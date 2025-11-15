@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter, useRoute } from 'vue-router/composables';
+import { useRouter, useRoute } from 'vue-router';
 import { computed, onMounted } from 'vue';
 import type { FearlessNft, NftCollection } from '@extension-base/services/nft-service/types';
 import { cut, setClipboard } from '@/helpers';

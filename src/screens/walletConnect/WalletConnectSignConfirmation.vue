@@ -31,14 +31,14 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import {
   EIP155_SIGNING_METHODS,
   SIGNATURE_METHODS,
   type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { TransferErrorCode, BasicTxErrorCode } from '@extension-base/background/types/types';
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from 'vue-i18n';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import WalletConnectRequestData from './WalletConnectRequestData.vue';
 import WalletConnectHeader from './WalletConnectHeader.vue';

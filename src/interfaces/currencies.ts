@@ -1,6 +1,4 @@
-import { type CodecString } from '@sora-substrate/util';
-import { type DexId } from '@sora-substrate/util/build/dex/consts';
-import type { Asset } from '@sora-substrate/util/build/assets/types';
+import type { CodecString, Asset, DexId } from '@/types/sora';
 
 enum MarketType {
   SMART = 'SMART',

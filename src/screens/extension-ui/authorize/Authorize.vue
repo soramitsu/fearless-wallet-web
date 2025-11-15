@@ -41,9 +41,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, set, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { computed, ref, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
 import { Components } from '@/router/routes';
@@ -84,13 +84,13 @@ onMounted(() => {
   const active = showSelectAll.value;
 
   accounts.value.forEach(({ name, address, ethereumAddress, isMobile }) => {
-    set(state.value, address, {
+    state.value[address] = {
       name,
       address,
       ethereumAddress,
       isMobile,
       active,
-    });
+    };
   });
 
   selectAll.value = isAllSelected();
@@ -110,10 +110,10 @@ const onSelect = (value: boolean, address: string) => {
 
 const onSelectAll = (value: boolean) => {
   Object.keys(state.value).forEach((key) => {
-    set(state.value, key, {
+    state.value[key] = {
       ...state.value[key],
       active: value,
-    });
+    };
   });
 
   selectAll.value = value;

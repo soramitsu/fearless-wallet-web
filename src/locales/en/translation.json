@@ -492,12 +492,24 @@
     "notSlashed": "Not slashed",
     "notOversubscribed": "Not oversubscribed",
     "estimatedRewards": "Estimated rewards",
+    "apy": "APY",
+    "apyHistory": "APY history",
+    "apyChange": "24h change",
+    "performance": "Performance",
+    "lastUpdated": "Last updated",
+    "sampledLocally": "Sampled locally",
+    "validatorBreakdown": "Validator breakdown",
+    "totalValidators": "{count} validators tracked",
+    "topValidators": "Top validators",
+    "validatorCommission": "Commission",
+    "validatorStatus": "Status",
     "selectedValidators": "Selected validators",
     "yourValidators": "Your validators",
     "validatorInfo": "Validator info",
     "tokensAllocated": "Your tokens allocated to the oversubscribed validator. You will not receive rewards in this era.",
     "about": {
-      "sora": "SORA staking is unique amongst Substrate-based chains. By staking XOR to secure the SORA network, you will receive the deflationary token VAL and participate in a new economic system."
+      "sora": "SORA staking is unique amongst Substrate-based chains. By staking XOR to secure the SORA network, you will receive the deflationary token VAL and participate in a new economic system.",
+      "generic": "Stake your tokens on this network to help secure it and earn protocol rewards."
     },
     "elected": "Elected",
     "notElected": "Not elected",
@@ -734,6 +746,6 @@
     "networkFees": "Network fee",
     "copyHash": "Copy hash",
     "fearlessSupport": "Fearless support",
-    "evmDApps":"EVM DApps"
+    "evmDApps": "EVM DApps"
   }
 }

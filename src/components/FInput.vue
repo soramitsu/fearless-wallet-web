@@ -16,7 +16,7 @@
         :style="inputStyle"
         @blur="$emit('blur', $event)"
         @input="$emit('change', $event)"
-        @keydown.native="keydownPress"
+        @keydown="keydownPress"
       />
     </div>
   </FCorners>
@@ -105,9 +105,7 @@ const inputClasses = computed(() => {
   ];
 });
 
-const keydownPress = (event: Event) => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
+const keydownPress = (event: KeyboardEvent) => {
   if (event.key === 'Enter') emit('pressEnter');
 };
 

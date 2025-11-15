@@ -1,8 +1,14 @@
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { ethers } from 'ethers';
-import { REFRESH_TIME } from '../evm-contract-service';
 import type State from '@extension-base/background/handlers/State';
 import type { ResponseBalanceRequest, FetchBalancePayload } from '@extension-base/background/types/types';
+import { WalletEcosystem } from '@/interfaces';
+import {
+  BALANCE_FETCH_TTL_MS,
+  createNetworkMatcher,
+  markBalanceFetch,
+  shouldSkipBalanceFetch,
+} from '@/helpers/balances';
 
 export default class EvmBalanceService {
   constructor(private readonly state: State) {}
@@ -19,22 +25,37 @@ export default class EvmBalanceService {
 
     if (ethereumAddress === '') return [];
 
+    const matchNetwork = createNetworkMatcher(networks);
     const filteredNetworks = this.state.networkService.activeNetworkByEcosystem.evm.filter(({ name }) =>
-      networks?.includes(name.toLowerCase())
+      matchNetwork(name)
     );
+
+    const registry = this.state.balanceService.lookupRegistry;
 
     const promises: Promise<ResponseBalanceRequest[]>[] = filteredNetworks.map(
       async ({ assets, name, networkStatus }) => {
         const api = this.state.getEvmApi(name);
 
-        const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
-        const timeDiff = Date.now() - timeout;
-        const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
+        if (networkStatus === NETWORK_STATUS.DISCONNECTED) return [];
+        if (!api?.api) return [];
 
-        if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return [];
+        const skipFetch = shouldSkipBalanceFetch({
+          lookup: registry,
+          ecosystem: WalletEcosystem.Evm,
+          network: name,
+          address: ethereumAddress,
+          ttl: BALANCE_FETCH_TTL_MS,
+          force,
+        });
 
-        // Save timeout [network api][ethereum address]
-        if (api) api.timeout[ethereumAddress] = Date.now();
+        if (skipFetch) return [];
+
+        markBalanceFetch({
+          lookup: registry,
+          ecosystem: WalletEcosystem.Evm,
+          network: name,
+          address: ethereumAddress,
+        });
 
         if (assetId) {
           const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, assetId, this.state);

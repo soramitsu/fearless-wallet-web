@@ -50,91 +50,110 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
 import type { DerivationPaths } from '@/interfaces';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 
-@Component
-export default class AdvancedForm extends Vue {
-  readonly ethereumDefaultDerivationPath = ETHEREUM_DEFAULT_DERIVATION_PATH;
-  readonly optionsSubstrateKeyPair = [
-    { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
-    { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },
-    { label: 'ECDSA | BTC/ETH compatible', value: 'ecdsa', example: '//hard///password' },
-  ];
+defineOptions({
+  name: 'AdvancedForm',
+});
 
-  substrateDP = '';
-  ethereumDP = '';
-  substrateKeypairType = '';
-  ethereumKeypairType = 'ETHEREUM';
+const props = withDefaults(
+  defineProps<{
+    derivationPaths: DerivationPaths;
+    showEthereumDP?: boolean;
+  }>(),
+  {
+    showEthereumDP: true,
+  }
+);
 
-  @Prop(Object) derivationPaths!: DerivationPaths;
-  @Prop({ default: true }) showEthereumDP!: boolean;
+const emit = defineEmits<{
+  toggleAdvancedFormVisible: [value: boolean];
+  updateDP: [value: DerivationPaths];
+}>();
 
-  get example() {
-    return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeypairType)?.example;
+const ethereumDefaultDerivationPath = ETHEREUM_DEFAULT_DERIVATION_PATH;
+const optionsSubstrateKeyPair = [
+  { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
+  { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },
+  { label: 'ECDSA | BTC/ETH compatible', value: 'ecdsa', example: '//hard///password' },
+] as const;
+
+const substrateDP = ref('');
+const ethereumDP = ref('');
+const substrateKeypairType = ref<KeypairType | ''>('');
+const ethereumKeypairType = ref('ETHEREUM');
+
+const initialize = () => {
+  substrateDP.value = props.derivationPaths.substrate.value;
+  ethereumDP.value = props.derivationPaths.ethereum.value;
+  substrateKeypairType.value = props.derivationPaths.substrate.keypairType;
+};
+
+watch(
+  () => props.derivationPaths,
+  () => initialize(),
+  { immediate: true, deep: true }
+);
+
+const example = computed(
+  () => optionsSubstrateKeyPair.find(({ value }) => value === substrateKeypairType.value)?.example
+);
+
+const showAcceptIcon = computed(() => {
+  const { ethereum, substrate } = props.derivationPaths;
+  const isSubstrateSaved = substrate.value !== '';
+  const isEthereumSaved = ethereum.value !== '';
+
+  if (isSubstrateSaved && isEthereumSaved) {
+    return substrateDP.value !== substrate.value || ethereumDP.value !== ethereum.value;
   }
 
-  get showAcceptIcon() {
-    const { ethereum, substrate } = this.derivationPaths;
-    const isSubstrateSaved = substrate.value !== '';
-    const isEthereumSaved = ethereum.value !== '';
-
-    if (isSubstrateSaved && isEthereumSaved) {
-      return this.substrateDP !== substrate.value || this.ethereumDP !== ethereum.value;
-    }
-
-    if (isSubstrateSaved && ethereum.value === '') {
-      return this.substrateDP !== substrate.value || this.ethereumDP !== '';
-    }
-
-    if (isEthereumSaved && substrate.value === '') {
-      return this.ethereumDP !== ethereum.value || this.substrateDP !== '';
-    }
-
-    return this.substrateDP !== '' || this.ethereumDP !== '';
+  if (isSubstrateSaved && ethereum.value === '') {
+    return substrateDP.value !== substrate.value || ethereumDP.value !== '';
   }
 
-  changeSubstrateKeypairType(value: string) {
-    this.substrateKeypairType = value;
+  if (isEthereumSaved && substrate.value === '') {
+    return ethereumDP.value !== ethereum.value || substrateDP.value !== '';
   }
 
-  mounted() {
-    this.substrateDP = this.derivationPaths.substrate.value;
-    this.ethereumDP = this.derivationPaths.ethereum.value;
-    this.substrateKeypairType = this.derivationPaths.substrate.keypairType;
-  }
+  return substrateDP.value !== '' || ethereumDP.value !== '';
+});
 
-  closeAdvancedForm() {
-    this.$emit('toggleAdvancedFormVisible', false);
-  }
+const changeSubstrateKeypairType = (value: string) => {
+  substrateKeypairType.value = value as KeypairType;
+};
 
-  changeSubstrateDP(value: string) {
-    this.substrateDP = value;
-  }
+const changeSubstrateDP = (value: string) => {
+  substrateDP.value = value;
+};
 
-  changeEthereumDP(value: string) {
-    this.ethereumDP = value;
-  }
+const changeEthereumDP = (value: string) => {
+  ethereumDP.value = value;
+};
 
-  saveChanges() {
-    const derivationPaths: DerivationPaths = {
-      substrate: {
-        value: this.substrateDP,
-        keypairType: this.substrateKeypairType as KeypairType,
-      },
-      ethereum: {
-        value: this.ethereumDP,
-        keypairType: 'ethereum',
-      },
-    };
+const closeAdvancedForm = () => {
+  emit('toggleAdvancedFormVisible', false);
+};
 
-    this.$emit('updateDP', derivationPaths);
-    this.closeAdvancedForm();
-  }
-}
+const saveChanges = () => {
+  const derivationPaths: DerivationPaths = {
+    substrate: {
+      value: substrateDP.value,
+      keypairType: substrateKeypairType.value as KeypairType,
+    },
+    ethereum: {
+      value: ethereumDP.value,
+      keypairType: 'ethereum',
+    },
+  };
+
+  emit('updateDP', derivationPaths);
+  closeAdvancedForm();
+};
 </script>
 
 <style lang="scss" scoped>

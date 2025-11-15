@@ -1,5 +1,5 @@
 <template>
-  <div :class="cornersClasses">
+  <div :class="cornersClasses" @click="handleClick">
     <div :class="slotContainerClasses">
       <slot></slot>
     </div>
@@ -55,6 +55,14 @@ const cornersClasses = computed(() => [
     FCorners: props.topLeftCorner || props.bottomRightCorner,
   },
 ]);
+
+const emit = defineEmits<{
+  (_event: 'click', _payload: MouseEvent): void;
+}>();
+
+const handleClick = (payload: MouseEvent) => {
+  emit('click', payload);
+};
 </script>
 
 <style lang="scss" scoped>

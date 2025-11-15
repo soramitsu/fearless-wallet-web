@@ -1,10 +1,11 @@
 import { BN, isFunction } from '@polkadot/util';
-import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from '@extension-base/api/substrate/sora';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getPrecisionValue } from '@extension-base/api/substrate';
+import { getFPNumberCtor } from '@extension-base/services/utils/sora';
 import { createLiberlandCrossChain } from './liberland';
+import type { FPNumber as FPNumberInstance } from '@sora/math';
 import type { CrossChainProps, Extrinsic, MakeCrossChainProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup, BasicTxResponse } from '@extension-base/background/types/types';
@@ -32,6 +33,7 @@ enum XcmVersions {
 }
 
 const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
+const getFPNumber = getFPNumberCtor;
 
 function isNativeNetwork(networkName: NetworkName) {
   return NATIVE_NETWORKS.includes(networkName.toLowerCase());
@@ -42,7 +44,7 @@ function isRelayChain(network: string) {
 }
 
 function interiorHelper(interiors: Interiors) {
-  const array = interiors.reduce((result, interior) => {
+  const array = interiors.reduce<Record<string, unknown>[]>((result, interior) => {
     const formattedInterior = Object.fromEntries(
       Object.entries(interior).map(([key, value]) => {
         const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
@@ -54,7 +56,7 @@ function interiorHelper(interiors: Interiors) {
     return [...result, formattedInterior];
   }, []);
 
-  return array.length === 1 ? (array[0] as Record<string, string>) : (array as Record<string, string>[]);
+  return array.length === 1 ? array[0] : array;
 }
 
 function getConcreteAsset(
@@ -120,7 +122,7 @@ function getNativeTeleportParams(
 
   const paraId = isSora(destNet, true)
     ? getSoraParaId(relayChain, state)
-    : state.networkService.networkMap[destNetworkKey]?.paraId ?? '0';
+    : (state.networkService.networkMap[destNetworkKey]?.paraId ?? '0');
 
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
@@ -186,7 +188,7 @@ function getOrmlTeleportParams(
 
   const paraId = isSora(destNet, true)
     ? getSoraParaId(relayChain, state)
-    : state.networkService.networkMap[destNetworkKey]?.paraId ?? 0;
+    : (state.networkService.networkMap[destNetworkKey]?.paraId ?? 0);
 
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
@@ -248,7 +250,7 @@ async function createNativeCrossChainExtrinsic(
 
   const { precision } = getAssetBalance(originNet, tokenBalance);
 
-  const precisionAmount = getPrecisionValue(amount, precision);
+  const precisionAmount = await getPrecisionValue(amount, precision);
   const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
   const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
   const tx = api!.tx[pallet][module];
@@ -273,7 +275,7 @@ async function createOrmlCrossChainExtrinsic(
   await api.isReadyOrError;
 
   const { precision } = getAssetBalance(originNet, tokenBalance);
-  const precisionAmount = getPrecisionValue(amount, precision);
+  const precisionAmount = await getPrecisionValue(amount, precision);
 
   // В большинстве случаев используется xTokens, но он есть не всегда
   if (api.tx?.xTokens?.transferMultiasset) {
@@ -319,7 +321,10 @@ async function createCrossChainExtrinsic(props: CrossChainProps, amount: string,
   return createOrmlCrossChainExtrinsic(xcmAssetId, originNet, destinationNet, to, amount, tokenBalance, state);
 }
 
-async function estimateCrossChainFee(props: CrossChainProps, state: State): Promise<[FPNumber, FPNumber]> {
+async function estimateCrossChainFee(
+  props: CrossChainProps,
+  state: State
+): Promise<[FPNumberInstance, FPNumberInstance]> {
   const { originNet, destinationNet, amount, tokenBalance } = props;
 
   // Crosschain fee calculation
@@ -339,6 +344,7 @@ async function estimateCrossChainFee(props: CrossChainProps, state: State): Prom
 
   const { precision } = getAssetBalance(originNet, tokenBalance);
 
+  const FPNumber = await getFPNumber();
   const crossChainFee = FPNumber.fromCodecValue(
     destEstimateFee?.feeInPlanks ?? '0',
     +(destEstimateFee?.precision ?? precision)
@@ -386,6 +392,7 @@ async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise
   const { precision } = getAssetBalance(originNet, tokenBalance);
   const [, crossChainFee] = await estimateCrossChainFee(props, state);
 
+  const FPNumber = await getFPNumber();
   const amountWithCrossChainFee = new FPNumber(amount, precision).add(crossChainFee).toString(); // добавляем CrossChain комиссию, потому что она списывается из суммы amount`а
 
   const extrinsic = await createCrossChainExtrinsic(props, amountWithCrossChainFee, state);

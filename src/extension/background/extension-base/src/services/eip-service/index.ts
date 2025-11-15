@@ -129,7 +129,7 @@ export class EipService {
     // This method will be called after DApp request connect to extension
     const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
 
-    const emitEvent = (eventName: EvmEventType, payload: any) => {
+    const emitEvent = (eventName: EvmEventType, payload: unknown) => {
       cb({ type: eventName, payload });
     };
 

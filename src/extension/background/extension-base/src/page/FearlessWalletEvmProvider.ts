@@ -1,13 +1,9 @@
-import { type FWEvmProvider } from '@extension-base/page/types';
+import { type FWEvmProvider, type SendSyncJsonRpcRequest, type JsonRpcCallback } from '@extension-base/page/types';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import { sendMessage } from '.';
 import type { RequestArguments } from '@json-rpc-tools/utils';
 import { APP_VERSION } from '@/consts/global';
-
-export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
-  method: 'net_version';
-}
 
 let subscribeFlag = false;
 
@@ -117,9 +113,13 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     }
   }
 
-  sendAsync<T>(payload: JsonRpcRequest<T>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void {
+  sendAsync<T>(payload: JsonRpcRequest<T>, callback: JsonRpcCallback<T>): void {
     this.request<T>(payload)
-      .then((result) => callback(null, { result, id: payload.id, jsonrpc: payload.jsonrpc }))
+      .then((result) => {
+        const id = (payload.id ?? 0) as unknown as number;
+
+        callback(null, { result, id, jsonrpc: payload.jsonrpc });
+      })
       .catch((e) => callback(e));
   }
 

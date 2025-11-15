@@ -9,89 +9,99 @@
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
-      <div v-if="showMenu" class="dots-container" :ref="dotsHorizontalRef" data-testid="dots">
+      <div v-if="showMenu" ref="dotsHorizontalRef" class="dots-container" data-testid="dots">
         <Icon icon="dots-horizontal" className="dots" />
       </div>
     </div>
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 
 import { type CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { getTotalBalances } from '@/extension/messaging';
 
-@Component({
-  components: { WalletBalance },
-})
-export default class WalletInfo extends Vue {
-  readonly dotsHorizontalRef = 'dotsHorizontal';
+defineOptions({
+  name: 'WalletInfo',
+});
 
-  showWalletMenu = false;
-  totalBalances: ResponseTotalBalances[] = [];
-  interval: NodeJS.Timer | undefined;
-
-  $refs!: {
-    dotsHorizontal: HTMLDivElement;
-  };
-
-  @Prop({ default: '' }) name!: string;
-  @Prop({ default: '' }) address!: string;
-  @Prop(Boolean) isMobile!: boolean;
-  @Prop({ default: false }) isSelected!: boolean;
-  @Prop({ default: true }) showMenu!: boolean;
-
-  get totalBalance() {
-    return this.totalBalances.find(({ address }) => address === this.address);
+const props = withDefaults(
+  defineProps<{
+    name: string;
+    address: string;
+    isMobile?: boolean;
+    isSelected?: boolean;
+    showMenu?: boolean;
+  }>(),
+  {
+    name: '',
+    address: '',
+    isMobile: false,
+    isSelected: false,
+    showMenu: true,
   }
+);
 
-  get balance() {
-    return this.totalBalance?.total ?? 0;
+const emit = defineEmits<{
+  setWallet: [];
+  setShowWalletDetailsPopupVisible: [buttonTop: number];
+}>();
+
+const totalBalances = ref<ResponseTotalBalances[]>([]);
+const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
+const dotsHorizontalRef = ref<HTMLDivElement | null>(null);
+
+const totalBalance = computed(() => totalBalances.value.find(({ address }) => address === props.address));
+
+const balance = computed(() => totalBalance.value?.total ?? 0);
+
+const changeWalletBalance = computed(() => totalBalance.value?.change ?? { percent: 0, amount: 0 });
+
+const contentClasses = computed(() => [
+  'wallet-info',
+  {
+    'is-selected': props.isSelected,
+  },
+]);
+
+const loadBalances = async () => {
+  totalBalances.value = await getTotalBalances();
+};
+
+onMounted(async () => {
+  await loadBalances();
+
+  intervalId.value = setInterval(loadBalances, 5000);
+});
+
+onBeforeUnmount(() => {
+  if (intervalId.value) clearInterval(intervalId.value);
+});
+
+const setWallet = (event: CustomEvent | MouseEvent) => {
+  const target = (event.target as HTMLElement | null) ?? null;
+
+  if (!target) return;
+
+  const classList = target.classList;
+  const shouldUpdateSelectedWallet = !(
+    classList.contains('dots-container') ||
+    classList.contains('dots') ||
+    classList.contains('dots-horizontal') ||
+    classList.contains('icon__inner')
+  );
+
+  if (shouldUpdateSelectedWallet) {
+    emit('setWallet');
+  } else if (dotsHorizontalRef.value) {
+    const buttonTop = dotsHorizontalRef.value.getBoundingClientRect().top;
+
+    emit('setShowWalletDetailsPopupVisible', buttonTop);
   }
-
-  get changeWalletBalance() {
-    return this.totalBalance?.change ?? { percent: 0, amount: 0 };
-  }
-
-  get contentClasses() {
-    return [
-      'wallet-info',
-      {
-        'is-selected': this.isSelected,
-      },
-    ];
-  }
-
-  async created() {
-    this.totalBalances = await getTotalBalances();
-
-    this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
-  }
-
-  beforeDestroy() {
-    clearInterval(this.interval);
-  }
-
-  setWallet({ target: { classList } }: CustomEvent) {
-    const shouldUpdateSelectedWallet = !(
-      classList.contains('dots-container') ||
-      classList.contains('dots') ||
-      classList.contains('dots-horizontal') ||
-      classList.contains('icon__inner')
-    );
-
-    if (shouldUpdateSelectedWallet) this.$emit('setWallet');
-    else {
-      const buttonTop = this.$refs[this.dotsHorizontalRef].getBoundingClientRect().top;
-
-      this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
-    }
-  }
-}
+};
 </script>
 
 <style lang="scss" scoped>

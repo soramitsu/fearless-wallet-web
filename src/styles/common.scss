@@ -3,8 +3,8 @@ $extension-height: 600px;
 $default-height-page: 100%;
 
 @function toRem($value) {
-    $remValue: ($value / 16) + rem;
-    @return $remValue;
+  $remValue: ($value / 16) + rem;
+  @return $remValue;
 }
 
 $header-height: toRem(48);

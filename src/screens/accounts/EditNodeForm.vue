@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="$emit('closeForm')">
+  <AboveForm :fullScreen="true" header="accounts.newNode" @closeHandler="handleClose">
     <div class="add-node-form">
       <div>
         <FInput
@@ -39,129 +39,125 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 
-@Component
-export default class EditNodeForm extends Vue {
-  networksStore = useNetworksStore();
-  name = '';
-  url = '';
-  isError = false;
+const networksStore = useNetworksStore();
 
-  @Prop(String) network!: string;
-  @Prop({ type: String, default: '' }) nodeName!: string;
-  @Prop({ type: String, default: '' }) nodeUrl!: string;
-  @Prop(Boolean) isActive!: boolean;
+const props = withDefaults(
+  defineProps<{
+    network: string;
+    nodeName?: string;
+    nodeUrl?: string;
+    isActive: boolean;
+  }>(),
+  {
+    nodeName: '',
+    nodeUrl: '',
+  }
+);
 
-  get buttonText() {
-    return this.isEdit ? 'common.save' : 'accounts.addNode';
+const emit = defineEmits<{
+  closeForm: [updated?: boolean];
+}>();
+
+const name = ref('');
+const url = ref('');
+const isError = ref(false);
+
+const networkJson = computed(() => networksStore.getNetwork(props.network));
+const isEdit = computed(() => props.nodeUrl !== '');
+const urlLength = computed(() => url.value.length);
+
+const isUrlDuplicate = computed(() => {
+  if (!networkJson.value) return false;
+
+  return (
+    networkJson.value.nodes.some(({ url: nodeUrl }) => nodeUrl === url.value) ||
+    networkJson.value.customNodes.some(({ url: nodeUrl }) => nodeUrl === url.value)
+  );
+});
+
+const errorMessage = computed(() =>
+  isUrlDuplicate.value ? 'accounts.customNodeDuplicate' : 'accounts.invalidNodeAddress'
+);
+
+const isUrlChanged = computed(() => url.value !== props.nodeUrl);
+const isNameChanged = computed(() => name.value !== props.nodeName);
+
+const buttonDisabled = computed(
+  () => name.value === '' || urlLength.value === 0 || isError.value || (!isUrlChanged.value && !isNameChanged.value)
+);
+
+const buttonText = computed(() => (isEdit.value ? 'common.save' : 'accounts.addNode'));
+
+const validateUrl = () => {
+  isError.value = false;
+
+  if (urlLength.value === 0 || url.value === props.nodeUrl) return;
+
+  if (isUrlDuplicate.value) {
+    isError.value = true;
+
+    return;
   }
 
-  get networkJson() {
-    return this.networksStore.getNetwork(this.network);
+  const explorers = networkJson.value?.externalApi?.explorers;
+  const isTooShort = urlLength.value < 7;
+
+  if (explorers && explorers[0].type === 'etherscan') {
+    isError.value = isTooShort || !url.value.startsWith('https://');
+
+    return;
   }
 
-  get isEdit() {
-    return this.nodeUrl !== '';
-  }
+  isError.value = isTooShort || !url.value.startsWith('wss://');
+};
 
-  get isUrlDuplicate() {
-    if (!this.networkJson) return false;
+watch(url, validateUrl);
 
-    return (
-      this.networkJson.nodes.some(({ url }) => url === this.url) ||
-      this.networkJson.customNodes.some(({ url }) => url === this.url)
-    );
-  }
+const changeName = (value: string) => {
+  name.value = value;
+};
 
-  get urlLength() {
-    return this.url.length;
-  }
+const changeUrl = (value: string) => {
+  url.value = value;
+};
 
-  @Watch('url')
-  isErrorUrlNode() {
-    this.isError = false;
+const updateNodes = () => {
+  if (urlLength.value === 0 || !networkJson.value) return;
 
-    if (this.urlLength === 0 || this.url === this.nodeUrl) return;
+  const prepData: Partial<NetworkJson> = {};
+  const customNodeIndex = networkJson.value.customNodes.findIndex(
+    ({ url: existingUrl, name: existingName }) => existingUrl === props.nodeUrl && existingName === props.nodeName
+  );
 
-    if (this.isUrlDuplicate) {
-      this.isError = true;
+  prepData.customNodes = [...(networkJson.value.customNodes ?? [])];
+  const editedNode = { name: name.value, url: url.value };
 
-      return;
-    }
+  if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = editedNode;
+  else prepData.customNodes.push(editedNode);
 
-    const explorers = this.networkJson.externalApi?.explorers;
-    const isTooLengthTooSmall = this.urlLength < 7;
+  prepData.currentProvider = url.value;
 
-    if (explorers && explorers[0].type === 'etherscan') {
-      this.isError = isTooLengthTooSmall || !this.url.startsWith('https://');
+  upsertNetworkMap({
+    ...networkJson.value,
+    ...prepData,
+    isManual: false,
+  });
 
-      return;
-    }
+  handleClose(true);
+};
 
-    this.isError = isTooLengthTooSmall || !this.url.startsWith('wss://');
-  }
+const handleClose = (updated = false) => emit('closeForm', updated);
 
-  get errorMessage() {
-    if (this.isUrlDuplicate) return 'accounts.customNodeDuplicate';
-
-    return 'accounts.invalidNodeAddress';
-  }
-
-  get isUrlChanged() {
-    return this.url !== this.nodeUrl;
-  }
-
-  get isNameChanged() {
-    return this.name !== this.nodeName;
-  }
-
-  get buttonDisabled() {
-    return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
-  }
-
-  changeName(value: string) {
-    this.name = value;
-  }
-
-  changeUrl(value: string) {
-    this.url = value;
-  }
-
-  mounted() {
-    this.name = this.nodeName;
-    this.url = this.nodeUrl;
-  }
-
-  updateNodes() {
-    if (this.urlLength === 0) return;
-
-    const prepData: Partial<NetworkJson> = {};
-    const customNodeIndex = this.networkJson.customNodes.findIndex(
-      ({ url, name }) => url === this.nodeUrl && name === this.nodeName
-    );
-
-    prepData.customNodes = this.networkJson.customNodes ?? [];
-    const editedNode = { name: this.name, url: this.url };
-
-    if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = editedNode;
-    else prepData.customNodes.push(editedNode);
-
-    prepData.currentProvider = this.url;
-
-    upsertNetworkMap({
-      ...this.networkJson,
-      ...prepData,
-      isManual: false,
-    });
-
-    this.$emit('closeForm', true);
-  }
-}
+onMounted(() => {
+  name.value = props.nodeName ?? '';
+  url.value = props.nodeUrl ?? '';
+});
 </script>
 
 <style lang="scss" scoped>

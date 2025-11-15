@@ -12,31 +12,29 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getFormattedDate } from '@/helpers';
 
-@Component
-export default class AlertItem extends Vue {
-  @Prop({ type: String }) name!: string;
-  @Prop({ type: Number }) timespan!: number;
-  @Prop({ type: String }) formName!: string;
+const props = defineProps<{
+  name: string;
+  timespan: number;
+  formName: string;
+}>();
 
-  get date() {
-    return getFormattedDate(this.timespan, 'ms');
-  }
+const emit = defineEmits<{
+  openForm: [formName: string];
+}>();
 
-  get tName() {
-    return this.$t(`staking.alertsList.${this.name}.name`);
-  }
+const { t } = useI18n();
 
-  get tDescriptions() {
-    return this.$t(`staking.alertsList.${this.name}.text`);
-  }
+const date = computed(() => getFormattedDate(props.timespan, 'ms'));
+const tName = computed(() => t(`staking.alertsList.${props.name}.name`));
+const tDescriptions = computed(() => t(`staking.alertsList.${props.name}.text`));
 
-  click() {
-    this.$emit('openForm', this.formName);
-  }
+function click() {
+  emit('openForm', props.formName);
 }
 </script>
 

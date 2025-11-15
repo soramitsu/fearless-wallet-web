@@ -30,72 +30,49 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkParams } from '@/stores';
-import { isSameString } from '@/helpers';
+import { balanceMatchesNetwork } from '@/helpers';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class StakingItem extends Vue {
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  stakingNetwork: NetworkParams;
+}>();
 
-  @Prop(Object) stakingNetwork!: NetworkParams;
+const emit = defineEmits<{
+  click: [];
+}>();
 
-  get network() {
-    return this.stakingNetwork.network;
-  }
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
 
-  get assetId() {
-    return this.stakingNetwork.assetId;
-  }
+const network = computed(() => props.stakingNetwork.network);
+const assetId = computed(() => props.stakingNetwork.assetId);
 
-  get stakingCurrency() {
-    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId);
-  }
+const stakingCurrency = computed(() => accountsStore.balances?.find(({ groupId }) => groupId === assetId.value));
 
-  get isLoading() {
-    return !this.balanceIsReady;
-  }
+const balanceIsReady = computed(() => {
+  const networkBalance = stakingCurrency.value?.balances?.find((balance) =>
+    balanceMatchesNetwork(balance, network.value)
+  );
 
-  get balanceIsReady() {
-    const networkBalance = this.stakingCurrency?.balances?.find(({ name }) => isSameString(name, this.network));
+  return networkBalance?.state === APIItemState.READY;
+});
 
-    return networkBalance?.state === APIItemState.READY;
-  }
+const isLoading = computed(() => !balanceIsReady.value);
 
-  get apy() {
-    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
-  }
+const apy = computed(() => `${n(props.stakingNetwork.apy, 'price')}%`);
+const asset = computed(() => props.stakingNetwork.asset.toUpperCase());
+const icon = computed(() => props.stakingNetwork.icon);
+const minBond = computed(() => props.stakingNetwork.minBond);
+const type = computed(() => props.stakingNetwork.type);
+const days = computed(() => ({ value: props.stakingNetwork.unbondPeriod }));
 
-  get asset() {
-    return this.stakingNetwork.asset.toUpperCase();
-  }
-
-  get icon() {
-    return this.stakingNetwork.icon;
-  }
-
-  get unbondPeriod() {
-    return this.stakingNetwork.unbondPeriod;
-  }
-
-  get minBond() {
-    return this.stakingNetwork.minBond;
-  }
-
-  get type() {
-    return this.stakingNetwork.type;
-  }
-
-  get days() {
-    return { value: this.stakingNetwork.unbondPeriod };
-  }
-
-  click() {
-    if (!this.isLoading) this.$emit('click');
-  }
+function click() {
+  if (!isLoading.value) emit('click');
 }
 </script>
 

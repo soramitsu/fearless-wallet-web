@@ -1,15 +1,12 @@
 <template>
-  <Fragment>
-    <Favicon :url="url" :width="80" class="auth-favicon" />
-    <div class="header" data-testid="header">{{ title }}</div>
-    <div v-if="subtext" class="subtext">{{ subtext }}</div>
-  </Fragment>
+  <Favicon :url="url" :width="80" class="auth-favicon" />
+  <div class="header" data-testid="header">{{ title }}</div>
+  <div v-if="subtext" class="subtext">{{ subtext }}</div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Fragment } from 'vue-fragment';
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from 'vue-i18n';
 import Favicon from '@/components/Favicon.vue';
 type Props = {
   url: string;

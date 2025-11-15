@@ -125,9 +125,21 @@ export class PricesService {
   }
 
   async fetchTokensPrice(): Promise<PriceJson> {
-    const tonAssetsPrice = await this.tonPricingService.fetchTonAsstetsPrice();
-    const coinGeckoAssetsPrice = await this.coinGeckoService.fetchAssetsPrice();
-    const soraAssetsPrice = await this.soraPricingService.fetchSoraExplorerPricing();
+    const tonAssetsPricePromise = this.tonPricingService.fetchTonAsstetsPrice();
+    const coinGeckoAssetsPricePromise = this.coinGeckoService.fetchAssetsPrice();
+
+    const [tonAssetsPrice, coinGeckoAssetsPrice] = await Promise.all([
+      tonAssetsPricePromise,
+      coinGeckoAssetsPricePromise,
+    ]);
+
+    let soraAssetsPrice: BasePriceJson = DEFAULT_PRICES;
+
+    try {
+      soraAssetsPrice = await this.soraPricingService.fetchSoraExplorerPricing();
+    } catch (error) {
+      console.warn('Unable to refresh SORA pricing feed.', error);
+    }
 
     const allRates: BasePriceJson = {
       tokenPriceMap: {

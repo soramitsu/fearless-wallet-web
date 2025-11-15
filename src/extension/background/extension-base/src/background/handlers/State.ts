@@ -1,63 +1,100 @@
-import { BehaviorSubject, Subject } from 'rxjs';
-import { addMetadata } from '@polkadot/extension-chains';
-import { isEthereumAddress } from '@polkadot/util-crypto';
-import { assert } from '@polkadot/util';
-import { accounts } from '@subwallet/ui-keyring/observable/accounts';
-import {
-  EventService,
-  OnboardingService,
-  KeyringService,
-  StakingService,
-  PoolsService,
-  NetworkService,
-  RequestService,
-  WalletConnectService,
-  NftService,
-  GoogleService,
-  WalletConnectDAppService,
-  SubscriptionService,
-  CronService,
-  ScamService,
-  PricesService,
-  TimeoutService,
-} from '@extension-base/services';
-import { api as apiSora } from '@sora-substrate/util';
-import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
+import { BehaviorSubject, Subject } from 'rxjs';
+
+import { addMetadata } from '@polkadot/extension-chains';
+import { assert } from '@polkadot/util';
+import { isEthereumAddress } from '@polkadot/util-crypto';
+import { accounts } from '@subwallet/ui-keyring/observable/accounts';
+
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
+import {
+  CronService,
+  EventService,
+  GoogleService,
+  KeyringService,
+  NetworkService,
+  NftService,
+  OnboardingService,
+  PoolsService,
+  PricesService,
+  RequestService,
+  ScamService,
+  StakingService,
+  SubscriptionService,
+  TimeoutService,
+  WalletConnectDAppService,
+  WalletConnectService,
+} from '@extension-base/services';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
+import { getSoraUtil, getSoraUtilOrThrow } from '@extension-base/services/utils/sora';
+import { storage } from '@extension-base/stores/Storage';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
-import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
+import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
+import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
+import type { CreateResult } from '@polkadot/ui-keyring/types';
+
 import type {
-  ServiceInfo,
+  ActiveTabAuthorizeStatus,
+  AuthUrlInfo,
+  AuthUrls,
+  IState,
+  Port,
+  Providers,
   RequestRpcSend,
   RequestRpcSubscribe,
   RequestRpcUnsubscribe,
-  ResponseRpcListProviders,
-  Port,
-  IState,
-  ActiveTabAuthorizeStatus,
-  Providers,
-  AuthUrlInfo,
-  AuthUrls,
   RequestUpdateCurrentAccount,
+  ResponseRpcListProviders,
+  ServiceInfo,
 } from '@extension-base/background/types/types';
-import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
-import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
-import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { FWKeyringMeta } from '@extension-base/types';
+import { ALL_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { URLS } from '@/consts/urls';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
-import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
-import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { WalletEcosystem, type NetworkName, type SoraFees, type XcmFees, type XcmLocations } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { filterNetworksBySelection } from '@/helpers/networkGroups';
 
 type Wallet = {
   address: string;
   ethereumAddress: string;
+};
+
+const buildInitialSoraFees = (): SoraFees => {
+  try {
+    const { api, FPNumber } = getSoraUtilOrThrow();
+
+    return Object.fromEntries(
+      Object.entries(api.NetworkFee ?? {}).map(([operation, value]) => [
+        operation,
+        FPNumber.fromCodecValue(value).toString(),
+      ])
+    ) as SoraFees;
+  } catch {
+    return {} as SoraFees;
+  }
+};
+
+const createAccountResult = (pair: KeyringPair): CreateResult => {
+  const meta: KeyringPair$Meta = { ...pair.meta };
+
+  const json: KeyringPair$Json = {
+    address: pair.address,
+    encoded: '',
+    encoding: {
+      content: ['pkcs8', pair.type],
+      type: 'none',
+      version: '0',
+    },
+    meta,
+  };
+
+  return { json, pair };
 };
 
 export default class State {
@@ -67,7 +104,7 @@ export default class State {
   serviceInfoSubject = new Subject<ServiceInfo>();
   xcmFees: XcmFees = [];
   xcmLocations: XcmLocations = [];
-  soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
+  soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(buildInitialSoraFees());
   currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,
     authorizeAccountsCount: 0,
@@ -261,32 +298,16 @@ export default class State {
   }
 
   getActiveNetworksCurrentWallet(address: string) {
-    const uniqNetworks = new Set<NetworkJson>();
     const networks = this.networkService.networkValues;
     const selectedNetwork = this.networkService.selectedNetworks[address];
 
-    if (selectedNetwork === ALL_NETWORKS) return networks;
+    if (!selectedNetwork || selectedNetwork === ALL_NETWORKS) return new Set(networks);
 
-    if (selectedNetwork === POPULAR_NETWORKS) {
-      const popular = networks.filter((el) => el.rank !== undefined);
-      popular.forEach((el) => uniqNetworks.add(el));
+    const relevantNetworks = filterNetworksBySelection(networks, selectedNetwork, {
+      favoriteAddress: address,
+    });
 
-      return uniqNetworks;
-    }
-
-    if (selectedNetwork === FAVORITE_NETWORKS) {
-      const favorite = networks.filter((el) => el.favorite.length && el.favorite.includes(address));
-
-      favorite.forEach((el) => uniqNetworks.add(el));
-
-      return uniqNetworks;
-    }
-
-    const singleNetwork = networks.find((network) => network.name === selectedNetwork);
-
-    if (singleNetwork) uniqNetworks.add(singleNetwork);
-
-    return uniqNetworks;
+    return new Set(relevantNetworks);
   }
 
   getAllAddresses(): string[] {
@@ -308,6 +329,38 @@ export default class State {
     assert(provider, 'Cannot call pub(rpc.subscribe) before provider is set');
 
     return provider.send(request.method, request.params);
+  }
+
+  async rpcConnect(port: Port): Promise<boolean> {
+    const provider = this.injectedProviders.get(port);
+
+    assert(provider, 'Cannot call pub(rpc.connect) before provider is set');
+
+    if (typeof provider.connect !== 'function') {
+      console.warn('Selected provider does not support connect, skipping manual connect request.');
+
+      return true;
+    }
+
+    await provider.connect();
+
+    return true;
+  }
+
+  async rpcDisconnect(port: Port): Promise<boolean> {
+    const provider = this.injectedProviders.get(port);
+
+    assert(provider, 'Cannot call pub(rpc.disconnect) before provider is set');
+
+    if (typeof provider.disconnect !== 'function') {
+      console.warn('Selected provider does not support disconnect, skipping manual disconnect request.');
+
+      return true;
+    }
+
+    await provider.disconnect();
+
+    return true;
   }
 
   // Start a provider, return its meta
@@ -350,15 +403,20 @@ export default class State {
     return provider.subscribe(type, method, params, cb);
   }
 
-  rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): void {
+  rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): () => void {
     const provider = this.injectedProviders.get(port);
 
     assert(provider, 'Cannot call pub(rpc.subscribeConnected) before provider is set');
 
+    const unsubscribeConnected = provider.on('connected', () => cb(null, true));
+    const unsubscribeDisconnected = provider.on('disconnected', () => cb(null, false));
+
     cb(null, provider.isConnected); // Immediately send back current isConnected
 
-    provider.on('connected', () => cb(null, true));
-    provider.on('disconnected', () => cb(null, false));
+    return () => {
+      unsubscribeConnected();
+      unsubscribeDisconnected();
+    };
   }
 
   rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
@@ -428,7 +486,7 @@ export default class State {
       const activeValue =
         walletEcosystem === WalletEcosystem.Ton
           ? 'Ton Mainnet'
-          : this.networkService.selectedNetworks[address] ?? POPULAR_NETWORKS;
+          : (this.networkService.selectedNetworks[address] ?? POPULAR_NETWORKS);
 
       if (isNew) this.setActiveNetworks(activeValue);
 
@@ -444,23 +502,49 @@ export default class State {
     // logic for Sora library
     this.poolsService.unsubscribePools();
 
-    const isTonWallet = data?.walletEcosystem === WalletEcosystem.Ton;
-
-    // logic for Sora library
-    if (!isTonWallet && data?.address && !data.isMobile && data.walletEcosystem === 'substrate') {
-      const pair = this.keyringService.getPair(data?.address)!;
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      apiSora.account = { json: null as any, pair };
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
-    }
+    this.syncSoraAccount(data);
 
     this.updateServiceInfo();
     callback();
+  }
+
+  private syncSoraAccount(data: CurrentAccountState): void {
+    const shouldAttach =
+      data !== null && !data.isMobile && data.walletEcosystem === WalletEcosystem.Substrate && !!data.address;
+
+    if (!shouldAttach) return;
+
+    const pair = this.keyringService.getPair(data.address!);
+
+    if (!pair) return;
+
+    const assignPair = (api: Awaited<ReturnType<typeof getSoraUtil>>['api']) => {
+      const accountResult = createAccountResult(pair as unknown as KeyringPair);
+
+      api.account = accountResult;
+
+      if (api.bridgeProxy?.sub) {
+        api.bridgeProxy.sub.account = accountResult;
+      }
+    };
+
+    try {
+      const cached = getSoraUtilOrThrow();
+
+      assignPair(cached.api);
+
+      return;
+    } catch {
+      // fallthrough to async load
+    }
+
+    void getSoraUtil()
+      .then(({ api }) => {
+        if (this.currentAccount?.address !== data.address) return;
+
+        assignPair(api);
+      })
+      .catch(() => null);
   }
 
   saveCurrentAccountAddress(

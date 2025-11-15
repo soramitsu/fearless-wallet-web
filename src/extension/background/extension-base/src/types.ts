@@ -9,7 +9,7 @@ export interface Message extends MessageEvent {
     id: string;
     origin: string;
     response?: string;
-    subscription?: any;
+    subscription?: unknown;
   };
 }
 

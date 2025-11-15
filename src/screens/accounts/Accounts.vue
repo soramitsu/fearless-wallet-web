@@ -7,75 +7,56 @@
       :icon="networkIcon"
       :isMobile="isMobile"
       :address="address"
-      @openAddEthereumAccountPopup="$emit('openAddEthereumAccountPopup')"
+      @openAddEthereumAccountPopup="handleOpenAddEthereumAccountPopup"
       @openAccountSettingsPopup="openAccountSettingsPopup"
     />
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import AccountsItem from './AccountsItem.vue';
-import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSameString } from '@/helpers';
 
-@Component({
-  components: { AccountsItem },
-})
-export default class Account extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  selectedNetwork = '';
-  selectedAddress = '';
-  newName = '';
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const route = useRoute();
 
-  get chainAccounts() {
-    const networks = this.networksStore.networks.filter(({ ecosystem }) => {
-      if (this.isEVM) return isSameString(ecosystem, 'ethereum');
+defineOptions({
+  name: 'Account',
+});
 
-      if (this.isTon) return isSameString(ecosystem, 'ton');
+const type = computed(() => route.params.type as string | undefined);
 
-      return isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased');
-    });
+const isEVM = computed(() => type.value === 'evm');
+const isTon = computed(() => type.value === 'ton');
 
-    return getChainAccounts(networks, this.accountsStore.selectedWallet);
-  }
+const relevantNetworks = computed(() =>
+  networksStore.networks.filter(({ ecosystem }) => {
+    if (isEVM.value) return isSameString(ecosystem, 'ethereum');
+    if (isTon.value) return isSameString(ecosystem, 'ton');
 
-  get isMobile() {
-    return !!this.accountsStore.selectedWallet.isMobile;
-  }
+    return isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased');
+  })
+);
 
-  get type() {
-    return this.$route.params.type;
-  }
+const chainAccounts = computed(() => getChainAccounts(relevantNetworks.value, accountsStore.selectedWallet));
+const isMobile = computed(() => Boolean(accountsStore.selectedWallet.isMobile));
 
-  get isEVM() {
-    return this.type === 'evm';
-  }
+const emit = defineEmits<{
+  openAccountSettingsPopup: [network: string, buttonTop: number];
+  openAddEthereumAccountPopup: [];
+}>();
 
-  get isTon() {
-    return this.type === 'ton';
-  }
+const openAccountSettingsPopup = (network: string, buttonTop: number) => {
+  emit('openAccountSettingsPopup', network, buttonTop);
+};
 
-  mounted() {
-    this.newName = this.accountsStore.selectedWallet.name;
-  }
-
-  back() {
-    this.$router.push({ name: Components.Wallet });
-  }
-
-  openAccountSettingsPopup(network: string, event: Event) {
-    this.$emit('openAccountSettingsPopup', network, event);
-  }
-
-  changeNewName(value: string) {
-    this.newName = value;
-  }
-}
+const handleOpenAddEthereumAccountPopup = () => emit('openAddEthereumAccountPopup');
 </script>
 
 <style lang="scss" scoped>

@@ -17,15 +17,23 @@ interface SubqueryFiatPriceQuery {
       edges: Edges[];
       pageInfo: {
         hasNextPage?: boolean;
+        endCursor?: string;
       };
     };
   };
 }
 
+type PageInfoParams = {
+  endCursor?: string;
+  hasNextPage?: boolean;
+};
+
 export class SoraPricingService {
   constructor(private state: State) {}
 
-  async fetchSQSora(pricingUrl: string, pageInfoParams?: any): Promise<Edges[]> {
+  async fetchSQSora(pricingUrl: string, pageInfoParams?: PageInfoParams): Promise<Edges[]> {
+    if (!pricingUrl) throw new Error('Missing SORA pricing endpoint.');
+
     if (this.state.pricesService.fiatSymbol !== 'usd') return [];
 
     try {
@@ -47,8 +55,8 @@ export class SoraPricingService {
       }
 
       return edges;
-    } catch {
-      return [];
+    } catch (error) {
+      throw new Error(`Failed to fetch SORA pricing data: ${(error as Error).message}`);
     }
   }
 
@@ -60,11 +68,15 @@ export class SoraPricingService {
     const soraPrices = await this.fetchSQSora(pricingUrl);
 
     const soraAssetsPrice = assets.reduce<TokenPrice>((result, { symbol, priceProvider }) => {
-      const id = priceProvider!.id;
+      if (!priceProvider?.id) return result;
+
+      const id = priceProvider.id;
 
       const soraPrice = soraPrices.find(({ node }) => node.id === id);
 
-      result[symbol] = +(soraPrice?.node?.priceUSD ?? 0);
+      if (!soraPrice?.node?.priceUSD) return result;
+
+      result[symbol] = +soraPrice.node.priceUSD;
 
       return result;
     }, {});

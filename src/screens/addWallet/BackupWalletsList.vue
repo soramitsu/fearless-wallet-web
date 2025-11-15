@@ -52,106 +52,120 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
 import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class BackupWalletsList extends Vue {
-  accountsStore = useAccountsStore();
+defineOptions({
+  name: 'BackupWalletsList',
+});
 
-  @Prop(Array) items!: FilesState[];
-  @Prop({ default: false }) isGoogle!: boolean;
+const accountsStore = useAccountsStore();
 
-  setItemValue(index: number, data: Record<string, string | boolean>) {
-    this.$emit('setItemValue', index, data);
+const props = withDefaults(
+  defineProps<{
+    items: FilesState[];
+    isGoogle?: boolean;
+  }>(),
+  {
+    isGoogle: false,
+  }
+);
+
+const emit = defineEmits<{
+  setItemValue: [index: number, data: Record<string, string | boolean>];
+  setItemPassword: [index: number, password: string];
+  getFile: [id: string, index: number];
+}>();
+
+const setItemValue = (index: number, data: Record<string, string | boolean>) => {
+  emit('setItemValue', index, data);
+};
+
+const changePassword = (index: number, password: string) => {
+  emit('setItemPassword', index, password);
+};
+
+const buttonText = (file: FilesState) => (file.isLoading || file.isComplete ? '' : 'common.confirm');
+
+const isDisabled = (file: FilesState) => !file.password || !file.password.length || file.isLoading || file.isComplete;
+
+const migrateAccounts = async (index: number) => {
+  setItemValue(index, { isLoading: true });
+
+  const { address, password } = props.items[index];
+
+  if (!address || !password) {
+    setItemValue(index, { isLoading: false, isError: true });
+
+    return;
   }
 
-  onConfirm(index: number) {
-    if (this.isGoogle) this.importFromGoogle(index);
-    else this.migrateAccounts(index);
+  const isSuccess = await migrateMasterPassword({ address, password });
+
+  setItemValue(index, {
+    isError: !isSuccess,
+    isComplete: isSuccess,
+    isLoading: false,
+  });
+};
+
+const importFromGoogle = async (index: number) => {
+  setItemValue(index, { isLoading: true });
+
+  const { json, ethJson, password } = props.items[index];
+
+  if (!json || !password) {
+    setItemValue(index, { isLoading: false, isError: true });
+
+    return;
   }
 
-  async migrateAccounts(index: number) {
-    this.setItemValue(index, { isLoading: true });
+  const { value: isValid } = await isJsonValid(json, password);
 
-    const { address, password } = this.items[index];
+  setItemValue(index, {
+    isError: !isValid,
+    isComplete: isValid,
+    isLoading: false,
+  });
 
-    const isSuccess = await migrateMasterPassword({ address: address!, password: password! });
+  if (!isValid) return;
 
-    const fields = {
-      isError: !isSuccess,
-      isComplete: isSuccess,
-      isLoading: false,
-    };
+  if (ethJson) await jsonRestore(ethJson, password);
 
-    this.setItemValue(index, fields);
+  const address = await jsonRestore(json, password);
+
+  await updateCurrentAccount(address || accountsStore.selectedWallet.address);
+
+  setItemValue(index, { isComplete: true, isLoading: false });
+};
+
+const onConfirm = (index: number) => {
+  if (props.isGoogle) importFromGoogle(index);
+  else migrateAccounts(index);
+};
+
+const onSelect = (value: boolean, index: number) => {
+  const file = props.items[index];
+
+  if (!file) return;
+
+  if (file.isComplete) return;
+
+  if (file.isComplete === undefined) setItemValue(index, { isLoading: false, isComplete: false });
+
+  setItemValue(index, { active: value });
+
+  if (props.isGoogle) {
+    if (file.json === undefined) emit('getFile', file.id, index);
+
+    if (file.ethJson === undefined && file.ethWalletID) emit('getFile', file.ethWalletID, index);
   }
+};
 
-  async importFromGoogle(index: number) {
-    this.setItemValue(index, { isLoading: true });
-
-    const { json, ethJson, password } = this.items[index];
-
-    if (!json || !password) return;
-
-    const { value: isValid } = await isJsonValid(json, password);
-
-    const fields = {
-      isError: !isValid,
-      isComplete: isValid,
-      isLoading: false,
-    };
-
-    this.setItemValue(index, fields);
-
-    if (isValid) {
-      if (ethJson) await jsonRestore(ethJson, password);
-
-      const address = await jsonRestore(json, password);
-
-      await updateCurrentAccount(address || this.accountsStore.selectedWallet.address);
-
-      this.setItemValue(index, { isComplete: true, isLoading: false });
-    }
-  }
-
-  buttonText(file: FilesState) {
-    return file.isLoading || file.isComplete ? '' : 'common.confirm';
-  }
-
-  isDisabled(file: FilesState) {
-    return !file.password || !file.password.length || file.isLoading || file.isComplete;
-  }
-
-  changePassword(index: number, password: string) {
-    this.$emit('setItemPassword', index, password);
-  }
-
-  onSelect(value: boolean, index: number) {
-    const file = this.items[index];
-
-    if (file.isComplete) return;
-    else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
-
-    this.setItemValue(index, { active: value });
-
-    if (this.isGoogle) {
-      if (file.json === undefined) this.$emit('getFile', file.id, index);
-
-      if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
-    }
-  }
-
-  cutAddress(address?: string) {
-    if (!address) return '';
-
-    return cut(address);
-  }
-}
+const cutAddress = (address?: string) => (address ? cut(address) : '');
 </script>
 
 <style lang="scss" scoped>

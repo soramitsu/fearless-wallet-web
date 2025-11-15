@@ -30,8 +30,8 @@
 
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import type { ChainData } from '@/interfaces/walletconnect';
 import { transformNamespaces } from '@/util/walletConnect';

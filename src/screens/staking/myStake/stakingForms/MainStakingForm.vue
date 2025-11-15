@@ -154,8 +154,9 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, toRefs, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkParams } from '@/stores';
 import { type StakingOperation, type StakingOperationParams, WalletEcosystem } from '@/interfaces';
@@ -178,393 +179,355 @@ import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    Payee,
-    Rebond,
-    Unbond,
-    BondExtra,
-    WalletInfo,
-    HistoryBook,
-    EditAddressBook,
-    WithdrawUnbonded,
-    ControllerAccount,
-    ConfirmationPasswordPopup,
-  },
-})
-export default class MainStakingForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  stakingStore = useStakingStore();
-  showConfirmationPasswordPopup = false;
-  isSuggested = false;
-  showHistoryBook = false;
-  showMyWallets = false;
-  isValidController = true;
-  showEditAddressBook = false;
-  amount = '';
-  stashBalance = '0';
-  step = 1;
-  controllerAddress = '';
-  payoutAddress = '';
-  newAddress = '';
+const props = defineProps<{
+  stakingCurrency: TokenGroup;
+  rewardedCurrency: TokenGroup;
+  stakingNetwork: NetworkParams;
+  type: StakingOperation;
+}>();
 
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: String }) type!: StakingOperation;
+const emit = defineEmits<{
+  closeForm: [];
+}>();
 
-  get fee() {
-    if (!this.networksStore.soraFees) return '';
+const { stakingCurrency, stakingNetwork, type } = toRefs(props);
 
-    const {
-      StakingBondExtra,
-      StakingRebond,
-      StakingUnbond,
-      StakingSetController,
-      StakingWithdrawUnbonded,
-      StakingSetPayee,
-    } = this.networksStore.soraFees;
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const stakingStore = useStakingStore();
+const { t } = useI18n();
 
-    if (this.isBondExtra) return StakingBondExtra;
-    else if (this.isUnbond) return StakingUnbond;
-    else if (this.isRebond) return StakingRebond;
-    else if (this.isRedeem) return StakingWithdrawUnbonded;
-    else if (this.isControllerAccount) return StakingSetController;
-    else if (this.isPayee) return StakingSetPayee;
+const showConfirmationPasswordPopup = ref(false);
+const showHistoryBook = ref(false);
+const showMyWallets = ref(false);
+const isValidController = ref(true);
+const showEditAddressBook = ref(false);
+const amount = ref('');
+const stashBalance = ref('0');
+const step = ref(1);
+const controllerAddress = ref('');
+const payoutAddress = ref('');
+const newAddress = ref('');
 
-    return '';
+const isBondExtra = computed(() => type.value === 'bondExtra');
+const isUnbond = computed(() => type.value === 'unbond');
+const isRedeem = computed(() => type.value === 'redeem');
+const isRebond = computed(() => type.value === 'rebond');
+const isControllerAccount = computed(() => type.value === 'setController');
+const isPayee = computed(() => type.value === 'setPayee');
+
+const network = computed(() => stakingNetwork.value.network);
+
+const fee = computed(() => {
+  const soraFees = networksStore.soraFees;
+
+  if (!soraFees) return '';
+
+  const {
+    StakingBondExtra,
+    StakingRebond,
+    StakingUnbond,
+    StakingSetController,
+    StakingWithdrawUnbonded,
+    StakingSetPayee,
+  } = soraFees;
+
+  if (isBondExtra.value) return StakingBondExtra;
+  if (isUnbond.value) return StakingUnbond;
+  if (isRebond.value) return StakingRebond;
+  if (isRedeem.value) return StakingWithdrawUnbonded;
+  if (isControllerAccount.value) return StakingSetController;
+  if (isPayee.value) return StakingSetPayee;
+
+  return '';
+});
+
+const showMyWalletsButton = computed(() => acountsEcosystem.value.length !== 0);
+const showBtn = computed(() => !showHistoryBook.value && !showEditAddressBook.value && !showMyWallets.value);
+const showBackIcon = computed(() => showMyWallets.value || showHistoryBook.value || showEditAddressBook.value);
+const showAmountInput = computed(() => {
+  if (isControllerAccount.value || isPayee.value) return false;
+
+  return step.value === 1;
+});
+
+const header = computed(() => {
+  if (showEditAddressBook.value) return 'assets.addContact';
+  if (showHistoryBook.value) return 'assets.chooseFromHistory';
+  if (showMyWallets.value) return 'assets.wallets';
+
+  return `staking.${type.value}`;
+});
+
+const showWalletName = computed(() => {
+  if (isControllerAccount.value || isPayee.value) return step.value === 2;
+
+  return step.value === 1;
+});
+
+const acountsEcosystem = computed(() => {
+  if (isPayee.value || isControllerAccount.value) return accountsStore.allAcountsEcosystem;
+
+  return accountsStore.acountsEcosystem;
+});
+
+const isValidControllerAddress = computed(() => {
+  if (!controllerAddress.value) return false;
+
+  return BaseApi.validateAddress(controllerAddress.value, network.value);
+});
+
+const isValidPayoutAddress = computed(() => {
+  if (!payoutAddress.value) return false;
+
+  return BaseApi.validateAddress(payoutAddress.value, network.value);
+});
+
+const stakingAssetId = computed(() => stakingCurrency.value?.groupId);
+const stakingAssetName = computed(() => stakingCurrency.value?.symbol);
+
+const totalAmount = computed(() => {
+  if (isUnbond.value) return stakingNetwork.value.activeStake;
+  if (isRebond.value) return stakingNetwork.value.unbond.sum;
+  if (isRedeem.value) return stakingNetwork.value.redeemAmount;
+
+  return stakingNetwork.value.transferableAmount;
+});
+
+const stakingAssetPrice = computed(() => {
+  const priceId = stakingCurrency.value?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const feeValue = computed(() => getCostOfAssets(fee.value, stakingAssetPrice.value).toString());
+const amountValue = computed(() => getCostOfAssets(amount.value, stakingAssetPrice.value).toString());
+const accountName = computed(() => accountsStore.selectedWallet.name);
+
+const btnText = computed(() => {
+  if (isControllerAccount.value || isPayee.value) {
+    if (step.value === 1) return 'common.edit';
+
+    if (
+      (controllerAddress.value && !isValidControllerAddress.value) ||
+      (payoutAddress.value && !isValidPayoutAddress.value)
+    )
+      return t('accounts.invalidAccountAddress');
   }
 
-  get showMyWalletsButton() {
-    return this.acountsEcosystem.length !== 0;
-  }
+  if (!isValidAmountAssetValue.value)
+    return { text: 'assets.insufficientBalance', localeProps: { asset: (stakingAssetName.value ?? '').toUpperCase() } };
 
-  get showBtn() {
-    return !this.showHistoryBook && !this.showEditAddressBook && !this.showMyWallets;
-  }
+  return 'common.confirm';
+});
 
-  get showBackIcon() {
-    return this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
-  }
+const currencyByOperation = computed<TokenGroup | null>(() => {
+  if (!stakingCurrency.value) return null;
 
-  get network() {
-    return this.stakingNetwork.network;
-  }
-
-  get btnText() {
-    if (this.isControllerAccount || this.isPayee) {
-      if (this.step === 1) return 'common.edit';
-      else if (
-        (this.controllerAddress !== '' && !this.isValidControllerAddress) ||
-        (this.payoutAddress !== '' && !this.isValidPayoutAddress)
-      )
-        return this.$t('accounts.invalidAccountAddress');
-    }
-
-    if (!this.isValidAmountAsset)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
-
-    return 'common.confirm';
-  }
-
-  get showAmountInput() {
-    if (this.isControllerAccount || this.isPayee) return false;
-
-    return this.step === 1;
-  }
-
-  get header() {
-    if (this.showEditAddressBook) return 'assets.addContact';
-
-    if (this.showHistoryBook) return 'assets.chooseFromHistory';
-
-    if (this.showMyWallets) return 'assets.wallets';
-
-    return `staking.${this.type}`;
-  }
-
-  get isBondExtra() {
-    return this.type === 'bondExtra';
-  }
-
-  get isUnbond() {
-    return this.type === 'unbond';
-  }
-
-  get isRedeem() {
-    return this.type === 'redeem';
-  }
-
-  get isRebond() {
-    return this.type === 'rebond';
-  }
-
-  get isControllerAccount() {
-    return this.type === 'setController';
-  }
-
-  get showWalletName() {
-    if (this.isControllerAccount || this.isPayee) return this.step === 2;
-
-    return this.step === 1;
-  }
-
-  get acountsEcosystem() {
-    if (this.isPayee || this.isControllerAccount) return this.accountsStore.allAcountsEcosystem;
-
-    return this.accountsStore.acountsEcosystem;
-  }
-
-  get isPayee() {
-    return this.type === 'setPayee';
-  }
-
-  get isValidControllerAddress() {
-    if (this.controllerAddress === '') return false;
-
-    return BaseApi.validateAddress(this.controllerAddress, this.network);
-  }
-
-  get isValidPayoutAddress() {
-    if (this.payoutAddress === '') return false;
-
-    return BaseApi.validateAddress(this.payoutAddress, this.network);
-  }
-
-  get confirmBtnDisabled() {
-    if (this.isControllerAccount) {
-      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
-
-      return false;
-    }
-
-    if (this.isPayee) {
-      if (this.step === 1) return false;
-
-      return !this.isValidPayoutAddress;
-    }
-
-    if (this.amount === '' || +this.amount === 0) return true;
-
-    return !this.isValidAmountAsset;
-  }
-
-  get isValidAmountAsset() {
-    // для isRebond подменяем на сумму unbond`ов
-    // для isUnbond подменяем на суммарный стейк(activeStake)
-    // для isRedeem можно не подменять данные, тк инпут всегда isDisabled и значение подставляется автоматически и оно всегда корректное
-    const currencyByTypeOperation: TokenGroup = this.isRebond
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({
-            ...item,
-            transferable: this.stakingNetwork.unbond.sum,
-          })),
-        }
-      : this.isUnbond
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({
-            ...item,
-            transferable: this.stakingNetwork.activeStake,
-          })),
-        }
-      : this.stakingCurrency;
-
-    // Проверяем корерктно ли значение amount, которое ввел юзер
-    const isValid = isValidAmountAsset(currencyByTypeOperation, this.network, '0', this.amount);
-
-    if (!isValid) return false;
-
-    // Далее проверка на то, хватает ли Utility на оплату комиссии
-    // Для controller аккаунта подставляем баланс stash аккаунта, потому что комиссия списывается со stash
-    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({
-            ...item,
-            transferable: this.stashBalance,
-          })),
-        }
-      : this.stakingCurrency;
-
-    // при этом для bondExtra проверяется то, что transferable баланса хватает на оплату и amount и fee
-    // комиссия по всем операциям списывается с transferable баланса
-    // по этому amount важен только при операции bondExtra
-    // в остальных случаях amount-это значение не относящееся к transferable балансу(мы проверили его выше)
-    // а значение уже залоченных токенов(unbond, rebond)
-    const amount = this.isBondExtra ? this.amount : '0';
-
-    return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', amount);
-  }
-
-  get stakingAssetId() {
-    return this.stakingCurrency?.groupId;
-  }
-
-  get stakingAssetName() {
-    return this.stakingCurrency?.symbol;
-  }
-
-  get totalAmount() {
-    if (this.isUnbond) return this.stakingNetwork.activeStake;
-
-    if (this.isRebond) return this.stakingNetwork.unbond.sum;
-
-    if (this.isRedeem) return this.stakingNetwork.redeemAmount;
-
-    // isBondExtra;
-    return this.stakingNetwork.transferableAmount;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get feeValue() {
-    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
-  }
-
-  get amountValue() {
-    return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
-  }
-
-  get accountName() {
-    return this.accountsStore.selectedWallet.name;
-  }
-
-  get tx() {
+  if (isRebond.value) {
     return {
-      amount: this.amount,
-      from: this.accountsStore.selectedWallet.address,
-      networkName: this.network,
-      controllerAddress: this.controllerAddress,
-      payee: this.payoutAddress,
-    } as StakingOperationParams;
+      ...stakingCurrency.value,
+      balances: stakingCurrency.value.balances.map((item) => ({
+        ...item,
+        transferable: stakingNetwork.value.unbond.sum,
+      })),
+    };
   }
 
-  @Watch('controllerAddress')
-  async checkController(value: string) {
-    this.isValidController = await checkController({ address: value });
+  if (isUnbond.value) {
+    return {
+      ...stakingCurrency.value,
+      balances: stakingCurrency.value.balances.map((item) => ({
+        ...item,
+        transferable: stakingNetwork.value.activeStake,
+      })),
+    };
   }
 
-  async mounted() {
-    if (this.isRebond) {
-      const unlocking = this.stakingNetwork.unbond.unlocking;
-      const lastUnbond = unlocking[unlocking.length - 1].value;
+  return stakingCurrency.value;
+});
 
-      this.amount = lastUnbond;
-    } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
+const effectiveStashCurrency = computed<TokenGroup | null>(() => {
+  if (!stakingCurrency.value) return null;
 
-    if (this.stakingNetwork.isController) {
-      const balances = await fetchBalance({
-        address: this.stakingNetwork.stashAddress,
-        networks: [this.stakingNetwork.network],
-        walletEcosystem: WalletEcosystem.Substrate,
-      });
+  if (!stakingNetwork.value.isController) return stakingCurrency.value;
 
-      this.stashBalance = balances[0].balance;
-    }
+  return {
+    ...stakingCurrency.value,
+    balances: stakingCurrency.value.balances.map((item) => ({
+      ...item,
+      transferable: stashBalance.value,
+    })),
+  };
+});
+
+const isValidAmountAssetValue = computed(() => {
+  if (!stakingCurrency.value) return false;
+
+  const operationCurrency = currencyByOperation.value;
+
+  if (!operationCurrency) return false;
+
+  const amountToValidate = amount.value || '0';
+  const isValid = isValidAmountAsset(operationCurrency, network.value, '0', amountToValidate);
+
+  if (!isValid) return false;
+
+  const stakingCurrencyForFee = effectiveStashCurrency.value ?? stakingCurrency.value;
+  const amountForFee = isBondExtra.value ? amount.value : '0';
+
+  return isValidAmountAsset(stakingCurrencyForFee, network.value, fee.value ?? '0', amountForFee);
+});
+
+const confirmBtnDisabled = computed(() => {
+  if (isControllerAccount.value) {
+    if (step.value === 2)
+      return !isValidController.value || !isValidControllerAddress.value || !isValidAmountAssetValue.value;
+
+    return false;
   }
 
-  toggleEditBook(address: string = '') {
-    this.showEditAddressBook = !this.showEditAddressBook;
-    this.showHistoryBook = !this.showHistoryBook;
-    this.newAddress = address;
+  if (isPayee.value) {
+    if (step.value === 1) return false;
+
+    return !isValidPayoutAddress.value;
   }
 
-  updateControllerAddress(value: string) {
-    this.controllerAddress = value;
+  if (!amount.value || Number(amount.value) === 0) return true;
+
+  return !isValidAmountAssetValue.value;
+});
+
+const tx = computed<StakingOperationParams>(() => ({
+  amount: amount.value,
+  from: accountsStore.selectedWallet.address,
+  networkName: network.value,
+  controllerAddress: controllerAddress.value,
+  payee: payoutAddress.value,
+}));
+
+watch(controllerAddress, async (value) => {
+  if (!value) {
+    isValidController.value = true;
+
+    return;
   }
 
-  handlerBack() {
-    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    else if (this.showEditAddressBook) this.toggleEditBook();
-    else if (this.showMyWallets) this.toggleMyWalletsVisibility();
+  isValidController.value = await checkController({ address: value });
+});
+
+onMounted(async () => {
+  if (isRebond.value) {
+    const unlocking = stakingNetwork.value.unbond.unlocking;
+    const lastUnbond = unlocking[unlocking.length - 1]?.value ?? '0';
+
+    amount.value = lastUnbond;
+  } else if (isRedeem.value) {
+    amount.value = stakingNetwork.value.redeemAmount;
   }
 
-  closeForm() {
-    this.$emit('closeForm');
+  if (stakingNetwork.value.isController) {
+    const balances = await fetchBalance({
+      address: stakingNetwork.value.stashAddress,
+      networks: [stakingNetwork.value.network],
+      walletEcosystem: WalletEcosystem.Substrate,
+    });
+
+    stashBalance.value = balances[0]?.balance ?? '0';
   }
+});
 
-  confirm() {
-    if (this.isControllerAccount && this.step === 1) this.step += 1;
-    else if (this.isPayee && this.step === 1) this.step += 1;
-    else this.showConfirmationPasswordPopup = true;
+const toggleEditBook = (address = '') => {
+  showEditAddressBook.value = !showEditAddressBook.value;
+  showHistoryBook.value = !showHistoryBook.value;
+  newAddress.value = address;
+};
+
+const updateControllerAddress = (value: string) => {
+  controllerAddress.value = value;
+};
+
+const handlerBack = () => {
+  if (showHistoryBook.value) toggleHistoryBookVisibility();
+  else if (showEditAddressBook.value) toggleEditBook();
+  else if (showMyWallets.value) toggleMyWalletsVisibility();
+};
+
+const closeForm = () => {
+  emit('closeForm');
+};
+
+const confirm = () => {
+  if (isControllerAccount.value && step.value === 1) step.value += 1;
+  else if (isPayee.value && step.value === 1) step.value += 1;
+  else showConfirmationPasswordPopup.value = true;
+};
+
+const confirmationPasswordPopupClose = (closeFormModal: boolean) => {
+  showConfirmationPasswordPopup.value = false;
+
+  if (closeFormModal) {
+    stakingStore.getMyStakingInfo({ network: network.value });
+    closeForm();
   }
+};
 
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
+const updateAmount = (value: string) => {
+  amount.value = value;
+};
 
-    if (closeForm) {
-      this.stakingStore.getMyStakingInfo({ network: this.network });
-      this.closeForm();
-    }
-  }
+const calcTransferableSendMinusFeeValue = () => {
+  return calcTransferableSendMinusFee(stakingCurrency.value, network.value, fee.value);
+};
 
-  updateAmount(amount: string) {
-    this.amount = amount;
-  }
+const setMax = () => {
+  if (!stakingCurrency.value) return;
 
-  calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.fee);
-  }
+  if (isBondExtra.value) amount.value = calcTransferableSendMinusFeeValue();
+  else if (isUnbond.value) amount.value = stakingNetwork.value.activeStake;
+  else if (isRebond.value) amount.value = stakingNetwork.value.unbond.sum;
+  else if (isRedeem.value) amount.value = stakingNetwork.value.redeemAmount;
+};
 
-  async setMax() {
-    if (!this.stakingCurrency) return;
+const toggleHistoryBookVisibility = () => {
+  showHistoryBook.value = !showHistoryBook.value;
+};
 
-    if (this.isBondExtra) this.amount = this.calcTransferableSendMinusFee();
+const paste = () => {
+  setRecipient(getClipboard());
+};
 
-    if (this.isUnbond) this.amount = this.stakingNetwork.activeStake;
+const toggleMyWalletsVisibility = () => {
+  showMyWallets.value = !showMyWallets.value;
+};
 
-    if (this.isRebond) this.amount = this.stakingNetwork.unbond.sum;
+const getStatusWallet = (address: string, ethereumAddress: string) => {
+  const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, network.value);
+  const currentRecipientAddress = BaseApi.formatAddress(
+    { address: payoutAddress.value, ethereumAddress: payoutAddress.value },
+    network.value
+  );
 
-    if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
-  }
+  return currentAddress === currentRecipientAddress;
+};
 
-  toggleHistoryBookVisibility() {
-    this.showHistoryBook = !this.showHistoryBook;
-  }
+const setWallet = (address: string, ethereumAddress: string) => {
+  const value = BaseApi.formatAddress({ address, ethereumAddress }, network.value);
 
-  paste() {
-    this.setRecipient(getClipboard());
-  }
+  if (isPayee.value) payoutAddress.value = value;
+  else if (isControllerAccount.value) controllerAddress.value = value;
 
-  toggleMyWalletsVisibility() {
-    this.showMyWallets = !this.showMyWallets;
-  }
+  toggleMyWalletsVisibility();
+};
 
-  getStatusWallet(address: string, ethereumAddress: string) {
-    const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
-    const currentRecipientAddress = BaseApi.formatAddress(
-      { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
-      this.network
-    );
+const setPayoutAddress = (value = '') => {
+  payoutAddress.value = value;
+};
 
-    return currentAddress === currentRecipientAddress;
-  }
-
-  setWallet(address: string, ethereumAddress: string) {
-    const value = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
-
-    if (this.isPayee) this.payoutAddress = value;
-    else if (this.isControllerAccount) this.controllerAddress = value;
-
-    this.toggleMyWalletsVisibility();
-  }
-
-  setPayoutAddress(value = '') {
-    this.payoutAddress = value;
-  }
-
-  setRecipient(value = '') {
-    if (this.isControllerAccount) this.controllerAddress = value;
-    else if (this.isPayee) this.payoutAddress = value;
-  }
-}
+const setRecipient = (value = '') => {
+  if (isControllerAccount.value) controllerAddress.value = value;
+  else if (isPayee.value) payoutAddress.value = value;
+};
 </script>
 
 <style lang="scss" scoped>

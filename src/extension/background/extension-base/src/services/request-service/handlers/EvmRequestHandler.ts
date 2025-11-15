@@ -40,7 +40,7 @@ export default class EvmRequestHandler {
     else if (type === 'evmRequests') this.signEvmSubject.next(this.evmRequests);
   }
 
-  confirmSign(id: string, url: string, method: string, params: any): Promise<ResponseSigning> {
+  confirmSign(id: string, url: string, method: string, params: unknown[]): Promise<ResponseSigning> {
     const complete = () => this.onComplete(id, 'evmRequests');
     const values = this.signEvmSubject.getValue();
 

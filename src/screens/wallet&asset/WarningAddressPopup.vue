@@ -8,8 +8,8 @@
     :showRejectButton="true"
     :closeByBackground="false"
     :headers="headers"
-    @handlerClose="$emit('handlerClose')"
-    @handlerAccept="$emit('handlerAccept')"
+    @handlerClose="handleClose"
+    @handlerAccept="handleAccept"
   />
 </template>
 
@@ -18,4 +18,12 @@ const headers = {
   text: 'assets.invalidNetworkText',
   subtext: 'assets.invalidNetworkSubtext',
 };
+
+const emit = defineEmits<{
+  handlerClose: [];
+  handlerAccept: [];
+}>();
+
+const handleClose = () => emit('handlerClose');
+const handleAccept = () => emit('handlerAccept');
 </script>

@@ -23,8 +23,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getCostOfAssets } from '@/helpers/transfers';
 import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';

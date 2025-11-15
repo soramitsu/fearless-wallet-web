@@ -14,7 +14,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from 'vue-i18n';
 import type { ComponentText } from '@/interfaces';
 
 type SizeTextType = 'small' | 'medium' | 'big';

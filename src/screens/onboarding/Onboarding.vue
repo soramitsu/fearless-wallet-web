@@ -1,101 +1,95 @@
 <template>
-  <Fragment>
-    <div class="onboarding">
-      <template v-if="showStartingScreen">
-        <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
-        <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
-        <h1 class="onboarding__header">
-          {{ title.first }} <span class="onboarding__header--red">{{ title.last }}</span>
-        </h1>
-      </template>
+  <div class="onboarding">
+    <template v-if="showStartingScreen">
+      <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
+      <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
+      <h1 class="onboarding__header">
+        {{ title.first }} <span class="onboarding__header--red">{{ title.last }}</span>
+      </h1>
+    </template>
 
-      <template v-else>
-        <OnboardingStory :story="currentStory" />
+    <template v-else>
+      <OnboardingStory :story="currentStory" />
 
-        <StoryCounter :count="storiesLength" :activeIndex="activeStory" />
-      </template>
+      <StoryCounter :count="storiesLength" :activeIndex="activeStory" />
+    </template>
 
-      <div class="onboarding__controls">
-        <FButton
-          v-show="showSkip"
-          text="common.skip"
-          type="secondary"
-          :border="false"
-          size="big"
-          data-testid="skipBtn"
-          @click="onSkip"
-        />
-        <FButton class="button-main" size="big" :text="buttonText" data-testid="continueBtn" @click="onContinue" />
-      </div>
+    <div class="onboarding__controls">
+      <FButton
+        v-show="showSkip"
+        text="common.skip"
+        type="secondary"
+        :border="false"
+        size="big"
+        data-testid="skipBtn"
+        @click="onSkip"
+      />
+      <FButton class="button-main" size="big" :text="buttonText" data-testid="continueBtn" @click="onContinue" />
     </div>
-  </Fragment>
+  </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
 import type { OnboardingStories } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
-@Component({
-  components: {
-    OnboardingStory,
-    StoryCounter,
-  },
-})
-export default class Onboarding extends Vue {
-  readonly title = {
-    first: 'The DeFi Wallet for the',
-    last: 'Future',
-  };
-  stories: OnboardingStories = [];
-  showStartingScreen = true;
-  activeStory = 1;
+defineOptions({
+  name: 'Onboarding',
+});
 
-  get storiesLength() {
-    return this.stories.length;
+const router = useRouter();
+const { locale } = useI18n();
+
+const title = {
+  first: 'The DeFi Wallet for the',
+  last: 'Future',
+} as const;
+
+const stories = ref<OnboardingStories>([]);
+const showStartingScreen = ref(true);
+const activeStory = ref(1);
+
+const storiesLength = computed(() => stories.value.length);
+const showSkip = computed(() => !showStartingScreen.value);
+const buttonText = computed(() => (showStartingScreen.value ? 'common.start' : 'common.next'));
+const currentStory = computed(() => stories.value[activeStory.value - 1]);
+
+const loadStories = async () => {
+  const fetchedStories = await getOnboardingStories(locale.value);
+
+  stories.value = fetchedStories;
+
+  if (fetchedStories.length === 0) router.back();
+};
+
+const completeOnboarding = () => {
+  setOnboardingComplete();
+  router.push({ name: Components.Wallet });
+};
+
+const onSkip = () => {
+  completeOnboarding();
+};
+
+const onContinue = () => {
+  if (showStartingScreen.value) {
+    showStartingScreen.value = false;
+  } else if (storiesLength.value === activeStory.value) {
+    completeOnboarding();
+  } else {
+    activeStory.value += 1;
   }
+};
 
-  get showSkip() {
-    return !this.showStartingScreen;
-  }
-
-  get buttonText() {
-    if (this.showStartingScreen) return 'common.start';
-
-    return 'common.next';
-  }
-
-  get currentStory() {
-    return this.stories[this.activeStory - 1];
-  }
-
-  async mounted() {
-    const stories = await getOnboardingStories(this.$i18n.locale);
-
-    this.stories = stories;
-
-    if (stories.length === 0) this.$router.back();
-  }
-
-  onSkip() {
-    this.completeOnboarding();
-  }
-
-  onContinue() {
-    if (this.showStartingScreen) this.showStartingScreen = false;
-    else if (this.storiesLength === this.activeStory) this.completeOnboarding();
-    else this.activeStory += 1;
-  }
-
-  completeOnboarding() {
-    setOnboardingComplete();
-
-    this.$router.push({ name: Components.Wallet });
-  }
-}
+onMounted(() => {
+  loadStories();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -111,7 +105,7 @@ export default class Onboarding extends Vue {
   }
 
   &__header {
-    font-family: Unbounded, sans-serif;
+    font-family: 'Sora', sans-serif;
     font-size: 2.875em;
     font-weight: 700;
     letter-spacing: 0.54px;

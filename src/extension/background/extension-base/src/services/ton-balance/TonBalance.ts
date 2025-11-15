@@ -1,10 +1,30 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
+import { getSoraUtil, getSoraUtilOrThrow } from '@extension-base/services/utils/sora';
 import { DEFAULT_PRICES } from '../prices-service';
 import { type ResponseBalanceRequest } from '../../background/types/types';
+import type { SoraUtilModule } from '@extension-base/services/utils/sora';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import { getJettonAssetId, isSameString } from '@/helpers';
+import { telemetry } from '@/utils/perpsExoticTelemetry';
+
+type SoraLoaderContext = 'utility' | 'jetton';
+
+const ensureSoraLoaded = async (context: SoraLoaderContext) => {
+  try {
+    return await getSoraUtil();
+  } catch (error) {
+    telemetry.record('ton.balance.sora_loader.error', {
+      context,
+      message: error instanceof Error ? error.message : String(error),
+    });
+
+    throw error;
+  }
+};
+
+const getSoraOrThrow = (): SoraUtilModule => getSoraUtilOrThrow();
 
 export class TonBalance {
   constructor(private readonly state: State) {}
@@ -31,30 +51,44 @@ export class TonBalance {
           id: tonId,
           total: tonBalance,
           transferable: tonBalance,
+          networkName,
         },
         address
       );
 
+      telemetry.record('ton.balance.utility', {
+        address,
+        network: networkName,
+        assetId: tonId,
+        amount: tonBalance,
+      });
+
       const jettonsBalance = await this.fetchJettonsAsset(address, networkKey);
 
       jettonsBalance.forEach(({ balance, image, name, precision, symbol, assetId, walletAddress }) => {
-        this.state.balanceService.setBalanceItem(
+        const jettonPayload = {
+          state: APIItemState.READY,
+          precision,
+          relayChain: networkName.toLowerCase(),
+          assetIcon: image,
+          icon,
+          id: assetId,
+          symbol,
+          total: balance,
+          transferable: balance,
+          walletAddress,
           networkName,
-          {
-            state: APIItemState.READY,
-            precision,
-            relayChain: networkName.toLowerCase(),
-            assetIcon: image,
-            icon,
-            id: assetId,
-            name,
-            symbol,
-            total: balance,
-            transferable: balance,
-            walletAddress,
-          },
-          address
-        );
+          tokenName: name,
+        } as Partial<BalanceItem> & { tokenName: string };
+
+        this.state.balanceService.setBalanceItem(networkName, jettonPayload, address);
+
+        telemetry.record('ton.balance.jetton', {
+          address,
+          network: networkName,
+          assetId,
+          amount: balance,
+        });
       });
 
       return [
@@ -76,6 +110,8 @@ export class TonBalance {
 
   async fetchUtilityAsset(address: string, networkName: NetworkName, precision: number) {
     try {
+      await ensureSoraLoaded('utility');
+      const { FPNumber } = getSoraOrThrow();
       const api = this.state.getTonApiMap[networkName];
 
       const { walletContract } = this.state.keyringService.tonKeyring.accountSubject.value[address];
@@ -98,6 +134,8 @@ export class TonBalance {
 
   async fetchJettonsAsset(address: string, networkName: NetworkName) {
     try {
+      await ensureSoraLoaded('jetton');
+      const { FPNumber } = getSoraOrThrow();
       const api = this.state.getTonApiMap[networkName];
 
       const { walletContract } = this.state.keyringService.tonKeyring.accountSubject.value[address];

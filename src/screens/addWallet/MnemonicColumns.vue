@@ -14,74 +14,60 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
 const COLUMN_ELEMENTS = {
   24: 8,
   12: 6,
 };
 
-@Component
-export default class MnemonicColumns extends Vue {
-  @Prop(Array) mnemonicArray!: string[];
-  @Prop({ default: 12 }) mnemonicLength!: keyof typeof COLUMN_ELEMENTS;
-
-  get columnElements() {
-    return COLUMN_ELEMENTS[this.mnemonicLength];
+const props = withDefaults(
+  defineProps<{
+    mnemonicArray: string[];
+    mnemonicLength?: keyof typeof COLUMN_ELEMENTS;
+  }>(),
+  {
+    mnemonicLength: '12',
   }
+);
 
-  get columns() {
-    const columns = this.mnemonicLength / this.columnElements;
+const mnemonicLengthNumber = computed(() => Number(props.mnemonicLength));
+const columnElements = computed(() => COLUMN_ELEMENTS[props.mnemonicLength]);
 
-    return new Array(columns).fill('').map((item, index) => {
-      const startIndex = index * this.columnElements;
+const mnemonicArrayValidLength = computed(() => {
+  const array = [...props.mnemonicArray];
 
-      return this.mnemonicArrayValidLength.slice(startIndex, startIndex + this.columnElements);
-    });
-  }
+  array.length = mnemonicLengthNumber.value;
 
-  get mnemonicArrayValidLength() {
-    const array = [...this.mnemonicArray];
+  return array.fill('', props.mnemonicArray.length, mnemonicLengthNumber.value);
+});
 
-    array.length = this.mnemonicLength;
+const columns = computed(() => {
+  const elementsPerColumn = columnElements.value;
+  if (!elementsPerColumn) return [];
+  const count = mnemonicLengthNumber.value / elementsPerColumn;
 
-    return array.fill('', this.mnemonicArray.length, this.mnemonicLength);
-  }
+  return Array.from({ length: count }, (_, index) => {
+    const startIndex = index * elementsPerColumn;
 
-  get columnOne() {
-    return this.mnemonicArrayValidLength.slice(0, this.columnElements);
-  }
+    return mnemonicArrayValidLength.value.slice(startIndex, startIndex + elementsPerColumn);
+  });
+});
 
-  get columnTwo() {
-    return this.mnemonicArrayValidLength.slice(this.columnElements, this.columnElements * 2);
-  }
+const getNumberString = (number1: number, number2: number) => {
+  const baseValue = number1 * number2;
 
-  get columnTree() {
-    if (this.mnemonicLength === 12) return [];
-
-    return this.mnemonicArrayValidLength.slice(this.columnElements * 2, this.columnElements * 3);
-  }
-
-  getNumberString(number1: number, number2: number) {
-    const baseValue = number1 * number2;
-
-    return baseValue.toString().padStart(2, '0');
-  }
-}
+  return baseValue.toString().padStart(2, '0');
+};
 </script>
 
 <style lang="scss" scoped>
-@font-face {
-  font-family: 'Roboto mono';
-  src: local('Roboto mono'), url('@/assets/fonts/RobotoMono-Regular.ttf') format('truetype');
-}
-
 .mnemonic-columns {
   display: flex;
   justify-content: space-evenly;
   font-size: 1em;
-  font-family: 'Roboto mono', sans-serif;
+  font-family: 'Sora', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
   font-weight: 400;
 
   .mnemonic-element {

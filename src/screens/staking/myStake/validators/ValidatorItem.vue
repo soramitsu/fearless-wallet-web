@@ -26,36 +26,35 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectionValidator, CustomEvent } from '@/interfaces';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import type { SelectionValidator } from '@/interfaces';
 
-@Component
-export default class ValidatorItem extends Vue {
-  @Prop({ type: Object }) validator!: SelectionValidator;
-  @Prop({ default: true }) showCheckbox!: boolean;
+const props = defineProps<{
+  validator: SelectionValidator;
+  showCheckbox?: boolean;
+}>();
 
-  get iconClasses() {
-    return ['icon-info', this.validator.address];
+const emit = defineEmits<{
+  openValidatorInfo: [validator: SelectionValidator];
+  onSelect: [value: boolean, address: string];
+}>();
+
+const iconClasses = computed(() => ['icon-info', props.validator.address]);
+const classes = ['validator', 'validator-cursor'];
+
+function click(event: Event) {
+  const target = event.target as HTMLElement | null;
+
+  if (target?.classList.contains('el-checkbox__inner') || target?.classList.contains('el-checkbox__original')) {
+    return;
   }
 
-  get classes() {
-    return ['validator', 'validator-cursor'];
-  }
+  emit('openValidatorInfo', props.validator);
+}
 
-  click(event: CustomEvent) {
-    if (
-      event.target?.classList.contains('el-checkbox__inner') ||
-      event.target?.classList.contains('el-checkbox__original')
-    )
-      return;
-
-    this.$emit('openValidatorInfo', this.validator);
-  }
-
-  onSelect(value: boolean) {
-    this.$emit('onSelect', value, this.validator.address);
-  }
+function onSelect(value: boolean) {
+  emit('onSelect', value, props.validator.address);
 }
 </script>
 

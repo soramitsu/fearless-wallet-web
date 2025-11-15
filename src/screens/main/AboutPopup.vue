@@ -6,7 +6,7 @@
       :showHeader="false"
       :width="410"
       :top="50"
-      @handlerClose="$emit('handlerClose')"
+      @handlerClose="handleClose"
       sizeWidth="big"
       verticalPlacement="top"
       horizontalPlacement="right"
@@ -102,10 +102,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from 'vue-i18n';
 import { MAIN_ITEMS, COMMUNITY_ITEMS, SOCIAL_MEDIA_ITEMS, SUPPORT_ITEMS } from '@/consts/extensionInformation';
 
-const emit = defineEmits(['handlerClose']);
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
 const locale = useI18n();
 const mainItems = MAIN_ITEMS;
 const communityItems = COMMUNITY_ITEMS;
@@ -114,10 +116,12 @@ const supportItems = SUPPORT_ITEMS;
 
 const t = (value: string) => locale.t(`common.${value}`);
 
+const handleClose = () => emit('handlerClose');
+
 const open = (url: string) => {
   window.open(url);
 
-  emit('handlerClose');
+  handleClose();
 };
 </script>
 

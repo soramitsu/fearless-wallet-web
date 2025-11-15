@@ -109,8 +109,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import { hasMasterPassword, initGoogleAuth } from '@/extension/messaging';
@@ -119,99 +120,94 @@ import { IS_EXTENSION } from '@/consts/global';
 import { type WalletEcosystem } from '@/interfaces';
 import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
 
-@Component({ components: { ChoiceEcosystem } })
-export default class Welcome extends Vue {
-  readonly isExtension = IS_EXTENSION;
-  accountsStore = useAccountsStore();
-  showGoogleAuthPopup = false;
-  isAuthFlowInit = false;
-  hasMasterPassword = false;
-  walletEcosystem: WalletEcosystem | null = null;
+defineOptions({
+  name: 'Welcome',
+});
 
-  get showChoiceEcosystem() {
-    return !this.walletEcosystem;
+const router = useRouter();
+const route = useRoute();
+const accountsStore = useAccountsStore();
+
+const isExtension = IS_EXTENSION;
+
+const showGoogleAuthPopup = ref(false);
+const isAuthFlowInit = ref(false);
+const hasPassword = ref(false);
+const walletEcosystem = ref<WalletEcosystem | null>(null);
+
+const showChoiceEcosystem = computed(() => walletEcosystem.value === null);
+const isSubstrate = computed(() => walletEcosystem.value === 'substrate');
+const showBackWalletIcon = computed(() => accountsStore.accounts.length !== 0);
+
+const accessToken = computed<string | undefined>(() => {
+  const token = route.params.access_token;
+
+  return typeof token === 'string' ? token : undefined;
+});
+
+const setEcosystem = (value: WalletEcosystem) => {
+  walletEcosystem.value = value;
+};
+
+const openTermsAndConditions = () => window.open(URLS.FEARLESS_TERMS);
+const openPrivacyPolicy = () => window.open(URLS.FEARLESS_PRIVACY);
+
+const backToWallet = () => {
+  if (walletEcosystem.value) {
+    walletEcosystem.value = null;
+
+    return;
   }
 
-  get isSubstrate() {
-    return this.walletEcosystem === 'substrate';
+  router.push({ name: Components.Wallet });
+};
+
+const manageGoogle = async () => {
+  if (!hasPassword.value) {
+    router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
+
+    return;
   }
 
-  get showBackWalletIcon() {
-    return this.accountsStore.accounts.length !== 0;
+  if (!isAuthFlowInit.value) {
+    isAuthFlowInit.value = true;
+
+    initGoogleAuth().finally(() => {
+      isAuthFlowInit.value = false;
+    });
+  }
+};
+
+const openAddWalletComponent = (type: string) => {
+  if (hasPassword.value) {
+    router.push({ name: Components.AddWallet, params: { type, walletEcosystem: walletEcosystem.value! } });
+
+    return;
   }
 
-  get accessToken() {
-    return this.$route.params.access_token;
-  }
+  router.push({
+    name: Components.ChangePassword,
+    params: {
+      name: 'AddWallet',
+      type,
+      walletEcosystem: walletEcosystem.value!,
+    },
+  });
+};
 
-  async created() {
-    this.hasMasterPassword = await hasMasterPassword();
+const openAddWalletMobile = () => {
+  const path = hasPassword.value
+    ? { name: Components.MobileWalletAuth }
+    : { name: Components.ChangePassword, params: { name: 'MobileWalletAuth' } };
 
-    if (this.accessToken) this.showGoogleAuthPopup = true;
-  }
+  router.push(path);
+};
 
-  setEcosystem(value: WalletEcosystem) {
-    this.walletEcosystem = value;
-  }
+onMounted(async () => {
+  hasPassword.value = await hasMasterPassword();
 
-  closeGooglePopup() {
-    this.showGoogleAuthPopup = false;
-  }
-
-  openTermsAndConditions() {
-    window.open(URLS.FEARLESS_TERMS);
-  }
-
-  openPrivacyPolicy() {
-    window.open(URLS.FEARLESS_PRIVACY);
-  }
-
-  backToWallet() {
-    if (this.walletEcosystem) {
-      this.walletEcosystem = null;
-
-      return;
-    }
-
-    this.$router.push({ name: Components.Wallet });
-  }
-
-  async manageGoogle() {
-    if (!this.hasMasterPassword) {
-      this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
-
-      return;
-    }
-
-    if (!this.isAuthFlowInit) {
-      this.isAuthFlowInit = true;
-
-      initGoogleAuth().finally(() => (this.isAuthFlowInit = false));
-    }
-  }
-
-  async openAddWalletComponent(type: string) {
-    if (this.hasMasterPassword)
-      this.$router.push({ name: Components.AddWallet, params: { type, walletEcosystem: this.walletEcosystem! } });
-    else
-      this.$router.push({
-        name: Components.ChangePassword,
-        params: {
-          name: 'AddWallet',
-          type,
-          walletEcosystem: this.walletEcosystem!,
-        },
-      });
-  }
-
-  async openAddWalletMobile() {
-    const path = this.hasMasterPassword
-      ? { name: Components.MobileWalletAuth }
-      : { name: Components.ChangePassword, params: { name: 'MobileWalletAuth' } };
-
-    this.$router.push(path);
-  }
-}
+  if (accessToken.value) showGoogleAuthPopup.value = true;
+});
 </script>
 
 <style lang="scss" scoped>

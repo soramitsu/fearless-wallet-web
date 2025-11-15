@@ -36,68 +36,82 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { MarketType } from '@/interfaces';
 
-@Component
-export default class PolkaswapSettings extends Vue {
-  readonly optionsSubstrateKeyPair = [
-    { label: MarketType.SMART, value: MarketType.SMART },
-    { label: MarketType.TBC, value: MarketType.TBC },
+const props = defineProps<{
+  text?: string;
+  temporaryMarketType?: string;
+  temporarySlippage: number;
+}>();
+
+const emit = defineEmits<{
+  'update:temporaryMarketType': [value: string];
+  'update:temporarySlippage': [value: number];
+}>();
+
+const { t } = useI18n();
+
+const optionsSubstrateKeyPair = [
+  { label: MarketType.SMART, value: MarketType.SMART },
+  { label: MarketType.TBC, value: MarketType.TBC },
+];
+
+const slippageValues = [
+  { label: '0.1%', value: 0.1, warningText: 'assets.transactionMayFail' },
+  { label: '0.5%', value: 0.5 },
+  { label: '1%', value: 1 },
+  { label: '2%', value: 2 },
+  { label: '3%', value: 3 },
+  { label: '4%', value: 4 },
+  { label: '5%', value: 5, warningText: 'assets.transactionFrontrun' },
+];
+
+const marketTypeModel = computed({
+  get: () => props.temporaryMarketType,
+  set: (value: string | undefined) => {
+    if (value !== undefined) emit('update:temporaryMarketType', value);
+  },
+});
+
+const slippageModel = computed({
+  get: () => props.temporarySlippage,
+  set: (value: number) => emit('update:temporarySlippage', value),
+});
+
+const showMarketType = computed(() => marketTypeModel.value !== undefined);
+
+const slippagePercent = computed(() => `${slippageModel.value} %`);
+
+const isErrorSlippageInput = computed(() =>
+  slippageValues.filter(({ warningText }) => warningText).some(({ value }) => value === slippageModel.value)
+);
+
+const warningMessage = computed(() => {
+  const { warningText } = slippageValues.find(({ value }) => value === slippageModel.value) ?? {};
+
+  if (!warningText) return '';
+
+  return t(warningText, { value: slippageModel.value });
+});
+
+function setSlippage(value: number) {
+  slippageModel.value = value;
+}
+
+function updateSyncedMarketType(value: string) {
+  marketTypeModel.value = value;
+}
+
+function getSlippageClasses(value: number) {
+  return [
+    'slippage-value',
+    {
+      'selected-value': value === slippageModel.value,
+    },
   ];
-
-  readonly slippageValues = [
-    { label: '0.1%', value: 0.1, warningText: 'assets.transactionMayFail' },
-    { label: '0.5%', value: 0.5 },
-    { label: '1%', value: 1 },
-    { label: '2%', value: 2 },
-    { label: '3%', value: 3 },
-    { label: '4%', value: 4 },
-    { label: '5%', value: 5, warningText: 'assets.transactionFrontrun' },
-  ];
-
-  @Prop({ default: '' }) text!: string;
-  @PropSync('temporaryMarketType', { type: String }) syncedMarketType!: string;
-  @PropSync('temporarySlippage', { type: Number }) syncedSlippage!: number;
-
-  get showMarketType() {
-    return this.syncedMarketType !== undefined;
-  }
-
-  get slippagePercent() {
-    return `${this.syncedSlippage} %`;
-  }
-
-  get isErrorSlippageInput() {
-    return this.slippageValues
-      .filter(({ warningText }) => warningText)
-      .map(({ value }) => value)
-      .includes(this.syncedSlippage);
-  }
-
-  get warningMessage() {
-    const { warningText } = this.slippageValues.find(({ value }) => value === this.syncedSlippage)!;
-
-    return this.$t(warningText!, { value: this.syncedSlippage });
-  }
-
-  setSlippage(value: number) {
-    this.syncedSlippage = value;
-  }
-
-  updateSyncedMarketType(value: string) {
-    this.syncedMarketType = value;
-  }
-
-  getSlippageClasses(value: number) {
-    return [
-      'slippage-value',
-      {
-        'selected-value': value === this.syncedSlippage,
-      },
-    ];
-  }
 }
 </script>
 

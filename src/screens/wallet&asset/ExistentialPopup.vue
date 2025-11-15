@@ -4,8 +4,8 @@
     :headers="headers"
     :showAcceptButton="true"
     :showRejectButton="true"
-    @handlerClose="$emit('handlerClose')"
-    @handlerAccept="$emit('handlerAccept')"
+    @handlerClose="handleClose"
+    @handlerAccept="handleAccept"
   />
 </template>
 
@@ -14,4 +14,12 @@ const headers = {
   text: 'assets.existentialDepositText',
   subtext: 'assets.existentialDepositSubtext',
 };
+
+const emit = defineEmits<{
+  handlerClose: [];
+  handlerAccept: [];
+}>();
+
+const handleClose = () => emit('handlerClose');
+const handleAccept = () => emit('handlerAccept');
 </script>

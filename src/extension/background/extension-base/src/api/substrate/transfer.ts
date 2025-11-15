@@ -1,6 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate';
+import { getFPNumberCtor } from '@extension-base/services/utils/sora';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import type { BasicTxResponse, TokenGroup } from '@extension-base/background/types/types';
 import type { Extrinsic, ExtrinsicTransferProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
@@ -8,7 +9,9 @@ import type { NetworkName } from '@/interfaces';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { isSameString } from '@/helpers';
 
-export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Extrinsic {
+const getFPNumber = getFPNumberCtor;
+
+export async function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: State): Promise<Extrinsic> {
   const { amount, tokenBalance, to, networkKey } = props;
   const networkKeyLCase = networkKey.toLowerCase();
 
@@ -16,9 +19,13 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
 
   if (!api) return null;
 
-  const { precision, type, id } = tokenBalance.balances.find(({ name }) => isSameString(name, networkKey))!;
+  const balance = tokenBalance.balances.find((balanceItem) =>
+    isSameString(getBalanceNetworkName(balanceItem), networkKey)
+  )!;
+  const { precision, type, id } = balance;
   const ormlOptions = getAssetOptions(id, state.networkService.assetsMap);
-  const precisionAmount = getPrecisionValue(amount, precision) as string;
+  const assetOptions = (ormlOptions ?? id) as unknown;
+  const precisionAmount = await getPrecisionValue(amount, precision);
 
   try {
     switch (type) {
@@ -30,17 +37,17 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps, state: St
         return api.tx.balances.transferKeepAlive(to, precisionAmount);
 
       case 'ormlChain':
-        return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);
+        return api.tx.tokens.transfer(to, assetOptions as never, precisionAmount);
 
       case 'equilibrium':
-        return api.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
+        return api.tx.eqBalances.transfer(assetOptions as never, to, precisionAmount);
 
       case 'soraAsset':
       case 'assets':
-        return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
+        return api.tx.assets.transfer(assetOptions as never, to, precisionAmount);
 
       default:
-        return api.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+        return api.tx.currencies.transfer(to, assetOptions as never, precisionAmount);
     }
   } catch (e) {
     console.info('Unable to create extrinsic', e);
@@ -63,7 +70,7 @@ export async function estimateFee(
 
   await api.isReadyOrError;
 
-  const extrinsic = createExtrinsicTransfer(
+  const extrinsic = await createExtrinsicTransfer(
     {
       amount: value,
       tokenBalance,
@@ -76,6 +83,7 @@ export async function estimateFee(
   if (!extrinsic) return '0';
 
   const { precision: utilityPrecision } = getUtilityProps(networkKey, state);
+  const FPNumber = await getFPNumber();
 
   try {
     const paymentInfo = await extrinsic.paymentInfo(to);
@@ -121,7 +129,7 @@ export async function makeTransfer({
   const address = state.keyringService.getSubstrateAddress(from);
   const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
 
-  const extrinsic = createExtrinsicTransfer(
+  const extrinsic = await createExtrinsicTransfer(
     {
       amount,
       tokenBalance,

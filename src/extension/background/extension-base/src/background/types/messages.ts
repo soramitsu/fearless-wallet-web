@@ -1,6 +1,6 @@
 import { type KeyringAddress } from '@subwallet/ui-keyring/types';
 import type { EvmRequests } from '@extension-base/services/request-service/types';
-import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+import type { AccountLiquidity } from '@sora/poolXyk/types';
 import type { RequestArguments } from '@json-rpc-tools/utils';
 import type {
   RequestEvmEvents,
@@ -140,6 +140,8 @@ import type {
   OnboardingStories,
   FiatJson,
   TonEventTokens,
+  HistoryFetchRequest,
+  HistoryFetchResponse,
 } from '@/interfaces';
 
 export interface RequestSignatures {
@@ -177,6 +179,7 @@ export interface RequestSignatures {
   'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
   'pri(accounts.getHistory)': [RequestGetHistory, TonEventTokens];
+  'pri(history.fetchAsset)': [HistoryFetchRequest, HistoryFetchResponse | null];
 
   // App Management - networks
   // Network, APIs, Custom tokens functions
@@ -239,6 +242,7 @@ export interface RequestSignatures {
 
   // Pools
   'pri(pools.poolsParams)': [PoolsParamsRequest, PoolsParamsResponse];
+  'pri(pools.poolsParams.subscribe)': [PoolsParamsRequest, boolean, PoolsParamsResponse];
   'pri(pools.makePool)': [MakePoolsRequest, BasicTxResponse];
   'pri(pools.shareOfPool)': [GetShareOfPoolRequest, GetShareOfPoolResponse];
   'pri(pools.unsubscribePools)': [null, void];
@@ -280,6 +284,8 @@ export interface RequestSignatures {
   'pub(phishing.redirectIfDenied)': [null, boolean];
   'pub(rpc.listProviders)': [void, ResponseRpcListProviders];
   'pub(rpc.send)': [RequestRpcSend, JsonRpcResponse<unknown>];
+  'pub(rpc.connect)': [void, boolean];
+  'pub(rpc.disconnect)': [void, boolean];
   'pub(rpc.startProvider)': [string, ProviderMeta];
   'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse<unknown>];
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
@@ -295,7 +301,7 @@ export interface RequestSignatures {
   'pri(walletConnect.requests.notSupport.subscribe)': [
     null,
     WalletConnectNotSupportRequest[],
-    WalletConnectNotSupportRequest[]
+    WalletConnectNotSupportRequest[],
   ];
   // 'pri(walletConnect.notSupport.approve)': [RequestApproveWalletConnectNotSupport, boolean];
   'pri(walletConnect.notSupport.reject)': [RequestRejectWalletConnectNotSupport, boolean];
@@ -303,7 +309,7 @@ export interface RequestSignatures {
   'pri(walletConnect.signing.requests.subscribe)': [
     RequestSigningSubscribe,
     WalletConnectTransactionRequest[],
-    WalletConnectTransactionRequest[]
+    WalletConnectTransactionRequest[],
   ];
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
   'pri(walletConnect.request.reject)': [{ topic: string }, boolean];

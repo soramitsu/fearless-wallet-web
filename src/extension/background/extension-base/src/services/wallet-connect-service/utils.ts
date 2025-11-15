@@ -1,6 +1,9 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import * as encoding from '@walletconnect/encoding';
-import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
+import {
+  EIP155_SIGNING_METHODS,
+  POLKADOT_SIGNING_METHODS,
+} from '@extension-base/services/wallet-connect-service/types';
 import { getChainInfoByHalfGenesisHash, getChainInfoByChainId } from '@extension-base/services/network-service/helpers';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
@@ -11,6 +14,7 @@ import {
 import type {
   WalletConnectNotSupportRequest,
   WalletConnectParamMap,
+  WalletConnectParamsFor,
   WalletConnectSessionRequest,
   WalletConnectSigningMethod,
 } from '@extension-base/services/wallet-connect-service/types';
@@ -46,20 +50,92 @@ export const convertNotSupportRequest = (
   };
 };
 
-export const parseRequestParams = <T = keyof WalletConnectSigningMethod>(params: unknown) => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  return params as WalletConnectParamMap[T];
+const isEip155SignMessageParams = (
+  params: unknown
+): params is WalletConnectParamMap[EIP155_SIGNING_METHODS.PERSONAL_SIGN] => {
+  return Array.isArray(params) && params.length >= 2 && typeof params[0] === 'string' && typeof params[1] === 'string';
+};
+
+const isEip155SendTransactionParams = (
+  params: unknown
+): params is WalletConnectParamMap[EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION] => {
+  if (!Array.isArray(params) || params.length === 0) return false;
+
+  const [tx] = params;
+
+  return typeof tx === 'object' && tx !== null && typeof (tx as { from?: unknown }).from === 'string';
+};
+
+const isPolkadotSignMessageParams = (
+  params: unknown
+): params is WalletConnectParamMap[POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE] => {
+  return (
+    typeof params === 'object' &&
+    params !== null &&
+    typeof (params as { address?: unknown }).address === 'string' &&
+    typeof (params as { message?: unknown }).message === 'string'
+  );
+};
+
+const isPolkadotSignTransactionParams = (
+  params: unknown
+): params is WalletConnectParamMap[POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION] => {
+  if (typeof params !== 'object' || params === null) return false;
+
+  const { address, transactionPayload } = params as {
+    address?: unknown;
+    transactionPayload?: unknown;
+  };
+
+  return typeof address === 'string' && typeof transactionPayload === 'object' && transactionPayload !== null;
+};
+
+const isWalletConnectParamForMethod = <T extends WalletConnectSigningMethod>(
+  method: T,
+  params: unknown
+): params is WalletConnectParamsFor<T> => {
+  switch (method) {
+    case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
+    case EIP155_SIGNING_METHODS.ETH_SIGN:
+    case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
+    case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V1:
+    case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
+    case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
+      return isEip155SignMessageParams(params);
+
+    case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
+      return isEip155SendTransactionParams(params);
+
+    case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE:
+      return isPolkadotSignMessageParams(params);
+
+    case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION:
+      return isPolkadotSignTransactionParams(params);
+
+    default:
+      return false;
+  }
+};
+
+export const parseRequestParams = <T extends WalletConnectSigningMethod>(
+  params: unknown,
+  method: T
+): WalletConnectParamsFor<T> => {
+  if (!isWalletConnectParamForMethod(method, params)) {
+    throw new Error(`WalletConnect params mismatch for request ${method}`);
+  }
+
+  return params;
 };
 
 export function parseAddressFromSendTxRequest(params: unknown) {
-  const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
+  const [tx] = parseRequestParams(params, EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION);
 
   return tx.from;
 }
 
 export function parseAddressFromPersonalSign(params: unknown) {
-  const [p1, p2] = parseRequestParams<EIP155_SIGNING_METHODS.PERSONAL_SIGN>(params);
+  const [p1, p2] = parseRequestParams(params, EIP155_SIGNING_METHODS.PERSONAL_SIGN);
 
   if (typeof p1 === 'string' && isEthereumAddress(p1)) {
     return p1;

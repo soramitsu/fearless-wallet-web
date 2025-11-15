@@ -21,7 +21,8 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
 } from '@extension-base/background/types/types';
-import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
+import type { SubjectInfo as PolkadotSubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SubjectInfo as SubWalletSubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type {
@@ -38,6 +39,7 @@ import {
 
 export default class Tabs {
   accountSubs: Record<string, AccountSub> = {};
+  private rpcSubscriptions = new Map<string, string>();
   eipService: EipService;
 
   constructor(public state: State) {
@@ -60,8 +62,12 @@ export default class Tabs {
   }
 
   async accountsListAuthorized(url: string): Promise<InjectedAccount[]> {
-    const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubject.value });
-    const transformedAddresses = transformAddresses({ accounts: this.state.keyringService.addressSubject.value });
+    const transformedAccounts = transformAccounts({
+      accounts: this.state.keyringService.accountSubject.value as unknown as PolkadotSubjectInfo,
+    });
+    const transformedAddresses = transformAddresses({
+      accounts: this.state.keyringService.addressSubject.value as unknown as PolkadotSubjectInfo,
+    });
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
@@ -72,19 +78,23 @@ export default class Tabs {
     const cb = this.state.subscriptionService.createSubscription<'pub(accounts.subscribe)'>(id, port);
 
     this.accountSubs[id] = {
-      subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
-        const transformedAccounts = transformAccounts({ accounts });
-        const transformedMobileAccount = transformAddresses({
-          accounts: this.state.keyringService.addressSubject.value,
-        });
-        const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
+      subscription: this.state.keyringService.accountSubject.subscribe(
+        async (accounts: SubWalletSubjectInfo): Promise<void> => {
+          const transformedAccounts = transformAccounts({
+            accounts: accounts as unknown as PolkadotSubjectInfo,
+          });
+          const transformedMobileAccount = transformAddresses({
+            accounts: this.state.keyringService.addressSubject.value as unknown as PolkadotSubjectInfo,
+          });
+          const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
 
-        chrome.storage.local.set({ transformAccounts: allAccounts });
+          chrome.storage.local.set({ transformAccounts: allAccounts });
 
-        const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
+          const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
 
-        cb(auths);
-      }),
+          cb(auths);
+        }
+      ),
       url,
     };
 
@@ -162,6 +172,14 @@ export default class Tabs {
     return this.state.rpcSend(request, port);
   }
 
+  rpcConnect(port: Port): Promise<boolean> {
+    return this.state.rpcConnect(port);
+  }
+
+  rpcDisconnect(port: Port): Promise<boolean> {
+    return this.state.rpcDisconnect(port);
+  }
+
   rpcStartProvider(key: string, port: Port): ProviderMeta {
     return this.state.rpcStartProvider(key, port);
   }
@@ -170,6 +188,13 @@ export default class Tabs {
     const innerCb = this.state.subscriptionService.createSubscription<'pub(rpc.subscribe)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribe)']): void => innerCb(data);
     const subscriptionId = await this.state.rpcSubscribe(request, cb, port);
+
+    const subscriptionKey = String(subscriptionId);
+    this.rpcSubscriptions.set(subscriptionKey, id);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      this.rpcSubscriptions.delete(subscriptionKey);
+    });
 
     port.onDisconnect.addListener((): void => {
       this.state.subscriptionService.cancelSubscription(id);
@@ -186,14 +211,25 @@ export default class Tabs {
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribeConnected)']): void =>
       innerCb(data);
 
-    this.state.rpcSubscribeConnected(request, cb, port);
+    const unsubscribe = this.state.rpcSubscribeConnected(request, cb, port);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, unsubscribe);
 
     port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
     return Promise.resolve(true);
   }
 
-  rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
+  async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
+    const subscriptionKey = String(request.subscriptionId);
+    const subscribeId = this.rpcSubscriptions.get(subscriptionKey);
+
+    if (subscribeId) {
+      this.state.subscriptionService.cancelSubscription(subscribeId);
+    }
+
+    this.rpcSubscriptions.delete(subscriptionKey);
+
     return this.state.rpcUnsubscribe(request, port);
   }
 
@@ -222,7 +258,13 @@ export default class Tabs {
     )
       return;
 
-    switch (type) {
+    if ((type as string) === 'pub(rpc.unsubscribe)') {
+      return this.rpcUnsubscribe(request as RequestRpcUnsubscribe, port);
+    }
+
+    const messageType = type as MessageTypes;
+
+    switch (messageType) {
       case 'pub(authorize.tab)':
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
 
@@ -253,6 +295,12 @@ export default class Tabs {
       case 'pub(rpc.send)':
         return this.rpcSend(request as RequestRpcSend, port);
 
+      case 'pub(rpc.connect)':
+        return this.rpcConnect(port);
+
+      case 'pub(rpc.disconnect)':
+        return this.rpcDisconnect(port);
+
       case 'pub(rpc.startProvider)':
         return this.rpcStartProvider(request as string, port);
 
@@ -276,7 +324,7 @@ export default class Tabs {
         return this.eipService.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
 
       default:
-        throw new Error(`Unable to handle message of type ${type}`);
+        throw new Error(`Unable to handle message of type ${messageType}`);
     }
   }
 }

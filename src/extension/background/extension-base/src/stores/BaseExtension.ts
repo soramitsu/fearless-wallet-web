@@ -30,13 +30,20 @@ export default abstract class BaseExtensionStore<T> {
     chrome.storage.local.get(null, (result: StoreValue) => {
       lastError('all');
 
-      const entries = Object.entries(result);
       const map: Record<string, T> = {};
 
-      for (let i = 0; i < entries.length; i++) {
-        const [key, value] = entries[i];
+      for (const [key, value] of Object.entries(result)) {
+        if (!key.startsWith(this.prefix)) continue;
 
-        if (key.startsWith(this.prefix)) map[key.replace(this.prefix, '')] = value as T;
+        const strippedKey = key.replace(this.prefix, '');
+
+        if (value === undefined || value === null) {
+          console.warn(`BaseExtensionStore.allMap: skipping invalid entry for key ${key}`);
+          chrome.storage.local.remove(key, () => lastError('remove-invalid'));
+          continue;
+        }
+
+        map[strippedKey] = value as T;
       }
 
       update(map);
@@ -48,8 +55,17 @@ export default abstract class BaseExtensionStore<T> {
 
     chrome.storage.local.get([key], (result: StoreValue) => {
       lastError('get');
+      const entry = result[key];
 
-      update(result[key] as T);
+      if (entry === undefined || entry === null) {
+        console.warn(`BaseExtensionStore.get: missing entry for key ${key}`);
+        chrome.storage.local.remove(key, () => lastError('remove-missing'));
+        update({} as T);
+
+        return;
+      }
+
+      update(entry as T);
     });
   }
 

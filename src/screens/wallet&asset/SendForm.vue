@@ -52,8 +52,11 @@
   </TransferForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
@@ -61,132 +64,109 @@ import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: { TransferForm },
-})
-export default class SendForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  partialFee = '';
-  selectedNetwork = '';
-  assetId = '';
-  recipient = '';
-  amount = '';
-  value = '';
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
+const { n } = useI18n();
 
-  get currency() {
-    return this.accountsStore.balances.find(({ balances }) =>
-      balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
-    );
-  }
+const partialFee = ref('');
+const selectedNetwork = ref((route.params.network as string | undefined) ?? '');
+const assetId = ref((route.params.assetId as string | undefined) ?? '');
+const recipient = ref('');
+const amount = ref('');
+const value = ref('');
 
-  get isUtilityAsset() {
-    return this.currency?.balances.some(({ isUtility, name }) => isUtility && isSameString(name, this.selectedNetwork));
-  }
+const currency = computed(() =>
+  accountsStore.balances.find(({ balances }) =>
+    balances.some(({ id }) => id.toLowerCase() === assetId.value.toLowerCase())
+  )
+);
 
-  get partialFeeString() {
-    const utilityAsset = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
-    const symbol = utilityAsset ? utilityAsset.symbol : '';
+const isUtilityAsset = computed(() =>
+  currency.value?.balances.some(
+    (balance) => balance.isUtility && isSameString(getBalanceNetworkName(balance), selectedNetwork.value)
+  )
+);
 
-    return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
-  }
+const partialFeeString = computed(() => {
+  const utilityAsset = getUtilityAsset(accountsStore.balances, selectedNetwork.value);
+  const symbol = utilityAsset ? utilityAsset.symbol : '';
 
-  get showValue() {
-    return this.value !== '0';
-  }
+  return `${n(+partialFee.value, 'decimalPrecise')} ${symbol.toUpperCase()}`;
+});
 
-  get assetPrice() {
-    return this.networksStore.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
-  }
+const assetPrice = computed(() => networksStore.getAssetPrice(currency.value?.priceId ?? '')?.price ?? 0);
 
-  get originNet() {
-    return this.networksStore.getNetwork(this.selectedNetwork);
-  }
+const originNet = computed(() => networksStore.getNetwork(selectedNetwork.value));
+const originalUtilityId = computed(() => originNet.value?.assets[0].id ?? '');
 
-  get originalUtilityId() {
-    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-  }
+const feeAssetPrice = computed(() => {
+  const feeCurrency = accountsStore.balances.find(({ balances }) =>
+    balances.some(({ id }) => id === originalUtilityId.value)
+  );
+  const priceId = feeCurrency?.priceId ?? '';
 
-  get feeAssetPrice() {
-    const currency = this.accountsStore.balances.find(({ balances }) =>
-      balances.some(({ id }) => id === this.originalUtilityId)
-    );
-    const priceId = currency?.priceId ?? '';
+  return networksStore.getAssetPrice(priceId).price;
+});
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
+const fiatFeeString = computed(
+  () => `${accountsStore.fiatSymbol}${n(+partialFee.value * feeAssetPrice.value, 'price')}`
+);
 
-  get fiatFeeString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
-  }
+const valueString = computed(() => `${accountsStore.fiatSymbol}${n(+value.value, 'price')}`);
 
-  get valueString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
-  }
+const selectedAsset = computed(() =>
+  currency.value?.balances?.find(
+    (el) =>
+      el.symbol.toLowerCase() === assetId.value.toLowerCase() || el.id.toLowerCase() === assetId.value.toLowerCase()
+  )
+);
 
-  get amountString() {
-    return `${+this.amount} ${this.selectedAssetUpper}`;
-  }
+const selectedAssetUpper = computed(() => selectedAsset.value?.symbol.toUpperCase() ?? '');
 
-  get formattedAddressTo() {
-    return `${this.recipient.slice(0, 7)}...${this.recipient.slice(-8)}`;
-  }
+const amountString = computed(() => `${+amount.value} ${selectedAssetUpper.value}`);
 
-  get selectedAsset() {
-    return this.currency?.balances?.find(
-      (el) =>
-        el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
-    );
-  }
+const formattedAddressTo = computed(() => {
+  const currentRecipient = recipient.value;
 
-  get selectedAssetUpper() {
-    return this.selectedAsset?.symbol.toUpperCase();
-  }
+  if (currentRecipient.length <= 15) return currentRecipient;
 
-  get total() {
-    return +addNumbers([this.amount, this.partialFee]);
-  }
+  return `${currentRecipient.slice(0, 7)}...${currentRecipient.slice(-8)}`;
+});
 
-  get totalString() {
-    return `${this.$n(this.total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
-  }
+const total = computed(() => +addNumbers([amount.value, partialFee.value]));
 
-  get fiatTotalString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
-  }
+const totalString = computed(() => `${n(total.value, 'decimalPrecise')} ${selectedAssetUpper.value}`);
 
-  created() {
-    this.assetId = this.$route.params.assetId;
-    this.selectedNetwork = this.$route.params.network;
-  }
+const fiatTotalString = computed(() => `${accountsStore.fiatSymbol}${n(total.value * assetPrice.value, 'price')}`);
 
-  closeForm() {
-    this.$router.back();
-  }
+function closeForm() {
+  router.back();
+}
 
-  updateAssetId(value: string) {
-    this.assetId = value;
-  }
+function updateAssetId(valueToSet: string) {
+  assetId.value = valueToSet;
+}
 
-  updateSelectedNetwork(value: string) {
-    this.selectedNetwork = value;
-  }
+function updateSelectedNetwork(valueToSet: string) {
+  selectedNetwork.value = valueToSet;
+}
 
-  updateRecipient(value: string) {
-    this.recipient = value;
-  }
+function updateRecipient(valueToSet: string) {
+  recipient.value = valueToSet;
+}
 
-  updateAmount(value: string) {
-    this.amount = value;
-  }
+function updateAmount(valueToSet: string) {
+  amount.value = valueToSet;
+}
 
-  updateValue(value: string) {
-    this.value = value;
-  }
+function updateValue(valueToSet: string) {
+  value.value = valueToSet;
+}
 
-  updatePartialFee(value: string) {
-    this.partialFee = value;
-  }
+function updatePartialFee(valueToSet: string) {
+  partialFee.value = valueToSet;
 }
 </script>
 

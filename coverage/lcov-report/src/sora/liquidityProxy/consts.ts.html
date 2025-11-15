@@ -1,0 +1,421 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/sora/liquidityProxy/consts.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">src/sora/liquidityProxy</a> consts.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/71</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/14</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/7</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/70</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input oninput="onInput()" type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { FPNumber } from '@sora/math';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >export class <span class="cstat-no" title="statement not covered" >C</span>onsts {</span>
+<span class="cstat-no" title="statement not covered" >  /** XOR token */</span>
+  static readonly XOR = '0x0200000000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** KXOR token */</span>
+  static readonly KXOR = '0x02000e0000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** VAL token */</span>
+  static readonly VAL = '0x0200040000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** PSWAP token */</span>
+  static readonly PSWAP = '0x0200050000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** DAI token */</span>
+  static readonly DAI = '0x0200060000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** ETH token */</span>
+  static readonly ETH = '0x0200070000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** XST-USD token */</span>
+  static readonly XSTUSD = '0x0200080000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** XST token */</span>
+  static readonly XST = '0x0200090000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** TBCD token */</span>
+  static readonly TBCD = '0x02000a0000000000000000000000000000000000000000000000000000000000';
+<span class="cstat-no" title="statement not covered" >  /** KUSD token */</span>
+  static readonly KUSD = '0x02000c0000000000000000000000000000000000000000000000000000000000';
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  /** XYK, TBC fees the same */</span>
+  static readonly XYK_FEE = new FPNumber(0.003)<span class="cstat-no" title="statement not covered" >;</span>
+  static readonly TBC_FEE = Consts.XYK_FEE;
+<span class="cstat-no" title="statement not covered" >  /** Max `Rust` number value */</span>
+  static readonly MAX = new FPNumber('170141183460469231731.687303715884105727');
+<span class="cstat-no" title="statement not covered" >  /** Manimal significant balance */</span>
+  static readonly MIN = FPNumber.fromCodecValue(1);
+<span class="cstat-no" title="statement not covered" >  /** Irreducible reserve percent = 1% */</span>
+  static readonly IrreducibleReserve = new FPNumber(0.01)<span class="cstat-no" title="statement not covered" >;</span>
+&nbsp;
+  static readonly InternalSlippageTolerance = new FPNumber(0.001);
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  /** ETH &amp; DAI which are incentivized */</span>
+  static readonly incentivizedCurrenciesNum = FPNumber.TWO;
+<span class="cstat-no" title="statement not covered" >  /** 2.5 billion pswap reserved for tbc rewards */</span>
+  static readonly initialPswapTbcRewardsAmount = new FPNumber(2_500_000_000)<span class="cstat-no" title="statement not covered" >;</span>
+&nbsp;
+  static readonly GetNumSamples = 10;
+}
+&nbsp;
+export const <span class="cstat-no" title="statement not covered" >DexIdByBaseAsset: Record&lt;string, number&gt; = {</span>
+  [Consts.XOR]: 0,
+  [Consts.XSTUSD]: 1,
+  [Consts.KUSD]: 2,
+};
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum E</span>rrors {</span>
+<span class="cstat-no" title="statement not covered" >  AggregationError = 'Unable to aggregate the liquidity from sources.',</span>
+<span class="cstat-no" title="statement not covered" >  AssetsMustNotBeSame = 'In this case assets must not be same.',</span>
+<span class="cstat-no" title="statement not covered" >  BadLiquidity = 'Internal error. Liquidity source returned wrong liquidity.',</span>
+<span class="cstat-no" title="statement not covered" >  BaseAssetIsNotMatchedWithAnyAssetArguments = 'The base asset is not matched with any asset arguments.',</span>
+<span class="cstat-no" title="statement not covered" >  CalculationError = 'Specified parameters lead to arithmetic error',</span>
+<span class="cstat-no" title="statement not covered" >  CantExchange = "Liquidity source can't exchange assets with the given IDs on the given DEXId.",</span>
+<span class="cstat-no" title="statement not covered" >  InsufficientLiquidity = 'None of the sources has enough reserves to execute a trade',</span>
+<span class="cstat-no" title="statement not covered" >  InvalidOrderAmount = 'Invalid Order Amount',</span>
+<span class="cstat-no" title="statement not covered" >  InvalidFeeRatio = 'Invalid fee ratio value.',</span>
+<span class="cstat-no" title="statement not covered" >  NotEnoughLiquidityInOrderBook = 'Not Enough Liquidity In OrderBook',</span>
+<span class="cstat-no" title="statement not covered" >  NotEnoughReserves = "It's not enough reserves in the pool to perform the operation.",</span>
+<span class="cstat-no" title="statement not covered" >  NotEnoughOutputReserves = 'Output asset reserves is not enough',</span>
+<span class="cstat-no" title="statement not covered" >  PoolIsEmpty = 'The pool has empty liquidity.',</span>
+<span class="cstat-no" title="statement not covered" >  PriceCalculationFailed = 'An error occurred while calculating the price.',</span>
+<span class="cstat-no" title="statement not covered" >  RestrictedChameleonPool = 'Restricted Chameleon pool',</span>
+<span class="cstat-no" title="statement not covered" >  SyntheticDoesNotExist = 'Synthetic asset does not exist.',</span>
+<span class="cstat-no" title="statement not covered" >  SyntheticBaseBuySellLimitExceeded = 'Input/output amount of synthetic base asset exceeds the limit',</span>
+<span class="cstat-no" title="statement not covered" >  UnavailableExchangePath = 'No route exists in a given DEX for given parameters to carry out the swap',</span>
+<span class="cstat-no" title="statement not covered" >  UnknownOrderBook = 'Order book does not exist for this trading pair',</span>
+<span class="cstat-no" title="statement not covered" >  UnsupportedQuotePath = 'Attempt to quote via unsupported path, i.e. both output and input tokens are not XOR.',</span>
+  // own
+<span class="cstat-no" title="statement not covered" >  UnsupportedLiquiditySource = 'Unsupported liquidity source',</span>
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum L</span>iquiditySourceTypes {</span>
+<span class="cstat-no" title="statement not covered" >  Default = '',</span>
+<span class="cstat-no" title="statement not covered" >  XYKPool = 'XYKPool',</span>
+<span class="cstat-no" title="statement not covered" >  XSTPool = 'XSTPool',</span>
+<span class="cstat-no" title="statement not covered" >  MulticollateralBondingCurvePool = 'MulticollateralBondingCurvePool',</span>
+<span class="cstat-no" title="statement not covered" >  OrderBook = 'OrderBook',</span>
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum R</span>ewardReason {</span>
+<span class="cstat-no" title="statement not covered" >  Unspecified = 'Unspecified',</span>
+<span class="cstat-no" title="statement not covered" >  BuyOnBondingCurve = 'BuyOnBondingCurve',</span>
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum P</span>riceVariant {</span>
+<span class="cstat-no" title="statement not covered" >  Buy = 'Buy',</span>
+<span class="cstat-no" title="statement not covered" >  Sell = 'Sell',</span>
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum A</span>ssetType {</span>
+<span class="cstat-no" title="statement not covered" >  Base = 'Base',</span>
+<span class="cstat-no" title="statement not covered" >  SyntheticBase = 'SyntheticBase',</span>
+<span class="cstat-no" title="statement not covered" >  Basic = 'Basic',</span>
+<span class="cstat-no" title="statement not covered" >  Synthetic = 'Synthetic',</span>
+<span class="cstat-no" title="statement not covered" >  ChameleonBase = 'ChameleonBase',</span>
+<span class="cstat-no" title="statement not covered" >  ChameleonPoolAsset = 'ChameleonPoolAsset',</span>
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum S</span>wapVariant {</span>
+<span class="cstat-no" title="statement not covered" >  WithDesiredInput = 'WithDesiredInput',</span>
+<span class="cstat-no" title="statement not covered" >  WithDesiredOutput = 'WithDesiredOutput',</span>
+}
+&nbsp;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >export enum F</span>ilterMode {</span>
+<span class="cstat-no" title="statement not covered" >  Disabled = 'Disabled',</span>
+<span class="cstat-no" title="statement not covered" >  AllowSelected = 'AllowSelected',</span>
+<span class="cstat-no" title="statement not covered" >  ForbidSelected = 'ForbidSelected',</span>
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-11-15T10:53:18.006Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    

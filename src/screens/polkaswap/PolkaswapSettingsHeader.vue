@@ -1,6 +1,6 @@
 <template>
   <div class="header-content">
-    <div :class="classesBackIcon" data-testid="backBtn" @click="$emit('back')">
+    <div :class="classesBackIcon" data-testid="backBtn" @click="emitBack">
       <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
     </div>
 
@@ -11,9 +11,9 @@
     </div>
 
     <template>
-      <Icon v-if="showCloseIcon" icon="close" class="img close" data-testid="closeForm" @click="$emit('closeForm')" />
+      <Icon v-if="showCloseIcon" icon="close" class="img close" data-testid="closeForm" @click="emitClose" />
 
-      <div v-else :class="classesSettings" @click="$emit('toggleSettingsVisibility')">
+      <div v-else :class="classesSettings" @click="emitToggleSettings">
         <template>
           <div class="settings-text" data-testid="settingText">{{ marketType }}</div>
 
@@ -25,33 +25,51 @@
     </template>
   </div>
 </template>
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component({})
-export default class PolkaswapSettingsHeader extends Vue {
-  @Prop({ type: String, default: 'Settings' }) marketType!: string;
-  @Prop({ type: Boolean }) showSettings!: boolean;
-  @Prop({ type: Boolean }) showPolkaswapIcon!: boolean;
-  @Prop({ type: Boolean }) settingHide!: boolean;
-  @Prop({ type: Boolean }) showBackIcon!: boolean;
-  @Prop({ type: Boolean }) showCloseIcon!: boolean;
-  @Prop({ type: Boolean }) showBackMock!: boolean;
-  @Prop({ type: String }) header!: string;
-
-  get classesSettings() {
-    return ['settings', { 'setting-hide': this.settingHide }];
+const props = withDefaults(
+  defineProps<{
+    marketType?: string;
+    showSettings: boolean;
+    showPolkaswapIcon: boolean;
+    settingHide: boolean;
+    showBackIcon: boolean;
+    showCloseIcon: boolean;
+    showBackMock: boolean;
+    header: string;
+  }>(),
+  {
+    marketType: 'Settings',
   }
+);
 
-  get classesBackIcon() {
-    return [
-      'back-default',
-      {
-        'back-mock-settings': !this.showCloseIcon,
-        'back-mock': this.showBackMock || this.showSettings,
-      },
-    ];
-  }
+const emit = defineEmits<{
+  back: [];
+  toggleSettingsVisibility: [];
+  closeForm: [];
+}>();
+
+const classesSettings = computed(() => ['settings', { 'setting-hide': props.settingHide }]);
+
+const classesBackIcon = computed(() => [
+  'back-default',
+  {
+    'back-mock-settings': !props.showCloseIcon,
+    'back-mock': props.showBackMock || props.showSettings,
+  },
+]);
+
+function emitBack() {
+  emit('back');
+}
+
+function emitToggleSettings() {
+  emit('toggleSettingsVisibility');
+}
+
+function emitClose() {
+  emit('closeForm');
 }
 </script>
 

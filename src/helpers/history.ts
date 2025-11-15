@@ -1,17 +1,10 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { NetworkJson } from '@extension-base/types';
-import type {
-  HistoryElement,
-  GiantsquidHistoryItem,
-  SubqueryHistory,
-  HistoryServiceType,
-  NetworkName,
-  SoraHistoryElement,
-  TonEvent,
-} from '@/interfaces';
-import type { History } from '@/stores/networks/types';
-import { TransactionType } from '@/interfaces';
-import { firstCharToUp, isSora, isTonNetwork } from '@/helpers';
+import type { HistoryElement, NetworkName } from '@/interfaces';
+import type { TokenGroup } from '@extension-base/background/types/types';
+import type { BalanceItem } from '@extension-base/api/evm/types';
+import { isSoraHistoryElement, isTonEvent, TransactionType } from '@/interfaces';
+import { FPNumber } from '@/lib/fpNumber';
+import { firstCharToUp, isSora, isTonNetwork, findTokenBalanceByNetwork } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -36,15 +29,19 @@ function getSignTransfer(historyElement: HistoryElement, address: string, networ
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.sora) {
-    const element = historyElement as unknown as SoraHistoryElement;
+    if (isSoraHistoryElement(historyElement)) {
+      return historyElement.method === 'rewarded' ? '+' : '-';
+    }
 
-    return element.method === 'rewarded' ? '+' : '-';
+    return '-';
   }
 
   if (type === TransactionType.ton) {
-    const element = historyElement as unknown as TonEvent;
+    if (isTonEvent(historyElement)) {
+      return historyElement.isOutEvent ? '-' : '+';
+    }
 
-    return element.isOutEvent ? '-' : '+';
+    return '';
   }
 
   if (type === TransactionType.transfer) {
@@ -61,15 +58,19 @@ function getTypeFormatted(historyElement: HistoryElement, address: string, netwo
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.ton) {
-    const element = historyElement as unknown as TonEvent;
+    if (isTonEvent(historyElement)) {
+      return historyElement.isOutEvent ? TransferType.Outgoing : TransferType.Incoming;
+    }
 
-    return element.isOutEvent ? TransferType.Outgoing : TransferType.Incoming;
+    return TransferType.Outgoing;
   }
 
   if (type === TransactionType.sora) {
-    const element = historyElement as unknown as SoraHistoryElement;
+    if (isSoraHistoryElement(historyElement)) {
+      return historyElement.module;
+    }
 
-    return element.module;
+    return TransferType.Outgoing;
   }
 
   const signTransfer = getSignTransfer(historyElement, address, networkName);
@@ -88,8 +89,10 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
   const tokenBalances = accountsStore.balances;
   const network: NetworkJson = networksStore.getNetwork(networkName);
   const asset = network.assets.find((asset) => asset.isUtility);
-  const token = tokenBalances.find(({ symbol }) => symbol === asset?.symbol);
-  const balance = token?.balances.find(({ id }) => id === asset?.id);
+  const token = tokenBalances.find((tokenGroup: TokenGroup) =>
+    tokenGroup.balances.some((balanceItem: BalanceItem) => balanceItem.id === asset?.id)
+  );
+  const balance = findTokenBalanceByNetwork(token, networkName);
   const precision = balance?.precision ?? 0;
 
   return FPNumber.fromCodecValue(value, precision).toNumber();
@@ -98,8 +101,12 @@ function getHumanFeeValue(value: string, networkName: NetworkName) {
 function getHumanValue(value: string | number, assetId: string, networkName: NetworkName) {
   const accountsStore = useAccountsStore();
   const tokenBalances = accountsStore.balances;
-  const { balances } = tokenBalances.find(({ groupId }) => groupId === assetId)!;
-  const { precision } = balances.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
+  const token = tokenBalances.find((tokenGroup: TokenGroup) => tokenGroup.groupId === assetId);
+  const balance = findTokenBalanceByNetwork(token, networkName);
+
+  if (!balance) return 0;
+
+  const { precision } = balance;
 
   return +FPNumber.fromCodecValue(value, precision);
 }
@@ -111,17 +118,15 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   const type = getType(historyElement, networkName);
 
   if (type === TransactionType.sora) {
-    const element = historyElement as unknown as SoraHistoryElement;
-    const { networkFee } = element;
+    if (!isSoraHistoryElement(historyElement)) return 0;
 
-    return getHumanFeeValue(networkFee, networkName);
+    return getHumanFeeValue(historyElement.networkFee, networkName);
   }
 
   if (type === TransactionType.ton) {
-    const element = historyElement as unknown as TonEvent;
-    const { networkFee } = element;
+    if (!isTonEvent(historyElement)) return 0;
 
-    return getHumanFeeValue(networkFee, networkName);
+    return getHumanFeeValue(historyElement.networkFee, networkName);
   }
 
   const { transfer } = historyElement;
@@ -162,25 +167,25 @@ function getHistoryValue(
     return { signTransfer, value: +amount };
   }
 
-  if (type === TransactionType.sora) {
-    const element = historyElement as unknown as SoraHistoryElement;
-
+  if (type === TransactionType.sora && isSoraHistoryElement(historyElement)) {
     const dataValue =
-      element.data?.value ?? element.data?.amount ?? element.data?.baseAssetAmount ?? element.data?.maxAdditional ?? 0;
+      historyElement.data?.value ??
+      historyElement.data?.amount ??
+      historyElement.data?.baseAssetAmount ??
+      historyElement.data?.maxAdditional ??
+      0;
 
-    const targetValue = +(element.data?.targetAssetAmount ?? 0);
+    const targetValue = +(historyElement.data?.targetAssetAmount ?? 0);
 
-    // fee в индексере с учетом decimals
     const fee = getHumanTransferFee(historyElement, networkName);
 
-    const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;
+    const result = withFee && historyElement.method !== 'rewarded' ? +dataValue + fee : +dataValue;
 
     return { signTransfer, value: result, targetValue };
   }
 
-  if (type === TransactionType.ton) {
-    const element = historyElement as unknown as TonEvent;
-    const amount = element.amount ?? element.amountIn ?? 0;
+  if (type === TransactionType.ton && isTonEvent(historyElement)) {
+    const amount = historyElement.amount ?? historyElement.amountIn ?? 0;
 
     const value = getHumanValue(amount, assetId, networkName);
 
@@ -206,67 +211,6 @@ function getHistoryValue(
   return { signTransfer: '', value: 0 };
 }
 
-// temporary function, remove after complete transition to subsquid
-function getFormattedHistory(history: History, serviceType: HistoryServiceType): SubqueryHistory {
-  if (serviceType === 'giantsquid') {
-    const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
-      const { amount, from, success, timestamp, to } = transfer;
-
-      return {
-        id,
-        timestamp: (new Date(timestamp).getTime() / 1000).toString(),
-        address: '',
-        success,
-        transfer: {
-          amount,
-          from: from.id,
-          to: to.id,
-          fee: '0',
-        },
-      };
-    });
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
-  }
-
-  if (serviceType === 'etherscan') {
-    const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
-      return {
-        ...historyElement,
-        timestamp: (+historyElement.timestamp / 1000).toString(),
-      };
-    });
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
-  }
-
-  if (serviceType === 'ton') {
-    const nodes: HistoryElement[] = history as HistoryElement[];
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
-  }
-
-  if (serviceType === 'subsquid') {
-    const nodes: HistoryElement[] = history as HistoryElement[];
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
-  }
-
-  if (serviceType === 'sora' || serviceType === 'oklink' || serviceType === 'zeta') {
-    const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
-      return {
-        ...historyElement,
-        success: historyElement.execution.success,
-        timestamp: historyElement.timestamp.toString(),
-      };
-    });
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
-  }
-
-  return history as SubqueryHistory;
-}
-
 function getEthereumExplorerApiKey(url: string): string | undefined {
   const keys = [
     { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
@@ -290,5 +234,4 @@ export {
   getHistoryValue,
   getHumanFeeValue,
   getSignTransfer,
-  getFormattedHistory,
 };

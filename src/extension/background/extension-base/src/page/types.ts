@@ -1,4 +1,5 @@
-import type { JsonRpcPayload, JsonRpcResponse } from '@json-rpc-tools/utils';
+import type { JsonRpcPayload, JsonRpcResponse, RequestArguments } from '@json-rpc-tools/utils';
+import type { JsonRpcRequest } from 'json-rpc-engine';
 import type {
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
@@ -8,10 +9,12 @@ import type {
   SubscriptionMessageTypes,
 } from '@extension-base/background/types/types';
 
+type JsonRpcParams = (JsonRpcPayload & { params?: unknown })['params'];
+
 export interface Handler {
-  resolve: (data?: any) => void;
+  resolve: (data?: unknown) => void;
   reject: (error: Error) => void;
-  subscriber?: (data: any) => void;
+  subscriber?: (data: unknown) => void;
 }
 
 export type Handlers = Record<string, Handler>;
@@ -29,10 +32,25 @@ export interface SendRequest {
   ): Promise<ResponseTypes[TMessageType]>;
 }
 
-export type FWEvmProvider = {
+export type JsonRpcCallback<T> = (error: Error | null, result?: JsonRpcResponse<T>) => void;
+
+export interface FWEvmProvider {
   provider?: FWEvmProvider;
   isConnected(): boolean;
-};
+  on(event: string | symbol, listener: (...args: unknown[]) => void): this;
+  once(event: string | symbol, listener: (...args: unknown[]) => void): this;
+  off(event: string | symbol, listener: (...args: unknown[]) => void): this;
+  addListener(event: string | symbol, listener: (...args: unknown[]) => void): this;
+  removeListener(event: string | symbol, listener: (...args: unknown[]) => void): this;
+  removeAllListeners(event?: string | symbol): this;
+  enable(origin?: string): Promise<string[]>;
+  request<T>(args: RequestArguments): Promise<T>;
+  send<T>(
+    methodOrPayload: string | SendSyncJsonRpcRequest | JsonRpcRequest<unknown>,
+    callbackOrParams?: JsonRpcCallback<T> | JsonRpcParams
+  ): Promise<unknown> | JsonRpcResponse<T> | void;
+  sendAsync<T>(payload: JsonRpcRequest<T>, callback: JsonRpcCallback<T>): void | Promise<void>;
+}
 
 export type RequestEvmEvents = null;
 export type EvmEventType =
@@ -64,4 +82,8 @@ export type RequestEvmProviderSend = JsonRpcPayload;
 export interface ResponseEvmProviderSend {
   error: Error | null;
   result?: JsonRpcResponse;
+}
+
+export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
+  method: 'net_version';
 }

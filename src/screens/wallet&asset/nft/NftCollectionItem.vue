@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import { computed } from 'vue';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import { Components } from '@/router/routes';

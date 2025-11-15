@@ -6,13 +6,12 @@
       :name="name"
       :timespan="timespan"
       :formName="formName"
-      @openForm="$emit('openForm', $event)"
+      @openForm="emit('openForm', $event)"
     />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import AlertItem from '@/screens/staking/myStake/AlertItem.vue';
 
 type Alert = {
@@ -21,10 +20,11 @@ type Alert = {
   timespan: number;
 };
 
-@Component({
-  components: { AlertItem },
-})
-export default class Alerts extends Vue {
-  @Prop({ type: Array }) alerts!: Alert[];
-}
+defineProps<{
+  alerts: Alert[];
+}>();
+
+const emit = defineEmits<{
+  openForm: [payload: unknown];
+}>();
 </script>

@@ -1,10 +1,7 @@
-import Vue from 'vue';
-import VueI18n from 'vue-i18n';
-import { createI18n } from 'vue-i18n-composable';
+import { createI18n } from 'vue-i18n';
 import * as en from './en/translation.json';
 import * as ru from './ru/translation.json';
 import { accountController } from '@/controllers';
-Vue.use(VueI18n);
 
 const messages = {
   'en-EN': en,
@@ -13,9 +10,9 @@ const messages = {
 
 export type Lang = keyof typeof messages;
 
-Vue.use(VueI18n);
-
 export const i18n = createI18n({
+  legacy: false,
+  globalInjection: true,
   locale: accountController.getLang(),
   fallbackLocale: 'en-EN',
   messages,
@@ -34,6 +31,11 @@ export const i18n = createI18n({
       decimalPrecise: {
         style: 'decimal',
         minimumFractionDigits: 4,
+        maximumFractionDigits: 12,
+      },
+      decimalTiny: {
+        style: 'decimal',
+        minimumFractionDigits: 6,
         maximumFractionDigits: 12,
       },
       price: {
@@ -61,6 +63,11 @@ export const i18n = createI18n({
       decimalPrecise: {
         style: 'decimal',
         minimumFractionDigits: 4,
+        maximumFractionDigits: 12,
+      },
+      decimalTiny: {
+        style: 'decimal',
+        minimumFractionDigits: 6,
         maximumFractionDigits: 12,
       },
       price: {

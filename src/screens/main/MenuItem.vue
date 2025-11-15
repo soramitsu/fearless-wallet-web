@@ -1,5 +1,5 @@
 <template>
-  <div :class="menuItemClasses" data-testid="menuItemStatus">
+  <div :class="menuItemClasses" data-testid="menuItemStatus" @click="handleClick">
     <Icon :icon="img" :className="iconClass" :hover="false" />
 
     <div class="name" data-testid="menuItem">{{ $t(localeName) }}</div>
@@ -22,6 +22,14 @@ const localeName = ref(`menu.${props.name.toLowerCase()}`);
 
 const menuItemClasses = computed(() => ['menu-item', { active: props.isActive }]);
 const img = ref(props.name.toLowerCase());
+
+const emit = defineEmits<{
+  click: [event: MouseEvent];
+}>();
+
+const handleClick = (event: MouseEvent) => {
+  emit('click', event);
+};
 </script>
 
 <style lang="scss" scoped>

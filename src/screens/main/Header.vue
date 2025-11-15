@@ -1,6 +1,6 @@
 <template>
   <header class="header">
-    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+    <div ref="walletNameRef" class="header-part header-part-left" @click="toggleSelectWalletPopupVisible">
       <div class="logo-container">
         <CircleButton
           v-if="showBackIcon"
@@ -73,7 +73,7 @@
       <Tooltip :text="accountsStore.selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
-        :ref="settingsNameRef"
+        ref="settingsButtonRef"
         iconName="settings"
         size="big"
         backgroundColor="none"
@@ -93,8 +93,11 @@
   </header>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import type { ComponentPublicInstance } from 'vue';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
@@ -102,192 +105,181 @@ import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { isNetworkGroup } from '@/helpers/common';
+import { isNetworkGroup } from '@/helpers/networkGroups';
 import { cut, setClipboard } from '@/helpers';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    ConnectionPopup,
-    NetworkManagement,
-    NetworkManagementButton,
+defineOptions({
+  name: 'MainHeader',
+});
+
+const networksStore = useNetworksStore();
+const extensionStore = useExtensionStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
+
+const props = defineProps<{
+  highlightSettingsIcon: boolean;
+  showSelectWalletPopup: boolean;
+}>();
+
+const emit = defineEmits<{
+  'update:showSelectWalletPopup': [value: boolean];
+  toggleSettingsVisible: [];
+}>();
+
+const isPopup = IS_POPUP;
+const allNetworksIcon = 'all-networks';
+
+const showConnectionPopup = ref(false);
+const showSelectNetworkPopup = ref(false);
+
+const walletNameRef = ref<HTMLElement | null>(null);
+const settingsButtonRef = ref<ComponentPublicInstance | HTMLElement | null>(null);
+
+const syncedShowSelectWalletPopup = computed({
+  get: () => props.showSelectWalletPopup,
+  set: (value: boolean) => emit('update:showSelectWalletPopup', value),
+});
+
+const showBackIcon = computed(() => route.name === Components.AssetNetworks || route.name === Components.AssetHistory);
+
+const isGroup = computed(() => isNetworkGroup(accountsStore.selectedNetwork));
+
+const isAddressExists = computed(() => {
+  if (accountsStore.selectedWallet.isTon) return true;
+  if (isGroup.value) return route.name === Components.AssetHistory;
+
+  return true;
+});
+
+const selectedAssetId = computed(() => (route.params.assetId as string) ?? '');
+
+const currentCurrency = computed<TokenGroup | undefined>(() =>
+  accountsStore.balances.find(
+    ({ groupId, balances }) =>
+      groupId === selectedAssetId.value || balances.some((el) => el.id === selectedAssetId.value)
+  )
+);
+
+const isDisableNetworkManagementButton = computed(() => networksStore.networks.length <= 1);
+
+const { t } = useI18n();
+
+const networkManagementButtonText = computed(() => {
+  if (isGroup.value) {
+    if (route.name === Components.AssetHistory) {
+      return networksStore.getNetwork(route.params.selectedNetwork as string)?.name ?? '';
+    }
+
+    return t(`header.networkManagement.${accountsStore.selectedNetwork}`);
+  }
+
+  return accountsStore.selectedNetwork;
+});
+
+const selectedNetworkIcon = computed(() => {
+  if (isGroup.value) return allNetworksIcon;
+
+  if (route.name === Components.AssetHistory) {
+    const asset = currentCurrency.value?.balances.find((el) => el.id === selectedAssetId.value);
+
+    if (!asset) return '';
+
+    return networksStore.getNetwork(asset.name)?.icon ?? '';
+  }
+
+  return networksStore.getNetwork(accountsStore.selectedNetwork)?.icon ?? allNetworksIcon;
+});
+
+const address = computed(() => {
+  if (!isAddressExists.value) return '';
+  if (accountsStore.selectedWallet.address === '') return '';
+
+  const selectedNetwork = isGroup.value ? (route.params.selectedNetwork as string) : accountsStore.selectedNetwork;
+
+  return BaseApi.formatAddress(accountsStore.selectedWallet, selectedNetwork);
+});
+
+const cutAddress = computed(() => cut(address.value, 5));
+
+const name = computed(() => accountsStore.selectedWallet.name);
+
+const statusConnectedClasses = computed(() =>
+  !extensionStore.tabStatus || !extensionStore.tabStatus.isAuthorize ? 'fail-connect' : 'success-connect'
+);
+
+const isMobile = computed(() => Boolean(accountsStore.selectedWallet.isMobile));
+
+const resolveSettingsElement = () => {
+  const refValue = settingsButtonRef.value;
+  if (!refValue) return null;
+
+  if (refValue instanceof HTMLElement) return refValue;
+
+  return (refValue.$el ?? null) as HTMLElement | null;
+};
+
+watch(
+  [syncedShowSelectWalletPopup, walletNameRef],
+  ([value]) => {
+    if (!walletNameRef.value) return;
+
+    walletNameRef.value.style.zIndex = value ? '200' : '0';
   },
-})
-export default class Header extends Vue {
-  readonly walletNameRef = 'walletName';
-  readonly settingsNameRef = 'settingsName';
-  readonly isPopup = IS_POPUP;
-  readonly allNetworksIcon = 'all-networks';
+  { immediate: true }
+);
 
-  networksStore = useNetworksStore();
-  extensionStore = useExtensionStore();
-  accountsStore = useAccountsStore();
-  showConnectionPopup = false;
-  showSelectNetworkPopup = false;
+watch(
+  [() => props.highlightSettingsIcon, settingsButtonRef],
+  ([value]) => {
+    const element = resolveSettingsElement();
 
-  @Prop(Boolean) highlightSettingsIcon!: boolean;
-  @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
+    if (!element) return;
 
-  get showBackIcon() {
-    const route = this.$route.name;
+    element.style.zIndex = value ? '300' : '0';
+  },
+  { immediate: true }
+);
 
-    return route === Components.AssetNetworks || route === Components.AssetHistory;
-  }
+onMounted(() => {
+  extensionStore.fetchTabStatus();
+});
 
-  get isAddressExists() {
-    if (this.accountsStore.selectedWallet.isTon) return true;
+const copyAddress = () => {
+  setClipboard(address.value);
+};
 
-    if (this.isGroup) return this.routeName === Components.AssetHistory;
+const toggleSelectNetworkPopupVisible = () => {
+  showSelectNetworkPopup.value = !showSelectNetworkPopup.value;
+};
 
-    return true;
-  }
+const toggleConnectionPopup = () => {
+  if (!extensionStore.tabStatus) return;
 
-  get routeName() {
-    return this.$route.name;
-  }
+  showConnectionPopup.value = !showConnectionPopup.value;
+};
 
-  get routeParams() {
-    return this.$route.params;
-  }
+const back = () => {
+  router.back();
+};
 
-  get isGroup() {
-    return isNetworkGroup(this.accountsStore.selectedNetwork);
-  }
+const openFullScreen = () => {
+  windowOpen('/');
+  window.close();
+};
 
-  get selectedAssetId() {
-    return this.$route.params.assetId ?? '';
-  }
+const toggleSettingsVisible = () => {
+  emit('toggleSettingsVisible');
+};
 
-  get currentCurrency(): TokenGroup | undefined {
-    return this.accountsStore.balances.find(
-      ({ groupId, balances }) =>
-        groupId === this.selectedAssetId || balances.some((el) => el.id === this.selectedAssetId)
-    );
-  }
-
-  get isDisableNetworkManagementButton() {
-    return this.networksStore.networks.length <= 1;
-  }
-
-  get networkManagementButtonText() {
-    if (this.isGroup) {
-      if (this.$route.name === Components.AssetHistory)
-        return this.networksStore.getNetwork(this.$route.params.selectedNetwork)?.name;
-
-      return this.$t(`header.networkManagement.${this.accountsStore.selectedNetwork}`);
-    }
-
-    return this.accountsStore.selectedNetwork;
-  }
-
-  get selectedNetworkIcon() {
-    if (this.isGroup) return this.allNetworksIcon;
-
-    if (this.$route.name === Components.AssetHistory) {
-      const asset = this.currentCurrency?.balances.find((el) => el.id === this.selectedAssetId);
-
-      if (!asset) return '';
-
-      return this.networksStore.getNetwork(asset?.name).icon;
-    }
-
-    const network = this.networksStore.getNetwork(this.accountsStore.selectedNetwork);
-
-    if (network) return network.icon;
-
-    return this.allNetworksIcon;
-  }
-
-  get cutAddress() {
-    return cut(this.address, 5);
-  }
-
-  get decimals() {
-    return this.networksStore.getNetwork(this.accountsStore.selectedNetwork)?.addressPrefix;
-  }
-
-  get address() {
-    if (!this.isAddressExists) return '';
-
-    if (this.accountsStore.selectedWallet.address === '') return '';
-
-    const selectedNetwork = this.isGroup ? this.routeParams.selectedNetwork : this.accountsStore.selectedNetwork;
-
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, selectedNetwork);
-  }
-
-  get name() {
-    return this.accountsStore.selectedWallet.name;
-  }
-
-  get statusConnectedClasses() {
-    return !this.extensionStore.tabStatus || !this.extensionStore.tabStatus.isAuthorize
-      ? 'fail-connect'
-      : 'success-connect';
-  }
-
-  get statusConnectedText() {
-    return !this.extensionStore.tabStatus || !this.extensionStore.tabStatus.isAuthorize
-      ? 'header.notConnected'
-      : 'header.connected';
-  }
-
-  get isMobile() {
-    return !!this.accountsStore.selectedWallet.isMobile;
-  }
-
-  copyAddress() {
-    setClipboard(this.address);
-  }
-
-  toggleSelectNetworkPopupVisible() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-  }
-
-  @Watch('syncedShowSelectWalletPopup')
-  updateZIndexSelectWalletPopup() {
-    const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
-
-    targetElement.style.zIndex = this.syncedShowSelectWalletPopup ? '200' : '0';
-  }
-
-  @Watch('highlightSettingsIcon')
-  updateZIndexShowSettings(value: boolean) {
-    const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
-
-    targetElement.style.zIndex = value ? '300' : '0';
-  }
-
-  async mounted() {
-    this.extensionStore.fetchTabStatus();
-  }
-
-  toggleConnectionPopup() {
-    if (!this.extensionStore.tabStatus) return;
-
-    this.showConnectionPopup = !this.showConnectionPopup;
-  }
-
-  back() {
-    this.$router.back();
-  }
-
-  openFullScreen() {
-    windowOpen('/');
-    window.close();
-  }
-
-  toggleSettingsVisible() {
-    this.$emit('toggleSettingsVisible');
-  }
-
-  toggleSelectWalletPopupVisible() {
-    this.syncedShowSelectWalletPopup = !this.syncedShowSelectWalletPopup;
-  }
-}
+const toggleSelectWalletPopupVisible = () => {
+  syncedShowSelectWalletPopup.value = !syncedShowSelectWalletPopup.value;
+};
 </script>
 
 <style lang="scss" scoped>

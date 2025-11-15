@@ -3,7 +3,8 @@ import { type NetworkName, type RelayChainName } from './networks';
 
 type XcmVersion = 'v1' | 'v2' | 'v3';
 
-type Interiors = any[];
+type InteriorComponent = Record<string, unknown>;
+type Interiors = ReadonlyArray<InteriorComponent>;
 
 type XcmLocations = {
   name: RelayChainName;
@@ -14,7 +15,7 @@ type XcmLocations = {
       id: string;
       interiors: Interiors;
       versions: XcmVersion[];
-    }
+    },
   ];
 }[];
 
@@ -29,4 +30,4 @@ type XcmFees = {
   weight: string;
 }[];
 
-export { XcmLocations, Interiors, XcmFees, XcmVersion };
+export { XcmLocations, Interiors, InteriorComponent, XcmFees, XcmVersion };

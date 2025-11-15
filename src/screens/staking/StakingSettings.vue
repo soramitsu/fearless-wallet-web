@@ -10,7 +10,7 @@
           :target="target"
           :class="classes"
           :label="label"
-          :isActive="syncedActiveTabName === tabName"
+          :isActive="activeTabModel === tabName"
           @click="openTab(tabName)"
         />
       </template>
@@ -18,7 +18,7 @@
 
     <div class="settings-part">
       <SearchInput
-        :value="syncedFilterValue"
+        :value="filterValueModel"
         placeholder="common.search"
         width="185px"
         class="search"
@@ -28,8 +28,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { StakingTab } from '@/interfaces/common';
 
 interface TabsOptions {
@@ -40,43 +40,51 @@ interface TabsOptions {
   isShow: boolean;
 }
 
-@Component
-export default class StakingSettings extends Vue {
-  @Prop({ type: Boolean }) showStakingItems!: boolean;
-  @Prop({ type: Boolean }) showMyStakingItems!: boolean;
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: StakingTab;
-  @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
+const props = defineProps<{
+  showStakingItems: boolean;
+  showMyStakingItems: boolean;
+  activeTabName: StakingTab;
+  filterValue: string;
+}>();
 
-  get tabsOptions(): TabsOptions[] {
-    return [
-      {
-        label: 'common.all',
-        tabName: 'all',
-        classes: 'all-tab',
-        target: '.all-tab',
-        isShow: this.showStakingItems,
-      },
-      {
-        label: 'staking.myStaked',
-        tabName: 'my',
-        classes: 'my-tab',
-        target: '.my-tab',
-        isShow: this.showMyStakingItems,
-      },
-    ];
-  }
+const emit = defineEmits<{
+  'update:activeTabName': [value: StakingTab];
+  'update:filterValue': [value: string];
+}>();
 
-  get isAllTab() {
-    return this.syncedActiveTabName === 'all';
-  }
+const activeTabModel = computed({
+  get: () => props.activeTabName,
+  set: (value: StakingTab) => emit('update:activeTabName', value),
+});
 
-  changeSyncedFilterValue(value: string) {
-    this.syncedFilterValue = value;
-  }
+const filterValueModel = computed({
+  get: () => props.filterValue,
+  set: (value: string) => emit('update:filterValue', value),
+});
 
-  openTab(name: StakingTab) {
-    this.syncedActiveTabName = name;
-  }
+const tabsOptions = computed<TabsOptions[]>(() => [
+  {
+    label: 'common.all',
+    tabName: 'all',
+    classes: 'all-tab',
+    target: '.all-tab',
+    isShow: props.showStakingItems,
+  },
+  {
+    label: 'staking.myStaked',
+    tabName: 'my',
+    classes: 'my-tab',
+    target: '.my-tab',
+    isShow: props.showMyStakingItems,
+  },
+]);
+
+function changeSyncedFilterValue(value: string) {
+  filterValueModel.value = value;
+}
+
+function openTab(name: StakingTab) {
+  activeTabModel.value = name;
 }
 </script>
 

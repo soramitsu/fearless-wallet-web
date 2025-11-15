@@ -44,7 +44,10 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
 
-  constructor(readonly keyringService: KeyringService, private readonly state: State) {
+  constructor(
+    readonly keyringService: KeyringService,
+    private readonly state: State
+  ) {
     this.popupHandler = new PopupHandler(state);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);

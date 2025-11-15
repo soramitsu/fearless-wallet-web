@@ -25,101 +25,93 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
 import { accountUpdateName } from '@/extension/messaging';
-import { getChainAccounts } from '@/helpers/accounts';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { type SelectedWallet } from '@/stores';
 import { isSameString } from '@/helpers';
 
-@Component({})
-export default class AccountSetting extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  selectedNetwork = '';
-  selectedAddress = '';
-  newName = '';
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
 
-  get chainAccounts() {
-    return getChainAccounts(this.networksStore.networks, this.accountsStore.selectedWallet);
-  }
+const newName = ref('');
 
-  get relayChains() {
-    const counterEVM = this.networksStore.networks.filter(({ ecosystem }) =>
-      isSameString(ecosystem, 'ethereum')
-    ).length;
+const relayChains = computed(() => {
+  const counterEVM = networksStore.networks.filter(({ ecosystem }) => isSameString(ecosystem, 'ethereum')).length;
 
-    const counterSubstrate = this.networksStore.networks.filter(
-      ({ ecosystem }) => isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased')
-    ).length;
+  const counterSubstrate = networksStore.networks.filter(
+    ({ ecosystem }) => isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased')
+  ).length;
 
-    const counterTon = this.networksStore.networks.filter(({ ecosystem }) => isSameString(ecosystem, 'ton')).length;
+  const counterTon = networksStore.networks.filter(({ ecosystem }) => isSameString(ecosystem, 'ton')).length;
 
-    if (this.accountsStore.selectedWallet.isTon) {
-      return [
-        {
-          name: 'TON',
-          count: counterTon.toString(),
-          type: 'ton',
-        },
-      ];
-    }
-
+  if (accountsStore.selectedWallet.isTon) {
     return [
       {
-        name: 'EVM',
-        count: counterEVM.toString(),
-        type: 'evm',
-      },
-      {
-        name: 'Substrate',
-        count: counterSubstrate.toString(),
-        type: 'substrate',
+        name: 'TON',
+        count: counterTon.toString(),
+        type: 'ton',
       },
     ];
   }
 
-  @Watch('selectedWallet')
-  selectedWalletWatcher({ name }: SelectedWallet) {
-    this.newName = name;
+  return [
+    {
+      name: 'EVM',
+      count: counterEVM.toString(),
+      type: 'evm',
+    },
+    {
+      name: 'Substrate',
+      count: counterSubstrate.toString(),
+      type: 'substrate',
+    },
+  ];
+});
+
+const setInitialName = () => {
+  newName.value = accountsStore.selectedWallet.name;
+};
+
+onMounted(() => {
+  setInitialName();
+});
+
+watch(
+  () => accountsStore.selectedWallet.name,
+  () => {
+    setInitialName();
+  }
+);
+
+const changeNewName = (value: string) => {
+  newName.value = value;
+};
+
+const blurInputName = () => {
+  const { address, name, walletEcosystem } = accountsStore.selectedWallet;
+
+  if (newName.value === '') {
+    newName.value = name;
+
+    return;
   }
 
-  mounted() {
-    this.newName = this.accountsStore.selectedWallet.name;
-  }
+  accountUpdateName(address, newName.value, walletEcosystem!);
+};
 
-  back() {
-    this.$router.push({ name: Components.Wallet });
-  }
-
-  changeNewName(value: string) {
-    this.newName = value;
-  }
-
-  blurInputName() {
-    const { address, name } = this.accountsStore.selectedWallet;
-
-    if (this.newName === '') {
-      this.newName = name;
-
-      return;
-    }
-
-    accountUpdateName(address, this.newName, this.accountsStore.selectedWallet.walletEcosystem!);
-  }
-
-  openChainAccounts(type: string) {
-    this.$router.push({
-      name: Components.ChainAccounts,
-      params: {
-        type,
-      },
-    });
-  }
-}
+const openChainAccounts = (type: string) => {
+  router.push({
+    name: Components.ChainAccounts,
+    params: {
+      type,
+    },
+  });
+};
 </script>
 
 <style lang="scss" scoped>

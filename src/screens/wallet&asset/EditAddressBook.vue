@@ -42,71 +42,82 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
 import { storage } from '@extension-base/stores/Storage';
 import BaseApi from '@/util/BaseApi';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class EditAddressBook extends Vue {
-  accountStore = useAccountsStore();
+const props = defineProps<{
+  _name?: string;
+  _address: string;
+  network: string;
+  isActive: boolean;
+}>();
 
-  name = '';
-  address = '';
-  saveForAllNetworks = false;
+const emit = defineEmits<{
+  toggleEditBook: [];
+}>();
 
-  @Prop({ default: '' }) _name!: string;
-  @Prop(String) _address!: string;
-  @Prop(String) network!: string;
-  @Prop(Boolean) isActive!: boolean;
+const accountsStore = useAccountsStore();
 
-  get buttonDisabled() {
-    return this.name === '' || this.address.trim() === '' || this.isErrorAddress;
+const name = ref(props._name ?? '');
+const address = ref(props._address ?? '');
+const saveForAllNetworks = ref(false);
+
+watch(
+  () => props._name,
+  (value) => {
+    name.value = value ?? '';
   }
+);
 
-  get isErrorAddress() {
-    const address = this.address.trim();
-
-    if (address.length === 0) return false;
-
-    // TODO ton
-    if (this.accountStore.selectedWallet.isTon) return false;
-
-    return !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'));
+watch(
+  () => props._address,
+  (value) => {
+    address.value = value ?? '';
   }
+);
 
-  changeName(value: string) {
-    this.name = value;
-  }
+const trimmedAddress = computed(() => address.value.trim());
 
-  changeAddress(value: string) {
-    this.address = value;
-  }
+const isErrorAddress = computed(() => {
+  const currentAddress = trimmedAddress.value;
 
-  mounted() {
-    this.name = this._name;
-    this.address = this._address;
-  }
+  if (currentAddress.length === 0) return false;
 
-  async updateContact() {
-    const { addressBook } = await storage.get(['addressBook']);
-    const key = this.saveForAllNetworks ? 'all' : this.network;
-    const value = addressBook[key] ?? [];
+  if (accountsStore.selectedWallet.isTon) return false;
 
-    storage.set({
-      addressBook: {
-        ...addressBook,
-        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],
-      },
-    });
+  return !(BaseApi.validateAddress(currentAddress, 'polkadot') || BaseApi.validateAddress(currentAddress, 'moonbeam'));
+});
 
-    this.$emit('toggleEditBook');
-  }
+const buttonDisabled = computed(() => name.value === '' || trimmedAddress.value === '' || isErrorAddress.value);
 
-  onSave(value: boolean) {
-    this.saveForAllNetworks = value;
-  }
+function changeName(value: string) {
+  name.value = value;
+}
+
+function changeAddress(value: string) {
+  address.value = value;
+}
+
+async function updateContact() {
+  const { addressBook } = await storage.get(['addressBook']);
+  const key = saveForAllNetworks.value ? 'all' : props.network;
+  const value = addressBook[key] ?? [];
+
+  storage.set({
+    addressBook: {
+      ...addressBook,
+      [key]: [...value, { name: name.value, address: BaseApi.encodeAddress(trimmedAddress.value) }],
+    },
+  });
+
+  emit('toggleEditBook');
+}
+
+function onSave(value: boolean) {
+  saveForAllNetworks.value = value;
 }
 </script>
 

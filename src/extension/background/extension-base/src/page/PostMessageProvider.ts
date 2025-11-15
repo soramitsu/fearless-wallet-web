@@ -26,11 +26,27 @@ export default class PostMessageProvider implements InjectedProvider {
   isClonable = true;
   // Whether or not the actual extension background provider is connected
   #isConnected = false;
+  #hasConnectedSubscription = false;
 
   // Subscription IDs are (historically) not guaranteed to be globally unique;
   // only unique for a given subscription method; which is why we identify
   // the subscriptions based on subscription id + type
   readonly #subscriptions: Record<string, AnyFunction> = {}; // {[(type,subscriptionId)]: callback}
+  readonly #buildRpcPayload = (method: unknown, params?: unknown[]): { method: string; params: unknown[] } => {
+    if (typeof method !== 'string' || method.trim() === '') {
+      throw new Error('Invalid RPC method');
+    }
+
+    if (params === undefined) {
+      return { method: method.trim(), params: [] };
+    }
+
+    if (!Array.isArray(params)) {
+      throw new Error('Invalid RPC params');
+    }
+
+    return { method: method.trim(), params };
+  };
 
   /**
    * @param {function}  sendRequest  The function to be called to send requests to the node
@@ -45,7 +61,7 @@ export default class PostMessageProvider implements InjectedProvider {
   /**
    * @description Returns a clone of the object
    */
-  public clone(): PostMessageProvider {
+  public clone(): InjectedProvider {
     return new PostMessageProvider(sendRequest);
   }
 
@@ -53,16 +69,23 @@ export default class PostMessageProvider implements InjectedProvider {
    * @description Manually disconnect from the connection, clearing autoconnect logic
    */
   public async connect(): Promise<void> {
-    // FIXME This should see if the extension's state's provider can disconnect
-    console.error('PostMessageProvider.disconnect() is not implemented.');
+    const result = await sendRequest('pub(rpc.connect)', undefined);
+
+    if (!result) throw new Error('Unable to connect provider');
   }
 
   /**
    * @description Manually disconnect from the connection, clearing autoconnect logic
    */
   public async disconnect(): Promise<void> {
-    // FIXME This should see if the extension's state's provider can disconnect
-    console.error('PostMessageProvider.disconnect() is not implemented.');
+    const result = await sendRequest('pub(rpc.disconnect)', undefined);
+
+    if (!result) throw new Error('Unable to disconnect provider');
+
+    if (this.#isConnected) {
+      this.#isConnected = false;
+      this.#eventemitter.emit('disconnected');
+    }
   }
 
   /**
@@ -99,20 +122,43 @@ export default class PostMessageProvider implements InjectedProvider {
     };
   }
 
-  public async send(method: string, params: unknown[], _?: boolean, subscription?: SubscriptionHandler): Promise<any> {
+  public async send<T = unknown>(method: string, params: unknown[], isCacheable?: boolean): Promise<T>;
+  public async send<T = unknown>(
+    method: string,
+    params: unknown[],
+    isCacheable: boolean | undefined,
+    subscription: SubscriptionHandler
+  ): Promise<T>;
+  public async send<T = unknown>(
+    method: string,
+    params: unknown[],
+    _?: boolean,
+    subscription?: SubscriptionHandler
+  ): Promise<T> {
+    if (subscription && typeof subscription.callback !== 'function') {
+      throw new Error('Invalid subscription callback');
+    }
+
+    const payload = this.#buildRpcPayload(method, params);
+
     if (subscription) {
       const { callback, type } = subscription;
+      const subscriptionType = typeof type === 'string' ? type.trim() : '';
 
-      const id = await sendRequest('pub(rpc.subscribe)', { method, params, type }, (res): void => {
+      if (subscriptionType.length === 0) {
+        throw new Error('Invalid subscription type');
+      }
+
+      const id = await sendRequest('pub(rpc.subscribe)', { ...payload, type: subscriptionType }, (res): void => {
         subscription.callback(null, res);
       });
 
-      this.#subscriptions[`${type}::${id}`] = callback;
+      this.#subscriptions[`${subscriptionType}::${id}`] = callback;
 
-      return id;
+      return id as T;
     }
 
-    return sendRequest('pub(rpc.send)', { method, params });
+    return sendRequest('pub(rpc.send)', payload) as Promise<T>;
   }
 
   /**
@@ -125,14 +171,19 @@ export default class PostMessageProvider implements InjectedProvider {
 
     const meta = await sendRequest('pub(rpc.startProvider)', key);
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    sendRequest('pub(rpc.subscribeConnected)', null, (connected) => {
-      this.#isConnected = connected;
+    if (!this.#hasConnectedSubscription) {
+      this.#hasConnectedSubscription = true;
 
-      connected ? this.#eventemitter.emit('connected') : this.#eventemitter.emit('disconnected');
+      void sendRequest('pub(rpc.subscribeConnected)', null, (connected) => {
+        if (this.#isConnected === connected) return true;
 
-      return true;
-    });
+        this.#isConnected = connected;
+
+        this.#eventemitter.emit(connected ? 'connected' : 'disconnected');
+
+        return true;
+      });
+    }
 
     return meta;
   }
@@ -145,7 +196,15 @@ export default class PostMessageProvider implements InjectedProvider {
    * @summary Allows unsubscribing to subscriptions made with [[subscribe]].
    */
   public async unsubscribe(type: string, method: string, id: number): Promise<boolean> {
-    const subscription = `${type}::${id}`;
+    const subscriptionType = typeof type === 'string' ? type.trim() : '';
+
+    if (!subscriptionType) {
+      l.debug((): string => `Unable to process unsubscribe for invalid subscription type=${type}`);
+
+      return false;
+    }
+
+    const subscription = `${subscriptionType}::${id}`;
 
     // FIXME This now could happen with re-subscriptions. The issue is that with a re-sub
     // the assigned id now does not match what the API user originally received. It has

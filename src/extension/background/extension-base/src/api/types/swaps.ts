@@ -1,5 +1,5 @@
-import { type FPNumber } from '@sora-substrate/util';
-import { type AccountAsset, type Asset } from '@sora-substrate/util/build/assets/types';
+import type { FPNumber } from '@sora/math';
+import type { AccountAsset, Asset } from '@sora/assets/types';
 import { type SwapOptions } from '@/interfaces';
 
 export interface BaseExchangeProps {

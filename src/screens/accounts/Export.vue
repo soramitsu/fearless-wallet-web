@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
+import { useRoute, useRouter } from 'vue-router';
 import BaseApi from '@/util/BaseApi';
 import { validatePassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';

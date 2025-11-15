@@ -6,7 +6,7 @@
     sizeWidth="big"
     verticalPlacement="top"
     horizontalPlacement="right"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
   >
     <div class="settings">
       <template v-if="!isTonWallet">
@@ -73,55 +73,63 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { lockExtension } from '@/extension/messaging';
-import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: { SettingMenuItem },
-})
-export default class SettingsPopup extends Vue {
-  readonly isExtension = IS_EXTENSION;
-  extensionStore = useExtensionStore();
-  accountsStore = useAccountsStore();
+defineOptions({
+  name: 'SettingsPopup',
+});
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
+const router = useRouter();
+const route = useRoute();
+const accountsStore = useAccountsStore();
 
-  get routeName() {
-    return this.$route.name;
-  }
+const isExtension = IS_EXTENSION;
 
-  openPopup(value: string) {
-    this.$emit(value);
-  }
+const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
+const routeName = computed(() => route.name as keyof typeof Components | undefined);
 
-  openManageAuths() {
-    this.$router.push({ name: Components.DAppsAuths, params: { type: 'substrate' } });
-  }
+type PopupEvent = 'openFiatsPopup' | 'openLanguagePopup' | 'openAboutPopup';
 
-  open(name: keyof typeof Components) {
-    if (this.routeName !== name) {
-      if (this.isTonWallet && name === 'AccountSetting') {
-        this.$router.push({ name: Components.Export });
-      } else this.$router.push({ name: Components[name] });
+const emit = defineEmits<{
+  handlerClose: [];
+  openFiatsPopup: [];
+  openLanguagePopup: [];
+  openAboutPopup: [];
+}>();
+
+const handleClose = () => emit('handlerClose');
+
+const openPopup = (value: PopupEvent) => {
+  emit(value);
+};
+
+const openManageAuths = () => {
+  router.push({ name: Components.DAppsAuths, params: { type: 'substrate' } });
+};
+
+const open = (name: keyof typeof Components) => {
+  if (routeName.value !== name) {
+    if (isTonWallet.value && name === 'AccountSetting') {
+      router.push({ name: Components.Export });
+    } else {
+      router.push({ name: Components[name] });
     }
-
-    this.$emit('handlerClose');
   }
 
-  lock() {
-    lockExtension(true);
+  handleClose();
+};
 
-    this.$router.push({ name: Components.Unlock });
-  }
-}
+const lock = () => {
+  lockExtension(true);
+  router.push({ name: Components.Unlock });
+};
 </script>
 
 <style lang="scss" scoped>

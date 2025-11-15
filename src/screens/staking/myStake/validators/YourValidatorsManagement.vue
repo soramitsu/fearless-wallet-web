@@ -83,9 +83,9 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { computed, reactive, ref, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
 import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -101,241 +101,205 @@ import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    ValidatorInfo,
-    YourValidators,
-    SelectionValidatorsForm,
-    ConfirmationPasswordPopup,
-  },
-})
-export default class YourValidatorsManagement extends Vue {
-  networksStore = useNetworksStore();
-  stakingStore = useStakingStore();
-  accountsStore = useAccountsStore();
-  state: Record<string, SelectionValidator> = {};
-  showConfirmationPasswordPopup = false;
-  step = 1;
-  isSuggested = false;
-  selectedValidator: FWValidatorInfoFull | null = null;
-  fee = '0';
-  stashBalance = '0';
+const props = defineProps<{
+  stakingNetwork: NetworkParams;
+  stakingCurrency: TokenGroup;
+}>();
 
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
+const emit = defineEmits<{
+  (_event: 'closeForm'): void;
+}>();
 
-  get selectedAccountName() {
-    return this.accountsStore.selectedWallet.name;
+const networksStore = useNetworksStore();
+const stakingStore = useStakingStore();
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
+
+const state = reactive<Record<string, SelectionValidator>>({});
+const showConfirmationPasswordPopup = ref(false);
+const step = ref(1);
+const isSuggested = ref(false);
+const selectedValidator = ref<FWValidatorInfoFull | null>(null);
+const fee = ref('0');
+const stashBalance = ref('0');
+
+const selectedAccountName = computed(() => accountsStore.selectedWallet.name);
+const network = computed(() => props.stakingNetwork.network);
+const stakingAssetName = computed(() => props.stakingCurrency.symbol);
+const stakingAssetId = computed(() => props.stakingCurrency.groupId);
+const stakingAssetPrice = computed(() => {
+  const priceId = props.stakingCurrency?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const feeValue = computed(() => getCostOfAssets(fee.value, stakingAssetPrice.value).toString());
+const feeValueString = computed(() => `${accountsStore.fiatSymbol}${n(+feeValue.value, 'price')}`);
+
+const validators = computed(() => Object.values(state));
+const selectedValidators = computed(() =>
+  Object.values(state)
+    .filter(({ isSelect }) => isSelect)
+    .map(({ address }) => address)
+);
+const selectedValidatorsLength = computed(() => selectedValidators.value.length);
+
+const showValidatorInfo = computed(() => selectedValidator.value !== null);
+const showConfirmButton = computed(() => step.value !== 2 && !showValidatorInfo.value);
+
+const effectiveStakingCurrency = computed<TokenGroup>(() => {
+  if (!props.stakingNetwork.isController) return props.stakingCurrency;
+
+  return {
+    ...props.stakingCurrency,
+    balances: props.stakingCurrency.balances.map((item) => ({ ...item, transferable: stashBalance.value })),
+  };
+});
+
+const isValidAmountAssetValue = computed(() =>
+  isValidAmountAsset(effectiveStakingCurrency.value, props.stakingNetwork.network, fee.value ?? '0', '0')
+);
+
+const fullMatchValidators = computed(() => {
+  if (props.stakingNetwork.myValidators.length === 0) return false;
+
+  return props.stakingNetwork.myValidators.every(({ address }) =>
+    selectedValidators.value.some((_address) => address === _address)
+  );
+});
+
+const confirmBtnDisabled = computed(() => {
+  if (step.value === 4 || step.value === 5) {
+    return selectedValidatorsLength.value === 0 || fullMatchValidators.value;
   }
 
-  get network() {
-    return this.stakingNetwork.network;
+  if (step.value === 6) return !isValidAmountAssetValue.value;
+
+  return false;
+});
+
+const buttontext = computed(() => {
+  if (step.value === 1) return 'common.edit';
+
+  if (step.value === 4 || step.value === 5) {
+    if (fullMatchValidators.value) return 'staking.validatorsAlreadyNominated';
   }
 
-  get stakingAssetName() {
-    return this.stakingCurrency.symbol;
+  if (step.value === 6 && !isValidAmountAssetValue.value) {
+    return { text: 'assets.insufficientBalance', localeProps: { asset: stakingAssetName.value.toUpperCase() } };
   }
 
-  get stakingAssetId() {
-    return this.stakingCurrency.groupId;
-  }
+  return 'common.confirm';
+});
 
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
+const showBackIcon = computed(() => step.value !== 1 || showValidatorInfo.value);
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
+const header = computed(() => {
+  if (showValidatorInfo.value) return 'staking.validatorInfo';
+  if (step.value === 1) return 'staking.yourValidators';
+  if (step.value === 2) return 'staking.validators';
+  if (step.value === 3) return 'common.warning';
+  if (step.value === 4) return 'staking.recommended';
+  if (step.value === 5) return 'staking.yourself';
+  if (step.value === 6) return 'common.confirmation';
 
-  get feeValueString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
-  }
+  return '';
+});
 
-  get showConfirmButton() {
-    return this.step !== 2 && !this.showValidatorInfo;
-  }
+const maxNominations = computed(() => {
+  const max = props.stakingNetwork.maxNominations;
 
-  get isValidAmountAsset() {
-    // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
-        }
-      : this.stakingCurrency;
+  return validators.value.length < max ? validators.value.length : max;
+});
 
-    return isValidAmountAsset(stakingCurrency, this.stakingNetwork.network, this.fee ?? '0', '0');
-  }
+const selectedAccountAddress = computed(() => accountsStore.selectedWallet.address);
 
-  get confirmBtnDisabled() {
-    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0 || this.fullMatchValidators;
+const tx = computed<RequestNominate>(() => ({
+  from: selectedAccountAddress.value,
+  networkName: network.value,
+  validators: selectedValidators.value,
+}));
 
-    if (this.step === 6) return !this.isValidAmountAsset;
+watch(selectedValidators, async (validatorsAddresses) => {
+  fee.value = await getNominateNetworkFee({ validators: validatorsAddresses, network: network.value });
+});
 
-    return false;
-  }
+onMounted(async () => {
+  const isSlashed = false;
+  const limitValidatorsIdentity = false;
 
-  get fullMatchValidators() {
-    if (this.stakingNetwork.myValidators.length === 0) return false;
+  props.stakingNetwork.validators.forEach((info) => {
+    state[info.address] = {
+      ...info,
+      isSlashed,
+      limitValidatorsIdentity,
+      isSelect: false,
+    };
+  });
 
-    return this.stakingNetwork.myValidators.every(({ address }) =>
-      this.selectedValidators.some((_address) => address === _address)
-    );
-  }
-
-  get buttontext() {
-    if (this.step === 1) return 'common.edit';
-
-    if (this.step === 4 || this.step === 5) {
-      if (this.fullMatchValidators) return 'staking.validatorsAlreadyNominated';
-    }
-
-    if (this.step === 6 && !this.isValidAmountAsset)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
-
-    return 'common.confirm';
-  }
-
-  get showBackIcon() {
-    return this.step !== 1 || this.showValidatorInfo;
-  }
-
-  get feeValue() {
-    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
-  }
-
-  get header() {
-    if (this.showValidatorInfo) return 'staking.validatorInfo';
-
-    if (this.step === 1) return 'staking.yourValidators';
-
-    if (this.step === 2) return 'staking.validators';
-
-    if (this.step === 3) return 'common.warning';
-
-    if (this.step === 4) return 'staking.recommended';
-
-    if (this.step === 5) return 'staking.yourself';
-
-    if (this.step === 6) return 'common.confirmation';
-
-    return '';
-  }
-
-  get maxNominations() {
-    const maxNominations = this.stakingNetwork.maxNominations;
-
-    // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
-    if (this.validators.length < maxNominations) return this.validators.length;
-
-    return maxNominations;
-  }
-
-  get showValidatorInfo() {
-    return this.selectedValidator !== null;
-  }
-
-  get validators() {
-    return Object.values(this.state);
-  }
-
-  get selectedValidatorsLength() {
-    return this.selectedValidators.length;
-  }
-
-  get selectedValidators() {
-    return Object.values(this.state)
-      .filter(({ isSelect }) => isSelect)
-      .map(({ address }) => address);
-  }
-
-  get tx() {
-    return {
-      from: this.accountsStore.selectedWallet.address,
-      networkName: this.network,
-      validators: this.selectedValidators,
-    } as RequestNominate;
-  }
-
-  @Watch('selectedValidators')
-  async srcWatcher() {
-    this.fee = await getNominateNetworkFee({ validators: this.selectedValidators, network: this.network });
-  }
-
-  async mounted() {
-    // TODO staking
-    const isSlashed = false;
-    const limitValidatorsIdentity = false;
-
-    this.stakingNetwork.validators.forEach((info) => {
-      Vue.set(this.state, info.address, {
-        ...info,
-        isSlashed,
-        limitValidatorsIdentity,
-        isSelect: false,
-      });
+  if (props.stakingNetwork.isController) {
+    const balances = await fetchBalance({
+      address: props.stakingNetwork.stashAddress,
+      networks: [props.stakingNetwork.network],
+      walletEcosystem: WalletEcosystem.Substrate,
     });
 
-    if (this.stakingNetwork.isController) {
-      const balances = await fetchBalance({
-        address: this.stakingNetwork.stashAddress,
-        networks: [this.stakingNetwork.network],
-        walletEcosystem: WalletEcosystem.Substrate,
-      });
+    stashBalance.value = balances[0]?.balance ?? '0';
+  }
+});
 
-      this.stashBalance = balances[0].balance;
-    }
+const closeForm = () => {
+  emit('closeForm');
+};
+
+const confirmationPasswordPopupClose = (shouldCloseForm: boolean) => {
+  showConfirmationPasswordPopup.value = false;
+
+  if (shouldCloseForm) {
+    stakingStore.getMyStakingInfo({ network: network.value });
+    closeForm();
+  }
+};
+
+const openValidatorList = (suggested = false) => {
+  validators.value.forEach((validator, index) => {
+    state[validator.address].isSelect = suggested && index < maxNominations.value;
+  });
+
+  isSuggested.value = suggested;
+  step.value = suggested ? 3 : 5;
+};
+
+const updateSelectedValidators = (value: boolean, address: string) => {
+  state[address].isSelect = value;
+};
+
+const openSelectionValidatorsForm = () => {
+  if (step.value === 4) step.value += 1;
+
+  if (step.value === 6) {
+    showConfirmationPasswordPopup.value = true;
+  } else {
+    step.value += 1;
+  }
+};
+
+const openValidatorInfo = (validator: FWValidatorInfoFull) => {
+  selectedValidator.value = validator;
+};
+
+const handlerBack = () => {
+  if (showValidatorInfo.value) {
+    selectedValidator.value = null;
+
+    return;
   }
 
-  closeForm() {
-    this.$emit('closeForm');
-  }
+  if (step.value === 6 && isSuggested.value) step.value -= 1;
+  else if (step.value === 5) step.value -= 2;
 
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) {
-      this.stakingStore.getMyStakingInfo({ network: this.network });
-      this.closeForm();
-    }
-  }
-
-  openValidatorList(isSuggested = false) {
-    this.validators.forEach(
-      (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
-    );
-
-    this.isSuggested = isSuggested;
-    this.step = isSuggested ? 3 : 5;
-  }
-
-  updateSelectedValidators(value: boolean, address: string) {
-    this.state[address].isSelect = value;
-  }
-
-  openSelectionValidatorsForm() {
-    if (this.step === 4) this.step += 1;
-
-    if (this.step === 6) this.showConfirmationPasswordPopup = true;
-    else this.step += 1;
-  }
-
-  openValidatorInfo(validator: FWValidatorInfoFull) {
-    this.selectedValidator = validator;
-  }
-
-  handlerBack() {
-    if (this.showValidatorInfo) {
-      this.selectedValidator = null;
-
-      return;
-    }
-
-    if (this.step === 6 && this.isSuggested) this.step -= 1;
-    else if (this.step === 5) this.step -= 2;
-
-    this.step -= 1;
-  }
-}
+  step.value -= 1;
+};
 </script>
 
 <style lang="scss" scoped>

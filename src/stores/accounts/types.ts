@@ -1,5 +1,5 @@
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
-import type { WalletAddress, NetworkName, WalletEcosystem } from '@/interfaces';
+import type { WalletAddress, NetworkFilter, NetworkName, WalletEcosystem } from '@/interfaces';
 import { type AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 export interface Wallet {
@@ -37,7 +37,7 @@ export type SetAutoSelectNode = {
   value: boolean;
 };
 
-export type SelectedNetworks = Record<WalletAddress, string>;
+export type SelectedNetworks = Record<WalletAddress, NetworkFilter>;
 export type FavoriteNetworks = Record<WalletAddress, string[]>;
 
 export type Accounts = SubjectInfo;

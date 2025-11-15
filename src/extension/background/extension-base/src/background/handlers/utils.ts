@@ -1,3 +1,4 @@
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
 import type { AssetName, NetworkName } from '@/interfaces';
@@ -26,7 +27,7 @@ export function getNativeAssetName(asset: AssetName = '') {
 }
 
 export function getBalanceItem(balances: BalanceItem[], network: string) {
-  return balances.find((balance) => isSameString(balance.name, network));
+  return balances.find((balance) => isSameString(getBalanceNetworkName(balance), network));
 }
 
 // For Moonbeam, Moonriver

@@ -31,7 +31,7 @@
             @change="changeFilterValue"
           />
 
-          <Icon icon="filter" @click.native="openFiltersPopup" class="filter" data-testid="filter" />
+          <Icon icon="filter" @click="openFiltersPopup" class="filter" data-testid="filter" />
         </div>
       </div>
 
@@ -54,8 +54,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref, toRefs } from 'vue';
 import type { SelectionValidator } from '@/interfaces';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import type { NetworkParams } from '@/stores';
@@ -63,87 +63,108 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
 
-@Component({
-  components: {
-    ValidatorItem,
-    ValidatorInfo,
-  },
-})
-export default class SelectValidator extends Vue {
-  filterValue = '';
+type SelectValidatorProps = {
+  step: number;
+  onchainIdentity?: boolean;
+  notSlashed?: boolean;
+  notOversubscribed?: boolean;
+  limitValidatorsIdentity?: boolean;
+  sortByApy?: boolean;
+  validators: SelectionValidator[];
+  maxNominations: number;
+  stakingNetwork: NetworkParams;
+  stakingCurrency: TokenGroup;
+  selectedValidator: FWValidatorInfoFull | null;
+};
 
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: Boolean }) onchainIdentity!: boolean;
-  @Prop({ type: Boolean }) notSlashed!: boolean;
-  @Prop({ type: Boolean }) notOversubscribed!: boolean;
-  @Prop({ type: Boolean }) limitValidatorsIdentity!: boolean;
-  @Prop({ type: Boolean }) sortByApy!: boolean;
-  @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) maxNominations!: number;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) selectedValidator!: FWValidatorInfoFull;
+const props = withDefaults(defineProps<SelectValidatorProps>(), {
+  onchainIdentity: false,
+  notSlashed: false,
+  notOversubscribed: false,
+  limitValidatorsIdentity: false,
+  sortByApy: false,
+  selectedValidator: null,
+});
 
-  get showValidatorInfo() {
-    return this.selectedValidator !== null;
-  }
+const emit = defineEmits<{
+  updateSelectedValidators: [value: boolean, address: string];
+  openFiltersPopup: [];
+  openValidatorInfo: [validator: FWValidatorInfoFull];
+}>();
 
-  get filteredValidatorsBySettings() {
-    return this.validators.filter(({ isOversubscribed, isKnownGood, isSlashed, limitValidatorsIdentity }) => {
-      if (this.onchainIdentity && !isKnownGood) return false;
+const {
+  step,
+  onchainIdentity,
+  notSlashed,
+  notOversubscribed,
+  limitValidatorsIdentity,
+  sortByApy,
+  validators,
+  maxNominations,
+  stakingNetwork,
+  stakingCurrency,
+  selectedValidator,
+} = toRefs(props);
 
-      if (this.notSlashed && isSlashed) return false;
+const filterValue = ref('');
 
-      if (this.notOversubscribed && isOversubscribed) return false;
+const showValidatorInfo = computed(() => selectedValidator.value !== null);
 
-      if (this.limitValidatorsIdentity && !limitValidatorsIdentity) return false;
+const filteredValidatorsBySettings = computed(() =>
+  validators.value.filter(
+    ({ isOversubscribed, isKnownGood, isSlashed, limitValidatorsIdentity: validatorIdentity }) => {
+      if (onchainIdentity.value && !isKnownGood) return false;
+
+      if (notSlashed.value && isSlashed) return false;
+
+      if (notOversubscribed.value && isOversubscribed) return false;
+
+      if (limitValidatorsIdentity.value && !validatorIdentity) return false;
 
       return true;
-    });
+    }
+  )
+);
+
+const sortedValidators = computed(() => {
+  if (step.value === 4) return validators.value;
+
+  if (sortByApy.value) {
+    return [...filteredValidatorsBySettings.value].sort(({ apy: apy1 }, { apy: apy2 }) => +apy2 - +apy1);
   }
 
-  get haveFilteredValidators() {
-    return this.filteredValidators.length !== 0;
-  }
+  return filteredValidatorsBySettings.value;
+});
 
-  get sortedValidators() {
-    if (this.step === 4) return this.validators;
+const filteredValidators = computed(() => {
+  if (step.value === 4) return sortedValidators.value;
 
-    if (this.sortByApy) return this.filteredValidatorsBySettings.sort(({ apy: apy1 }, { apy: apy2 }) => +apy2 - +apy1);
+  const filter = filterValue.value.trim().toLowerCase();
 
-    return this.filteredValidatorsBySettings;
-  }
+  return sortedValidators.value.filter(
+    ({ address, name }) => address.toLowerCase().includes(filter) || name.toLowerCase().includes(filter)
+  );
+});
 
-  get filteredValidators() {
-    if (this.step === 4) return this.sortedValidators;
+const haveFilteredValidators = computed(() => filteredValidators.value.length !== 0);
 
-    const filter = this.filterValue.trim().toLowerCase();
+const selectedQuantity = computed(() => validators.value.filter(({ isSelect }) => isSelect).length);
 
-    return this.sortedValidators.filter(
-      ({ address, name }) => address.toLowerCase().includes(filter) || name.toLowerCase().includes(filter)
-    );
-  }
+const onSelect = (value: boolean, address: string) => {
+  emit('updateSelectedValidators', value, address);
+};
 
-  get selectedQuantity() {
-    return this.validators.filter(({ isSelect }) => isSelect).length;
-  }
+const openFiltersPopup = () => {
+  emit('openFiltersPopup');
+};
 
-  onSelect(value: boolean, address: string) {
-    this.$emit('updateSelectedValidators', value, address);
-  }
+const openValidatorInfo = (validator: FWValidatorInfoFull) => {
+  emit('openValidatorInfo', validator);
+};
 
-  openFiltersPopup() {
-    this.$emit('openFiltersPopup');
-  }
-
-  openValidatorInfo(validator: FWValidatorInfoFull) {
-    this.$emit('openValidatorInfo', validator);
-  }
-
-  changeFilterValue(value: string) {
-    this.filterValue = value;
-  }
-}
+const changeFilterValue = (value: string) => {
+  filterValue.value = value;
+};
 </script>
 
 <style lang="scss" scoped>

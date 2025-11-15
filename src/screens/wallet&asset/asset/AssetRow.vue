@@ -18,26 +18,24 @@
   </Row>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import Row from '@/components/Row.vue';
 
-@Component({
-  components: { Row },
-})
-export default class AssetRow extends Vue {
-  @Prop(String) text!: string;
-  @Prop(String) value!: string;
-  @Prop(String) price!: string;
-  @Prop(String) icon?: string;
+defineProps<{
+  text: string;
+  value: string;
+  price: string;
+  icon?: string;
+}>();
 
-  get classes() {
-    return ['icon-info'];
-  }
+const emit = defineEmits<{
+  openAsset: [];
+}>();
 
-  onSelect() {
-    this.$emit('openAsset');
-  }
+const classes = ['icon-info'];
+
+function onSelect() {
+  emit('openAsset');
 }
 </script>
 

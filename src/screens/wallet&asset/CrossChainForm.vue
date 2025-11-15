@@ -81,186 +81,161 @@
   </TransferForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, nextTick, onMounted, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import TransferForm from './TransferForm.vue';
-import { firstCharToUp, cut, isSora, isSameString } from '@/helpers/';
+import { cut as cutValue, isSora, isSameString } from '@/helpers';
 import { formattedNumber } from '@/helpers/numbers';
 import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: { TransferForm },
-})
-export default class CrossChainForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  originNetFee = '';
-  destNetFee = '';
-  assetId = '';
-  originalNetwork = '';
-  destinationNetwork = '';
-  amount = '';
-  recipient = '';
-  value = '';
+const props = defineProps<{
+  _originalNetwork?: string;
+}>();
 
-  @Prop(String) _originalNetwork!: string;
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
+const { t, n } = useI18n();
 
-  get minValueBridgeToSora() {
-    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
-  }
+const originNetFee = ref('');
+const destNetFee = ref('');
+const assetId = ref('');
+const originalNetwork = ref('');
+const destinationNetwork = ref('');
+const amount = ref('');
+const recipient = ref('');
+const value = ref('');
 
-  get minValueBridgeFromSora() {
-    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
-  }
+const currency = computed(() =>
+  accountsStore.balances.find(({ groupId, balances }) => {
+    return groupId === assetId.value || balances.some(({ id }) => id.toLowerCase() === assetId.value.toLowerCase());
+  })
+);
 
-  get showSoraAlert() {
-    if (!isSora(this.originalNetwork, true) && !isSora(this.destinationNetwork, true)) return false;
+const assetName = computed(() => (currency.value?.symbol ?? '').toUpperCase());
 
-    if (this.amount === '') return false;
+const minValueBridgeToSora = computed(() => {
+  const network = originalNetwork.value.toLowerCase();
+  const asset = assetName.value.toLowerCase();
 
-    if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;
+  return BRIDGE_MIN_VALUES_TO_SORA[network]?.[asset] ?? 0;
+});
 
-    return +this.amount < this.minValueBridgeFromSora;
-  }
+const minValueBridgeFromSora = computed(() => {
+  const network = destinationNetwork.value.toLowerCase();
+  const asset = assetName.value.toLowerCase();
 
-  get soraCrossChainALert() {
-    const value = isSora(this.destinationNetwork, true) ? this.minValueBridgeToSora : this.minValueBridgeFromSora;
+  return BRIDGE_MIN_VALUES_FROM_SORA[network]?.[asset] ?? 0;
+});
 
-    return this.$t('assets.soraCrossChainALert', { value, asset: this.assetName });
-  }
+const showSoraAlert = computed(() => {
+  if (!isSora(originalNetwork.value, true) && !isSora(destinationNetwork.value, true)) return false;
+  if (amount.value === '') return false;
 
-  get directionText() {
-    return `${this.$t('assets.from')} ${this.originalNetwork} ${this.$t('assets.to')} ${this.destinationNetwork} `;
-  }
+  if (isSora(destinationNetwork.value, true)) return +amount.value < minValueBridgeToSora.value;
 
-  get showValue() {
-    return this.value !== '0';
-  }
+  return +amount.value < minValueBridgeFromSora.value;
+});
 
-  get originalNetworkString() {
-    return `${firstCharToUp(this.originalNetwork)}`;
-  }
+const soraCrossChainALert = computed(() => {
+  const threshold = isSora(destinationNetwork.value, true) ? minValueBridgeToSora.value : minValueBridgeFromSora.value;
 
-  get destinationNetworkString() {
-    return `${firstCharToUp(this.destinationNetwork)}`;
-  }
+  return t('assets.soraCrossChainALert', { value: threshold, asset: assetName.value });
+});
 
-  get amountString() {
-    return `${+this.amount} ${this.assetName}`;
-  }
+const directionText = computed(
+  () => `${t('assets.from')} ${originalNetwork.value} ${t('assets.to')} ${destinationNetwork.value} `
+);
 
-  get valueString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
-  }
+const showValue = computed(() => value.value !== '0');
+const amountString = computed(() => `${+amount.value} ${assetName.value}`);
+const valueString = computed(() => `${accountsStore.fiatSymbol}${n(+value.value, 'price')}`);
 
-  get originalNetworkFeeString() {
-    return `${formattedNumber(+this.originNetFee, { decimalsValue: 7 })} ${this.originalNetworkUtilityAssetUpper}`;
-  }
+const originNet = computed(() => networksStore.getNetwork(originalNetwork.value));
+const destNet = computed(() => networksStore.getNetwork(destinationNetwork.value));
+const originNetIcon = computed(() => originNet.value?.icon ?? '');
+const destNetIcon = computed(() => destNet.value?.icon ?? '');
 
-  get destinationNetworkFeeString() {
-    return `${formattedNumber(+this.destNetFee)} ${this.assetName}`;
-  }
+const originalNetworkUtilityAsset = computed(() => {
+  const utilityId = originNet.value?.assets[0].id ?? '';
+  const currencyMatch = accountsStore.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
 
-  get currency() {
-    return this.accountsStore.balances.find(({ groupId, balances }) => {
-      return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
-    });
-  }
+  return currencyMatch?.symbol ?? '';
+});
 
-  get assetName() {
-    return (this.currency?.symbol ?? '').toUpperCase();
-  }
+const originalNetworkUtilityAssetUpper = computed(() => originalNetworkUtilityAsset.value.toUpperCase());
 
-  get originNet() {
-    return this.networksStore.getNetwork(this.originalNetwork);
-  }
+const originalNetworkFeeString = computed(
+  () => `${formattedNumber(+originNetFee.value, { decimalsValue: 7 })} ${originalNetworkUtilityAssetUpper.value}`
+);
 
-  get destNet() {
-    return this.networksStore.getNetwork(this.destinationNetwork);
-  }
+const destinationNetworkFeeString = computed(() => `${formattedNumber(+destNetFee.value)} ${assetName.value}`);
 
-  get originNetIcon() {
-    return this.originNet?.icon ?? '';
-  }
-
-  get destNetIcon() {
-    return this.destNet?.icon ?? '';
-  }
-
-  get originalNetworkUtilityAsset() {
-    const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    const currency = this.accountsStore.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
-
-    return currency?.symbol ?? '';
-  }
-
-  get originalNetworkUtilityAssetUpper() {
-    return this.originalNetworkUtilityAsset.toUpperCase();
-  }
-
-  created() {
-    this.assetId = this.$route.params.assetId;
-    this.originalNetwork = this.$route.params.network;
-
-    this.$nextTick(() => {
-      const originNet = this.networksStore.getNetwork(this.originalNetwork);
-      const asset = getNativeAssetName(this.assetName);
-
-      const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
-        assets.some(({ symbol }) => isSameString(symbol, asset))
-      )?.chainId;
-
-      if (!destChainId) return;
-
-      const { name: destName } = this.networksStore.getNetwork(destChainId)!;
-
-      this.destinationNetwork = destName;
-    });
-  }
-
-  closeForm() {
-    this.$router.back();
-  }
-
-  cut(value: string) {
-    return cut(value);
-  }
-
-  updateAssetId(value: string) {
-    this.assetId = value;
-  }
-
-  updateOriginalNetwork(value: string) {
-    this.originalNetwork = value;
-  }
-
-  setDestinationNetwork(value: string) {
-    this.destinationNetwork = value;
-  }
-
-  updateAmount(value: string) {
-    this.amount = value;
-  }
-
-  updateValue(value: string) {
-    this.value = value;
-  }
-
-  updateOriginNetFee(value: string) {
-    this.originNetFee = value;
-  }
-
-  updateDestNetFee(value: string) {
-    this.destNetFee = value;
-  }
-
-  updateRecipient(value: string) {
-    this.recipient = value;
-  }
+function closeForm() {
+  router.back();
 }
+
+function cut(text: string) {
+  return cutValue(text);
+}
+
+function updateAssetId(valueToSet: string) {
+  assetId.value = valueToSet;
+}
+
+function updateOriginalNetwork(valueToSet: string) {
+  originalNetwork.value = valueToSet;
+}
+
+function setDestinationNetwork(valueToSet: string) {
+  destinationNetwork.value = valueToSet;
+}
+
+function updateAmount(valueToSet: string) {
+  amount.value = valueToSet;
+}
+
+function updateValue(valueToSet: string) {
+  value.value = valueToSet;
+}
+
+function updateOriginNetFee(valueToSet: string) {
+  originNetFee.value = valueToSet;
+}
+
+function updateDestNetFee(valueToSet: string) {
+  destNetFee.value = valueToSet;
+}
+
+function updateRecipient(valueToSet: string) {
+  recipient.value = valueToSet;
+}
+
+onMounted(async () => {
+  assetId.value = (route.params.assetId as string) ?? '';
+  originalNetwork.value = (route.params.network as string) ?? props._originalNetwork ?? '';
+
+  await nextTick();
+
+  const originNetwork = networksStore.getNetwork(originalNetwork.value);
+  const asset = getNativeAssetName(assetName.value);
+
+  const destChainId = originNetwork?.xcm?.availableDestinations.find(({ assets }) =>
+    assets.some(({ symbol }) => isSameString(symbol, asset))
+  )?.chainId;
+
+  if (!destChainId) return;
+
+  const dest = networksStore.getNetwork(destChainId);
+
+  if (dest) destinationNetwork.value = dest.name;
+});
 </script>
 
 <style lang="scss" scoped>

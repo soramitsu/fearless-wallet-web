@@ -76,7 +76,7 @@ export function getMockAssets(networkMap: Record<string, NetworkJson>, walletEco
           ...result[index].balances,
           {
             state: APIItemState.PENDING,
-            name: mainNet.toLowerCase(),
+            networkName: mainNet.toLowerCase(),
             existentialDeposit,
             type: type ?? tonType,
             precision,

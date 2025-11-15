@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
+  <AboveForm header="Details" :fullScreen="true" @closeHandler="handleClose">
     <div class="details">
       <Scroll>
         <div class="descriptions">
@@ -118,8 +118,10 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { type HistoryElement, type TonEvent, type SoraHistoryElement, TransactionType } from '@/interfaces';
 import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
 import { cut, getFormattedDate, setClipboard } from '@/helpers';
@@ -127,251 +129,187 @@ import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({})
-export default class HistoryDetailsForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  assetId: string;
+  historyType: string;
+  historyElement: HistoryElement;
+}>();
 
-  @Prop(String) assetId!: string;
-  @Prop(String) historyType!: string;
-  @Prop(Object) historyElement!: HistoryElement;
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
 
-  get historyElementSoraType() {
-    return this.historyElement as unknown as SoraHistoryElement;
-  }
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const route = useRoute();
+const { t, n } = useI18n();
 
-  get historyElementTonType() {
-    return this.historyElement as unknown as TonEvent;
-  }
+const selectedNetwork = computed(() => {
+  const networkParam = route.params.network ?? route.params.selectedNetwork ?? '';
 
-  get showTargetAmount() {
-    return this.isSora && this.historyElementSoraType.method === 'swap';
-  }
+  return Array.isArray(networkParam) ? networkParam[0] : networkParam;
+});
 
-  get networkProps() {
-    return this.networksStore.getNetwork(this.selectedNetwork);
-  }
+const historyElementSoraType = computed(() => props.historyElement as unknown as SoraHistoryElement);
+const historyElementTonType = computed(() => props.historyElement as unknown as TonEvent);
 
-  get address() {
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
+const isSora = computed(() => type.value === 'sora');
+const isTon = computed(() => type.value === TransactionType.ton);
 
-    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, this.networkProps.addressPrefix);
-  }
+const networkProps = computed(() => networksStore.getNetwork(selectedNetwork.value));
 
-  get selectedNetworkJson() {
-    return this.networksStore.networks.find(
-      (network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase()
-    );
-  }
+const address = computed(() => {
+  if (BaseApi.isEthereumNetwork(selectedNetwork.value)) return accountsStore.selectedWallet.ethereumAddress;
 
-  get explorerType() {
-    return this.selectedNetworkJson?.externalApi?.explorers?.[0]?.type;
-  }
+  return BaseApi.encodeAddress(accountsStore.selectedWallet.address, networkProps.value.addressPrefix);
+});
 
-  get haveExplorers() {
-    return this.explorerUrl !== '';
-  }
+const selectedNetworkJson = computed(() =>
+  networksStore.networks.find((network) => network.name.toLowerCase() === selectedNetwork.value.toLowerCase())
+);
 
-  get explorerUrl() {
-    return this.networkProps?.externalApi?.explorers?.[0].url ?? '';
-  }
+const explorerType = computed(() => selectedNetworkJson.value?.externalApi?.explorers?.[0]?.type);
 
-  get buttonText() {
-    const explorerType =
-      this.explorerType === 'etherscan'
-        ? 'accounts.etherscan'
-        : this.explorerType === 'tonviewer'
+const explorerUrl = computed(() => networkProps.value?.externalApi?.explorers?.[0].url ?? '');
+
+const haveExplorers = computed(() => explorerUrl.value !== '');
+
+const buttonText = computed(() => {
+  const typeKey =
+    explorerType.value === 'etherscan'
+      ? 'accounts.etherscan'
+      : explorerType.value === 'tonviewer'
         ? 'accounts.tonviewer'
         : 'accounts.subscan';
 
-    return this.$t(explorerType);
-  }
+  return t(typeKey);
+});
 
-  get showFee() {
-    if (this.isSora) return this.historyElementSoraType.method !== 'rewarded';
+const signTransfer = computed(() => getSignTransfer(props.historyElement, address.value, selectedNetwork.value));
 
-    if (this.isTon) return this.signTransfer === '-';
+const isTransfer = computed(() => type.value === 'transfer' || isTon.value);
+const isReward = computed(() => type.value === 'reward');
 
-    return this.isTransfer && this.signTransfer === '-';
-  }
+const showFee = computed(() => {
+  if (isSora.value) return historyElementSoraType.value.method !== 'rewarded';
 
-  get isTransfer() {
-    return this.type === 'transfer' || this.isTon;
-  }
+  if (isTon.value) return signTransfer.value === '-';
 
-  get isReward() {
-    return this.type === 'reward';
-  }
+  return isTransfer.value && signTransfer.value === '-';
+});
 
-  get isSora() {
-    return this.type === 'sora';
-  }
+const showAmount = computed(() => {
+  if (isSora.value || isTon.value) return true;
 
-  get isTon() {
-    return this.type === TransactionType.ton;
-  }
+  return isTransfer.value;
+});
 
-  get showAmount() {
-    if (this.isSora || this.isTon) return true;
+const showTargetAmount = computed(() => isSora.value && historyElementSoraType.value.method === 'swap');
 
-    return this.isTransfer;
-  }
+const statusIsSuccess = computed(() => {
+  if (isSora.value) return historyElementSoraType.value.execution.success;
 
-  get statusIsSuccess() {
-    if (this.isSora) return this.historyElementSoraType.execution.success;
+  const { success } = props.historyElement;
 
-    const { success } = this.historyElement!;
+  return success ?? true;
+});
 
-    return success ?? true;
-  }
+const statusClasses = computed(() => ['item-value', statusIsSuccess.value ? 'status-success' : 'status-reject']);
+const statusText = computed(() => (statusIsSuccess.value ? 'Completed' : 'Reject'));
 
-  get validator() {
-    return this.historyElement.reward?.validator;
-  }
+const validator = computed(() => props.historyElement.reward?.validator);
+const displayValidator = computed(() => (validator.value ? cut(validator.value, 10) : 'no validator info'));
 
-  get displayValidator() {
-    if (!this.validator) return 'no validator info';
+const era = computed(() => props.historyElement.reward?.era);
 
-    return cut(this.validator, 10);
-  }
+const fromAddress = computed(() =>
+  isTon.value ? historyElementTonType.value?.from : props.historyElement.transfer?.from
+);
+const displayFromAddress = computed(() => cut(fromAddress.value, 10));
 
-  get era() {
-    return this.historyElement.reward?.era;
-  }
+const toAddress = computed(() => (isTon.value ? historyElementTonType.value?.to : props.historyElement.transfer?.to));
+const displayToAddress = computed(() => cut(toAddress.value, 10));
 
-  get statusClasses() {
-    return ['item-value', this.statusIsSuccess ? 'status-success' : 'status-reject'];
-  }
+const moduleType = computed(() => (isSora.value ? historyElementSoraType.value.module : props.historyElement.module));
 
-  get statusText() {
-    return this.statusIsSuccess ? 'Completed' : 'Reject';
-  }
+const method = computed(() => {
+  if (isSora.value) return historyElementSoraType.value.method;
 
-  get fromAddress() {
-    if (this.isTon) return this.historyElementTonType?.from;
+  if (isTon.value) return historyElementTonType.value.method;
 
-    return this.historyElement.transfer?.from;
-  }
+  return props.historyElement.method;
+});
 
-  get displayFromAddress() {
-    return cut(this.fromAddress, 10);
-  }
+const transferFee = computed(() => {
+  const fees = getHumanTransferFee(props.historyElement, selectedNetwork.value);
 
-  get toAddress() {
-    if (this.isTon) return this.historyElementTonType?.to;
+  return n(fees, 'decimalPrecise');
+});
 
-    return this.historyElement.transfer?.to;
-  }
+const date = computed(() => getFormattedDate(props.historyElement.timestamp));
 
-  get displayToAddress() {
-    return cut(this.toAddress, 10);
-  }
+const value = computed(() => {
+  const result = getHistoryValue(props.historyElement, props.assetId, selectedNetwork.value, address.value);
 
-  get moduleType() {
-    if (this.isSora) return this.historyElementSoraType.module;
+  if (!result) return '';
 
-    return this.historyElement!.module;
-  }
+  return `${result.signTransfer}${n(result.value, 'decimalPrecise')}`;
+});
 
-  get method() {
-    if (this.isSora) return this.historyElementSoraType.method;
+const targetValue = computed(() => {
+  const result = getHistoryValue(props.historyElement, props.assetId, selectedNetwork.value, address.value);
 
-    if (this.isTon) return this.historyElementTonType.method;
+  const target = result?.targetValue;
 
-    return this.historyElement?.method;
-  }
+  return target !== undefined ? n(target, 'decimalPrecise') : '';
+});
 
-  get transferFee() {
-    const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
+const type = computed(() => getType(props.historyElement, selectedNetwork.value));
 
-    return this.$n(fees, 'decimalPrecise');
-  }
+const extrinsicHash = computed(() => props.historyElement.extrinsicHash);
+const displayExtrinsicHash = computed(() => cut(extrinsicHash.value));
 
-  get date() {
-    return getFormattedDate(this.historyElement.timestamp);
-  }
+const blockHash = computed(() => props.historyElement.blockHash);
+const displayBlockHash = computed(() => cut(blockHash.value));
 
-  get value() {
-    const { value, signTransfer } = getHistoryValue(
-      this.historyElement,
-      this.assetId,
-      this.selectedNetwork,
-      this.address
-    );
+function copy(value?: string) {
+  if (!value) return;
 
-    return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
-  }
+  setClipboard(value);
+}
 
-  get targetValue() {
-    const { targetValue } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
+function openExplorer() {
+  if (explorerType.value === 'etherscan' || explorerType.value === 'oklink') {
+    if (explorerUrl.value) {
+      const url = explorerUrl.value.replace('{type}', 'tx').replace('{value}', props.historyElement.blockHash ?? '');
 
-    return this.$n(targetValue!, 'decimalPrecise');
-  }
-
-  get type() {
-    return getType(this.historyElement, this.selectedNetwork);
-  }
-
-  get signTransfer() {
-    return getSignTransfer(this.historyElement, this.address, this.selectedNetwork);
-  }
-
-  get extrinsicHash() {
-    return this.historyElement.extrinsicHash;
-  }
-
-  get displayExtrinsicHash() {
-    return cut(this.extrinsicHash);
-  }
-
-  get blockHash() {
-    return this.historyElement.blockHash;
-  }
-
-  get displayBlockHash() {
-    return cut(this.blockHash);
-  }
-
-  get selectedNetwork() {
-    // TODO Переделать на одинаковое название параметра
-    return this.$route.params.network ?? this.$route.params.selectedNetwork;
-  }
-
-  copy(value?: string) {
-    if (!value) return;
-
-    setClipboard(value);
-  }
-
-  openExplorer() {
-    if (this.explorerType === 'etherscan' || this.explorerType === 'oklink') {
-      if (this.explorerUrl) {
-        const url = this.explorerUrl.replace('{type}', 'tx').replace('{value}', this.historyElement?.blockHash ?? '');
-
-        window.open(url);
-      }
-
-      return;
+      window.open(url);
     }
 
-    if (this.explorerType === 'tonviewer') {
-      if (this.explorerUrl) {
-        const url = this.explorerUrl
-          .replace('{type}', 'transaction')
-          .replace('{value}', this.historyElementTonType?.eventId ?? '');
+    return;
+  }
 
-        window.open(url);
-      }
+  if (explorerType.value === 'tonviewer') {
+    if (explorerUrl.value) {
+      const url = explorerUrl.value
+        .replace('{type}', 'transaction')
+        .replace('{value}', historyElementTonType.value?.eventId ?? '');
 
-      return;
+      window.open(url);
     }
 
-    const url = this.explorerUrl
-      .replace('{type}', 'extrinsic')
-      .replace('{value}', this.historyElement?.extrinsicHash ?? '');
-
-    window.open(url);
+    return;
   }
+
+  const url = explorerUrl.value
+    .replace('{type}', 'extrinsic')
+    .replace('{value}', props.historyElement.extrinsicHash ?? '');
+
+  window.open(url);
+}
+
+function handleClose() {
+  emit('handlerClose');
 }
 </script>
 

@@ -1,13 +1,8 @@
-import type {
-  ValidatorInfoFull,
-  Payouts,
-  MyStakingInfo as SoraMyStakingInfo,
-  Unlocking,
-} from '@sora-substrate/util/build/staking/types';
-import type { ActivityRequestSign } from '@extension-base/background/types/types';
+import type { ValidatorInfoFull, Payouts, MyStakingInfo as SoraMyStakingInfo, Unlocking } from '@sora/staking/types';
+import type { ActivityRequestSign, BaseRequestSign } from '@extension-base/background/types/types';
 import type { NetworkName, StakingOperation } from '@/interfaces';
 
-export interface Bond {
+export interface Bond extends BaseRequestSign {
   from: string;
   payoutAddress: string;
   networkName: NetworkName;
@@ -19,7 +14,7 @@ export type RequestBond = ActivityRequestSign<Bond>;
 
 ///////////////////////////////////////////////////////
 
-export interface BondExtra {
+export interface BondExtra extends BaseRequestSign {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -29,7 +24,7 @@ export type RequestBondExtra = ActivityRequestSign<BondExtra>;
 
 ///////////////////////////////////////////////////////
 
-export interface Unbond {
+export interface Unbond extends BaseRequestSign {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -39,7 +34,7 @@ export type RequestUnbond = ActivityRequestSign<Unbond>;
 
 ///////////////////////////////////////////////////////
 
-export interface Rebond {
+export interface Rebond extends BaseRequestSign {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -49,7 +44,7 @@ export type RequestRebond = ActivityRequestSign<Rebond>;
 
 ///////////////////////////////////////////////////////
 
-export interface WithdrawUnbonded {
+export interface WithdrawUnbonded extends BaseRequestSign {
   networkName: NetworkName;
   from: string;
   amount: string;
@@ -59,7 +54,7 @@ export type RequestWithdrawUnbonded = ActivityRequestSign<WithdrawUnbonded>;
 
 //////////////////////////////////////////////////////////
 
-export interface SetControllerAccount {
+export interface SetControllerAccount extends BaseRequestSign {
   networkName: NetworkName;
   from: string;
   controllerAddress: string;
@@ -69,7 +64,7 @@ export type RequestSetControllerAccount = ActivityRequestSign<SetControllerAccou
 
 //////////////////////////////////////////////////////////
 
-export interface Nominate {
+export interface Nominate extends BaseRequestSign {
   from: string;
   networkName: NetworkName;
   validators: string[];
@@ -79,7 +74,7 @@ export type RequestNominate = ActivityRequestSign<Nominate>;
 
 //////////////////////////////////////////////////////////
 
-export interface SetPayee {
+export interface SetPayee extends BaseRequestSign {
   from: string;
   networkName: NetworkName;
   payee: string;
@@ -89,7 +84,7 @@ export type RequestSetPayee = ActivityRequestSign<SetPayee>;
 
 //////////////////////////////////////////////////////////
 
-export interface PayoutRewards {
+export interface PayoutRewards extends BaseRequestSign {
   from: string;
   networkName: NetworkName;
   payouts: Payouts;
@@ -137,7 +132,16 @@ export interface FWValidatorInfoFull extends ValidatorInfoFull {
 
 export type Alert = { name: string; timespan: number; formName: string };
 
-export type DefaultStakingParams = {
+export type StakingAssetMetadata = {
+  asset: string;
+  assetId: string;
+  icon: string;
+  color: string;
+  priceId: string;
+  transferableAmount: string;
+};
+
+export type DefaultStakingParams = StakingAssetMetadata & {
   stashAddress: string;
   stashName: string;
   payeeAddress: string;

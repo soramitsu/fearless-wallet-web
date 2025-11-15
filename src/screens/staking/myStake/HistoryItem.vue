@@ -22,87 +22,109 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type { HistoryElement } from '@/interfaces/history';
+import type { NetworkName } from '@/interfaces';
 import { getFormattedDate } from '@/helpers';
-import { getHistoryValue } from '@/helpers/history';
+import { getHistoryValue, getTypeFormatted } from '@/helpers/history';
 import BaseApi from '@/util/BaseApi';
-import { type SoraHistoryElement } from '@/interfaces/history';
-import { type NetworkName } from '@/interfaces';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class HistoryItem extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  history: HistoryElement;
+  stakingAssetId: string;
+  rewardedAssetId: string;
+  network: NetworkName;
+}>();
 
-  @Prop({ type: Object }) history!: SoraHistoryElement;
-  @Prop({ type: String }) stakingAssetId!: string;
-  @Prop({ type: String }) rewardedAssetId!: string;
-  @Prop({ type: String }) network!: NetworkName;
+const emit = defineEmits<{
+  openHistoryDetailsForm: [history: HistoryElement];
+}>();
 
-  get operationName() {
-    return this.$t(`history.${this.history.method}`);
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { t, n } = useI18n();
+
+const method = computed(() => props.history.method ?? props.history.type ?? '');
+
+const currency = computed(() => accountsStore.balances.find(({ groupId }) => groupId === props.stakingAssetId));
+
+const rewardedCurrency = computed(() =>
+  accountsStore.balances.find(({ groupId }) => groupId === props.rewardedAssetId)
+);
+
+const stakingAssetPrice = computed(() => {
+  const priceId = currency.value?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const rewardedAssetPrice = computed(() => {
+  const priceId = rewardedCurrency.value?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const address = computed(() => {
+  if (BaseApi.isEthereumNetwork(props.network.toLowerCase())) {
+    return accountsStore.selectedWallet.ethereumAddress;
   }
 
-  get method() {
-    return this.history.method;
-  }
+  const network = networksStore.getNetwork(props.network);
 
-  get historyValue() {
-    return getHistoryValue(this.history, this.stakingAssetId, this.network, this.address, true);
-  }
+  return BaseApi.encodeAddress(accountsStore.selectedWallet.address, network.addressPrefix);
+});
 
-  get amount() {
-    return `${this.historyValue.signTransfer}${this.$n(this.historyValue.value, 'decimalPrecise')}`;
-  }
+const historyValue = computed(() =>
+  getHistoryValue(props.history, props.stakingAssetId, props.network, address.value, true)
+);
 
-  get networkFee() {
-    return this.history.networkFee;
-  }
+type AmountFormatKey = 'decimalPrecise' | 'decimalTiny';
 
-  get symbol() {
-    if (this.method === 'rewarded') return this.rewardedCurrency?.symbol;
+const amountFormatKey = computed<AmountFormatKey>(() => {
+  const absoluteValue = Math.abs(historyValue.value.value);
 
-    return this.currency?.symbol;
-  }
+  if (absoluteValue > 0 && absoluteValue < 0.001) return 'decimalTiny';
 
-  get date() {
-    return getFormattedDate(this.history.timestamp);
-  }
+  return 'decimalPrecise';
+});
 
-  get currency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
-  }
+const amount = computed(
+  () => `${historyValue.value.signTransfer}${n(historyValue.value.value, amountFormatKey.value)}`
+);
 
-  get rewardedCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
-  }
+const value = computed(() => {
+  const price = isReward.value ? rewardedAssetPrice.value || stakingAssetPrice.value : stakingAssetPrice.value;
+  const total = historyValue.value.value * price;
 
-  get assetPrice() {
-    const priceId = this.currency?.priceId ?? '';
+  return `${accountsStore.fiatSymbol}${n(total, 'price')}`;
+});
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
+const typeLabel = computed(() => getTypeFormatted(props.history, address.value, props.network));
+const operationKey = computed(() => method.value || typeLabel.value || 'transfer');
+const operationName = computed(() => {
+  const key = `history.${operationKey.value}`;
+  const translated = t(key);
 
-  get address() {
-    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
+  return translated === key ? typeLabel.value || operationKey.value : translated;
+});
+const date = computed(() => getFormattedDate(props.history.timestamp));
 
-    const network = this.networksStore.getNetwork(this.network);
+const isReward = computed(
+  () => method.value === 'rewarded' || props.history.method === 'rewarded' || props.history.reward !== undefined
+);
 
-    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
-  }
+const symbol = computed(() => {
+  if (isReward.value) return rewardedCurrency.value?.symbol ?? currency.value?.symbol ?? '';
 
-  get value() {
-    const value = this.historyValue.value * this.assetPrice;
+  return currency.value?.symbol ?? '';
+});
 
-    return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
-  }
-
-  openDetails() {
-    this.$emit('openHistoryDetailsForm', this.history);
-  }
+function openDetails() {
+  emit('openHistoryDetailsForm', props.history);
 }
 </script>
 

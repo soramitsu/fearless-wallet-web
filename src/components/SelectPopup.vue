@@ -19,121 +19,135 @@
     @handlerClose="$emit('handlerClose')"
   >
     <div
-      v-for="{ name, value, icon, iconType, subName } in options"
-      :key="value"
-      :class="rowClasses(value)"
-      @click="toggle(value)"
+      v-for="option in displayOptions"
+      :key="option.value"
+      :class="rowClasses(option.value)"
+      @click="toggle(option.value)"
     >
       <div class="description" data-testid="description">
         <template v-if="showIcon">
-          <Identicon v-if="isAddressIconType(iconType)" :address="value" class="img" />
+          <Identicon v-if="isAddressIconType(option.iconType)" :address="option.value" class="img" />
 
-          <Icon v-else-if="isGlobusIcon(icon)" :icon="icon" className="img" />
+          <Icon v-else-if="isGlobusIcon(option.icon)" :icon="option.icon" className="img" />
 
-          <ExternalLogo v-else :name="icon" class="img" />
+          <ExternalLogo v-else :name="option.icon" class="img" />
         </template>
 
-        <div v-if="subName" class="description-name">
-          {{ name }}
+        <div v-if="option.subName" class="description-name">
+          {{ option.name }}
           <span class="description-name__token">
-            {{ subName }}
+            {{ option.subName }}
           </span>
         </div>
 
         <span v-else>
-          {{ name }}
+          {{ option.name }}
         </span>
       </div>
 
-      <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />
+      <SIcon name="basic-check-mark-24" v-show="getIconVisible(option.value)" />
     </div>
 
     <div v-if="showWarning" class="warning" data-testid="warning">Nothing found</div>
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, toRefs } from 'vue';
 import Popup from './Popup.vue';
 
 type SpaceSize = 'small' | 'medium' | 'big';
 
-interface Options {
+type HorizontalPlacement = 'left' | 'center' | 'right';
+type VerticalPlacement = 'top' | 'bottom' | 'center';
+
+type Options = {
   name: string;
   value: string;
   icon: string;
   iconType: string;
   isAll?: true;
-}
+  subName?: string;
+};
 
-@Component({
-  components: { Popup },
-})
-export default class SelectPopup extends Vue {
-  icons: string[] = [];
-  formattedOptions: Record<string, string>[] = [];
+type Props = {
+  value: string;
+  options: Options[];
+  headerText?: string;
+  top?: number;
+  left?: number;
+  horizontalPlacement?: HorizontalPlacement;
+  verticalPlacement?: VerticalPlacement;
+  space?: SpaceSize;
+  placeholder?: string;
+  height?: number;
+  maxHeight?: number;
+  showIcon?: boolean;
+  showSearch?: boolean;
+  showBorder?: boolean;
+  showBlur?: boolean;
+  showAnimation?: boolean;
+  showBackground?: boolean;
+  sizeWidth?: string;
+};
 
-  @Prop(String) value!: string;
-  @Prop(Array) options!: Options[];
-  @Prop(String) headerText!: string;
-  @Prop(Number) top!: number;
-  @Prop(Number) left!: number;
-  @Prop({ default: 'center' }) horizontalPlacement!: string;
-  @Prop({ default: 'center' }) verticalPlacement!: string;
-  @Prop({ default: 'big' }) space!: SpaceSize;
-  @Prop({ default: '' }) placeholder!: string;
-  @Prop({ type: Number, required: false }) height?: number;
-  @Prop({ type: Number, required: false }) maxHeight?: number;
-  @Prop({ default: true }) showIcon!: boolean;
-  @Prop({ default: true }) showSearch!: boolean;
-  @Prop({ default: true }) showBorder!: boolean;
-  @Prop({ default: true }) showBlur!: boolean;
-  @Prop({ default: true }) showAnimation!: boolean;
-  @Prop({ default: true }) showBackground!: boolean;
-  @Prop({ default: 'medium' }) sizeWidth!: boolean;
+const emit = defineEmits<{
+  (_event: 'handlerFilter', ..._args: unknown[]): void;
+  (_event: 'handlerClose'): void;
+  (_event: 'toggleValue', _value: string): void;
+}>();
 
-  get showWarning() {
-    return this.options.length === 0;
-  }
+const rawProps = withDefaults(defineProps<Props>(), {
+  headerText: '',
+  top: 0,
+  left: 0,
+  horizontalPlacement: 'center',
+  verticalPlacement: 'center',
+  space: 'big',
+  placeholder: '',
+  showIcon: true,
+  showSearch: true,
+  showBorder: true,
+  showBlur: true,
+  showAnimation: true,
+  showBackground: true,
+  sizeWidth: 'medium',
+});
 
-  created() {
-    const index = this.options.findIndex(({ value }) => value === this.value);
+const { value, options, space, showIcon } = toRefs(rawProps);
 
-    if (index === -1) return;
+const displayOptions = computed(() => {
+  const list = [...options.value];
+  const index = list.findIndex(({ value: optionValue }) => optionValue === value.value);
 
-    const selectedElement = this.options[index];
-    const indexInsertion = this.options[0]?.isAll && index !== 0 ? 1 : 0;
+  if (index === -1) return list;
 
-    this.options.splice(index, 1);
-    this.options.splice(indexInsertion, 0, selectedElement);
-  }
+  const [selectedElement] = list.splice(index, 1);
+  const indexInsertion = list[0]?.isAll && index !== 0 ? 1 : 0;
 
-  getIconVisible(value: string) {
-    return this.value === value;
-  }
+  list.splice(indexInsertion, 0, selectedElement);
 
-  rowClasses(value: string) {
-    return [
-      'row',
-      {
-        'row-active': this.value === value,
-      },
-      `padding-${this.space}`,
-    ];
-  }
+  return list;
+});
 
-  toggle(value: string) {
-    this.$emit('toggleValue', value);
-  }
+const showWarning = computed(() => displayOptions.value.length === 0);
 
-  isAddressIconType(iconType: string) {
-    return iconType === 'address';
-  }
+const getIconVisible = (optionValue: string) => value.value === optionValue;
 
-  isGlobusIcon(icon: string) {
-    return icon === 'globus';
-  }
-}
+const rowClasses = (optionValue: string) => [
+  'row',
+  {
+    'row-active': value.value === optionValue,
+  },
+  `padding-${space.value}`,
+];
+
+const toggle = (optionValue: string) => {
+  emit('toggleValue', optionValue);
+};
+
+const isAddressIconType = (iconType: string) => iconType === 'address';
+const isGlobusIcon = (icon: string) => icon === 'globus';
 </script>
 
 <style lang="scss" scoped>

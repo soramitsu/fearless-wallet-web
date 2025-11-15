@@ -28,42 +28,34 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class Unbond extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+type UnbondProps = {
+  stakingCurrency: TokenGroup;
+  stakingNetwork: NetworkParams;
+  fee: string;
+};
 
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: String }) fee!: string;
+const props = defineProps<UnbondProps>();
 
-  get asset() {
-    return this.stakingNetwork.asset;
-  }
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { n, t } = useI18n();
 
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
+const asset = computed(() => props.stakingNetwork.asset);
+const stakingAssetPrice = computed(() => networksStore.getAssetPrice(props.stakingCurrency?.priceId ?? '').price);
+const valueString = computed(() => {
+  const value = Number(props.fee) * stakingAssetPrice.value;
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get valueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  get period() {
-    return `${this.stakingNetwork.unbondPeriod} ${this.$t('common.days')}`;
-  }
-}
+  return `${accountsStore.fiatSymbol}${n(value, 'price')}`;
+});
+const period = computed(() => `${props.stakingNetwork.unbondPeriod} ${t('common.days')}`);
 </script>
 
 <style lang="scss" scoped>

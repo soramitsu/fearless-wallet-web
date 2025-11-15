@@ -2,10 +2,12 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import { type GetBalancesProps } from '../subscription-service';
 import { TonBalance } from '../ton-balance/TonBalance';
 import SubstrateBalanceService from './SubstrateBalanceService';
 import EvmBalanceService from './EvmBalanceService';
+import BalanceLookupRegistry from './BalanceLookupRegistry';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type {
@@ -21,12 +23,17 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/helpers/common';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
 
+type PendingStorageUpdates = Record<string, Record<string, Record<string, BalanceItem>>>;
+
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
   evmBalanceService: EvmBalanceService;
   tonBalanceService: TonBalance;
   balanceMap: BalanceMap = {};
   balanceSubject = new Subject<BalanceJson>();
+  readonly lookupRegistry = new BalanceLookupRegistry();
+  private pendingStorageUpdates: PendingStorageUpdates = {};
+  private static readonly BALANCE_SYNC_TIMEOUT_KEY = 'balance:sync';
 
   constructor(private state: State) {
     this.substrateBalanceService = new SubstrateBalanceService(state);
@@ -42,30 +49,18 @@ export default class BalanceService {
     if (!this.balanceMap[address]) return;
 
     delete this.balanceMap[address];
-  }
 
-  public updateBalanceStore(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    this.updateBalanceStorage(networkKey, address, item).catch((e) => console.warn(e));
-  }
+    (Object.values(WalletEcosystem) as WalletEcosystem[]).forEach((ecosystem) =>
+      this.lookupRegistry.clearFetchCache(ecosystem, undefined, address)
+    );
 
-  private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
-    if (item.state !== APIItemState.READY) return;
+    const accountMeta = this.state.keyringService.getAccount(address, WalletEcosystem.Substrate)?.meta as
+      | { ethereumAddress?: string }
+      | undefined;
 
-    const { balances } = await storage.get(['balances']);
-    const copyBalance = { ...(balances ?? {}) };
-    const { symbol } = item;
-
-    if (!symbol) return;
-
-    if (!copyBalance[address]) copyBalance[address] = {};
-
-    if (item.state !== APIItemState.READY) return;
-
-    if (!copyBalance[address][symbol]) copyBalance[address][symbol] = {};
-
-    copyBalance[address][symbol][chain] = { chain, ...item } as BalanceItem;
-
-    await storage.set({ balances: copyBalance });
+    if (accountMeta?.ethereumAddress) {
+      this.lookupRegistry.clearFetchCache(WalletEcosystem.Evm, undefined, accountMeta.ethereumAddress);
+    }
   }
 
   public async updateUtilityED(networkName: NetworkName): Promise<void> {
@@ -80,11 +75,11 @@ export default class BalanceService {
 
     allAccounts.forEach(({ address }) => {
       const currencyIndex = this.balanceMap[address].findIndex(({ balances }) =>
-        balances.find(({ isUtility, name }) => isUtility && isSameString(name, networkName))
+        balances.find((balance) => balance.isUtility && isSameString(getBalanceNetworkName(balance), networkName))
       );
 
       const token = this.balanceMap[address][currencyIndex];
-      const index = token.balances.findIndex(({ name }) => isSameString(name, networkName));
+      const index = token.balances.findIndex((balance) => isSameString(getBalanceNetworkName(balance), networkName));
 
       this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
         existentialDeposit?.toString() ?? '0';
@@ -114,14 +109,19 @@ export default class BalanceService {
       } else throw new Error(`Failed to find ${item.symbol} on ${networkKey}`);
     }
 
-    const assetIndex = this.balanceMap[accountAddress][groupIndex].balances.findIndex(({ name }) => {
-      const key = PREP_NETWORKS_NAME[name] ?? name;
+    const assetIndex = this.balanceMap[accountAddress][groupIndex].balances.findIndex((balance) => {
+      const balanceNetwork = getBalanceNetworkName(balance);
+      const key = PREP_NETWORKS_NAME[balanceNetwork] ?? balanceNetwork;
 
       return isSameString(key, networkKey);
     });
 
-    this.balanceMap[accountAddress][groupIndex].balances[assetIndex] = {
-      ...this.balanceMap[accountAddress][groupIndex].balances[assetIndex],
+    const currentBalance = this.balanceMap[accountAddress][groupIndex].balances[assetIndex];
+    const resolvedNetworkName = getBalanceNetworkName(currentBalance) || networkKey;
+
+    const updatedBalance: BalanceItem = {
+      ...currentBalance,
+      networkName: resolvedNetworkName,
       reserved: item.reserved,
       free: item.free,
       locked: item.locked,
@@ -132,16 +132,22 @@ export default class BalanceService {
       timestamp: +new Date(),
     };
 
-    this.updateBalanceStore(networkKey, item, address);
+    this.balanceMap[accountAddress][groupIndex].balances[assetIndex] = updatedBalance;
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    if (updatedBalance.state === APIItemState.READY) {
+      this.queueStorageUpdate(accountAddress, updatedBalance, networkKey);
+    }
+
+    this.scheduleBalanceSync();
   }
 
   public setJettonBalanceItem(networkKey: string, item: Partial<BalanceItem>, accountAddress: string) {
+    const tokenDisplayName = (item as { tokenName?: string }).tokenName ?? item.symbol ?? networkKey;
+
     const balance: BalanceItem = {
       address: accountAddress,
       icon: item.icon!,
-      name: networkKey,
+      networkName: item.networkName ?? networkKey,
       precision: item.precision!,
       state: APIItemState.READY,
       total: item.total,
@@ -162,7 +168,7 @@ export default class BalanceService {
       mainNetwork: networkKey,
       providers: [],
       symbol: item.symbol!,
-      tokenName: item.name!,
+      tokenName: tokenDisplayName,
       relayChain: item.relayChain as RelayChainName,
       priceId: item.symbol,
       balances: [balance],
@@ -170,9 +176,97 @@ export default class BalanceService {
 
     this.balanceMap[accountAddress].push(asset);
 
-    this.updateBalanceStore(networkKey, balance, accountAddress);
+    if (balance.state === APIItemState.READY) {
+      this.queueStorageUpdate(accountAddress, balance, networkKey);
+    }
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.scheduleBalanceSync();
+  }
+
+  private queueStorageUpdate(address: string, balance: BalanceItem, networkKey: string) {
+    const { symbol } = balance;
+
+    if (!symbol) return;
+
+    const legacyName = (balance as BalanceItem & { name?: string }).name;
+    const networkName = balance.networkName ?? legacyName ?? networkKey;
+    const payload: BalanceItem = {
+      ...balance,
+      networkName,
+      chain: networkKey,
+    };
+
+    if (!this.pendingStorageUpdates[address]) this.pendingStorageUpdates[address] = {};
+    if (!this.pendingStorageUpdates[address][symbol]) this.pendingStorageUpdates[address][symbol] = {};
+
+    this.pendingStorageUpdates[address][symbol][networkKey] = payload;
+  }
+
+  private scheduleBalanceSync() {
+    this.state.timeoutService.lazyNext(
+      BalanceService.BALANCE_SYNC_TIMEOUT_KEY,
+      () => {
+        void this.flushStorageUpdates()
+          .then(() => this.publishBalance())
+          .catch((error) => {
+            console.warn('[BalanceService] Failed to sync balances', error);
+
+            if (this.hasPendingStorageUpdates()) {
+              this.scheduleBalanceSync();
+            }
+          });
+      },
+      500
+    );
+  }
+
+  private hasPendingStorageUpdates(): boolean {
+    return Object.keys(this.pendingStorageUpdates).length > 0;
+  }
+
+  private mergePendingStorageUpdates(updates: PendingStorageUpdates) {
+    Object.entries(updates).forEach(([address, symbols]) => {
+      if (!this.pendingStorageUpdates[address]) {
+        this.pendingStorageUpdates[address] = {};
+      }
+
+      Object.entries(symbols).forEach(([symbol, networks]) => {
+        if (!this.pendingStorageUpdates[address][symbol]) {
+          this.pendingStorageUpdates[address][symbol] = {};
+        }
+
+        Object.assign(this.pendingStorageUpdates[address][symbol], networks);
+      });
+    });
+  }
+
+  private async flushStorageUpdates(): Promise<void> {
+    if (!this.hasPendingStorageUpdates()) return;
+
+    const updates = this.pendingStorageUpdates;
+    this.pendingStorageUpdates = {};
+
+    try {
+      const { balances } = await storage.get(['balances']);
+      const copyBalance = { ...(balances ?? {}) };
+
+      Object.entries(updates).forEach(([address, symbols]) => {
+        if (!copyBalance[address]) copyBalance[address] = {};
+
+        Object.entries(symbols).forEach(([symbol, networks]) => {
+          if (!copyBalance[address][symbol]) copyBalance[address][symbol] = {};
+
+          Object.entries(networks).forEach(([networkKey, balance]) => {
+            copyBalance[address][symbol][networkKey] = balance;
+          });
+        });
+      });
+
+      await storage.set({ balances: copyBalance });
+    } catch (error) {
+      this.mergePendingStorageUpdates(updates);
+      throw error;
+    }
   }
 
   public async publishBalance() {
@@ -193,7 +287,10 @@ export default class BalanceService {
             this.state.networkService.networksGithub
           );
 
-          const change = getChangeWalletBalance(this.balanceMap[address], prices, ALL_NETWORKS);
+          const change = getChangeWalletBalance(this.balanceMap[address], prices, ALL_NETWORKS, {
+            networks: this.state.networkService.networksGithub,
+            favoriteAddress: address,
+          });
 
           return { address, total, change };
         });

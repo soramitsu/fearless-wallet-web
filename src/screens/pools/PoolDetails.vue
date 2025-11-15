@@ -138,8 +138,10 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import PoolDescription from '@/screens/pools/PoolDescription.vue';
 import PoolHeader from '@/screens/pools/PoolHeader.vue';
 import InputsForm from '@/screens/pools/InputsForm.vue';
@@ -156,342 +158,306 @@ import { usePoolsStore } from '@/stores/pools';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    InputsForm,
-    PoolHeader,
-    PolkaswapAlert,
-    PoolDescription,
-    PolkaswapSettings,
-    PolkaswapSettingsHeader,
-    ConfirmationPasswordPopup,
-  },
-})
-export default class PoolDetails extends Vue {
-  accountsStore = useAccountsStore();
-  networksStore = useNetworksStore();
-  poolsStore = usePoolsStore();
-  step = 1; // step 1 = pool preview, step 2 = add/remove liquidity, step 3 = add/remove preview, step 4 = my pool
-  amount1 = '';
-  amount2 = '';
-  extrinsicType: PoolsOperation | '' = '';
-  slippage = 0.5;
-  temporarySlippage = 0.5;
-  showSettings = false;
-  showConfirmationPasswordPopup = false;
-  isExchangeB = false;
+const router = useRouter();
+const route = useRoute();
+const { t, n } = useI18n();
 
-  get fee() {
-    if (!this.networksStore.soraFees) return '';
+const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
+const poolsStore = usePoolsStore();
 
-    return this.extrinsicType === 'addLiquidity'
-      ? this.networksStore.soraFees?.AddLiquidity
-      : this.networksStore.soraFees?.RemoveLiquidity;
+const step = ref(1); // 1 = pool preview, 2 = add/remove liquidity, 3 = confirmation, 4 = my pool
+const amount1 = ref('');
+const amount2 = ref('');
+const extrinsicType = ref<PoolsOperation | ''>('');
+const slippage = ref(0.5);
+const temporarySlippage = ref(0.5);
+const showSettings = ref(false);
+const showConfirmationPasswordPopup = ref(false);
+const isExchangeB = ref(false);
+
+const fee = computed(() => {
+  const soraFees = networksStore.soraFees;
+
+  if (!soraFees) return '';
+
+  return extrinsicType.value === 'addLiquidity' ? soraFees.AddLiquidity : soraFees.RemoveLiquidity;
+});
+
+const poolName = computed(() => (typeof route.params.poolName === 'string' ? route.params.poolName : ''));
+const splitPoolName = computed(() => {
+  const [first = '', second = ''] = poolName.value.split('-');
+
+  return [first, second];
+});
+
+const asset1 = computed(() => splitPoolName.value[0] ?? '');
+const asset2 = computed(() => splitPoolName.value[1] ?? '');
+
+const poolParams = computed(() => {
+  const allPools = [...poolsStore.poolsItems, ...poolsStore.myPoolsItems];
+
+  return (
+    allPools.find(
+      ({ asset1: assetA, asset2: assetB }) =>
+        isSameString(assetA.name, asset1.value) && isSameString(assetB.name, asset2.value)
+    ) ?? null
+  );
+});
+
+const showLiquidityWarning = computed(
+  () => step.value === 2 && poolParams.value?.asset1.reserve === '0' && poolParams.value?.asset2.reserve === '0'
+);
+
+const showPolkaswapIcon = computed(() => step.value === 2 && !showSettings.value);
+
+const network = computed(() => poolParams.value?.network ?? '');
+
+const asset1MyAmount = computed(() => n(+(poolParams.value?.asset1.tokenBalance ?? 0), 'decimal'));
+const asset2MyAmount = computed(() => n(+(poolParams.value?.asset2.tokenBalance ?? 0), 'decimal'));
+
+const asset1PooledStr = computed(() => t('pools.yourPooled', { asset: asset1.value.toUpperCase() }));
+const asset2PooledStr = computed(() => t('pools.yourPooled', { asset: asset2.value.toUpperCase() }));
+
+const utilityCurrency = computed(() => getUtilityAsset(accountsStore.balances, network.value));
+const utilityAssetPrice = computed(() => networksStore.getAssetPrice(utilityCurrency.value?.priceId ?? '').price);
+
+const feeValue = computed(() => getCostOfAssets(fee.value, utilityAssetPrice.value).toString());
+
+const currency1 = computed(() =>
+  accountsStore.balances.find(({ groupId }) => isSameString(groupId, poolParams.value?.asset1.id))
+);
+const currency2 = computed(() =>
+  accountsStore.balances.find(({ groupId }) => isSameString(groupId, poolParams.value?.asset2.id))
+);
+
+const amount1AssetPrice = computed(() => networksStore.getAssetPrice(poolParams.value?.asset1.priceId ?? '').price);
+const amount1Value = computed(() => getCostOfAssets(amount1.value, amount1AssetPrice.value).toString());
+
+const currencyXOR = computed(() => getXORCurrency(accountsStore.balances));
+
+const isValidAsset1 = computed(() => {
+  const currency = currency1.value;
+  const params = poolParams.value;
+  const networkName = network.value;
+
+  if (!currency || !params) return false;
+
+  const poolCurrency =
+    extrinsicType.value === 'removeLiquidity'
+      ? {
+          ...currency,
+          balances: currency.balances.map((item) => ({
+            ...item,
+            transferable: params.asset1.tokenBalance,
+          })),
+        }
+      : currency;
+
+  const isValid = isValidAmountAsset(poolCurrency, networkName, '0', amount1.value);
+
+  if (!isValid) return false;
+
+  return isValidAmountAsset(currencyXOR.value, networkName, fee.value, '0');
+});
+
+const isValidAsset2 = computed(() => {
+  const currency = currency2.value;
+  const params = poolParams.value;
+  const networkName = network.value;
+
+  if (!currency || !params) return false;
+
+  const poolCurrency =
+    extrinsicType.value === 'removeLiquidity'
+      ? {
+          ...currency,
+          balances: currency.balances.map((item) => ({
+            ...item,
+            transferable: params.asset2.tokenBalance,
+          })),
+        }
+      : currency;
+
+  const isValid = isValidAmountAsset(poolCurrency, networkName, '0', amount2.value);
+
+  if (!isValid) return false;
+
+  return isValidAmountAsset(currencyXOR.value, networkName, fee.value, '0');
+});
+
+const confirmBtnDisabled = computed(() => {
+  if (showSettings.value) return false;
+
+  if (step.value === 1 || step.value === 4) return false;
+
+  if (step.value === 2) {
+    if (+amount1.value === 0 && +amount2.value === 0) return true;
+
+    if (!isValidAsset1.value || !isValidAsset2.value) return true;
+
+    return fee.value === '';
   }
 
-  get poolParams() {
-    return [...this.poolsStore.poolsItems, ...this.poolsStore.myPoolsItems].find(
-      ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) && isSameString(asset2.name, this.asset2)
-    );
+  return false;
+});
+
+const btnSecondText = computed(() => (showSettings.value ? 'assets.resetToDefault' : 'pools.remove'));
+
+const btnText = computed(() => {
+  if (showSettings.value) return 'common.save';
+
+  if (step.value === 1) return 'pools.supply';
+
+  if (step.value === 2) return 'assets.preview';
+
+  if (step.value === 3) return 'common.confirm';
+
+  return 'pools.supply';
+});
+
+const widthConfirmBtn = computed(() => (showSecondBtn.value ? '260px' : '530px'));
+
+const showCloseIcon = computed(() => (showSettings.value ? true : step.value !== 2));
+
+const showBackIcon = computed(() => {
+  if (showSettings.value) return false;
+
+  if (step.value === 4) return false;
+
+  return step.value !== 1;
+});
+
+const showSecondBtn = computed(() => (showSettings.value ? true : !!poolParams.value?.isMyPool && step.value === 4));
+
+const icon1 = computed(() => poolParams.value?.asset1.icon);
+const icon2 = computed(() => poolParams.value?.asset2.icon);
+
+const header = computed(() => {
+  if (showSettings.value) return t('assets.poolSettings');
+
+  if (step.value === 1 || step.value === 4) return t('pools.poolDetails');
+
+  if (step.value === 2) {
+    if (extrinsicType.value === 'addLiquidity') return t('pools.supplyLiquidity');
+
+    return t('pools.removeLiquidity');
   }
 
-  get showLiquidityWarning() {
-    return this.step === 2 && this.poolParams?.asset1.reserve === '0' && this.poolParams?.asset2.reserve === '0';
+  if (step.value === 3) return t('pools.confirmSupply');
+
+  return '';
+});
+
+const tx = computed<RequestPool>(() => ({
+  amount1: amount1.value,
+  amount2: amount2.value,
+  assetId1: poolParams.value?.asset1.id ?? '',
+  assetId2: poolParams.value?.asset2.id ?? '',
+  networkName: network.value,
+  slippage: slippage.value,
+}));
+
+async function initializePool() {
+  if (poolsStore.poolsItems.length === 0 && poolsStore.myPoolsItems.length === 0) {
+    await poolsStore.getPoolsParams();
   }
 
-  get splitPoolName() {
-    return this.$route.params.poolName.split('-');
-  }
-
-  get asset1() {
-    return this.splitPoolName[0];
-  }
-
-  get asset2() {
-    return this.splitPoolName[1];
-  }
-
-  get showPolkaswapIcon() {
-    return this.step === 2 && !this.showSettings;
-  }
-
-  get network() {
-    return this.poolParams?.network ?? '';
-  }
-
-  get asset1MyAmount() {
-    return this.$n(+(this.poolParams?.asset1.tokenBalance ?? 0), 'decimal');
-  }
-
-  get asset2MyAmount() {
-    return this.$n(+(this.poolParams?.asset2.tokenBalance ?? 0), 'decimal');
-  }
-
-  get asset1PooledStr() {
-    return this.$t('pools.yourPooled', { asset: this.asset1.toUpperCase() });
-  }
-
-  get asset2PooledStr() {
-    return this.$t('pools.yourPooled', { asset: this.asset2.toUpperCase() });
-  }
-
-  get utilityCurrency() {
-    return getUtilityAsset(this.accountsStore.balances, this.network);
-  }
-
-  get utilityAssetPrice() {
-    const priceId = this.utilityCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get feeValue() {
-    return getCostOfAssets(this.fee, this.utilityAssetPrice).toString();
-  }
-
-  get currency1() {
-    return this.accountsStore.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset1.id));
-  }
-
-  get currency2() {
-    return this.accountsStore.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset2.id));
-  }
-
-  get amount1AssetPrice() {
-    const priceId = this.poolParams?.asset1.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get amount1Value() {
-    return getCostOfAssets(this.amount1, this.amount1AssetPrice).toString();
-  }
-
-  get currencyXOR() {
-    return getXORCurrency(this.accountsStore.balances);
-  }
-
-  get isValidAsset1() {
-    // для remove транзакции баланс, это баланс пула
-    const poolCurrency =
-      this.extrinsicType === 'removeLiquidity'
-        ? {
-            ...this.currency1!,
-            balances: this.currency1!.balances.map((item) => ({
-              ...item,
-              transferable: this.poolParams?.asset1.tokenBalance,
-            })),
-          }
-        : this.currency1;
-
-    const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount1);
-
-    if (!isValid) return false;
-
-    return isValidAmountAsset(this.currencyXOR, this.network, this.fee, '0');
-  }
-
-  get isValidAsset2() {
-    // для remove транзакции баланс, это баланс пула
-    const poolCurrency =
-      this.extrinsicType === 'removeLiquidity'
-        ? {
-            ...this.currency2!,
-            balances: this.currency2!.balances.map((item) => ({
-              ...item,
-              transferable: this.poolParams?.asset2.tokenBalance,
-            })),
-          }
-        : this.currency2;
-
-    const isValid = isValidAmountAsset(poolCurrency, this.network, '0', this.amount2);
-
-    if (!isValid) return false;
-
-    return isValidAmountAsset(this.currencyXOR, this.network, this.fee, '0');
-  }
-
-  get confirmBtnDisabled() {
-    if (this.showSettings) return false;
-
-    if (this.step === 1 || this.step === 4) return false;
-
-    if (this.step === 2) {
-      if (+this.amount1 === 0 && +this.amount2 === 0) return true;
-
-      if (!this.isValidAsset1 || !this.isValidAsset2) return true;
-
-      return this.fee === '';
-    }
-
-    return false;
-  }
-
-  get btnSecondText() {
-    if (this.showSettings) return 'assets.resetToDefault';
-
-    return 'pools.remove';
-  }
-
-  get btnText() {
-    if (this.showSettings) return 'common.save';
-
-    if (this.step === 1) return 'pools.supply';
-
-    if (this.step === 2) return 'assets.preview';
-
-    if (this.step === 3) return 'common.confirm';
-
-    return 'pools.supply';
-  }
-
-  get widthConfirmBtn() {
-    return this.showSecondBtn ? '260px' : '530px';
-  }
-
-  get showCloseIcon() {
-    if (this.showSettings) return true;
-
-    return this.step !== 2;
-  }
-
-  get showBackIcon() {
-    if (this.showSettings) return false;
-
-    if (this.step === 4) return false;
-
-    return this.step !== 1;
-  }
-
-  get showSecondBtn() {
-    if (this.showSettings) return true;
-
-    return this.poolParams?.isMyPool && this.step === 4;
-  }
-
-  get icon1() {
-    return this.poolParams?.asset1.icon;
-  }
-
-  get icon2() {
-    return this.poolParams?.asset2.icon;
-  }
-
-  get header() {
-    if (this.showSettings) return this.$t('assets.poolSettings');
-
-    if (this.step === 1 || this.step === 4) return this.$t('pools.poolDetails');
-
-    if (this.step === 2) {
-      if (this.extrinsicType === 'addLiquidity') return this.$t('pools.supplyLiquidity');
-
-      return this.$t('pools.removeLiquidity');
-    }
-
-    if (this.step === 3) return this.$t('pools.confirmSupply');
-
-    return '';
-  }
-
-  get tx() {
-    return {
-      amount1: this.amount1,
-      amount2: this.amount2,
-      assetId1: this.poolParams?.asset1.id,
-      assetId2: this.poolParams?.asset2.id,
-      networkName: this.network,
-      slippage: this.slippage,
-    } as RequestPool;
-  }
-
-  async created() {
-    if (this.poolsStore.poolsItems.length === 0 && this.poolsStore.myPoolsItems.length === 0)
-      await this.poolsStore.getPoolsParams();
-
-    if (this.poolParams?.isMyPool) this.step = 4;
-  }
-
-  toggleSettingsVisibility() {
-    if (this.step !== 2) this.closeForm();
-    else if (this.step === 2) {
-      this.showSettings = !this.showSettings;
-      this.temporarySlippage = this.slippage;
-    }
-  }
-
-  handlerBack() {
-    if (this.showSettings || this.step === 1) return;
-
-    if (this.step === 2 && this.poolParams?.isMyPool) {
-      this.step = 4;
-      this.amount1 = '';
-      this.amount2 = '';
-    } else this.step -= 1;
-  }
-
-  closeForm() {
-    if (this.showSettings) {
-      this.toggleSettingsVisibility();
-
-      return;
-    }
-
-    this.$router.back();
-  }
-
-  secondBtnHandler() {
-    if (this.showSettings) {
-      this.temporarySlippage = 0.5;
-      this.supply();
-
-      return;
-    }
-
-    this.step = 2;
-    this.extrinsicType = 'removeLiquidity';
-  }
-
-  updateIsExchangeB(value: boolean) {
-    this.isExchangeB = value;
-  }
-
-  updateAmount1(value: string) {
-    this.amount1 = value;
-  }
-
-  updateAmount2(value: string) {
-    this.amount2 = value;
-  }
-
-  supply() {
-    if (this.showSettings) {
-      this.slippage = this.temporarySlippage;
-      this.showSettings = false;
-
-      return;
-    }
-
-    if (this.step === 1 || this.step === 4) {
-      this.step = 2;
-      this.extrinsicType = 'addLiquidity';
-
-      return;
-    }
-
-    if (this.step === 3) this.showConfirmationPasswordPopup = true;
-    else this.step += 1;
-  }
-
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) this.closeForm();
-  }
-
-  updateSlippage(value: number) {
-    this.temporarySlippage = value;
+  if (poolParams.value?.isMyPool) {
+    step.value = 4;
   }
 }
+
+function toggleSettingsVisibility() {
+  if (step.value !== 2) {
+    closeForm();
+  } else {
+    showSettings.value = !showSettings.value;
+    temporarySlippage.value = slippage.value;
+  }
+}
+
+function handlerBack() {
+  if (showSettings.value || step.value === 1) return;
+
+  if (step.value === 2 && poolParams.value?.isMyPool) {
+    step.value = 4;
+    amount1.value = '';
+    amount2.value = '';
+  } else {
+    step.value -= 1;
+  }
+}
+
+function closeForm() {
+  if (showSettings.value) {
+    toggleSettingsVisibility();
+
+    return;
+  }
+
+  router.back();
+}
+
+function secondBtnHandler() {
+  if (showSettings.value) {
+    temporarySlippage.value = 0.5;
+    supply();
+
+    return;
+  }
+
+  step.value = 2;
+  extrinsicType.value = 'removeLiquidity';
+}
+
+function updateIsExchangeB(value: boolean) {
+  isExchangeB.value = value;
+}
+
+function updateAmount1(value: string) {
+  amount1.value = value;
+}
+
+function updateAmount2(value: string) {
+  amount2.value = value;
+}
+
+function supply() {
+  if (showSettings.value) {
+    slippage.value = temporarySlippage.value;
+    showSettings.value = false;
+
+    return;
+  }
+
+  if (step.value === 1 || step.value === 4) {
+    step.value = 2;
+    extrinsicType.value = 'addLiquidity';
+
+    return;
+  }
+
+  if (step.value === 3) {
+    showConfirmationPasswordPopup.value = true;
+  } else {
+    step.value += 1;
+  }
+}
+
+function confirmationPasswordPopupClose(closePopup: boolean) {
+  showConfirmationPasswordPopup.value = false;
+
+  if (closePopup) closeForm();
+}
+
+function updateSlippage(value: number) {
+  temporarySlippage.value = value;
+}
+
+onMounted(() => {
+  void initializePool();
+});
 </script>
 
 <style lang="scss" scoped>

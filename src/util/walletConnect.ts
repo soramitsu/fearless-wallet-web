@@ -4,6 +4,7 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import { getChainInfoByHalfGenesisHash } from '@extension-base/services/network-service/helpers';
+import type { NetworkJson } from '@extension-base/types';
 import { type ChainData, type SessionProposalNamespaces } from '@/interfaces/walletconnect';
 import { useNetworksStore } from '@/stores/networks';
 
@@ -23,7 +24,7 @@ export const chainNamesFromRequest = (
     for (const chain of chains) {
       const [, chainId] = chain.split(':');
 
-      const net = networks.find((el) => +el.chainId === +chainId);
+      const net = networks.find((networkItem: NetworkJson) => +networkItem.chainId === +chainId);
 
       if (net) names.push({ icon: net.icon, name: net.name, connected: net.active });
       else if (isRequired) {

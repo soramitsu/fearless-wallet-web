@@ -34,9 +34,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter, useRoute } from 'vue-router/composables';
-import { ref, nextTick, computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { useRouter, useRoute } from 'vue-router';
+import { ref, nextTick, computed, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import {
@@ -75,12 +75,21 @@ const isDisabled = computed(
     (oldPassword.value === '' && alreadyHasMasterPassword.value)
 );
 
-// Update alreadyHasMasterPassword, hasAccount, isNeedMigration
-(async () => {
-  alreadyHasMasterPassword.value = await hasMasterPassword();
-  hasAccount.value = await hasAccounts();
-  needMigration.value = await isNeedMigration();
-})();
+const loadInitialState = async () => {
+  const [hasPassword, accountExists, migrationRequired] = await Promise.all([
+    hasMasterPassword(),
+    hasAccounts(),
+    isNeedMigration(),
+  ]);
+
+  alreadyHasMasterPassword.value = hasPassword;
+  hasAccount.value = accountExists;
+  needMigration.value = migrationRequired;
+};
+
+onMounted(() => {
+  void loadInitialState();
+});
 
 const header = computed(() => (alreadyHasMasterPassword.value ? 'common.changePassword' : 'common.createPassword'));
 

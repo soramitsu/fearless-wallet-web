@@ -1,5 +1,4 @@
 type AssetPrices = {
-  /* eslint-disable */
   aed: number;
   aed_24h_change: number;
   ars: number;
@@ -92,7 +91,6 @@ type AssetPrices = {
   xdr_24h_change: number;
   zar: number;
   zar_24h_change: number;
-  /* eslint-enable */
 };
 
 interface AssetPrice {

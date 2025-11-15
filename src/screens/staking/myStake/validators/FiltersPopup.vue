@@ -6,7 +6,7 @@
     horizontalPlacement="right"
     :showBorder="true"
     :top="50"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
   >
     <div class="settings">
       <div class="label" data-testid="showLabel">{{ $t('staking.show') }}</div>
@@ -60,28 +60,55 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 
-@Component
-export default class FiltersPopup extends Vue {
-  @PropSync('onchainIdentity', { type: Boolean }) syncedOnchainIdentity!: boolean;
-  @PropSync('notSlashed', { type: Boolean }) syncedNotSlashed!: boolean;
-  @PropSync('notOversubscribed', { type: Boolean }) syncedNotOversubscribed!: boolean;
-  @PropSync('limitValidatorsIdentity', { type: Boolean }) syncedLimitValidatorsIdentity!: boolean;
-  @PropSync('sortByApy', { type: Boolean }) syncedSortByApy!: boolean;
-  @Prop({ default: () => () => null }) handlerClose!: VoidFunction;
+const props = defineProps<{
+  onchainIdentity: boolean;
+  notSlashed: boolean;
+  notOversubscribed: boolean;
+  limitValidatorsIdentity: boolean;
+  sortByApy: boolean;
+}>();
 
-  toggleSortByApy() {
-    this.syncedSortByApy = !this.syncedSortByApy;
-  }
+const emit = defineEmits<{
+  'update:onchainIdentity': [value: boolean];
+  'update:notSlashed': [value: boolean];
+  'update:notOversubscribed': [value: boolean];
+  'update:limitValidatorsIdentity': [value: boolean];
+  'update:sortByApy': [value: boolean];
+  handlerClose: [];
+}>();
 
-  toggleSyncedNotOversubscribed() {
-    this.syncedNotOversubscribed = !this.syncedNotOversubscribed;
-  }
-  toggleSyncedOnchainIdentity() {
-    this.syncedOnchainIdentity = !this.syncedOnchainIdentity;
-  }
+const syncedOnchainIdentity = computed({
+  get: () => props.onchainIdentity,
+  set: (value: boolean) => emit('update:onchainIdentity', value),
+});
+
+const syncedNotOversubscribed = computed({
+  get: () => props.notOversubscribed,
+  set: (value: boolean) => emit('update:notOversubscribed', value),
+});
+
+const syncedSortByApy = computed({
+  get: () => props.sortByApy,
+  set: (value: boolean) => emit('update:sortByApy', value),
+});
+
+function toggleSortByApy() {
+  syncedSortByApy.value = !syncedSortByApy.value;
+}
+
+function toggleSyncedNotOversubscribed(value: boolean) {
+  syncedNotOversubscribed.value = value;
+}
+
+function toggleSyncedOnchainIdentity(value: boolean) {
+  syncedOnchainIdentity.value = value;
+}
+
+function handleClose() {
+  emit('handlerClose');
 }
 </script>
 

@@ -1,7 +1,6 @@
-import { ApiPromise } from '@polkadot/api';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { WsProvider } from '@polkadot/rpc-provider';
+import { getApiPromiseCtor, getWsProviderCtor } from '@extension-base/services/utils/polkadot';
 import { SoraApiHandler } from './SoraApiHandler';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
@@ -16,7 +15,10 @@ import { MAX_CONTINUE_RETRY } from '@/consts/networks';
 export class SubstrateApiHandler {
   api: Record<NetworkName, ApiProps> = {};
 
-  constructor(readonly networkService: NetworkService, public state: State) {}
+  constructor(
+    readonly networkService: NetworkService,
+    public state: State
+  ) {}
 
   async destroyApi(network: string) {
     const networkLower = network.toLowerCase();
@@ -54,7 +56,7 @@ export class SubstrateApiHandler {
     if (this.api[networkName] === undefined) this.api[networkName] = this.createApiObject();
     const { nodeIndex } = this.api[networkName];
 
-    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex].url ?? nodes[0].url;
+    let currentProvider = network.isManual ? network.currentProvider : (nodes[nodeIndex].url ?? nodes[0].url);
 
     if (currentProvider.includes('dwellir')) {
       currentProvider = `${currentProvider}/${process.env.FL_DWELLIR_API_KEY}`;
@@ -80,7 +82,9 @@ export class SubstrateApiHandler {
 
     if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
 
+    const WsProvider = await getWsProviderCtor();
     const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
+    const ApiPromise = await getApiPromiseCtor();
 
     this.api[networkName].api = new ApiPromise({ provider, noInitWarn: true });
     this.api[networkName].provider = provider;
@@ -130,7 +134,9 @@ export class SubstrateApiHandler {
 
     api.nodeIndex += 1;
 
-    if (api.nodeIndex <= network.nodes.length - 1 && navigator.onLine) {
+    const isOnline = 'onLine' in navigator ? navigator.onLine : true;
+
+    if (api.nodeIndex <= network.nodes.length - 1 && isOnline) {
       this.initApi(network);
     } else {
       api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогли подключиться, ставим статус дисконнект

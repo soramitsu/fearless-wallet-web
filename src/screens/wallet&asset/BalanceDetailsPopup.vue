@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="$emit('closePopup')" sizeWidth="big">
+  <Popup headerText="assets.lockedDetails" :showBorder="true" @handlerClose="handleClose" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row" data-testid="balanceRow">
         <div class="label" data-testid="labelBalanceDetails">{{ $t(`assets.${name}`) }}</div>
@@ -18,93 +18,76 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
-
-import type { AssetPrice } from '@/interfaces';
-
+import type { AssetPrice, NetworkName } from '@/interfaces';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { findBalanceByNetwork } from '@/helpers';
 
-@Component
-export default class LockedDetailsPopup extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  network: string;
+  currency: TokenGroup;
+  assetPrice: AssetPrice;
+}>();
 
-  @Prop(String) network!: string;
-  @Prop(Object) currency!: TokenGroup;
-  @Prop(Object) assetPrice!: AssetPrice;
+const emit = defineEmits<{
+  closePopup: [];
+}>();
 
-  get assetNameUpper() {
-    return this.currency.symbol.toUpperCase();
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
+
+const assetNameUpper = computed(() => props.currency.symbol.toUpperCase());
+
+const balancesList = computed(() => {
+  if (!props.currency.balances) return [];
+
+  if (props.network === ALL_NETWORKS) {
+    return props.currency.balances;
   }
 
-  get detailsBalance() {
-    if (this.currency.balances === undefined)
-      return [
-        { name: 'reserved', value: 0, fiat: 0 },
-        { name: 'frozen', value: 0, fiat: 0 },
-        { name: 'transferable', value: 0, fiat: 0 },
-        { name: 'totalLocked', value: 0, fiat: 0 },
-        { name: 'total', value: 0, fiat: 0 },
-      ];
+  const match = findBalanceByNetwork(props.currency.balances, props.network as NetworkName);
 
-    const balances =
-      this.network === ALL_NETWORKS
-        ? this.currency.balances
-        : [this.currency.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!];
+  return match ? [match] : [];
+});
 
-    const { frozen, locked, reserved, total, transferable } = balances.reduce(
-      (prev, curr) => {
-        const network = this.networksStore.getNetwork(curr.name);
+const detailsBalance = computed(() => {
+  const initial = { reserved: 0, locked: 0, frozen: 0, transferable: 0, total: 0 };
+  const { reserved, locked, frozen, transferable, total } = balancesList.value.reduce((prev, curr) => {
+    const networkName = getBalanceNetworkName(curr);
+    const network = networksStore.getNetwork(networkName);
 
-        if (!network.active) return prev;
+    if (!network?.active) return prev;
 
-        const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);
-        const locked = (prev.locked += curr.locked ? +curr.locked : 0);
-        const reserved = (prev.reserved += curr.reserved ? +curr.reserved : 0);
-        const transferable = (prev.transferable += curr.transferable ? +curr.transferable : 0);
-        const total = (prev.total += curr.total ? +curr.total : 0);
+    return {
+      reserved: prev.reserved + Number(curr.reserved ?? 0),
+      locked: prev.locked + Number(curr.locked ?? 0),
+      frozen: prev.frozen + Number(curr.frozen ?? 0),
+      transferable: prev.transferable + Number(curr.transferable ?? 0),
+      total: prev.total + Number(curr.total ?? 0),
+    };
+  }, initial);
 
-        return {
-          reserved,
-          locked,
-          frozen,
-          transferable,
-          total,
-        };
-      },
-      { reserved: 0, locked: 0, frozen: 0, transferable: 0, total: 0 }
-    );
+  const price = Number(props.assetPrice.price ?? 0);
 
-    return [
-      { name: 'reserved', value: reserved, fiat: reserved * +this.assetPrice.price },
-      { name: 'frozen', value: frozen, fiat: frozen * +this.assetPrice.price },
-      { name: 'transferable', value: transferable, fiat: transferable * +this.assetPrice.price },
-      { name: 'totalLocked', value: locked, fiat: locked * +this.assetPrice.price },
-      { name: 'total', value: total, fiat: total * +this.assetPrice.price },
-    ];
-  }
+  return [
+    { name: 'reserved', value: reserved, fiat: reserved * price },
+    { name: 'frozen', value: frozen, fiat: frozen * price },
+    { name: 'transferable', value: transferable, fiat: transferable * price },
+    { name: 'totalLocked', value: locked, fiat: locked * price },
+    { name: 'total', value: total, fiat: total * price },
+  ];
+});
 
-  get showFiatValue() {
-    return this.fiatPrice !== 0;
-  }
-
-  get fiatPrice() {
-    return this.networksStore.getAssetPrice(this.currency.priceId ?? '').price ?? 0;
-  }
-
-  prepFiatValue(fiat: number) {
-    return `${this.accountsStore.fiatSymbol}${this.$n(fiat, 'price')} `;
-  }
-
-  getFiatValueVisible(value: number) {
-    return value.toString() !== '0';
-  }
-}
+const prepFiatValue = (fiat: number) => `${accountsStore.fiatSymbol}${n(fiat, 'price')} `;
+const getFiatValueVisible = (value: number) => value !== 0;
+const handleClose = () => emit('closePopup');
 </script>
 
 <style lang="scss" scoped>

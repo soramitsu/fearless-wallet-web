@@ -15,9 +15,9 @@ import type { Message } from '@extension-base/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 interface Handler {
-  resolve: (data: any) => void;
+  resolve: (data: unknown) => void;
   reject: (error: Error) => void;
-  subscriber?: (value: any) => void;
+  subscriber?: (value: unknown) => void;
 }
 
 type Handlers = Record<string, Handler>;
@@ -83,12 +83,18 @@ function sendMessage<TMessageType extends MessageTypes>(
   return new Promise((resolve, reject): void => {
     const id = getId(message);
 
-    handlers[id] = { reject, resolve, subscriber };
+    handlers[id] = {
+      reject,
+      resolve: (value: unknown) => resolve(value as ResponseTypes[TMessageType]),
+      subscriber,
+    };
 
     if (IS_EXTENSION) port?.postMessage({ id, message, request: request ?? {} });
     else {
-      navigator.serviceWorker?.ready.then((registration) =>
-        registration?.active?.postMessage({ id, message, request: request ?? {} })
+      const serviceWorker = (navigator as Navigator & { serviceWorker?: ServiceWorkerContainer }).serviceWorker;
+
+      serviceWorker?.ready.then((registration: ServiceWorkerRegistration) =>
+        registration.active?.postMessage({ id, message, request: request ?? {} })
       );
     }
   });
@@ -110,3 +116,4 @@ export * from '@/extension/messaging/balance';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
 export * from '@/extension/messaging/pools';
+export * from '@/extension/messaging/history';

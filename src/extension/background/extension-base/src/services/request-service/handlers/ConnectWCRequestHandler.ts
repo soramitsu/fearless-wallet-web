@@ -17,11 +17,7 @@ export class ConnectWCRequestHandler {
   }
 
   public get allConnectWCRequests(): WalletConnectSessionRequest[] {
-    return (
-      Object.values(this.connectWCRequests)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(({ reject, resolve, ...data }) => data)
-    );
+    return Object.values(this.connectWCRequests).map(({ reject, resolve, ...data }) => data);
   }
 
   public get numConnectWCRequests(): number {

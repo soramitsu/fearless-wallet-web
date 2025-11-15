@@ -2,20 +2,16 @@ import type { NetworkJson } from '@extension-base/types';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
-  SubqueryHistory,
   AccountBalance,
   AssetPrice,
   FiatJson,
   Node,
   NetworkName,
-  HistoryServiceType,
-  GiantsquidHistoryItem,
-  HistoryElement,
-  SoraHistoryElement,
   SoraFees,
   Network,
-  TonEvent,
+  NormalizedNetworkName,
 } from '@/interfaces';
+import type { GetHistory as HistoryGetter, HistoryFetchResponse, History as StoredHistory } from '@/interfaces/history';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { KeyringJson } from '@subwallet/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
@@ -49,14 +45,13 @@ export type SetAssetsPriceIntervalProps = {
   interval: NodeJS.Timer;
 };
 
-export type History = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[] | SoraHistoryElement[] | TonEvent[];
+export type GetHistory = HistoryGetter;
+export type History = StoredHistory;
 
 export type HistoryProps = {
-  history: History;
+  historyItems: HistoryFetchResponse;
   walletAddress: string;
-  networkName: NetworkName;
-  assetId: string;
-  serviceType: HistoryServiceType;
+  networkName: NormalizedNetworkName;
 };
 
 export type UpdateCurrencyBalanceProps = {
@@ -89,11 +84,6 @@ export type FetchHistory = {
   networkName: NetworkName;
   assetId: string;
   address?: string;
-};
-
-export type FetchTonHistory = {
-  address: string;
-  networkName: NetworkName;
 };
 
 export type ToggleFavorite = {

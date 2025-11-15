@@ -27,129 +27,75 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import type { HistoryElement } from '@/interfaces/history';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
-import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
-import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
-import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import AssetInfo from '@/screens/wallet&asset/asset/AssetInfo.vue';
-import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
-import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BaseApi from '@/util/BaseApi';
-import { NETWORKS_GROUPS } from '@/consts/networks';
-import { isNetworkGroup } from '@/helpers/common/index';
-import { IS_POPUP } from '@/consts/globalClient';
+import { isNetworkGroup } from '@/helpers/networkGroups';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    AssetInfo,
-    SendForm,
-    BuyPopup,
-    ReceiveForm,
-    CrossChainForm,
-    HistoryDetailsForm,
-    NetworkManagementButton,
-    NetworkManagement,
-  },
-})
-export default class Asset extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  historyElement: HistoryElement | Record<string, string> | null = null;
-  showBuyPopup = false;
-  showTipPopup = false;
-  filterValue = '';
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const route = useRoute();
 
-  get showHistoryDetailsForm() {
-    return this.historyElement !== null;
-  }
+const historyElement = ref<HistoryElement | Record<string, string> | null>(null);
+const showBuyPopup = ref(false);
 
-  get isGroupIcon() {
-    return isNetworkGroup(this.accountsStore.selectedNetwork);
-  }
+const showHistoryDetailsForm = computed(() => historyElement.value !== null);
 
-  get selectedNetworkIcon() {
-    if (this.isGroupIcon) return 'all-networks';
+const selectedLocalNetwork = computed(() => (route.params.selectedNetwork as string | undefined) ?? '');
 
-    return this.networksStore.getNetwork(this.accountsStore.selectedNetwork).icon;
-  }
+const selectedAssetId = computed(() => (route.params.assetId as string | undefined) ?? '');
 
-  get selectedLocalNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
+const currentCurrency = computed(() => {
+  return (
+    accountsStore.balances.find(
+      ({ groupId: id, balances }) =>
+        id === selectedAssetId.value || balances.some(({ id }) => id === selectedAssetId.value)
+    ) ?? {}
+  );
+});
 
-  get isHistoryPage() {
-    if (!NETWORKS_GROUPS.includes(this.accountsStore.selectedNetwork)) return false;
+const providers = computed(() => currentCurrency.value.providers ?? []);
 
-    return this.selectedLocalNetwork === '';
-  }
+const mainNetwork = computed(() => {
+  const currency = currentCurrency.value.balances?.find((network) => network.isUtility || network.isNative);
 
-  get providers() {
-    return this.currentCurrency.providers ?? [];
-  }
+  return currency ? currency.name : '';
+});
 
-  get mainNetwork() {
-    const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
+const isHistoryPage = computed(() => {
+  if (!isNetworkGroup(accountsStore.selectedNetwork)) return false;
 
-    return currency ? currency.name : '';
-  }
+  return selectedLocalNetwork.value === '';
+});
 
-  get currentCurrency() {
-    return (
-      this.accountsStore.balances.find(
-        ({ groupId: id, balances }) =>
-          id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
-      )! ?? {}
-    );
-  }
+const displayAddressByNetwork = computed(() => {
+  if (isHistoryPage.value) return BaseApi.formatAddress(accountsStore.selectedWallet, mainNetwork.value);
 
-  get displayAddressByNetwork() {
-    if (this.isHistoryPage) return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.mainNetwork);
+  return BaseApi.formatAddress(accountsStore.selectedWallet, selectedLocalNetwork.value);
+});
 
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedLocalNetwork);
-  }
+const selectedAsset = computed(() => currentCurrency.value.symbol?.toLowerCase() ?? '');
+const selectedAssetUpper = computed(() => selectedAsset.value.toUpperCase());
 
-  get selectedAssetId() {
-    return this.$route.params.assetId ?? '';
-  }
+const assetPrice = computed(() => networksStore.getAssetPrice(currentCurrency.value.priceId ?? ''));
 
-  get selectedAsset() {
-    return this.currentCurrency.symbol?.toLowerCase() ?? '';
-  }
+function toggleVisible(value = true) {
+  showBuyPopup.value = value;
+}
 
-  get iconPosition() {
-    return `top: 24px; right:${IS_POPUP ? '67px' : '131px'};`;
-  }
+function openHistoryDetailsForm(element: HistoryElement) {
+  historyElement.value = element;
+}
 
-  get selectedAssetUpper() {
-    return this.selectedAsset.toUpperCase();
-  }
-
-  get assetPrice() {
-    return this.networksStore.getAssetPrice(this.currentCurrency.priceId ?? '');
-  }
-
-  toggleVisible(value = true) {
-    this.showBuyPopup = value;
-  }
-
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
-  openHistoryDetailsForm(historyElement: HistoryElement) {
-    this.historyElement = historyElement;
-  }
-
-  closeHistoryDetailsForm() {
-    this.historyElement = null;
-  }
+function closeHistoryDetailsForm() {
+  historyElement.value = null;
 }
 </script>
 

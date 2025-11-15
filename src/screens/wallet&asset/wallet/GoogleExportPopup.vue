@@ -5,7 +5,7 @@
     :headerText="statusMessagesHeader"
     :zIndex="399"
     :showBorder="true"
-    @handlerClose="$emit('closePopup')"
+    @handlerClose="emitClose"
   >
     <div class="popup-content">
       <template v-if="isAwaiting">
@@ -54,126 +54,120 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { ICreateFile } from '@/interfaces';
 import { createGoogleFile, exportJSON, validatePassword } from '@/extension/messaging';
 
-@Component
-export default class GoogleExportPopup extends Vue {
-  password = '';
-  isErrorPassword = false;
-  status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
+const emit = defineEmits<{
+  closePopup: [];
+}>();
 
-  get selectedWalletAddress() {
-    return this.$route.query.wallet as string;
+const { t } = useI18n();
+const route = useRoute();
+
+const password = ref('');
+const isErrorPassword = ref(false);
+const status = ref<'prepare' | 'upload' | 'uploaded' | 'await'>('await');
+
+const selectedWalletAddress = computed(() => route.query.wallet as string);
+const isAwaiting = computed(() => status.value === 'await');
+const isUploading = computed(() => status.value === 'prepare' || status.value === 'upload');
+const isFinishedUpload = computed(() => status.value === 'uploaded');
+
+const disabledButton = computed(() => {
+  if (isFinishedUpload.value) return false;
+
+  return password.value === '' || isErrorPassword.value;
+});
+
+const hintGoogleDriveText = computed(() => t('addWallet.google.dataWillStoreOnGDrive'));
+
+const popupMessage = computed(() =>
+  status.value === 'await' ? t('accounts.validatePass') : t('addWallet.google.saved')
+);
+
+const statusMessagesHeader = computed(() => {
+  if (status.value === 'prepare') return t('googleExport.prepData');
+  if (status.value === 'upload') return t('googleExport.uploading');
+
+  return '';
+});
+
+function changePassword(value: string) {
+  password.value = value;
+}
+
+watch(password, () => {
+  isErrorPassword.value = false;
+});
+
+async function onConfirm() {
+  if (isFinishedUpload.value) {
+    emit('closePopup');
+
+    return;
   }
 
-  get isAwaiting() {
-    return this.status === 'await';
+  status.value = 'prepare';
+
+  const isValid = await validatePassword(password.value);
+
+  if (!isValid) {
+    status.value = 'await';
+    isErrorPassword.value = true;
+
+    return;
   }
 
-  get isUploading() {
-    return this.status === 'prepare' || this.status === 'upload';
+  let ethWalletId: string | undefined;
+  let substrateWalletId: string | undefined;
+
+  const { json: substrateJson } = await exportJSON(selectedWalletAddress.value, password.value);
+  const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
+  const stringifyJson = JSON.stringify(substrateJson);
+
+  status.value = 'upload';
+
+  if (isEthereumAddress) {
+    const { json: ethereumJson } = await exportJSON(substrateJson.meta.ethereumAddress as string, password.value);
+
+    const ethOptions = prepUploadMeta(substrateJson);
+    ethWalletId = await createFile(JSON.stringify(ethereumJson), ethOptions);
+
+    const substrateOptions = prepUploadMeta(substrateJson, ethWalletId);
+    substrateWalletId = await createFile(stringifyJson, substrateOptions);
+  } else {
+    const substrateOptions = prepUploadMeta(substrateJson);
+    substrateWalletId = await createFile(stringifyJson, substrateOptions);
   }
 
-  get isFinishedUpload() {
-    return this.status === 'uploaded';
-  }
+  status.value = substrateWalletId ? 'uploaded' : 'await';
+}
 
-  get disabledButton() {
-    if (this.isFinishedUpload) return false;
+function prepUploadMeta(json: KeyringPair$Json, ethWalletId?: string): ICreateFile['options'] {
+  return {
+    name: json.meta.name as string,
+    address: ethWalletId ? `${json.address}/${ethWalletId}` : ((json.meta.ethereumAddress as string) ?? ''),
+    password: password.value,
+  };
+}
 
-    return this.password === '' || this.isErrorPassword;
-  }
+async function createFile(json: string, options: ICreateFile['options']): Promise<string> {
+  const res = await createGoogleFile({
+    json,
+    options,
+    token: route.params.access_token as string,
+  });
 
-  get hintGoogleDriveText() {
-    return this.$t('addWallet.google.dataWillStoreOnGDrive');
-  }
+  return res.id;
+}
 
-  get popupMessage() {
-    if (this.status === 'await') return this.$t('accounts.validatePass');
-
-    return this.$t('addWallet.google.saved');
-  }
-
-  get statusMessagesHeader() {
-    if (this.status === 'prepare') return this.$t('googleExport.prepData');
-    if (this.status === 'upload') return this.$t('googleExport.uploading');
-
-    return '';
-  }
-
-  changePassword(value: string) {
-    this.password = value;
-  }
-
-  @Watch('password')
-  resetStatusError() {
-    this.isErrorPassword = false;
-  }
-
-  async onConfirm() {
-    if (this.isFinishedUpload) {
-      this.$emit('closePopup');
-
-      return;
-    }
-
-    this.status = 'prepare';
-
-    const isValid = await validatePassword(this.password);
-
-    if (!isValid) {
-      this.status = 'await';
-      this.isErrorPassword = true;
-
-      return;
-    }
-
-    let ethWalletId;
-    let substrateWalletId;
-
-    const { json: substrateJson } = await exportJSON(this.selectedWalletAddress, this.password);
-    const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
-    const stringifyJson = JSON.stringify(substrateJson);
-
-    this.status = 'upload';
-
-    if (isEthereumAddress) {
-      const { json: ethereumJson } = await exportJSON(substrateJson.meta.ethereumAddress as string, this.password);
-
-      const ethOptions = this.prepUploadMeta(substrateJson);
-      ethWalletId = await this.createFile(JSON.stringify(ethereumJson), ethOptions);
-
-      const substrateOptions = this.prepUploadMeta(substrateJson, ethWalletId);
-      substrateWalletId = await this.createFile(stringifyJson, substrateOptions);
-    } else {
-      const substrateOptions = this.prepUploadMeta(substrateJson);
-      substrateWalletId = await this.createFile(stringifyJson, substrateOptions);
-    }
-
-    this.status = substrateWalletId ? 'uploaded' : 'await';
-  }
-
-  prepUploadMeta(json: KeyringPair$Json, ethWalletId?: string): ICreateFile['options'] {
-    return {
-      name: json.meta.name as string,
-      address: ethWalletId ? `${json.address}/${ethWalletId}` : (json.meta.ethereumAddress as string) ?? '',
-      password: this.password,
-    };
-  }
-
-  async createFile(json: string, options: ICreateFile['options']): Promise<string> {
-    const res = await createGoogleFile({
-      json,
-      options,
-      token: this.$route.params.access_token,
-    });
-
-    return res.id;
-  }
+function emitClose() {
+  emit('closePopup');
 }
 </script>
 

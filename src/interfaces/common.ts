@@ -83,6 +83,7 @@ interface ChangeWalletBalance {
 enum WalletEcosystem {
   Substrate = 'substrate',
   Ton = 'ton',
+  Evm = 'evm',
 }
 
 type Placement =

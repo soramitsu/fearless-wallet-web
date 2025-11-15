@@ -7,7 +7,7 @@
     :left="-17"
     :showBorder="true"
     :showHeader="false"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="emit('handlerClose')"
   >
   </Popup>
 </template>
@@ -17,7 +17,10 @@ type Props = {
   top: number;
 };
 
-defineEmits(['handlerClose']);
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
+
 defineProps<Props>();
 </script>
 

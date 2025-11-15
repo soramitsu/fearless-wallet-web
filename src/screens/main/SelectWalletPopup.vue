@@ -8,7 +8,7 @@
     @handlerClose="close"
     :top="55"
     :maxHeight="391"
-    @click.native="walletPopupClick"
+    @click="walletPopupClick"
   >
     <div class="wallet-content">
       <WalletInfo
@@ -20,7 +20,7 @@
         :address="address"
         class="wallet"
         data-testid="walletContent"
-        @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
+        @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible($event, address)"
         @setWallet="updateSelectedWallet(address, walletEcosystem)"
       />
 
@@ -29,54 +29,61 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import WalletInfo from './WalletInfo.vue';
 import type { CustomEvent, WalletEcosystem } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: { WalletInfo },
-})
-export default class SelectWalletPopup extends Vue {
-  accountsStore = useAccountsStore();
+defineOptions({
+  name: 'SelectWalletPopup',
+});
 
-  get sortedWallets() {
-    return this.accountsStore.accounts.sort((a, b) => a.name.localeCompare(b.name));
-  }
+const accountsStore = useAccountsStore();
+const router = useRouter();
 
-  addWallet() {
-    this.$router.push({ name: Components.Welcome });
-  }
+const emit = defineEmits<{
+  close: [];
+  toggleWalletDetailsPopupVisible: [value: boolean | undefined, buttonTop?: number, address?: string];
+}>();
 
-  walletPopupClick({ target: { classList } }: CustomEvent) {
-    if (
-      !(
-        classList.contains('dots-container') ||
-        classList.contains('dots') ||
-        classList.contains('dots-horizontal') ||
-        classList.contains('icon__inner')
-      )
-    )
-      this.$emit('toggleWalletDetailsPopupVisible', false);
-  }
+const sortedWallets = computed(() => [...accountsStore.accounts].sort((a, b) => a.name.localeCompare(b.name)));
 
-  async updateSelectedWallet(address: string, walletEcosystem: WalletEcosystem) {
-    await updateCurrentAccount(address, walletEcosystem);
+const addWallet = () => {
+  router.push({ name: Components.Welcome });
+};
 
-    this.close();
-  }
+const walletPopupClick = (event: CustomEvent | MouseEvent) => {
+  const target = (event.target as HTMLElement | null) ?? null;
 
-  close() {
-    this.$emit('close');
-  }
+  if (!target) return;
 
-  toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
-    this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
-  }
-}
+  const classList = target.classList;
+  const isMenuInteraction =
+    classList.contains('dots-container') ||
+    classList.contains('dots') ||
+    classList.contains('dots-horizontal') ||
+    classList.contains('icon__inner');
+
+  if (!isMenuInteraction) emit('toggleWalletDetailsPopupVisible', false);
+};
+
+const updateSelectedWallet = async (address: string, walletEcosystem: WalletEcosystem) => {
+  await updateCurrentAccount(address, walletEcosystem);
+
+  close();
+};
+
+const close = () => {
+  emit('close');
+};
+
+const toggleWalletDetailsPopupVisible = (buttonTop: number, address: string) => {
+  emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
+};
 </script>
 
 <style lang="scss" scoped>

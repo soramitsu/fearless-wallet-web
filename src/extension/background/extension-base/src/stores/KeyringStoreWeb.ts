@@ -6,8 +6,22 @@ const FEARLESS_KEYRING = `${EXTENSION_PREFIX}:keyring`;
 
 export default class KeyringStoreWeb implements PasswordStore {
   public get(update: (value: KeyringPasswordJson) => void): void {
-    const keyring = JSON.parse(localStorage.getItem(FEARLESS_KEYRING) || '') as KeyringPasswordJson;
-    update?.(keyring);
+    const raw = localStorage.getItem(FEARLESS_KEYRING);
+
+    if (!raw) {
+      update?.({} as KeyringPasswordJson);
+
+      return;
+    }
+
+    try {
+      const keyring = JSON.parse(raw) as KeyringPasswordJson;
+      update?.(keyring);
+    } catch (error) {
+      console.warn('KeyringStoreWeb.get: failed to parse keyring payload', error);
+      this.remove();
+      update?.({} as KeyringPasswordJson);
+    }
   }
 
   public remove(update?: () => void): void {

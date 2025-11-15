@@ -10,8 +10,9 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
+import { getSoraUtil, getSoraUtilOrThrow } from '@extension-base/services/utils/sora';
+import type { SoraUtilModule } from '@extension-base/services/utils/sora';
 import type {
   AvailableNftPayload,
   ChainNftState,
@@ -24,6 +25,10 @@ import type {
 import type State from '@extension-base/background/handlers/State';
 import { getBalanceItem } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
+
+const ensureSoraLoaded = async () => getSoraUtil();
+
+const getSoraOrThrow = (): SoraUtilModule => getSoraUtilOrThrow();
 
 export class NftService {
   private refreshTime = 10000;
@@ -232,6 +237,8 @@ export class NftService {
     ]);
 
     try {
+      await ensureSoraLoaded();
+      const { FPNumber } = getSoraOrThrow();
       const gasLimit = await api.estimateGas({
         data,
         to: VALID_ETHEREUM_ADDRESS,
@@ -244,7 +251,7 @@ export class NftService {
       const estimateFee = calcEvmFees(feeData.maxFeePerGas ?? feeData.gasPrice, block?.baseFeePerGas, gasLimit);
       const formatFees = formatUnits(estimateFee);
 
-      const isInsufficientFunds = new FPNumber(formatFees).isGreaterThan(new FPNumber(balance?.total ?? 0));
+      const isInsufficientFunds = FPNumber.isGreaterThan(new FPNumber(formatFees), new FPNumber(balance?.total ?? 0));
 
       if (isInsufficientFunds)
         return {

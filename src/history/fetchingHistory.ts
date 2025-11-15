@@ -1,215 +1,84 @@
-import axios from 'axios';
-import { FPNumber } from '@sora-substrate/util';
-import { formatEther, formatUnits } from 'ethers';
-import type {
-  SubqueryHistory,
-  GiantsquidHistoryItem,
-  HistoryElement,
-  HistoryServiceType,
-  NetworkName,
-  EthereumHistoryResponse,
-  EthereumTokenHistoryData,
-  SoraHistoryElement,
-  X1HistoryElement,
-  ZetaHistory,
-} from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
-import { getEthereumExplorerApiKey } from '@/helpers/history';
-import { SEC1 } from '@/consts/time';
-import {
-  computedGiantSquidRequest,
-  computedSoraRequest,
-  computedSubqueryRequest,
-  computedSubsquidRequest,
-} from '@/history/requests';
-import { getHistory } from '@/extension/messaging';
+import type { NetworkJson } from '@extension-base/types';
+import type { TokenGroup } from '@extension-base/background/types/types';
+import type { HistoryFetchRequest, HistoryServiceType } from '@/interfaces';
+import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { isSora } from '@/helpers';
+import { balanceMatchesNetwork, findBalanceByNetwork } from '@/helpers/balances';
 
-async function fetchSubqueryHistory(
-  url: string,
-  address: string,
-  pageSize = 100,
-  cursor: string | null = null
-): Promise<SubqueryHistory> {
-  const res = await axios
-    .post(url, { query: computedSubqueryRequest(cursor, pageSize, address) })
-    .catch((e) => console.info(e));
+export type HistoryEndpointConfig = {
+  type: HistoryServiceType;
+  url: string;
+};
 
-  if (res && res.data) return res.data?.historyElements;
+type WalletAddressPayload = HistoryFetchRequest['address'];
 
-  return { nodes: [], timestamp: Date.now(), pageInfo: { startCursor: '0', endCursor: '0' } };
-}
+type HistoryRequestBuilderParams = {
+  network: NetworkJson;
+  assetId: string;
+  wallet: WalletAddressPayload;
+  balances: TokenGroup[];
+  endpoint: HistoryEndpointConfig;
+};
 
-async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {
-  const {
-    data: { data },
-  } = await axios.post(url, { query: computedGiantSquidRequest(address) }).catch(() => {
-    return {
-      data: { transfers: [] },
-    };
-  });
+export const getHistoryEndpoint = (network: NetworkJson): HistoryEndpointConfig | null => {
+  const { externalApi } = network;
+  const historyEndpoint = externalApi?.history;
+  const stakingEndpoint = externalApi?.staking;
 
-  return data?.transfers;
-}
+  if (!historyEndpoint && !stakingEndpoint) return null;
 
-async function fetchSubsquidHistory(url: string, address: string): Promise<HistoryElement[]> {
-  const {
-    data: { data },
-  } = await axios.post(url, { query: computedSubsquidRequest(address) }).catch(() => {
-    return {
-      data: { historyElements: [], timestamp: Date.now() },
-    };
-  });
+  const shouldPreferStaking = stakingEndpoint?.type?.toLowerCase().startsWith('staking');
+  const target = shouldPreferStaking ? (stakingEndpoint ?? historyEndpoint) : (historyEndpoint ?? stakingEndpoint);
 
-  return data?.historyElements;
-}
+  if (!target) return null;
 
-async function fetchEthereumHistory(url: string, address: string, contractAddress?: string): Promise<HistoryElement[]> {
-  const abort = new AbortController();
-  const signal = abort.signal;
-  const apikey = getEthereumExplorerApiKey(url);
-  const params: Record<string, unknown> = {
-    module: 'account',
-    action: contractAddress ? 'tokentx' : 'txlist',
-    contractAddress: contractAddress,
-    address,
-    page: 1,
-    offset: 300,
-    sort: 'desc',
+  return {
+    type: target.type as HistoryServiceType,
+    url: target.url,
   };
+};
 
-  if (!url.includes('optimistic')) {
-    params.apikey = apikey;
-  }
+const findNativeAsset = (balances: TokenGroup[], assetId: string, networkName: string) =>
+  balances.find(({ balances }) =>
+    balances.some((balance) => balance.id === assetId && balanceMatchesNetwork(balance, networkName))
+  );
 
-  const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
-    params,
-    signal,
-  });
+const findUtilityAsset = (balances: TokenGroup[], networkName: string) =>
+  balances.find(({ balances }) =>
+    balances.some((balance) => balance.isUtility && balanceMatchesNetwork(balance, networkName))
+  );
 
-  if (res.status !== 200) {
-    abort.abort();
+export const buildHistoryFetchRequest = ({
+  network,
+  assetId,
+  wallet,
+  balances,
+  endpoint,
+}: HistoryRequestBuilderParams): HistoryFetchRequest | null => {
+  const networkName = network.name;
+  const isNativeEvm = isNativeEVMNetwork(networkName);
+  const assetGroup = isNativeEvm
+    ? findNativeAsset(balances, assetId, networkName)
+    : findUtilityAsset(balances, networkName);
 
-    return [];
-  }
+  if (!assetGroup) return null;
 
-  return res.data.result.map(({ timeStamp, value: amount, gasUsed: fee, gasPrice, from, to, hash }, index) => {
-    const calcFee = new FPNumber(formatUnits(fee, 'gwei'))
-      .mul(new FPNumber(formatUnits(gasPrice, 'gwei')))
-      .toCodecString();
+  const searchedAsset = findBalanceByNetwork(assetGroup.balances, networkName);
 
-    return {
-      address,
-      id: String(index),
-      timestamp: (+timeStamp * SEC1).toString(),
-      success: true,
-      blockHash: hash,
-      transfer: {
-        amount,
-        fee: formatEther(calcFee),
-        from,
-        to,
-      },
-    };
-  });
-}
+  if (!searchedAsset) return null;
 
-export async function fetchX1History(url: string, address: string): Promise<HistoryElement[]> {
-  const prepUrl = `${url}&address=${address}`;
-  const headers = { 'OK-ACCESS-KEY': process.env.VUE_APP_FL_WEB_X1_TESTNET_API_KEY };
-  const res = await axios.get<X1HistoryElement>(prepUrl, { headers });
-  const result: HistoryElement[] = [];
+  const isUtility = isNativeEvm ? !!searchedAsset.isUtility : assetId === assetGroup.groupId;
 
-  res.data.data[0].transactionLists.forEach((el, index) => {
-    result.push({
-      address,
-      id: String(index),
-      timestamp: (new Date(+el.transactionTime).getTime() / 1000).toString(),
-      success: el.state === 'success',
-      blockHash: el.txId,
-      transfer: {
-        amount: el.amount,
-        from: el.from,
-        to: el.to,
-        fee: el.txFee,
-      },
-    });
-  });
+  if (!isSora(networkName) && !isUtility && endpoint.type !== 'etherscan') return null;
 
-  return result;
-}
-
-async function fetchSoraHistory(url: string, address: string) {
-  const {
-    data: { data },
-  } = await axios.post<{ data: { historyElements: SoraHistoryElement[] } }>(url, {
-    query: computedSoraRequest(address),
-  });
-
-  return data?.historyElements;
-}
-
-async function fetchZetaHistory(url: string, address: string) {
-  const prepUrl = `${url}${address}/transactions`;
-  const headers = { 'OK-ACCESS-KEY': process.env.VUE_APP_FL_WEB_X1_TESTNET_API_KEY };
-  const res = await axios.get<ZetaHistory>(prepUrl, { headers });
-  const result: HistoryElement[] = [];
-
-  res.data.items.forEach((el, index) => {
-    result.push({
-      address,
-      id: String(index),
-      timestamp: (new Date(el.timestamp).getTime() / 1000).toString(), //to seconds
-      success: el.status === 'ok',
-      blockHash: el.hash,
-      transfer: {
-        amount: el.value,
-        from: el.from.hash,
-        to: el.to.hash,
-        fee: el.fee.value,
-      },
-    });
-  });
-
-  return result;
-}
-
-export async function fetchHistory(
-  url: string,
-  address: string,
-  type: HistoryServiceType,
-  networkName: NetworkName,
-  assetId: string,
-  isUtility: boolean
-) {
-  try {
-    if (type === 'ton') return getHistory(address, networkName);
-
-    if (type === 'sora') return fetchSoraHistory(url, address);
-
-    if (type === 'oklink') return fetchX1History(url, address);
-
-    if (type === 'zeta') return fetchZetaHistory(url, address);
-
-    if (type === 'subquery') return fetchSubqueryHistory(url, address);
-
-    if (type === 'subsquid') return fetchSubsquidHistory(url, address);
-
-    if (type === 'giantsquid') {
-      const formattedAddress = BaseApi.isEthereumNetwork(networkName) ? address.toLowerCase() : address;
-
-      return fetchGiantsquidHistory(url, formattedAddress);
-    }
-
-    if (type === 'etherscan') {
-      const contractAddress = isUtility ? undefined : assetId;
-
-      return fetchEthereumHistory(url, address, contractAddress);
-    }
-
-    return [];
-  } catch {
-    console.info(`%c failed to load history for [[${networkName}]]-[[${address}]] `, 'background:orange;color:#fff');
-
-    return [];
-  }
-}
+  return {
+    network: networkName,
+    endpoint,
+    address: wallet,
+    asset: {
+      id: searchedAsset.id,
+      isUtility,
+      contractAddress: !isUtility && endpoint.type === 'etherscan' ? searchedAsset.id : undefined,
+    },
+  };
+};

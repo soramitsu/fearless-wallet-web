@@ -30,7 +30,10 @@ export class NetworkService {
   evmApiHandler = new EvmApiHandler(this.networkMap);
   substrateApiHandler: SubstrateApiHandler;
 
-  constructor(readonly keyringService: KeyringService, state: State) {
+  constructor(
+    readonly keyringService: KeyringService,
+    state: State
+  ) {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
     this.tonApiHandler = new TonApiHandler(state);
 

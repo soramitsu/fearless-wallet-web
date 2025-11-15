@@ -1,7 +1,7 @@
 <template>
   <div class="password-form">
     <ValidatedInput
-      ref="pass1Input"
+      ref="pass1InputComponent"
       data-testid="enterPasswordInput"
       class="row"
       :value="pass1"
@@ -30,72 +30,67 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch, Prop, Ref } from 'vue-property-decorator';
-import type ValidatedInput from '@/components/ValidatedInput.vue';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 
-@Component
-export default class PasswordForm extends Vue {
-  pass1 = '';
-  pass2 = '';
-
-  @Ref('pass1Input') readonly pass1InputComponent!: typeof ValidatedInput;
-  @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
-  @Prop(Boolean) showSamePasswordText!: boolean;
-  @Prop({ type: Boolean, default: true }) focus!: boolean;
-
-  get isShortPassword() {
-    return this.pass1.length !== 0 && this.pass1.length < 6;
+const props = withDefaults(
+  defineProps<{
+    isGoogleFlow?: boolean;
+    showSamePasswordText: boolean;
+    focus?: boolean;
+  }>(),
+  {
+    isGoogleFlow: false,
+    focus: true,
   }
+);
 
-  get isWrongPassword() {
-    return !!this.pass2.length && this.pass1 !== this.pass2;
-  }
+const emit = defineEmits<{
+  setPassword: [value: string];
+}>();
 
-  get showPasswordConfirmation() {
-    return this.pass1.length !== 0 && !this.isShortPassword;
-  }
+const pass1 = ref('');
+const pass2 = ref('');
+const pass1InputComponent = ref<InstanceType<typeof ValidatedInput> | null>(null);
 
-  get hintGoogleDriveText() {
-    return this.$t('addWallet.google.dataWillStoreOnGDrive');
-  }
+const { t } = useI18n();
 
-  get hintText() {
-    if (this.showSamePasswordText) return this.$t('addWallet.samePassword');
+const isShortPassword = computed(() => pass1.value.length !== 0 && pass1.value.length < 6);
+const isWrongPassword = computed(() => Boolean(pass2.value.length) && pass1.value !== pass2.value);
+const showPasswordConfirmation = computed(() => pass1.value.length !== 0 && !isShortPassword.value);
 
-    return this.$t('addWallet.passwordInfo');
-  }
+const hintGoogleDriveText = computed(() => t('addWallet.google.dataWillStoreOnGDrive'));
+const hintText = computed(() =>
+  props.showSamePasswordText ? t('addWallet.samePassword') : t('addWallet.passwordInfo')
+);
 
-  mounted() {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    if (this.focus) this.pass1InputComponent.input.focus();
-  }
+const setPassword = (password: string) => {
+  emit('setPassword', password);
+};
 
-  @Watch('pass1')
-  changePassword(pass1: string) {
-    if (pass1.length < 6) this.pass2 = '';
+const changePass1 = (value: string) => {
+  pass1.value = value;
+};
 
-    this.setPassword(pass1 === this.pass2 ? pass1 : '');
-  }
+const changePass2 = (value: string) => {
+  pass2.value = value;
+};
 
-  @Watch('pass2')
-  confirmPassword(pass2: string) {
-    this.setPassword(this.pass1 === pass2 ? pass2 : '');
-  }
+watch(pass1, (value) => {
+  if (value.length < 6) pass2.value = '';
 
-  setPassword(password: string) {
-    this.$emit('setPassword', password);
-  }
+  setPassword(value === pass2.value ? value : '');
+});
 
-  changePass1(value: string) {
-    this.pass1 = value;
-  }
+watch(pass2, (value) => {
+  setPassword(pass1.value === value ? value : '');
+});
 
-  changePass2(value: string) {
-    this.pass2 = value;
-  }
-}
+onMounted(() => {
+  if (props.focus) pass1InputComponent.value?.input?.focus();
+});
 </script>
 
 <style lang="scss" scoped>

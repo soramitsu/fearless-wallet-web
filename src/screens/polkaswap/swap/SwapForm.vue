@@ -40,7 +40,7 @@
               :showOriginValue="isExchangeB"
               @update:amount="updateSendAmount"
               @setMax="setMax"
-              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
+              @togglePopupVisibility="() => toggleSelectAssetPopupVisibility('send')"
             />
 
             <SelectInput
@@ -54,7 +54,7 @@
               :isRotate="isReceiveAssetType"
               :showOriginValue="!isExchangeB"
               @update:amount="updateReceiveAmount"
-              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
+              @togglePopupVisibility="() => toggleSelectAssetPopupVisibility('receive')"
             />
 
             <div :class="classesSwapIcon" data-testid="swapAssets" @click="swapAssets">
@@ -96,7 +96,7 @@
               :sendAssetUP="sendAssetUP"
               :receiveAssetUP="receiveAssetUP"
               :isExchangeB="isExchangeB"
-              :route="route"
+              :route="swapRoute"
             />
           </template>
 
@@ -115,7 +115,7 @@
             :sendAssetUP="sendAssetUP"
             :receiveAssetUP="receiveAssetUP"
             :isExchangeB="isExchangeB"
-            :route="route"
+            :route="swapRoute"
           />
         </div>
 
@@ -181,22 +181,23 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { FPNumber } from '@sora-substrate/util';
+<script lang="ts" setup>
+import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import { FPNumber } from '@/lib/fpNumber';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
 import { checkSwap } from '@/extension/messaging';
 import {
   getCurrencyOptions,
   getXORCurrency,
-  calcTransferableSendMinusFee,
+  calcTransferableSendMinusFee as calcSendMinusFee,
   isValidAmountAsset,
 } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/helpers/transfers';
@@ -205,514 +206,442 @@ import { addNumbers } from '@/helpers/numbers';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { balanceMatchesNetwork, findTokenBalanceByNetwork } from '@/helpers';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
-@Component({
-  components: {
-    SwapInfo,
-    Disclaimer,
-    SwapPreview,
-    PoolsBanner,
-    PolkaswapAlert,
-    PolkaswapSettings,
-    PolkaswapSettingsHeader,
-    ConfirmationPasswordPopup,
-  },
-})
-export default class SwapForm extends Vue {
-  readonly soraNetworkName = SORA_NETWORK_NAME;
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  step = 1;
-  slippage = 0.5;
-  temporarySlippage = 0.5;
-  marketType = MarketType.SMART;
-  temporaryMarketType = MarketType.SMART;
-  sendAssetId = '';
-  receiveAssetId = '';
-  sendAmount = '';
-  receiveAmount = '';
-  minMaxAmount = '';
-  selectAssetType = '';
-  route = '';
-  AToB = '';
-  BToA = '';
-  filterValue = '';
-  showSettings = false;
-  showConfirmationPasswordPopup = false;
-  isExchangeB = false;
-  tx: SwapOptions = {} as SwapOptions;
-  swapInterval!: NodeJS.Timer;
+const soraNetworkName = SORA_NETWORK_NAME;
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const routeInstance = useRoute();
+const { t, n } = useI18n();
 
-  get showBackIcon() {
-    return !this.showSettings;
+const step = ref(1);
+const slippage = ref(0.5);
+const temporarySlippage = ref(0.5);
+const marketType = ref<MarketType>(MarketType.SMART);
+const temporaryMarketType = ref<MarketType>(MarketType.SMART);
+const sendAssetId = ref('');
+const receiveAssetId = ref('');
+const sendAmount = ref('');
+const receiveAmount = ref('');
+const minMaxAmount = ref('');
+const selectAssetType = ref<'send' | 'receive' | ''>('');
+const swapRoute = ref('');
+const AToB = ref('');
+const BToA = ref('');
+const filterValue = ref('');
+const showSettings = ref(false);
+const showConfirmationPasswordPopup = ref(false);
+const isExchangeB = ref(false);
+const tx = ref<SwapOptions>({} as SwapOptions);
+
+let swapInterval: ReturnType<typeof setInterval> | null = null;
+
+const fee = computed(() => networksStore.soraFees?.Swap ?? '');
+const currencyXOR = computed(() => getXORCurrency(accountsStore.balances));
+
+const sendCurrency = computed(() => accountsStore.balances.find(({ groupId }) => groupId === sendAssetId.value));
+
+const receiveCurrency = computed(() => accountsStore.balances.find(({ groupId }) => groupId === receiveAssetId.value));
+
+const sendAssetName = computed(() => sendCurrency.value?.symbol ?? '');
+const receiveAssetName = computed(() => receiveCurrency.value?.symbol ?? '');
+
+const sendAssetPrice = computed(() => {
+  const priceId = sendCurrency.value?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const receiveAssetPrice = computed(() => {
+  const priceId = receiveCurrency.value?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const showBackIcon = computed(() => !showSettings.value);
+const showPolkaswapIcon = computed(() => step.value === 1 && !showSettings.value);
+const showCloseIcon = computed(() => (showSettings.value ? true : step.value !== 1));
+
+const classesSwapIcon = computed(() => ['swap-icon', { 'swap-icon-disable': receiveAssetId.value === '' }]);
+
+const feePrice = computed(() => {
+  const feeValue = Number(fee.value ?? 0);
+  const price = networksStore.getAssetPrice(currencyXOR.value?.priceId ?? '').price;
+  const balance = price * feeValue;
+
+  return n(balance || 0, 'price');
+});
+
+const soraMainAssetUpper = computed(() => SORA_UTILITY_ASSET.toUpperCase());
+
+const minMaxAmountPrice = computed(() => {
+  const assetPrice = isExchangeB.value
+    ? networksStore.getAssetPrice(sendAssetId.value).price
+    : networksStore.getAssetPrice(receiveAssetId.value).price;
+
+  const price = (getCostOfAssets(+minMaxAmount.value, assetPrice) as number) ?? 0;
+
+  return `${accountsStore.fiatSymbol} ${n(price, 'price')}`;
+});
+
+const minMaxAssetName = computed(() => (isExchangeB.value ? sendAssetUP.value : receiveAssetUP.value));
+
+const minMaxAmountCut = computed(() => `${n(+minMaxAmount.value || 0, 'decimal')} ${minMaxAssetName.value}`);
+
+const AToBCut = computed(() => {
+  const value = n(+AToB.value || 0, 'decimal');
+
+  return `${value} ${receiveAssetUP.value}`;
+});
+
+const BToACut = computed(() => {
+  const value = n(+BToA.value || 0, 'decimal');
+
+  return `${value} ${sendAssetUP.value}`;
+});
+
+const AToBValueCut = computed(() => {
+  const xorPrice = networksStore.getAssetPrice(sendAssetId.value).price;
+  const price = xorPrice * +AToB.value;
+
+  return `${accountsStore.fiatSymbol} ${n(price || 0, 'price')}`;
+});
+
+const BToAValueCut = computed(() => {
+  const xorPrice = networksStore.getAssetPrice(receiveAssetId.value).price;
+  const price = xorPrice * +BToA.value;
+
+  return `${accountsStore.fiatSymbol} ${n(price || 0, 'price')}`;
+});
+
+const widthButton = computed(() => (showSettings.value ? '49%' : '100%'));
+
+const header = computed(() => {
+  if (showSettings.value) return t('assets.poolSettings');
+
+  if (step.value === 1 || step.value === 4) return t('pools.poolDetails');
+
+  if (step.value === 2) {
+    if (showSettings.value) return t('assets.poolSettings');
+
+    return t('polkaswap.preview');
   }
 
-  get showPolkaswapIcon() {
-    return this.step === 1 && !this.showSettings;
+  return t('common.swap');
+});
+
+const showSwapInfo = computed(() => sendAmount.value !== '' && receiveAmount.value !== '');
+const showSelectPopup = computed(() => selectAssetType.value !== '');
+
+const optionsCurrency = computed(() => {
+  const filter = filterValue.value.toLowerCase();
+
+  const tokensFiltered = accountsStore.balances.filter(({ balances }) =>
+    balances.some((balance) => balanceMatchesNetwork(balance, soraNetworkName))
+  );
+
+  return getCurrencyOptions(tokensFiltered).filter(({ name, value }) => {
+    if (!name.toLowerCase().includes(filter)) return false;
+
+    const id = isSendAssetType.value ? receiveAssetId.value : sendAssetId.value;
+
+    return value !== id;
+  });
+});
+
+const top = computed(() => (isSendAssetType.value ? 145 : 248));
+const selectPopupValue = computed(() => (isSendAssetType.value ? sendAssetId.value : receiveAssetId.value));
+
+const isSendAssetType = computed(() => selectAssetType.value === 'send');
+const isReceiveAssetType = computed(() => selectAssetType.value === 'receive');
+
+const sendAssetUP = computed(() => sendAssetName.value.toUpperCase());
+const receiveAssetUP = computed(() => receiveAssetName.value.toUpperCase());
+
+const sendCurrencyBalance = computed(() => findTokenBalanceByNetwork(sendCurrency.value, soraNetworkName));
+
+const transferableSendAmount = computed(() => +(sendCurrencyBalance.value?.transferable ?? 0));
+
+const transferableReceiveAmount = computed(() => {
+  const balance = findTokenBalanceByNetwork(receiveCurrency.value, soraNetworkName);
+
+  return +(balance?.transferable ?? 0);
+});
+
+const sendValue = computed(() => getCostOfAssets(+sendAmount.value || 0, sendAssetPrice.value, 'string'));
+const receiveValue = computed(() => getCostOfAssets(+receiveAmount.value || 0, receiveAssetPrice.value, 'string'));
+
+const buttonText = computed(() => {
+  if (showSettings.value) return 'common.save';
+
+  if (sendAmount.value !== '' && receiveAmount.value !== '' && fee.value === '') return 'assets.calculateFee';
+
+  if (!isValidSendAsset.value) return { text: 'assets.insufficientBalance', localeProps: { asset: sendAssetUP.value } };
+
+  if (!isValidTransferByXOR.value)
+    return { text: 'assets.insufficientBalance', localeProps: { asset: soraMainAssetUpper.value } };
+
+  if (+sendAmount.value === 0 || +receiveAmount.value === 0) return { text: 'assets.insufficientLiquidity' };
+
+  return step.value === 1 ? 'assets.preview' : 'common.confirm';
+});
+
+const buttonPreviewDisabled = computed(() => {
+  if (step.value === 2 || showSettings.value) return false;
+
+  if (
+    fee.value === '' ||
+    !isValidSendAsset.value ||
+    !isValidTransferByXOR.value ||
+    +sendAmount.value === 0 ||
+    +receiveAmount.value === 0
+  )
+    return true;
+
+  return sendAssetId.value === '' || receiveAssetId.value === '' || sendAmount.value === '';
+});
+
+const isValidSendAsset = computed(() =>
+  isValidAmountAsset(sendCurrency.value, soraNetworkName, fee.value, sendAmount.value)
+);
+
+const isValidTransferByXOR = computed(() => {
+  if (fee.value === '') return false;
+
+  if (receiveAssetName.value === SORA_UTILITY_ASSET) {
+    const transferableXor = calcTransferableXor();
+    const receiveAmountValue = isExchangeB.value ? receiveAmount.value : minMaxAmount.value;
+    const transferableXORAfterSending = addNumbers([transferableXor, receiveAmountValue]);
+
+    return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(fee.value));
   }
 
-  get fee() {
-    return this.networksStore.soraFees?.Swap ?? '';
+  if (sendAssetName.value === SORA_UTILITY_ASSET) return true;
+
+  return FPNumber.gte(new FPNumber(calcTransferableXor()), new FPNumber(fee.value));
+});
+
+function updateComponentParams() {
+  const params = routeInstance.params as Record<string, string | string[]>;
+  const resetParam = Array.isArray(params.reset) ? params.reset[0] : params.reset;
+  const restPriceXORParam = Array.isArray(params.restPriceXOR) ? params.restPriceXOR[0] : params.restPriceXOR;
+  const assetIdParam = Array.isArray(params.assetId) ? params.assetId[0] : params.assetId;
+
+  if (resetParam !== undefined) {
+    receiveAssetId.value = '';
+    sendAmount.value = '';
+    receiveAmount.value = '';
+  } else if (restPriceXORParam) {
+    receiveAssetId.value = SORA_XOR_ASSET_ID;
+    receiveAmount.value = restPriceXORParam;
+    isExchangeB.value = true;
   }
 
-  get showCloseIcon() {
-    if (this.showSettings) return true;
+  sendAssetId.value = assetIdParam ?? SORA_XOR_ASSET_ID;
+}
 
-    return this.step !== 1;
+async function updateSwapQuotes() {
+  if (sendAssetId.value === '' || receiveAssetId.value === '') {
+    if (isExchangeB.value) sendAmount.value = '';
+    else receiveAmount.value = '';
+
+    return;
   }
 
-  get sendAssetPrice() {
-    const priceId = this.sendCurrency?.priceId ?? '';
+  if ((isExchangeB.value && receiveAmount.value === '') || (!isExchangeB.value && sendAmount.value === '')) {
+    sendAmount.value = '';
+    receiveAmount.value = '';
 
-    return this.networksStore.getAssetPrice(priceId).price;
+    return;
   }
 
-  get receiveAssetPrice() {
-    const priceId = this.receiveCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get classesSwapIcon() {
-    return ['swap-icon', { 'swap-icon-disable': this.receiveAssetId === '' }];
-  }
-
-  get currencyXOR() {
-    return getXORCurrency(this.accountsStore.balances);
-  }
-
-  get feePrice() {
-    const fee = this.fee ?? 0;
-    const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
-
-    return this.$n(+balance, 'price');
-  }
-
-  get soraMainAssetUpper() {
-    return SORA_UTILITY_ASSET.toUpperCase();
-  }
-
-  get minMaxAmountPrice() {
-    const price = (
-      this.isExchangeB
-        ? getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.sendAssetId).price)
-        : getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.receiveAssetId).price)
-    ) as number;
-
-    return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
-  }
-
-  get minMaxAmountCut() {
-    return `${this.$n(+this.minMaxAmount, 'decimal')} ${this.minMaxAssetName}`;
-  }
-
-  get minMaxAssetName() {
-    return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
-  }
-
-  get AToBCut() {
-    const value = +this.$n(+this.AToB, 'decimal') || '0';
-
-    return `${value} ${this.receiveAssetUP}`;
-  }
-
-  get BToACut() {
-    const value = +this.$n(+this.BToA, 'decimal') || '0';
-
-    return `${value} ${this.sendAssetUP}`;
-  }
-
-  get AToBValueCut() {
-    const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
-    const value = this.$n(cost, 'price') || '0';
-
-    return `${this.accountsStore.fiatSymbol} ${value}`;
-  }
-
-  get BToAValueCut() {
-    const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
-    const value = this.$n(cost, 'price') || '0';
-
-    return `${this.accountsStore.fiatSymbol} ${value}`;
-  }
-
-  get widthButton() {
-    return this.showSettings ? '49%' : '100%';
-  }
-
-  get classesSettings() {
-    return ['settings', { 'setting-hide': this.step === 2 }];
-  }
-
-  get header() {
-    if (this.showSettings) return this.$t('assets.swapSettings');
-
-    if (this.step === 1) return this.$t('assets.polkaswap');
-
-    return this.$t('assets.swapPreview');
-  }
-
-  get showSwapInfo() {
-    return this.sendAssetId !== '' && this.receiveAssetId !== '' && this.sendAmount !== '' && this.receiveAmount !== '';
-  }
-
-  get sendCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.sendAssetId);
-  }
-
-  get sendAssetName(): string {
-    return this.sendCurrency?.symbol ?? '';
-  }
-
-  get sendAssetIcon() {
-    return this.sendCurrency?.groupId ?? '';
-  }
-
-  get receiveCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.receiveAssetId);
-  }
-
-  get receiveAssetName(): string {
-    return this.receiveCurrency?.symbol ?? '';
-  }
-
-  get receiveAssetIcon() {
-    return this.receiveCurrency ? this.receiveCurrency.icon : '';
-  }
-
-  get showSelectPopup() {
-    return this.selectAssetType !== '';
-  }
-
-  get optionsCurrency() {
-    const filter = this.filterValue.toLowerCase();
-    const tokensGroupFilteredByNetwork = this.accountsStore.balances.filter(({ balances }) => {
-      return balances.some(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
+  const createSwap = async () => {
+    const {
+      amountA,
+      amountB,
+      AToB: newAToB,
+      BToA: newBToA,
+      swapOptions,
+      minMaxValue,
+      route,
+    } = await checkSwap({
+      network: soraNetworkName,
+      amountA: sendAmount.value,
+      amountB: receiveAmount.value,
+      assetAId: sendAssetId.value,
+      assetBId: receiveAssetId.value,
+      slippage: slippage.value,
+      symbolA: sendAssetName.value,
+      symbolB: receiveAssetName.value,
+      isExchangeB: isExchangeB.value,
+      marketType: marketType.value,
     });
 
-    const tokens = getCurrencyOptions(tokensGroupFilteredByNetwork).filter(({ name, value }) => {
-      if (!name.toLowerCase().includes(filter)) return false;
-
-      const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;
-
-      return value !== id;
-    });
-
-    return tokens;
-  }
-
-  get top() {
-    return this.isSendAssetType ? 145 : 248;
-  }
-
-  get selectPopupValue() {
-    if (this.isSendAssetType) return this.sendAssetId;
-
-    return this.receiveAssetId;
-  }
-
-  get isSendAssetType() {
-    return this.selectAssetType === 'send';
-  }
-
-  get isReceiveAssetType() {
-    return this.selectAssetType === 'receive';
-  }
-
-  get buttonText() {
-    if (this.showSettings) return 'common.save';
-
-    if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'assets.calculateFee';
-
-    if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
-
-    if (!this.isValidTransferByXOR)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
-
-    if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
-
-    return this.step === 1 ? 'assets.preview' : 'common.confirm';
-  }
-
-  get buttonPreviewDisabled() {
-    if (this.step === 2 || this.showSettings) return false;
-
-    if (
-      this.fee === '' ||
-      !this.isValidSendAsset ||
-      !this.isValidTransferByXOR ||
-      +this.sendAmount === 0 ||
-      +this.receiveAmount === 0
-    )
-      return true;
-
-    return this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '';
-  }
-
-  get isValidSendAsset() {
-    return isValidAmountAsset(this.sendCurrency, this.soraNetworkName, this.fee, this.sendAmount);
-  }
-
-  get isValidTransferByXOR() {
-    if (this.fee === '') return false;
-
-    if (this.receiveAssetName === SORA_UTILITY_ASSET) {
-      const transferableXor = this.calcTransferableXor();
-      const receiveAmount = this.isExchangeB ? this.receiveAmount : this.minMaxAmount;
-      const transferableXORAfterSending = addNumbers([transferableXor, receiveAmount]);
-
-      // если баланс xor после получения будет больше, чем затраты на комиссию, своп валиден
-      return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(this.fee));
-    }
-
-    // этот кейс проверяется в this.isValidSendAsset, когда sendAsset выбран xor
-    if (this.sendAssetName === SORA_UTILITY_ASSET) return true;
-
-    // проверяем, что xor достаточно на оплату комиссии
-    return FPNumber.gte(new FPNumber(this.calcTransferableXor()), new FPNumber(this.fee));
-  }
-
-  get sendAssetUP() {
-    return this.sendAssetName.toUpperCase();
-  }
-
-  get receiveAssetUP() {
-    return this.receiveAssetName.toUpperCase();
-  }
-
-  get sendCurrencyBalance() {
-    return this.sendCurrency?.balances.find(
-      (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
-    );
-  }
-
-  get transferableSendAmount() {
-    return +(this.sendCurrencyBalance?.transferable ?? 0);
-  }
-
-  get transferableReceiveAmount() {
-    return +(
-      this.receiveCurrency?.balances.find(
-        (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
-      )?.transferable ?? 0
-    );
-  }
-
-  get sendValue() {
-    return getCostOfAssets(+this.sendAmount ?? 0, this.sendAssetPrice, 'string');
-  }
-
-  get receiveValue() {
-    return getCostOfAssets(+this.receiveAmount ?? 0, this.receiveAssetPrice, 'string');
-  }
-
-  created() {
-    this.updateComponentParams();
-  }
-
-  activated() {
-    this.updateComponentParams();
-  }
-
-  deactivated() {
-    this.selectAssetType = '';
-    this.step = 1;
-  }
-
-  updateComponentParams() {
-    const { reset, restPriceXOR, assetId } = this.$route.params;
-
-    if (reset !== undefined) {
-      this.receiveAssetId = '';
-      this.sendAmount = '';
-      this.receiveAmount = '';
-    } else if (restPriceXOR) {
-      this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = restPriceXOR;
-      this.isExchangeB = true;
-    }
-
-    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-  }
-
-  async checkSwap() {
-    if (this.sendAssetId === '' || this.receiveAssetId === '') {
-      if (this.isExchangeB) this.sendAmount = '';
-      else this.receiveAmount = '';
-
-      return;
-    }
-
-    if ((this.isExchangeB && this.receiveAmount == '') || (!this.isExchangeB && this.sendAmount === '')) {
-      this.sendAmount = '';
-      this.receiveAmount = '';
-
-      return;
-    }
-
-    const createSwap = async () => {
-      const { amountA, amountB, AToB, BToA, swapOptions, minMaxValue, route } = await checkSwap({
-        network: this.soraNetworkName,
-        amountA: this.sendAmount,
-        amountB: this.receiveAmount,
-        assetAId: this.sendAssetId,
-        assetBId: this.receiveAssetId,
-        slippage: this.slippage,
-        symbolA: this.sendAssetName,
-        symbolB: this.receiveAssetName,
-        isExchangeB: this.isExchangeB,
-        marketType: this.marketType,
-      });
-
-      if (this.isExchangeB) this.sendAmount = amountA;
-      else this.receiveAmount = amountB;
-
-      this.tx = swapOptions!;
-      this.minMaxAmount = minMaxValue;
-      this.AToB = AToB;
-      this.BToA = BToA;
-      this.route = route;
-    };
-
-    this.clearSwapInterval();
-    this.swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);
-
-    createSwap();
-  }
-
-  clearSwapInterval() {
-    clearInterval(this.swapInterval);
-  }
-
-  closeForm() {
-    if (this.showSettings) {
-      this.toggleSettingsVisibility();
-
-      return;
-    }
-
-    this.clearSwapInterval();
-    this.$router.back();
-  }
-
-  async updateSendAmount(value: string) {
-    this.isExchangeB = false;
-    this.sendAmount = value;
-
-    this.checkSwap();
-  }
-
-  async updateReceiveAmount(value: string) {
-    this.isExchangeB = true;
-    this.receiveAmount = value;
-
-    this.checkSwap();
-  }
-
-  toggleSelectedAsset(value: string) {
-    if (this.isSendAssetType) this.sendAssetId = value;
-    else this.receiveAssetId = value;
-
-    this.checkSwap();
-    this.toggleSelectAssetPopupVisibility('');
-  }
-
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) {
-      this.sendAmount = '';
-      this.receiveAmount = '';
-      this.step = 1;
-
-      this.clearSwapInterval();
-    }
-  }
-
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
-  toggleSelectAssetPopupVisibility(value: 'send' | 'receive' | '') {
-    if (this.selectAssetType !== '') this.selectAssetType = '';
-    else this.selectAssetType = value;
-
-    this.filterValue = '';
-  }
-
-  async proceed() {
-    if (this.showSettings) {
-      this.marketType = this.temporaryMarketType;
-      this.slippage = this.temporarySlippage;
-      this.showSettings = false;
-
-      await this.checkSwap();
-    } else if (this.step === 1) this.step += 1;
-    else this.showConfirmationPasswordPopup = true;
-  }
-
-  resetSettings() {
-    this.temporaryMarketType = MarketType.SMART;
-    this.temporarySlippage = 0.5;
-
-    this.proceed();
-  }
-
-  toggleSettingsVisibility() {
-    this.showSettings = !this.showSettings;
-    this.temporaryMarketType = this.marketType;
-    this.temporarySlippage = this.slippage;
-  }
-
-  swapAssets() {
-    if (this.receiveAssetId === '') return;
-
-    const sendAssetId = this.sendAssetId;
-
-    if (this.isExchangeB) this.sendAmount = this.receiveAmount;
-    else this.receiveAmount = this.sendAmount;
-
-    this.isExchangeB = !this.isExchangeB;
-    this.sendAssetId = this.receiveAssetId;
-    this.receiveAssetId = sendAssetId;
-
-    this.checkSwap();
-  }
-
-  back() {
-    if (this.step === 1) this.closeForm();
-    else this.step -= 1;
-  }
-
-  updateMarketType(value: MarketType) {
-    this.temporaryMarketType = value;
-  }
-
-  updateSlippage(value: number) {
-    this.temporarySlippage = value;
-  }
-
-  calcTransferableXor() {
-    const balance = this.currencyXOR!.balances.find(
-      ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
-    )!;
-
-    return balance.transferable?.toString() ?? '';
-  }
-
-  calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);
-  }
-
-  setMax() {
-    this.isExchangeB = false;
-    this.sendAmount = this.calcTransferableSendMinusFee();
-
-    this.checkSwap();
+    if (isExchangeB.value) sendAmount.value = amountA;
+    else receiveAmount.value = amountB;
+
+    tx.value = swapOptions ?? ({} as SwapOptions);
+    minMaxAmount.value = minMaxValue;
+    AToB.value = newAToB;
+    BToA.value = newBToA;
+    swapRoute.value = route;
+  };
+
+  clearSwapInterval();
+  swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);
+
+  await createSwap();
+}
+
+function clearSwapInterval() {
+  if (swapInterval) {
+    clearInterval(swapInterval);
+    swapInterval = null;
   }
 }
+
+function closeForm() {
+  if (showSettings.value) {
+    toggleSettingsVisibility();
+
+    return;
+  }
+
+  clearSwapInterval();
+  router.back();
+}
+
+function updateSendAmount(value: string) {
+  isExchangeB.value = false;
+  sendAmount.value = value;
+
+  void updateSwapQuotes();
+}
+
+function updateReceiveAmount(value: string) {
+  isExchangeB.value = true;
+  receiveAmount.value = value;
+
+  void updateSwapQuotes();
+}
+
+function toggleSelectedAsset(value: string) {
+  if (isSendAssetType.value) sendAssetId.value = value;
+  else receiveAssetId.value = value;
+
+  void updateSwapQuotes();
+  toggleSelectAssetPopupVisibility('');
+}
+
+function confirmationPasswordPopupClose(closeForm: boolean) {
+  showConfirmationPasswordPopup.value = false;
+
+  if (closeForm) {
+    sendAmount.value = '';
+    receiveAmount.value = '';
+    step.value = 1;
+
+    clearSwapInterval();
+  }
+}
+
+function handlerFilter(value: string) {
+  filterValue.value = value;
+}
+
+function toggleSelectAssetPopupVisibility(value: 'send' | 'receive' | '') {
+  selectAssetType.value = selectAssetType.value !== '' ? '' : value;
+  filterValue.value = '';
+}
+
+async function proceed() {
+  if (showSettings.value) {
+    marketType.value = temporaryMarketType.value;
+    slippage.value = temporarySlippage.value;
+    showSettings.value = false;
+
+    await updateSwapQuotes();
+  } else if (step.value === 1) step.value += 1;
+  else showConfirmationPasswordPopup.value = true;
+}
+
+function resetSettings() {
+  temporaryMarketType.value = MarketType.SMART;
+  temporarySlippage.value = 0.5;
+
+  void proceed();
+}
+
+function toggleSettingsVisibility() {
+  showSettings.value = !showSettings.value;
+  temporaryMarketType.value = marketType.value;
+  temporarySlippage.value = slippage.value;
+}
+
+function swapAssets() {
+  if (receiveAssetId.value === '') return;
+
+  const previousSendAssetId = sendAssetId.value;
+
+  if (isExchangeB.value) sendAmount.value = receiveAmount.value;
+  else receiveAmount.value = sendAmount.value;
+
+  isExchangeB.value = !isExchangeB.value;
+  sendAssetId.value = receiveAssetId.value;
+  receiveAssetId.value = previousSendAssetId;
+
+  void updateSwapQuotes();
+}
+
+function back() {
+  if (step.value === 1) closeForm();
+  else step.value -= 1;
+}
+
+function updateMarketType(value: MarketType) {
+  temporaryMarketType.value = value;
+}
+
+function updateSlippage(value: number) {
+  temporarySlippage.value = value;
+}
+
+function calcTransferableXor() {
+  const balance = findTokenBalanceByNetwork(currencyXOR.value, soraNetworkName);
+
+  return balance?.transferable?.toString() ?? '0';
+}
+
+function calculateTransferableSendMinusFee() {
+  return calcSendMinusFee(sendCurrency.value, soraNetworkName, fee.value);
+}
+
+function setMax() {
+  isExchangeB.value = false;
+  sendAmount.value = calculateTransferableSendMinusFee();
+
+  void updateSwapQuotes();
+}
+
+onMounted(() => {
+  updateComponentParams();
+});
+
+onActivated(() => {
+  updateComponentParams();
+});
+
+onDeactivated(() => {
+  selectAssetType.value = '';
+  step.value = 1;
+});
+
+onBeforeUnmount(() => {
+  clearSwapInterval();
+});
 </script>
 
 <style lang="scss" scoped>

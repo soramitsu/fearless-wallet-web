@@ -6,12 +6,12 @@ import Metadata from '@extension-base/page/Metadata';
 import PostMessageProvider from '@extension-base/page/PostMessageProvider';
 import Signer from '@extension-base/page/Signer';
 import type { SendRequest } from '@extension-base/page/types';
-import type { Injected } from '@polkadot/extension-inject/types';
+import type { Injected, InjectedProvider } from '@polkadot/extension-inject/types';
 
 export default class implements Injected {
   public readonly accounts: Accounts;
   public readonly metadata: Metadata;
-  public readonly provider: PostMessageProvider;
+  public readonly provider: InjectedProvider;
   public readonly signer: Signer;
 
   constructor(sendRequest: SendRequest) {

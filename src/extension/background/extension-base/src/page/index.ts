@@ -40,7 +40,11 @@ export function sendMessage<TMessageType extends MessageTypes>(
   return new Promise((resolve, reject): void => {
     const id = getId();
 
-    handlers[id] = { reject, resolve, subscriber };
+    handlers[id] = {
+      reject,
+      resolve: (value?: unknown) => resolve(value as ResponseTypes[TMessageType]),
+      subscriber,
+    };
 
     const transportRequestMessage: TransportRequestMessage<TMessageType> = {
       id,

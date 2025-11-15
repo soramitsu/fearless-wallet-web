@@ -4,7 +4,13 @@
 
     <div v-else-if="showHiddenText" class="info-text" data-testid="infoText">{{ $t(mainText()) }}</div>
 
-    <Draggable v-else v-model="filteredTokenGroups" handle=".handle" :key="accountsStore.selectedWallet.address">
+    <Draggable
+      v-else
+      v-model="filteredTokenGroups"
+      handle=".handle"
+      item-key="groupId"
+      :key="accountsStore.selectedWallet.address"
+    >
       <CurrencyItem
         v-for="(asset, assetKey) in filteredTokenGroups"
         :assetData="asset"
@@ -14,114 +20,104 @@
         :selectedNetwork="accountsStore.selectedNetwork"
         :showAssetsManagementForm="showAssetsManagementForm"
         :timeoutCallback="timeoutCallback"
-        @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+        @toggleVisibleActivityForm="emit('toggleVisibleActivityForm', ...arguments)"
+        @toggleNetworkManagementVisible="emit('toggleNetworkManagementVisible')"
       />
     </Draggable>
   </Scroll>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import { computed, onBeforeUnmount, ref } from 'vue';
 import Draggable from 'vuedraggable';
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
 type TimeoutSubscription = {
-  subscription: NodeJS.Timeout;
+  subscription: ReturnType<typeof setTimeout>;
   fn: () => void;
 };
 
-@Component({
-  components: {
-    Draggable,
-    CurrencyItem,
-  },
-})
-export default class Currencies extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  timeoutSubscriptions: TimeoutSubscription[] = [];
+const props = defineProps<{
+  balances: TokenGroup[];
+  filterValue: string;
+  showAssetsManagementForm: boolean;
+}>();
 
-  @Prop(Array) balances!: TokenGroup[];
-  @Prop(String) filterValue!: string;
-  @Prop(Boolean) showAssetsManagementForm!: boolean;
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
 
-  get showLoader() {
-    return this.isEmptyBalances || this.accountsStore.isBalanceLoading;
-  }
+const timeoutSubscriptions = ref<TimeoutSubscription[]>([]);
 
-  get isEmptyBalances() {
-    return this.accountsStore.balances.length === 0;
-  }
+const showLoader = computed(() => isEmptyBalances.value || accountsStore.isBalanceLoading);
 
-  get isOnline() {
-    return navigator.onLine;
-  }
+const isEmptyBalances = computed(() => accountsStore.balances.length === 0);
 
-  get showHiddenText() {
-    if (!this.isOnline || !this.balances) return true;
+const isOnline = computed(() => navigator.onLine);
 
-    if (this.showAssetsManagementForm) return false;
+const showHiddenText = computed(() => {
+  if (!isOnline.value || !props.balances) return true;
 
-    const allHidden = this.balances.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
+  if (props.showAssetsManagementForm) return false;
 
-    return this.balances.length === this.accountsStore.hiddenAssets.length || allHidden || !navigator.onLine;
-  }
+  const allHidden = props.balances.every(({ groupId }) => accountsStore.hiddenAssets.includes(groupId));
 
-  get filteredTokenGroups() {
-    return this.balances;
-  }
+  return props.balances.length === accountsStore.hiddenAssets.length || allHidden || !navigator.onLine;
+});
 
-  set filteredTokenGroups(balances) {
-    this.accountsStore.setBalance({
+const filteredTokenGroups = computed({
+  get: () => props.balances,
+  set: (balances: TokenGroup[]) => {
+    accountsStore.setBalance({
       details: balances,
       reset: false,
       saveSequence: true,
     });
-  }
+  },
+});
 
-  getAssetPrice(assetKey: string | undefined) {
-    if (assetKey === undefined) return 0;
+function getAssetPrice(assetKey: string | undefined) {
+  if (assetKey === undefined) return 0;
 
-    if (Object.keys(this.networksStore.assetsPrice).length && this.networksStore.assetsPrice.tokenPriceMap[assetKey])
-      return this.networksStore.assetsPrice.tokenPriceMap[assetKey];
+  if (Object.keys(networksStore.assetsPrice).length && networksStore.assetsPrice.tokenPriceMap[assetKey])
+    return networksStore.assetsPrice.tokenPriceMap[assetKey];
 
-    return 0;
-  }
-
-  getPriceChange(assetKey: string | undefined) {
-    if (
-      this.networksStore.assetsPrice === undefined ||
-      this.networksStore.assetsPrice.tokenPriceChange === undefined ||
-      assetKey === undefined
-    )
-      return 0;
-
-    if (this.networksStore.assetsPrice.tokenPriceChange[assetKey])
-      return this.networksStore.assetsPrice.tokenPriceChange[assetKey] / 100;
-
-    return 0;
-  }
-
-  timeoutCallback(fn: () => void) {
-    this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
-
-    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 0);
-
-      return { subscription, fn };
-    });
-  }
-
-  mainText() {
-    if (!navigator.onLine) return 'common.offlineStatus';
-
-    return this.filterValue !== '' ? 'common.nothingFound' : 'wallet.allAssetsHidden';
-  }
+  return 0;
 }
+
+function getPriceChange(assetKey: string | undefined) {
+  if (
+    networksStore.assetsPrice === undefined ||
+    networksStore.assetsPrice.tokenPriceChange === undefined ||
+    assetKey === undefined
+  )
+    return 0;
+
+  if (networksStore.assetsPrice.tokenPriceChange[assetKey])
+    return networksStore.assetsPrice.tokenPriceChange[assetKey] / 100;
+
+  return 0;
+}
+
+function timeoutCallback(fn: () => void) {
+  timeoutSubscriptions.value.forEach(({ subscription }) => clearTimeout(subscription));
+
+  const subscription = setTimeout(() => fn(), 0);
+  timeoutSubscriptions.value = [{ subscription, fn }];
+}
+
+function mainText() {
+  if (!navigator.onLine) return 'common.offlineStatus';
+
+  return props.filterValue !== '' ? 'common.nothingFound' : 'wallet.allAssetsHidden';
+}
+
+onBeforeUnmount(() => {
+  timeoutSubscriptions.value.forEach(({ subscription }) => clearTimeout(subscription));
+  timeoutSubscriptions.value = [];
+});
 </script>
 
 <style lang="scss" scoped>

@@ -1,5 +1,5 @@
 <template>
-  <Popup :headerText="headerText" :showBorder="true" @handlerClose="$emit('closePopup')" sizeWidth="big">
+  <Popup :headerText="headerText" :showBorder="true" @handlerClose="handlerClose" sizeWidth="big">
     <div class="buy-content">
       <FButton
         v-for="provider in providersFiltered"
@@ -14,33 +14,38 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { BuyProvider } from '@/interfaces';
 import { getProviderUrl } from '@/helpers/currencies';
 import { useExtensionStore } from '@/stores/extension';
 
-@Component
-export default class BuyPopup extends Vue {
-  extensionStore = useExtensionStore();
+const props = defineProps<{
+  asset: string;
+  address: string;
+  providers: BuyProvider[];
+}>();
 
-  @Prop(String) asset!: string;
-  @Prop(String) address!: string;
-  @Prop(Array) providers!: ('ramp' | 'moonpay')[];
+const emit = defineEmits<{
+  closePopup: [];
+}>();
 
-  get headerText() {
-    return this.$t('assets.buyHeader', { asset: this.asset });
-  }
+const extensionStore = useExtensionStore();
+const { t } = useI18n();
 
-  get providersFiltered() {
-    return this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
-  }
+const headerText = computed(() => t('assets.buyHeader', { asset: props.asset }));
 
-  openProvider(providerName: BuyProvider) {
-    const url = getProviderUrl(providerName, this.asset, this.address);
+const providersFiltered = computed(() => props.providers.filter((provider) => extensionStore.features?.fiat[provider]));
 
-    window.open(url);
-  }
+function handlerClose() {
+  emit('closePopup');
+}
+
+function openProvider(providerName: BuyProvider) {
+  const url = getProviderUrl(providerName, props.asset, props.address);
+
+  window.open(url);
 }
 </script>
 

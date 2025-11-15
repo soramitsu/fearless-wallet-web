@@ -10,6 +10,7 @@ module.exports = {
     loaderOptions: {
       sass: {
         additionalData: `
+          @use "@soramitsu-ui/theme/sass" as theme;
           @import "@/styles/_layout.scss";
           @import "@/styles/_mixins.scss";
           @import "@/styles/common.scss";
@@ -32,7 +33,28 @@ module.exports = {
     },
   },
   productionSourceMap: true,
+  configureWebpack: (config) => {
+    config.experiments = {
+      ...(config.experiments ?? {}),
+      asyncWebAssembly: true,
+    };
+
+    const moduleConfig = config.module ?? {};
+    const existingRules = moduleConfig.rules ?? [];
+
+    moduleConfig.rules = [
+      ...existingRules,
+      {
+        test: /\.wasm$/,
+        type: 'webassembly/async',
+      },
+    ];
+
+    config.module = moduleConfig;
+  },
   chainWebpack: (config) => {
+    config.plugins.delete('eslint');
+
     config.plugin('define').tap((definitions) => {
       const def = definitions[0]['process.env'];
 
@@ -64,7 +86,27 @@ module.exports = {
 
       return definitions;
     });
-    config.resolve.alias.set('@extension-base', path.resolve(__dirname, 'src/extension/background/extension-base/src'));
+    config.resolve.alias
+      .set('@extension-base', path.resolve(__dirname, 'src/extension/background/extension-base/src'))
+      .set('@sora', path.resolve(__dirname, 'src/sora'))
+      .set('@polkadot/keyring', path.dirname(require.resolve('@polkadot/keyring/package.json')))
+      .set(
+        '@polkadot/ui-keyring/node_modules/@polkadot/keyring',
+        path.dirname(require.resolve('@polkadot/keyring/package.json'))
+      )
+      .set(
+        '@polkadot/ui-keyring/node_modules/@polkadot/keyring/pair',
+        path.join(path.dirname(require.resolve('@polkadot/keyring/package.json')), 'pair')
+      )
+      .set(
+        '@polkadot/ui-keyring/node_modules/@polkadot/keyring/pair/index.js',
+        path.resolve(__dirname, 'src/shims/polkadot-keyring-pair.js')
+      )
+      .set(
+        '@polkadot/keyring/pair$',
+        path.join(path.dirname(require.resolve('@polkadot/keyring/package.json')), 'pair/index.js')
+      )
+      .set('@polkadot/keyring/pair/index.js', path.resolve(__dirname, 'src/shims/polkadot-keyring-pair.js'));
 
     config.module.rule('svg').exclude.add(resolve('src/assets')).end();
     config.module
@@ -83,12 +125,23 @@ module.exports = {
       splitChunks: {
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|element-ui|vuedraggable|tippy.js|vue-class-component)[\\/]/,
+            test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|vuedraggable|tippy.js|vue-router|vue-i18n)[\\/]/,
             name: 'vendor',
             chunks: 'all',
           },
         },
       },
     });
+
+    config.merge({
+      experiments: {
+        asyncWebAssembly: true,
+      },
+    });
+
+    config.module
+      .rule('wasm')
+      .test(/\.wasm$/)
+      .set('type', 'webassembly/async');
   },
 };

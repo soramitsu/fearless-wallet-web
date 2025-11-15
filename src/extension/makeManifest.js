@@ -1,6 +1,20 @@
 const { env } = require('process');
 const packageJson = require('../../package.json');
 
+const sanitizeVersionName = (value = '') =>
+  value
+    .trim()
+    .replace(/[^0-9A-Za-z.-]/g, '-')
+    .substring(0, 64);
+
+const resolveVersionName = () => {
+  const suffix =
+    sanitizeVersionName(
+      env.RELEASE_TAG || env.GIT_TAG_NAME || env.BUILD_TAG || env.BRANCH_NAME || env.BUILD_NUMBER || ''
+    ) || '';
+  return suffix ? `${packageJson.version}-${suffix}` : packageJson.version;
+};
+
 module.exports = (browser) => {
   const baseContentSecurityPolicy =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
@@ -46,10 +60,12 @@ module.exports = (browser) => {
     content_security_policy: {
       extension_pages: baseContentSecurityPolicy,
     },
+    ...(env.CRX_UPDATE_URL ? { update_url: env.CRX_UPDATE_URL } : {}),
   };
 
   return {
     version: packageJson.version,
+    version_name: resolveVersionName(),
     description: packageJson.description,
     homepage_url: 'https://fearlesswallet.io/',
     name: 'Fearless Wallet',

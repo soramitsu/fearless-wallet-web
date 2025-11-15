@@ -283,7 +283,6 @@ export interface EvmApiProps {
   api?: EvmProvider;
   apiRetry?: number;
   nodeIndex?: number;
-  timeout: Record<string, number>;
 }
 
 export interface TonApiProps {
@@ -300,8 +299,7 @@ export type FetchBalancePayload = {
   force?: boolean;
 };
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type BaseRequestSign = {};
+export type BaseRequestSign = Record<string, unknown>;
 
 export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: NetworkName;
@@ -551,8 +549,8 @@ export type TransportResponseMessage<TMessageType extends MessageTypes> =
   TMessageType extends MessageTypesWithNoSubscriptions
     ? TransportResponseMessageNoSub<TMessageType>
     : TMessageType extends MessageTypesWithSubscriptions
-    ? TransportResponseMessageSub<TMessageType>
-    : never;
+      ? TransportResponseMessageSub<TMessageType>
+      : never;
 
 export type ResponseRpcListProviders = ProviderList;
 
@@ -622,7 +620,7 @@ export type AuthUrls = Record<string, AuthUrlInfo>;
 export type AuthorizedAccountsDiff = [
   url: string,
   authorizedAccounts: AuthUrlInfo['authorizedAccounts'],
-  authType: AuthType
+  authType: AuthType,
 ][];
 
 export interface MetaRequest extends Resolver<boolean> {

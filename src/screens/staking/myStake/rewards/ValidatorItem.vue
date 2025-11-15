@@ -14,45 +14,38 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { ValidatorReward } from '@extension-base/services/staking-service/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class ValidatorItem extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  validator: ValidatorReward;
+  rewardedCurrency: TokenGroup;
+}>();
 
-  @Prop({ type: Object }) validator!: ValidatorReward;
-  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
 
-  get rewards() {
-    return this.$n(+this.validator.rewards, 'decimal');
-  }
+const rewards = computed(() => n(+props.validator.rewards, 'decimal'));
 
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
+const rewardedAssetPrice = computed(() => {
+  const priceId = props.rewardedCurrency?.priceId ?? '';
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
+  return networksStore.getAssetPrice(priceId).price;
+});
 
-  get rewardedAsset() {
-    return this.rewardedCurrency.symbol;
-  }
+const rewardedAsset = computed(() => props.rewardedCurrency.symbol);
 
-  get price() {
-    const value = +this.validator.rewards * this.rewardedAssetPrice;
+const price = computed(() => {
+  const value = +props.validator.rewards * rewardedAssetPrice.value;
 
-    return this.$n(value, 'price');
-  }
-
-  onSelect(value: boolean) {
-    this.$emit('onSelect', value, this.validator.address);
-  }
-}
+  return n(value, 'price');
+});
 </script>
 
 <style lang="scss" scoped>

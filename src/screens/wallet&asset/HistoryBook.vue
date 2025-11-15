@@ -2,8 +2,8 @@
   <div class="history-book">
     <Scroll>
       <div class="history">
-        <template v-if="showHistoryAndBook">
-          <template v-if="showHistory">
+        <div v-if="showHistoryAndBook">
+          <div v-if="showHistory">
             <div class="label" data-testid="recentLabel">
               {{ $t('assets.recent') }}
             </div>
@@ -19,33 +19,32 @@
                 </div>
               </div>
 
-              <Icon icon="plus-pink" class="plus" data-testid="setAddress" @click="openEditBook(address)" />
+              <Icon icon="plus-pink" class="plus" data-testid="setAddress" @click.stop="openEditBook(address)" />
             </div>
-          </template>
+          </div>
 
-          <template v-for="[key, addressBook] in splitAddressBook">
-            <div class="label" data-testid="labelKey" :key="key">{{ key }}</div>
+          <div v-for="group in splitAddressBook" :key="group.letter" class="address-book-group">
+            <div class="label" data-testid="labelKey">{{ group.letter }}</div>
 
             <div
-              v-for="{ name, address } in addressBook"
-              :key="name + address"
+              v-for="item in group.addresses"
+              :key="item.name + item.address"
               class="row"
-              @click="setRecipient(address)"
+              @click="setRecipient(item.address)"
             >
               <div class="description">
                 <img v-if="isTonWallet" :src="tonIcon" />
 
-                <Identicon v-else :address="address" />
+                <Identicon v-else :address="item.address" />
 
                 <div class="full-description">
-                  <div class="name" data-testid="name">{{ name }}</div>
-
-                  <div class="address" data-testid="address">{{ cut(address) }}</div>
+                  <div class="name" data-testid="name">{{ item.name }}</div>
+                  <div class="address" data-testid="address">{{ cut(item.address) }}</div>
                 </div>
               </div>
             </div>
-          </template>
-        </template>
+          </div>
+        </div>
 
         <div v-else data-testid="noHistory">{{ $t('assets.noHistory') }}</div>
       </div>
@@ -62,10 +61,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
 import { storage } from '@extension-base/stores/Storage';
-import { toSvg } from 'jdenticon';
 import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { cut, isSameString, isSora } from '@/helpers/';
@@ -75,132 +73,136 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { TON_ICON } from '@/consts/networks';
 
-@Component
-export default class HistoryBook extends Vue {
-  accountsStore = useAccountsStore();
-  networksStore = useNetworksStore();
-  addressBook: AddressBook = {};
-  tonIcon = TON_ICON;
+defineOptions({
+  name: 'HistoryBook',
+});
 
-  @Prop(String) network!: string;
-  @Prop(String) assetId!: string;
+const props = defineProps<{
+  network: string;
+  assetId: string;
+}>();
 
-  get showHistoryAndBook() {
-    return this.showHistory || this.book.length !== 0;
-  }
+const emit = defineEmits<{
+  setRecipient: [address: string];
+  toggleHistoryBookVisibility: [];
+  toggleEditBook: [address?: string];
+}>();
 
-  get showHistory() {
-    return this.historyAddresses.length !== 0;
-  }
+const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
+const addressBook = ref<AddressBook>({});
+const tonIcon = TON_ICON;
 
-  get addressPrefix() {
-    return this.networksStore.getNetwork(this.network)?.addressPrefix;
-  }
+const showHistory = computed(() => historyAddresses.value.length !== 0);
+const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
 
-  get book() {
-    const addresses = [...(this.addressBook['all'] ?? []), ...(this.addressBook[this.network] ?? [])];
+const addressPrefix = computed(() => networksStore.getNetwork(props.network)?.addressPrefix);
 
-    return Array.from(new Set(addresses));
-  }
+const book = computed(() => {
+  const addresses = [...(addressBook.value.all ?? []), ...(addressBook.value[props.network] ?? [])];
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
+  return Array.from(new Set(addresses));
+});
 
-  get addressByConditions() {
-    if (!this.network) return [];
+const showHistoryAndBook = computed(() => showHistory.value || book.value.length !== 0);
 
-    const history = this.networksStore.getHistory(this.assetId, this.network.toLowerCase());
+const addressByConditions = computed(() => {
+  if (!props.network) return [];
 
-    if (!history) return [];
+  const history = networksStore.getHistory(props.assetId, props.network.toLowerCase());
 
-    if (isSora(this.network)) {
-      return (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
-        if (item.method !== 'transfer') return [];
+  if (!history) return [];
 
-        return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];
-      });
-    }
+  if (isSora(props.network)) {
+    return (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
+      if (item.method !== 'transfer') return [];
 
-    if (this.isTonWallet) {
-      return (history.nodes as unknown as TonEvent[]).flatMap((item) => item.to ?? []);
-    }
-
-    return history?.nodes.flatMap((item) => {
-      if (getType(item) !== TransactionType.transfer) return [];
-
-      return BaseApi.encodeAddress(item.transfer?.to ?? '', this.addressPrefix) ?? [];
+      return BaseApi.encodeAddress(item.data?.to ?? '', addressPrefix.value) ?? [];
     });
   }
 
-  get historyAddresses() {
-    return Array.from(new Set(this.addressByConditions))
-      .filter(
-        (address) =>
-          !this.book.some(({ address: addressFromBook }) => {
-            if (this.isTonWallet) {
-              return isSameString(address, addressFromBook);
-            }
-
-            return isSameString(BaseApi.encodeAddress(address), BaseApi.encodeAddress(addressFromBook));
-          })
-      )
-      .slice(0, 11);
+  if (isTonWallet.value) {
+    return (history.nodes as unknown as TonEvent[]).flatMap((item) => item.to ?? []);
   }
 
-  get splitAddressBook() {
-    const sortedAddressBook = this.book.sort(({ name: name1 }, { name: name2 }) => name1.localeCompare(name2));
+  return history.nodes.flatMap((item) => {
+    if (getType(item) !== TransactionType.transfer) return [];
 
-    const splitObj = sortedAddressBook.reduce<AddressBook>((result, { address, name }) => {
-      const firstChar = name[0].toUpperCase();
-      const addressByNetwork = BaseApi.encodeAddress(address, this.addressPrefix);
+    return BaseApi.encodeAddress(item.transfer?.to ?? '', addressPrefix.value) ?? [];
+  });
+});
 
-      if (result[firstChar]) result[firstChar].push({ name, address: addressByNetwork });
-      else result[firstChar] = [{ name, address: addressByNetwork }];
+const historyAddresses = computed(() =>
+  Array.from(new Set(addressByConditions.value))
+    .filter((address) => {
+      return !book.value.some(({ address: addressFromBook }) => {
+        if (isTonWallet.value) {
+          return isSameString(address, addressFromBook);
+        }
 
-      return result;
-    }, {});
+        return isSameString(BaseApi.encodeAddress(address), BaseApi.encodeAddress(addressFromBook));
+      });
+    })
+    .slice(0, 11)
+);
 
-    return Object.entries(splitObj);
-  }
+const splitAddressBook = computed(() => {
+  const sortedAddressBook = [...book.value].sort(({ name: name1 = '' }, { name: name2 = '' }) =>
+    name1.localeCompare(name2)
+  );
 
-  @Watch('assetId')
-  @Watch('selectedNetwork')
-  networkWatcher() {
-    this.loadHistory();
-  }
+  const map = new Map<string, { name: string; address: string }[]>();
 
-  async mounted() {
-    this.loadHistory();
+  sortedAddressBook.forEach(({ address, name = '' }) => {
+    const firstChar = name[0]?.toUpperCase() ?? '#';
+    const addressByNetwork = BaseApi.encodeAddress(address, addressPrefix.value);
+    const bucket = map.get(firstChar) ?? [];
 
-    const { addressBook } = await storage.get(['addressBook']);
+    bucket.push({ name, address: addressByNetwork ?? address });
+    map.set(firstChar, bucket);
+  });
 
-    this.addressBook = addressBook;
-  }
+  return Array.from(map.entries()).map(([letter, addresses]) => ({ letter, addresses }));
+});
 
-  loadHistory() {
-    if (this.historyAddresses.length !== 0) return;
+const loadHistory = () => {
+  if (!props.network || !props.assetId) return;
+  if (historyAddresses.value.length !== 0) return;
 
-    this.networksStore.fetchHistory({ networkName: this.network, assetId: this.assetId });
-  }
+  networksStore.fetchHistory({ networkName: props.network, assetId: props.assetId });
+};
 
-  getJdenticon(address: string) {
-    return toSvg(address, 24);
-  }
+watch(
+  () => props.assetId,
+  () => loadHistory()
+);
 
-  cut(value: string) {
-    return cut(value);
-  }
+watch(
+  () => accountsStore.selectedNetwork,
+  () => loadHistory()
+);
 
-  setRecipient(address: string) {
-    this.$emit('setRecipient', address);
-    this.$emit('toggleHistoryBookVisibility');
-  }
+watch(
+  () => props.network,
+  () => loadHistory()
+);
 
-  openEditBook(address: string = '') {
-    this.$emit('toggleEditBook', address);
-  }
-}
+onMounted(async () => {
+  loadHistory();
+
+  const { addressBook: savedAddressBook } = await storage.get(['addressBook']);
+
+  addressBook.value = savedAddressBook ?? {};
+});
+
+const setRecipient = (address: string) => {
+  emit('setRecipient', address);
+  emit('toggleHistoryBookVisibility');
+};
+
+const openEditBook = (address = '') => {
+  emit('toggleEditBook', address);
+};
 </script>
 
 <style lang="scss" scoped>

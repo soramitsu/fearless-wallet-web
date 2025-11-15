@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { onMounted, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router/composables';
+import { useRouter, useRoute } from 'vue-router';
 import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import AuthItem from '@/screens/extension-ui/AuthItem.vue';
 import { Components } from '@/router/routes';

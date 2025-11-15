@@ -8,7 +8,10 @@ import type { WalletConnectService } from '@extension-base/services/wallet-conne
 import type State from '@extension-base/background/handlers/State';
 
 export class Eip155RequestHandler {
-  constructor(public state: State, public walletConnectService: WalletConnectService) {}
+  constructor(
+    public state: State,
+    public walletConnectService: WalletConnectService
+  ) {}
 
   private handleError(topic: string, id: number, e: unknown) {
     let message = (e as Error).message;
@@ -53,9 +56,9 @@ export class Eip155RequestHandler {
 
           this.walletConnectService.responseRequest({ topic, response });
         })
-        .catch((e: any) => this.handleError(topic, id, e));
+        .catch((error) => this.handleError(topic, id, error));
     } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
+      const [tx] = parseRequestParams(request.params, EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION);
 
       const address = tx.from;
 
@@ -78,7 +81,7 @@ export class Eip155RequestHandler {
               response: formatJsonRpcResult(id, payload),
             })
           )
-          .catch((e) => this.handleError(topic, id, e));
+          .catch((error) => this.handleError(topic, id, error));
       };
 
       if (chainState.active) createRequest();

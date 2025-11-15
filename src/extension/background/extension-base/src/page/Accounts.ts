@@ -12,9 +12,8 @@ export default class Accounts implements InjectedAccounts {
     sendRequest = _sendRequest;
   }
 
-  // eslint-disable-next-line
-  public get(anyType?: boolean): Promise<InjectedAccount[]> {
-    // anyType is not used, but dApp can use it
+  public get(_anyType?: boolean): Promise<InjectedAccount[]> {
+    // Parameter retained for API compatibility; actual value unused by the extension
     return sendRequest('pub(accounts.list)');
   }
 

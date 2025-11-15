@@ -321,7 +321,7 @@ export class WalletConnectDAppService {
     id: string,
     url: string,
     method: string,
-    params: any,
+    params: unknown,
     topic: string
   ): Promise<ResponseSigning> {
     const requestSession = this.getSession(topic);
@@ -364,7 +364,7 @@ export class WalletConnectDAppService {
       return { id, payload: res.payload };
     }
 
-    const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
+    const [tx] = parseRequestParams(params, EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION);
 
     const address = tx.from;
 

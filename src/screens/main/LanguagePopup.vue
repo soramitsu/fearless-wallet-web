@@ -10,13 +10,13 @@
     :showSearch="false"
     :options="options"
     @toggleValue="toggleLanguage"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
   />
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from 'vue-i18n';
 import type { Lang } from '@/locales';
 import { accountController } from '@/controllers';
 
@@ -25,7 +25,9 @@ const options = [
   { name: 'Русский', value: 'ru-RU' },
 ];
 const i18n = useI18n();
-const emit = defineEmits(['handlerClose']);
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
 
 const language = computed({
   get: () => {
@@ -38,9 +40,11 @@ const language = computed({
   },
 });
 
+const handleClose = () => emit('handlerClose');
+
 const toggleLanguage = (lang: Lang) => {
   language.value = lang;
 
-  emit('handlerClose');
+  handleClose();
 };
 </script>

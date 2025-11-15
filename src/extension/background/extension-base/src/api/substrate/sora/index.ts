@@ -1,6 +1,6 @@
 import { getAssetBalance } from '../../../background/helpers';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import type { Asset } from '@sora-substrate/util/src/assets/types';
+import type { Asset } from '@sora/assets/types';
 import type { NetworkName } from '@/interfaces';
 
 interface Props {

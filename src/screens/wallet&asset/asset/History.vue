@@ -28,7 +28,7 @@
               :network="selectedNetwork"
               :address="accountsStore.selectedWallet.address"
               data-testid="historyItem"
-              @click.native="openHistoryDetails(historyElement)"
+              @click="openHistoryDetails(historyElement)"
             />
           </template>
         </div>
@@ -37,8 +37,9 @@
   </ContentForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory, HistoryElement, SoraHistoryElement, SubqueryHistory } from '@/interfaces';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -47,152 +48,136 @@ import { getUtilityAsset } from '@/helpers/currencies';
 import { isSora } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
+import { MENU_HEIGHT } from '@/screens/main/menu.constants';
 
-@Component({ components: { HistoryItem } })
-export default class History extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  filterHistoryValue: FilterHistory = 'all';
-  showLoader = false;
-  refreshTimeout = 30000;
+defineProps<{
+  currency: TokenGroup;
+}>();
 
-  @Prop(Object) currency!: TokenGroup;
+const emit = defineEmits<{
+  openHistoryDetailsForm: [history: HistoryElement];
+}>();
 
-  get historyDropdownOption() {
-    const options = [
-      { label: 'assets.all', value: 'all' },
-      { label: 'assets.transfer', value: 'transfer' },
-      { label: 'assets.reward', value: 'reward' },
-    ];
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const route = useRoute();
 
-    if (!this.isSora) options.push({ label: 'assets.extrinsic', value: 'extrinsic' });
+const filterHistoryValue = ref<FilterHistory>('all');
+const showLoader = ref(false);
+const refreshTimeout = 30000;
 
-    return options;
-  }
+const selectedNetwork = computed(() => (route.params.selectedNetwork as string | undefined) ?? '');
+const assetId = computed(() => route.params.assetId as string);
 
-  get contentFormHeight() {
-    return this.isTonWallet ? 209 + MENU_HEIGHT : 209;
-  }
+const history = computed<SubqueryHistory | undefined>(() => {
+  if (!selectedNetwork.value)
+    return { nodes: [], pageInfo: { endCursor: '0', startCursor: '0' }, timestamp: Number.MIN_VALUE };
 
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
+  return networksStore.getHistory(assetId.value, selectedNetwork.value.toLowerCase());
+});
 
-  get assetId() {
-    return this.$route.params.assetId;
-  }
+const historyTimestamp = computed(() => (history.value ? history.value.timestamp : Number.MIN_VALUE));
 
-  get isEmptyHistory() {
-    return this.filteredHistory?.length === 0;
-  }
+const historyItems = computed<HistoryElement[]>(() => {
+  if (!history.value) return [];
 
-  get historyContainerClasses() {
-    return [
-      'history-content',
-      {
-        'empty-history': this.isEmptyHistory,
-      },
-    ];
-  }
+  return history.value.nodes;
+});
 
-  get address() {
-    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
+const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
+const isSoraNetwork = computed(() => isSora(selectedNetwork.value));
 
-    const network = this.networksStore.getNetwork(this.selectedNetwork);
+const isMainNetwork = computed(() => {
+  if (selectedNetwork.value === '' || accountsStore.balances.length === 0) return false;
 
-    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
-  }
+  const { groupId } = getUtilityAsset(accountsStore.balances, selectedNetwork.value);
 
-  get historyTimestamp() {
-    if (!this.history) return Number.MIN_VALUE;
+  return assetId.value === groupId;
+});
 
-    return this.history.timestamp;
-  }
+const isEthereumNativeNetwork = computed(() => BaseApi.isEthereumNativeNetwork(selectedNetwork.value));
 
-  get history(): SubqueryHistory | undefined {
-    if (!this.selectedNetwork)
-      return { nodes: [], pageInfo: { endCursor: '0', startCursor: '0' }, timestamp: Number.MIN_VALUE };
+const filteredHistory = computed(() => {
+  if (filterHistoryValue.value === 'all') return historyItems.value;
 
-    return this.networksStore.getHistory(this.assetId, this.selectedNetwork.toLowerCase());
-  }
+  const field = filterHistoryValue.value as 'transfer' | 'reward';
 
-  get historyItems(): HistoryElement[] {
-    if (!this.history) return [];
+  if (isSoraNetwork.value) {
+    const value = field === 'reward' ? 'rewarded' : field;
 
-    return this.history.nodes;
-  }
-
-  get isSora() {
-    return isSora(this.selectedNetwork);
-  }
-
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
-
-  get filteredHistory() {
-    if (this.filterHistoryValue === 'all') return this.historyItems;
-
-    const field = this.filterHistoryValue as 'transfer' | 'reward';
-
-    if (this.isSora) {
-      const value = field === 'reward' ? 'rewarded' : field;
-
-      const filteredHistory = (this.historyItems as unknown as SoraHistoryElement[]).filter((historyItem) => {
-        return historyItem.method === value;
-      });
-
-      return filteredHistory;
-    }
-
-    return this.historyItems.filter((historyItem) => historyItem[field]);
-  }
-
-  get isMainNetwork() {
-    if (this.selectedNetwork === '' || this.accountsStore.balances.length === 0) return false;
-
-    const { groupId } = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
-
-    return this.assetId === groupId;
-  }
-
-  get isEthereumNativeNetwork() {
-    return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
-  }
-
-  @Watch('selectedNetwork')
-  @Watch('selectedWallet')
-  @Watch('isMainNetwork')
-  async watchSelectedNetwork() {
-    this.loadHistory();
-  }
-
-  mounted() {
-    setTimeout(() => this.loadHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
-  }
-
-  async loadHistory() {
-    if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
-
-    if (!this.isSora && !this.isTonWallet && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
-
-    if (this.historyItems.length === 0) this.showLoader = true;
-
-    const options = { networkName: this.selectedNetwork, assetId: this.assetId };
-
-    this.networksStore.fetchHistory(options).finally(() => {
-      this.showLoader = false;
+    const filtered = (historyItems.value as unknown as SoraHistoryElement[]).filter((historyItem) => {
+      return historyItem.method === value;
     });
+
+    return filtered as unknown as HistoryElement[];
   }
 
-  filterHistoryValueUpdate(name: FilterHistory) {
-    this.filterHistoryValue = name;
-  }
+  return historyItems.value.filter((historyItem) => historyItem[field]);
+});
 
-  openHistoryDetails(history: HistoryElement) {
-    this.$emit('openHistoryDetailsForm', history);
+const historyDropdownOption = computed(() => {
+  const options = [
+    { label: 'assets.all', value: 'all' },
+    { label: 'assets.transfer', value: 'transfer' },
+    { label: 'assets.reward', value: 'reward' },
+  ];
+
+  if (!isSoraNetwork.value) options.push({ label: 'assets.extrinsic', value: 'extrinsic' });
+
+  return options;
+});
+
+const contentFormHeight = computed(() => (isTonWallet.value ? 209 + MENU_HEIGHT : 209));
+
+const isEmptyHistory = computed(() => filteredHistory.value?.length === 0);
+
+const historyContainerClasses = computed(() => [
+  'history-content',
+  {
+    'empty-history': isEmptyHistory.value,
+  },
+]);
+
+async function loadHistory() {
+  if (historyTimestamp.value + refreshTimeout > Date.now()) return false;
+
+  if (!isSoraNetwork.value && !isTonWallet.value && !isEthereumNativeNetwork.value && !isMainNetwork.value) return;
+
+  if (historyItems.value.length === 0) showLoader.value = true;
+
+  const options = { networkName: selectedNetwork.value, assetId: assetId.value };
+
+  networksStore.fetchHistory(options).finally(() => {
+    showLoader.value = false;
+  });
+
+  return true;
+}
+
+watch(
+  [
+    selectedNetwork,
+    () => accountsStore.selectedWallet.address,
+    () => accountsStore.selectedWallet.ethereumAddress,
+    isMainNetwork,
+  ],
+  () => {
+    void loadHistory();
   }
+);
+
+onMounted(() => {
+  setTimeout(() => {
+    void loadHistory();
+  }, 300);
+});
+
+function filterHistoryValueUpdate(name: FilterHistory) {
+  filterHistoryValue.value = name;
+}
+
+function openHistoryDetails(history: HistoryElement) {
+  emit('openHistoryDetailsForm', history);
 }
 </script>
 

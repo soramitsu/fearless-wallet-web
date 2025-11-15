@@ -1,5 +1,5 @@
 <template>
-  <div ref="targetRef" data-testid="lazy">
+  <div ref="targetRef" data-testid="lazy" @click="emitClick">
     <slot v-if="shouldRender" />
 
     <Shimmer v-else-if="isTimeout" height="100%" width="100%" />
@@ -27,16 +27,21 @@ const targetRef = ref<Element | null>(null);
 const shouldRender = ref(false);
 const isTimeout = computed(() => props.timeoutCallback !== undefined);
 
-const options = computed(
-  () =>
-    ({
-      root: props.root,
-      threshold: props.threshold,
-      rootMargin: props.rootMargin,
-    } as IntersectionObserverInit)
-);
+const options = computed<IntersectionObserverInit>(() => ({
+  root: props.root,
+  threshold: props.threshold,
+  rootMargin: props.rootMargin,
+}));
 
 const setShouldRender = () => (shouldRender.value = true);
+
+const emit = defineEmits<{
+  (_event: 'click', _payload: MouseEvent): void;
+}>();
+
+const emitClick = (payload: MouseEvent) => {
+  emit('click', payload);
+};
 
 onMounted(() => {
   const observer = new IntersectionObserver((entries, observer) => {

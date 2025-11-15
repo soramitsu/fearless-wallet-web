@@ -1,6 +1,6 @@
-import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
+import { getSoraApi, getFPNumberCtor } from '@extension-base/services/utils/sora';
 import type State from '@extension-base/background/handlers/State';
 import type {
   RequestBond,
@@ -23,40 +23,90 @@ import type {
   GetPayoutsFeeRequest,
   GetNominateNetworkFeeRequest,
   getRewardsRequest,
+  Alert,
+  StakingAssetMetadata,
 } from '@extension-base/services/staking-service/types';
+import type { NetworkName } from '@/interfaces';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
-import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
 import { cut, isSameString } from '@/helpers';
-export * from '@sora-substrate/util/build/staking/types';
+import { findTokenBalanceByNetwork } from '@/helpers/balances';
+export * from '@sora/staking/types';
+
+type FPNumberConstructor = typeof import('@sora/math').FPNumber;
+type FPNumberInstance = InstanceType<FPNumberConstructor>;
+const getApiSora = getSoraApi;
+const getFPNumber = getFPNumberCtor;
 
 export class StakingService {
   constructor(private state: State) {}
+
+  private resolveStakingAssetMetadata(network: NetworkName): StakingAssetMetadata {
+    const networkJson = this.state.networkService.getNetworkJson(network);
+    const stakingAsset =
+      networkJson.assets.find((asset) => asset.staking) ?? networkJson.assets.find((asset) => asset.isUtility);
+
+    const assetSymbol = stakingAsset?.symbol ?? stakingAsset?.name ?? network;
+    const assetId = stakingAsset?.id ?? stakingAsset?.currencyId ?? assetSymbol;
+    const icon = stakingAsset?.icon ?? networkJson.icon ?? '';
+    const color = stakingAsset?.color ?? '';
+    const priceId = stakingAsset?.priceId ?? assetSymbol.toLowerCase();
+
+    let transferableAmount = '0';
+
+    try {
+      const address = this.state.getCurrentAddress(network);
+      const balances = this.state.balanceService.getAccountBalance(address) ?? [];
+      const tokenGroup = balances.find(({ groupId }) => isSameString(groupId, assetId));
+      const balance = findTokenBalanceByNetwork(tokenGroup, network);
+
+      transferableAmount = balance?.transferable ?? '0';
+    } catch {
+      transferableAmount = '0';
+    }
+
+    return {
+      asset: assetSymbol,
+      assetId,
+      icon,
+      color,
+      priceId,
+      transferableAmount,
+    };
+  }
 
   public async getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
     const { networks } = params;
 
     // TODO use networks
     const promises: Promise<StakingParams>[] = networks.map(async (network) => {
+      const metadata = this.resolveStakingAssetMetadata(network);
       const apiProps = this.state.getSubstrateApiMap[network.toLowerCase()];
       const isReady = await apiProps?.api?.isReady;
 
-      if (!isReady) return getDefaultStakingParams(network);
+      if (!isReady) return getDefaultStakingParams({ network, ...metadata });
 
       const validators = await this.getValidators(network);
       const minBond = await this.getMinNominatorBond(validators, network);
-      const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
+      const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond, metadata);
       const validatorsFilters = validators.filter(({ apy }) => apy !== '0');
       const apy = validatorsFilters.reduce((result, { apy }) => result + +apy, 0) / validatorsFilters.length;
 
+      const [unbondPeriod, maxNominations, maxNominatorRewardedPerValidator] = await Promise.all([
+        this.getUnbondPeriod(),
+        this.getMaxNominations(),
+        this.maxNominatorRewardedPerValidator(),
+      ]);
+
       return {
+        ...metadata,
         ...myStakingInfo,
         network,
         validators,
         apy,
-        unbondPeriod: this.getUnbondPeriod(),
-        maxNominations: this.getMaxNominations(),
-        maxNominatorRewardedPerValidator: this.maxNominatorRewardedPerValidator(),
+        unbondPeriod,
+        maxNominations,
+        maxNominatorRewardedPerValidator,
         minBond,
       };
     });
@@ -67,8 +117,10 @@ export class StakingService {
   public async getMyStakingInfo(
     network: NetworkName,
     validators: FWValidatorInfoFull[],
-    _minBond?: number
+    _minBond?: number,
+    metadata?: StakingAssetMetadata
   ): Promise<MyStakingInfo> {
+    const apiSora = await getApiSora();
     const _address = this.state.getCurrentAddress(network);
     const currentWallet = { address: _address, ethereumAddress: _address };
     const stashByController = await this.getStashByController(_address);
@@ -97,8 +149,8 @@ export class StakingService {
     const payeeAddress = isControllerAndPayeeController
       ? this.state.formatAddress(currentWallet, network)
       : isControllerAndPayeeStaked || isControllerAndPayeeStash
-      ? stashAddress
-      : stakingInfo.payee;
+        ? stashAddress
+        : stakingInfo.payee;
 
     const payeeAccountName = this.state.keyringService.getAccountName(payeeAddress);
     const payeeBookName = addressBook[network]?.find(({ address: _address }) =>
@@ -145,7 +197,9 @@ export class StakingService {
     const minBond = _minBond ?? (await this.getMinNominatorBond(validators, network));
     const alerts = this.getALerts(result, minBond);
 
-    return { ...result, alerts };
+    const assetMetadata = metadata ?? this.resolveStakingAssetMetadata(network);
+
+    return { ...assetMetadata, ...result, alerts };
   }
 
   public async getValidatorsStatuses(
@@ -153,10 +207,11 @@ export class StakingService {
     network: NetworkName,
     myValidators: string[]
   ): Promise<ValidatorStatuses> {
+    const apiSora = await getApiSora();
     const substrateAddress = this.state.keyringService.getSubstrateAddress(_address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(_address);
     const address = this.state.formatAddress({ address: substrateAddress, ethereumAddress }, network);
-    const max = this.maxNominatorRewardedPerValidator();
+    const max = await this.maxNominatorRewardedPerValidator();
     const activeEra = await apiSora.staking.getCurrentEra();
     const submittedIn = (await apiSora.staking.getNominations(address))?.submittedIn;
     const electedValidators = await apiSora.staking.getElectedValidators(activeEra);
@@ -166,7 +221,7 @@ export class StakingService {
       .map((exposure) => {
         if (!max) return null;
 
-        const others = exposure.others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0);
+        const others = exposure.others.sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
 
         if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
 
@@ -212,19 +267,23 @@ export class StakingService {
   }
 
   public async getRewards({ address, network }: getRewardsRequest): Promise<RewardsResponse> {
+    const [apiSora, fpNumberCtor] = await Promise.all([getApiSora(), getFPNumber()]);
     const rewards = await apiSora.staking.getNominatorsReward(address);
 
-    const validatorsRewards = rewards.reduce((result, { validators }) => {
-      validators.forEach(({ address, value }) => {
-        if (!result[address]) result[address] = new FPNumber(value);
-        else result[address] = result[address].add(new FPNumber(value));
-      });
+    const validatorsRewards = rewards.reduce(
+      (result, { validators }) => {
+        validators.forEach(({ address, value }) => {
+          if (!result[address]) result[address] = new fpNumberCtor(value);
+          else result[address] = result[address].add(new fpNumberCtor(value));
+        });
 
-      return result;
-    }, {} as Record<string, FPNumber>);
+        return result;
+      },
+      {} as Record<string, FPNumberInstance>
+    );
 
     const sum = Object.values(validatorsRewards)
-      .reduce((sum, rewards) => sum.add(new FPNumber(rewards)), FPNumber.ZERO)
+      .reduce((sum, rewards) => sum.add(new fpNumberCtor(rewards)), fpNumberCtor.ZERO)
       .toString();
 
     const allValidators = await this.getValidators(network);
@@ -251,6 +310,7 @@ export class StakingService {
   }
 
   public async getValidators(network: NetworkName): Promise<FWValidatorInfoFull[]> {
+    const [apiSora, fpNumberCtor] = await Promise.all([getApiSora(), getFPNumber()]);
     const { precision } = getUtilityProps(network, this.state);
 
     const validatorsInfo = await apiSora.staking.getValidatorsInfo();
@@ -264,7 +324,7 @@ export class StakingService {
       const stake = Object.fromEntries(
         Object.entries(validator.stake).map(([key, value]) => [
           key,
-          FPNumber.fromCodecValue(value, precision).toString(),
+          fpNumberCtor.fromCodecValue(value, precision).toString(),
         ])
       );
 
@@ -274,8 +334,11 @@ export class StakingService {
     return validators;
   }
 
-  public getALerts(myStakingInfo: Omit<MyStakingInfo, 'alerts'>, minBond: number) {
-    const alerts = [];
+  public getALerts(
+    myStakingInfo: Pick<MyStakingInfo, 'redeemAmount' | 'myValidators' | 'totalStake'>,
+    minBond: number
+  ) {
+    const alerts: Alert[] = [];
     const { redeemAmount, myValidators, totalStake } = myStakingInfo;
     const isRedeem = redeemAmount !== '0';
     const isNeedBondExtra = +totalStake < minBond;
@@ -306,11 +369,15 @@ export class StakingService {
   }
 
   public async getStashByController(address: string) {
+    const apiSora = await getApiSora();
+
     return await apiSora.staking.getStashByController(address);
   }
 
   public async getMinNominatorBond(validators: FWValidatorInfoFull[], networkName: NetworkName) {
     const haveFreeValidators = validators.some(({ isOversubscribed }) => !isOversubscribed);
+
+    const [apiSora, fpNumberCtor] = await Promise.all([getApiSora(), getFPNumber()]);
 
     if (haveFreeValidators) return await apiSora.staking.getMinNominatorBond();
 
@@ -318,37 +385,46 @@ export class StakingService {
     const min = Math.min(...lastNominators);
     const precision = getUtilityProps(networkName, this.state).precision;
 
-    return FPNumber.fromCodecValue(min + 1, precision).toNumber();
+    return fpNumberCtor.fromCodecValue(min + 1, precision).toNumber();
   }
 
-  public getMaxNominations() {
+  public async getMaxNominations() {
+    const apiSora = await getApiSora();
+
     return apiSora.staking.getMaxNominations();
   }
 
-  public getUnbondPeriod() {
+  public async getUnbondPeriod() {
+    const apiSora = await getApiSora();
+
     return apiSora.staking.getUnbondPeriod();
   }
 
-  public maxNominatorRewardedPerValidator() {
+  public async maxNominatorRewardedPerValidator() {
+    const apiSora = await getApiSora();
+
     return apiSora.staking.getMaxNominatorRewardedPerValidator();
   }
 
   public async getPayoutsFee({ payouts, network }: GetPayoutsFeeRequest) {
+    const [apiSora, fpNumberCtor] = await Promise.all([getApiSora(), getFPNumber()]);
     const precision = getUtilityProps(network, this.state).precision;
     const fee = await apiSora.staking.getPayoutNetworkFee({ payouts });
 
-    return FPNumber.fromCodecValue(fee, precision).toString();
+    return fpNumberCtor.fromCodecValue(fee, precision).toString();
   }
 
   public async getNominateNetworkFee({ validators, network }: GetNominateNetworkFeeRequest) {
+    const [apiSora, fpNumberCtor] = await Promise.all([getApiSora(), getFPNumber()]);
     const precision = getUtilityProps(network, this.state).precision;
 
     const fee = await apiSora.staking.getNominateNetworkFee({ validators });
 
-    return FPNumber.fromCodecValue(fee, precision).toString();
+    return fpNumberCtor.fromCodecValue(fee, precision).toString();
   }
 
   public async getBondAndNominateNetworkFee({ validators, payoutAddress, from, networkName, amount }: RequestBond) {
+    const [apiSora, fpNumberCtor] = await Promise.all([getApiSora(), getFPNumber()]);
     const precision = getUtilityProps(networkName, this.state).precision;
 
     const fee = await apiSora.staking.getBondAndNominateNetworkFee({
@@ -358,16 +434,17 @@ export class StakingService {
       value: amount,
     });
 
-    return FPNumber.fromCodecValue(fee, precision).toString();
+    return fpNumberCtor.fromCodecValue(fee, precision).toString();
   }
 
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
     const { networkName } = params;
     const apiProps = this.state.getSubstrateApiMap[networkName.toLowerCase()];
-    const isReady = await apiProps.api?.isReady;
+    const isReady = await apiProps?.api?.isReady;
 
     if (!isReady) return { status: false };
 
+    const apiSora = await getApiSora();
     apiSora.shouldPairBeLocked = false;
 
     if (type === 'bond') return this.bondAndNominate(params as RequestBond);
@@ -395,6 +472,7 @@ export class StakingService {
   }
 
   public async bondAndNominate(params: RequestBond): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { amount, payoutAddress, from, validators } = params;
 
     const payee = payoutAddress === '' ? from : payoutAddress;
@@ -421,6 +499,7 @@ export class StakingService {
   }
 
   public async bondExtra(params: RequestBondExtra): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { amount } = params;
 
     try {
@@ -445,6 +524,7 @@ export class StakingService {
   }
 
   public async unbond(params: RequestUnbond): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { amount } = params;
 
     try {
@@ -469,6 +549,7 @@ export class StakingService {
   }
 
   public async rebond(params: RequestRebond): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { amount } = params;
 
     try {
@@ -493,6 +574,7 @@ export class StakingService {
   }
 
   public async withdrawUnbonded(params: RequestWithdrawUnbonded): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { amount } = params;
 
     try {
@@ -517,6 +599,7 @@ export class StakingService {
   }
 
   public async setControllerAccount(params: RequestSetControllerAccount): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { controllerAddress } = params;
 
     try {
@@ -541,6 +624,7 @@ export class StakingService {
   }
 
   public async nominate(params: RequestNominate): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { validators } = params;
 
     try {
@@ -565,6 +649,7 @@ export class StakingService {
   }
 
   public async setPayee(params: RequestSetPayee): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
     const { payee } = params;
 
     try {
@@ -589,6 +674,8 @@ export class StakingService {
   }
 
   public async payoutRewards({ payouts }: RequestPayoutRewards): Promise<BasicTxResponse> {
+    const apiSora = await getApiSora();
+
     try {
       await apiSora.staking.payout({ payouts });
     } catch (ex) {

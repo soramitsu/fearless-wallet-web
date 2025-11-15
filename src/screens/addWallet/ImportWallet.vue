@@ -22,7 +22,7 @@
 
     <FInput
       v-if="notJsonImport"
-      ref="valueInput"
+      ref="valueInputComponent"
       type="textarea"
       class="row"
       size="big"
@@ -53,7 +53,7 @@
           class="row"
           data-testid="password"
           :showPassword="true"
-          :value="syncedPasswordJson"
+          :value="passwordJson"
           @change="changeSyncedPasswordJson"
         />
       </div>
@@ -63,131 +63,153 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch, VModel, PropSync, Ref } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { ImportType } from '@/interfaces';
-import type FInput from '@/components/FInput.vue';
+import FInput from '@/components/FInput.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 
-@Component({
-  components: {
-    AdvancedButton,
+defineOptions({
+  name: 'ImportWallet',
+});
+
+type ImportField = 'mnemonic' | 'substrateRawSeed' | 'ethereumRawSeed' | 'substrateJson' | 'ethereumJson';
+
+const optionsImport = [
+  { label: 'Mnemonic passphrase', value: 'mnemonic' },
+  { label: 'Raw seed', value: 'rawSeed' },
+  { label: 'Restore JSON', value: 'json' },
+] as const;
+
+const props = withDefaults(
+  defineProps<{
+    typeImport: ImportType;
+    mnemonic: string;
+    substrateRawSeed: string;
+    ethereumRawSeed: string;
+    substrateJson: string;
+    ethereumJson: string;
+    step: number;
+    isOnlyEthereumAccount: boolean;
+    isSubstrate: boolean;
+    passwordJson: string;
+  }>(),
+  {
+    mnemonic: '',
+    substrateRawSeed: '',
+    ethereumRawSeed: '',
+    substrateJson: '',
+    ethereumJson: '',
+    step: 1,
+    isOnlyEthereumAccount: false,
+    isSubstrate: true,
+    passwordJson: '',
+  }
+);
+
+const emit = defineEmits<{
+  'update:typeImport': [value: ImportType];
+  setImportValue: [value: string, field: ImportField];
+  toggleAdvancedFormVisible: [];
+  reset: [];
+  'update:passwordJson': [value: string];
+}>();
+
+const { t } = useI18n();
+
+const valueInputComponent = ref<InstanceType<typeof FInput> | null>(null);
+
+const typeImport = computed({
+  get: () => props.typeImport,
+  set: (value: ImportType) => emit('update:typeImport', value),
+});
+
+const passwordJson = computed({
+  get: () => props.passwordJson,
+  set: (value: string) => emit('update:passwordJson', value),
+});
+
+const field = computed<ImportField>(() => {
+  if (typeImport.value === 'mnemonic') return 'mnemonic';
+
+  if (typeImport.value === 'rawSeed') {
+    if (props.isOnlyEthereumAccount) return 'ethereumRawSeed';
+
+    return props.step === 1 ? 'substrateRawSeed' : 'ethereumRawSeed';
+  }
+
+  // json
+  if (props.isOnlyEthereumAccount) return 'ethereumJson';
+
+  return props.step === 1 ? 'substrateJson' : 'ethereumJson';
+});
+
+const inputValue = computed({
+  get: () => (props as Record<string, string>)[field.value],
+  set: (value: string) => emit('setImportValue', value, field.value),
+});
+
+const typeImportValue = computed(() => optionsImport.find(({ value }) => value === typeImport.value)?.label ?? '');
+const disabledSelect = computed(() => props.step === 2);
+const notJsonImport = computed(() => typeImport.value !== 'json');
+
+const showSlot = computed(() => {
+  if (!props.isSubstrate) return false;
+
+  return typeImport.value === 'mnemonic' || (typeImport.value === 'rawSeed' && props.step === 1);
+});
+
+const placeholderTypeImportValue = computed(() => {
+  if (typeImport.value === 'rawSeed') {
+    if (props.isOnlyEthereumAccount) {
+      return t('addWallet.rawSeed', { type: 'ETH' });
+    }
+
+    if (props.step === 1) return t('addWallet.rawSeed', { type: 'Substrate' });
+
+    if (props.step === 2) return t('addWallet.rawSeed', { type: 'ETH' });
+  }
+
+  if (typeImport.value === 'json') {
+    if (props.step === 1) return t('addWallet.restoreJson', { type: 'Substrate' });
+
+    if (props.step === 2) return t('addWallet.restoreJson', { type: 'Ethereum' });
+  }
+
+  return t('addWallet.enterPassphrase');
+});
+
+const toggleAdvancedFormVisible = () => {
+  emit('toggleAdvancedFormVisible');
+};
+
+const changeInputValue = (value: string) => {
+  inputValue.value = value;
+};
+
+const changeSyncedPasswordJson = (value: string) => {
+  passwordJson.value = value;
+};
+
+const changeTypeImport = (value: ImportType) => {
+  typeImport.value = value;
+};
+
+watch(
+  typeImport,
+  async () => {
+    emit('reset');
+    await nextTick();
+    valueInputComponent.value?.input?.focus?.();
   },
-})
-export default class ImportWallet extends Vue {
-  readonly optionsImport = [
-    { label: 'Mnemonic passphrase', value: 'mnemonic' },
-    { label: 'Raw seed', value: 'rawSeed' },
-    { label: 'Restore JSON', value: 'json' },
-  ];
+  { flush: 'post' }
+);
 
-  @VModel({ type: String }) typeImport!: ImportType;
-  @Prop(String) mnemonic!: string;
-  @Prop(String) substrateRawSeed!: string;
-  @Prop(String) ethereumRawSeed!: string;
-  @Prop(String) substrateJson!: string;
-  @Prop(String) ethereumJson!: string;
-  @Prop(Number) step!: number;
-  @Prop(Boolean) isOnlyEthereumAccount!: boolean;
-  @Prop(Boolean) isSubstrate!: boolean;
-  @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
-  @Ref('valueInput') readonly valueInputComponent!: typeof FInput;
-
-  get inputValue() {
-    return this[this.field];
-  }
-
-  get typeImportValue() {
-    return this.optionsImport.find(({ value }) => value === this.typeImport)?.label ?? '';
-  }
-
-  set inputValue(value: string) {
-    this.$emit('setImportValue', value, this.field);
-  }
-
-  get field() {
-    if (this.typeImport === 'mnemonic') return 'mnemonic';
-
-    if (this.typeImport === 'rawSeed') {
-      if (this.isOnlyEthereumAccount) return 'ethereumRawSeed';
-
-      return this.step === 1 ? 'substrateRawSeed' : 'ethereumRawSeed';
-    }
-
-    // typeImport === 'json'
-    if (this.isOnlyEthereumAccount) return 'ethereumJson';
-
-    return this.step === 1 ? 'substrateJson' : 'ethereumJson';
-  }
-
-  get disabledSelect() {
-    return this.step === 2;
-  }
-
-  get notJsonImport() {
-    return this.typeImport !== 'json';
-  }
-
-  get showSlot() {
-    if (!this.isSubstrate) return false;
-
-    return this.typeImport === 'mnemonic' || (this.typeImport === 'rawSeed' && this.step === 1);
-  }
-
-  get placeholderTypeImportValue() {
-    if (this.typeImport === 'rawSeed') {
-      if (this.isOnlyEthereumAccount) {
-        return this.t('rawSeed', { type: 'ETH' });
-      }
-
-      if (this.step === 1) return this.t('rawSeed', { type: 'Substrate' });
-
-      if (this.step === 2) return this.t('rawSeed', { type: 'ETH' });
-    }
-
-    if (this.typeImport === 'json') {
-      if (this.step === 1) return this.t('restoreJson', { type: 'Substrate' });
-
-      if (this.step === 2) return this.t('restoreJson', { type: 'Ethereum' });
-    }
-
-    return this.t('enterPassphrase');
-  }
-
-  @Watch('typeImport')
-  onTypeImportChanged() {
-    this.$emit('reset');
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    this.$nextTick(() => this.valueInputComponent?.input.focus());
-  }
-
-  mounted() {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    this.valueInputComponent.input.focus();
-  }
-
-  t(value: string, obj: Record<string, string> = {}) {
-    return this.$t(`addWallet.${value}`, obj);
-  }
-
-  toggleAdvancedFormVisible() {
-    this.$emit('toggleAdvancedFormVisible');
-  }
-
-  changeInputValue(value: string) {
-    this.inputValue = value;
-  }
-
-  changeSyncedPasswordJson(value: string) {
-    this.syncedPasswordJson = value;
-  }
-
-  changeTypeImport(value: ImportType) {
-    this.typeImport = value;
-  }
-}
+onMounted(async () => {
+  await nextTick();
+  valueInputComponent.value?.input?.focus?.();
+});
 </script>
 
 <style lang="scss">

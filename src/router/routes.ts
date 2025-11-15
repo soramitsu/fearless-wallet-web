@@ -1,9 +1,12 @@
-import { type RouteConfig } from 'vue-router';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
+import type {
+  NavigationGuardNext,
+  RouteLocationNormalized,
+  RouteLocationNormalizedLoaded,
+  RouteRecordRaw,
+} from 'vue-router';
 import { keyringIsLocked } from '@/extension/messaging';
-import { useAccountsStore } from '@/stores/accounts';
-import { useExtensionStore } from '@/stores/extension';
-import { useStakingStore } from '@/stores/staking';
+import { useAccountsStore, useExtensionStore, useStakingStore } from '@/stores';
 import Unlock from '@/screens/welcome/Unlock.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
@@ -56,17 +59,17 @@ const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/a
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
 
-const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking/myStake/MyStake.vue');
-const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/StakingPage.vue');
+const MyStake = () => import(/* webpackChunkName: "staking" */ '@/screens/staking/myStake/MyStake.vue');
+const Staking = () => import(/* webpackChunkName: "staking" */ '@/screens/staking/StakingPage.vue');
 
-const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
-const PoolDetails = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolDetails.vue');
+const Pools = () => import(/* webpackChunkName: "pools" */ '@/screens/pools/PoolsPage.vue');
+const PoolDetails = () => import(/* webpackChunkName: "pools" */ '@/screens/pools/PoolDetails.vue');
 
-const MigrationDescription = (/* webpackChunkName: "migration */) =>
-  import('@/screens/addWallet/keyringMigration/MigrationDescription.vue');
+const MigrationDescription = () =>
+  import(/* webpackChunkName: "migration" */ '@/screens/addWallet/keyringMigration/MigrationDescription.vue');
 
-const MigrationAccounts = (/* webpackChunkName: "migration */) =>
-  import('@/screens/addWallet/keyringMigration/MigrationAccounts.vue');
+const MigrationAccounts = () =>
+  import(/* webpackChunkName: "migration" */ '@/screens/addWallet/keyringMigration/MigrationAccounts.vue');
 
 export enum Components {
   MigrationDescription = 'MigrationDescription',
@@ -121,7 +124,7 @@ export enum Components {
   NftSendForm = 'NftSendForm',
 }
 
-const routes: Array<RouteConfig> = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/migration-description',
     name: Components.MigrationDescription,
@@ -274,7 +277,7 @@ const routes: Array<RouteConfig> = [
     meta: {
       title: 'transaction',
     },
-    beforeEnter: (to, from, next) => {
+    beforeEnter: (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
       const extensionStore = useExtensionStore();
 
       if (haveSignRequests(extensionStore)) next();
@@ -375,10 +378,17 @@ const routes: Array<RouteConfig> = [
     path: '/my-stake/:network',
     name: Components.MyStake,
     component: MyStake,
-    beforeEnter: async (to, from, next) => {
-      const network = to.params.network;
+    beforeEnter: async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
+      const networkParam = Array.isArray(to.params.network) ? to.params.network[0] : to.params.network;
+
+      if (typeof networkParam !== 'string') {
+        next({ name: Components.Staking });
+
+        return;
+      }
+
       const stakingStore = useStakingStore();
-      const stakingParams = await getStakingNetwork(stakingStore, network);
+      const stakingParams = await getStakingNetwork(stakingStore, networkParam);
 
       if (stakingParams.totalStake === '0') next({ name: Components.Staking });
       else next();
@@ -400,11 +410,11 @@ const routes: Array<RouteConfig> = [
       },
       {
         path: 'wallet/:access_token?',
-        props: (route) => ({ query: route.query.wallet }),
+        props: (route: RouteLocationNormalizedLoaded) => ({ query: route.query.wallet }),
         name: Components.Wallet,
         component: Wallet,
         redirect: { name: Components.Currencies },
-        beforeEnter: (to, from, next) => {
+        beforeEnter: (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
           const extensionStore = useExtensionStore();
 
           if (haveAuthRequests(extensionStore)) next({ name: Components.Authorize });
@@ -459,7 +469,7 @@ const routes: Array<RouteConfig> = [
         },
       },
     ],
-    beforeEnter: (to, from, next) => {
+    beforeEnter: (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
       const accountsStore = useAccountsStore();
 
       if (!hasSelectedWallet(accountsStore)) next({ name: Components.Welcome });
@@ -505,9 +515,9 @@ const routes: Array<RouteConfig> = [
     ],
   },
   {
-    path: '*',
+    path: '/:pathMatch(.*)*',
     component: Welcome,
-    beforeEnter: async (to, from, next) => {
+    beforeEnter: async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
       const isLock = await keyringIsLocked();
 
       if (isLock) next({ name: Components.Unlock });

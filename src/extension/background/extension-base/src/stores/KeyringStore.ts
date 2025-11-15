@@ -19,7 +19,20 @@ export default class KeyringStore implements PasswordStore {
     chrome.storage.local.get([FEARLESS_KEYRING], (result: StoreValue): void => {
       lastError('get');
 
-      update(result[FEARLESS_KEYRING] as KeyringPasswordJson);
+      const entry = result[FEARLESS_KEYRING];
+
+      if (!entry || typeof entry !== 'object') {
+        console.warn('KeyringStore.get: missing or invalid keyring payload, resetting');
+        update({} as KeyringPasswordJson);
+
+        if (entry !== undefined) {
+          chrome.storage.local.remove(FEARLESS_KEYRING, () => lastError('remove-corrupted'));
+        }
+
+        return;
+      }
+
+      update(entry as KeyringPasswordJson);
     });
   }
 

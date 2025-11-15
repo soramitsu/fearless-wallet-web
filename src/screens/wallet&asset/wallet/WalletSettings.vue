@@ -23,7 +23,7 @@
         target=".hide-zero"
         placementTooltip="right"
         :label="toggleButtonText"
-        @click="$emit('toggleCurrenciesVisible', allTokenGroupsHidden)"
+        @click="emit('toggleCurrenciesVisible', allTokenGroupsHidden)"
       />
     </div>
 
@@ -52,8 +52,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { TabWallet } from '@/interfaces/common';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
@@ -67,78 +67,97 @@ interface TabsOptions {
   target: string;
 }
 
-@Component
-export default class ContentSettings extends Vue {
-  accountsStore = useAccountsStore();
+defineOptions({
+  name: 'ContentSettings',
+});
 
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
-  @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
-  @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
-  @Prop(Array) tokenGroups!: TokenGroup[];
+const accountsStore = useAccountsStore();
 
-  get tabsOptions() {
-    const baseTabs: TabsOptions[] = [
-      {
-        label: 'wallet.currencies',
-        tabName: Components.Currencies,
-        tooltipText: 'wallet.fungibleTokens',
-        classes: 'currencies-tab',
-        target: '.currencies-tab',
-      },
-    ];
+const props = withDefaults(
+  defineProps<{
+    activeTabName: TabWallet;
+    filterValue: string;
+    showAssetsManagementForm: boolean;
+    tokenGroups: TokenGroup[];
+  }>(),
+  {
+    tokenGroups: () => [],
+  }
+);
 
-    if (!this.accountsStore.selectedWallet.isTon)
-      baseTabs.push({
-        label: 'wallet.nfts',
-        tabName: Components.Nfts,
-        tooltipText: 'wallet.nonFungibleTokens',
-        classes: 'currencies-tab',
-        target: '.currencies-tab',
-      });
+const emit = defineEmits<{
+  'update:activeTabName': [value: TabWallet];
+  'update:filterValue': [value: string];
+  'update:showAssetsManagementForm': [value: boolean];
+  toggleCurrenciesVisible: [value: boolean];
+}>();
 
-    return baseTabs;
+const syncedActiveTabName = computed({
+  get: () => props.activeTabName,
+  set: (value: TabWallet) => emit('update:activeTabName', value),
+});
+
+const syncedFilterValue = computed({
+  get: () => props.filterValue,
+  set: (value: string) => emit('update:filterValue', value),
+});
+
+const syncedShowAssetsManagementForm = computed({
+  get: () => props.showAssetsManagementForm,
+  set: (value: boolean) => emit('update:showAssetsManagementForm', value),
+});
+
+const tabsOptions = computed(() => {
+  const baseTabs: TabsOptions[] = [
+    {
+      label: 'wallet.currencies',
+      tabName: Components.Currencies,
+      tooltipText: 'wallet.fungibleTokens',
+      classes: 'currencies-tab',
+      target: '.currencies-tab',
+    },
+  ];
+
+  if (!accountsStore.selectedWallet.isTon) {
+    baseTabs.push({
+      label: 'wallet.nfts',
+      tabName: Components.Nfts,
+      tooltipText: 'wallet.nonFungibleTokens',
+      classes: 'currencies-tab',
+      target: '.currencies-tab',
+    });
   }
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
+  return baseTabs;
+});
 
-  get target() {
-    return `.${this.iconName}`;
-  }
+const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
 
-  get allTokenGroupsHidden() {
-    return this.tokenGroups.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
-  }
+const iconName = computed(() => (syncedShowAssetsManagementForm.value ? 'close' : 'filter'));
 
-  get searchInputWidth() {
-    return '100%';
-  }
+const target = computed(() => `.${iconName.value}`);
 
-  get toggleButtonText() {
-    return this.allTokenGroupsHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
-  }
+const allTokenGroupsHidden = computed(() =>
+  props.tokenGroups.every(({ groupId }) => accountsStore.hiddenAssets.includes(groupId))
+);
 
-  get iconName() {
-    return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
-  }
+const searchInputWidth = computed(() => '100%');
 
-  get notNftTabActive() {
-    return this.syncedActiveTabName !== Components.Nfts;
-  }
+const toggleButtonText = computed(() => (allTokenGroupsHidden.value ? 'wallet.showAllBalances' : 'wallet.hideZero'));
 
-  openTab(name: TabWallet) {
-    this.syncedActiveTabName = name;
-  }
+const notNftTabActive = computed(() => syncedActiveTabName.value !== Components.Nfts);
 
-  changeSyncedFilterValue(value: string) {
-    this.syncedFilterValue = value;
-  }
+const openTab = (name: TabWallet) => {
+  syncedActiveTabName.value = name;
+};
 
-  toggleAssetsManagementVisible() {
-    this.syncedShowAssetsManagementForm = !this.syncedShowAssetsManagementForm;
-  }
-}
+const changeSyncedFilterValue = (value: string) => {
+  syncedFilterValue.value = value;
+};
+
+const toggleAssetsManagementVisible = () => {
+  syncedShowAssetsManagementForm.value = !syncedShowAssetsManagementForm.value;
+};
 </script>
 
 <style lang="scss" scoped>

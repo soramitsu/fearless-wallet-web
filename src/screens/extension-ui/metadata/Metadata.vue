@@ -26,8 +26,9 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { type MetadataRequest } from '@extension-base/background/types/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
@@ -36,33 +37,36 @@ import InfoList from '@/screens/extension-ui/InfoList.vue';
 
 import { useExtensionStore } from '@/stores/extension';
 
-@Component({
-  components: {
-    InfoList,
-    InfoItem,
-    Hint,
+defineOptions({
+  name: 'MetadataScreen',
+});
+
+const router = useRouter();
+const extensionStore = useExtensionStore();
+
+const request = computed(() => extensionStore.metaRequests[0]);
+
+const requests = computed<MetadataRequest[]>(() => extensionStore.metaRequests);
+
+watch(
+  requests,
+  (value) => {
+    if (value.length === 0) router.push({ name: Components.Wallet });
   },
-})
-export default class Metadata extends Vue {
-  extensionStore = useExtensionStore();
+  { immediate: true }
+);
 
-  get request() {
-    return this.extensionStore.metaRequests[0];
-  }
+const onApprove = () => {
+  if (!request.value) return;
 
-  @Watch('requests')
-  updateRoute(value: MetadataRequest[]) {
-    if (value.length === 0) this.$router.push({ name: Components.Wallet });
-  }
+  extensionStore.approveMetaRequests(request.value);
+};
 
-  onApprove() {
-    this.extensionStore.approveMetaRequests(this.request);
-  }
+const onReject = () => {
+  if (!request.value) return;
 
-  onReject() {
-    this.extensionStore.rejectMetaRequests(this.request);
-  }
-}
+  extensionStore.rejectMetaRequests(request.value);
+};
 </script>
 
 <style lang="scss" scoped>

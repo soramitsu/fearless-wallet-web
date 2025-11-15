@@ -1,5 +1,5 @@
 <template>
-  <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
+  <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click="onNavigate">
     <video v-if="isMp4" :src="imageUrl" width="240" height="240"></video>
     <img v-else :src="imageUrl" :alt="nft.meta?.name" width="240" height="240" />
 
@@ -21,14 +21,14 @@
           height="20px"
         />
       </div>
-      <Icon v-else icon="export-nft" className="share" data-testid="export" @click.native.stop="$emit('share', nft)" />
+      <Icon v-else icon="export-nft" className="share" data-testid="export" @click.stop="emit('share', nft)" />
     </div>
   </FCorners>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRoute } from 'vue-router/composables';
+import { useRoute } from 'vue-router';
 import { type RawLocation } from 'vue-router';
 import type { FearlessNft } from '@extension-base/services/nft-service/types';
 import { Components } from '@/router/routes';
@@ -38,6 +38,10 @@ type Props = {
   nft: FearlessNft;
   collectionName?: string;
 };
+const emit = defineEmits<{
+  share: [nft: FearlessNft];
+}>();
+
 const route = useRoute();
 const props = defineProps<Props>();
 

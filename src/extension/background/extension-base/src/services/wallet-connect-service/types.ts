@@ -3,24 +3,24 @@ import type { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/
 import type { EvmSendTransactionParams } from '@extension-base/api/evm/types';
 import type { Resolver } from '@extension-base/background/types/types';
 
-//TODO refactoring types
-type BaseWalletConnectSessionRequest = {
-  id: string;
-  isInternal?: boolean;
-  url: string;
-};
+export type WalletConnectSessionProposalEvent = SignClientTypes.EventArguments['session_proposal'];
+export type WalletConnectSessionRequestEvent = SignClientTypes.EventArguments['session_request'];
 
-export interface WalletConnectSessionRequest extends BaseWalletConnectSessionRequest {
-  request: SignClientTypes.EventArguments['session_proposal'];
+interface BaseWalletConnectRequest<TEvent> {
+  id: string;
+  request: TEvent;
+  url: string;
+  isInternal?: boolean;
+}
+
+export interface WalletConnectSessionRequest extends BaseWalletConnectRequest<WalletConnectSessionProposalEvent> {
   isPasswordRequired?: boolean;
 }
 
 export type WalletConnectSessions = SessionTypes.Struct[];
 
-export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
-  request: SignClientTypes.EventArguments['session_request'];
-}
-export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'];
+export type WalletConnectNotSupportRequest = BaseWalletConnectRequest<WalletConnectSessionRequestEvent>;
+export type WalletConnectTransactionRequest = WalletConnectSessionRequestEvent;
 
 export interface RequestApproveWalletConnect {
   address: string;
@@ -110,6 +110,12 @@ export type WalletConnectParamMap = {
   [EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4]: WalletConnectEip155SignMessage;
   [EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION]: WalletConnectEip155SendTransaction;
 };
+
+export type WalletConnectParamKey = keyof WalletConnectParamMap;
+export type WalletConnectParamsFor<T extends WalletConnectSigningMethod> = WalletConnectParamMap[Extract<
+  T,
+  WalletConnectParamKey
+>];
 
 export type AppSessionInitResponse = {
   uri?: string;

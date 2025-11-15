@@ -29,57 +29,56 @@
   </Scroll>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { MnemonicConfirmation } from '@/interfaces/common';
 import type { WordCount } from '@extension-base/services';
 import MnemonicConfirmationForm from '@/screens/addWallet/MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import { setClipboard } from '@/helpers';
+import { shuffleArray } from '@/helpers/numbers';
 
-@Component({
-  components: {
-    AdvancedButton,
-    MnemonicBackupForm,
-    MnemonicConfirmationForm,
-  },
-})
-export default class CreateWallet extends Vue {
-  @Prop(Number) step!: number;
-  @Prop(String) mnemonic!: string;
-  @Prop(Number) mnemonicLength!: WordCount;
-  @Prop(Boolean) isSubstrate!: boolean;
-  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
+defineOptions({
+  name: 'CreateWallet',
+});
 
-  get mnemonicArray() {
-    return this.mnemonic.split(' ');
-  }
+const props = defineProps<{
+  step: number;
+  mnemonic: string;
+  mnemonicLength: WordCount;
+  isSubstrate: boolean;
+  selectedMnemonicElements: MnemonicConfirmation[];
+}>();
 
-  get mnemonicMix() {
-    return [...this.mnemonicArray].sort(() => Math.random() - 0.5).map((word) => `${word} `);
-  }
+const emit = defineEmits<{
+  toggleAdvancedFormVisible: [];
+  'update:selectedMnemonicElements': [value: MnemonicConfirmation[]];
+}>();
 
-  get showMnemonicBackupForm() {
-    return this.step === 2;
-  }
+const syncedSelectedMnemonicElements = computed({
+  get: () => props.selectedMnemonicElements,
+  set: (value: MnemonicConfirmation[]) => emit('update:selectedMnemonicElements', value),
+});
 
-  get showMnemonicConfirmationForm() {
-    return this.step === 3;
-  }
+const mnemonicArray = computed(() => props.mnemonic.split(' '));
 
-  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-    this.syncedSelectedMnemonicElements = value;
-  }
+const mnemonicMix = computed(() => shuffleArray(mnemonicArray.value).map((word) => `${word} `));
 
-  onCopy() {
-    setClipboard(this.mnemonic);
-  }
+const showMnemonicBackupForm = computed(() => props.step === 2);
+const showMnemonicConfirmationForm = computed(() => props.step === 3);
 
-  toggleAdvancedFormVisible() {
-    this.$emit('toggleAdvancedFormVisible');
-  }
-}
+const updateSelectedMnemonicElements = (value: MnemonicConfirmation[]) => {
+  syncedSelectedMnemonicElements.value = value;
+};
+
+const onCopy = () => {
+  setClipboard(props.mnemonic);
+};
+
+const toggleAdvancedFormVisible = () => {
+  emit('toggleAdvancedFormVisible');
+};
 </script>
 
 <style lang="scss" scoped>

@@ -1,4 +1,4 @@
-import Vue from 'vue';
+import type { App } from 'vue';
 import AboveForm from '@/components/AboveForm.vue';
 import Alert from '@/components/Alert.vue';
 import AssetHighlightIcon from '@/components/AssetHighlightIcon.vue';
@@ -48,52 +48,62 @@ import Tooltip from '@/components/Tooltip.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import Tabs from '@/components/Tabs.vue';
 
+const components = [
+  ['AboveForm', AboveForm],
+  ['Alert', Alert],
+  ['AssetHighlightIcon', AssetHighlightIcon],
+  ['DoubleAssetHighlightIcon', DoubleAssetHighlightIcon],
+  ['BadgeButton', BadgeButton],
+  ['BorderButton', BorderButton],
+  ['Checkbox', Checkbox],
+  ['CircleButton', CircleButton],
+  ['EllipseButton', EllipseButton],
+  ['ComingSoon', ComingSoon],
+  ['ConfirmationPopup', ConfirmationPopup],
+  ['ContentForm', ContentForm],
+  ['DirectionContentForm', DirectionContentForm],
+  ['FCorners', FCorners],
+  ['Dropdown', Dropdown],
+  ['FButton', FButton],
+  ['FLink', FLink],
+  ['FInput', FInput],
+  ['Hint', Hint],
+  ['Icon', Icon],
+  ['Identicon', Identicon],
+  ['InfiniteScroll', InfiniteScroll],
+  ['InformationBlock', InformationBlock],
+  ['InfoRow', InfoRow],
+  ['InputWithIcon', InputWithIcon],
+  ['LazyRender', LazyRender],
+  ['Loader', Loader],
+  ['Loading', Loading],
+  ['Logo', Logo],
+  ['ExternalLogo', ExternalLogo],
+  ['ExternalWidget', ExternalWidget],
+  ['NotificationPopup', NotificationPopup],
+  ['Popup', Popup],
+  ['ProgressBar', ProgressBar],
+  ['QR', QR],
+  ['Rotate', Rotate],
+  ['Scroll', Scroll],
+  ['SearchInput', SearchInput],
+  ['FSelect', FSelect],
+  ['SelectPopup', SelectPopup],
+  ['Shimmer', Shimmer],
+  ['SelectInput', SelectInput],
+  ['Slider', Slider],
+  ['Switcher', Switcher],
+  ['TabButton', TabButton],
+  ['Tooltip', Tooltip],
+  ['ValidatedInput', ValidatedInput],
+  ['Tabs', Tabs],
+] as const;
+
 //add component to component.d.ts as well
-Vue.component('AboveForm', AboveForm);
-Vue.component('Alert', Alert);
-Vue.component('AssetHighlightIcon', AssetHighlightIcon);
-Vue.component('DoubleAssetHighlightIcon', DoubleAssetHighlightIcon);
-Vue.component('BadgeButton', BadgeButton);
-Vue.component('BorderButton', BorderButton);
-Vue.component('Checkbox', Checkbox);
-Vue.component('CircleButton', CircleButton);
-Vue.component('EllipseButton', EllipseButton);
-Vue.component('ComingSoon', ComingSoon);
-Vue.component('ConfirmationPopup', ConfirmationPopup);
-Vue.component('ContentForm', ContentForm);
-Vue.component('DirectionContentForm', DirectionContentForm);
-Vue.component('FCorners', FCorners);
-Vue.component('Dropdown', Dropdown);
-Vue.component('FButton', FButton);
-Vue.component('FLink', FLink);
-Vue.component('FInput', FInput);
-Vue.component('Hint', Hint);
-Vue.component('Icon', Icon);
-Vue.component('Identicon', Identicon);
-Vue.component('InfiniteScroll', InfiniteScroll);
-Vue.component('InformationBlock', InformationBlock);
-Vue.component('InfoRow', InfoRow);
-Vue.component('InputWithIcon', InputWithIcon);
-Vue.component('LazyRender', LazyRender);
-Vue.component('Loader', Loader);
-Vue.component('Loading', Loading);
-Vue.component('Logo', Logo);
-Vue.component('ExternalLogo', ExternalLogo);
-Vue.component('ExternalWidget', ExternalWidget);
-Vue.component('NotificationPopup', NotificationPopup);
-Vue.component('Popup', Popup);
-Vue.component('ProgressBar', ProgressBar);
-Vue.component('QR', QR);
-Vue.component('Rotate', Rotate);
-Vue.component('Scroll', Scroll);
-Vue.component('SearchInput', SearchInput);
-Vue.component('FSelect', FSelect);
-Vue.component('SelectPopup', SelectPopup);
-Vue.component('Shimmer', Shimmer);
-Vue.component('SelectInput', SelectInput);
-Vue.component('Slider', Slider);
-Vue.component('Switcher', Switcher);
-Vue.component('TabButton', TabButton);
-Vue.component('Tooltip', Tooltip);
-Vue.component('ValidatedInput', ValidatedInput);
-Vue.component('Tabs', Tabs);
+export const registerGlobalComponents = (app: App) => {
+  components.forEach(([name, component]) => {
+    app.component(name, component);
+  });
+};
+
+export default registerGlobalComponents;

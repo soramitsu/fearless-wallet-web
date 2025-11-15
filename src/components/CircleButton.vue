@@ -1,15 +1,21 @@
 <template>
   <div>
-    <div :class="backgroundClass" @click="click($event)">
+    <div ref="buttonRef" :class="backgroundClass" @click="click($event)">
       <Icon :icon="iconName" :className="imageClasses" />
     </div>
 
-    <Tooltip v-show="showTooltip" :text="tooltipText" :target="target" :placement="placement" />
+    <Tooltip
+      v-show="showTooltip"
+      :text="tooltipText"
+      :target="target"
+      :targetElement="buttonRef"
+      :placement="placement"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Placement } from '@/interfaces';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
@@ -34,6 +40,8 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   size: 'medium',
 });
+
+const buttonRef = ref<HTMLElement | null>(null);
 
 const showTooltip = computed(() => props.tooltipText !== '');
 

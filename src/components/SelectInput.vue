@@ -18,7 +18,7 @@
       </div>
 
       <div class="column right-column">
-        <FCorners class="FCorners-button" @click.native="click">
+        <FCorners class="FCorners-button" @click="click">
           <button data-testid="selectBtn" :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
@@ -46,152 +46,169 @@
   </FCorners>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import { FPNumber } from '@sora-substrate/util';
+<script lang="ts" setup>
+import { computed, ref, toRefs } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { FPNumber } from '@/lib/fpNumber';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class SelectInput extends Vue {
-  accountsStore = useAccountsStore();
-  inputIsFocused = false;
+type Props = {
+  text?: string;
+  asset?: string;
+  assetId?: string;
+  value?: string;
+  totalAmount?: number;
+  showBalance?: boolean;
+  readonly?: boolean;
+  showIcon?: boolean;
+  showOriginValue?: boolean;
+  amount: string;
+  isRotate: boolean;
+};
 
-  @Prop({ default: '' }) text!: string;
-  @Prop({ default: '' }) asset!: string;
-  @Prop({ default: '' }) assetId!: string;
-  @Prop({ default: '' }) value!: string;
-  @Prop({ default: 0 }) totalAmount!: number;
-  @Prop({ default: true }) showBalance!: boolean;
-  @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: true }) showIcon!: boolean;
-  @Prop({ default: false }) showOriginValue!: boolean;
-  @PropSync('amount', { type: String }) syncedAmount!: string;
-  @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
+const emit = defineEmits<{
+  (_event: 'setMax'): void;
+  (_event: 'togglePopupVisibility'): void;
+  (_event: 'update:amount', _value: string): void;
+  (_event: 'update:isRotate', _value: boolean): void;
+}>();
 
-  get showIconRotate() {
-    return this.showIcon && !this.readonly;
-  }
+const rawProps = withDefaults(defineProps<Props>(), {
+  text: '',
+  asset: '',
+  assetId: '',
+  value: '',
+  totalAmount: 0,
+  showBalance: true,
+  readonly: false,
+  showIcon: true,
+  showOriginValue: false,
+  amount: '',
+  isRotate: false,
+});
 
-  get isSelected() {
-    return this.inputIsFocused && !this.readonly;
-  }
+const { t, n } = useI18n();
+const accountsStore = useAccountsStore();
+const inputIsFocused = ref(false);
 
-  get amountInternal() {
-    if (this.syncedAmount === '') return '';
+const { text, asset, assetId, value, totalAmount, showBalance, readonly, showIcon, showOriginValue, amount, isRotate } =
+  toRefs(rawProps);
 
-    if (this.showOriginValue) return this.syncedAmount;
+const syncedAmount = computed({
+  get: () => amount.value,
+  set: (val: string) => emit('update:amount', val),
+});
 
-    if (this.syncedAmount.includes('.')) {
-      const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+const syncedIsRotate = computed({
+  get: () => isRotate.value,
+  set: (val: boolean) => emit('update:isRotate', val),
+});
+
+const showIconRotate = computed(() => showIcon.value && !readonly.value);
+const isSelected = computed(() => inputIsFocused.value && !readonly.value);
+const header = computed(() => t(text.value));
+
+const amountInternal = computed({
+  get: () => {
+    if (syncedAmount.value === '') return '';
+
+    if (showOriginValue.value) return syncedAmount.value;
+
+    if (syncedAmount.value.includes('.')) {
+      const [wholePart, fractionalPart] = syncedAmount.value.split('.');
       const localString = FPNumber.fromCodecValue(wholePart || 0, 0).toLocaleString();
 
-      if (this.syncedAmount.endsWith('.')) return `${localString}.`;
+      if (syncedAmount.value.endsWith('.')) return `${localString}.`;
 
-      if (localString === 'NaN') return this.syncedAmount;
+      if (localString === 'NaN') return syncedAmount.value;
 
       return `${localString}.${fractionalPart}`;
     }
 
-    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
-  }
+    return FPNumber.fromCodecValue(syncedAmount.value || 0, 0).toLocaleString();
+  },
+  set: (_value: string) => {
+    const normalizedValue = _value.replaceAll(',', '').replaceAll(' ', '');
+    const previous = syncedAmount.value ?? '';
 
-  set amountInternal(_value: string) {
-    const value = _value.replaceAll(',', '').replaceAll(' ', '');
-
-    if (value.length < this.syncedAmount.length) {
-      this.syncedAmount = value;
+    if (normalizedValue.length < previous.length) {
+      syncedAmount.value = normalizedValue;
 
       return;
     }
 
-    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
-      if (value.includes('.')) {
-        const [wholePart, fractionalPart] = value.split('.');
+    if (FPNumber.fromCodecValue(normalizedValue || 0, 0).toLocaleString() !== 'NaN') {
+      if (normalizedValue.includes('.')) {
+        const [wholePart, fractionalPart] = normalizedValue.split('.');
 
-        if (value.endsWith('.')) {
-          this.syncedAmount = this.syncedAmount = `${wholePart}.`;
+        if (normalizedValue.endsWith('.')) {
+          syncedAmount.value = `${wholePart}.`;
 
           return;
         }
 
-        this.syncedAmount = `${wholePart}.${fractionalPart}`;
+        syncedAmount.value = `${wholePart}.${fractionalPart}`;
 
         return;
       }
 
-      this.syncedAmount = value;
+      syncedAmount.value = normalizedValue;
+    }
+  },
+});
+
+const tokenGroup = computed(() => accountsStore.balances.find(({ groupId }) => groupId === assetId.value));
+const assetIcon = computed(() => tokenGroup.value?.icon);
+const valueCut = computed(() => n(Number(value.value), 'price'));
+
+const balanceValueClasses = computed(() => [
+  'balance-value',
+  {
+    'balance-value-readonly': readonly.value,
+  },
+]);
+
+const selectButtonClasses = computed(() => [
+  'select-button',
+  {
+    'select-button-readonly': readonly.value,
+  },
+]);
+
+const selectClasses = computed(() => [
+  'select',
+  {
+    'select-focused': inputIsFocused.value && !readonly.value,
+  },
+]);
+
+const IsNumber = (event: KeyboardEvent) => {
+  if (!/\d/.test(event.key) && event.key !== '.') event.preventDefault();
+};
+
+const setFocusValue = (value: boolean) => {
+  inputIsFocused.value = value;
+
+  if (!value) {
+    const [wholePart, fractionalPart] = syncedAmount.value.split('.');
+
+    if (fractionalPart !== undefined && Number(fractionalPart) === 0) {
+      syncedAmount.value = wholePart;
     }
   }
+};
 
-  get header() {
-    return this.$t(this.text);
-  }
+const setMax = () => {
+  if (readonly.value) return;
 
-  get tokenGroup() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.assetId);
-  }
+  emit('setMax');
+};
 
-  get assetIcon() {
-    return this.tokenGroup?.icon;
-  }
+const click = () => {
+  if (readonly.value) return;
 
-  get valueCut() {
-    return this.$n(+this.value, 'price');
-  }
-
-  get balanceValueClasses() {
-    return [
-      'balance-value',
-      {
-        'balance-value-readonly': this.readonly,
-      },
-    ];
-  }
-
-  get selectButtonClasses() {
-    return [
-      'select-button',
-      {
-        'select-button-readonly': this.readonly,
-      },
-    ];
-  }
-
-  get selectClasses() {
-    return [
-      'select',
-      {
-        'select-focused': this.inputIsFocused && !this.readonly,
-      },
-    ];
-  }
-
-  IsNumber(event: KeyboardEvent) {
-    if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
-  }
-
-  setFocusValue(value: boolean) {
-    this.inputIsFocused = value;
-
-    if (!value) {
-      const [wholePart, fractionalPart] = this.syncedAmount.split('.');
-
-      if (+fractionalPart === 0) this.syncedAmount = wholePart;
-    }
-  }
-
-  setMax() {
-    if (this.readonly) return;
-
-    this.$emit('setMax');
-  }
-
-  click() {
-    if (this.readonly) return;
-
-    this.$emit('togglePopupVisibility');
-  }
-}
+  emit('togglePopupVisibility');
+};
 </script>
 
 <style lang="scss" scoped>

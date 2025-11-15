@@ -17,32 +17,22 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "types": [
-      "webpack-env",
-      "jest",
-      "node",
-      "element-ui",
-      "chrome",
-      "firefox-webext-browser",
-      "network-information-types"
-    ],
+    "types": ["webpack-env", "jest", "node", "chrome", "firefox-webext-browser", "network-information-types"],
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@extension-base/*": [
-        "src/extension/background/extension-base/src/*"
-      ]
+      "@/*": ["src/*"],
+      "@extension-base/*": ["src/extension/background/extension-base/src/*"],
+      "@sora": ["src/sora/index.ts"],
+      "@sora/*": ["src/sora/*"],
+      "@sora-typeDefs": ["src/sora/typeDefinitions"],
+      "@sora-types/*": ["src/types/sora.ts"],
+      "@sora-types": ["src/types/sora.ts"],
+      "@sora-substrate/util/src/bridgeProxy/sub/consts": ["tests/unit/__mocks__/soraSubBridgeConsts.ts"],
+      "@polkadot/*": ["node_modules/@polkadot/*"]
     },
-    "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable",
-      "scripthost"
-    ]
+    "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
   },
   "vueCompilerOptions": {
-    "target": 2.7
+    "target": 3
   },
   "include": [
     "src/**/*.ts",
@@ -50,9 +40,8 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx",
+    "src/**/*.d.ts",
     "src/extension/makeManifest.js"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

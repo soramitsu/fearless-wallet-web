@@ -1,4 +1,5 @@
 import { assert } from '@polkadot/util';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
@@ -11,7 +12,7 @@ export function getAssetInfo(assetId: string, state: State): Asset {
 }
 
 export function getAssetBalance(network: NetworkName, tokenBalance: TokenGroup): BalanceItem {
-  return tokenBalance.balances.find(({ name }) => isSameString(name, network))!;
+  return tokenBalance.balances.find((balance) => isSameString(getBalanceNetworkName(balance), network))!;
 }
 
 export function withErrorLog(fn: () => unknown): void {
@@ -37,12 +38,14 @@ export function stripUrl(url: string): string {
   return parts[2];
 }
 
-export async function isOpenClient() {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  const contexts: any[] = await chrome.runtime.getContexts({});
+export async function isOpenClient(): Promise<boolean> {
+  const runtime = chrome.runtime as unknown as {
+    getContexts?: (filter: unknown) => Promise<Array<{ contextType?: string }>>;
+  };
 
-  const index = contexts.findIndex(({ contextType }) => contextType === 'TAB' || contextType === 'POPUP');
+  const contexts = await runtime.getContexts?.({});
 
-  return index !== -1;
+  if (!contexts) return false;
+
+  return contexts.some(({ contextType }) => contextType === 'TAB' || contextType === 'POPUP');
 }

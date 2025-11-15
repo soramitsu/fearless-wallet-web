@@ -5,7 +5,7 @@
       :fullScreen="true"
       :showBackIcon="showBackIcon"
       @handlerBack="handlerBack"
-      @closeHandler="$emit('closeForm')"
+      @closeHandler="handleClose"
     >
       <Scroll>
         <EditAddressBook
@@ -111,6 +111,10 @@
 
               <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
 
+              <Alert v-if="crossChainValidationError" headerText="common.warning">
+                {{ crossChainValidationError }}
+              </Alert>
+
               <slot name="step1Warning"></slot>
 
               <InfoRow
@@ -195,12 +199,12 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
-import { FPNumber } from '@sora-substrate/util';
+<script lang="ts" setup>
+import { computed, ref, watch, nextTick, getCurrentInstance, onBeforeUnmount, toRef } from 'vue';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { TransferErrorCode } from '@extension-base/background/types/types';
 import { Reasons, type ScamInfo } from '@extension-base/services/scam-service/types';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
@@ -210,6 +214,7 @@ import type {
   ResponseCheckTransfer,
   ResponseCheckCrossChain,
 } from '@extension-base/background/types/types';
+import { FPNumber } from '@/lib/fpNumber';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
@@ -219,783 +224,801 @@ import {
   isValidAmountAsset,
   getUtilityAsset,
 } from '@/helpers/currencies';
-import { cut, getClipboard, isSameString, isTonNetwork } from '@/helpers';
 import {
-  VALID_SUBSTRATE_ADDRESS,
-  VALID_ETHEREUM_ADDRESS,
-  CHAIN_IDS,
-  POPULAR_NETWORKS,
-  FAVORITE_NETWORKS,
-} from '@/consts/networks';
+  balanceMatchesNetwork,
+  cut,
+  findTokenBalanceByNetwork,
+  getClipboard,
+  isSameString,
+  isTonNetwork as isTonNetworkHelper,
+} from '@/helpers';
+import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/helpers/transfers';
 import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
-import { isNetworkGroup } from '@/helpers/common';
 import { IS_POPUP } from '@/consts/globalClient';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    WalletInfo,
-    HistoryBook,
-    EditAddressBook,
-    ExistentialPopup,
-    WarningAddressPopup,
-    ConfirmationPasswordPopup,
-  },
-})
-export default class TransferForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  timeoutSubscription: NodeJS.Timeout | undefined;
-  timeoutSetMax: NodeJS.Timeout | undefined;
-  showSelectedAssetPopup = false;
-  showSelectNetworkPopup = false;
-  showDestNetPopup = false;
-  showExistentialPopup = false;
-  showConfirmationPasswordPopup = false;
-  showMyWallets = false;
-  showHistoryBook = false;
-  showEditAddressBook = false;
-  newAddress = '';
-  filterValue = '';
-  isFetchingFees = false;
-  estimateFeeError = false;
-  isScamAddress = false;
-  scamInfo: Nullable<ScamInfo> = null;
-  step = 1;
+type Option = { name: string; value: string; icon: string | undefined };
 
-  @Prop(String) header!: string;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
-  @Prop({ default: false }) isDisableBtn!: boolean;
-  @PropSync('recipient', { default: '' }) syncedRecipient!: string;
-  @PropSync('assetId', { type: String }) syncedAssetId!: string;
-  @PropSync('selectedNetwork', { type: String }) syncedNetwork!: string;
-  @PropSync('destinationNetwork', { type: String, default: '' }) syncedDestNet!: string;
-  @PropSync('amount', { type: String }) syncedAmount!: string;
-  @PropSync('value', { type: String }) syncedValue!: string;
-  @PropSync('partialFee', { type: String }) syncedFee!: string;
-  @PropSync('destNetFee', { type: String, default: '0' }) syncedDestNetFee!: string;
+defineOptions({ name: 'TransferForm' });
 
-  get scamMessage() {
-    const key =
-      this.scamInfo?.reason === Reasons.Donation
-        ? 'isDonationAddress'
-        : this.scamInfo?.reason === Reasons.Exchange
+interface TransferFormProps {
+  header: string;
+  extrinsicType: 'transfer' | 'crossChain';
+  isDisableBtn?: boolean;
+  recipient?: string;
+  assetId?: string;
+  selectedNetwork?: string;
+  destinationNetwork?: string;
+  amount?: string;
+  value?: string;
+  partialFee?: string;
+  destNetFee?: string;
+}
+
+const props = withDefaults(defineProps<TransferFormProps>(), {
+  isDisableBtn: false,
+  recipient: '',
+  assetId: '',
+  selectedNetwork: '',
+  destinationNetwork: '',
+  amount: '',
+  value: '',
+  partialFee: '',
+  destNetFee: '0',
+});
+
+type TransferFormEmits = {
+  (event: 'closeForm'): void;
+  (event: 'update:recipient', value: string): void;
+  (event: 'update:assetId', value: string): void;
+  (event: 'update:selectedNetwork', value: string): void;
+  (event: 'update:destinationNetwork', value: string): void;
+  (event: 'update:amount', value: string): void;
+  (event: 'update:value', value: string): void;
+  (event: 'update:partialFee', value: string): void;
+  (event: 'update:destNetFee', value: string): void;
+};
+
+const emit = defineEmits<TransferFormEmits>();
+
+const handleClose = () => emit('closeForm');
+
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+
+const showSelectedAssetPopup = ref(false);
+const showSelectNetworkPopup = ref(false);
+const showDestNetPopup = ref(false);
+const showExistentialPopup = ref(false);
+const showConfirmationPasswordPopup = ref(false);
+const showMyWallets = ref(false);
+const showHistoryBook = ref(false);
+const showEditAddressBook = ref(false);
+const newAddress = ref('');
+const filterValue = ref('');
+const isFetchingFees = ref(false);
+const estimateFeeError = ref(false);
+const isScamAddress = ref(false);
+const scamInfo = ref<ScamInfo | null>(null);
+const crossChainValidationError = ref<string | null>(null);
+const step = ref(1);
+
+let timeoutSubscription: ReturnType<typeof setTimeout> | undefined;
+let timeoutSetMax: ReturnType<typeof setTimeout> | undefined;
+
+const vm = getCurrentInstance();
+const n = vm?.proxy?.$n?.bind(vm.proxy);
+
+const syncedRecipient = computed<string>({
+  get: () => props.recipient,
+  set: (value) => emit('update:recipient', value),
+});
+const syncedAssetId = computed<string>({
+  get: () => props.assetId,
+  set: (value) => emit('update:assetId', value),
+});
+const syncedNetwork = computed<string>({
+  get: () => props.selectedNetwork,
+  set: (value) => emit('update:selectedNetwork', value),
+});
+const syncedDestNet = computed<string>({
+  get: () => props.destinationNetwork,
+  set: (value) => emit('update:destinationNetwork', value),
+});
+const syncedAmount = computed<string>({
+  get: () => props.amount,
+  set: (value) => emit('update:amount', value),
+});
+const syncedValue = computed<string>({
+  get: () => props.value,
+  set: (value) => emit('update:value', value),
+});
+const syncedFee = computed<string>({
+  get: () => props.partialFee,
+  set: (value) => emit('update:partialFee', value),
+});
+const syncedDestNetFee = computed<string>({
+  get: () => props.destNetFee,
+  set: (value) => emit('update:destNetFee', value),
+});
+
+const togglesMap = {
+  showSelectedAssetPopup,
+  showSelectNetworkPopup,
+  showDestNetPopup,
+  showEditAddressBook,
+} as const;
+
+const toggleValue = (key: keyof typeof togglesMap) => {
+  const target = togglesMap[key];
+  target.value = !target.value;
+};
+
+const extrinsicType = toRef(props, 'extrinsicType');
+const isTransfer = computed(() => extrinsicType.value === 'transfer');
+const isCrossChain = computed(() => extrinsicType.value === 'crossChain');
+
+const targetNetwork = computed(() => (isTransfer.value ? syncedNetwork.value : syncedDestNet.value));
+
+const formHeader = computed(() => {
+  if (showEditAddressBook.value) return 'assets.addContact';
+  if (showHistoryBook.value) return 'assets.chooseFromHistory';
+  if (showMyWallets.value) return 'assets.wallets';
+
+  return props.header;
+});
+
+const isTonNetwork = computed(() => isTonNetworkHelper(syncedNetwork.value));
+
+const currency = computed(() =>
+  accountsStore.balances?.find(({ balances }) => balances.some((el) => isSameString(el.id, syncedAssetId.value)))
+);
+const currencyBalance = computed(() => findTokenBalanceByNetwork(currency.value, syncedNetwork.value));
+
+const originNet = computed(() => networksStore.getNetwork(syncedNetwork.value));
+const originalUtilityId = computed(() => originNet.value?.assets?.[0]?.id ?? '');
+const originalNetworkUtilityAsset = computed(() => {
+  const current = accountsStore.balances.find(({ balances }) =>
+    balances.some(({ id }) => id === originalUtilityId.value)
+  );
+
+  return current?.symbol ?? '';
+});
+const originalAssetPrice = computed(() => {
+  const current = accountsStore.balances.find(({ balances }) =>
+    balances.some(({ id }) => id === originalUtilityId.value)
+  );
+  const priceId = current?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const assetPrice = computed(() => {
+  const priceId = currency.value?.priceId ?? '';
+
+  return networksStore.getAssetPrice(priceId).price;
+});
+
+const acountsEcosystem = computed(() => (isCrossChain.value ? accountsStore.accounts : accountsStore.acountsEcosystem));
+const showMyWalletsButton = computed(() => acountsEcosystem.value.length !== 0);
+
+const recipientCut = computed(() => cut(syncedRecipient.value));
+
+const sendAssetName = computed(() => {
+  const symbol = currency.value?.symbol;
+
+  return symbol ? getNativeAssetName(symbol) : '';
+});
+
+const scamMessage = computed(() => {
+  const reason = scamInfo.value?.reason;
+  const key =
+    reason === Reasons.Donation
+      ? 'isDonationAddress'
+      : reason === Reasons.Exchange
         ? 'isExchangeAddress'
-        : this.scamInfo?.reason === Reasons.Sanctions
-        ? 'isSanctionsAddress'
-        : 'isScamAddress';
+        : reason === Reasons.Sanctions
+          ? 'isSanctionsAddress'
+          : 'isScamAddress';
+
+  return {
+    text: `assets.${key}`,
+    localeProps: { asset: sendAssetName.value?.toUpperCase?.() ?? '' },
+  };
+});
+
+const isSameAddress = computed(() => {
+  if (isTonNetwork.value) {
+    return isSameString(accountsStore.selectedWallet.address, syncedRecipient.value);
+  }
+
+  if (isCrossChain.value) return false;
+
+  return BaseApi.isSameAddress(accountsStore.selectedWallet, syncedRecipient.value, syncedNetwork.value);
+});
+
+const isValidRecipientAddress = computed(() => {
+  if (isSameAddress.value) return false;
+
+  if (isTonNetwork.value) return true;
+
+  if (syncedRecipient.value === '') return false;
+
+  if (isCrossChain.value && syncedDestNet.value === '') return false;
+
+  return BaseApi.validateAddress(syncedRecipient.value, targetNetwork.value);
+});
+
+const isValidAddressByNetwork = computed(() => {
+  if (!isValidRecipientAddress.value || syncedNetwork.value === '') return true;
+
+  return BaseApi.validateAddressByNetwork(syncedRecipient.value, targetNetwork.value);
+});
+
+const utilityAsset = computed(() => getUtilityAsset(accountsStore.balances, syncedNetwork.value));
+const utilityAssetName = computed(() => utilityAsset.value?.symbol?.toLowerCase?.() ?? '');
+
+const transferableAmount = computed(() => +(currencyBalance.value?.transferable ?? 0));
+
+const showSelectPopup = computed(
+  () => showSelectedAssetPopup.value || showSelectNetworkPopup.value || showDestNetPopup.value
+);
+
+const placeholderSelectPopup = computed(() =>
+  showSelectedAssetPopup.value ? 'common.searchAmongAssets' : 'common.searchNetwork'
+);
+const placeholderNetwork = computed(() => (isTransfer.value ? 'assets.network' : 'assets.originNet'));
+
+const top = computed(() => {
+  if (!IS_EXTENSION) return 120;
+
+  if (showSelectedAssetPopup.value) return 220;
+
+  if (showSelectNetworkPopup.value) return 150;
+
+  return IS_POPUP ? 42 : 332;
+});
+
+const left = computed(() => {
+  if (!IS_EXTENSION) return 0;
+
+  if (showSelectedAssetPopup.value || (showDestNetPopup.value && IS_POPUP)) return 160;
+
+  return -160;
+});
+
+const selectPopupValue = computed(() => {
+  if (showSelectedAssetPopup.value) return syncedAssetId.value;
+
+  if (showSelectNetworkPopup.value) return syncedNetwork.value;
+
+  return syncedDestNet.value;
+});
+
+const showBackIcon = computed(
+  () => step.value === 2 || showHistoryBook.value || showMyWallets.value || showEditAddressBook.value
+);
+
+const firstIcon = computed(() => (isTransfer.value ? syncedAssetId.value : syncedNetwork.value));
+
+const scamWatcher = async () => {
+  if (isValidRecipientAddress.value && isValidAddressByNetwork.value) {
+    const { value, info } = await checkScamAddress({
+      address: syncedRecipient.value,
+      network: targetNetwork.value,
+    });
+
+    isScamAddress.value = value;
+    scamInfo.value = info ?? null;
+  } else {
+    isScamAddress.value = false;
+    scamInfo.value = null;
+  }
+};
+
+const optionsAssets = computed(() => {
+  const networkInfo = networksStore.networks.find(
+    ({ name }) => name.toLowerCase() === syncedNetwork.value.toLowerCase()
+  );
+  const relay = ((networkInfo?.parentId && CHAIN_IDS[networkInfo.parentId]) ?? syncedNetwork.value).toLowerCase();
+
+  if (isTransfer.value) return getCurrencyOptions(accountsStore.balances);
+
+  const xcm = networkInfo?.xcm;
+
+  const balances = accountsStore.balances.filter(({ symbol, relayChain }) => {
+    if (relayChain.toLowerCase() !== relay) return false;
+
+    return xcm?.availableAssets.some(({ symbol: _symbol }) => {
+      const assetName = getSubstrateEvmAssetName(_symbol, syncedNetwork.value);
+
+      return isSameString(assetName, symbol);
+    });
+  });
+
+  return getCurrencyOptions(balances);
+});
+
+const optionsNetworks = computed(() => {
+  const walletBalance = currency.value?.balances ?? [];
+
+  return walletBalance.flatMap((balance) => {
+    const networkName = getBalanceNetworkName(balance);
+    const network = networksStore.getNetwork(networkName);
+
+    if (!network.active) return [];
+
+    return [
+      {
+        name: network.name,
+        value: network.name,
+        icon: balance.icon,
+      },
+    ];
+  });
+});
+
+const optionsDestNet = computed<Option[]>(() => {
+  if (isTransfer.value || !sendAssetName.value) return [];
+
+  const asset = getNativeAssetName(sendAssetName.value);
+  const destinations = originNet.value?.xcm?.availableDestinations ?? [];
+
+  return destinations.flatMap(({ assets, chainId }) => {
+    if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
+
+    const { name, icon } = networksStore.getNetwork(chainId);
 
     return {
-      text: `assets.${key}`,
-      localeProps: { asset: this.sendAssetName.toUpperCase() },
+      name,
+      value: name,
+      icon,
     };
-  }
+  });
+});
 
-  get recipientCut() {
-    return cut(this.syncedRecipient);
-  }
+const options = computed<Option[]>(() => {
+  const filter = filterValue.value.trim().toLowerCase();
 
-  get acountsEcosystem() {
-    if (this.isCrossChain) return this.accountsStore.accounts;
+  let list: Option[] = [];
 
-    return this.accountsStore.acountsEcosystem;
-  }
+  if (showSelectedAssetPopup.value) list = optionsAssets.value;
+  else if (showSelectNetworkPopup.value) list = optionsNetworks.value as Option[];
+  else if (showDestNetPopup.value) list = optionsDestNet.value;
 
-  get formHeader() {
-    if (this.showEditAddressBook) return 'assets.addContact';
+  return list.filter(({ name }) => name.toLowerCase().includes(filter));
+});
 
-    if (this.showHistoryBook) return 'assets.chooseFromHistory';
+const calcTransferableUtility = () => {
+  const balance = utilityAsset.value?.balances.find(
+    (balanceItem) => balanceItem.isUtility && balanceMatchesNetwork(balanceItem, syncedNetwork.value)
+  );
 
-    if (this.showMyWallets) return 'assets.wallets';
+  return balance?.transferable?.toString() ?? '0';
+};
 
-    return this.header;
-  }
+const calcTransferableSendMinusFeeValue = (fee: string) =>
+  calcTransferableSendMinusFee(currency.value, syncedNetwork.value, fee, isCrossChain.value, syncedDestNetFee.value);
 
-  get showMyWalletsButton() {
-    return this.acountsEcosystem.length !== 0;
-  }
+const isValidSendAsset = computed(() =>
+  isValidAmountAsset(
+    currency.value,
+    syncedNetwork.value,
+    syncedFee.value ?? '0',
+    syncedAmount.value,
+    isCrossChain.value,
+    syncedDestNetFee.value ?? '0'
+  )
+);
 
-  get isTransfer() {
-    return this.extrinsicType === 'transfer';
-  }
+const isValidTransferByUtility = computed(() => {
+  if (syncedFee.value === '') return false;
 
-  get isCrossChain() {
-    return this.extrinsicType === 'crossChain';
-  }
+  if (sendAssetName.value?.toLowerCase() === utilityAssetName.value) return true;
 
-  get originalUtilityId() {
-    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-  }
+  const precision = currencyBalance.value?.precision;
 
-  get originalNetworkUtilityAsset() {
-    const currency = this.accountsStore.balances.find(({ balances }) =>
-      balances.some(({ id }) => id === this.originalUtilityId)
-    );
+  const ed = FPNumber.fromCodecValue(currencyBalance.value?.existentialDeposit ?? '0', precision).mul(
+    new FPNumber(1.1, precision)
+  );
 
-    return currency?.symbol ?? '';
-  }
+  const feeFP = new FPNumber(syncedFee.value, precision);
+  const checkValue = isCrossChain.value ? feeFP.add(ed) : feeFP;
 
-  get originalAssetPrice() {
-    const currency = this.accountsStore.balances.find(({ balances }) =>
-      balances.some(({ id }) => id === this.originalUtilityId)
-    );
-    const priceId = currency?.priceId ?? '';
+  return FPNumber.gte(new FPNumber(calcTransferableUtility(), precision), checkValue);
+});
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
+const transactionAddress = computed(() => getTransactionAddress(accountsStore.selectedWallet, syncedNetwork.value));
 
-  get syncedFeeCut() {
-    const text = this.isTonNetwork ? `< ` : '';
+const tx = computed(() => {
+  const baseRequest = {
+    to: syncedRecipient.value,
+    from: transactionAddress.value,
+    relayChain: currency.value?.relayChain,
+    assetId: syncedAssetId.value,
+    amount: syncedAmount.value,
+  };
 
-    return `${text}${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
-  }
-
-  get fiatFeeCut() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
-  }
-
-  get destNetFeeCut() {
-    return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName?.toUpperCase()}`;
-  }
-
-  get destNetFiatFeeCut() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
-  }
-
-  get firstIcon() {
-    return this.isTransfer ? this.syncedAssetId : this.syncedNetwork;
-  }
-
-  get placeholderSelectPopup() {
-    return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
-  }
-
-  get assetPrice() {
-    const priceId = this.currency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get placeholderNetwork() {
-    return this.isTransfer ? 'assets.network' : 'assets.originNet';
-  }
-
-  get showSelectPopup() {
-    return this.showSelectedAssetPopup || this.showSelectNetworkPopup || this.showDestNetPopup;
-  }
-
-  get targetNetwork() {
-    return this.isTransfer ? this.syncedNetwork : this.syncedDestNet;
-  }
-
-  get isValidAddressByNetwork() {
-    if (!this.isValidRecipientAddress || this.syncedNetwork === '') return true;
-
-    return BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
-  }
-
-  get top() {
-    if (!IS_EXTENSION) return 120;
-
-    if (this.showSelectedAssetPopup) return 220;
-
-    if (this.showSelectNetworkPopup) return 150;
-
-    return IS_POPUP ? 42 : 332;
-  }
-
-  get left() {
-    if (!IS_EXTENSION) return 0;
-
-    if (this.showSelectedAssetPopup || (this.showDestNetPopup && IS_POPUP)) return 160;
-
-    return -160;
-  }
-
-  get selectPopupValue() {
-    if (this.showSelectedAssetPopup) return this.syncedAssetId;
-
-    if (this.showSelectNetworkPopup) return this.syncedNetwork;
-
-    return this.syncedDestNet;
-  }
-
-  get showBackIcon() {
-    return this.step === 2 || this.showHistoryBook || this.showMyWallets || this.showEditAddressBook;
-  }
-
-  get buttonText() {
-    if (!navigator.onLine) return 'common.offlineStatus';
-
-    if (!this.currency) return '';
-
-    if (this.step === 2) {
-      if (this.isTransfer) return 'assets.sendButtonText';
-
-      return 'common.confirm';
-    }
-
-    if (this.estimateFeeError) return 'estimateFeeError';
-
-    if (this.isSameAddress) return 'assets.isSameAddress';
-
-    if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
-
-    if (!this.isValidSendAsset)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
-
-    if (!this.isValidTransferByUtility)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.utilityAssetName.toUpperCase() } };
-
-    return 'common.continue';
-  }
-
-  get utilityAsset() {
-    return getUtilityAsset(this.accountsStore.balances, this.syncedNetwork);
-  }
-
-  get utilityAssetName() {
-    return this.utilityAsset.symbol.toLowerCase();
-  }
-
-  get isTonNetwork() {
-    return isTonNetwork(this.syncedNetwork);
-  }
-
-  get buttonDisabled() {
-    if (this.isDisableBtn) return true;
-
-    if (this.isFetchingFees || this.estimateFeeError) return true;
-
-    if (!navigator.onLine) return true;
-
-    if (this.step === 2) return false;
-
-    return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedFee === '';
-  }
-
-  get isAllFieldsCorrect() {
-    if (!this.currency) return false;
-
-    return (
-      !!this.syncedAssetId &&
-      !!this.syncedNetwork &&
-      !!this.syncedAmount &&
-      this.isValidSendAsset &&
-      this.isValidTransferByUtility &&
-      this.isValidRecipientAddress
-    );
-  }
-
-  get isSameAddress() {
-    if (this.isTonNetwork) return isSameString(this.accountsStore.selectedWallet.address, this.syncedRecipient);
-
-    // для CrossChain транзакций эта проверка не нужна, поэтому всегда возвращаем false
-    if (this.isCrossChain) return false;
-
-    return BaseApi.isSameAddress(this.accountsStore.selectedWallet, this.syncedRecipient, this.syncedNetwork);
-  }
-
-  get isValidRecipientAddress() {
-    if (this.isSameAddress) return false;
-
-    if (this.isTonNetwork) return true;
-
-    if (this.syncedRecipient === '') return false;
-
-    if (this.isCrossChain && this.syncedDestNet === '') return false;
-
-    return BaseApi.validateAddress(this.syncedRecipient, this.targetNetwork);
-  }
-
-  get currency() {
-    return this.accountsStore.balances?.find(({ balances }) =>
-      balances.some((el) => isSameString(el.id, this.syncedAssetId))
-    );
-  }
-
-  get currencyBalance() {
-    return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
-  }
-
-  get transferableAmount() {
-    return +(this.currencyBalance?.transferable ?? 0);
-  }
-
-  get options() {
-    const filter = this.filterValue.trim().toLowerCase();
-
-    let options: { name: string; value: string; icon: string | undefined }[] = [];
-
-    if (this.showSelectedAssetPopup) options = this.optionsAssets;
-    else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
-    else if (this.showDestNetPopup) options = this.optionsDestNet;
-
-    return options.filter(({ name }) => name.toLowerCase().includes(filter));
-  }
-
-  get isSelectedNetworkGroup() {
-    return isNetworkGroup(this.accountsStore.selectedNetwork);
-  }
-
-  get assetWithActiveNetworks() {
-    const result = this.accountsStore.balances.filter(({ balances }) => {
-      const prepBalances = balances ?? [];
-
-      return prepBalances.some(({ name }) => {
-        const { active, rank, favorite } = this.networksStore.getNetwork(name);
-
-        if (!active) return false;
-
-        if (this.isSelectedNetworkGroup) {
-          if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
-
-          const isNetworkInFavorites = favorite.some((el) => el === this.accountsStore.selectedWallet.address);
-
-          if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
-        }
-
-        return isSameString(this.accountsStore.selectedNetwork, name);
-      });
-    });
-
-    return result;
-  }
-
-  get optionsAssets() {
-    const { xcm, parentId } = this.networksStore.networks.find(
-      ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
-    )!;
-    const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
-
-    if (this.isTransfer) return getCurrencyOptions(this.accountsStore.balances);
-
-    const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
-      if (relayChain.toLowerCase() !== relay) return false;
-
-      return xcm?.availableAssets.some(({ symbol: _symbol }) => {
-        const assetName = getSubstrateEvmAssetName(_symbol, this.syncedNetwork);
-
-        return isSameString(assetName, symbol);
-      });
-    });
-
-    return getCurrencyOptions(balances);
-  }
-
-  get optionsNetworks() {
-    // used only for transfer
-    const walletBalance = this.currency?.balances ?? [];
-
-    return walletBalance.flatMap(({ name, icon }) => {
-      const network = this.networksStore.getNetwork(name);
-
-      if (!network.active) return [];
-
-      return [
-        {
-          name: network.name,
-          value: network.name,
-          icon,
-        },
-      ];
-    });
-  }
-
-  get originNet() {
-    return this.networksStore.getNetwork(this.syncedNetwork);
-  }
-
-  get optionsDestNet() {
-    // used only for crossChain
-    if (this.isTransfer || !this.sendAssetName) return [];
-
-    const asset = getNativeAssetName(this.sendAssetName);
-
-    return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
-      if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
-
-      const { name, icon } = this.networksStore.getNetwork(chainId);
-
-      return {
-        name: name,
-        value: name,
-        icon,
-      };
-    });
-  }
-
-  get sendAssetName() {
-    return getNativeAssetName(this.currency?.symbol);
-  }
-
-  get isValidSendAsset() {
-    return isValidAmountAsset(
-      this.currency,
-      this.syncedNetwork,
-      this.syncedFee ?? '0',
-      this.syncedAmount,
-      this.isCrossChain, // проверяем ED для crossChain транзакций
-      this.syncedDestNetFee ?? '0'
-    );
-  }
-
-  get isValidTransferByUtility() {
-    if (this.syncedFee === '') return false;
-
-    // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
-    if (this.sendAssetName?.toLowerCase() === this.utilityAssetName) return true;
-
-    const precision = this.currencyBalance?.precision;
-
-    const ed = FPNumber.fromCodecValue(this.currencyBalance?.existentialDeposit ?? '0', precision).mul(
-      new FPNumber(1.1, precision)
-    );
-
-    const checkValue = this.isCrossChain
-      ? new FPNumber(this.syncedFee, precision).add(ed)
-      : new FPNumber(this.syncedFee, precision);
-
-    // проверяем, что utility balance достаточно на оплату fee и ED
-    return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
-  }
-
-  get transactionAddress() {
-    return getTransactionAddress(this.accountsStore.selectedWallet, this.syncedNetwork);
-  }
-
-  get tx() {
-    const baseRequest = {
-      to: this.syncedRecipient,
-      from: this.transactionAddress,
-      relayChain: this.currency?.relayChain,
-      assetId: this.syncedAssetId,
-      amount: this.syncedAmount,
-    };
-
-    if (this.isTransfer)
-      return {
-        ...baseRequest,
-        networkKey: this.syncedNetwork,
-      } as RequestCheckTransfer;
-
+  if (isTransfer.value)
     return {
       ...baseRequest,
-      originNet: this.syncedNetwork,
-      destinationNet: this.syncedDestNet,
-    } as RequestCheckCrossChain;
+      networkKey: syncedNetwork.value,
+    } as RequestCheckTransfer;
+
+  return {
+    ...baseRequest,
+    originNet: syncedNetwork.value,
+    destinationNet: syncedDestNet.value,
+  } as RequestCheckCrossChain;
+});
+
+const syncedFeeCut = computed(() => {
+  const text = isTonNetwork.value ? '< ' : '';
+  const formatted = n ? n(+syncedFee.value, 'decimalPrecise') : syncedFee.value;
+
+  return `${text}${formatted} ${originalNetworkUtilityAsset.value.toUpperCase()}`;
+});
+
+const fiatFeeCut = computed(() => {
+  const formatted = n ? n(+syncedFee.value * originalAssetPrice.value, 'price') : (+syncedFee.value).toString();
+
+  return `${accountsStore.fiatSymbol}${formatted}`;
+});
+
+const destNetFeeCut = computed(() => {
+  const formatted = n ? n(+syncedDestNetFee.value, 'decimalPrecise') : syncedDestNetFee.value;
+
+  return `${formatted} ${sendAssetName.value?.toUpperCase?.() ?? ''}`;
+});
+
+const destNetFiatFeeCut = computed(() => {
+  const formatted = n
+    ? n(+syncedDestNetFee.value * assetPrice.value, 'price')
+    : (+syncedDestNetFee.value * assetPrice.value).toString();
+
+  return `${accountsStore.fiatSymbol}${formatted}`;
+});
+
+const buttonText = computed(() => {
+  if (!navigator.onLine) return 'common.offlineStatus';
+
+  if (!currency.value) return '';
+
+  if (step.value === 2) {
+    if (isTransfer.value) return 'assets.sendButtonText';
+
+    return 'common.confirm';
   }
 
-  @Watch('syncedRecipient')
-  async checkScam() {
-    if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
-      const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
+  if (estimateFeeError.value) return 'estimateFeeError';
 
-      this.isScamAddress = value;
-      this.scamInfo = info;
-    } else {
-      this.isScamAddress = false;
-      this.scamInfo = null;
-    }
+  if (isSameAddress.value) return 'assets.isSameAddress';
+
+  if (!isValidRecipientAddress.value && syncedRecipient.value !== '') return 'assets.incorrectAddress';
+
+  if (!isValidSendAsset.value)
+    return { text: 'assets.insufficientBalance', localeProps: { asset: sendAssetName.value?.toUpperCase?.() } };
+
+  if (!isValidTransferByUtility.value)
+    return { text: 'assets.insufficientBalance', localeProps: { asset: utilityAssetName.value.toUpperCase() } };
+
+  return 'common.continue';
+});
+
+const buttonDisabled = computed(() => {
+  if (props.isDisableBtn) return true;
+
+  if (isFetchingFees.value || estimateFeeError.value) return true;
+
+  if (!navigator.onLine) return true;
+
+  if (step.value === 2) return false;
+
+  return (
+    !isValidSendAsset.value ||
+    !isValidTransferByUtility.value ||
+    !isValidRecipientAddress.value ||
+    !syncedAssetId.value ||
+    !syncedNetwork.value ||
+    !syncedAmount.value ||
+    +syncedAmount.value === 0 ||
+    syncedFee.value === ''
+  );
+});
+
+const getStatusWallet = (address: string, ethereumAddress: string) => {
+  const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, syncedNetwork.value);
+  const currentRecipientAddress = BaseApi.formatAddress(
+    { address: syncedRecipient.value, ethereumAddress: syncedRecipient.value },
+    syncedNetwork.value
+  );
+
+  return currentAddress === currentRecipientAddress;
+};
+
+const toggleEditBook = (address: string = '') => {
+  showEditAddressBook.value = !showEditAddressBook.value;
+  showHistoryBook.value = !showHistoryBook.value;
+  newAddress.value = address;
+};
+
+const setRecipient = (address = '') => {
+  syncedRecipient.value = BaseApi.formatAddress({ address, ethereumAddress: address }, targetNetwork.value);
+};
+
+const toggleSelectedNetwork = (value: string) => {
+  if (showSelectedAssetPopup.value) {
+    syncedAssetId.value = value;
+
+    toggleValue('showSelectedAssetPopup');
+  } else if (showSelectNetworkPopup.value) {
+    syncedNetwork.value = value;
+
+    toggleValue('showSelectNetworkPopup');
+  } else {
+    syncedDestNet.value = value;
+
+    toggleValue('showDestNetPopup');
   }
+};
 
-  @Watch('showSelectedAssetPopup')
-  resetAssetPopupVisible(newValue: string) {
-    if (newValue) {
-      this.showSelectNetworkPopup = false;
-      this.showDestNetPopup = false;
-      this.filterValue = '';
-    }
-  }
+const updateAmount = (amount: string) => {
+  const value = getCostOfAssets(+amount, assetPrice.value).toString() ?? '';
 
-  @Watch('showSelectNetworkPopup')
-  resetOriginPopupVisible(newValue: string) {
-    if (newValue) {
-      this.showSelectedAssetPopup = false;
-      this.showDestNetPopup = false;
-      this.filterValue = '';
-    }
-  }
+  syncedAmount.value = amount;
+  syncedValue.value = value;
+};
 
-  @Watch('showDestNetPopup')
-  resetDestPopupVisible(newValue: string) {
-    if (newValue) {
-      this.showSelectedAssetPopup = false;
-      this.showSelectNetworkPopup = false;
-      this.filterValue = '';
-    }
-  }
+const handlerFilter = (value: string) => {
+  filterValue.value = value;
+};
 
-  @Watch('syncedNetwork')
-  resetDestNetwork(newValue: string, prevValue: string) {
-    if (newValue.toLowerCase() === this.syncedDestNet.toLowerCase()) this.syncedDestNet = prevValue;
-  }
+const toggleMyWalletsVisibility = () => {
+  showMyWallets.value = !showMyWallets.value;
+};
 
-  @Watch('syncedAssetId')
-  updateSelectedNetwork() {
-    this.syncedAmount = '';
-    this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
-    this.syncedValue = '';
+const toggleHistoryBookVisibility = () => {
+  showHistoryBook.value = !showHistoryBook.value;
+};
 
-    if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
-  }
+const handlerBack = () => {
+  if (showHistoryBook.value) toggleHistoryBookVisibility();
+  else if (showEditAddressBook.value) toggleEditBook();
+  else if (showMyWallets.value) toggleMyWalletsVisibility();
+  else step.value -= 1;
+};
 
-  @Watch('syncedDestNet')
-  async clearRecipient() {
-    this.$nextTick(() => {
-      if (!this.isValidRecipientAddress) this.setRecipient();
-    });
-  }
+const confirmationPasswordPopupClose = (closeForm: boolean) => {
+  showConfirmationPasswordPopup.value = false;
 
-  @Watch('syncedAssetId')
-  @Watch('syncedNetwork')
-  @Watch('syncedDestNet')
-  @Watch('syncedRecipient')
-  @Watch('syncedAmount')
-  calculateFee() {
-    if (!this.currency) return;
+  if (closeForm) emit('closeForm');
+};
 
-    clearTimeout(this.timeoutSubscription);
+const setWallet = (address: string, ethereumAddress: string) => {
+  const network = isTransfer.value || syncedDestNet.value === '' ? syncedNetwork.value : syncedDestNet.value;
 
-    this.timeoutSubscription = setTimeout(() => this.calculateEstimates(), 2000);
-  }
+  syncedRecipient.value = BaseApi.formatAddress({ address, ethereumAddress }, network);
 
-  created() {
-    this.calculateEstimates();
-  }
+  toggleMyWalletsVisibility();
+};
 
-  async calculateEstimates() {
-    if (!this.currency) return;
+const toggleLoading = (value = true) => {
+  isFetchingFees.value = value;
+};
 
-    try {
-      const { estimateFee, destEstimateFee, errors } = await this.verifyTx();
+const verifyTx = async (_amount?: string): Promise<ResponseCheckTransfer | ResponseCheckCrossChain> => {
+  toggleLoading();
 
-      if (errors) {
-        errors.forEach((error) => {
-          if (error.code === TransferErrorCode.TRANSFER_ERROR) this.estimateFeeError = true;
-          else this.estimateFeeError = false;
-        });
-      }
-
-      this.syncedFee = estimateFee ?? '';
-      this.syncedDestNetFee = destEstimateFee ?? '';
-    } catch (e) {
-      this.syncedFee = '';
-      this.syncedDestNetFee = '';
-    }
-  }
-
-  toggleEditBook(address: string = '') {
-    this.showEditAddressBook = !this.showEditAddressBook;
-    this.showHistoryBook = !this.showHistoryBook;
-    this.newAddress = address;
-  }
-
-  toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup' | 'showEditAddressBook') {
-    this[value] = !this[value];
-  }
-
-  setRecipient(address = '') {
-    this.syncedRecipient = BaseApi.formatAddress({ address, ethereumAddress: address }, this.targetNetwork);
-  }
-
-  toggleSelectedNetwork(value: string) {
-    if (this.showSelectedAssetPopup) {
-      this.syncedAssetId = value;
-
-      this.toggleValue('showSelectedAssetPopup');
-    } else if (this.showSelectNetworkPopup) {
-      this.syncedNetwork = value;
-
-      this.toggleValue('showSelectNetworkPopup');
-    } else {
-      this.syncedDestNet = value;
-
-      this.toggleValue('showDestNetPopup');
-    }
-  }
-
-  updateAmount(amount: string) {
-    const value = getCostOfAssets(+amount, this.assetPrice).toString() ?? '';
-
-    this.syncedAmount = amount;
-    this.syncedValue = value;
-  }
-
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
-  handlerBack() {
-    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    else if (this.showEditAddressBook) this.toggleEditBook();
-    else if (this.showMyWallets) this.toggleMyWalletsVisibility();
-    else this.step -= 1;
-  }
-
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) this.$emit('closeForm');
-  }
-
-  getStatusWallet(address: string, ethereumAddress: string) {
-    const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.syncedNetwork);
-    const currentRecipientAddress = BaseApi.formatAddress(
-      { address: this.syncedRecipient, ethereumAddress: this.syncedRecipient },
-      this.syncedNetwork
-    );
-
-    return currentAddress === currentRecipientAddress;
-  }
-
-  calcTransferableUtility() {
-    const balance = this.utilityAsset.balances.find(
-      ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
-    )!;
-
-    return balance?.transferable?.toString() ?? '0';
-  }
-
-  calcTransferableSendMinusFee(fee: string) {
-    return calcTransferableSendMinusFee(
-      this.currency,
-      this.syncedNetwork,
-      fee,
-      this.isCrossChain, // проверяем ED для crossChain транзакций
-      this.syncedDestNetFee
-    );
-  }
-
-  async setMax() {
-    if (!this.currency) return;
-
-    const setMax = async () => {
-      const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
-      const transferable = this.calcTransferableSendMinusFee(estimateFee!);
-
-      this.syncedAmount = transferable.toString();
-      this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
-    };
-
-    if (this.syncedFee === '' || this.syncedFee === '0') {
-      clearTimeout(this.timeoutSetMax);
-
-      this.timeoutSetMax = setTimeout(setMax, 2000);
-    } else setMax();
-  }
-
-  toggleLoading(value = true) {
-    this.isFetchingFees = value;
-  }
-
-  async verifyTx(_amount?: string): Promise<ResponseCheckTransfer | ResponseCheckCrossChain> {
-    this.toggleLoading();
-
-    // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
+  try {
     const to = BaseApi.formatAddress(
       { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-      this.targetNetwork
+      targetNetwork.value
     );
 
-    const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0' ? this.syncedAmount : '1');
+    const amount = _amount ?? (syncedAmount.value !== '' && syncedAmount.value !== '0' ? syncedAmount.value : '1');
 
-    if (this.isTransfer) {
-      const ex = await checkTransfer({
-        networkKey: this.syncedNetwork,
-        from: this.transactionAddress,
+    if (isTransfer.value) {
+      return await checkTransfer({
+        networkKey: syncedNetwork.value,
+        from: transactionAddress.value,
         to,
-        relayChain: this.currency?.relayChain,
+        relayChain: currency.value?.relayChain,
         amount,
-        assetId: this.syncedAssetId,
+        assetId: syncedAssetId.value,
       });
-
-      this.toggleLoading(false);
-
-      return ex;
     }
 
-    const ex = await checkCrossChain({
-      originNet: this.syncedNetwork,
-      destinationNet: this.syncedDestNet,
-      from: this.transactionAddress,
+    return await checkCrossChain({
+      originNet: syncedNetwork.value,
+      destinationNet: syncedDestNet.value,
+      from: transactionAddress.value,
       to,
-      relayChain: this.currency?.relayChain,
+      relayChain: currency.value?.relayChain,
       amount,
-      assetId: this.syncedAssetId,
+      assetId: syncedAssetId.value,
     });
-
-    this.toggleLoading(false);
-
-    return ex;
+  } finally {
+    toggleLoading(false);
   }
+};
 
-  async handlerContinueButton() {
-    if (this.step === 2) {
-      this.showConfirmationPasswordPopup = true;
+const calculateEstimates = async () => {
+  if (!currency.value) return;
 
-      return;
+  crossChainValidationError.value = null;
+
+  try {
+    const { estimateFee, destEstimateFee, errors } = await verifyTx();
+
+    if (errors) {
+      errors.forEach((error) => {
+        if (error.code === TransferErrorCode.TRANSFER_ERROR) estimateFeeError.value = true;
+        else estimateFeeError.value = false;
+      });
     }
 
-    this.step += 1;
-    this.showSelectedAssetPopup = false;
-    this.showSelectNetworkPopup = false;
-    this.showDestNetPopup = false;
+    syncedFee.value = estimateFee ?? '';
+    syncedDestNetFee.value = destEstimateFee ?? '';
+  } catch (error) {
+    syncedFee.value = '';
+    syncedDestNetFee.value = '';
+
+    if (isCrossChain.value) {
+      const fallbackMessage = 'Unable to estimate cross-chain fees for the selected destination.';
+      const normalizedMessage = error instanceof Error && error.message.trim() !== '' ? error.message : fallbackMessage;
+
+      crossChainValidationError.value = normalizedMessage;
+    }
+  }
+};
+
+const setMax = async () => {
+  if (!currency.value) return;
+
+  const setMaxInner = async () => {
+    const { estimateFee } = await verifyTx(transferableAmount.value.toString());
+    const transferable = calcTransferableSendMinusFeeValue(estimateFee ?? '0');
+
+    syncedAmount.value = transferable.toString();
+    syncedValue.value = getCostOfAssets(transferable, assetPrice.value).toString();
+  };
+
+  if (syncedFee.value === '' || syncedFee.value === '0') {
+    if (timeoutSetMax) clearTimeout(timeoutSetMax);
+
+    timeoutSetMax = setTimeout(() => {
+      void setMaxInner();
+    }, 2000);
+  } else {
+    await setMaxInner();
+  }
+};
+
+const handlerContinueButton = () => {
+  if (step.value === 2) {
+    showConfirmationPasswordPopup.value = true;
+
+    return;
   }
 
-  handlerCloseExistentialPopup() {
-    this.showExistentialPopup = false;
+  step.value += 1;
+  showSelectedAssetPopup.value = false;
+  showSelectNetworkPopup.value = false;
+  showDestNetPopup.value = false;
+};
+
+const handlerCloseExistentialPopup = () => {
+  showExistentialPopup.value = false;
+};
+
+const handlerAcceptExistentialPopup = () => {
+  handlerContinueButton();
+  handlerCloseExistentialPopup();
+};
+
+const handlerCloseSelectPopup = () => {
+  if (showSelectedAssetPopup.value) toggleValue('showSelectedAssetPopup');
+  else if (showSelectNetworkPopup.value) toggleValue('showSelectNetworkPopup');
+  else toggleValue('showDestNetPopup');
+};
+
+const handlerCloseWarningAddressPopup = () => {
+  syncedRecipient.value = '';
+};
+
+const formatAddress = () => {
+  syncedRecipient.value = BaseApi.formatAddress(
+    {
+      address: syncedRecipient.value,
+      ethereumAddress: syncedRecipient.value,
+    },
+    targetNetwork.value
+  );
+};
+
+const paste = () => {
+  syncedRecipient.value = getClipboard();
+};
+
+watch(syncedRecipient, () => {
+  void scamWatcher();
+});
+
+watch(showSelectedAssetPopup, (newValue) => {
+  if (newValue) {
+    showSelectNetworkPopup.value = false;
+    showDestNetPopup.value = false;
+    filterValue.value = '';
   }
+});
 
-  handlerAcceptExistentialPopup() {
-    this.handlerContinueButton();
-    this.handlerCloseExistentialPopup();
+watch(showSelectNetworkPopup, (newValue) => {
+  if (newValue) {
+    showSelectedAssetPopup.value = false;
+    showDestNetPopup.value = false;
+    filterValue.value = '';
   }
+});
 
-  handlerCloseSelectPopup() {
-    if (this.showSelectedAssetPopup) this.toggleValue('showSelectedAssetPopup');
-    else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
-    else this.toggleValue('showDestNetPopup');
+watch(showDestNetPopup, (newValue) => {
+  if (newValue) {
+    showSelectedAssetPopup.value = false;
+    showSelectNetworkPopup.value = false;
+    filterValue.value = '';
   }
+});
 
-  handlerCloseWarningAddressPopup() {
-    this.syncedRecipient = '';
+watch(
+  syncedNetwork,
+  (newValue, prevValue) => {
+    if (!newValue || !prevValue) return;
+
+    if (newValue.toLowerCase() === syncedDestNet.value.toLowerCase()) syncedDestNet.value = prevValue;
+  },
+  { flush: 'post' }
+);
+
+watch(syncedAssetId, () => {
+  syncedAmount.value = '';
+  syncedDestNet.value = optionsDestNet.value?.[0]?.value ?? '';
+  syncedValue.value = '';
+
+  if (isTransfer.value) syncedNetwork.value = optionsNetworks.value?.[0]?.value ?? '';
+});
+
+watch(syncedDestNet, () => {
+  nextTick(() => {
+    if (!isValidRecipientAddress.value) setRecipient();
+  });
+});
+
+watch([syncedRecipient, syncedDestNet, syncedNetwork], () => {
+  crossChainValidationError.value = null;
+});
+
+watch(
+  () => [syncedAssetId.value, syncedNetwork.value, syncedDestNet.value, syncedRecipient.value, syncedAmount.value],
+  () => {
+    if (!currency.value) return;
+
+    if (timeoutSubscription) clearTimeout(timeoutSubscription);
+
+    timeoutSubscription = setTimeout(() => {
+      void calculateEstimates();
+    }, 2000);
   }
+);
 
-  formatAddress() {
-    this.syncedRecipient = BaseApi.formatAddress(
-      {
-        address: this.syncedRecipient,
-        ethereumAddress: this.syncedRecipient,
-      },
-      this.targetNetwork
-    );
-  }
+void calculateEstimates();
 
-  paste() {
-    this.syncedRecipient = getClipboard();
-  }
-
-  setWallet(address: string, ethereumAddress: string) {
-    const network = this.isTransfer || this.syncedDestNet === '' ? this.syncedNetwork : this.syncedDestNet;
-
-    this.syncedRecipient = BaseApi.formatAddress({ address, ethereumAddress }, network);
-
-    this.toggleMyWalletsVisibility();
-  }
-
-  toggleMyWalletsVisibility() {
-    this.showMyWallets = !this.showMyWallets;
-  }
-
-  toggleHistoryBookVisibility() {
-    this.showHistoryBook = !this.showHistoryBook;
-  }
-}
+onBeforeUnmount(() => {
+  if (timeoutSubscription) clearTimeout(timeoutSubscription);
+  if (timeoutSetMax) clearTimeout(timeoutSetMax);
+});
 </script>
 
 <style lang="scss">

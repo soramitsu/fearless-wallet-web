@@ -80,8 +80,9 @@
   </Scroll>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
 import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -89,103 +90,46 @@ import Scroll from '@/components/Scroll.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: { Scroll },
-})
-export default class ValidatorInfo extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  stakingNetwork: NetworkParams;
+  stakingCurrency: TokenGroup;
+  validator: FWValidatorInfoFull;
+  validators: FWValidatorInfoFull[];
+}>();
 
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
-  @Prop({ type: Array }) validators!: FWValidatorInfoFull[];
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { t, n } = useI18n();
 
-  get validatorFormHeight() {
-    const sub = this.showOversubscribedWarning ? 0 : 55;
-    const sub2 = this.showSlashedWarning ? 0 : 55;
+const stakingAssetPrice = computed(() => networksStore.getAssetPrice(props.stakingCurrency?.priceId ?? '').price);
 
-    return 355 - sub - sub2;
-  }
+const showOversubscribedWarning = computed(() => props.validator.isOversubscribed);
+const showSlashedWarning = computed(() => false);
 
-  get stakingAssetName() {
-    return this.stakingCurrency.symbol;
-  }
+const validatorFormHeight = computed(
+  () => 355 - (showOversubscribedWarning.value ? 55 : 0) - (showSlashedWarning.value ? 55 : 0)
+);
 
-  get showOversubscribedWarning() {
-    return this.validator.isOversubscribed;
-  }
+const stakingAssetName = computed(() => props.stakingCurrency.symbol);
+const address = computed(() => props.validator.address);
+const validatorName = computed(() => props.validator.name);
+const nominatorsCount = computed(() => props.validator.nominators.length);
+const legalName = computed(() => props.validator.identity?.info.legal ?? '');
+const email = computed(() => props.validator.identity?.info.email ?? '');
+const web = computed(() => props.validator.identity?.info.web ?? '');
+const twitter = computed(() => props.validator.identity?.info.twitter ?? '');
+const elementName = computed(() => props.validator.identity?.info.description ?? '');
+const maxNominatorRewardedPerValidator = computed(() => props.stakingNetwork.maxNominatorRewardedPerValidator);
+const apy = computed(() => props.validator?.apy ?? 0);
+const totalStake = computed(() => props.validator.stake.total ?? '0');
+const totalStakeString = computed(() => n(+totalStake.value, 'decimal'));
+const totalStakeValue = computed(() => {
+  const value = +totalStake.value * stakingAssetPrice.value;
 
-  get showSlashedWarning() {
-    // TODO staking
-    return false;
-    // return this.validator.isSlashed;
-  }
+  return `${accountsStore.fiatSymbol}${n(value, 'price')}`;
+});
 
-  get address() {
-    return this.validator.address;
-  }
-
-  get validatorName() {
-    return this.validator.name;
-  }
-
-  get nominatorsCount() {
-    return this.validator.nominators.length;
-  }
-
-  get legalName() {
-    return this.validator.identity?.info.legal;
-  }
-
-  get email() {
-    return this.validator.identity?.info.email;
-  }
-
-  get web() {
-    return this.validator.identity?.info.web;
-  }
-
-  get twitter() {
-    return this.validator.identity?.info.twitter;
-  }
-
-  get status() {
-    return this.$t(`staking.${this.validator.status}`);
-  }
-
-  get elementName() {
-    return this.validator.identity?.info.description;
-  }
-
-  get maxNominatorRewardedPerValidator() {
-    return this.stakingNetwork.maxNominatorRewardedPerValidator;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get apy() {
-    return this.validator?.apy;
-  }
-
-  get totalStake() {
-    return this.validator.stake.total ?? '0';
-  }
-
-  get totalStakeString() {
-    return this.$n(+this.totalStake, 'decimal');
-  }
-
-  get totalStakeValue() {
-    const value = +this.totalStake * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-}
+const status = computed(() => t(`staking.${props.validator.status}`));
 </script>
 
 <style lang="scss" scoped>

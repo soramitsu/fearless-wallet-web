@@ -12,7 +12,7 @@ export interface BalanceChildItem {
 export interface BalanceItem {
   state: APIItemState;
   symbol: string;
-  name: string; // is Network Name, TODO name -> networkName
+  networkName: string;
   id: string;
   relayChain?: string;
   existentialDeposit?: string;
@@ -74,10 +74,20 @@ export type TokenInfo = {
   type?: CustomTokenType; // to differentiate custom tokens from native tokens
   decimals: number;
   name: string;
-  // TODO: unify specialOption, assetId, assetIndex
-  specialOption?: object;
   assetId?: string; // for moon assets
   assetIndex?: number | string;
+};
+
+export const getBalanceNetworkName = (balance: BalanceItem): string => {
+  if (!balance.networkName) {
+    const legacyName = (balance as BalanceItem & { name?: string }).name;
+
+    if (legacyName) {
+      balance.networkName = legacyName;
+    }
+  }
+
+  return balance.networkName;
 };
 
 export interface EvmSendTransactionParams {

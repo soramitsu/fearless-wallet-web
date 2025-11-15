@@ -8,15 +8,15 @@
     :top="top"
     :left="-35"
     :zIndex="399"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
   >
     <div class="node-settings">
-      <div class="row" @click="$emit('openEditNodeForm', selectedNetwork, name, url)">
+      <div class="row" @click="emit('openEditNodeForm', selectedNetwork, name, url)">
         <Icon icon="edit" className="edit-icon" />
 
         <div class="label" data-testid="editNode">{{ $t('accounts.editNode') }}</div>
       </div>
-      <div class="row" @click="$emit('openNotificationPopup')">
+      <div class="row" @click="emit('openNotificationPopup')">
         <Icon icon="basket" className="basket-icon" />
 
         <div class="label delete" data-testid="deleteNode">{{ $t('accounts.deleteNode') }}</div>
@@ -27,10 +27,15 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRoute } from 'vue-router/composables';
+import { useRoute } from 'vue-router';
 
 type Props = { buttonTopClick: number; name?: string; url?: string };
 const props = defineProps<Props>();
+const emit = defineEmits<{
+  handlerClose: [];
+  openEditNodeForm: [network: string | string[] | undefined, name?: string, url?: string];
+  openNotificationPopup: [];
+}>();
 const route = useRoute();
 
 const selectedNetwork = computed(() => route.params.network);
@@ -39,6 +44,8 @@ const top = computed(() => {
 
   return props.buttonTopClick + computedMargin;
 });
+
+const handleClose = () => emit('handlerClose');
 </script>
 
 <style lang="scss" scoped>

@@ -1,10 +1,5 @@
 <template>
-  <AboveForm
-    header="assets.networkIssues"
-    class="network-management"
-    :fullScreen="true"
-    @closeHandler="$emit('closeForm')"
-  >
+  <AboveForm header="assets.networkIssues" class="network-management" :fullScreen="true" @closeHandler="handleClose">
     <div class="management-content">
       <Scroll>
         <FCorners v-for="{ name, icon } in networks" :key="name" size="big" class="network-FCorners">
@@ -17,12 +12,7 @@
               <div class="unavailable">Network is unavailable</div>
             </div>
 
-            <FButton
-              size="mini"
-              class="switch-button"
-              text="common.resolve"
-              @click="$emit('setNetworkUnavailable', name)"
-            />
+            <FButton size="mini" class="switch-button" text="common.resolve" @click="handleResolve(name)" />
           </div>
         </FCorners>
       </Scroll>
@@ -30,13 +20,24 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import type { NetworkJson } from '@extension-base/types';
 
-@Component
-export default class NetworkManagement extends Vue {
-  @Prop(Array) networks!: NetworkJson[];
+defineProps<{
+  networks: NetworkJson[];
+}>();
+
+const emit = defineEmits<{
+  closeForm: [];
+  setNetworkUnavailable: [network: string];
+}>();
+
+function handleClose() {
+  emit('closeForm');
+}
+
+function handleResolve(network: string) {
+  emit('setNetworkUnavailable', network);
 }
 </script>
 

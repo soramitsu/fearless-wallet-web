@@ -2,7 +2,7 @@
   <div class="nickname">
     <FInput
       :value="syncedNickname"
-      ref="nicknameInput"
+      ref="nicknameInputComponent"
       placeholder="addWallet.walletNickname"
       size="big"
       :maxlength="35"
@@ -16,26 +16,38 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync, Ref } from 'vue-property-decorator';
-import type FInput from '@/components/FInput.vue';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import FInput from '@/components/FInput.vue';
 
-@Component
-export default class NicknameForm extends Vue {
-  @Ref('nicknameInput') readonly nicknameInputComponent!: typeof FInput;
-  @Prop({ default: false }) readonly!: boolean;
-  @PropSync('nickname', { type: String }) syncedNickname!: string;
-
-  mounted() {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    this.nicknameInputComponent.input.focus();
+const props = withDefaults(
+  defineProps<{
+    readonly?: boolean;
+    nickname: string;
+  }>(),
+  {
+    readonly: false,
   }
+);
 
-  changeSyncedNickname(value: string) {
-    this.syncedNickname = value;
-  }
-}
+const emit = defineEmits<{
+  'update:nickname': [value: string];
+}>();
+
+const nicknameInputComponent = ref<InstanceType<typeof FInput> | null>(null);
+
+const syncedNickname = computed({
+  get: () => props.nickname,
+  set: (value: string) => emit('update:nickname', value),
+});
+
+const changeSyncedNickname = (value: string) => {
+  syncedNickname.value = value;
+};
+
+onMounted(() => {
+  nicknameInputComponent.value?.input?.focus();
+});
 </script>
 
 <style lang="scss" scoped>

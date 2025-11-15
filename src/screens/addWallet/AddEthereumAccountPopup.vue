@@ -1,9 +1,5 @@
 <template>
-  <ConfirmationPopup
-    text="accounts.addEthereumAccounts"
-    @handlerClose="$emit('handlerClose')"
-    @handlerAgree="$emit('handlerAgree')"
-  >
+  <ConfirmationPopup text="accounts.addEthereumAccounts" @handlerClose="handleClose" @handlerAgree="handleAgree">
     <div class="ethereum-account-popup">
       <Icon icon="moonbeam-moonriver" class="moonbeam-moonriver" />
 
@@ -12,7 +8,15 @@
   </ConfirmationPopup>
 </template>
 
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+const emit = defineEmits<{
+  handlerClose: [];
+  handlerAgree: [];
+}>();
+
+const handleClose = () => emit('handlerClose');
+const handleAgree = () => emit('handlerAgree');
+</script>
 
 <style lang="scss" scoped>
 .ethereum-account-popup {

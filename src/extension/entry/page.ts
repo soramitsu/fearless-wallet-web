@@ -1,124 +1,139 @@
-/* eslint-disable prefer-rest-params */
 import '@polkadot/extension-inject/crossenv';
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, handleResponse, initEvmProvider, redirectIfPhishing } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
-import type { FWEvmProvider } from '@extension-base/page/types';
+import type { JsonRpcPayload, JsonRpcResponse, RequestArguments } from '@json-rpc-tools/utils';
+import type { JsonRpcRequest } from 'json-rpc-engine';
+import type { FWEvmProvider, JsonRpcCallback, SendSyncJsonRpcRequest } from '@extension-base/page/types';
 import type { Message } from '@extension-base/types';
 import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
 import type { InjectedWindow } from '@/extension/entry/types';
+import type { Injected } from '@polkadot/extension-inject/types';
 import { APP_VERSION } from '@/consts/global';
 
 const win = window as Window & InjectedWindow;
 const walletKey = 'fearless-wallet';
 
+type JsonRpcParams = JsonRpcPayload extends { params?: infer P } ? P : never;
+
 win.injectedWeb3 = win.injectedWeb3 || {};
 
-class FearlessWalletPlaceholder {
-  provider: FWEvmProvider | undefined = undefined; // TODO ???
+class FearlessWalletPlaceholder implements FWEvmProvider {
+  provider: FWEvmProvider | undefined = undefined;
   connected = false;
-  isConnected = () => false;
+  private readonly waitProvider: Promise<FWEvmProvider>;
 
-  __waitProvider = (async () => {
-    if (this.provider) return Promise.resolve(this.provider);
+  constructor() {
+    this.waitProvider = new Promise<FWEvmProvider>((resolve, reject) => {
+      if (this.provider) {
+        this.connected = this.provider.isConnected();
+        resolve(this.provider);
 
-    const provider = await new Promise((resolve, reject) => {
+        return;
+      }
+
       let retry = 0;
+      const interval = window.setInterval(() => {
+        retry += 1;
 
-      const interval = setInterval(() => {
-        if (++retry > 30) {
-          clearInterval(interval);
+        if (retry > 30) {
+          window.clearInterval(interval);
           reject(new Error('Fearless Wallet not found'));
+
+          return;
         }
 
-        if (this.provider) {
-          clearInterval(interval);
-          resolve(this.provider);
-        }
+        if (!this.provider) return;
+
+        window.clearInterval(interval);
+        this.connected = this.provider.isConnected();
+        resolve(this.provider);
       }, 100);
     });
+  }
+
+  private async resolveProvider(): Promise<FWEvmProvider> {
+    const provider = await this.waitProvider;
+    this.connected = provider.isConnected();
 
     return provider;
-  })();
-
-  on() {
-    this.__waitProvider.then((provider) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      provider.on(...arguments);
-    });
   }
 
-  once() {
-    this.__waitProvider.then((provider) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      provider.once(...arguments);
-    });
+  isConnected(): boolean {
+    return this.provider?.isConnected() ?? this.connected;
   }
 
-  off() {
-    this.__waitProvider.then((provider) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      provider.off(...arguments);
-    });
+  on(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    void this.resolveProvider()
+      .then((provider) => provider.on(event, listener))
+      .catch(console.error);
+
+    return this;
   }
 
-  addListener() {
-    this.__waitProvider.then((provider) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      provider.addListener(...arguments);
-    });
+  once(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    void this.resolveProvider()
+      .then((provider) => provider.once(event, listener))
+      .catch(console.error);
+
+    return this;
   }
 
-  removeListener() {
-    this.__waitProvider.then((provider) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      provider.removeListener(...arguments);
-    });
+  off(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    void this.resolveProvider()
+      .then((provider) => provider.off(event, listener))
+      .catch(console.error);
+
+    return this;
   }
 
-  removeAllListeners() {
-    this.__waitProvider.then((provider) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      provider.removeAllListeners(...arguments);
-    });
+  addListener(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    void this.resolveProvider()
+      .then((provider) => provider.addListener(event, listener))
+      .catch(console.error);
+
+    return this;
   }
 
-  async enable() {
-    const provider = await this.__waitProvider;
+  removeListener(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    void this.resolveProvider()
+      .then((provider) => provider.removeListener(event, listener))
+      .catch(console.error);
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    return await provider.enable(...arguments);
+    return this;
   }
 
-  async request() {
-    const provider = await this.__waitProvider;
+  removeAllListeners(event?: string | symbol): this {
+    void this.resolveProvider()
+      .then((provider) => provider.removeAllListeners(event))
+      .catch(console.error);
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    return await provider.send(...arguments);
+    return this;
   }
 
-  async send() {
-    const provider = await this.__waitProvider;
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    return await provider.send(...arguments);
+  enable(origin?: string): Promise<string[]> {
+    return this.resolveProvider().then((provider) => provider.enable(origin));
   }
 
-  async sendAsync() {
-    const provider = await this.__waitProvider;
+  request<T>(args: RequestArguments): Promise<T> {
+    return this.resolveProvider().then((provider) => provider.request<T>(args));
+  }
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    return await provider.send(...arguments);
+  send<T>(
+    methodOrPayload: string | SendSyncJsonRpcRequest | JsonRpcRequest<unknown>,
+    callbackOrParams?: JsonRpcCallback<T> | JsonRpcParams
+  ): Promise<unknown> | JsonRpcResponse<T> | void {
+    return this.resolveProvider().then(
+      (provider) => provider.send<T>(methodOrPayload, callbackOrParams) as Promise<unknown> | JsonRpcResponse<T> | void
+    );
+  }
+
+  sendAsync<T>(payload: JsonRpcRequest<T>, callback: JsonRpcCallback<T>): void {
+    void this.resolveProvider()
+      .then((provider) => provider.sendAsync(payload, callback))
+      .catch((error: unknown) => {
+        callback(error instanceof Error ? error : new Error(String(error)));
+      });
   }
 }
 
@@ -200,7 +215,7 @@ class Page {
     windowInject.injectedWeb3 = windowInject.injectedWeb3 || {};
 
     windowInject.injectedWeb3[walletKey] = {
-      enable: (origin: string) => enable(origin),
+      enable: (origin: string) => enable(origin) as Promise<Injected>,
       version: APP_VERSION,
     };
   }

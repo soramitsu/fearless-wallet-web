@@ -19,7 +19,7 @@
 ### **Checklist**
 
 - [ ] Code adheres to coding guidelines and standards.
-- [ ] Linting and formatting checks have passed, no local issues.
+- [ ] `yarn format:check` and `yarn lint:ci` pass locally.
 - [ ] Existing tests pass successfully, no local errors.
 - [ ] Pull request is linked to a relevant issue or task.
 - [ ] Tests are written for new features or fixes.

@@ -101,8 +101,8 @@
 
 <script lang="ts" setup>
 import { computed, reactive, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { cut, getClipboard } from '@/helpers';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';

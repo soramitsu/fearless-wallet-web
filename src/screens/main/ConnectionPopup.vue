@@ -6,7 +6,7 @@
     :headerText="activeTabName"
     :closeByBackground="true"
     zIndex="299"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
   >
     <div class="notification-popup-content">
       <div class="message">{{ message }}</div>
@@ -14,37 +14,43 @@
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import { type ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { useI18n } from 'vue-i18n';
 
-@Component
-export default class ConnectionPopup extends Vue {
-  @Prop(Object) tabStatus!: ActiveTabAuthorizeStatus;
+const props = defineProps<{
+  tabStatus: ActiveTabAuthorizeStatus;
+}>();
 
-  get message() {
-    if (this.tabStatus.isAuthorize) {
-      const count = this.tabStatus.authorizeAccountsCount;
-      const tc = count === 1 ? 1 : 2;
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
 
-      return this.$tc('header.connectedMessage', tc, { count });
-    }
+defineOptions({
+  name: 'ConnectionPopup',
+});
 
-    return this.$t('header.connectionStatusMessage', {
-      not: this.tabStatus.isAuthorize ? '' : 'not',
-    });
+const { t, tc } = useI18n();
+
+const message = computed(() => {
+  if (props.tabStatus.isAuthorize) {
+    const count = props.tabStatus.authorizeAccountsCount;
+    const pluralization = count === 1 ? 1 : 2;
+
+    return tc('header.connectedMessage', pluralization, { count });
   }
 
-  get activeTabName() {
-    return this.tabStatus.dAppName === 'header.currentExtensionPage'
-      ? this.$t(this.tabStatus.dAppName)
-      : this.tabStatus.dAppName;
-  }
+  return t('header.connectionStatusMessage', {
+    not: props.tabStatus.isAuthorize ? '' : 'not',
+  });
+});
 
-  get classesSubtext() {
-    return ['subtext', `subtext-big`];
-  }
-}
+const activeTabName = computed(() =>
+  props.tabStatus.dAppName === 'header.currentExtensionPage' ? t(props.tabStatus.dAppName) : props.tabStatus.dAppName
+);
+
+const handleClose = () => emit('handlerClose');
 </script>
 
 <style lang="scss" scoped>

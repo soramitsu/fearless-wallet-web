@@ -1,113 +1,126 @@
-import Vue from 'vue';
-import DesignSystem from '@soramitsu-ui/ui-vue2/lib/types/DesignSystem';
-import { setDesignSystem, setTheme } from '@soramitsu-ui/ui-vue2/lib/utils';
-import {
-  SButton,
-  SCard,
-  SCheckbox,
-  SDialog,
-  SPagination,
-  SScrollbar,
-  SSlider,
-  SSwitch,
-  STooltip,
-  SCol,
-  SCollapse,
-  SCollapseItem,
-  SDesignSystemProvider,
-  SDivider,
-  SDropdown,
-  SDropdownItem,
-  SFloatInput,
-  SForm,
-  SFormItem,
-  SIcon,
-  SImage,
-  SInput,
-  SJsonInput,
-  SMenu,
-  SMenuItem,
-  SMenuItemGroup,
-  SRadio,
-  SRadioGroup,
-  SRow,
-  SSelect,
-  SOption,
-  SSkeleton,
-  SSkeletonItem,
-  STab,
-  STabs,
-  STable,
-  STableColumn,
-} from '@soramitsu-ui/ui-vue2';
-import ElementUIPlugin, { Message, MessageBox, Notification } from '@soramitsu-ui/ui-vue2/lib/plugins/elementUI';
+import { plugin as createSoramitsuPlugin, Status } from '@soramitsu-ui/ui';
+import '@soramitsu-ui/ui/styles';
+import { showAlertDialog, showPromptDialog } from '@/plugins/dialogService';
 
-import SoramitsuUIStorePlugin from '@soramitsu-ui/ui-vue2/lib/plugins/soramitsuUIStore';
-import store from '@/store';
+export type SoramitsuApp = {
+  use: (plugin: unknown, ...options: unknown[]) => unknown;
+  config: {
+    globalProperties: Record<string, unknown>;
+  };
+};
 
-type SNotificationParams = {
+const NOTIFICATION_STATUS = {
+  Info: Status.Info,
+  Success: Status.Success,
+  Warning: Status.Warning,
+  Error: Status.Error,
+} as const satisfies Record<string, (typeof Status)[keyof typeof Status]>;
+
+type NotificationStatus = (typeof Status)[keyof typeof Status];
+
+type NotificationType = keyof typeof NOTIFICATION_STATUS | NotificationStatus | string;
+
+type NotificationPayload = {
   message: string;
   title: string;
-  type: string;
+  type: NotificationType;
 };
 
-// TODO: [arch] CHECK IT LATER
-const notificationFn = ({ message, title, type }: SNotificationParams) => {
-  Notification({
-    message,
-    title,
-    duration: 2500, // If is will be changed you should change animation duration as well
-    type,
-    customClass: 'sora s-flex fearless-notify',
+type NormalizedNotificationPayload = Omit<NotificationPayload, 'type'> & { type: NotificationStatus };
+
+type NotificationListener = (payload: NormalizedNotificationPayload) => void;
+
+const listeners = new Set<NotificationListener>();
+type BasicMessage = string | { message: string; title?: string; type?: NotificationType };
+type NotificationsApi = {
+  show: (params: {
+    title?: string;
+    description?: string;
+    status?: NotificationStatus;
+    timeout?: number;
+    showCloseBtn?: boolean;
+  }) => { close: () => void };
+};
+
+let notificationsApi: NotificationsApi | null = null;
+
+export const setNotificationsApi = (api: NotificationsApi | null) => {
+  notificationsApi = api;
+};
+
+export const registerNotificationListener = (listener: NotificationListener) => {
+  listeners.add(listener);
+
+  return () => listeners.delete(listener);
+};
+
+const normalizeMessage = (input: BasicMessage): NotificationPayload => {
+  if (typeof input === 'string') {
+    return {
+      message: input,
+      title: '',
+      type: NOTIFICATION_STATUS.Info,
+    };
+  }
+
+  return {
+    message: input.message,
+    title: input.title ?? '',
+    type: input.type ?? NOTIFICATION_STATUS.Info,
+  };
+};
+
+export const resolveStatus = (type: NotificationType): NotificationStatus => {
+  if (typeof type === 'string') {
+    const normalized = type.toLowerCase();
+
+    const statusValue = (Object.values(NOTIFICATION_STATUS) as string[]).find((value) => value === normalized);
+
+    if (statusValue) return statusValue as NotificationStatus;
+
+    const statusKey = (Object.keys(NOTIFICATION_STATUS) as Array<keyof typeof NOTIFICATION_STATUS>).find(
+      (key) => key.toLowerCase() === normalized
+    );
+
+    if (statusKey) return NOTIFICATION_STATUS[statusKey];
+  } else if ((Object.values(NOTIFICATION_STATUS) as NotificationStatus[]).includes(type as NotificationStatus)) {
+    return type as NotificationStatus;
+  }
+
+  return NOTIFICATION_STATUS.Info;
+};
+
+const emitNotification = ({ message, title, type }: NotificationPayload) => {
+  const resolvedType = resolveStatus(type);
+  const payload: NormalizedNotificationPayload = { message, title, type: resolvedType };
+
+  notificationsApi?.show({
+    title: payload.title,
+    description: payload.message,
+    status: payload.type,
+    timeout: 2500,
+    showCloseBtn: true,
   });
+
+  listeners.forEach((listener) => listener(payload));
 };
 
-export const useNotify = () => notificationFn;
+export const useNotify = () => emitNotification;
 
-Vue.use(ElementUIPlugin)
-  .use(SoramitsuUIStorePlugin, { store })
-  .use(SButton)
-  .use(SCard)
-  .use(SCheckbox)
-  .use(SCol)
-  .use(SCollapse)
-  .use(SCollapseItem)
-  .use(SDesignSystemProvider)
-  .use(SDialog)
-  .use(SDivider)
-  .use(SDropdown)
-  .use(SDropdownItem)
-  .use(SFloatInput)
-  .use(SForm)
-  .use(SFormItem)
-  .use(SIcon)
-  .use(SImage)
-  .use(SInput)
-  .use(SJsonInput)
-  .use(SMenu)
-  .use(SMenuItem)
-  .use(SMenuItemGroup)
-  .use(SPagination)
-  .use(SRadio)
-  .use(SRadioGroup)
-  .use(SRow)
-  .use(SScrollbar)
-  .use(SSelect)
-  .use(SOption)
-  .use(SSkeleton)
-  .use(SSkeletonItem)
-  .use(SSlider)
-  .use(SSwitch)
-  .use(STab)
-  .use(STabs)
-  .use(STable)
-  .use(STableColumn)
-  .use(STooltip);
+export const installSoramitsuUI = (app: SoramitsuApp) => {
+  app.use(createSoramitsuPlugin());
+  app.config.globalProperties.$notify = emitNotification;
+  app.config.globalProperties.$message = (payload: BasicMessage) => emitNotification(normalizeMessage(payload));
 
-Vue.prototype.$prompt = MessageBox.prompt;
-Vue.prototype.$alert = MessageBox.alert;
-Vue.prototype.$message = Message;
-Vue.prototype.$notify = notificationFn;
+  app.config.globalProperties.$alert = (payload: BasicMessage) => {
+    const normalized = normalizeMessage(payload);
+    emitNotification(normalized);
 
-setTheme();
-setDesignSystem(DesignSystem.NEUMORPHIC);
+    return showAlertDialog({ message: normalized.message, title: normalized.title });
+  };
+
+  app.config.globalProperties.$prompt = (message: string, title?: string, defaultValue?: string) =>
+    showPromptDialog({ message, title, defaultValue });
+};
+
+export default installSoramitsuUI;

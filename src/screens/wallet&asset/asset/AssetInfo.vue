@@ -64,132 +64,103 @@
     />
   </Fragment>
 </template>
-<script lang="ts">
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { AssetPrice } from '@/interfaces';
-
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 import { getSummaryLockedBalance } from '@/helpers/common';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    BalanceDetailsPopup,
-    AccountSettingsPopup,
-  },
-})
-export default class AssetInfo extends Vue {
-  accountsStore = useAccountsStore();
-  showBalanceDetailsPopup = false;
-  showDetailsPopup = false;
-  transferableAssetBalance = 0;
+const props = defineProps<{
+  price: AssetPrice;
+  currency: TokenGroup;
+}>();
 
-  @Prop(Object) price!: AssetPrice;
-  @Prop(Object) currency!: TokenGroup;
+const accountsStore = useAccountsStore();
+const route = useRoute();
+const { n } = useI18n();
 
-  get selectedAssetNetwork() {
-    return this.$route.params.selectedNetwork;
-  }
+const showBalanceDetailsPopup = ref(false);
+const showDetailsPopup = ref(false);
+const transferableAssetBalance = ref(0);
 
-  get pickedNetwork() {
-    return this.selectedAssetNetwork ?? this.accountsStore.selectedNetwork;
-  }
+const selectedAssetNetwork = computed(() => route.params.selectedNetwork as string | undefined);
 
-  get showShimmers() {
-    return !navigator.onLine || !this.currency.balances?.some(({ state }) => state === APIItemState.READY);
-  }
+const pickedNetwork = computed(() => selectedAssetNetwork.value ?? accountsStore.selectedNetwork);
 
-  get icon() {
-    return this.currency?.icon ?? '';
-  }
+const showShimmers = computed(
+  () => !navigator.onLine || !props.currency.balances?.some(({ state }) => state === APIItemState.READY)
+);
 
-  get showSettingsPopup() {
-    if (this.accountsStore.selectedWallet.isTon) return false;
+const icon = computed(() => props.currency?.icon ?? '');
 
-    return this.selectedAssetNetwork !== '' && this.selectedAssetNetwork !== undefined;
-  }
+const showSettingsPopup = computed(() => {
+  if (accountsStore.selectedWallet.isTon) return false;
 
-  get priceChangeString() {
-    return this.$n(this.price.priceChange, 'percent');
-  }
+  return selectedAssetNetwork.value !== '' && selectedAssetNetwork.value !== undefined;
+});
 
-  get fiatPriceChangeString() {
-    return `(${this.accountsStore.fiatSymbol}${this.$n(
-      this.transferableFiatBalance * this.price.priceChange,
-      'price'
-    )})`;
-  }
+const priceChangeString = computed(() => n(props.price.priceChange, 'percent'));
 
-  get changePriceClasses() {
-    const classes = ['price-change'];
+const transferableFiatBalance = computed(() => transferableAssetBalance.value * props.price.price);
 
-    if (this.price.priceChange > 0) classes.push('up-price');
-    else if (this.price.priceChange < 0) classes.push('down-price');
+const fiatPriceChangeString = computed(
+  () => `(${accountsStore.fiatSymbol}${n(transferableFiatBalance.value * props.price.priceChange, 'price')})`
+);
 
-    return classes;
-  }
+const changePriceClasses = computed(() => {
+  const classes = ['price-change'];
 
-  get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.accountsStore.fiatSymbol}${this.$n(this.price.price, 'price')}`;
-  }
+  if (props.price.priceChange > 0) classes.push('up-price');
+  else if (props.price.priceChange < 0) classes.push('down-price');
 
-  get lockedBalanceString() {
-    const lockedBalance = getSummaryLockedBalance(this.currency);
+  return classes;
+});
 
-    return `${this.$n(lockedBalance, 'decimal')} ${this.selectedAssetUpper}`;
-  }
+const selectedAsset = computed(() => props.currency.symbol?.toLowerCase() ?? '');
+const selectedAssetUpper = computed(() => selectedAsset.value.toUpperCase());
 
-  get transferableFiatBalance() {
-    return this.transferableAssetBalance * this.price.price;
-  }
+const assetPriceString = computed(
+  () => `1 ${selectedAssetUpper.value} = ${accountsStore.fiatSymbol}${n(props.price.price, 'price')}`
+);
 
-  get transferableFiatBalanceInNetworkString() {
-    if (!this.currency) return `${this.accountsStore.fiatSymbol} 0`;
+const lockedBalanceString = computed(() => {
+  const lockedBalance = getSummaryLockedBalance(props.currency);
 
-    return `${this.accountsStore.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
-  }
+  return `${n(lockedBalance, 'decimal')} ${selectedAssetUpper.value}`;
+});
 
-  get countAssetsString() {
-    if (!this.currency) return `0 ${this.selectedAssetUpper}`;
+const transferableFiatBalanceInNetworkString = computed(
+  () => `${accountsStore.fiatSymbol} ${n(transferableFiatBalance.value ?? 0, 'price')}`
+);
 
-    const total = this.$n(this.transferableAssetBalance, 'decimal');
+const countAssetsString = computed(() => {
+  const total = n(transferableAssetBalance.value ?? 0, 'decimal');
 
-    return `${total} ${this.selectedAssetUpper}`;
-  }
+  return `${total} ${selectedAssetUpper.value}`;
+});
 
-  get selectedAsset() {
-    return this.currency.symbol?.toLowerCase() ?? '';
-  }
+function updateTransferableAssetBalance() {
+  transferableAssetBalance.value = +getSummaryTransferableBalanceFilteredByActiveNetworks(
+    props.currency,
+    pickedNetwork.value
+  );
+}
 
-  get selectedAssetUpper() {
-    return this.selectedAsset.toUpperCase();
-  }
+watch([pickedNetwork, () => props.currency], updateTransferableAssetBalance, { immediate: true, deep: true });
 
-  @Watch('pickedNetwork')
-  @Watch('currency', { deep: true })
-  transferableAssetBalanceUpdate() {
-    this.transferableAssetBalance = +getSummaryTransferableBalanceFilteredByActiveNetworks(
-      this.currency,
-      this.pickedNetwork
-    );
-  }
+function toggleBalanceDetailsPopup() {
+  showBalanceDetailsPopup.value = !showBalanceDetailsPopup.value;
+}
 
-  mounted() {
-    this.transferableAssetBalanceUpdate();
-  }
-
-  toggleBalanceDetailsPopup() {
-    this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
-  }
-
-  toggleDetailsPopup() {
-    this.showDetailsPopup = !this.showDetailsPopup;
-  }
+function toggleDetailsPopup() {
+  showDetailsPopup.value = !showDetailsPopup.value;
 }
 </script>
 

@@ -50,51 +50,60 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, toRefs } from 'vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 
-@Component({
-  components: { FinishForm },
-})
-export default class FlowStepLayout extends Vue {
-  @Prop(Number) countSteps!: number;
-  @Prop(Number) step!: number;
-  @Prop({ default: false, type: Boolean }) isLoading!: boolean;
-  @Prop(String) header!: string;
-  @Prop({ default: false }) showFullScreenIcon!: boolean;
-  @Prop({ default: false }) showAdvancedForm!: boolean;
+defineOptions({
+  name: 'FlowStepLayout',
+});
 
-  get isFinishStep() {
-    return this.countSteps === this.step;
+const props = withDefaults(
+  defineProps<{
+    countSteps: number;
+    step: number;
+    isLoading?: boolean;
+    header: string;
+    showFullScreenIcon?: boolean;
+    showAdvancedForm?: boolean;
+  }>(),
+  {
+    isLoading: false,
+    showFullScreenIcon: false,
+    showAdvancedForm: false,
   }
+);
 
-  get showBackButton() {
-    return !this.showAdvancedForm && !this.isFinishStep;
-  }
+const emit = defineEmits<{
+  back: [];
+  openFullScreen: [];
+}>();
 
-  back() {
-    this.$emit('back');
-  }
+const { countSteps, step, isLoading, header, showFullScreenIcon, showAdvancedForm } = toRefs(props);
 
-  fullScreen() {
-    this.$emit('openFullScreen');
-  }
+const isFinishStep = computed(() => countSteps.value === step.value);
+const showBackButton = computed(() => !showAdvancedForm.value && !isFinishStep.value);
 
-  getClasses(num: number) {
-    //TODO it maybe broken
-    const isCircleHidden = this.step >= this.countSteps;
-    const isCircleFilled = !isCircleHidden && num <= this.step;
+const back = () => {
+  emit('back');
+};
 
-    return [
-      'circle-step',
-      {
-        'circle-filled': isCircleFilled,
-        'circle-hidden': isCircleHidden,
-      },
-    ];
-  }
-}
+const fullScreen = () => {
+  emit('openFullScreen');
+};
+
+const getClasses = (num: number) => {
+  const isCircleHidden = step.value >= countSteps.value;
+  const isCircleFilled = !isCircleHidden && num <= step.value;
+
+  return [
+    'circle-step',
+    {
+      'circle-filled': isCircleFilled,
+      'circle-hidden': isCircleHidden,
+    },
+  ];
+};
 </script>
 
 <style lang="scss" scoped>

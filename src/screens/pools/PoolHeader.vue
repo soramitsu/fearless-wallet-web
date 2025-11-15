@@ -20,54 +20,40 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import type { PoolParams } from '@/stores';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {},
-})
-export default class PoolHeader extends Vue {
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  poolParams: PoolParams;
+  step: number;
+}>();
 
-  @Prop({ type: Object }) poolParams!: PoolParams;
-  @Prop({ type: Number }) step!: number;
+const accountsStore = useAccountsStore();
+const { n, t } = useI18n();
 
-  get size() {
-    return this.step === 3 ? 'big' : 'small';
-  }
+const size = computed(() => (props.step === 3 ? 'big' : 'small'));
 
-  get tvl() {
-    const tvl = +(this.poolParams?.tvl ?? 0);
+const tvl = computed(() => {
+  const tvlValue = +(props.poolParams?.tvl ?? 0);
 
-    return `${this.accountsStore.fiatSymbol}${this.$n(tvl, 'price')}`;
-  }
+  return `${accountsStore.fiatSymbol}${n(tvlValue, 'price')}`;
+});
 
-  get icon1() {
-    return this.poolParams?.asset1.icon ?? '';
-  }
+const icon1 = computed(() => props.poolParams?.asset1.icon ?? '');
+const icon2 = computed(() => props.poolParams?.asset2.icon ?? '');
+const color1 = computed(() => props.poolParams?.asset1.color ?? '');
+const color2 = computed(() => props.poolParams?.asset2.color ?? '');
 
-  get icon2() {
-    return this.poolParams?.asset2.icon ?? '';
-  }
+const poolName = computed(() => {
+  const asset1 = props.poolParams?.asset1.name.toUpperCase();
+  const asset2 = props.poolParams?.asset2.name.toUpperCase();
 
-  get color1() {
-    return this.poolParams?.asset1.color ?? '';
-  }
-
-  get color2() {
-    return this.poolParams?.asset2.color ?? '';
-  }
-
-  get poolName() {
-    const asset1 = this.poolParams?.asset1.name.toUpperCase();
-    const asset2 = this.poolParams?.asset2.name.toUpperCase();
-
-    return `${asset1}-${asset2} ${this.$t('pools.pool')}`;
-  }
-}
+  return `${asset1}-${asset2} ${t('pools.pool')}`;
+});
 </script>
 
 <style lang="scss" scoped>

@@ -44,7 +44,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import { ref, computed, onMounted } from 'vue';
 import type { FilesState } from '@/interfaces';
 import { Components } from '@/router/routes';

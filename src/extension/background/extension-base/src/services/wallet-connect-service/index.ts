@@ -31,7 +31,10 @@ export class WalletConnectService {
   readonly polkadotRequestHandler: PolkadotHandler;
   readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>([]);
 
-  constructor(private state: State, private readonly requestService: RequestService) {
+  constructor(
+    private state: State,
+    private readonly requestService: RequestService
+  ) {
     this.eip155RequestHandler = new Eip155RequestHandler(this.state, this);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this);
 

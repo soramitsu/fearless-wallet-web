@@ -11,7 +11,7 @@
     >
       {{ $t(label) }}
 
-      <template slot="menu">
+      <template v-slot:menu>
         <SDropdownItem
           v-for="{ label, value } in filteredOptions"
           :key="label"

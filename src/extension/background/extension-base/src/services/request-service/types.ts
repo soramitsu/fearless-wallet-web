@@ -12,7 +12,7 @@ export type DAppChainInfoPayload = {
 
 export type EvmRequestPayload = {
   id: string;
-  data: any;
+  data: unknown[];
   url: string;
 };
 
@@ -20,7 +20,7 @@ export type EvmRequests = Record<string, EvmRequestPayload>;
 
 export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning> {
   id: string;
-  data: any;
+  data: unknown[];
   method: string;
   url: string;
 }

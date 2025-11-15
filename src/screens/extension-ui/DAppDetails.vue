@@ -22,8 +22,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, set, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import type { AuthType } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
 import { updateAuthorization } from '@/extension/messaging';
@@ -75,13 +75,13 @@ onMounted(async () => {
       ? ethereumAddress === evmAuthorizedAccount
       : authorizedAccounts.some((el: string) => el === address);
 
-    set(state.value, address, {
+    state.value[address] = {
       name,
       isMobile,
       address,
       ethereumAddress,
       active: isAuthorized,
-    });
+    };
   });
 
   selectAll.value = isAllSelected();
@@ -97,10 +97,10 @@ const onSelect = (value: boolean, address: string) => {
 
 const onSelectAll = (value: boolean) => {
   Object.keys(state.value).forEach((key) => {
-    set(state.value, key, {
+    state.value[key] = {
       ...state.value[key],
       active: value,
-    });
+    };
   });
 
   selectAll.value = value;

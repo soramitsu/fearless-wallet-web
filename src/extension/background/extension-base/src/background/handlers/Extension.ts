@@ -1,4 +1,3 @@
-import { api as apiSora } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
@@ -38,9 +37,20 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { getSoraApi } from '@extension-base/services/utils/sora';
+
+const safeParseJson = <T>(value: string, fallback: () => T): T => {
+  try {
+    return JSON.parse(value) as T;
+  } catch (error) {
+    console.warn('Extension handler: failed to parse JSON payload', error);
+    return fallback();
+  }
+};
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
+import type { LiquiditySourceTypes } from '@sora/liquidityProxy/consts';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type { EvmRequests, EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
@@ -132,7 +142,13 @@ import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
-import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import type {
+  DerivationPath,
+  GoogleAuthTypes,
+  ICreateFile,
+  RequestGoogleToken,
+  HistoryFetchRequest,
+} from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import {
@@ -143,6 +159,58 @@ import {
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { isSameString, isTonNetwork } from '@/helpers';
+
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+
+const isValidHistoryFetchPayload = (value: unknown): value is HistoryFetchRequest => {
+  if (!value || typeof value !== 'object') return false;
+
+  const candidate = value as HistoryFetchRequest;
+  const endpoint = (candidate as { endpoint?: unknown }).endpoint;
+  const address = (candidate as { address?: unknown }).address;
+  const asset = (candidate as { asset?: unknown }).asset;
+
+  if (!isNonEmptyString(candidate.network)) return false;
+  if (!endpoint || typeof endpoint !== 'object') return false;
+
+  const endpointRecord = endpoint as Record<string, unknown>;
+  if (!isNonEmptyString(endpointRecord.type) || !isNonEmptyString(endpointRecord.url)) return false;
+
+  if (!address || typeof address !== 'object') return false;
+
+  const addressRecord = address as Record<string, unknown>;
+  if (!isNonEmptyString(addressRecord.raw) || !isNonEmptyString(addressRecord.formatted)) return false;
+
+  if (!asset || typeof asset !== 'object') return false;
+
+  const assetRecord = asset as Record<string, unknown>;
+  if (!isNonEmptyString(assetRecord.id) || typeof assetRecord.isUtility !== 'boolean') return false;
+
+  if (
+    Object.prototype.hasOwnProperty.call(assetRecord, 'contractAddress') &&
+    assetRecord.contractAddress !== undefined &&
+    typeof assetRecord.contractAddress !== 'string'
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+const isValidCrossChainPayload = (value: unknown): value is RequestCrossChain => {
+  if (!value || typeof value !== 'object') return false;
+
+  const candidate = value as RequestCrossChain;
+
+  return (
+    isNonEmptyString(candidate.from) &&
+    isNonEmptyString(candidate.originNet) &&
+    isNonEmptyString(candidate.destinationNet) &&
+    isNonEmptyString(candidate.to) &&
+    isNonEmptyString(candidate.assetId) &&
+    typeof candidate.isMobile === 'boolean'
+  );
+};
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -227,24 +295,27 @@ export default class Extension extends FWExtensionBase {
   }
 
   convertAccounts(accounts: SubjectInfo, walletEcosystem = WalletEcosystem.Substrate): AccountJson[] {
-    return Object.values(accounts).flatMap<AccountJson>(({ json: { address, meta }, type }) => {
-      if (isEthereumAddress(address)) return [];
+    return Object.values(accounts).reduce<AccountJson[]>((result, { json: { address, meta }, type }) => {
+      if (isEthereumAddress(address)) return result;
 
       const pair = this.state.keyringService.getPair(address);
       const haveEntropy = pair?.haveEntropy;
+      const keypairType = type === 'bitcoin-44' ? undefined : (type as KeypairType | undefined);
 
-      return {
+      result.push({
         address,
         ethereumAddress: meta.ethereumAddress as string,
         active: address === this.state.currentAccount?.address,
         name: meta.name ?? '',
-        type,
+        type: keypairType,
         haveEntropy,
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         walletEcosystem,
         ...meta,
-      };
-    });
+      });
+
+      return result;
+    }, []);
   }
 
   async accountsSubscribe(id: string, port?: Port): Promise<AccountJson[]> {
@@ -556,13 +627,14 @@ export default class Extension extends FWExtensionBase {
     const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const txData = request.data[0] as { to: string; value: string };
+      const [rawTx] = request.data;
+      const txData = rawTx as { to: string; value: string };
 
       const { hash } = await signer.sendTransaction(txData);
 
       request.resolve({ id: request.id, payload: hash as HexString });
     } else {
-      const params = request.data;
+      const params = request.data as unknown[];
 
       if (
         [
@@ -576,15 +648,17 @@ export default class Extension extends FWExtensionBase {
       )
         throw new Error('Not found sign method');
 
-      let payload;
+      let payload: unknown;
 
       if (typeof params[0] === 'string' && isEthereumAddress(params[0])) payload = params[1];
       else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) payload = params[0];
 
-      if (address === '' || !payload) throw new Error('Not found address or payload to sign');
+      if (address === '' || typeof payload !== 'string') throw new Error('Not found address or payload to sign');
 
       const message =
-        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1
+          ? convertHexToUtf8(payload)
+          : safeParseJson(payload, () => payload);
 
       if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) delete message.types['EIP712Domain'];
 
@@ -799,6 +873,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
+    const apiSora = await getSoraApi();
     const { AToB, BToA, amountA, amountB, minMaxValue, swapOptions, route } = await createSwap(
       options,
       apiSora,
@@ -817,11 +892,12 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
+    const apiSora = await getSoraApi();
     const { swapOptions } = await createSwap(options, apiSora, this.state);
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
     const errors: Array<BasicTxError> = [];
     const address = this.state.getAccountAddress();
-    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!] as LiquiditySourceTypes;
 
     this.state.keyringService.unlockPair(address);
 
@@ -1125,7 +1201,7 @@ export default class Extension extends FWExtensionBase {
   async getShareOfPool(params: GetShareOfPoolRequest): Promise<string> {
     return params.type === 'addLiquidity'
       ? await this.state.poolsService.getShareOfPoolByAddLiquidity(params)
-      : this.state.poolsService.getShareOfPoolByRemoveLiquidity(params);
+      : await this.state.poolsService.getShareOfPoolByRemoveLiquidity(params);
   }
 
   private async fetchBalance({
@@ -1422,7 +1498,9 @@ export default class Extension extends FWExtensionBase {
       if (address === '' || !payload) throw new Error('Not found address or payload to sign');
 
       const message =
-        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
+        ['eth_sign', 'personal_sign'].indexOf(method) > -1
+          ? convertHexToUtf8(payload)
+          : safeParseJson(payload, () => payload);
 
       if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) {
         delete message.types['EIP712Domain'];
@@ -1655,6 +1733,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.getHistory)':
         return this.state.historyService.fetchTonAssetsHistory(request as RequestGetHistory);
 
+      case 'pri(history.fetchAsset)': {
+        if (!isValidHistoryFetchPayload(request)) {
+          throw new Error('Invalid history fetch payload');
+        }
+
+        return this.state.historyService.fetchHistoryForAsset(request);
+      }
+
       /// Transfer, CrossChain, Sora Swap
       case 'pri(accounts.checkTransfer)':
         return this.checkTransfer(request as RequestCheckTransfer);
@@ -1665,8 +1751,13 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.checkCrossChain)':
         return this.checkCrossChain(request as RequestCheckCrossChain);
 
-      case 'pri(accounts.makeCrossChain)':
-        return this.makeCrossChain(id, request as RequestCrossChain, port);
+      case 'pri(accounts.makeCrossChain)': {
+        if (!isValidCrossChainPayload(request)) {
+          throw new Error('Invalid cross-chain payload');
+        }
+
+        return this.makeCrossChain(id, request, port);
+      }
 
       case 'pri(accounts.checkSwap)':
         return this.checkSwap(request as RequestCheckSwap);
@@ -1709,6 +1800,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(pools.poolsParams)':
         return this.state.poolsService.getPoolsParams(request as PoolsParamsRequest);
 
+      case 'pri(pools.poolsParams.subscribe)':
+        return this.state.poolsService.subscribePoolsParams(id, request as PoolsParamsRequest, port);
+
       case 'pri(pools.makePool)':
         return this.makePool(request as MakePoolsRequest);
 
@@ -1722,7 +1816,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.poolsService.accountLiquiditySubscribe(id, port);
 
       case 'pri(pools.getAmountValue)':
-        return this.state.poolsService.getPoolAmountValue(request as DefaultPoolParams);
+        return await this.state.poolsService.getPoolAmountValue(request as DefaultPoolParams);
 
       // price
       case 'pri(price.update.currency)':

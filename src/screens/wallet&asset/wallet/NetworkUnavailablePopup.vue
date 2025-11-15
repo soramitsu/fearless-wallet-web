@@ -21,53 +21,62 @@
   </NotificationPopup>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import type { NetworkJson } from '@extension-base/types';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class NetworkUnavailablePopup extends Vue {
-  accountsStore = useAccountsStore();
-  isDontShowAgain = false;
+defineOptions({
+  name: 'NetworkUnavailablePopup',
+});
 
-  @Prop(Array) networks!: NetworkJson[];
-  @Prop(String) network!: string;
+const props = defineProps<{
+  networks: NetworkJson[];
+  network: string;
+}>();
 
-  get headers() {
-    return this.haveMoreOneNodes
-      ? { text: 'common.resolveOption' }
-      : { text: 'wallet.networkUnavailable', subtext: 'wallet.networkUnavailableSubtext' };
-  }
+const emit = defineEmits<{
+  (_event: 'closePopup'): void;
+}>();
 
-  get haveMoreOneNodes() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.nodes.length > 1;
-  }
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const isDontShowAgain = ref(false);
 
-  get showWarningIcon() {
-    return !this.haveMoreOneNodes;
-  }
+const haveMoreOneNodes = computed(() => {
+  const details = props.networks.find(({ name }) => name.toLowerCase() === props.network.toLowerCase());
 
-  openSwitchNode() {
-    if (this.isDontShowAgain) this.accountsStore.hideNetworkWarning(this.network);
+  return (details?.nodes.length ?? 0) > 1;
+});
 
-    this.$router.push({
-      name: Components.Nodes,
-      params: { network: this.network },
-    });
-  }
+const headers = computed(() =>
+  haveMoreOneNodes.value
+    ? { text: 'common.resolveOption' }
+    : { text: 'wallet.networkUnavailable', subtext: 'wallet.networkUnavailableSubtext' }
+);
 
-  close() {
-    if (this.isDontShowAgain) this.accountsStore.hideNetworkWarning(this.network);
+const showWarningIcon = computed(() => !haveMoreOneNodes.value);
 
-    this.$emit('closePopup');
-  }
+const openSwitchNode = () => {
+  if (isDontShowAgain.value) accountsStore.hideNetworkWarning(props.network);
 
-  onChange(value: boolean) {
-    this.isDontShowAgain = value;
-  }
-}
+  router.push({
+    name: Components.Nodes,
+    params: { network: props.network },
+  });
+};
+
+const close = () => {
+  if (isDontShowAgain.value) accountsStore.hideNetworkWarning(props.network);
+
+  emit('closePopup');
+};
+
+const onChange = (value: boolean) => {
+  isDontShowAgain.value = value;
+};
 </script>
 
 <style lang="scss" scoped>

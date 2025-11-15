@@ -107,9 +107,9 @@ export default class FWExtensionBase {
       if (isSubstrate) this.state.keyringService.encodeAddress(pair.address);
 
       return { value: true };
-    } catch (error: any) {
-      const errorType =
-        error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const errorType = message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
 
       if (errorType === 'jsonPassword') return { value: false, errorType };
     }
@@ -120,8 +120,9 @@ export default class FWExtensionBase {
       ethers.decryptKeystoreJsonSync(stringFile, password);
 
       return { value: true };
-    } catch (error: any) {
-      const errorType = error.message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const errorType = message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }

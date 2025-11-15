@@ -1,4 +1,14 @@
-type Value = number | string | boolean | Record<string, any> | any[];
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | {
+      [key: string]: JsonValue;
+    };
+
+type Value = JsonValue;
 
 export class LocalStorage {
   constructor(private prefix: string) {}
@@ -11,10 +21,10 @@ export class LocalStorage {
     localStorage.setItem(`${this.prefix}${key}`, value);
   }
 
-  public get(key: string): Record<string, any> {
+  public get<T extends Record<string, unknown> = Record<string, unknown>>(key: string): T {
     const item = localStorage.getItem(`${this.prefix}${key}`);
 
-    return item ? JSON.parse(item) : {};
+    return item ? (JSON.parse(item) as T) : ({} as T);
   }
 
   public set(key: string, _value: Value) {
@@ -30,7 +40,7 @@ export class LocalStorage {
   }
 
   public clear() {
-    for (const key in Object.keys(localStorage)) {
+    for (const key of Object.keys(localStorage)) {
       if (key.startsWith(this.prefix)) localStorage.removeItem(key);
     }
   }

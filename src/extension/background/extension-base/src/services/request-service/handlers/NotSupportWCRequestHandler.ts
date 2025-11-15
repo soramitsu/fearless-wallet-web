@@ -18,11 +18,7 @@ export class NotSupportWCRequestHandler {
   }
 
   public get allNotSupportWCRequests(): WalletConnectNotSupportRequest[] {
-    return (
-      Object.values(this.notSupportWCRequests)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(({ reject, resolve, ...data }) => data)
-    );
+    return Object.values(this.notSupportWCRequests).map(({ reject, resolve, ...data }) => data);
   }
 
   public get numNotSupportWCRequests(): number {

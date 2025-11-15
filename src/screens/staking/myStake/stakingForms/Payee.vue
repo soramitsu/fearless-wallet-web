@@ -51,61 +51,52 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, toRefs } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { NetworkParams } from '@/stores';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { cut } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class Payee extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+type PayeeProps = {
+  step: number;
+  fee: string;
+  stakingCurrency: TokenGroup;
+  stakingNetwork: NetworkParams;
+  payoutAddress: string;
+};
 
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: String }) fee!: string;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
+const props = withDefaults(defineProps<PayeeProps>(), {
+  payoutAddress: '',
+});
 
-  get payeeName() {
-    return this.stakingNetwork.payeeName;
-  }
+const emit = defineEmits<{
+  'update:payoutAddress': [value: string];
+}>();
 
-  get payeeCut() {
-    return cut(this.payeeName);
-  }
+const { step, fee, stakingCurrency, stakingNetwork, payoutAddress } = toRefs(props);
 
-  get asset() {
-    return this.stakingCurrency.symbol;
-  }
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
 
-  get addressCut() {
-    return cut(this.syncedPayoutAddress);
-  }
+const payeeName = computed(() => stakingNetwork.value.payeeName);
+const payeeCut = computed(() => cut(payeeName.value));
+const asset = computed(() => stakingCurrency.value.symbol);
+const addressCut = computed(() => cut(payoutAddress.value));
+const accountNameCut = computed(() => cut(accountsStore.selectedWallet.name));
+const stakingAssetPrice = computed(() => networksStore.getAssetPrice(stakingCurrency.value?.priceId ?? '').price);
+const valueString = computed(() => {
+  const value = Number(fee.value) * stakingAssetPrice.value;
 
-  get accountNameCut() {
-    return cut(this.accountsStore.selectedWallet.name);
-  }
+  return `${accountsStore.fiatSymbol}${n(value, 'price')}`;
+});
 
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get valueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  setPayoutAddress(value = '') {
-    this.syncedPayoutAddress = value;
-  }
-}
+const setPayoutAddress = (value = '') => {
+  emit('update:payoutAddress', value);
+};
 </script>
 
 <style lang="scss" scoped>

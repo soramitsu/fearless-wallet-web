@@ -37,9 +37,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import { ref, onMounted, computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from 'vue-i18n';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { resetWallet } from '@/extension/messaging';
 import { Components } from '@/router/routes';

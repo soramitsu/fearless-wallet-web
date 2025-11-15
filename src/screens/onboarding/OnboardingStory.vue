@@ -13,11 +13,6 @@ defineProps<{ story: OnboardingStory }>();
 </script>
 
 <style lang="scss" scoped>
-@font-face {
-  font-family: 'Unbounded';
-  src: local('Unbounded'), url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
-}
-
 .story {
   display: flex;
   flex-flow: column;
@@ -29,7 +24,7 @@ defineProps<{ story: OnboardingStory }>();
   }
 
   &__title {
-    font-family: Unbounded, sans-serif;
+    font-family: 'Sora', sans-serif;
     font-size: 1.5em;
     font-weight: 700;
   }

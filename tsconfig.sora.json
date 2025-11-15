@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@sora": ["src/sora/index.ts"],
+      "@sora/*": ["src/sora/*"],
+      "@sora-typeDefs": ["src/sora/typeDefinitions"],
+      "@sora-types/*": ["src/types/sora.ts"],
+      "@sora-types": ["src/types/sora.ts"],
+      "@polkadot/*": ["node_modules/@polkadot/*"]
+    }
+  },
+  "include": ["src/sora/**/*.ts"]
+}

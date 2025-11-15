@@ -1,35 +1,19 @@
-import Vue from 'vue';
-import { Plugin } from 'vue-fragment';
-import { createPinia, PiniaVuePlugin } from 'pinia';
-import router from '@/router';
-import { i18n } from '@/locales';
-import App from '@/App.vue';
-import '@/styles';
-import '@/plugins';
-import '@/assets';
-import '@/components';
+import createFearlessApp from '@/app/createApp';
 import { IS_EXTENSION } from '@/consts/global';
 
-Vue.use(Plugin);
-Vue.use(PiniaVuePlugin); // TODO: remove for vue 3
-
-Vue.config.productionTip = false;
-Vue.config.devtools = process.env.NODE_ENV === 'development';
+const app = createFearlessApp();
 
 if ('serviceWorker' in navigator && !IS_EXTENSION) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker
+    const serviceWorker = (navigator as Navigator & { serviceWorker?: ServiceWorkerContainer }).serviceWorker;
+
+    if (!serviceWorker) return;
+
+    serviceWorker
       .register('service-worker.js')
-      .then((registration) => console.info('SW registered: ', registration))
-      .catch((registrationError) => console.info('SW registration failed: ', registrationError));
+      .then((registration: ServiceWorkerRegistration) => console.info('SW registered: ', registration))
+      .catch((registrationError: unknown) => console.info('SW registration failed: ', registrationError));
   });
 }
 
-const pinia = createPinia();
-
-new Vue({
-  pinia,
-  router,
-  i18n,
-  render: (h) => h(App),
-}).$mount('#app');
+app.mount('#app');

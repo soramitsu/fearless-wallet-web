@@ -6,7 +6,7 @@
         :balance="summaryTransferableBalance"
         :changeWalletBalance="changeWalletBalance"
         :staticWidth="false"
-        @click.native="$emit('openFiatsPopup', true)"
+        @click="openFiatsPopup"
       />
 
       <Loading v-if="showLoadingBalance" :width="28" class="balance-loading" />
@@ -56,14 +56,14 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onActivated, onDeactivated, provide, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { TabWallet } from '@/interfaces';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
-import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
-import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
@@ -71,275 +71,263 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
+import { isNetworkGroup } from '@/helpers/networkGroups';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
-import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
+import { MENU_HEIGHT } from '@/screens/main/menu.constants';
+import { WalletMetadataKey } from '@/screens/wallet&asset/wallet/metadata';
+import { useWalletMetadata } from '@/composables/useWalletMetadata';
 
-@Component({
-  components: {
-    SendForm,
-    ReceiveForm,
-    WalletBalance,
-    WalletSettings,
-    NetworkManagement,
-    NetworkUnavailablePopup,
-    GoogleExportPopup,
-  },
-})
-export default class Wallet extends Vue {
-  networksStore = useNetworksStore();
-  showNetworkManagement = false;
-  showAssetsManagementForm = false;
-  networkUnavailable = '';
-  filterValue = '';
-  selectedCurrency!: {
-    mainNetwork?: string;
-    assetId?: string;
-  };
+defineOptions({
+  name: 'Wallet',
+});
 
-  accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const route = useRoute();
+const router = useRouter();
 
-  get activeTabName() {
-    return this.$route.name;
+const emit = defineEmits<{
+  openFiatsPopup: [value: boolean];
+  closeSelectWalletPopup: [];
+}>();
+
+const showNetworkManagement = ref(false);
+const showAssetsManagementForm = ref(false);
+const networkUnavailable = ref('');
+const filterValue = ref('');
+
+const activeTabName = computed(() => route.name as TabWallet | string | undefined);
+
+const contentFormHeight = computed(() => {
+  const isTonWallet = accountsStore.selectedWallet.isTon;
+
+  return isTonWallet ? CONTENT_FORM_HEIGHT + MENU_HEIGHT : CONTENT_FORM_HEIGHT;
+});
+
+const showNetworkUnavailablePopup = computed(() => networkUnavailable.value !== '');
+
+const disconnectedNetworks = computed(() =>
+  networksStore.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED)
+);
+
+const networksWithWarning = computed(() =>
+  disconnectedNetworks.value.filter(({ name }) => !accountsStore.getShowWarningNetwork(name))
+);
+
+const summaryTransferableBalance = computed(() =>
+  getSummaryTransferableWalletBalance(
+    accountsStore.selectedWallet.address,
+    accountsStore.balances,
+    networksStore.assetsPrice,
+    accountsStore.selectedNetwork,
+    networksStore.networks
+  )
+);
+
+const changeWalletBalance = computed(() => {
+  if (accountsStore.balances.length === 0) return { percent: 0, amount: 0 };
+
+  return getChangeWalletBalance(accountsStore.balances, networksStore.assetsPrice, accountsStore.selectedNetwork, {
+    networks: networksStore.networks,
+    favoriteAddress: accountsStore.selectedWallet.address,
+  });
+});
+
+const sortedTokenGroups = computed(() => {
+  const balances = accountsStore.selectedWallet.hasEthereum
+    ? accountsStore.balances
+    : accountsStore.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork));
+
+  const { address } = accountsStore.selectedWallet;
+
+  if (address === '') return [];
+
+  if (!accountsStore.isCustomSort(address))
+    return defaultSortingCurrencies(accountsStore.balances, networksStore.assetsPrice, accountsStore.selectedNetwork);
+
+  const sequence = accountController.getSequenceAssetsByAddress(address);
+
+  return [...balances].sort((currency1, currency2) => {
+    const index1 = sequence.indexOf(currency1.groupId);
+    const index2 = sequence.indexOf(currency2.groupId);
+
+    return index1 - index2;
+  });
+});
+
+const walletMetadata = useWalletMetadata(() => ({ tokenGroups: sortedTokenGroups.value }));
+
+provide(WalletMetadataKey, walletMetadata);
+
+const walletNetworkSelection = computed(() => walletMetadata.value.selection);
+const assetTagIndex = computed(() => walletMetadata.value.assetTags);
+
+const showLoadingBalance = computed(() => {
+  if (!isNetworkGroup(accountsStore.selectedNetwork)) {
+    const networkStatus = networksStore.networks.find(
+      ({ name }) => name.toLowerCase() === accountsStore.selectedNetwork.toLowerCase()
+    )?.networkStatus;
+
+    return networkStatus === NETWORK_STATUS.CONNECTING;
   }
 
-  get contentFormHeight() {
-    const isTonWallet = this.accountsStore.selectedWallet.isTon;
+  const isPendingExists = networksStore.networks.some(
+    ({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING
+  );
 
-    return isTonWallet ? CONTENT_FORM_HEIGHT + MENU_HEIGHT : CONTENT_FORM_HEIGHT;
-  }
+  return !navigator.onLine || isPendingExists;
+});
 
-  get showNetworkUnavailablePopup() {
-    return this.networkUnavailable !== '';
-  }
+const filteredTokenGroups = computed(() => {
+  const selection = walletNetworkSelection.value;
+  const isAllNetworks = isSameString(accountsStore.selectedNetwork, ALL_NETWORKS);
 
-  get showWarningIcon() {
-    if (this.accountsStore.selectedNetwork !== ALL_NETWORKS) {
-      const networkStatus = this.networksStore.networks.find(
-        ({ name }) => name.toLowerCase() === this.accountsStore.selectedNetwork.toLowerCase()
-      )?.networkStatus;
+  const tokenGroups = accountsStore.selectedWallet.isMobile
+    ? sortedTokenGroups.value.filter(({ balances }) => {
+        return balances.some((balance) => {
+          const account = accountsStore.accounts.find(
+            ({ address }) => address === accountsStore.selectedWallet.address
+          );
 
-      return networkStatus === NETWORK_STATUS.DISCONNECTED;
-    }
+          const network = networksStore.getNetwork(getBalanceNetworkName(balance));
 
-    return this.networksWithWarning.length !== 0;
-  }
-
-  get disconnectedNetworks() {
-    return this.networksStore.networks.filter(({ networkStatus }) => networkStatus === NETWORK_STATUS.DISCONNECTED);
-  }
-
-  get networksWithWarning() {
-    return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
-  }
-
-  get summaryTransferableBalance() {
-    return getSummaryTransferableWalletBalance(
-      this.accountsStore.selectedWallet.address,
-      this.accountsStore.balances,
-      this.networksStore.assetsPrice,
-      this.accountsStore.selectedNetwork,
-      this.networksStore.networks
-    );
-  }
-
-  get changeWalletBalance() {
-    if (this.accountsStore.balances.length === 0) return { percent: 0, amount: 0 };
-
-    return getChangeWalletBalance(
-      this.accountsStore.balances,
-      this.networksStore.assetsPrice,
-      this.accountsStore.selectedNetwork
-    );
-  }
-
-  get sortedTokenGroups() {
-    const balances = this.accountsStore.selectedWallet.hasEthereum
-      ? this.accountsStore.balances
-      : this.accountsStore.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork));
-
-    const { address } = this.accountsStore.selectedWallet;
-
-    if (address === '') return [];
-
-    if (!this.accountsStore.isCustomSort(address))
-      return defaultSortingCurrencies(
-        this.accountsStore.balances,
-        this.networksStore.assetsPrice,
-        this.accountsStore.selectedNetwork
-      );
-
-    const sequence = accountController.getSequenceAssetsByAddress(address);
-
-    return balances.sort((currency1, currency2) => {
-      const index1 = sequence.indexOf(currency1.groupId);
-      const index2 = sequence.indexOf(currency2.groupId);
-
-      return index1 - index2;
-    });
-  }
-
-  get showShimmers() {
-    return networksIsPending(this.networksStore.networks, this.accountsStore.selectedNetwork);
-  }
-
-  get showLoadingBalance() {
-    if (!isNetworkGroup(this.accountsStore.selectedNetwork)) {
-      const networkStatus = this.networksStore.networks.find(
-        ({ name }) => name.toLowerCase() === this.accountsStore.selectedNetwork.toLowerCase()
-      )?.networkStatus;
-
-      return networkStatus === NETWORK_STATUS.CONNECTING;
-    }
-
-    //TODO добавить проверку по группам
-    const isPendingExists = this.networksStore.networks.some(
-      ({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING
-    );
-
-    return !navigator.onLine || isPendingExists;
-  }
-
-  get filteredTokenGroups() {
-    const isAllNetworks = isSameString(this.accountsStore.selectedNetwork, ALL_NETWORKS);
-
-    const tokenGroups = this.accountsStore.selectedWallet.isMobile
-      ? this.sortedTokenGroups.filter(({ balances }) => {
-          return balances.some((balance) => {
-            const account = this.accountsStore.accounts.find(
-              ({ address }) => address === this.accountsStore.selectedWallet.address
-            );
-
-            const network = this.networksStore.getNetwork(balance.name);
-
-            return account?.chains?.some((el) => network.chainId.includes(el));
-          });
-        })
-      : this.sortedTokenGroups;
-
-    const filteredByNetwork = isAllNetworks
-      ? tokenGroups
-      : tokenGroups.filter(({ balances }) => {
-          return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.accountsStore.selectedNetwork));
+          return account?.chains?.some((el) => network.chainId.includes(el));
         });
+      })
+    : sortedTokenGroups.value;
 
-    if (this.showAssetsManagementForm) return filteredByNetwork;
+  const filteredByNetwork = isAllNetworks
+    ? tokenGroups
+    : tokenGroups.filter(({ balances }) => balances.some((balance) => filterBalanceItemsByNetwork(balance, selection)));
 
-    const filter = this.filterValue.trim().toLowerCase();
+  if (showAssetsManagementForm.value) return filteredByNetwork;
 
-    return filteredByNetwork.filter(({ symbol }) => symbol.toLowerCase().includes(filter));
+  const filter = filterValue.value.trim().toLowerCase();
+
+  if (!filter) return filteredByNetwork;
+
+  const tagsIndex = assetTagIndex.value;
+
+  return filteredByNetwork.filter((token) => {
+    if (token.symbol.toLowerCase().includes(filter)) return true;
+
+    return tagsIndex.matches(token, filter);
+  });
+});
+
+const showGoogleExportPopup = computed(
+  () => typeof route.params.access_token !== 'undefined' && route.params.access_token !== 'null'
+);
+
+watch(
+  networksWithWarning,
+  (value) => {
+    if (value.length === 0) showNetworkManagement.value = false;
+  },
+  { immediate: true }
+);
+
+watch(
+  () => accountsStore.selectedWallet.ethereumAddress,
+  (address) => {
+    fetchEvmBalance(undefined, address);
+  },
+  { immediate: true }
+);
+
+onActivated(() => {
+  fetchEvmBalance(undefined, accountsStore.selectedWallet.ethereumAddress);
+});
+
+onDeactivated(() => {
+  showAssetsManagementForm.value = false;
+  showNetworkManagement.value = false;
+  filterValue.value = '';
+
+  setNetworkUnavailable();
+});
+
+const openFiatsPopup = () => {
+  emit('openFiatsPopup', true);
+};
+
+const closeGoogleExportPopup = () => {
+  router.replace('/').catch((e) => e);
+
+  emit('closeSelectWalletPopup');
+};
+
+const setNetworkUnavailable = (network = '') => {
+  networkUnavailable.value = network;
+};
+
+const toggleNetworkManagementVisible = () => {
+  showNetworkManagement.value = !showNetworkManagement.value;
+};
+
+const toggleAssetsManagementForm = (value = true) => {
+  showAssetsManagementForm.value = value;
+};
+
+const toggleCurrenciesVisible = (allCurrenciesHidden: boolean) => {
+  if (allCurrenciesHidden) {
+    accountsStore.balances.forEach(({ groupId }) => accountsStore.setHiddenAssets({ groupId, value: true }));
+
+    return;
   }
 
-  get showCurrencies() {
-    return this.activeTabName === 'currencies';
-  }
+  const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
 
-  get showGoogleExportPopup() {
-    return this.$route.params.access_token && this.$route.params.access_token !== 'null';
-  }
+  accountsStore.balances.forEach(({ groupId, balances }) => {
+    const index = balances.findIndex(nonZeroBalanceCb);
+    const isZeroBalance = index === -1;
 
-  @Watch('networksWithWarning')
-  connect(value: string[]) {
-    if (value.length === 0) this.showNetworkManagement = false;
-  }
+    if (isZeroBalance) accountsStore.setHiddenAssets({ groupId, value: false });
+  });
 
-  @Watch('selectedWallet')
-  updateEvmBalance() {
-    fetchEvmBalance(undefined, this.accountsStore.selectedWallet.ethereumAddress);
-  }
+  const assetsVisibleWithBalance = accountsStore.balances.filter(({ balances, groupId }) => {
+    const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
+    const isVisibleAsset = !accountsStore.hiddenAssets.includes(groupId);
 
-  activated() {
-    fetchEvmBalance(undefined, this.accountsStore.selectedWallet.ethereumAddress);
-  }
+    return isVisibleAsset && haveAssets;
+  });
 
-  deactivated() {
-    this.showAssetsManagementForm = false;
-    this.showNetworkManagement = false;
-    this.filterValue = '';
+  const assetsInvisibleWithBalance = accountsStore.balances.filter(({ balances, groupId }) => {
+    const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
+    const isHiddenAsset = accountsStore.hiddenAssets.includes(groupId);
 
-    this.setNetworkUnavailable();
-  }
+    return isHiddenAsset && haveAssets;
+  });
 
-  closeGoogleExportPopup() {
-    this.$router.replace('/').catch((e) => e);
+  const assetsInvisibleWithoutBalance = accountsStore.balances.filter(({ balances, groupId }) => {
+    const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
+    const isHiddenAsset = accountsStore.hiddenAssets.includes(groupId);
 
-    this.$emit('closeSelectWalletPopup');
-  }
+    return isHiddenAsset && notHaveAssets;
+  });
 
-  setNetworkUnavailable(network = '') {
-    this.networkUnavailable = network;
-  }
+  accountsStore.setBalance({
+    details: [...assetsVisibleWithBalance, ...assetsInvisibleWithBalance, ...assetsInvisibleWithoutBalance],
+    reset: false,
+    saveSequence: true,
+  });
+};
 
-  toggleNetworkManagementVisible() {
-    this.showNetworkManagement = !this.showNetworkManagement;
-  }
+const updateFilterValue = (value: string) => {
+  filterValue.value = value;
+};
 
-  toggleAssetsManagementForm(value = true) {
-    this.showAssetsManagementForm = value;
-  }
+const updateActiveTabName = (name: TabWallet) => {
+  if (activeTabName.value === name) return;
 
-  toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
-    if (allCurrenciesHidden) {
-      this.accountsStore.balances.forEach(({ groupId }) =>
-        this.accountsStore.setHiddenAssets({ groupId, value: true })
-      );
-
-      return;
-    }
-
-    const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
-
-    this.accountsStore.balances.forEach(({ groupId, balances }) => {
-      const index = balances.findIndex(nonZeroBalanceCb);
-      const isZeroBalance = index === -1;
-
-      if (isZeroBalance) this.accountsStore.setHiddenAssets({ groupId, value: false });
-    });
-
-    const assetsVisibleWithBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
-      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isVisibleAsset = !this.accountsStore.hiddenAssets.includes(groupId);
-
-      return isVisibleAsset && haveAssets;
-    });
-
-    const assetsInvisibleWithBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
-      const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-      const isHiddenAsset = this.accountsStore.hiddenAssets.includes(groupId);
-
-      return isHiddenAsset && haveAssets;
-    });
-
-    const assetsInvisibleWithoutBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
-      const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
-      const isHiddenAsset = this.accountsStore.hiddenAssets.includes(groupId);
-
-      return isHiddenAsset && notHaveAssets;
-    });
-
-    this.accountsStore.setBalance({
-      details: [...assetsVisibleWithBalance, ...assetsInvisibleWithBalance, ...assetsInvisibleWithoutBalance],
-      reset: false,
-      saveSequence: true,
-    });
-  }
-
-  updateFilterValue(value: string) {
-    this.filterValue = value;
-  }
-
-  updateActiveTabName(name: TabWallet) {
-    if (this.activeTabName === name) return;
-
-    this.$router.push({ name });
-  }
-}
+  router.push({ name });
+};
 </script>
 
 <style lang="scss" scoped>

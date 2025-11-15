@@ -3,6 +3,7 @@ import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
 import type { HiddenAssets } from '@/stores/accounts/types';
 import { LocalStorage } from '@/controllers/localStorageController';
+import { isNonEmptyString, reduceObjectEntries } from '@/util/storage';
 
 class AccountController {
   private readonly lsAccount = new LocalStorage('account_');
@@ -26,11 +27,13 @@ class AccountController {
   public getHiddenWarningNetworks(): string[] {
     const array = this.lsAccount.get(this.hiddenWarningNetworks);
 
-    return array.value ?? [];
+    return (array.value as string[] | undefined) ?? [];
   }
 
   public setHiddenWarningNetwork(networkName: NetworkName): void {
     const array = this.getHiddenWarningNetworks();
+
+    if (array.includes(networkName)) return;
 
     this.lsAccount.set(this.hiddenWarningNetworks, [...array, networkName]);
   }
@@ -38,7 +41,7 @@ class AccountController {
   public getHidingPoolsBanner(): boolean {
     const { value } = this.lsAccount.get(this.hidingPoolsBanner);
 
-    return value ?? false;
+    return (value as boolean | undefined) ?? false;
   }
 
   public setHidingPoolsBanner(): void {
@@ -58,7 +61,7 @@ class AccountController {
   public getLang(): Lang {
     const lang = this.lsAccount.get(this.langStorageName);
 
-    return lang.value ?? 'en-EN';
+    return (lang.value as Lang | undefined) ?? 'en-EN';
   }
 
   public setLang(lang: Lang): void {
@@ -69,12 +72,20 @@ class AccountController {
     this.lsAccount.set(this.nftSettings, settings);
   }
 
-  public getNftSettings() {
-    return this.lsAccount.get(this.nftSettings).value ?? {};
+  public getNftSettings(): NftSettings {
+    const value = this.lsAccount.get(this.nftSettings).value as NftSettings | undefined;
+
+    return value ?? { spam: false, airdrop: false };
   }
 
   public getHiddenAssets(): HiddenAssets {
-    return this.lsAccount.get(this.hiddenAssets).value ?? {};
+    return reduceObjectEntries<string[]>(this.lsAccount.get(this.hiddenAssets).value, (assets, address) => {
+      if (!Array.isArray(assets) || !isNonEmptyString(address)) return null;
+
+      const sanitized = assets.filter((assetId): assetId is string => isNonEmptyString(assetId));
+
+      return sanitized.length ? sanitized : null;
+    }) as HiddenAssets;
   }
 
   public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
@@ -82,21 +93,22 @@ class AccountController {
   }
 
   private getSequenceAssets(): Record<string, string> {
-    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
-
-    return sequencesAssets.value ?? {};
+    return reduceObjectEntries<string>(this.lsAccount.get(this.sequenceAssetsStorageName).value, (sequence) =>
+      typeof sequence === 'string' ? sequence : null
+    );
   }
 
   public getAssetTipData(): { count: number; time: number } {
-    const sequencesAssets = this.lsAccount.get(this.assetTipData);
+    const value = this.lsAccount.get(this.assetTipData).value as { count: number; time: number } | undefined;
 
-    return sequencesAssets.value ?? { count: 0, time: 0 };
+    return value ?? { count: 0, time: 0 };
   }
 
   public getSequenceAssetsByAddress(address: string): string[] {
     const sequencesAssets = this.getSequenceAssets();
+    const value = sequencesAssets[address];
 
-    return (sequencesAssets?.[address]?.split(',') as string[]) ?? [];
+    return value ? value.split(',') : [];
   }
 
   public setSequenceAssets(sequence: string[], address: string): void {
@@ -110,13 +122,15 @@ class AccountController {
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {
-    const autoSelectNodes = this.lsAccount.get(this.autoSelectNodesStorageName);
-
-    return autoSelectNodes.value ?? {};
+    return reduceObjectEntries<boolean>(this.lsAccount.get(this.autoSelectNodesStorageName).value, (enabled) =>
+      typeof enabled === 'boolean' ? enabled : null
+    );
   }
 
   public getCustomSort(): Record<string, boolean> {
-    return this.lsAccount.get(this.customSort).value ?? {};
+    const customSort = this.lsAccount.get(this.customSort).value as Record<string, boolean> | undefined;
+
+    return customSort ?? ({} as Record<string, boolean>);
   }
 
   public setCustomSort(address: string) {
@@ -132,15 +146,17 @@ class AccountController {
   }
 
   public getActiveNodes(): Record<string, Node> {
-    const activeNodes = this.lsAccount.get(this.activeNodeStorageName);
+    return reduceObjectEntries<Node>(this.lsAccount.get(this.activeNodeStorageName).value, (node) => {
+      const sanitized = this.sanitizeNode(node);
 
-    return activeNodes.value ?? {};
+      return sanitized ?? null;
+    });
   }
 
   public getActiveNodesByNetwork(network: string): Node {
     const activeNodes = this.getActiveNodes();
 
-    return activeNodes[network] ?? {};
+    return activeNodes[network] ?? { name: '', url: '' };
   }
 
   public setActiveNode(value: Node, network: string): void {
@@ -151,10 +167,24 @@ class AccountController {
     this.lsAccount.set(this.activeNodeStorageName, activeNodes);
   }
 
-  public getCustomNodes(): Record<string, Node[]> {
-    const customNodes = this.lsAccount.get(this.customNodesStorageName);
+  private sanitizeNode(candidate: unknown): Node | null {
+    if (!candidate || typeof candidate !== 'object') return null;
 
-    return customNodes.value ?? {};
+    const { name, url } = candidate as Partial<Node>;
+
+    if (!isNonEmptyString(name) || !isNonEmptyString(url)) return null;
+
+    return { name, url };
+  }
+
+  public getCustomNodes(): Record<string, Node[]> {
+    return reduceObjectEntries<Node[]>(this.lsAccount.get(this.customNodesStorageName).value, (nodes) => {
+      if (!Array.isArray(nodes)) return null;
+
+      const sanitized = nodes.map((node) => this.sanitizeNode(node)).filter((node): node is Node => node !== null);
+
+      return sanitized.length ? sanitized : null;
+    });
   }
 
   public getCustomNodesByNetwork(network: string): Node[] {
@@ -184,7 +214,11 @@ class AccountController {
     const nodes = this.getCustomNodes();
     const networkNodes = nodes[network];
 
+    if (!networkNodes) return;
+
     const nodeIndex = networkNodes.findIndex(({ name, url }) => name === value.name && url === value.url);
+
+    if (nodeIndex === -1) return;
 
     networkNodes.splice(nodeIndex, 1);
 

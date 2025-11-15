@@ -2,67 +2,124 @@
   <div class="tooltip"></div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { onBeforeUnmount, onMounted, shallowRef, toRefs, watchEffect } from 'vue';
 import tippy from 'tippy.js';
+import { useI18n } from 'vue-i18n';
 import type { Placement, ComponentText } from '@/interfaces';
 import type { Props, Instance } from 'tippy.js';
 
-@Component
-export default class Tooltip extends Vue {
-  tooltips: Instance<Props>[] = [];
+type PropsDefinition = {
+  text?: ComponentText;
+  target?: string;
+  targetElement?: HTMLElement | null;
+  placement?: Placement;
+  arrow?: boolean;
+  maxWidth?: number;
+  delay?: number;
+  trigger?: string;
+};
 
-  @Prop({ default: '' }) text!: ComponentText;
-  @Prop(String) target!: string;
-  @Prop({ default: 'top' }) placement!: Placement;
-  @Prop({ default: false }) arrow!: boolean;
-  @Prop({ default: 250 }) maxWidth!: number;
-  @Prop({ default: 1500 }) delay!: number;
-  @Prop(String) trigger?: string;
+defineOptions({
+  name: 'Tooltip',
+});
 
-  get language() {
-    return this.$root.$i18n.locale;
-  }
+const rawProps = withDefaults(defineProps<PropsDefinition>(), {
+  text: '',
+  target: '',
+  placement: 'top',
+  arrow: false,
+  maxWidth: 250,
+  delay: 1500,
+});
 
-  mounted() {
-    this.createTooltip();
-  }
+const { t, locale } = useI18n();
+const { text, target, targetElement, placement, arrow, maxWidth, delay, trigger } = toRefs(rawProps);
 
-  beforeDestroy() {
-    this.tooltips.forEach((item) => item.destroy());
-  }
+const tooltips = shallowRef<Instance<Props>[]>([]);
+const isMounted = shallowRef(false);
 
-  @Watch('language')
-  createTooltip() {
-    if (!this.target) return;
+const destroyTooltips = () => {
+  tooltips.value.forEach((item) => item.destroy());
+  tooltips.value = [];
+};
 
-    this.tooltips.forEach((item) => item.destroy());
+const resolveContent = () => {
+  if (typeof text.value === 'string') return text.value ? t(text.value) : '';
 
-    const content = typeof this.text === 'string' ? this.$t(this.text) : this.$t(this.text.text, this.text.localeProps);
+  return t(text.value.text, text.value.localeProps);
+};
 
-    const options: Partial<Props> = {
-      content: content as string,
-      placement: this.placement,
-      arrow: this.arrow,
-      animation: 'shift-toward-extreme',
-      delay: [this.delay, 0],
-      duration: 0,
-      maxWidth: this.maxWidth,
-      allowHTML: true,
-      onShow(instance) {
-        if (this.trigger === 'click')
-          setTimeout(() => {
-            instance.hide();
-          }, 1000);
-      },
-    };
+watchEffect((onCleanup) => {
+  void locale.value;
 
-    if (this.trigger) {
-      options.trigger = this.trigger;
-      options.delay = 0;
+  if (!isMounted.value) return;
+
+  const resolvedTargets = (): Element[] => {
+    if (typeof window === 'undefined') return [];
+
+    if (targetElement?.value) {
+      return targetElement.value ? [targetElement.value] : [];
     }
 
-    this.tooltips = tippy(this.target, options);
+    if (!target.value) return [];
+
+    return Array.from(document.querySelectorAll(target.value));
+  };
+
+  const nodes = resolvedTargets();
+
+  if (!nodes.length) {
+    destroyTooltips();
+
+    return;
   }
-}
+
+  const currentTrigger = trigger?.value;
+  const options: Partial<Props> = {
+    content: resolveContent(),
+    placement: placement.value,
+    arrow: arrow.value,
+    animation: 'shift-toward-extreme',
+    delay: [delay.value, 0],
+    duration: 0,
+    maxWidth: maxWidth.value,
+    allowHTML: true,
+    appendTo: () => document.body,
+    trigger: currentTrigger ?? 'mouseenter focus',
+    hideOnClick: currentTrigger === 'click',
+    onShow(instance) {
+      if (currentTrigger === 'click') {
+        setTimeout(() => {
+          instance.hide();
+        }, 1000);
+      }
+    },
+  };
+
+  if (currentTrigger) {
+    options.delay = 0;
+  }
+
+  const instances = nodes.flatMap((node) => {
+    const instance = tippy(node, options);
+
+    return Array.isArray(instance) ? instance : [instance];
+  });
+
+  tooltips.value = instances;
+
+  onCleanup(() => {
+    destroyTooltips();
+  });
+});
+
+onMounted(() => {
+  isMounted.value = true;
+});
+
+onBeforeUnmount(() => {
+  isMounted.value = false;
+  destroyTooltips();
+});
 </script>

@@ -3,8 +3,6 @@ import ERC20Contract from '@extension-base/services/evm-contract-service/evm-con
 import ERC721 from '@extension-base/services/evm-contract-service/evm-contracts/ERC721.json';
 import ERC1155 from '@extension-base/services/evm-contract-service/evm-contracts/ERC1155.json';
 
-export const REFRESH_TIME = 30000;
-
 export default class EvmContractService {
   async getContract(
     contractAddress: string,

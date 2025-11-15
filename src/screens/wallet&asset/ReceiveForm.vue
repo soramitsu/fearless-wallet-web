@@ -23,7 +23,7 @@
             </div>
           </div>
 
-          <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
+          <QR class="qr" ref="qrRef" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
 
         <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
@@ -75,125 +75,131 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { saveAs } from 'file-saver';
+import type { ComponentPublicInstance } from 'vue';
 import BaseApi from '@/util/BaseApi';
 import { cut, setClipboard } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class ReceiveForm extends Vue {
-  readonly selectNetworkInputRef = 'selectNetworkInput';
-  readonly copyQRTooltip = {
-    text: 'common.copiedValue',
-    localeProps: { value: 'QR' },
-  };
+const selectNetworkInputRef = 'selectNetworkInput';
+const copyQRTooltip = {
+  text: 'common.copiedValue',
+  localeProps: { value: 'QR' },
+} as const;
 
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  filterValue = '';
-  selectedNetwork = 'polkadot';
-  showSelectNetworkPopup = false;
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
+const filterValue = ref('');
+const selectedNetwork = ref('polkadot');
+const showSelectNetworkPopup = ref(false);
+const qrRef = ref<ComponentPublicInstance | null>(null);
 
-  get selectedAssetId() {
-    return this.$route.params.assetId ?? '';
-  }
+const selectedAssetId = computed(() => (route.params.assetId as string | undefined) ?? '');
 
-  get popupLeft() {
-    return IS_EXTENSION ? -160 : 0;
-  }
+const popupLeft = computed(() => (IS_EXTENSION ? -160 : 0));
 
-  get assetNetworks() {
-    const currency = this.accountsStore.balances.find(({ groupId }) => groupId === this.selectedAssetId);
-    const filter = this.filterValue.toLowerCase();
+const assetNetworks = computed(() => {
+  const currency = accountsStore.balances.find(({ groupId }) => groupId === selectedAssetId.value);
+  const filter = filterValue.value.toLowerCase();
 
-    return (
-      currency?.balances
-        .map(({ name, icon }) => {
-          const network = this.networksStore.getNetwork(name);
+  return (
+    currency?.balances
+      .map(({ name, icon }) => {
+        const network = networksStore.getNetwork(name);
 
-          return {
-            name: network.name,
-            value: network.name,
-            icon,
-          };
-        })
-        .filter(({ name }) => name.toLowerCase().includes(filter)) ?? []
-    );
-  }
+        return {
+          name: network.name,
+          value: network.name,
+          icon,
+        };
+      })
+      .filter(({ name }) => name.toLowerCase().includes(filter)) ?? []
+  );
+});
 
-  get address() {
-    if (this.accountsStore.selectedWallet.address === '') return '';
+const address = computed(() => {
+  const walletAddress = accountsStore.selectedWallet.address;
 
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
-  }
+  if (walletAddress === '') return '';
 
-  get cutAddress() {
-    return cut(this.address, 5);
-  }
+  return BaseApi.formatAddress(accountsStore.selectedWallet, selectedNetwork.value);
+});
 
-  get widthSaveBtn() {
-    return IS_EXTENSION ? (this.showCopyBtn ? '260px' : '530px') : '100%';
-  }
+const cutAddress = computed(() => cut(address.value, 5));
 
-  get showCopyBtn() {
-    return !window.navigator.userAgent.toLowerCase().includes('firefox');
-  }
+const widthSaveBtn = computed(() => (IS_EXTENSION ? (showCopyBtn.value ? '260px' : '530px') : '100%'));
 
-  mounted() {
-    this.selectedNetwork = this.$route.params.network ?? '';
-  }
+const showCopyBtn = computed(() => !window.navigator.userAgent.toLowerCase().includes('firefox'));
 
-  closeForm() {
-    this.$router.back();
-  }
+onMounted(() => {
+  selectedNetwork.value = (route.params.network as string | undefined) ?? 'polkadot';
+});
 
-  toggleSelectNetworkPopupVisible() {
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-  }
+function closeForm() {
+  router.back();
+}
 
-  toggleSelectedNetwork(value: string) {
-    this.selectedNetwork = value;
+function toggleSelectNetworkPopupVisible() {
+  showSelectNetworkPopup.value = !showSelectNetworkPopup.value;
+}
 
-    this.toggleSelectNetworkPopupVisible();
-  }
+function toggleSelectedNetwork(value: string) {
+  selectedNetwork.value = value;
+  toggleSelectNetworkPopupVisible();
+}
 
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
+function handlerFilter(value: string) {
+  filterValue.value = value;
+}
 
-  copyAddress() {
-    setClipboard(this.address);
-  }
+function copyAddress() {
+  setClipboard(address.value);
+}
 
-  createBlob() {
-    const el = (this.$refs.qr as Vue).$el;
-    const imgQR = el.firstChild as Element;
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+function createBlob(): Promise<Blob | null> {
+  const qrComponent = qrRef.value?.$el as HTMLElement | undefined;
+  const img = qrComponent?.firstChild as HTMLImageElement | undefined;
 
-    canvas.width = imgQR.clientWidth;
-    canvas.height = imgQR.clientHeight;
+  if (!img) return Promise.resolve(null);
 
-    context?.drawImage(imgQR as CanvasImageSource, 0, 0);
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
 
-    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-  }
+  canvas.width = img.clientWidth;
+  canvas.height = img.clientHeight;
 
-  copyQR() {
-    navigator.clipboard.write([
-      new ClipboardItem({
-        'image/png': this.createBlob() as Promise<Blob>,
-      }),
-    ]);
-  }
+  if (context) context.drawImage(img, 0, 0);
 
-  async saveQR() {
-    saveAs((await this.createBlob()) as Blob, `${this.address}.png`);
-  }
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/png');
+  });
+}
+
+async function copyQR() {
+  const blob = await createBlob();
+
+  if (!blob) return;
+
+  await navigator.clipboard.write([
+    new ClipboardItem({
+      'image/png': Promise.resolve(blob),
+    }),
+  ]);
+}
+
+async function saveQR() {
+  const blob = await createBlob();
+
+  if (!blob) return;
+
+  saveAs(blob, `${address.value}.png`);
 }
 </script>
 

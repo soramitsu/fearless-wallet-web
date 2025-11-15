@@ -1,92 +1,89 @@
 <template>
-  <Fragment>
-    <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
-      <div class="auth-content">
-        <div class="scroll__container" :class="heightClass">
-          <Scroll>
-            <div class="auth-confirmation">
-              <WalletConnectHeader :title="title" :url="url" />
+  <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
+    <div class="auth-content">
+      <div class="scroll__container" :class="heightClass">
+        <Scroll>
+          <div class="auth-confirmation">
+            <WalletConnectHeader :title="title" :url="url" />
 
-              <ContentForm v-if="isAbleToConnect" class="permissions">
-                <h3 class="list__header">{{ $t('walletConnect.permissions.title') }}</h3>
-                <div class="list">
-                  <div v-for="(item, index) in permissionList" class="list__item" :key="index">
-                    <Icon icon="check" className="permission-icon" iconColor="success" />
+            <ContentForm v-if="isAbleToConnect" class="permissions">
+              <h3 class="list__header">{{ $t('walletConnect.permissions.title') }}</h3>
+              <div class="list">
+                <div v-for="(item, index) in permissionList" class="list__item" :key="index">
+                  <Icon icon="check" className="permission-icon" iconColor="success" />
 
-                    <span>{{ item }}</span>
-                  </div>
+                  <span>{{ item }}</span>
                 </div>
-              </ContentForm>
-
-              <div v-else class="alert">
-                <Alert :headerText="alertContent.header" :message="alertContent.message" sizeText="small" />
               </div>
+            </ContentForm>
 
-              <ContentForm v-if="isAbleToConnect" class="width-100" @click.native="toggleWalletSelectForm">
-                <div class="wallet">
-                  <Icon icon="wallet-logo-transaction" class="wallet__logo" />
-
-                  <span class="wallet__name">{{ selectedWalletName }}</span>
-                  <span class="wallet__address">{{ cutAddress }}</span>
-
-                  <Icon icon="chevron-right" class="wallet__icon" />
-                </div>
-              </ContentForm>
-
-              <ContentForm v-if="isSupportNetwork" class="namespaces-form" :bottomRightCorner="true">
-                <div class="namespaces">
-                  <span>{{ $t('common.networks') }}</span>
-                  <div class="namespaces__icons">
-                    <ExternalLogo
-                      v-for="(namespace, index) in namespaces"
-                      :name="namespace.icon"
-                      :width="28"
-                      :key="index"
-                    />
-                  </div>
-                </div>
-              </ContentForm>
+            <div v-else class="alert">
+              <Alert :headerText="alertContent.header" :message="alertContent.message" sizeText="small" />
             </div>
-          </Scroll>
-        </div>
-        <div class="controls">
-          <FButton
-            text="common.reject"
-            :type="isAbleToConnect ? 'secondary' : 'primary'"
-            :border="false"
-            width="100%"
-            @click="onReject"
-          />
-          <FButton v-if="isAbleToConnect" text="common.approve" width="100%" @click="onApprove" />
-        </div>
+
+            <ContentForm v-if="isAbleToConnect" class="width-100" @click="toggleWalletSelectForm">
+              <div class="wallet">
+                <Icon icon="wallet-logo-transaction" class="wallet__logo" />
+
+                <span class="wallet__name">{{ selectedWalletName }}</span>
+                <span class="wallet__address">{{ cutAddress }}</span>
+
+                <Icon icon="chevron-right" class="wallet__icon" />
+              </div>
+            </ContentForm>
+
+            <ContentForm v-if="isSupportNetwork" class="namespaces-form" :bottomRightCorner="true">
+              <div class="namespaces">
+                <span>{{ $t('common.networks') }}</span>
+                <div class="namespaces__icons">
+                  <ExternalLogo
+                    v-for="(namespace, index) in namespaces"
+                    :name="namespace.icon"
+                    :width="28"
+                    :key="index"
+                  />
+                </div>
+              </div>
+            </ContentForm>
+          </div>
+        </Scroll>
       </div>
-    </AboveForm>
+      <div class="controls">
+        <FButton
+          text="common.reject"
+          :type="isAbleToConnect ? 'secondary' : 'primary'"
+          :border="false"
+          width="100%"
+          @click="onReject"
+        />
+        <FButton v-if="isAbleToConnect" text="common.approve" width="100%" @click="onApprove" />
+      </div>
+    </div>
+  </AboveForm>
 
-    <NotificationPopup
-      v-if="showNotificationPopup"
-      :headers="notificationPopupMessage"
-      acceptButtonText="common.approve"
-      sizeWidth="big"
-      :showAcceptButton="true"
-      :showRejectButton="true"
-      @handlerClose="onReject"
-      @handlerAccept="onApprove"
-    />
+  <NotificationPopup
+    v-if="showNotificationPopup"
+    :headers="notificationPopupMessage"
+    acceptButtonText="common.approve"
+    sizeWidth="big"
+    :showAcceptButton="true"
+    :showRejectButton="true"
+    @handlerClose="onReject"
+    @handlerAccept="onApprove"
+  />
 
-    <WalletChooseForm
-      v-if="showWalletSelect"
-      :selectedAddress="selectedAddress"
-      @onSelect="onSelectWallet"
-      @onClose="toggleWalletSelectForm"
-    />
-  </Fragment>
+  <WalletChooseForm
+    v-if="showWalletSelect"
+    :selectedAddress="selectedAddress"
+    @onSelect="onSelectWallet"
+    @onClose="toggleWalletSelectForm"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
-import { Fragment } from 'vue-fragment';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';

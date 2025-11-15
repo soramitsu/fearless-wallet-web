@@ -1,13 +1,9 @@
 <template>
-  <Fragment>
-    <dt class="name">{{ name }}</dt>
-    <dd class="value">{{ value }}</dd>
-  </Fragment>
+  <dt class="name">{{ name }}</dt>
+  <dd class="value">{{ value }}</dd>
 </template>
 
 <script lang="ts" setup>
-import { Fragment } from 'vue-fragment';
-
 const { name, value } = defineProps({
   name: { type: String, required: true },
   value: { type: [String, Number], required: true },

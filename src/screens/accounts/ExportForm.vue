@@ -34,9 +34,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { ExportType } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -53,102 +53,87 @@ enum ExportTypeText {
   json = 'JSON',
 }
 
-@Component({ components: { MnemonicBackupForm } })
-export default class ExportForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  json: KeyringPair$Json = {} as KeyringPair$Json;
-  isLoading = false;
-  seed = '';
+defineOptions({
+  name: 'ExportForm',
+});
 
-  @Prop(String) password!: string;
-  @Prop(String) exportType!: ExportType;
+const props = defineProps<{
+  password: string;
+  exportType: ExportType;
+}>();
 
-  get exportTypeText() {
-    return ExportTypeText[this.exportType];
+const route = useRoute();
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+
+const json = ref<KeyringPair$Json>({} as KeyringPair$Json);
+const isLoading = ref(false);
+const seed = ref('');
+
+const network = computed(() => (route.params.network ?? route.params.selectedNetwork) as string | undefined);
+
+const isMnemonic = computed(() => props.exportType === 'mnemonic');
+const isRowSeed = computed(() => props.exportType === 'rawSeed');
+const isJson = computed(() => props.exportType === 'json');
+
+const exportTypeText = computed(() => ExportTypeText[props.exportType]);
+
+const mnemonicArray = computed(() => seed.value.split(' ').filter((word) => word.length > 0));
+const mnemonicLength = computed(() => mnemonicArray.value.length);
+
+const addressByNetwork = computed(() => BaseApi.formatAddress(accountsStore.selectedWallet, network.value));
+const isEthereumNetwork = computed(() => BaseApi.isEthereumNetwork(network.value));
+
+const placeholder = computed(() => (isEthereumNetwork.value ? 'Ethereum' : 'Substrate'));
+const text = computed(() => (isJson.value ? 'accounts.downloadFile' : 'common.copyToClipboard'));
+
+const substrateAddress = computed(() => {
+  const sorted = Object.entries(json.value)
+    .sort(([key]) => (key === 'address' ? -1 : 0))
+    .reduce<Record<string, unknown>>((result, [key, value]) => ({ ...result, [key]: value }), {});
+
+  return JSON.stringify(sorted);
+});
+
+const proceed = () => {
+  if (isMnemonic.value || isRowSeed.value) {
+    setClipboard(seed.value);
+  } else {
+    downloadJsonFile();
+  }
+};
+
+const downloadJsonFile = () => {
+  const networkDetails = networksStore.networks.find(({ name }) => isSameString(name, network.value ?? ''));
+
+  if (!networkDetails) return;
+
+  const chainId = networkDetails.chainId;
+  const meta = { ...json.value.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
+
+  downloadJsonAccount(addressByNetwork.value, json.value, meta);
+};
+
+onMounted(async () => {
+  isLoading.value = true;
+
+  if (isMnemonic.value) {
+    const { address, walletEcosystem } = accountsStore.selectedWallet;
+    const { seed: exportedSeed } = await exportMnemonic(address, props.password, walletEcosystem);
+
+    seed.value = exportedSeed;
+  } else if (isRowSeed.value) {
+    const { seed: exportedSeed } = await exportRowSeed(addressByNetwork.value, props.password, isEthereumNetwork.value);
+
+    seed.value = exportedSeed;
+  } else {
+    const { json: exportedJson } = await exportJSON(addressByNetwork.value, props.password, network.value);
+
+    json.value = exportedJson;
   }
 
-  get mnemonicLength() {
-    return this.mnemonicArray.length;
-  }
-
-  get mnemonicArray() {
-    return this.seed.split(' ');
-  }
-
-  get isMnemonic() {
-    return this.exportType === 'mnemonic';
-  }
-
-  get isRowSeed() {
-    return this.exportType === 'rawSeed';
-  }
-
-  get isJson() {
-    return this.exportType === 'json';
-  }
-
-  get network() {
-    return this.$route.params.network ?? this.$route.params.selectedNetwork;
-  }
-
-  get text() {
-    return this.isJson ? 'accounts.downloadFile' : 'common.copyToClipboard';
-  }
-
-  get isEthereumNetwork() {
-    return BaseApi.isEthereumNetwork(this.network);
-  }
-
-  get placeholder() {
-    return this.isEthereumNetwork ? 'Ethereum' : 'Substrate';
-  }
-
-  get substrateAddress() {
-    const json = Object.entries(this.json)
-      .sort(([key]) => (key === 'address' ? -1 : 0))
-      .reduce((result, [key, value]) => ({ ...result, [key]: value }), {});
-
-    return JSON.stringify(json);
-  }
-
-  get addressByNetwork() {
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.network);
-  }
-
-  async mounted() {
-    this.isLoading = true;
-
-    if (this.isMnemonic) {
-      const { address, walletEcosystem } = this.accountsStore.selectedWallet;
-      const { seed } = await exportMnemonic(address, this.password, walletEcosystem);
-
-      this.seed = seed;
-    } else if (this.isRowSeed) {
-      const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
-
-      this.seed = seed;
-    } else {
-      const { json } = await exportJSON(this.addressByNetwork, this.password, this.network);
-
-      this.json = json;
-    }
-
-    this.isLoading = false;
-  }
-
-  proceed() {
-    if (this.isMnemonic || this.isRowSeed) setClipboard(this.seed);
-    else this.downloadJsonFile();
-  }
-
-  async downloadJsonFile() {
-    const chainId = this.networksStore.networks.find(({ name }) => isSameString(name, this.network))!.chainId;
-    const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
-
-    downloadJsonAccount(this.addressByNetwork, this.json, meta);
-  }
-}
+  isLoading.value = false;
+});
 </script>
 
 <style lang="scss" scoped>

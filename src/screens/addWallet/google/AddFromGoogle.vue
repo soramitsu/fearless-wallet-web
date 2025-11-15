@@ -34,8 +34,10 @@
   </FlowStepLayout>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { FilesState } from '@/interfaces';
 import BackupWalletsList from '@/screens/addWallet/BackupWalletsList.vue';
 import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messaging';
@@ -44,179 +46,144 @@ import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import { ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 
-@Component({
-  components: {
-    FlowStepLayout,
-    NegativeMessage,
-    BackupWalletsList,
-  },
-})
-export default class AddFromGoogle extends Vue {
-  readonly countSteps = 2;
-  files: FilesState[] = [];
-  isLoading = true;
-  step = 1;
-  tokenValidation: 'pending' | 'valid' | 'invalid' = 'pending';
+const countSteps = 2;
+const files = ref<FilesState[]>([]);
+const isLoading = ref(true);
+const step = ref(1);
+const tokenValidation = ref<'pending' | 'valid' | 'invalid'>('pending');
 
-  get isAccessDenied() {
-    return this.token === 'null' || this.tokenValidation === 'invalid';
+const route = useRoute();
+const router = useRouter();
+const { t } = useI18n();
+
+const token = computed(() => (route.params.access_token as string | undefined) ?? 'null');
+
+const isImportInProgress = computed(() => files.value.some((el) => el.isLoading));
+const isActiveNotComplete = computed(() => files.value.some(({ active, isComplete }) => active && !isComplete));
+const importAcquired = computed(() => files.value.every(({ isComplete }) => !isComplete));
+const isAccessDenied = computed(() => token.value === 'null' || tokenValidation.value === 'invalid');
+const isFinishForm = computed(() => step.value === countSteps);
+const getSteps = computed(() => (isLoading.value ? [] : [1, 2]));
+const isFilesExists = computed(() => files.value.length);
+const haveWalletsToImport = computed(() => !isLoading.value && Boolean(isFilesExists.value));
+const buttonText = computed(() => t(step.value === 2 ? 'common.finish' : 'common.continue').toString());
+const isAllowedContinue = computed(() => isImportInProgress.value || isActiveNotComplete.value || importAcquired.value);
+const header = computed(() => {
+  if (isAccessDenied.value) return t('addWallet.google.accessDenied').toString();
+
+  if (isFinishForm.value) return '';
+
+  return isLoading.value ? t('addWallet.google.fetchInfo').toString() : t('addWallet.google.selectToImport').toString();
+});
+
+const goBack = () => {
+  router.replace('/').catch(() => {});
+  router.push({ name: Components.Wallet }).catch(() => {});
+};
+
+const back = () => {
+  if (step.value === 1) {
+    goBack();
+
+    return;
   }
 
-  get isFinishForm() {
-    return this.step === this.countSteps;
+  step.value -= 1;
+};
+
+const setItemValue = (index: number, data: Record<string, unknown>) => {
+  const updated = { ...files.value[index], ...data };
+
+  files.value.splice(index, 1, updated as FilesState);
+};
+
+const setItemPassword = (index: number, password: string) => {
+  setItemValue(index, { password });
+};
+
+const getFile = async (id: string, key: number) => {
+  const file = await getGoogleFile(id, token.value);
+
+  if (file.address.startsWith(ETHEREUM_ADDRESS_PREFIX)) setItemValue(key, { ethJson: file });
+  else setItemValue(key, { json: file });
+};
+
+const proceed = () => {
+  if (isFinishForm.value || isAccessDenied.value) {
+    goBack();
+
+    return;
   }
 
-  get getSteps() {
-    return this.isLoading ? [] : [1, 2];
+  step.value += 1;
+};
+
+const isTokenValid = async () => {
+  if (token.value === 'null') {
+    isLoading.value = false;
+    tokenValidation.value = 'invalid';
+
+    return false;
   }
 
-  get isImportInProgress() {
-    return this.files.some((el) => el.isLoading);
+  const data = await verifyToken(token.value);
+
+  if (data === null || Number(data.expires_in) <= 0) {
+    isLoading.value = false;
+    tokenValidation.value = 'invalid';
+
+    return false;
   }
 
-  get token() {
-    return this.$route.params.access_token;
-  }
+  tokenValidation.value = 'valid';
 
-  get isFilesExists() {
-    return this.files.length;
-  }
+  return true;
+};
 
-  get haveWalletsToImport() {
-    return !this.isLoading && this.isFilesExists;
-  }
+onMounted(async () => {
+  const validToken = await isTokenValid();
 
-  get buttonText() {
-    return this.step === 2 ? this.$t('common.finish') : this.$t('common.continue');
-  }
+  if (!validToken) return;
 
-  get isActiveNotComplete() {
-    return this.files.some(({ active, isComplete }) => active && !isComplete);
-  }
+  const { files: googleFiles } = await getGoogleFiles(token.value);
 
-  get importAcquired() {
-    return this.files.every(({ isComplete }) => !isComplete);
-  }
+  const jsonsWithoutEth = googleFiles.filter((el) => el.description === '' || el.description === 'undefined');
+  const regex = /\w+\/\w+/;
+  const filterFiles = googleFiles.filter((el) => el && regex.test(el.description ?? ''));
+  const filesToImport = [...filterFiles, ...jsonsWithoutEth];
 
-  get isAllowedContinue() {
-    return this.isImportInProgress || this.isActiveNotComplete || this.importAcquired;
-  }
-
-  get header() {
-    if (this.isAccessDenied) return this.$t('addWallet.google.accessDenied');
-
-    if (this.isFinishForm) return this.$t('');
-
-    return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
-  }
-
-  async mounted() {
-    const isValidToken = await this.isTokenValid();
-
-    if (!isValidToken) return;
-
-    const { files } = await getGoogleFiles(this.token);
-
-    const jsonsWithoutEth = files.filter((el) => el.description === '' || el.description === 'undefined');
-    const regex = /\w+\/\w+/;
-    const filterFiles = files.filter((el) => el && regex.test(el.description));
-    const filesToImport = [...filterFiles, ...jsonsWithoutEth];
-
-    if (filesToImport.length === 0) {
-      this.$router.push({
-        name: Components.CreateGoogle,
-        params: {
-          access_token: this.$route.params.access_token,
-        },
-      });
-
-      this.isLoading = false;
-
-      return;
-    }
-
-    filesToImport.forEach(({ id, description, name }) => {
-      const [prepName] = name.split('.');
-
-      const [address, ethID] = description.split('/');
-
-      this.files.push({
-        id,
-        name: prepName,
-        address,
-        isComplete: false,
-        isLoading: false,
-        isError: false,
-        ethWalletID: ethID,
-        password: '',
-        active: false,
-      });
+  if (filesToImport.length === 0) {
+    router.push({
+      name: Components.CreateGoogle,
+      params: {
+        access_token: route.params.access_token,
+      },
     });
 
-    this.isLoading = false;
+    isLoading.value = false;
+
+    return;
   }
 
-  goBack() {
-    this.$router.replace('/').catch((e) => e);
-    this.$router.push({ name: Components.Wallet }).catch((e) => e);
-  }
+  filesToImport.forEach(({ id, description, name }) => {
+    const [prepName] = name.split('.');
+    const [address, ethID] = (description ?? '').split('/');
 
-  back() {
-    if (this.step === 1) {
-      this.goBack();
+    files.value.push({
+      id,
+      name: prepName,
+      address,
+      isComplete: false,
+      isLoading: false,
+      isError: false,
+      ethWalletID: ethID,
+      password: '',
+      active: false,
+    });
+  });
 
-      return;
-    }
-
-    this.step -= 1;
-  }
-
-  async getFile(id: string, key: number) {
-    const file = await getGoogleFile(id, this.token);
-
-    if (file.address.startsWith(ETHEREUM_ADDRESS_PREFIX)) this.setItemValue(key, { ethJson: file });
-    else this.setItemValue(key, { json: file });
-  }
-
-  proceed() {
-    if (this.isFinishForm || this.isAccessDenied) {
-      this.goBack();
-
-      return;
-    }
-
-    this.step += 1;
-  }
-
-  setItemValue(index: number, data: Record<string, unknown>) {
-    this.$set(this.files, index, { ...this.files[index], ...data });
-  }
-
-  setItemPassword(index: number, password: string) {
-    this.$set(this.files, index, { ...this.files[index], password });
-  }
-
-  async isTokenValid() {
-    if (this.token === 'null') {
-      this.isLoading = false;
-
-      return false;
-    }
-
-    const data = await verifyToken(this.token);
-
-    if (data === null || +data.expires_in <= 0) {
-      this.tokenValidation = 'invalid';
-      this.isLoading = false;
-
-      return false;
-    }
-
-    this.tokenValidation = 'valid';
-
-    return true;
-  }
-}
+  isLoading.value = false;
+});
 </script>
 
 <style lang="scss" scoped>

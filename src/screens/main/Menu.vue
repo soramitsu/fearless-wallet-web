@@ -5,13 +5,14 @@
       :key="menuItem"
       :name="menuItem"
       :isActive="checkActive(menuItem)"
-      @click.native="clickMenuItem(menuItem)"
+      @click="clickMenuItem(menuItem)"
     />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { IS_PRODUCTION } from '@/consts/global';
@@ -21,80 +22,72 @@ import { useAccountsStore } from '@/stores/accounts';
 
 type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
-export const MENU_HEIGHT = 70;
+defineOptions({
+  name: 'MainMenu',
+});
 
-@Component({
-  components: { MenuItem },
-})
-export default class Menu extends Vue {
-  accountsStore = useAccountsStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
 
-  walletItems: string[] = [
-    Components.Currencies,
-    Components.Nfts,
-    Components.AccountSetting,
-    Components.Export,
-    Components.Nodes,
-  ];
+const walletItems: string[] = [
+  Components.Currencies,
+  Components.Nfts,
+  Components.AccountSetting,
+  Components.Export,
+  Components.Nodes,
+];
 
-  stakingItems: string[] = [Components.MyStake];
+const stakingItems: string[] = [Components.MyStake];
 
-  get menuItems() {
-    const array: MenuItemType[] = [Components.Wallet];
+const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
 
-    if (!this.isTonWallet) {
-      array.push(Components.Staking);
+const menuItems = computed(() => {
+  const array: MenuItemType[] = [Components.Wallet];
 
-      if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
-        array.push(Components.Polkaswap);
+  if (!isTonWallet.value) {
+    array.push(Components.Staking);
+
+    if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(accountsStore.selectedNetwork, SORA_MAINNET))) {
+      array.push(Components.Polkaswap);
     }
-
-    return array;
   }
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
+  return array;
+});
+
+const currentRouteName = computed(() => {
+  const [, , secondSegment] = route.path.split('/');
+
+  return secondSegment;
+});
+
+const routeName = computed(() => route.name as string | undefined);
+
+const checkActive = (menuItem: MenuItemType) => {
+  if (menuItem === 'Wallet') {
+    const isHighlightWalletItem = routeName.value ? walletItems.includes(routeName.value) : false;
+    const haveAssetId = route.params.assetId !== undefined;
+
+    if (isHighlightWalletItem || haveAssetId) return true;
   }
 
-  get currentRouteName() {
-    const route = this.$route.path.split('/')[2];
+  if (menuItem === 'Staking') {
+    const isHighlightStakingItem = routeName.value ? stakingItems.includes(routeName.value) : false;
 
-    return route;
+    if (isHighlightStakingItem) return true;
   }
 
-  get routeName() {
-    return this.$route.name as string;
-  }
+  return menuItem.toLowerCase() === currentRouteName.value;
+};
 
-  checkActive(menuItem: MenuItemType) {
-    if (menuItem === 'Wallet') {
-      const isHighlightWalletItem = this.walletItems.includes(this.routeName);
-      const haveAssetId = this.$route.params.assetId !== undefined;
+const clickMenuItem = (menuItem: MenuItemType) => {
+  if (currentRouteName.value === menuItem.toLowerCase()) return;
 
-      if (isHighlightWalletItem || haveAssetId) return true;
-    }
+  const targetRoute = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[menuItem as keyof typeof Components];
 
-    if (menuItem === 'Staking') {
-      const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
-
-      if (isHighlightWalletItem) return true;
-    }
-
-    return menuItem.toLowerCase() === this.currentRouteName;
-  }
-
-  clickMenuItem(menuItem: MenuItemType) {
-    if (this.currentRouteName === menuItem.toLowerCase()) return;
-
-    const route = menuItem as keyof typeof Components;
-
-    const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
-
-    this.$router.push({
-      name,
-    });
-  }
-}
+  router.push({ name: targetRoute });
+};
 </script>
 
 <style lang="scss" scoped>

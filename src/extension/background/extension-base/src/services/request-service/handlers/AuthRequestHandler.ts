@@ -127,10 +127,10 @@ export class AuthRequestHandler {
       const ethereumAddress = substrateAccount?.meta.ethereumAddress as string;
 
       const evmAuthorizedAccount =
-        accountAuthType !== 'substrate' ? ethereumAddress : existedAuth?.evmAuthorizedAccount ?? '';
+        accountAuthType !== 'substrate' ? ethereumAddress : (existedAuth?.evmAuthorizedAccount ?? '');
 
       const authorizedAccounts =
-        accountAuthType !== 'evm' ? _authorizedAccounts : existedAuth?.authorizedAccounts ?? [];
+        accountAuthType !== 'evm' ? _authorizedAccounts : (existedAuth?.authorizedAccounts ?? []);
 
       this.authorizeCached[stripedUrl] = {
         authorizedAccounts,

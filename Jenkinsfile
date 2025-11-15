@@ -51,7 +51,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
     distFoldersTestNets:        ['./dist/extension/chrome-test'],
-    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && corepack enable &&yarn set version 3.4.1 && yarn install'],
+    preBuildCmds:               ['apt-get update && apt-get install zip jq -y && corepack enable && yarn set version 3.4.1 && yarn install && node scripts/release/validate-env.js && yarn format:check'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
@@ -85,3 +85,5 @@ def pipeline = new org.js.AppArtifactsPipeline(
     targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base"
 )
 pipeline.runPipeline()
+
+// Release checklist reference: docs/release-checklist.md

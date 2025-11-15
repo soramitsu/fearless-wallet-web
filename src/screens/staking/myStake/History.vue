@@ -7,38 +7,41 @@
       :stakingAssetId="stakingAssetId"
       :rewardedAssetId="rewardedAssetId"
       :network="network"
-      @openHistoryDetailsForm="$emit('openHistoryDetailsForm', ...arguments)"
+      @openHistoryDetailsForm="handleOpenHistoryDetailsForm"
     />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import type { HistoryElement, NetworkName } from '@/interfaces';
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
-import { type SoraHistoryElement, type NetworkName } from '@/interfaces';
 import { useStakingStore } from '@/stores/staking';
 
-@Component({
-  components: { HistoryItem },
-})
-export default class History extends Vue {
-  stakingStore = useStakingStore();
+const props = defineProps<{
+  network: NetworkName;
+  stakingAssetId: string;
+  rewardedAssetId: string;
+}>();
 
-  @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) stakingAssetId!: string;
-  @Prop({ type: String }) rewardedAssetId!: string;
+const stakingStore = useStakingStore();
 
-  get history() {
-    return this.stakingStore.getStakingHistory(
-      this.network,
-      this.stakingAssetId,
-      this.stakingNetwork.stashAddress,
-      this.stakingNetwork.payeeAddress
-    ) as SoraHistoryElement[];
-  }
+const stakingNetwork = computed(() => stakingStore.getStakingNetwork(props.network));
 
-  get stakingNetwork() {
-    return this.stakingStore.getStakingNetwork(this.network);
-  }
-}
+const emit = defineEmits<{
+  openHistoryDetailsForm: [payload: unknown[]];
+}>();
+
+const historyResult = computed(() =>
+  stakingStore.getStakingHistory(
+    props.network,
+    props.stakingAssetId,
+    stakingNetwork.value.stashAddress,
+    stakingNetwork.value.payeeAddress
+  )
+);
+
+const history = computed<HistoryElement[]>(() => (historyResult.value.entries as HistoryElement[]) ?? []);
+
+const handleOpenHistoryDetailsForm = (...args: unknown[]) => emit('openHistoryDetailsForm', args);
 </script>

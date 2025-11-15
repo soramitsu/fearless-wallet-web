@@ -41,7 +41,7 @@
       text="assets.buy"
       iconName="plus-pink"
       data-testid="buyBtn"
-      @click="$emit('toggleVisible')"
+      @click="handleToggleVisible"
     />
 
     <BorderButton
@@ -49,12 +49,13 @@
       class="activity-button activity-button--settings"
       iconName="three-dots-vertical"
       data-testid="threeDotsVerticalBtn"
-      @click="$emit('togglePopupButton')"
+      @click="handleTogglePopupButton"
     />
   </div>
 </template>
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import { isSora } from '@/helpers';
@@ -62,89 +63,69 @@ import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
+const props = defineProps<{
+  currency: TokenGroup;
+  showBuyButton: boolean;
+  assetId: string;
+}>();
 
-type ControlButtons = {
-  class: string;
-  text: string;
-  icon: string;
-  formName: ShowField;
-  isActive: boolean;
-};
+const emit = defineEmits<{
+  toggleVisible: [];
+  togglePopupButton: [];
+}>();
 
-@Component
-export default class AssetActionButtons extends Vue {
-  readonly basicButtons: ControlButtons[] = [
-    {
-      class: 'activity-button',
-      text: 'assets.receiveButtonText',
-      icon: 'receive',
-      formName: 'showReceiveForm',
-      isActive: true,
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
+
+const selectedNetwork = computed(() => (route.params.selectedNetwork as string | undefined) ?? '');
+const selectedAsset = computed(() => props.currency?.symbol?.toLowerCase() ?? '');
+
+const showSwapButton = computed(() => isSora(selectedNetwork.value) && !accountsStore.selectedWallet.isMobile);
+
+const showCrossChainButton = computed(() => {
+  if (selectedNetwork.value === '') return false;
+
+  const network = networksStore.getNetwork(selectedNetwork.value);
+  const asset = getNativeAssetName(selectedAsset.value);
+
+  if (!network || network.xcm === undefined) return false;
+
+  return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
+});
+
+const isNeedPopupButton = computed(() => showCrossChainButton.value && props.showBuyButton && showSwapButton.value);
+
+function onRoute(form: 'send' | 'receive' | 'crossChain') {
+  const name =
+    form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
+
+  router.push({
+    name,
+    params: {
+      assetId: route.params.assetId,
+      network: selectedNetwork.value,
     },
-  ];
+  });
+}
 
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+function openSoraSwap() {
+  router.push({
+    name: Components.SoraSwap,
+    params: {
+      assetId: props.assetId,
+      reset: '',
+    },
+  });
+}
 
-  @Prop(Object) currency!: TokenGroup;
-  @Prop(Boolean) showBuyButton!: boolean;
-  @Prop(String) assetId!: string;
+function handleToggleVisible() {
+  emit('toggleVisible');
+}
 
-  onRoute(form: 'send' | 'receive' | 'crossChain') {
-    const name =
-      form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
-
-    this.$router.push({
-      name,
-      params: {
-        assetId: this.$route.params.assetId,
-        network: this.selectedNetwork,
-      },
-    });
-  }
-
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
-
-  get selectedAsset() {
-    return this.currency?.symbol?.toLowerCase() ?? '';
-  }
-
-  get showSwapButton() {
-    return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
-  }
-
-  get isNeedPopupButton() {
-    return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
-  }
-
-  get showCrossChainButton() {
-    if (this.selectedNetwork === '') return false;
-
-    const network = this.networksStore.getNetwork(this.selectedNetwork);
-
-    const asset = getNativeAssetName(this.selectedAsset);
-
-    if (!network || network.xcm === undefined) return false;
-
-    return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
-  }
-
-  onToggleVisible(name: string) {
-    this.$emit('toggleVisible', name);
-  }
-
-  openSoraSwap() {
-    this.$router.push({
-      name: Components.SoraSwap,
-      params: {
-        assetId: this.assetId,
-        reset: '',
-      },
-    });
-  }
+function handleTogglePopupButton() {
+  emit('togglePopupButton');
 }
 </script>
 

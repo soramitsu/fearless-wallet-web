@@ -5,7 +5,7 @@
     :showBorder="true"
     :showAnimation="false"
     :zIndex="399"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
   >
     <div class="add-ethereum-account">
       <BorderButton
@@ -22,27 +22,31 @@
         @click="openAddWalletPage('import')"
       />
 
-      <BorderButton borderRadius="mini" text="accounts.dontNeedAccount" class="button" @click="$emit('handlerClose')" />
+      <BorderButton borderRadius="mini" text="accounts.dontNeedAccount" class="button" @click="handleClose" />
     </div>
   </Popup>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
 
-@Component
-export default class AddEthereumAccountPopup extends Vue {
-  openAddWalletPage(type: string) {
-    this.$router.push({
-      name: Components.AddWallet,
-      params: {
-        type,
-        onlyEthereumAccount: '',
-      },
-    });
-  }
-}
+const router = useRouter();
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
+
+const openAddWalletPage = (type: string) => {
+  router.push({
+    name: Components.AddWallet,
+    params: {
+      type,
+      onlyEthereumAccount: '',
+    },
+  });
+};
+
+const handleClose = () => emit('handlerClose');
 </script>
 
 <style lang="scss" scoped>

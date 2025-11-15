@@ -1,4 +1,8 @@
-import type { WalletAddress, NetworkName, AssetId, AssetName } from '@/interfaces';
+import type { WalletAddress } from '@/interfaces/common';
+import type { AssetId, AssetName } from '@/interfaces/assets';
+import type { NetworkName, NormalizedNetworkName, HistoryServiceType } from '@/interfaces/networks';
+
+type BaseHistoryServiceType = Exclude<HistoryServiceType, `staking${string}`>;
 
 type Reward = {
   amount: string;
@@ -43,7 +47,7 @@ type SoraHistoryElement = {
     success: boolean;
   };
   success: boolean; // дубликат execution.success для совместимости с HistoryElement
-  module: 'staking' | 'liquidityProxy' | 'demeterFarmingPlatform' | 'utility' | string;
+  module: 'staking' | 'liquidityProxy' | 'utility' | string;
   method:
     | 'setPayee'
     | 'unbond'
@@ -134,13 +138,13 @@ interface SubqueryHistory {
   };
 }
 
-type HistoryForWalletAddress = Record<NetworkName, SubqueryHistory>;
+type HistoryForWalletAddress = Record<NormalizedNetworkName, SubqueryHistory>;
 
 type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
 type History = Record<AssetId, HistoryForAssetId>;
 
-type GetHistory = (assetName: AssetName, networkName: NetworkName, address?: string) => SubqueryHistory;
+export type GetHistory = (assetName: AssetName, networkName: NetworkName, address?: string) => SubqueryHistory;
 
 enum TransactionType {
   transfer = 'transfer',
@@ -217,9 +221,80 @@ interface TonEvent {
 
 type TonEventTokens = Record<string, TonEvent[]>;
 
+type HistoryPayload = SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[] | SoraHistoryElement[] | TonEvent[];
+
+type TypedHistoryResult<Type extends BaseHistoryServiceType, Payload> = {
+  serviceType: Type;
+  history: Payload;
+};
+
+type TonHistoryResult = TypedHistoryResult<'ton', TonEvent[]>;
+type SoraHistoryResult = TypedHistoryResult<'sora', SoraHistoryElement[]>;
+type SubqueryHistoryResult = TypedHistoryResult<'subquery', SubqueryHistory>;
+type SubsquidHistoryResult = TypedHistoryResult<'subsquid', HistoryElement[]>;
+type GiantsquidHistoryResult = TypedHistoryResult<'giantsquid', GiantsquidHistoryItem[]>;
+type EtherscanHistoryResult = TypedHistoryResult<'etherscan', HistoryElement[]>;
+type OklinkHistoryResult = TypedHistoryResult<'oklink', HistoryElement[]>;
+type ZetaHistoryResult = TypedHistoryResult<'zeta', HistoryElement[]>;
+
+type HistoryFetchResult =
+  | TonHistoryResult
+  | SoraHistoryResult
+  | SubqueryHistoryResult
+  | SubsquidHistoryResult
+  | GiantsquidHistoryResult
+  | EtherscanHistoryResult
+  | OklinkHistoryResult
+  | ZetaHistoryResult;
+
+type HistoryResultItem = {
+  assetId: AssetId;
+  serviceType: BaseHistoryServiceType;
+  history: SubqueryHistory;
+};
+
+type HistoryFetchResponse = HistoryResultItem[];
+
+interface HistoryFetchRequest {
+  network: NetworkName;
+  endpoint: {
+    type: HistoryServiceType;
+    url: string;
+  };
+  address: {
+    raw: string;
+    formatted: string;
+  };
+  asset: {
+    id: string;
+    isUtility: boolean;
+    contractAddress?: string;
+  };
+}
+
+const hasExecutionSuccess = (value: unknown): value is { execution: { success: boolean } } =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { execution?: { success?: unknown } }).execution?.success === 'boolean';
+
+const hasSoraHistoryShape = (value: unknown): value is SoraHistoryElement =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { module?: unknown }).module === 'string' &&
+  typeof (value as { method?: unknown }).method === 'string' &&
+  hasExecutionSuccess(value);
+
+const isSoraHistoryElement = (value: unknown): value is SoraHistoryElement => hasSoraHistoryShape(value);
+
+const isTonEvent = (value: unknown): value is TonEvent =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { method?: unknown }).method === 'string' &&
+  typeof (value as { networkFee?: unknown }).networkFee === 'string' &&
+  typeof (value as { isOutEvent?: unknown }).isOutEvent === 'boolean';
+
 export {
   TransactionType,
-  GetHistory,
   History,
   HistoryForWalletAddress,
   SubqueryHistory,
@@ -229,8 +304,16 @@ export {
   HistoryElement,
   Transfer,
   SoraHistoryElement,
+  isSoraHistoryElement,
+  isTonEvent,
   X1HistoryElement,
   ZetaHistoryItem,
   ZetaHistory,
   TonEvent,
+  HistoryFetchRequest,
+  HistoryFetchResult,
+  HistoryFetchResponse,
+  HistoryResultItem,
+  HistoryPayload,
+  BaseHistoryServiceType,
 };

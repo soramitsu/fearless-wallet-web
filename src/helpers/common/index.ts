@@ -1,64 +1,73 @@
 import { APIItemState } from '@extension-base//api/types/networks';
-import { isSameString } from '..';
+import { getBalanceNetworkName } from '@extension-base/api/evm/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { BasePriceJson, TokenGroup } from '@extension-base/background/types/types';
-import type { ChangeWalletBalance, NetworkName } from '@/interfaces';
+import type { ChangeWalletBalance, NetworkFilter, NetworkName } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
+import { createNormalizedNetworkNameSet, isNetworkGroup, normalizeNetworkName } from '@/helpers/networkGroups';
+import { findBalanceByNetwork } from '@/helpers/balances';
+import { useNetworksStore } from '@/stores/networks';
 
-export function isNetworkGroup(network: string) {
-  return NETWORKS_GROUPS.some((group) => group.toLowerCase() === network.toLowerCase());
-}
+type SummaryOptions = {
+  networks?: NetworkJson[];
+  favoriteAddress?: string;
+};
 
-export function getTransferableBalanceInNetwork(token: TokenGroup, network: string) {
-  return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
+const buildAllowedNetworkSet = (
+  group: NetworkFilter,
+  { networks, favoriteAddress }: SummaryOptions
+): Set<NetworkName> | null => {
+  if (!networks?.length) return null;
+
+  return createNormalizedNetworkNameSet(networks, group, { favoriteAddress });
+};
+
+export function getTransferableBalanceInNetwork(token: TokenGroup, network: NetworkName) {
+  const balance = findBalanceByNetwork(token.balances, network);
+
+  return balance?.transferable ?? '0';
 }
 
 export function getSummaryTransferableWalletBalance(
   address: string,
   tokens: TokenGroup[],
   price: BasePriceJson,
-  network: NetworkName, // network name or group name
+  network: NetworkFilter, // network name or group name
   networks: NetworkJson[]
 ): number {
+  const options: SummaryOptions = { networks, favoriteAddress: address };
+
   return tokens.reduce((result, token) => {
-    const { balances, priceId } = token;
-    const tokenPrice = price.tokenPriceMap ? price.tokenPriceMap[priceId ?? ''] ?? 0 : 0;
+    const { priceId } = token;
+    const tokenPrice = price.tokenPriceMap ? (price.tokenPriceMap[priceId ?? ''] ?? 0) : 0;
+    const assetCount = +getSummaryTransferableBalance(token, network, options);
+    const assetValue = assetCount * tokenPrice;
 
-    if (!isNetworkGroup(network)) {
-      const assetCount = getTransferableBalanceInNetwork(token, network);
-      const assetValue = +assetCount * tokenPrice;
-
-      return result + assetValue;
-    }
-
-    balances.forEach(({ state, transferable, name }) => {
-      const stakingNetwork = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
-
-      if (isSameString(network, POPULAR_NETWORKS) && stakingNetwork?.rank === undefined) return result;
-
-      if (isSameString(network, FAVORITE_NETWORKS) && !stakingNetwork?.favorite.includes(address)) return result;
-
-      if (state === APIItemState.READY) {
-        const assetCount = +(transferable ?? 0);
-        const assetValue = assetCount * tokenPrice;
-
-        result += assetValue;
-      }
-    });
-
-    return result;
+    return result + assetValue;
   }, 0);
 }
 
-export function getSummaryTransferableBalance(token: TokenGroup, network = ALL_NETWORKS) {
+export function getSummaryTransferableBalance(
+  token: TokenGroup,
+  network: NetworkFilter = ALL_NETWORKS,
+  options: SummaryOptions = {}
+) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
-  // TODO: нужна проверка на то, входит ли сеть в группу
-  return token.balances.reduce((result, { state, transferable }) => {
-    if (state === APIItemState.READY && transferable) result += +transferable;
+  const balances = token.balances ?? [];
+  const allowedSet = buildAllowedNetworkSet(network, options);
 
-    return result;
+  return balances.reduce((result, balance) => {
+    if (balance.state !== APIItemState.READY || !balance.transferable) return result;
+
+    if (allowedSet) {
+      const normalizedBalanceName = normalizeNetworkName(getBalanceNetworkName(balance));
+
+      if (!allowedSet.has(normalizedBalanceName)) return result;
+    }
+
+    return result + Number(balance.transferable);
   }, 0);
 }
 
@@ -73,7 +82,8 @@ export function getSummaryLockedBalance(token: TokenGroup) {
 export function getChangeWalletBalance(
   tokens: TokenGroup[],
   price: BasePriceJson,
-  network: NetworkName // network name or group name
+  network: NetworkFilter, // network name or group name
+  options: SummaryOptions = {}
 ): ChangeWalletBalance {
   const changeAssets = tokens.map((tokenGroup) => {
     const priceChange = price?.tokenPriceChange[tokenGroup.priceId ?? ''] ?? 0;
@@ -81,7 +91,7 @@ export function getChangeWalletBalance(
 
     const currentPercent = 100 + (priceChange ?? 0);
 
-    const totalBalance = +getSummaryTransferableBalance(tokenGroup, network);
+    const totalBalance = +getSummaryTransferableBalance(tokenGroup, network, options);
     const oldBalance = (totalBalance / currentPercent) * 100;
 
     const changeAmount = totalBalance - oldBalance;
@@ -100,4 +110,25 @@ export function getChangeWalletBalance(
     percent: totalPercentChange,
     amount: totalChangeFiat,
   };
+}
+
+export function getSummaryTransferableBalanceFilteredByActiveNetworks(
+  token: TokenGroup,
+  network: NetworkFilter = ALL_NETWORKS
+) {
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
+
+  const networksStore = useNetworksStore();
+
+  return (
+    token.balances?.reduce((sum, balance) => {
+      const networkName = getBalanceNetworkName(balance);
+      const networkMeta: NetworkJson = networksStore.getNetwork(networkName);
+
+      if (balance.state === APIItemState.READY && networkMeta.active && balance.transferable)
+        sum += +balance.transferable;
+
+      return sum;
+    }, 0) ?? 0
+  );
 }

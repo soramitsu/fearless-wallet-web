@@ -1,5 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
+import { getFPNumberCtor } from '@extension-base/services/utils/sora';
 import type { Asset } from '@extension-base/types';
+
+const getFPNumber = getFPNumberCtor;
 
 export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
   const { currencyId, symbol, type } = assetsMap.find(({ id }) => id === assetId)!;
@@ -22,8 +24,9 @@ export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
   return { Token: symbol.toUpperCase() };
 }
 
-export function getPrecisionValue(_amount: string | undefined, precision: number): string {
+export async function getPrecisionValue(_amount: string | undefined, precision: number): Promise<string> {
   const amount = _amount === '' || _amount === undefined ? '0' : _amount;
+  const FPNumber = await getFPNumber();
   const amountFP = new FPNumber(amount, precision);
 
   return amountFP.toCodecString();

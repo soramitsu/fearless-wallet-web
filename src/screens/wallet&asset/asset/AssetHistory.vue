@@ -4,11 +4,11 @@
       :showBuyButton="showBuyButton"
       :currency="currency"
       :assetId="selectedAssetId"
-      v-on="$listeners"
+      v-on="attrs"
       @togglePopupButton="togglePopupButton"
     />
 
-    <History :currency="currency" v-on="$listeners" />
+    <History :currency="currency" v-on="attrs" />
 
     <Blur v-if="showPopupButton" @click="togglePopupButton">
       <div class="popup-button">
@@ -23,15 +23,16 @@
           class="activity-button"
           text="assets.buy"
           iconName="plus-pink"
-          @click="$emit('toggleVisible')"
+          @click="handleToggleVisible"
         />
       </div>
     </Blur>
   </Fragment>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, useAttrs } from 'vue';
+import { useRoute } from 'vue-router';
 import History from './History.vue';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
@@ -39,52 +40,55 @@ import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { useExtensionStore } from '@/stores/extension';
 
-@Component({
-  components: {
-    History,
-    AssetActionButtons,
-  },
-})
-export default class AssetHistory extends Vue {
-  extensionStore = useExtensionStore();
-  showPopupButton = false;
+defineOptions({ inheritAttrs: false });
 
-  @Prop(Object) currency!: TokenGroup;
+const props = defineProps<{
+  currency: TokenGroup;
+}>();
 
-  get selectedAssetId() {
-    return this.$route.params.assetId;
-  }
+const emit = defineEmits<{
+  toggleVisible: [];
+}>();
 
-  get providers() {
-    return this.currency.providers ?? [];
-  }
+const attrs = useAttrs();
+const extensionStore = useExtensionStore();
+const route = useRoute();
 
-  get mainNetwork() {
-    const currency = this.currency.balances?.find((network) => network.isUtility || network.isNative);
+const showPopupButton = ref(false);
 
-    return currency ? currency.name : '';
-  }
+const selectedAssetId = computed(() => route.params.assetId as string);
 
-  get showBuyButton() {
-    const providers = this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
+const currency = computed(() => props.currency);
 
-    if (providers.length === 0) return false;
+const providers = computed(() => props.currency.providers ?? []);
 
-    return this.mainNetwork?.toLowerCase() === this.selectedNetwork.toLowerCase();
-  }
+const mainNetwork = computed(() => {
+  const currency = props.currency.balances?.find((network) => network.isUtility || network.isNative);
 
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
+  return currency ? currency.name : '';
+});
 
-  mounted() {
-    if (BaseApi.isEthereumNativeNetwork(this.selectedNetwork)) fetchEvmBalance(this.selectedAssetId);
-  }
+const selectedNetwork = computed(() => (route.params.selectedNetwork as string | undefined) ?? '');
 
-  togglePopupButton() {
-    this.showPopupButton = !this.showPopupButton;
-  }
+const showBuyButton = computed(() => {
+  const availableProviders = providers.value.filter((provider) => extensionStore.features?.fiat[provider]);
+
+  if (availableProviders.length === 0) return false;
+
+  return mainNetwork.value?.toLowerCase() === selectedNetwork.value.toLowerCase();
+});
+
+function togglePopupButton() {
+  showPopupButton.value = !showPopupButton.value;
 }
+
+function handleToggleVisible() {
+  emit('toggleVisible');
+}
+
+onMounted(() => {
+  if (BaseApi.isEthereumNativeNetwork(selectedNetwork.value)) fetchEvmBalance(selectedAssetId.value);
+});
 </script>
 
 <style lang="scss" scoped>

@@ -10,7 +10,10 @@ import type State from '@extension-base/background/handlers/State';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 
 export class PolkadotHandler {
-  constructor(public state: State, public walletConnectService: WalletConnectService) {}
+  constructor(
+    public state: State,
+    public walletConnectService: WalletConnectService
+  ) {}
 
   private checkAccount(address: string, accounts: string[]) {
     if (!accounts.find((account) => isSameAddress(account, address))) {
@@ -42,7 +45,7 @@ export class PolkadotHandler {
     const sessionAccounts = requestSession.namespaces.polkadot.accounts.map((account) => account.split(':')[2]);
 
     if (method === POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE) {
-      const param = parseRequestParams<POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE>(request.params);
+      const param = parseRequestParams(request.params, POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE);
 
       this.checkAccount(param.address, sessionAccounts);
 
@@ -70,7 +73,7 @@ export class PolkadotHandler {
           this.handleError(topic, id, e);
         });
     } else if (method === POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION) {
-      const param = parseRequestParams<POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION>(request.params);
+      const param = parseRequestParams(request.params, POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION);
 
       this.checkAccount(param.address, sessionAccounts);
 

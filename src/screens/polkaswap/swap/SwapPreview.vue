@@ -30,27 +30,23 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 
-@Component({
-  components: { SwapInfo },
-})
-export default class SwapPreview extends Vue {
-  @Prop({ default: '' }) marketType!: string;
-  @Prop({ default: '' }) slippage!: string;
-  @Prop({ default: '' }) sendAmount!: string;
-  @Prop({ default: '' }) receiveAmount!: string;
-  @Prop({ default: '' }) sendValue!: string;
-  @Prop({ default: '' }) receiveValue!: string;
-  @Prop({ default: '' }) minMaxAmount!: string;
-  @Prop({ default: '' }) minMaxAmountPrice!: string;
-  @Prop({ default: '' }) fee!: string;
-  @Prop({ default: '' }) feePrice!: string;
-  @Prop({ default: '' }) sendAssetUP!: string;
-  @Prop({ default: '' }) receiveAssetUP!: string;
-  @Prop({ default: '' }) route!: string;
-  @Prop(Boolean) isExchangeB!: boolean;
-}
+defineProps<{
+  marketType: string;
+  slippage: string;
+  sendAmount: string;
+  receiveAmount: string;
+  sendValue: string;
+  receiveValue: string;
+  minMaxAmount: string;
+  minMaxAmountPrice: string;
+  fee: string;
+  feePrice: string;
+  sendAssetUP: string;
+  receiveAssetUP: string;
+  route: string;
+  isExchangeB: boolean;
+}>();
 </script>

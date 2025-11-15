@@ -46,152 +46,158 @@
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
+<script lang="ts" setup>
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import type { AccountLiquidity } from '@/types/sora';
 import type { PoolsTab } from '@/interfaces';
 import type { PoolParams } from '@/stores';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';
-import { isSubstrString } from '@/helpers';
 import { Components } from '@/router/routes';
 import { subscribeAccountLiquidity, unsubscribePools } from '@/extension/messaging';
 import { usePoolsStore } from '@/stores/pools';
+import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    PoolItem,
-    PoolsSettings,
-  },
-})
-export default class PoolsPage extends Vue {
-  activeTabName: PoolsTab | '' = '';
-  filterValue = '';
-  isLoading = false;
-  poolsStore = usePoolsStore();
+const router = useRouter();
+const poolsStore = usePoolsStore();
+const accountsStore = useAccountsStore();
 
-  get filteredPoolsItems() {
-    if (this.filterValue === '') return this.poolsStore.poolsItems;
+const activeTabName = ref<PoolsTab | ''>('');
+const filterValue = ref('');
+const isLoading = ref(false);
 
-    return this.poolsStore.poolsItems.filter(
-      ({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
-        isSubstrString(`${name1}${name2}`, this.filterValue) || isSubstrString(`${name1}-${name2}`, this.filterValue)
-    );
-  }
+const filterMatchesPool = (filter: string, assetA: string, assetB: string) => {
+  const normalizedFilter = filter.toLowerCase();
+  const combined = `${assetA}${assetB}`.toLowerCase();
+  const dashed = `${assetA}-${assetB}`.toLowerCase();
 
-  get filteredMyPoolsItems() {
-    if (this.filterValue === '') return this.poolsStore.myPoolsItems;
+  return combined.includes(normalizedFilter) || dashed.includes(normalizedFilter);
+};
 
-    return this.poolsStore.myPoolsItems.filter(
-      ({ asset1: { name: name1 }, asset2: { name: name2 } }) =>
-        isSubstrString(`${name1}${name2}`, this.filterValue) || isSubstrString(`${name1}-${name2}`, this.filterValue)
-    );
-  }
+const filteredPoolsItems = computed(() => {
+  if (filterValue.value === '') return poolsStore.poolsItems;
 
-  get haveFilteredItems() {
-    if (this.isAllTab) return this.filteredPoolsItems.length;
+  return poolsStore.poolsItems.filter(({ asset1, asset2 }) => {
+    const symbol1 = asset1.symbol || asset1.name;
+    const symbol2 = asset2.symbol || asset2.name;
 
-    return this.filteredMyPoolsItems.length;
-  }
+    return filterMatchesPool(filterValue.value, symbol1, symbol2);
+  });
+});
 
-  get showLoader() {
-    if (this.activeTabName === 'all' && this.isLoading) return true;
+const filteredMyPoolsItems = computed(() => {
+  if (filterValue.value === '') return poolsStore.myPoolsItems;
 
-    return this.activeTabName === '';
-  }
+  return poolsStore.myPoolsItems.filter(({ asset1, asset2 }) => {
+    const symbol1 = asset1.symbol || asset1.name;
+    const symbol2 = asset2.symbol || asset2.name;
 
-  get noPoolsItems() {
-    return !this.showPoolsItems && !this.showMyPoolsItems;
-  }
+    return filterMatchesPool(filterValue.value, symbol1, symbol2);
+  });
+});
 
-  get showPoolsItems() {
-    return this.poolsStore.poolsItems.length !== 0;
-  }
+const isAllTab = computed(() => activeTabName.value === 'all');
 
-  get showMyPoolsItems() {
-    return this.poolsStore.myPoolsItems.length !== 0;
-  }
+const haveFilteredItems = computed(() =>
+  isAllTab.value ? filteredPoolsItems.value.length : filteredMyPoolsItems.value.length
+);
 
-  get contentFormHeight() {
-    return CONTENT_FORM_HEIGHT;
-  }
+const showPoolsItems = computed(() => poolsStore.poolsItems.length !== 0);
+const showMyPoolsItems = computed(() => poolsStore.myPoolsItems.length !== 0);
 
-  get isAllTab() {
-    return this.activeTabName === 'all';
-  }
+const showLoader = computed(() => {
+  if (activeTabName.value === 'all' && isLoading.value) return true;
 
-  created() {
-    this.fetchPoolInfo();
+  return activeTabName.value === '';
+});
 
-    const callback = (accountLiquidity: AccountLiquidity[]) => {
-      console.info('Client accountLiquidity:', accountLiquidity);
+const noPoolsItems = computed(() => !showPoolsItems.value && !showMyPoolsItems.value);
 
-      this.fetchPoolInfo();
-    };
+const selectedWallet = computed(() => accountsStore.selectedWallet);
 
-    subscribeAccountLiquidity(callback);
-  }
+async function fetchPoolInfo() {
+  const updateTab = () => updateActiveTabName(showMyPoolsItems.value ? 'my' : 'all');
 
-  @Watch('showPoolsItems')
-  updateTab1(newValue: boolean) {
-    if (!newValue) this.updateActiveTabName('my');
-  }
+  if (showMyPoolsItems.value && !showPoolsItems.value) updateTab();
 
-  @Watch('showMyPoolsItems')
-  updateTab2(newValue: boolean) {
-    if (!newValue) this.updateActiveTabName('all');
-  }
+  await poolsStore.getPoolsParams();
 
-  @Watch('selectedWallet')
-  async updateTabPoolsParams() {
-    this.isLoading = true;
-
-    await this.poolsStore.getPoolsParams({ delay: 5000 });
-
-    this.isLoading = false;
-  }
-
-  async fetchPoolInfo() {
-    const updateTab = () => this.updateActiveTabName(this.showMyPoolsItems ? 'my' : 'all');
-
-    if (this.showMyPoolsItems && !this.showPoolsItems) updateTab();
-
-    await this.poolsStore.getPoolsParams();
-
-    if (this.activeTabName === '') updateTab();
-  }
-
-  updateFilterValue(value: string) {
-    this.filterValue = value;
-  }
-
-  updateActiveTabName(name: PoolsTab) {
-    this.activeTabName = name;
-  }
-
-  openPoolDetails(poolParams: PoolParams) {
-    const asset1 = poolParams.asset1.name;
-    const asset2 = poolParams.asset2.name;
-
-    this.$router.push({
-      name: Components.PoolDetails,
-      params: {
-        poolName: `${asset1}-${asset2}`,
-      },
-    });
-  }
-
-  closeForm() {
-    unsubscribePools();
-
-    this.$router.push({ name: Components.Wallet });
-  }
-
-  getKey(item: PoolParams) {
-    return item.asset1.name + item.asset2.name;
-  }
+  if (activeTabName.value === '') updateTab();
 }
+
+function updateFilterValue(value: string) {
+  filterValue.value = value;
+}
+
+function updateActiveTabName(name: PoolsTab) {
+  activeTabName.value = name;
+}
+
+function openPoolDetails(poolParams: PoolParams) {
+  const asset1 = poolParams.asset1.symbol || poolParams.asset1.name;
+  const asset2 = poolParams.asset2.symbol || poolParams.asset2.name;
+
+  router.push({
+    name: Components.PoolDetails,
+    params: {
+      poolName: `${asset1}-${asset2}`,
+    },
+  });
+}
+
+function closeForm() {
+  unsubscribePools();
+  poolsStore.resetPoolsSubscription();
+
+  router.push({ name: Components.Wallet });
+}
+
+function getKey(item: PoolParams) {
+  return item.poolId;
+}
+
+onMounted(() => {
+  void fetchPoolInfo();
+
+  const callback = (accountLiquidity: AccountLiquidity[]) => {
+    console.info('Client accountLiquidity:', accountLiquidity);
+
+    void fetchPoolInfo();
+  };
+
+  subscribeAccountLiquidity(callback);
+});
+
+onBeforeUnmount(() => {
+  unsubscribePools();
+  poolsStore.resetPoolsSubscription();
+});
+
+watch(
+  () => showPoolsItems.value,
+  (newValue) => {
+    if (!newValue) updateActiveTabName('my');
+  }
+);
+
+watch(
+  () => showMyPoolsItems.value,
+  (newValue) => {
+    if (!newValue) updateActiveTabName('all');
+  }
+);
+
+watch(
+  () => selectedWallet.value,
+  async () => {
+    isLoading.value = true;
+
+    await poolsStore.getPoolsParams({ delay: 5000 });
+
+    isLoading.value = false;
+  }
+);
 </script>
 
 <style lang="scss" scoped>

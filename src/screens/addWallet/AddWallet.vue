@@ -138,10 +138,14 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type { WarningValueName } from '@/consts/messages';
+import type { FWKeyringMeta } from '@/extension/background/extension-base/src/types';
 import { WalletEcosystem } from '@/interfaces';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
@@ -149,9 +153,9 @@ import ImportWallet from '@/screens/addWallet/ImportWallet.vue';
 import NicknameForm from '@/screens/addWallet/NicknameForm.vue';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
+import NotificationPopup from '@/components/NotificationPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-import { type WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import {
   forgetAccount,
@@ -166,571 +170,532 @@ import {
 } from '@/extension/messaging';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useAccountsStore } from '@/stores/accounts';
-import { type FWKeyringMeta } from '@/extension/background/extension-base/src/types';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
-@Component({
-  components: {
-    FinishForm,
-    CreateWallet,
-    ImportWallet,
-    NicknameForm,
-    AdvancedForm,
-    AddEthereumAccountPopup,
-  },
-})
-export default class AddWallet extends Vue {
-  readonly isPopup = IS_POPUP;
-  readonly countSteps = 4;
-  accountsStore = useAccountsStore();
-  step = 1;
-  nickname = '';
-  mnemonic = '';
-  passwordSubstrateJson = '';
-  passwordEthereumJson = '';
-  ethereumJson = '';
-  substrateJson = '';
-  ethereumRawSeed = '';
-  substrateRawSeed = '';
-  showAdvancedForm = false;
-  showAddEthereumAccountPopup = false;
-  selectedMnemonicElements: MnemonicConfirmation[] = [];
-  warningValueName: WarningValueName = '';
-  typeImport: ImportType = 'mnemonic';
-  derivationPaths = INITIAL_DERIVATION_PATHS;
-  address: string | null = null;
-  isLoading = false;
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+const accountsStore = useAccountsStore();
 
-  get confirmMnemonicStep() {
-    return this.step === 3 && this.isCreateWallet;
+const countSteps = 4;
+const isPopup = IS_POPUP;
+
+const step = ref(1);
+const nickname = ref('');
+const mnemonic = ref('');
+const passwordSubstrateJson = ref('');
+const passwordEthereumJson = ref('');
+const ethereumJson = ref('');
+const substrateJson = ref('');
+const ethereumRawSeed = ref('');
+const substrateRawSeed = ref('');
+const showAdvancedForm = ref(false);
+const showAddEthereumAccountPopup = ref(false);
+const selectedMnemonicElements = ref<MnemonicConfirmation[]>([]);
+const warningValueName = ref<WarningValueName>('');
+const typeImport = ref<ImportType>('mnemonic');
+const derivationPaths = ref<DerivationPaths>(JSON.parse(JSON.stringify(INITIAL_DERIVATION_PATHS)) as DerivationPaths);
+const address = ref<string | null>(null);
+const isLoading = ref(false);
+
+const isOnlyEthereumAccount = computed(() => route.params.onlyEthereumAccount !== undefined);
+const walletType = computed(() => route.params.type as 'create' | 'import' | undefined);
+const walletEcosystem = computed<WalletEcosystem>(
+  () => (route.params.walletEcosystem as WalletEcosystem) ?? WalletEcosystem.Substrate
+);
+const isSubstrate = computed(() => walletEcosystem.value === WalletEcosystem.Substrate);
+const mnemonicLength = computed(() => (walletEcosystem.value === WalletEcosystem.Ton ? 24 : 12));
+const confirmMnemonicStep = computed(() => step.value === 3 && isCreateWallet.value);
+const isDifferentPasswords = computed(() => passwordEthereumJson.value !== passwordSubstrateJson.value);
+
+const passwordJson = computed(() =>
+  isOnlyEthereumAccount.value
+    ? passwordEthereumJson.value
+    : step.value === 1
+      ? passwordSubstrateJson.value
+      : passwordEthereumJson.value
+);
+
+const substrateJSON = computed(() => BaseApi.parseJson(substrateJson.value));
+const ethereumJSON = computed(() => BaseApi.parseJson(ethereumJson.value));
+const showEthereumDP = computed(() => typeImport.value === 'mnemonic');
+const readonlyNickname = computed(() => typeImport.value === 'json');
+const showNotificationPopup = computed(() => warningValueName.value !== '');
+const isMobileWalletExists = computed(() => warningValueName.value === 'duplicateMobileWallet');
+
+const isCreateWallet = computed(() => walletType.value === 'create');
+const isImportWallet = computed(() => walletType.value === 'import');
+
+const showNicknameForm = computed(
+  () => (isImportWallet.value && step.value === 3) || (isCreateWallet.value && step.value === 1)
+);
+const showCreateForm = computed(
+  () => isCreateWallet.value && (step.value === 2 || step.value === 3) && !showAdvancedForm.value
+);
+const showImportForm = computed(
+  () => isImportWallet.value && (step.value === 1 || step.value === 2) && !showAdvancedForm.value
+);
+const showBackIcon = computed(() => step.value !== 4);
+const showFinishForm = computed(() => step.value === 4);
+
+const translate = (key: string, params: Record<string, unknown> = {}) => t(`addWallet.${key}`, params).toString();
+
+const header = computed(() => {
+  if (isCreateWallet.value) {
+    if (step.value === 1) return translate('createWallet');
+    if (step.value === 2) return translate('backupPassphrase');
+    if (step.value === 3) return translate('confirmPassphrase');
   }
 
-  get isOnlyEthereumAccount() {
-    return this.$route.params.onlyEthereumAccount !== undefined;
+  if (step.value === 1) {
+    if (isOnlyEthereumAccount.value) return translate('addEthereumAccount');
+
+    return typeImport.value === 'mnemonic'
+      ? translate('importWallet')
+      : translate('importAccount', { type: 'substrate' });
   }
 
-  get walletType() {
-    return this.$route.params.type;
-  }
+  if (step.value === 2) return translate('importAccount', { type: 'ethereum' });
+  if (step.value === 3) return translate('walletNickname');
 
-  get walletEcosystem() {
-    return (this.$route.params.walletEcosystem ?? 'substrate') as WalletEcosystem;
-  }
+  return '';
+});
 
-  get isSubstrate() {
-    return this.walletEcosystem === 'substrate';
-  }
+const buttonText = computed(() => {
+  if (isCreateWallet.value && step.value === 2) return translate('haveWrittenPassphrase');
+  if (showFinishForm.value) return translate('usingFearless');
 
-  get mnemonicLength() {
-    return this.walletEcosystem === 'ton' ? 24 : 12;
-  }
+  return 'common.continue';
+});
 
-  get isDifferentPasswords() {
-    return this.passwordEthereumJson !== this.passwordSubstrateJson;
-  }
+const isLengthZero = (value: string | KeyringPair$Json) =>
+  typeof value === 'string' ? value.length === 0 : Object.keys(value ?? {}).length === 0;
 
-  get passwordJson() {
-    if (this.isOnlyEthereumAccount) return this.passwordEthereumJson;
+const invalidMessages = computed(() => {
+  if (!warningValueName.value) return {};
 
-    return this.step === 1 ? this.passwordSubstrateJson : this.passwordEthereumJson;
-  }
+  const mainPath = `addWallet.warningMessages.${warningValueName.value}`;
 
-  get substrateJSON() {
-    return BaseApi.parseJson(this.substrateJson);
-  }
+  return {
+    text: `${mainPath}.text`,
+    subtext: `${mainPath}.subtext`,
+  };
+});
 
-  get ethereumJSON() {
-    return BaseApi.parseJson(this.ethereumJson);
-  }
+const disabledProceed = computed(() => {
+  if (isLoading.value) return true;
 
-  get showEthereumDP() {
-    return this.typeImport === 'mnemonic';
-  }
-
-  get readonlyNickname() {
-    return this.typeImport === 'json';
-  }
-
-  get showNotificationPopup() {
-    return this.warningValueName !== '';
-  }
-
-  get isMobileWalletExists() {
-    return this.warningValueName === 'duplicateMobileWallet';
-  }
-
-  get invalidMessages() {
-    if (!this.warningValueName) return {};
-
-    const mainPath = `addWallet.warningMessages.${this.warningValueName}`;
-
-    return {
-      text: `${mainPath}.text`,
-      subtext: `${mainPath}.subtext`,
-    };
-  }
-
-  get showNicknameForm() {
-    return (this.isImportWallet && this.step === 3) || (this.isCreateWallet && this.step === 1);
-  }
-
-  get isCreateWallet() {
-    return this.walletType === 'create';
-  }
-
-  get isImportWallet() {
-    return this.walletType === 'import';
-  }
-
-  get showCreateForm() {
-    return this.isCreateWallet && (this.step === 2 || this.step === 3) && !this.showAdvancedForm;
-  }
-
-  get showImportForm() {
-    return this.isImportWallet && (this.step === 1 || this.step === 2) && !this.showAdvancedForm;
-  }
-
-  get showBackIcon() {
-    return this.step !== 4;
-  }
-
-  get showFinishForm() {
-    return this.step === 4;
-  }
-
-  get header() {
-    if (this.isCreateWallet) {
-      if (this.step === 1) return this.t('createWallet');
-
-      if (this.step === 2) return this.t('backupPassphrase');
-
-      if (this.step === 3) return this.t('confirmPassphrase');
-    }
-
-    if (this.step === 1) {
-      if (this.isOnlyEthereumAccount) return this.t('addEthereumAccount');
-
-      return this.typeImport === 'mnemonic' ? this.t('importWallet') : this.t('importAccount', { type: 'substrate' });
-    }
-
-    if (this.step === 2) return this.t('importAccount', { type: 'ethereum' });
-
-    if (this.step === 3) return this.t('walletNickname');
-
-    return '';
-  }
-
-  get buttonText() {
-    if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
-
-    if (this.showFinishForm) return this.t('usingFearless');
-
-    return 'common.continue';
-  }
-
-  get disabledProceed() {
-    if (this.isLoading) return true;
-
-    if (this.isImportWallet) {
-      if (this.step === 1) {
-        if (this.isOnlyEthereumAccount)
-          return !this.ethereumRawSeed && this.isLengthZero(this.ethereumJson) && !this.passwordEthereumJson;
-
-        if (
-          !this.mnemonic &&
-          !this.substrateRawSeed &&
-          (this.isLengthZero(this.substrateJson) || !this.passwordSubstrateJson)
-        )
-          return true;
-
-        return false;
+  if (isImportWallet.value) {
+    if (step.value === 1) {
+      if (isOnlyEthereumAccount.value) {
+        return !ethereumRawSeed.value && isLengthZero(ethereumJson.value) && !passwordEthereumJson.value;
       }
 
-      if (this.step === 2) {
-        if (this.isDifferentPasswords) return true;
-
-        if (!this.ethereumRawSeed) return this.isLengthZero(this.ethereumJson) || !this.passwordEthereumJson;
-
-        return false;
-      }
-
-      if (this.step === 3 && this.typeImport !== 'json') return !this.nickname;
+      if (
+        !mnemonic.value &&
+        !substrateRawSeed.value &&
+        (isLengthZero(substrateJson.value) || !passwordSubstrateJson.value)
+      )
+        return true;
 
       return false;
     }
 
-    // isCreateWallet
-    if (this.step === 1) return !this.nickname;
+    if (step.value === 2) {
+      if (isDifferentPasswords.value) return true;
+      if (!ethereumRawSeed.value) return isLengthZero(ethereumJson.value) || !passwordEthereumJson.value;
 
-    if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+      return false;
+    }
+
+    if (step.value === 3 && typeImport.value !== 'json') return !nickname.value;
 
     return false;
   }
 
-  get suriSubstrate() {
-    const {
-      substrate: { value: substrateDerivationPath },
-    } = this.derivationPaths;
+  if (step.value === 1) return !nickname.value;
+  if (step.value === 3) return mnemonic.value.split(' ').length !== selectedMnemonicElements.value.length;
 
-    return `${(this.mnemonic || this.substrateRawSeed).trim()}${substrateDerivationPath.trim()}`;
+  return false;
+});
+
+const substrateDerivationPath = computed(() => derivationPaths.value.substrate.value.trim());
+const ethereumDerivationPath = computed(() => derivationPaths.value.ethereum.value.trim());
+
+const suriSubstrate = computed(
+  () => `${(mnemonic.value || substrateRawSeed.value).trim()}${substrateDerivationPath.value}`
+);
+
+const suriEthereum = computed(() => {
+  if (!isSubstrate.value) return '';
+
+  const dp = ethereumDerivationPath.value.length
+    ? ethereumDerivationPath.value.startsWith('/')
+      ? ethereumDerivationPath.value
+      : `/${ethereumDerivationPath.value}`
+    : ETHEREUM_DEFAULT_DERIVATION_PATH;
+
+  if (mnemonic.value) return `${mnemonic.value.trim()}${dp.trim()}`;
+  if (ethereumRawSeed.value) return ethereumRawSeed.value.trim();
+
+  return '';
+});
+
+const getClassesStep = (num: number) => {
+  let hidden: number[] = [];
+
+  if (isOnlyEthereumAccount.value) {
+    if (isImportWallet.value) {
+      if (typeImport.value === 'mnemonic' || typeImport.value === 'rawSeed') hidden = [2, 3, 5];
+      else if (typeImport.value === 'json') hidden = [2, 3, 4, 5];
+    } else hidden = [1, 5];
+  } else if (isImportWallet.value) {
+    if (typeImport.value === 'json') hidden = [4];
+    else if (typeImport.value === 'mnemonic') hidden = [2];
   }
 
-  get suriEthereum() {
-    if (!this.isSubstrate) return '';
+  const isCircleHidden = hidden.includes(num) || hidden.length === countSteps - 1;
+  const isCircleFilled = !isCircleHidden && num <= step.value;
 
-    const {
-      ethereum: { value: ethereumDerivationPath },
-    } = this.derivationPaths;
+  return [
+    'circle-step',
+    {
+      'circle-filled': isCircleFilled,
+      'circle-hidden': isCircleHidden,
+    },
+  ];
+};
 
-    const ethereumDP = (
-      ethereumDerivationPath.length !== 0
-        ? ethereumDerivationPath[0] === '/'
-          ? ethereumDerivationPath
-          : `/${ethereumDerivationPath}`
-        : ETHEREUM_DEFAULT_DERIVATION_PATH
-    ).trim();
+const toggleAdvancedFormVisible = (value = true) => {
+  showAdvancedForm.value = value;
+};
 
-    return this.mnemonic
-      ? `${this.mnemonic.trim()}${ethereumDP}`
-      : this.ethereumRawSeed
-      ? this.ethereumRawSeed.trim()
-      : '';
+const updateDP = (value: DerivationPaths) => {
+  derivationPaths.value = value;
+};
+
+const reset = () => {
+  mnemonic.value = '';
+  substrateRawSeed.value = '';
+  ethereumRawSeed.value = '';
+  substrateJson.value = '';
+  ethereumJson.value = '';
+  passwordSubstrateJson.value = '';
+  passwordEthereumJson.value = '';
+  nickname.value = '';
+  address.value = null;
+  derivationPaths.value = JSON.parse(JSON.stringify(INITIAL_DERIVATION_PATHS)) as DerivationPaths;
+};
+
+const setImportValue = (value: string | KeyringPair$Json | Record<string, never>, field: AddWalletField) => {
+  switch (field) {
+    case 'mnemonic':
+      mnemonic.value = value as string;
+      break;
+    case 'ethereumRawSeed':
+      ethereumRawSeed.value = value as string;
+      break;
+    case 'substrateRawSeed':
+      substrateRawSeed.value = value as string;
+      break;
+    case 'substrateJson':
+      substrateJson.value = value as string;
+      break;
+    case 'ethereumJson':
+      ethereumJson.value = value as string;
+      break;
+  }
+};
+
+const setNickname = (value: string) => {
+  nickname.value = value;
+};
+
+const updateSelectedMnemonicElements = (value: MnemonicConfirmation[]) => {
+  selectedMnemonicElements.value = value;
+};
+
+const setPasswordJson = (value: string) => {
+  if (isOnlyEthereumAccount.value) {
+    passwordEthereumJson.value = value;
+  } else {
+    if (step.value === 1) passwordSubstrateJson.value = value;
+    else passwordEthereumJson.value = value;
+  }
+};
+
+const handlerCloseNotificationPopup = async () => {
+  if (warningValueName.value === 'jsonInvalid') {
+    if (step.value === 1) substrateJson.value = '';
+    else if (step.value === 2) ethereumJson.value = '';
   }
 
-  @Watch('substrateJson')
-  substrateJsonChanged(value: string) {
-    if (this.isLengthZero(this.substrateJSON) && value !== '') {
-      this.warningValueName = 'jsonInvalid';
+  if (step.value === 1) passwordSubstrateJson.value = '';
+  else if (step.value === 2) passwordEthereumJson.value = '';
+
+  if (warningValueName.value === 'duplicateMobileWallet') reset();
+
+  warningValueName.value = '';
+  selectedMnemonicElements.value = [];
+};
+
+const handlerAcceptAddWallet = async () => {
+  if (address.value) await forgetAccount(address.value, 'mobile');
+
+  warningValueName.value = '';
+  step.value += 1;
+};
+
+const closeAddEthereumAccountPopup = () => {
+  showAddEthereumAccountPopup.value = false;
+  step.value += 2;
+};
+
+const resetAll = () => {
+  selectedMnemonicElements.value = [];
+};
+
+const skipStep = () => {
+  step.value += 1;
+};
+
+const handlerAgree = () => {
+  showAddEthereumAccountPopup.value = false;
+  step.value += 1;
+};
+
+const validateAddressForDubMobileWallet = (rawAddress: string) => {
+  const substrateAddress = BaseApi.encodeAddress(rawAddress);
+
+  if (BaseApi.isMobileWallet(substrateAddress)) {
+    warningValueName.value = 'duplicateMobileWallet';
+    address.value = substrateAddress;
+  }
+};
+
+const validateMobileDubs = async () => {
+  if (isOnlyEthereumAccount.value) return;
+
+  if (typeImport.value === 'json') {
+    validateAddressForDubMobileWallet(substrateJSON.value.address);
+
+    return;
+  }
+
+  return true;
+};
+
+const validateSequenceMnemonic = () => {
+  const isValidSequenceMnemonic = isCreateWallet.value
+    ? BaseApi.isValidSequenceMnemonic(
+        mnemonic.value,
+        selectedMnemonicElements.value.map(({ word }) => word.trim())
+      )
+    : true;
+
+  if (!isValidSequenceMnemonic) warningValueName.value = 'mnemonicSequence';
+};
+
+const validateSuri = async () => {
+  const {
+    ethereum: { value: ethereumDPValue },
+    substrate,
+  } = derivationPaths.value;
+
+  const normalizedDP =
+    ethereumDPValue.length !== 0 ? (ethereumDPValue[0] === '/' ? ethereumDPValue.slice(1) : ethereumDPValue) : '';
+
+  const isValidMnemonic =
+    mnemonic.value.length === 0 ? true : await mnemonicValidate(walletEcosystem.value, mnemonic.value.trim());
+  const isValidSubstratePhrase = substrate.value ? await isDerivationPathValid(substrate) : true;
+  const isValidEthereumDP = ethereumDPValue ? BaseApi.isValidEthereumDerivationPath(normalizedDP.trim()) : true;
+  const isValidSubstrateRawSeed = substrateRawSeed.value ? BaseApi.isHex(substrateRawSeed.value) : true;
+  const isValidEthereumRawSeed = ethereumRawSeed.value ? BaseApi.isHex(ethereumRawSeed.value) : true;
+
+  const validatedSubstrateJson =
+    substrateJson.value !== ''
+      ? await isJsonValid(substrateJSON.value, passwordSubstrateJson.value)
+      : ({ value: true } as ValidateJsonResult);
+
+  const validatedEthereumJson =
+    ethereumJson.value !== ''
+      ? await isJsonValid(ethereumJSON.value, passwordEthereumJson.value, false)
+      : ({ value: true } as ValidateJsonResult);
+
+  if (!isValidMnemonic) warningValueName.value = 'mnemonic';
+  else if (!isValidSubstratePhrase) warningValueName.value = 'substrateDP';
+  else if (!isValidEthereumDP) warningValueName.value = 'ethereumDP';
+  else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) warningValueName.value = 'rawSeed';
+  else if (!validatedSubstrateJson.value) warningValueName.value = validatedSubstrateJson.errorType;
+  else if (!validatedEthereumJson.value) warningValueName.value = validatedEthereumJson.errorType;
+  else if (isValidMnemonic && isValidSubstrateRawSeed && validatedSubstrateJson.value && step.value === 1)
+    await validateMobileDubs();
+};
+
+const saveKeypairFromSeed = async () => {
+  const meta: FWKeyringMeta = {
+    name: nickname.value.trim(),
+    ethereumAddress: '',
+    walletEcosystem: walletEcosystem.value,
+  };
+
+  const {
+    substrate: { keypairType: substrateKeypairType },
+    ethereum: { keypairType: ethereumKeypairType },
+  } = derivationPaths.value;
+
+  if (isOnlyEthereumAccount.value) meta.name = accountsStore.selectedWallet.name;
+
+  if (suriEthereum.value) {
+    const ethereumAddress = await addAccount(suriEthereum.value, ethereumKeypairType, meta);
+
+    if (isOnlyEthereumAccount.value) {
+      updatePairMeta(accountsStore.selectedWallet.address, { ethereumAddress });
+
+      return '';
+    }
+
+    meta.ethereumAddress = ethereumAddress;
+  }
+
+  const addressValue = await addAccount(suriSubstrate.value, substrateKeypairType, meta, walletEcosystem.value);
+
+  return addressValue;
+};
+
+const saveKeypairFromJson = async () => {
+  const substrateJSONClone = { ...substrateJSON.value };
+
+  if (ethereumJson.value) {
+    const ethereumAddress = await jsonRestore(ethereumJSON.value, passwordEthereumJson.value);
+
+    if (isOnlyEthereumAccount.value) {
+      updatePairMeta(accountsStore.selectedWallet.address, {
+        ethereumAddress,
+        walletEcosystem: WalletEcosystem.Substrate,
+      });
+
+      return '';
+    }
+
+    substrateJSONClone.meta.ethereumAddress = ethereumAddress;
+  }
+
+  const addressValue = await jsonRestore(substrateJSONClone, passwordSubstrateJson.value);
+
+  return addressValue;
+};
+
+const saveKeypair = () => {
+  if (substrateJson.value || ethereumJson.value) return saveKeypairFromJson();
+
+  return saveKeypairFromSeed();
+};
+
+const createFlow = async () => {
+  if (step.value === 1 && !mnemonic.value.length) {
+    mnemonic.value = await generateMnemonic(walletEcosystem.value, mnemonicLength.value);
+  } else if (step.value === 2) {
+    await validateSuri();
+  } else if (step.value === 3) {
+    validateSequenceMnemonic();
+  }
+};
+
+const importFlow = async () => {
+  if (step.value === 1) {
+    await validateSuri();
+
+    if (warningValueName.value !== '') return;
+
+    if (isOnlyEthereumAccount.value) {
+      step.value += 2;
 
       return;
     }
 
-    this.nickname = (this.substrateJSON?.meta?.name as string) || '';
-  }
-
-  @Watch('ethereumJson')
-  ethereumJsonChanged(value: string) {
-    if (this.isLengthZero(this.ethereumJSON) && value !== '') this.warningValueName = 'jsonInvalid';
-  }
-
-  @Watch('step')
-  async changedCurrentStep(step: number) {
-    if (step === 0) this.$router.push({ name: Components.Welcome });
-
-    if (step === 2) this.selectedMnemonicElements = [];
-    else if (step === 5) this.$router.push({ name: Components.Wallet });
-    else if (step === 4) {
-      this.isLoading = true;
-
-      await this.saveKeypair();
-
-      this.isLoading = false;
-
-      if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
-    }
-  }
-
-  mounted() {
-    if (this.isOnlyEthereumAccount && this.isCreateWallet) this.proceed();
-  }
-
-  isLengthZero(value: string | KeyringPair$Json) {
-    return Object.keys(value).length === 0;
-  }
-
-  t(value: string, obj: Record<string, string> = {}) {
-    return this.$t(`addWallet.${value}`, obj);
-  }
-
-  getClassesStep(num: number) {
-    let arrayWithHiddenSteps: number[] = [];
-
-    // steps import: 1 - type import, 2 - eth account, 3 - nickname, 4 - finish form
-    // steps create: 1 - nickname, 2 - view mnemonic, 3 - confirm mnemonic, 4 - finish form
-    if (this.isOnlyEthereumAccount) {
-      if (this.isImportWallet) {
-        if (this.typeImport === 'mnemonic' || this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
-        else if (this.typeImport === 'json') arrayWithHiddenSteps = [2, 3, 4, 5];
-      } else arrayWithHiddenSteps = [1, 5];
-    } else if (this.isImportWallet) {
-      if (this.typeImport === 'json') arrayWithHiddenSteps = [4];
-      else if (this.typeImport === 'mnemonic') arrayWithHiddenSteps = [2];
-    }
-
-    const isCircleHidden = arrayWithHiddenSteps.includes(num) || arrayWithHiddenSteps.length === this.countSteps - 1;
-    const isCircleFilled = !isCircleHidden && num <= this.step;
-
-    return [
-      'circle-step',
-      {
-        'circle-filled': isCircleFilled,
-        'circle-hidden': isCircleHidden,
-      },
-    ];
-  }
-
-  toggleAdvancedFormVisible(value = true) {
-    this.showAdvancedForm = value;
-  }
-
-  updateDP(derivationPaths: DerivationPaths) {
-    this.derivationPaths = derivationPaths;
-  }
-
-  reset() {
-    this.mnemonic = '';
-    this.substrateRawSeed = '';
-    this.ethereumRawSeed = '';
-    this.substrateJson = '';
-    this.ethereumJson = '';
-    this.passwordSubstrateJson = '';
-    this.passwordEthereumJson = '';
-    this.nickname = '';
-    this.address = null;
-    this.derivationPaths = INITIAL_DERIVATION_PATHS;
-  }
-
-  setImportValue(value: string & (KeyringPair$Json | Record<string, never>), field: AddWalletField) {
-    this[field] = value;
-  }
-
-  setNickname(value: string) {
-    this.nickname = value;
-  }
-
-  setPasswordJson(value: string) {
-    if (this.isOnlyEthereumAccount) {
-      this.passwordEthereumJson = value;
+    if (typeImport.value === 'mnemonic') {
+      step.value += 1;
     } else {
-      if (this.step === 1) this.passwordSubstrateJson = value;
-      else this.passwordEthereumJson = value;
+      showAddEthereumAccountPopup.value = true;
+    }
+  } else if (step.value === 2) {
+    await validateSuri();
+  }
+};
+
+const proceed = async () => {
+  if (isCreateWallet.value) await createFlow();
+  else await importFlow();
+
+  if (!showNotificationPopup.value && !showAddEthereumAccountPopup.value) step.value += 1;
+};
+
+const openFullScreen = () => {
+  windowOpen('/');
+  window.close();
+};
+
+const backIsImportWallet = () => {
+  if (step.value === 3 && ethereumRawSeed.value === '' && ethereumJson.value === '') step.value -= 1;
+};
+
+const back = () => {
+  if (isOnlyEthereumAccount.value) {
+    step.value -= 1;
+  } else if (isImportWallet.value) {
+    backIsImportWallet();
+  } else if (step.value === 2) {
+    ethereumRawSeed.value = '';
+    ethereumJson.value = '';
+  }
+
+  step.value -= 1;
+};
+
+watch(substrateJson, (value) => {
+  if (isLengthZero(substrateJSON.value) && value !== '') {
+    warningValueName.value = 'jsonInvalid';
+
+    return;
+  }
+
+  nickname.value = (substrateJSON.value?.meta?.name as string) || '';
+});
+
+watch(ethereumJson, (value) => {
+  if (isLengthZero(ethereumJSON.value) && value !== '') warningValueName.value = 'jsonInvalid';
+});
+
+watch(step, async (value, oldValue) => {
+  if (value === 0) {
+    router.push({ name: Components.Welcome });
+
+    return;
+  }
+
+  if (value === 2) selectedMnemonicElements.value = [];
+  else if (value === 5) {
+    router.push({ name: Components.Wallet });
+
+    return;
+  } else if (value === 4 && oldValue !== 4) {
+    isLoading.value = true;
+
+    try {
+      await saveKeypair();
+
+      if (isOnlyEthereumAccount.value) router.push({ name: Components.Wallet });
+    } finally {
+      isLoading.value = false;
     }
   }
+});
 
-  async handlerCloseNotificationPopup() {
-    if (this.warningValueName === 'jsonInvalid') {
-      if (this.step === 1) this.substrateJson = '';
-      else if (this.step === 2) this.ethereumJson = '';
-    }
-
-    if (this.step === 1) this.passwordSubstrateJson = '';
-    else if (this.step === 2) this.passwordEthereumJson = '';
-
-    if (this.warningValueName === 'duplicateMobileWallet') this.reset();
-
-    this.warningValueName = '';
-    this.selectedMnemonicElements = [];
-  }
-
-  async handlerAcceptAddWallet() {
-    if (this.address) await forgetAccount(this.address, 'mobile');
-
-    this.warningValueName = '';
-
-    this.step += 1;
-  }
-
-  closeAddEthereumAccountPopup() {
-    this.showAddEthereumAccountPopup = false;
-
-    this.step += 2;
-  }
-
-  resetAll() {
-    this.selectedMnemonicElements = [];
-  }
-
-  skipStep() {
-    this.step += 1;
-  }
-
-  handlerAgree() {
-    this.showAddEthereumAccountPopup = false;
-    this.step += 1;
-  }
-
-  async proceed() {
-    if (this.isCreateWallet) await this.createFlow();
-    else await this.importFlow();
-
-    // if a invalid popup or add ETH account popup is shown, then the index does not need to be increased
-    this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
-  }
-
-  async createFlow() {
-    if (this.step === 1 && !this.mnemonic.length) {
-      this.mnemonic = await generateMnemonic(this.walletEcosystem, this.mnemonicLength);
-    } else if (this.step === 2) await this.validateSuri();
-    else if (this.step === 3) this.validateSequenceMnemonic();
-  }
-
-  async importFlow() {
-    if (this.step === 1) {
-      await this.validateSuri();
-
-      if (this.warningValueName !== '') return;
-      else if (this.isOnlyEthereumAccount) {
-        this.step += 2;
-
-        return;
-      }
-
-      // if import type is raw seed or json, show a window with a question about adding an ETH account
-      if (this.typeImport === 'mnemonic') this.step += 1;
-      else this.showAddEthereumAccountPopup = true;
-    } else if (this.step === 2) await this.validateSuri();
-  }
-
-  validateAddressForDubMobileWallet(address: string) {
-    const substrate = BaseApi.encodeAddress(address);
-
-    if (BaseApi.isMobileWallet(substrate)) {
-      this.warningValueName = 'duplicateMobileWallet';
-      this.address = substrate;
-    }
-  }
-
-  async validateMobileDubs() {
-    if (this.isOnlyEthereumAccount) return;
-
-    if (this.typeImport === 'json') {
-      this.validateAddressForDubMobileWallet(this.substrateJSON.address);
-
-      return;
-    }
-
-    return true;
-  }
-
-  validateSequenceMnemonic() {
-    const isValidSequenceMnemonic = this.isCreateWallet
-      ? BaseApi.isValidSequenceMnemonic(
-          this.mnemonic,
-          this.selectedMnemonicElements.map(({ word }) => word.trim())
-        )
-      : true;
-
-    if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
-  }
-
-  async validateSuri() {
-    const {
-      ethereum: { value: ethereumDerivationPath },
-      substrate,
-    } = this.derivationPaths;
-
-    const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
-    const isValidMnemonic = this.mnemonic ? await mnemonicValidate(this.walletEcosystem, this.mnemonic.trim()) : true;
-    const isValidSubstratePhrase = substrate.value ? await isDerivationPathValid(substrate) : true;
-    const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
-    const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
-    const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
-
-    const validatedSubstrateJson =
-      this.substrateJson !== ''
-        ? await isJsonValid(this.substrateJSON, this.passwordSubstrateJson)
-        : ({ value: true } as ValidateJsonResult);
-
-    const validatedEthereumJson =
-      this.ethereumJson !== ''
-        ? await isJsonValid(this.ethereumJSON, this.passwordEthereumJson, false)
-        : ({ value: true } as ValidateJsonResult);
-
-    if (!isValidMnemonic) this.warningValueName = 'mnemonic';
-    else if (!isValidSubstratePhrase) this.warningValueName = 'substrateDP';
-    else if (!isValidEthereumDP) this.warningValueName = 'ethereumDP';
-    else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.warningValueName = 'rawSeed';
-    else if (!validatedSubstrateJson.value) this.warningValueName = validatedSubstrateJson.errorType;
-    else if (!validatedEthereumJson.value) this.warningValueName = validatedEthereumJson.errorType;
-    else if (isValidMnemonic && isValidSubstrateRawSeed && validatedSubstrateJson.value && this.step === 1)
-      this.validateMobileDubs();
-  }
-
-  saveKeypair() {
-    if (this.substrateJson || this.ethereumJson) return this.saveKeypairFromJson();
-
-    return this.saveKeypairFromSeed();
-  }
-
-  async saveKeypairFromSeed() {
-    const meta: FWKeyringMeta = {
-      name: this.nickname.trim(),
-      ethereumAddress: '',
-      walletEcosystem: this.walletEcosystem,
-    };
-
-    const {
-      substrate: { keypairType: substrateKeypairType },
-      ethereum: { keypairType: ethereumKeypairType },
-    } = this.derivationPaths;
-
-    if (this.isOnlyEthereumAccount) meta.name = this.accountsStore.selectedWallet.name;
-
-    if (this.suriEthereum !== '') {
-      const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
-
-      if (this.isOnlyEthereumAccount) {
-        updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
-
-        return '';
-      }
-
-      meta.ethereumAddress = ethereumAddress;
-    }
-
-    const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem);
-
-    return address;
-  }
-
-  async saveKeypairFromJson() {
-    const substrateJSON = { ...this.substrateJSON };
-
-    if (this.ethereumJson) {
-      const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
-
-      if (this.isOnlyEthereumAccount) {
-        updatePairMeta(this.accountsStore.selectedWallet.address, {
-          ethereumAddress,
-          walletEcosystem: WalletEcosystem.Substrate,
-        });
-
-        return '';
-      }
-
-      substrateJSON.meta.ethereumAddress = ethereumAddress;
-    }
-
-    const address = await jsonRestore(substrateJSON, this.passwordSubstrateJson);
-
-    return address;
-  }
-
-  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-    this.selectedMnemonicElements = value;
-  }
-
-  openFullScreen() {
-    windowOpen('/');
-    window.close();
-  }
-
-  backIsImportWallet() {
-    if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
-  }
-
-  back() {
-    if (this.isOnlyEthereumAccount) this.step -= 1;
-    else if (this.isImportWallet) this.backIsImportWallet();
-    else if (this.step === 2) {
-      this.ethereumRawSeed = '';
-      this.ethereumJson = '';
-    }
-
-    this.step -= 1;
-  }
-}
+onMounted(() => {
+  if (isOnlyEthereumAccount.value && isCreateWallet.value) void proceed();
+});
 </script>
 
 <style lang="scss" scoped>

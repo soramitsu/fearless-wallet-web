@@ -12,22 +12,16 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
 import { usePoolsStore } from '@/stores/pools';
 
-@Component({})
-export default class PoolsBanner extends Vue {
-  poolsStore = usePoolsStore();
+const poolsStore = usePoolsStore();
+const router = useRouter();
 
-  openPoolsPage() {
-    this.$router.push({ name: Components.Pools });
-  }
-
-  hideBanner() {
-    this.poolsStore.hidePoolsBanner();
-  }
+function openPoolsPage() {
+  router.push({ name: Components.Pools });
 }
 </script>
 

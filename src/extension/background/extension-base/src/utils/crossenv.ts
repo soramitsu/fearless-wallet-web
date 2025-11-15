@@ -1,5 +1,4 @@
 import { extractGlobal, xglobal } from '@polkadot/x-global';
 
-// eslint-disable-next-line
-// @ts-ignore
-export const chrome = extractGlobal('browser', xglobal.chrome) as unknown as typeof globalThis.chrome;
+export const browser = extractGlobal('browser', xglobal.browser ?? xglobal.chrome) as typeof globalThis.browser;
+export const chrome = extractGlobal('chrome', browser ?? xglobal.chrome) as typeof globalThis.chrome;

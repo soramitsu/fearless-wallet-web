@@ -9,7 +9,7 @@
           :target="target"
           :class="classes"
           :label="label"
-          :isActive="syncedActiveTabName === tabName"
+          :isActive="activeTab === tabName"
           @click="openTab(tabName)"
         />
       </template>
@@ -17,7 +17,7 @@
 
     <div class="settings-part">
       <SearchInput
-        :value="syncedFilterValue"
+        :value="filterValue"
         placeholder="common.search"
         width="185px"
         class="search"
@@ -27,8 +27,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { PoolsTab } from '@/interfaces/common';
 
 interface TabsOptions {
@@ -39,43 +39,51 @@ interface TabsOptions {
   isShow: boolean;
 }
 
-@Component
-export default class PoolsSettings extends Vue {
-  @Prop({ type: Boolean }) showPoolsItems!: boolean;
-  @Prop({ type: Boolean }) showMyPoolsItems!: boolean;
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: PoolsTab;
-  @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
+const props = defineProps<{
+  showPoolsItems: boolean;
+  showMyPoolsItems: boolean;
+  activeTabName: PoolsTab;
+  filterValue: string;
+}>();
 
-  get tabsOptions(): TabsOptions[] {
-    return [
-      {
-        label: 'common.all',
-        tabName: 'all',
-        classes: 'all-tab',
-        target: '.all-tab',
-        isShow: this.showPoolsItems,
-      },
-      {
-        label: 'pools.myPools',
-        tabName: 'my',
-        classes: 'my-tab',
-        target: '.my-tab',
-        isShow: this.showMyPoolsItems,
-      },
-    ];
-  }
+const emit = defineEmits<{
+  'update:activeTabName': [value: PoolsTab];
+  'update:filterValue': [value: string];
+}>();
 
-  get isAllTab() {
-    return this.syncedActiveTabName === 'all';
-  }
+const activeTab = computed({
+  get: () => props.activeTabName,
+  set: (value: PoolsTab) => emit('update:activeTabName', value),
+});
 
-  openTab(name: PoolsTab) {
-    this.syncedActiveTabName = name;
-  }
+const filterValue = computed({
+  get: () => props.filterValue,
+  set: (value: string) => emit('update:filterValue', value),
+});
 
-  changeSyncedFilterValue(value: string) {
-    this.syncedFilterValue = value;
-  }
+const tabsOptions = computed<TabsOptions[]>(() => [
+  {
+    label: 'common.all',
+    tabName: 'all',
+    classes: 'all-tab',
+    target: '.all-tab',
+    isShow: props.showPoolsItems,
+  },
+  {
+    label: 'pools.myPools',
+    tabName: 'my',
+    classes: 'my-tab',
+    target: '.my-tab',
+    isShow: props.showMyPoolsItems,
+  },
+]);
+
+function openTab(name: PoolsTab) {
+  activeTab.value = name;
+}
+
+function changeSyncedFilterValue(value: string) {
+  filterValue.value = value;
 }
 </script>
 

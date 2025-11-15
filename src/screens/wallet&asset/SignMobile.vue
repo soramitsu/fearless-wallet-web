@@ -16,18 +16,18 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+const emit = defineEmits<{
+  onSign: [];
+  onCancel: [];
+}>();
 
-@Component
-export default class SignMobile extends Vue {
-  handleSign() {
-    this.$emit('onSign');
-  }
+function handleSign() {
+  emit('onSign');
+}
 
-  handleCancel() {
-    this.$emit('onCancel');
-  }
+function handleCancel() {
+  emit('onCancel');
 }
 </script>
 

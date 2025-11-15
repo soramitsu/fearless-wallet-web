@@ -22,8 +22,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { PoolParams } from '@/stores';
 import type { MarketType } from '@/interfaces';
 import { getShareOfPool } from '@/extension/messaging';
@@ -31,92 +32,82 @@ import { getXORCurrency } from '@/helpers/currencies';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({})
-export default class PoolDescription extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  estimatedYourShare = '';
-  _poolParams: PoolParams | null = null;
+const props = defineProps<{
+  poolParams: PoolParams;
+  showAdditionalInfo: boolean;
+  slippage: number;
+  isExchangeB: boolean;
+  marketType?: MarketType;
+  amount1: string;
+  amount2: string;
+  fee: string;
+  extrinsicType: 'addLiquidity' | 'removeLiquidity' | '';
+}>();
 
-  @Prop({ type: Object }) poolParams!: PoolParams;
-  @Prop(Boolean) showAdditionalInfo!: boolean;
-  @Prop(Number) slippage!: number;
-  @Prop(Boolean) isExchangeB!: boolean;
-  @Prop(String) marketType?: MarketType;
-  @Prop(String) amount1!: string;
-  @Prop(String) amount2!: string;
-  @Prop(String) fee!: string;
-  @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
 
-  get soraMainAsset() {
-    return this.currencyXOR.symbol;
+const estimatedYourShare = ref('');
+const previousPoolParams = ref<PoolParams | null>(null);
+
+const currencyXOR = computed(() => getXORCurrency(accountsStore.balances));
+const soraMainAsset = computed(() => currencyXOR.value?.symbol ?? '');
+
+const feePrice = computed(() => {
+  const feeValue = Number(props.fee ?? 0);
+  const price = networksStore.getAssetPrice(currencyXOR.value?.priceId ?? '').price;
+  const balance = price * feeValue;
+
+  return n(balance, 'price');
+});
+
+const rewardAsset = computed(() => props.poolParams?.rewardAsset);
+const yourShare = computed(() => `${n(+estimatedYourShare.value || 0, 'decimalPrecise')}%`);
+const isActivityForm = computed(() => props.extrinsicType !== '');
+
+async function fetchShare() {
+  if (!props.poolParams) return;
+
+  const share = await getShareOfPool({
+    amount1: props.amount1,
+    amount2: props.amount2,
+    assetId1: props.poolParams.asset1.id,
+    assetId2: props.poolParams.asset2.id,
+    networkName: props.poolParams.network,
+    type: props.extrinsicType || 'addLiquidity',
+    isExchangeB: props.isExchangeB,
+  });
+
+  estimatedYourShare.value = share ?? '';
+}
+
+watch(
+  () => [props.amount1, props.amount2, props.isExchangeB, props.extrinsicType],
+  () => {
+    if (!props.poolParams) return;
+    void fetchShare();
   }
+);
 
-  get currencyXOR() {
-    return getXORCurrency(this.accountsStore.balances);
-  }
+watch(
+  () => props.poolParams,
+  (newVal) => {
+    if (!newVal) return;
 
-  get feePrice() {
-    const fee = this.fee ?? 0;
-    const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
-
-    return this.$n(+balance, 'price');
-  }
-
-  get rewardAsset() {
-    return this.poolParams?.rewardAsset;
-  }
-
-  get yourShare() {
-    return `${this.$n(+this.estimatedYourShare, 'decimalPrecise')}%`;
-  }
-
-  get isMyPool() {
-    return this.poolParams.isMyPool;
-  }
-
-  get isActivityForm() {
-    return this.extrinsicType !== '';
-  }
-
-  @Watch('amount1')
-  @Watch('amount2')
-  async calculateShare() {
-    if (!this.poolParams) return;
-
-    this.estimatedYourShare = await this.getShareOfPool();
-  }
-
-  @Watch('poolParams')
-  async calculateShare2() {
-    if (!this.poolParams) return;
+    const prev = previousPoolParams.value;
 
     if (
-      this._poolParams?.asset1.id === this.poolParams.asset1.id &&
-      this._poolParams?.asset2.id === this.poolParams.asset2.id &&
-      this._poolParams?.network === this.poolParams.network
-    )
+      prev?.asset1.id === newVal.asset1.id &&
+      prev?.asset2.id === newVal.asset2.id &&
+      prev?.network === newVal.network
+    ) {
       return;
+    }
 
-    this.estimatedYourShare = await this.getShareOfPool();
-
-    this._poolParams = this.poolParams;
-  }
-
-  created() {
-    this.calculateShare();
-  }
-
-  async getShareOfPool() {
-    return await getShareOfPool({
-      amount1: this.amount1,
-      amount2: this.amount2,
-      assetId1: this.poolParams.asset1.id,
-      assetId2: this.poolParams.asset2.id,
-      networkName: this.poolParams.network,
-      type: this.extrinsicType || 'addLiquidity',
-      isExchangeB: this.isExchangeB,
-    });
-  }
-}
+    previousPoolParams.value = newVal;
+    void fetchShare();
+  },
+  { immediate: true }
+);
 </script>

@@ -8,47 +8,50 @@
     :showAnimation="showAnimation"
     :options="filteredOptionsFiats"
     @toggleValue="toggleSelectedFiat"
-    @handlerClose="$emit('handlerClose')"
+    @handlerClose="handleClose"
     @handlerFilter="handlerFilter"
   />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
 import { updateFiatSymbol } from '@/extension/messaging';
-import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useWalletMetadata } from '@/composables/useWalletMetadata';
 
-@Component
-export default class FiatsPopup extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  filterValue = '';
+const accountsStore = useAccountsStore();
+const filterValue = ref('');
 
-  @Prop(Boolean) showAnimation!: boolean;
+const props = withDefaults(defineProps<{ showAnimation?: boolean }>(), {
+  showAnimation: false,
+});
 
-  get filteredOptionsFiats() {
-    const filter = this.filterValue.trim().toLowerCase();
+const showAnimation = computed(() => props.showAnimation);
 
-    return this.networksStore.fiats
-      .filter(({ name }) => name.toLowerCase().includes(filter))
-      .map(({ name, id, icon }) => {
-        return { name: name, value: id, icon };
-      });
-  }
+const emit = defineEmits<{
+  handlerClose: [];
+}>();
 
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
+defineOptions({
+  name: 'FiatsPopup',
+});
 
-  toggleSelectedFiat(id: string) {
-    updateFiatSymbol(id).then(() => {
-      this.accountsStore.setSelectedFiat(id);
+const walletMetadata = useWalletMetadata(() => ({ fiatFilter: filterValue.value }));
+const fiatMetadata = computed(() => walletMetadata.value.fiatMetadata);
+const filteredOptionsFiats = computed(() => fiatMetadata.value.options);
 
-      this.$emit('handlerClose');
-    });
-  }
-}
+const handlerFilter = (value: string) => {
+  filterValue.value = value;
+};
+
+const handleClose = () => emit('handlerClose');
+
+const toggleSelectedFiat = (id: string) => {
+  updateFiatSymbol(id).then(() => {
+    accountsStore.setSelectedFiat(id);
+    handleClose();
+  });
+};
 </script>
 
 <style lang="scss" scoped>

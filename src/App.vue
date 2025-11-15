@@ -1,17 +1,23 @@
 <template>
-  <div id="app" :class="appMainClass">
-    <keep-alive :include="includeKeepAlive">
-      <router-view />
-    </keep-alive>
+  <div id="app" class="sora-theme-provider" data-theme="dark" :class="appMainClass">
+    <SNotificationsProvider vertical="top" horizontal="right" absolute>
+      <NotificationsBridge />
+      <DialogHost />
+      <keep-alive :include="includeKeepAlive">
+        <router-view />
+      </keep-alive>
+    </SNotificationsProvider>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, defineComponent, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { initStorage } from '@extension-base/stores/Storage';
 import { chrome } from '@extension-base/utils/crossenv';
+import { useNotifications } from '@soramitsu-ui/ui';
 import { ALL_NETWORKS } from './consts/networks';
 import { useExtensionStore } from './stores/extension';
 import { useNetworksStore } from './stores/networks';
@@ -32,173 +38,191 @@ import {
 import { IS_EXTENSION } from '@/consts/global';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
 import { getPopupIds } from '@/extension/messaging/popup';
+import { setNotificationsApi } from '@/plugins/soramitsuUI';
+import DialogHost from '@/components/DialogHost.vue';
 
-@Component({})
-export default class App extends Vue {
-  extensionStore = useExtensionStore();
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+const extensionStore = useExtensionStore();
+const networksStore = useNetworksStore();
+const accountsStore = useAccountsStore();
+const router = useRouter();
+const route = useRoute();
+const pingInterval = ref<ReturnType<typeof setInterval> | null>(null);
 
-  pingInterval: NodeJS.Timer | undefined = undefined;
+const includeKeepAlive = computed(() => {
+  const components = ['Main'];
 
-  get includeKeepAlive() {
-    const components = ['Main'];
+  // It was necessary to prevent the SwapForm state from being reset when navigating to the Disclaimer page
+  if (accountsStore.showPolkaswapAlert) components.push('SwapForm');
 
-    // It was necessary to prevent the SwapForm state from being reset when navigating to the Disclaimer page
-    if (this.accountsStore.showPolkaswapAlert) components.push('SwapForm');
+  return components;
+});
 
-    return components;
-  }
+const appMainClass = computed(() => (IS_EXTENSION ? 'fw-extension' : 'fw-web'));
 
-  get appMainClass() {
-    return IS_EXTENSION ? 'fw-extension' : 'fw-web';
-  }
+const NotificationsBridge = defineComponent({
+  name: 'NotificationsBridge',
+  setup() {
+    const api = useNotifications();
 
-  async created() {
-    lockExtension();
+    onMounted(() => setNotificationsApi(api));
+    onUnmounted(() => setNotificationsApi(null));
 
-    this.setupWallet();
+    return () => null;
+  },
+});
 
-    if (IS_EXTENSION) {
-      const win = await chrome.windows.getCurrent();
-      const hasRequests = await this.extensionStore.subscribeExtensionRequests();
-
-      if (win.type === 'popup') {
-        const popupIds = await getPopupIds();
-
-        if (popupIds.includes(win.id ?? 0) && hasRequests) return;
-      }
+const setupSWPing = () => {
+  pingInterval.value = setInterval(() => {
+    try {
+      pingServiceWorker();
+    } catch (_error) {
+      window.close();
     }
+  }, 20000);
+};
 
-    if (!IS_EXTENSION) await this.setupWeb();
+const setupBalance = async () => {
+  const callback = (balance: BalanceJson) => {
+    accountsStore.setIsBalanceLoading(false);
+    accountsStore.setBalance(balance);
+  };
 
-    setTitle();
+  const balance = await subscribeBalance(callback);
 
-    this.setupNetworks();
-    this.networksStore.getFiats();
+  callback(balance);
+};
 
-    await this.setupBalance();
+const setupWeb = async () => {
+  await cryptoWaitReady()
+    .then(() => {
+      // TODO send message to SW, dont use import state, MigrationService
 
-    this.setupNfts();
-    this.setupPrice();
-    this.setupSWPing();
+      // state.keyringService.loadAll();
+      // state.eventService.emit('crypto.ready', true);
 
-    this.extensionStore.fetchFeatures();
+      keyring.restoreKeyringPassword();
+
+      // MigrationService.start();
+    })
+    .catch((error) => console.error('initialization failed', error));
+
+  await initStorage();
+};
+
+const setupNfts = async () => {
+  const ownedNfts = await getNftSubscribe((nftUpdates) => accountsStore.setNfts(nftUpdates));
+
+  accountsStore.setNfts(ownedNfts);
+};
+
+const setupNetworks = async () => {
+  const nets = await subscribeNetworkMap((networksUpdates) =>
+    networksStore.setNetworks({ networks: Object.values(networksUpdates) })
+  );
+
+  networksStore.setNetworks({ networks: Object.values(nets) });
+
+  await subscribeSelectedNetworks((network) => accountsStore.setSelectedNetwork(network));
+};
+
+const updatePrice = ({ fiat, tokenPriceMap, tokenPriceChange }: PriceJson) => {
+  accountsStore.setSelectedFiat(fiat);
+  networksStore.setPrices({ tokenPriceMap, tokenPriceChange });
+};
+
+const setupPrice = async () => {
+  const prices = await subscribePrice((priceUpdates) => {
+    updatePrice(priceUpdates);
+  });
+
+  updatePrice(prices);
+};
+
+const onAccountUpdate = (accounts: AccountJson[]) => {
+  const selectedAccount = accounts.find((account) => account.active);
+  const isOnAddWallet = route.name === Components.AddWallet;
+  const currentSelectedAddress = accountsStore.selectedWallet?.address;
+
+  // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
+  // это любой кейс смены аккаунта за исключением выше описанного
+  if (selectedAccount?.address !== currentSelectedAddress && !isOnAddWallet) {
+    router.push({ name: Components.Wallet }).catch(() => {});
   }
 
-  setupSWPing() {
-    this.pingInterval = setInterval(() => {
-      try {
-        pingServiceWorker();
-      } catch (error) {
-        window.close();
-      }
-    }, 20000);
-  }
+  accountsStore.setAccounts({ accounts });
 
-  destroyed() {
-    clearInterval(this.pingInterval);
-  }
+  if (!selectedAccount) return;
 
-  async setupBalance() {
-    const callback = (balance: BalanceJson) => {
-      this.accountsStore.setIsBalanceLoading(false);
-      this.accountsStore.setBalance(balance);
-    };
+  accountsStore.setSelectedWallet(selectedAccount);
+  accountsStore.setSelectedNetwork(selectedAccount.network ?? ALL_NETWORKS);
+};
 
-    const balance = await subscribeBalance(callback);
+const setupWallet = async () => {
+  const accounts = await subscribeAccounts(onAccountUpdate);
 
-    callback(balance);
-  }
+  onAccountUpdate(accounts);
 
-  async setupWeb() {
-    await cryptoWaitReady()
-      .then(() => {
-        // TODO send message to SW, dont use import state, MigrationService
+  soraFeesSubscribe((fees) => networksStore.setSoraFees({ fees }));
+};
 
-        // state.keyringService.loadAll();
-        // state.eventService.emit('crypto.ready', true);
+onMounted(async () => {
+  lockExtension();
 
-        keyring.restoreKeyringPassword();
+  setupWallet();
 
-        // MigrationService.start();
-      })
-      .catch((error) => console.error('initialization failed', error));
+  if (IS_EXTENSION) {
+    const win = await chrome.windows.getCurrent();
+    const hasRequests = await extensionStore.subscribeExtensionRequests();
 
-    await initStorage();
-  }
+    if (win.type === 'popup') {
+      const popupIds = await getPopupIds();
 
-  async setupNfts() {
-    const ownedNfts = await getNftSubscribe((nftUpdates) => this.accountsStore.setNfts(nftUpdates));
-
-    this.accountsStore.setNfts(ownedNfts);
-  }
-
-  async setupNetworks() {
-    const nets = await subscribeNetworkMap((networksUpdates) =>
-      this.networksStore.setNetworks({ networks: Object.values(networksUpdates) })
-    );
-
-    this.networksStore.setNetworks({ networks: Object.values(nets) });
-
-    await subscribeSelectedNetworks((network) => this.accountsStore.setSelectedNetwork(network));
-  }
-
-  async setupPrice() {
-    const prices = await subscribePrice((priceUpdates) => {
-      this.updatePrice(priceUpdates);
-    });
-
-    this.updatePrice(prices);
-  }
-
-  updatePrice({ fiat, tokenPriceMap, tokenPriceChange }: PriceJson) {
-    this.accountsStore.setSelectedFiat(fiat);
-    this.networksStore.setPrices({ tokenPriceMap, tokenPriceChange });
-  }
-
-  onAccountUpdate(accounts: AccountJson[]) {
-    const selectedAccount = accounts.find((account) => account.active);
-
-    // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
-    // это любой кейс смены аккаунта за исключением выше описанного
-    if (
-      selectedAccount?.address !== this.accountsStore.selectedWallet.address &&
-      this.$route.name !== Components.AddWallet
-    ) {
-      this.$router.push({ name: Components.Wallet }).catch(() => {});
+      if (popupIds.includes(win.id ?? 0) && hasRequests) return;
     }
-
-    this.accountsStore.setAccounts({ accounts });
-
-    if (!selectedAccount) return;
-
-    this.accountsStore.setSelectedWallet(selectedAccount);
-    this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
   }
 
-  async setupWallet() {
-    const accounts = await subscribeAccounts(this.onAccountUpdate);
+  if (!IS_EXTENSION) await setupWeb();
 
-    this.onAccountUpdate(accounts);
+  setTitle();
 
-    soraFeesSubscribe((fees) => this.networksStore.setSoraFees({ fees }));
+  setupNetworks();
+  networksStore.getFiats();
+
+  await setupBalance();
+
+  setupNfts();
+  setupPrice();
+  setupSWPing();
+
+  extensionStore.fetchFeatures();
+});
+
+onBeforeUnmount(() => {
+  if (pingInterval.value) {
+    clearInterval(pingInterval.value);
+    pingInterval.value = null;
   }
-}
+});
 </script>
 
 <style lang="scss">
+html,
+body {
+  font-family: 'Sora', sans-serif;
+  font-style: normal;
+  font-feature-settings:
+    'tnum' on,
+    'lnum' on;
+  min-height: 100%;
+}
+
 body {
   background-color: rgb(54, 49, 52);
-  min-height: 100%;
 }
 </style>
 
 <style lang="scss" scoped>
 #app {
-  font-family: 'Sora', sans-serif;
-  font-style: normal;
-  font-feature-settings: 'tnum' on, 'lnum' on;
   height: 100vh;
   color: white;
   text-align: center;

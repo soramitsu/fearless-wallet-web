@@ -48,8 +48,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, onDeactivated, ref } from 'vue';
 import Header from './Header.vue';
 import Menu from './Menu.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
@@ -58,98 +58,84 @@ import SettingsPopup from './SettingsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
-import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
-  components: {
-    Menu,
-    Header,
-    FiatsPopup,
-    AboutPopup,
-    ManageAuths,
-    SettingsPopup,
-    LanguagePopup,
-    SelectWalletPopup,
-    WalletDetailsPopup,
-  },
-})
-export default class Main extends Vue {
-  accountsStore = useAccountsStore();
+defineOptions({
+  name: 'MainScreen',
+});
 
-  buttonTopClick = 0;
-  selectedWalletAddress = '';
-  showSettings = false;
-  showLanguagePopup = false;
-  showFiatsPopup = false;
-  showAboutPopup = false;
-  showSelectWalletPopup = false;
-  showWalletDetailsPopup = false;
-  showFiatPopupAnimation = false;
-  showManageAuthsVisible = false;
+const accountsStore = useAccountsStore();
 
-  get highlightSettingsIcon() {
-    return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
+const buttonTopClick = ref(0);
+const selectedWalletAddress = ref('');
+const showSettings = ref(false);
+const showLanguagePopup = ref(false);
+const showFiatsPopup = ref(false);
+const showAboutPopup = ref(false);
+const showSelectWalletPopup = ref(false);
+const showWalletDetailsPopup = ref(false);
+const showFiatPopupAnimation = ref(false);
+const showManageAuthsVisible = ref(false);
+
+const highlightSettingsIcon = computed(
+  () => showSettings.value || showAboutPopup.value || showLanguagePopup.value || showFiatsPopup.value
+);
+
+const showMenu = computed(() => accountsStore.selectedWallet.isSubstrate);
+
+onDeactivated(() => {
+  showSelectWalletPopup.value = false;
+  showWalletDetailsPopup.value = false;
+  showSettings.value = false;
+});
+
+const toggleSettingsVisible = () => {
+  if (!showSettings.value && (showFiatsPopup.value || showLanguagePopup.value || showAboutPopup.value)) {
+    showFiatsPopup.value = false;
+    showAboutPopup.value = false;
+    showLanguagePopup.value = false;
+
+    return;
   }
 
-  get showMenu() {
-    return this.accountsStore.selectedWallet.isSubstrate;
-  }
+  showSettings.value = !showSettings.value;
+};
 
-  deactivated() {
-    this.showSelectWalletPopup = false;
-    this.showWalletDetailsPopup = false;
-    this.showSettings = false;
-  }
+const toggleManageAuthsVisible = () => {
+  showManageAuthsVisible.value = !showManageAuthsVisible.value;
 
-  toggleManageAuthsVisible() {
-    this.showManageAuthsVisible = !this.showManageAuthsVisible;
+  if (showManageAuthsVisible.value) toggleSettingsVisible();
+};
 
-    if (this.showManageAuthsVisible) this.toggleSettingsVisible();
-  }
+const toggleLanguagePopupVisible = () => {
+  showLanguagePopup.value = !showLanguagePopup.value;
 
-  toggleLanguagePopupVisible() {
-    this.showLanguagePopup = !this.showLanguagePopup;
+  if (showLanguagePopup.value) toggleSettingsVisible();
+};
 
-    if (this.showLanguagePopup) this.toggleSettingsVisible();
-  }
+const toggleAboutPopupVisible = () => {
+  showAboutPopup.value = !showAboutPopup.value;
 
-  toggleAboutPopupVisible() {
-    this.showAboutPopup = !this.showAboutPopup;
+  if (showAboutPopup.value) toggleSettingsVisible();
+};
 
-    if (this.showAboutPopup) this.toggleSettingsVisible();
-  }
+const toggleFiatsPopupVisible = (showAnimation = false) => {
+  showFiatPopupAnimation.value = !showFiatsPopup.value ? showAnimation : false;
+  showFiatsPopup.value = !showFiatsPopup.value;
 
-  toggleFiatsPopupVisible(showFiatPopupAnimation = false) {
-    this.showFiatPopupAnimation = !this.showFiatsPopup ? showFiatPopupAnimation : false;
-    this.showFiatsPopup = !this.showFiatsPopup;
+  if (showFiatsPopup.value) showSettings.value = false;
+};
 
-    if (this.showFiatsPopup) this.showSettings = false;
-  }
+const setSelectWalletPopupVisible = (value = false) => {
+  showSelectWalletPopup.value = value;
+  showWalletDetailsPopup.value = false;
+};
 
-  toggleSettingsVisible() {
-    if (!this.showSettings && (this.showFiatsPopup || this.showLanguagePopup || this.showAboutPopup)) {
-      this.showFiatsPopup = false;
-      this.showAboutPopup = false;
-      this.showLanguagePopup = false;
-
-      return;
-    }
-
-    this.showSettings = !this.showSettings;
-  }
-
-  setSelectWalletPopupVisible(value = false) {
-    this.showSelectWalletPopup = value;
-    this.showWalletDetailsPopup = false;
-  }
-
-  toggleWalletDetailsPopupVisible(value: boolean, buttonTop = 0, address = '') {
-    this.showWalletDetailsPopup = value ?? !this.showWalletDetailsPopup;
-    this.buttonTopClick = buttonTop;
-    this.selectedWalletAddress = address;
-  }
-}
+const toggleWalletDetailsPopupVisible = (value?: boolean, buttonTop = 0, address = '') => {
+  showWalletDetailsPopup.value = value ?? !showWalletDetailsPopup.value;
+  buttonTopClick.value = buttonTop;
+  selectedWalletAddress.value = address;
+};
 </script>
 
 <style lang="scss" scoped>

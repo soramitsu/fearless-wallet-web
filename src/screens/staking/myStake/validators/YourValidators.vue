@@ -22,7 +22,7 @@
                 :key="validator.address"
                 :validator="validator"
                 :showCheckbox="false"
-                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+                @openValidatorInfo="emitOpenValidatorInfo"
               />
             </template>
 
@@ -34,7 +34,7 @@
                 :key="validator.address"
                 :validator="validator"
                 :showCheckbox="false"
-                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+                @openValidatorInfo="emitOpenValidatorInfo"
               />
             </template>
 
@@ -48,7 +48,7 @@
                 :key="validator.address"
                 :validator="validator"
                 :showCheckbox="false"
-                @openValidatorInfo="$emit('openValidatorInfo', $event)"
+                @openValidatorInfo="emitOpenValidatorInfo"
               />
             </template>
           </template>
@@ -60,51 +60,37 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { NetworkParams } from '@/stores';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 
-@Component({
-  components: {
-    ValidatorItem,
-  },
-})
-export default class YourValidators extends Vue {
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
+const props = defineProps<{
+  stakingNetwork: NetworkParams;
+}>();
 
-  get showMyValidators() {
-    return this.stakingNetwork.myValidators.length !== 0;
-  }
+const emit = defineEmits<{
+  openValidatorInfo: [value: unknown];
+}>();
 
-  get myActiveValidators() {
-    return this.stakingNetwork.myValidators.filter(({ isActive }) => isActive);
-  }
+const showMyValidators = computed(() => props.stakingNetwork.myValidators.length !== 0);
 
-  get showMyActiveValidators() {
-    return this.myActiveValidators.length !== 0;
-  }
+const myActiveValidators = computed(() => props.stakingNetwork.myValidators.filter(({ isActive }) => isActive));
+const showMyActiveValidators = computed(() => myActiveValidators.value.length !== 0);
 
-  get inactiveValidators() {
-    return this.stakingNetwork.myValidators.filter(({ isInactive }) => isInactive);
-  }
+const inactiveValidators = computed(() => props.stakingNetwork.myValidators.filter(({ isInactive }) => isInactive));
+const showInactiveMyValidators = computed(() => inactiveValidators.value.length !== 0);
 
-  get showInactiveMyValidators() {
-    return this.inactiveValidators.length !== 0;
-  }
+const waitingValidators = computed(() => props.stakingNetwork.myValidators.filter(({ isWaiting }) => isWaiting));
+const showWaitingMyValidators = computed(() => waitingValidators.value.length !== 0);
 
-  get waitingValidators() {
-    return this.stakingNetwork.myValidators.filter(({ isWaiting }) => isWaiting);
-  }
+const showOversubscribedAlert = computed(() =>
+  props.stakingNetwork.myValidators.some(({ isOversubscribed }) => isOversubscribed)
+);
 
-  get showWaitingMyValidators() {
-    return this.waitingValidators.length !== 0;
-  }
-
-  get showOversubscribedAlert() {
-    return this.stakingNetwork.myValidators.some(({ isOversubscribed }) => isOversubscribed);
-  }
-}
+const emitOpenValidatorInfo = (value: unknown) => {
+  emit('openValidatorInfo', value);
+};
 </script>
 
 <style lang="scss" scoped>

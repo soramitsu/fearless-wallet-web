@@ -1,7 +1,44 @@
-import { type NetworkFeesObject } from '@sora-substrate/util';
+import type { NetworkFeesObject } from '@/types/sora';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
 import { type TON_MAINNET, type TON_TESTNET } from '@/consts/networks';
+
+const BASE_HISTORY_SERVICE_TYPES = [
+  'ton',
+  'subsquid',
+  'giantsquid',
+  'subquery',
+  'etherscan',
+  'sora',
+  'oklink',
+  'zeta',
+] as const;
+
+type BaseHistoryServiceType = (typeof BASE_HISTORY_SERVICE_TYPES)[number];
+
+type HistoryServiceType = BaseHistoryServiceType | `staking${Capitalize<BaseHistoryServiceType>}` | `staking${string}`;
+
+const BASE_ASSET_TYPES = [
+  'normal',
+  'ormlAsset',
+  'vToken',
+  'vsToken',
+  'foreignAsset',
+  'stable',
+  'liquidCrowdloan',
+  'stableAssetPoolToken',
+  'equilibrium',
+  'ormlChain',
+  'soraAsset',
+  'erc20',
+  'token2',
+  'assets',
+  'assetId',
+  'ton',
+  'jetton',
+] as const;
+
+type BaseAssetType = (typeof BASE_ASSET_TYPES)[number];
 
 type RelayChainName =
   | 'polkadot'
@@ -17,8 +54,9 @@ type SoraFees = {
 };
 
 type NetworkName = string;
-
-type HistoryServiceType = 'ton' | 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora' | 'oklink' | 'zeta'; // TODO staking
+type NetworkGroup = 'all' | 'popular' | 'favorites';
+type NetworkFilter = NetworkName | NetworkGroup;
+type NormalizedNetworkName = Lowercase<NetworkName>;
 
 interface ExternalApiElement {
   url: string;
@@ -39,24 +77,7 @@ type ExternalApi = {
   explorers?: Explorer[];
 };
 
-type AssetType =
-  | 'normal'
-  | 'ormlAsset'
-  | 'vToken'
-  | 'vsToken'
-  | 'foreignAsset'
-  | 'stable'
-  | 'liquidCrowdloan'
-  | 'stableAssetPoolToken'
-  | 'equilibrium'
-  | 'ormlChain'
-  | 'soraAsset'
-  | 'erc20'
-  | 'token2'
-  | 'assets'
-  | 'assetId' // TODO add
-  | 'ton'
-  | 'jetton';
+type AssetType = BaseAssetType | `assetId:${string}`;
 
 type BuyProvider = 'moonpay' | 'ramp';
 
@@ -146,11 +167,16 @@ export {
   BuyProvider,
   AssetType,
   NetworkName,
+  NetworkGroup,
+  NetworkFilter,
   ExternalApi,
   HistoryServiceType,
+  BASE_HISTORY_SERVICE_TYPES,
+  BASE_ASSET_TYPES,
   SoraFees,
   RelayChainName,
   EthereumHistoryResponse,
   EthereumHistoryData,
   EthereumTokenHistoryData,
+  NormalizedNetworkName,
 };

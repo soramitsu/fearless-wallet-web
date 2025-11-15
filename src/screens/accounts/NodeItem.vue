@@ -7,7 +7,7 @@
 
     <CircleButton
       v-if="isCustomNode"
-      :ref="dotsHorizontalRef"
+      ref="dotsHorizontalRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
       data-testid="nodeSettingsBtn"
@@ -16,51 +16,67 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 import type { CustomEvent } from '@/interfaces';
 
-@Component
-export default class NodeItem extends Vue {
-  readonly dotsHorizontalRef = 'dotsHorizontal';
-
-  @Prop(String) name!: string;
-  @Prop(String) url!: string;
-  @Prop(Boolean) isActive!: boolean;
-  @Prop(Boolean) isCustomNode!: boolean;
-  @Prop(Boolean) isRemoveBorderBottom!: boolean;
-
-  get nodeItemClasses() {
-    return [
-      'node-item',
-      {
-        'node-active': this.isActive,
-        'not-border-bottom': this.isRemoveBorderBottom,
-      },
-    ];
+const props = withDefaults(
+  defineProps<{
+    name: string;
+    url: string;
+    isActive: boolean;
+    isCustomNode: boolean;
+    isRemoveBorderBottom: boolean;
+  }>(),
+  {
+    isActive: false,
+    isCustomNode: false,
+    isRemoveBorderBottom: false,
   }
+);
 
-  changeNode(event: CustomEvent) {
-    const classList = event.target?.classList;
+const emit = defineEmits<{
+  changeNode: [];
+  openNodeSettingsPopup: [top: number, isActive: boolean];
+}>();
 
-    if (
-      classList.contains('node-item') ||
-      classList.contains('node-active') ||
-      classList.contains('url') ||
-      classList.contains('name')
-    )
-      this.$emit('changeNode');
+const dotsHorizontalRef = ref<ComponentPublicInstance | HTMLElement | null>(null);
+
+const nodeItemClasses = computed(() => [
+  'node-item',
+  {
+    'node-active': props.isActive,
+    'not-border-bottom': props.isRemoveBorderBottom,
+  },
+]);
+
+const changeNode = (event: CustomEvent) => {
+  const target = event.target as HTMLElement | null;
+  const classList = target?.classList;
+
+  if (
+    classList?.contains('node-item') ||
+    classList?.contains('node-active') ||
+    classList?.contains('url') ||
+    classList?.contains('name')
+  ) {
+    emit('changeNode');
   }
+};
 
-  openNodeSettingsPopup() {
-    const targetElement = (this.$refs[this.dotsHorizontalRef] as Vue)?.$el as HTMLElement;
-    const buttonTop = targetElement.getBoundingClientRect().top;
+const openNodeSettingsPopup = () => {
+  const element = dotsHorizontalRef.value;
+  const targetElement = element instanceof HTMLElement ? element : ((element?.$el ?? null) as HTMLElement | null);
 
-    targetElement.style.zIndex = '200';
+  if (!targetElement) return;
 
-    this.$emit('openNodeSettingsPopup', buttonTop, this.isActive);
-  }
-}
+  const buttonTop = targetElement.getBoundingClientRect().top;
+
+  targetElement.style.zIndex = '200';
+
+  emit('openNodeSettingsPopup', buttonTop, props.isActive);
+};
 </script>
 
 <style lang="scss" scoped>

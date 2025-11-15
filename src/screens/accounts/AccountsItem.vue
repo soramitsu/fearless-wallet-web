@@ -12,7 +12,7 @@
 
     <CircleButton
       v-if="addressExist"
-      :ref="circleButtonRef"
+      ref="circleButtonRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
       data-testid="dots"
@@ -23,36 +23,43 @@
       v-else-if="!isMobile"
       icon="circle-plus"
       :className="['plus-icon']"
-      @click="$emit('openAddEthereumAccountPopup')"
+      @click="emit('openAddEthereumAccountPopup')"
     />
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed, ref } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 
-@Component
-export default class AccountsItem extends Vue {
-  readonly circleButtonRef = 'circleButton';
-  @Prop(String) icon!: string;
-  @Prop(String) network!: string;
-  @Prop(Boolean) isMobile!: boolean;
-  @Prop(String) address!: string;
+const props = defineProps<{
+  icon: string;
+  network: string;
+  isMobile: boolean;
+  address: string;
+}>();
 
-  get addressExist() {
-    return !!this.address;
-  }
+const emit = defineEmits<{
+  openAccountSettingsPopup: [name: string, buttonTop: number];
+  openAddEthereumAccountPopup: [];
+}>();
 
-  getUpperValue(string: string) {
-    return string.toUpperCase();
-  }
+const circleButtonRef = ref<ComponentPublicInstance | HTMLElement | null>(null);
 
-  openAccountSettingsPopup(name: string) {
-    const buttonTop = (this.$refs[this.circleButtonRef] as Vue).$el.getBoundingClientRect().top;
+const addressExist = computed(() => Boolean(props.address));
 
-    this.$emit('openAccountSettingsPopup', name, buttonTop);
-  }
-}
+const getUpperValue = (value: string) => value.toUpperCase();
+
+const openAccountSettingsPopup = (name: string) => {
+  const element = circleButtonRef.value;
+  const targetElement = element instanceof HTMLElement ? element : ((element?.$el ?? null) as HTMLElement | null);
+
+  if (!targetElement) return;
+
+  const buttonTop = targetElement.getBoundingClientRect().top;
+
+  emit('openAccountSettingsPopup', name, buttonTop);
+};
 </script>
 
 <style lang="scss" scoped>

@@ -38,7 +38,6 @@ export class EvmApiHandler {
 
     return {
       api,
-      timeout: {},
     };
   }
 

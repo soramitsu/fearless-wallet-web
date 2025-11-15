@@ -1,5 +1,5 @@
 <template>
-  <div class="row" @click="$emit('onOpen')">
+  <div class="row" @click="handleOpen">
     <div class="description">
       <Icon :icon="icon" :className="iconClass" />
 
@@ -14,6 +14,12 @@
 const iconClass = ['icon', 'icon--width'];
 
 defineProps<{ icon: string; title: string }>();
+
+const emit = defineEmits<{
+  onOpen: [];
+}>();
+
+const handleOpen = () => emit('onOpen');
 </script>
 
 <style lang="scss" scoped>

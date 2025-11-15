@@ -29,8 +29,8 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import PermissionDeniedPopup from '@/screens/mobile-wallet/PermissionDeniedPopup.vue';
 import { walletConnectDappInitSession, walletConnectDappSubscribeSession } from '@/extension/messaging';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';

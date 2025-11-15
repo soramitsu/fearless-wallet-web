@@ -108,7 +108,9 @@ export class CronService {
   }
 
   recoverApiMap() {
-    if (!navigator.onLine) return;
+    const isOnline = 'onLine' in navigator ? navigator.onLine : true;
+
+    if (!isOnline) return;
 
     const { evm, substrate } = this.state.networkService.getApiMap;
 

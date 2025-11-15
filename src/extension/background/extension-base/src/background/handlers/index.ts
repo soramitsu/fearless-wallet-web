@@ -1,5 +1,5 @@
 import { assert } from '@polkadot/util';
-import { PORT_EXTENSION } from '@extension-base/defaults';
+import { MESSAGE_ORIGIN_PAGE, PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from '@extension-base/background/handlers/Extension';
 import Tabs from '@extension-base/background/handlers/Tabs';
 import State from '@extension-base/background/handlers/State';
@@ -11,12 +11,24 @@ export const extension = new Extension(state);
 export const tabs = new Tabs(state);
 
 export function handlers<TMessageType extends MessageTypes>(
-  { id, message, request }: TransportRequestMessage<TMessageType>,
+  { id, message, request, origin }: TransportRequestMessage<TMessageType>,
   port?: Port
 ): void {
   const isExtension = !port || port?.name === PORT_EXTENSION;
 
   if (!port && IS_EXTENSION) return;
+
+  if (!id || typeof id !== 'string' || typeof message !== 'string') {
+    console.warn('Dropping malformed message payload');
+
+    return;
+  }
+
+  if (!isExtension && origin !== MESSAGE_ORIGIN_PAGE) {
+    console.warn('Blocked message with unexpected origin', origin);
+
+    return;
+  }
 
   const sender = port?.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';

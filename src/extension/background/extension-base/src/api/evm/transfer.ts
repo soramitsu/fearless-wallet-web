@@ -36,7 +36,8 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
     await signer.sendTransaction(tx);
 
     callback?.({ status: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.warn(error);
 
     callback?.({
@@ -44,7 +45,7 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
       errors: [
         {
           code: TransferErrorCode.TRANSFER_ERROR,
-          message: error.message,
+          message,
         },
       ],
     });

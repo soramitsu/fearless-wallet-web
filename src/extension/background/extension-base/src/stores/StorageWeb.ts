@@ -34,12 +34,28 @@ export class StorageWeb {
         const request = store.get(storageItem);
 
         request.onsuccess = (event) => {
-          const filtered = key.reduce((acc, key) => {
-            const result = (event.target as IDBRequest).result;
-            acc[key] = result ? result[key] ?? {} : {};
+          const payload = (event.target as IDBRequest).result as unknown;
+          let sanitizedPayload: Record<string, unknown> = {};
 
-            return acc;
-          }, {} as Pick<IState, (typeof key)[number]>);
+          if (payload && typeof payload === 'object') {
+            sanitizedPayload = payload as Record<string, unknown>;
+          } else if (payload !== undefined && payload !== null) {
+            console.warn('StorageWeb.get: invalid IndexedDB payload, clearing entry');
+            void this.openDatabase().then((db) => {
+              const cleanupTx = db.transaction(db_name, 'readwrite');
+              cleanupTx.objectStore(db_name).delete(storageItem);
+            });
+          }
+
+          const filtered = key.reduce(
+            (acc, key) => {
+              const value = sanitizedPayload[key as string];
+              acc[key] = (value !== undefined && value !== null ? value : {}) as IState[(typeof key)[number]];
+
+              return acc;
+            },
+            {} as Pick<IState, (typeof key)[number]>
+          );
           resolve(filtered);
         };
 

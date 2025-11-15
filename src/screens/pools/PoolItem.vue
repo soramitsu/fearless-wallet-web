@@ -25,77 +25,48 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { PoolParams } from '@/stores';
-import { isSameString } from '@/helpers';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class PoolItem extends Vue {
-  accountsStore = useAccountsStore();
+const props = defineProps<{
+  poolParams: PoolParams;
+}>();
 
-  @Prop(Object) poolParams!: PoolParams;
+const emit = defineEmits<{
+  click: [];
+}>();
 
-  get network() {
-    return this.poolParams.network;
-  }
+const accountsStore = useAccountsStore();
+const { n } = useI18n();
 
-  get tvl() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.poolParams.tvl, 'price')}`;
-  }
+const asset1 = computed(() => props.poolParams.asset1.symbol);
+const asset2 = computed(() => props.poolParams.asset2.symbol);
 
-  get assetId1() {
-    return this.poolParams.asset1.id;
-  }
+const poolName = computed(() => `${asset1.value}-${asset2.value}`);
 
-  get assetId2() {
-    return this.poolParams.asset2.id;
-  }
+const tvl = computed(() => {
+  const raw = Number.parseFloat(props.poolParams.tvl ?? '0');
+  const numericTvl = Number.isFinite(raw) ? raw : 0;
 
-  get asset1() {
-    return this.poolCurrency1?.symbol;
-  }
+  return `${accountsStore.fiatSymbol}${n(numericTvl, 'price')}`;
+});
 
-  get asset2() {
-    return this.poolCurrency2?.symbol;
-  }
+const isLoading = computed(
+  () =>
+    props.poolParams.loading ||
+    props.poolParams.asset1.balanceState !== APIItemState.READY ||
+    props.poolParams.asset2.balanceState !== APIItemState.READY
+);
 
-  get poolName() {
-    return `${this.asset1}-${this.asset2}`;
-  }
+const icon1 = computed(() => props.poolParams.asset1.icon);
+const icon2 = computed(() => props.poolParams.asset2.icon);
 
-  get poolCurrency1() {
-    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId1);
-  }
-
-  get poolCurrency2() {
-    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId2);
-  }
-
-  get isLoading() {
-    return !this.balanceIsReady;
-  }
-
-  get balanceIsReady() {
-    const networkBalance1 = this.poolCurrency1?.balances?.find(({ name }) => isSameString(name, this.network));
-    const networkBalance2 = this.poolCurrency1?.balances?.find(({ name }) => isSameString(name, this.network));
-
-    return networkBalance1?.state === APIItemState.READY && networkBalance2?.state === APIItemState.READY;
-  }
-
-  get icon1() {
-    return this.poolParams.asset1.icon;
-  }
-
-  get icon2() {
-    return this.poolParams.asset2.icon;
-  }
-
-  click() {
-    if (!this.isLoading) this.$emit('click');
-  }
+function click() {
+  if (!isLoading.value) emit('click');
 }
 </script>
 

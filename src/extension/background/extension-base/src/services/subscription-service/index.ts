@@ -60,6 +60,31 @@ export class SubscriptionService {
     this.init();
   }
 
+  private resolveNetwork(networkName: string) {
+    const { networkMap } = this.state.networkService;
+
+    return networkMap[networkName] ?? Object.values(networkMap).find(({ name }) => isSameString(name, networkName));
+  }
+
+  private normalizeNetworkName(networkName: string): string {
+    return this.resolveNetwork(networkName)?.name ?? networkName;
+  }
+
+  private resolveEcosystem(networkName: string): WalletEcosystem {
+    const network = this.resolveNetwork(networkName);
+
+    if (!network) return WalletEcosystem.Substrate;
+
+    switch (network.ecosystem) {
+      case 'ethereum':
+        return WalletEcosystem.Evm;
+      case 'ton':
+        return WalletEcosystem.Ton;
+      default:
+        return WalletEcosystem.Substrate;
+    }
+  }
+
   // Clear a previous subscriber
   private unsubscribe(id: string): void {
     if (this.subscriptionsPorts[id]) delete this.subscriptionsPorts[id];
@@ -106,17 +131,24 @@ export class SubscriptionService {
   updateNetworkSubscription(params: UpdateSub) {
     const { name, func } = params;
 
-    const oldSub = this.subscriptionNetworksMap[name];
+    const normalizedName = this.normalizeNetworkName(name);
+    const ecosystem = this.resolveEcosystem(name);
 
-    oldSub?.();
+    this.state.balanceService.lookupRegistry.registerSubscription({
+      ecosystem,
+      network: normalizedName,
+      unsubscribe: func,
+    });
 
     this.subscriptionNetworksMap[name] = func;
   }
 
   cancelNetworkSubscription(networkName: string) {
-    const unsub = this.subscriptionNetworksMap[networkName];
+    const normalizedName = this.normalizeNetworkName(networkName);
+    const ecosystem = this.resolveEcosystem(networkName);
 
-    unsub?.();
+    this.state.balanceService.lookupRegistry.cancelSubscription(ecosystem, normalizedName);
+    this.state.balanceService.lookupRegistry.clearFetchCache(ecosystem, normalizedName);
 
     delete this.subscriptionNetworksMap[networkName];
   }

@@ -9,41 +9,49 @@
     </div>
   </div>
 </template>
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { Components } from '@/router/routes';
 
-@Component({})
-export default class NetworkManagementButton extends Vue {
-  @Prop(Boolean) isGroupIcon!: boolean;
-  @Prop(Boolean) isDisable!: boolean;
-  @Prop(String) icon!: string;
-  @Prop(String) selectedNetwork!: string;
+defineOptions({
+  name: 'NetworkManagementButton',
+});
 
-  get isAssetPage() {
-    const route = this.$route.name;
-
-    return route === Components.AssetNetworks || route === Components.AssetHistory;
+const props = withDefaults(
+  defineProps<{
+    isGroupIcon?: boolean;
+    isDisable?: boolean;
+    icon: string;
+    selectedNetwork: string;
+  }>(),
+  {
+    isGroupIcon: false,
+    isDisable: false,
   }
+);
 
-  get containerClasses() {
-    return {
-      'network-management--cursor-not-allowed': this.isAssetPage || this.isDisable,
-    };
-  }
+const emit = defineEmits<{
+  (_event: 'onToggle'): void;
+}>();
 
-  get assetPageClasses() {
-    return {
-      'network-management--disabled': this.isAssetPage,
-    };
-  }
+const route = useRoute();
 
-  onToggle() {
-    if (this.isDisable) return;
+const isAssetPage = computed(() => route.name === Components.AssetNetworks || route.name === Components.AssetHistory);
 
-    this.$emit('onToggle');
-  }
-}
+const containerClasses = computed(() => ({
+  'network-management--cursor-not-allowed': isAssetPage.value || props.isDisable,
+}));
+
+const assetPageClasses = computed(() => ({
+  'network-management--disabled': isAssetPage.value,
+}));
+
+const onToggle = () => {
+  if (props.isDisable) return;
+
+  emit('onToggle');
+};
 </script>
 
 <style lang="scss" scoped>

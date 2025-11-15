@@ -1,46 +1,44 @@
 <template>
-  <Fragment>
-    <OfferValidators v-if="step === 2" @openValidatorList="openValidatorList" />
+  <OfferValidators v-if="step === 2" @openValidatorList="onOpenValidatorList" />
 
-    <SuggestedValidatorDisclaimer v-else-if="step === 3" />
+  <SuggestedValidatorDisclaimer v-else-if="step === 3" />
 
-    <SelectValidator
-      v-else-if="step === 4 || step === 5"
-      :step="step"
-      :onchainIdentity="onchainIdentity"
-      :notSlashed="notSlashed"
-      :limitValidatorsIdentity="limitValidatorsIdentity"
-      :notOversubscribed="notOversubscribed"
-      :sortByApy="sortByApy"
-      :validators="validators"
-      :maxNominations="maxNominations"
-      :stakingNetwork="stakingNetwork"
-      :stakingCurrency="stakingCurrency"
-      :selectedValidator="selectedValidator"
-      @updateSelectedValidators="updateSelectedValidators"
-      @openFiltersPopup="toggleFiltersPopupVisibility"
-      @openValidatorInfo="$emit('openValidatorInfo', $event)"
-    />
+  <SelectValidator
+    v-else-if="step === 4 || step === 5"
+    :step="step"
+    :onchainIdentity="onchainIdentity"
+    :notSlashed="notSlashed"
+    :limitValidatorsIdentity="limitValidatorsIdentity"
+    :notOversubscribed="notOversubscribed"
+    :sortByApy="sortByApy"
+    :validators="validators"
+    :maxNominations="maxNominations"
+    :stakingNetwork="stakingNetwork"
+    :stakingCurrency="stakingCurrency"
+    :selectedValidator="selectedValidator"
+    @updateSelectedValidators="onUpdateSelectedValidators"
+    @openFiltersPopup="toggleFiltersPopupVisibility"
+    @openValidatorInfo="onOpenValidatorInfo"
+  />
 
-    <FiltersPopup
-      v-if="showFiltersPopup"
-      :onchainIdentity="onchainIdentity"
-      :notSlashed="notSlashed"
-      :limitValidatorsIdentity="limitValidatorsIdentity"
-      :notOversubscribed="notOversubscribed"
-      :sortByApy="sortByApy"
-      @update:onchainIdentity="updateOnchainIdentity"
-      @update:notSlashed="updateNotSlashed"
-      @update:notOversubscribed="updateNotOversubscribed"
-      @update:limitValidatorsIdentity="updateLimitValidatorsIdentity"
-      @update:sortByApy="updateSortByApy"
-      @handlerClose="toggleFiltersPopupVisibility"
-    />
-  </Fragment>
+  <FiltersPopup
+    v-if="showFiltersPopup"
+    :onchainIdentity="onchainIdentity"
+    :notSlashed="notSlashed"
+    :limitValidatorsIdentity="limitValidatorsIdentity"
+    :notOversubscribed="notOversubscribed"
+    :sortByApy="sortByApy"
+    @update:onchainIdentity="updateOnchainIdentity"
+    @update:notSlashed="updateNotSlashed"
+    @update:notOversubscribed="updateNotOversubscribed"
+    @update:limitValidatorsIdentity="updateLimitValidatorsIdentity"
+    @update:sortByApy="updateSortByApy"
+    @handlerClose="toggleFiltersPopupVisibility"
+  />
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { ref, toRefs } from 'vue';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { SelectionValidator } from '@/interfaces';
 import type { NetworkParams } from '@/stores';
@@ -50,59 +48,67 @@ import OfferValidators from '@/screens/staking/myStake/validators/OfferValidator
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 
-@Component({
-  components: {
-    FiltersPopup,
-    OfferValidators,
-    SelectValidator,
-    SuggestedValidatorDisclaimer,
-  },
-})
-export default class SelectionValidatorsForm extends Vue {
-  showFiltersPopup = false;
-  onchainIdentity = false;
-  notSlashed = false;
-  notOversubscribed = false;
-  limitValidatorsIdentity = false;
-  sortByApy = true;
+type SelectionValidatorsFormProps = {
+  step: number;
+  validators: SelectionValidator[];
+  maxNominations: number;
+  stakingNetwork: NetworkParams;
+  stakingCurrency: TokenGroup;
+  selectedValidator: FWValidatorInfoFull | null;
+};
 
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) maxNominations!: number;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) selectedValidator!: FWValidatorInfoFull;
+const props = withDefaults(defineProps<SelectionValidatorsFormProps>(), {
+  selectedValidator: null,
+});
 
-  openValidatorList(isSuggested: boolean) {
-    this.$emit('openValidatorList', isSuggested);
-  }
+const emit = defineEmits<{
+  openValidatorList: [isSuggested: boolean];
+  updateSelectedValidators: [value: boolean, address: string];
+  openValidatorInfo: [validator: FWValidatorInfoFull];
+}>();
 
-  toggleFiltersPopupVisibility() {
-    this.showFiltersPopup = !this.showFiltersPopup;
-  }
+const showFiltersPopup = ref(false);
+const onchainIdentity = ref(false);
+const notSlashed = ref(false);
+const notOversubscribed = ref(false);
+const limitValidatorsIdentity = ref(false);
+const sortByApy = ref(true);
 
-  updateSelectedValidators(value: boolean, address: string) {
-    this.$emit('updateSelectedValidators', value, address);
-  }
+const toggleFiltersPopupVisibility = () => {
+  showFiltersPopup.value = !showFiltersPopup.value;
+};
 
-  updateOnchainIdentity(value: boolean) {
-    this.onchainIdentity = value;
-  }
+const updateOnchainIdentity = (value: boolean) => {
+  onchainIdentity.value = value;
+};
 
-  updateNotSlashed(value: boolean) {
-    this.notSlashed = value;
-  }
+const updateNotSlashed = (value: boolean) => {
+  notSlashed.value = value;
+};
 
-  updateNotOversubscribed(value: boolean) {
-    this.notOversubscribed = value;
-  }
+const updateNotOversubscribed = (value: boolean) => {
+  notOversubscribed.value = value;
+};
 
-  updateLimitValidatorsIdentity(value: boolean) {
-    this.limitValidatorsIdentity = value;
-  }
+const updateLimitValidatorsIdentity = (value: boolean) => {
+  limitValidatorsIdentity.value = value;
+};
 
-  updateSortByApy(value: boolean) {
-    this.sortByApy = value;
-  }
-}
+const updateSortByApy = (value: boolean) => {
+  sortByApy.value = value;
+};
+
+const onOpenValidatorList = (isSuggested: boolean) => {
+  emit('openValidatorList', isSuggested);
+};
+
+const onUpdateSelectedValidators = (value: boolean, address: string) => {
+  emit('updateSelectedValidators', value, address);
+};
+
+const onOpenValidatorInfo = (validator: FWValidatorInfoFull) => {
+  emit('openValidatorInfo', validator);
+};
+
+const { step, validators, maxNominations, stakingNetwork, stakingCurrency, selectedValidator } = toRefs(props);
 </script>

@@ -98,7 +98,11 @@ function getClipboard() {
 }
 
 function setClipboard(str: string) {
-  if ('clipboard' in navigator) navigator.clipboard.writeText(str);
+  if ('clipboard' in navigator) {
+    const clipboard = (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
+
+    clipboard?.writeText(str);
+  }
 }
 
 function getJettonAssetId(name: string, symbol: string) {
@@ -137,3 +141,13 @@ export {
   isSoraMainnet,
   isTonNetwork,
 };
+
+export {
+  isNetworkGroup,
+  normalizeNetworkName,
+  filterNetworksByGroup,
+  NETWORK_GROUP_VALUES,
+  filterNetworksBySelection,
+  createNormalizedNetworkNameSet,
+} from '@/helpers/networkGroups';
+export { balanceMatchesNetwork, findBalanceByNetwork, findTokenBalanceByNetwork } from '@/helpers/balances';

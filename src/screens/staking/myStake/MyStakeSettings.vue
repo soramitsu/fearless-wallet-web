@@ -10,7 +10,7 @@
           :target="target"
           :class="classes"
           :label="label"
-          :isActive="activeTabName === tabName"
+          :isActive="activeTabModel === tabName"
           @click="openTab(tabName)"
         />
       </template>
@@ -18,9 +18,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
+<script lang="ts" setup>
+import { computed } from 'vue';
 import type { MyStakingTab } from '@/interfaces/common';
+import TabButton from '@/components/TabButton.vue';
 
 interface TabsOptions {
   label: string;
@@ -30,52 +31,46 @@ interface TabsOptions {
   visibility: boolean;
 }
 
-@Component
-export default class MyStakeSettings extends Vue {
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: MyStakingTab;
-  @Prop({ type: Boolean }) showAlertTab!: boolean;
+const props = defineProps<{
+  activeTabName: MyStakingTab;
+  showAlertTab: boolean;
+}>();
 
-  get tabsOptions(): TabsOptions[] {
-    return [
-      {
-        label: 'common.about',
-        tabName: 'about',
-        classes: 'about-tab',
-        target: '.about-tab',
-        visibility: true,
-      },
-      {
-        label: 'staking.alerts',
-        tabName: 'alerts',
-        classes: 'alerts-tab',
-        target: '.alerts-tab',
-        visibility: this.showAlertTab,
-      },
-      {
-        label: 'assets.history',
-        tabName: 'history',
-        classes: 'history-tab',
-        target: '.history-tab',
-        visibility: true,
-      },
-    ];
-  }
+const emit = defineEmits<{
+  'update:activeTabName': [value: MyStakingTab];
+}>();
 
-  get isAboutTab() {
-    return this.syncedActiveTabName === 'about';
-  }
+const activeTabModel = computed({
+  get: () => props.activeTabName,
+  set: (value: MyStakingTab) => emit('update:activeTabName', value),
+});
 
-  get isAlertsTab() {
-    return this.syncedActiveTabName === 'alerts';
-  }
+const tabsOptions = computed<TabsOptions[]>(() => [
+  {
+    label: 'common.about',
+    tabName: 'about',
+    classes: 'about-tab',
+    target: '.about-tab',
+    visibility: true,
+  },
+  {
+    label: 'staking.alerts',
+    tabName: 'alerts',
+    classes: 'alerts-tab',
+    target: '.alerts-tab',
+    visibility: props.showAlertTab,
+  },
+  {
+    label: 'assets.history',
+    tabName: 'history',
+    classes: 'history-tab',
+    target: '.history-tab',
+    visibility: true,
+  },
+]);
 
-  get isHistoryTab() {
-    return this.syncedActiveTabName === 'history';
-  }
-
-  openTab(name: MyStakingTab) {
-    this.syncedActiveTabName = name;
-  }
+function openTab(name: MyStakingTab) {
+  activeTabModel.value = name;
 }
 </script>
 

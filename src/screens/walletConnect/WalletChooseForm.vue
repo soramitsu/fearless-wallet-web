@@ -4,7 +4,7 @@
       <div
         v-for="wallet in wallets"
         class="wallet"
-        @click="$emit('onSelect', wallet.ethereumAddress)"
+        @click="emit('onSelect', wallet.ethereumAddress)"
         :key="wallet.address"
       >
         <Icon icon="wallet-logo-transaction" class="wallet__logo" />

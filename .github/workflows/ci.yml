@@ -73,6 +73,12 @@ jobs:
       - name: Solana extension e2e smoke
         run: yarn test:e2e:solana
 
+      - name: Bitcoin broadcast smoke and evidence gate
+        run: |
+          yarn test:smoke:bitcoin
+          yarn test:bitcoin-broadcast-evidence-audit
+          yarn audit:bitcoin-broadcast-evidence
+
       - name: Build Firefox extension
         run: yarn build:extension:firefox
 

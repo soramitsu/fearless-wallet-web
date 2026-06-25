@@ -17,6 +17,7 @@ Usage:
   scripts/check-iroha-js-sdk-artifact.sh --tarball <path>
   scripts/check-iroha-js-sdk-artifact.sh --package-dir <path>
   scripts/check-iroha-js-sdk-artifact.sh --download --version <version> [--registry <url>]
+  scripts/check-iroha-js-sdk-artifact.sh --github-release --repo <owner/repo> --tag <tag> --asset <name> [--sha256 <hex>]
 
 Validates that an @iroha/iroha-js package artifact contains the browser-safe SDK
 surface required by fearless-wallet-web and does not package the native .node
@@ -204,6 +205,57 @@ process.stdin.on("end", () => {
   validate_tarball "$tmp/$filename"
 }
 
+download_github_release_asset() {
+  local repo="$1"
+  local tag="$2"
+  local asset="$3"
+  local expected_sha256="$4"
+
+  [[ -n "$repo" ]] || fail "--repo is required with --github-release"
+  [[ -n "$tag" ]] || fail "--tag is required with --github-release"
+  [[ -n "$asset" ]] || fail "--asset is required with --github-release"
+
+  local normalized_sha256="${expected_sha256#sha256:}"
+  normalized_sha256="$(printf '%s' "$normalized_sha256" | tr '[:upper:]' '[:lower:]')"
+  if [[ -n "$normalized_sha256" && ! "$normalized_sha256" =~ ^[0-9a-f]{64}$ ]]; then
+    fail "--sha256 must be a 64-character hex digest"
+  fi
+
+  require_command gh
+
+  local tmp
+  tmp="$(make_tmp)"
+  trap_add_rm "$tmp"
+  gh release download "$tag" --repo "$repo" --pattern "$asset" --dir "$tmp" --clobber ||
+    fail "GitHub release asset download failed for $repo@$tag:$asset"
+
+  local downloaded_files=()
+  while IFS= read -r -d '' file; do
+    downloaded_files+=("$file")
+  done < <(find "$tmp" -maxdepth 1 -type f -print0)
+
+  if [[ "${#downloaded_files[@]}" -ne 1 ]]; then
+    fail "GitHub release download must produce exactly one asset, found ${#downloaded_files[@]}"
+  fi
+
+  local downloaded="${downloaded_files[0]}"
+  if [[ "$(basename "$downloaded")" != "$asset" ]]; then
+    fail "GitHub release asset name mismatch: expected $asset, got $(basename "$downloaded")"
+  fi
+
+  if [[ -n "$normalized_sha256" ]]; then
+    require_command shasum
+    local actual_sha256
+    actual_sha256="$(shasum -a 256 "$downloaded" | awk '{print $1}')" ||
+      fail "unable to compute SHA-256 for $downloaded"
+    if [[ "$actual_sha256" != "$normalized_sha256" ]]; then
+      fail "GitHub release asset SHA-256 mismatch: expected $normalized_sha256, got $actual_sha256"
+    fi
+  fi
+
+  validate_tarball "$downloaded"
+}
+
 TRAP_RM_DIRS=()
 trap_add_rm() {
   TRAP_RM_DIRS+=("$1")
@@ -323,6 +375,10 @@ TARBALL=""
 PACKAGE_DIR=""
 VERSION=""
 REGISTRY="https://registry.npmjs.org/"
+RELEASE_REPO=""
+RELEASE_TAG=""
+RELEASE_ASSET=""
+RELEASE_SHA256=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -346,6 +402,10 @@ while [[ $# -gt 0 ]]; do
       MODE="download"
       shift
       ;;
+    --github-release)
+      MODE="github-release"
+      shift
+      ;;
     --version)
       VERSION="${2:-}"
       [[ -n "$VERSION" ]] || fail "--version requires a value"
@@ -354,6 +414,26 @@ while [[ $# -gt 0 ]]; do
     --registry)
       REGISTRY="${2:-}"
       [[ -n "$REGISTRY" ]] || fail "--registry requires a value"
+      shift 2
+      ;;
+    --repo)
+      RELEASE_REPO="${2:-}"
+      [[ -n "$RELEASE_REPO" ]] || fail "--repo requires a value"
+      shift 2
+      ;;
+    --tag)
+      RELEASE_TAG="${2:-}"
+      [[ -n "$RELEASE_TAG" ]] || fail "--tag requires a value"
+      shift 2
+      ;;
+    --asset)
+      RELEASE_ASSET="${2:-}"
+      [[ -n "$RELEASE_ASSET" ]] || fail "--asset requires a value"
+      shift 2
+      ;;
+    --sha256)
+      RELEASE_SHA256="${2:-}"
+      [[ -n "$RELEASE_SHA256" ]] || fail "--sha256 requires a value"
       shift 2
       ;;
     -h|--help)
@@ -386,8 +466,12 @@ case "$MODE" in
     download_package "$VERSION" "$REGISTRY"
     printf 'Iroha JS SDK artifact check passed for @iroha/iroha-js@%s.\n' "$VERSION"
     ;;
+  github-release)
+    download_github_release_asset "$RELEASE_REPO" "$RELEASE_TAG" "$RELEASE_ASSET" "$RELEASE_SHA256"
+    printf 'Iroha JS SDK artifact check passed for GitHub release %s@%s asset %s.\n' "$RELEASE_REPO" "$RELEASE_TAG" "$RELEASE_ASSET"
+    ;;
   *)
     usage >&2
-    fail "choose one of --self-test, --tarball, --package-dir, or --download"
+    fail "choose one of --self-test, --tarball, --package-dir, --download, or --github-release"
     ;;
 esac

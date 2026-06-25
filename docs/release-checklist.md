@@ -18,14 +18,26 @@ Use this checklist for every browser-extension release PR from `develop` to
 - Run `yarn npm audit --environment production` and confirm there are no
   production dependency audit findings.
 - Confirm public extension builds work without private manifest credentials.
-- Run `IROHA_JS_SDK_VERSION=<version> ./scripts/audit-public-artifacts.sh`
-  before enabling an Iroha browser SDK package in release builds, or use
-  `IROHA_JS_SDK_TARBALL=<path>` for release-candidate tarballs.
+- Run `IROHA_JS_SDK_RELEASE_REPO=<repo> IROHA_JS_SDK_RELEASE_TAG=<tag>
+  IROHA_JS_SDK_RELEASE_ASSET=<asset> IROHA_JS_SDK_RELEASE_SHA256=<sha256>
+  ./scripts/audit-public-artifacts.sh` before enabling an Iroha browser SDK
+  package in release builds. Use `IROHA_JS_SDK_VERSION=<version>` for a
+  published npm package, or `IROHA_JS_SDK_TARBALL=<path>` for local
+  release-candidate tarballs.
 - Keep `VUE_APP_ENABLE_IROHA_TRANSFERS=false` unless the same release audit is
   run with a pinned Iroha JS SDK artifact and the SDK checker passes.
+- Run `yarn test:smoke:bitcoin`,
+  `yarn test:bitcoin-broadcast-evidence-audit`, and
+  `yarn audit:bitcoin-broadcast-evidence`. Before treating Bitcoin send as
+  release-ready, run a funded live testnet broadcast with
+  `FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin`, record the txid,
+  outpoint, amount, source/recipient testnet addresses, indexer URL, operator,
+  timestamp, and commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,
+  set `status: ready` and `releaseEnabled: true`, then rerun
+  `yarn audit:bitcoin-broadcast-evidence --require-ready`.
 - Run or confirm green CI for branch-flow audit, public artifact audit,
   TODO-debt audit, production dependency audit, typecheck, lint, unit tests,
-  extension build, and Solana extension e2e smoke.
+  extension build, Solana extension e2e smoke, and Bitcoin broadcast smoke.
 - Confirm Universal Wallet migrations, legacy export-only access, and supported
   network registry changes are documented in the PR.
 - Confirm rollback owner, monitoring owner, and release communication channel.

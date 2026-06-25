@@ -33,3 +33,14 @@ Optional variables:
 The live smoke refuses mainnet addresses, malformed outpoints, missing required
 settings, and source addresses that do not match the supplied mnemonic and
 derivation path before it creates the testnet client.
+
+Release evidence is tracked in `scripts/bitcoin-testnet-broadcast-evidence.json`.
+The default manifest remains blocked until a funded testnet broadcast succeeds.
+After a live run, record the broadcast txid, selected outpoint, source and
+recipient testnet addresses, amount, indexer URL, UTC timestamp, operator, and
+commit, then run:
+
+```sh
+yarn test:bitcoin-broadcast-evidence-audit
+yarn audit:bitcoin-broadcast-evidence --require-ready
+```

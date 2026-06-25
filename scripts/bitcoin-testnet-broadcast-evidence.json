@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "scope": "web-bitcoin-testnet-broadcast-readiness",
+  "status": "blocked",
+  "releaseEnabled": false,
+  "lastReviewed": "2026-06-26",
+  "blockers": [
+    "funded-testnet-broadcast-evidence-missing"
+  ],
+  "smokeCommand": "yarn test:smoke:bitcoin",
+  "readyVerificationCommands": [
+    "yarn test:bitcoin-broadcast-evidence-audit",
+    "yarn audit:bitcoin-broadcast-evidence --require-ready",
+    "FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin"
+  ],
+  "liveSmokeEnvironment": [
+    "FEARLESS_BITCOIN_TESTNET_LIVE",
+    "FEARLESS_BITCOIN_TESTNET_MNEMONIC",
+    "FEARLESS_BITCOIN_TESTNET_SOURCE_ADDRESS",
+    "FEARLESS_BITCOIN_TESTNET_RECIPIENT_ADDRESS",
+    "FEARLESS_BITCOIN_TESTNET_AMOUNT_SAT",
+    "FEARLESS_BITCOIN_TESTNET_OUTPOINT"
+  ],
+  "defaultIndexerUrl": "https://blockstream.info/testnet/api",
+  "requiredEvidenceFields": [
+    "txid",
+    "sourceAddress",
+    "recipientAddress",
+    "amountSat",
+    "outpoint",
+    "indexerUrl",
+    "timestamp",
+    "operator",
+    "commit"
+  ],
+  "evidence": []
+}

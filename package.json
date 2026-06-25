@@ -32,6 +32,8 @@
     "test:e2e:extension": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs",
     "test:e2e:solana": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs",
     "test:smoke:bitcoin": "vitest run tests/smoke/bitcoin-testnet-broadcast.spec.ts",
+    "audit:bitcoin-broadcast-evidence": "bash scripts/audit-bitcoin-broadcast-evidence.sh",
+    "test:bitcoin-broadcast-evidence-audit": "bash scripts/test-bitcoin-broadcast-evidence-audit.sh",
     "test:all": "yarn typecheck && yarn lint:check && yarn test:unit"
   },
   "main": "index.js",

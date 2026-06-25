@@ -27,7 +27,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRoute } from 'vue-router/composables';
+import { useRoute } from 'vue-router';
 
 type Props = { buttonTopClick: number; name?: string; url?: string };
 const props = defineProps<Props>();

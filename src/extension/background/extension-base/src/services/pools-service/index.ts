@@ -20,8 +20,6 @@ import type {
   DefaultPoolsParams,
   DefaultParams,
 } from './types';
-import type { Subscription } from 'rxjs';
-
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
 import type { Asset } from '@sora-substrate/util/src/assets/types';
@@ -29,7 +27,8 @@ import { getSoraAsset } from '@/extension/background/extension-base/src/api/subs
 import { isSameString } from '@/helpers';
 
 const toReserve = (value: u128): string => new FPNumber(value).toString();
-const toKey = (address: any) => address.code.toString();
+const toKey = (address: { code: { toString(): string } }) => address.code.toString();
+type SubscriptionLike = { unsubscribe(): void };
 
 const getSvgUrl = (assetName: string): string =>
   `https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/${assetName.toUpperCase()}.svg`;
@@ -58,10 +57,10 @@ export class PoolsService {
     AccountLiquidity[]
   >([]);
 
-  userPoolsSubscription: Subscription | null = null;
-  liquidityUpdatedSubscription: Subscription | null = null;
-  demeterFarmingSubscription: Subscription | null = null;
-  ceresLiquidityLockerSubscription: Subscription | null = null;
+  userPoolsSubscription: SubscriptionLike | null = null;
+  liquidityUpdatedSubscription: SubscriptionLike | null = null;
+  demeterFarmingSubscription: SubscriptionLike | null = null;
+  ceresLiquidityLockerSubscription: SubscriptionLike | null = null;
 
   accountLiquidity: AccountLiquidity[] = [];
   demeterAccountPools: DemeterAccountPool[] = [];

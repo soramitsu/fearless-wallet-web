@@ -8,7 +8,7 @@
     @handlerClose="close"
     :top="55"
     :maxHeight="391"
-    @click.native="walletPopupClick"
+    @click="walletPopupClick"
   >
     <div class="wallet-content">
       <WalletInfo
@@ -30,53 +30,54 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import WalletInfo from './WalletInfo.vue';
 import type { CustomEvent, WalletEcosystem } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'SelectWalletPopup',
   components: { WalletInfo },
-})
-export default class SelectWalletPopup extends Vue {
-  accountsStore = useAccountsStore();
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    sortedWallets() {
+      return [...this.accountsStore.accounts].sort((a, b) => a.name.localeCompare(b.name));
+    },
+  },
+  methods: {
+    addWallet() {
+      this.$router.push({ name: Components.Welcome });
+    },
+    walletPopupClick({ target: { classList } }: CustomEvent) {
+      if (
+            !(
+              classList.contains('dots-container') ||
+              classList.contains('dots') ||
+              classList.contains('dots-horizontal') ||
+              classList.contains('icon__inner')
+            )
+          )
+            this.$emit('toggleWalletDetailsPopupVisible', false);
+    },
+    async updateSelectedWallet(address: string, walletEcosystem: WalletEcosystem) {
+      await updateCurrentAccount(address, walletEcosystem);
 
-  get sortedWallets() {
-    return this.accountsStore.accounts.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  addWallet() {
-    this.$router.push({ name: Components.Welcome });
-  }
-
-  walletPopupClick({ target: { classList } }: CustomEvent) {
-    if (
-      !(
-        classList.contains('dots-container') ||
-        classList.contains('dots') ||
-        classList.contains('dots-horizontal') ||
-        classList.contains('icon__inner')
-      )
-    )
-      this.$emit('toggleWalletDetailsPopupVisible', false);
-  }
-
-  async updateSelectedWallet(address: string, walletEcosystem: WalletEcosystem) {
-    await updateCurrentAccount(address, walletEcosystem);
-
-    this.close();
-  }
-
-  close() {
-    this.$emit('close');
-  }
-
-  toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
-    this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
-  }
-}
+          this.close();
+    },
+    close() {
+      this.$emit('close');
+    },
+    toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
+      this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

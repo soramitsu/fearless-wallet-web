@@ -15,44 +15,46 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { ValidatorReward } from '@extension-base/services/staking-service/types';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class ValidatorItem extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'ValidatorItem' ,
+  props: {
+    validator: { type: Object },
+    rewardedCurrency: { type: Object },
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    rewards() {
+      return this.$n(+this.validator.rewards, 'decimal');
+    },
+    rewardedAssetPrice() {
+      const priceId = this.rewardedCurrency?.priceId ?? '';
 
-  @Prop({ type: Object }) validator!: ValidatorReward;
-  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    rewardedAsset() {
+      return this.rewardedCurrency.symbol;
+    },
+    price() {
+      const value = +this.validator.rewards * this.rewardedAssetPrice;
 
-  get rewards() {
-    return this.$n(+this.validator.rewards, 'decimal');
-  }
-
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get rewardedAsset() {
-    return this.rewardedCurrency.symbol;
-  }
-
-  get price() {
-    const value = +this.validator.rewards * this.rewardedAssetPrice;
-
-    return this.$n(value, 'price');
-  }
-
-  onSelect(value: boolean) {
-    this.$emit('onSelect', value, this.validator.address);
-  }
-}
+          return this.$n(value, 'price');
+    },
+  },
+  methods: {
+    onSelect(value: boolean) {
+      this.$emit('onSelect', value, this.validator.address);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

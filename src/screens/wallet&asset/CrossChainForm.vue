@@ -82,7 +82,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import TransferForm from './TransferForm.vue';
 import { firstCharToUp, cut, isSora, isSameString } from '@/helpers/';
@@ -91,176 +92,152 @@ import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'CrossChainForm',
   components: { TransferForm },
-})
-export default class CrossChainForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  originNetFee = '';
-  destNetFee = '';
-  assetId = '';
-  originalNetwork = '';
-  destinationNetwork = '';
-  amount = '';
-  recipient = '';
-  value = '';
+  props: {
+    _originalNetwork: String,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      originNetFee: '',
+      destNetFee: '',
+      assetId: '',
+      originalNetwork: '',
+      destinationNetwork: '',
+      amount: '',
+      recipient: '',
+      value: '',
+    };
+  },
+  computed: {
+    minValueBridgeToSora() {
+      return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
+    },
+    minValueBridgeFromSora() {
+      return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
+    },
+    showSoraAlert() {
+      if (!isSora(this.originalNetwork, true) && !isSora(this.destinationNetwork, true)) return false;
 
-  @Prop(String) _originalNetwork!: string;
+          if (this.amount === '') return false;
 
-  get minValueBridgeToSora() {
-    return BRIDGE_MIN_VALUES_TO_SORA[this.originalNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
-  }
+          if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;
 
-  get minValueBridgeFromSora() {
-    return BRIDGE_MIN_VALUES_FROM_SORA[this.destinationNetwork.toLowerCase()][this.assetName.toLowerCase()] ?? 0;
-  }
+          return +this.amount < this.minValueBridgeFromSora;
+    },
+    soraCrossChainALert() {
+      const value = isSora(this.destinationNetwork, true) ? this.minValueBridgeToSora : this.minValueBridgeFromSora;
 
-  get showSoraAlert() {
-    if (!isSora(this.originalNetwork, true) && !isSora(this.destinationNetwork, true)) return false;
+          return this.$t('assets.soraCrossChainALert', { value, asset: this.assetName });
+    },
+    directionText() {
+      return `${this.$t('assets.from')} ${this.originalNetwork} ${this.$t('assets.to')} ${this.destinationNetwork} `;
+    },
+    showValue() {
+      return this.value !== '0';
+    },
+    originalNetworkString() {
+      return `${firstCharToUp(this.originalNetwork)}`;
+    },
+    destinationNetworkString() {
+      return `${firstCharToUp(this.destinationNetwork)}`;
+    },
+    amountString() {
+      return `${+this.amount} ${this.assetName}`;
+    },
+    valueString() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
+    },
+    originalNetworkFeeString() {
+      return `${formattedNumber(+this.originNetFee, { decimalsValue: 7 })} ${this.originalNetworkUtilityAssetUpper}`;
+    },
+    destinationNetworkFeeString() {
+      return `${formattedNumber(+this.destNetFee)} ${this.assetName}`;
+    },
+    currency() {
+      return this.accountsStore.balances.find(({ groupId, balances }) => {
+            return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
+          });
+    },
+    assetName() {
+      return (this.currency?.symbol ?? '').toUpperCase();
+    },
+    originNet() {
+      return this.networksStore.getNetwork(this.originalNetwork);
+    },
+    destNet() {
+      return this.networksStore.getNetwork(this.destinationNetwork);
+    },
+    originNetIcon() {
+      return this.originNet?.icon ?? '';
+    },
+    destNetIcon() {
+      return this.destNet?.icon ?? '';
+    },
+    originalNetworkUtilityAsset() {
+      const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
+          const currency = this.accountsStore.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
 
-    if (this.amount === '') return false;
-
-    if (isSora(this.destinationNetwork, true)) return +this.amount < this.minValueBridgeToSora;
-
-    return +this.amount < this.minValueBridgeFromSora;
-  }
-
-  get soraCrossChainALert() {
-    const value = isSora(this.destinationNetwork, true) ? this.minValueBridgeToSora : this.minValueBridgeFromSora;
-
-    return this.$t('assets.soraCrossChainALert', { value, asset: this.assetName });
-  }
-
-  get directionText() {
-    return `${this.$t('assets.from')} ${this.originalNetwork} ${this.$t('assets.to')} ${this.destinationNetwork} `;
-  }
-
-  get showValue() {
-    return this.value !== '0';
-  }
-
-  get originalNetworkString() {
-    return `${firstCharToUp(this.originalNetwork)}`;
-  }
-
-  get destinationNetworkString() {
-    return `${firstCharToUp(this.destinationNetwork)}`;
-  }
-
-  get amountString() {
-    return `${+this.amount} ${this.assetName}`;
-  }
-
-  get valueString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
-  }
-
-  get originalNetworkFeeString() {
-    return `${formattedNumber(+this.originNetFee, { decimalsValue: 7 })} ${this.originalNetworkUtilityAssetUpper}`;
-  }
-
-  get destinationNetworkFeeString() {
-    return `${formattedNumber(+this.destNetFee)} ${this.assetName}`;
-  }
-
-  get currency() {
-    return this.accountsStore.balances.find(({ groupId, balances }) => {
-      return groupId === this.assetId || balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase());
-    });
-  }
-
-  get assetName() {
-    return (this.currency?.symbol ?? '').toUpperCase();
-  }
-
-  get originNet() {
-    return this.networksStore.getNetwork(this.originalNetwork);
-  }
-
-  get destNet() {
-    return this.networksStore.getNetwork(this.destinationNetwork);
-  }
-
-  get originNetIcon() {
-    return this.originNet?.icon ?? '';
-  }
-
-  get destNetIcon() {
-    return this.destNet?.icon ?? '';
-  }
-
-  get originalNetworkUtilityAsset() {
-    const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    const currency = this.accountsStore.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
-
-    return currency?.symbol ?? '';
-  }
-
-  get originalNetworkUtilityAssetUpper() {
-    return this.originalNetworkUtilityAsset.toUpperCase();
-  }
-
+          return currency?.symbol ?? '';
+    },
+    originalNetworkUtilityAssetUpper() {
+      return this.originalNetworkUtilityAsset.toUpperCase();
+    },
+  },
   created() {
     this.assetId = this.$route.params.assetId;
-    this.originalNetwork = this.$route.params.network;
+        this.originalNetwork = this.$route.params.network;
 
-    this.$nextTick(() => {
-      const originNet = this.networksStore.getNetwork(this.originalNetwork);
-      const asset = getNativeAssetName(this.assetName);
+        this.$nextTick(() => {
+          const originNet = this.networksStore.getNetwork(this.originalNetwork);
+          const asset = getNativeAssetName(this.assetName);
 
-      const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
-        assets.some(({ symbol }) => isSameString(symbol, asset))
-      )?.chainId;
+          const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
+            assets.some(({ symbol }) => isSameString(symbol, asset))
+          )?.chainId;
 
-      if (!destChainId) return;
+          if (!destChainId) return;
 
-      const { name: destName } = this.networksStore.getNetwork(destChainId)!;
+          const { name: destName } = this.networksStore.getNetwork(destChainId)!;
 
-      this.destinationNetwork = destName;
-    });
-  }
-
-  closeForm() {
-    this.$router.back();
-  }
-
-  cut(value: string) {
-    return cut(value);
-  }
-
-  updateAssetId(value: string) {
-    this.assetId = value;
-  }
-
-  updateOriginalNetwork(value: string) {
-    this.originalNetwork = value;
-  }
-
-  setDestinationNetwork(value: string) {
-    this.destinationNetwork = value;
-  }
-
-  updateAmount(value: string) {
-    this.amount = value;
-  }
-
-  updateValue(value: string) {
-    this.value = value;
-  }
-
-  updateOriginNetFee(value: string) {
-    this.originNetFee = value;
-  }
-
-  updateDestNetFee(value: string) {
-    this.destNetFee = value;
-  }
-
-  updateRecipient(value: string) {
-    this.recipient = value;
-  }
-}
+          this.destinationNetwork = destName;
+        });
+  },
+  methods: {
+    closeForm() {
+      this.$router.back();
+    },
+    cut(value: string) {
+      return cut(value);
+    },
+    updateAssetId(value: string) {
+      this.assetId = value;
+    },
+    updateOriginalNetwork(value: string) {
+      this.originalNetwork = value;
+    },
+    setDestinationNetwork(value: string) {
+      this.destinationNetwork = value;
+    },
+    updateAmount(value: string) {
+      this.amount = value;
+    },
+    updateValue(value: string) {
+      this.value = value;
+    },
+    updateOriginNetFee(value: string) {
+      this.originNetFee = value;
+    },
+    updateDestNetFee(value: string) {
+      this.destNetFee = value;
+    },
+    updateRecipient(value: string) {
+      this.recipient = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

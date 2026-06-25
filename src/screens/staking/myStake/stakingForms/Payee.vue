@@ -52,60 +52,67 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import type { NetworkParams } from '@/stores';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
 import { cut } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class Payee extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'Payee' ,
+  props: {
+    step: { type: Number },
+    fee: { type: String },
+    stakingCurrency: { type: Object },
+    stakingNetwork: { type: Object },
+    payoutAddress: { type: String },
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    payeeName() {
+      return this.stakingNetwork.payeeName;
+    },
+    payeeCut() {
+      return cut(this.payeeName);
+    },
+    asset() {
+      return this.stakingCurrency.symbol;
+    },
+    addressCut() {
+      return cut(this.syncedPayoutAddress);
+    },
+    accountNameCut() {
+      return cut(this.accountsStore.selectedWallet.name);
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
 
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: String }) fee!: string;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @PropSync('payoutAddress', { type: String }) syncedPayoutAddress!: string;
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    valueString() {
+      const value = +this.fee * this.stakingAssetPrice;
 
-  get payeeName() {
-    return this.stakingNetwork.payeeName;
-  }
-
-  get payeeCut() {
-    return cut(this.payeeName);
-  }
-
-  get asset() {
-    return this.stakingCurrency.symbol;
-  }
-
-  get addressCut() {
-    return cut(this.syncedPayoutAddress);
-  }
-
-  get accountNameCut() {
-    return cut(this.accountsStore.selectedWallet.name);
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get valueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  setPayoutAddress(value = '') {
-    this.syncedPayoutAddress = value;
-  }
-}
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+    syncedPayoutAddress: {
+      get() {
+        return this.payoutAddress;
+      },
+      set(value) {
+        this.$emit('update:payoutAddress', value);
+      },
+    },
+  },
+  methods: {
+    setPayoutAddress(value = '') {
+      this.syncedPayoutAddress = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -1,4 +1,4 @@
-import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
+import { formatJsonRpcError, formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
 import { type SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';

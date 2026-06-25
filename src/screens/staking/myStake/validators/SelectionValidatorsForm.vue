@@ -40,69 +40,63 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { TokenGroup } from '@extension-base/background/types/types';
-import type { SelectionValidator } from '@/interfaces';
-import type { NetworkParams } from '@/stores';
-import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import { defineComponent } from 'vue';
+
 import SuggestedValidatorDisclaimer from '@/screens/staking/myStake/validators/SuggestedValidatorDisclaimer.vue';
 import OfferValidators from '@/screens/staking/myStake/validators/OfferValidators.vue';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
 
-@Component({
+export default defineComponent({ name: 'SelectionValidatorsForm',
   components: {
     FiltersPopup,
     OfferValidators,
     SelectValidator,
     SuggestedValidatorDisclaimer,
   },
-})
-export default class SelectionValidatorsForm extends Vue {
-  showFiltersPopup = false;
-  onchainIdentity = false;
-  notSlashed = false;
-  notOversubscribed = false;
-  limitValidatorsIdentity = false;
-  sortByApy = true;
-
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) maxNominations!: number;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) selectedValidator!: FWValidatorInfoFull;
-
-  openValidatorList(isSuggested: boolean) {
-    this.$emit('openValidatorList', isSuggested);
-  }
-
-  toggleFiltersPopupVisibility() {
-    this.showFiltersPopup = !this.showFiltersPopup;
-  }
-
-  updateSelectedValidators(value: boolean, address: string) {
-    this.$emit('updateSelectedValidators', value, address);
-  }
-
-  updateOnchainIdentity(value: boolean) {
-    this.onchainIdentity = value;
-  }
-
-  updateNotSlashed(value: boolean) {
-    this.notSlashed = value;
-  }
-
-  updateNotOversubscribed(value: boolean) {
-    this.notOversubscribed = value;
-  }
-
-  updateLimitValidatorsIdentity(value: boolean) {
-    this.limitValidatorsIdentity = value;
-  }
-
-  updateSortByApy(value: boolean) {
-    this.sortByApy = value;
-  }
-}
+  props: {
+    step: { type: Number },
+    validators: { type: Array },
+    maxNominations: { type: Number },
+    stakingNetwork: { type: Object },
+    stakingCurrency: { type: Object },
+    selectedValidator: { type: Object },
+  },
+  data() {
+    return {
+      showFiltersPopup: false,
+      onchainIdentity: false,
+      notSlashed: false,
+      notOversubscribed: false,
+      limitValidatorsIdentity: false,
+      sortByApy: true,
+    };
+  },
+  methods: {
+    openValidatorList(isSuggested: boolean) {
+      this.$emit('openValidatorList', isSuggested);
+    },
+    toggleFiltersPopupVisibility() {
+      this.showFiltersPopup = !this.showFiltersPopup;
+    },
+    updateSelectedValidators(value: boolean, address: string) {
+      this.$emit('updateSelectedValidators', value, address);
+    },
+    updateOnchainIdentity(value: boolean) {
+      this.onchainIdentity = value;
+    },
+    updateNotSlashed(value: boolean) {
+      this.notSlashed = value;
+    },
+    updateNotOversubscribed(value: boolean) {
+      this.notOversubscribed = value;
+    },
+    updateLimitValidatorsIdentity(value: boolean) {
+      this.limitValidatorsIdentity = value;
+    },
+    updateSortByApy(value: boolean) {
+      this.sortByApy = value;
+    },
+  },
+});
 </script>

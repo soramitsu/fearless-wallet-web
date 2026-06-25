@@ -1,7 +1,6 @@
-import { NftFilters, type Network } from 'alchemy-sdk';
 import { Subject } from 'rxjs';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
-import { PROD_NFT_NETWORKS } from '@extension-base/services/nft-service/consts';
+import { NFT_FILTERS, PROD_NFT_NETWORKS, type AlchemyNetwork, type NftFilter } from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
 import {
@@ -48,7 +47,7 @@ export class NftService {
   }
 
   isNeedUpdate(address: string) {
-    const networks = Object.keys(this.sdks) as Network[];
+    const networks = Object.keys(this.sdks) as AlchemyNetwork[];
 
     for (const network of networks) {
       const timespan = this.sdks[network].timespan;
@@ -60,7 +59,7 @@ export class NftService {
   }
 
   resetTime(address: string) {
-    const networks = Object.keys(this.sdks) as Network[];
+    const networks = Object.keys(this.sdks) as AlchemyNetwork[];
 
     for (const network of networks) {
       this.sdks[network].timespan[address] = Number.MAX_VALUE;
@@ -76,7 +75,7 @@ export class NftService {
   }
 
   excludeFilters(address: string) {
-    const filters: NftFilters[] = [];
+    const filters: NftFilter[] = [];
 
     if (!this.hideSettings[address]) {
       this.hideSettings[address] = {
@@ -85,7 +84,7 @@ export class NftService {
       };
     }
 
-    if (this.hideSettings[address].airdrop) filters.push(NftFilters.AIRDROPS);
+    if (this.hideSettings[address].airdrop) filters.push(NFT_FILTERS.AIRDROPS);
 
     return filters;
   }
@@ -122,12 +121,14 @@ export class NftService {
         sdk.fetchNftsForWallet(address).then((networkNfts) => {
           if (!this.nftMap[address]) this.nftMap[address] = {};
 
-          this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
+        this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
 
-          if (this.state.currentAccount?.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
-        });
-      }
+        if (this.state.currentAccount?.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
+      }).catch((error) => {
+        console.info(error);
+      });
     }
+  }
   }
 
   changeSettings({ address, settings }: RequestSettingsChangePayload) {

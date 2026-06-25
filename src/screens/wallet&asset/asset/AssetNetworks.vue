@@ -61,10 +61,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { APIItemState } from '@extension-base/api/types/networks';
 import HistoryItem from './HistoryItem.vue';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
@@ -82,11 +82,14 @@ interface TabsOptions {
   target: string;
 }
 
-@Component({
+export default defineComponent({ name: 'AssetNetworks',
   components: { HistoryItem, AssetRow },
-})
-export default class AssetNetworks extends Vue {
-  readonly tabsOptions: TabsOptions[] = [
+  props: {
+    currency: Object,
+  },
+  data() {
+    return {
+      tabsOptions: [
     {
       label: 'assets.networkAssets',
       tabName: 'Assets',
@@ -101,132 +104,121 @@ export default class AssetNetworks extends Vue {
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
-  ];
-
-  readonly filterDropdownOption = [
+  ] as TabsOptions[],
+      filterDropdownOption: [
     { name: this.$t('assets.filters.fiat'), value: 'fiat' },
     { name: this.$t('assets.filters.popularity'), value: 'popularity' },
     { name: this.$t('assets.filters.name'), value: 'name' },
-  ];
+  ],
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      filterValue: 'fiat',
+      activeTabName: 'Assets',
+      showSelectFilterPopup: false,
+    };
+  },
+  computed: {
+    contentFormHeight() {
+      return this.accountsStore.selectedWallet.isTon ? 266 + MENU_HEIGHT : 266;
+    },
+    filteredNetworks() {
+      const baseFilter = this.currency.balances?.filter(({ name, state }) => {
+            const network = this.networksStore.getNetwork(name);
 
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  filterValue = 'fiat';
-  activeTabName = 'Assets';
-  showSelectFilterPopup = false;
+            if (state !== APIItemState.READY) return false;
 
-  @Prop(Object) currency!: TokenGroup;
+            if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
-  get contentFormHeight() {
-    return this.accountsStore.selectedWallet.isTon ? 266 + MENU_HEIGHT : 266;
-  }
+            if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS)
+              return network.favorite.some((address) => address === this.accountsStore.selectedWallet.address);
 
-  get filteredNetworks() {
-    const baseFilter = this.currency.balances?.filter(({ name, state }) => {
-      const network = this.networksStore.getNetwork(name);
+            return this.networksStore.getNetwork(name).active;
+          });
 
-      if (state !== APIItemState.READY) return false;
+          if (this.activeTabName === 'MyAssets')
+            return baseFilter.filter(({ transferable }) => transferable && +transferable > 0);
 
-      if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
+          return baseFilter;
+    },
+    sortedNetworks() {
+      return this.filteredNetworks
+        ? [...this.filteredNetworks].sort((a, b) => {
+            if (this.filterValue === 'fiat') {
+              const value1 = +(a.transferable ?? 0);
+              const value2 = +(b.transferable ?? 0);
 
-      if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS)
-        return network.favorite.some((address) => address === this.accountsStore.selectedWallet.address);
+              return value2 - value1;
+            }
 
-      return this.networksStore.getNetwork(name).active;
-    });
+            if (this.filterValue === 'popularity') {
+              const value1 = this.networksStore.getNetwork(a.name).rank ?? Infinity;
+              const value2 = this.networksStore.getNetwork(b.name).rank ?? Infinity;
 
-    if (this.activeTabName === 'MyAssets')
-      return baseFilter.filter(({ transferable }) => transferable && +transferable > 0);
+              return value1 - value2;
+            }
 
-    return baseFilter;
-  }
+            return a.name.localeCompare(b.name);
+          })
+        : undefined;
+    },
+    priceString() {
+      return `${this.accountsStore.fiatSymbol} ${this.$n(this.price, 'price')}`;
+    },
+    price() {
+      const price = this.networksStore.getAssetPrice(this.currency.priceId ?? '').price;
 
-  get sortedNetworks() {
-    return this.filteredNetworks?.sort((a, b) => {
-      if (this.filterValue === 'fiat') {
-        const value1 = +(a.transferable ?? 0);
-        const value2 = +(b.transferable ?? 0);
-
-        return value2 - value1;
-      }
-
-      if (this.filterValue === 'popularity') {
-        const value1 = this.networksStore.getNetwork(a.name).rank ?? Infinity;
-        const value2 = this.networksStore.getNetwork(b.name).rank ?? Infinity;
-
-        return value1 - value2;
-      }
-
-      return a.name.localeCompare(b.name);
-    });
-  }
-
-  get priceString() {
-    return `${this.accountsStore.fiatSymbol} ${this.$n(this.price, 'price')}`;
-  }
-
-  get price() {
-    const price = this.networksStore.getAssetPrice(this.currency.priceId ?? '').price;
-
-    return +(price ?? 0);
-  }
-
-  get selectedAssetId() {
-    return this.$route.params.assetId;
-  }
-
+          return +(price ?? 0);
+    },
+    selectedAssetId() {
+      return this.$route.params.assetId;
+    },
+  },
   mounted() {
     if (BaseApi.isEthereumNetwork(this.currency.mainNetwork)) fetchEvmBalance(this.selectedAssetId);
-  }
+  },
+  methods: {
+    openAsset(name: string) {
+      const network = this.networksStore.getNetwork(name);
 
-  openAsset(name: string) {
-    const network = this.networksStore.getNetwork(name);
+          this.$router.push({
+            name: Components.AssetHistory,
+            params: {
+              assetId: this.currency.groupId,
+              selectedNetwork: network.name,
+            },
+          });
+    },
+    openTab(name: string) {
+      this.activeTabName = name;
+    },
+    toggleSelectFilterPopupVisibility() {
+      this.showSelectFilterPopup = !this.showSelectFilterPopup;
+    },
+    getBalanceInNetworkString(network: string) {
+      return `${this.$n(this.getBalanceInNetwork(network), 'decimal')} ${this.currency.symbol.toUpperCase()}`;
+    },
+    getBalanceInNetwork(network: string) {
+      const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
+          const prepBalance = balance ? Number(balance) : 0;
 
-    this.$router.push({
-      name: Components.AssetHistory,
-      params: {
-        assetId: this.currency.groupId,
-        selectedNetwork: network.name,
-      },
-    });
-  }
+          return prepBalance;
+    },
+    getFiatBalanceInNetwork(network: string) {
+      const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
+          const prepBalance = balance ? Number(balance) : 0;
 
-  openTab(name: string) {
-    this.activeTabName = name;
-  }
+          return prepBalance * +(this.price ?? 0);
+    },
+    getFiatInNetworkString(network: string) {
+      return `${this.accountsStore.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
+    },
+    filterValueUpdate(name: string) {
+      this.filterValue = name;
 
-  toggleSelectFilterPopupVisibility() {
-    this.showSelectFilterPopup = !this.showSelectFilterPopup;
-  }
-
-  getBalanceInNetworkString(network: string) {
-    return `${this.$n(this.getBalanceInNetwork(network), 'decimal')} ${this.currency.symbol.toUpperCase()}`;
-  }
-
-  getBalanceInNetwork(network: string) {
-    const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
-    const prepBalance = balance ? Number(balance) : 0;
-
-    return prepBalance;
-  }
-
-  getFiatBalanceInNetwork(network: string) {
-    const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
-    const prepBalance = balance ? Number(balance) : 0;
-
-    return prepBalance * +this.price ?? 0;
-  }
-
-  getFiatInNetworkString(network: string) {
-    return `${this.accountsStore.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
-  }
-
-  filterValueUpdate(name: string) {
-    this.filterValue = name;
-
-    this.toggleSelectFilterPopupVisibility();
-  }
-}
+          this.toggleSelectFilterPopupVisibility();
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -77,7 +77,8 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { isNativeEVMNetwork } from '@extension-base/background/handlers/utils';
 import NodeItem from './NodeItem.vue';
 import type { NetworkJson } from '@extension-base/types';
@@ -88,140 +89,129 @@ import { cut, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'Nodes',
   components: { NodeItem },
-})
-export default class Nodes extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    heightDefaultNodesForm() {
+      const countNodes = this.defaultNodes.length;
 
-  get heightDefaultNodesForm() {
-    const countNodes = this.defaultNodes.length;
+          return countNodes * 60 + 80;
+    },
+    heightCustomNodesForm() {
+      const countNodes = this.customNodes.length;
 
-    return countNodes * 60 + 80;
-  }
+          return countNodes * 60 + 80;
+    },
+    showCustomNodesForm() {
+      return this.customNodes.length !== 0;
+    },
+    autoSelectNode: {
+      get() {
+        return this.accountsStore.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
+      },
+      set(value: boolean) {
+        this.accountsStore.setAutoSelectNode({ value, network: this.selectedNetwork });
+      },
+    },
+    activeNode() {
+      const { currentProvider } = this.networkJson;
+          const activeNode =
+            this.networkJson.nodes.find(({ url }) => url === currentProvider) ??
+            this.networkJson.customNodes.find(({ url }) => url === currentProvider);
 
-  get heightCustomNodesForm() {
-    const countNodes = this.customNodes.length;
+          return activeNode ?? this.networkJson.nodes[0];
+    },
+    formattedAddress() {
+      return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
+    },
+    address() {
+      if (this.accountsStore.selectedWallet.address === '') return '';
 
-    return countNodes * 60 + 80;
-  }
+          return cut(this.formattedAddress, 5);
+    },
+    defaultNodes() {
+      if (!this.networkJson) return [];
 
-  get showCustomNodesForm() {
-    return this.customNodes.length !== 0;
-  }
+          if (isNativeEVMNetwork(this.networkJson.name))
+            return this.networkJson.nodes.filter((el) => !el.url.startsWith('wss'));
 
-  get autoSelectNode() {
-    return this.accountsStore.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
-  }
+          return this.networkJson.nodes ?? [];
+    },
+    customNodes() {
+      if (!this.networkJson) return [];
 
-  set autoSelectNode(value: boolean) {
-    this.accountsStore.setAutoSelectNode({ value, network: this.selectedNetwork });
-  }
+          return this.networkJson.customNodes ?? [];
+    },
+    route() {
+      return this.$route.name;
+    },
+    selectedNetwork() {
+      return this.$route.params.network;
+    },
+    networkJson() {
+      return this.networksStore.getNetwork(this.selectedNetwork);
+    },
+    selectedNetworkUpper() {
+      return this.$route.params.network.toUpperCase();
+    },
+  },
+  watch: {
+    "autoSelectNode": 'toggleAutoSelectNodesValue',
+  },
+  methods: {
+    toggleAutoSelectNodesValue() {
+      const [{ url }] = this.defaultNodes;
 
-  get activeNode() {
-    const { currentProvider } = this.networkJson;
-    const activeNode =
-      this.networkJson.nodes.find(({ url }) => url === currentProvider) ??
-      this.networkJson.customNodes.find(({ url }) => url === currentProvider);
+          this.changeNode(url);
+    },
+    toggleAutoSelectNode(value: boolean) {
+      this.autoSelectNode = value;
+    },
+    openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
+      this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
+    },
+    changeNode(url: string) {
+      if (this.autoSelectNode) return;
 
-    return activeNode ?? this.networkJson.nodes[0];
-  }
+          const prepData: Partial<NetworkJson> = {};
 
-  get formattedAddress() {
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
-  }
+          prepData.currentProvider = url;
 
-  get address() {
-    if (this.accountsStore.selectedWallet.address === '') return '';
+          upsertNetworkMap({
+            ...this.networkJson,
+            ...prepData,
+            isManual: !this.autoSelectNode,
+          });
+    },
+    copyAddress() {
+      setClipboard(this.formattedAddress);
+    },
+    getActiveStatus(nodeName: string, url: string) {
+      if (this.autoSelectNode) return false;
 
-    return cut(this.formattedAddress, 5);
-  }
+          return nodeName === this.activeNode.name && this.activeNode.url === url;
+    },
+    getRemoveBorderBottomValue(index: number, isCustomNode = false) {
+      const nodes = isCustomNode ? this.customNodes : this.defaultNodes;
+          const { name: activeNodeName, url: activeNodeUrl } = this.activeNode;
 
-  get defaultNodes() {
-    if (!this.networkJson) return [];
+          if (this.autoSelectNode) return;
 
-    if (isNativeEVMNetwork(this.networkJson.name))
-      return this.networkJson.nodes.filter((el) => !el.url.startsWith('wss'));
+          const activeNodeIndex = nodes.findIndex(({ name, url }) => name === activeNodeName && activeNodeUrl === url);
 
-    return this.networkJson.nodes ?? [];
-  }
-
-  get customNodes() {
-    if (!this.networkJson) return [];
-
-    return this.networkJson.customNodes ?? [];
-  }
-
-  get route() {
-    return this.$route.name;
-  }
-
-  get selectedNetwork() {
-    return this.$route.params.network;
-  }
-
-  get networkJson() {
-    return this.networksStore.getNetwork(this.selectedNetwork);
-  }
-
-  get selectedNetworkUpper() {
-    return this.$route.params.network.toUpperCase();
-  }
-
-  @Watch('autoSelectNode')
-  toggleAutoSelectNodesValue() {
-    const [{ url }] = this.defaultNodes;
-
-    this.changeNode(url);
-  }
-
-  toggleAutoSelectNode(value: boolean) {
-    this.autoSelectNode = value;
-  }
-
-  openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
-    this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
-  }
-
-  changeNode(url: string) {
-    if (this.autoSelectNode) return;
-
-    const prepData: Partial<NetworkJson> = {};
-
-    prepData.currentProvider = url;
-
-    upsertNetworkMap({
-      ...this.networkJson,
-      ...prepData,
-      isManual: !this.autoSelectNode,
-    });
-  }
-
-  copyAddress() {
-    setClipboard(this.formattedAddress);
-  }
-
-  getActiveStatus(nodeName: string, url: string) {
-    if (this.autoSelectNode) return false;
-
-    return nodeName === this.activeNode.name && this.activeNode.url === url;
-  }
-
-  getRemoveBorderBottomValue(index: number, isCustomNode = false) {
-    const nodes = isCustomNode ? this.customNodes : this.defaultNodes;
-    const { name: activeNodeName, url: activeNodeUrl } = this.activeNode;
-
-    if (this.autoSelectNode) return;
-
-    const activeNodeIndex = nodes.findIndex(({ name, url }) => name === activeNodeName && activeNodeUrl === url);
-
-    if (activeNodeIndex !== -1) {
-      // remove the border if it is the active node or the previous node
-      return activeNodeIndex === index || index + 1 === activeNodeIndex;
-    }
-  }
-}
+          if (activeNodeIndex !== -1) {
+            // remove the border if it is the active node or the previous node
+            return activeNodeIndex === index || index + 1 === activeNodeIndex;
+          }
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

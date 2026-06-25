@@ -166,7 +166,7 @@ export class StakingService {
       .map((exposure) => {
         if (!max) return null;
 
-        const others = exposure.others.sort((a, b) => (+b.value ?? 0) - +a.value ?? 0);
+        const others = exposure.others.sort((a, b) => +(b.value ?? 0) - +(a.value ?? 0));
 
         if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
 

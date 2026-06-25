@@ -1,5 +1,4 @@
 import { chrome } from '@extension-base/utils/crossenv';
-import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import { initStorage } from '@extension-base/stores/Storage';
@@ -11,7 +10,7 @@ import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
 
-axios.defaults.adapter = fetchAdapter;
+axios.defaults.adapter = 'fetch';
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab

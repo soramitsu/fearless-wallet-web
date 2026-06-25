@@ -6,6 +6,9 @@ import { type GetBalancesProps } from '../subscription-service';
 import { TonBalance } from '../ton-balance/TonBalance';
 import SubstrateBalanceService from './SubstrateBalanceService';
 import EvmBalanceService from './EvmBalanceService';
+import SolanaBalanceService from './SolanaBalanceService';
+import BitcoinBalanceService from './BitcoinBalanceService';
+import IrohaBalanceService from './IrohaBalanceService';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type {
@@ -25,6 +28,9 @@ export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
   evmBalanceService: EvmBalanceService;
   tonBalanceService: TonBalance;
+  solanaBalanceService: SolanaBalanceService;
+  bitcoinBalanceService: BitcoinBalanceService;
+  irohaBalanceService: IrohaBalanceService;
   balanceMap: BalanceMap = {};
   balanceSubject = new Subject<BalanceJson>();
 
@@ -32,6 +38,9 @@ export default class BalanceService {
     this.substrateBalanceService = new SubstrateBalanceService(state);
     this.evmBalanceService = new EvmBalanceService(state);
     this.tonBalanceService = new TonBalance(state);
+    this.solanaBalanceService = new SolanaBalanceService(state);
+    this.bitcoinBalanceService = new BitcoinBalanceService(state);
+    this.irohaBalanceService = new IrohaBalanceService(state);
   }
 
   getAccountBalance(address: string) {
@@ -143,7 +152,7 @@ export default class BalanceService {
       icon: item.icon!,
       name: networkKey,
       precision: item.precision!,
-      state: APIItemState.READY,
+      state: item.state ?? APIItemState.READY,
       total: item.total,
       transferable: item.transferable,
       reserved: '0',
@@ -239,9 +248,27 @@ export default class BalanceService {
     evmNetworks = [],
     substrateNetworks = [],
     tonNetworks = [],
+    solanaNetworks = [],
+    bitcoinNetworks = [],
+    irohaNetworks = [],
+    solanaAddress,
+    bitcoinAddress,
+    bitcoinTestnetAddress,
+    irohaAddress,
     walletEcosystem,
   }: GetBalancesProps): Promise<ResponseBalanceRequest[]> {
     if (walletEcosystem === WalletEcosystem.Ton) return this.tonBalanceService.fetchBalance(address, tonNetworks);
+    if (walletEcosystem === WalletEcosystem.Solana)
+      return this.solanaBalanceService.fetchBalance({ address, solanaAddress, networks: solanaNetworks });
+    if (walletEcosystem === WalletEcosystem.Bitcoin)
+      return this.bitcoinBalanceService.fetchBalance({
+        address,
+        bitcoinAddress,
+        bitcoinTestnetAddress,
+        networks: bitcoinNetworks,
+      });
+    if (walletEcosystem === WalletEcosystem.Iroha)
+      return this.irohaBalanceService.fetchBalance({ address, irohaAddress, networks: irohaNetworks });
 
     const evmBalances = await this.evmBalanceService.fetchBalance({ networks: evmNetworks, ethereumAddress });
 

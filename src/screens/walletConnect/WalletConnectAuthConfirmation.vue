@@ -22,7 +22,7 @@
                 <Alert :headerText="alertContent.header" :message="alertContent.message" sizeText="small" />
               </div>
 
-              <ContentForm v-if="isAbleToConnect" class="width-100" @click.native="toggleWalletSelectForm">
+              <ContentForm v-if="isAbleToConnect" class="width-100" @click="toggleWalletSelectForm">
                 <div class="wallet">
                   <Icon icon="wallet-logo-transaction" class="wallet__logo" />
 
@@ -84,13 +84,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
-import { Fragment } from 'vue-fragment';
+import { useRouter } from 'vue-router';
+import { Fragment } from 'vue';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from '@/interfaces/walletconnect';
+import { useI18n } from '@/locales/useI18n';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';
 import { transformNamespaces } from '@/util/walletConnect';

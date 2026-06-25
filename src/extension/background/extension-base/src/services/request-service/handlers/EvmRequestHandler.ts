@@ -1,6 +1,11 @@
 import { BehaviorSubject } from 'rxjs';
 import type { RequestService } from '@extension-base/services/request-service';
-import type { EvmRequests, EvmRequestsSubject, WCSignRequest } from '@extension-base/services/request-service/types';
+import type {
+  EvmRequestParams,
+  EvmRequests,
+  EvmRequestsSubject,
+  WCSignRequest,
+} from '@extension-base/services/request-service/types';
 import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { Resolver, ResponseSigning } from '@extension-base/background/types/types';
 
@@ -40,7 +45,7 @@ export default class EvmRequestHandler {
     else if (type === 'evmRequests') this.signEvmSubject.next(this.evmRequests);
   }
 
-  confirmSign(id: string, url: string, method: string, params: any): Promise<ResponseSigning> {
+  confirmSign(id: string, url: string, method: string, params: EvmRequestParams): Promise<ResponseSigning> {
     const complete = () => this.onComplete(id, 'evmRequests');
     const values = this.signEvmSubject.getValue();
 

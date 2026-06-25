@@ -2,7 +2,9 @@ import Injected from '@extension-base/page/Injected';
 import { MESSAGE_ORIGIN_PAGE } from '@extension-base/defaults';
 import { getId } from '@extension-base/utils/utils';
 import { FearlessWalletEvmProvider } from '@extension-base/page/FearlessWalletEvmProvider';
-import type { FWEvmProvider, Handlers } from '@extension-base/page/types';
+import { FearlessWalletIrohaProvider } from '@extension-base/page/FearlessWalletIrohaProvider';
+import { FearlessWalletSolanaProvider } from '@extension-base/page/FearlessWalletSolanaProvider';
+import type { FWEvmProvider, FWIrohaProvider, FWSolanaProvider, Handlers } from '@extension-base/page/types';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -87,4 +89,12 @@ export function handleResponse<TMessageType extends MessageTypes>(
 
 export function initEvmProvider(): FWEvmProvider {
   return new FearlessWalletEvmProvider();
+}
+
+export function initSolanaProvider(): FWSolanaProvider {
+  return new FearlessWalletSolanaProvider();
+}
+
+export function initIrohaProvider(): FWIrohaProvider {
+  return new FearlessWalletIrohaProvider();
 }

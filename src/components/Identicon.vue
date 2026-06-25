@@ -1,21 +1,21 @@
 <template>
   <div class="identicon">
-    <div v-if="isEthereumAddress(address)" v-html="getJdenticon(address)"></div>
+    <img v-if="isEthereumAddress(address)" :src="getJdenticon(address)" alt="" width="24" height="24" />
 
-    <Ident v-else :size="24" theme="polkadot" :value="address" />
+    <Ident v-else :size="24" :address="address" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { toSvg } from 'jdenticon';
-import { Identicon as Ident } from '@polkadot/vue-identicon';
+import { Polkadot as Ident } from '@polkadot/vue-identicon/icons/Polkadot';
 import BaseApi from '@/util/BaseApi';
 
 withDefaults(defineProps<{ address: string }>(), {
   address: '',
 });
 
-const getJdenticon = (address: string) => toSvg(address, 24);
+const getJdenticon = (address: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(toSvg(address, 24))}`;
 const isEthereumAddress = (address: string) => BaseApi.isEthereumAddress(address);
 </script>
 

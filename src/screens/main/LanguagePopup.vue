@@ -16,8 +16,8 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
 import type { Lang } from '@/locales';
+import { useI18n } from '@/locales/useI18n';
 import { accountController } from '@/controllers';
 
 const options = [

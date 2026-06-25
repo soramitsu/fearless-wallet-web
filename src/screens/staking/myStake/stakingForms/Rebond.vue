@@ -16,36 +16,39 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class Rebond extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'Rebond' ,
+  props: {
+    stakingCurrency: { type: Object },
+    fee: { type: String },
+    amount: { type: String },
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    asset() {
+      return this.stakingCurrency.symbol;
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
 
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: String }) fee!: string;
-  @Prop({ type: String }) amount!: string;
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    valueString() {
+      const value = +this.fee * this.stakingAssetPrice;
 
-  get asset() {
-    return this.stakingCurrency.symbol;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get valueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-}
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

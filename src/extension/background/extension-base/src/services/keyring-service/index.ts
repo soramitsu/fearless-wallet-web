@@ -28,12 +28,15 @@ import type {
   ResponseExportSeed,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeypairType } from '@subwallet/keyring/types';
 import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
+import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
+import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWalletKeyringMigration';
+import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
@@ -48,7 +51,7 @@ export class KeyringService {
     eventService.waitCryptoReady
       .then(() => {
         this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
-          rs && this.currentAccountSubject.next(rs);
+          if (rs) this.currentAccountSubject.next(rs);
         });
       })
       .catch(console.error);
@@ -105,7 +108,13 @@ export class KeyringService {
   }
 
   getAllSubstrateAccounts() {
-    return this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address));
+    return this.getAllAccounts().filter(
+      ({ address, meta }) =>
+        !isEthereumAddress(address) &&
+        meta.walletEcosystem !== WalletEcosystem.Bitcoin &&
+        meta.walletEcosystem !== WalletEcosystem.Solana &&
+        meta.walletEcosystem !== WalletEcosystem.Iroha
+    );
   }
 
   getAllEthereumAccounts() {
@@ -114,7 +123,7 @@ export class KeyringService {
 
   // return all walletEcosystem accounts [substrate[without ethereum], ton]
   getAllMainAccounts() {
-    return [...this.getAllSubstrateAccounts(), ...this.tonKeyring.getAccounts()];
+    return [...this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address)), ...this.tonKeyring.getAccounts()];
   }
 
   triggerWalletsSubscription(address: string, walletEcosystem: WalletEcosystem) {
@@ -137,14 +146,22 @@ export class KeyringService {
 
   async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
     if (walletEcosystem === 'ton') {
-      const account = await this.tonKeyring.createAccount(suri, meta.name!, this.password);
+      const account = await this.tonKeyring.createAccount(suri, meta, this.password);
 
       return account.address.toString();
     }
 
+    const initialMeta = { ...meta, isMobile: false, walletEcosystem };
     const {
       pair: { address },
-    } = keyring.addUri(suri, { ...meta, isMobile: false, walletEcosystem: WalletEcosystem.Substrate }, type);
+    } = keyring.addUri(suri, initialMeta, type);
+
+    const effectiveEcosystem = isEthereumAddress(address) ? WalletEcosystem.Evm : walletEcosystem;
+    const pair = this.getPair(address);
+
+    if (pair) {
+      keyring.saveAccountMeta(pair, withUniversalWalletKeyringMeta(address, initialMeta, effectiveEcosystem));
+    }
 
     return address;
   }
@@ -284,11 +301,27 @@ export class KeyringService {
   saveAccountMeta(address: string, meta: FWKeyringMeta) {
     const pair = this.getPair(address);
 
-    if (pair) return keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
+    if (pair) {
+      const walletEcosystem =
+        isEthereumAddress(address) && meta.walletEcosystem === undefined
+          ? WalletEcosystem.Evm
+          : meta.walletEcosystem ?? (pair.meta as FWKeyringMeta).walletEcosystem;
+
+      return keyring.saveAccountMeta(
+        pair,
+        withUniversalWalletKeyringMeta(address, { ...(pair.meta as FWKeyringMeta), ...meta }, walletEcosystem)
+      );
+    }
 
     const account = this.getAddress(address);
 
-    if (account) this.saveAddress(address, { ...account.meta, ...meta }, 'address');
+    if (account) {
+      this.saveAddress(
+        address,
+        withUniversalWalletKeyringMeta(address, { ...(account.meta as FWKeyringMeta), ...meta }, meta.walletEcosystem),
+        'address'
+      );
+    }
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
@@ -337,7 +370,7 @@ export class KeyringService {
       const pair = keyring.getPair(address);
 
       return { value: pair.address };
-    } catch (err) {
+    } catch {
       console.info();
     }
 
@@ -395,13 +428,22 @@ export class KeyringService {
       return { seed };
     }
 
+    const passphrase = password ?? this.password;
+
     try {
       const pair = keyring.getPair(address);
-      const seed = pair.exportMnemonic(password!);
+      const seed = pair.exportMnemonic(passphrase);
 
       return { seed };
     } catch {
-      return { seed: '' };
+      try {
+        const json = this.backupAccount(address, passphrase);
+        const seed = json ? decodeMnemonicFromJsonBackup(json, passphrase) : '';
+
+        return { seed };
+      } catch {
+        return { seed: '' };
+      }
     }
   }
 
@@ -490,6 +532,22 @@ export class KeyringService {
 
   isNeedMigration(): boolean {
     return this.getMigrationAccounts().length !== 0;
+  }
+
+  getUniversalWalletMigrationSnapshot() {
+    return buildWebUniversalWalletMigrationSnapshot({
+      accounts: [
+        ...this.getAccounts().map(({ address, meta }) => ({
+          address,
+          meta,
+          type: isEthereumAddress(address) ? 'ethereum' : undefined,
+        })),
+        ...Object.values(this.tonKeyring.accountSubject.value).map(({ json: { address, meta } }) => ({
+          address,
+          meta: meta as FWKeyringMeta,
+        })),
+      ],
+    });
   }
 
   keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {

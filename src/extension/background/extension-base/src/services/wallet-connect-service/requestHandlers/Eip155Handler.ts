@@ -1,4 +1,4 @@
-import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils';
+import { formatJsonRpcError, formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
 import { getSdkError } from '@walletconnect/utils';
 import { isSameAddress } from '@extension-base/utils';
 import { getEip155MessageAddress, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
@@ -53,7 +53,7 @@ export class Eip155RequestHandler {
 
           this.walletConnectService.responseRequest({ topic, response });
         })
-        .catch((e: any) => this.handleError(topic, id, e));
+        .catch((e: unknown) => this.handleError(topic, id, e));
     } else if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(request.params);
 

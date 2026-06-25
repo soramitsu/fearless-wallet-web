@@ -4,7 +4,7 @@ import { chrome } from '@extension-base/utils/crossenv';
 export default class WalletConnectStorage {
   getKeys(): Promise<string[]> {
     return new Promise((res) => {
-      chrome.storage.local.get(null).then((values) => {
+      (chrome.storage.local.get(null) as unknown as Promise<Record<string, unknown>>).then((values) => {
         res(Object.keys(values));
       });
     });
@@ -12,7 +12,7 @@ export default class WalletConnectStorage {
 
   getEntries<T = unknown>(): Promise<[string, T][]> {
     return new Promise((res) => {
-      chrome.storage.local.get(null).then((values) => {
+      (chrome.storage.local.get(null) as unknown as Promise<Record<string, T>>).then((values) => {
         res(Object.entries(values));
       });
     });
@@ -21,7 +21,7 @@ export default class WalletConnectStorage {
   getItem<T = unknown>(key: string): Promise<T | undefined> {
     return new Promise((res) => {
       chrome.storage.local.get(key).then((values) => {
-        res(values[key]);
+        res(values[key] as T | undefined);
       });
     });
   }

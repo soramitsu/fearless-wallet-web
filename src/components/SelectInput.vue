@@ -18,7 +18,7 @@
       </div>
 
       <div class="column right-column">
-        <FCorners class="FCorners-button" @click.native="click">
+        <FCorners class="FCorners-button" @click="click">
           <button data-testid="selectBtn" :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
@@ -29,7 +29,7 @@
             <div v-else class="select-label">Select</div>
 
             <Rotate v-if="showIconRotate" :isActive="syncedIsRotate" class="rotate-asset">
-              <SIcon name="chevron-bottom-16" data-testid="rotateAsset" />
+              <Icon icon="down" data-testid="rotateAsset" />
             </Rotate>
           </button>
         </FCorners>
@@ -47,151 +47,163 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { FPNumber } from '@sora-substrate/util';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class SelectInput extends Vue {
-  accountsStore = useAccountsStore();
-  inputIsFocused = false;
+export default defineComponent({ name: 'SelectInput' ,
+  props: {
+    text: { default: '' },
+    asset: { default: '' },
+    assetId: { default: '' },
+    value: { default: '' },
+    totalAmount: { default: 0 },
+    showBalance: { default: true },
+    readonly: { default: false },
+    showIcon: { default: true },
+    showOriginValue: { default: false },
+    amount: { type: String },
+    isRotate: { type: Boolean },
+  },
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+      inputIsFocused: false,
+    };
+  },
+  computed: {
+    showIconRotate() {
+      return this.showIcon && !this.readonly;
+    },
+    isSelected() {
+      return this.inputIsFocused && !this.readonly;
+    },
+    amountInternal: {
+      get() {
+        if (this.syncedAmount === '') return '';
 
-  @Prop({ default: '' }) text!: string;
-  @Prop({ default: '' }) asset!: string;
-  @Prop({ default: '' }) assetId!: string;
-  @Prop({ default: '' }) value!: string;
-  @Prop({ default: 0 }) totalAmount!: number;
-  @Prop({ default: true }) showBalance!: boolean;
-  @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: true }) showIcon!: boolean;
-  @Prop({ default: false }) showOriginValue!: boolean;
-  @PropSync('amount', { type: String }) syncedAmount!: string;
-  @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
+            if (this.showOriginValue) return this.syncedAmount;
 
-  get showIconRotate() {
-    return this.showIcon && !this.readonly;
-  }
+            if (this.syncedAmount.includes('.')) {
+              const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+              const localString = FPNumber.fromCodecValue(wholePart || 0, 0).toLocaleString();
 
-  get isSelected() {
-    return this.inputIsFocused && !this.readonly;
-  }
+              if (this.syncedAmount.endsWith('.')) return `${localString}.`;
 
-  get amountInternal() {
-    if (this.syncedAmount === '') return '';
+              if (localString === 'NaN') return this.syncedAmount;
 
-    if (this.showOriginValue) return this.syncedAmount;
+              return `${localString}.${fractionalPart}`;
+            }
 
-    if (this.syncedAmount.includes('.')) {
-      const [wholePart, fractionalPart] = this.syncedAmount.split('.');
-      const localString = FPNumber.fromCodecValue(wholePart || 0, 0).toLocaleString();
-
-      if (this.syncedAmount.endsWith('.')) return `${localString}.`;
-
-      if (localString === 'NaN') return this.syncedAmount;
-
-      return `${localString}.${fractionalPart}`;
-    }
-
-    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
-  }
-
-  set amountInternal(_value: string) {
-    const value = _value.replaceAll(',', '').replaceAll(' ', '');
-
-    if (value.length < this.syncedAmount.length) {
-      this.syncedAmount = value;
-
-      return;
-    }
-
-    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
-      if (value.includes('.')) {
-        const [wholePart, fractionalPart] = value.split('.');
-
-        if (value.endsWith('.')) {
-          this.syncedAmount = this.syncedAmount = `${wholePart}.`;
-
-          return;
-        }
-
-        this.syncedAmount = `${wholePart}.${fractionalPart}`;
-
-        return;
-      }
-
-      this.syncedAmount = value;
-    }
-  }
-
-  get header() {
-    return this.$t(this.text);
-  }
-
-  get tokenGroup() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.assetId);
-  }
-
-  get assetIcon() {
-    return this.tokenGroup?.icon;
-  }
-
-  get valueCut() {
-    return this.$n(+this.value, 'price');
-  }
-
-  get balanceValueClasses() {
-    return [
-      'balance-value',
-      {
-        'balance-value-readonly': this.readonly,
+            return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
       },
-    ];
-  }
+      set(_value: string) {
+        const value = _value.replaceAll(',', '').replaceAll(' ', '');
 
-  get selectButtonClasses() {
-    return [
-      'select-button',
-      {
-        'select-button-readonly': this.readonly,
+            if (value.length < this.syncedAmount.length) {
+              this.syncedAmount = value;
+
+              return;
+            }
+
+            if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
+              if (value.includes('.')) {
+                const [wholePart, fractionalPart] = value.split('.');
+
+                if (value.endsWith('.')) {
+                  this.syncedAmount = this.syncedAmount = `${wholePart}.`;
+
+                  return;
+                }
+
+                this.syncedAmount = `${wholePart}.${fractionalPart}`;
+
+                return;
+              }
+
+              this.syncedAmount = value;
+            }
       },
-    ];
-  }
-
-  get selectClasses() {
-    return [
-      'select',
-      {
-        'select-focused': this.inputIsFocused && !this.readonly,
+    },
+    header() {
+      return this.$t(this.text);
+    },
+    tokenGroup() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.assetId);
+    },
+    assetIcon() {
+      return this.tokenGroup?.icon;
+    },
+    valueCut() {
+      return this.$n(+this.value, 'price');
+    },
+    balanceValueClasses() {
+      return [
+            'balance-value',
+            {
+              'balance-value-readonly': this.readonly,
+            },
+          ];
+    },
+    selectButtonClasses() {
+      return [
+            'select-button',
+            {
+              'select-button-readonly': this.readonly,
+            },
+          ];
+    },
+    selectClasses() {
+      return [
+            'select',
+            {
+              'select-focused': this.inputIsFocused && !this.readonly,
+            },
+          ];
+    },
+    syncedAmount: {
+      get() {
+        return this.amount;
       },
-    ];
-  }
+      set(value) {
+        this.$emit('update:amount', value);
+      },
+    },
+    syncedIsRotate: {
+      get() {
+        return this.isRotate;
+      },
+      set(value) {
+        this.$emit('update:isRotate', value);
+      },
+    },
+  },
+  methods: {
+    IsNumber(event: KeyboardEvent) {
+      if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
+    },
+    setFocusValue(value: boolean) {
+      this.inputIsFocused = value;
 
-  IsNumber(event: KeyboardEvent) {
-    if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
-  }
+          if (!value) {
+            const [wholePart, fractionalPart] = this.syncedAmount.split('.');
 
-  setFocusValue(value: boolean) {
-    this.inputIsFocused = value;
+            if (+fractionalPart === 0) this.syncedAmount = wholePart;
+          }
+    },
+    setMax() {
+      if (this.readonly) return;
 
-    if (!value) {
-      const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+          this.$emit('setMax');
+    },
+    click() {
+      if (this.readonly) return;
 
-      if (+fractionalPart === 0) this.syncedAmount = wholePart;
-    }
-  }
-
-  setMax() {
-    if (this.readonly) return;
-
-    this.$emit('setMax');
-  }
-
-  click() {
-    if (this.readonly) return;
-
-    this.$emit('togglePopupVisibility');
-  }
-}
+          this.$emit('togglePopupVisibility');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

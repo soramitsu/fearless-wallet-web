@@ -21,53 +21,51 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-import type { PoolParams } from '@/stores';
+
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'PoolHeader',
   components: {},
-})
-export default class PoolHeader extends Vue {
-  accountsStore = useAccountsStore();
+  props: {
+    poolParams: { type: Object },
+    step: { type: Number },
+  },
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    size() {
+      return this.step === 3 ? 'big' : 'small';
+    },
+    tvl() {
+      const tvl = +(this.poolParams?.tvl ?? 0);
 
-  @Prop({ type: Object }) poolParams!: PoolParams;
-  @Prop({ type: Number }) step!: number;
+          return `${this.accountsStore.fiatSymbol}${this.$n(tvl, 'price')}`;
+    },
+    icon1() {
+      return this.poolParams?.asset1.icon ?? '';
+    },
+    icon2() {
+      return this.poolParams?.asset2.icon ?? '';
+    },
+    color1() {
+      return this.poolParams?.asset1.color ?? '';
+    },
+    color2() {
+      return this.poolParams?.asset2.color ?? '';
+    },
+    poolName() {
+      const asset1 = this.poolParams?.asset1.name.toUpperCase();
+          const asset2 = this.poolParams?.asset2.name.toUpperCase();
 
-  get size() {
-    return this.step === 3 ? 'big' : 'small';
-  }
-
-  get tvl() {
-    const tvl = +(this.poolParams?.tvl ?? 0);
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(tvl, 'price')}`;
-  }
-
-  get icon1() {
-    return this.poolParams?.asset1.icon ?? '';
-  }
-
-  get icon2() {
-    return this.poolParams?.asset2.icon ?? '';
-  }
-
-  get color1() {
-    return this.poolParams?.asset1.color ?? '';
-  }
-
-  get color2() {
-    return this.poolParams?.asset2.color ?? '';
-  }
-
-  get poolName() {
-    const asset1 = this.poolParams?.asset1.name.toUpperCase();
-    const asset2 = this.poolParams?.asset2.name.toUpperCase();
-
-    return `${asset1}-${asset2} ${this.$t('pools.pool')}`;
-  }
-}
+          return `${asset1}-${asset2} ${this.$t('pools.pool')}`;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

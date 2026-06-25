@@ -17,50 +17,56 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { CustomEvent } from '@/interfaces';
 
-@Component
-export default class NodeItem extends Vue {
-  readonly dotsHorizontalRef = 'dotsHorizontal';
+export default defineComponent({ name: 'NodeItem' ,
+  props: {
+    name: String,
+    url: String,
+    isActive: Boolean,
+    isCustomNode: Boolean,
+    isRemoveBorderBottom: Boolean,
+  },
+  data() {
+    return {
+      dotsHorizontalRef: 'dotsHorizontal',
+    };
+  },
+  computed: {
+    nodeItemClasses() {
+      return [
+            'node-item',
+            {
+              'node-active': this.isActive,
+              'not-border-bottom': this.isRemoveBorderBottom,
+            },
+          ];
+    },
+  },
+  methods: {
+    changeNode(event: CustomEvent) {
+      const classList = event.target?.classList;
 
-  @Prop(String) name!: string;
-  @Prop(String) url!: string;
-  @Prop(Boolean) isActive!: boolean;
-  @Prop(Boolean) isCustomNode!: boolean;
-  @Prop(Boolean) isRemoveBorderBottom!: boolean;
+          if (
+            classList.contains('node-item') ||
+            classList.contains('node-active') ||
+            classList.contains('url') ||
+            classList.contains('name')
+          )
+            this.$emit('changeNode');
+    },
+    openNodeSettingsPopup() {
+      const targetElement = (this.$refs[this.dotsHorizontalRef] as { $el: HTMLElement })?.$el;
+          const buttonTop = targetElement.getBoundingClientRect().top;
 
-  get nodeItemClasses() {
-    return [
-      'node-item',
-      {
-        'node-active': this.isActive,
-        'not-border-bottom': this.isRemoveBorderBottom,
-      },
-    ];
-  }
+          targetElement.style.zIndex = '200';
 
-  changeNode(event: CustomEvent) {
-    const classList = event.target?.classList;
-
-    if (
-      classList.contains('node-item') ||
-      classList.contains('node-active') ||
-      classList.contains('url') ||
-      classList.contains('name')
-    )
-      this.$emit('changeNode');
-  }
-
-  openNodeSettingsPopup() {
-    const targetElement = (this.$refs[this.dotsHorizontalRef] as Vue)?.$el as HTMLElement;
-    const buttonTop = targetElement.getBoundingClientRect().top;
-
-    targetElement.style.zIndex = '200';
-
-    this.$emit('openNodeSettingsPopup', buttonTop, this.isActive);
-  }
-}
+          this.$emit('openNodeSettingsPopup', buttonTop, this.isActive);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

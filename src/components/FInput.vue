@@ -1,22 +1,34 @@
 <template>
   <FCorners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
-      <SInput
+      <label class="s-placeholder">{{ $t(placeholder) }}</label>
+      <textarea
+        v-if="type === 'textarea'"
         v-model="vModel"
         ref="input"
-        :class="inputClasses"
-        :type="type"
-        :accept="accept"
-        :placeholder="$t(placeholder)"
-        :size="size"
+        :class="['el-input__inner', inputClasses]"
         :maxlength="maxlength"
         :readonly="readonly"
         :disabled="disabled"
-        :show-password="showPassword"
         :style="inputStyle"
         @blur="$emit('blur', $event)"
-        @input="$emit('change', $event)"
-        @keydown.native="keydownPress"
+        @input="$emit('change', vModel)"
+        @keydown="keydownPress"
+      />
+      <input
+        v-else
+        v-model="vModel"
+        ref="input"
+        :class="['el-input__inner', inputClasses]"
+        :type="showPassword ? 'password' : type === 'text-file' ? 'file' : type"
+        :accept="accept"
+        :maxlength="maxlength"
+        :readonly="readonly"
+        :disabled="disabled"
+        :style="inputStyle"
+        @blur="$emit('blur', $event)"
+        @input="$emit('change', vModel)"
+        @keydown="keydownPress"
       />
     </div>
   </FCorners>
@@ -132,20 +144,30 @@ defineExpose({ input });
 .input {
   position: relative;
 
-  .s-input {
+  .el-input__inner {
+    width: 100%;
+    min-height: 48px;
     border: 1px solid $default-background-color !important;
     padding-left: 25px !important;
+    padding-right: 16px !important;
+    outline: none;
   }
 
   .el-input__inner {
     font-size: 1em !important;
   }
 
-  .s-input .s-placeholder {
+  .s-placeholder {
+    display: block;
+    position: absolute;
+    top: 7px;
+    left: 25px;
+    z-index: 1;
+    font-size: 0.75rem;
     color: $default-white !important;
   }
 
-  .s-placeholder + .el-input {
+  .s-placeholder + .el-input__inner {
     padding-top: 15px !important;
   }
 
@@ -160,7 +182,7 @@ defineExpose({ input });
     color: $pink-lavender-color !important;
   }
 
-  .s-input {
+  .el-input__inner {
     background-color: $secondary-background-color !important;
   }
 }
@@ -171,19 +193,19 @@ defineExpose({ input });
     color: $plain-white !important;
   }
 
-  .s-input {
+  .el-input__inner {
     background-color: $pink-purple-color !important;
   }
 }
 
 .input-size-big {
-  .s-input {
+  .el-input__inner {
     clip-path: $big-clip-path-left-top-and-right-bottom;
   }
 }
 
 .input-size-medium {
-  .s-input {
+  .el-input__inner {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
   }
 }

@@ -53,105 +53,103 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
 import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class BackupWalletsList extends Vue {
-  accountsStore = useAccountsStore();
-
-  @Prop(Array) items!: FilesState[];
-  @Prop({ default: false }) isGoogle!: boolean;
-
-  setItemValue(index: number, data: Record<string, string | boolean>) {
-    this.$emit('setItemValue', index, data);
-  }
-
-  onConfirm(index: number) {
-    if (this.isGoogle) this.importFromGoogle(index);
-    else this.migrateAccounts(index);
-  }
-
-  async migrateAccounts(index: number) {
-    this.setItemValue(index, { isLoading: true });
-
-    const { address, password } = this.items[index];
-
-    const isSuccess = await migrateMasterPassword({ address: address!, password: password! });
-
-    const fields = {
-      isError: !isSuccess,
-      isComplete: isSuccess,
-      isLoading: false,
+export default defineComponent({ name: 'BackupWalletsList' ,
+  props: {
+    items: Array,
+    isGoogle: { default: false },
+  },
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
     };
+  },
+  methods: {
+    setItemValue(index: number, data: Record<string, string | boolean>) {
+      this.$emit('setItemValue', index, data);
+    },
+    onConfirm(index: number) {
+      if (this.isGoogle) this.importFromGoogle(index);
+          else this.migrateAccounts(index);
+    },
+    async migrateAccounts(index: number) {
+      this.setItemValue(index, { isLoading: true });
 
-    this.setItemValue(index, fields);
-  }
+          const { address, password } = this.items[index];
 
-  async importFromGoogle(index: number) {
-    this.setItemValue(index, { isLoading: true });
+          const isSuccess = await migrateMasterPassword({ address: address!, password: password! });
 
-    const { json, ethJson, password } = this.items[index];
+          const fields = {
+            isError: !isSuccess,
+            isComplete: isSuccess,
+            isLoading: false,
+          };
 
-    if (!json || !password) return;
+          this.setItemValue(index, fields);
+    },
+    async importFromGoogle(index: number) {
+      this.setItemValue(index, { isLoading: true });
 
-    const { value: isValid } = await isJsonValid(json, password);
+          const { json, ethJson, password } = this.items[index];
 
-    const fields = {
-      isError: !isValid,
-      isComplete: isValid,
-      isLoading: false,
-    };
+          if (!json || !password) return;
 
-    this.setItemValue(index, fields);
+          const { value: isValid } = await isJsonValid(json, password);
 
-    if (isValid) {
-      if (ethJson) await jsonRestore(ethJson, password);
+          const fields = {
+            isError: !isValid,
+            isComplete: isValid,
+            isLoading: false,
+          };
 
-      const address = await jsonRestore(json, password);
+          this.setItemValue(index, fields);
 
-      await updateCurrentAccount(address || this.accountsStore.selectedWallet.address);
+          if (isValid) {
+            if (ethJson) await jsonRestore(ethJson, password);
 
-      this.setItemValue(index, { isComplete: true, isLoading: false });
-    }
-  }
+            const address = await jsonRestore(json, password);
 
-  buttonText(file: FilesState) {
-    return file.isLoading || file.isComplete ? '' : 'common.confirm';
-  }
+            await updateCurrentAccount(address || this.accountsStore.selectedWallet.address);
 
-  isDisabled(file: FilesState) {
-    return !file.password || !file.password.length || file.isLoading || file.isComplete;
-  }
+            this.setItemValue(index, { isComplete: true, isLoading: false });
+          }
+    },
+    buttonText(file: FilesState) {
+      return file.isLoading || file.isComplete ? '' : 'common.confirm';
+    },
+    isDisabled(file: FilesState) {
+      return !file.password || !file.password.length || file.isLoading || file.isComplete;
+    },
+    changePassword(index: number, password: string) {
+      this.$emit('setItemPassword', index, password);
+    },
+    onSelect(value: boolean, index: number) {
+      const file = this.items[index];
 
-  changePassword(index: number, password: string) {
-    this.$emit('setItemPassword', index, password);
-  }
+          if (file.isComplete) return;
+          else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
 
-  onSelect(value: boolean, index: number) {
-    const file = this.items[index];
+          this.setItemValue(index, { active: value });
 
-    if (file.isComplete) return;
-    else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
+          if (this.isGoogle) {
+            if (file.json === undefined) this.$emit('getFile', file.id, index);
 
-    this.setItemValue(index, { active: value });
+            if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
+          }
+    },
+    cutAddress(address?: string) {
+      if (!address) return '';
 
-    if (this.isGoogle) {
-      if (file.json === undefined) this.$emit('getFile', file.id, index);
-
-      if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
-    }
-  }
-
-  cutAddress(address?: string) {
-    if (!address) return '';
-
-    return cut(address);
-  }
-}
+          return cut(address);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -1,12 +1,24 @@
 import { type KeyringAddress } from '@subwallet/ui-keyring/types';
-import type { EvmRequests } from '@extension-base/services/request-service/types';
+import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
-import type { RequestArguments } from '@json-rpc-tools/utils';
+import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type {
   RequestEvmEvents,
   EvmEvent,
   ResponseEvmProviderSend,
   RequestEvmProviderSend,
+  IrohaConnectRequest,
+  IrohaConnectResponse,
+  SolanaConnectRequest,
+  SolanaConnectResponse,
+  SolanaSignAllTransactionsRequest,
+  SolanaSignAllTransactionsResponse,
+  SolanaSignAndSendTransactionRequest,
+  SolanaSignAndSendTransactionResponse,
+  SolanaSignMessageRequest,
+  SolanaSignMessageResponse,
+  SolanaSignTransactionRequest,
+  SolanaSignTransactionResponse,
 } from '@extension-base/page/types';
 import type {
   PoolsParamsRequest,
@@ -23,8 +35,8 @@ import type {
   AvailableNftResponse,
   RequestSettingsChangePayload,
   ChainNftState,
+  AlchemyOwnedNftsResponse,
 } from '@extension-base/services/nft-service/types';
-import type { OwnedNftsResponse } from 'alchemy-sdk';
 import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
@@ -129,6 +141,7 @@ import type {
 } from '@polkadot/extension-inject/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type { UniversalWalletMigrationSnapshot } from '@/util/universalWalletMigrationContract';
 import type {
   DerivationPath,
   GoogleAuthTypes,
@@ -154,6 +167,7 @@ export interface RequestSignatures {
   'pri(keyring.reset)': [null, boolean];
   'pri(keyring.getMigrationAccounts)': [null, KeyringAddress[]];
   'pri(keyring.isNeedMigration)': [null, boolean];
+  'pri(keyring.getUniversalWalletMigrationSnapshot)': [null, UniversalWalletMigrationSnapshot];
   'pri(keyring.migrateMasterPassword)': [RequestMigratePassword, boolean];
 
   // Account Management
@@ -181,6 +195,7 @@ export interface RequestSignatures {
   // App Management - networks
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
+  'pri(app.isReady)': [null, boolean];
   'pri(networkMap.upsert)': [NetworkJson, void];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   'pri(selectedNetworks.getSubscription)': [null, string, string];
@@ -204,6 +219,7 @@ export interface RequestSignatures {
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.requests)': [null, SigningRequest[], SigningRequest[]];
+  'pri(signing.solanaRequests)': [null, SolanaRequests, SolanaRequests];
 
   'pri(window.open)': [string, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];
@@ -263,6 +279,22 @@ export interface RequestSignatures {
   'evm(authorizeUrl)': [RequestArguments, unknown];
   'evm(provider.send)': [RequestEvmProviderSend, string | number, ResponseEvmProviderSend];
 
+  // Solana dApp provider
+  'solana(authorizeUrl)': [SolanaConnectRequest, SolanaConnectResponse];
+  'solana(accounts)': [null, SolanaConnectResponse];
+  'solana(disconnect)': [null, SolanaConnectResponse];
+  'solana(events.subscribe)': [null, boolean, SolanaConnectResponse];
+  'solana(signMessage)': [SolanaSignMessageRequest, SolanaSignMessageResponse];
+  'solana(signTransaction)': [SolanaSignTransactionRequest, SolanaSignTransactionResponse];
+  'solana(signAndSendTransaction)': [SolanaSignAndSendTransactionRequest, SolanaSignAndSendTransactionResponse];
+  'solana(signAllTransactions)': [SolanaSignAllTransactionsRequest, SolanaSignAllTransactionsResponse];
+
+  // Iroha/Nexus dApp provider
+  'iroha(authorizeUrl)': [IrohaConnectRequest, IrohaConnectResponse];
+  'iroha(accounts)': [IrohaConnectRequest | null, IrohaConnectResponse];
+  'iroha(disconnect)': [null, IrohaConnectResponse];
+  'iroha(events.subscribe)': [IrohaConnectRequest | null, boolean, IrohaConnectResponse];
+
   // OnBoarding
   'pri(onboarding.isRequired)': [null, boolean];
   'pri(onboarding.getStories)': [string, OnboardingStories];
@@ -315,7 +347,7 @@ export interface RequestSignatures {
   'pri(walletConnect.app.pairing)': [null, string];
 
   // Nfts
-  'pri(nft.get.all)': [string, OwnedNftsResponse];
+  'pri(nft.get.all)': [string, AlchemyOwnedNftsResponse];
   'pri(nft.subscribe)': [null, ChainNftState, ChainNftState];
   'pri(nft.fetch)': [string, void];
   'pri(nft.send)': [NftTx, ResponseNftTransfer];

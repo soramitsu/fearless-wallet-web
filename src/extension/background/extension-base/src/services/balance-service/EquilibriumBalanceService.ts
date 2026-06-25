@@ -7,6 +7,16 @@ import type { u128 } from '@polkadot/types-codec';
 import { CHAIN_IDS, EQUILIBRIUM } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 
+type EquilibriumBalanceEntry = [u128, { asPositive: u128 }];
+type EquilibriumAccountData = {
+  data: {
+    asV0: {
+      lock: u128;
+      balance: EquilibriumBalanceEntry[];
+    };
+  };
+};
+
 export default class EquilibriumBalanceService {
   constructor(private readonly state: State) {}
 
@@ -21,10 +31,10 @@ export default class EquilibriumBalanceService {
 
     const pallet = api!.rx.query.system.account(address ?? '');
 
-    const sub = pallet.subscribe((balances: any) => {
-      const asV0 = balances.data['asV0'];
+    const sub = pallet.subscribe((balances: unknown) => {
+      const asV0 = (balances as EquilibriumAccountData).data.asV0;
       const locked = FPNumber.fromCodecValue((asV0.lock as u128).toNumber(), 9); // TODO: 9 дефолтный precision, уточнить насчет asV0.lock
-      const balance: any[] = asV0.balance;
+      const balance = asV0.balance;
 
       const notZeroBalances = balance.map(([key, { asPositive }]) => {
         const _currencyId = (key as u128).toString();

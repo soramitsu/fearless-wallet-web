@@ -18,8 +18,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRouter } from 'vue-router';
+import { useI18n } from '@/locales/useI18n';
 import WalletConnectHeader from '@/screens/walletConnect/WalletConnectHeader.vue';
 import { rejectWalletConnectSession } from '@/extension/messaging';
 import { useExtensionStore } from '@/stores/extension';

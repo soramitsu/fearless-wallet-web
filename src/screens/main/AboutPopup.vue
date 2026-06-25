@@ -102,7 +102,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from '@/locales/useI18n';
 import { MAIN_ITEMS, COMMUNITY_ITEMS, SOCIAL_MEDIA_ITEMS, SUPPORT_ITEMS } from '@/consts/extensionInformation';
 
 const emit = defineEmits(['handlerClose']);

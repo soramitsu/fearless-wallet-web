@@ -13,31 +13,33 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { getFormattedDate } from '@/helpers';
 
-@Component
-export default class AlertItem extends Vue {
-  @Prop({ type: String }) name!: string;
-  @Prop({ type: Number }) timespan!: number;
-  @Prop({ type: String }) formName!: string;
-
-  get date() {
-    return getFormattedDate(this.timespan, 'ms');
-  }
-
-  get tName() {
-    return this.$t(`staking.alertsList.${this.name}.name`);
-  }
-
-  get tDescriptions() {
-    return this.$t(`staking.alertsList.${this.name}.text`);
-  }
-
-  click() {
-    this.$emit('openForm', this.formName);
-  }
-}
+export default defineComponent({ name: 'AlertItem' ,
+  props: {
+    name: { type: String },
+    timespan: { type: Number },
+    formName: { type: String },
+  },
+  computed: {
+    date() {
+      return getFormattedDate(this.timespan, 'ms');
+    },
+    tName() {
+      return this.$t(`staking.alertsList.${this.name}.name`);
+    },
+    tDescriptions() {
+      return this.$t(`staking.alertsList.${this.name}.text`);
+    },
+  },
+  methods: {
+    click() {
+      this.$emit('openForm', this.formName);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -22,9 +22,9 @@
 </template>
 
 <script lang="ts">
+import { defineComponent } from 'vue';
+
 import Draggable from 'vuedraggable';
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -34,94 +34,93 @@ type TimeoutSubscription = {
   fn: () => void;
 };
 
-@Component({
+export default defineComponent({ name: 'Currencies',
   components: {
     Draggable,
     CurrencyItem,
   },
-})
-export default class Currencies extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  timeoutSubscriptions: TimeoutSubscription[] = [];
+  props: {
+    balances: Array,
+    filterValue: String,
+    showAssetsManagementForm: Boolean,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      timeoutSubscriptions: [] as TimeoutSubscription[],
+    };
+  },
+  computed: {
+    showLoader() {
+      return this.isEmptyBalances || this.accountsStore.isBalanceLoading;
+    },
+    isEmptyBalances() {
+      return this.accountsStore.balances.length === 0;
+    },
+    isOnline() {
+      return navigator.onLine;
+    },
+    showHiddenText() {
+      if (!this.isOnline || !this.balances) return true;
 
-  @Prop(Array) balances!: TokenGroup[];
-  @Prop(String) filterValue!: string;
-  @Prop(Boolean) showAssetsManagementForm!: boolean;
+          if (this.showAssetsManagementForm) return false;
 
-  get showLoader() {
-    return this.isEmptyBalances || this.accountsStore.isBalanceLoading;
-  }
+          const allHidden = this.balances.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
 
-  get isEmptyBalances() {
-    return this.accountsStore.balances.length === 0;
-  }
+          return this.balances.length === this.accountsStore.hiddenAssets.length || allHidden || !navigator.onLine;
+    },
+    filteredTokenGroups: {
+      get() {
+        return this.balances;
+      },
+      set(balances) {
+        this.accountsStore.setBalance({
+              details: balances,
+              reset: false,
+              saveSequence: true,
+            });
+      },
+    },
+  },
+  methods: {
+    getAssetPrice(assetKey: string | undefined) {
+      if (assetKey === undefined) return 0;
 
-  get isOnline() {
-    return navigator.onLine;
-  }
+          if (Object.keys(this.networksStore.assetsPrice).length && this.networksStore.assetsPrice.tokenPriceMap[assetKey])
+            return this.networksStore.assetsPrice.tokenPriceMap[assetKey];
 
-  get showHiddenText() {
-    if (!this.isOnline || !this.balances) return true;
+          return 0;
+    },
+    getPriceChange(assetKey: string | undefined) {
+      if (
+            this.networksStore.assetsPrice === undefined ||
+            this.networksStore.assetsPrice.tokenPriceChange === undefined ||
+            assetKey === undefined
+          )
+            return 0;
 
-    if (this.showAssetsManagementForm) return false;
+          if (this.networksStore.assetsPrice.tokenPriceChange[assetKey])
+            return this.networksStore.assetsPrice.tokenPriceChange[assetKey] / 100;
 
-    const allHidden = this.balances.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
+          return 0;
+    },
+    timeoutCallback(fn: () => void) {
+      this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
 
-    return this.balances.length === this.accountsStore.hiddenAssets.length || allHidden || !navigator.onLine;
-  }
+          this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
+            const subscription = setTimeout(() => fn(), 0);
 
-  get filteredTokenGroups() {
-    return this.balances;
-  }
+            return { subscription, fn };
+          });
+    },
+    mainText() {
+      if (!navigator.onLine) return 'common.offlineStatus';
 
-  set filteredTokenGroups(balances) {
-    this.accountsStore.setBalance({
-      details: balances,
-      reset: false,
-      saveSequence: true,
-    });
-  }
-
-  getAssetPrice(assetKey: string | undefined) {
-    if (assetKey === undefined) return 0;
-
-    if (Object.keys(this.networksStore.assetsPrice).length && this.networksStore.assetsPrice.tokenPriceMap[assetKey])
-      return this.networksStore.assetsPrice.tokenPriceMap[assetKey];
-
-    return 0;
-  }
-
-  getPriceChange(assetKey: string | undefined) {
-    if (
-      this.networksStore.assetsPrice === undefined ||
-      this.networksStore.assetsPrice.tokenPriceChange === undefined ||
-      assetKey === undefined
-    )
-      return 0;
-
-    if (this.networksStore.assetsPrice.tokenPriceChange[assetKey])
-      return this.networksStore.assetsPrice.tokenPriceChange[assetKey] / 100;
-
-    return 0;
-  }
-
-  timeoutCallback(fn: () => void) {
-    this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
-
-    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 0);
-
-      return { subscription, fn };
-    });
-  }
-
-  mainText() {
-    if (!navigator.onLine) return 'common.offlineStatus';
-
-    return this.filterValue !== '' ? 'common.nothingFound' : 'wallet.allAssetsHidden';
-  }
-}
+          return this.filterValue !== '' ? 'common.nothingFound' : 'wallet.allAssetsHidden';
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

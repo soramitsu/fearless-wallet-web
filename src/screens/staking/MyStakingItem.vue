@@ -63,77 +63,74 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { NetworkParams } from '@/stores';
+import { defineComponent } from 'vue';
+
 import { Components } from '@/router/routes';
 import { getCostOfAssets } from '@/helpers/transfers';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class MyStakingItem extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'MyStakingItem' ,
+  props: {
+    stakingNetwork: Object,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    fiatValue() {
+      const stakingCurrency = getUtilityAsset(this.accountsStore.balances, this.network);
+          const priceId = stakingCurrency?.priceId ?? '';
+          const price = this.networksStore.getAssetPrice(priceId).price;
+          const value = getCostOfAssets(this.totalStake, price, 'string').toString();
 
-  @Prop(Object) stakingNetwork!: NetworkParams;
-
-  get fiatValue() {
-    const stakingCurrency = getUtilityAsset(this.accountsStore.balances, this.network);
-    const priceId = stakingCurrency?.priceId ?? '';
-    const price = this.networksStore.getAssetPrice(priceId).price;
-    const value = getCostOfAssets(this.totalStake, price, 'string').toString();
-
-    return this.$n(+value, 'price');
-  }
-
-  get network() {
-    return this.stakingNetwork.network;
-  }
-
-  get icon() {
-    return this.stakingNetwork.icon;
-  }
-
-  get unbondPeriod() {
-    return this.stakingNetwork.unbondPeriod;
-  }
-
-  get unbondAmount() {
-    return this.stakingNetwork.unbond.sum;
-  }
-
-  get asset() {
-    return this.stakingNetwork.asset;
-  }
-
-  get isLoading() {
-    return this.stakingNetwork.loading;
-  }
-
-  get apy() {
-    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
-  }
-
-  get period() {
-    return `${this.unbondPeriod} ${this.$t('common.days')}`;
-  }
-
-  get totalStake() {
-    return this.stakingNetwork.totalStake;
-  }
-
-  openStakingInfo() {
-    if (!this.isLoading)
-      this.$router.push({
-        name: Components.MyStake,
-        params: {
-          network: this.network.toLowerCase(),
-          paramsLoaded: 'true',
-        },
-      });
-  }
-}
+          return this.$n(+value, 'price');
+    },
+    network() {
+      return this.stakingNetwork.network;
+    },
+    icon() {
+      return this.stakingNetwork.icon;
+    },
+    unbondPeriod() {
+      return this.stakingNetwork.unbondPeriod;
+    },
+    unbondAmount() {
+      return this.stakingNetwork.unbond.sum;
+    },
+    asset() {
+      return this.stakingNetwork.asset;
+    },
+    isLoading() {
+      return this.stakingNetwork.loading;
+    },
+    apy() {
+      return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
+    },
+    period() {
+      return `${this.unbondPeriod} ${this.$t('common.days')}`;
+    },
+    totalStake() {
+      return this.stakingNetwork.totalStake;
+    },
+  },
+  methods: {
+    openStakingInfo() {
+      if (!this.isLoading)
+            this.$router.push({
+              name: Components.MyStake,
+              params: {
+                network: this.network.toLowerCase(),
+                paramsLoaded: 'true',
+              },
+            });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

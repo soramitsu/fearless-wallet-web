@@ -1,4 +1,4 @@
-import type { EvmRequests } from '@extension-base/services/request-service/types';
+import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
@@ -23,6 +23,7 @@ export type State = {
   wcRequests: WalletConnectTransactionRequest[];
   wcSessions: WalletConnectSessions;
   signEvmRequests: EvmRequests;
+  signSolanaRequests: SolanaRequests;
   authList: AuthUrls;
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
@@ -39,6 +40,7 @@ export const state = (): State => {
     wcRequests: [],
     wcSessions: [],
     signEvmRequests: {},
+    signSolanaRequests: {},
     authList: {},
     tabStatus: null,
     features: null,

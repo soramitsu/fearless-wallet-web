@@ -51,50 +51,50 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 
-@Component({
+export default defineComponent({ name: 'FlowStepLayout',
   components: { FinishForm },
-})
-export default class FlowStepLayout extends Vue {
-  @Prop(Number) countSteps!: number;
-  @Prop(Number) step!: number;
-  @Prop({ default: false, type: Boolean }) isLoading!: boolean;
-  @Prop(String) header!: string;
-  @Prop({ default: false }) showFullScreenIcon!: boolean;
-  @Prop({ default: false }) showAdvancedForm!: boolean;
+  props: {
+    countSteps: Number,
+    step: Number,
+    isLoading: { default: false, type: Boolean },
+    header: String,
+    showFullScreenIcon: { default: false },
+    showAdvancedForm: { default: false },
+  },
+  computed: {
+    isFinishStep() {
+      return this.countSteps === this.step;
+    },
+    showBackButton() {
+      return !this.showAdvancedForm && !this.isFinishStep;
+    },
+  },
+  methods: {
+    back() {
+      this.$emit('back');
+    },
+    fullScreen() {
+      this.$emit('openFullScreen');
+    },
+    getClasses(num: number) {
+      //TODO it maybe broken
+          const isCircleHidden = this.step >= this.countSteps;
+          const isCircleFilled = !isCircleHidden && num <= this.step;
 
-  get isFinishStep() {
-    return this.countSteps === this.step;
-  }
-
-  get showBackButton() {
-    return !this.showAdvancedForm && !this.isFinishStep;
-  }
-
-  back() {
-    this.$emit('back');
-  }
-
-  fullScreen() {
-    this.$emit('openFullScreen');
-  }
-
-  getClasses(num: number) {
-    //TODO it maybe broken
-    const isCircleHidden = this.step >= this.countSteps;
-    const isCircleFilled = !isCircleHidden && num <= this.step;
-
-    return [
-      'circle-step',
-      {
-        'circle-filled': isCircleFilled,
-        'circle-hidden': isCircleHidden,
-      },
-    ];
-  }
-}
+          return [
+            'circle-step',
+            {
+              'circle-filled': isCircleFilled,
+              'circle-hidden': isCircleHidden,
+            },
+          ];
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

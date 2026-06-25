@@ -40,7 +40,7 @@ export function stripUrl(url: string): string {
 export async function isOpenClient() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
-  const contexts: any[] = await chrome.runtime.getContexts({});
+  const contexts: Array<{ contextType: string }> = await chrome.runtime.getContexts({});
 
   const index = contexts.findIndex(({ contextType }) => contextType === 'TAB' || contextType === 'POPUP');
 

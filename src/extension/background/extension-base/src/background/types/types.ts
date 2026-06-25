@@ -1,9 +1,8 @@
 import { type TonApiClient } from '@ton-api/client';
 import { type WordCount } from '../../services';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { ScamInfo } from '@extension-base/services/scam-service/types';
-import type { Subscription } from 'rxjs';
 import type { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { UserType } from '@extension-base/services/onboarding-service/types';
@@ -13,8 +12,7 @@ import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { WsProvider } from '@polkadot/rpc-provider';
 import type { ApiPromise } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
-import type { KeyringPair$Json, KeyringPair } from '@subwallet/keyring/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeyringPair$Json, KeyringPair, KeypairType as SubwalletKeypairType } from '@subwallet/keyring/types';
 import type { FWKeyringMeta, NetworkJson, PriceProvider } from '@extension-base/types';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
@@ -51,12 +49,16 @@ export type Port = chrome.runtime.Port;
 export interface AccountJson extends FWKeyringMeta {
   address: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
   genesisHash?: string | null;
   network?: string;
   active?: boolean;
   name: string;
   suri?: string;
-  type?: KeypairType;
+  type?: SubwalletKeypairType;
   haveEntropy?: boolean;
   whenCreated?: number;
 
@@ -91,7 +93,7 @@ export interface MetadataRequest {
   url: string;
 }
 
-export type AccountAuthType = 'substrate' | 'evm' | 'both';
+export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' | 'all';
 
 export interface SigningRequest {
   account: AccountJson;
@@ -120,6 +122,11 @@ export interface RequestAddressCreate {
 export interface FetchBalanceRequest {
   address: string;
   ethereumAddress?: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
   networks: NetworkName[];
   walletEcosystem: WalletEcosystem;
 }
@@ -183,7 +190,7 @@ export interface RequestAuthorizeApprove {
   authorizedAccounts: string[];
 }
 
-export type AuthType = 'substrate' | 'evm';
+export type AuthType = 'substrate' | 'evm' | 'solana' | 'iroha';
 export interface RequestUpdateAuthorizedAccounts {
   url: string;
   authorizedAccounts: string[];
@@ -200,7 +207,7 @@ export interface RequestMetadataReject {
 
 export interface RequestAccountCreateSuri {
   suri: string;
-  type?: KeypairType;
+  type?: SubwalletKeypairType;
   meta: FWKeyringMeta;
   walletEcosystem: WalletEcosystem;
 }
@@ -300,8 +307,7 @@ export type FetchBalancePayload = {
   force?: boolean;
 };
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type BaseRequestSign = {};
+export type BaseRequestSign = object;
 
 export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: NetworkName;
@@ -310,6 +316,14 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   assetId: string;
   relayChain?: RelayChainName;
   amount?: string;
+  bitcoinFeeRateSatPerVbyte?: number;
+  bitcoinFeeTargetBlocks?: number;
+  bitcoinIncludeUnconfirmed?: boolean;
+  bitcoinMaxInputs?: number;
+  bitcoinSelectedOutpoints?: Array<{
+    txid: string;
+    vout: number;
+  }>;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -613,6 +627,8 @@ export interface AuthUrlInfo {
   accountAuthType?: AccountAuthType;
   authorizedAccounts: string[];
   evmAuthorizedAccount: string;
+  solanaAuthorizedAccount?: string;
+  irohaAuthorizedAccount?: string;
   allowedAccountsMap: Record<string, boolean>;
   currentEvmNetworkKey?: string;
 }
@@ -661,7 +677,7 @@ export interface SignRequest extends Resolver<ResponseSigning> {
 }
 
 export interface AccountSub {
-  subscription: Subscription;
+  subscription: { unsubscribe(): void };
   url: string;
 }
 

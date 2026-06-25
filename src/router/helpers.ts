@@ -1,4 +1,4 @@
-import { type Route } from 'vue-router';
+import type { RouteLocationNormalized } from 'vue-router';
 import type { NetworkName } from '@/interfaces';
 import type { NetworkParams } from '@/stores';
 import type { ExtensionStore } from '@/stores/extension';
@@ -19,7 +19,9 @@ const haveMetaRequests = (extensionStore: ExtensionStore): number => extensionSt
 const getStakingNetwork = async (stakingStore: StakingStore, network: NetworkName): Promise<NetworkParams> =>
   await new Promise((res) => setTimeout(() => res(stakingStore.getStakingNetwork(network)), 100));
 
-const updateTitle = (to: Route) => {
+const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+const updateTitle = (to: RouteLocationNormalized) => {
   if (IS_POPUP) return;
   const { name, meta, params } = to;
 
@@ -32,7 +34,7 @@ const updateTitle = (to: Route) => {
 
   if (params && haveBalances && (IsAssetsNetworkPage || IsAssetsHistoryPage)) {
     if (IsAssetsNetworkPage) {
-      const assetId = params.assetId;
+      const assetId = routeParam(params.assetId);
 
       const symbol = tokenBalances.find(({ groupId }) => groupId === assetId)?.symbol;
       const title = symbol ? `${FEARLESS_TITLE} | ${symbol.toUpperCase()}` : FEARLESS_TITLE;
@@ -43,8 +45,8 @@ const updateTitle = (to: Route) => {
     }
 
     if (IsAssetsHistoryPage) {
-      const assetId = params.assetId;
-      const network = params.selectedNetwork;
+      const assetId = routeParam(params.assetId);
+      const network = routeParam(params.selectedNetwork);
 
       const symbol = tokenBalances.find(({ groupId }) => groupId === assetId)?.symbol;
       const title = symbol ? `${FEARLESS_TITLE} | ${symbol.toUpperCase()} | ${network.toUpperCase()}` : FEARLESS_TITLE;
@@ -52,8 +54,8 @@ const updateTitle = (to: Route) => {
       setTitle(title);
     }
   } else {
-    const toTitle = meta?.title ?? '';
-    const tabName = (toTitle !== '' ? i18n.t(`browserTabs.${toTitle}`) : '') as string;
+    const toTitle = String(meta?.title ?? '');
+    const tabName = toTitle !== '' ? i18n.global.t(`browserTabs.${toTitle}`) : '';
 
     const title = `${FEARLESS_TITLE} ${tabName !== '' ? '|' : ''} ${tabName.toUpperCase()}`;
 

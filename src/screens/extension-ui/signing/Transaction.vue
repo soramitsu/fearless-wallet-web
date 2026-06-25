@@ -45,7 +45,8 @@ import registry from '@extension-base/api/substrate/typeRegistry';
 import { reactive, computed, onMounted } from 'vue';
 import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
 import { formatUnits } from 'ethers';
-import { type EvmRequestPayload } from '@extension-base/services/request-service/types';
+import { type EvmRequestPayload, type SolanaRequestPayload } from '@extension-base/services/request-service/types';
+import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import type { ApprovePayload } from '@/stores/extension/actions';
@@ -69,9 +70,28 @@ const requests = computed(() => extensionStore.signAllRequests);
 const accounts = computed(() => accountsStore.accounts);
 const selectedWallet = computed(() => accountsStore.selectedWallet);
 
-const transactionAddress = computed(() => payload.value?.address ?? selectedWallet.value.address);
-const request = computed<SigningRequest | EvmRequestPayload>(
-  () => requests.value.substrate[0] ?? Object.values(requests.value.evm)[0]
+type SubstratePayload = SignerPayloadJSON | SignerPayloadRaw;
+
+const isEvmRequest = (value: unknown): value is EvmRequestPayload =>
+  !!value && typeof value === 'object' && 'data' in value;
+
+const isSolanaRequest = (value: unknown): value is SolanaRequestPayload =>
+  !!value && typeof value === 'object' && 'ecosystem' in value && value.ecosystem === 'solana';
+
+const isSubstrateRequest = (value: unknown): value is SigningRequest =>
+  !!value && typeof value === 'object' && 'account' in value && 'request' in value;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object';
+
+const getEvmRequestData = (value: EvmRequestPayload): unknown[] => (Array.isArray(value.data) ? value.data : [value.data]);
+
+const substratePayload = computed<SubstratePayload | undefined>(() =>
+  payload.value && !isEvmRequest(payload.value) && !isSolanaRequest(payload.value) ? payload.value : undefined
+);
+
+const transactionAddress = computed(() => substratePayload.value?.address ?? selectedWallet.value.address);
+const request = computed<SigningRequest | EvmRequestPayload | SolanaRequestPayload | undefined>(
+  () => requests.value.substrate[0] ?? Object.values(requests.value.evm)[0] ?? Object.values(requests.value.solana)[0]
 );
 
 const isSignMobile = computed(() => {
@@ -81,31 +101,49 @@ const isSignMobile = computed(() => {
 });
 
 const address = computed(() => {
-  if (request.value && 'data' in request.value) return request.value.data[0].from ?? request.value.data[1];
+  if (isEvmRequest(request.value)) {
+    const data = getEvmRequestData(request.value);
+    const first = data[0];
 
-  return request.value?.account.address;
+    if (isRecord(first) && first.from !== undefined) return String(first.from);
+
+    return data[1] !== undefined ? String(data[1]) : '';
+  }
+
+  if (isSolanaRequest(request.value)) return request.value.account.address;
+
+  return isSubstrateRequest(request.value) ? request.value.account.address : '';
 });
 
 const typedPayload = computed<GenericExtrinsicPayload | undefined>(() => {
-  if (request.value && 'data' in request.value) return;
+  if (!substratePayload.value) return;
 
-  registry.setSignedExtensions(payload.value.signedExtensions);
+  if ('signedExtensions' in substratePayload.value) registry.setSignedExtensions(substratePayload.value.signedExtensions);
 
-  return registry.createType('ExtrinsicPayload', payload.value, { version: payload.value.version });
+  const version = 'version' in substratePayload.value ? substratePayload.value.version : 4;
+
+  return registry.createType('ExtrinsicPayload', substratePayload.value, { version });
 });
 
 const accountName = computed(() => {
   if (!request.value) return '';
 
+  if (isSolanaRequest(request.value)) return request.value.account.name ?? request.value.account.address;
+
   if ('account' in request.value) return request.value.account.name;
 
-  return request.value.data[0].from ?? request.value.data[0];
+  const data = getEvmRequestData(request.value);
+  const first = data[0];
+
+  if (isRecord(first) && first.from !== undefined) return String(first.from);
+
+  return first !== undefined ? String(first) : '';
 });
 
 const onSignApprove = (data: ApprovePayload) => extensionStore.approveSign(data);
 
 onMounted(async () => {
-  if (isSignMobile.value) onSignApprove({ id: request.value.id });
+  if (isSignMobile.value && request.value && !isSolanaRequest(request.value)) onSignApprove({ id: request.value.id });
 });
 
 const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
@@ -118,34 +156,102 @@ const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string
   return `mortal, valid from ${birth} to ${death}`;
 };
 
-const mortality = computed(() => mortalityAsString(typedPayload.value?.era, payload.value.blockNumber));
+const blockNumber = computed(() =>
+  substratePayload.value && 'blockNumber' in substratePayload.value ? substratePayload.value.blockNumber : ''
+);
+
+const mortality = computed(() => mortalityAsString(typedPayload.value?.era, blockNumber.value));
 
 const txInfo = computed(() => {
+  if (!request.value) return {};
+
   const info: Record<string, string | number> = {
     url: request.value.url,
   };
 
-  if (request.value && 'data' in request.value) {
-    if (typeof request.value.data === 'object') {
-      const [payload] = request.value.data;
+  if (isEvmRequest(request.value)) {
+    const requestData = getEvmRequestData(request.value);
 
-      if (typeof payload === 'object') {
-        if ('gas' in payload) info.gas = formatUnits(payload.gas, 'gwei');
-        if ('value' in payload) info.value = formatUnits(payload.value);
-        if ('to' in payload) info.to = cut(payload.to.toString(), 15);
-        if ('from' in payload) info.from = cut(payload.from.toString(), 15);
-        if ('data' in payload) info.data = cut(payload.data.toString(), 15);
-      } else {
-        info.data = request.value.data[0];
-      }
+    const [payload] = requestData;
+
+    if (isRecord(payload)) {
+      if (payload.gas !== undefined) info.gas = formatUnits(String(payload.gas), 'gwei');
+      if (payload.value !== undefined) info.value = formatUnits(String(payload.value));
+      if (payload.to !== undefined) info.to = cut(String(payload.to), 15);
+      if (payload.from !== undefined) info.from = cut(String(payload.from), 15);
+      if (payload.data !== undefined) info.data = cut(String(payload.data), 15);
     } else {
-      info.data = request.value.data[0];
+      info.data = payload !== undefined ? String(payload) : '';
     }
-  } else {
+  } else if (isSolanaRequest(request.value)) {
+    info.ecosystem = 'solana';
+    info.method = request.value.method;
+    info.address = cut(request.value.account.address, 15);
+
+    if (request.value.method === 'signMessage' && request.value.messageBase64) {
+      info.messageBytes = getBase64ByteLength(request.value.messageBase64);
+      info.display = request.value.display ?? 'utf8';
+      info.message = cut(request.value.messageBase64, 24);
+    } else if (
+      (request.value.method === 'signTransaction' || request.value.method === 'signAndSendTransaction') &&
+      request.value.transactionBase64
+    ) {
+      const preview = request.value.transactionPreview;
+
+      info.transactionBytes = preview?.transactionBytes ?? getBase64ByteLength(request.value.transactionBase64);
+      info.transaction = cut(request.value.transactionBase64, 24);
+
+      if (preview?.parseError) {
+        info.previewError = preview.parseError;
+      } else if (preview) {
+        info.version = preview.version ?? '';
+        info.requiredSignatures = preview.requiredSignatures ?? 0;
+        info.signatureSlots = preview.signatureCount ?? 0;
+        info.accountKeys = preview.accountCount ?? 0;
+        info.instructions = preview.instructionCount ?? 0;
+        info.addressTableLookups = preview.addressTableLookupCount ?? 0;
+        if (preview.firstSigner) info.firstSigner = cut(preview.firstSigner, 15);
+        if (preview.recentBlockhash) info.recentBlockhash = cut(preview.recentBlockhash, 15);
+      }
+
+      if (request.value.method === 'signAndSendTransaction') {
+        info.preflightCommitment = request.value.options?.preflightCommitment ?? 'confirmed';
+        info.skipPreflight = String(request.value.options?.skipPreflight ?? false);
+        if (request.value.options?.maxRetries !== undefined) info.maxRetries = request.value.options.maxRetries;
+
+        if (request.value.fee) {
+          info.fee = request.value.fee.status;
+          if (request.value.fee.slot !== undefined) info.feeSlot = request.value.fee.slot;
+          if (request.value.fee.lamports !== undefined) info.feeLamports = request.value.fee.lamports;
+          if (request.value.fee.error) info.feeError = cut(request.value.fee.error, 36);
+        }
+
+        if (request.value.simulation) {
+          info.simulation = request.value.simulation.status;
+          if (request.value.simulation.slot !== undefined) info.simulationSlot = request.value.simulation.slot;
+          if (request.value.simulation.unitsConsumed !== undefined)
+            info.simulationUnits = request.value.simulation.unitsConsumed;
+          if (request.value.simulation.logCount !== undefined) info.simulationLogs = request.value.simulation.logCount;
+          if (request.value.simulation.error) info.simulationError = cut(request.value.simulation.error, 36);
+        }
+      }
+    } else if (request.value.transactionsBase64) {
+      info.transactions = request.value.transactionsBase64.length;
+      info.totalBytes = request.value.transactionsBase64.reduce((total, value) => total + getBase64ByteLength(value), 0);
+
+      if (request.value.transactionPreviews) {
+        const previewErrors = request.value.transactionPreviews.filter(({ parseError }) => parseError).length;
+
+        info.parsedTransactions = request.value.transactionPreviews.length - previewErrors;
+        if (previewErrors > 0) info.previewErrors = previewErrors;
+      }
+    }
+  } else if (isSubstrateRequest(request.value)) {
+    const substrateRequest = request.value;
     const data: Record<string, string | number | undefined> = {
       nonce: typedPayload.value?.nonce.toString(),
-      wallet: request.value.account.name,
-      address: request.value.account.address,
+      wallet: substrateRequest.account.name,
+      address: substrateRequest.account.address,
       genesisHash: typedPayload.value?.genesisHash.toString(),
       specVersion: typedPayload.value?.specVersion.toString(),
       method: typedPayload.value?.method.toString(),
@@ -162,9 +268,19 @@ const txInfo = computed(() => {
   return info;
 });
 
-const onReject = async () => extensionStore.signCancel(request.value.id);
+const getBase64ByteLength = (value: string): number => {
+  const normalized = value.replace(/=+$/, '');
+
+  return Math.floor((normalized.length * 3) / 4);
+};
+
+const onReject = async () => {
+  if (request.value) await extensionStore.signCancel(request.value.id);
+};
 
 const sendExtrinsic = async () => {
+  if (!request.value) return;
+
   state.isDisabled = true;
 
   onSignApprove({ id: request.value.id });

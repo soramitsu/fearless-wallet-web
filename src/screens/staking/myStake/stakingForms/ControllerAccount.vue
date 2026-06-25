@@ -59,61 +59,68 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import type { NetworkParams } from '@/stores';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
 import { cut } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({})
-export default class ControllerAccount extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'ControllerAccount' ,
+  props: {
+    step: { type: Number },
+    fee: { type: String },
+    stakingCurrency: { type: Object },
+    stakingNetwork: { type: Object },
+    isValidController: { type: Boolean },
+    controllerAddress: { type: String },
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    controllerName() {
+      return this.stakingNetwork.controllerName;
+    },
+    controllerCut() {
+      return cut(this.controllerName);
+    },
+    asset() {
+      return this.stakingCurrency.symbol;
+    },
+    addressCut() {
+      return cut(this.syncedControllerAddress);
+    },
+    accountName() {
+      return cut(this.stakingNetwork.stashName);
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
 
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: String }) fee!: string;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Boolean }) isValidController!: boolean;
-  @PropSync('controllerAddress', { type: String }) syncedControllerAddress!: string;
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    valueString() {
+      const value = +this.fee * this.stakingAssetPrice;
 
-  get controllerName() {
-    return this.stakingNetwork.controllerName;
-  }
-
-  get controllerCut() {
-    return cut(this.controllerName);
-  }
-
-  get asset() {
-    return this.stakingCurrency.symbol;
-  }
-
-  get addressCut() {
-    return cut(this.syncedControllerAddress);
-  }
-
-  get accountName() {
-    return cut(this.stakingNetwork.stashName);
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get valueString() {
-    const value = +this.fee * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-
-  setControllerAddress(value = '') {
-    this.syncedControllerAddress = value;
-  }
-}
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+    syncedControllerAddress: {
+      get() {
+        return this.controllerAddress;
+      },
+      set(value) {
+        this.$emit('update:controllerAddress', value);
+      },
+    },
+  },
+  methods: {
+    setControllerAddress(value = '') {
+      this.syncedControllerAddress = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

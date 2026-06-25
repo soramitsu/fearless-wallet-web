@@ -1,28 +1,21 @@
 import '@polkadot/extension-inject/crossenv';
-import { createPinia, PiniaVuePlugin } from 'pinia';
-import Vue from 'vue';
-import { Plugin } from 'vue-fragment';
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import router from '@/router';
 import { i18n } from '@/locales';
-import store from '@/store';
 import App from '@/App.vue';
 import '@/styles';
-import '@/plugins';
+import { registerPlugins } from '@/plugins';
 import '@/assets';
-import '@/components';
-
-Vue.use(Plugin);
-Vue.use(PiniaVuePlugin); // TODO: remove for vue 3
-
-Vue.config.productionTip = false;
-Vue.config.devtools = process.env.NODE_ENV === 'development';
+import { registerComponents } from '@/components';
 
 export const pinia = createPinia();
+const app = createApp(App);
 
-new Vue({
-  store,
-  pinia,
-  router,
-  i18n,
-  render: (h) => h(App),
-}).$mount('#app');
+app.use(pinia);
+app.use(router);
+app.use(i18n);
+registerPlugins(app);
+registerComponents(app);
+app.config.performance = process.env.NODE_ENV === 'development';
+app.mount('#app');

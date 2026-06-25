@@ -15,33 +15,39 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { BuyProvider } from '@/interfaces';
 import { getProviderUrl } from '@/helpers/currencies';
 import { useExtensionStore } from '@/stores/extension';
 
-@Component
-export default class BuyPopup extends Vue {
-  extensionStore = useExtensionStore();
+export default defineComponent({ name: 'BuyPopup' ,
+  props: {
+    asset: String,
+    address: String,
+    providers: Array,
+  },
+  data() {
+    return {
+      extensionStore: useExtensionStore(),
+    };
+  },
+  computed: {
+    headerText() {
+      return this.$t('assets.buyHeader', { asset: this.asset });
+    },
+    providersFiltered() {
+      return this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
+    },
+  },
+  methods: {
+    openProvider(providerName: BuyProvider) {
+      const url = getProviderUrl(providerName, this.asset, this.address);
 
-  @Prop(String) asset!: string;
-  @Prop(String) address!: string;
-  @Prop(Array) providers!: ('ramp' | 'moonpay')[];
-
-  get headerText() {
-    return this.$t('assets.buyHeader', { asset: this.asset });
-  }
-
-  get providersFiltered() {
-    return this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
-  }
-
-  openProvider(providerName: BuyProvider) {
-    const url = getProviderUrl(providerName, this.asset, this.address);
-
-    window.open(url);
-  }
-}
+          window.open(url);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

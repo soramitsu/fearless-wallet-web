@@ -8,8 +8,8 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
+import { useI18n } from '@/locales/useI18n';
 
 type Props = {
   iconName: 'notification' | 'warning';

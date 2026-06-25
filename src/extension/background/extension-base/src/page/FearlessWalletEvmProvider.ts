@@ -2,12 +2,17 @@ import { type FWEvmProvider } from '@extension-base/page/types';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import { sendMessage } from '.';
-import type { RequestArguments } from '@json-rpc-tools/utils';
+import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import { APP_VERSION } from '@/consts/global';
 
 export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
   method: 'net_version';
 }
+
+type EvmRequestArguments<T = unknown> = Omit<RequestArguments<T>, 'id'> & {
+  id?: unknown;
+  jsonrpc?: string;
+};
 
 let subscribeFlag = false;
 
@@ -77,7 +82,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     return this.request<string[]>({ method: 'eth_requestAccounts' });
   }
 
-  request<T>({ method, params }: RequestArguments): Promise<T> {
+  request<T>({ method, params }: EvmRequestArguments): Promise<T> {
     if (!this.isEnabled && method === 'eth_accounts') return this.request({ method: 'eth_requestAccounts' });
 
     // Subscribe events
@@ -86,8 +91,9 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
       case 'wallet_requestPermissions':
         return new Promise((resolve, reject) => {
           const origin = document.title !== '' ? document.title : window.location.hostname;
+          const permissionParams = params && typeof params === 'object' ? params : {};
 
-          sendMessage('evm(request)', { params: { ...params, origin }, method })
+          sendMessage('evm(request)', { params: { ...permissionParams, origin }, method })
             .then((result) => resolve(result as T))
             .catch((e) => reject(e));
         });

@@ -30,10 +30,10 @@
 
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRoute, useRouter } from 'vue-router';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import type { ChainData } from '@/interfaces/walletconnect';
+import { useI18n } from '@/locales/useI18n';
 import { transformNamespaces } from '@/util/walletConnect';
 import { disconnectWalletConnectConnection } from '@/extension/messaging/wallet-connect-requests';
 import { useExtensionStore } from '@/stores/extension';
@@ -42,7 +42,7 @@ const route = useRoute();
 const router = useRouter();
 const extensionStore = useExtensionStore();
 const { t } = useI18n();
-const topic = computed(() => route.params.topic);
+const topic = computed(() => (Array.isArray(route.params.topic) ? route.params.topic[0] : route.params.topic) ?? '');
 
 const request = computed(() => {
   const list = extensionStore.wcSessions;

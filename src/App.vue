@@ -7,7 +7,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { initStorage } from '@extension-base/stores/Storage';
@@ -33,158 +34,151 @@ import { IS_EXTENSION } from '@/consts/global';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
 import { getPopupIds } from '@/extension/messaging/popup';
 
-@Component({})
-export default class App extends Vue {
-  extensionStore = useExtensionStore();
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'App' ,
+  data() {
+    return {
+      extensionStore: useExtensionStore(),
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      pingInterval: undefined,
+    };
+  },
+  computed: {
+    includeKeepAlive() {
+      const components = ['Main'];
 
-  pingInterval: NodeJS.Timer | undefined = undefined;
+          // It was necessary to prevent the SwapForm state from being reset when navigating to the Disclaimer page
+          if (this.accountsStore.showPolkaswapAlert) components.push('SwapForm');
 
-  get includeKeepAlive() {
-    const components = ['Main'];
-
-    // It was necessary to prevent the SwapForm state from being reset when navigating to the Disclaimer page
-    if (this.accountsStore.showPolkaswapAlert) components.push('SwapForm');
-
-    return components;
-  }
-
-  get appMainClass() {
-    return IS_EXTENSION ? 'fw-extension' : 'fw-web';
-  }
-
+          return components;
+    },
+    appMainClass() {
+      return IS_EXTENSION ? 'fw-extension' : 'fw-web';
+    },
+  },
   async created() {
     lockExtension();
 
-    this.setupWallet();
+        this.setupWallet();
 
-    if (IS_EXTENSION) {
-      const win = await chrome.windows.getCurrent();
-      const hasRequests = await this.extensionStore.subscribeExtensionRequests();
+        if (IS_EXTENSION) {
+          const win = await chrome.windows.getCurrent();
+          const hasRequests = await this.extensionStore.subscribeExtensionRequests();
 
-      if (win.type === 'popup') {
-        const popupIds = await getPopupIds();
+          if (win.type === 'popup') {
+            const popupIds = await getPopupIds();
 
-        if (popupIds.includes(win.id ?? 0) && hasRequests) return;
-      }
-    }
+            if (popupIds.includes(win.id ?? 0) && hasRequests) return;
+          }
+        }
 
-    if (!IS_EXTENSION) await this.setupWeb();
+        if (!IS_EXTENSION) await this.setupWeb();
 
-    setTitle();
+        setTitle();
 
-    this.setupNetworks();
-    this.networksStore.getFiats();
+        this.setupNetworks();
+        this.networksStore.getFiats();
 
-    await this.setupBalance();
+        await this.setupBalance();
 
-    this.setupNfts();
-    this.setupPrice();
-    this.setupSWPing();
+        this.setupNfts();
+        this.setupPrice();
+        this.setupSWPing();
 
-    this.extensionStore.fetchFeatures();
-  }
-
-  setupSWPing() {
-    this.pingInterval = setInterval(() => {
-      try {
-        pingServiceWorker();
-      } catch (error) {
-        window.close();
-      }
-    }, 20000);
-  }
-
-  destroyed() {
+        this.extensionStore.fetchFeatures();
+  },
+  unmounted() {
     clearInterval(this.pingInterval);
-  }
+  },
+  methods: {
+    setupSWPing() {
+      this.pingInterval = setInterval(() => {
+            try {
+              pingServiceWorker();
+            } catch {
+              window.close();
+            }
+          }, 20000);
+    },
+    async setupBalance() {
+      const callback = (balance: BalanceJson) => {
+            this.accountsStore.setIsBalanceLoading(false);
+            this.accountsStore.setBalance(balance);
+          };
 
-  async setupBalance() {
-    const callback = (balance: BalanceJson) => {
-      this.accountsStore.setIsBalanceLoading(false);
-      this.accountsStore.setBalance(balance);
-    };
+          const balance = await subscribeBalance(callback);
 
-    const balance = await subscribeBalance(callback);
+          callback(balance);
+    },
+    async setupWeb() {
+      await cryptoWaitReady()
+            .then(() => {
+              // TODO send message to SW, dont use import state, MigrationService
 
-    callback(balance);
-  }
+              // state.keyringService.loadAll();
+              // state.eventService.emit('crypto.ready', true);
 
-  async setupWeb() {
-    await cryptoWaitReady()
-      .then(() => {
-        // TODO send message to SW, dont use import state, MigrationService
+              keyring.restoreKeyringPassword();
 
-        // state.keyringService.loadAll();
-        // state.eventService.emit('crypto.ready', true);
+              // MigrationService.start();
+            })
+            .catch((error) => console.error('initialization failed', error));
 
-        keyring.restoreKeyringPassword();
+          await initStorage();
+    },
+    async setupNfts() {
+      const ownedNfts = await getNftSubscribe((nftUpdates) => this.accountsStore.setNfts(nftUpdates));
 
-        // MigrationService.start();
-      })
-      .catch((error) => console.error('initialization failed', error));
+          this.accountsStore.setNfts(ownedNfts);
+    },
+    async setupNetworks() {
+      const nets = await subscribeNetworkMap((networksUpdates) =>
+            this.networksStore.setNetworks({ networks: Object.values(networksUpdates) })
+          );
 
-    await initStorage();
-  }
+          this.networksStore.setNetworks({ networks: Object.values(nets) });
 
-  async setupNfts() {
-    const ownedNfts = await getNftSubscribe((nftUpdates) => this.accountsStore.setNfts(nftUpdates));
+          await subscribeSelectedNetworks((network) => this.accountsStore.setSelectedNetwork(network));
+    },
+    async setupPrice() {
+      const prices = await subscribePrice((priceUpdates) => {
+            this.updatePrice(priceUpdates);
+          });
 
-    this.accountsStore.setNfts(ownedNfts);
-  }
+          this.updatePrice(prices);
+    },
+    updatePrice({ fiat, tokenPriceMap, tokenPriceChange }: PriceJson) {
+      this.accountsStore.setSelectedFiat(fiat);
+          this.networksStore.setPrices({ tokenPriceMap, tokenPriceChange });
+    },
+    onAccountUpdate(accounts: AccountJson[]) {
+      const selectedAccount = accounts.find((account) => account.active);
 
-  async setupNetworks() {
-    const nets = await subscribeNetworkMap((networksUpdates) =>
-      this.networksStore.setNetworks({ networks: Object.values(networksUpdates) })
-    );
+          // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
+          // это любой кейс смены аккаунта за исключением выше описанного
+          if (
+            selectedAccount?.address !== this.accountsStore.selectedWallet.address &&
+            this.$route.name !== Components.AddWallet
+          ) {
+            this.$router.push({ name: Components.Wallet }).catch(() => {});
+          }
 
-    this.networksStore.setNetworks({ networks: Object.values(nets) });
+          this.accountsStore.setAccounts({ accounts });
 
-    await subscribeSelectedNetworks((network) => this.accountsStore.setSelectedNetwork(network));
-  }
+          if (!selectedAccount) return;
 
-  async setupPrice() {
-    const prices = await subscribePrice((priceUpdates) => {
-      this.updatePrice(priceUpdates);
-    });
+          this.accountsStore.setSelectedWallet(selectedAccount);
+          this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
+    },
+    async setupWallet() {
+      const accounts = await subscribeAccounts(this.onAccountUpdate);
 
-    this.updatePrice(prices);
-  }
+          this.onAccountUpdate(accounts);
 
-  updatePrice({ fiat, tokenPriceMap, tokenPriceChange }: PriceJson) {
-    this.accountsStore.setSelectedFiat(fiat);
-    this.networksStore.setPrices({ tokenPriceMap, tokenPriceChange });
-  }
-
-  onAccountUpdate(accounts: AccountJson[]) {
-    const selectedAccount = accounts.find((account) => account.active);
-
-    // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
-    // это любой кейс смены аккаунта за исключением выше описанного
-    if (
-      selectedAccount?.address !== this.accountsStore.selectedWallet.address &&
-      this.$route.name !== Components.AddWallet
-    ) {
-      this.$router.push({ name: Components.Wallet }).catch(() => {});
-    }
-
-    this.accountsStore.setAccounts({ accounts });
-
-    if (!selectedAccount) return;
-
-    this.accountsStore.setSelectedWallet(selectedAccount);
-    this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
-  }
-
-  async setupWallet() {
-    const accounts = await subscribeAccounts(this.onAccountUpdate);
-
-    this.onAccountUpdate(accounts);
-
-    soraFeesSubscribe((fees) => this.networksStore.setSoraFees({ fees }));
-  }
-}
+          soraFeesSubscribe((fees) => this.networksStore.setSoraFees({ fees }));
+    },
+  },
+});
 </script>
 
 <style lang="scss">

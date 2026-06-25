@@ -18,11 +18,11 @@
 
         <div class="activity align-right">
           <div v-if="props.showCloseIcon" class="icon" @click="emit('closeHandler')">
-            <SIcon name="basic-close-24" />
+            <Icon icon="close" />
           </div>
 
           <div v-show="props.showAcceptIcon" class="icon" @click="emit('saveChanges')">
-            <SIcon name="basic-check-mark-24" />
+            <Icon icon="check" />
           </div>
         </div>
       </div>
@@ -36,8 +36,8 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
 import type { ComponentText } from '@/interfaces';
+import { useI18n } from '@/locales/useI18n';
 
 type Props = {
   header?: ComponentText;

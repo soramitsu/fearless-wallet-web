@@ -28,16 +28,26 @@ interface ServiceInfo {
     substrate: NetworkName[];
     evm: NetworkName[];
     ton: NetworkName[];
+    solana: NetworkName[];
+    bitcoin: NetworkName[];
+    iroha: NetworkName[];
   };
 }
 
 export interface GetBalancesProps {
   address: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
   walletEcosystem?: WalletEcosystem;
   substrateNetworks?: NetworkName[];
   evmNetworks?: NetworkName[];
   tonNetworks?: NetworkName[];
+  solanaNetworks?: NetworkName[];
+  bitcoinNetworks?: NetworkName[];
+  irohaNetworks?: NetworkName[];
   isFirstRun?: boolean;
 }
 
@@ -51,7 +61,7 @@ export class SubscriptionService {
   private serviceInfo: ServiceInfo = {
     address: '',
     ethereumAddress: '',
-    networks: { evm: [], substrate: [], ton: [] },
+    networks: { evm: [], substrate: [], ton: [], solana: [], bitcoin: [], iroha: [] },
   };
 
   constructor(private state: State) {
@@ -131,11 +141,18 @@ export class SubscriptionService {
     accountsExceptCurrent.forEach(({ address, meta }) =>
       this.fetchNetworkBalances({
         address,
+        bitcoinAddress: meta.bitcoinAddress as string | undefined,
+        bitcoinTestnetAddress: meta.bitcoinTestnetAddress as string | undefined,
         ethereumAddress: meta.ethereumAddress ?? '',
+        irohaAddress: meta.irohaAddress as string | undefined,
+        solanaAddress: meta.solanaAddress as string | undefined,
         walletEcosystem: meta.walletEcosystem!,
         substrateNetworks: this.state.networkService.activeNetworkByEcosystem.substrateList,
         evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
         tonNetworks: this.state.networkService.activeNetworkByEcosystem.tonList,
+        solanaNetworks: this.state.networkService.activeNetworkByEcosystem.solanaList,
+        bitcoinNetworks: this.state.networkService.activeNetworkByEcosystem.bitcoinList,
+        irohaNetworks: this.state.networkService.activeNetworkByEcosystem.irohaList,
         isFirstRun: true,
       })
     );
@@ -166,6 +183,9 @@ export class SubscriptionService {
               const currentSubstrateNetworks = Object.keys(serviceInfo.apiMap.substrate);
               const currentEvmNetworks = Object.keys(serviceInfo.apiMap.evm);
               const currentTonNetworks = Object.keys(serviceInfo.apiMap.ton);
+              const currentSolanaNetworks = this.state.networkService.activeNetworkByEcosystem.solanaList;
+              const currentBitcoinNetworks = this.state.networkService.activeNetworkByEcosystem.bitcoinList;
+              const currentIrohaNetworks = this.state.networkService.activeNetworkByEcosystem.irohaList;
 
               this.serviceInfo = {
                 address,
@@ -174,6 +194,9 @@ export class SubscriptionService {
                   substrate: currentSubstrateNetworks,
                   evm: currentEvmNetworks,
                   ton: currentTonNetworks,
+                  solana: currentSolanaNetworks,
+                  bitcoin: currentBitcoinNetworks,
+                  iroha: currentIrohaNetworks,
                 },
               };
 
@@ -189,6 +212,9 @@ export class SubscriptionService {
                   substrateNetworks: this.state.networkService.activeNetworkByEcosystem.substrateList,
                   evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
                   tonNetworks: this.state.networkService.activeNetworkByEcosystem.tonList,
+                  solanaNetworks: this.state.networkService.activeNetworkByEcosystem.solanaList,
+                  bitcoinNetworks: this.state.networkService.activeNetworkByEcosystem.bitcoinList,
+                  irohaNetworks: this.state.networkService.activeNetworkByEcosystem.irohaList,
                 });
 
                 return;
@@ -208,6 +234,11 @@ export class SubscriptionService {
               );
               const newEvmNetworks = currentEvmNetworks.filter((network) => !oldNetworks.evm.includes(network));
               const newTonNetworks = currentTonNetworks.filter((network) => !oldNetworks.ton.includes(network));
+              const newSolanaNetworks = currentSolanaNetworks.filter((network) => !oldNetworks.solana.includes(network));
+              const newBitcoinNetworks = currentBitcoinNetworks.filter(
+                (network) => !oldNetworks.bitcoin.includes(network)
+              );
+              const newIrohaNetworks = currentIrohaNetworks.filter((network) => !oldNetworks.iroha.includes(network));
 
               // если адрес не менялся, подписываемся только на новые сети(которые только что включили)
               this.fetchNetworkBalances({
@@ -215,6 +246,9 @@ export class SubscriptionService {
                 evmNetworks: newEvmNetworks,
                 substrateNetworks: newSubstrateNetworks,
                 tonNetworks: newTonNetworks,
+                solanaNetworks: newSolanaNetworks,
+                bitcoinNetworks: newBitcoinNetworks,
+                irohaNetworks: newIrohaNetworks,
               });
 
               // кейс, когда было [sora, polkadot, kusama]

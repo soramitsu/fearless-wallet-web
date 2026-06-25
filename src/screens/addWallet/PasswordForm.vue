@@ -31,71 +31,72 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch, Prop, Ref } from 'vue-property-decorator';
-import type ValidatedInput from '@/components/ValidatedInput.vue';
+import { defineComponent } from 'vue';
 
-@Component
-export default class PasswordForm extends Vue {
-  pass1 = '';
-  pass2 = '';
 
-  @Ref('pass1Input') readonly pass1InputComponent!: typeof ValidatedInput;
-  @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
-  @Prop(Boolean) showSamePasswordText!: boolean;
-  @Prop({ type: Boolean, default: true }) focus!: boolean;
+export default defineComponent({ name: 'PasswordForm' ,
+  props: {
+    isGoogleFlow: { type: Boolean, default: false },
+    showSamePasswordText: Boolean,
+    focus: { type: Boolean, default: true },
+  },
+  data() {
+    return {
+      pass1: '',
+      pass2: '',
+    };
+  },
+  computed: {
+    isShortPassword() {
+      return this.pass1.length !== 0 && this.pass1.length < 6;
+    },
+    isWrongPassword() {
+      return !!this.pass2.length && this.pass1 !== this.pass2;
+    },
+    showPasswordConfirmation() {
+      return this.pass1.length !== 0 && !this.isShortPassword;
+    },
+    hintGoogleDriveText() {
+      return this.$t('addWallet.google.dataWillStoreOnGDrive');
+    },
+    hintText() {
+      if (this.showSamePasswordText) return this.$t('addWallet.samePassword');
 
-  get isShortPassword() {
-    return this.pass1.length !== 0 && this.pass1.length < 6;
-  }
-
-  get isWrongPassword() {
-    return !!this.pass2.length && this.pass1 !== this.pass2;
-  }
-
-  get showPasswordConfirmation() {
-    return this.pass1.length !== 0 && !this.isShortPassword;
-  }
-
-  get hintGoogleDriveText() {
-    return this.$t('addWallet.google.dataWillStoreOnGDrive');
-  }
-
-  get hintText() {
-    if (this.showSamePasswordText) return this.$t('addWallet.samePassword');
-
-    return this.$t('addWallet.passwordInfo');
-  }
-
+          return this.$t('addWallet.passwordInfo');
+    },
+    pass1InputComponent() {
+      return this.$refs.pass1Input;
+    },
+  },
+  watch: {
+    "pass1": 'changePassword',
+    "pass2": 'confirmPassword',
+  },
   mounted() {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    if (this.focus) this.pass1InputComponent.input.focus();
-  }
+        //@ts-ignore
+        if (this.focus) this.pass1InputComponent.input.focus();
+  },
+  methods: {
+    changePassword(pass1: string) {
+      if (pass1.length < 6) this.pass2 = '';
 
-  @Watch('pass1')
-  changePassword(pass1: string) {
-    if (pass1.length < 6) this.pass2 = '';
-
-    this.setPassword(pass1 === this.pass2 ? pass1 : '');
-  }
-
-  @Watch('pass2')
-  confirmPassword(pass2: string) {
-    this.setPassword(this.pass1 === pass2 ? pass2 : '');
-  }
-
-  setPassword(password: string) {
-    this.$emit('setPassword', password);
-  }
-
-  changePass1(value: string) {
-    this.pass1 = value;
-  }
-
-  changePass2(value: string) {
-    this.pass2 = value;
-  }
-}
+          this.setPassword(pass1 === this.pass2 ? pass1 : '');
+    },
+    confirmPassword(pass2: string) {
+      this.setPassword(this.pass1 === pass2 ? pass2 : '');
+    },
+    setPassword(password: string) {
+      this.$emit('setPassword', password);
+    },
+    changePass1(value: string) {
+      this.pass1 = value;
+    },
+    changePass2(value: string) {
+      this.pass2 = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

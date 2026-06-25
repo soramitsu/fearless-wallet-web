@@ -13,6 +13,7 @@
       v-if="createWalletStep"
       :step="step"
       :mnemonic="mnemonic"
+      :mnemonicLength="mnemonicLength"
       :selectedMnemonicElements="selectedMnemonicElements"
       @update:selectedMnemonicElements="updateSelectedMnemonicElements"
       @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
@@ -75,10 +76,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import type { TranslateResult } from 'vue-i18n';
+import { defineComponent } from 'vue';
+
 import type { FWKeyringMeta } from '@extension-base/types';
-import type { WarningValueName } from '@/consts/messages';
 import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
@@ -87,6 +87,11 @@ import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
+import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
+import { deriveBitcoinReceiveAddress } from '@/util/bitcoinKeyring';
+import { deriveIrohaAddress } from '@/util/irohaKeyring';
+import { deriveSolanaAddress } from '@/util/solanaKeyring';
+import { deriveTonAccount } from '@/util/tonKeyring';
 import BaseApi from '@/util/BaseApi';
 import {
   addAccount,
@@ -97,7 +102,7 @@ import {
   generateMnemonic,
 } from '@/extension/messaging';
 
-@Component({
+export default defineComponent({ name: 'CreateGoogle',
   components: {
     AdvancedForm,
     NickNameForm,
@@ -106,242 +111,240 @@ import {
     AdvancedButton,
     NegativeMessage,
   },
-})
-export default class CreateGoogle extends Vue {
-  readonly countSteps = 4;
-  readonly buttonTextForStep: Record<number, TranslateResult> = {
+  data() {
+    return {
+      countSteps: 4,
+      buttonTextForStep: {
     1: this.$t('common.continue'),
     2: this.$t('addWallet.haveWrittenPassphrase'),
     3: this.$t('addWallet.ConfirmSecretData'),
     4: this.$t('common.finish'),
-  };
-
-  selectedMnemonicElements: MnemonicConfirmation[] = [];
-  step = 1;
-  nickname = '';
-  mnemonic = '';
-  showAdvancedForm = false;
-  derivationPaths = INITIAL_DERIVATION_PATHS;
-  showNotificationPopup = false;
-  warningValueName: WarningValueName = '';
-  isLoading = false;
-
-  get invalidMessages() {
-    if (!this.warningValueName) return {};
-
-    const mainPath = `addWallet.warningMessages.${this.warningValueName}`;
-
-    return {
-      text: `${mainPath}.text`,
-      subtext: `${mainPath}.subtext`,
+  },
+      selectedMnemonicElements: [],
+      step: 1,
+      nickname: '',
+      mnemonic: '',
+      showAdvancedForm: false,
+      derivationPaths: INITIAL_DERIVATION_PATHS,
+      showNotificationPopup: false,
+      warningValueName: '',
+      isLoading: false,
     };
-  }
+  },
+  computed: {
+    invalidMessages() {
+      if (!this.warningValueName) return {};
 
-  get nickNameStep() {
-    return this.step === 1;
-  }
+          const mainPath = `addWallet.warningMessages.${this.warningValueName}`;
 
-  get createWalletStep() {
-    return this.step === 2 || this.step === 3;
-  }
+          return {
+            text: `${mainPath}.text`,
+            subtext: `${mainPath}.subtext`,
+          };
+    },
+    nickNameStep() {
+      return this.step === 1;
+    },
+    createWalletStep() {
+      return this.step === 2 || this.step === 3;
+    },
+    header() {
+      if (this.nickNameStep) return this.$t('addWallet.createWallet');
 
-  get header() {
-    if (this.nickNameStep) return this.$t('addWallet.createWallet');
+          if (this.step === 2) return this.$t('addWallet.backupPassphrase');
 
-    if (this.step === 2) return this.$t('addWallet.backupPassphrase');
+          if (this.step === 3) return this.$t('addWallet.confirmPassphrase');
 
-    if (this.step === 3) return this.$t('addWallet.confirmPassphrase');
+          if (this.step === 4) return '';
 
-    if (this.step === 4) return '';
+          return this.$t('addWallet.createWallet');
+    },
+    buttonText() {
+      if (this.buttonTextForStep[this.step]) return this.buttonTextForStep[this.step];
 
-    return this.$t('addWallet.createWallet');
-  }
+          return this.$t('addWallet.createWallet');
+    },
+    disabledProceed() {
+      if (this.nickNameStep) return !this.nickname;
 
-  get buttonText() {
-    if (this.buttonTextForStep[this.step]) return this.buttonTextForStep[this.step];
+          if (this.isLoading) return true;
 
-    return this.$t('addWallet.createWallet');
-  }
+          if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
-  get disabledProceed() {
-    if (this.nickNameStep) return !this.nickname;
+          return false;
+    },
+    confirmMnemonicStep() {
+      return this.step === 3;
+    },
+    mnemonicLength() {
+      return UNIVERSAL_WALLET_DEFAULT_WORD_COUNT;
+    },
+    suriSubstrate() {
+      const {
+            substrate: { value: substrateDerivationPath },
+          } = this.derivationPaths;
 
-    if (this.isLoading) return true;
+          return `${this.mnemonic.trim()}${substrateDerivationPath.trim()}`;
+    },
+    suriEthereum() {
+      const {
+            ethereum: { value: ethereumDerivationPath },
+          } = this.derivationPaths;
 
-    if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+          const ethereumDP = (
+            ethereumDerivationPath.length !== 0
+              ? ethereumDerivationPath[0] === '/'
+                ? ethereumDerivationPath
+                : `/${ethereumDerivationPath}`
+              : ETHEREUM_DEFAULT_DERIVATION_PATH
+          ).trim();
 
-    return false;
-  }
-
-  get confirmMnemonicStep() {
-    return this.step === 3;
-  }
-
-  get suriSubstrate() {
-    const {
-      substrate: { value: substrateDerivationPath },
-    } = this.derivationPaths;
-
-    return `${this.mnemonic.trim()}${substrateDerivationPath.trim()}`;
-  }
-
-  get suriEthereum() {
-    const {
-      ethereum: { value: ethereumDerivationPath },
-    } = this.derivationPaths;
-
-    const ethereumDP = (
-      ethereumDerivationPath.length !== 0
-        ? ethereumDerivationPath[0] === '/'
-          ? ethereumDerivationPath
-          : `/${ethereumDerivationPath}`
-        : ETHEREUM_DEFAULT_DERIVATION_PATH
-    ).trim();
-
-    return `${this.mnemonic}${ethereumDP}`;
-  }
-
+          return `${this.mnemonic}${ethereumDP}`;
+    },
+  },
+  watch: {
+    "step": 'watchStep',
+  },
   async mounted() {
-    this.mnemonic = await generateMnemonic();
-  }
+    this.mnemonic = await generateMnemonic(WalletEcosystem.Substrate, UNIVERSAL_WALLET_DEFAULT_WORD_COUNT);
+  },
+  methods: {
+    async watchStep() {
+      if (this.step === 4) {
+            this.isLoading = true;
 
-  @Watch('step')
-  async watchStep() {
-    if (this.step === 4) {
-      this.isLoading = true;
+            const address = await this.saveKeypairFromSeed();
 
-      const address = await this.saveKeypairFromSeed();
+            await this.backupWallet(address);
 
-      await this.backupWallet(address);
+            updateCurrentAccount(address);
 
-      updateCurrentAccount(address);
+            this.isLoading = false;
+          }
+    },
+    updateDP(derivationPaths: DerivationPaths) {
+      this.derivationPaths = derivationPaths;
+    },
+    resetAll() {
+      this.selectedMnemonicElements = [];
+    },
+    skipStep() {
+      this.step += 1;
+    },
+    async handlerCloseNotificationPopup() {
+      this.warningValueName = '';
+          this.selectedMnemonicElements = [];
+          this.showNotificationPopup = false;
+    },
+    async handlerAcceptAddWallet() {
+      this.warningValueName = '';
 
-      this.isLoading = false;
-    }
-  }
+          this.step += 1;
+    },
+    goBack() {
+      this.$router.replace('/').catch((e) => e);
+    },
+    back() {
+      if (this.step === 1) this.goBack();
+          else this.step -= 1;
+    },
+    proceed() {
+      if (this.step === this.countSteps) {
+            this.goBack();
 
-  updateDP(derivationPaths: DerivationPaths) {
-    this.derivationPaths = derivationPaths;
-  }
+            return;
+          }
 
-  resetAll() {
-    this.selectedMnemonicElements = [];
-  }
+          if (this.step === 3) {
+            const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
+              this.mnemonic,
+              this.selectedMnemonicElements.map(({ word }) => word.trim())
+            );
 
-  skipStep() {
-    this.step += 1;
-  }
+            if (!isValidSequenceMnemonic) {
+              this.warningValueName = 'mnemonicSequence';
+              this.showNotificationPopup = true;
 
-  async handlerCloseNotificationPopup() {
-    this.warningValueName = '';
-    this.selectedMnemonicElements = [];
-    this.showNotificationPopup = false;
-  }
+              return;
+            }
+          }
 
-  async handlerAcceptAddWallet() {
-    this.warningValueName = '';
+          this.step += 1;
+    },
+    setNickname(name: string) {
+      this.nickname = name;
+    },
+    updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
+      this.selectedMnemonicElements = value;
+    },
+    setValue(value: string) {
+      this.nickname = value;
+    },
+    toggleAdvancedFormVisible(value = true) {
+      this.showAdvancedForm = value;
+    },
+    async backupWallet(address: string) {
+      const password = await getExtensionPassword();
+          const { json } = await exportJSON(address, password);
 
-    this.step += 1;
-  }
+          const ethAddress = json.meta.ethereumAddress as string;
+          const token = this.$route.params.access_token;
 
-  goBack() {
-    this.$router.replace('/').catch((e) => e);
-  }
+          let ethRes;
 
-  back() {
-    if (this.step === 1) this.goBack();
-    else this.step -= 1;
-  }
+          if (ethAddress) {
+            const { json: ethJson } = await exportJSON(ethAddress, password);
 
-  proceed() {
-    if (this.step === this.countSteps) {
-      this.goBack();
+            ethRes = await createGoogleFile({
+              json: JSON.stringify(ethJson),
+              options: { name: this.nickname, address: ethAddress },
+              token,
+            });
+          }
 
-      return;
-    }
+          createGoogleFile({
+            json: JSON.stringify(json),
+            options: { name: this.nickname, address: `${address}/${ethRes ? ethRes.id : ''}` },
+            token,
+          });
+    },
+    async saveKeypairFromSeed() {
+          const meta: FWKeyringMeta = {
+            name: this.nickname.trim(),
+            ethereumAddress: '',
+            walletEcosystem: WalletEcosystem.Substrate,
+          };
 
-    if (this.step === 3) {
-      const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
-        this.mnemonic,
-        this.selectedMnemonicElements.map(({ word }) => word.trim())
-      );
+          if (this.mnemonic) {
+            meta.bitcoinAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic });
+            meta.bitcoinTestnetAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic, network: 'testnet' });
+            meta.solanaAddress = deriveSolanaAddress({ mnemonic: this.mnemonic });
+            const ton = deriveTonAccount({ mnemonic: this.mnemonic });
+            const iroha = deriveIrohaAddress({ mnemonic: this.mnemonic, network: 'taira' });
 
-      if (!isValidSequenceMnemonic) {
-        this.warningValueName = 'mnemonicSequence';
-        this.showNotificationPopup = true;
+            meta.tonAddress = ton.addressNonBounceable;
+            meta.tonPublicKeyHex = ton.publicKeyHex;
+            meta.irohaPublicKeyHex = iroha.publicKeyHex;
+            meta.irohaAddress = iroha.address;
+          }
 
-        return;
-      }
-    }
+          const {
+            substrate: { keypairType: substrateKeypairType },
+            ethereum: { keypairType: ethereumKeypairType },
+          } = this.derivationPaths;
 
-    this.step += 1;
-  }
+          if (this.suriEthereum !== '') {
+            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
 
-  setNickname(name: string) {
-    this.nickname = name;
-  }
+            meta.ethereumAddress = ethereumAddress;
+          }
 
-  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-    this.selectedMnemonicElements = value;
-  }
+          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta);
 
-  setValue(value: string) {
-    this.nickname = value;
-  }
-
-  toggleAdvancedFormVisible(value = true) {
-    this.showAdvancedForm = value;
-  }
-
-  async backupWallet(address: string) {
-    const password = await getExtensionPassword();
-    const { json } = await exportJSON(address, password);
-
-    const ethAddress = json.meta.ethereumAddress as string;
-    const token = this.$route.params.access_token;
-
-    let ethRes;
-
-    if (ethAddress) {
-      const { json: ethJson } = await exportJSON(ethAddress, password);
-
-      ethRes = await createGoogleFile({
-        json: JSON.stringify(ethJson),
-        options: { name: this.nickname, address: ethAddress },
-        token,
-      });
-    }
-
-    createGoogleFile({
-      json: JSON.stringify(json),
-      options: { name: this.nickname, address: `${address}/${ethRes ? ethRes.id : ''}` },
-      token,
-    });
-  }
-
-  async saveKeypairFromSeed() {
-    const meta: FWKeyringMeta = {
-      name: this.nickname.trim(),
-      ethereumAddress: '',
-      walletEcosystem: WalletEcosystem.Substrate,
-    };
-
-    const {
-      substrate: { keypairType: substrateKeypairType },
-      ethereum: { keypairType: ethereumKeypairType },
-    } = this.derivationPaths;
-
-    if (this.suriEthereum !== '') {
-      const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
-
-      meta.ethereumAddress = ethereumAddress;
-    }
-
-    const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta);
-
-    return address;
-  }
-}
+          return address;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Fragment } from 'vue-fragment';
+import { Fragment } from 'vue';
 
 const { name, value } = defineProps({
   name: { type: String, required: true },

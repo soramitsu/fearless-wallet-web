@@ -3,7 +3,9 @@ import { type NetworkName, type RelayChainName } from './networks';
 
 type XcmVersion = 'v1' | 'v2' | 'v3';
 
-type Interiors = any[];
+type Interior = Record<string, string | number | boolean | Record<string, unknown> | unknown[]>;
+
+type Interiors = Interior[];
 
 type XcmLocations = {
   name: RelayChainName;

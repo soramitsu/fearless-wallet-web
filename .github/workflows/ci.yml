@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Branch flow audit
+        run: |
+          bash ./scripts/test-branch-flow-audit.sh
+          bash ./scripts/audit-branch-flow.sh
+
+      - name: Audit public artifacts
+        run: |
+          bash ./scripts/test-public-artifacts-audit.sh
+          ./scripts/audit-public-artifacts.sh
+
+      - name: TODO debt audit
+        run: |
+          bash ./scripts/test-todo-debt-audit.sh
+          bash ./scripts/audit-todo-debt.sh
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable Corepack
+        run: |
+          npm install -g corepack@latest
+          corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Production dependency audit
+        run: yarn npm audit --environment production
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Lint
+        run: yarn lint:check
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Build web app
+        run: yarn build:web
+
+      - name: Build Chrome extension
+        run: yarn build:extension
+
+      - name: Solana extension e2e smoke
+        run: yarn test:e2e:solana
+
+      - name: Build Firefox extension
+        run: yarn build:extension:firefox
+
+      - name: Lint Firefox extension package
+        run: yarn lint:webext:firefox

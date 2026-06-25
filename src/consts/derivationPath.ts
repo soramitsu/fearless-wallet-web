@@ -1,4 +1,4 @@
-import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeypairType } from '@subwallet/keyring/types';
 
 const ETHEREUM_DEFAULT_DERIVATION_PATH = "/m/44'/60'/0'/0/0";
 

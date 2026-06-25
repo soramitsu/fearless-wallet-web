@@ -52,7 +52,14 @@ const emit = defineEmits(['onSelectAll', 'onSelect']);
 const showAllCheckbox = computed(() => Object.keys(props.accounts).length > 1 && props.showSelectAll);
 
 const cutAddress = (account: WalletInfo) => {
-  const address = props.authType === 'evm' ? account.ethereumAddress : account.address;
+  const address =
+    props.authType === 'evm'
+      ? account.ethereumAddress
+      : props.authType === 'solana'
+      ? account.solanaAddress ?? account.address
+      : props.authType === 'iroha'
+      ? account.irohaAddress ?? account.address
+      : account.address;
 
   return cut(address);
 };

@@ -1,5 +1,9 @@
 <template>
-  <SCheckbox class="fw-checkbox" v-model.lazy="vmodel" :size="size" :label="label" data-testid="checkbox" />
+  <label class="fw-checkbox" data-testid="checkbox">
+    <input v-model.lazy="vmodel" type="checkbox" :class="`fw-checkbox__input fw-checkbox__input--${size}`" />
+    <span class="fw-checkbox__box"></span>
+    <span class="fw-checkbox__label">{{ label }}</span>
+  </label>
 </template>
 
 <script lang="ts" setup>
@@ -22,33 +26,38 @@ const vmodel = computed({
 
 <style lang="scss">
 .fw-checkbox {
-  border-color: $default-white !important;
-  border-radius: 3px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: $default-white !important;
+  cursor: pointer;
+}
 
-  .el-checkbox__input > .el-checkbox__inner {
-    border-color: transparent;
-    border-radius: 5px;
-  }
+.fw-checkbox__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
 
-  .el-checkbox__input.is-focus > .el-checkbox__inner {
-    border-color: $purple-color;
-  }
+.fw-checkbox__box {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background-color: $default-background-color;
+  border: 1px solid transparent;
+}
 
-  .el-checkbox__inner:hover {
-    border-color: $purple-color;
-  }
+.fw-checkbox__input:focus + .fw-checkbox__box,
+.fw-checkbox:hover .fw-checkbox__box {
+  border-color: $purple-color;
+}
 
-  .el-checkbox__input.is-checked > .el-checkbox__inner {
-    background-color: $purple-color;
-    border-color: $purple-color;
-  }
+.fw-checkbox__input:checked + .fw-checkbox__box {
+  background-color: $purple-color;
+  border-color: $purple-color;
+}
 
-  .el-checkbox__inner {
-    background-color: $default-background-color;
-  }
-
-  .el-checkbox__label {
-    color: $default-white !important;
-  }
+.fw-checkbox__label {
+  color: $default-white !important;
 }
 </style>

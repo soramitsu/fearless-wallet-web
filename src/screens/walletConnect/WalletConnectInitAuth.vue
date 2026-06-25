@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import { getClipboard } from '@/helpers';
 import { newConnection } from '@/extension/messaging';
 

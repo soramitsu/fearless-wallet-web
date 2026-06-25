@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { HexString } from '@polkadot/util/types';
-import type { EvmRequests } from '@extension-base/services/request-service/types';
+import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { RequestsPayload } from './types';
 import type { ExtensionStore } from '.';
 import type {
@@ -36,6 +36,7 @@ import {
   walletConnectRequestSubscribe,
   subscribeWalletConnectRequest,
   subscribeEvmSigningRequests,
+  subscribeSolanaSigningRequests,
   approveSign,
   approveSignSignature,
   // approveWalletConnectSession,
@@ -70,6 +71,7 @@ type Actions = {
 
   subscribeSignRequests(this: ExtensionStore): Promise<SigningRequest[]>;
   subscribeEvmSignRequests(this: ExtensionStore): Promise<EvmRequests>;
+  subscribeSolanaSignRequests(this: ExtensionStore): Promise<SolanaRequests>;
   signCancel(this: ExtensionStore, id: string): Promise<void>;
   approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
   subscribeExtensionRequests(this: ExtensionStore): Promise<boolean>;
@@ -97,6 +99,8 @@ export const actions: Actions = {
     if (type === 'signRequests') this.signRequests = requests;
 
     if (type === 'signEvmRequests') this.signEvmRequests = requests;
+
+    if (type === 'signSolanaRequests') this.signSolanaRequests = requests;
 
     if (type === 'wcConnectRequests') this.wcConnectRequests = requests;
 
@@ -168,7 +172,7 @@ export const actions: Actions = {
     const callback = (requests: MetadataRequest[]) => {
       this.setRequest({ type: 'metaRequests', requests });
 
-      if (router.currentRoute.name === 'MetaRequest' && requests.length === 0)
+      if (router.currentRoute.value.name === 'MetaRequest' && requests.length === 0)
         router.push({
           name: Components.Wallet,
         });
@@ -201,7 +205,7 @@ export const actions: Actions = {
     const callback = (requests: SigningRequest[]) => {
       this.setRequest({ type: 'signRequests', requests });
 
-      if (router.currentRoute.name === 'Transaction' && requests.length === 0)
+      if (router.currentRoute.value.name === 'Transaction' && requests.length === 0)
         router.push({
           name: Components.Wallet,
         });
@@ -221,11 +225,24 @@ export const actions: Actions = {
 
       const isRequestsExists = Object.keys(requests).length !== 0;
 
-      if (router.currentRoute.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
+      if (router.currentRoute.value.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
       else if (isRequestsExists) router.push({ name: Components.Transaction });
     };
 
     return subscribeEvmSigningRequests(callback);
+  },
+
+  async subscribeSolanaSignRequests() {
+    const callback = (requests: SolanaRequests) => {
+      this.setRequest({ type: 'signSolanaRequests', requests });
+
+      const isRequestsExists = Object.keys(requests).length !== 0;
+
+      if (router.currentRoute.value.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
+      else if (isRequestsExists) router.push({ name: Components.Transaction });
+    };
+
+    return subscribeSolanaSigningRequests(callback);
   },
 
   async approveSign({ id }) {
@@ -258,6 +275,7 @@ export const actions: Actions = {
 
   async subscribeExtensionRequests() {
     const signEvm = this.subscribeEvmSignRequests();
+    const signSolana = this.subscribeSolanaSignRequests();
     const auth = this.subscribeAuthRequests();
     const sign = this.subscribeSignRequests();
     const meta = this.subscribeMetaRequests();
@@ -265,9 +283,9 @@ export const actions: Actions = {
     const wcSessions = this.subscribeWcSessions();
     const wcRequests = this.subscribeWcRequests();
 
-    const promises = await Promise.all([wcSessions, signEvm, auth, sign, meta, wcConnectRequests, wcRequests]);
+    const promises = await Promise.all([wcSessions, signEvm, signSolana, auth, sign, meta, wcConnectRequests, wcRequests]);
 
-    return !!Object.keys(promises[1]).length || !!promises.slice(2).flat().length;
+    return !!Object.keys(promises[1]).length || !!Object.keys(promises[2]).length || !!promises.slice(3).flat().length;
   },
 
   async fetchTabStatus() {

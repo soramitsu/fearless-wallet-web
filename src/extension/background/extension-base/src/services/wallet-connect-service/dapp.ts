@@ -18,6 +18,7 @@ import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
 import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
+import type { EvmRequestParams } from '@extension-base/services/request-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
@@ -321,7 +322,7 @@ export class WalletConnectDAppService {
     id: string,
     url: string,
     method: string,
-    params: any,
+    params: EvmRequestParams,
     topic: string
   ): Promise<ResponseSigning> {
     const requestSession = this.getSession(topic);
@@ -359,7 +360,7 @@ export class WalletConnectDAppService {
 
       this.checkAccount(address, sessionAccounts);
 
-      const res = await this.app.client.request<{ payload: HexString }>(requestEvent as any);
+      const res = await this.app.client.request<{ payload: HexString }>(requestEvent);
 
       return { id, payload: res.payload };
     }
@@ -373,7 +374,7 @@ export class WalletConnectDAppService {
     const createRequest = () => {
       if (!this.app) throw new Error('Wallet Connect is not init!');
 
-      return this.app.client.request<{ payload: HexString }>(requestEvent as any);
+      return this.app.client.request<{ payload: HexString }>(requestEvent);
     };
 
     if (!chainState.active) await this.state.setActiveNetworks(networkKey);

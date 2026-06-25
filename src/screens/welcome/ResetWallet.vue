@@ -37,10 +37,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import { ref, onMounted, computed } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
-import type ValidatedInput from '@/components/ValidatedInput.vue';
+import { useI18n } from '@/locales/useI18n';
+import FInput from '@/components/FInput.vue';
 import { resetWallet } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 
@@ -49,11 +49,11 @@ const router = useRouter();
 const { t } = useI18n();
 
 const password = ref('');
-const passInput = ref<ValidatedInput>(null);
+const passInput = ref<InstanceType<typeof FInput> | null>(null);
 
 const isDisabled = computed(() => password.value !== phrase);
 
-onMounted(() => passInput.value.input.focus());
+onMounted(() => passInput.value?.input?.focus());
 
 const changeOPassword = async (pass: string) => (password.value = pass);
 const close = () => router.back();

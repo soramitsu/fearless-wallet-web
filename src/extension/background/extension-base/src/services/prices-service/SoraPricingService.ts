@@ -22,10 +22,14 @@ interface SubqueryFiatPriceQuery {
   };
 }
 
+type PageInfoParams = SubqueryFiatPriceQuery['data']['data']['pageInfo'] & {
+  endCursor?: string;
+};
+
 export class SoraPricingService {
   constructor(private state: State) {}
 
-  async fetchSQSora(pricingUrl: string, pageInfoParams?: any): Promise<Edges[]> {
+  async fetchSQSora(pricingUrl: string, pageInfoParams?: PageInfoParams): Promise<Edges[]> {
     if (this.state.pricesService.fiatSymbol !== 'usd') return [];
 
     try {

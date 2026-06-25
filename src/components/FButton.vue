@@ -1,26 +1,23 @@
 <template>
   <div :class="containerButtonClasses" :style="containerButtonStyle">
-    <SButton
-      :type="type"
-      :border-radius="borderRadius"
-      :size="size"
-      :disabled="disabled"
-      :class="buttonClasses"
-      :loading="loading"
+    <button
+      type="button"
+      :disabled="disabled || loading"
+      :class="['el-button', buttonClasses, { 'is-disabled': disabled, 'is-loading': loading }]"
       :style="buttonStyle"
       @click="$emit('click')"
     >
       <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" :iconColor="iconColor" />
 
       <span>{{ tText }}</span>
-    </SButton>
+    </button>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { computed } from 'vue';
 import type { ComponentText } from '@/interfaces';
+import { useI18n } from '@/locales/useI18n';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';

@@ -17,81 +17,76 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-import type { ResponseTotalBalances } from '@extension-base/background/types/types';
+
 
 import { type CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { getTotalBalances } from '@/extension/messaging';
 
-@Component({
+export default defineComponent({ name: 'WalletInfo',
   components: { WalletBalance },
-})
-export default class WalletInfo extends Vue {
-  readonly dotsHorizontalRef = 'dotsHorizontal';
-
-  showWalletMenu = false;
-  totalBalances: ResponseTotalBalances[] = [];
-  interval: NodeJS.Timer | undefined;
-
-  $refs!: {
-    dotsHorizontal: HTMLDivElement;
-  };
-
-  @Prop({ default: '' }) name!: string;
-  @Prop({ default: '' }) address!: string;
-  @Prop(Boolean) isMobile!: boolean;
-  @Prop({ default: false }) isSelected!: boolean;
-  @Prop({ default: true }) showMenu!: boolean;
-
-  get totalBalance() {
-    return this.totalBalances.find(({ address }) => address === this.address);
-  }
-
-  get balance() {
-    return this.totalBalance?.total ?? 0;
-  }
-
-  get changeWalletBalance() {
-    return this.totalBalance?.change ?? { percent: 0, amount: 0 };
-  }
-
-  get contentClasses() {
-    return [
-      'wallet-info',
-      {
-        'is-selected': this.isSelected,
-      },
-    ];
-  }
-
+  props: {
+    name: { default: '' },
+    address: { default: '' },
+    isMobile: Boolean,
+    isSelected: { default: false },
+    showMenu: { default: true },
+  },
+  data() {
+    return {
+      dotsHorizontalRef: 'dotsHorizontal',
+      showWalletMenu: false,
+      totalBalances: [],
+      interval: undefined as ReturnType<typeof setInterval> | undefined,
+    };
+  },
+  computed: {
+    totalBalance() {
+      return this.totalBalances.find(({ address }) => address === this.address);
+    },
+    balance() {
+      return this.totalBalance?.total ?? 0;
+    },
+    changeWalletBalance() {
+      return this.totalBalance?.change ?? { percent: 0, amount: 0 };
+    },
+    contentClasses() {
+      return [
+            'wallet-info',
+            {
+              'is-selected': this.isSelected,
+            },
+          ];
+    },
+  },
   async created() {
     this.totalBalances = await getTotalBalances();
 
-    this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
-  }
-
-  beforeDestroy() {
+        this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
+  },
+  beforeUnmount() {
     clearInterval(this.interval);
-  }
+  },
+  methods: {
+    setWallet({ target: { classList } }: CustomEvent) {
+      const shouldUpdateSelectedWallet = !(
+            classList.contains('dots-container') ||
+            classList.contains('dots') ||
+            classList.contains('dots-horizontal') ||
+            classList.contains('icon__inner')
+          );
 
-  setWallet({ target: { classList } }: CustomEvent) {
-    const shouldUpdateSelectedWallet = !(
-      classList.contains('dots-container') ||
-      classList.contains('dots') ||
-      classList.contains('dots-horizontal') ||
-      classList.contains('icon__inner')
-    );
+          if (shouldUpdateSelectedWallet) this.$emit('setWallet');
+          else {
+            const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLDivElement).getBoundingClientRect().top;
 
-    if (shouldUpdateSelectedWallet) this.$emit('setWallet');
-    else {
-      const buttonTop = this.$refs[this.dotsHorizontalRef].getBoundingClientRect().top;
-
-      this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
-    }
-  }
-}
+            this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
+          }
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

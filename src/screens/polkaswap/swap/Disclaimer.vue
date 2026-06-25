@@ -69,7 +69,7 @@
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
+import { useRoute, useRouter } from 'vue-router';
 import { URLS } from '@/consts/urls';
 import { useAccountsStore } from '@/stores/accounts';
 

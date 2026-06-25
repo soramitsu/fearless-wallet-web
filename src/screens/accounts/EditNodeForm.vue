@@ -40,128 +40,125 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { NetworkJson } from '@extension-base/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 
-@Component
-export default class EditNodeForm extends Vue {
-  networksStore = useNetworksStore();
-  name = '';
-  url = '';
-  isError = false;
+export default defineComponent({ name: 'EditNodeForm' ,
+  props: {
+    network: String,
+    nodeName: { type: String, default: '' },
+    nodeUrl: { type: String, default: '' },
+    isActive: Boolean,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      name: '',
+      url: '',
+      isError: false,
+    };
+  },
+  computed: {
+    buttonText() {
+      return this.isEdit ? 'common.save' : 'accounts.addNode';
+    },
+    networkJson() {
+      return this.networksStore.getNetwork(this.network);
+    },
+    isEdit() {
+      return this.nodeUrl !== '';
+    },
+    isUrlDuplicate() {
+      if (!this.networkJson) return false;
 
-  @Prop(String) network!: string;
-  @Prop({ type: String, default: '' }) nodeName!: string;
-  @Prop({ type: String, default: '' }) nodeUrl!: string;
-  @Prop(Boolean) isActive!: boolean;
+          return (
+            this.networkJson.nodes.some(({ url }) => url === this.url) ||
+            this.networkJson.customNodes.some(({ url }) => url === this.url)
+          );
+    },
+    urlLength() {
+      return this.url.length;
+    },
+    errorMessage() {
+      if (this.isUrlDuplicate) return 'accounts.customNodeDuplicate';
 
-  get buttonText() {
-    return this.isEdit ? 'common.save' : 'accounts.addNode';
-  }
-
-  get networkJson() {
-    return this.networksStore.getNetwork(this.network);
-  }
-
-  get isEdit() {
-    return this.nodeUrl !== '';
-  }
-
-  get isUrlDuplicate() {
-    if (!this.networkJson) return false;
-
-    return (
-      this.networkJson.nodes.some(({ url }) => url === this.url) ||
-      this.networkJson.customNodes.some(({ url }) => url === this.url)
-    );
-  }
-
-  get urlLength() {
-    return this.url.length;
-  }
-
-  @Watch('url')
-  isErrorUrlNode() {
-    this.isError = false;
-
-    if (this.urlLength === 0 || this.url === this.nodeUrl) return;
-
-    if (this.isUrlDuplicate) {
-      this.isError = true;
-
-      return;
-    }
-
-    const explorers = this.networkJson.externalApi?.explorers;
-    const isTooLengthTooSmall = this.urlLength < 7;
-
-    if (explorers && explorers[0].type === 'etherscan') {
-      this.isError = isTooLengthTooSmall || !this.url.startsWith('https://');
-
-      return;
-    }
-
-    this.isError = isTooLengthTooSmall || !this.url.startsWith('wss://');
-  }
-
-  get errorMessage() {
-    if (this.isUrlDuplicate) return 'accounts.customNodeDuplicate';
-
-    return 'accounts.invalidNodeAddress';
-  }
-
-  get isUrlChanged() {
-    return this.url !== this.nodeUrl;
-  }
-
-  get isNameChanged() {
-    return this.name !== this.nodeName;
-  }
-
-  get buttonDisabled() {
-    return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
-  }
-
-  changeName(value: string) {
-    this.name = value;
-  }
-
-  changeUrl(value: string) {
-    this.url = value;
-  }
-
+          return 'accounts.invalidNodeAddress';
+    },
+    isUrlChanged() {
+      return this.url !== this.nodeUrl;
+    },
+    isNameChanged() {
+      return this.name !== this.nodeName;
+    },
+    buttonDisabled() {
+      return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
+    },
+  },
+  watch: {
+    "url": 'isErrorUrlNode',
+  },
   mounted() {
     this.name = this.nodeName;
-    this.url = this.nodeUrl;
-  }
+        this.url = this.nodeUrl;
+  },
+  methods: {
+    isErrorUrlNode() {
+      this.isError = false;
 
-  updateNodes() {
-    if (this.urlLength === 0) return;
+          if (this.urlLength === 0 || this.url === this.nodeUrl) return;
 
-    const prepData: Partial<NetworkJson> = {};
-    const customNodeIndex = this.networkJson.customNodes.findIndex(
-      ({ url, name }) => url === this.nodeUrl && name === this.nodeName
-    );
+          if (this.isUrlDuplicate) {
+            this.isError = true;
 
-    prepData.customNodes = this.networkJson.customNodes ?? [];
-    const editedNode = { name: this.name, url: this.url };
+            return;
+          }
 
-    if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = editedNode;
-    else prepData.customNodes.push(editedNode);
+          const explorers = this.networkJson.externalApi?.explorers;
+          const isTooLengthTooSmall = this.urlLength < 7;
 
-    prepData.currentProvider = this.url;
+          if (explorers && explorers[0].type === 'etherscan') {
+            this.isError = isTooLengthTooSmall || !this.url.startsWith('https://');
 
-    upsertNetworkMap({
-      ...this.networkJson,
-      ...prepData,
-      isManual: false,
-    });
+            return;
+          }
 
-    this.$emit('closeForm', true);
-  }
-}
+          this.isError = isTooLengthTooSmall || !this.url.startsWith('wss://');
+    },
+    changeName(value: string) {
+      this.name = value;
+    },
+    changeUrl(value: string) {
+      this.url = value;
+    },
+    updateNodes() {
+      if (this.urlLength === 0) return;
+
+          const prepData: Partial<NetworkJson> = {};
+          const customNodeIndex = this.networkJson.customNodes.findIndex(
+            ({ url, name }) => url === this.nodeUrl && name === this.nodeName
+          );
+
+          prepData.customNodes = this.networkJson.customNodes ?? [];
+          const editedNode = { name: this.name, url: this.url };
+
+          if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = editedNode;
+          else prepData.customNodes.push(editedNode);
+
+          prepData.currentProvider = this.url;
+
+          upsertNetworkMap({
+            ...this.networkJson,
+            ...prepData,
+            isManual: false,
+          });
+
+          this.$emit('closeForm', true);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

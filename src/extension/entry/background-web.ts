@@ -1,11 +1,10 @@
-import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
 import { keyring } from '@subwallet/ui-keyring';
 
-axios.defaults.adapter = fetchAdapter;
+axios.defaults.adapter = 'fetch';
 
 addEventListener('message', (event) => {
   // event is an ExtendableMessageEvent object

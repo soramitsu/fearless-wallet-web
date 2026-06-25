@@ -81,111 +81,95 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { NetworkParams } from '@/stores';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
 import Scroll from '@/components/Scroll.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'ValidatorInfo',
   components: { Scroll },
-})
-export default class ValidatorInfo extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+  props: {
+    stakingNetwork: { type: Object },
+    stakingCurrency: { type: Object },
+    validator: { type: Object },
+    validators: { type: Array },
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    validatorFormHeight() {
+      const sub = this.showOversubscribedWarning ? 0 : 55;
+          const sub2 = this.showSlashedWarning ? 0 : 55;
 
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) validator!: FWValidatorInfoFull;
-  @Prop({ type: Array }) validators!: FWValidatorInfoFull[];
+          return 355 - sub - sub2;
+    },
+    stakingAssetName() {
+      return this.stakingCurrency.symbol;
+    },
+    showOversubscribedWarning() {
+      return this.validator.isOversubscribed;
+    },
+    showSlashedWarning() {
+      // TODO staking
+          return false;
+          // return this.validator.isSlashed;
+    },
+    address() {
+      return this.validator.address;
+    },
+    validatorName() {
+      return this.validator.name;
+    },
+    nominatorsCount() {
+      return this.validator.nominators.length;
+    },
+    legalName() {
+      return this.validator.identity?.info.legal;
+    },
+    email() {
+      return this.validator.identity?.info.email;
+    },
+    web() {
+      return this.validator.identity?.info.web;
+    },
+    twitter() {
+      return this.validator.identity?.info.twitter;
+    },
+    status() {
+      return this.$t(`staking.${this.validator.status}`);
+    },
+    elementName() {
+      return this.validator.identity?.info.description;
+    },
+    maxNominatorRewardedPerValidator() {
+      return this.stakingNetwork.maxNominatorRewardedPerValidator;
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
 
-  get validatorFormHeight() {
-    const sub = this.showOversubscribedWarning ? 0 : 55;
-    const sub2 = this.showSlashedWarning ? 0 : 55;
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    apy() {
+      return this.validator?.apy;
+    },
+    totalStake() {
+      return this.validator.stake.total ?? '0';
+    },
+    totalStakeString() {
+      return this.$n(+this.totalStake, 'decimal');
+    },
+    totalStakeValue() {
+      const value = +this.totalStake * this.stakingAssetPrice;
 
-    return 355 - sub - sub2;
-  }
-
-  get stakingAssetName() {
-    return this.stakingCurrency.symbol;
-  }
-
-  get showOversubscribedWarning() {
-    return this.validator.isOversubscribed;
-  }
-
-  get showSlashedWarning() {
-    // TODO staking
-    return false;
-    // return this.validator.isSlashed;
-  }
-
-  get address() {
-    return this.validator.address;
-  }
-
-  get validatorName() {
-    return this.validator.name;
-  }
-
-  get nominatorsCount() {
-    return this.validator.nominators.length;
-  }
-
-  get legalName() {
-    return this.validator.identity?.info.legal;
-  }
-
-  get email() {
-    return this.validator.identity?.info.email;
-  }
-
-  get web() {
-    return this.validator.identity?.info.web;
-  }
-
-  get twitter() {
-    return this.validator.identity?.info.twitter;
-  }
-
-  get status() {
-    return this.$t(`staking.${this.validator.status}`);
-  }
-
-  get elementName() {
-    return this.validator.identity?.info.description;
-  }
-
-  get maxNominatorRewardedPerValidator() {
-    return this.stakingNetwork.maxNominatorRewardedPerValidator;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get apy() {
-    return this.validator?.apy;
-  }
-
-  get totalStake() {
-    return this.validator.stake.total ?? '0';
-  }
-
-  get totalStakeString() {
-    return this.$n(+this.totalStake, 'decimal');
-  }
-
-  get totalStakeValue() {
-    const value = +this.totalStake * this.stakingAssetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
-}
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

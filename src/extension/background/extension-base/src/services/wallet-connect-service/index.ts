@@ -1,4 +1,4 @@
-import { formatJsonRpcError } from '@json-rpc-tools/utils';
+import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
@@ -23,6 +23,9 @@ import type { RequestService } from '@extension-base/services';
 import { PolkadotHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler';
 import { Eip155RequestHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import { isSameString } from '@/helpers';
+
+const namespaceAccounts = (namespace: SessionTypes.Namespace | unknown[]): string[] =>
+  Array.isArray(namespace) ? [] : namespace.accounts ?? [];
 
 export class WalletConnectService {
   private client?: WalletConnect;
@@ -147,15 +150,17 @@ export class WalletConnectService {
     this.sessions.forEach((session) => {
       const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
       const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE] ?? [];
+      const evmAccounts = namespaceAccounts(evm);
+      const polkadotAccounts = namespaceAccounts(polkadot);
 
-      if (ethereumAddress && evm?.accounts?.length) {
-        const [, , evmAddress] = evm.accounts[0].split(':');
+      if (ethereumAddress && evmAccounts.length) {
+        const [, , evmAddress] = evmAccounts[0].split(':');
 
         if (isSameString(ethereumAddress, evmAddress)) return this.disconnect(session.topic);
       }
 
-      if (polkadot?.accounts?.length) {
-        const [, , substrateAddress] = polkadot.accounts[0].split(':');
+      if (polkadotAccounts.length) {
+        const [, , substrateAddress] = polkadotAccounts[0].split(':');
 
         if (isSameString(address, substrateAddress)) this.disconnect(session.topic);
       }

@@ -29,7 +29,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { StakingTab } from '@/interfaces/common';
 
 interface TabsOptions {
@@ -40,44 +41,61 @@ interface TabsOptions {
   isShow: boolean;
 }
 
-@Component
-export default class StakingSettings extends Vue {
-  @Prop({ type: Boolean }) showStakingItems!: boolean;
-  @Prop({ type: Boolean }) showMyStakingItems!: boolean;
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: StakingTab;
-  @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
-
-  get tabsOptions(): TabsOptions[] {
-    return [
-      {
-        label: 'common.all',
-        tabName: 'all',
-        classes: 'all-tab',
-        target: '.all-tab',
-        isShow: this.showStakingItems,
+export default defineComponent({ name: 'StakingSettings' ,
+  props: {
+    showStakingItems: { type: Boolean },
+    showMyStakingItems: { type: Boolean },
+    activeTabName: { type: String },
+    filterValue: { type: String },
+  },
+  computed: {
+    tabsOptions(): TabsOptions[] {
+      return [
+            {
+              label: 'common.all',
+              tabName: 'all',
+              classes: 'all-tab',
+              target: '.all-tab',
+              isShow: this.showStakingItems,
+            },
+            {
+              label: 'staking.myStaked',
+              tabName: 'my',
+              classes: 'my-tab',
+              target: '.my-tab',
+              isShow: this.showMyStakingItems,
+            },
+          ];
+    },
+    isAllTab() {
+      return this.syncedActiveTabName === 'all';
+    },
+    syncedActiveTabName: {
+      get() {
+        return this.activeTabName;
       },
-      {
-        label: 'staking.myStaked',
-        tabName: 'my',
-        classes: 'my-tab',
-        target: '.my-tab',
-        isShow: this.showMyStakingItems,
+      set(value) {
+        this.$emit('update:activeTabName', value);
       },
-    ];
-  }
-
-  get isAllTab() {
-    return this.syncedActiveTabName === 'all';
-  }
-
-  changeSyncedFilterValue(value: string) {
-    this.syncedFilterValue = value;
-  }
-
-  openTab(name: StakingTab) {
-    this.syncedActiveTabName = name;
-  }
-}
+    },
+    syncedFilterValue: {
+      get() {
+        return this.filterValue;
+      },
+      set(value) {
+        this.$emit('update:filterValue', value);
+      },
+    },
+  },
+  methods: {
+    changeSyncedFilterValue(value: string) {
+      this.syncedFilterValue = value;
+    },
+    openTab(name: StakingTab) {
+      this.syncedActiveTabName = name;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

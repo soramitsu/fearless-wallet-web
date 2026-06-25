@@ -9,9 +9,9 @@ import type {
   SetSoraFee,
 } from './types';
 import type { FetchHistory, ToggleFavorite } from '@/stores';
-import type { AssetId, SoraHistoryElement, TonEventTokens } from '@/interfaces';
 import type { BasePriceJson, TokenGroup } from '@extension-base/background/types/types';
 import type { History } from '@/stores/networks/types';
+import { WalletEcosystem, type AssetId, type SoraHistoryElement, type TonEventTokens } from '@/interfaces';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/history/fetchingHistory';
@@ -21,6 +21,7 @@ import { isSameString, isSora, isTonNetwork } from '@/helpers';
 import { getFormattedHistory } from '@/helpers/history';
 import { SORA_VAL_ASSET_ID, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { getFiats } from '@/extension/messaging/price';
+import { UNIVERSAL_WALLET_INDEXERS, UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 
 type Actions = {
   getFiats(this: NetworksStore): Promise<void>;
@@ -34,6 +35,22 @@ type Actions = {
   setFavoriteNetwork(this: NetworksStore, props: NetworkFavoriteProps): void;
   setHistory(this: NetworksStore, props: HistoryProps): void;
 };
+
+function getBitcoinHistoryUrl(networkName: string, chainId?: string): string {
+  const descriptor = `${networkName} ${chainId ?? ''}`.toLowerCase();
+
+  return descriptor.includes('testnet')
+    ? UNIVERSAL_WALLET_INDEXERS.bitcoin.testnet
+    : UNIVERSAL_WALLET_INDEXERS.bitcoin.mainnet;
+}
+
+function getIrohaHistoryUrl(networkName: string, chainId?: string): string {
+  const descriptor = `${networkName} ${chainId ?? ''}`.toLowerCase();
+
+  if (descriptor.includes('nexus')) return UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl ?? '';
+
+  return UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl;
+}
 
 export const actions: Actions = {
   removeFavoriteNetwork({ networkName, index }) {
@@ -59,9 +76,9 @@ export const actions: Actions = {
       const oldStartCursor = oldPageInfo?.startCursor;
 
       const historyForAssetId = {
-        ...(this.history[assetId] ?? []),
+        ...(this.history[assetId] ?? {}),
         [walletAddress]: {
-          ...(this.history[assetId]?.[walletAddress] ?? []),
+          ...(this.history[assetId]?.[walletAddress] ?? {}),
           [networkName]: {
             timestamp: Date.now(),
             nodes,
@@ -125,37 +142,74 @@ export const actions: Actions = {
     if (!networkName) return;
 
     const accountsStore = useAccountsStore();
-    const wallet = address ? { address, ethereumAddress: address } : accountsStore.selectedWallet;
+    const wallet = address
+      ? {
+          address,
+          bitcoinAddress: address,
+          bitcoinTestnetAddress: address,
+          ethereumAddress: address,
+          irohaAddress: address,
+          solanaAddress: address,
+        }
+      : accountsStore.selectedWallet;
 
     if (isTonNetwork(networkName)) return this.fetchTonNetwork({ address: wallet.address, networkName });
 
-    const { externalApi } = this.getNetwork(networkName);
+    const network = this.getNetwork(networkName);
+    const { externalApi } = network;
+    const isSolanaNetwork = isSameString(network.ecosystem, WalletEcosystem.Solana);
+    const isBitcoinNetwork = isSameString(network.ecosystem, WalletEcosystem.Bitcoin);
+    const isIrohaNetwork = isSameString(network.ecosystem, WalletEcosystem.Iroha);
+    const isUniversalIndexerNetwork = isSolanaNetwork || isBitcoinNetwork || isIrohaNetwork;
 
-    if (!externalApi?.history) return;
+    if (!externalApi?.history && !isUniversalIndexerNetwork) return;
 
-    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+    const formattedAddress = isSolanaNetwork
+      ? (address ?? wallet.solanaAddress)
+      : isBitcoinNetwork
+        ? (address ?? BaseApi.formatAddress(wallet, networkName))
+        : isIrohaNetwork
+          ? (address ?? wallet.irohaAddress)
+        : BaseApi.formatAddress(wallet, networkName);
 
-    const { type, url: historyUrl } = externalApi.history;
+    if (!formattedAddress) return;
+
+    const { type, url: historyUrl } = externalApi?.history ?? {
+      type: isBitcoinNetwork ? ('bitcoin' as const) : isIrohaNetwork ? ('iroha' as const) : ('solana' as const),
+      url: isBitcoinNetwork
+        ? getBitcoinHistoryUrl(network.name, network.chainId)
+        : isIrohaNetwork
+          ? getIrohaHistoryUrl(network.name, network.chainId)
+          : UNIVERSAL_WALLET_INDEXERS.solana,
+    };
     const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
 
     const isNativeEvm = isNativeEVMNetwork(networkName);
-    const balances: TokenGroup[] = accountsStore.balances ?? [];
+    const balances = (accountsStore.balances ?? []) as unknown as TokenGroup[];
 
-    const asset = isNativeEvm
-      ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
-      : getUtilityAsset(balances, networkName);
+    const asset = isUniversalIndexerNetwork
+      ? balances.find(
+          ({ balances, groupId }) =>
+            groupId === assetId || balances.some(({ id, name }) => id === assetId && isSameString(name, networkName))
+        )
+      : isNativeEvm
+        ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
+        : getUtilityAsset(balances, networkName);
 
     if (!asset) return;
 
-    const utilityId = isNativeEvm
+    const utilityId = isUniversalIndexerNetwork
       ? asset.balances.find(({ name, isUtility }) => isSameString(name, networkName) && isUtility)?.id
-      : asset?.groupId;
+      : isNativeEvm
+        ? asset.balances.find(({ name, isUtility }) => isSameString(name, networkName) && isUtility)?.id
+        : asset?.groupId;
 
     const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
 
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
-    if (!isSora(networkName)) if (!isUtility && type !== 'etherscan') return;
+    if (!isSora(networkName))
+      if (!isUtility && type !== 'etherscan' && type !== 'solana' && type !== 'bitcoin' && type !== 'iroha') return;
 
     const searchedAsset = asset.balances.find(({ name }) => isSameString(name, networkName));
 

@@ -30,56 +30,61 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { MnemonicConfirmation } from '@/interfaces/common';
-import type { WordCount } from '@extension-base/services';
 import MnemonicConfirmationForm from '@/screens/addWallet/MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import { setClipboard } from '@/helpers';
 
-@Component({
+export default defineComponent({ name: 'CreateWallet',
   components: {
     AdvancedButton,
     MnemonicBackupForm,
     MnemonicConfirmationForm,
   },
-})
-export default class CreateWallet extends Vue {
-  @Prop(Number) step!: number;
-  @Prop(String) mnemonic!: string;
-  @Prop(Number) mnemonicLength!: WordCount;
-  @Prop(Boolean) isSubstrate!: boolean;
-  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
-
-  get mnemonicArray() {
-    return this.mnemonic.split(' ');
-  }
-
-  get mnemonicMix() {
-    return [...this.mnemonicArray].sort(() => Math.random() - 0.5).map((word) => `${word} `);
-  }
-
-  get showMnemonicBackupForm() {
-    return this.step === 2;
-  }
-
-  get showMnemonicConfirmationForm() {
-    return this.step === 3;
-  }
-
-  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-    this.syncedSelectedMnemonicElements = value;
-  }
-
-  onCopy() {
-    setClipboard(this.mnemonic);
-  }
-
-  toggleAdvancedFormVisible() {
-    this.$emit('toggleAdvancedFormVisible');
-  }
-}
+  props: {
+    step: Number,
+    mnemonic: String,
+    mnemonicLength: Number,
+    isSubstrate: Boolean,
+    selectedMnemonicElements: { type: Array },
+  },
+  computed: {
+    mnemonicArray() {
+      return this.mnemonic.split(' ');
+    },
+    mnemonicMix() {
+      return [...this.mnemonicArray].sort(() => Math.random() - 0.5).map((word) => `${word} `);
+    },
+    showMnemonicBackupForm() {
+      return this.step === 2;
+    },
+    showMnemonicConfirmationForm() {
+      return this.step === 3;
+    },
+    syncedSelectedMnemonicElements: {
+      get() {
+        return this.selectedMnemonicElements;
+      },
+      set(value) {
+        this.$emit('update:selectedMnemonicElements', value);
+      },
+    },
+  },
+  methods: {
+    updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
+      this.syncedSelectedMnemonicElements = value;
+    },
+    onCopy() {
+      setClipboard(this.mnemonic);
+    },
+    toggleAdvancedFormVisible() {
+      this.$emit('toggleAdvancedFormVisible');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

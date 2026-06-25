@@ -1,0 +1,91 @@
+const nodeProcess = require('node:process');
+const packageJson = require('../../package.json');
+
+module.exports = (browser) => {
+  const baseContentSecurityPolicy =
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
+  const chromiumKey = nodeProcess.env.EXTENSION_PUBLIC_KEY?.replace(/ /g, '');
+  const oauthClientId = nodeProcess.env.OAUTH_CLIENT_ID;
+
+  const firefoxBase = {
+    manifest_version: 3,
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead'],
+    background: {
+      scripts: ['background.js'],
+      type: 'module',
+    },
+    browser_specific_settings: {
+      gecko: {
+        id: '{6a9332b9-e864-4d0a-a591-140fe75a29ba}',
+        data_collection_permissions: {
+          required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
+        },
+      },
+    },
+    action: {
+      default_title: 'Fearless Wallet',
+      default_popup: 'popup.html#/',
+    },
+    host_permissions: ['<all_urls>'],
+    content_security_policy: {
+      extension_pages: baseContentSecurityPolicy,
+    },
+  };
+
+  const chromiumBase = {
+    manifest_version: 3,
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead'],
+    background: {
+      service_worker: 'background.js',
+      type: 'module',
+    },
+    action: {
+      default_title: 'Fearless Wallet',
+      default_popup: 'popup.html#/',
+    },
+    host_permissions: ['<all_urls>'],
+    ...(chromiumKey ? { key: chromiumKey } : {}),
+    ...(oauthClientId
+      ? {
+          oauth2: {
+            scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+            client_id: oauthClientId,
+          },
+        }
+      : {}),
+    minimum_chrome_version: '92',
+    content_security_policy: {
+      extension_pages: baseContentSecurityPolicy,
+    },
+  };
+
+  return {
+    version: packageJson.version,
+    description: packageJson.description,
+    homepage_url: 'https://fearlesswallet.io/',
+    name: 'Fearless Wallet',
+    short_name: 'FW',
+    author: 'Soramitsu',
+    icons: {
+      16: 'icons/logo-16.png',
+      32: 'icons/logo-32.png',
+      48: 'icons/logo-48.png',
+      64: 'icons/logo-64.png',
+      128: 'icons/logo-128.png',
+    },
+    content_scripts: [
+      {
+        js: ['content.js'],
+        matches: ['https://*/*', 'http://*/*'],
+        run_at: 'document_start',
+      },
+    ],
+    web_accessible_resources: [
+      {
+        resources: ['page.js'],
+        matches: ['https://*/*', 'http://*/*', 'http://localhost/*'],
+      },
+    ],
+    ...(browser === 'chrome' ? chromiumBase : firefoxBase),
+  };
+};

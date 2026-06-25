@@ -1,21 +1,20 @@
-import Vue from 'vue';
-import VueRouter from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import { updateTitle } from './helpers';
 import routes, { Components } from '@/router/routes';
+import { resolveUniversalWalletMigrationRedirect } from '@/router/universalWalletMigrationGuard';
 import {
   keyringIsLocked,
+  getUniversalWalletMigrationSnapshot,
   hasMasterPassword,
   hasAccounts,
   isNeedMigration,
   isOnboardingRequired,
 } from '@/extension/messaging';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
+import { getUniversalWalletMigrationRequiredAction } from '@/util/universalWalletMigrationContract';
 
-Vue.use(VueRouter);
-
-const router = new VueRouter({
-  mode: 'hash',
-  base: IS_EXTENSION ? process.env.BASE_URL : undefined,
+const router = createRouter({
+  history: createWebHashHistory(IS_EXTENSION ? process.env.BASE_URL : undefined),
   routes,
 });
 
@@ -40,20 +39,40 @@ router.beforeEach(async (to, from, next) => {
   // If the extension is locked, skip the migration step.
   // This can happen if the user set a password during migration and then locked the extension.
   if (!isLock && !isRequiredOnboarding) {
-    if (
-      to.name !== Components.MigrationDescription &&
-      to.name !== Components.MigrationAccounts &&
-      to.name !== Components.Onboarding
-    ) {
+    const isKeyringMigrationRoute =
+      to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts;
+
+    if (needMigration) {
       const isFromMigrationDescriptionToChangePass =
         from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
 
-      if (isFromMigrationDescriptionToChangePass) next();
-      else if (needMigration) next({ name: Components.MigrationDescription });
-      else next();
-    } else if (to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts) {
-      if (!needMigration) next({ name: Components.Welcome });
-      else next();
+      if (isFromMigrationDescriptionToChangePass || isKeyringMigrationRoute || to.name === Components.Onboarding) {
+        next();
+
+        return;
+      }
+
+      next({ name: Components.MigrationDescription });
+
+      return;
+    }
+
+    if (isKeyringMigrationRoute) {
+      next({ name: Components.Welcome });
+
+      return;
+    }
+
+    const universalMigrationSnapshot = await getUniversalWalletMigrationSnapshot();
+    const universalMigrationRedirect = resolveUniversalWalletMigrationRedirect({
+      action: getUniversalWalletMigrationRequiredAction(universalMigrationSnapshot),
+      routeName: to.name,
+    });
+
+    if (universalMigrationRedirect) {
+      next({ name: universalMigrationRedirect });
+
+      return;
     }
   }
 

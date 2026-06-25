@@ -23,8 +23,8 @@
             </div>
           </template>
 
-          <template v-for="[key, addressBook] in splitAddressBook">
-            <div class="label" data-testid="labelKey" :key="key">{{ key }}</div>
+          <template v-for="[key, addressBook] in splitAddressBook" :key="key">
+            <div class="label" data-testid="labelKey">{{ key }}</div>
 
             <div
               v-for="{ name, address } in addressBook"
@@ -63,10 +63,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
-import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { cut, isSameString, isSora } from '@/helpers/';
 import { getType } from '@/helpers/history';
@@ -75,132 +75,134 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { TON_ICON } from '@/consts/networks';
 
-@Component
-export default class HistoryBook extends Vue {
-  accountsStore = useAccountsStore();
-  networksStore = useNetworksStore();
-  addressBook: AddressBook = {};
-  tonIcon = TON_ICON;
+type AddressBookEntry = {
+  name: string;
+  address: string;
+};
 
-  @Prop(String) network!: string;
-  @Prop(String) assetId!: string;
+type AddressBookMap = Partial<Record<string, AddressBookEntry[]>>;
 
-  get showHistoryAndBook() {
-    return this.showHistory || this.book.length !== 0;
-  }
+export default defineComponent({ name: 'HistoryBook' ,
+  props: {
+    network: String,
+    assetId: String,
+  },
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+      networksStore: useNetworksStore(),
+      addressBook: {} as AddressBookMap,
+      tonIcon: TON_ICON,
+    };
+  },
+  computed: {
+    showHistoryAndBook() {
+      return this.showHistory || this.book.length !== 0;
+    },
+    showHistory() {
+      return this.historyAddresses.length !== 0;
+    },
+    addressPrefix() {
+      return this.networksStore.getNetwork(this.network)?.addressPrefix;
+    },
+    book(): AddressBookEntry[] {
+      const addresses = [...(this.addressBook.all ?? []), ...(this.addressBook[this.network ?? ''] ?? [])];
 
-  get showHistory() {
-    return this.historyAddresses.length !== 0;
-  }
+          return Array.from(new Set(addresses));
+    },
+    isTonWallet() {
+      return this.accountsStore.selectedWallet.isTon;
+    },
+    addressByConditions(): string[] {
+      if (!this.network) return [];
 
-  get addressPrefix() {
-    return this.networksStore.getNetwork(this.network)?.addressPrefix;
-  }
+          const history = this.networksStore.getHistory(this.assetId, this.network.toLowerCase());
 
-  get book() {
-    const addresses = [...(this.addressBook['all'] ?? []), ...(this.addressBook[this.network] ?? [])];
+          if (!history) return [];
 
-    return Array.from(new Set(addresses));
-  }
+          if (isSora(this.network)) {
+            return (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
+              if (item.method !== 'transfer') return [];
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
+              return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];
+            });
+          }
 
-  get addressByConditions() {
-    if (!this.network) return [];
+          if (this.isTonWallet) {
+            return (history.nodes as unknown as TonEvent[]).flatMap((item) => item.to ?? []);
+          }
 
-    const history = this.networksStore.getHistory(this.assetId, this.network.toLowerCase());
+          return history?.nodes.flatMap((item) => {
+            if (getType(item) !== TransactionType.transfer) return [];
 
-    if (!history) return [];
+            return BaseApi.encodeAddress(item.transfer?.to ?? '', this.addressPrefix) ?? [];
+          });
+    },
+    historyAddresses(): string[] {
+      return Array.from(new Set(this.addressByConditions as string[]))
+            .filter(
+              (address) =>
+                !this.book.some(({ address: addressFromBook }) => {
+                  if (this.isTonWallet) {
+                    return isSameString(address, addressFromBook);
+                  }
 
-    if (isSora(this.network)) {
-      return (history.nodes as unknown as SoraHistoryElement[]).flatMap((item) => {
-        if (item.method !== 'transfer') return [];
+                  return isSameString(BaseApi.encodeAddress(address), BaseApi.encodeAddress(addressFromBook));
+                })
+            )
+            .slice(0, 11);
+    },
+    splitAddressBook() {
+      const sortedAddressBook = [...this.book].sort(({ name: name1 }, { name: name2 }) => name1.localeCompare(name2));
 
-        return BaseApi.encodeAddress(item.data?.to ?? '', this.addressPrefix) ?? [];
-      });
-    }
+          const splitObj = sortedAddressBook.reduce((result, { address, name }) => {
+            const firstChar = name[0].toUpperCase();
+            const addressByNetwork = BaseApi.encodeAddress(address, this.addressPrefix);
 
-    if (this.isTonWallet) {
-      return (history.nodes as unknown as TonEvent[]).flatMap((item) => item.to ?? []);
-    }
+            if (result[firstChar]) result[firstChar].push({ name, address: addressByNetwork });
+            else result[firstChar] = [{ name, address: addressByNetwork }];
 
-    return history?.nodes.flatMap((item) => {
-      if (getType(item) !== TransactionType.transfer) return [];
+            return result;
+          }, {} as AddressBookMap);
 
-      return BaseApi.encodeAddress(item.transfer?.to ?? '', this.addressPrefix) ?? [];
-    });
-  }
-
-  get historyAddresses() {
-    return Array.from(new Set(this.addressByConditions))
-      .filter(
-        (address) =>
-          !this.book.some(({ address: addressFromBook }) => {
-            if (this.isTonWallet) {
-              return isSameString(address, addressFromBook);
-            }
-
-            return isSameString(BaseApi.encodeAddress(address), BaseApi.encodeAddress(addressFromBook));
-          })
-      )
-      .slice(0, 11);
-  }
-
-  get splitAddressBook() {
-    const sortedAddressBook = this.book.sort(({ name: name1 }, { name: name2 }) => name1.localeCompare(name2));
-
-    const splitObj = sortedAddressBook.reduce<AddressBook>((result, { address, name }) => {
-      const firstChar = name[0].toUpperCase();
-      const addressByNetwork = BaseApi.encodeAddress(address, this.addressPrefix);
-
-      if (result[firstChar]) result[firstChar].push({ name, address: addressByNetwork });
-      else result[firstChar] = [{ name, address: addressByNetwork }];
-
-      return result;
-    }, {});
-
-    return Object.entries(splitObj);
-  }
-
-  @Watch('assetId')
-  @Watch('selectedNetwork')
-  networkWatcher() {
-    this.loadHistory();
-  }
-
+          return Object.entries(splitObj);
+    },
+  },
+  watch: {
+    "assetId": 'networkWatcher',
+    "selectedNetwork": 'networkWatcher',
+  },
   async mounted() {
     this.loadHistory();
 
-    const { addressBook } = await storage.get(['addressBook']);
+        const { addressBook } = await storage.get(['addressBook']);
 
-    this.addressBook = addressBook;
-  }
+        this.addressBook = addressBook;
+  },
+  methods: {
+    networkWatcher() {
+      this.loadHistory();
+    },
+    loadHistory() {
+      if (this.historyAddresses.length !== 0) return;
 
-  loadHistory() {
-    if (this.historyAddresses.length !== 0) return;
-
-    this.networksStore.fetchHistory({ networkName: this.network, assetId: this.assetId });
-  }
-
-  getJdenticon(address: string) {
-    return toSvg(address, 24);
-  }
-
-  cut(value: string) {
-    return cut(value);
-  }
-
-  setRecipient(address: string) {
-    this.$emit('setRecipient', address);
-    this.$emit('toggleHistoryBookVisibility');
-  }
-
-  openEditBook(address: string = '') {
-    this.$emit('toggleEditBook', address);
-  }
-}
+          this.networksStore.fetchHistory({ networkName: this.network, assetId: this.assetId });
+    },
+    getJdenticon(address: string) {
+      return toSvg(address, 24);
+    },
+    cut(value: string) {
+      return cut(value);
+    },
+    setRecipient(address: string) {
+      this.$emit('setRecipient', address);
+          this.$emit('toggleHistoryBookVisibility');
+    },
+    openEditBook(address: string = '') {
+      this.$emit('toggleEditBook', address);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

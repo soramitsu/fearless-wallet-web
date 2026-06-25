@@ -20,3 +20,14 @@ export function getTransactionAddress(wallet: Wallet, network: NetworkName): str
 
   return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
 }
+
+export function getTransferWalletRecipient(wallet: Wallet, network: NetworkName): string {
+  return BaseApi.formatAddress(wallet, network);
+}
+
+export function isTransferWalletRecipient(wallet: Wallet, recipient: string, network: NetworkName): boolean {
+  return (
+    getTransferWalletRecipient(wallet, network) ===
+    BaseApi.formatAddress({ address: recipient, ethereumAddress: recipient }, network)
+  );
+}

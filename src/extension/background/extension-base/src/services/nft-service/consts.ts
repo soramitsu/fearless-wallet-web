@@ -1,14 +1,27 @@
-import { Network } from 'alchemy-sdk';
+export type AlchemyNetwork =
+  | 'eth-mainnet'
+  | 'eth-sepolia'
+  | 'opt-mainnet'
+  | 'arb-mainnet'
+  | 'polygon-mainnet'
+  | 'polygon-mumbai';
 
-const testNets: Record<number, Network> = {
-  80001: Network.MATIC_MUMBAI,
-  11155111: Network.ETH_SEPOLIA,
+export const NFT_FILTERS = {
+  AIRDROPS: 'AIRDROPS',
+  SPAM: 'SPAM',
+} as const;
+
+export type NftFilter = (typeof NFT_FILTERS)[keyof typeof NFT_FILTERS];
+
+const testNets: Record<number, AlchemyNetwork> = {
+  80001: 'polygon-mumbai',
+  11155111: 'eth-sepolia',
 };
 
-export const PROD_NFT_NETWORKS: Record<number, Network> = {
-  1: Network.ETH_MAINNET,
-  10: Network.OPT_MAINNET,
-  42161: Network.ARB_MAINNET,
-  137: Network.MATIC_MAINNET,
+export const PROD_NFT_NETWORKS: Record<number, AlchemyNetwork> = {
+  1: 'eth-mainnet',
+  10: 'opt-mainnet',
+  42161: 'arb-mainnet',
+  137: 'polygon-mainnet',
   ...testNets,
 };

@@ -11,7 +11,7 @@
     />
 
     <Rotate v-if="icon === 'rotate'" :isActive="isActiveRotate" class="icon">
-      <SIcon name="chevron-bottom-16" data-testid="rotate" />
+      <Icon icon="down" data-testid="rotate" />
     </Rotate>
 
     <div v-else-if="isCloseIcon" class="icon" @click="clickIcon">
@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-import { withDefaults, computed } from 'vue';
+import { computed } from 'vue';
 
 type IconType = 'rotate' | 'close';
 

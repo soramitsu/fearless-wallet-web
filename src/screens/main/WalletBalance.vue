@@ -7,55 +7,58 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-import type { ChangeWalletBalance } from '@/interfaces';
+
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class WalletBalance extends Vue {
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'WalletBalance' ,
+  props: {
+    changeWalletBalance: Object,
+    balance: Number,
+    staticWidth: { default: true },
+  },
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    containerClasses() {
+      const array = [
+            'wallet-balance',
+            {
+              'wallet-balance--static': this.staticWidth,
+            },
+          ];
 
-  @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
-  @Prop(Number) balance!: number;
-  @Prop({ default: true }) staticWidth!: boolean;
+          return array;
+    },
+    percentString() {
+      const { percent, amount } = this.changeWalletBalance;
 
-  get containerClasses() {
-    const array = [
-      'wallet-balance',
-      {
-        'wallet-balance--static': this.staticWidth,
-      },
-    ];
+          if (percent === 0) return `${this.$n(0, 'percent')}`;
 
-    return array;
-  }
+          const sign = percent > 0 ? '+' : '';
+          const displayAmount = amount < 0 ? amount * -1 : amount;
+          const percentage = percent / 100;
 
-  get percentString() {
-    const { percent, amount } = this.changeWalletBalance;
+          return `${sign}${this.$n(percentage, 'percent')}(${this.accountsStore.fiatSymbol}${this.$n(
+            displayAmount ?? 0,
+            'price'
+          )})`;
+    },
+    percentClasses() {
+      const { percent } = this.changeWalletBalance;
+          const classes = ['percent'];
 
-    if (percent === 0) return `${this.$n(0, 'percent')}`;
+          if (percent > 0) classes.push('up-percent');
+          else if (percent < 0) classes.push('down-percent');
 
-    const sign = percent > 0 ? '+' : '';
-    const displayAmount = amount < 0 ? amount * -1 : amount;
-    const percentage = percent / 100 ?? 0;
-
-    return `${sign}${this.$n(percentage, 'percent')}(${this.accountsStore.fiatSymbol}${this.$n(
-      displayAmount ?? 0,
-      'price'
-    )})`;
-  }
-
-  get percentClasses() {
-    const { percent } = this.changeWalletBalance;
-    const classes = ['percent'];
-
-    if (percent > 0) classes.push('up-percent');
-    else if (percent < 0) classes.push('down-percent');
-
-    return classes;
-  }
-}
+          return classes;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

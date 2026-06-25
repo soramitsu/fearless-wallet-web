@@ -1,5 +1,5 @@
 <template>
-  <div :class="internalRowClasses" v-on="$listeners">
+  <div :class="internalRowClasses">
     <div class="label" data-testid="label">
       <slot></slot>
 

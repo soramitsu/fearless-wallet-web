@@ -8,8 +8,16 @@ import { MAIN_NETWORKS } from '@/consts/networks';
 
 const isSameEcosystem = (networkEcosystem: NetworkEcosystem, walletEcosystem: WalletEcosystem) => {
   if (walletEcosystem === WalletEcosystem.Ton) return networkEcosystem === WalletEcosystem.Ton;
+  if (walletEcosystem === WalletEcosystem.Solana) return networkEcosystem === WalletEcosystem.Solana;
+  if (walletEcosystem === WalletEcosystem.Bitcoin) return networkEcosystem === WalletEcosystem.Bitcoin;
+  if (walletEcosystem === WalletEcosystem.Iroha) return networkEcosystem === WalletEcosystem.Iroha;
 
-  return networkEcosystem !== WalletEcosystem.Ton;
+  return (
+    networkEcosystem !== WalletEcosystem.Ton &&
+    networkEcosystem !== WalletEcosystem.Solana &&
+    networkEcosystem !== WalletEcosystem.Bitcoin &&
+    networkEcosystem !== WalletEcosystem.Iroha
+  );
 };
 
 export function getMockAssets(networkMap: Record<string, NetworkJson>, walletEcosystem: WalletEcosystem) {

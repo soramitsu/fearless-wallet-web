@@ -31,72 +31,67 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { NetworkParams } from '@/stores';
 import { isSameString } from '@/helpers';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class StakingItem extends Vue {
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'StakingItem' ,
+  props: {
+    stakingNetwork: Object,
+  },
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    network() {
+      return this.stakingNetwork.network;
+    },
+    assetId() {
+      return this.stakingNetwork.assetId;
+    },
+    stakingCurrency() {
+      return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId);
+    },
+    isLoading() {
+      return !this.balanceIsReady;
+    },
+    balanceIsReady() {
+      const networkBalance = this.stakingCurrency?.balances?.find(({ name }) => isSameString(name, this.network));
 
-  @Prop(Object) stakingNetwork!: NetworkParams;
-
-  get network() {
-    return this.stakingNetwork.network;
-  }
-
-  get assetId() {
-    return this.stakingNetwork.assetId;
-  }
-
-  get stakingCurrency() {
-    return this.accountsStore.balances?.find(({ groupId }) => groupId === this.assetId);
-  }
-
-  get isLoading() {
-    return !this.balanceIsReady;
-  }
-
-  get balanceIsReady() {
-    const networkBalance = this.stakingCurrency?.balances?.find(({ name }) => isSameString(name, this.network));
-
-    return networkBalance?.state === APIItemState.READY;
-  }
-
-  get apy() {
-    return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
-  }
-
-  get asset() {
-    return this.stakingNetwork.asset.toUpperCase();
-  }
-
-  get icon() {
-    return this.stakingNetwork.icon;
-  }
-
-  get unbondPeriod() {
-    return this.stakingNetwork.unbondPeriod;
-  }
-
-  get minBond() {
-    return this.stakingNetwork.minBond;
-  }
-
-  get type() {
-    return this.stakingNetwork.type;
-  }
-
-  get days() {
-    return { value: this.stakingNetwork.unbondPeriod };
-  }
-
-  click() {
-    if (!this.isLoading) this.$emit('click');
-  }
-}
+          return networkBalance?.state === APIItemState.READY;
+    },
+    apy() {
+      return `${this.$n(this.stakingNetwork.apy, 'price')}%`;
+    },
+    asset() {
+      return this.stakingNetwork.asset.toUpperCase();
+    },
+    icon() {
+      return this.stakingNetwork.icon;
+    },
+    unbondPeriod() {
+      return this.stakingNetwork.unbondPeriod;
+    },
+    minBond() {
+      return this.stakingNetwork.minBond;
+    },
+    type() {
+      return this.stakingNetwork.type;
+    },
+    days() {
+      return { value: this.stakingNetwork.unbondPeriod };
+    },
+  },
+  methods: {
+    click() {
+      if (!this.isLoading) this.$emit('click');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

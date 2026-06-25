@@ -43,71 +43,72 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { storage } from '@extension-base/stores/Storage';
 import BaseApi from '@/util/BaseApi';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class EditAddressBook extends Vue {
-  accountStore = useAccountsStore();
+export default defineComponent({ name: 'EditAddressBook' ,
+  props: {
+    _name: { default: '' },
+    _address: String,
+    network: String,
+    isActive: Boolean,
+  },
+  data() {
+    return {
+      accountStore: useAccountsStore(),
+      name: '',
+      address: '',
+      saveForAllNetworks: false,
+    };
+  },
+  computed: {
+    buttonDisabled() {
+      return this.name === '' || this.address.trim() === '' || this.isErrorAddress;
+    },
+    isErrorAddress() {
+      const address = this.address.trim();
 
-  name = '';
-  address = '';
-  saveForAllNetworks = false;
+          if (address.length === 0) return false;
 
-  @Prop({ default: '' }) _name!: string;
-  @Prop(String) _address!: string;
-  @Prop(String) network!: string;
-  @Prop(Boolean) isActive!: boolean;
+          // TODO ton
+          if (this.accountStore.selectedWallet.isTon) return false;
 
-  get buttonDisabled() {
-    return this.name === '' || this.address.trim() === '' || this.isErrorAddress;
-  }
-
-  get isErrorAddress() {
-    const address = this.address.trim();
-
-    if (address.length === 0) return false;
-
-    // TODO ton
-    if (this.accountStore.selectedWallet.isTon) return false;
-
-    return !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'));
-  }
-
-  changeName(value: string) {
-    this.name = value;
-  }
-
-  changeAddress(value: string) {
-    this.address = value;
-  }
-
+          return !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'));
+    },
+  },
   mounted() {
     this.name = this._name;
-    this.address = this._address;
-  }
+        this.address = this._address;
+  },
+  methods: {
+    changeName(value: string) {
+      this.name = value;
+    },
+    changeAddress(value: string) {
+      this.address = value;
+    },
+    async updateContact() {
+      const { addressBook } = await storage.get(['addressBook']);
+          const key = this.saveForAllNetworks ? 'all' : this.network;
+          const value = addressBook[key] ?? [];
 
-  async updateContact() {
-    const { addressBook } = await storage.get(['addressBook']);
-    const key = this.saveForAllNetworks ? 'all' : this.network;
-    const value = addressBook[key] ?? [];
+          storage.set({
+            addressBook: {
+              ...addressBook,
+              [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],
+            },
+          });
 
-    storage.set({
-      addressBook: {
-        ...addressBook,
-        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],
-      },
-    });
-
-    this.$emit('toggleEditBook');
-  }
-
-  onSave(value: boolean) {
-    this.saveForAllNetworks = value;
-  }
-}
+          this.$emit('toggleEditBook');
+    },
+    onSave(value: boolean) {
+      this.saveForAllNetworks = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

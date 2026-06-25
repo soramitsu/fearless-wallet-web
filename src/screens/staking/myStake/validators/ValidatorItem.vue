@@ -27,36 +27,38 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectionValidator, CustomEvent } from '@/interfaces';
+import { defineComponent } from 'vue';
 
-@Component
-export default class ValidatorItem extends Vue {
-  @Prop({ type: Object }) validator!: SelectionValidator;
-  @Prop({ default: true }) showCheckbox!: boolean;
+import type { CustomEvent } from '@/interfaces';
 
-  get iconClasses() {
-    return ['icon-info', this.validator.address];
-  }
+export default defineComponent({ name: 'ValidatorItem' ,
+  props: {
+    validator: { type: Object },
+    showCheckbox: { default: true },
+  },
+  computed: {
+    iconClasses() {
+      return ['icon-info', this.validator.address];
+    },
+    classes() {
+      return ['validator', 'validator-cursor'];
+    },
+  },
+  methods: {
+    click(event: CustomEvent) {
+      if (
+            event.target?.classList.contains('el-checkbox__inner') ||
+            event.target?.classList.contains('el-checkbox__original')
+          )
+            return;
 
-  get classes() {
-    return ['validator', 'validator-cursor'];
-  }
-
-  click(event: CustomEvent) {
-    if (
-      event.target?.classList.contains('el-checkbox__inner') ||
-      event.target?.classList.contains('el-checkbox__original')
-    )
-      return;
-
-    this.$emit('openValidatorInfo', this.validator);
-  }
-
-  onSelect(value: boolean) {
-    this.$emit('onSelect', value, this.validator.address);
-  }
-}
+          this.$emit('openValidatorInfo', this.validator);
+    },
+    onSelect(value: boolean) {
+      this.$emit('onSelect', value, this.validator.address);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

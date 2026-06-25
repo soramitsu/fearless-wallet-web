@@ -27,7 +27,7 @@
             data-testid="fromWallet"
           />
 
-          <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
+          <Icon icon="chevron-right" class="arrow-icon" />
 
           <FInput
             :value="formattedAddressTo"
@@ -53,7 +53,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
@@ -61,133 +62,114 @@ import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'SendForm',
   components: { TransferForm },
-})
-export default class SendForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  partialFee = '';
-  selectedNetwork = '';
-  assetId = '';
-  recipient = '';
-  amount = '';
-  value = '';
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      partialFee: '',
+      selectedNetwork: '',
+      assetId: '',
+      recipient: '',
+      amount: '',
+      value: '',
+    };
+  },
+  computed: {
+    currency() {
+      return this.accountsStore.balances.find(({ balances }) =>
+            balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
+          );
+    },
+    isUtilityAsset() {
+      return this.currency?.balances.some(({ isUtility, name }) => isUtility && isSameString(name, this.selectedNetwork));
+    },
+    partialFeeString() {
+      const utilityAsset = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
+          const symbol = utilityAsset ? utilityAsset.symbol : '';
 
-  get currency() {
-    return this.accountsStore.balances.find(({ balances }) =>
-      balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
-    );
-  }
+          return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
+    },
+    showValue() {
+      return this.value !== '0';
+    },
+    assetPrice() {
+      return this.networksStore.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
+    },
+    originNet() {
+      return this.networksStore.getNetwork(this.selectedNetwork);
+    },
+    originalUtilityId() {
+      return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
+    },
+    feeAssetPrice() {
+      const currency = this.accountsStore.balances.find(({ balances }) =>
+            balances.some(({ id }) => id === this.originalUtilityId)
+          );
+          const priceId = currency?.priceId ?? '';
 
-  get isUtilityAsset() {
-    return this.currency?.balances.some(({ isUtility, name }) => isUtility && isSameString(name, this.selectedNetwork));
-  }
-
-  get partialFeeString() {
-    const utilityAsset = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
-    const symbol = utilityAsset ? utilityAsset.symbol : '';
-
-    return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
-  }
-
-  get showValue() {
-    return this.value !== '0';
-  }
-
-  get assetPrice() {
-    return this.networksStore.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
-  }
-
-  get originNet() {
-    return this.networksStore.getNetwork(this.selectedNetwork);
-  }
-
-  get originalUtilityId() {
-    return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-  }
-
-  get feeAssetPrice() {
-    const currency = this.accountsStore.balances.find(({ balances }) =>
-      balances.some(({ id }) => id === this.originalUtilityId)
-    );
-    const priceId = currency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get fiatFeeString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
-  }
-
-  get valueString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
-  }
-
-  get amountString() {
-    return `${+this.amount} ${this.selectedAssetUpper}`;
-  }
-
-  get formattedAddressTo() {
-    return `${this.recipient.slice(0, 7)}...${this.recipient.slice(-8)}`;
-  }
-
-  get selectedAsset() {
-    return this.currency?.balances?.find(
-      (el) =>
-        el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
-    );
-  }
-
-  get selectedAssetUpper() {
-    return this.selectedAsset?.symbol.toUpperCase();
-  }
-
-  get total() {
-    return +addNumbers([this.amount, this.partialFee]);
-  }
-
-  get totalString() {
-    return `${this.$n(this.total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
-  }
-
-  get fiatTotalString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
-  }
-
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    fiatFeeString() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
+    },
+    valueString() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
+    },
+    amountString() {
+      return `${+this.amount} ${this.selectedAssetUpper}`;
+    },
+    formattedAddressTo() {
+      return `${this.recipient.slice(0, 7)}...${this.recipient.slice(-8)}`;
+    },
+    selectedAsset() {
+      return this.currency?.balances?.find(
+            (el) =>
+              el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
+          );
+    },
+    selectedAssetUpper() {
+      return this.selectedAsset?.symbol.toUpperCase();
+    },
+    total() {
+      return +addNumbers([this.amount, this.partialFee]);
+    },
+    totalString() {
+      return `${this.$n(this.total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
+    },
+    fiatTotalString() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
+    },
+  },
   created() {
     this.assetId = this.$route.params.assetId;
-    this.selectedNetwork = this.$route.params.network;
-  }
-
-  closeForm() {
-    this.$router.back();
-  }
-
-  updateAssetId(value: string) {
-    this.assetId = value;
-  }
-
-  updateSelectedNetwork(value: string) {
-    this.selectedNetwork = value;
-  }
-
-  updateRecipient(value: string) {
-    this.recipient = value;
-  }
-
-  updateAmount(value: string) {
-    this.amount = value;
-  }
-
-  updateValue(value: string) {
-    this.value = value;
-  }
-
-  updatePartialFee(value: string) {
-    this.partialFee = value;
-  }
-}
+        this.selectedNetwork = this.$route.params.network;
+  },
+  methods: {
+    closeForm() {
+      this.$router.back();
+    },
+    updateAssetId(value: string) {
+      this.assetId = value;
+    },
+    updateSelectedNetwork(value: string) {
+      this.selectedNetwork = value;
+    },
+    updateRecipient(value: string) {
+      this.recipient = value;
+    },
+    updateAmount(value: string) {
+      this.amount = value;
+    },
+    updateValue(value: string) {
+      this.value = value;
+    },
+    updatePartialFee(value: string) {
+      this.partialFee = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

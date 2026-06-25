@@ -5,6 +5,22 @@ import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
+import {
+  estimateBitcoinTransferFee,
+  getBitcoinNetworkKind,
+  isBitcoinTransferNetwork,
+  makeBitcoinTransfer,
+} from '@extension-base/api/bitcoin/transfer';
+import {
+  estimateIrohaTransferFee,
+  isIrohaTransferNetwork,
+  makeIrohaTransfer,
+} from '@extension-base/api/iroha/transfer';
+import {
+  estimateSolanaTransferFee,
+  isSolanaTransferNetwork,
+  makeSolanaTransfer,
+} from '@extension-base/api/solana/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
@@ -38,11 +54,22 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
   WALLET_CONNECT_SUPPORTED_METHODS,
 } from '@extension-base/services/wallet-connect-service/consts';
+import {
+  resolveSolanaSignAndSendTransaction,
+  resolveSolanaSigning,
+} from '@extension-base/services/request-service/handlers/solanaSigning';
+import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import type { EvmRequests, EvmRequestsSubjectPayload } from '@extension-base/services/request-service/types';
+import type {
+  EvmRequests,
+  EvmRequestsSubjectPayload,
+  SolanaRequests,
+  SolanaRequestsSubjectPayload,
+} from '@extension-base/services/request-service/types';
 import type {
   RequestUpdateMeta,
   PriceJson,
@@ -63,6 +90,7 @@ import type {
   ResponseCheckCrossChain,
   ResponseMakeSwap,
   AccountJson,
+  SignRequest,
   AuthorizedAccountsDiff,
   AuthorizeRequest,
   GoogleFileId,
@@ -148,6 +176,18 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
   return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
+function isEvmSignRequest(
+  value: SignRequest | EvmRequestsSubjectPayload | SolanaRequestsSubjectPayload
+): value is EvmRequestsSubjectPayload {
+  return 'data' in value;
+}
+
+function isSolanaSignRequest(
+  value: SignRequest | EvmRequestsSubjectPayload | SolanaRequestsSubjectPayload
+): value is SolanaRequestsSubjectPayload {
+  return 'ecosystem' in value && value.ecosystem === 'solana';
+}
+
 export default class Extension extends FWExtensionBase {
   constructor(state: State) {
     super(state);
@@ -161,6 +201,8 @@ export default class Extension extends FWExtensionBase {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
     const pair = this.state.keyringService.getPair(address);
     const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
+    const solanaAddress = pair?.meta.solanaAddress as string | undefined;
+    const irohaAddress = pair?.meta.irohaAddress as string | undefined;
 
     // cycle through authUrls and prepare the array of diff
     this.state.requestService.getAuthorize((authUrls) => {
@@ -173,6 +215,10 @@ export default class Extension extends FWExtensionBase {
           ]);
 
         if (urlInfo.evmAuthorizedAccount === ethereumAddress) authorizedAccountsDiff.push([url, [''], 'evm']);
+        if (urlInfo.solanaAuthorizedAccount === solanaAddress || urlInfo.solanaAuthorizedAccount === address)
+          authorizedAccountsDiff.push([url, [''], 'solana']);
+        if (urlInfo.irohaAuthorizedAccount === irohaAddress || urlInfo.irohaAuthorizedAccount === address)
+          authorizedAccountsDiff.push([url, [''], 'iroha']);
       });
     });
 
@@ -598,12 +644,51 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  async signSolanaApprove({ id }: RequestSigningApprove): Promise<boolean> {
+    const request = this.state.requestService.getSignRequest(id) as SolanaRequestsSubjectPayload | undefined;
+
+    assert(request, 'Unable to find request');
+
+    try {
+      const accounts = this.state.keyringService.getAllAccounts();
+      const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) =>
+        this.state.keyringService.exportMnemonic({
+          address,
+          password: this.state.keyringService.getPassword(),
+          walletEcosystem: walletEcosystem as WalletEcosystem,
+        });
+      const response =
+        request.method === 'signAndSendTransaction'
+          ? await resolveSolanaSignAndSendTransaction({
+              accounts,
+              broadcastTransaction: (transactionBase64, options) =>
+                new SolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options),
+              exportMnemonic,
+              request,
+            })
+          : resolveSolanaSigning({
+              accounts,
+              exportMnemonic,
+              request,
+            });
+
+      request.resolve(response);
+
+      return true;
+    } catch (error) {
+      request.reject(error instanceof Error ? error : new Error('Unable to sign Solana request'));
+
+      return false;
+    }
+  }
+
   async signingApprove({ id }: RequestSigningApprove): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    if (queued && 'data' in queued) return this.signEvmApprove({ id }); // sign evm requests
+    if (isSolanaSignRequest(queued)) return this.signSolanaApprove({ id });
+    if (isEvmSignRequest(queued)) return this.signEvmApprove({ id }); // sign evm requests
 
     const account = this.state.keyringService
       .getAllAccounts()
@@ -656,6 +741,12 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
+    if (isSolanaSignRequest(queued)) {
+      queued.reject(new Error('External signature approval is not supported for Solana'));
+
+      return false;
+    }
+
     queued.resolve({ id, payload: signature });
 
     return true;
@@ -697,6 +788,20 @@ export default class Extension extends FWExtensionBase {
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return this.state.requestService.signEvmSubject.value;
+  }
+
+  signingSolanaSubscribe(id: string, port?: Port): SolanaRequests {
+    const cb = this.state.subscriptionService.createSubscription<'pri(signing.solanaRequests)'>(id, port);
+
+    const signSolanaSubscription = this.state.requestService.signSolanaSubject.subscribe(
+      (requests: SolanaRequests): void => cb(requests)
+    );
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, signSolanaSubscription.unsubscribe);
+
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+    return this.state.requestService.signSolanaSubject.value;
   }
 
   async windowOpen(path: string): Promise<boolean> {
@@ -846,13 +951,82 @@ export default class Extension extends FWExtensionBase {
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const { from, networkKey, to, assetId, relayChain, amount } = request;
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-
-    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
-    const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
+    const network = this.state.networkService.networkMap[networkKey];
 
     let fee = '0';
     const errors: BasicTxError[] = [];
+
+    if (isBitcoinTransferNetwork(network)) {
+      try {
+        fee = await estimateBitcoinTransferFee({ network: getBitcoinNetworkKind(network) });
+      } catch (e) {
+        console.info(e);
+        errors.push({
+          message: 'common.estimateFeeError',
+          code: TransferErrorCode.TRANSFER_ERROR,
+        });
+      }
+
+      return {
+        destEstimateFee: '0',
+        estimateFee: fee.toString(),
+        errors,
+      };
+    }
+
+    if (isIrohaTransferNetwork(network)) {
+      try {
+        fee = await estimateIrohaTransferFee({
+          amount: amount ?? '0',
+          assetId,
+          from,
+          networkKey,
+          state: this.state,
+          to,
+        });
+      } catch (e) {
+        console.info(e);
+        errors.push({
+          message: (e as Error).message,
+          code: TransferErrorCode.TRANSFER_ERROR,
+        });
+      }
+
+      return {
+        destEstimateFee: '0',
+        estimateFee: fee.toString(),
+        errors,
+      };
+    }
+
+    if (isSolanaTransferNetwork(network)) {
+      try {
+        fee = await estimateSolanaTransferFee({
+          amount: amount ?? '0',
+          assetId,
+          from,
+          networkKey,
+          state: this.state,
+          to,
+        });
+      } catch (e) {
+        console.info(e);
+        errors.push({
+          message: (e as Error).message,
+          code: TransferErrorCode.TRANSFER_ERROR,
+        });
+      }
+
+      return {
+        destEstimateFee: '0',
+        estimateFee: fee.toString(),
+        errors,
+      };
+    }
+
+    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
+    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+    const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
     // Estimate with EVM API
     if (isNativeEVMNetwork(networkKey)) {
@@ -895,11 +1069,19 @@ export default class Extension extends FWExtensionBase {
 
     this.state.keyringService.unlockPair(from);
 
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
-    const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
-
     const callback = this.state.subscriptionService.createSubscription<'pri(accounts.makeTransfer)'>(id, port);
+    const network = this.state.networkService.networkMap[networkKey];
+
+    let tokenSymbol = assetId;
+    let balance;
+
+    if (!isBitcoinTransferNetwork(network) && !isIrohaTransferNetwork(network) && !isSolanaTransferNetwork(network)) {
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
+      const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+
+      tokenSymbol = tokenBalance.symbol;
+      balance = getBalanceItem(tokenBalance.balances, networkKey)!;
+    }
 
     let transferProm: Promise<void> | undefined;
 
@@ -912,10 +1094,44 @@ export default class Extension extends FWExtensionBase {
       state: this.state,
       isMobile: !!isMobile,
       assetId,
-      balance,
+      balance: balance!,
     };
 
-    if (isNativeEVMNetwork(networkKey)) {
+    if (isBitcoinTransferNetwork(network)) {
+      transferProm = makeBitcoinTransfer({
+        amount,
+        bitcoinFeeRateSatPerVbyte: request.bitcoinFeeRateSatPerVbyte,
+        bitcoinFeeTargetBlocks: request.bitcoinFeeTargetBlocks,
+        bitcoinIncludeUnconfirmed: request.bitcoinIncludeUnconfirmed,
+        bitcoinMaxInputs: request.bitcoinMaxInputs,
+        bitcoinSelectedOutpoints: request.bitcoinSelectedOutpoints,
+        callback,
+        from,
+        networkKey,
+        state: this.state,
+        to,
+      });
+    } else if (isIrohaTransferNetwork(network)) {
+      transferProm = makeIrohaTransfer({
+        amount,
+        assetId,
+        callback,
+        from,
+        networkKey,
+        state: this.state,
+        to,
+      });
+    } else if (isSolanaTransferNetwork(network)) {
+      transferProm = makeSolanaTransfer({
+        amount,
+        assetId,
+        callback,
+        from,
+        networkKey,
+        state: this.state,
+        to,
+      });
+    } else if (isNativeEVMNetwork(networkKey)) {
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
 
       transferProm = makeEVMTransfer(
@@ -935,7 +1151,7 @@ export default class Extension extends FWExtensionBase {
 
       console.info(
         `
-        Start transfer: ${amount} ${tokenBalance.symbol}
+        Start transfer: ${amount} ${tokenSymbol}
         from ${from}
         to ${to}
       `
@@ -1131,13 +1347,26 @@ export default class Extension extends FWExtensionBase {
   private async fetchBalance({
     address,
     networks,
+    bitcoinAddress,
+    bitcoinTestnetAddress,
     ethereumAddress,
+    solanaAddress,
+    irohaAddress,
     walletEcosystem,
   }: FetchBalanceRequest): Promise<ResponseBalanceRequest[]> {
+    if (walletEcosystem === WalletEcosystem.Bitcoin) {
+      return await this.state.balanceService.fetchBalance({
+        address,
+        bitcoinAddress,
+        bitcoinTestnetAddress,
+        bitcoinNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['bitcoin']),
+        ethereumAddress: ethereumAddress ?? '',
+        walletEcosystem,
+      });
+    }
+
     if (walletEcosystem === WalletEcosystem.Ton) {
-      const tonNetworks = networks.filter(
-        (network) => this.state.networkService.networkMap[network].ecosystem === 'ton'
-      );
+      const tonNetworks = filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['ton']);
 
       return await this.state.balanceService.fetchBalance({
         address,
@@ -1147,15 +1376,36 @@ export default class Extension extends FWExtensionBase {
       });
     }
 
-    const evmNetworks = networks.filter(
-      (network) => this.state.networkService.networkMap[network].ecosystem === 'ethereum'
-    );
+    if (walletEcosystem === WalletEcosystem.Solana) {
+      const solanaNetworks = filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['solana']);
 
-    const substrateNetworks = networks.filter((network) => {
-      const ecosystem = this.state.networkService.networkMap[network].ecosystem;
+      return await this.state.balanceService.fetchBalance({
+        address,
+        solanaAddress,
+        solanaNetworks,
+        ethereumAddress: ethereumAddress ?? '',
+        walletEcosystem,
+      });
+    }
 
-      return ecosystem === 'substrate' || ecosystem === 'ethereumBased';
-    });
+    if (walletEcosystem === WalletEcosystem.Iroha) {
+      const irohaNetworks = filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['iroha']);
+
+      return await this.state.balanceService.fetchBalance({
+        address,
+        irohaAddress,
+        irohaNetworks,
+        ethereumAddress: ethereumAddress ?? '',
+        walletEcosystem,
+      });
+    }
+
+    const evmNetworks = filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['ethereum']);
+
+    const substrateNetworks = filterNetworksByEcosystem(this.state.networkService.networkMap, networks, [
+      'substrate',
+      'ethereumBased',
+    ]);
 
     return await this.state.balanceService.fetchBalance({
       address,
@@ -1523,6 +1773,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(app.port.ping)':
         return true;
 
+      case 'pri(app.isReady)':
+        return this.state.isReady();
+
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
 
@@ -1562,6 +1815,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(keyring.isNeedMigration)':
         return this.state.keyringService.isNeedMigration();
+
+      case 'pri(keyring.getUniversalWalletMigrationSnapshot)':
+        return this.state.keyringService.getUniversalWalletMigrationSnapshot();
 
       case 'pri(keyring.migrateMasterPassword)':
         return this.state.keyringService.keyringMigrateMasterPassword(request as RequestMigratePassword);
@@ -1766,6 +2022,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(signing.evmRequests)':
         return this.signingEvmSubscribe(id, port);
+
+      case 'pri(signing.solanaRequests)':
+        return this.signingSolanaSubscribe(id, port);
 
       // google
       case 'pri(google.get.files)':

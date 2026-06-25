@@ -1,6 +1,5 @@
 import * as tonWebMnemonic from 'tonweb-mnemonic';
 import CryptoJS from 'crypto-js';
-import { type Address, WalletContractV4 } from '@ton/ton';
 import { BehaviorSubject } from 'rxjs';
 import { tonStore } from './../../stores/TonStore';
 import { validateBip39Mnemonic } from './Bip39';
@@ -8,7 +7,10 @@ import { type KeyringService } from '.';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import type { FWKeyringMeta } from '../../types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
+import type { Address, WalletContractV4 } from '@ton/ton';
 import { WalletEcosystem } from '@/interfaces';
+import { createTonWalletContractV4R2, deriveTonAccount } from '@/util/tonKeyring';
+import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 type TonAccountInfo = Omit<TonStoreAccount, 'publicKeyHex'> & {
   walletEcosystem: WalletEcosystem;
@@ -30,17 +32,22 @@ export class TonKeyringService {
   readonly accountSubject: BehaviorSubject<SubjectInfo & TonAccount> = new BehaviorSubject({});
 
   constructor(private keyringService: KeyringService) {
-    const saveAccounts = async (address: string, { name, cipherSeed, publicKeyHex }: TonStoreAccount) =>
-      this.setAccounts({ address, name, cipherSeed, publicKeyHex });
+    const saveAccounts = async (address: string, { name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) =>
+      this.setAccounts({ address, name, cipherSeed, meta, publicKeyHex });
 
     tonStore.all(saveAccounts);
   }
 
-  setAccounts({ address, name, cipherSeed, publicKeyHex }: TonStoreAccount) {
+  setAccounts({ address, name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) {
     const accounts = this.accountSubject.value;
 
     const publicKey = hexToBytes(publicKeyHex);
     const walletContract = this.keyringService.tonKeyring.createContractV4(publicKey);
+    const accountMeta: FWKeyringMeta = meta ?? {
+      name,
+      cipherSeed,
+      walletEcosystem: WalletEcosystem.Ton,
+    };
 
     this.accountSubject.next({
       ...accounts,
@@ -53,11 +60,7 @@ export class TonKeyringService {
         walletEcosystem: WalletEcosystem.Ton,
         json: {
           address,
-          meta: {
-            name,
-            cipherSeed,
-            walletEcosystem: WalletEcosystem.Ton,
-          },
+          meta: accountMeta,
         },
         option: {
           name,
@@ -69,12 +72,25 @@ export class TonKeyringService {
   }
 
   updateAccountName(address: string, name: string) {
-    const { cipherSeed, publicKey: pubKey } = this.accountSubject.value[address];
+    const {
+      cipherSeed,
+      json: { meta },
+      publicKey: pubKey,
+    } = this.accountSubject.value[address];
     const publicKeyHex = bytesToHex(pubKey);
+    const nextMeta = withUniversalWalletKeyringMeta(
+      address,
+      {
+        ...meta,
+        name,
+        walletEcosystem: WalletEcosystem.Ton,
+      },
+      WalletEcosystem.Ton
+    );
 
-    tonStore.set(address, { name, address, cipherSeed, publicKeyHex });
+    tonStore.set(address, { name, address, cipherSeed, meta: nextMeta, publicKeyHex });
 
-    this.setAccounts({ address, name, publicKeyHex, cipherSeed });
+    this.setAccounts({ address, name, publicKeyHex, cipherSeed, meta: nextMeta });
   }
 
   getAccount(_address: string) {
@@ -102,7 +118,14 @@ export class TonKeyringService {
   }
 
   async mnemonicToKeyPair(mnemonic: string[], password?: string) {
-    return await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
+    if (password) return await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
+
+    const account = deriveTonAccount({ mnemonic: mnemonic.join(' ') });
+
+    return {
+      publicKey: account.publicKey,
+      secretKey: account.secretKey,
+    };
   }
 
   async isPasswordNeeded(mnemonic: string[]) {
@@ -135,27 +158,44 @@ export class TonKeyringService {
   }
 
   createContractV4(publicKey: Uint8Array) {
-    const wallet = WalletContractV4.create({ workchain: 0, publicKey: Buffer.from(publicKey) });
+    const wallet = createTonWalletContractV4R2(publicKey);
 
     return wallet;
   }
 
-  async createAccount(suri: string, name: string = '', password?: string) {
+  async createAccount(suri: string, meta: FWKeyringMeta | string = '', password?: string) {
     const suriArray = suri.split(' ');
-
-    const { publicKey: pubKey } = await this.mnemonicToKeyPair(suriArray);
-
-    const wallet = this.createContractV4(pubKey);
-    const address = this.getUserFriendlyAddress(wallet.address);
+    const initialMeta: FWKeyringMeta =
+      typeof meta === 'string'
+        ? {
+            name: meta,
+            walletEcosystem: WalletEcosystem.Ton,
+          }
+        : {
+            ...meta,
+            walletEcosystem: WalletEcosystem.Ton,
+          };
+    const account = deriveTonAccount({ mnemonic: suriArray.join(' ') });
+    const wallet = this.createContractV4(account.publicKey);
+    const address = account.addressNonBounceable;
+    const name = initialMeta.name ?? '';
+    const universalMeta = withUniversalWalletKeyringMeta(
+      address,
+      {
+        ...initialMeta,
+        tonAddress: account.addressNonBounceable,
+        tonPublicKeyHex: account.publicKeyHex,
+      },
+      WalletEcosystem.Ton
+    );
 
     if (password) {
       const cipherSeed = this.encodeMnemonic(suriArray, password);
+      const publicKeyHex = account.publicKeyHex;
 
-      const publicKeyHex = bytesToHex(pubKey);
+      tonStore.set(address, { name, address, cipherSeed, meta: universalMeta, publicKeyHex });
 
-      tonStore.set(address, { name, address, cipherSeed, publicKeyHex });
-
-      this.setAccounts({ address, name, cipherSeed, publicKeyHex });
+      this.setAccounts({ address, name, cipherSeed, meta: universalMeta, publicKeyHex });
     }
 
     return { wallet, address };

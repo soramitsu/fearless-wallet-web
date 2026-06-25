@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
+import { useRoute, useRouter } from 'vue-router';
 import BaseApi from '@/util/BaseApi';
 import { validatePassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -51,7 +51,7 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
-const network = computed(() => route.params.network);
+const network = computed(() => (Array.isArray(route.params.network) ? route.params.network[0] : route.params.network) ?? '');
 
 onMounted(() => {
   if (accountsStore.selectedWallet.isMobile) router.back();

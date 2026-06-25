@@ -17,25 +17,38 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync, Ref } from 'vue-property-decorator';
-import type FInput from '@/components/FInput.vue';
+import { defineComponent } from 'vue';
 
-@Component
-export default class NicknameForm extends Vue {
-  @Ref('nicknameInput') readonly nicknameInputComponent!: typeof FInput;
-  @Prop({ default: false }) readonly!: boolean;
-  @PropSync('nickname', { type: String }) syncedNickname!: string;
 
+export default defineComponent({ name: 'NicknameForm' ,
+  props: {
+    readonly: { default: false },
+    nickname: { type: String },
+  },
+  computed: {
+    syncedNickname: {
+      get() {
+        return this.nickname;
+      },
+      set(value) {
+        this.$emit('update:nickname', value);
+      },
+    },
+    nicknameInputComponent() {
+      return this.$refs.nicknameInput;
+    },
+  },
   mounted() {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    this.nicknameInputComponent.input.focus();
-  }
-
-  changeSyncedNickname(value: string) {
-    this.syncedNickname = value;
-  }
-}
+        //@ts-ignore
+        this.nicknameInputComponent.input.focus();
+  },
+  methods: {
+    changeSyncedNickname(value: string) {
+      this.syncedNickname = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

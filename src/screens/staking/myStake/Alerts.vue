@@ -12,19 +12,21 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import AlertItem from '@/screens/staking/myStake/AlertItem.vue';
 
 type Alert = {
   name: string;
   descriptions: string;
+  formName: string;
   timespan: number;
 };
 
-@Component({
+export default defineComponent({ name: 'Alerts',
   components: { AlertItem },
-})
-export default class Alerts extends Vue {
-  @Prop({ type: Array }) alerts!: Alert[];
-}
+  props: {
+    alerts: { type: Array as () => Alert[] },
+  },
+});
 </script>

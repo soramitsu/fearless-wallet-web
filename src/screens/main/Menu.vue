@@ -5,13 +5,14 @@
       :key="menuItem"
       :name="menuItem"
       :isActive="checkActive(menuItem)"
-      @click.native="clickMenuItem(menuItem)"
+      @click="clickMenuItem(menuItem)"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { IS_PRODUCTION } from '@/consts/global';
@@ -23,78 +24,76 @@ type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
 
 export const MENU_HEIGHT = 70;
 
-@Component({
+export default defineComponent({ name: 'Menu',
   components: { MenuItem },
-})
-export default class Menu extends Vue {
-  accountsStore = useAccountsStore();
-
-  walletItems: string[] = [
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+      walletItems: [
     Components.Currencies,
     Components.Nfts,
     Components.AccountSetting,
     Components.Export,
     Components.Nodes,
-  ];
+  ],
+      stakingItems: [Components.MyStake],
+    };
+  },
+  computed: {
+    menuItems() {
+      const array: MenuItemType[] = [Components.Wallet];
 
-  stakingItems: string[] = [Components.MyStake];
+          if (!this.isTonWallet) {
+            array.push(Components.Staking);
 
-  get menuItems() {
-    const array: MenuItemType[] = [Components.Wallet];
+            if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
+              array.push(Components.Polkaswap);
+          }
 
-    if (!this.isTonWallet) {
-      array.push(Components.Staking);
+          return array;
+    },
+    isTonWallet() {
+      return this.accountsStore.selectedWallet.isTon;
+    },
+    currentRouteName() {
+      const route = this.$route.path.split('/')[2];
 
-      if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
-        array.push(Components.Polkaswap);
-    }
+          return route;
+    },
+    routeName() {
+      return this.$route.name as string;
+    },
+  },
+  methods: {
+    checkActive(menuItem: MenuItemType) {
+      if (menuItem === 'Wallet') {
+            const isHighlightWalletItem = this.walletItems.includes(this.routeName);
+            const haveAssetId = this.$route.params.assetId !== undefined;
 
-    return array;
-  }
+            if (isHighlightWalletItem || haveAssetId) return true;
+          }
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
+          if (menuItem === 'Staking') {
+            const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
 
-  get currentRouteName() {
-    const route = this.$route.path.split('/')[2];
+            if (isHighlightWalletItem) return true;
+          }
 
-    return route;
-  }
+          return menuItem.toLowerCase() === this.currentRouteName;
+    },
+    clickMenuItem(menuItem: MenuItemType) {
+      if (this.currentRouteName === menuItem.toLowerCase()) return;
 
-  get routeName() {
-    return this.$route.name as string;
-  }
+          const route = menuItem as keyof typeof Components;
 
-  checkActive(menuItem: MenuItemType) {
-    if (menuItem === 'Wallet') {
-      const isHighlightWalletItem = this.walletItems.includes(this.routeName);
-      const haveAssetId = this.$route.params.assetId !== undefined;
+          const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
 
-      if (isHighlightWalletItem || haveAssetId) return true;
-    }
-
-    if (menuItem === 'Staking') {
-      const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
-
-      if (isHighlightWalletItem) return true;
-    }
-
-    return menuItem.toLowerCase() === this.currentRouteName;
-  }
-
-  clickMenuItem(menuItem: MenuItemType) {
-    if (this.currentRouteName === menuItem.toLowerCase()) return;
-
-    const route = menuItem as keyof typeof Components;
-
-    const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
-
-    this.$router.push({
-      name,
-    });
-  }
-}
+          this.$router.push({
+            name,
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

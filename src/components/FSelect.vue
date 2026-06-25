@@ -1,15 +1,12 @@
 <template>
   <FCorners :size="size">
     <div :class="containerSelectClasses">
-      <SSelect v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled" data-testid="select">
-        <SOption
-          v-for="{ value, label } in options"
-          :key="label"
-          :value="value"
-          :label="label"
-          data-testid="selectOption"
-        />
-      </SSelect>
+      <label class="s-placeholder">{{ $t(placeholder) }}</label>
+      <select v-model="vModel" class="el-input__inner" :disabled="disabled" data-testid="select">
+        <option v-for="{ value, label } in options" :key="label" :value="value" data-testid="selectOption">
+          {{ label }}
+        </option>
+      </select>
     </div>
   </FCorners>
 </template>
@@ -55,28 +52,29 @@ const containerSelectClasses = computed(() => {
 
 <style lang="scss">
 .select-style-default {
+  position: relative;
+
   input {
     color: $pink-lavender-color !important;
   }
 
-  .s-select .el-input__inner {
+  .el-input__inner {
+    width: 100%;
+    min-height: 48px;
     background-color: $secondary-background-color !important;
     border: 1px solid $default-background-color !important;
     padding-top: 25px !important;
+    padding-left: 25px !important;
+    color: $pink-lavender-color !important;
+    outline: none;
   }
 
-  .s-select .s-placeholder {
+  .s-placeholder {
+    position: absolute;
+    z-index: 1;
     color: $default-white !important;
     margin-top: 12px !important;
     padding-left: 25px !important;
-  }
-
-  .s-select input {
-    padding-left: 25px !important;
-  }
-
-  .s-select .el-select i.el-icon-arrow-up:before {
-    color: $gray-color !important;
   }
 }
 
@@ -106,13 +104,13 @@ const containerSelectClasses = computed(() => {
 }
 
 .select-size-big {
-  .s-select {
+  .el-input__inner {
     clip-path: $big-clip-path-left-top-and-right-bottom;
   }
 }
 
 .select-size-medium {
-  .s-select {
+  .el-input__inner {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
   }
 }

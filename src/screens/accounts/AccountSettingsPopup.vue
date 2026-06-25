@@ -39,7 +39,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { EXPLORERS_BASE_URLS } from '@/consts/networks';
@@ -47,104 +48,97 @@ import { setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class AccountSettingsPopup extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'AccountSettingsPopup' ,
+  props: {
+    selectedNetwork: String,
+    showNodeSwitch: Boolean,
+    showCopyAddress: Boolean,
+    showExport: Boolean,
+    buttonTopClick: Number,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    networkProps() {
+      return this.networksStore.getNetwork(this.selectedNetwork);
+    },
+    explorerType() {
+      return this.networkProps?.externalApi?.history?.type;
+    },
+    haveExplorers() {
+      return this.explorerUrl !== '';
+    },
+    explorerUrl() {
+      if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
 
-  @Prop(String) selectedNetwork!: string;
-  @Prop(Boolean) showNodeSwitch!: boolean;
-  @Prop(Boolean) showCopyAddress!: boolean;
-  @Prop(Boolean) showExport!: boolean;
-  @Prop(Number) buttonTopClick!: number;
+          return '';
+    },
+    buttonText() {
+      const explorer =
+            this.explorerType === 'etherscan'
+              ? 'accounts.etherscan'
+              : this.explorerType === 'ton'
+              ? 'accounts.tonviewer'
+              : 'accounts.subscan';
 
-  get networkProps() {
-    return this.networksStore.getNetwork(this.selectedNetwork);
-  }
+          return this.$t(explorer);
+    },
+    top() {
+      if (this.buttonTopClick === undefined) return 110;
 
-  get explorerType() {
-    return this.networkProps?.externalApi?.history?.type;
-  }
+          if (this.buttonTopClick > 300) return this.buttonTopClick - 181;
 
-  get haveExplorers() {
-    return this.explorerUrl !== '';
-  }
+          return this.buttonTopClick + 7;
+    },
+    addressByNetwork() {
+      return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
+    },
+    lowerCaseSelectedNetwork() {
+      return this.selectedNetwork.toLowerCase();
+    },
+    substrateExplorerByNetwork() {
+      return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
+    },
+  },
+  methods: {
+    copyAddress() {
+      setClipboard(this.addressByNetwork);
 
-  get explorerUrl() {
-    if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
+          this.close();
+    },
+    openEvmExplorer() {
+      const hostname = new URL(this.explorerUrl).hostname;
 
-    return '';
-  }
+          window.open(`https://${hostname}/address/${this.addressByNetwork}`);
+    },
+    openSubscan() {
+      window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
+    },
+    openExplorer() {
+      if (this.explorerType === 'etherscan') return this.openEvmExplorer();
+          else this.openSubscan();
 
-  get buttonText() {
-    const explorer =
-      this.explorerType === 'etherscan'
-        ? 'accounts.etherscan'
-        : this.explorerType === 'ton'
-        ? 'accounts.tonviewer'
-        : 'accounts.subscan';
+          this.close();
+    },
+    openNetwork() {
+      this.$router.push({
+            name: Components.Nodes,
+            params: {
+              network: this.selectedNetwork,
+            },
+          });
 
-    return this.$t(explorer);
-  }
-
-  get top() {
-    if (this.buttonTopClick === undefined) return 110;
-
-    if (this.buttonTopClick > 300) return this.buttonTopClick - 181;
-
-    return this.buttonTopClick + 7;
-  }
-
-  get addressByNetwork() {
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
-  }
-
-  get lowerCaseSelectedNetwork() {
-    return this.selectedNetwork.toLowerCase();
-  }
-
-  get substrateExplorerByNetwork() {
-    return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
-  }
-
-  copyAddress() {
-    setClipboard(this.addressByNetwork);
-
-    this.close();
-  }
-
-  openEvmExplorer() {
-    const hostname = new URL(this.explorerUrl).hostname;
-
-    window.open(`https://${hostname}/address/${this.addressByNetwork}`);
-  }
-
-  openSubscan() {
-    window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
-  }
-
-  openExplorer() {
-    if (this.explorerType === 'etherscan') return this.openEvmExplorer();
-    else this.openSubscan();
-
-    this.close();
-  }
-
-  openNetwork() {
-    this.$router.push({
-      name: Components.Nodes,
-      params: {
-        network: this.selectedNetwork,
-      },
-    });
-
-    this.close();
-  }
-
-  close() {
-    this.$emit('handlerClose');
-  }
-}
+          this.close();
+    },
+    close() {
+      this.$emit('handlerClose');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

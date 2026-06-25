@@ -17,18 +17,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-@Component
-export default class SignMobile extends Vue {
-  handleSign() {
-    this.$emit('onSign');
-  }
-
-  handleCancel() {
-    this.$emit('onCancel');
-  }
-}
+export default defineComponent({ name: 'SignMobile' ,
+  methods: {
+    handleSign() {
+      this.$emit('onSign');
+    },
+    handleCancel() {
+      this.$emit('onCancel');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

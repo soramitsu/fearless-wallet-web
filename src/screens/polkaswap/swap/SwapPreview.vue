@@ -31,26 +31,27 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 
-@Component({
+export default defineComponent({ name: 'SwapPreview',
   components: { SwapInfo },
-})
-export default class SwapPreview extends Vue {
-  @Prop({ default: '' }) marketType!: string;
-  @Prop({ default: '' }) slippage!: string;
-  @Prop({ default: '' }) sendAmount!: string;
-  @Prop({ default: '' }) receiveAmount!: string;
-  @Prop({ default: '' }) sendValue!: string;
-  @Prop({ default: '' }) receiveValue!: string;
-  @Prop({ default: '' }) minMaxAmount!: string;
-  @Prop({ default: '' }) minMaxAmountPrice!: string;
-  @Prop({ default: '' }) fee!: string;
-  @Prop({ default: '' }) feePrice!: string;
-  @Prop({ default: '' }) sendAssetUP!: string;
-  @Prop({ default: '' }) receiveAssetUP!: string;
-  @Prop({ default: '' }) route!: string;
-  @Prop(Boolean) isExchangeB!: boolean;
-}
+  props: {
+    marketType: { default: '' },
+    slippage: { default: '' },
+    sendAmount: { default: '' },
+    receiveAmount: { default: '' },
+    sendValue: { default: '' },
+    receiveValue: { default: '' },
+    minMaxAmount: { default: '' },
+    minMaxAmountPrice: { default: '' },
+    fee: { default: '' },
+    feePrice: { default: '' },
+    sendAssetUP: { default: '' },
+    receiveAssetUP: { default: '' },
+    route: { default: '' },
+    isExchangeB: Boolean,
+  },
+});
 </script>

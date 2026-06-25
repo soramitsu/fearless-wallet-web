@@ -13,32 +13,36 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import HistoryItem from '@/screens/staking/myStake/HistoryItem.vue';
-import { type SoraHistoryElement, type NetworkName } from '@/interfaces';
+import { type SoraHistoryElement } from '@/interfaces';
 import { useStakingStore } from '@/stores/staking';
 
-@Component({
+export default defineComponent({ name: 'History',
   components: { HistoryItem },
-})
-export default class History extends Vue {
-  stakingStore = useStakingStore();
-
-  @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) stakingAssetId!: string;
-  @Prop({ type: String }) rewardedAssetId!: string;
-
-  get history() {
-    return this.stakingStore.getStakingHistory(
-      this.network,
-      this.stakingAssetId,
-      this.stakingNetwork.stashAddress,
-      this.stakingNetwork.payeeAddress
-    ) as SoraHistoryElement[];
-  }
-
-  get stakingNetwork() {
-    return this.stakingStore.getStakingNetwork(this.network);
-  }
-}
+  props: {
+    network: { type: String },
+    stakingAssetId: { type: String },
+    rewardedAssetId: { type: String },
+  },
+  data() {
+    return {
+      stakingStore: useStakingStore(),
+    };
+  },
+  computed: {
+    history() {
+      return this.stakingStore.getStakingHistory(
+            this.network,
+            this.stakingAssetId,
+            this.stakingNetwork.stashAddress,
+            this.stakingNetwork.payeeAddress
+          ) as SoraHistoryElement[];
+    },
+    stakingNetwork() {
+      return this.stakingStore.getStakingNetwork(this.network);
+    },
+  },
+});
 </script>

@@ -61,50 +61,44 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { NetworkParams } from '@/stores';
+import { defineComponent } from 'vue';
+
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 
-@Component({
+export default defineComponent({ name: 'YourValidators',
   components: {
     ValidatorItem,
   },
-})
-export default class YourValidators extends Vue {
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-
-  get showMyValidators() {
-    return this.stakingNetwork.myValidators.length !== 0;
-  }
-
-  get myActiveValidators() {
-    return this.stakingNetwork.myValidators.filter(({ isActive }) => isActive);
-  }
-
-  get showMyActiveValidators() {
-    return this.myActiveValidators.length !== 0;
-  }
-
-  get inactiveValidators() {
-    return this.stakingNetwork.myValidators.filter(({ isInactive }) => isInactive);
-  }
-
-  get showInactiveMyValidators() {
-    return this.inactiveValidators.length !== 0;
-  }
-
-  get waitingValidators() {
-    return this.stakingNetwork.myValidators.filter(({ isWaiting }) => isWaiting);
-  }
-
-  get showWaitingMyValidators() {
-    return this.waitingValidators.length !== 0;
-  }
-
-  get showOversubscribedAlert() {
-    return this.stakingNetwork.myValidators.some(({ isOversubscribed }) => isOversubscribed);
-  }
-}
+  props: {
+    stakingNetwork: { type: Object },
+  },
+  computed: {
+    showMyValidators() {
+      return this.stakingNetwork.myValidators.length !== 0;
+    },
+    myActiveValidators() {
+      return this.stakingNetwork.myValidators.filter(({ isActive }) => isActive);
+    },
+    showMyActiveValidators() {
+      return this.myActiveValidators.length !== 0;
+    },
+    inactiveValidators() {
+      return this.stakingNetwork.myValidators.filter(({ isInactive }) => isInactive);
+    },
+    showInactiveMyValidators() {
+      return this.inactiveValidators.length !== 0;
+    },
+    waitingValidators() {
+      return this.stakingNetwork.myValidators.filter(({ isWaiting }) => isWaiting);
+    },
+    showWaitingMyValidators() {
+      return this.waitingValidators.length !== 0;
+    },
+    showOversubscribedAlert() {
+      return this.stakingNetwork.myValidators.some(({ isOversubscribed }) => isOversubscribed);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -26,64 +26,65 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { Components } from '@/router/routes';
 import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
 
-@Component
-export default class WalletDetailsPopup extends Vue {
-  readonly isExtension = IS_EXTENSION;
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'WalletDetailsPopup' ,
+  props: {
+    buttonTopClick: Number,
+    selectedWalletAddress: String,
+  },
+  data() {
+    return {
+      isExtension: IS_EXTENSION,
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    selectedAccount() {
+      return this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
+    },
+    selectedAccountIsSubstrate() {
+      return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
+    },
+    isExportPossible() {
+      if (!this.isExtension || this.selectedAccount?.isMobile) return false;
 
-  @Prop(Number) buttonTopClick!: number;
-  @Prop(String) selectedWalletAddress!: string;
+          return this.selectedAccountIsSubstrate;
+    },
+    top() {
+      return this.buttonTopClick - 30;
+    },
+  },
+  methods: {
+    close() {
+      this.$emit('close');
+    },
+    async deleteWallet() {
+      await forgetAccount(this.selectedWalletAddress, this.selectedAccount?.isMobile ? 'mobile' : 'native');
 
-  get selectedAccount() {
-    return this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
-  }
+          if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
+          else this.close();
+    },
+    exportToGoogleDrive() {
+      initGoogleAuth('export', this.selectedWalletAddress);
+    },
+    async openWalletDetails() {
+      const walletInfo = this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
 
-  get selectedAccountIsSubstrate() {
-    return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
-  }
+          await updateCurrentAccount(this.selectedWalletAddress, walletInfo?.walletEcosystem);
 
-  get isExportPossible() {
-    if (!this.isExtension || this.selectedAccount?.isMobile) return false;
+          this.$router.push({ name: Components.AccountSetting });
 
-    return this.selectedAccountIsSubstrate;
-  }
-
-  get top() {
-    return this.buttonTopClick - 30;
-  }
-
-  close() {
-    this.$emit('close');
-  }
-
-  async deleteWallet() {
-    await forgetAccount(this.selectedWalletAddress, this.selectedAccount?.isMobile ? 'mobile' : 'native');
-
-    if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
-    else this.close();
-  }
-
-  exportToGoogleDrive() {
-    initGoogleAuth('export', this.selectedWalletAddress);
-  }
-
-  async openWalletDetails() {
-    const walletInfo = this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
-
-    await updateCurrentAccount(this.selectedWalletAddress, walletInfo?.walletEcosystem);
-
-    this.$router.push({ name: Components.AccountSetting });
-
-    this.$emit('closeSelectWalletPopup');
-  }
-}
+          this.$emit('closeSelectWalletPopup');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

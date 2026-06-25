@@ -54,9 +54,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter, useRoute } from 'vue-router/composables';
+import { useRouter, useRoute } from 'vue-router';
 import { computed, onMounted } from 'vue';
 import type { FearlessNft, NftCollection } from '@extension-base/services/nft-service/types';
+import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
 import { cut, setClipboard } from '@/helpers';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
@@ -66,9 +67,11 @@ const route = useRoute();
 const accountsStore = useAccountsStore();
 
 const selectedWallet = computed(() => accountsStore.selectedWallet);
-const id = computed(() => route.params.id);
-const contract = computed(() => route.params.contract);
-const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? {});
+const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+const id = computed(() => routeParam(route.params.id));
+const contract = computed(() => routeParam(route.params.contract));
+const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? []);
 const collection = computed<NftCollection>(
   () => nfts.value.find((nft) => nft.address === contract.value) ?? { ownedNfts: [], address: '', network: '' }
 );
@@ -89,7 +92,7 @@ const network = computed(() => nft.value.network ?? '');
 
 const contentType = computed(() => nft.value.contentType);
 const isMp4 = computed(() => contentType.value === 'video/mp4');
-const imageUrl = computed(() => nft.value.image ?? require('@/assets/fearless-logo-animated.gif'));
+const imageUrl = computed(() => nft.value.image ?? fallbackNftImage);
 
 const ownedBy = computed(() => cut(selectedWallet.value.ethereumAddress));
 const meta = computed(() => nft.value.meta ?? {});

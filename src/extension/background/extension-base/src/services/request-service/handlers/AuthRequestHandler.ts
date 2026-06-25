@@ -20,6 +20,32 @@ import { isSameString } from '@/helpers';
 
 const AUTH_URLS_KEY = 'authUrls';
 
+const isAuthTypeCovered = (existing: RequestAuthorizeTab['accountAuthType'], requested: RequestAuthorizeTab['accountAuthType']) => {
+  if (!existing || !requested) return false;
+  if (existing === 'all' || existing === requested) return true;
+  if (existing === 'both') return requested === 'substrate' || requested === 'evm';
+
+  return false;
+};
+
+const mergeAuthType = (
+  existing: RequestAuthorizeTab['accountAuthType'] | undefined,
+  requested: RequestAuthorizeTab['accountAuthType']
+): RequestAuthorizeTab['accountAuthType'] => {
+  if (!existing || existing === requested) return requested;
+  if (existing === 'all' || requested === 'all') return 'all';
+  if (existing === 'both' && (requested === 'substrate' || requested === 'evm')) return 'both';
+  if (requested === 'both' && (existing === 'substrate' || existing === 'evm')) return 'both';
+  if (
+    (existing === 'substrate' || existing === 'evm') &&
+    (requested === 'substrate' || requested === 'evm')
+  ) {
+    return 'both';
+  }
+
+  return 'all';
+};
+
 export class AuthRequestHandler {
   private readonly requestService: RequestService;
   private readonly networkService: NetworkService;
@@ -107,7 +133,7 @@ export class AuthRequestHandler {
     const complete = async (_authorizedAccounts: string[] = [], isAllowed = true) => {
       const {
         id: idStr,
-        request: { origin },
+        request: { accountAuthType: requestedAccountAuthType, origin },
         accountAuthType,
         url,
         currentEvmNetworkKey,
@@ -125,16 +151,24 @@ export class AuthRequestHandler {
 
       const substrateAccount = this.keyringService.getAccount(_authorizedAccounts[0]);
       const ethereumAddress = substrateAccount?.meta.ethereumAddress as string;
+      const requestType = requestedAccountAuthType ?? accountAuthType;
 
       const evmAuthorizedAccount =
-        accountAuthType !== 'substrate' ? ethereumAddress : existedAuth?.evmAuthorizedAccount ?? '';
+        requestType === 'evm' ? ethereumAddress : existedAuth?.evmAuthorizedAccount ?? '';
 
       const authorizedAccounts =
-        accountAuthType !== 'evm' ? _authorizedAccounts : existedAuth?.authorizedAccounts ?? [];
+        requestType === 'substrate' ? _authorizedAccounts : existedAuth?.authorizedAccounts ?? [];
+
+      const solanaAuthorizedAccount =
+        requestType === 'solana' ? _authorizedAccounts[0] ?? '' : existedAuth?.solanaAuthorizedAccount ?? '';
+      const irohaAuthorizedAccount =
+        requestType === 'iroha' ? _authorizedAccounts[0] ?? '' : existedAuth?.irohaAuthorizedAccount ?? '';
 
       this.authorizeCached[stripedUrl] = {
         authorizedAccounts,
         evmAuthorizedAccount,
+        solanaAuthorizedAccount,
+        irohaAuthorizedAccount,
         count: 0,
         isAllowed: true,
         accountAuthType,
@@ -180,10 +214,18 @@ export class AuthRequestHandler {
 
     const existedAuth = authList[idStr];
     const existedAccountAuthType = existedAuth?.accountAuthType;
-    const isNewType = existedAccountAuthType !== 'both' && existedAccountAuthType !== request.accountAuthType;
+    const isNewType = !isAuthTypeCovered(existedAccountAuthType, request.accountAuthType);
 
     if (request.accountAuthType === 'evm') {
       if (existedAuth && existedAuth?.evmAuthorizedAccount !== '' && !request.reConfirm) return false;
+    } else if (request.accountAuthType === 'solana') {
+      if (existedAuth && existedAuth?.solanaAuthorizedAccount && !request.reConfirm) return false;
+    } else if (request.accountAuthType === 'iroha') {
+      const authorizedAccount = existedAuth?.irohaAuthorizedAccount;
+      const allowedAccounts = request.allowedAccounts ?? [];
+      const authorizedAccountMatchesRequest = allowedAccounts.length === 0 || allowedAccounts.includes(authorizedAccount ?? '');
+
+      if (existedAuth && authorizedAccount && authorizedAccountMatchesRequest && !request.reConfirm) return false;
     }
     // Reconfirm if check auth for empty list
     else if (existedAuth) {
@@ -208,7 +250,7 @@ export class AuthRequestHandler {
         idStr,
         request,
         url,
-        accountAuthType: existedAuth && existedAuth.accountAuthType !== accountAuthType ? 'both' : accountAuthType,
+        accountAuthType: mergeAuthType(existedAuth?.accountAuthType, accountAuthType),
         currentEvmNetworkKey: existedAuth ? existedAuth.currentEvmNetworkKey : 'Ethereum',
       };
 

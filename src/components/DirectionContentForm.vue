@@ -23,8 +23,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, withDefaults } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { computed } from 'vue';
+import { useI18n } from '@/locales/useI18n';
 import { getCostOfAssets } from '@/helpers/transfers';
 import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';
@@ -74,8 +74,8 @@ const fiatSymbol = computed<string>(() => accountsStore.fiatSymbol);
 const assetPrice1 = computed(() => networksStore.getAssetPrice(props.priceId1).price);
 const assetPrice2 = computed(() => networksStore.getAssetPrice(props.priceId2).price);
 
-const _value1 = computed(() => props.value1 ?? getCostOfAssets(+props.amount1 ?? 0, assetPrice1.value));
-const _value2 = computed(() => props.value2 ?? getCostOfAssets(+props.amount2 ?? 0, assetPrice2.value));
+const _value1 = computed(() => props.value1 ?? getCostOfAssets(+(props.amount1 ?? 0), assetPrice1.value));
+const _value2 = computed(() => props.value2 ?? getCostOfAssets(+(props.amount2 ?? 0), assetPrice2.value));
 
 const value1Cut = computed(() => `${fiatSymbol.value} ${n(+_value1.value, 'price')}`);
 const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price')}`);

@@ -15,60 +15,59 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 
 const COLUMN_ELEMENTS = {
   24: 8,
   12: 6,
 };
 
-@Component
-export default class MnemonicColumns extends Vue {
-  @Prop(Array) mnemonicArray!: string[];
-  @Prop({ default: 12 }) mnemonicLength!: keyof typeof COLUMN_ELEMENTS;
+export default defineComponent({ name: 'MnemonicColumns' ,
+  props: {
+    mnemonicArray: Array,
+    mnemonicLength: { default: 12 },
+  },
+  computed: {
+    columnElements() {
+      return COLUMN_ELEMENTS[this.mnemonicLength];
+    },
+    columns() {
+      const columns = this.mnemonicLength / this.columnElements;
 
-  get columnElements() {
-    return COLUMN_ELEMENTS[this.mnemonicLength];
-  }
+          return new Array(columns).fill('').map((item, index) => {
+            const startIndex = index * this.columnElements;
 
-  get columns() {
-    const columns = this.mnemonicLength / this.columnElements;
+            return this.mnemonicArrayValidLength.slice(startIndex, startIndex + this.columnElements);
+          });
+    },
+    mnemonicArrayValidLength() {
+      const array = [...this.mnemonicArray];
 
-    return new Array(columns).fill('').map((item, index) => {
-      const startIndex = index * this.columnElements;
+          array.length = this.mnemonicLength;
 
-      return this.mnemonicArrayValidLength.slice(startIndex, startIndex + this.columnElements);
-    });
-  }
+          return array.fill('', this.mnemonicArray.length, this.mnemonicLength);
+    },
+    columnOne() {
+      return this.mnemonicArrayValidLength.slice(0, this.columnElements);
+    },
+    columnTwo() {
+      return this.mnemonicArrayValidLength.slice(this.columnElements, this.columnElements * 2);
+    },
+    columnTree() {
+      if (this.mnemonicLength === 12) return [];
 
-  get mnemonicArrayValidLength() {
-    const array = [...this.mnemonicArray];
+          return this.mnemonicArrayValidLength.slice(this.columnElements * 2, this.columnElements * 3);
+    },
+  },
+  methods: {
+    getNumberString(number1: number, number2: number) {
+      const baseValue = number1 * number2;
 
-    array.length = this.mnemonicLength;
-
-    return array.fill('', this.mnemonicArray.length, this.mnemonicLength);
-  }
-
-  get columnOne() {
-    return this.mnemonicArrayValidLength.slice(0, this.columnElements);
-  }
-
-  get columnTwo() {
-    return this.mnemonicArrayValidLength.slice(this.columnElements, this.columnElements * 2);
-  }
-
-  get columnTree() {
-    if (this.mnemonicLength === 12) return [];
-
-    return this.mnemonicArrayValidLength.slice(this.columnElements * 2, this.columnElements * 3);
-  }
-
-  getNumberString(number1: number, number2: number) {
-    const baseValue = number1 * number2;
-
-    return baseValue.toString().padStart(2, '0');
-  }
-}
+          return baseValue.toString().padStart(2, '0');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

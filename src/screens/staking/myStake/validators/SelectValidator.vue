@@ -31,7 +31,7 @@
             @change="changeFilterValue"
           />
 
-          <Icon icon="filter" @click.native="openFiltersPopup" class="filter" data-testid="filter" />
+          <Icon icon="filter" @click="openFiltersPopup" class="filter" data-testid="filter" />
         </div>
       </div>
 
@@ -55,95 +55,91 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectionValidator } from '@/interfaces';
+import { defineComponent } from 'vue';
+
 import type { FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { NetworkParams } from '@/stores';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import ValidatorItem from '@/screens/staking/myStake/validators/ValidatorItem.vue';
 import ValidatorInfo from '@/screens/staking/myStake/validators/ValidatorInfo.vue';
 
-@Component({
+export default defineComponent({ name: 'SelectValidator',
   components: {
     ValidatorItem,
     ValidatorInfo,
   },
-})
-export default class SelectValidator extends Vue {
-  filterValue = '';
+  props: {
+    step: { type: Number },
+    onchainIdentity: { type: Boolean },
+    notSlashed: { type: Boolean },
+    notOversubscribed: { type: Boolean },
+    limitValidatorsIdentity: { type: Boolean },
+    sortByApy: { type: Boolean },
+    validators: { type: Array },
+    maxNominations: { type: Number },
+    stakingNetwork: { type: Object },
+    stakingCurrency: { type: Object },
+    selectedValidator: { type: Object },
+  },
+  data() {
+    return {
+      filterValue: '',
+    };
+  },
+  computed: {
+    showValidatorInfo() {
+      return this.selectedValidator !== null;
+    },
+    filteredValidatorsBySettings() {
+      return this.validators.filter(({ isOversubscribed, isKnownGood, isSlashed, limitValidatorsIdentity }) => {
+            if (this.onchainIdentity && !isKnownGood) return false;
 
-  @Prop({ type: Number }) step!: number;
-  @Prop({ type: Boolean }) onchainIdentity!: boolean;
-  @Prop({ type: Boolean }) notSlashed!: boolean;
-  @Prop({ type: Boolean }) notOversubscribed!: boolean;
-  @Prop({ type: Boolean }) limitValidatorsIdentity!: boolean;
-  @Prop({ type: Boolean }) sortByApy!: boolean;
-  @Prop({ type: Array }) validators!: SelectionValidator[];
-  @Prop({ type: Number }) maxNominations!: number;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) selectedValidator!: FWValidatorInfoFull;
+            if (this.notSlashed && isSlashed) return false;
 
-  get showValidatorInfo() {
-    return this.selectedValidator !== null;
-  }
+            if (this.notOversubscribed && isOversubscribed) return false;
 
-  get filteredValidatorsBySettings() {
-    return this.validators.filter(({ isOversubscribed, isKnownGood, isSlashed, limitValidatorsIdentity }) => {
-      if (this.onchainIdentity && !isKnownGood) return false;
+            if (this.limitValidatorsIdentity && !limitValidatorsIdentity) return false;
 
-      if (this.notSlashed && isSlashed) return false;
+            return true;
+          });
+    },
+    haveFilteredValidators() {
+      return this.filteredValidators.length !== 0;
+    },
+    sortedValidators() {
+      if (this.step === 4) return this.validators;
 
-      if (this.notOversubscribed && isOversubscribed) return false;
+          if (this.sortByApy)
+            return [...this.filteredValidatorsBySettings].sort(({ apy: apy1 }, { apy: apy2 }) => +apy2 - +apy1);
 
-      if (this.limitValidatorsIdentity && !limitValidatorsIdentity) return false;
+          return this.filteredValidatorsBySettings;
+    },
+    filteredValidators() {
+      if (this.step === 4) return this.sortedValidators;
 
-      return true;
-    });
-  }
+          const filter = this.filterValue.trim().toLowerCase();
 
-  get haveFilteredValidators() {
-    return this.filteredValidators.length !== 0;
-  }
-
-  get sortedValidators() {
-    if (this.step === 4) return this.validators;
-
-    if (this.sortByApy) return this.filteredValidatorsBySettings.sort(({ apy: apy1 }, { apy: apy2 }) => +apy2 - +apy1);
-
-    return this.filteredValidatorsBySettings;
-  }
-
-  get filteredValidators() {
-    if (this.step === 4) return this.sortedValidators;
-
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return this.sortedValidators.filter(
-      ({ address, name }) => address.toLowerCase().includes(filter) || name.toLowerCase().includes(filter)
-    );
-  }
-
-  get selectedQuantity() {
-    return this.validators.filter(({ isSelect }) => isSelect).length;
-  }
-
-  onSelect(value: boolean, address: string) {
-    this.$emit('updateSelectedValidators', value, address);
-  }
-
-  openFiltersPopup() {
-    this.$emit('openFiltersPopup');
-  }
-
-  openValidatorInfo(validator: FWValidatorInfoFull) {
-    this.$emit('openValidatorInfo', validator);
-  }
-
-  changeFilterValue(value: string) {
-    this.filterValue = value;
-  }
-}
+          return this.sortedValidators.filter(
+            ({ address, name }) => address.toLowerCase().includes(filter) || name.toLowerCase().includes(filter)
+          );
+    },
+    selectedQuantity() {
+      return this.validators.filter(({ isSelect }) => isSelect).length;
+    },
+  },
+  methods: {
+    onSelect(value: boolean, address: string) {
+      this.$emit('updateSelectedValidators', value, address);
+    },
+    openFiltersPopup() {
+      this.$emit('openFiltersPopup');
+    },
+    openValidatorInfo(validator: FWValidatorInfoFull) {
+      this.$emit('openValidatorInfo', validator);
+    },
+    changeFilterValue(value: string) {
+      this.filterValue = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

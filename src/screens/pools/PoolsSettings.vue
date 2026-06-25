@@ -28,7 +28,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { PoolsTab } from '@/interfaces/common';
 
 interface TabsOptions {
@@ -39,44 +40,61 @@ interface TabsOptions {
   isShow: boolean;
 }
 
-@Component
-export default class PoolsSettings extends Vue {
-  @Prop({ type: Boolean }) showPoolsItems!: boolean;
-  @Prop({ type: Boolean }) showMyPoolsItems!: boolean;
-  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: PoolsTab;
-  @PropSync('filterValue', { type: String }) syncedFilterValue!: string;
-
-  get tabsOptions(): TabsOptions[] {
-    return [
-      {
-        label: 'common.all',
-        tabName: 'all',
-        classes: 'all-tab',
-        target: '.all-tab',
-        isShow: this.showPoolsItems,
+export default defineComponent({ name: 'PoolsSettings' ,
+  props: {
+    showPoolsItems: { type: Boolean },
+    showMyPoolsItems: { type: Boolean },
+    activeTabName: { type: String },
+    filterValue: { type: String },
+  },
+  computed: {
+    tabsOptions(): TabsOptions[] {
+      return [
+            {
+              label: 'common.all',
+              tabName: 'all',
+              classes: 'all-tab',
+              target: '.all-tab',
+              isShow: this.showPoolsItems,
+            },
+            {
+              label: 'pools.myPools',
+              tabName: 'my',
+              classes: 'my-tab',
+              target: '.my-tab',
+              isShow: this.showMyPoolsItems,
+            },
+          ];
+    },
+    isAllTab() {
+      return this.syncedActiveTabName === 'all';
+    },
+    syncedActiveTabName: {
+      get() {
+        return this.activeTabName;
       },
-      {
-        label: 'pools.myPools',
-        tabName: 'my',
-        classes: 'my-tab',
-        target: '.my-tab',
-        isShow: this.showMyPoolsItems,
+      set(value) {
+        this.$emit('update:activeTabName', value);
       },
-    ];
-  }
-
-  get isAllTab() {
-    return this.syncedActiveTabName === 'all';
-  }
-
-  openTab(name: PoolsTab) {
-    this.syncedActiveTabName = name;
-  }
-
-  changeSyncedFilterValue(value: string) {
-    this.syncedFilterValue = value;
-  }
-}
+    },
+    syncedFilterValue: {
+      get() {
+        return this.filterValue;
+      },
+      set(value) {
+        this.$emit('update:filterValue', value);
+      },
+    },
+  },
+  methods: {
+    openTab(name: PoolsTab) {
+      this.syncedActiveTabName = name;
+    },
+    changeSyncedFilterValue(value: string) {
+      this.syncedFilterValue = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

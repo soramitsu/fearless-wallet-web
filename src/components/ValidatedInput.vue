@@ -71,7 +71,7 @@ const emit = defineEmits(['change', 'pressEnter']);
 const emitChange = (value: string | number) => emit('change', value);
 const emitPressEnter = () => emit('pressEnter');
 
-const inputRef = ref<typeof FInput | null>(null);
+const inputRef = ref<InstanceType<typeof FInput> | null>(null);
 
 const showErrorText = computed(() => props.isError && props.errorDescriptions);
 const input = computed(() => inputRef.value?.input as HTMLInputElement);

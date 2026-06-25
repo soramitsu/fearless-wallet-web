@@ -5,6 +5,11 @@ import type { WalletEcosystem } from '@/interfaces';
 export interface CurrentAccountInfo {
   address: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
   name: string;
   isMobile: boolean;
   walletEcosystem: WalletEcosystem;

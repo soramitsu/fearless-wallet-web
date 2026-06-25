@@ -135,7 +135,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { MyStakingTab, HistoryElement } from '@/interfaces';
 import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
@@ -161,7 +162,7 @@ type ShowField =
   | 'showPayeeForm'
   | 'showYourValidatorsForm';
 
-@Component({
+export default defineComponent({ name: 'MyStake',
   components: {
     About,
     Alerts,
@@ -172,249 +173,221 @@ type ShowField =
     HistoryDetailsForm,
     YourValidatorsManagement,
   },
-})
-export default class MyStake extends Vue {
-  stakingStore = useStakingStore();
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  activeTabName: MyStakingTab = 'about';
-  showBondExtraForm = false;
-  showUnbondForm = false;
-  showRedeemForm = false;
-  showRebondForm = false;
-  showControllerAccountForm = false;
-  showYourValidatorsForm = false;
-  showPayeeForm = false;
-  showPendingRewardForm = false;
-  historyElement: HistoryElement | Record<string, string> | null = null;
+  data() {
+    return {
+      stakingStore: useStakingStore(),
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      activeTabName: 'about',
+      showBondExtraForm: false,
+      showUnbondForm: false,
+      showRedeemForm: false,
+      showRebondForm: false,
+      showControllerAccountForm: false,
+      showYourValidatorsForm: false,
+      showPayeeForm: false,
+      showPendingRewardForm: false,
+      historyElement: null,
+    };
+  },
+  computed: {
+    actionOptions() {
+      return [
+            {
+              label: 'staking.yourValidators',
+              value: 'showYourValidatorsForm',
+              visibility: !this.showValidatorsBtn && !this.isOtherController,
+            },
+            {
+              label: 'staking.setController',
+              value: 'showControllerAccountForm',
+              visibility: !this.showControllerBtn && !this.isController,
+            },
+            {
+              label: 'staking.setPayee',
+              value: 'showPayeeForm',
+              visibility: this.isController || !this.isOtherController,
+            },
+            {
+              label: 'staking.pendingRewards',
+              value: 'showPendingRewardForm',
+              visibility: this.isController || !this.isOtherController,
+            },
+          ];
+    },
+    showAlertTab() {
+      return this.alerts.length !== 0;
+    },
+    showDropdown() {
+      return this.actionOptions.some(({ visibility }) => visibility);
+    },
+    isController() {
+      return this.stakingNetwork.isController;
+    },
+    isOtherController() {
+      return this.stakingNetwork.isOtherController;
+    },
+    showMainStakingForm() {
+      return (
+            this.showBondExtraForm ||
+            this.showUnbondForm ||
+            this.showRedeemForm ||
+            this.showRebondForm ||
+            this.showControllerAccountForm ||
+            this.showPayeeForm
+          );
+    },
+    type() {
+      if (this.showBondExtraForm) return 'bondExtra';
 
-  get actionOptions() {
-    return [
-      {
-        label: 'staking.yourValidators',
-        value: 'showYourValidatorsForm',
-        visibility: !this.showValidatorsBtn && !this.isOtherController,
-      },
-      {
-        label: 'staking.setController',
-        value: 'showControllerAccountForm',
-        visibility: !this.showControllerBtn && !this.isController,
-      },
-      {
-        label: 'staking.setPayee',
-        value: 'showPayeeForm',
-        visibility: this.isController || !this.isOtherController,
-      },
-      {
-        label: 'staking.pendingRewards',
-        value: 'showPendingRewardForm',
-        visibility: this.isController || !this.isOtherController,
-      },
-    ];
-  }
+          if (this.showUnbondForm) return 'unbond';
 
-  get showAlertTab() {
-    return this.alerts.length !== 0;
-  }
+          if (this.showRebondForm) return 'rebond';
 
-  get showDropdown() {
-    return this.actionOptions.some(({ visibility }) => visibility);
-  }
+          if (this.showRedeemForm) return 'redeem';
 
-  get isController() {
-    return this.stakingNetwork.isController;
-  }
+          if (this.showControllerAccountForm) return 'setController';
 
-  get isOtherController() {
-    return this.stakingNetwork.isOtherController;
-  }
+          if (this.showPayeeForm) return 'setPayee';
 
-  get showMainStakingForm() {
-    return (
-      this.showBondExtraForm ||
-      this.showUnbondForm ||
-      this.showRedeemForm ||
-      this.showRebondForm ||
-      this.showControllerAccountForm ||
-      this.showPayeeForm
-    );
-  }
+          return '';
+    },
+    showHistoryDetailsForm() {
+      return this.historyElement !== null;
+    },
+    stakingNetwork() {
+      return this.stakingStore.getStakingNetwork(this.network);
+    },
+    showControllerBtn() {
+      if (this.isController) return false;
 
-  get type() {
-    if (this.showBondExtraForm) return 'bondExtra';
+          return this.isOtherController;
+    },
+    showValidatorsBtn() {
+      if (this.isOtherController) return false;
 
-    if (this.showUnbondForm) return 'unbond';
+          return !(this.showRebondBtn || this.showRedeemBtn);
+    },
+    showBondExtraBtn() {
+      return !this.isController;
+    },
+    showUnbondBtn() {
+      if (this.isOtherController) return false;
 
-    if (this.showRebondForm) return 'rebond';
+          return this.stakingNetwork.activeStake !== '0';
+    },
+    showRebondBtn() {
+      if (this.isOtherController) return false;
 
-    if (this.showRedeemForm) return 'redeem';
+          return this.stakingNetwork.unbond.sum !== '0';
+    },
+    showRedeemBtn() {
+      if (this.isOtherController) return false;
 
-    if (this.showControllerAccountForm) return 'setController';
+          return this.stakingNetwork.redeemAmount !== '0';
+    },
+    isAbout() {
+      return this.activeTabName === 'about';
+    },
+    isAlerts() {
+      return this.activeTabName === 'alerts';
+    },
+    isHistory() {
+      return this.activeTabName === 'history';
+    },
+    alerts() {
+      return this.stakingNetwork.alerts;
+    },
+    network() {
+      return this.$route.params.network;
+    },
+    stakingAssetId() {
+      if (this.accountsStore.balances.length === 0) return '';
 
-    if (this.showPayeeForm) return 'setPayee';
+          const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
 
-    return '';
-  }
+          return groupId;
+    },
+    rewardedAssetId() {
+      if (isSora(this.network)) {
+            const { groupId } = this.accountsStore.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
 
-  get showHistoryDetailsForm() {
-    return this.historyElement !== null;
-  }
+            return groupId;
+          }
 
-  get stakingNetwork() {
-    return this.stakingStore.getStakingNetwork(this.network);
-  }
+          // стейкается всегда утилити токен, он же является ревард токеном
+          return this.stakingAssetId;
+    },
+    stakingCurrency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
+    },
+    rewardedCurrency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
+    },
+    history() {
+      if (!this.network) return [];
 
-  get showControllerBtn() {
-    if (this.isController) return false;
+          const stashHistory =
+            this.networksStore.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.stashAddress)
+              ?.nodes ?? [];
 
-    return this.isOtherController;
-  }
+          const payeeHistory =
+            this.networksStore.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.payeeAddress)
+              ?.nodes ?? [];
 
-  get showValidatorsBtn() {
-    if (this.isOtherController) return false;
-
-    return !(this.showRebondBtn || this.showRedeemBtn);
-  }
-
-  get showBondExtraBtn() {
-    return !this.isController;
-  }
-
-  get showUnbondBtn() {
-    if (this.isOtherController) return false;
-
-    return this.stakingNetwork.activeStake !== '0';
-  }
-
-  get showRebondBtn() {
-    if (this.isOtherController) return false;
-
-    return this.stakingNetwork.unbond.sum !== '0';
-  }
-
-  get showRedeemBtn() {
-    if (this.isOtherController) return false;
-
-    return this.stakingNetwork.redeemAmount !== '0';
-  }
-
-  get isAbout() {
-    return this.activeTabName === 'about';
-  }
-
-  get isAlerts() {
-    return this.activeTabName === 'alerts';
-  }
-
-  get isHistory() {
-    return this.activeTabName === 'history';
-  }
-
-  get alerts() {
-    return this.stakingNetwork.alerts;
-  }
-
-  get network() {
-    return this.$route.params.network;
-  }
-
-  get stakingAssetId() {
-    if (this.accountsStore.balances.length === 0) return '';
-
-    const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
-
-    return groupId;
-  }
-
-  get rewardedAssetId() {
-    if (isSora(this.network)) {
-      const { groupId } = this.accountsStore.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
-
-      return groupId;
-    }
-
-    // стейкается всегда утилити токен, он же является ревард токеном
-    return this.stakingAssetId;
-  }
-
-  get stakingCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
-  }
-
-  get rewardedCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
-  }
-
-  get history() {
-    if (!this.network) return [];
-
-    const stashHistory =
-      this.networksStore.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.stashAddress)
-        ?.nodes ?? [];
-
-    const payeeHistory =
-      this.networksStore.getHistory(this.stakingAssetId, this.network.toLowerCase(), this.stakingNetwork.payeeAddress)
-        ?.nodes ?? [];
-
-    return [...stashHistory, ...payeeHistory];
-  }
-
+          return [...stashHistory, ...payeeHistory];
+    },
+  },
   created() {
     if (this.$route.params.paramsLoaded !== 'true') this.stakingStore.getStakingParams();
 
-    this.loadHistory();
-  }
+        this.loadHistory();
+  },
+  methods: {
+    async loadHistory() {
+      if (this.history.length !== 0) return;
 
-  async loadHistory() {
-    if (this.history.length !== 0) return;
+          this.networksStore.fetchHistory({
+            networkName: this.network,
+            assetId: this.stakingAssetId,
+            address: this.stakingNetwork.stashAddress,
+          });
 
-    this.networksStore.fetchHistory({
-      networkName: this.network,
-      assetId: this.stakingAssetId,
-      address: this.stakingNetwork.stashAddress,
-    });
-
-    if (this.stakingNetwork.isOtherPayee)
-      this.networksStore.fetchHistory({
-        networkName: this.network,
-        assetId: this.stakingAssetId,
-        address: this.stakingNetwork.payeeAddress,
-      });
-  }
-
-  updateActiveTabName(name: MyStakingTab) {
-    this.activeTabName = name;
-  }
-
-  closeStakingManagement() {
-    this.showBondExtraForm = false;
-    this.showUnbondForm = false;
-    this.showRedeemForm = false;
-    this.showRebondForm = false;
-    this.showControllerAccountForm = false;
-    this.showPayeeForm = false;
-  }
-
-  toggleVisible(field: ShowField, value: boolean) {
-    this[field] = value;
-  }
-
-  openForm(field: ShowField) {
-    this[field] = true;
-  }
-
-  closeStake() {
-    this.$router.push({ name: Components.Staking });
-  }
-
-  openHistoryDetailsForm(historyElement: HistoryElement) {
-    this.historyElement = historyElement;
-  }
-
-  closeHistoryDetailsForm() {
-    this.historyElement = null;
-  }
-}
+          if (this.stakingNetwork.isOtherPayee)
+            this.networksStore.fetchHistory({
+              networkName: this.network,
+              assetId: this.stakingAssetId,
+              address: this.stakingNetwork.payeeAddress,
+            });
+    },
+    updateActiveTabName(name: MyStakingTab) {
+      this.activeTabName = name;
+    },
+    closeStakingManagement() {
+      this.showBondExtraForm = false;
+          this.showUnbondForm = false;
+          this.showRedeemForm = false;
+          this.showRebondForm = false;
+          this.showControllerAccountForm = false;
+          this.showPayeeForm = false;
+    },
+    toggleVisible(field: ShowField, value: boolean) {
+      this[field] = value;
+    },
+    openForm(field: ShowField) {
+      this[field] = true;
+    },
+    closeStake() {
+      this.$router.push({ name: Components.Staking });
+    },
+    openHistoryDetailsForm(historyElement: HistoryElement) {
+      this.historyElement = historyElement;
+    },
+    closeHistoryDetailsForm() {
+      this.historyElement = null;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

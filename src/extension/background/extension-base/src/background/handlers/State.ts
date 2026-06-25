@@ -47,6 +47,7 @@ import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import type { BitcoinNetworkKind } from '@/util/bitcoin';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
@@ -54,10 +55,17 @@ import { isEthereumNetwork } from '@/extension/background/extension-base/src/bac
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
+import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
+import { encodeIrohaI105Address, type IrohaNetworkInput } from '@/util/iroha';
 
 type Wallet = {
   address: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
 };
 
 export default class State {
@@ -181,7 +189,17 @@ export default class State {
       const [
         {
           address,
-          meta: { name, ethereumAddress, isMobile, walletEcosystem },
+          meta: {
+            name,
+            ethereumAddress,
+            isMobile,
+            bitcoinAddress,
+            bitcoinTestnetAddress,
+            solanaAddress,
+            irohaAddress,
+            irohaPublicKeyHex,
+            walletEcosystem,
+          },
         },
       ] = allAccounts;
 
@@ -189,6 +207,11 @@ export default class State {
         address,
         name: name!,
         ethereumAddress: ethereumAddress!,
+        bitcoinAddress: bitcoinAddress as string | undefined,
+        bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
+        solanaAddress: solanaAddress as string | undefined,
+        irohaAddress: irohaAddress as string | undefined,
+        irohaPublicKeyHex: irohaPublicKeyHex as string | undefined,
         isMobile: isMobile!,
         walletEcosystem: walletEcosystem!,
       });
@@ -452,11 +475,11 @@ export default class State {
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.account = { json: null as any, pair };
+      apiSora.account = { json: null, pair };
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.bridgeProxy.sub.account = { json: null as any, pair };
+      apiSora.bridgeProxy.sub.account = { json: null, pair };
     }
 
     this.updateServiceInfo();
@@ -471,7 +494,16 @@ export default class State {
     if (address === '') return this.setCurrentAccount(null);
 
     const {
-      meta: { isMobile, name, ethereumAddress },
+      meta: {
+        isMobile,
+        name,
+        ethereumAddress,
+        bitcoinAddress,
+        bitcoinTestnetAddress,
+        solanaAddress,
+        irohaAddress,
+        irohaPublicKeyHex,
+      },
     } = this.keyringService.getAccount(address, walletEcosystem) ?? this.keyringService.getAddress(address)!;
 
     const accountInfo: CurrentAccountInfo = {
@@ -479,6 +511,11 @@ export default class State {
       isMobile: !!(isMobile as boolean),
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
+      bitcoinAddress: bitcoinAddress as string | undefined,
+      bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
+      solanaAddress: solanaAddress as string | undefined,
+      irohaAddress: irohaAddress as string | undefined,
+      irohaPublicKeyHex: irohaPublicKeyHex as string | undefined,
       walletEcosystem,
     };
 
@@ -511,16 +548,82 @@ export default class State {
 
   getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
     const currentAccount = _currentAccount ?? this.currentAccount;
+    const ecosystem = this.getNetworkEcosystem(network);
 
+    if (ecosystem === WalletEcosystem.Solana) return currentAccount!.solanaAddress ?? currentAccount!.address;
+    if (ecosystem === WalletEcosystem.Bitcoin) return this.formatBitcoinAddress(currentAccount!, network);
+    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress(currentAccount!, network);
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
-  formatAddress({ address, ethereumAddress }: Wallet, networkName: string = 'westend'): string {
+  private getNetworkEcosystem(networkName: string) {
+    return this.networkService.networkValues.find(({ name }) => isSameString(name, networkName))?.ecosystem;
+  }
+
+  private getBitcoinExpectedNetwork(networkName: string): BitcoinNetworkKind {
+    const network = this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
+    const contract = `${network?.chainId ?? ''} ${network?.name ?? ''} ${networkName}`.toLowerCase();
+
+    return contract.includes('testnet') ? 'testnet' : 'mainnet';
+  }
+
+  private getIrohaExpectedNetwork(networkName: string): IrohaNetworkInput {
+    const network = this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
+    const discriminant =
+      (network as { chainDiscriminant?: unknown; i105Prefix?: unknown } | undefined)?.chainDiscriminant ??
+      (network as { i105Prefix?: unknown } | undefined)?.i105Prefix;
+    const contract = `${network?.chainId ?? ''} ${network?.name ?? ''} ${networkName}`.toLowerCase();
+
+    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant) return 'taira';
+    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant) return 'nexus';
+    if (typeof discriminant === 'number') return discriminant;
+    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId || contract.includes('taira')) return 'taira';
+    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId || contract.includes('nexus')) return 'nexus';
+
+    return contract.includes('testnet') ? 'taira' : 'nexus';
+  }
+
+  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, networkName: string): string {
+    if (irohaPublicKeyHex) {
+      try {
+        return encodeIrohaI105Address(irohaPublicKeyHex, this.getIrohaExpectedNetwork(networkName));
+      } catch {
+        return irohaAddress ?? address;
+      }
+    }
+
+    return irohaAddress ?? address;
+  }
+
+  private formatBitcoinAddress({ address, bitcoinAddress, bitcoinTestnetAddress }: Wallet, networkName: string): string {
+    if (this.getBitcoinExpectedNetwork(networkName) === 'testnet') return bitcoinTestnetAddress ?? address;
+
+    return bitcoinAddress ?? address;
+  }
+
+  formatAddress(
+    {
+      address,
+      ethereumAddress,
+      bitcoinAddress,
+      bitcoinTestnetAddress,
+      solanaAddress,
+      irohaAddress,
+      irohaPublicKeyHex,
+    }: Wallet,
+    networkName: string = 'westend'
+  ): string {
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
+    const ecosystem = network?.ecosystem ?? this.getNetworkEcosystem(networkName);
+
+    if (ecosystem === WalletEcosystem.Solana) return solanaAddress ?? address;
+    if (ecosystem === WalletEcosystem.Bitcoin)
+      return this.formatBitcoinAddress({ address, ethereumAddress, bitcoinAddress, bitcoinTestnetAddress }, networkName);
+    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, networkName);
+
     const isEthereumNet = isEthereumNetwork(networkName);
 
     if (isEthereumNet) return ethereumAddress;
-
-    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
 
     // the only case for try/catch
     // if the user used ethereum account instead of a substratum account(via json or private key)

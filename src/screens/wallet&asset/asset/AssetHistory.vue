@@ -4,11 +4,11 @@
       :showBuyButton="showBuyButton"
       :currency="currency"
       :assetId="selectedAssetId"
-      v-on="$listeners"
+      v-bind="$attrs"
       @togglePopupButton="togglePopupButton"
     />
 
-    <History :currency="currency" v-on="$listeners" />
+    <History :currency="currency" v-bind="$attrs" />
 
     <Blur v-if="showPopupButton" @click="togglePopupButton">
       <div class="popup-button">
@@ -31,60 +31,61 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import History from './History.vue';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import AssetActionButtons from '@/screens/wallet&asset/asset/AssetActionButtons.vue';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { useExtensionStore } from '@/stores/extension';
 
-@Component({
+export default defineComponent({ name: 'AssetHistory',
+  inheritAttrs: false,
   components: {
     History,
     AssetActionButtons,
   },
-})
-export default class AssetHistory extends Vue {
-  extensionStore = useExtensionStore();
-  showPopupButton = false;
+  props: {
+    currency: Object,
+  },
+  data() {
+    return {
+      extensionStore: useExtensionStore(),
+      showPopupButton: false,
+    };
+  },
+  computed: {
+    selectedAssetId() {
+      return this.$route.params.assetId;
+    },
+    providers() {
+      return this.currency.providers ?? [];
+    },
+    mainNetwork() {
+      const currency = this.currency.balances?.find((network) => network.isUtility || network.isNative);
 
-  @Prop(Object) currency!: TokenGroup;
+          return currency ? currency.name : '';
+    },
+    showBuyButton() {
+      const providers = this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
 
-  get selectedAssetId() {
-    return this.$route.params.assetId;
-  }
+          if (providers.length === 0) return false;
 
-  get providers() {
-    return this.currency.providers ?? [];
-  }
-
-  get mainNetwork() {
-    const currency = this.currency.balances?.find((network) => network.isUtility || network.isNative);
-
-    return currency ? currency.name : '';
-  }
-
-  get showBuyButton() {
-    const providers = this.providers.filter((provider) => this.extensionStore.features?.fiat[provider]);
-
-    if (providers.length === 0) return false;
-
-    return this.mainNetwork?.toLowerCase() === this.selectedNetwork.toLowerCase();
-  }
-
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
-
+          return this.mainNetwork?.toLowerCase() === this.selectedNetwork.toLowerCase();
+    },
+    selectedNetwork() {
+      return this.$route.params.selectedNetwork ?? '';
+    },
+  },
   mounted() {
     if (BaseApi.isEthereumNativeNetwork(this.selectedNetwork)) fetchEvmBalance(this.selectedAssetId);
-  }
-
-  togglePopupButton() {
-    this.showPopupButton = !this.showPopupButton;
-  }
-}
+  },
+  methods: {
+    togglePopupButton() {
+      this.showPopupButton = !this.showPopupButton;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

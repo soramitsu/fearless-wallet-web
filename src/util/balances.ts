@@ -1,8 +1,13 @@
 import { FPNumber } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { AccountBalance } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
+
+type OrmlAccountData = {
+  free?: AccountData['free'];
+  reserved?: AccountData['reserved'];
+  frozen?: AccountData['free'];
+};
 
 export function formatBalance(data: AccountData | OrmlAccountData | u128, assetDecimals: number): AccountBalance {
   const free = new FPNumber((data as AccountData)?.free ?? 0, assetDecimals);

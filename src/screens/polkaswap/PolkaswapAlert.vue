@@ -22,21 +22,26 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class PolkaswapAlert extends Vue {
-  accountsStore = useAccountsStore();
-
-  openPolkaswapDisclaimer() {
-    this.$router.push({
-      name: Components.PolkaswapDisclaimer,
-      params: { showSwitcher: '1' },
-    });
-  }
-}
+export default defineComponent({ name: 'PolkaswapAlert' ,
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+    };
+  },
+  methods: {
+    openPolkaswapDisclaimer() {
+      this.$router.push({
+            name: Components.PolkaswapDisclaimer,
+            params: { showSwitcher: '1' },
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

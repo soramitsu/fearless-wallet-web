@@ -14,7 +14,8 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import AccountsItem from './AccountsItem.vue';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
@@ -22,60 +23,57 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSameString } from '@/helpers';
 
-@Component({
+export default defineComponent({ name: 'Account',
   components: { AccountsItem },
-})
-export default class Account extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  selectedNetwork = '';
-  selectedAddress = '';
-  newName = '';
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      selectedNetwork: '',
+      selectedAddress: '',
+      newName: '',
+    };
+  },
+  computed: {
+    chainAccounts() {
+      const networks = this.networksStore.networks.filter(({ ecosystem }) => {
+            if (this.isEVM) return isSameString(ecosystem, 'ethereum');
 
-  get chainAccounts() {
-    const networks = this.networksStore.networks.filter(({ ecosystem }) => {
-      if (this.isEVM) return isSameString(ecosystem, 'ethereum');
+            if (this.isTon) return isSameString(ecosystem, 'ton');
 
-      if (this.isTon) return isSameString(ecosystem, 'ton');
+            return isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased');
+          });
 
-      return isSameString(ecosystem, 'substrate') || isSameString(ecosystem, 'ethereumBased');
-    });
-
-    return getChainAccounts(networks, this.accountsStore.selectedWallet);
-  }
-
-  get isMobile() {
-    return !!this.accountsStore.selectedWallet.isMobile;
-  }
-
-  get type() {
-    return this.$route.params.type;
-  }
-
-  get isEVM() {
-    return this.type === 'evm';
-  }
-
-  get isTon() {
-    return this.type === 'ton';
-  }
-
+          return getChainAccounts(networks, this.accountsStore.selectedWallet);
+    },
+    isMobile() {
+      return !!this.accountsStore.selectedWallet.isMobile;
+    },
+    type() {
+      return this.$route.params.type;
+    },
+    isEVM() {
+      return this.type === 'evm';
+    },
+    isTon() {
+      return this.type === 'ton';
+    },
+  },
   mounted() {
     this.newName = this.accountsStore.selectedWallet.name;
-  }
-
-  back() {
-    this.$router.push({ name: Components.Wallet });
-  }
-
-  openAccountSettingsPopup(network: string, event: Event) {
-    this.$emit('openAccountSettingsPopup', network, event);
-  }
-
-  changeNewName(value: string) {
-    this.newName = value;
-  }
-}
+  },
+  methods: {
+    back() {
+      this.$router.push({ name: Components.Wallet });
+    },
+    openAccountSettingsPopup(network: string, event: Event) {
+      this.$emit('openAccountSettingsPopup', network, event);
+    },
+    changeNewName(value: string) {
+      this.newName = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

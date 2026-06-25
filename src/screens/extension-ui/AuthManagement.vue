@@ -12,7 +12,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router/composables';
+import { useRouter, useRoute } from 'vue-router';
 import { Components } from '@/router/routes';
 
 const router = useRouter();

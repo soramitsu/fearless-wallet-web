@@ -8,6 +8,7 @@ import {
   AuthRequestHandler,
   MetadataRequestHandler,
   SubstrateRequestHandler,
+  SolanaRequestHandler,
 } from '@extension-base/services/request-service/handlers';
 import { type KeyringService } from '@extension-base/services';
 import { assert } from '@polkadot/util';
@@ -43,6 +44,7 @@ export class RequestService {
   readonly authRequestHandler: AuthRequestHandler;
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
+  readonly solanaRequestHandler: SolanaRequestHandler;
 
   constructor(readonly keyringService: KeyringService, private readonly state: State) {
     this.popupHandler = new PopupHandler(state);
@@ -52,6 +54,7 @@ export class RequestService {
     this.authRequestHandler = new AuthRequestHandler(this, state);
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
+    this.solanaRequestHandler = new SolanaRequestHandler(this);
   }
 
   public updateIcon(shouldClose?: boolean): void {
@@ -149,6 +152,7 @@ export class RequestService {
 
   public getSignRequest(id: string) {
     if (this.evmRequestHandler.getEvmSignRequest(id)) return this.evmRequestHandler.getEvmSignRequest(id);
+    if (this.solanaRequestHandler.getSolanaSignRequest(id)) return this.solanaRequestHandler.getSolanaSignRequest(id);
 
     return this.substrateRequestHandler.getSignRequest(id);
   }
@@ -160,6 +164,10 @@ export class RequestService {
 
   public get signEvmSubject(): BehaviorSubject<EvmRequests> {
     return this.evmRequestHandler.signEvmSubject;
+  }
+
+  public get signSolanaSubject() {
+    return this.solanaRequestHandler.signSolanaSubject;
   }
 
   public signWcRequest(topic: string): WCSignRequest {
@@ -189,6 +197,10 @@ export class RequestService {
 
   public get numSignWCRequests(): number {
     return this.evmRequestHandler.numWcSignRequest;
+  }
+
+  public get numSolanaSignRequests(): number {
+    return this.solanaRequestHandler.numSolanaSignRequest;
   }
 
   public addConnectWCRequest(request: WalletConnectSessionRequest): void {
@@ -224,7 +236,8 @@ export class RequestService {
       this.numSubstrateRequests +
       this.numConnectWCRequests +
       this.numNotSupportWCRequests +
-      this.numSignWCRequests
+      this.numSignWCRequests +
+      this.numSolanaSignRequests
     );
   }
 
@@ -234,6 +247,8 @@ export class RequestService {
     authorizedAccountDiff.forEach(([url, authorizedAccounts, authType]) => {
       if (authType === 'substrate') entries[url].authorizedAccounts = authorizedAccounts;
       else if (authType === 'evm') entries[url].evmAuthorizedAccount = authorizedAccounts[0] ?? '';
+      else if (authType === 'solana') entries[url].solanaAuthorizedAccount = authorizedAccounts[0] ?? '';
+      else if (authType === 'iroha') entries[url].irohaAuthorizedAccount = authorizedAccounts[0] ?? '';
     });
 
     return this.setAuthorize(entries);

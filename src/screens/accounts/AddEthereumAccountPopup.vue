@@ -28,21 +28,23 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { Components } from '@/router/routes';
 
-@Component
-export default class AddEthereumAccountPopup extends Vue {
-  openAddWalletPage(type: string) {
-    this.$router.push({
-      name: Components.AddWallet,
-      params: {
-        type,
-        onlyEthereumAccount: '',
-      },
-    });
-  }
-}
+export default defineComponent({ name: 'AddEthereumAccountPopup' ,
+  methods: {
+    openAddWalletPage(type: string) {
+      this.$router.push({
+            name: Components.AddWallet,
+            params: {
+              type,
+              onlyEthereumAccount: '',
+            },
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

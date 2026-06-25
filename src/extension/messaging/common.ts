@@ -5,6 +5,7 @@ import type {
   RequestUnlockExtension,
   RequestMigratePassword,
 } from '@extension-base/background/types/types';
+import type { UniversalWalletMigrationSnapshot } from '@/util/universalWalletMigrationContract';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function windowOpen(path: string): Promise<boolean> {
@@ -57,6 +58,10 @@ export function getMigrationAccounts(): Promise<KeyringAddress[]> {
 
 export function isNeedMigration(): Promise<boolean> {
   return sendMessage('pri(keyring.isNeedMigration)');
+}
+
+export function getUniversalWalletMigrationSnapshot(): Promise<UniversalWalletMigrationSnapshot> {
+  return sendMessage('pri(keyring.getUniversalWalletMigrationSnapshot)');
 }
 
 export function migrateMasterPassword(request: RequestMigratePassword): Promise<boolean> {

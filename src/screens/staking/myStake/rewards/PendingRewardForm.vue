@@ -98,10 +98,10 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { FPNumber } from '@sora-substrate/util';
-import type { PayoutRewards, RewardsResponse } from '@extension-base/services/staking-service/types';
-import type { NetworkParams } from '@/stores';
+import type { PayoutRewards } from '@extension-base/services/staking-service/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/helpers/transfers';
@@ -114,207 +114,184 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 
-@Component({
+export default defineComponent({ name: 'PendingRewardForm',
   components: {
     WarningPopup,
     ValidatorItem,
     ConfirmationPasswordPopup,
   },
-})
-export default class PendingRewardForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-
-  showConfirmationPasswordPopup = false;
-  showWarningPopup = false;
-  amount = '';
-  step = 1;
-  fee = '';
-  stashBalance = '0';
-  showLoader = false;
-  rewards: RewardsResponse = { validators: [], payouts: [], sum: '0' };
-  stakingStore = useStakingStore();
-
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-
-  get network() {
-    return this.stakingNetwork.network;
-  }
-
-  get selectedAccountName() {
-    return this.accountsStore.selectedWallet.name;
-  }
-
-  get btnText() {
-    if (this.step === 1) return 'staking.payoutAll';
-
-    if (!this.isValidAmountAsset)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
-
-    return 'common.confirm';
-  }
-
-  get disabledBtn() {
-    if (this.step === 1) return this.myRewards.length === 0;
-
-    return !this.isValidAmountAsset;
-  }
-
-  get isValidAmountAsset() {
-    // для controller аккаунта подставляем баланс stash аккаунта
-    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
-        }
-      : this.stakingCurrency;
-
-    return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', '0');
-  }
-
-  get payeeName() {
-    return this.stakingNetwork.payeeName;
-  }
-
-  get myRewards() {
-    return this.rewards?.validators;
-  }
-
-  get summaryRewards() {
-    return this.rewards.sum;
-  }
-
-  get feeValueString() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
-  }
-
-  get stakingAssetName() {
-    return this.stakingCurrency?.symbol;
-  }
-
-  get rewardedAssetName() {
-    return this.rewardedCurrency?.symbol;
-  }
-
-  get showBackIcon() {
-    return this.step !== 1;
-  }
-
-  get header() {
-    if (this.step === 1) return 'staking.pendingRewards';
-
-    if (this.step === 2) return 'common.confirmation';
-
-    return '';
-  }
-
-  get rewardedAssetId() {
-    return this.rewardedCurrency!.groupId;
-  }
-
-  get stakingAssetId() {
-    return this.stakingCurrency!.groupId;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get feeValue() {
-    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
-  }
-
-  get summaryRewardsValue() {
-    return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
-  }
-
-  get tx() {
+  props: {
+    stakingCurrency: { type: Object },
+    rewardedCurrency: { type: Object },
+    stakingNetwork: { type: Object },
+  },
+  data() {
     return {
-      payouts: this.rewards.payouts,
-      from: this.accountsStore.selectedWallet.address,
-      networkName: this.network,
-    } as PayoutRewards;
-  }
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      showConfirmationPasswordPopup: false,
+      showWarningPopup: false,
+      amount: '',
+      step: 1,
+      fee: '',
+      stashBalance: '0',
+      showLoader: false,
+      rewards: { validators: [], payouts: [], sum: '0' },
+      stakingStore: useStakingStore(),
+    };
+  },
+  computed: {
+    network() {
+      return this.stakingNetwork.network;
+    },
+    selectedAccountName() {
+      return this.accountsStore.selectedWallet.name;
+    },
+    btnText() {
+      if (this.step === 1) return 'staking.payoutAll';
 
+          if (!this.isValidAmountAsset)
+            return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
+
+          return 'common.confirm';
+    },
+    disabledBtn() {
+      if (this.step === 1) return this.myRewards.length === 0;
+
+          return !this.isValidAmountAsset;
+    },
+    isValidAmountAsset() {
+      // для controller аккаунта подставляем баланс stash аккаунта
+          const stakingCurrency: TokenGroup = this.stakingNetwork.isController
+            ? {
+                ...this.stakingCurrency,
+                balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
+              }
+            : this.stakingCurrency;
+
+          return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', '0');
+    },
+    payeeName() {
+      return this.stakingNetwork.payeeName;
+    },
+    myRewards() {
+      return this.rewards?.validators;
+    },
+    summaryRewards() {
+      return this.rewards.sum;
+    },
+    feeValueString() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(+this.feeValue, 'price')}`;
+    },
+    stakingAssetName() {
+      return this.stakingCurrency?.symbol;
+    },
+    rewardedAssetName() {
+      return this.rewardedCurrency?.symbol;
+    },
+    showBackIcon() {
+      return this.step !== 1;
+    },
+    header() {
+      if (this.step === 1) return 'staking.pendingRewards';
+
+          if (this.step === 2) return 'common.confirmation';
+
+          return '';
+    },
+    rewardedAssetId() {
+      return this.rewardedCurrency!.groupId;
+    },
+    stakingAssetId() {
+      return this.stakingCurrency!.groupId;
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
+
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    rewardedAssetPrice() {
+      const priceId = this.rewardedCurrency?.priceId ?? '';
+
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    feeValue() {
+      return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+    },
+    summaryRewardsValue() {
+      return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
+    },
+    tx() {
+      return {
+            payouts: this.rewards.payouts,
+            from: this.accountsStore.selectedWallet.address,
+            networkName: this.network,
+          } as PayoutRewards;
+    },
+  },
   async created() {
     await this.getRewards();
 
-    this.getPayoutsFee();
+        this.getPayoutsFee();
 
-    if (this.stakingNetwork.isController) {
-      const balances = await fetchBalance({
-        address: this.stakingNetwork.stashAddress,
-        networks: [this.network],
-        walletEcosystem: WalletEcosystem.Substrate,
-      });
+        if (this.stakingNetwork.isController) {
+          const balances = await fetchBalance({
+            address: this.stakingNetwork.stashAddress,
+            networks: [this.network],
+            walletEcosystem: WalletEcosystem.Substrate,
+          });
 
-      this.stashBalance = balances[0].balance;
-    }
-  }
+          this.stashBalance = balances[0].balance;
+        }
+  },
+  methods: {
+    async getRewards() {
+      this.showLoader = true;
 
-  async getRewards() {
-    this.showLoader = true;
+          this.rewards = await getRewards({
+            address: this.stakingNetwork.stashAddress,
+            network: this.network,
+          });
 
-    this.rewards = await getRewards({
-      address: this.stakingNetwork.stashAddress,
-      network: this.network,
-    });
+          this.showLoader = false;
+    },
+    async getPayoutsFee() {
+      this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
+    },
+    closeForm() {
+      this.$emit('closeForm');
+    },
+    confirmationPasswordPopupClose(closeForm: boolean) {
+      this.showConfirmationPasswordPopup = false;
 
-    this.showLoader = false;
-  }
+          if (closeForm) {
+            this.stakingStore.getMyStakingInfo({ network: this.network });
+            this.closeForm();
+          }
+    },
+    handlerBack() {
+      this.step -= 1;
+    },
+    handlerAccept() {
+      this.step = 2;
 
-  async getPayoutsFee() {
-    this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
-  }
+          this.closeWarningPopup();
 
-  closeForm() {
-    this.$emit('closeForm');
-  }
+          this.showConfirmationPasswordPopup = true;
+    },
+    closeWarningPopup() {
+      this.showWarningPopup = false;
+    },
+    confirm() {
+      if (this.step === 2) {
+            const rewardLessFee = FPNumber.lte(new FPNumber(this.summaryRewardsValue), new FPNumber(this.feeValue));
 
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) {
-      this.stakingStore.getMyStakingInfo({ network: this.network });
-      this.closeForm();
-    }
-  }
-
-  handlerBack() {
-    this.step -= 1;
-  }
-
-  handlerAccept() {
-    this.step = 2;
-
-    this.closeWarningPopup();
-
-    this.showConfirmationPasswordPopup = true;
-  }
-
-  closeWarningPopup() {
-    this.showWarningPopup = false;
-  }
-
-  confirm() {
-    if (this.step === 2) {
-      const rewardLessFee = FPNumber.lte(new FPNumber(this.summaryRewardsValue), new FPNumber(this.feeValue));
-
-      if (rewardLessFee) this.showWarningPopup = true;
-      else this.showConfirmationPasswordPopup = true;
-    } else this.step += 1;
-  }
-}
+            if (rewardLessFee) this.showWarningPopup = true;
+            else this.showConfirmationPasswordPopup = true;
+          } else this.step += 1;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

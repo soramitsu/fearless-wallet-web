@@ -1,5 +1,5 @@
 import type { FWKeyringMeta } from '@extension-base/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeypairType } from '@subwallet/keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   ValidateJsonResult,
@@ -11,6 +11,7 @@ import type {
 import type { DerivationPath, NetworkName, TonEventTokens } from '@/interfaces';
 import type { WordCount } from '@extension-base/services';
 import { WalletEcosystem } from '@/interfaces';
+import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function addAccount(
@@ -52,7 +53,7 @@ export function exportRowSeed(address: string, password: string, isEVM: boolean)
 
 export function generateMnemonic(
   walletEcosystem = WalletEcosystem.Substrate,
-  wordCount: WordCount = 12
+  wordCount: WordCount = UNIVERSAL_WALLET_DEFAULT_WORD_COUNT
 ): Promise<string> {
   return sendMessage('pri(keyring.generateMnemonic)', { walletEcosystem, wordCount });
 }

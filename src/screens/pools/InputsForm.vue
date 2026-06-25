@@ -46,220 +46,230 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { FPNumber } from '@sora-substrate/util';
-import type { PoolParams } from '@/stores';
-import type { TokenGroup } from '@/extension/background/extension-base/src/background/types/types';
 import { calcTransferableSendMinusFee } from '@/helpers/currencies';
 
 import { getCostOfAssets } from '@/helpers/transfers';
 import { getAmountPoolValue } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 
-@Component({})
-export default class InputsForm extends Vue {
-  networksStore = useNetworksStore();
-  percent = 0;
-  isPercentChanging = false;
-
-  @PropSync('amount1', { type: String }) syncedAmount1!: string;
-  @PropSync('amount2', { type: String }) syncedAmount2!: string;
-  @PropSync('isExchangeB', { type: Boolean }) syncedIsExchangeB!: boolean;
-  @Prop({ type: Object }) poolParams!: PoolParams;
-  @Prop({ type: Object }) currency1!: TokenGroup;
-  @Prop({ type: Object }) currency2!: TokenGroup;
-  @Prop({ type: String }) fee!: string;
-  @Prop(String) extrinsicType!: 'addLiquidity' | 'removeLiquidity' | '';
-
-  get isRemoveLiquidity() {
-    return this.extrinsicType === 'removeLiquidity';
-  }
-
-  get isAddLiquidity() {
-    return this.extrinsicType === 'addLiquidity';
-  }
-
-  get transferableAmount1() {
-    if (this.isRemoveLiquidity) return this.poolParams.asset1.tokenBalance;
-
-    return this.poolParams.asset1.transferableAmount;
-  }
-
-  get transferableAmount2() {
-    if (this.isRemoveLiquidity) return this.poolParams.asset2.tokenBalance;
-
-    return this.poolParams.asset2.transferableAmount;
-  }
-
-  get assetId1() {
-    return this.poolParams.asset1.id;
-  }
-
-  get assetId2() {
-    return this.poolParams.asset2.id;
-  }
-
-  get asset1() {
-    return this.poolParams.asset1.name;
-  }
-
-  get asset2() {
-    return this.poolParams.asset2.name;
-  }
-
-  get assetPrice1() {
-    const priceId = this.poolParams.asset1.priceId;
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get assetPrice2() {
-    const priceId = this.poolParams.asset2.priceId;
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get value1() {
-    return getCostOfAssets(+this.syncedAmount1 ?? 0, this.assetPrice1);
-  }
-
-  get value2() {
-    return getCostOfAssets(+this.syncedAmount2 ?? 0, this.assetPrice2);
-  }
-
-  get percentIsMax() {
-    return this.percent === 100;
-  }
-
-  get poolValueParams() {
+export default defineComponent({ name: 'InputsForm' ,
+  props: {
+    poolParams: { type: Object },
+    currency1: { type: Object },
+    currency2: { type: Object },
+    fee: { type: String },
+    extrinsicType: String,
+    amount1: { type: String },
+    amount2: { type: String },
+    isExchangeB: { type: Boolean },
+  },
+  data() {
     return {
-      amount1: this.syncedAmount1,
-      amount2: this.syncedAmount2,
-      assetId1: this.assetId1,
-      assetId2: this.assetId2,
-      networkName: this.poolParams.network,
-      isExchangeB: this.syncedIsExchangeB,
+      networksStore: useNetworksStore(),
+      percent: 0,
+      isPercentChanging: false,
     };
-  }
+  },
+  computed: {
+    isRemoveLiquidity() {
+      return this.extrinsicType === 'removeLiquidity';
+    },
+    isAddLiquidity() {
+      return this.extrinsicType === 'addLiquidity';
+    },
+    transferableAmount1() {
+      if (this.isRemoveLiquidity) return this.poolParams.asset1.tokenBalance;
 
-  @Watch('transferableAmount1')
-  @Watch('transferableAmount2')
-  watcherTransferable() {
-    if (this.isPercentChanging) this.setMaxLiquidity();
-  }
+          return this.poolParams.asset1.transferableAmount;
+    },
+    transferableAmount2() {
+      if (this.isRemoveLiquidity) return this.poolParams.asset2.tokenBalance;
 
-  @Watch('percent')
-  setMaxLiquidity() {
-    if (!this.isPercentChanging) return;
+          return this.poolParams.asset2.transferableAmount;
+    },
+    assetId1() {
+      return this.poolParams.asset1.id;
+    },
+    assetId2() {
+      return this.poolParams.asset2.id;
+    },
+    asset1() {
+      return this.poolParams.asset1.name;
+    },
+    asset2() {
+      return this.poolParams.asset2.name;
+    },
+    assetPrice1() {
+      const priceId = this.poolParams.asset1.priceId;
 
-    const part = new FPNumber(this.percent).div(FPNumber.HUNDRED);
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    assetPrice2() {
+      const priceId = this.poolParams.asset2.priceId;
 
-    const value1 = new FPNumber(this.transferableAmount1).mul(part).toString();
-    const value2 = new FPNumber(this.transferableAmount2).mul(part).toString();
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    value1() {
+      return getCostOfAssets(+(this.syncedAmount1 ?? 0), this.assetPrice1);
+    },
+    value2() {
+      return getCostOfAssets(+(this.syncedAmount2 ?? 0), this.assetPrice2);
+    },
+    percentIsMax() {
+      return this.percent === 100;
+    },
+    poolValueParams() {
+      return {
+            amount1: this.syncedAmount1,
+            amount2: this.syncedAmount2,
+            assetId1: this.assetId1,
+            assetId2: this.assetId2,
+            networkName: this.poolParams.network,
+            isExchangeB: this.syncedIsExchangeB,
+          };
+    },
+    syncedAmount1: {
+      get() {
+        return this.amount1;
+      },
+      set(value) {
+        this.$emit('update:amount1', value);
+      },
+    },
+    syncedAmount2: {
+      get() {
+        return this.amount2;
+      },
+      set(value) {
+        this.$emit('update:amount2', value);
+      },
+    },
+    syncedIsExchangeB: {
+      get() {
+        return this.isExchangeB;
+      },
+      set(value) {
+        this.$emit('update:isExchangeB', value);
+      },
+    },
+  },
+  watch: {
+    "transferableAmount1": 'watcherTransferable',
+    "transferableAmount2": 'watcherTransferable',
+    "percent": 'setMaxLiquidity',
+    "syncedAmount1": 'watcherAmount1',
+    "syncedAmount2": 'watcherAmount2',
+  },
+  methods: {
+    watcherTransferable() {
+      if (this.isPercentChanging) this.setMaxLiquidity();
+    },
+    setMaxLiquidity() {
+      if (!this.isPercentChanging) return;
 
-    this.syncedAmount1 = value1;
-    this.syncedAmount2 = value2;
-  }
+          const part = new FPNumber(this.percent).div(FPNumber.HUNDRED);
 
-  @Watch('syncedAmount1')
-  async watcherAmount1() {
-    if (this.syncedIsExchangeB || this.isPercentChanging) return;
+          const value1 = new FPNumber(this.transferableAmount1).mul(part).toString();
+          const value2 = new FPNumber(this.transferableAmount2).mul(part).toString();
 
-    if (this.isAddLiquidity) {
-      if (this.poolParams.asset1.reserve === '0') return;
+          this.syncedAmount1 = value1;
+          this.syncedAmount2 = value2;
+    },
+    async watcherAmount1() {
+      if (this.syncedIsExchangeB || this.isPercentChanging) return;
 
-      this.syncedAmount2 = new FPNumber(this.syncedAmount1)
-        .mul(new FPNumber(this.poolParams.asset2.reserve))
-        .div(new FPNumber(this.poolParams.asset1.reserve))
-        .toString();
-    } else {
-      this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
+          if (this.isAddLiquidity) {
+            if (this.poolParams.asset1.reserve === '0') return;
 
-      const percent = Math.round(
-        new FPNumber(this.syncedAmount1).div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
-      );
+            this.syncedAmount2 = new FPNumber(this.syncedAmount1)
+              .mul(new FPNumber(this.poolParams.asset2.reserve))
+              .div(new FPNumber(this.poolParams.asset1.reserve))
+              .toString();
+          } else {
+            this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
 
-      this.percent = Math.min(percent, 100);
-    }
-  }
+            const percent = Math.round(
+              new FPNumber(this.syncedAmount1).div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
+            );
 
-  @Watch('syncedAmount2')
-  async watcherAmount2() {
-    if (!this.syncedIsExchangeB || this.isPercentChanging) return;
+            this.percent = Math.min(percent, 100);
+          }
+    },
+    async watcherAmount2() {
+      if (!this.syncedIsExchangeB || this.isPercentChanging) return;
 
-    if (this.isAddLiquidity) {
-      if (this.poolParams.asset2.reserve === '0') return;
+          if (this.isAddLiquidity) {
+            if (this.poolParams.asset2.reserve === '0') return;
 
-      this.syncedAmount1 = new FPNumber(this.syncedAmount2)
-        .mul(new FPNumber(this.poolParams.asset1.reserve))
-        .div(new FPNumber(this.poolParams.asset2.reserve))
-        .toString();
-    } else {
-      this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
+            this.syncedAmount1 = new FPNumber(this.syncedAmount2)
+              .mul(new FPNumber(this.poolParams.asset1.reserve))
+              .div(new FPNumber(this.poolParams.asset2.reserve))
+              .toString();
+          } else {
+            this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
 
-      const percent = Math.round(
-        new FPNumber(this.syncedAmount2).div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
-      );
+            const percent = Math.round(
+              new FPNumber(this.syncedAmount2).div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
+            );
 
-      this.percent = Math.min(percent, 100);
-    }
-  }
+            this.percent = Math.min(percent, 100);
+          }
+    },
+    updateAmount1(value: string) {
+      const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount1));
 
-  updateAmount1(value: string) {
-    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount1));
+          if (this.isRemoveLiquidity && isOverValue) {
+            this.isPercentChanging = true;
 
-    if (this.isRemoveLiquidity && isOverValue) {
-      this.isPercentChanging = true;
+            this.setMax(this.syncedIsExchangeB);
 
-      this.setMax(this.syncedIsExchangeB);
+            return;
+          }
 
-      return;
-    }
+          this.syncedAmount1 = value;
+          this.syncedIsExchangeB = false;
+          this.isPercentChanging = false;
+    },
+    updateAmount2(value: string) {
+      const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount2));
 
-    this.syncedAmount1 = value;
-    this.syncedIsExchangeB = false;
-    this.isPercentChanging = false;
-  }
+          if (this.isRemoveLiquidity && isOverValue) {
+            this.isPercentChanging = true;
 
-  updateAmount2(value: string) {
-    const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount2));
+            this.setMax(this.syncedIsExchangeB);
 
-    if (this.isRemoveLiquidity && isOverValue) {
-      this.isPercentChanging = true;
+            return;
+          }
 
-      this.setMax(this.syncedIsExchangeB);
+          this.syncedAmount2 = value;
+          this.syncedIsExchangeB = true;
+          this.isPercentChanging = false;
+    },
+    calcTransferableSendMinusFee(isExchangeB: boolean) {
+      const currency = isExchangeB ? this.currency2 : this.currency1;
 
-      return;
-    }
+          return calcTransferableSendMinusFee(currency, this.poolParams.network, this.fee);
+    },
+    setMax(isExchangeB: boolean) {
+      if (this.isRemoveLiquidity) this.updatePercent(100);
+          else {
+            this.syncedIsExchangeB = isExchangeB;
+            this.isPercentChanging = false;
 
-    this.syncedAmount2 = value;
-    this.syncedIsExchangeB = true;
-    this.isPercentChanging = false;
-  }
-
-  calcTransferableSendMinusFee(isExchangeB: boolean) {
-    const currency = isExchangeB ? this.currency2 : this.currency1;
-
-    return calcTransferableSendMinusFee(currency, this.poolParams.network, this.fee);
-  }
-
-  setMax(isExchangeB: boolean) {
-    if (this.isRemoveLiquidity) this.updatePercent(100);
-    else {
-      this.syncedIsExchangeB = isExchangeB;
-      this.isPercentChanging = false;
-
-      if (isExchangeB) this.syncedAmount2 = this.calcTransferableSendMinusFee(isExchangeB);
-      else this.syncedAmount1 = this.calcTransferableSendMinusFee(isExchangeB);
-    }
-  }
-
-  updatePercent(percent = 100) {
-    this.percent = percent;
-    this.isPercentChanging = true;
-    this.syncedIsExchangeB = false;
-  }
-}
+            if (isExchangeB) this.syncedAmount2 = this.calcTransferableSendMinusFee(isExchangeB);
+            else this.syncedAmount1 = this.calcTransferableSendMinusFee(isExchangeB);
+          }
+    },
+    updatePercent(percent = 100) {
+      this.percent = percent;
+          this.isPercentChanging = true;
+          this.syncedIsExchangeB = false;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -1,7 +1,6 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      VUE_CLI_SERVICE_CONFIG_PATH: string;
       NODE_ENV: 'development' | 'production';
       PORT?: string;
       OAUTH_CLIENT_ID: string;

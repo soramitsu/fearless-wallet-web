@@ -9,6 +9,11 @@ interface CustomEvent extends Event {
 interface Meta {
   name: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
   isMobile: boolean;
 }
 
@@ -82,7 +87,11 @@ interface ChangeWalletBalance {
 
 enum WalletEcosystem {
   Substrate = 'substrate',
+  Evm = 'evm',
   Ton = 'ton',
+  Bitcoin = 'bitcoin',
+  Solana = 'solana',
+  Iroha = 'iroha',
 }
 
 type Placement =

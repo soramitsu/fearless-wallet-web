@@ -31,13 +31,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { NetworkJson } from '@extension-base/types';
+import { defineComponent } from 'vue';
 
-@Component
-export default class NetworkManagement extends Vue {
-  @Prop(Array) networks!: NetworkJson[];
-}
+
+export default defineComponent({ name: 'NetworkManagement' ,
+  props: {
+    networks: Array,
+  },
+});
 </script>
 
 <style lang="scss" scoped>

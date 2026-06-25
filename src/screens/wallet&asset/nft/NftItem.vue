@@ -1,5 +1,5 @@
 <template>
-  <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click.native="onNavigate">
+  <FCorners class="nft" size="big" :topLeftCorner="false" :bottomRightCorner="false" @click="onNavigate">
     <video v-if="isMp4" :src="imageUrl" width="240" height="240"></video>
     <img v-else :src="imageUrl" :alt="nft.meta?.name" width="240" height="240" />
 
@@ -21,16 +21,17 @@
           height="20px"
         />
       </div>
-      <Icon v-else icon="export-nft" className="share" data-testid="export" @click.native.stop="$emit('share', nft)" />
+      <Icon v-else icon="export-nft" className="share" data-testid="export" @click.stop="$emit('share', nft)" />
     </div>
   </FCorners>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRoute } from 'vue-router/composables';
-import { type RawLocation } from 'vue-router';
+import { useRoute } from 'vue-router';
+import { type RouteLocationRaw } from 'vue-router';
 import type { FearlessNft } from '@extension-base/services/nft-service/types';
+import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
 import { Components } from '@/router/routes';
 import router from '@/router';
 
@@ -41,7 +42,9 @@ type Props = {
 const route = useRoute();
 const props = defineProps<Props>();
 
-const contract = computed(() => route.params.contract);
+const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+const contract = computed(() => routeParam(route.params.contract));
 const isOwned = computed(() => props.nft.isOwned);
 const title = computed(() => props.nft?.meta?.name ?? '');
 const subTitle = computed(() => props.nft.meta.description ?? '');
@@ -49,10 +52,10 @@ const upperTitle = computed(() => props.collectionName ?? '');
 
 const contentType = computed(() => props.nft.contentType);
 const isMp4 = computed(() => contentType.value === 'video/mp4');
-const imageUrl = computed(() => props.nft.image ?? require('@/assets/fearless-logo-animated.gif'));
+const imageUrl = computed(() => props.nft.image ?? fallbackNftImage);
 
 const onNavigate = () => {
-  const route: RawLocation = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
+  const route: RouteLocationRaw = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
   router.push(route);
 };
 </script>

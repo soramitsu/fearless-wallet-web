@@ -8,8 +8,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Fragment } from 'vue-fragment';
-import { useI18n } from 'vue-i18n-composable';
+import { Fragment } from 'vue';
+import { useI18n } from '@/locales/useI18n';
 import Favicon from '@/components/Favicon.vue';
 type Props = {
   url: string;

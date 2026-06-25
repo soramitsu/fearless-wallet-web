@@ -14,3 +14,6 @@ export * from '@extension-base/services/subscription-service';
 export * from '@extension-base/services/scam-service';
 export * from '@extension-base/services/prices-service';
 export * from '@extension-base/services/timeout-service';
+export * from '@extension-base/services/solana-indexer-service';
+export * from '@extension-base/services/bitcoin-indexer-service';
+export * from '@extension-base/services/iroha-torii-service';

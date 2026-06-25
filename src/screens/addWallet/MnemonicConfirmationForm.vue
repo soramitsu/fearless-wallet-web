@@ -25,48 +25,56 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import MnemonicColumns from './MnemonicColumns.vue';
-import type { MnemonicConfirmation } from '@/interfaces/common';
-import type { WordCount } from '@extension-base/services';
+import { defineComponent } from 'vue';
 
-@Component({
+import MnemonicColumns from './MnemonicColumns.vue';
+
+export default defineComponent({ name: 'MnemonicConfirmationForm',
   components: {
     MnemonicColumns,
   },
-})
-export default class MnemonicConfirmationForm extends Vue {
-  @Prop(Array) mnemonicMix!: string[];
-  @Prop(Number) mnemonicLength!: WordCount;
-  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
-
-  get selectedMnemonicArray() {
-    return this.syncedSelectedMnemonicElements.map(({ word }) => word);
-  }
-
-  addButtonClasses(word: string, index: number) {
-    const findIndex = this.syncedSelectedMnemonicElements.findIndex(
-      ({ word: _word, initialIndex }) => _word === word && initialIndex === index
-    );
-
-    return [
-      'button-mnemonic',
-      {
-        'inactive-button': findIndex !== -1,
+  props: {
+    mnemonicMix: Array,
+    mnemonicLength: Number,
+    selectedMnemonicElements: { type: Array },
+  },
+  computed: {
+    selectedMnemonicArray() {
+      return this.syncedSelectedMnemonicElements.map(({ word }) => word);
+    },
+    syncedSelectedMnemonicElements: {
+      get() {
+        return this.selectedMnemonicElements;
       },
-    ];
-  }
+      set(value) {
+        this.$emit('update:selectedMnemonicElements', value);
+      },
+    },
+  },
+  methods: {
+    addButtonClasses(word: string, index: number) {
+      const findIndex = this.syncedSelectedMnemonicElements.findIndex(
+            ({ word: _word, initialIndex }) => _word === word && initialIndex === index
+          );
 
-  updateSelectedMnemonicElements(word: string, index: number) {
-    const findIndex = this.syncedSelectedMnemonicElements.findIndex(
-      ({ word: _word, initialIndex }) => _word === word && initialIndex === index
-    );
+          return [
+            'button-mnemonic',
+            {
+              'inactive-button': findIndex !== -1,
+            },
+          ];
+    },
+    updateSelectedMnemonicElements(word: string, index: number) {
+      const findIndex = this.syncedSelectedMnemonicElements.findIndex(
+            ({ word: _word, initialIndex }) => _word === word && initialIndex === index
+          );
 
-    if (findIndex !== -1) return;
+          if (findIndex !== -1) return;
 
-    this.syncedSelectedMnemonicElements.push({ word, initialIndex: index });
-  }
-}
+          this.syncedSelectedMnemonicElements.push({ word, initialIndex: index });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

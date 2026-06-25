@@ -19,7 +19,7 @@
     @handlerClose="$emit('handlerClose')"
   >
     <div
-      v-for="{ name, value, icon, iconType, subName } in options"
+      v-for="{ name, value, icon, iconType, subName } in sortedOptions"
       :key="value"
       :class="rowClasses(value)"
       @click="toggle(value)"
@@ -45,7 +45,7 @@
         </span>
       </div>
 
-      <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />
+      <Icon icon="check" v-show="getIconVisible(value)" />
     </div>
 
     <div v-if="showWarning" class="warning" data-testid="warning">Nothing found</div>
@@ -53,87 +53,88 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from './Popup.vue';
+import { defineComponent } from 'vue';
 
-type SpaceSize = 'small' | 'medium' | 'big';
+import Popup from './Popup.vue';
 
 interface Options {
   name: string;
   value: string;
   icon: string;
   iconType: string;
+  subName?: string;
   isAll?: true;
 }
 
-@Component({
+export default defineComponent({ name: 'SelectPopup',
   components: { Popup },
-})
-export default class SelectPopup extends Vue {
-  icons: string[] = [];
-  formattedOptions: Record<string, string>[] = [];
+  props: {
+    value: String,
+    options: Array,
+    headerText: String,
+    top: Number,
+    left: Number,
+    horizontalPlacement: { default: 'center' },
+    verticalPlacement: { default: 'center' },
+    space: { default: 'big' },
+    placeholder: { default: '' },
+    height: { type: Number, required: false },
+    maxHeight: { type: Number, required: false },
+    showIcon: { default: true },
+    showSearch: { default: true },
+    showBorder: { default: true },
+    showBlur: { default: true },
+    showAnimation: { default: true },
+    showBackground: { default: true },
+    sizeWidth: { default: 'medium' },
+  },
+  data() {
+    return {
+      icons: [],
+      formattedOptions: [],
+    };
+  },
+  computed: {
+    showWarning() {
+      return this.options.length === 0;
+    },
+    sortedOptions(): Options[] {
+      const options = [...(this.options as Options[])];
+      const index = options.findIndex(({ value }) => value === this.value);
 
-  @Prop(String) value!: string;
-  @Prop(Array) options!: Options[];
-  @Prop(String) headerText!: string;
-  @Prop(Number) top!: number;
-  @Prop(Number) left!: number;
-  @Prop({ default: 'center' }) horizontalPlacement!: string;
-  @Prop({ default: 'center' }) verticalPlacement!: string;
-  @Prop({ default: 'big' }) space!: SpaceSize;
-  @Prop({ default: '' }) placeholder!: string;
-  @Prop({ type: Number, required: false }) height?: number;
-  @Prop({ type: Number, required: false }) maxHeight?: number;
-  @Prop({ default: true }) showIcon!: boolean;
-  @Prop({ default: true }) showSearch!: boolean;
-  @Prop({ default: true }) showBorder!: boolean;
-  @Prop({ default: true }) showBlur!: boolean;
-  @Prop({ default: true }) showAnimation!: boolean;
-  @Prop({ default: true }) showBackground!: boolean;
-  @Prop({ default: 'medium' }) sizeWidth!: boolean;
+      if (index === -1) return options;
 
-  get showWarning() {
-    return this.options.length === 0;
-  }
+      const [selectedElement] = options.splice(index, 1);
+      const indexInsertion = options[0]?.isAll && index !== 0 ? 1 : 0;
+      options.splice(indexInsertion, 0, selectedElement);
 
-  created() {
-    const index = this.options.findIndex(({ value }) => value === this.value);
-
-    if (index === -1) return;
-
-    const selectedElement = this.options[index];
-    const indexInsertion = this.options[0]?.isAll && index !== 0 ? 1 : 0;
-
-    this.options.splice(index, 1);
-    this.options.splice(indexInsertion, 0, selectedElement);
-  }
-
-  getIconVisible(value: string) {
-    return this.value === value;
-  }
-
-  rowClasses(value: string) {
-    return [
-      'row',
-      {
-        'row-active': this.value === value,
-      },
-      `padding-${this.space}`,
-    ];
-  }
-
-  toggle(value: string) {
-    this.$emit('toggleValue', value);
-  }
-
-  isAddressIconType(iconType: string) {
-    return iconType === 'address';
-  }
-
-  isGlobusIcon(icon: string) {
-    return icon === 'globus';
-  }
-}
+      return options;
+    },
+  },
+  methods: {
+    getIconVisible(value: string) {
+      return this.value === value;
+    },
+    rowClasses(value: string) {
+      return [
+            'row',
+            {
+              'row-active': this.value === value,
+            },
+            `padding-${this.space}`,
+          ];
+    },
+    toggle(value: string) {
+      this.$emit('toggleValue', value);
+    },
+    isAddressIconType(iconType: string) {
+      return iconType === 'address';
+    },
+    isGlobusIcon(icon: string) {
+      return icon === 'globus';
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

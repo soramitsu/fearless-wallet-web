@@ -5,6 +5,11 @@ import { type AccountJson } from '@/extension/background/extension-base/src/back
 export interface Wallet {
   address: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
   walletEcosystem?: WalletEcosystem;
   isMobile?: boolean;
   isMasterAccount?: boolean;
@@ -51,6 +56,11 @@ export interface WalletInfo {
   name: string;
   address: string;
   ethereumAddress: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
   isMobile: boolean;
   active: boolean;
 }

@@ -1,7 +1,7 @@
-import { type RequestArguments } from '@json-rpc-tools/utils';
 import { toBeHex, type JsonRpcPayload } from 'ethers';
 import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
+import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
@@ -129,7 +129,7 @@ export class EipService {
     // This method will be called after DApp request connect to extension
     const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
 
-    const emitEvent = (eventName: EvmEventType, payload: any) => {
+    const emitEvent = (eventName: EvmEventType, payload: unknown) => {
       cb({ type: eventName, payload });
     };
 
@@ -186,13 +186,15 @@ export class EipService {
 
     const provider = await this.getEvmProvider(url);
 
-    const eventMap: Record<string, any> = {};
+    const eventMap: Record<string, (...args: unknown[]) => void> = {};
 
-    eventMap.data = ({ method, params }: JsonRpcPayload) => {
+    eventMap.data = (payload: unknown) => {
+      const { method, params } = payload as JsonRpcPayload;
+
       emitEvent('message', { type: method, data: params });
     };
 
-    eventMap.error = (rs: Error) => {
+    eventMap.error = (rs: unknown) => {
       emitEvent('error', rs);
     };
 

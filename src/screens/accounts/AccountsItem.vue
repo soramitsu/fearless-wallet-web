@@ -4,10 +4,8 @@
       <div class="img-container">
         <ExternalLogo :name="icon" class="img" />
       </div>
-
       <div class="description">
         <div class="network-name" data-testid="networkName">{{ getUpperValue(network) }}</div>
-
         <div v-if="addressExist" class="address" data-testid="networkAddress">{{ address }}</div>
       </div>
     </div>
@@ -31,30 +29,36 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-@Component
-export default class AccountsItem extends Vue {
-  readonly circleButtonRef = 'circleButton';
-  @Prop(String) icon!: string;
-  @Prop(String) network!: string;
-  @Prop(Boolean) isMobile!: boolean;
-  @Prop(String) address!: string;
+export default defineComponent({ name: 'AccountsItem' ,
+  props: {
+    icon: String,
+    network: String,
+    isMobile: Boolean,
+    address: String,
+  },
+  data() {
+    return {
+      circleButtonRef: 'circleButton',
+    };
+  },
+  computed: {
+    addressExist() {
+      return !!this.address;
+    },
+  },
+  methods: {
+    getUpperValue(string: string) {
+      return string.toUpperCase();
+    },
+    openAccountSettingsPopup(name: string) {
+      const buttonTop = (this.$refs[this.circleButtonRef] as { $el: HTMLElement }).$el.getBoundingClientRect().top;
 
-  get addressExist() {
-    return !!this.address;
-  }
-
-  getUpperValue(string: string) {
-    return string.toUpperCase();
-  }
-
-  openAccountSettingsPopup(name: string) {
-    const buttonTop = (this.$refs[this.circleButtonRef] as Vue).$el.getBoundingClientRect().top;
-
-    this.$emit('openAccountSettingsPopup', name, buttonTop);
-  }
-}
+          this.$emit('openAccountSettingsPopup', name, buttonTop);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

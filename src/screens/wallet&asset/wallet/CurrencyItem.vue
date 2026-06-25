@@ -3,10 +3,10 @@
     v-if="showCurrencyItem"
     :timeoutCallback="timeoutCallback"
     class="currency-item"
-    @click.native="openAssetPage"
+    @click="openAssetPage"
   >
     <div v-if="showAssetsManagementForm" class="drag-icon">
-      <SIcon name="basic-menu-24" class="handle" />
+      <Icon icon="dots-horizontal" class="handle" />
     </div>
 
     <div class="img-container">
@@ -64,7 +64,7 @@
     </div>
     <div class="activity">
       <template v-if="showWarning">
-        <Icon icon="info-triangle" className="warning-img" @click.native="$emit('toggleNetworkManagementVisible')" />
+        <Icon icon="info-triangle" className="warning-img" @click="$emit('toggleNetworkManagementVisible')" />
 
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
@@ -107,10 +107,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { APIItemState, NETWORK_STATUS } from '@extension-base//api/types/networks';
 import type { CustomEvent } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import { Components } from '@/router/routes';
 import {
   filterBalanceItemsByNetwork,
@@ -122,270 +122,249 @@ import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class CurrencyItem extends Vue {
-  readonly countDisplayedNetworks = 5;
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'CurrencyItem' ,
+  props: {
+    assetData: { type: Object, required: true },
+    selectedNetwork: String,
+    showAssetsManagementForm: Boolean,
+    timeoutCallback: { required: false },
+  },
+  data() {
+    return {
+      countDisplayedNetworks: 5,
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    isCrv() {
+      return this.assetData.symbol === 'crv';
+    },
+    showPriceRow() {
+      return this.priceJson.isExist;
+    },
+    networkJson() {
+      return this.networksStore.getNetwork(this.selectedNetwork);
+    },
+    filteredBalances() {
+      return this.assetData.balances.filter(({ state, name }) => {
+            if (this.accountsStore.selectedWallet.isMobile) {
+              const accounts = this.accountsStore.accounts;
+              const account = accounts.find(({ address }) => address === this.accountsStore.selectedWallet.address);
+              const network = this.networksStore.getNetwork(name);
 
-  @Prop({ type: Object, required: true }) assetData!: TokenGroup;
-  @Prop(String) selectedNetwork!: string;
-  @Prop(Boolean) showAssetsManagementForm!: boolean;
-  @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
+              if (account && account.chains) {
+                return account.chains.some((halfChainId) => {
+                  if (network && network.chainId)
+                    return network.chainId.includes(halfChainId) && state === APIItemState.READY;
 
-  get isCrv() {
-    return this.assetData.symbol === 'crv';
-  }
+                  return false;
+                });
+              }
+            }
 
-  get showPriceRow() {
-    return this.priceJson.isExist;
-  }
-
-  get networkJson() {
-    return this.networksStore.getNetwork(this.selectedNetwork);
-  }
-
-  get filteredBalances() {
-    return this.assetData.balances.filter(({ state, name }) => {
-      if (this.accountsStore.selectedWallet.isMobile) {
-        const accounts = this.accountsStore.accounts;
-        const account = accounts.find(({ address }) => address === this.accountsStore.selectedWallet.address);
-        const network = this.networksStore.getNetwork(name);
-
-        if (account && account.chains) {
-          return account.chains.some((halfChainId) => {
-            if (network && network.chainId)
-              return network.chainId.includes(halfChainId) && state === APIItemState.READY;
-
-            return false;
+            return state === APIItemState.READY;
           });
-        }
-      }
+    },
+    isAdditional() {
+      return this.filteredBalances.length > this.countDisplayedNetworks;
+    },
+    additionalCount() {
+      return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
+    },
+    tokenName() {
+      return this.assetData.tokenName.toUpperCase() ?? '';
+    },
+    mainNetwork() {
+      if (this.isCurrentNetwork) {
+            const network = this.networksStore.getNetwork(this.selectedNetwork);
 
-      return state === APIItemState.READY;
-    });
-  }
+            return network?.name;
+          }
 
-  get isAdditional() {
-    return this.filteredBalances.length > this.countDisplayedNetworks;
-  }
+          const activeNetworks = this.assetData.balances.filter(({ name }) => this.networksStore.getNetwork(name).active);
 
-  get additionalCount() {
-    return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
-  }
+          if (this.assetData.relayChain === 'ethereum') {
+            const network = this.networksStore.getNetwork(activeNetworks[0].name);
 
-  get tokenName() {
-    return this.assetData.tokenName.toUpperCase() ?? '';
-  }
+            return network.name;
+          }
 
-  get mainNetwork() {
-    if (this.isCurrentNetwork) {
-      const network = this.networksStore.getNetwork(this.selectedNetwork);
+          if (BaseApi.isEthereumNetwork(this.assetData.mainNetwork) && !this.accountsStore.selectedWallet.hasEthereum) {
+            const networkWithTokens = activeNetworks.find(({ transferable }) => transferable && transferable !== '0')?.name;
+            const network = this.networksStore.getNetwork(networkWithTokens ?? this.assetData.balances[0].name);
 
-      return network?.name;
-    }
+            return network.name;
+          }
 
-    const activeNetworks = this.assetData.balances.filter(({ name }) => this.networksStore.getNetwork(name).active);
+          const network = this.networksStore.getNetwork(this.assetData.mainNetwork);
 
-    if (this.assetData.relayChain === 'ethereum') {
-      const network = this.networksStore.getNetwork(activeNetworks[0].name);
+          return network.name;
+    },
+    groupId() {
+      return this.assetData.groupId;
+    },
+    priceJson() {
+      return this.networksStore.getAssetPrice(this.assetData.priceId ?? '');
+    },
+    currencyVisible() {
+      return !this.accountsStore.hiddenAssets.includes(this.assetData.groupId);
+    },
+    showCurrencyItem() {
+      return this.showAssetsManagementForm || this.currencyVisible;
+    },
+    networkBadges() {
+      if (this.isCurrentNetwork) {
+            const network = this.assetData.balances.find((balance) => {
+              const account = this.accountsStore.accounts.find(
+                ({ address }) => address === this.accountsStore.selectedWallet.address
+              );
+              const network = this.networksStore.getNetwork(balance.name);
 
-      return network.name;
-    }
+              if (account && account.chains) {
+                if (!account.chains.some((el) => network.chainId.includes(el))) return false;
+              }
 
-    if (BaseApi.isEthereumNetwork(this.assetData.mainNetwork) && !this.accountsStore.selectedWallet.hasEthereum) {
-      const networkWithTokens = activeNetworks.find(({ transferable }) => transferable && transferable !== '0')?.name;
-      const network = this.networksStore.getNetwork(networkWithTokens ?? this.assetData.balances[0].name);
+              return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
+            });
 
-      return network.name;
-    }
+            if (network) {
+              const { icon, name } = network;
 
-    const network = this.networksStore.getNetwork(this.assetData.mainNetwork);
+              return [{ icon, name }];
+            }
 
-    return network.name;
-  }
+            return [];
+          }
 
-  get groupId() {
-    return this.assetData.groupId;
-  }
+          if (this.isAdditional) return this.filteredBalances.slice(0, this.countDisplayedNetworks - 1);
 
-  get priceJson() {
-    return this.networksStore.getAssetPrice(this.assetData.priceId ?? '');
-  }
+          return this.filteredBalances;
+    },
+    allNetworkBadges() {
+      return this.assetData.balances;
+    },
+    showShimmers() {
+      if (this.showWarning) return false;
 
-  get currencyVisible(): boolean {
-    return !this.accountsStore.hiddenAssets.includes(this.assetData.groupId);
-  }
+          // Hide shimmer if balances are loaded for at least one network
+          return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
+    },
+    showWarning() {
+      if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
 
-  get showCurrencyItem() {
-    return this.showAssetsManagementForm || this.currencyVisible;
-  }
+          // If all networks for tokens is DISCONNECTED, show error
+          const allNetworksDisconnected = this.assetData.balances.every(({ name }) => {
+            const network = this.networksStore.getNetwork(name);
 
-  get networkBadges() {
-    if (this.isCurrentNetwork) {
-      const network = this.assetData.balances.find((balance) => {
-        const account = this.accountsStore.accounts.find(
-          ({ address }) => address === this.accountsStore.selectedWallet.address
-        );
-        const network = this.networksStore.getNetwork(balance.name);
+            return network?.networkStatus === NETWORK_STATUS.DISCONNECTED;
+          });
 
-        if (account && account.chains) {
-          if (!account.chains.some((el) => network.chainId.includes(el))) return false;
-        }
+          if (allNetworksDisconnected) return true;
 
-        return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
-      });
+          return (
+            this.assetData.balances.some((el) => el.state === APIItemState.ERROR && el.name === this.selectedNetwork) ||
+            this.assetData.balances.every((el) => el.state === APIItemState.ERROR)
+          );
+    },
+    assetFiat() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(this.priceJson.price, 'price')}`;
+    },
+    transferableFiatBalanceValue() {
+      return `${this.accountsStore.fiatSymbol}${this.$n(this.transferableFiatBalance, 'price')}`;
+    },
+    assetFiatChange() {
+      if (!this.priceJson.priceChange) return '';
 
-      if (network) {
-        const { icon, name } = network;
+          return this.$n(this.priceJson.priceChange, 'percent');
+    },
+    totalAssetBalanceValue() {
+      return this.$n(this.transferableAssetBalance, 'decimal');
+    },
+    transferableAssetBalance() {
+      return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
+    },
+    transferableFiatBalance() {
+      return this.transferableAssetBalance * this.priceJson.price;
+    },
+    changePriceClasses() {
+      const classes = ['price-change'];
 
-        return [{ icon, name }];
-      }
+          if (this.priceJson.priceChange > 0) classes.push('up-price');
+          else if (this.priceJson.priceChange < 0) classes.push('down-price');
 
-      return [];
-    }
+          return classes;
+    },
+    isCurrentNetwork() {
+      return !isNetworkGroup(this.selectedNetwork);
+    },
+    redirectNetwork() {
+      if (this.isCurrentNetwork) return this.selectedNetwork;
 
-    if (this.isAdditional) return this.filteredBalances.splice(0, this.countDisplayedNetworks - 1);
+          const netName = this.activeNetworks[0].name;
+          const network = this.networksStore.getNetwork(netName);
 
-    return this.filteredBalances;
-  }
+          return network.name;
+    },
+    activeNetworks() {
+      return this.assetData.balances
+            .filter(({ name }) => {
+              const { rank, favorite, active } = this.networksStore.getNetwork(name);
 
-  get allNetworkBadges() {
-    return this.assetData.balances;
-  }
+              if (this.selectedNetwork === POPULAR_NETWORKS) return rank !== undefined;
 
-  get showShimmers() {
-    if (this.showWarning) return false;
+              if (this.selectedNetwork === FAVORITE_NETWORKS)
+                return favorite.some((address) => address === this.accountsStore.selectedWallet.address);
 
-    // Hide shimmer if balances are loaded for at least one network
-    return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
-  }
+              return active;
+            })
+            .filter(({ state }) => state === APIItemState.READY);
+    },
+  },
+  methods: {
+    toggleCurrencyVisible(value: boolean) {
+      this.accountsStore.setHiddenAssets({ groupId: this.assetData.groupId, value: value });
+    },
+    openAssetPage(event: CustomEvent) {
+      if (this.showWarning) return;
 
-  get showWarning() {
-    if (!isNetworkGroup(this.selectedNetwork)) return this.networkJson?.networkStatus === NETWORK_STATUS.DISCONNECTED;
+          const classList = event.target?.classList;
 
-    // If all networks for tokens is DISCONNECTED, show error
-    const allNetworksDisconnected = this.assetData.balances.every(({ name }) => {
-      const network = this.networksStore.getNetwork(name);
+          if (
+            this.showAssetsManagementForm ||
+            classList.contains('button') ||
+            classList.contains('send-white') ||
+            classList.contains('receive-white')
+          )
+            return;
 
-      return network?.networkStatus === NETWORK_STATUS.DISCONNECTED;
-    });
-
-    if (allNetworksDisconnected) return true;
-
-    return (
-      this.assetData.balances.some((el) => el.state === APIItemState.ERROR && el.name === this.selectedNetwork) ||
-      this.assetData.balances.every((el) => el.state === APIItemState.ERROR)
-    );
-  }
-
-  get assetFiat() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(this.priceJson.price, 'price')}`;
-  }
-
-  get transferableFiatBalanceValue() {
-    return `${this.accountsStore.fiatSymbol}${this.$n(this.transferableFiatBalance, 'price')}`;
-  }
-
-  get assetFiatChange() {
-    if (!this.priceJson.priceChange) return '';
-
-    return this.$n(this.priceJson.priceChange, 'percent');
-  }
-
-  get totalAssetBalanceValue() {
-    return this.$n(this.transferableAssetBalance, 'decimal');
-  }
-
-  get transferableAssetBalance() {
-    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
-  }
-
-  get transferableFiatBalance() {
-    return this.transferableAssetBalance * this.priceJson.price;
-  }
-
-  get changePriceClasses() {
-    const classes = ['price-change'];
-
-    if (this.priceJson.priceChange > 0) classes.push('up-price');
-    else if (this.priceJson.priceChange < 0) classes.push('down-price');
-
-    return classes;
-  }
-
-  get isCurrentNetwork() {
-    return !isNetworkGroup(this.selectedNetwork);
-  }
-
-  get redirectNetwork(): string {
-    if (this.isCurrentNetwork) return this.selectedNetwork;
-
-    const netName = this.activeNetworks[0].name;
-    const network = this.networksStore.getNetwork(netName);
-
-    return network.name;
-  }
-
-  get activeNetworks() {
-    return this.assetData.balances
-      .filter(({ name }) => {
-        const { rank, favorite, active } = this.networksStore.getNetwork(name);
-
-        if (this.selectedNetwork === POPULAR_NETWORKS) return rank !== undefined;
-
-        if (this.selectedNetwork === FAVORITE_NETWORKS)
-          return favorite.some((address) => address === this.accountsStore.selectedWallet.address);
-
-        return active;
-      })
-      .filter(({ state }) => state === APIItemState.READY);
-  }
-
-  toggleCurrencyVisible(value: boolean) {
-    this.accountsStore.setHiddenAssets({ groupId: this.assetData.groupId, value: value });
-  }
-
-  openAssetPage(event: CustomEvent) {
-    if (this.showWarning) return;
-
-    const classList = event.target?.classList;
-
-    if (
-      this.showAssetsManagementForm ||
-      classList.contains('button') ||
-      classList.contains('send-white') ||
-      classList.contains('receive-white')
-    )
-      return;
-
-    if (this.isCurrentNetwork || this.activeNetworks.length === 1)
+          if (this.isCurrentNetwork || this.activeNetworks.length === 1)
+            this.$router.push({
+              name: Components.AssetHistory,
+              params: {
+                assetId: this.groupId,
+                selectedNetwork: this.redirectNetwork,
+              },
+            });
+          else
+            this.$router.push({
+              name: Components.AssetNetworks,
+              params: {
+                assetId: this.groupId,
+              },
+            });
+    },
+    onRoute(form: 'send' | 'receive') {
       this.$router.push({
-        name: Components.AssetHistory,
-        params: {
-          assetId: this.groupId,
-          selectedNetwork: this.redirectNetwork,
-        },
-      });
-    else
-      this.$router.push({
-        name: Components.AssetNetworks,
-        params: {
-          assetId: this.groupId,
-        },
-      });
-  }
-
-  onRoute(form: 'send' | 'receive') {
-    this.$router.push({
-      name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
-      params: {
-        assetId: this.groupId ?? '',
-        network: this.mainNetwork ?? '',
-      },
-    });
-  }
-}
+            name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
+            params: {
+              assetId: this.groupId ?? '',
+              network: this.mainNetwork ?? '',
+            },
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

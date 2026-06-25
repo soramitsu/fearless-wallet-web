@@ -1,15 +1,9 @@
 import { type Injected } from '@polkadot/extension-inject/types';
-import { type FWEvmProvider } from '@extension-base/page/types';
-import {
-  type DecryptForCosignerData,
-  type EncryptByCosignerData,
-} from '../background/extension-base/src/background/types/types';
+import { type FWEvmProvider, type FWIrohaProvider, type FWSolanaProvider } from '@extension-base/page/types';
 type This = typeof globalThis;
 
 export interface InjectedWindowProvider {
   enable: (origin: string) => Promise<Injected>;
-  decryptForCosigner: (data: DecryptForCosignerData) => Promise<string>;
-  encryptByCosigner: (data: EncryptByCosignerData) => Promise<string>;
   isPlaceholder?: boolean;
   version: string;
 }
@@ -17,7 +11,10 @@ export interface InjectedWindowProvider {
 export interface InjectedWindow extends This {
   injectedWeb3: Record<string, InjectedWindowProvider>;
   ethereum: FWEvmProvider;
+  fearlessIroha: FWIrohaProvider;
   fearlessWallet: FWEvmProvider;
+  fearlessSolana: FWSolanaProvider;
+  solana?: FWSolanaProvider;
 }
 
 export interface EIP6963ProviderInfo {

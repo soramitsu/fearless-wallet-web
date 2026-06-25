@@ -23,87 +23,81 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { getFormattedDate } from '@/helpers';
 import { getHistoryValue } from '@/helpers/history';
 import BaseApi from '@/util/BaseApi';
-import { type SoraHistoryElement } from '@/interfaces/history';
-import { type NetworkName } from '@/interfaces';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class HistoryItem extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'HistoryItem' ,
+  props: {
+    history: { type: Object },
+    stakingAssetId: { type: String },
+    rewardedAssetId: { type: String },
+    network: { type: String },
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    operationName() {
+      return this.$t(`history.${this.history.method}`);
+    },
+    method() {
+      return this.history.method;
+    },
+    historyValue() {
+      return getHistoryValue(this.history, this.stakingAssetId, this.network, this.address, true);
+    },
+    amount() {
+      return `${this.historyValue.signTransfer}${this.$n(this.historyValue.value, 'decimalPrecise')}`;
+    },
+    networkFee() {
+      return this.history.networkFee;
+    },
+    symbol() {
+      if (this.method === 'rewarded') return this.rewardedCurrency?.symbol;
 
-  @Prop({ type: Object }) history!: SoraHistoryElement;
-  @Prop({ type: String }) stakingAssetId!: string;
-  @Prop({ type: String }) rewardedAssetId!: string;
-  @Prop({ type: String }) network!: NetworkName;
+          return this.currency?.symbol;
+    },
+    date() {
+      return getFormattedDate(this.history.timestamp);
+    },
+    currency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
+    },
+    rewardedCurrency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
+    },
+    assetPrice() {
+      const priceId = this.currency?.priceId ?? '';
 
-  get operationName() {
-    return this.$t(`history.${this.history.method}`);
-  }
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    address() {
+      if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
 
-  get method() {
-    return this.history.method;
-  }
+          const network = this.networksStore.getNetwork(this.network);
 
-  get historyValue() {
-    return getHistoryValue(this.history, this.stakingAssetId, this.network, this.address, true);
-  }
+          return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
+    },
+    value() {
+      const value = this.historyValue.value * this.assetPrice;
 
-  get amount() {
-    return `${this.historyValue.signTransfer}${this.$n(this.historyValue.value, 'decimalPrecise')}`;
-  }
-
-  get networkFee() {
-    return this.history.networkFee;
-  }
-
-  get symbol() {
-    if (this.method === 'rewarded') return this.rewardedCurrency?.symbol;
-
-    return this.currency?.symbol;
-  }
-
-  get date() {
-    return getFormattedDate(this.history.timestamp);
-  }
-
-  get currency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
-  }
-
-  get rewardedCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.rewardedAssetId);
-  }
-
-  get assetPrice() {
-    const priceId = this.currency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get address() {
-    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
-
-    const network = this.networksStore.getNetwork(this.network);
-
-    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
-  }
-
-  get value() {
-    const value = this.historyValue.value * this.assetPrice;
-
-    return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
-  }
-
-  openDetails() {
-    this.$emit('openHistoryDetailsForm', this.history);
-  }
-}
+          return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
+    },
+  },
+  methods: {
+    openDetails() {
+      this.$emit('openHistoryDetailsForm', this.history);
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

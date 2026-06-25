@@ -1,9 +1,11 @@
+@use "sass:math";
+
 $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;
 
 @function toRem($value) {
-    $remValue: ($value / 16) + rem;
+    $remValue: math.div($value, 16) * 1rem;
     @return $remValue;
 }
 

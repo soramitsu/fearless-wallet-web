@@ -14,7 +14,7 @@ export function getTransferableBalanceInNetwork(token: TokenGroup, network: stri
   return token.balances?.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
-export function getSummaryWalletBalance(
+export function getSummaryTransferableWalletBalance(
   address: string,
   tokens: TokenGroup[],
   price: BasePriceJson,
@@ -32,7 +32,7 @@ export function getSummaryWalletBalance(
       return result + assetValue;
     }
 
-    balances.forEach(({ state, total, name }) => {
+    balances.forEach(({ state, transferable, name }) => {
       const stakingNetwork = networks.find(({ name: _name }) => isSameString(_name.toLowerCase(), name.toLowerCase()));
 
       if (isSameString(network, POPULAR_NETWORKS) && stakingNetwork?.rank === undefined) return result;
@@ -40,7 +40,7 @@ export function getSummaryWalletBalance(
       if (isSameString(network, FAVORITE_NETWORKS) && !stakingNetwork?.favorite.includes(address)) return result;
 
       if (state === APIItemState.READY) {
-        const assetCount = +(total ?? 0);
+        const assetCount = +(transferable ?? 0);
         const assetValue = assetCount * tokenPrice;
 
         result += assetValue;
@@ -51,12 +51,12 @@ export function getSummaryWalletBalance(
   }, 0);
 }
 
-export function getSummaryBalance(token: TokenGroup, network = ALL_NETWORKS) {
+export function getSummaryTransferableBalance(token: TokenGroup, network = ALL_NETWORKS) {
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   // TODO: нужна проверка на то, входит ли сеть в группу
-  return token.balances.reduce((result, { state, total }) => {
-    if (state === APIItemState.READY && total) result += +total;
+  return token.balances.reduce((result, { state, transferable }) => {
+    if (state === APIItemState.READY && transferable) result += +transferable;
 
     return result;
   }, 0);
@@ -81,7 +81,7 @@ export function getChangeWalletBalance(
 
     const currentPercent = 100 + (priceChange ?? 0);
 
-    const totalBalance = +getSummaryBalance(tokenGroup, network);
+    const totalBalance = +getSummaryTransferableBalance(tokenGroup, network);
     const oldBalance = (totalBalance / currentPercent) * 100;
 
     const changeAmount = totalBalance - oldBalance;

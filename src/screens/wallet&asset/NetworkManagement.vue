@@ -30,6 +30,8 @@
       <div v-show="isNetworksExists" class="container" :class="networkListClasses">
         <Scroll>
           <ul class="network__list">
+            <template> </template>
+
             <NetworkItem
               v-for="network in filteredOptionsNetworks"
               :network="network"
@@ -57,7 +59,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import NetworkItem from './NetworkItem.vue';
 import type { Tab } from '@/interfaces/ui';
 import { isNetworkGroup } from '@/helpers/common';
@@ -73,13 +76,16 @@ type Tabs = {
   [FAVORITE_NETWORKS]: Tab;
 };
 
-@Component({
+export default defineComponent({ name: 'NetworkManagement',
   components: {
     NetworkItem,
   },
-})
-export default class NetworkManagement extends Vue {
-  readonly tabs: Tabs = {
+  props: {
+    type: String,
+  },
+  data() {
+    return {
+      tabs: {
     [ALL_NETWORKS]: {
       label: 'header.networkManagement.tabs.all',
       name: ALL_NETWORKS,
@@ -92,154 +98,139 @@ export default class NetworkManagement extends Vue {
       label: 'header.networkManagement.tabs.favorites',
       name: FAVORITE_NETWORKS,
     },
-  };
+  },
+      accountsStore: useAccountsStore(),
+      networksStore: useNetworksStore(),
+      filterValue: '',
+      activeTab: ALL_NETWORKS,
+      value: '',
+    };
+  },
+  computed: {
+    isGroupSelected() {
+      return this.accountsStore.selectedNetwork === this.activeTab;
+    },
+    networkListClasses() {
+      return IS_POPUP ? '' : 'container--fullscreen';
+    },
+    networkGroup() {
+      return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
+    },
+    filterByGroupNetworks() {
+      if (this.activeTab === ALL_NETWORKS) return this.networksStore.networks;
 
-  accountsStore = useAccountsStore();
-  networksStore = useNetworksStore();
-  filterValue = '';
-  activeTab: keyof Tabs = ALL_NETWORKS;
-  value = '';
+          if (this.activeTab === POPULAR_NETWORKS) {
+            return this.networksStore.networks
+              .filter(({ rank }) => rank !== undefined)
+              .sort((a, b) => {
+                if (a.rank === undefined || b.rank === undefined) return 0;
 
-  @Prop(String) type!: keyof Tabs | string;
+                return a.rank > b.rank ? 1 : -1;
+              });
+          }
 
-  get isGroupSelected() {
-    return this.accountsStore.selectedNetwork === this.activeTab;
-  }
+          return this.networksStore.networks.filter(({ favorite }) =>
+            favorite.some((address) => address === this.accountsStore.selectedWallet.address)
+          );
+    },
+    sortAvailableNetworks() {
+      return [...this.filterByGroupNetworks].sort((a, b) => {
+            const aAvailable = this.isAvailableNetwork(a.name);
+            const bAvailable = this.isAvailableNetwork(b.name);
 
-  get networkListClasses() {
-    return IS_POPUP ? '' : 'container--fullscreen';
-  }
+            return aAvailable === bAvailable ? 0 : aAvailable === true ? -1 : 1;
+          });
+    },
+    filteredOptionsNetworks() {
+      const filter = this.filterValue.trim().toLowerCase();
 
-  get networkGroup() {
-    return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
-  }
-
-  get filterByGroupNetworks() {
-    if (this.activeTab === ALL_NETWORKS) return this.networksStore.networks;
-
-    if (this.activeTab === POPULAR_NETWORKS) {
-      return this.networksStore.networks
-        .filter(({ rank }) => rank !== undefined)
-        .sort((a, b) => {
-          if (a.rank === undefined || b.rank === undefined) return 0;
-
-          return a.rank > b.rank ? 1 : -1;
-        });
-    }
-
-    return this.networksStore.networks.filter(({ favorite }) =>
-      favorite.some((address) => address === this.accountsStore.selectedWallet.address)
-    );
-  }
-
-  get sortAvailableNetworks() {
-    return this.filterByGroupNetworks.sort((a, b) => {
-      const aAvailable = this.isAvailableNetwork(a.name);
-      const bAvailable = this.isAvailableNetwork(b.name);
-
-      return aAvailable === bAvailable ? 0 : aAvailable === true ? -1 : 1;
-    });
-  }
-
-  get filteredOptionsNetworks() {
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return this.sortAvailableNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
-  }
-
-  get isNetworksExists() {
-    return this.filteredOptionsNetworks.length !== 0;
-  }
-
-  get selectedAccount() {
-    return this.accountsStore.accounts.find(({ active }) => active);
-  }
-
+          return this.sortAvailableNetworks.filter(({ name }) => name.toLowerCase().includes(filter));
+    },
+    isNetworksExists() {
+      return this.filteredOptionsNetworks.length !== 0;
+    },
+    selectedAccount() {
+      return this.accountsStore.accounts.find(({ active }) => active);
+    },
+  },
   async mounted() {
     if (isNetworkGroup(this.accountsStore.selectedNetwork))
-      this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
-  }
-
-  beforeDestroy() {
+          this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
+  },
+  beforeUnmount() {
     updateCurrentNetwork(this.accountsStore.selectedNetwork);
-  }
+  },
+  methods: {
+    changeFilterValue(value: string) {
+      this.filterValue = value;
+    },
+    getLocale(key: string) {
+      return `header.networkManagement.${key}`;
+    },
+    isAvailableNetwork(network: string) {
+      const selectedNetwork = this.networksStore.getNetwork(network);
 
-  changeFilterValue(value: string) {
-    this.filterValue = value;
-  }
+          if (this.accountsStore.selectedWallet.isMobile) {
+            if (!this.selectedAccount) return false;
 
-  getLocale(key: string): string {
-    return `header.networkManagement.${key}`;
-  }
+            if (!this.selectedAccount.chains) return false;
 
-  isAvailableNetwork(network: string): boolean {
-    const selectedNetwork = this.networksStore.getNetwork(network);
+            const available = this.selectedAccount.chains.some((el) => selectedNetwork.chainId.includes(el));
 
-    if (this.accountsStore.selectedWallet.isMobile) {
-      if (!this.selectedAccount) return false;
+            return available;
+          }
 
-      if (!this.selectedAccount.chains) return false;
+          if (!this.accountsStore.selectedWallet.hasEthereum && BaseApi.isEthereumNetwork(network)) return false;
 
-      const available = this.selectedAccount.chains.some((el) => selectedNetwork.chainId.includes(el));
+          return true;
+    },
+    isNetworkSelected(name: string) {
+      return this.accountsStore.selectedNetwork === name;
+    },
+    updateActiveTab(tab: Tab) {
+      this.activeTab = tab.name as keyof Tabs;
+    },
+    toggleNetworkType() {
+      if (this.isGroupSelected) return;
 
-      return available;
-    }
+          const network = this.tabs[this.activeTab].name;
 
-    if (!this.accountsStore.selectedWallet.hasEthereum && BaseApi.isEthereumNetwork(network)) return false;
+          this.accountsStore.setSelectedNetwork(network);
 
-    return true;
-  }
+          const prepNotification = this.$t(this.getLocale('groupSelected'), {
+            group: this.$t(this.tabs[this.activeTab].label),
+          }).toString();
 
-  isNetworkSelected(name: string) {
-    return this.accountsStore.selectedNetwork === name;
-  }
+          this.$notify({ title: prepNotification, message: '', type: 'success' });
+    },
+    enableSingleNetwork(network: string) {
+      const isSelected = this.isNetworkSelected(network);
 
-  updateActiveTab(tab: Tab) {
-    this.activeTab = tab.name as keyof Tabs;
-  }
+          if (isSelected) return;
 
-  toggleNetworkType() {
-    if (this.isGroupSelected) return;
+          this.accountsStore.setSelectedNetwork(network);
 
-    const network = this.tabs[this.activeTab].name;
+          const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 
-    this.accountsStore.setSelectedNetwork(network);
+          this.$notify({ title: prepNotification, message: '', type: 'success' });
+    },
+    async toggleFavorite(network: string) {
+      const isFavorite = await this.networksStore.toggleFavoriteNetwork({
+            networkName: network,
+            address: this.accountsStore.selectedWallet.address,
+          });
 
-    const prepNotification = this.$t(this.getLocale('groupSelected'), {
-      group: this.$t(this.tabs[this.activeTab].label),
-    }).toString();
+          const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
+          const prepNotification = this.$t(t, { network });
 
-    this.$notify({ title: prepNotification, message: '', type: 'success' });
-  }
-
-  enableSingleNetwork(network: string) {
-    const isSelected = this.isNetworkSelected(network);
-
-    if (isSelected) return;
-
-    this.accountsStore.setSelectedNetwork(network);
-
-    const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
-
-    this.$notify({ title: prepNotification, message: '', type: 'success' });
-  }
-
-  async toggleFavorite(network: string) {
-    const isFavorite = await this.networksStore.toggleFavoriteNetwork({
-      networkName: network,
-      address: this.accountsStore.selectedWallet.address,
-    });
-
-    const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
-    const prepNotification = this.$t(t, { network });
-
-    this.$notify({
-      title: prepNotification as string,
-      message: '',
-      type: 'success',
-    });
-  }
-}
+          this.$notify({
+            title: prepNotification as string,
+            message: '',
+            type: 'success',
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

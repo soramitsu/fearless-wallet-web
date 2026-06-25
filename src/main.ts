@@ -1,20 +1,13 @@
-import Vue from 'vue';
-import { Plugin } from 'vue-fragment';
-import { createPinia, PiniaVuePlugin } from 'pinia';
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import router from '@/router';
 import { i18n } from '@/locales';
 import App from '@/App.vue';
 import '@/styles';
-import '@/plugins';
+import { registerPlugins } from '@/plugins';
 import '@/assets';
-import '@/components';
+import { registerComponents } from '@/components';
 import { IS_EXTENSION } from '@/consts/global';
-
-Vue.use(Plugin);
-Vue.use(PiniaVuePlugin); // TODO: remove for vue 3
-
-Vue.config.productionTip = false;
-Vue.config.devtools = process.env.NODE_ENV === 'development';
 
 if ('serviceWorker' in navigator && !IS_EXTENSION) {
   window.addEventListener('load', () => {
@@ -26,10 +19,12 @@ if ('serviceWorker' in navigator && !IS_EXTENSION) {
 }
 
 const pinia = createPinia();
+const app = createApp(App);
 
-new Vue({
-  pinia,
-  router,
-  i18n,
-  render: (h) => h(App),
-}).$mount('#app');
+app.use(pinia);
+app.use(router);
+app.use(i18n);
+registerPlugins(app);
+registerComponents(app);
+app.config.performance = process.env.NODE_ENV === 'development';
+app.mount('#app');

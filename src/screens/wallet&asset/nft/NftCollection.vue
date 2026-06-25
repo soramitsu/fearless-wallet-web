@@ -35,9 +35,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRoute, useRouter } from 'vue-router';
 import type { NftCollection, AvailableNftState, FearlessNft } from '@extension-base/services/nft-service/types';
+import { useI18n } from '@/locales/useI18n';
 import { fetchAvailableNftsForContract } from '@/extension/messaging/nfts';
 import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
@@ -53,7 +53,9 @@ const { t } = useI18n();
 
 const selectedWallet = computed(() => accountsStore.selectedWallet);
 
-const contract = computed(() => route.params.contract);
+const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+const contract = computed(() => routeParam(route.params.contract));
 const availableNftsFromStore = computed<AvailableNftState>(() => accountsStore.availableNfts);
 const nftCollectionFromStore = computed<FearlessNft[]>(
   () => availableNftsFromStore.value[contract.value]?.collection ?? []
@@ -65,7 +67,7 @@ const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
   canLoadMore: true,
 });
 
-const tooltip = ref<Tooltip>();
+const tooltip = ref<InstanceType<typeof Tooltip> | null>(null);
 
 const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? []);
 const collection = computed(() => nfts.value.find((el) => el.address === contract.value));

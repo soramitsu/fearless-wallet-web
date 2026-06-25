@@ -1,0 +1,49 @@
+# Existing TODO/FIXME/STOPSHIP baseline. Remove entries when debt is resolved.
+src/App.vue	// TODO send message to SW, dont use import state, MigrationService
+src/extension/background/extension-base/src/api/evm/types.ts	// TODO: unify specialOption, assetId, assetIndex
+src/extension/background/extension-base/src/api/evm/types.ts	name: string; // is Network Name, TODO name -> networkName
+src/extension/background/extension-base/src/api/substrate/crossChain.ts	const limit = { Unlimited: null }; // TODO возможно в будущем нужно будет доделать
+src/extension/background/extension-base/src/api/substrate/crossChain.ts	key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
+src/extension/background/extension-base/src/api/substrate/crossChain.ts	key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
+src/extension/background/extension-base/src/api/substrate/index.ts	// TODO AUSD
+src/extension/background/extension-base/src/api/ton/transfer.ts	// TODO ton add init options for new accounts
+src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This now could happen with re-subscriptions. The issue is that with a re-sub
+src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider can disconnect
+src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider can disconnect
+src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider has subscriptions
+src/extension/background/extension-base/src/services/balance-service/EquilibriumBalanceService.ts	// TODO
+src/extension/background/extension-base/src/services/balance-service/EquilibriumBalanceService.ts	const locked = FPNumber.fromCodecValue((asV0.lock as u128).toNumber(), 9); // TODO: 9 дефолтный precision, уточнить насчет asV0.lock
+src/extension/background/extension-base/src/services/balance-service/index.ts	// TODO проверить будет ли корректно работать если заменить на поиск по groupId
+src/extension/background/extension-base/src/services/history-service/index.ts	// TODO возможно стоит перенести парсинг всей истории в SW
+src/extension/background/extension-base/src/services/nft-service/handlers/AlchemyNftSdk.ts	}, //todo fill the req meta
+src/extension/background/extension-base/src/services/pools-service/index.ts	// TODO use networks
+src/extension/background/extension-base/src/services/pools-service/index.ts	const groupId1 = this.state.balanceService.getTokenBalance(address, asset1.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
+src/extension/background/extension-base/src/services/pools-service/index.ts	const groupId2 = this.state.balanceService.getTokenBalance(address, asset2.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
+src/extension/background/extension-base/src/services/staking-service/index.ts	// TODO use networks
+src/extension/background/extension-base/src/services/subscription-service/index.ts	// TODO возможно нужно перенести данные отписки в функцию которая отключает API сети
+src/extension/background/extension-base/src/services/wallet-connect-service/storage.ts	//TODO: make it work on both platforms
+src/extension/background/extension-base/src/services/wallet-connect-service/types.ts	//TODO refactoring types
+src/extension/entry/page.ts	provider: FWEvmProvider | undefined = undefined; // TODO ???
+src/helpers/common/index.ts	// TODO: нужна проверка на то, входит ли сеть в группу
+src/helpers/shimmers.ts	//TODO добавить проверку по группам
+src/interfaces/history.ts	| 'batchAll'; // TODO
+src/interfaces/networks.ts	| 'assetId' // TODO add
+src/interfaces/networks.ts	| 'bitcoin'; // TODO staking
+src/screens/addWallet/google/FlowStepLayout.vue	//TODO it maybe broken
+src/screens/main/WalletInfo.vue	min-height: 45px; // TODO: delete after adding percent
+src/screens/staking/Bond.vue	// TODO staking
+src/screens/staking/Bond.vue	// TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
+src/screens/staking/Bond.vue	<!-- TODO: staking Переделать, когда будут новые сети -->
+src/screens/staking/myStake/About.vue	<!-- TODO: staking Поправить, когда будут другие сети -->
+src/screens/staking/myStake/validators/ValidatorInfo.vue	// TODO staking
+src/screens/staking/myStake/validators/YourValidatorsManagement.vue	// TODO staking
+src/screens/wallet&asset/ConfirmationPasswordPopup.vue	// TODO Выводить юзеру ошибку ???
+src/screens/wallet&asset/ConfirmationPasswordPopup.vue	// TODO ошибку balanceTooLow по хорошему нужно обработать и показать
+src/screens/wallet&asset/EditAddressBook.vue	// TODO ton
+src/screens/wallet&asset/asset/History.vue	setTimeout(() => this.loadHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+src/screens/wallet&asset/asset/HistoryDetailsForm.vue	// TODO Переделать на одинаковое название параметра
+src/screens/wallet&asset/wallet/Wallet.vue	//TODO добавить проверку по группам
+src/stores/networks/actions.ts	// TODO: когда появится история других токенов отрефаткорить данную логику
+src/stores/networks/actions.ts	const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
+src/stores/staking/getters.ts	// TODO staking доделать когда появятся новые сети для стейкинга
+src/stores/staking/types.ts	export type StakingHistory = HistoryElement | SoraHistoryElement; // TODO

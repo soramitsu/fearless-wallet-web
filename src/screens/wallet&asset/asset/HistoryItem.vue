@@ -19,9 +19,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { HistoryElement, NetworkName, TonEvent } from '@/interfaces';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
+import type { TonEvent } from '@/interfaces';
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer, TransferType } from '@/helpers/history';
 import { getFormattedDate, cut, isSora, isTonNetwork } from '@/helpers';
 import { type SoraHistoryElement, TransactionType } from '@/interfaces/history';
@@ -29,114 +29,104 @@ import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class HistoryItem extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-
-  @Prop(Object) historyElement!: HistoryElement;
-  @Prop(Object) token!: TokenGroup;
-  @Prop(String) network!: NetworkName;
-
-  get signTransfer() {
-    return getSignTransfer(this.historyElement, this.address, this.network);
-  }
-
-  get address() {
-    if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
-
-    const network = this.networksStore.getNetwork(this.network);
-
-    return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
-  }
-
-  get asset() {
-    return this.token.symbol;
-  }
-
-  get isSora() {
-    return isSora(this.network);
-  }
-
-  get isTon() {
-    return isTonNetwork(this.network);
-  }
-
-  get success() {
-    return this.historyElement.success;
-  }
-
-  get valueClasses() {
+export default defineComponent({ name: 'HistoryItem' ,
+  props: {
+    historyElement: Object,
+    token: Object,
+    network: String,
+  },
+  data() {
     return {
-      reject: !this.success,
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
     };
-  }
+  },
+  computed: {
+    signTransfer() {
+      return getSignTransfer(this.historyElement, this.address, this.network);
+    },
+    address() {
+      if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
 
-  get date() {
-    return getFormattedDate(this.historyElement.timestamp);
-  }
+          const network = this.networksStore.getNetwork(this.network);
 
-  get assetToUpperCase() {
-    return this.asset.toUpperCase();
-  }
+          return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
+    },
+    asset() {
+      return this.token.symbol;
+    },
+    isSora() {
+      return isSora(this.network);
+    },
+    isTon() {
+      return isTonNetwork(this.network);
+    },
+    success() {
+      return this.historyElement.success;
+    },
+    valueClasses() {
+      return {
+            reject: !this.success,
+          };
+    },
+    date() {
+      return getFormattedDate(this.historyElement.timestamp);
+    },
+    assetToUpperCase() {
+      return this.asset.toUpperCase();
+    },
+    type() {
+      return getType(this.historyElement);
+    },
+    networkJson() {
+      return this.networksStore.getNetwork(this.network);
+    },
+    networkHistoryType() {
+      return this.networkJson.externalApi?.history?.type;
+    },
+    value() {
+      const values = getHistoryValue(this.historyElement, this.token.groupId, this.network, this.address, true);
 
-  get type() {
-    return getType(this.historyElement);
-  }
+          if (!values) return 0;
 
-  get networkJson() {
-    return this.networksStore.getNetwork(this.network);
-  }
+          return `${values.signTransfer}${this.$n(values.value, 'decimalPrecise')}`;
+    },
+    addressHistory() {
+      if (this.isSora) {
+            const element = this.historyElement as unknown as SoraHistoryElement;
 
-  get networkHistoryType() {
-    return this.networkJson.externalApi?.history?.type;
-  }
+            return this.$t(`history.${element.method}`);
+          }
 
-  get value() {
-    const values = getHistoryValue(this.historyElement, this.token.groupId, this.network, this.address, true);
+          if (this.isTon) {
+            const element = this.historyElement as unknown as TonEvent;
+            const value = this.typeFormatted === TransferType.Incoming ? element!.from : element!.to;
 
-    if (!values) return 0;
+            return cut(value);
+          }
 
-    return `${values.signTransfer}${this.$n(values.value, 'decimalPrecise')}`;
-  }
+          const { transfer, reward } = this.historyElement;
 
-  get addressHistory() {
-    if (this.isSora) {
-      const element = this.historyElement as unknown as SoraHistoryElement;
+          if (this.type === TransactionType.transfer) {
+            const value = this.typeFormatted === TransferType.Incoming ? transfer!.from : transfer!.to;
 
-      return this.$t(`history.${element.method}`);
-    }
+            return cut(value);
+          }
 
-    if (this.isTon) {
-      const element = this.historyElement as unknown as TonEvent;
-      const value = this.typeFormatted === TransferType.Incoming ? element!.from : element!.to;
+          // reward
+          return cut(reward!.validator);
+    },
+    typeFormatted() {
+      return getTypeFormatted(this.historyElement, this.address, this.network);
+    },
+    typeHistory() {
+      if (this.typeFormatted === TransferType.Incoming || this.typeFormatted === TransferType.Outgoing)
+            return this.$t(`history.${this.typeFormatted}`);
 
-      return cut(value);
-    }
-
-    const { transfer, reward } = this.historyElement;
-
-    if (this.type === TransactionType.transfer) {
-      const value = this.typeFormatted === TransferType.Incoming ? transfer!.from : transfer!.to;
-
-      return cut(value);
-    }
-
-    // reward
-    return cut(reward!.validator);
-  }
-
-  get typeFormatted() {
-    return getTypeFormatted(this.historyElement, this.address, this.network);
-  }
-
-  get typeHistory() {
-    if (this.typeFormatted === TransferType.Incoming || this.typeFormatted === TransferType.Outgoing)
-      return this.$t(`history.${this.typeFormatted}`);
-
-    return this.typeFormatted;
-  }
-}
+          return this.typeFormatted;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -32,70 +32,68 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
-import type { OnboardingStories } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
-@Component({
+export default defineComponent({ name: 'Onboarding',
   components: {
     OnboardingStory,
     StoryCounter,
   },
-})
-export default class Onboarding extends Vue {
-  readonly title = {
+  data() {
+    return {
+      title: {
     first: 'The DeFi Wallet for the',
     last: 'Future',
-  };
-  stories: OnboardingStories = [];
-  showStartingScreen = true;
-  activeStory = 1;
+  },
+      stories: [],
+      showStartingScreen: true,
+      activeStory: 1,
+    };
+  },
+  computed: {
+    storiesLength() {
+      return this.stories.length;
+    },
+    showSkip() {
+      return !this.showStartingScreen;
+    },
+    buttonText() {
+      if (this.showStartingScreen) return 'common.start';
 
-  get storiesLength() {
-    return this.stories.length;
-  }
-
-  get showSkip() {
-    return !this.showStartingScreen;
-  }
-
-  get buttonText() {
-    if (this.showStartingScreen) return 'common.start';
-
-    return 'common.next';
-  }
-
-  get currentStory() {
-    return this.stories[this.activeStory - 1];
-  }
-
+          return 'common.next';
+    },
+    currentStory() {
+      return this.stories[this.activeStory - 1];
+    },
+  },
   async mounted() {
     const stories = await getOnboardingStories(this.$i18n.locale);
 
-    this.stories = stories;
+        this.stories = stories;
 
-    if (stories.length === 0) this.$router.back();
-  }
+        if (stories.length === 0) this.$router.back();
+  },
+  methods: {
+    onSkip() {
+      this.completeOnboarding();
+    },
+    onContinue() {
+      if (this.showStartingScreen) this.showStartingScreen = false;
+          else if (this.storiesLength === this.activeStory) this.completeOnboarding();
+          else this.activeStory += 1;
+    },
+    completeOnboarding() {
+      setOnboardingComplete();
 
-  onSkip() {
-    this.completeOnboarding();
-  }
-
-  onContinue() {
-    if (this.showStartingScreen) this.showStartingScreen = false;
-    else if (this.storiesLength === this.activeStory) this.completeOnboarding();
-    else this.activeStory += 1;
-  }
-
-  completeOnboarding() {
-    setOnboardingComplete();
-
-    this.$router.push({ name: Components.Wallet });
-  }
-}
+          this.$router.push({ name: Components.Wallet });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

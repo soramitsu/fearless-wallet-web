@@ -61,28 +61,71 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-@Component
-export default class FiltersPopup extends Vue {
-  @PropSync('onchainIdentity', { type: Boolean }) syncedOnchainIdentity!: boolean;
-  @PropSync('notSlashed', { type: Boolean }) syncedNotSlashed!: boolean;
-  @PropSync('notOversubscribed', { type: Boolean }) syncedNotOversubscribed!: boolean;
-  @PropSync('limitValidatorsIdentity', { type: Boolean }) syncedLimitValidatorsIdentity!: boolean;
-  @PropSync('sortByApy', { type: Boolean }) syncedSortByApy!: boolean;
-  @Prop({ default: () => () => null }) handlerClose!: VoidFunction;
-
-  toggleSortByApy() {
-    this.syncedSortByApy = !this.syncedSortByApy;
-  }
-
-  toggleSyncedNotOversubscribed() {
-    this.syncedNotOversubscribed = !this.syncedNotOversubscribed;
-  }
-  toggleSyncedOnchainIdentity() {
-    this.syncedOnchainIdentity = !this.syncedOnchainIdentity;
-  }
-}
+export default defineComponent({ name: 'FiltersPopup' ,
+  props: {
+    handlerClose: { default: () => () => null },
+    onchainIdentity: { type: Boolean },
+    notSlashed: { type: Boolean },
+    notOversubscribed: { type: Boolean },
+    limitValidatorsIdentity: { type: Boolean },
+    sortByApy: { type: Boolean },
+  },
+  computed: {
+    syncedOnchainIdentity: {
+      get() {
+        return this.onchainIdentity;
+      },
+      set(value) {
+        this.$emit('update:onchainIdentity', value);
+      },
+    },
+    syncedNotSlashed: {
+      get() {
+        return this.notSlashed;
+      },
+      set(value) {
+        this.$emit('update:notSlashed', value);
+      },
+    },
+    syncedNotOversubscribed: {
+      get() {
+        return this.notOversubscribed;
+      },
+      set(value) {
+        this.$emit('update:notOversubscribed', value);
+      },
+    },
+    syncedLimitValidatorsIdentity: {
+      get() {
+        return this.limitValidatorsIdentity;
+      },
+      set(value) {
+        this.$emit('update:limitValidatorsIdentity', value);
+      },
+    },
+    syncedSortByApy: {
+      get() {
+        return this.sortByApy;
+      },
+      set(value) {
+        this.$emit('update:sortByApy', value);
+      },
+    },
+  },
+  methods: {
+    toggleSortByApy() {
+      this.syncedSortByApy = !this.syncedSortByApy;
+    },
+    toggleSyncedNotOversubscribed() {
+      this.syncedNotOversubscribed = !this.syncedNotOversubscribed;
+    },
+    toggleSyncedOnchainIdentity() {
+      this.syncedOnchainIdentity = !this.syncedOnchainIdentity;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

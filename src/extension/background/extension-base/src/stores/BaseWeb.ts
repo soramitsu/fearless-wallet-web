@@ -36,7 +36,7 @@ export default abstract class BaseWebStore<T> {
     this.openDatabase().then((db) => {
       const transaction = db.transaction(db_name, 'readwrite');
       const store = transaction.objectStore(db_name);
-      !(value instanceof Promise) && store.put(value, key);
+      if (!(value instanceof Promise)) store.put(value, key);
     });
   }
 

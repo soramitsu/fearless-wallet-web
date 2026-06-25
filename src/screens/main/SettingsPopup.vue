@@ -74,7 +74,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import { IS_EXTENSION } from '@/consts/global';
@@ -82,46 +83,46 @@ import { lockExtension } from '@/extension/messaging';
 import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'SettingsPopup',
   components: { SettingMenuItem },
-})
-export default class SettingsPopup extends Vue {
-  readonly isExtension = IS_EXTENSION;
-  extensionStore = useExtensionStore();
-  accountsStore = useAccountsStore();
+  data() {
+    return {
+      isExtension: IS_EXTENSION,
+      extensionStore: useExtensionStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    isTonWallet() {
+      return this.accountsStore.selectedWallet.isTon;
+    },
+    routeName() {
+      return this.$route.name;
+    },
+  },
+  methods: {
+    openPopup(value: string) {
+      this.$emit(value);
+    },
+    openManageAuths() {
+      this.$router.push({ name: Components.DAppsAuths, params: { type: 'substrate' } });
+    },
+    open(name: keyof typeof Components) {
+      if (this.routeName !== name) {
+            if (this.isTonWallet && name === 'AccountSetting') {
+              this.$router.push({ name: Components.Export });
+            } else this.$router.push({ name: Components[name] });
+          }
 
-  get isTonWallet() {
-    return this.accountsStore.selectedWallet.isTon;
-  }
+          this.$emit('handlerClose');
+    },
+    lock() {
+      lockExtension(true);
 
-  get routeName() {
-    return this.$route.name;
-  }
-
-  openPopup(value: string) {
-    this.$emit(value);
-  }
-
-  openManageAuths() {
-    this.$router.push({ name: Components.DAppsAuths, params: { type: 'substrate' } });
-  }
-
-  open(name: keyof typeof Components) {
-    if (this.routeName !== name) {
-      if (this.isTonWallet && name === 'AccountSetting') {
-        this.$router.push({ name: Components.Export });
-      } else this.$router.push({ name: Components[name] });
-    }
-
-    this.$emit('handlerClose');
-  }
-
-  lock() {
-    lockExtension(true);
-
-    this.$router.push({ name: Components.Unlock });
-  }
-}
+          this.$router.push({ name: Components.Unlock });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

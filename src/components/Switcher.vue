@@ -1,12 +1,9 @@
 <template>
-  <SSwitch
-    v-model="vModel"
-    class="switch"
-    data-testid="switch"
-    :activeText="activeText"
-    :inactiveText="inactiveText"
-    :disabled="disabled"
-  />
+  <label class="switch" data-testid="switch">
+    <input v-model="vModel" class="switch__input" type="checkbox" :disabled="disabled" />
+    <span class="switch__core"></span>
+    <span v-if="activeText || inactiveText" class="switch__text">{{ vModel ? activeText : inactiveText }}</span>
+  </label>
 </template>
 
 <script lang="ts" setup>
@@ -39,15 +36,44 @@ const disabled = computed(() => props.disabled);
 </script>
 
 <style lang="scss">
-.el-switch__core {
-  background-color: #422539 !important;
-  border: 1px solid $default-background-color !important;
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.is-checked {
-  .el-switch__core {
-    background-color: #7700ee !important;
-    border: 1px solid $default-background-color !important;
+.switch__input {
+  display: none;
+}
+
+.switch__core {
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  border-radius: 20px;
+  position: relative;
+  background-color: #422539 !important;
+  border: 1px solid $default-background-color !important;
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 1px;
+    left: 1px;
+    border-radius: 50%;
+    background: $plain-white;
+    transition: transform 0.15s ease;
+  }
+}
+
+.switch__input:checked + .switch__core {
+  background-color: #7700ee !important;
+  border: 1px solid $default-background-color !important;
+
+  &::after {
+    transform: translateX(20px);
   }
 }
 </style>

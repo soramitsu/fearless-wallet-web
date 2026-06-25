@@ -14,41 +14,47 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { updateFiatSymbol } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class FiatsPopup extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  filterValue = '';
+export default defineComponent({ name: 'FiatsPopup' ,
+  props: {
+    showAnimation: Boolean,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      filterValue: '',
+    };
+  },
+  computed: {
+    filteredOptionsFiats() {
+      const filter = this.filterValue.trim().toLowerCase();
 
-  @Prop(Boolean) showAnimation!: boolean;
+          return this.networksStore.fiats
+            .filter(({ name }) => name.toLowerCase().includes(filter))
+            .map(({ name, id, icon }) => {
+              return { name: name, value: id, icon };
+            });
+    },
+  },
+  methods: {
+    handlerFilter(value: string) {
+      this.filterValue = value;
+    },
+    toggleSelectedFiat(id: string) {
+      updateFiatSymbol(id).then(() => {
+            this.accountsStore.setSelectedFiat(id);
 
-  get filteredOptionsFiats() {
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return this.networksStore.fiats
-      .filter(({ name }) => name.toLowerCase().includes(filter))
-      .map(({ name, id, icon }) => {
-        return { name: name, value: id, icon };
-      });
-  }
-
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
-  toggleSelectedFiat(id: string) {
-    updateFiatSymbol(id).then(() => {
-      this.accountsStore.setSelectedFiat(id);
-
-      this.$emit('handlerClose');
-    });
-  }
-}
+            this.$emit('handlerClose');
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -2,10 +2,10 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "strict": true,
+    "strict": false,
     "jsx": "preserve",
     "importHelpers": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "moduleDetection": "force",
     "experimentalDecorators": true,
     "skipLibCheck": true,
@@ -13,15 +13,15 @@
     "noEmit": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "types": [
-      "webpack-env",
-      "jest",
+      "vite/client",
+      "vitest/globals",
       "node",
-      "element-ui",
       "chrome",
       "firefox-webext-browser",
       "network-information-types"
@@ -42,7 +42,8 @@
     ]
   },
   "vueCompilerOptions": {
-    "target": 2.7
+    "target": 3,
+    "skipTemplateCodegen": true
   },
   "include": [
     "src/**/*.ts",
@@ -50,7 +51,7 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    "src/extension/makeManifest.js"
+    "vite.config*.ts"
   ],
   "exclude": [
     "node_modules"

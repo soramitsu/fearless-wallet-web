@@ -2,14 +2,27 @@ import { checkIfDenied } from '@polkadot/phishing';
 import { chrome } from '@extension-base/utils/crossenv';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
-import { type RequestArguments } from '@json-rpc-tools/utils';
-import { type RequestEvmProviderSend } from '@extension-base/page/types';
+import {
+  type RequestEvmProviderSend,
+  type IrohaConnectRequest,
+  type IrohaConnectResponse,
+  type IrohaNetworkKey,
+  type SolanaAccountInfo,
+  type SolanaSignAllTransactionsRequest,
+  type SolanaSignAndSendTransactionRequest,
+  type SolanaConnectRequest,
+  type SolanaConnectResponse,
+  type SolanaSignMessageRequest,
+  type SolanaSignTransactionRequest,
+} from '@extension-base/page/types';
 import { EipService } from '../../services/eip-service';
+import { SolanaRpcClient } from '../../services/solana-rpc-service';
+import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type {
+  AccountSub,
   DecryptForCosignerData,
   EncryptByCosignerData,
-  AccountSub,
   MessageTypes,
   Port,
   RequestAccountUnsubscribe,
@@ -36,6 +49,8 @@ import { stripUrl, withErrorLog } from '@/extension/background/extension-base/sr
 import {
   transformAccounts,
   transformAddresses,
+  transformIrohaAccounts,
+  transformSolanaAccounts,
 } from '@/extension/background/extension-base/src/background/helpers/accounts';
 
 export default class Tabs {
@@ -68,6 +83,247 @@ export default class Tabs {
     const filteredAuths = await this.filterForAuthorizedAccounts(totalAccounts, url);
 
     return filteredAuths;
+  }
+
+  private getAllSolanaAccounts(): SolanaAccountInfo[] {
+    const accounts = [
+      ...transformSolanaAccounts({ accounts: this.state.keyringService.accountSubject.value }),
+      ...transformSolanaAccounts({ accounts: this.state.keyringService.addressSubject.value }),
+    ];
+    const uniqueAccounts = new Map<string, SolanaAccountInfo>();
+
+    accounts.forEach((account) => {
+      if (!uniqueAccounts.has(account.address)) uniqueAccounts.set(account.address, account);
+    });
+
+    return [...uniqueAccounts.values()];
+  }
+
+  private getAllIrohaAccounts(network: IrohaNetworkKey = 'nexus'): IrohaConnectResponse['accounts'] {
+    const accounts = [
+      ...transformIrohaAccounts({ accounts: this.state.keyringService.accountSubject.value }, network),
+      ...transformIrohaAccounts({ accounts: this.state.keyringService.addressSubject.value }, network),
+    ];
+    const uniqueAccounts = new Map<string, IrohaConnectResponse['accounts'][number]>();
+
+    accounts.forEach((account) => {
+      if (!uniqueAccounts.has(account.address)) uniqueAccounts.set(account.address, account);
+    });
+
+    return [...uniqueAccounts.values()];
+  }
+
+  async solanaAccountsAuthorized(url: string): Promise<SolanaConnectResponse> {
+    const authInfo = await this.state.getAuthInfo(url);
+    const authorizedAddress = authInfo?.solanaAuthorizedAccount;
+    const accounts = this.getAllSolanaAccounts().filter(({ address }) => address === authorizedAddress);
+
+    return { accounts };
+  }
+
+  async solanaAuthorizeUrl(url: string, request: SolanaConnectRequest): Promise<SolanaConnectResponse> {
+    if (request.silent) return this.solanaAccountsAuthorized(url);
+    if (this.getAllSolanaAccounts().length === 0) return { accounts: [] };
+
+    await this.state.requestService.authorizeUrl(url, {
+      origin: request.origin,
+      accountAuthType: 'solana',
+    });
+
+    return this.solanaAccountsAuthorized(url);
+  }
+
+  async solanaDisconnect(url: string): Promise<SolanaConnectResponse> {
+    const idStr = stripUrl(url);
+    const authList = await this.state.requestService.getAuthList();
+    const authInfo = authList[idStr];
+
+    if (authInfo) {
+      this.state.requestService.setAuthorize({
+        ...authList,
+        [idStr]: {
+          ...authInfo,
+          solanaAuthorizedAccount: '',
+        },
+      });
+    }
+
+    return { accounts: [] };
+  }
+
+  async solanaSubscribeAccounts(url: string, id: string, port: Port): Promise<boolean> {
+    const cb = this.state.subscriptionService.createSubscription<'solana(events.subscribe)'>(id, port);
+    let previousPayload = '';
+
+    const emitIfChanged = async (): Promise<void> => {
+      const payload = await this.solanaAccountsAuthorized(url);
+      const nextPayload = JSON.stringify(payload);
+
+      if (nextPayload === previousPayload) return;
+
+      previousPayload = nextPayload;
+      cb(payload);
+    };
+
+    const accountSubscription = this.state.keyringService.accountSubject.subscribe(() => {
+      emitIfChanged().catch(console.error);
+    });
+    const addressSubscription = this.state.keyringService.addressSubject.subscribe(() => {
+      emitIfChanged().catch(console.error);
+    });
+    const authSubscription = this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(() => {
+      emitIfChanged().catch(console.error);
+    });
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      accountSubscription.unsubscribe();
+      addressSubscription.unsubscribe();
+      authSubscription.unsubscribe();
+    });
+
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    await emitIfChanged();
+
+    return true;
+  }
+
+  async irohaAccountsAuthorized(url: string, request?: IrohaConnectRequest | null): Promise<IrohaConnectResponse> {
+    const network = request?.network ?? 'nexus';
+    const authInfo = await this.state.getAuthInfo(url);
+    const authorizedAddress = authInfo?.irohaAuthorizedAccount;
+    const accounts = this.getAllIrohaAccounts(network).filter(({ address }) => address === authorizedAddress);
+
+    return { accounts };
+  }
+
+  async irohaAuthorizeUrl(url: string, request: IrohaConnectRequest): Promise<IrohaConnectResponse> {
+    if (request.silent) return this.irohaAccountsAuthorized(url, request);
+    const accounts = this.getAllIrohaAccounts(request.network ?? 'nexus');
+
+    if (accounts.length === 0) return { accounts: [] };
+
+    await this.state.requestService.authorizeUrl(url, {
+      origin: request.origin,
+      accountAuthType: 'iroha',
+      allowedAccounts: accounts.map(({ address }) => address),
+    });
+
+    return this.irohaAccountsAuthorized(url, request);
+  }
+
+  async irohaDisconnect(url: string): Promise<IrohaConnectResponse> {
+    const idStr = stripUrl(url);
+    const authList = await this.state.requestService.getAuthList();
+    const authInfo = authList[idStr];
+
+    if (authInfo) {
+      this.state.requestService.setAuthorize({
+        ...authList,
+        [idStr]: {
+          ...authInfo,
+          irohaAuthorizedAccount: '',
+        },
+      });
+    }
+
+    return { accounts: [] };
+  }
+
+  async irohaSubscribeAccounts(
+    url: string,
+    request: IrohaConnectRequest | null,
+    id: string,
+    port: Port
+  ): Promise<boolean> {
+    const cb = this.state.subscriptionService.createSubscription<'iroha(events.subscribe)'>(id, port);
+    let previousPayload = '';
+
+    const emitIfChanged = async (): Promise<void> => {
+      const payload = await this.irohaAccountsAuthorized(url, request);
+      const nextPayload = JSON.stringify(payload);
+
+      if (nextPayload === previousPayload) return;
+
+      previousPayload = nextPayload;
+      cb(payload);
+    };
+
+    const accountSubscription = this.state.keyringService.accountSubject.subscribe(() => {
+      emitIfChanged().catch(console.error);
+    });
+    const addressSubscription = this.state.keyringService.addressSubject.subscribe(() => {
+      emitIfChanged().catch(console.error);
+    });
+    const authSubscription = this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(() => {
+      emitIfChanged().catch(console.error);
+    });
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      accountSubscription.unsubscribe();
+      addressSubscription.unsubscribe();
+      authSubscription.unsubscribe();
+    });
+
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    await emitIfChanged();
+
+    return true;
+  }
+
+  async solanaSignMessage(url: string, request: SolanaSignMessageRequest) {
+    return this.state.requestService.solanaRequestHandler.confirmSignMessage(
+      url,
+      request,
+      await this.getAuthorizedSolanaAccount(url)
+    );
+  }
+
+  async solanaSignTransaction(url: string, request: SolanaSignTransactionRequest) {
+    return this.state.requestService.solanaRequestHandler.confirmSignTransaction(
+      url,
+      request,
+      await this.getAuthorizedSolanaAccount(url)
+    );
+  }
+
+  async solanaSignAndSendTransaction(url: string, request: SolanaSignAndSendTransactionRequest) {
+    const rpcClient = new SolanaRpcClient({ network: 'mainnet' });
+    const preflightCommitment = request.options?.preflightCommitment ?? 'confirmed';
+
+    return this.state.requestService.solanaRequestHandler.confirmSignAndSendTransaction(
+      url,
+      request,
+      await this.getAuthorizedSolanaAccount(url),
+      undefined,
+      (transactionBase64) =>
+        rpcClient.simulateTransaction(transactionBase64, {
+          commitment: preflightCommitment,
+          replaceRecentBlockhash: true,
+          sigVerify: false,
+        }),
+      (messageBase64) => rpcClient.getFeeForMessage(messageBase64, preflightCommitment)
+    );
+  }
+
+  async solanaSignAllTransactions(url: string, request: SolanaSignAllTransactionsRequest) {
+    return this.state.requestService.solanaRequestHandler.confirmSignAllTransactions(
+      url,
+      request,
+      await this.getAuthorizedSolanaAccount(url)
+    );
+  }
+
+  private async getAuthorizedSolanaAccount(url: string): Promise<SolanaAccountInfo> {
+    const { accounts } = await this.solanaAccountsAuthorized(url);
+    const account = accounts[0];
+
+    if (!account) throw new Error('Solana account is not authorized');
+
+    return {
+      address: account.address,
+      name: account.name ?? '',
+      publicKey: account.publicKey,
+    };
   }
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
@@ -212,7 +468,15 @@ export default class Tabs {
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
-    if (type !== 'pub(authorize.tab)' && type !== 'evm(request)' && type !== 'evm(authorizeUrl)')
+    if (
+      type !== 'pub(authorize.tab)' &&
+      type !== 'evm(request)' &&
+      type !== 'evm(authorizeUrl)' &&
+      type !== 'solana(authorizeUrl)' &&
+      type !== 'solana(accounts)' &&
+      type !== 'solana(disconnect)' &&
+      type !== 'solana(events.subscribe)'
+    )
       await this.state.requestService.ensureUrlAuthorized(url);
 
     if (
@@ -282,6 +546,44 @@ export default class Tabs {
 
       case 'evm(provider.send)':
         return this.eipService.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
+
+      // Solana
+      case 'solana(authorizeUrl)':
+        return this.solanaAuthorizeUrl(url, request as SolanaConnectRequest);
+
+      case 'solana(accounts)':
+        return this.solanaAccountsAuthorized(url);
+
+      case 'solana(disconnect)':
+        return this.solanaDisconnect(url);
+
+      case 'solana(events.subscribe)':
+        return this.solanaSubscribeAccounts(url, id, port);
+
+      case 'solana(signMessage)':
+        return this.solanaSignMessage(url, request as SolanaSignMessageRequest);
+
+      case 'solana(signTransaction)':
+        return this.solanaSignTransaction(url, request as SolanaSignTransactionRequest);
+
+      case 'solana(signAndSendTransaction)':
+        return this.solanaSignAndSendTransaction(url, request as SolanaSignAndSendTransactionRequest);
+
+      case 'solana(signAllTransactions)':
+        return this.solanaSignAllTransactions(url, request as SolanaSignAllTransactionsRequest);
+
+      // Iroha/Nexus
+      case 'iroha(authorizeUrl)':
+        return this.irohaAuthorizeUrl(url, request as IrohaConnectRequest);
+
+      case 'iroha(accounts)':
+        return this.irohaAccountsAuthorized(url, request as IrohaConnectRequest | null);
+
+      case 'iroha(disconnect)':
+        return this.irohaDisconnect(url);
+
+      case 'iroha(events.subscribe)':
+        return this.irohaSubscribeAccounts(url, request as IrohaConnectRequest | null, id, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

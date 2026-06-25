@@ -1,4 +1,4 @@
-import { type EvmRequests } from '@extension-base/services/request-service/types';
+import { type EvmRequests, type SolanaRequests } from '@extension-base/services/request-service/types';
 import type {
   SigningRequest,
   ResponseAuthorizeList,
@@ -55,6 +55,10 @@ export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => voi
 
 export function subscribeEvmSigningRequests(cb: (requests: EvmRequests) => void): Promise<EvmRequests> {
   return sendMessage('pri(signing.evmRequests)', null, cb);
+}
+
+export function subscribeSolanaSigningRequests(cb: (requests: SolanaRequests) => void): Promise<SolanaRequests> {
+  return sendMessage('pri(signing.solanaRequests)', null, cb);
 }
 
 export function approveMetaRequest(id: string): Promise<boolean> {

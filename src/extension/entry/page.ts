@@ -2,22 +2,18 @@
 import '@polkadot/extension-inject/crossenv';
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import {
-  decryptForCosigner,
   enable,
-  encryptByCosigner,
   handleResponse,
   initEvmProvider,
+  initIrohaProvider,
+  initSolanaProvider,
   redirectIfPhishing,
 } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
+import { registerSolanaWalletStandard } from '@extension-base/page/FearlessWalletSolanaProvider';
 import type { FWEvmProvider } from '@extension-base/page/types';
 import type { Message } from '@extension-base/types';
-import type {
-  DecryptForCosignerData,
-  EncryptByCosignerData,
-  MessageTypes,
-  TransportRequestMessage,
-} from '@extension-base/background/types/types';
+import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
 import type { InjectedWindow } from '@/extension/entry/types';
 import { APP_VERSION } from '@/consts/global';
 
@@ -138,8 +134,6 @@ if (!win.injectedWeb3[walletKey]) {
   win.injectedWeb3[walletKey] = {
     isPlaceholder: true,
     version: APP_VERSION,
-    decryptForCosigner: (data: DecryptForCosignerData) => decryptForCosigner(data),
-    encryptByCosigner: (data: EncryptByCosignerData) => encryptByCosigner(data),
     enable: async (origin) => {
       await new Promise((resolve, reject) => {
         let retry = 0;
@@ -200,6 +194,8 @@ class Page {
   static async init() {
     this.setMaxListeners();
     this.injectEvm();
+    this.injectIroha();
+    this.injectSolana();
 
     const gotRedirected = await redirectIfPhishing();
 
@@ -215,8 +211,6 @@ class Page {
 
     windowInject.injectedWeb3[walletKey] = {
       enable: (origin: string) => enable(origin),
-      decryptForCosigner: (data: DecryptForCosignerData) => decryptForCosigner(data),
-      encryptByCosigner: (data: EncryptByCosignerData) => encryptByCosigner(data),
       version: APP_VERSION,
     };
   }
@@ -237,6 +231,24 @@ class Page {
         windowInject.dispatchEvent(new Event('ethereum#initialized'));
       }
     });
+  }
+
+  static injectSolana(): void {
+    const solanaProvider = initSolanaProvider();
+    const windowInject = window as Window & InjectedWindow;
+
+    windowInject.fearlessSolana = solanaProvider;
+    registerSolanaWalletStandard(solanaProvider);
+
+    if (!windowInject.solana) windowInject.solana = solanaProvider;
+  }
+
+  static injectIroha(): void {
+    const irohaProvider = initIrohaProvider();
+    const windowInject = window as Window & InjectedWindow;
+
+    windowInject.fearlessIroha = irohaProvider;
+    windowInject.dispatchEvent(new Event('fearlessIroha#initialized'));
   }
 
   static setMaxListeners() {

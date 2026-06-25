@@ -1,10 +1,12 @@
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import SubscribableStore from '@extension-base/stores/SubscribableStore';
+import type { FWKeyringMeta } from '@extension-base/types';
 
 export interface TonStoreAccount {
   name: string;
   address: string;
   cipherSeed: string;
+  meta?: FWKeyringMeta;
   publicKeyHex: string;
 }
 

@@ -9,6 +9,9 @@ type RelayChainName =
   | 'westend'
   | 'rococo'
   | 'ethereum'
+  | 'solana'
+  | 'iroha'
+  | 'bitcoin'
   | typeof TON_MAINNET
   | typeof TON_TESTNET;
 
@@ -18,7 +21,18 @@ type SoraFees = {
 
 type NetworkName = string;
 
-type HistoryServiceType = 'ton' | 'subsquid' | 'giantsquid' | 'subquery' | 'etherscan' | 'sora' | 'oklink' | 'zeta'; // TODO staking
+type HistoryServiceType =
+  | 'ton'
+  | 'subsquid'
+  | 'giantsquid'
+  | 'subquery'
+  | 'etherscan'
+  | 'sora'
+  | 'oklink'
+  | 'zeta'
+  | 'solana'
+  | 'iroha'
+  | 'bitcoin'; // TODO staking
 
 interface ExternalApiElement {
   url: string;
@@ -55,6 +69,9 @@ type AssetType =
   | 'token2'
   | 'assets'
   | 'assetId' // TODO add
+  | 'bitcoin'
+  | 'solana'
+  | 'iroha'
   | 'ton'
   | 'jetton';
 
@@ -84,7 +101,7 @@ type Network = {
   paraId?: string;
   addressPrefix: number;
   isEthereumNetwork: boolean;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   externalApi: ExternalApi;
   status: NetworkStatus;
   rank?: number;

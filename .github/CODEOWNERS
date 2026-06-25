@@ -1,0 +1,20 @@
+# Owners must have write access to this repository.
+
+* @soramitsu/fearless
+
+/.github/ @soramitsu/devops-team
+/CONTRIBUTING.md @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev
+/README.md @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev
+/docs/release-checklist.md @soramitsu/fearless @soramitsu/devops-team
+/docs/rollback-checklist.md @soramitsu/fearless @soramitsu/devops-team
+/scripts/audit-public-artifacts.sh @soramitsu/fearless @soramitsu/devops-team @soramitsu/security
+
+/src/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev
+/src/consts/ @soramitsu/fearless @soramitsu/frontend @soramitsu/security
+/src/extension/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security
+/src/extension/messaging/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security
+/src/screens/addWallet/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security
+/src/screens/extension-ui/signing/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security
+/**/*Key* @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security
+/**/*Signer* @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security
+/**/*signing* @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security

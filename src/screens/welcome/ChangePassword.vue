@@ -34,9 +34,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter, useRoute } from 'vue-router/composables';
+import { useRouter, useRoute } from 'vue-router';
 import { ref, nextTick, computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n-composable';
+import { useI18n } from '@/locales/useI18n';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import {
@@ -57,7 +57,9 @@ const { t } = useI18n();
 
 const oldPassword = ref('');
 const walletPassword = ref('');
-const oldPassInput = ref<ValidatedInput>();
+const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+const oldPassInput = ref<InstanceType<typeof ValidatedInput> | null>(null);
 const isErrorOldPassword = ref(false);
 const alreadyHasMasterPassword = ref(false);
 const needMigration = ref(false);
@@ -87,7 +89,7 @@ const header = computed(() => (alreadyHasMasterPassword.value ? 'common.changePa
 watch(alreadyHasMasterPassword, async () => {
   await nextTick();
 
-  if (alreadyHasMasterPassword.value) oldPassInput.value.input.focus();
+  if (alreadyHasMasterPassword.value) oldPassInput.value?.input?.focus();
 });
 
 const changeOldPass = async (password: string) => {
@@ -121,8 +123,9 @@ const close = (isClose = true) => {
     return;
   }
 
-  const componentName = route.params.name;
-  const type = route.params.type;
+  const componentName = routeParam(route.params.name);
+  const type = routeParam(route.params.type);
+  const walletEcosystem = routeParam(route.params.walletEcosystem);
 
   if (componentName === 'GoogleAuth') {
     if (!isAuthFlowInit.value) {
@@ -131,7 +134,7 @@ const close = (isClose = true) => {
       initGoogleAuth().finally(() => (isAuthFlowInit.value = false));
     }
   } else if (componentName)
-    router.push({ name: componentName, params: { type, walletEcosystem: route.params.walletEcosystem } });
+    router.push({ name: componentName, params: { type, walletEcosystem } });
   else
     router.push({
       name: 'AddWallet',

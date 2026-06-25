@@ -1,5 +1,5 @@
 import { type SessionTypes } from '@walletconnect/types';
-import { type EvmRequests } from '@extension-base/services/request-service/types';
+import { type EvmRequests, type SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types/types';
 import type {
   WalletConnectSessionRequest,
@@ -17,6 +17,7 @@ export interface Features {
 export type SignRequests = {
   substrate: SigningRequest[];
   evm: EvmRequests;
+  solana: SolanaRequests;
 };
 
 export type RequestsPayload =
@@ -51,4 +52,8 @@ export type RequestsPayload =
   | {
       type: 'signEvmRequests';
       requests: EvmRequests;
+    }
+  | {
+      type: 'signSolanaRequests';
+      requests: SolanaRequests;
     };

@@ -240,7 +240,7 @@ function getFormattedHistory(history: History, serviceType: HistoryServiceType):
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
-  if (serviceType === 'ton') {
+  if (serviceType === 'ton' || serviceType === 'solana' || serviceType === 'bitcoin' || serviceType === 'iroha') {
     const nodes: HistoryElement[] = history as HistoryElement[];
 
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };

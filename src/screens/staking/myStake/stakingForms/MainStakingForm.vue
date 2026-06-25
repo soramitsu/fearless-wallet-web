@@ -155,10 +155,10 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkParams } from '@/stores';
-import { type StakingOperation, type StakingOperationParams, WalletEcosystem } from '@/interfaces';
+import { type StakingOperationParams, WalletEcosystem } from '@/interfaces';
 import WithdrawUnbonded from '@/screens/staking/myStake/stakingForms/WithdrawUnbonded.vue';
 import Unbond from '@/screens/staking/myStake/stakingForms/Unbond.vue';
 import Rebond from '@/screens/staking/myStake/stakingForms/Rebond.vue';
@@ -178,7 +178,7 @@ import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'MainStakingForm',
   components: {
     Payee,
     Rebond,
@@ -191,380 +191,343 @@ import { useAccountsStore } from '@/stores/accounts';
     ControllerAccount,
     ConfirmationPasswordPopup,
   },
-})
-export default class MainStakingForm extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  stakingStore = useStakingStore();
-  showConfirmationPasswordPopup = false;
-  isSuggested = false;
-  showHistoryBook = false;
-  showMyWallets = false;
-  isValidController = true;
-  showEditAddressBook = false;
-  amount = '';
-  stashBalance = '0';
-  step = 1;
-  controllerAddress = '';
-  payoutAddress = '';
-  newAddress = '';
-
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-  @Prop({ type: String }) type!: StakingOperation;
-
-  get fee() {
-    if (!this.networksStore.soraFees) return '';
-
-    const {
-      StakingBondExtra,
-      StakingRebond,
-      StakingUnbond,
-      StakingSetController,
-      StakingWithdrawUnbonded,
-      StakingSetPayee,
-    } = this.networksStore.soraFees;
-
-    if (this.isBondExtra) return StakingBondExtra;
-    else if (this.isUnbond) return StakingUnbond;
-    else if (this.isRebond) return StakingRebond;
-    else if (this.isRedeem) return StakingWithdrawUnbonded;
-    else if (this.isControllerAccount) return StakingSetController;
-    else if (this.isPayee) return StakingSetPayee;
-
-    return '';
-  }
-
-  get showMyWalletsButton() {
-    return this.acountsEcosystem.length !== 0;
-  }
-
-  get showBtn() {
-    return !this.showHistoryBook && !this.showEditAddressBook && !this.showMyWallets;
-  }
-
-  get showBackIcon() {
-    return this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
-  }
-
-  get network() {
-    return this.stakingNetwork.network;
-  }
-
-  get btnText() {
-    if (this.isControllerAccount || this.isPayee) {
-      if (this.step === 1) return 'common.edit';
-      else if (
-        (this.controllerAddress !== '' && !this.isValidControllerAddress) ||
-        (this.payoutAddress !== '' && !this.isValidPayoutAddress)
-      )
-        return this.$t('accounts.invalidAccountAddress');
-    }
-
-    if (!this.isValidAmountAsset)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
-
-    return 'common.confirm';
-  }
-
-  get showAmountInput() {
-    if (this.isControllerAccount || this.isPayee) return false;
-
-    return this.step === 1;
-  }
-
-  get header() {
-    if (this.showEditAddressBook) return 'assets.addContact';
-
-    if (this.showHistoryBook) return 'assets.chooseFromHistory';
-
-    if (this.showMyWallets) return 'assets.wallets';
-
-    return `staking.${this.type}`;
-  }
-
-  get isBondExtra() {
-    return this.type === 'bondExtra';
-  }
-
-  get isUnbond() {
-    return this.type === 'unbond';
-  }
-
-  get isRedeem() {
-    return this.type === 'redeem';
-  }
-
-  get isRebond() {
-    return this.type === 'rebond';
-  }
-
-  get isControllerAccount() {
-    return this.type === 'setController';
-  }
-
-  get showWalletName() {
-    if (this.isControllerAccount || this.isPayee) return this.step === 2;
-
-    return this.step === 1;
-  }
-
-  get acountsEcosystem() {
-    if (this.isPayee || this.isControllerAccount) return this.accountsStore.allAcountsEcosystem;
-
-    return this.accountsStore.acountsEcosystem;
-  }
-
-  get isPayee() {
-    return this.type === 'setPayee';
-  }
-
-  get isValidControllerAddress() {
-    if (this.controllerAddress === '') return false;
-
-    return BaseApi.validateAddress(this.controllerAddress, this.network);
-  }
-
-  get isValidPayoutAddress() {
-    if (this.payoutAddress === '') return false;
-
-    return BaseApi.validateAddress(this.payoutAddress, this.network);
-  }
-
-  get confirmBtnDisabled() {
-    if (this.isControllerAccount) {
-      if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
-
-      return false;
-    }
-
-    if (this.isPayee) {
-      if (this.step === 1) return false;
-
-      return !this.isValidPayoutAddress;
-    }
-
-    if (this.amount === '' || +this.amount === 0) return true;
-
-    return !this.isValidAmountAsset;
-  }
-
-  get isValidAmountAsset() {
-    // для isRebond подменяем на сумму unbond`ов
-    // для isUnbond подменяем на суммарный стейк(activeStake)
-    // для isRedeem можно не подменять данные, тк инпут всегда isDisabled и значение подставляется автоматически и оно всегда корректное
-    const currencyByTypeOperation: TokenGroup = this.isRebond
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({
-            ...item,
-            transferable: this.stakingNetwork.unbond.sum,
-          })),
-        }
-      : this.isUnbond
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({
-            ...item,
-            transferable: this.stakingNetwork.activeStake,
-          })),
-        }
-      : this.stakingCurrency;
-
-    // Проверяем корерктно ли значение amount, которое ввел юзер
-    const isValid = isValidAmountAsset(currencyByTypeOperation, this.network, '0', this.amount);
-
-    if (!isValid) return false;
-
-    // Далее проверка на то, хватает ли Utility на оплату комиссии
-    // Для controller аккаунта подставляем баланс stash аккаунта, потому что комиссия списывается со stash
-    const stakingCurrency: TokenGroup = this.stakingNetwork.isController
-      ? {
-          ...this.stakingCurrency,
-          balances: this.stakingCurrency.balances.map((item) => ({
-            ...item,
-            transferable: this.stashBalance,
-          })),
-        }
-      : this.stakingCurrency;
-
-    // при этом для bondExtra проверяется то, что transferable баланса хватает на оплату и amount и fee
-    // комиссия по всем операциям списывается с transferable баланса
-    // по этому amount важен только при операции bondExtra
-    // в остальных случаях amount-это значение не относящееся к transferable балансу(мы проверили его выше)
-    // а значение уже залоченных токенов(unbond, rebond)
-    const amount = this.isBondExtra ? this.amount : '0';
-
-    return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', amount);
-  }
-
-  get stakingAssetId() {
-    return this.stakingCurrency?.groupId;
-  }
-
-  get stakingAssetName() {
-    return this.stakingCurrency?.symbol;
-  }
-
-  get totalAmount() {
-    if (this.isUnbond) return this.stakingNetwork.activeStake;
-
-    if (this.isRebond) return this.stakingNetwork.unbond.sum;
-
-    if (this.isRedeem) return this.stakingNetwork.redeemAmount;
-
-    // isBondExtra;
-    return this.stakingNetwork.transferableAmount;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get feeValue() {
-    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
-  }
-
-  get amountValue() {
-    return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
-  }
-
-  get accountName() {
-    return this.accountsStore.selectedWallet.name;
-  }
-
-  get tx() {
+  props: {
+    stakingCurrency: { type: Object },
+    rewardedCurrency: { type: Object },
+    stakingNetwork: { type: Object },
+    type: { type: String },
+  },
+  data() {
     return {
-      amount: this.amount,
-      from: this.accountsStore.selectedWallet.address,
-      networkName: this.network,
-      controllerAddress: this.controllerAddress,
-      payee: this.payoutAddress,
-    } as StakingOperationParams;
-  }
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      stakingStore: useStakingStore(),
+      showConfirmationPasswordPopup: false,
+      isSuggested: false,
+      showHistoryBook: false,
+      showMyWallets: false,
+      isValidController: true,
+      showEditAddressBook: false,
+      amount: '',
+      stashBalance: '0',
+      step: 1,
+      controllerAddress: '',
+      payoutAddress: '',
+      newAddress: '',
+    };
+  },
+  computed: {
+    fee() {
+      if (!this.networksStore.soraFees) return '';
 
-  @Watch('controllerAddress')
-  async checkController(value: string) {
-    this.isValidController = await checkController({ address: value });
-  }
+          const {
+            StakingBondExtra,
+            StakingRebond,
+            StakingUnbond,
+            StakingSetController,
+            StakingWithdrawUnbonded,
+            StakingSetPayee,
+          } = this.networksStore.soraFees;
 
+          if (this.isBondExtra) return StakingBondExtra;
+          else if (this.isUnbond) return StakingUnbond;
+          else if (this.isRebond) return StakingRebond;
+          else if (this.isRedeem) return StakingWithdrawUnbonded;
+          else if (this.isControllerAccount) return StakingSetController;
+          else if (this.isPayee) return StakingSetPayee;
+
+          return '';
+    },
+    showMyWalletsButton() {
+      return this.acountsEcosystem.length !== 0;
+    },
+    showBtn() {
+      return !this.showHistoryBook && !this.showEditAddressBook && !this.showMyWallets;
+    },
+    showBackIcon() {
+      return this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
+    },
+    network() {
+      return this.stakingNetwork.network;
+    },
+    btnText() {
+      if (this.isControllerAccount || this.isPayee) {
+            if (this.step === 1) return 'common.edit';
+            else if (
+              (this.controllerAddress !== '' && !this.isValidControllerAddress) ||
+              (this.payoutAddress !== '' && !this.isValidPayoutAddress)
+            )
+              return this.$t('accounts.invalidAccountAddress');
+          }
+
+          if (!this.isValidAmountAsset)
+            return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
+
+          return 'common.confirm';
+    },
+    showAmountInput() {
+      if (this.isControllerAccount || this.isPayee) return false;
+
+          return this.step === 1;
+    },
+    header() {
+      if (this.showEditAddressBook) return 'assets.addContact';
+
+          if (this.showHistoryBook) return 'assets.chooseFromHistory';
+
+          if (this.showMyWallets) return 'assets.wallets';
+
+          return `staking.${this.type}`;
+    },
+    isBondExtra() {
+      return this.type === 'bondExtra';
+    },
+    isUnbond() {
+      return this.type === 'unbond';
+    },
+    isRedeem() {
+      return this.type === 'redeem';
+    },
+    isRebond() {
+      return this.type === 'rebond';
+    },
+    isControllerAccount() {
+      return this.type === 'setController';
+    },
+    showWalletName() {
+      if (this.isControllerAccount || this.isPayee) return this.step === 2;
+
+          return this.step === 1;
+    },
+    acountsEcosystem() {
+      if (this.isPayee || this.isControllerAccount) return this.accountsStore.allAcountsEcosystem;
+
+          return this.accountsStore.acountsEcosystem;
+    },
+    isPayee() {
+      return this.type === 'setPayee';
+    },
+    isValidControllerAddress() {
+      if (this.controllerAddress === '') return false;
+
+          return BaseApi.validateAddress(this.controllerAddress, this.network);
+    },
+    isValidPayoutAddress() {
+      if (this.payoutAddress === '') return false;
+
+          return BaseApi.validateAddress(this.payoutAddress, this.network);
+    },
+    confirmBtnDisabled() {
+      if (this.isControllerAccount) {
+            if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
+
+            return false;
+          }
+
+          if (this.isPayee) {
+            if (this.step === 1) return false;
+
+            return !this.isValidPayoutAddress;
+          }
+
+          if (this.amount === '' || +this.amount === 0) return true;
+
+          return !this.isValidAmountAsset;
+    },
+    isValidAmountAsset() {
+      // для isRebond подменяем на сумму unbond`ов
+          // для isUnbond подменяем на суммарный стейк(activeStake)
+          // для isRedeem можно не подменять данные, тк инпут всегда isDisabled и значение подставляется автоматически и оно всегда корректное
+          const currencyByTypeOperation: TokenGroup = this.isRebond
+            ? {
+                ...this.stakingCurrency,
+                balances: this.stakingCurrency.balances.map((item) => ({
+                  ...item,
+                  transferable: this.stakingNetwork.unbond.sum,
+                })),
+              }
+            : this.isUnbond
+            ? {
+                ...this.stakingCurrency,
+                balances: this.stakingCurrency.balances.map((item) => ({
+                  ...item,
+                  transferable: this.stakingNetwork.activeStake,
+                })),
+              }
+            : this.stakingCurrency;
+
+          // Проверяем корерктно ли значение amount, которое ввел юзер
+          const isValid = isValidAmountAsset(currencyByTypeOperation, this.network, '0', this.amount);
+
+          if (!isValid) return false;
+
+          // Далее проверка на то, хватает ли Utility на оплату комиссии
+          // Для controller аккаунта подставляем баланс stash аккаунта, потому что комиссия списывается со stash
+          const stakingCurrency: TokenGroup = this.stakingNetwork.isController
+            ? {
+                ...this.stakingCurrency,
+                balances: this.stakingCurrency.balances.map((item) => ({
+                  ...item,
+                  transferable: this.stashBalance,
+                })),
+              }
+            : this.stakingCurrency;
+
+          // при этом для bondExtra проверяется то, что transferable баланса хватает на оплату и amount и fee
+          // комиссия по всем операциям списывается с transferable баланса
+          // по этому amount важен только при операции bondExtra
+          // в остальных случаях amount-это значение не относящееся к transferable балансу(мы проверили его выше)
+          // а значение уже залоченных токенов(unbond, rebond)
+          const amount = this.isBondExtra ? this.amount : '0';
+
+          return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', amount);
+    },
+    stakingAssetId() {
+      return this.stakingCurrency?.groupId;
+    },
+    stakingAssetName() {
+      return this.stakingCurrency?.symbol;
+    },
+    totalAmount() {
+      if (this.isUnbond) return this.stakingNetwork.activeStake;
+
+          if (this.isRebond) return this.stakingNetwork.unbond.sum;
+
+          if (this.isRedeem) return this.stakingNetwork.redeemAmount;
+
+          // isBondExtra;
+          return this.stakingNetwork.transferableAmount;
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
+
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    feeValue() {
+      return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+    },
+    amountValue() {
+      return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
+    },
+    accountName() {
+      return this.accountsStore.selectedWallet.name;
+    },
+    tx() {
+      return {
+            amount: this.amount,
+            from: this.accountsStore.selectedWallet.address,
+            networkName: this.network,
+            controllerAddress: this.controllerAddress,
+            payee: this.payoutAddress,
+          } as StakingOperationParams;
+    },
+  },
+  watch: {
+    "controllerAddress": 'checkController',
+  },
   async mounted() {
     if (this.isRebond) {
-      const unlocking = this.stakingNetwork.unbond.unlocking;
-      const lastUnbond = unlocking[unlocking.length - 1].value;
+          const unlocking = this.stakingNetwork.unbond.unlocking;
+          const lastUnbond = unlocking[unlocking.length - 1].value;
 
-      this.amount = lastUnbond;
-    } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
+          this.amount = lastUnbond;
+        } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
-    if (this.stakingNetwork.isController) {
-      const balances = await fetchBalance({
-        address: this.stakingNetwork.stashAddress,
-        networks: [this.stakingNetwork.network],
-        walletEcosystem: WalletEcosystem.Substrate,
-      });
+        if (this.stakingNetwork.isController) {
+          const balances = await fetchBalance({
+            address: this.stakingNetwork.stashAddress,
+            networks: [this.stakingNetwork.network],
+            walletEcosystem: WalletEcosystem.Substrate,
+          });
 
-      this.stashBalance = balances[0].balance;
-    }
-  }
+          this.stashBalance = balances[0].balance;
+        }
+  },
+  methods: {
+    async checkController(value: string) {
+      this.isValidController = await checkController({ address: value });
+    },
+    toggleEditBook(address: string = '') {
+      this.showEditAddressBook = !this.showEditAddressBook;
+          this.showHistoryBook = !this.showHistoryBook;
+          this.newAddress = address;
+    },
+    updateControllerAddress(value: string) {
+      this.controllerAddress = value;
+    },
+    handlerBack() {
+      if (this.showHistoryBook) this.toggleHistoryBookVisibility();
+          else if (this.showEditAddressBook) this.toggleEditBook();
+          else if (this.showMyWallets) this.toggleMyWalletsVisibility();
+    },
+    closeForm() {
+      this.$emit('closeForm');
+    },
+    confirm() {
+      if (this.isControllerAccount && this.step === 1) this.step += 1;
+          else if (this.isPayee && this.step === 1) this.step += 1;
+          else this.showConfirmationPasswordPopup = true;
+    },
+    confirmationPasswordPopupClose(closeForm: boolean) {
+      this.showConfirmationPasswordPopup = false;
 
-  toggleEditBook(address: string = '') {
-    this.showEditAddressBook = !this.showEditAddressBook;
-    this.showHistoryBook = !this.showHistoryBook;
-    this.newAddress = address;
-  }
+          if (closeForm) {
+            this.stakingStore.getMyStakingInfo({ network: this.network });
+            this.closeForm();
+          }
+    },
+    updateAmount(amount: string) {
+      this.amount = amount;
+    },
+    calcTransferableSendMinusFee() {
+      return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.fee);
+    },
+    async setMax() {
+      if (!this.stakingCurrency) return;
 
-  updateControllerAddress(value: string) {
-    this.controllerAddress = value;
-  }
+          if (this.isBondExtra) this.amount = this.calcTransferableSendMinusFee();
 
-  handlerBack() {
-    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    else if (this.showEditAddressBook) this.toggleEditBook();
-    else if (this.showMyWallets) this.toggleMyWalletsVisibility();
-  }
+          if (this.isUnbond) this.amount = this.stakingNetwork.activeStake;
 
-  closeForm() {
-    this.$emit('closeForm');
-  }
+          if (this.isRebond) this.amount = this.stakingNetwork.unbond.sum;
 
-  confirm() {
-    if (this.isControllerAccount && this.step === 1) this.step += 1;
-    else if (this.isPayee && this.step === 1) this.step += 1;
-    else this.showConfirmationPasswordPopup = true;
-  }
+          if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
+    },
+    toggleHistoryBookVisibility() {
+      this.showHistoryBook = !this.showHistoryBook;
+    },
+    paste() {
+      this.setRecipient(getClipboard());
+    },
+    toggleMyWalletsVisibility() {
+      this.showMyWallets = !this.showMyWallets;
+    },
+    getStatusWallet(address: string, ethereumAddress: string) {
+      const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+          const currentRecipientAddress = BaseApi.formatAddress(
+            { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
+            this.network
+          );
 
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
+          return currentAddress === currentRecipientAddress;
+    },
+    setWallet(address: string, ethereumAddress: string) {
+      const value = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
 
-    if (closeForm) {
-      this.stakingStore.getMyStakingInfo({ network: this.network });
-      this.closeForm();
-    }
-  }
+          if (this.isPayee) this.payoutAddress = value;
+          else if (this.isControllerAccount) this.controllerAddress = value;
 
-  updateAmount(amount: string) {
-    this.amount = amount;
-  }
-
-  calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.fee);
-  }
-
-  async setMax() {
-    if (!this.stakingCurrency) return;
-
-    if (this.isBondExtra) this.amount = this.calcTransferableSendMinusFee();
-
-    if (this.isUnbond) this.amount = this.stakingNetwork.activeStake;
-
-    if (this.isRebond) this.amount = this.stakingNetwork.unbond.sum;
-
-    if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
-  }
-
-  toggleHistoryBookVisibility() {
-    this.showHistoryBook = !this.showHistoryBook;
-  }
-
-  paste() {
-    this.setRecipient(getClipboard());
-  }
-
-  toggleMyWalletsVisibility() {
-    this.showMyWallets = !this.showMyWallets;
-  }
-
-  getStatusWallet(address: string, ethereumAddress: string) {
-    const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
-    const currentRecipientAddress = BaseApi.formatAddress(
-      { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
-      this.network
-    );
-
-    return currentAddress === currentRecipientAddress;
-  }
-
-  setWallet(address: string, ethereumAddress: string) {
-    const value = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
-
-    if (this.isPayee) this.payoutAddress = value;
-    else if (this.isControllerAccount) this.controllerAddress = value;
-
-    this.toggleMyWalletsVisibility();
-  }
-
-  setPayoutAddress(value = '') {
-    this.payoutAddress = value;
-  }
-
-  setRecipient(value = '') {
-    if (this.isControllerAccount) this.controllerAddress = value;
-    else if (this.isPayee) this.payoutAddress = value;
-  }
-}
+          this.toggleMyWalletsVisibility();
+    },
+    setPayoutAddress(value = '') {
+      this.payoutAddress = value;
+    },
+    setRecipient(value = '') {
+      if (this.isControllerAccount) this.controllerAddress = value;
+          else if (this.isPayee) this.payoutAddress = value;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

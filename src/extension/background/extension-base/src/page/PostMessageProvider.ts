@@ -99,7 +99,12 @@ export default class PostMessageProvider implements InjectedProvider {
     };
   }
 
-  public async send(method: string, params: unknown[], _?: boolean, subscription?: SubscriptionHandler): Promise<any> {
+  public async send<T = unknown>(
+    method: string,
+    params: unknown[],
+    _?: boolean,
+    subscription?: SubscriptionHandler
+  ): Promise<T> {
     if (subscription) {
       const { callback, type } = subscription;
 
@@ -109,10 +114,10 @@ export default class PostMessageProvider implements InjectedProvider {
 
       this.#subscriptions[`${type}::${id}`] = callback;
 
-      return id;
+      return id as T;
     }
 
-    return sendRequest('pub(rpc.send)', { method, params });
+    return sendRequest('pub(rpc.send)', { method, params }) as Promise<T>;
   }
 
   /**
@@ -125,11 +130,11 @@ export default class PostMessageProvider implements InjectedProvider {
 
     const meta = await sendRequest('pub(rpc.startProvider)', key);
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     sendRequest('pub(rpc.subscribeConnected)', null, (connected) => {
       this.#isConnected = connected;
 
-      connected ? this.#eventemitter.emit('connected') : this.#eventemitter.emit('disconnected');
+      if (connected) this.#eventemitter.emit('connected');
+      else this.#eventemitter.emit('disconnected');
 
       return true;
     });

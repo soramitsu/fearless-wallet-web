@@ -24,7 +24,7 @@ class AccountController {
   }
 
   public getHiddenWarningNetworks(): string[] {
-    const array = this.lsAccount.get(this.hiddenWarningNetworks);
+    const array = this.lsAccount.get<string[]>(this.hiddenWarningNetworks);
 
     return array.value ?? [];
   }
@@ -36,7 +36,7 @@ class AccountController {
   }
 
   public getHidingPoolsBanner(): boolean {
-    const { value } = this.lsAccount.get(this.hidingPoolsBanner);
+    const { value } = this.lsAccount.get<boolean>(this.hidingPoolsBanner);
 
     return value ?? false;
   }
@@ -56,7 +56,7 @@ class AccountController {
   }
 
   public getLang(): Lang {
-    const lang = this.lsAccount.get(this.langStorageName);
+    const lang = this.lsAccount.get<Lang>(this.langStorageName);
 
     return lang.value ?? 'en-EN';
   }
@@ -69,12 +69,12 @@ class AccountController {
     this.lsAccount.set(this.nftSettings, settings);
   }
 
-  public getNftSettings() {
-    return this.lsAccount.get(this.nftSettings).value ?? {};
+  public getNftSettings(): Partial<NftSettings> {
+    return this.lsAccount.get<Partial<NftSettings>>(this.nftSettings).value ?? {};
   }
 
   public getHiddenAssets(): HiddenAssets {
-    return this.lsAccount.get(this.hiddenAssets).value ?? {};
+    return this.lsAccount.get<HiddenAssets>(this.hiddenAssets).value ?? {};
   }
 
   public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
@@ -82,13 +82,13 @@ class AccountController {
   }
 
   private getSequenceAssets(): Record<string, string> {
-    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
+    const sequencesAssets = this.lsAccount.get<Record<string, string>>(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
   }
 
   public getAssetTipData(): { count: number; time: number } {
-    const sequencesAssets = this.lsAccount.get(this.assetTipData);
+    const sequencesAssets = this.lsAccount.get<{ count: number; time: number }>(this.assetTipData);
 
     return sequencesAssets.value ?? { count: 0, time: 0 };
   }
@@ -110,13 +110,13 @@ class AccountController {
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {
-    const autoSelectNodes = this.lsAccount.get(this.autoSelectNodesStorageName);
+    const autoSelectNodes = this.lsAccount.get<Record<string, boolean>>(this.autoSelectNodesStorageName);
 
     return autoSelectNodes.value ?? {};
   }
 
   public getCustomSort(): Record<string, boolean> {
-    return this.lsAccount.get(this.customSort).value ?? {};
+    return this.lsAccount.get<Record<string, boolean>>(this.customSort).value ?? {};
   }
 
   public setCustomSort(address: string) {
@@ -132,7 +132,7 @@ class AccountController {
   }
 
   public getActiveNodes(): Record<string, Node> {
-    const activeNodes = this.lsAccount.get(this.activeNodeStorageName);
+    const activeNodes = this.lsAccount.get<Record<string, Node>>(this.activeNodeStorageName);
 
     return activeNodes.value ?? {};
   }
@@ -140,7 +140,7 @@ class AccountController {
   public getActiveNodesByNetwork(network: string): Node {
     const activeNodes = this.getActiveNodes();
 
-    return activeNodes[network] ?? {};
+    return activeNodes[network] ?? { name: '', url: '' };
   }
 
   public setActiveNode(value: Node, network: string): void {
@@ -152,7 +152,7 @@ class AccountController {
   }
 
   public getCustomNodes(): Record<string, Node[]> {
-    const customNodes = this.lsAccount.get(this.customNodesStorageName);
+    const customNodes = this.lsAccount.get<Record<string, Node[]>>(this.customNodesStorageName);
 
     return customNodes.value ?? {};
   }

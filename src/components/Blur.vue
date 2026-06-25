@@ -1,5 +1,5 @@
 <template>
-  <div class="blur" v-on="$listeners">
+  <div class="blur">
     <slot></slot>
   </div>
 </template>

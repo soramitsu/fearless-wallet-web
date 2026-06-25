@@ -55,7 +55,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { StakingTab } from '@/interfaces';
 import type { NetworkParams } from '@/stores';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
@@ -72,7 +73,7 @@ import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'StakingPage',
   components: {
     Bond,
     StakingItem,
@@ -80,125 +81,114 @@ import { useAccountsStore } from '@/stores/accounts';
     WalletBalance,
     StakingSettings,
   },
-})
-export default class StakingPage extends Vue {
-  stakingStore = useStakingStore();
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  activeTabName: StakingTab | '' = '';
-  filterValue = '';
-  isLoading = false;
-  stakingNetwork: Nullable<NetworkParams> = null;
+  data() {
+    return {
+      stakingStore: useStakingStore(),
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      activeTabName: '',
+      filterValue: '',
+      isLoading: false,
+      stakingNetwork: null,
+    };
+  },
+  computed: {
+    filteredStakingItems() {
+      if (this.filterValue === '') return this.stakingStore.stakingItems;
 
-  get filteredStakingItems() {
-    if (this.filterValue === '') return this.stakingStore.stakingItems;
+          return this.stakingStore.stakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+    },
+    filteredMyStakingItems() {
+      if (this.filterValue === '') return this.stakingStore.myStakingItems;
 
-    return this.stakingStore.stakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
-  }
+          return this.stakingStore.myStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+    },
+    haveFilteredItems() {
+      if (this.isAllTab) return this.filteredStakingItems.length;
 
-  get filteredMyStakingItems() {
-    if (this.filterValue === '') return this.stakingStore.myStakingItems;
+          return this.filteredMyStakingItems.length;
+    },
+    showLoader() {
+      if (this.activeTabName === 'all' && this.isLoading) return true;
 
-    return this.stakingStore.myStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
-  }
+          return this.activeTabName === '';
+    },
+    noStakingItems() {
+      return !this.showStakingItems && !this.showMyStakingItems;
+    },
+    showStakingItems() {
+      return this.stakingStore.stakingItems.length !== 0;
+    },
+    showMyStakingItems() {
+      return this.stakingStore.myStakingItems.length !== 0;
+    },
+    showBond() {
+      return this.stakingNetwork !== null;
+    },
+    showLoading() {
+      const networks = this.networksStore.networks.filter(({ name }) =>
+            this.stakingStore.myStakingItems.some(({ network }) => isSameString(name, network))
+          );
 
-  get haveFilteredItems() {
-    if (this.isAllTab) return this.filteredStakingItems.length;
+          return networksIsPending(networks);
+    },
+    contentFormHeight() {
+      return CONTENT_FORM_HEIGHT;
+    },
+    stakingBalance() {
+      return this.stakingStore.myStakingItems.reduce((sum, { totalStake, assetId }) => {
+            const { priceId } = this.accountsStore.balances.find(({ groupId }) => groupId === assetId)!;
+            const assetPrice = this.networksStore.getAssetPrice(priceId ?? '').price;
+            const value = getCostOfAssets(totalStake, assetPrice) as number;
 
-    return this.filteredMyStakingItems.length;
-  }
-
-  get showLoader() {
-    if (this.activeTabName === 'all' && this.isLoading) return true;
-
-    return this.activeTabName === '';
-  }
-
-  get noStakingItems() {
-    return !this.showStakingItems && !this.showMyStakingItems;
-  }
-
-  get showStakingItems() {
-    return this.stakingStore.stakingItems.length !== 0;
-  }
-
-  get showMyStakingItems() {
-    return this.stakingStore.myStakingItems.length !== 0;
-  }
-
-  get showBond() {
-    return this.stakingNetwork !== null;
-  }
-
-  get showLoading() {
-    const networks = this.networksStore.networks.filter(({ name }) =>
-      this.stakingStore.myStakingItems.some(({ network }) => isSameString(name, network))
-    );
-
-    return networksIsPending(networks);
-  }
-
-  get contentFormHeight() {
-    return CONTENT_FORM_HEIGHT;
-  }
-
-  get stakingBalance() {
-    return this.stakingStore.myStakingItems.reduce((sum, { totalStake, assetId }) => {
-      const { priceId } = this.accountsStore.balances.find(({ groupId }) => groupId === assetId)!;
-      const assetPrice = this.networksStore.getAssetPrice(priceId ?? '').price;
-      const value = getCostOfAssets(totalStake, assetPrice) as number;
-
-      return sum + value;
-    }, 0);
-  }
-
-  get isAllTab() {
-    return this.activeTabName === 'all';
-  }
-
+            return sum + value;
+          }, 0);
+    },
+    isAllTab() {
+      return this.activeTabName === 'all';
+    },
+  },
+  watch: {
+    "showStakingItems": 'updateTab1',
+    "showMyStakingItems": 'updateTab2',
+    "selectedWallet": 'updateTabStakingParams',
+  },
   async created() {
     const updateTab = () => this.updateActiveTabName(this.showStakingItems ? 'all' : 'my');
 
-    if (this.showMyStakingItems && !this.showStakingItems) updateTab();
+        if (this.showMyStakingItems && !this.showStakingItems) updateTab();
 
-    await this.stakingStore.getStakingParams();
+        await this.stakingStore.getStakingParams();
 
-    if (this.activeTabName === '') updateTab();
-  }
+        if (this.activeTabName === '') updateTab();
+  },
+  methods: {
+    updateTab1(newValue: boolean) {
+      if (!newValue) this.updateActiveTabName('my');
+    },
+    updateTab2(newValue: boolean) {
+      if (!newValue) this.updateActiveTabName('all');
+    },
+    async updateTabStakingParams() {
+      this.isLoading = true;
 
-  @Watch('showStakingItems')
-  updateTab1(newValue: boolean) {
-    if (!newValue) this.updateActiveTabName('my');
-  }
+          await this.stakingStore.getStakingParams({ delay: 5000 });
 
-  @Watch('showMyStakingItems')
-  updateTab2(newValue: boolean) {
-    if (!newValue) this.updateActiveTabName('all');
-  }
+          this.isLoading = false;
+    },
+    updateFilterValue(value: string) {
+      this.filterValue = value;
+    },
+    updateActiveTabName(name: StakingTab) {
+      this.activeTabName = name;
+    },
+    updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null, updated = false) {
+      this.stakingNetwork = stakingNetwork;
 
-  @Watch('selectedWallet')
-  async updateTabStakingParams() {
-    this.isLoading = true;
-
-    await this.stakingStore.getStakingParams({ delay: 5000 });
-
-    this.isLoading = false;
-  }
-
-  updateFilterValue(value: string) {
-    this.filterValue = value;
-  }
-
-  updateActiveTabName(name: StakingTab) {
-    this.activeTabName = name;
-  }
-
-  updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null, updated = false) {
-    this.stakingNetwork = stakingNetwork;
-
-    if (updated) this.updateTabStakingParams();
-  }
-}
+          if (updated) this.updateTabStakingParams();
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

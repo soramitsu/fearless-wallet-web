@@ -13,9 +13,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import { computed } from 'vue';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
+import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
 import { Components } from '@/router/routes';
 
 type Props = {
@@ -25,7 +26,7 @@ type Props = {
 const props = defineProps<Props>();
 const router = useRouter();
 const counter = computed(() => `${props.collection.ownedNfts.length}/${props.collection.total}`);
-const image = computed(() => props.collection.image ?? require('@/assets/fearless-logo-animated.gif'));
+const image = computed(() => props.collection.image ?? fallbackNftImage);
 
 const onClick = () =>
   router.push({

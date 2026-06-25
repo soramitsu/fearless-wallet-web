@@ -54,10 +54,10 @@ export class SubstrateApiHandler {
     if (this.api[networkName] === undefined) this.api[networkName] = this.createApiObject();
     const { nodeIndex } = this.api[networkName];
 
-    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex]?.url ?? nodes[0].url;
+    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex].url ?? nodes[0].url;
 
     if (currentProvider.includes('dwellir')) {
-      currentProvider = `${currentProvider}/${process.env.FL_DWELLIR_API_KEY}`;
+      currentProvider = `${currentProvider}/${process.env.FL_WEB_DWELLIR_API_KEY || process.env.FL_DWELLIR_API_KEY || ''}`;
     }
 
     const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [

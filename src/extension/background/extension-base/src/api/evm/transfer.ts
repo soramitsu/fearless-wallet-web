@@ -28,6 +28,10 @@ export interface HandleTransferProps extends MakeTransferParams {
   tx: TransactionRequest;
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function handleTransfer({ callback, networkKey, privateKey, tx }: HandleTransferProps): Promise<void> {
   const web3Api = state.getEvmApi(networkKey)?.api;
   const signer = new Wallet(privateKey, web3Api);
@@ -36,7 +40,7 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
     await signer.sendTransaction(tx);
 
     callback?.({ status: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.warn(error);
 
     callback?.({
@@ -44,7 +48,7 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx }: H
       errors: [
         {
           code: TransferErrorCode.TRANSFER_ERROR,
-          message: error.message,
+          message: getErrorMessage(error),
         },
       ],
     });
@@ -106,7 +110,7 @@ async function getERC20TransactionObject(params: TransferParams, state: State): 
     data,
   };
 
-  let gasLimit = BigInt(0);
+  let gasLimit: bigint;
 
   try {
     gasLimit = await web3Api.estimateGas(transactionObject);

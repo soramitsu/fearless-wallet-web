@@ -19,26 +19,29 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import Row from '@/components/Row.vue';
 
-@Component({
+export default defineComponent({ name: 'AssetRow',
   components: { Row },
-})
-export default class AssetRow extends Vue {
-  @Prop(String) text!: string;
-  @Prop(String) value!: string;
-  @Prop(String) price!: string;
-  @Prop(String) icon?: string;
-
-  get classes() {
-    return ['icon-info'];
-  }
-
-  onSelect() {
-    this.$emit('openAsset');
-  }
-}
+  props: {
+    text: String,
+    value: String,
+    price: String,
+    icon: String,
+  },
+  computed: {
+    classes() {
+      return ['icon-info'];
+    },
+  },
+  methods: {
+    onSelect() {
+      this.$emit('openAsset');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

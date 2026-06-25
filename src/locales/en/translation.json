@@ -294,6 +294,8 @@
     "insufficientBalance": "Insufficient balance {asset}",
     "insufficientLiquidity": "Insufficient Liquidity",
     "isSameAddress": "Transfers to your own account are prohibited",
+    "irohaTransfersDisabled": "Iroha transfers are not enabled in this release",
+    "unsupportedSolanaTokenTransfer": "Solana token transfers are not supported yet",
     "minReceived": "Min received",
     "maxSales": "Max sales ",
     "priceImpact": "Price impact",
@@ -629,7 +631,15 @@
     "createMasterPass": "Create a master password. This master password will be used for all your wallets.",
     "enterPass": "Enter the passwords for your current wallets. If you don’t remember a wallet password, it will be reset. You can re-import the wallet later.",
     "accessLost": "Access to this wallet will be lost. You can re-import the wallet later. You will need a mnemonic phrase or a JSON backup.",
-    "skipWarning": "If you skip a wallet password step, wallet will be reset. You can re-import the wallet later with Mnemonic passphrase"
+    "skipWarning": "If you skip a wallet password step, wallet will be reset. You can re-import the wallet later with Mnemonic passphrase",
+    "universalWalletRequired": "Universal Wallet Required",
+    "universalWalletActionRequired": "Create or import a Universal Wallet",
+    "universalWalletLegacyText": "Normal wallet access is locked until a Universal Wallet is available. Existing legacy wallets remain export-only for recovery.",
+    "universalWalletEmptyText": "Create or import a Universal Wallet to start using Fearless Wallet.",
+    "exportLegacyVault": "Export legacy wallet",
+    "exportLegacyVaultUnavailable": "This legacy wallet is not available for export on this device.",
+    "createUniversalWallet": "Create Universal Wallet",
+    "importUniversalWallet": "Import Universal Wallet"
   },
   "common": {
     "lockApp": "Lock extension",

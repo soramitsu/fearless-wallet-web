@@ -2,7 +2,7 @@
   <div class="search-input-wrapper" data-testid="searchInput">
     <FInput :value="value" :placeholder="placeholder" size="small" :style="inputStyle" @change="changeInputValue" />
 
-    <SIcon name="basic-search-24" />
+    <Icon icon="search" className="search-icon" />
   </div>
 </template>
 
@@ -51,9 +51,10 @@ const inputStyle = computed(() => {
   align-items: center;
   user-select: none;
 
-  .s-icon-basic-search-24 {
+  .search-icon {
     color: $gray-color;
-    font-size: 1.25rem !important;
+    width: 20px;
+    height: 20px;
     margin-left: -30px;
   }
 }

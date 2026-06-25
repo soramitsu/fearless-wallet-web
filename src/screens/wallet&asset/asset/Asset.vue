@@ -28,7 +28,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 
 import type { HistoryElement } from '@/interfaces/history';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
@@ -46,7 +47,7 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'Asset',
   components: {
     AssetInfo,
     SendForm,
@@ -57,100 +58,88 @@ import { useAccountsStore } from '@/stores/accounts';
     NetworkManagementButton,
     NetworkManagement,
   },
-})
-export default class Asset extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  historyElement: HistoryElement | Record<string, string> | null = null;
-  showBuyPopup = false;
-  showTipPopup = false;
-  filterValue = '';
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      historyElement: null,
+      showBuyPopup: false,
+      showTipPopup: false,
+      filterValue: '',
+    };
+  },
+  computed: {
+    showHistoryDetailsForm() {
+      return this.historyElement !== null;
+    },
+    isGroupIcon() {
+      return isNetworkGroup(this.accountsStore.selectedNetwork);
+    },
+    selectedNetworkIcon() {
+      if (this.isGroupIcon) return 'all-networks';
 
-  get showHistoryDetailsForm() {
-    return this.historyElement !== null;
-  }
+          return this.networksStore.getNetwork(this.accountsStore.selectedNetwork).icon;
+    },
+    selectedLocalNetwork() {
+      return this.$route.params.selectedNetwork ?? '';
+    },
+    isHistoryPage() {
+      if (!NETWORKS_GROUPS.includes(this.accountsStore.selectedNetwork)) return false;
 
-  get isGroupIcon() {
-    return isNetworkGroup(this.accountsStore.selectedNetwork);
-  }
+          return this.selectedLocalNetwork === '';
+    },
+    providers() {
+      return this.currentCurrency.providers ?? [];
+    },
+    mainNetwork() {
+      const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
 
-  get selectedNetworkIcon() {
-    if (this.isGroupIcon) return 'all-networks';
+          return currency ? currency.name : '';
+    },
+    currentCurrency() {
+      return (
+            this.accountsStore.balances.find(
+              ({ groupId: id, balances }) =>
+                id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
+            )! ?? {}
+          );
+    },
+    displayAddressByNetwork() {
+      if (this.isHistoryPage) return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.mainNetwork);
 
-    return this.networksStore.getNetwork(this.accountsStore.selectedNetwork).icon;
-  }
-
-  get selectedLocalNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
-
-  get isHistoryPage() {
-    if (!NETWORKS_GROUPS.includes(this.accountsStore.selectedNetwork)) return false;
-
-    return this.selectedLocalNetwork === '';
-  }
-
-  get providers() {
-    return this.currentCurrency.providers ?? [];
-  }
-
-  get mainNetwork() {
-    const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
-
-    return currency ? currency.name : '';
-  }
-
-  get currentCurrency() {
-    return (
-      this.accountsStore.balances.find(
-        ({ groupId: id, balances }) =>
-          id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
-      )! ?? {}
-    );
-  }
-
-  get displayAddressByNetwork() {
-    if (this.isHistoryPage) return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.mainNetwork);
-
-    return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedLocalNetwork);
-  }
-
-  get selectedAssetId() {
-    return this.$route.params.assetId ?? '';
-  }
-
-  get selectedAsset() {
-    return this.currentCurrency.symbol?.toLowerCase() ?? '';
-  }
-
-  get iconPosition() {
-    return `top: 24px; right:${IS_POPUP ? '67px' : '131px'};`;
-  }
-
-  get selectedAssetUpper() {
-    return this.selectedAsset.toUpperCase();
-  }
-
-  get assetPrice() {
-    return this.networksStore.getAssetPrice(this.currentCurrency.priceId ?? '');
-  }
-
-  toggleVisible(value = true) {
-    this.showBuyPopup = value;
-  }
-
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
-  openHistoryDetailsForm(historyElement: HistoryElement) {
-    this.historyElement = historyElement;
-  }
-
-  closeHistoryDetailsForm() {
-    this.historyElement = null;
-  }
-}
+          return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedLocalNetwork);
+    },
+    selectedAssetId() {
+      return this.$route.params.assetId ?? '';
+    },
+    selectedAsset() {
+      return this.currentCurrency.symbol?.toLowerCase() ?? '';
+    },
+    iconPosition() {
+      return `top: 24px; right:${IS_POPUP ? '67px' : '131px'};`;
+    },
+    selectedAssetUpper() {
+      return this.selectedAsset.toUpperCase();
+    },
+    assetPrice() {
+      return this.networksStore.getAssetPrice(this.currentCurrency.priceId ?? '');
+    },
+  },
+  methods: {
+    toggleVisible(value = true) {
+      this.showBuyPopup = value;
+    },
+    handlerFilter(value: string) {
+      this.filterValue = value;
+    },
+    openHistoryDetailsForm(historyElement: HistoryElement) {
+      this.historyElement = historyElement;
+    },
+    closeHistoryDetailsForm() {
+      this.historyElement = null;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

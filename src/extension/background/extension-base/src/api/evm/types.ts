@@ -42,6 +42,16 @@ export interface BalanceItem {
   // ton
   walletAddress?: Address;
   assetIcon?: string;
+
+  // solana
+  solanaTokenAccountAddress?: string;
+  solanaTokenExtensions?: string[];
+  solanaTokenMint?: string;
+  solanaTokenProgram?: string;
+  solanaTokenProgramId?: string;
+  solanaTokenState?: string | null;
+  solanaTokenTransferFeeConfig?: unknown;
+  solanaTokenTransferHook?: unknown;
 }
 
 export enum CustomTokenType {

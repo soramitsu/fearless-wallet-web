@@ -122,7 +122,7 @@ export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<
 export function convertHexToUtf8(hex: string) {
   try {
     return encoding.hexToUtf8(hex);
-  } catch (e) {
+  } catch {
     return hex;
   }
 }

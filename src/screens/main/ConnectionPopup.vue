@@ -15,36 +15,36 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { type ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
 
-@Component
-export default class ConnectionPopup extends Vue {
-  @Prop(Object) tabStatus!: ActiveTabAuthorizeStatus;
 
-  get message() {
-    if (this.tabStatus.isAuthorize) {
-      const count = this.tabStatus.authorizeAccountsCount;
-      const tc = count === 1 ? 1 : 2;
+export default defineComponent({ name: 'ConnectionPopup' ,
+  props: {
+    tabStatus: Object,
+  },
+  computed: {
+    message() {
+      if (this.tabStatus.isAuthorize) {
+            const count = this.tabStatus.authorizeAccountsCount;
+            const tc = count === 1 ? 1 : 2;
 
-      return this.$tc('header.connectedMessage', tc, { count });
-    }
+            return this.$tc('header.connectedMessage', tc, { count });
+          }
 
-    return this.$t('header.connectionStatusMessage', {
-      not: this.tabStatus.isAuthorize ? '' : 'not',
-    });
-  }
-
-  get activeTabName() {
-    return this.tabStatus.dAppName === 'header.currentExtensionPage'
-      ? this.$t(this.tabStatus.dAppName)
-      : this.tabStatus.dAppName;
-  }
-
-  get classesSubtext() {
-    return ['subtext', `subtext-big`];
-  }
-}
+          return this.$t('header.connectionStatusMessage', {
+            not: this.tabStatus.isAuthorize ? '' : 'not',
+          });
+    },
+    activeTabName() {
+      return this.tabStatus.dAppName === 'header.currentExtensionPage'
+            ? this.$t(this.tabStatus.dAppName)
+            : this.tabStatus.dAppName;
+    },
+    classesSubtext() {
+      return ['subtext', `subtext-big`];
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

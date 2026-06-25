@@ -15,9 +15,9 @@ import type { Message } from '@extension-base/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 interface Handler {
-  resolve: (data: any) => void;
+  resolve: (data: unknown) => void;
   reject: (error: Error) => void;
-  subscriber?: (value: any) => void;
+  subscriber?: (value: unknown) => void;
 }
 
 type Handlers = Record<string, Handler>;

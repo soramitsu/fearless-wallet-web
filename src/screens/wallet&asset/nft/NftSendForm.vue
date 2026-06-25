@@ -101,8 +101,9 @@
 
 <script lang="ts" setup>
 import { computed, reactive, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRoute, useRouter } from 'vue-router';
+import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import { useI18n } from '@/locales/useI18n';
 import { cut, getClipboard } from '@/helpers';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
@@ -142,16 +143,18 @@ const formInfo = reactive({
   assetId: '',
 });
 
-const id = computed(() => route.params.id);
-const contract = computed(() => route.params.contract);
-const nfts = computed(() => accountsStore.nftsByActiveNetworks ?? {});
+const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+const id = computed(() => routeParam(route.params.id));
+const contract = computed(() => routeParam(route.params.contract));
+const nfts = computed(() => accountsStore.nftsByActiveNetworks ?? []);
 
 const collection = computed(() => nfts.value.find((nft) => nft.address === contract.value));
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));
 const selectedWallet = computed(() => accountsStore.selectedWallet);
-const image = computed(() => nft.value?.image ?? require('@/assets/fearless-logo-animated.gif'));
+const image = computed(() => nft.value?.image ?? fallbackNftImage);
 
 const acountsEcosystem = computed(() =>
   accountsStore.acountsEcosystem.filter(({ ethereumAddress }) => !!ethereumAddress)

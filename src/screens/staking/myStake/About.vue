@@ -62,123 +62,112 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { MyStakingTab } from '@/interfaces/common';
-import type { TokenGroup } from '@extension-base/background/types/types';
+import { defineComponent } from 'vue';
+
 import { type SoraHistoryElement } from '@/interfaces';
 import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class About extends Vue {
-  readonly dotsVerticalRef = 'dotsVertical';
-  networksStore = useNetworksStore();
-  stakingStore = useStakingStore();
-  accountsStore = useAccountsStore();
-  activeTabName: MyStakingTab = 'about';
-  isLoading = false;
+export default defineComponent({ name: 'About' ,
+  props: {
+    stakingCurrency: { type: Object },
+    rewardedCurrency: { type: Object },
+    network: { type: String },
+  },
+  data() {
+    return {
+      dotsVerticalRef: 'dotsVertical',
+      networksStore: useNetworksStore(),
+      stakingStore: useStakingStore(),
+      accountsStore: useAccountsStore(),
+      activeTabName: 'about',
+      isLoading: false,
+    };
+  },
+  computed: {
+    history() {
+      return this.stakingStore.getStakingHistory(
+            this.network,
+            this.stakingCurrency.groupId,
+            this.stakingNetwork.stashAddress,
+            this.stakingNetwork.payeeAddress
+          );
+    },
+    unbondDetails() {
+      const unbond = this.stakingNetwork.unbond;
+          const asset = this.stakingNetwork.asset.toUpperCase();
+          const base = `${this.$t('staking.unbond')} ${unbond.sum} ${asset}:`;
 
-  @Prop({ type: Object }) stakingCurrency!: TokenGroup;
-  @Prop({ type: Object }) rewardedCurrency!: TokenGroup;
-  @Prop({ type: String }) network!: string;
+          return unbond.unlocking.reduce((result, { value, remainingDays }) => {
+            return `
+              ${result}
+                <p>- ${value} ${asset} ${remainingDays} ${this.$t('staking.daysLeft')}</p>
+            `;
+          }, base);
+    },
+    stakingNetwork() {
+      return this.stakingStore.getStakingNetwork(this.network);
+    },
+    activeStake() {
+      return this.$n(+this.stakingNetwork.activeStake, 'decimal');
+    },
+    rewardAmount() {
+      return (this.history as SoraHistoryElement[])
+            .filter(({ method }) => method === 'rewarded')
+            .reduce((result, { data }) => {
+              result = result + +(data?.amount ?? 0);
 
-  get history() {
-    return this.stakingStore.getStakingHistory(
-      this.network,
-      this.stakingCurrency.groupId,
-      this.stakingNetwork.stashAddress,
-      this.stakingNetwork.payeeAddress
-    );
-  }
+              return result;
+            }, 0);
+    },
+    showUnbondDetails() {
+      return this.stakingNetwork.unbond.unlocking.length !== 0;
+    },
+    unbondAmount() {
+      return this.$n(+this.stakingNetwork.unbond.sum, 'decimal');
+    },
+    redeemAmount() {
+      return this.$n(+this.stakingNetwork.redeemAmount, 'decimal');
+    },
+    stakingAssetName() {
+      return this.stakingCurrency?.symbol;
+    },
+    rewardedAsset() {
+      return this.rewardedCurrency?.symbol;
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
 
-  get unbondDetails() {
-    const unbond = this.stakingNetwork.unbond;
-    const asset = this.stakingNetwork.asset.toUpperCase();
-    const base = `${this.$t('staking.unbond')} ${unbond.sum} ${asset}:`;
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    rewardedAssetPrice() {
+      const priceId = this.rewardedCurrency?.priceId ?? '';
 
-    return unbond.unlocking.reduce((result, { value, remainingDays }) => {
-      return `
-        ${result}
-          <p>- ${value} ${asset} ${remainingDays} ${this.$t('staking.daysLeft')}</p>
-      `;
-    }, base);
-  }
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    activeStakeValue() {
+      const value = +this.stakingNetwork.activeStake * this.stakingAssetPrice;
 
-  get stakingNetwork() {
-    return this.stakingStore.getStakingNetwork(this.network);
-  }
+          return this.$n(value, 'price');
+    },
+    rewardedValue() {
+      const value = +this.rewardAmount * this.rewardedAssetPrice;
 
-  get activeStake() {
-    return this.$n(+this.stakingNetwork.activeStake, 'decimal');
-  }
+          return this.$n(value, 'price');
+    },
+    unbondValue() {
+      const value = +this.stakingNetwork.unbond.sum * this.stakingAssetPrice;
 
-  get rewardAmount() {
-    return (this.history as SoraHistoryElement[])
-      .filter(({ method }) => method === 'rewarded')
-      .reduce((result, { data }) => {
-        result = result + +(data?.amount ?? 0);
+          return this.$n(value, 'price');
+    },
+    redeemableValue() {
+      const value = +this.stakingNetwork.redeemAmount * this.stakingAssetPrice;
 
-        return result;
-      }, 0);
-  }
-
-  get showUnbondDetails() {
-    return this.stakingNetwork.unbond.unlocking.length !== 0;
-  }
-
-  get unbondAmount() {
-    return this.$n(+this.stakingNetwork.unbond.sum, 'decimal');
-  }
-
-  get redeemAmount() {
-    return this.$n(+this.stakingNetwork.redeemAmount, 'decimal');
-  }
-
-  get stakingAssetName() {
-    return this.stakingCurrency?.symbol;
-  }
-
-  get rewardedAsset() {
-    return this.rewardedCurrency?.symbol;
-  }
-
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get rewardedAssetPrice() {
-    const priceId = this.rewardedCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get activeStakeValue() {
-    const value = +this.stakingNetwork.activeStake * this.stakingAssetPrice;
-
-    return this.$n(value, 'price');
-  }
-
-  get rewardedValue() {
-    const value = +this.rewardAmount * this.rewardedAssetPrice;
-
-    return this.$n(value, 'price');
-  }
-
-  get unbondValue() {
-    const value = +this.stakingNetwork.unbond.sum * this.stakingAssetPrice;
-
-    return this.$n(value, 'price');
-  }
-
-  get redeemableValue() {
-    const value = +this.stakingNetwork.redeemAmount * this.stakingAssetPrice;
-
-    return this.$n(value, 'price');
-  }
-}
+          return this.$n(value, 'price');
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

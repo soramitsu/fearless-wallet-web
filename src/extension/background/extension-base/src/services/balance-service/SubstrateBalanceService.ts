@@ -15,6 +15,28 @@ import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { isSameString, isSora } from '@/helpers';
 
 const mockUnsubFn = () => {};
+type BalanceData = Parameters<typeof formatBalance>[0];
+type CodecValue = string | number | bigint;
+type AssetBalanceResponse = {
+  data?: BalanceData;
+  toJSON?: () => { balance?: unknown } | null;
+};
+type AssetsQuery = {
+  account(assetId: unknown, address: string): unknown;
+};
+type SubscribableBalanceQuery = {
+  subscribe(callback: (balances: unknown) => void): Subscription;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function toCodecValue(value: unknown): CodecValue {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') return value;
+
+  return 0;
+}
 
 export default class SubstrateBalanceService {
   private readonly equilibriumBalanceService: EquilibriumBalanceService;
@@ -53,17 +75,20 @@ export default class SubstrateBalanceService {
           (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
 
         if (type === 'normal' || isSoraXOR) response = query.system.account(addressByNetwork);
-        else if (type === 'assets') response = (query.assets as any).account(options, addressByNetwork);
+        else if (type === 'assets')
+          response = (query.assets as unknown as AssetsQuery).account(options, addressByNetwork);
         else response = query.tokens.accounts(addressByNetwork, options);
 
         const balances = await response;
+        const balanceResponse = balances as AssetBalanceResponse;
 
-        const balance =
+        const balance = (
           type === 'assets'
             ? {
-                free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+                free: FPNumber.fromCodecValue(toCodecValue(balanceResponse.toJSON?.()?.balance), precision),
               }
-            : balances?.data ?? balances;
+            : balanceResponse.data ?? balanceResponse
+        ) as BalanceData;
 
         const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
 
@@ -123,16 +148,18 @@ export default class SubstrateBalanceService {
           type === 'normal' || isSoraXOR
             ? query.system.account(address ?? '')
             : type === 'assets'
-            ? (query.assets as any).account(options, address ?? '')
+            ? (query.assets as unknown as AssetsQuery).account(options, address ?? '')
             : query.tokens?.accounts(address, options);
 
-        const onBalanceFetch = (balances: any) => {
-          const balance =
+        const onBalanceFetch = (balances: unknown) => {
+          const balanceResponse = balances as AssetBalanceResponse;
+          const balance = (
             type === 'assets'
               ? {
-                  free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+                  free: FPNumber.fromCodecValue(toCodecValue(balanceResponse.toJSON?.()?.balance), precision),
                 }
-              : balances.data ?? balances;
+              : balanceResponse.data ?? balanceResponse
+          ) as BalanceData;
 
           const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
           const substrateAddress = state.keyringService.getSubstrateAddress(address);
@@ -154,10 +181,10 @@ export default class SubstrateBalanceService {
           );
         };
 
-        const sub: Subscription = pallet?.subscribe(onBalanceFetch);
+        const sub: Subscription | undefined = (pallet as SubscribableBalanceQuery | undefined)?.subscribe(onBalanceFetch);
 
         return () => sub?.unsubscribe();
-      } catch (err: any) {
+      } catch (err: unknown) {
         state.balanceService.setBalanceItem(
           networkKey,
           {
@@ -169,7 +196,7 @@ export default class SubstrateBalanceService {
           address
         );
 
-        console.warn(err.message, networkKey);
+        console.warn(getErrorMessage(err), networkKey);
 
         return mockUnsubFn;
       }

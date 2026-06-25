@@ -182,7 +182,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { FPNumber } from '@sora-substrate/util';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
@@ -208,7 +209,7 @@ import { useAccountsStore } from '@/stores/accounts';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
-@Component({
+export default defineComponent({ name: 'SwapForm',
   components: {
     SwapInfo,
     Disclaimer,
@@ -219,500 +220,439 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
     PolkaswapSettingsHeader,
     ConfirmationPasswordPopup,
   },
-})
-export default class SwapForm extends Vue {
-  readonly soraNetworkName = SORA_NETWORK_NAME;
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  step = 1;
-  slippage = 0.5;
-  temporarySlippage = 0.5;
-  marketType = MarketType.SMART;
-  temporaryMarketType = MarketType.SMART;
-  sendAssetId = '';
-  receiveAssetId = '';
-  sendAmount = '';
-  receiveAmount = '';
-  minMaxAmount = '';
-  selectAssetType = '';
-  route = '';
-  AToB = '';
-  BToA = '';
-  filterValue = '';
-  showSettings = false;
-  showConfirmationPasswordPopup = false;
-  isExchangeB = false;
-  tx: SwapOptions = {} as SwapOptions;
-  swapInterval!: NodeJS.Timer;
-
-  get showBackIcon() {
-    return !this.showSettings;
-  }
-
-  get showPolkaswapIcon() {
-    return this.step === 1 && !this.showSettings;
-  }
-
-  get fee() {
-    return this.networksStore.soraFees?.Swap ?? '';
-  }
-
-  get showCloseIcon() {
-    if (this.showSettings) return true;
-
-    return this.step !== 1;
-  }
-
-  get sendAssetPrice() {
-    const priceId = this.sendCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get receiveAssetPrice() {
-    const priceId = this.receiveCurrency?.priceId ?? '';
-
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
-
-  get classesSwapIcon() {
-    return ['swap-icon', { 'swap-icon-disable': this.receiveAssetId === '' }];
-  }
-
-  get currencyXOR() {
-    return getXORCurrency(this.accountsStore.balances);
-  }
-
-  get feePrice() {
-    const fee = this.fee ?? 0;
-    const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
-
-    return this.$n(+balance, 'price');
-  }
-
-  get soraMainAssetUpper() {
-    return SORA_UTILITY_ASSET.toUpperCase();
-  }
-
-  get minMaxAmountPrice() {
-    const price = (
-      this.isExchangeB
-        ? getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.sendAssetId).price)
-        : getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.receiveAssetId).price)
-    ) as number;
-
-    return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
-  }
-
-  get minMaxAmountCut() {
-    return `${this.$n(+this.minMaxAmount, 'decimal')} ${this.minMaxAssetName}`;
-  }
-
-  get minMaxAssetName() {
-    return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
-  }
-
-  get AToBCut() {
-    const value = +this.$n(+this.AToB, 'decimal') || '0';
-
-    return `${value} ${this.receiveAssetUP}`;
-  }
-
-  get BToACut() {
-    const value = +this.$n(+this.BToA, 'decimal') || '0';
-
-    return `${value} ${this.sendAssetUP}`;
-  }
-
-  get AToBValueCut() {
-    const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
-    const value = this.$n(cost, 'price') || '0';
-
-    return `${this.accountsStore.fiatSymbol} ${value}`;
-  }
-
-  get BToAValueCut() {
-    const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
-    const value = this.$n(cost, 'price') || '0';
-
-    return `${this.accountsStore.fiatSymbol} ${value}`;
-  }
-
-  get widthButton() {
-    return this.showSettings ? '49%' : '100%';
-  }
-
-  get classesSettings() {
-    return ['settings', { 'setting-hide': this.step === 2 }];
-  }
-
-  get header() {
-    if (this.showSettings) return this.$t('assets.swapSettings');
-
-    if (this.step === 1) return this.$t('assets.polkaswap');
-
-    return this.$t('assets.swapPreview');
-  }
-
-  get showSwapInfo() {
-    return this.sendAssetId !== '' && this.receiveAssetId !== '' && this.sendAmount !== '' && this.receiveAmount !== '';
-  }
-
-  get sendCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.sendAssetId);
-  }
-
-  get sendAssetName(): string {
-    return this.sendCurrency?.symbol ?? '';
-  }
-
-  get sendAssetIcon() {
-    return this.sendCurrency?.groupId ?? '';
-  }
-
-  get receiveCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.receiveAssetId);
-  }
-
-  get receiveAssetName(): string {
-    return this.receiveCurrency?.symbol ?? '';
-  }
-
-  get receiveAssetIcon() {
-    return this.receiveCurrency ? this.receiveCurrency.icon : '';
-  }
-
-  get showSelectPopup() {
-    return this.selectAssetType !== '';
-  }
-
-  get optionsCurrency() {
-    const filter = this.filterValue.toLowerCase();
-    const tokensGroupFilteredByNetwork = this.accountsStore.balances.filter(({ balances }) => {
-      return balances.some(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
-    });
-
-    const tokens = getCurrencyOptions(tokensGroupFilteredByNetwork).filter(({ name, value }) => {
-      if (!name.toLowerCase().includes(filter)) return false;
-
-      const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;
-
-      return value !== id;
-    });
-
-    return tokens;
-  }
-
-  get top() {
-    return this.isSendAssetType ? 145 : 248;
-  }
-
-  get selectPopupValue() {
-    if (this.isSendAssetType) return this.sendAssetId;
-
-    return this.receiveAssetId;
-  }
-
-  get isSendAssetType() {
-    return this.selectAssetType === 'send';
-  }
-
-  get isReceiveAssetType() {
-    return this.selectAssetType === 'receive';
-  }
-
-  get buttonText() {
-    if (this.showSettings) return 'common.save';
-
-    if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'assets.calculateFee';
-
-    if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
-
-    if (!this.isValidTransferByXOR)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
-
-    if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
-
-    return this.step === 1 ? 'assets.preview' : 'common.confirm';
-  }
-
-  get buttonPreviewDisabled() {
-    if (this.step === 2 || this.showSettings) return false;
-
-    if (
-      this.fee === '' ||
-      !this.isValidSendAsset ||
-      !this.isValidTransferByXOR ||
-      +this.sendAmount === 0 ||
-      +this.receiveAmount === 0
-    )
-      return true;
-
-    return this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '';
-  }
-
-  get isValidSendAsset() {
-    return isValidAmountAsset(this.sendCurrency, this.soraNetworkName, this.fee, this.sendAmount);
-  }
-
-  get isValidTransferByXOR() {
-    if (this.fee === '') return false;
-
-    if (this.receiveAssetName === SORA_UTILITY_ASSET) {
-      const transferableXor = this.calcTransferableXor();
-      const receiveAmount = this.isExchangeB ? this.receiveAmount : this.minMaxAmount;
-      const transferableXORAfterSending = addNumbers([transferableXor, receiveAmount]);
-
-      // если баланс xor после получения будет больше, чем затраты на комиссию, своп валиден
-      return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(this.fee));
-    }
-
-    // этот кейс проверяется в this.isValidSendAsset, когда sendAsset выбран xor
-    if (this.sendAssetName === SORA_UTILITY_ASSET) return true;
-
-    // проверяем, что xor достаточно на оплату комиссии
-    return FPNumber.gte(new FPNumber(this.calcTransferableXor()), new FPNumber(this.fee));
-  }
-
-  get sendAssetUP() {
-    return this.sendAssetName.toUpperCase();
-  }
-
-  get receiveAssetUP() {
-    return this.receiveAssetName.toUpperCase();
-  }
-
-  get sendCurrencyBalance() {
-    return this.sendCurrency?.balances.find(
-      (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
-    );
-  }
-
-  get transferableSendAmount() {
-    return +(this.sendCurrencyBalance?.transferable ?? 0);
-  }
-
-  get transferableReceiveAmount() {
-    return +(
-      this.receiveCurrency?.balances.find(
-        (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
-      )?.transferable ?? 0
-    );
-  }
-
-  get sendValue() {
-    return getCostOfAssets(+this.sendAmount ?? 0, this.sendAssetPrice, 'string');
-  }
-
-  get receiveValue() {
-    return getCostOfAssets(+this.receiveAmount ?? 0, this.receiveAssetPrice, 'string');
-  }
-
+  data() {
+    return {
+      soraNetworkName: SORA_NETWORK_NAME,
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      step: 1,
+      slippage: 0.5,
+      temporarySlippage: 0.5,
+      marketType: MarketType.SMART,
+      temporaryMarketType: MarketType.SMART,
+      sendAssetId: '',
+      receiveAssetId: '',
+      sendAmount: '',
+      receiveAmount: '',
+      minMaxAmount: '',
+      selectAssetType: '',
+      route: '',
+      AToB: '',
+      BToA: '',
+      filterValue: '',
+      showSettings: false,
+      showConfirmationPasswordPopup: false,
+      isExchangeB: false,
+      tx: {} as SwapOptions,
+      swapInterval: undefined as ReturnType<typeof setInterval> | undefined,
+    };
+  },
+  computed: {
+    showBackIcon() {
+      return !this.showSettings;
+    },
+    showPolkaswapIcon() {
+      return this.step === 1 && !this.showSettings;
+    },
+    fee() {
+      return this.networksStore.soraFees?.Swap ?? '';
+    },
+    showCloseIcon() {
+      if (this.showSettings) return true;
+
+          return this.step !== 1;
+    },
+    sendAssetPrice() {
+      const priceId = this.sendCurrency?.priceId ?? '';
+
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    receiveAssetPrice() {
+      const priceId = this.receiveCurrency?.priceId ?? '';
+
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    classesSwapIcon() {
+      return ['swap-icon', { 'swap-icon-disable': this.receiveAssetId === '' }];
+    },
+    currencyXOR() {
+      return getXORCurrency(this.accountsStore.balances);
+    },
+    feePrice() {
+      const fee = this.fee ?? 0;
+          const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+
+          return this.$n(+balance, 'price');
+    },
+    soraMainAssetUpper() {
+      return SORA_UTILITY_ASSET.toUpperCase();
+    },
+    minMaxAmountPrice() {
+      const price = (
+            this.isExchangeB
+              ? getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.sendAssetId).price)
+              : getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.receiveAssetId).price)
+          ) as number;
+
+          return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
+    },
+    minMaxAmountCut() {
+      return `${this.$n(+this.minMaxAmount, 'decimal')} ${this.minMaxAssetName}`;
+    },
+    minMaxAssetName() {
+      return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
+    },
+    AToBCut() {
+      const value = +this.$n(+this.AToB, 'decimal') || '0';
+
+          return `${value} ${this.receiveAssetUP}`;
+    },
+    BToACut() {
+      const value = +this.$n(+this.BToA, 'decimal') || '0';
+
+          return `${value} ${this.sendAssetUP}`;
+    },
+    AToBValueCut() {
+      const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
+          const value = this.$n(cost, 'price') || '0';
+
+          return `${this.accountsStore.fiatSymbol} ${value}`;
+    },
+    BToAValueCut() {
+      const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
+          const value = this.$n(cost, 'price') || '0';
+
+          return `${this.accountsStore.fiatSymbol} ${value}`;
+    },
+    widthButton() {
+      return this.showSettings ? '49%' : '100%';
+    },
+    classesSettings() {
+      return ['settings', { 'setting-hide': this.step === 2 }];
+    },
+    header() {
+      if (this.showSettings) return this.$t('assets.swapSettings');
+
+          if (this.step === 1) return this.$t('assets.polkaswap');
+
+          return this.$t('assets.swapPreview');
+    },
+    showSwapInfo() {
+      return this.sendAssetId !== '' && this.receiveAssetId !== '' && this.sendAmount !== '' && this.receiveAmount !== '';
+    },
+    sendCurrency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.sendAssetId);
+    },
+    sendAssetName() {
+      return this.sendCurrency?.symbol ?? '';
+    },
+    sendAssetIcon() {
+      return this.sendCurrency?.groupId ?? '';
+    },
+    receiveCurrency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.receiveAssetId);
+    },
+    receiveAssetName() {
+      return this.receiveCurrency?.symbol ?? '';
+    },
+    receiveAssetIcon() {
+      return this.receiveCurrency ? this.receiveCurrency.icon : '';
+    },
+    showSelectPopup() {
+      return this.selectAssetType !== '';
+    },
+    optionsCurrency() {
+      const filter = this.filterValue.toLowerCase();
+          const tokensGroupFilteredByNetwork = this.accountsStore.balances.filter(({ balances }) => {
+            return balances.some(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
+          });
+
+          const tokens = getCurrencyOptions(tokensGroupFilteredByNetwork).filter(({ name, value }) => {
+            if (!name.toLowerCase().includes(filter)) return false;
+
+            const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;
+
+            return value !== id;
+          });
+
+          return tokens;
+    },
+    top() {
+      return this.isSendAssetType ? 145 : 248;
+    },
+    selectPopupValue() {
+      if (this.isSendAssetType) return this.sendAssetId;
+
+          return this.receiveAssetId;
+    },
+    isSendAssetType() {
+      return this.selectAssetType === 'send';
+    },
+    isReceiveAssetType() {
+      return this.selectAssetType === 'receive';
+    },
+    buttonText() {
+      if (this.showSettings) return 'common.save';
+
+          if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'assets.calculateFee';
+
+          if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
+
+          if (!this.isValidTransferByXOR)
+            return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
+
+          if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
+
+          return this.step === 1 ? 'assets.preview' : 'common.confirm';
+    },
+    buttonPreviewDisabled() {
+      if (this.step === 2 || this.showSettings) return false;
+
+          if (
+            this.fee === '' ||
+            !this.isValidSendAsset ||
+            !this.isValidTransferByXOR ||
+            +this.sendAmount === 0 ||
+            +this.receiveAmount === 0
+          )
+            return true;
+
+          return this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '';
+    },
+    isValidSendAsset() {
+      return isValidAmountAsset(this.sendCurrency, this.soraNetworkName, this.fee, this.sendAmount);
+    },
+    isValidTransferByXOR() {
+      if (this.fee === '') return false;
+
+          if (this.receiveAssetName === SORA_UTILITY_ASSET) {
+            const transferableXor = this.calcTransferableXor();
+            const receiveAmount = this.isExchangeB ? this.receiveAmount : this.minMaxAmount;
+            const transferableXORAfterSending = addNumbers([transferableXor, receiveAmount]);
+
+            // если баланс xor после получения будет больше, чем затраты на комиссию, своп валиден
+            return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(this.fee));
+          }
+
+          // этот кейс проверяется в this.isValidSendAsset, когда sendAsset выбран xor
+          if (this.sendAssetName === SORA_UTILITY_ASSET) return true;
+
+          // проверяем, что xor достаточно на оплату комиссии
+          return FPNumber.gte(new FPNumber(this.calcTransferableXor()), new FPNumber(this.fee));
+    },
+    sendAssetUP() {
+      return this.sendAssetName.toUpperCase();
+    },
+    receiveAssetUP() {
+      return this.receiveAssetName.toUpperCase();
+    },
+    sendCurrencyBalance() {
+      return this.sendCurrency?.balances.find(
+            (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
+          );
+    },
+    transferableSendAmount() {
+      return +(this.sendCurrencyBalance?.transferable ?? 0);
+    },
+    transferableReceiveAmount() {
+      return +(
+            this.receiveCurrency?.balances.find(
+              (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
+            )?.transferable ?? 0
+          );
+    },
+    sendValue() {
+      return getCostOfAssets(+(this.sendAmount ?? 0), this.sendAssetPrice, 'string');
+    },
+    receiveValue() {
+      return getCostOfAssets(+(this.receiveAmount ?? 0), this.receiveAssetPrice, 'string');
+    },
+  },
   created() {
     this.updateComponentParams();
-  }
-
+  },
   activated() {
     this.updateComponentParams();
-  }
-
+  },
   deactivated() {
     this.selectAssetType = '';
-    this.step = 1;
-  }
+        this.step = 1;
+  },
+  methods: {
+    updateComponentParams() {
+      const { reset, restPriceXOR, assetId } = this.$route.params;
 
-  updateComponentParams() {
-    const { reset, restPriceXOR, assetId } = this.$route.params;
+          if (reset !== undefined) {
+            this.receiveAssetId = '';
+            this.sendAmount = '';
+            this.receiveAmount = '';
+          } else if (restPriceXOR) {
+            this.receiveAssetId = SORA_XOR_ASSET_ID;
+            this.receiveAmount = restPriceXOR;
+            this.isExchangeB = true;
+          }
 
-    if (reset !== undefined) {
-      this.receiveAssetId = '';
-      this.sendAmount = '';
-      this.receiveAmount = '';
-    } else if (restPriceXOR) {
-      this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = restPriceXOR;
+          this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+    },
+    async checkSwap() {
+      if (this.sendAssetId === '' || this.receiveAssetId === '') {
+            if (this.isExchangeB) this.sendAmount = '';
+            else this.receiveAmount = '';
+
+            return;
+          }
+
+          if ((this.isExchangeB && this.receiveAmount == '') || (!this.isExchangeB && this.sendAmount === '')) {
+            this.sendAmount = '';
+            this.receiveAmount = '';
+
+            return;
+          }
+
+          const createSwap = async () => {
+            const { amountA, amountB, AToB, BToA, swapOptions, minMaxValue, route } = await checkSwap({
+              network: this.soraNetworkName,
+              amountA: this.sendAmount,
+              amountB: this.receiveAmount,
+              assetAId: this.sendAssetId,
+              assetBId: this.receiveAssetId,
+              slippage: this.slippage,
+              symbolA: this.sendAssetName,
+              symbolB: this.receiveAssetName,
+              isExchangeB: this.isExchangeB,
+              marketType: this.marketType,
+            });
+
+            if (this.isExchangeB) this.sendAmount = amountA;
+            else this.receiveAmount = amountB;
+
+            this.tx = swapOptions!;
+            this.minMaxAmount = minMaxValue;
+            this.AToB = AToB;
+            this.BToA = BToA;
+            this.route = route;
+          };
+
+          this.clearSwapInterval();
+          this.swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);
+
+          createSwap();
+    },
+    clearSwapInterval() {
+      clearInterval(this.swapInterval);
+    },
+    closeForm() {
+      if (this.showSettings) {
+            this.toggleSettingsVisibility();
+
+            return;
+          }
+
+          this.clearSwapInterval();
+          this.$router.back();
+    },
+    async updateSendAmount(value: string) {
+      this.isExchangeB = false;
+          this.sendAmount = value;
+
+          this.checkSwap();
+    },
+    async updateReceiveAmount(value: string) {
       this.isExchangeB = true;
-    }
+          this.receiveAmount = value;
 
-    this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-  }
+          this.checkSwap();
+    },
+    toggleSelectedAsset(value: string) {
+      if (this.isSendAssetType) this.sendAssetId = value;
+          else this.receiveAssetId = value;
 
-  async checkSwap() {
-    if (this.sendAssetId === '' || this.receiveAssetId === '') {
-      if (this.isExchangeB) this.sendAmount = '';
-      else this.receiveAmount = '';
+          this.checkSwap();
+          this.toggleSelectAssetPopupVisibility('');
+    },
+    confirmationPasswordPopupClose(closeForm: boolean) {
+      this.showConfirmationPasswordPopup = false;
 
-      return;
-    }
+          if (closeForm) {
+            this.sendAmount = '';
+            this.receiveAmount = '';
+            this.step = 1;
 
-    if ((this.isExchangeB && this.receiveAmount == '') || (!this.isExchangeB && this.sendAmount === '')) {
-      this.sendAmount = '';
-      this.receiveAmount = '';
+            this.clearSwapInterval();
+          }
+    },
+    handlerFilter(value: string) {
+      this.filterValue = value;
+    },
+    toggleSelectAssetPopupVisibility(value: 'send' | 'receive' | '') {
+      if (this.selectAssetType !== '') this.selectAssetType = '';
+          else this.selectAssetType = value;
 
-      return;
-    }
+          this.filterValue = '';
+    },
+    async proceed() {
+      if (this.showSettings) {
+            this.marketType = this.temporaryMarketType;
+            this.slippage = this.temporarySlippage;
+            this.showSettings = false;
 
-    const createSwap = async () => {
-      const { amountA, amountB, AToB, BToA, swapOptions, minMaxValue, route } = await checkSwap({
-        network: this.soraNetworkName,
-        amountA: this.sendAmount,
-        amountB: this.receiveAmount,
-        assetAId: this.sendAssetId,
-        assetBId: this.receiveAssetId,
-        slippage: this.slippage,
-        symbolA: this.sendAssetName,
-        symbolB: this.receiveAssetName,
-        isExchangeB: this.isExchangeB,
-        marketType: this.marketType,
-      });
+            await this.checkSwap();
+          } else if (this.step === 1) this.step += 1;
+          else this.showConfirmationPasswordPopup = true;
+    },
+    resetSettings() {
+      this.temporaryMarketType = MarketType.SMART;
+          this.temporarySlippage = 0.5;
 
-      if (this.isExchangeB) this.sendAmount = amountA;
-      else this.receiveAmount = amountB;
+          this.proceed();
+    },
+    toggleSettingsVisibility() {
+      this.showSettings = !this.showSettings;
+          this.temporaryMarketType = this.marketType;
+          this.temporarySlippage = this.slippage;
+    },
+    swapAssets() {
+      if (this.receiveAssetId === '') return;
 
-      this.tx = swapOptions!;
-      this.minMaxAmount = minMaxValue;
-      this.AToB = AToB;
-      this.BToA = BToA;
-      this.route = route;
-    };
+          const sendAssetId = this.sendAssetId;
 
-    this.clearSwapInterval();
-    this.swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);
+          if (this.isExchangeB) this.sendAmount = this.receiveAmount;
+          else this.receiveAmount = this.sendAmount;
 
-    createSwap();
-  }
+          this.isExchangeB = !this.isExchangeB;
+          this.sendAssetId = this.receiveAssetId;
+          this.receiveAssetId = sendAssetId;
 
-  clearSwapInterval() {
-    clearInterval(this.swapInterval);
-  }
+          this.checkSwap();
+    },
+    back() {
+      if (this.step === 1) this.closeForm();
+          else this.step -= 1;
+    },
+    updateMarketType(value: MarketType) {
+      this.temporaryMarketType = value;
+    },
+    updateSlippage(value: number) {
+      this.temporarySlippage = value;
+    },
+    calcTransferableXor() {
+      const balance = this.currencyXOR!.balances.find(
+            ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
+          )!;
 
-  closeForm() {
-    if (this.showSettings) {
-      this.toggleSettingsVisibility();
+          return balance.transferable?.toString() ?? '';
+    },
+    calcTransferableSendMinusFee() {
+      return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);
+    },
+    setMax() {
+      this.isExchangeB = false;
+          this.sendAmount = this.calcTransferableSendMinusFee();
 
-      return;
-    }
-
-    this.clearSwapInterval();
-    this.$router.back();
-  }
-
-  async updateSendAmount(value: string) {
-    this.isExchangeB = false;
-    this.sendAmount = value;
-
-    this.checkSwap();
-  }
-
-  async updateReceiveAmount(value: string) {
-    this.isExchangeB = true;
-    this.receiveAmount = value;
-
-    this.checkSwap();
-  }
-
-  toggleSelectedAsset(value: string) {
-    if (this.isSendAssetType) this.sendAssetId = value;
-    else this.receiveAssetId = value;
-
-    this.checkSwap();
-    this.toggleSelectAssetPopupVisibility('');
-  }
-
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) {
-      this.sendAmount = '';
-      this.receiveAmount = '';
-      this.step = 1;
-
-      this.clearSwapInterval();
-    }
-  }
-
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
-  toggleSelectAssetPopupVisibility(value: 'send' | 'receive' | '') {
-    if (this.selectAssetType !== '') this.selectAssetType = '';
-    else this.selectAssetType = value;
-
-    this.filterValue = '';
-  }
-
-  async proceed() {
-    if (this.showSettings) {
-      this.marketType = this.temporaryMarketType;
-      this.slippage = this.temporarySlippage;
-      this.showSettings = false;
-
-      await this.checkSwap();
-    } else if (this.step === 1) this.step += 1;
-    else this.showConfirmationPasswordPopup = true;
-  }
-
-  resetSettings() {
-    this.temporaryMarketType = MarketType.SMART;
-    this.temporarySlippage = 0.5;
-
-    this.proceed();
-  }
-
-  toggleSettingsVisibility() {
-    this.showSettings = !this.showSettings;
-    this.temporaryMarketType = this.marketType;
-    this.temporarySlippage = this.slippage;
-  }
-
-  swapAssets() {
-    if (this.receiveAssetId === '') return;
-
-    const sendAssetId = this.sendAssetId;
-
-    if (this.isExchangeB) this.sendAmount = this.receiveAmount;
-    else this.receiveAmount = this.sendAmount;
-
-    this.isExchangeB = !this.isExchangeB;
-    this.sendAssetId = this.receiveAssetId;
-    this.receiveAssetId = sendAssetId;
-
-    this.checkSwap();
-  }
-
-  back() {
-    if (this.step === 1) this.closeForm();
-    else this.step -= 1;
-  }
-
-  updateMarketType(value: MarketType) {
-    this.temporaryMarketType = value;
-  }
-
-  updateSlippage(value: number) {
-    this.temporarySlippage = value;
-  }
-
-  calcTransferableXor() {
-    const balance = this.currencyXOR!.balances.find(
-      ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
-    )!;
-
-    return balance.transferable?.toString() ?? '';
-  }
-
-  calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);
-  }
-
-  setMax() {
-    this.isExchangeB = false;
-    this.sendAmount = this.calcTransferableSendMinusFee();
-
-    this.checkSwap();
-  }
-}
+          this.checkSwap();
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

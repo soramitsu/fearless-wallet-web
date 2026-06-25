@@ -16,6 +16,7 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
 import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
+import { mergeUniversalWalletRegistryNetworks } from '@/util/universalWalletRegistryNetworks';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
@@ -56,6 +57,15 @@ export class NetworkService {
         } else if (item.ecosystem === 'ton') {
           result.ton.push(item);
           result.tonList.push(networkLower);
+        } else if (item.ecosystem === 'solana') {
+          result.solana.push(item);
+          result.solanaList.push(networkLower);
+        } else if (item.ecosystem === 'bitcoin') {
+          result.bitcoin.push(item);
+          result.bitcoinList.push(networkLower);
+        } else if (item.ecosystem === 'iroha') {
+          result.iroha.push(item);
+          result.irohaList.push(networkLower);
         } else if (item.ecosystem === 'substrate' || item.ecosystem === 'ethereumBased') {
           result.substrate.push(item);
           result.substrateList.push(networkLower);
@@ -67,9 +77,15 @@ export class NetworkService {
         substrate: [] as NetworkJson[],
         evm: [] as NetworkJson[],
         ton: [] as NetworkJson[],
+        solana: [] as NetworkJson[],
+        bitcoin: [] as NetworkJson[],
+        iroha: [] as NetworkJson[],
         substrateList: [] as NetworkName[],
         evmList: [] as NetworkName[],
         tonList: [] as NetworkName[],
+        solanaList: [] as NetworkName[],
+        bitcoinList: [] as NetworkName[],
+        irohaList: [] as NetworkName[],
       }
     );
   }
@@ -130,6 +146,8 @@ export class NetworkService {
         };
       });
 
+    mergeUniversalWalletRegistryNetworks(this.networkMap, networksFromStorage);
+
     const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((networkName) => {
@@ -151,6 +169,7 @@ export class NetworkService {
 
     if (ecosystem === 'ethereum') this.evmApiHandler.destroyApi(name);
     else if (ecosystem === 'ton') this.tonApiHandler.destroyApi(name);
+    else if (ecosystem === 'bitcoin') return;
     else this.substrateApiHandler.destroyApi(name);
   }
 
@@ -197,13 +216,27 @@ export class NetworkService {
 
       if (!account) return;
 
+      const isSubstrateAddress = account?.meta.walletEcosystem === WalletEcosystem.Substrate;
       const isTonAddress = account?.meta.walletEcosystem === WalletEcosystem.Ton;
+      const isSolanaAddress = account?.meta.walletEcosystem === WalletEcosystem.Solana;
+      const isBitcoinAddress = account?.meta.walletEcosystem === WalletEcosystem.Bitcoin;
+      const isIrohaAddress = account?.meta.walletEcosystem === WalletEcosystem.Iroha;
 
       if (value === ALL_NETWORKS) {
         this.networkValues.forEach((network) => {
-          if (isTonAddress && network.ecosystem === 'ton') return uniqNetworks.add(network);
+          if (
+            isSubstrateAddress &&
+            network.ecosystem !== 'ton' &&
+            network.ecosystem !== 'solana' &&
+            network.ecosystem !== 'bitcoin' &&
+            network.ecosystem !== 'iroha'
+          )
+            return uniqNetworks.add(network);
 
-          if (!isTonAddress && network.ecosystem !== 'ton') uniqNetworks.add(network);
+          if (isTonAddress && network.ecosystem === 'ton') uniqNetworks.add(network);
+          if (isSolanaAddress && network.ecosystem === 'solana') uniqNetworks.add(network);
+          if (isBitcoinAddress && network.ecosystem === 'bitcoin') uniqNetworks.add(network);
+          if (isIrohaAddress && network.ecosystem === 'iroha') uniqNetworks.add(network);
         });
 
         return;
@@ -213,9 +246,19 @@ export class NetworkService {
         this.networkValues.forEach((network) => {
           if (!network.rank) return;
 
-          if (isTonAddress && network.ecosystem === 'ton') return uniqNetworks.add(network);
+          if (
+            isSubstrateAddress &&
+            network.ecosystem !== 'ton' &&
+            network.ecosystem !== 'solana' &&
+            network.ecosystem !== 'bitcoin' &&
+            network.ecosystem !== 'iroha'
+          )
+            return uniqNetworks.add(network);
 
-          if (!isTonAddress && network.ecosystem !== 'ton') uniqNetworks.add(network);
+          if (isTonAddress && network.ecosystem === 'ton') uniqNetworks.add(network);
+          if (isSolanaAddress && network.ecosystem === 'solana') uniqNetworks.add(network);
+          if (isBitcoinAddress && network.ecosystem === 'bitcoin') uniqNetworks.add(network);
+          if (isIrohaAddress && network.ecosystem === 'iroha') uniqNetworks.add(network);
         });
 
         return;
@@ -225,9 +268,19 @@ export class NetworkService {
         this.networkValues.forEach((network) => {
           if (network.favorite.includes(address)) return;
 
-          if (isTonAddress && network.ecosystem === 'ton') return uniqNetworks.add(network);
+          if (
+            isSubstrateAddress &&
+            network.ecosystem !== 'ton' &&
+            network.ecosystem !== 'solana' &&
+            network.ecosystem !== 'bitcoin' &&
+            network.ecosystem !== 'iroha'
+          )
+            return uniqNetworks.add(network);
 
-          if (!isTonAddress && network.ecosystem !== 'ton') uniqNetworks.add(network);
+          if (isTonAddress && network.ecosystem === 'ton') uniqNetworks.add(network);
+          if (isSolanaAddress && network.ecosystem === 'solana') uniqNetworks.add(network);
+          if (isBitcoinAddress && network.ecosystem === 'bitcoin') uniqNetworks.add(network);
+          if (isIrohaAddress && network.ecosystem === 'iroha') uniqNetworks.add(network);
         });
 
         return;
@@ -282,6 +335,8 @@ export class NetworkService {
 
     if (ecosystem === 'ethereum') this.evmApiHandler.initEvmApi(networkJson);
     else if (ecosystem === 'ton') this.tonApiHandler.initApi(networkJson);
+    else if (ecosystem === 'bitcoin') return;
+    else if (ecosystem === 'iroha') return;
     else {
       this.substrateApiHandler.api[name].api?.disconnect();
       this.substrateApiHandler.api[name].provider?.disconnect();

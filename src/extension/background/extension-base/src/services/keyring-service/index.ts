@@ -16,12 +16,13 @@ import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
-import { api } from '@sora-substrate/sdk';
+import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import type { EventService } from '@extension-base/services';
 import type {
   DecryptForCosignerData,
   EncryptByCosignerData,
+  FinalEncryptedStructure,
   RequestChangePassword,
   RequestExportSeed,
   RequestGenerateMnemonic,
@@ -32,12 +33,15 @@ import type {
   ResponseExportSeed,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeypairType } from '@subwallet/keyring/types';
 import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
+import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
+import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWalletKeyringMigration';
+import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
@@ -52,7 +56,7 @@ export class KeyringService {
     eventService.waitCryptoReady
       .then(() => {
         this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
-          rs && this.currentAccountSubject.next(rs);
+          if (rs) this.currentAccountSubject.next(rs);
         });
       })
       .catch(console.error);
@@ -109,7 +113,13 @@ export class KeyringService {
   }
 
   getAllSubstrateAccounts() {
-    return this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address));
+    return this.getAllAccounts().filter(
+      ({ address, meta }) =>
+        !isEthereumAddress(address) &&
+        meta.walletEcosystem !== WalletEcosystem.Bitcoin &&
+        meta.walletEcosystem !== WalletEcosystem.Solana &&
+        meta.walletEcosystem !== WalletEcosystem.Iroha
+    );
   }
 
   getAllEthereumAccounts() {
@@ -118,7 +128,7 @@ export class KeyringService {
 
   // return all walletEcosystem accounts [substrate[without ethereum], ton]
   getAllMainAccounts() {
-    return [...this.getAllSubstrateAccounts(), ...this.tonKeyring.getAccounts()];
+    return [...this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address)), ...this.tonKeyring.getAccounts()];
   }
 
   triggerWalletsSubscription(address: string, walletEcosystem: WalletEcosystem) {
@@ -141,14 +151,22 @@ export class KeyringService {
 
   async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
     if (walletEcosystem === 'ton') {
-      const account = await this.tonKeyring.createAccount(suri, meta.name!, this.password);
+      const account = await this.tonKeyring.createAccount(suri, meta, this.password);
 
       return account.address.toString();
     }
 
+    const initialMeta = { ...meta, isMobile: false, walletEcosystem };
     const {
       pair: { address },
-    } = keyring.addUri(suri, { ...meta, isMobile: false, walletEcosystem: WalletEcosystem.Substrate }, type);
+    } = keyring.addUri(suri, initialMeta, type);
+
+    const effectiveEcosystem = isEthereumAddress(address) ? WalletEcosystem.Evm : walletEcosystem;
+    const pair = this.getPair(address);
+
+    if (pair) {
+      keyring.saveAccountMeta(pair, withUniversalWalletKeyringMeta(address, initialMeta, effectiveEcosystem));
+    }
 
     return address;
   }
@@ -288,11 +306,27 @@ export class KeyringService {
   saveAccountMeta(address: string, meta: FWKeyringMeta) {
     const pair = this.getPair(address);
 
-    if (pair) return keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
+    if (pair) {
+      const walletEcosystem =
+        isEthereumAddress(address) && meta.walletEcosystem === undefined
+          ? WalletEcosystem.Evm
+          : meta.walletEcosystem ?? (pair.meta as FWKeyringMeta).walletEcosystem;
+
+      return keyring.saveAccountMeta(
+        pair,
+        withUniversalWalletKeyringMeta(address, { ...(pair.meta as FWKeyringMeta), ...meta }, walletEcosystem)
+      );
+    }
 
     const account = this.getAddress(address);
 
-    if (account) this.saveAddress(address, { ...account.meta, ...meta }, 'address');
+    if (account) {
+      this.saveAddress(
+        address,
+        withUniversalWalletKeyringMeta(address, { ...(account.meta as FWKeyringMeta), ...meta }, meta.walletEcosystem),
+        'address'
+      );
+    }
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
@@ -334,33 +368,23 @@ export class KeyringService {
 
   getDataAccounts({ address, walletEcosystem }: RequestExportSeed) {
     if (walletEcosystem === WalletEcosystem.Ton) {
-      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
-      const value = this.tonKeyring.decode(cipherSeed);
-
-      return { value };
+      return { value: address };
     }
 
     try {
       const pair = keyring.getPair(address);
-      const value = pair.exportMnemonic(this.password);
 
-      return { value };
-    } catch (err) {
+      return { value: pair.address };
+    } catch {
       console.info();
     }
 
     try {
-      const pair = keyring.getPair(address);
       const value1 = this.backupAccount(address, this.password);
-      let value2;
-
-      if ((pair.meta as any)?.ethereumAddress) {
-        value2 = this.backupAccount((pair.meta as any).ethereumAddress, this.password);
-      }
 
       return {
-        value: `${JSON.stringify(value1)}_${this.password}`,
-        value2: value2 ? `${JSON.stringify(value2)}_${this.password}` : undefined,
+        value: JSON.stringify(value1),
+        value2: value1?.address ?? '',
       };
     } catch {
       return { value: '' };
@@ -409,13 +433,22 @@ export class KeyringService {
       return { seed };
     }
 
+    const passphrase = password ?? this.password;
+
     try {
       const pair = keyring.getPair(address);
-      const seed = pair.exportMnemonic(password!);
+      const seed = pair.exportMnemonic(passphrase);
 
       return { seed };
     } catch {
-      return { seed: '' };
+      try {
+        const json = this.backupAccount(address, passphrase);
+        const seed = json ? decodeMnemonicFromJsonBackup(json, passphrase) : '';
+
+        return { seed };
+      } catch {
+        return { seed: '' };
+      }
     }
   }
 
@@ -455,17 +488,40 @@ export class KeyringService {
     return { seed: rawSeed };
   }
 
-  public accountExportSecretKey(request: RequestExportSeed) {
+  public accountExportSecretKey(request: RequestExportSeed): Uint8Array | null {
     const { seed } = this.exportMnemonic(request);
 
     if (!seed) return null;
 
-    // Convert mnemonic to raw seed (32 bytes for sr25519)
-    const seedU8 = mnemonicToMiniSecret(seed);
+    return sr25519PairFromSeed(mnemonicToMiniSecret(seed)).secretKey;
+  }
 
-    const { secretKey } = sr25519PairFromSeed(seedU8);
+  decryptForCosigner({ address, data, encryptorPublicKey }: DecryptForCosignerData): string {
+    const pair = this.getPair(address);
 
-    return secretKey;
+    if (!pair) throw new Error('Key pair does not exist');
+
+    const secretKey = this.accountExportSecretKey({ address, password: this.password });
+
+    if (secretKey === null) throw new Error('Secret key is undefined');
+
+    return soraSdk.crypto.decryptForCosigner(address, encryptorPublicKey, data, secretKey);
+  }
+
+  encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData): FinalEncryptedStructure {
+    if (this.password === '') throw new Error('First unlock the extension');
+
+    const pair = this.getPair(address);
+
+    if (!pair) throw new Error('Key pair does not exist');
+
+    const secretKey = this.accountExportSecretKey({ address, password: this.password });
+
+    if (secretKey === null) throw new Error('Secret key is undefined');
+
+    const cosignerBytes = Object.fromEntries(Object.entries(cosigners).map(([key, value]) => [key, hexToU8a(value)]));
+
+    return soraSdk.crypto.encryptBySigner(data, cosignerBytes, secretKey);
   }
 
   unlockKeyring({ password }: RequestUnlockExtension): boolean {
@@ -519,6 +575,22 @@ export class KeyringService {
     return this.getMigrationAccounts().length !== 0;
   }
 
+  getUniversalWalletMigrationSnapshot() {
+    return buildWebUniversalWalletMigrationSnapshot({
+      accounts: [
+        ...this.getAccounts().map(({ address, meta }) => ({
+          address,
+          meta,
+          type: isEthereumAddress(address) ? 'ethereum' : undefined,
+        })),
+        ...Object.values(this.tonKeyring.accountSubject.value).map(({ json: { address, meta } }) => ({
+          address,
+          meta: meta as FWKeyringMeta,
+        })),
+      ],
+    });
+  }
+
   keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {
     try {
       const account = this.getAccount(address);
@@ -535,33 +607,5 @@ export class KeyringService {
 
       return false;
     }
-  }
-
-  decryptForCosigner({ address, data, encryptorPublicKey }: DecryptForCosignerData) {
-    const pair = this.getPair(address);
-
-    if (!pair) throw new Error('Key pair not exist');
-
-    const secretKey = this.accountExportSecretKey({ address, password: this.password });
-
-    if (secretKey === null) throw new Error('Seckret key is undefined');
-
-    return api.crypto.decryptForCosigner(address, encryptorPublicKey, data, secretKey);
-  }
-
-  encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData) {
-    if (this.password === '') throw new Error('First unlock the extension');
-
-    const pair = this.getPair(address);
-
-    if (!pair) throw new Error('Key pair not exist');
-
-    const secretKey = this.accountExportSecretKey({ address, password: this.password });
-
-    if (secretKey === null) throw new Error('Seckret key is undefined');
-
-    const _cosigners = Object.fromEntries(Object.entries(cosigners).map(([key, value]) => [key, hexToU8a(value)]));
-
-    return api.crypto.encryptBySigner(data, _cosigners, secretKey);
   }
 }

@@ -27,6 +27,11 @@ export const actions: Actions = {
     this.selectedWallet = {
       address: account?.address ?? '',
       ethereumAddress: account?.ethereumAddress ?? '',
+      bitcoinAddress: account?.bitcoinAddress,
+      bitcoinTestnetAddress: account?.bitcoinTestnetAddress,
+      solanaAddress: account?.solanaAddress,
+      irohaAddress: account?.irohaAddress,
+      irohaPublicKeyHex: account?.irohaPublicKeyHex,
       walletEcosystem: account?.walletEcosystem,
       name: account?.name ?? '',
       isMobile: account?.isMobile ?? false,
@@ -35,7 +40,7 @@ export const actions: Actions = {
       haveEntropy: account?.haveEntropy ?? false,
       isSubstrate: account?.walletEcosystem === WalletEcosystem.Substrate,
       isTon: account?.walletEcosystem === WalletEcosystem.Ton,
-      hasEthereum: !!account?.ethereumAddress,
+      hasEthereum: account?.ethereumAddress !== '',
     };
   },
 

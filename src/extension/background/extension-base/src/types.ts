@@ -2,6 +2,7 @@ import type { CustomTokenType } from '@extension-base/api/evm/types';
 import type { NETWORK_STATUS } from './api/types/networks';
 import type { KeyringPair$Meta } from '@subwallet/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion, ExternalApi, WalletEcosystem } from '@/interfaces';
+import type { UniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 export interface Message extends MessageEvent {
   data: {
@@ -9,7 +10,7 @@ export interface Message extends MessageEvent {
     id: string;
     origin: string;
     response?: string;
-    subscription?: any;
+    subscription?: unknown;
   };
 }
 
@@ -92,7 +93,7 @@ type XcmAssets = {
   symbol: string;
 };
 
-export type NetworkEcosystem = 'substrate' | 'ton' | 'ethereumBased' | 'ethereum';
+export type NetworkEcosystem = 'substrate' | 'ton' | 'ethereumBased' | 'ethereum' | 'solana' | 'bitcoin' | 'iroha';
 
 export interface NetworkJson {
   // General Information
@@ -147,6 +148,14 @@ export interface FWKeyringMeta extends KeyringPair$Meta {
   isMasterPassword?: boolean;
   wcTopic?: string;
   ethereumAddress?: string;
+  bitcoinAddress?: string;
+  bitcoinTestnetAddress?: string;
+  solanaAddress?: string;
+  tonAddress?: string;
+  tonPublicKeyHex?: string;
+  irohaAddress?: string;
+  irohaPublicKeyHex?: string;
+  universalWallet?: UniversalWalletKeyringMeta;
   name?: string;
   walletEcosystem?: WalletEcosystem;
 }

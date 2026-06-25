@@ -18,9 +18,11 @@ export class OnboardingService {
 
     if (onboarding) this.changeUserType(onboarding.user);
 
-    const res = await axios
-      .get<OnBoardingStoriesLocales>(URLS.ONBOARDING_URL)
-      .catch(() => console.info('onboarding fetch error'));
+    const res = await axios.get<OnBoardingStoriesLocales>(URLS.ONBOARDING_URL).catch(() => {
+      console.info('onboarding fetch error');
+
+      return null;
+    });
 
     if (res?.status !== 200) return;
 

@@ -4,7 +4,15 @@
       <template v-if="isAccountsExists">
         <div>
           <Alert>
-            <p class="authorize__content" v-html="message"></p>
+            <p class="authorize__content">
+              <span
+                v-for="(part, index) in messageParts"
+                :key="`${part.kind}-${index}`"
+                :class="getMessagePartClass(part)"
+              >
+                {{ getMessagePartText(part) }}
+              </span>
+            </p>
           </Alert>
 
           <div class="authorize-account-list">
@@ -41,16 +49,19 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, set, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { computed, ref, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { type AuthorizeMessagePart, splitAuthorizeMessage } from './messageParts';
 import type { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
+import { useI18n } from '@/locales/useI18n';
 import { Components } from '@/router/routes';
 import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
+import { WalletEcosystem } from '@/interfaces';
+import { encodeIrohaI105Address } from '@/util/iroha';
 
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
@@ -63,18 +74,25 @@ const { t } = useI18n();
 const requests = computed(() => extensionStore.authRequests);
 const request = computed(() => requests.value[0]);
 const accountAuthType = computed(() => request.value?.request?.accountAuthType);
+const allowedAccounts = computed(() => new Set(request.value?.request.allowedAccounts ?? []));
 
 const accounts = computed<AccountJson[]>(() => {
   const accounts: AccountJson[] = accountsStore.accounts;
 
-  return accounts.filter(({ ethereumAddress }) => {
+  return accounts.filter((account) => {
+    const { ethereumAddress, solanaAddress, walletEcosystem } = account;
+
     if (accountAuthType.value === 'evm' && !ethereumAddress) return false;
+    if (accountAuthType.value === 'solana') return !!solanaAddress || walletEcosystem === WalletEcosystem.Solana;
+    if (accountAuthType.value === 'iroha') return !!resolveIrohaAuthAddress(account, allowedAccounts.value);
 
     return true;
   });
 });
 
-const showSelectAll = computed(() => accountAuthType.value !== 'evm');
+const showSelectAll = computed(
+  () => accountAuthType.value !== 'evm' && accountAuthType.value !== 'solana' && accountAuthType.value !== 'iroha'
+);
 const isDisabledApproveBtn = computed(() => !Object.values(state.value).some(({ active }) => active));
 const isAccountsExists = computed(() => accounts.value.length > 0);
 
@@ -83,14 +101,26 @@ const isAllSelected = () => Object.values(state.value).every(({ active }) => act
 onMounted(() => {
   const active = showSelectAll.value;
 
-  accounts.value.forEach(({ name, address, ethereumAddress, isMobile }) => {
-    set(state.value, address, {
+  accounts.value.forEach((account) => {
+    const { name, address, ethereumAddress, irohaAddress, isMobile, solanaAddress, walletEcosystem } = account;
+    const authAddress =
+      accountAuthType.value === 'solana' && solanaAddress
+        ? solanaAddress
+        : accountAuthType.value === 'solana' && walletEcosystem === WalletEcosystem.Solana
+        ? address
+        : accountAuthType.value === 'iroha'
+        ? resolveIrohaAuthAddress(account, allowedAccounts.value) ?? address
+        : address;
+
+    state.value[authAddress] = {
       name,
-      address,
+      address: authAddress,
       ethereumAddress,
+      irohaAddress,
+      solanaAddress,
       isMobile,
       active,
-    });
+    };
   });
 
   selectAll.value = isAllSelected();
@@ -110,21 +140,39 @@ const onSelect = (value: boolean, address: string) => {
 
 const onSelectAll = (value: boolean) => {
   Object.keys(state.value).forEach((key) => {
-    set(state.value, key, {
+    state.value[key] = {
       ...state.value[key],
       active: value,
-    });
+    };
   });
 
   selectAll.value = value;
 };
 
-const message = computed(() =>
-  t('authorize.authWarningMessage', {
-    name: `<span class="authorize__content--name">${request.value.request.origin}</span>`,
-    link: `<span class="authorize__content--link">${request.value.url}</span>`,
-  })
+const requestOrigin = computed(() => request.value?.request.origin ?? '');
+const requestUrl = computed(() => request.value?.url ?? '');
+const messageParts = computed(() =>
+  splitAuthorizeMessage(
+    t('authorize.authWarningMessage', {
+      name: '{name}',
+      link: '{link}',
+    })
+  )
 );
+
+const getMessagePartClass = (part: AuthorizeMessagePart) => {
+  if (part.kind === 'name') return 'authorize__content--name';
+  if (part.kind === 'link') return 'authorize__content--link';
+
+  return undefined;
+};
+
+const getMessagePartText = (part: AuthorizeMessagePart) => {
+  if (part.kind === 'name') return requestOrigin.value;
+  if (part.kind === 'link') return requestUrl.value;
+
+  return part.text;
+};
 
 const redirect = () => {
   if (IS_POPUP) setTimeout(() => router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
@@ -141,6 +189,31 @@ const onApprove = () => {
 };
 
 const onReject = () => extensionStore.rejectAuthRequests(request.value.id);
+
+const resolveIrohaAuthAddress = (
+  { address, irohaAddress, irohaPublicKeyHex, walletEcosystem }: AccountJson,
+  allowed: Set<string>
+): string | undefined => {
+  const candidates = [
+    irohaAddress,
+    address,
+    ...deriveIrohaAddresses(irohaPublicKeyHex),
+  ].filter((value): value is string => !!value);
+
+  if (allowed.size > 0) return candidates.find((candidate) => allowed.has(candidate));
+
+  return walletEcosystem === WalletEcosystem.Iroha ? candidates[0] : irohaAddress;
+};
+
+const deriveIrohaAddresses = (publicKeyHex?: string): string[] => {
+  if (!publicKeyHex) return [];
+
+  try {
+    return [encodeIrohaI105Address(publicKeyHex, 'nexus'), encodeIrohaI105Address(publicKeyHex, 'taira')];
+  } catch {
+    return [];
+  }
+};
 </script>
 
 <style lang="scss">

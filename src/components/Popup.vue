@@ -20,9 +20,9 @@
             </div>
           </template>
 
-          <SButton v-if="showCloseButton" type="link" class="button-close" data-testid="basicCloseBtn" @click="close">
-            <SIcon name="basic-close-24" />
-          </SButton>
+          <button v-if="showCloseButton" type="button" class="button-close" data-testid="basicCloseBtn" @click="close">
+            <Icon icon="close" />
+          </button>
         </div>
 
         <Scroll>

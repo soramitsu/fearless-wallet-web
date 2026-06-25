@@ -1,5 +1,6 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
+import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   RequestAccountExport,
   RequestAccountName,
@@ -14,12 +15,15 @@ import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { WalletEcosystem, type DerivationPath } from '@/interfaces';
 import { isSameString } from '@/helpers';
 
+const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+type StoredAccount = { address?: string } & Record<string, unknown>;
+
 export default class FWExtensionBase {
   constructor(protected state: State) {}
 
   migrateExportJSON(address: string): Promise<ResponseAccountExport> {
     return new Promise((resolve) => {
-      chrome.storage.local.get(null).then((values) => {
+      (chrome.storage.local.get(null) as unknown as Promise<Record<string, StoredAccount>>).then((values) => {
         const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
 
         const [, json] = accounts.find(([key, value]) => {
@@ -31,7 +35,7 @@ export default class FWExtensionBase {
           return isSameString(addressKey, address);
         })!;
 
-        resolve({ json });
+        resolve({ json: json as unknown as KeyringPair$Json });
       });
     });
   }
@@ -107,9 +111,10 @@ export default class FWExtensionBase {
       if (isSubstrate) this.state.keyringService.encodeAddress(pair.address);
 
       return { value: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
       const errorType =
-        error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+        message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
 
       if (errorType === 'jsonPassword') return { value: false, errorType };
     }
@@ -120,8 +125,8 @@ export default class FWExtensionBase {
       ethers.decryptKeystoreJsonSync(stringFile, password);
 
       return { value: true };
-    } catch (error: any) {
-      const errorType = error.message.includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
+    } catch (error: unknown) {
+      const errorType = getErrorMessage(error).includes('incorrect password') ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }

@@ -1,5 +1,6 @@
-import { type RouteConfig } from 'vue-router';
+import { type RouteRecordRaw } from 'vue-router';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
+import type { NetworkName } from '@/interfaces';
 import { keyringIsLocked } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
@@ -68,9 +69,13 @@ const MigrationDescription = (/* webpackChunkName: "migration */) =>
 const MigrationAccounts = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/keyringMigration/MigrationAccounts.vue');
 
+const UniversalWalletMigration = (/* webpackChunkName: "migration */) =>
+  import('@/screens/addWallet/universalWalletMigration/UniversalWalletMigration.vue');
+
 export enum Components {
   MigrationDescription = 'MigrationDescription',
   MigrationAccounts = 'MigrationAccounts',
+  UniversalWalletMigration = 'UniversalWalletMigration',
   Unlock = 'Unlock',
   ResetWallet = 'ResetWallet',
   ChangePassword = 'ChangePassword',
@@ -121,7 +126,7 @@ export enum Components {
   NftSendForm = 'NftSendForm',
 }
 
-const routes: Array<RouteConfig> = [
+const routes: Array<RouteRecordRaw> = [
   {
     path: '/migration-description',
     name: Components.MigrationDescription,
@@ -134,6 +139,14 @@ const routes: Array<RouteConfig> = [
     path: '/migration-accounts',
     name: Components.MigrationAccounts,
     component: MigrationAccounts,
+    meta: {
+      title: 'migration',
+    },
+  },
+  {
+    path: '/universal-wallet-migration',
+    name: Components.UniversalWalletMigration,
+    component: UniversalWalletMigration,
     meta: {
       title: 'migration',
     },
@@ -376,7 +389,7 @@ const routes: Array<RouteConfig> = [
     name: Components.MyStake,
     component: MyStake,
     beforeEnter: async (to, from, next) => {
-      const network = to.params.network;
+      const network = (Array.isArray(to.params.network) ? to.params.network[0] : to.params.network) as NetworkName;
       const stakingStore = useStakingStore();
       const stakingParams = await getStakingNetwork(stakingStore, network);
 

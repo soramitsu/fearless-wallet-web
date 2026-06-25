@@ -1,12 +1,27 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
-import axios from 'axios';
 import { DEFAULT_PRICES } from '../prices-service';
 import { type ResponseBalanceRequest } from '../../background/types/types';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
-import { URLS } from '@/consts/urls';
+
+type TonBalanceResult = {
+  balance: string;
+  state: APIItemState;
+};
+
+type TonJettonBalanceResult = {
+  balance: string;
+  image: string;
+  name: string;
+  precision: number;
+  symbol: string;
+  assetId: string;
+  walletAddress?: BalanceItem['walletAddress'];
+  state: APIItemState;
+};
 
 export class TonBalance {
   constructor(private readonly state: State) {}
@@ -21,29 +36,29 @@ export class TonBalance {
 
       const { precision, symbol, id: tonId } = assets[0];
 
-      const tonBalance = await this.fetchUtilityAsset(address, networkKey, precision);
+      const tonBalance = await this.fetchUtilityAsset(address, networkKey, precision, tonId);
 
       this.state.balanceService.setBalanceItem(
         networkName,
         {
-          state: APIItemState.READY,
+          state: tonBalance.state,
           precision,
           relayChain: networkName.toLowerCase(),
           symbol,
           id: tonId,
-          total: tonBalance,
-          transferable: tonBalance,
+          total: tonBalance.balance,
+          transferable: tonBalance.balance,
         },
         address
       );
 
       const jettonsBalance = await this.fetchJettonsAsset(address, networkKey);
 
-      jettonsBalance.forEach(({ balance, image, name, precision, symbol, assetId, walletAddress }) => {
+      jettonsBalance.forEach(({ balance, image, name, precision, symbol, assetId, walletAddress, state }) => {
         this.state.balanceService.setBalanceItem(
           networkName,
           {
-            state: APIItemState.READY,
+            state,
             precision,
             relayChain: networkName.toLowerCase(),
             assetIcon: image,
@@ -61,7 +76,7 @@ export class TonBalance {
 
       return [
         {
-          balance: tonBalance,
+          balance: tonBalance.balance,
           network: networkName,
           assetId: tonId,
         },
@@ -76,7 +91,12 @@ export class TonBalance {
     return (await Promise.all(promises)).flat();
   }
 
-  async fetchUtilityAsset(address: string, networkName: NetworkName, precision: number) {
+  async fetchUtilityAsset(
+    address: string,
+    networkName: NetworkName,
+    precision: number,
+    assetId: string
+  ): Promise<TonBalanceResult> {
     try {
       const api = this.state.getTonApiMap[networkName];
 
@@ -90,15 +110,18 @@ export class TonBalance {
 
       console.info(`[TON] TON ${address}: `, balanceFP.toString());
 
-      return balanceFP.toString();
+      return { balance: balanceFP.toString(), state: APIItemState.READY };
     } catch (error) {
       console.error('[TON][fetchUtilityAsset] Error', error);
 
-      return '0';
+      return {
+        balance: this.getCachedBalance(address, networkName, assetId) ?? '0',
+        state: APIItemState.ERROR,
+      };
     }
   }
 
-  async fetchJettonsAsset(address: string, networkName: NetworkName) {
+  async fetchJettonsAsset(address: string, networkName: NetworkName): Promise<TonJettonBalanceResult[]> {
     try {
       const api = this.state.getTonApiMap[networkName];
 
@@ -135,6 +158,7 @@ export class TonBalance {
           image,
           name,
           assetId: getJettonAssetId(name, symbolLower),
+          state: APIItemState.READY,
         };
       });
 
@@ -144,7 +168,46 @@ export class TonBalance {
     } catch (error) {
       console.error('[TON][fetchJettonsAsset] Error', error);
 
-      return [];
+      return this.getCachedJettonBalances(address, networkName);
     }
+  }
+
+  private getCachedBalance(address: string, networkName: NetworkName, assetId: string): string | undefined {
+    const cachedBalance = this.getCachedBalanceItems(address).find(
+      ({ id, mainNetwork, name, total, transferable, free }) =>
+        id === assetId &&
+        (isSameString(name, networkName) || isSameString(mainNetwork, networkName)) &&
+        (transferable !== undefined || total !== undefined || free !== undefined)
+    );
+
+    return cachedBalance?.transferable ?? cachedBalance?.total ?? cachedBalance?.free;
+  }
+
+  private getCachedJettonBalances(address: string, networkName: NetworkName): TonJettonBalanceResult[] {
+    return this.getCachedBalanceItems(address)
+      .filter(({ id, mainNetwork, name, type, total, transferable, free }) => {
+        if (!id || (transferable === undefined && total === undefined && free === undefined)) return false;
+
+        const belongsToNetwork = isSameString(name, networkName) || isSameString(mainNetwork, networkName);
+
+        return belongsToNetwork && type === 'jetton';
+      })
+      .map(({ assetIcon, icon, id, precision, symbol, total, transferable, free, walletAddress }) => ({
+        balance: transferable ?? total ?? free ?? '0',
+        image: assetIcon ?? icon,
+        name: symbol,
+        precision,
+        symbol,
+        assetId: id,
+        walletAddress,
+        state: APIItemState.ERROR,
+      }));
+  }
+
+  private getCachedBalanceItems(address: string): BalanceItem[] {
+    const accountAddress = this.state.keyringService.getSubstrateAddress?.(address) ?? address;
+    const groups = this.state.balanceService.balanceMap[accountAddress] ?? this.state.balanceService.balanceMap[address] ?? [];
+
+    return groups.flatMap(({ balances }) => balances);
   }
 }

@@ -226,10 +226,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import type { RequestBond, FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
-import type { NetworkParams } from '@/stores';
-import type { SelectionValidator } from '@/interfaces';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
@@ -245,7 +244,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'Bond',
   components: {
     WalletInfo,
     HistoryBook,
@@ -255,364 +254,319 @@ import { useAccountsStore } from '@/stores/accounts';
     SelectionValidatorsForm,
     ConfirmationPasswordPopup,
   },
-})
-export default class Bond extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  state: Record<string, SelectionValidator> = {};
-  selectedValidator: FWValidatorInfoFull | null = null;
-  payoutAddress = '';
-  step = 1;
-  isSuggested = false;
-  showConfirmationPasswordPopup = false;
-  showHistoryBook = false;
-  showMyWallets = false;
-  showEditAddressBook = false;
-  fee = '';
-  feeMax = '';
-  amount = '';
-  newAddress = '';
-
-  @Prop({ type: Object }) stakingNetwork!: NetworkParams;
-
-  get isValidPayoutAddress() {
-    if (this.payoutAddress === '') return true;
-
-    return BaseApi.validateAddress(this.payoutAddress, this.network);
-  }
-
-  get payoutAddressCut() {
-    return cut(this.payoutAddress);
-  }
-
-  get showBtn() {
-    return this.step !== 2 && !this.showHistoryBook && !this.showEditAddressBook;
-  }
-
-  get network() {
-    return this.stakingNetwork.network;
-  }
-
-  get stakingAssetId() {
-    if (this.accountsStore.balances.length === 0) return '';
-
-    const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
-
-    return groupId;
-  }
-
-  get stakingCurrency() {
-    return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
-  }
-
-  get accountName() {
-    return this.accountsStore.selectedWallet.name;
-  }
-
-  get acountsEcosystem() {
-    return this.accountsStore.acountsEcosystem;
-  }
-
-  get showMyWalletsButton() {
-    return this.acountsEcosystem.length !== 0;
-  }
-
-  get stakingCurrencyBalance() {
-    return this.stakingCurrency?.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase());
-  }
-
-  get feeValue() {
-    return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
-  }
-
-  get amountValue() {
-    return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
-  }
-
-  get transferableAmount() {
-    return +(this.stakingCurrencyBalance?.transferable ?? 0);
-  }
-
-  get btnText() {
-    if (this.step === 1) {
-      if (this.transferableAmount === 0)
-        return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
-
-      return 'common.next';
-    }
-
-    if (this.step === 3) return 'common.iAgree';
-
-    return 'common.confirm';
-  }
-
-  get isValidAmountAsset() {
-    return isValidAmountAsset(this.stakingCurrency, this.network, this.fee ?? '0', this.amount);
-  }
-
-  get confirmBtnDisabled() {
-    if (this.step === 1)
-      return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset || !this.isValidPayoutAddress;
-
-    if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
-
-    return false;
-  }
-
-  get showAmountInput() {
-    return this.step === 1;
-  }
-
-  get header() {
-    if (this.showEditAddressBook) return 'assets.addContact';
-
-    if (this.showHistoryBook) return 'assets.chooseFromHistory';
-
-    if (this.showMyWallets) return 'assets.wallets';
-
-    if (this.step === 1) return 'staking.bond';
-
-    if (this.step === 2) return 'staking.validators';
-
-    if (this.step === 3) return 'common.warning';
-
-    if (this.step === 4) return 'staking.recommended';
-
-    if (this.step === 5) return 'staking.yourself';
-
-    if (this.step === 6) return 'common.confirmation';
-
-    return '';
-  }
-
-  get showBackIcon() {
-    return this.step !== 1 || this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
-  }
-
-  get showSelectionValidatorsForm() {
-    return this.step !== 1 && this.step !== 6;
-  }
-
-  get selectedAccountName() {
-    return this.accountsStore.selectedWallet.name;
-  }
-
-  get textMinHint() {
+  props: {
+    stakingNetwork: { type: Object },
+  },
+  data() {
     return {
-      text: 'staking.minimumStake',
-      localeProps: {
-        value: this.stakingNetwork.minBond,
-        asset: this.stakingAssetName.toUpperCase(),
-      },
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      state: {},
+      selectedValidator: null,
+      payoutAddress: '',
+      step: 1,
+      isSuggested: false,
+      showConfirmationPasswordPopup: false,
+      showHistoryBook: false,
+      showMyWallets: false,
+      showEditAddressBook: false,
+      fee: '',
+      feeMax: '',
+      amount: '',
+      newAddress: '',
     };
-  }
+  },
+  computed: {
+    isValidPayoutAddress() {
+      if (this.payoutAddress === '') return true;
 
-  get stakingAssetName() {
-    return this.stakingCurrency?.symbol ?? '';
-  }
+          return BaseApi.validateAddress(this.payoutAddress, this.network);
+    },
+    payoutAddressCut() {
+      return cut(this.payoutAddress);
+    },
+    showBtn() {
+      return this.step !== 2 && !this.showHistoryBook && !this.showEditAddressBook;
+    },
+    network() {
+      return this.stakingNetwork.network;
+    },
+    stakingAssetId() {
+      if (this.accountsStore.balances.length === 0) return '';
 
-  get stakingAssetPrice() {
-    const priceId = this.stakingCurrency?.priceId ?? '';
+          const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
 
-    return this.networksStore.getAssetPrice(priceId).price;
-  }
+          return groupId;
+    },
+    stakingCurrency() {
+      return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
+    },
+    accountName() {
+      return this.accountsStore.selectedWallet.name;
+    },
+    acountsEcosystem() {
+      return this.accountsStore.acountsEcosystem;
+    },
+    showMyWalletsButton() {
+      return this.acountsEcosystem.length !== 0;
+    },
+    stakingCurrencyBalance() {
+      return this.stakingCurrency?.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase());
+    },
+    feeValue() {
+      return getCostOfAssets(this.fee, this.stakingAssetPrice).toString();
+    },
+    amountValue() {
+      return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
+    },
+    transferableAmount() {
+      return +(this.stakingCurrencyBalance?.transferable ?? 0);
+    },
+    btnText() {
+      if (this.step === 1) {
+            if (this.transferableAmount === 0)
+              return { text: 'assets.insufficientBalance', localeProps: { asset: this.stakingAssetName.toUpperCase() } };
 
-  get amountString() {
-    return `${this.amount} ${this.stakingAssetName.toUpperCase()}`;
-  }
+            return 'common.next';
+          }
 
-  get amountValueString() {
-    const value = +this.amount * this.stakingAssetPrice;
+          if (this.step === 3) return 'common.iAgree';
 
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
+          return 'common.confirm';
+    },
+    isValidAmountAsset() {
+      return isValidAmountAsset(this.stakingCurrency, this.network, this.fee ?? '0', this.amount);
+    },
+    confirmBtnDisabled() {
+      if (this.step === 1)
+            return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset || !this.isValidPayoutAddress;
 
-  get feeMaxValueString() {
-    const value = +this.feeMax * this.stakingAssetPrice;
+          if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
 
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
+          return false;
+    },
+    showAmountInput() {
+      return this.step === 1;
+    },
+    header() {
+      if (this.showEditAddressBook) return 'assets.addContact';
 
-  get feeValueString() {
-    const value = +this.fee * this.stakingAssetPrice;
+          if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
-    return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
-  }
+          if (this.showMyWallets) return 'assets.wallets';
 
-  get maxNominations() {
-    const maxNominations = this.stakingNetwork.maxNominations;
+          if (this.step === 1) return 'staking.bond';
 
-    // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
-    if (this.validators.length < maxNominations) return this.validators.length;
+          if (this.step === 2) return 'staking.validators';
 
-    return maxNominations;
-  }
+          if (this.step === 3) return 'common.warning';
 
-  get selectedValidators() {
-    return Object.values(this.state)
-      .filter(({ isSelect }) => isSelect)
-      .map(({ address }) => address);
-  }
+          if (this.step === 4) return 'staking.recommended';
 
-  get selectedValidatorsLength() {
-    return this.selectedValidators.length;
-  }
+          if (this.step === 5) return 'staking.yourself';
 
-  get days() {
-    return { value: this.stakingNetwork.unbondPeriod };
-  }
+          if (this.step === 6) return 'common.confirmation';
 
-  get tx() {
-    return {
-      amount: this.amount,
-      from: this.accountsStore.selectedWallet.address,
-      networkName: this.network,
-      payoutAddress: this.payoutAddress,
-      validators: this.selectedValidators,
-    } as RequestBond;
-  }
+          return '';
+    },
+    showBackIcon() {
+      return this.step !== 1 || this.showMyWallets || this.showHistoryBook || this.showEditAddressBook;
+    },
+    showSelectionValidatorsForm() {
+      return this.step !== 1 && this.step !== 6;
+    },
+    selectedAccountName() {
+      return this.accountsStore.selectedWallet.name;
+    },
+    textMinHint() {
+      return {
+            text: 'staking.minimumStake',
+            localeProps: {
+              value: this.stakingNetwork.minBond,
+              asset: this.stakingAssetName.toUpperCase(),
+            },
+          };
+    },
+    stakingAssetName() {
+      return this.stakingCurrency?.symbol ?? '';
+    },
+    stakingAssetPrice() {
+      const priceId = this.stakingCurrency?.priceId ?? '';
 
-  get validators() {
-    return Object.values(this.state);
-  }
+          return this.networksStore.getAssetPrice(priceId).price;
+    },
+    amountString() {
+      return `${this.amount} ${this.stakingAssetName.toUpperCase()}`;
+    },
+    amountValueString() {
+      const value = +this.amount * this.stakingAssetPrice;
 
-  @Watch('selectedValidators')
-  async srcWatcher() {
-    this.fee = await getBondAndNominateNetworkFee(this.tx);
-  }
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+    feeMaxValueString() {
+      const value = +this.feeMax * this.stakingAssetPrice;
 
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+    feeValueString() {
+      const value = +this.fee * this.stakingAssetPrice;
+
+          return `${this.accountsStore.fiatSymbol}${this.$n(+value, 'price')}`;
+    },
+    maxNominations() {
+      const maxNominations = this.stakingNetwork.maxNominations;
+
+          // Если количество валидаторов в сети меньше, чем maxNominations, то отображаем количество валидаторов как maxNominations
+          if (this.validators.length < maxNominations) return this.validators.length;
+
+          return maxNominations;
+    },
+    selectedValidators() {
+      return Object.values(this.state)
+            .filter(({ isSelect }) => isSelect)
+            .map(({ address }) => address);
+    },
+    selectedValidatorsLength() {
+      return this.selectedValidators.length;
+    },
+    days() {
+      return { value: this.stakingNetwork.unbondPeriod };
+    },
+    tx() {
+      return {
+            amount: this.amount,
+            from: this.accountsStore.selectedWallet.address,
+            networkName: this.network,
+            payoutAddress: this.payoutAddress,
+            validators: this.selectedValidators,
+          } as RequestBond;
+    },
+    validators() {
+      return Object.values(this.state);
+    },
+  },
+  watch: {
+    "selectedValidators": 'srcWatcher',
+  },
   mounted() {
     // TODO staking
-    const isSlashed = false;
-    const limitValidatorsIdentity = false;
+        const isSlashed = false;
+        const limitValidatorsIdentity = false;
 
-    this.stakingNetwork.validators.forEach((info) => {
-      Vue.set(this.state, info.address, {
-        ...info,
-        isSlashed,
-        limitValidatorsIdentity,
-        isSelect: false,
-      });
-    });
+        this.stakingNetwork.validators.forEach((info) => {
+          this.state[info.address] = {
+            ...info,
+            isSlashed,
+            limitValidatorsIdentity,
+            isSelect: false,
+          };
+        });
 
-    this.getSoraFees();
-  }
+        this.getSoraFees();
+  },
+  methods: {
+    async srcWatcher() {
+      this.fee = await getBondAndNominateNetworkFee(this.tx);
+    },
+    async getSoraFees() {
+      // TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
+          this.feeMax = await getBondAndNominateNetworkFee({
+            ...this.tx,
+            validators: new Array(this.stakingNetwork.maxNominations),
+          });
+    },
+    openValidatorList(isSuggested = false) {
+      this.validators.forEach(
+            (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
+          );
 
-  async getSoraFees() {
-    // TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
-    this.feeMax = await getBondAndNominateNetworkFee({
-      ...this.tx,
-      validators: new Array(this.stakingNetwork.maxNominations),
-    });
-  }
+          this.isSuggested = isSuggested;
+          this.step = isSuggested ? 3 : 5;
+    },
+    updateAmount(amount: string) {
+      this.amount = amount;
+    },
+    toggleEditBook(address: string = '') {
+      this.showEditAddressBook = !this.showEditAddressBook;
+          this.showHistoryBook = !this.showHistoryBook;
+          this.newAddress = address;
+    },
+    openValidatorInfo(validator: FWValidatorInfoFull) {
+      this.selectedValidator = validator;
+    },
+    toggleHistoryBookVisibility() {
+      this.showHistoryBook = !this.showHistoryBook;
+    },
+    updateSelectedValidators(value: boolean, address: string) {
+      this.state[address].isSelect = value;
+    },
+    handlerBack() {
+      if (this.selectedValidator) {
+            this.selectedValidator = null;
 
-  openValidatorList(isSuggested = false) {
-    this.validators.forEach(
-      (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
-    );
+            return;
+          }
 
-    this.isSuggested = isSuggested;
-    this.step = isSuggested ? 3 : 5;
-  }
+          if (this.step === 1) {
+            if (this.showHistoryBook) this.toggleHistoryBookVisibility();
+            else if (this.showEditAddressBook) this.toggleEditBook();
+            else if (this.showMyWallets) this.toggleMyWalletsVisibility();
 
-  updateAmount(amount: string) {
-    this.amount = amount;
-  }
+            return;
+          }
 
-  toggleEditBook(address: string = '') {
-    this.showEditAddressBook = !this.showEditAddressBook;
-    this.showHistoryBook = !this.showHistoryBook;
-    this.newAddress = address;
-  }
+          if (this.step === 6 && this.isSuggested) this.step -= 1;
+          else if (this.step === 5) this.step -= 2;
 
-  openValidatorInfo(validator: FWValidatorInfoFull) {
-    this.selectedValidator = validator;
-  }
+          this.step -= 1;
+    },
+    paste() {
+      this.payoutAddress = getClipboard();
+    },
+    confirm() {
+      if (this.step === 4) this.step += 1;
 
-  toggleHistoryBookVisibility() {
-    this.showHistoryBook = !this.showHistoryBook;
-  }
+          if (this.step === 6) this.showConfirmationPasswordPopup = true;
+          else this.step += 1;
+    },
+    confirmationPasswordPopupClose(closeForm: boolean) {
+      this.showConfirmationPasswordPopup = false;
 
-  updateSelectedValidators(value: boolean, address: string) {
-    this.state[address].isSelect = value;
-  }
+          if (closeForm) this.closeForm(true);
+    },
+    closeForm(updated = false) {
+      this.$emit('closeBond', null, updated);
+    },
+    calcTransferableSendMinusFee() {
+      return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.feeMax);
+    },
+    setPayoutAddress(address = '') {
+      this.payoutAddress = address;
+    },
+    async setMax() {
+      if (!this.stakingCurrency) return;
 
-  handlerBack() {
-    if (this.selectedValidator) {
-      this.selectedValidator = null;
+          this.amount = this.calcTransferableSendMinusFee();
+    },
+    toggleMyWalletsVisibility() {
+      this.showMyWallets = !this.showMyWallets;
+    },
+    getStatusWallet(address: string, ethereumAddress: string) {
+      const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
+          const currentRecipientAddress = BaseApi.formatAddress(
+            { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
+            this.network
+          );
 
-      return;
-    }
+          return currentAddress === currentRecipientAddress;
+    },
+    setWallet(address: string, ethereumAddress: string) {
+      this.payoutAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
 
-    if (this.step === 1) {
-      if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-      else if (this.showEditAddressBook) this.toggleEditBook();
-      else if (this.showMyWallets) this.toggleMyWalletsVisibility();
-
-      return;
-    }
-
-    if (this.step === 6 && this.isSuggested) this.step -= 1;
-    else if (this.step === 5) this.step -= 2;
-
-    this.step -= 1;
-  }
-
-  paste() {
-    this.payoutAddress = getClipboard();
-  }
-
-  confirm() {
-    if (this.step === 4) this.step += 1;
-
-    if (this.step === 6) this.showConfirmationPasswordPopup = true;
-    else this.step += 1;
-  }
-
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) this.closeForm(true);
-  }
-
-  closeForm(updated = false) {
-    this.$emit('closeBond', null, updated);
-  }
-
-  calcTransferableSendMinusFee() {
-    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, this.feeMax);
-  }
-
-  setPayoutAddress(address = '') {
-    this.payoutAddress = address;
-  }
-
-  async setMax() {
-    if (!this.stakingCurrency) return;
-
-    this.amount = this.calcTransferableSendMinusFee();
-  }
-
-  toggleMyWalletsVisibility() {
-    this.showMyWallets = !this.showMyWallets;
-  }
-
-  getStatusWallet(address: string, ethereumAddress: string) {
-    const currentAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
-    const currentRecipientAddress = BaseApi.formatAddress(
-      { address: this.payoutAddress, ethereumAddress: this.payoutAddress },
-      this.network
-    );
-
-    return currentAddress === currentRecipientAddress;
-  }
-
-  setWallet(address: string, ethereumAddress: string) {
-    this.payoutAddress = BaseApi.formatAddress({ address, ethereumAddress }, this.network);
-
-    this.toggleMyWalletsVisibility();
-  }
-}
+          this.toggleMyWalletsVisibility();
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

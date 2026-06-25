@@ -37,17 +37,23 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { MarketType } from '@/interfaces';
 
-@Component
-export default class PolkaswapSettings extends Vue {
-  readonly optionsSubstrateKeyPair = [
+export default defineComponent({ name: 'PolkaswapSettings' ,
+  props: {
+    text: { default: '' },
+    temporaryMarketType: { type: String },
+    temporarySlippage: { type: Number },
+  },
+  data() {
+    return {
+      optionsSubstrateKeyPair: [
     { label: MarketType.SMART, value: MarketType.SMART },
     { label: MarketType.TBC, value: MarketType.TBC },
-  ];
-
-  readonly slippageValues = [
+  ],
+      slippageValues: [
     { label: '0.1%', value: 0.1, warningText: 'assets.transactionMayFail' },
     { label: '0.5%', value: 0.5 },
     { label: '1%', value: 1 },
@@ -55,50 +61,61 @@ export default class PolkaswapSettings extends Vue {
     { label: '3%', value: 3 },
     { label: '4%', value: 4 },
     { label: '5%', value: 5, warningText: 'assets.transactionFrontrun' },
-  ];
+  ],
+    };
+  },
+  computed: {
+    showMarketType() {
+      return this.syncedMarketType !== undefined;
+    },
+    slippagePercent() {
+      return `${this.syncedSlippage} %`;
+    },
+    isErrorSlippageInput() {
+      return this.slippageValues
+            .filter(({ warningText }) => warningText)
+            .map(({ value }) => value)
+            .includes(this.syncedSlippage);
+    },
+    warningMessage() {
+      const { warningText } = this.slippageValues.find(({ value }) => value === this.syncedSlippage)!;
 
-  @Prop({ default: '' }) text!: string;
-  @PropSync('temporaryMarketType', { type: String }) syncedMarketType!: string;
-  @PropSync('temporarySlippage', { type: Number }) syncedSlippage!: number;
-
-  get showMarketType() {
-    return this.syncedMarketType !== undefined;
-  }
-
-  get slippagePercent() {
-    return `${this.syncedSlippage} %`;
-  }
-
-  get isErrorSlippageInput() {
-    return this.slippageValues
-      .filter(({ warningText }) => warningText)
-      .map(({ value }) => value)
-      .includes(this.syncedSlippage);
-  }
-
-  get warningMessage() {
-    const { warningText } = this.slippageValues.find(({ value }) => value === this.syncedSlippage)!;
-
-    return this.$t(warningText!, { value: this.syncedSlippage });
-  }
-
-  setSlippage(value: number) {
-    this.syncedSlippage = value;
-  }
-
-  updateSyncedMarketType(value: string) {
-    this.syncedMarketType = value;
-  }
-
-  getSlippageClasses(value: number) {
-    return [
-      'slippage-value',
-      {
-        'selected-value': value === this.syncedSlippage,
+          return this.$t(warningText!, { value: this.syncedSlippage });
+    },
+    syncedMarketType: {
+      get() {
+        return this.temporaryMarketType;
       },
-    ];
-  }
-}
+      set(value) {
+        this.$emit('update:temporaryMarketType', value);
+      },
+    },
+    syncedSlippage: {
+      get() {
+        return this.temporarySlippage;
+      },
+      set(value) {
+        this.$emit('update:temporarySlippage', value);
+      },
+    },
+  },
+  methods: {
+    setSlippage(value: number) {
+      this.syncedSlippage = value;
+    },
+    updateSyncedMarketType(value: string) {
+      this.syncedMarketType = value;
+    },
+    getSlippageClasses(value: number) {
+      return [
+            'slippage-value',
+            {
+              'selected-value': value === this.syncedSlippage,
+            },
+          ];
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

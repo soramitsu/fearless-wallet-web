@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { onMounted, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router/composables';
+import { useRouter, useRoute } from 'vue-router';
 import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import AuthItem from '@/screens/extension-ui/AuthItem.vue';
 import { Components } from '@/router/routes';
@@ -33,19 +33,28 @@ const allDappList = computed<AuthUrlInfo[]>(() => {
   return Object.values(auths);
 });
 
-const substrateList = computed<AuthUrlInfo[]>(() => allDappList.value.filter((item) => item.accountAuthType !== 'evm'));
-const evmList = computed<AuthUrlInfo[]>(() => allDappList.value.filter((item) => item.accountAuthType !== 'substrate'));
+const hasAuthType = (item: AuthUrlInfo, authType: string): boolean => {
+  if (item.accountAuthType === 'all') return true;
+  if (item.accountAuthType === 'both') return authType === 'substrate' || authType === 'evm';
+
+  return (item.accountAuthType ?? 'substrate') === authType;
+};
+
+const getAuthorizedAccounts = (item: AuthUrlInfo, authType: string): string[] => {
+  if (authType === 'evm') return item.evmAuthorizedAccount === '' ? [] : [item.evmAuthorizedAccount];
+  if (authType === 'solana') return item.solanaAuthorizedAccount ? [item.solanaAuthorizedAccount] : [];
+  if (authType === 'iroha') return item.irohaAuthorizedAccount ? [item.irohaAuthorizedAccount] : [];
+
+  return item.authorizedAccounts;
+};
+
 const list = computed(() => {
-  const authList = type.value === 'evm' ? evmList.value : substrateList.value;
+  const authType = String(type.value);
+  const authList = allDappList.value.filter((item) => hasAuthType(item, authType));
 
   return authList.map((item) => ({
     ...item,
-    authorizedAccounts:
-      type.value === 'evm'
-        ? item.evmAuthorizedAccount === ''
-          ? []
-          : [item.evmAuthorizedAccount]
-        : item.authorizedAccounts,
+    authorizedAccounts: getAuthorizedAccounts(item, authType),
   }));
 });
 

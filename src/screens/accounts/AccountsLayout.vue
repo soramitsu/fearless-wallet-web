@@ -82,7 +82,8 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import ExportForm from './ExportForm.vue';
 import ExportTypeForm from './ExportTypeForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
@@ -96,7 +97,7 @@ import { upsertNetworkMap } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'AccountsLayout',
   components: {
     ExportForm,
     EditNodeForm,
@@ -105,201 +106,176 @@ import { useAccountsStore } from '@/stores/accounts';
     AccountSettingsPopup,
     AddEthereumAccountPopup,
   },
-})
-export default class AccountsLayout extends Vue {
-  readonly routerViewRef = 'routerView';
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
-  password = '';
-  selectedNetwork = '';
-  selectedNodeName = '';
-  selectedNodeUrl = '';
-  exportType: Nullable<ExportType> = null;
-  selectedNodeIsActive = false;
-  buttonTopClick = 0;
-  showAddEthereumAccountPopup = false;
-  showAccountSettingsPopup = false;
-  showEditNodeForm = false;
-  showNodeSettingsPopup = false;
-  showNotificationPopup = false;
+  data() {
+    return {
+      routerViewRef: 'routerView',
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+      password: '',
+      selectedNetwork: '',
+      selectedNodeName: '',
+      selectedNodeUrl: '',
+      exportType: null,
+      selectedNodeIsActive: false,
+      buttonTopClick: 0,
+      showAddEthereumAccountPopup: false,
+      showAccountSettingsPopup: false,
+      showEditNodeForm: false,
+      showNodeSettingsPopup: false,
+      showNotificationPopup: false,
+    };
+  },
+  computed: {
+    headers() {
+      return { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName };
+    },
+    header() {
+      if (this.isAccountsRoute) return 'accounts.chainAccounts';
 
-  get headers() {
-    return { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName };
-  }
+          if (this.isExportRoute) return 'accounts.backupKeyPair';
 
-  get header() {
-    if (this.isAccountsRoute) return 'accounts.chainAccounts';
+          return 'addWallet.accounts';
+    },
+    showBackIcon() {
+      if (this.accountsStore.selectedWallet.isTon) return false;
 
-    if (this.isExportRoute) return 'accounts.backupKeyPair';
+          return !this.isAccountSetting;
+    },
+    showExportType() {
+      return this.password !== '';
+    },
+    showExportForm() {
+      return this.exportType !== null;
+    },
+    acceptButtonText() {
+      return 'common.delete';
+    },
+    network() {
+      return this.$route.params.network;
+    },
+    isAccountSetting() {
+      return this.routeName === Components.AccountSetting;
+    },
+    isAccountsRoute() {
+      return this.routeName === Components.ChainAccounts;
+    },
+    isNodesRoute() {
+      return this.routeName === Components.Nodes;
+    },
+    isExportRoute() {
+      return this.routeName === Components.Export;
+    },
+    showExport() {
+      return !this.isExportRoute && !this.accountsStore.selectedWallet.isMobile;
+    },
+    routeName() {
+      return this.$route.name;
+    },
+  },
+  methods: {
+    setExportType(type: Nullable<ExportType> = null) {
+      this.exportType = type;
+    },
+    setPassword(password: string = '') {
+      this.password = password;
 
-    return 'addWallet.accounts';
-  }
+          if (this.accountsStore.selectedWallet.isTon) this.setExportType('mnemonic');
+    },
+    handlerAccept() {
+      this.deleteNode();
+          this.closeNotificationPopup();
+    },
+    openExportAccountPage() {
+      this.$router.push({
+            name: Components.Export,
+            params: {
+              network: this.network ?? this.selectedNetwork,
+            },
+          });
 
-  get showBackIcon() {
-    if (this.accountsStore.selectedWallet.isTon) return false;
+          this.closeAccountSettings();
+    },
+    openAccountSettingsPopup(network = '', buttonTop = 0) {
+      this.showAccountSettingsPopup = true;
+          this.selectedNetwork = network;
+          this.buttonTopClick = buttonTop;
+    },
+    closeAccountSettings(isReset = true) {
+      this.showAccountSettingsPopup = false;
 
-    return !this.isAccountSetting;
-  }
+          if (isReset) this.selectedNetwork = '';
+    },
+    openNodeSettingsPopup(network = '', nodeName = '', nodeUrl = '', buttonTop: number, isActive: boolean) {
+      this.showNodeSettingsPopup = true;
+          this.selectedNetwork = network;
+          this.selectedNodeName = nodeName;
+          this.selectedNodeUrl = nodeUrl;
+          this.selectedNodeIsActive = isActive;
+          this.buttonTopClick = buttonTop;
+    },
+    openEditNodeForm(network: string, name: string, url: string) {
+      this.selectedNetwork = network || this.selectedNetwork;
+          this.selectedNodeName = name;
+          this.selectedNodeUrl = url;
+          this.showEditNodeForm = true;
 
-  get showExportType() {
-    return this.password !== '';
-  }
+          this.closeNodeSettings();
+    },
+    closeEditNodeForm(nodesUpdated = false) {
+      this.showEditNodeForm = false;
+          this.selectedNodeName = '';
+          this.selectedNodeUrl = '';
 
-  get showExportForm() {
-    return this.exportType !== null;
-  }
+          if (nodesUpdated) this.childUpdatedNode();
+    },
+    deleteNode() {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+          const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
 
-  get acceptButtonText() {
-    return 'common.delete';
-  }
+          upsertNetworkMap({
+            ...network,
+            customNodes,
+          });
 
-  get network() {
-    return this.$route.params.network;
-  }
+          this.childUpdatedNode(true);
+          this.closeNotificationPopup();
+    },
+    childUpdatedNode(setAuto = false) {
+      const nodesComponent = this.$refs[this.routerViewRef] as InstanceType<typeof Nodes>;
 
-  get isAccountSetting() {
-    return this.routeName === Components.AccountSetting;
-  }
+          if (setAuto && this.selectedNodeIsActive) nodesComponent.toggleAutoSelectNode(true);
+    },
+    openNotificationPopup() {
+      this.showNotificationPopup = true;
 
-  get isAccountsRoute() {
-    return this.routeName === Components.ChainAccounts;
-  }
+          this.closeNodeSettings();
+          this.closeAccountSettings(false);
+    },
+    openAddEthereumAccountPopup() {
+      this.showAddEthereumAccountPopup = true;
+    },
+    closeNotificationPopup() {
+      this.selectedNodeName = '';
+          this.selectedNodeUrl = '';
 
-  get isNodesRoute() {
-    return this.routeName === Components.Nodes;
-  }
-
-  get isExportRoute() {
-    return this.routeName === Components.Export;
-  }
-
-  get showExport() {
-    return !this.isExportRoute && !this.accountsStore.selectedWallet.isMobile;
-  }
-
-  get routeName() {
-    return this.$route.name;
-  }
-
-  setExportType(type: Nullable<ExportType> = null) {
-    this.exportType = type;
-  }
-
-  setPassword(password: string = '') {
-    this.password = password;
-
-    if (this.accountsStore.selectedWallet.isTon) this.setExportType('mnemonic');
-  }
-
-  handlerAccept() {
-    this.deleteNode();
-    this.closeNotificationPopup();
-  }
-
-  openExportAccountPage() {
-    this.$router.push({
-      name: Components.Export,
-      params: {
-        network: this.network ?? this.selectedNetwork,
-      },
-    });
-
-    this.closeAccountSettings();
-  }
-
-  openAccountSettingsPopup(network = '', buttonTop = 0) {
-    this.showAccountSettingsPopup = true;
-    this.selectedNetwork = network;
-    this.buttonTopClick = buttonTop;
-  }
-
-  closeAccountSettings(isReset = true) {
-    this.showAccountSettingsPopup = false;
-
-    if (isReset) this.selectedNetwork = '';
-  }
-
-  openNodeSettingsPopup(network = '', nodeName = '', nodeUrl = '', buttonTop: number, isActive: boolean) {
-    this.showNodeSettingsPopup = true;
-    this.selectedNetwork = network;
-    this.selectedNodeName = nodeName;
-    this.selectedNodeUrl = nodeUrl;
-    this.selectedNodeIsActive = isActive;
-    this.buttonTopClick = buttonTop;
-  }
-
-  openEditNodeForm(network: string, name: string, url: string) {
-    this.selectedNetwork = network || this.selectedNetwork;
-    this.selectedNodeName = name;
-    this.selectedNodeUrl = url;
-    this.showEditNodeForm = true;
-
-    this.closeNodeSettings();
-  }
-
-  closeEditNodeForm(nodesUpdated = false) {
-    this.showEditNodeForm = false;
-    this.selectedNodeName = '';
-    this.selectedNodeUrl = '';
-
-    if (nodesUpdated) this.childUpdatedNode();
-  }
-
-  deleteNode() {
-    const network = this.networksStore.getNetwork(this.selectedNetwork);
-    const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
-
-    upsertNetworkMap({
-      ...network,
-      customNodes,
-    });
-
-    this.childUpdatedNode(true);
-    this.closeNotificationPopup();
-  }
-
-  childUpdatedNode(setAuto = false) {
-    const nodesComponent = this.$refs[this.routerViewRef] as Nodes;
-
-    if (setAuto && this.selectedNodeIsActive) nodesComponent.toggleAutoSelectNode(true);
-  }
-
-  openNotificationPopup() {
-    this.showNotificationPopup = true;
-
-    this.closeNodeSettings();
-    this.closeAccountSettings(false);
-  }
-
-  openAddEthereumAccountPopup() {
-    this.showAddEthereumAccountPopup = true;
-  }
-
-  closeNotificationPopup() {
-    this.selectedNodeName = '';
-    this.selectedNodeUrl = '';
-
-    this.showNotificationPopup = false;
-  }
-
-  closeNodeSettings() {
-    this.showNodeSettingsPopup = false;
-  }
-
-  closeAddEthereumAccountPopup() {
-    this.showAddEthereumAccountPopup = false;
-  }
-
-  handlerBack() {
-    if (this.showExportForm) this.setExportType();
-    else if (this.showExportType) this.setPassword();
-    else this.$router.back();
-  }
-
-  close() {
-    this.$router.push({ name: Components.Wallet });
-  }
-}
+          this.showNotificationPopup = false;
+    },
+    closeNodeSettings() {
+      this.showNodeSettingsPopup = false;
+    },
+    closeAddEthereumAccountPopup() {
+      this.showAddEthereumAccountPopup = false;
+    },
+    handlerBack() {
+      if (this.showExportForm) this.setExportType();
+          else if (this.showExportType) this.setPassword();
+          else this.$router.back();
+    },
+    close() {
+      this.$router.push({ name: Components.Wallet });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

@@ -49,7 +49,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import Header from './Header.vue';
 import Menu from './Menu.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
@@ -61,7 +62,7 @@ import LanguagePopup from './LanguagePopup.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component({
+export default defineComponent({ name: 'Main',
   components: {
     Menu,
     Header,
@@ -73,83 +74,78 @@ import { useAccountsStore } from '@/stores/accounts';
     SelectWalletPopup,
     WalletDetailsPopup,
   },
-})
-export default class Main extends Vue {
-  accountsStore = useAccountsStore();
-
-  buttonTopClick = 0;
-  selectedWalletAddress = '';
-  showSettings = false;
-  showLanguagePopup = false;
-  showFiatsPopup = false;
-  showAboutPopup = false;
-  showSelectWalletPopup = false;
-  showWalletDetailsPopup = false;
-  showFiatPopupAnimation = false;
-  showManageAuthsVisible = false;
-
-  get highlightSettingsIcon() {
-    return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
-  }
-
-  get showMenu() {
-    return this.accountsStore.selectedWallet.isSubstrate;
-  }
-
+  data() {
+    return {
+      accountsStore: useAccountsStore(),
+      buttonTopClick: 0,
+      selectedWalletAddress: '',
+      showSettings: false,
+      showLanguagePopup: false,
+      showFiatsPopup: false,
+      showAboutPopup: false,
+      showSelectWalletPopup: false,
+      showWalletDetailsPopup: false,
+      showFiatPopupAnimation: false,
+      showManageAuthsVisible: false,
+    };
+  },
+  computed: {
+    highlightSettingsIcon() {
+      return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
+    },
+    showMenu() {
+      return this.accountsStore.selectedWallet.isSubstrate;
+    },
+  },
   deactivated() {
     this.showSelectWalletPopup = false;
-    this.showWalletDetailsPopup = false;
-    this.showSettings = false;
-  }
+        this.showWalletDetailsPopup = false;
+        this.showSettings = false;
+  },
+  methods: {
+    toggleManageAuthsVisible() {
+      this.showManageAuthsVisible = !this.showManageAuthsVisible;
 
-  toggleManageAuthsVisible() {
-    this.showManageAuthsVisible = !this.showManageAuthsVisible;
+          if (this.showManageAuthsVisible) this.toggleSettingsVisible();
+    },
+    toggleLanguagePopupVisible() {
+      this.showLanguagePopup = !this.showLanguagePopup;
 
-    if (this.showManageAuthsVisible) this.toggleSettingsVisible();
-  }
+          if (this.showLanguagePopup) this.toggleSettingsVisible();
+    },
+    toggleAboutPopupVisible() {
+      this.showAboutPopup = !this.showAboutPopup;
 
-  toggleLanguagePopupVisible() {
-    this.showLanguagePopup = !this.showLanguagePopup;
+          if (this.showAboutPopup) this.toggleSettingsVisible();
+    },
+    toggleFiatsPopupVisible(showFiatPopupAnimation = false) {
+      this.showFiatPopupAnimation = !this.showFiatsPopup ? showFiatPopupAnimation : false;
+          this.showFiatsPopup = !this.showFiatsPopup;
 
-    if (this.showLanguagePopup) this.toggleSettingsVisible();
-  }
+          if (this.showFiatsPopup) this.showSettings = false;
+    },
+    toggleSettingsVisible() {
+      if (!this.showSettings && (this.showFiatsPopup || this.showLanguagePopup || this.showAboutPopup)) {
+            this.showFiatsPopup = false;
+            this.showAboutPopup = false;
+            this.showLanguagePopup = false;
 
-  toggleAboutPopupVisible() {
-    this.showAboutPopup = !this.showAboutPopup;
+            return;
+          }
 
-    if (this.showAboutPopup) this.toggleSettingsVisible();
-  }
-
-  toggleFiatsPopupVisible(showFiatPopupAnimation = false) {
-    this.showFiatPopupAnimation = !this.showFiatsPopup ? showFiatPopupAnimation : false;
-    this.showFiatsPopup = !this.showFiatsPopup;
-
-    if (this.showFiatsPopup) this.showSettings = false;
-  }
-
-  toggleSettingsVisible() {
-    if (!this.showSettings && (this.showFiatsPopup || this.showLanguagePopup || this.showAboutPopup)) {
-      this.showFiatsPopup = false;
-      this.showAboutPopup = false;
-      this.showLanguagePopup = false;
-
-      return;
-    }
-
-    this.showSettings = !this.showSettings;
-  }
-
-  setSelectWalletPopupVisible(value = false) {
-    this.showSelectWalletPopup = value;
-    this.showWalletDetailsPopup = false;
-  }
-
-  toggleWalletDetailsPopupVisible(value: boolean, buttonTop = 0, address = '') {
-    this.showWalletDetailsPopup = value ?? !this.showWalletDetailsPopup;
-    this.buttonTopClick = buttonTop;
-    this.selectedWalletAddress = address;
-  }
-}
+          this.showSettings = !this.showSettings;
+    },
+    setSelectWalletPopupVisible(value = false) {
+      this.showSelectWalletPopup = value;
+          this.showWalletDetailsPopup = false;
+    },
+    toggleWalletDetailsPopupVisible(value: boolean, buttonTop = 0, address = '') {
+      this.showWalletDetailsPopup = value ?? !this.showWalletDetailsPopup;
+          this.buttonTopClick = buttonTop;
+          this.selectedWalletAddress = address;
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

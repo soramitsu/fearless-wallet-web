@@ -54,9 +54,9 @@
   </div>
 </template>
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
+
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
-import type { TokenGroup } from '@extension-base/background/types/types';
 import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
@@ -72,9 +72,15 @@ type ControlButtons = {
   isActive: boolean;
 };
 
-@Component
-export default class AssetActionButtons extends Vue {
-  readonly basicButtons: ControlButtons[] = [
+export default defineComponent({ name: 'AssetActionButtons' ,
+  props: {
+    currency: Object,
+    showBuyButton: Boolean,
+    assetId: String,
+  },
+  data() {
+    return {
+      basicButtons: [
     {
       class: 'activity-button',
       text: 'assets.receiveButtonText',
@@ -82,70 +88,63 @@ export default class AssetActionButtons extends Vue {
       formName: 'showReceiveForm',
       isActive: true,
     },
-  ];
+  ] as ControlButtons[],
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    selectedNetwork() {
+      return this.$route.params.selectedNetwork ?? '';
+    },
+    selectedAsset() {
+      return this.currency?.symbol?.toLowerCase() ?? '';
+    },
+    showSwapButton() {
+      return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
+    },
+    isNeedPopupButton() {
+      return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
+    },
+    showCrossChainButton() {
+      if (this.selectedNetwork === '') return false;
 
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+          const network = this.networksStore.getNetwork(this.selectedNetwork);
 
-  @Prop(Object) currency!: TokenGroup;
-  @Prop(Boolean) showBuyButton!: boolean;
-  @Prop(String) assetId!: string;
+          const asset = getNativeAssetName(this.selectedAsset);
 
-  onRoute(form: 'send' | 'receive' | 'crossChain') {
-    const name =
-      form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
+          if (!network || network.xcm === undefined) return false;
 
-    this.$router.push({
-      name,
-      params: {
-        assetId: this.$route.params.assetId,
-        network: this.selectedNetwork,
-      },
-    });
-  }
+          return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
+    },
+  },
+  methods: {
+    onRoute(form: 'send' | 'receive' | 'crossChain') {
+      const name =
+            form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
 
-  get selectedNetwork() {
-    return this.$route.params.selectedNetwork ?? '';
-  }
-
-  get selectedAsset() {
-    return this.currency?.symbol?.toLowerCase() ?? '';
-  }
-
-  get showSwapButton() {
-    return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
-  }
-
-  get isNeedPopupButton() {
-    return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
-  }
-
-  get showCrossChainButton() {
-    if (this.selectedNetwork === '') return false;
-
-    const network = this.networksStore.getNetwork(this.selectedNetwork);
-
-    const asset = getNativeAssetName(this.selectedAsset);
-
-    if (!network || network.xcm === undefined) return false;
-
-    return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
-  }
-
-  onToggleVisible(name: string) {
-    this.$emit('toggleVisible', name);
-  }
-
-  openSoraSwap() {
-    this.$router.push({
-      name: Components.SoraSwap,
-      params: {
-        assetId: this.assetId,
-        reset: '',
-      },
-    });
-  }
-}
+          this.$router.push({
+            name,
+            params: {
+              assetId: this.$route.params.assetId,
+              network: this.selectedNetwork,
+            },
+          });
+    },
+    onToggleVisible(name: string) {
+      this.$emit('toggleVisible', name);
+    },
+    openSoraSwap() {
+      this.$router.push({
+            name: Components.SoraSwap,
+            params: {
+              assetId: this.assetId,
+              reset: '',
+            },
+          });
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

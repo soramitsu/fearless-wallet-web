@@ -19,92 +19,93 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-import type { TokenGroup } from '@extension-base/background/types/types';
 
-import type { AssetPrice } from '@/interfaces';
+
 
 import { ALL_NETWORKS } from '@/consts/networks';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-@Component
-export default class LockedDetailsPopup extends Vue {
-  networksStore = useNetworksStore();
-  accountsStore = useAccountsStore();
+export default defineComponent({ name: 'LockedDetailsPopup' ,
+  props: {
+    network: String,
+    currency: Object,
+    assetPrice: Object,
+  },
+  data() {
+    return {
+      networksStore: useNetworksStore(),
+      accountsStore: useAccountsStore(),
+    };
+  },
+  computed: {
+    assetNameUpper() {
+      return this.currency.symbol.toUpperCase();
+    },
+    detailsBalance() {
+      if (this.currency.balances === undefined)
+            return [
+              { name: 'reserved', value: 0, fiat: 0 },
+              { name: 'frozen', value: 0, fiat: 0 },
+              { name: 'transferable', value: 0, fiat: 0 },
+              { name: 'totalLocked', value: 0, fiat: 0 },
+              { name: 'total', value: 0, fiat: 0 },
+            ];
 
-  @Prop(String) network!: string;
-  @Prop(Object) currency!: TokenGroup;
-  @Prop(Object) assetPrice!: AssetPrice;
+          const balances =
+            this.network === ALL_NETWORKS
+              ? this.currency.balances
+              : [this.currency.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!];
 
-  get assetNameUpper() {
-    return this.currency.symbol.toUpperCase();
-  }
+          const { frozen, locked, reserved, total, transferable } = balances.reduce(
+            (prev, curr) => {
+              const network = this.networksStore.getNetwork(curr.name);
 
-  get detailsBalance() {
-    if (this.currency.balances === undefined)
-      return [
-        { name: 'reserved', value: 0, fiat: 0 },
-        { name: 'frozen', value: 0, fiat: 0 },
-        { name: 'transferable', value: 0, fiat: 0 },
-        { name: 'totalLocked', value: 0, fiat: 0 },
-        { name: 'total', value: 0, fiat: 0 },
-      ];
+              if (!network.active) return prev;
 
-    const balances =
-      this.network === ALL_NETWORKS
-        ? this.currency.balances
-        : [this.currency.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!];
+              const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);
+              const locked = (prev.locked += curr.locked ? +curr.locked : 0);
+              const reserved = (prev.reserved += curr.reserved ? +curr.reserved : 0);
+              const transferable = (prev.transferable += curr.transferable ? +curr.transferable : 0);
+              const total = (prev.total += curr.total ? +curr.total : 0);
 
-    const { frozen, locked, reserved, total, transferable } = balances.reduce(
-      (prev, curr) => {
-        const network = this.networksStore.getNetwork(curr.name);
+              return {
+                reserved,
+                locked,
+                frozen,
+                transferable,
+                total,
+              };
+            },
+            { reserved: 0, locked: 0, frozen: 0, transferable: 0, total: 0 }
+          );
 
-        if (!network.active) return prev;
-
-        const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);
-        const locked = (prev.locked += curr.locked ? +curr.locked : 0);
-        const reserved = (prev.reserved += curr.reserved ? +curr.reserved : 0);
-        const transferable = (prev.transferable += curr.transferable ? +curr.transferable : 0);
-        const total = (prev.total += curr.total ? +curr.total : 0);
-
-        return {
-          reserved,
-          locked,
-          frozen,
-          transferable,
-          total,
-        };
-      },
-      { reserved: 0, locked: 0, frozen: 0, transferable: 0, total: 0 }
-    );
-
-    return [
-      { name: 'reserved', value: reserved, fiat: reserved * +this.assetPrice.price },
-      { name: 'frozen', value: frozen, fiat: frozen * +this.assetPrice.price },
-      { name: 'transferable', value: transferable, fiat: transferable * +this.assetPrice.price },
-      { name: 'totalLocked', value: locked, fiat: locked * +this.assetPrice.price },
-      { name: 'total', value: total, fiat: total * +this.assetPrice.price },
-    ];
-  }
-
-  get showFiatValue() {
-    return this.fiatPrice !== 0;
-  }
-
-  get fiatPrice() {
-    return this.networksStore.getAssetPrice(this.currency.priceId ?? '').price ?? 0;
-  }
-
-  prepFiatValue(fiat: number) {
-    return `${this.accountsStore.fiatSymbol}${this.$n(fiat, 'price')} `;
-  }
-
-  getFiatValueVisible(value: number) {
-    return value.toString() !== '0';
-  }
-}
+          return [
+            { name: 'reserved', value: reserved, fiat: reserved * +this.assetPrice.price },
+            { name: 'frozen', value: frozen, fiat: frozen * +this.assetPrice.price },
+            { name: 'transferable', value: transferable, fiat: transferable * +this.assetPrice.price },
+            { name: 'totalLocked', value: locked, fiat: locked * +this.assetPrice.price },
+            { name: 'total', value: total, fiat: total * +this.assetPrice.price },
+          ];
+    },
+    showFiatValue() {
+      return this.fiatPrice !== 0;
+    },
+    fiatPrice() {
+      return this.networksStore.getAssetPrice(this.currency.priceId ?? '').price ?? 0;
+    },
+  },
+  methods: {
+    prepFiatValue(fiat: number) {
+      return `${this.accountsStore.fiatSymbol}${this.$n(fiat, 'price')} `;
+    },
+    getFiatValueVisible(value: number) {
+      return value.toString() !== '0';
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

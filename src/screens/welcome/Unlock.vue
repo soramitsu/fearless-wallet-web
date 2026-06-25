@@ -64,8 +64,8 @@
 
 <script lang="ts" setup>
 import { watch, ref } from 'vue';
-import { useRouter } from 'vue-router/composables';
-import { useI18n } from 'vue-i18n-composable';
+import { useRouter } from 'vue-router';
+import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';

@@ -13,7 +13,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRouter } from 'vue-router/composables';
+import { useRouter } from 'vue-router';
 import WalletConnectAuthItem from '@/screens/walletConnect/WalletConnectAuthItem.vue';
 import { useAccountsStore } from '@/stores/accounts';
 import { Components } from '@/router/routes';

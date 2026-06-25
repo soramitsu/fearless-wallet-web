@@ -26,33 +26,34 @@
   </div>
 </template>
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { defineComponent } from 'vue';
 
-@Component({})
-export default class PolkaswapSettingsHeader extends Vue {
-  @Prop({ type: String, default: 'Settings' }) marketType!: string;
-  @Prop({ type: Boolean }) showSettings!: boolean;
-  @Prop({ type: Boolean }) showPolkaswapIcon!: boolean;
-  @Prop({ type: Boolean }) settingHide!: boolean;
-  @Prop({ type: Boolean }) showBackIcon!: boolean;
-  @Prop({ type: Boolean }) showCloseIcon!: boolean;
-  @Prop({ type: Boolean }) showBackMock!: boolean;
-  @Prop({ type: String }) header!: string;
-
-  get classesSettings() {
-    return ['settings', { 'setting-hide': this.settingHide }];
-  }
-
-  get classesBackIcon() {
-    return [
-      'back-default',
-      {
-        'back-mock-settings': !this.showCloseIcon,
-        'back-mock': this.showBackMock || this.showSettings,
-      },
-    ];
-  }
-}
+export default defineComponent({ name: 'PolkaswapSettingsHeader' ,
+  props: {
+    marketType: { type: String, default: 'Settings' },
+    showSettings: { type: Boolean },
+    showPolkaswapIcon: { type: Boolean },
+    settingHide: { type: Boolean },
+    showBackIcon: { type: Boolean },
+    showCloseIcon: { type: Boolean },
+    showBackMock: { type: Boolean },
+    header: { type: String },
+  },
+  computed: {
+    classesSettings() {
+      return ['settings', { 'setting-hide': this.settingHide }];
+    },
+    classesBackIcon() {
+      return [
+            'back-default',
+            {
+              'back-mock-settings': !this.showCloseIcon,
+              'back-mock': this.showBackMock || this.showSettings,
+            },
+          ];
+    },
+  },
+});
 </script>
 
 <style lang="scss" scoped>

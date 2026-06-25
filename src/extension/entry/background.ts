@@ -1,5 +1,4 @@
 import { chrome } from '@extension-base/utils/crossenv';
-import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import { initStorage } from '@extension-base/stores/Storage';
@@ -7,10 +6,11 @@ import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
 import { keyring } from '@subwallet/ui-keyring';
 import type { TransportRequestMessage, Port, MessageTypes } from '@extension-base/background/types/types';
+import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
 
-axios.defaults.adapter = fetchAdapter;
+axios.defaults.adapter = 'fetch';
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab
@@ -29,7 +29,11 @@ async function getActiveTabs() {
 }
 
 chrome.runtime.onInstalled.addListener(async (details) => {
-  if (details.reason === 'update') await state.onboardingService.updateStorage('regular', true);
+  if (details.reason === 'update') {
+    await state.onboardingService.updateStorage('regular', true);
+
+    if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
+  }
 
   state.onboardingService.init();
 

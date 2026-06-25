@@ -8,7 +8,6 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } fr
 import { isSameString } from '@/helpers';
 
 type Getters = {
-  allNets(state: State): NetworkJson[];
   networks(state: State): NetworkJson[];
   activeNetworkForSelectedWallet(state: State): NetworkJson[];
   favoriteNetworksNames(state: State): { name: string; favorite: string[] }[];
@@ -20,27 +19,28 @@ type Getters = {
 };
 
 export const getters: Getters = {
-  allNets({ allNetworks }): NetworkJson[] {
-    const accountsStore = useAccountsStore();
-
-    if (accountsStore.selectedWallet.isTon)
-      return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Ton));
-
-    const substrateAndEvmNetworks = allNetworks.filter(
-      ({ ecosystem }) => !isSameString(ecosystem, WalletEcosystem.Ton)
-    );
-
-    return substrateAndEvmNetworks;
-  },
-
   networks({ allNetworks }): NetworkJson[] {
     const accountsStore = useAccountsStore();
+    const walletEcosystem = accountsStore.selectedWallet.walletEcosystem;
 
-    if (accountsStore.selectedWallet.isTon)
+    if (walletEcosystem === WalletEcosystem.Ton || accountsStore.selectedWallet.isTon)
       return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Ton));
 
+    if (walletEcosystem === WalletEcosystem.Solana)
+      return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Solana));
+
+    if (walletEcosystem === WalletEcosystem.Bitcoin)
+      return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Bitcoin));
+
+    if (walletEcosystem === WalletEcosystem.Iroha)
+      return allNetworks.filter(({ ecosystem }) => isSameString(ecosystem, WalletEcosystem.Iroha));
+
     const substrateAndEvmNetworks = allNetworks.filter(
-      ({ ecosystem }) => !isSameString(ecosystem, WalletEcosystem.Ton)
+      ({ ecosystem }) =>
+        !isSameString(ecosystem, WalletEcosystem.Ton) &&
+        !isSameString(ecosystem, WalletEcosystem.Solana) &&
+        !isSameString(ecosystem, WalletEcosystem.Bitcoin) &&
+        !isSameString(ecosystem, WalletEcosystem.Iroha)
     );
 
     const substrateNetworks = substrateAndEvmNetworks.filter(({ ecosystem }) =>
@@ -57,17 +57,32 @@ export const getters: Getters = {
     const selectedNetwork = accountsStore.selectedNetwork.toLowerCase();
 
     const activeNetworks = allNetworks.filter(({ active }) => active);
+    const walletNetworks = activeNetworks.filter(({ ecosystem }) => {
+      if (selectedWallet.walletEcosystem === WalletEcosystem.Ton) return isSameString(ecosystem, WalletEcosystem.Ton);
+      if (selectedWallet.walletEcosystem === WalletEcosystem.Solana)
+        return isSameString(ecosystem, WalletEcosystem.Solana);
+      if (selectedWallet.walletEcosystem === WalletEcosystem.Bitcoin)
+        return isSameString(ecosystem, WalletEcosystem.Bitcoin);
+      if (selectedWallet.walletEcosystem === WalletEcosystem.Iroha) return isSameString(ecosystem, WalletEcosystem.Iroha);
+
+      if (isSameString(ecosystem, WalletEcosystem.Ton)) return false;
+      if (isSameString(ecosystem, WalletEcosystem.Solana)) return false;
+      if (isSameString(ecosystem, WalletEcosystem.Bitcoin)) return false;
+      if (isSameString(ecosystem, WalletEcosystem.Iroha)) return false;
+
+      return selectedWallet.hasEthereum || isSameString(ecosystem, WalletEcosystem.Substrate);
+    });
 
     if (NETWORKS_GROUPS.includes(selectedNetwork)) {
-      if (selectedNetwork === ALL_NETWORKS) return activeNetworks;
+      if (selectedNetwork === ALL_NETWORKS) return walletNetworks;
 
-      if (selectedNetwork === POPULAR_NETWORKS) return activeNetworks.filter(({ rank }) => rank);
+      if (selectedNetwork === POPULAR_NETWORKS) return walletNetworks.filter(({ rank }) => rank);
 
       if (selectedNetwork === FAVORITE_NETWORKS)
-        return activeNetworks.filter(({ favorite }) => favorite.includes(selectedWallet.address));
+        return walletNetworks.filter(({ favorite }) => favorite.includes(selectedWallet.address));
     }
 
-    return activeNetworks.filter(({ name }) => isSameString(name, selectedNetwork));
+    return walletNetworks.filter(({ name }) => isSameString(name, selectedNetwork));
   },
 
   favoriteNetworksNames({ allNetworks }) {

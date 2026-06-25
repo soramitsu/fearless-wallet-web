@@ -1,8 +1,8 @@
 import { vi } from 'vitest';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { decryptForCosigner, encryptByCosigner } from '@extension-base/page';
-import { NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import type { NetworkJson } from '@extension-base/types';
+import { NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 const dwellirNetwork = (): NetworkJson =>
   ({

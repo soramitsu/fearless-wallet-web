@@ -29,7 +29,8 @@ declare global {
       FL_WEB_ZKEVM_POLYGONSCAN_API_KEY: string;
       VUE_APP_FL_WEB_X1_TESTNET_API_KEY: string;
       FL_WEB_TON_API_KEY: string;
-      FL_DWELLIR_API_KEY: string;
+      FL_WEB_DWELLIR_API_KEY: string;
+      FL_DWELLIR_API_KEY?: string;
     }
   }
 }

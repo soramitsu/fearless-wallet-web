@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "3.0.3",
+  "version": "3.0.5",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -51,6 +51,7 @@
     "@polkadot/vue-identicon": "^3.16.7",
     "@scure/base": "^1.2.6",
     "@scure/bip32": "^1.4.0",
+    "@sora-substrate/sdk": "1.43.0-betaMST-1.0.21",
     "@sora-substrate/util": "1.40.2",
     "@subwallet/ui-keyring": "0.1.14",
     "@ton-api/client": "^0.4.0",

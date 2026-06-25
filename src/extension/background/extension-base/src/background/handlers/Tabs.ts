@@ -21,6 +21,8 @@ import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,
+  DecryptForCosignerData,
+  EncryptByCosignerData,
   MessageTypes,
   Port,
   RequestAccountUnsubscribe,
@@ -489,6 +491,12 @@ export default class Tabs {
     switch (type) {
       case 'pub(authorize.tab)':
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
+
+      case 'pub(decrypt.cosigner)':
+        return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
+
+      case 'pub(encrypt.cosigner)':
+        return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url);

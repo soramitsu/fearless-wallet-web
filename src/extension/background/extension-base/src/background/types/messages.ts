@@ -131,6 +131,9 @@ import type {
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
   RequestGetHistory,
+  DecryptForCosignerData,
+  EncryptByCosignerData,
+  FinalEncryptedStructure,
 } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -301,6 +304,8 @@ export interface RequestSignatures {
   'pri(onboarding.setComplete)': [null, void];
 
   // Public/external requests, i.e. from a page
+  'pub(decrypt.cosigner)': [DecryptForCosignerData, string];
+  'pub(encrypt.cosigner)': [EncryptByCosignerData, FinalEncryptedStructure];
   'pub(accounts.list)': [null, InjectedAccount[]];
   'pub(accounts.subscribe)': [null, string, InjectedAccount[]];
   'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];

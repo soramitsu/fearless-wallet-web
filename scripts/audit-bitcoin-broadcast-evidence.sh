@@ -136,6 +136,11 @@ function isTxid(value) {
   return /^[0-9a-f]{64}$/i.test(String(value || ''));
 }
 
+function isRepeatedHexPlaceholder(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return /^[0-9a-f]{8,}$/.test(normalized) && new Set(normalized).size === 1;
+}
+
 const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const BECH32_GENERATORS = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
 
@@ -387,6 +392,9 @@ if (manifest) {
     }
 
     const txid = String(entry.txid || '').toLowerCase();
+    if (isRepeatedHexPlaceholder(txid)) {
+      fail(`evidence[${index}].txid must not be a placeholder transaction id`);
+    }
     if (seenTxids.has(txid)) {
       fail(`duplicate Bitcoin broadcast txid evidence: ${txid}`);
     }
@@ -410,6 +418,11 @@ if (manifest) {
 
     if (!isOutpoint(entry.outpoint)) {
       fail(`evidence[${index}].outpoint must be formatted as <txid>:<vout>`);
+    } else {
+      const outpointTxid = String(entry.outpoint).split(':')[0].toLowerCase();
+      if (isRepeatedHexPlaceholder(outpointTxid)) {
+        fail(`evidence[${index}].outpoint must not use a placeholder transaction id`);
+      }
     }
 
     try {
@@ -427,6 +440,8 @@ if (manifest) {
 
     if (!/^[0-9a-f]{40}$/i.test(String(entry.commit || ''))) {
       fail(`evidence[${index}].commit must be a 40-character git commit`);
+    } else if (isRepeatedHexPlaceholder(entry.commit)) {
+      fail(`evidence[${index}].commit must not be a placeholder git commit`);
     }
   });
 }

@@ -92,15 +92,15 @@ write_ready_manifest() {
   ],
   "evidence": [
     {
-      "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+      "txid": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "sourceAddress": "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl",
       "recipientAddress": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
       "amountSat": "1000",
-      "outpoint": "2222222222222222222222222222222222222222222222222222222222222222:0",
+      "outpoint": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210:0",
       "indexerUrl": "https://blockstream.info/testnet/api",
       "timestamp": "2026-06-26T00:00:00Z",
       "operator": "release",
-      "commit": "3333333333333333333333333333333333333333"
+      "commit": "89abcdef89abcdef89abcdef89abcdef89abcdef"
     }
   ]
 }
@@ -215,8 +215,13 @@ expect_failure "ready evidence carries blockers" "blockers must be empty when Bi
 
 ready_bad_txid="$tmp_dir/ready-bad-txid.json"
 cp "$ready" "$ready_bad_txid"
-perl -0pi -e 's/1111111111111111111111111111111111111111111111111111111111111111/1234/' "$ready_bad_txid"
+perl -0pi -e 's/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef/1234/' "$ready_bad_txid"
 expect_failure "ready evidence bad txid" "txid must be a 64-character transaction id" run_audit "$ready_bad_txid" --require-ready
+
+ready_placeholder_txid="$tmp_dir/ready-placeholder-txid.json"
+cp "$ready" "$ready_placeholder_txid"
+perl -0pi -e 's/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef/1111111111111111111111111111111111111111111111111111111111111111/' "$ready_placeholder_txid"
+expect_failure "ready evidence placeholder txid" "txid must not be a placeholder transaction id" run_audit "$ready_placeholder_txid" --require-ready
 
 ready_mainnet_address="$tmp_dir/ready-mainnet-address.json"
 cp "$ready" "$ready_mainnet_address"
@@ -240,8 +245,13 @@ expect_failure "ready evidence zero amount" "amountSat must be a positive intege
 
 ready_bad_outpoint="$tmp_dir/ready-bad-outpoint.json"
 cp "$ready" "$ready_bad_outpoint"
-perl -0pi -e 's/2222222222222222222222222222222222222222222222222222222222222222:0/2222:0/' "$ready_bad_outpoint"
+perl -0pi -e 's/fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210:0/2222:0/' "$ready_bad_outpoint"
 expect_failure "ready evidence bad outpoint" "outpoint must be formatted as <txid>:<vout>" run_audit "$ready_bad_outpoint" --require-ready
+
+ready_placeholder_outpoint="$tmp_dir/ready-placeholder-outpoint.json"
+cp "$ready" "$ready_placeholder_outpoint"
+perl -0pi -e 's/fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210:0/2222222222222222222222222222222222222222222222222222222222222222:0/' "$ready_placeholder_outpoint"
+expect_failure "ready evidence placeholder outpoint" "outpoint must not use a placeholder transaction id" run_audit "$ready_placeholder_outpoint" --require-ready
 
 ready_http_indexer="$tmp_dir/ready-http-indexer.json"
 cp "$ready" "$ready_http_indexer"
@@ -305,8 +315,13 @@ expect_failure "ready evidence bad timestamp" "timestamp must be an ISO-8601 UTC
 
 ready_bad_commit="$tmp_dir/ready-bad-commit.json"
 cp "$ready" "$ready_bad_commit"
-perl -0pi -e 's/3333333333333333333333333333333333333333/3333/' "$ready_bad_commit"
+perl -0pi -e 's/89abcdef89abcdef89abcdef89abcdef89abcdef/3333/' "$ready_bad_commit"
 expect_failure "ready evidence bad commit" "commit must be a 40-character git commit" run_audit "$ready_bad_commit" --require-ready
+
+ready_placeholder_commit="$tmp_dir/ready-placeholder-commit.json"
+cp "$ready" "$ready_placeholder_commit"
+perl -0pi -e 's/89abcdef89abcdef89abcdef89abcdef89abcdef/3333333333333333333333333333333333333333/' "$ready_placeholder_commit"
+expect_failure "ready evidence placeholder commit" "commit must not be a placeholder git commit" run_audit "$ready_placeholder_commit" --require-ready
 
 secret_top_level="$tmp_dir/secret-top-level.json"
 cp "$ready" "$secret_top_level"
@@ -315,7 +330,7 @@ expect_failure "secret-like Bitcoin broadcast evidence key" "must not be include
 
 secret_nested="$tmp_dir/secret-nested.json"
 cp "$ready" "$secret_nested"
-perl -0pi -e 's/"commit": "3333333333333333333333333333333333333333"/"commit": "3333333333333333333333333333333333333333",\n      "authorization": "Bearer do-not-commit"/' "$secret_nested"
+perl -0pi -e 's/"commit": "89abcdef89abcdef89abcdef89abcdef89abcdef"/"commit": "89abcdef89abcdef89abcdef89abcdef89abcdef",\n      "authorization": "Bearer do-not-commit"/' "$secret_nested"
 expect_failure "nested secret-like Bitcoin broadcast evidence key" "must not be included in public Bitcoin broadcast evidence" run_audit "$secret_nested" --require-ready
 
 echo "[bitcoin-broadcast-evidence-test] all assertions passed"

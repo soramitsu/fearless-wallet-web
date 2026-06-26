@@ -28,6 +28,9 @@ while (($#)); do
       OUTPUT_FILE="$2"
       shift 2
       ;;
+    --)
+      shift
+      ;;
     -h|--help)
       usage
       exit 0

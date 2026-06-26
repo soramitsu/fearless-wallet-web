@@ -44,6 +44,11 @@ bash "$GENERATOR_SCRIPT" --manifest "$DEFAULT_MANIFEST" --output "$output_templa
 cmp "$output_template" "$tmp_dir/output-stdout.json" >/dev/null || fail "template output file must match stdout"
 cmp "$stdout_template" "$output_template" >/dev/null || fail "template generation must be deterministic"
 
+separator_template="$tmp_dir/separator-template.json"
+bash "$GENERATOR_SCRIPT" -- --manifest "$DEFAULT_MANIFEST" --output "$separator_template" >"$tmp_dir/separator-stdout.json"
+cmp "$output_template" "$separator_template" >/dev/null || fail "template generation must accept a standalone argument separator"
+cmp "$separator_template" "$tmp_dir/separator-stdout.json" >/dev/null || fail "separator template output file must match stdout"
+
 node - "$output_template" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];

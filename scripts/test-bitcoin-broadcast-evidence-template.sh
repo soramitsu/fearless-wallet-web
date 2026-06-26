@@ -173,6 +173,49 @@ fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "unsupported evidence field" "unsupported evidence field in manifest: network" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_field"
 
+unsupported_top_level="$tmp_dir/unsupported-top-level.json"
+cp "$DEFAULT_MANIFEST" "$unsupported_top_level"
+node - "$unsupported_top_level" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.network = 'testnet';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported top-level manifest field" "manifest.network is not supported in public Bitcoin broadcast evidence manifest" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_top_level"
+
+unsupported_record_field="$tmp_dir/unsupported-record-field.json"
+cp "$DEFAULT_MANIFEST" "$unsupported_record_field"
+node - "$unsupported_record_field" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence = [{ network: 'testnet' }];
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported Bitcoin broadcast evidence record field" "evidence[0].network is not supported in public Bitcoin broadcast evidence manifest" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_record_field"
+
+prefilled_evidence="$tmp_dir/prefilled-evidence.json"
+cp "$DEFAULT_MANIFEST" "$prefilled_evidence"
+node - "$prefilled_evidence" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence = [{
+  txid: 'a'.repeat(64),
+  sourceAddress: 'tb1qsourceaddressxxxxxxxxxxxxxxxxxxxxxxxx',
+  recipientAddress: 'tb1qrecipientaddressxxxxxxxxxxxxxxxxxxxxx',
+  amountSat: 1000,
+  outpoint: `${'b'.repeat(64)}:0`,
+  indexerUrl: manifest.defaultIndexerUrl,
+  timestamp: '2026-06-26T00:00:00Z',
+  operator: 'release',
+  commit: 'c'.repeat(40)
+}];
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "prefilled Bitcoin broadcast evidence" "committed Bitcoin broadcast evidence manifest must not prefill evidence" bash "$GENERATOR_SCRIPT" --manifest "$prefilled_evidence"
+
 secret_manifest="$tmp_dir/secret-manifest.json"
 cp "$DEFAULT_MANIFEST" "$secret_manifest"
 node - "$secret_manifest" <<'NODE'

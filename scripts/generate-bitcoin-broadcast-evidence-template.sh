@@ -77,6 +77,20 @@ const PLACEHOLDERS = {
   operator: 'TODO_RELEASE_OPERATOR',
   commit: 'TODO_40_HEX_GIT_COMMIT'
 };
+const ALLOWED_MANIFEST_FIELDS = [
+  'schemaVersion',
+  'scope',
+  'status',
+  'releaseEnabled',
+  'lastReviewed',
+  'blockers',
+  'smokeCommand',
+  'readyVerificationCommands',
+  'liveSmokeEnvironment',
+  'defaultIndexerUrl',
+  'requiredEvidenceFields',
+  'evidence'
+];
 
 function fail(message) {
   errors.push(message);
@@ -140,6 +154,32 @@ function secretLikeKeyReason(value, currentPath = '$') {
   return null;
 }
 
+function rejectUnsupportedKeys(value, allowedFields, path) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+  const allowed = new Set(allowedFields);
+  for (const field of Object.keys(value)) {
+    if (!allowed.has(field)) {
+      fail(`${path}.${field} is not supported in public Bitcoin broadcast evidence manifest`);
+    }
+  }
+}
+
+function validateCommittedEvidence(value) {
+  const evidence = requireArray(value, 'evidence');
+  evidence.forEach((record, index) => {
+    const path = `evidence[${index}]`;
+    if (!record || typeof record !== 'object' || Array.isArray(record)) {
+      fail(`${path} must be an object`);
+      return;
+    }
+    rejectUnsupportedKeys(record, REQUIRED_EVIDENCE_FIELDS, path);
+  });
+
+  if (evidence.length > 0) {
+    fail('committed Bitcoin broadcast evidence manifest must not prefill evidence');
+  }
+}
+
 const manifest = readManifest(manifestFile);
 
 if (manifest) {
@@ -151,6 +191,7 @@ if (manifest) {
   if (secretLikePath) {
     fail(`${secretLikePath} must not be read from public Bitcoin broadcast evidence manifest`);
   }
+  rejectUnsupportedKeys(manifest, ALLOWED_MANIFEST_FIELDS, 'manifest');
 
   if (manifest.schemaVersion !== 1) {
     fail('schemaVersion must be 1');
@@ -190,6 +231,7 @@ if (manifest) {
 
   requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands');
   requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment');
+  validateCommittedEvidence(manifest.evidence);
 }
 
 if (errors.length > 0) {

@@ -17,7 +17,17 @@ const chromeBinary =
     : 'google-chrome');
 const headless = process.env.SOLANA_EXTENSION_SMOKE_HEADLESS !== 'false';
 const timeoutMs = Number(process.env.SOLANA_EXTENSION_SMOKE_TIMEOUT_MS ?? 45_000);
+const cdpCommandTimeoutMs = Number(process.env.SOLANA_EXTENSION_SMOKE_CDP_TIMEOUT_MS ?? timeoutMs);
 const usePipeTransport = process.env.SOLANA_EXTENSION_SMOKE_TRANSPORT !== 'websocket';
+
+assert(
+  Number.isFinite(timeoutMs) && timeoutMs >= 1_000,
+  'SOLANA_EXTENSION_SMOKE_TIMEOUT_MS must be a positive millisecond value of at least 1000'
+);
+assert(
+  Number.isFinite(cdpCommandTimeoutMs) && cdpCommandTimeoutMs >= 1_000,
+  'SOLANA_EXTENSION_SMOKE_CDP_TIMEOUT_MS must be a positive millisecond value of at least 1000'
+);
 
 const PORT_EXTENSION = 'fw-fearless-extension';
 const TEST_PASSWORD = 'fearless-solana-smoke-password';
@@ -77,7 +87,7 @@ class CdpConnection {
       const timeout = setTimeout(() => {
         this.#callbacks.delete(id);
         reject(new Error(`Timed out waiting for CDP response to ${method}`));
-      }, Math.min(timeoutMs, 20_000));
+      }, cdpCommandTimeoutMs);
 
       this.#callbacks.set(id, { reject, resolve, timeout });
       this.socket.send(JSON.stringify(payload));
@@ -145,7 +155,7 @@ class CdpPipeConnection {
       const timeout = setTimeout(() => {
         this.#callbacks.delete(id);
         reject(new Error(`Timed out waiting for CDP response to ${method}`));
-      }, Math.min(timeoutMs, 20_000));
+      }, cdpCommandTimeoutMs);
 
       this.#callbacks.set(id, { reject, resolve, timeout });
       this.input.write(`${JSON.stringify(payload)}\0`);

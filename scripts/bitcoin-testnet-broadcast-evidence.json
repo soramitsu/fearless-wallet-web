@@ -9,6 +9,8 @@
   ],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
+    "yarn test:bitcoin-broadcast-evidence-template",
+    "yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json",
     "yarn test:bitcoin-broadcast-evidence-audit",
     "yarn audit:bitcoin-broadcast-evidence --require-ready",
     "FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin"

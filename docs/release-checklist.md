@@ -27,9 +27,13 @@ Use this checklist for every browser-extension release PR from `develop` to
 - Keep `VUE_APP_ENABLE_IROHA_TRANSFERS=false` unless the same release audit is
   run with a pinned Iroha JS SDK artifact and the SDK checker passes.
 - Run `yarn test:smoke:bitcoin`,
+  `yarn test:bitcoin-broadcast-evidence-template`,
+  `yarn generate:bitcoin-broadcast-evidence-template -- --output
+  build/reports/bitcoin-broadcast-evidence-template.json`,
   `yarn test:bitcoin-broadcast-evidence-audit`, and
   `yarn audit:bitcoin-broadcast-evidence`. Before treating Bitcoin send as
-  release-ready, run a funded live testnet broadcast with
+  release-ready, use the generated template to prepare the manifest, run a
+  funded live testnet broadcast with
   `FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin`, record the txid,
   outpoint, amount, source/recipient testnet addresses, indexer URL, operator,
   timestamp, and commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,

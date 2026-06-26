@@ -71,6 +71,8 @@ const REQUIRED_ENV = [
   'FEARLESS_BITCOIN_TESTNET_OUTPOINT'
 ];
 const REQUIRED_COMMAND_MARKERS = [
+  'yarn test:bitcoin-broadcast-evidence-template',
+  'yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json',
   'yarn test:bitcoin-broadcast-evidence-audit',
   'yarn audit:bitcoin-broadcast-evidence --require-ready',
   'FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin'

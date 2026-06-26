@@ -36,11 +36,19 @@ derivation path before it creates the testnet client.
 
 Release evidence is tracked in `scripts/bitcoin-testnet-broadcast-evidence.json`.
 The default manifest remains blocked until a funded testnet broadcast succeeds.
+Generate a fill-in-ready manifest template before recording the live result:
+
+```sh
+yarn test:bitcoin-broadcast-evidence-template
+yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json
+```
+
 After a live run, record the broadcast txid, selected outpoint, source and
 recipient testnet addresses, amount, indexer URL, UTC timestamp, operator, and
 commit, then run:
 
 ```sh
+yarn test:bitcoin-broadcast-evidence-template
 yarn test:bitcoin-broadcast-evidence-audit
 yarn audit:bitcoin-broadcast-evidence --require-ready
 ```

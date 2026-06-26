@@ -22,6 +22,8 @@ write_blocked_manifest() {
   ],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
+    "yarn test:bitcoin-broadcast-evidence-template",
+    "yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json",
     "yarn test:bitcoin-broadcast-evidence-audit",
     "yarn audit:bitcoin-broadcast-evidence --require-ready",
     "FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin"
@@ -62,6 +64,8 @@ write_ready_manifest() {
   "blockers": [],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
+    "yarn test:bitcoin-broadcast-evidence-template",
+    "yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json",
     "yarn test:bitcoin-broadcast-evidence-audit",
     "yarn audit:bitcoin-broadcast-evidence --require-ready",
     "FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin"
@@ -172,6 +176,16 @@ missing_ready_command="$tmp_dir/missing-ready-command.json"
 cp "$blocked" "$missing_ready_command"
 perl -0pi -e 's/yarn audit:bitcoin-broadcast-evidence --require-ready/yarn audit:bitcoin-broadcast-evidence/' "$missing_ready_command"
 expect_failure "missing require-ready command" "readyVerificationCommands missing yarn audit:bitcoin-broadcast-evidence --require-ready" run_audit "$missing_ready_command"
+
+missing_template_test_command="$tmp_dir/missing-template-test-command.json"
+cp "$blocked" "$missing_template_test_command"
+perl -0pi -e 's/"yarn test:bitcoin-broadcast-evidence-template",\n//' "$missing_template_test_command"
+expect_failure "missing template self-test command" "readyVerificationCommands missing yarn test:bitcoin-broadcast-evidence-template" run_audit "$missing_template_test_command"
+
+missing_template_generator_command="$tmp_dir/missing-template-generator-command.json"
+cp "$blocked" "$missing_template_generator_command"
+perl -0pi -e 's/"yarn generate:bitcoin-broadcast-evidence-template -- --output build\/reports\/bitcoin-broadcast-evidence-template.json",\n//' "$missing_template_generator_command"
+expect_failure "missing template generator command" "readyVerificationCommands missing yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json" run_audit "$missing_template_generator_command"
 
 missing_required_field="$tmp_dir/missing-required-field.json"
 cp "$blocked" "$missing_required_field"

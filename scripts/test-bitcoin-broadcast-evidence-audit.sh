@@ -192,6 +192,17 @@ cp "$blocked" "$missing_required_field"
 perl -0pi -e 's/"txid",\n//' "$missing_required_field"
 expect_failure "missing txid evidence field" "requiredEvidenceFields missing txid" run_audit "$missing_required_field"
 
+unsupported_required_field="$tmp_dir/unsupported-required-field.json"
+cp "$blocked" "$unsupported_required_field"
+node - "$unsupported_required_field" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.requiredEvidenceFields.push('network');
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported required Bitcoin broadcast evidence field" "unsupported Bitcoin broadcast evidence field in manifest: network" run_audit "$unsupported_required_field"
+
 ready_no_evidence="$tmp_dir/ready-no-evidence.json"
 cp "$ready" "$ready_no_evidence"
 perl -0pi -e 's/"evidence": \[[\s\S]*?\n  \]/"evidence": []/' "$ready_no_evidence"
@@ -264,6 +275,28 @@ manifest.evidence.push({ ...manifest.evidence[0] });
 fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "ready evidence duplicate txid" "duplicate Bitcoin broadcast txid evidence" run_audit "$ready_duplicate_txid" --require-ready
+
+unsupported_top_level="$tmp_dir/unsupported-top-level.json"
+cp "$ready" "$unsupported_top_level"
+node - "$unsupported_top_level" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.network = 'testnet';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported top-level Bitcoin broadcast evidence field" "manifest.network is not supported in public Bitcoin broadcast evidence" run_audit "$unsupported_top_level" --require-ready
+
+unsupported_record_field="$tmp_dir/unsupported-record-field.json"
+cp "$ready" "$unsupported_record_field"
+node - "$unsupported_record_field" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].network = 'testnet';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported Bitcoin broadcast evidence record field" "evidence[0].network is not supported in public Bitcoin broadcast evidence" run_audit "$unsupported_record_field" --require-ready
 
 ready_bad_timestamp="$tmp_dir/ready-bad-timestamp.json"
 cp "$ready" "$ready_bad_timestamp"

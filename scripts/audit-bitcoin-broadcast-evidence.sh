@@ -62,6 +62,20 @@ const REQUIRED_EVIDENCE_FIELDS = [
   'operator',
   'commit'
 ];
+const ALLOWED_MANIFEST_FIELDS = [
+  'schemaVersion',
+  'scope',
+  'status',
+  'releaseEnabled',
+  'lastReviewed',
+  'blockers',
+  'smokeCommand',
+  'readyVerificationCommands',
+  'liveSmokeEnvironment',
+  'defaultIndexerUrl',
+  'requiredEvidenceFields',
+  'evidence'
+];
 const REQUIRED_ENV = [
   'FEARLESS_BITCOIN_TESTNET_LIVE',
   'FEARLESS_BITCOIN_TESTNET_MNEMONIC',
@@ -245,6 +259,18 @@ function secretLikeKeyReason(value, path = '$') {
   return null;
 }
 
+function rejectUnsupportedKeys(value, allowedFields, path) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return;
+  }
+  const allowed = new Set(allowedFields);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) {
+      fail(`${path}.${key} is not supported in public Bitcoin broadcast evidence`);
+    }
+  }
+}
+
 const manifest = readJson(evidenceFile);
 
 if (manifest) {
@@ -254,6 +280,7 @@ if (manifest) {
   if (secretLikePath) {
     fail(`${secretLikePath} must not be included in public Bitcoin broadcast evidence`);
   }
+  rejectUnsupportedKeys(manifest, ALLOWED_MANIFEST_FIELDS, 'manifest');
 
   if (manifest.schemaVersion !== 1) {
     fail('schemaVersion must be 1');
@@ -283,7 +310,8 @@ if (manifest) {
   const blockers = new Set(manifestBlockers);
   const envVars = new Set(requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment'));
   const commands = requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands').join('\n');
-  const requiredEvidenceFields = new Set(requireArray(manifest.requiredEvidenceFields, 'requiredEvidenceFields'));
+  const requiredEvidenceFieldList = requireArray(manifest.requiredEvidenceFields, 'requiredEvidenceFields');
+  const requiredEvidenceFields = new Set(requiredEvidenceFieldList);
   const evidence = requireArray(manifest.evidence, 'evidence');
 
   if (manifest.status === 'blocked') {
@@ -319,6 +347,11 @@ if (manifest) {
       fail(`requiredEvidenceFields missing ${field}`);
     }
   }
+  for (const field of requiredEvidenceFieldList) {
+    if (!REQUIRED_EVIDENCE_FIELDS.includes(field)) {
+      fail(`unsupported Bitcoin broadcast evidence field in manifest: ${field}`);
+    }
+  }
 
   const readyClaimed = manifest.status === 'ready' || manifest.releaseEnabled || requireReady;
   if (readyClaimed) {
@@ -341,6 +374,7 @@ if (manifest) {
       fail(`evidence[${index}] must be an object`);
       return;
     }
+    rejectUnsupportedKeys(entry, REQUIRED_EVIDENCE_FIELDS, `evidence[${index}]`);
 
     for (const field of REQUIRED_EVIDENCE_FIELDS) {
       if (!nonEmptyString(entry[field])) {

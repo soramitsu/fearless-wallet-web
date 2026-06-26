@@ -313,6 +313,11 @@ cp "$ready" "$ready_bad_timestamp"
 perl -0pi -e 's/2026-06-26T00:00:00Z/2026-06-26/' "$ready_bad_timestamp"
 expect_failure "ready evidence bad timestamp" "timestamp must be an ISO-8601 UTC second timestamp" run_audit "$ready_bad_timestamp" --require-ready
 
+ready_future_timestamp="$tmp_dir/ready-future-timestamp.json"
+cp "$ready" "$ready_future_timestamp"
+perl -0pi -e 's/2026-06-26T00:00:00Z/2999-01-01T00:00:00Z/' "$ready_future_timestamp"
+expect_failure "ready evidence future timestamp" "timestamp must not be in the future" run_audit "$ready_future_timestamp" --require-ready
+
 ready_bad_commit="$tmp_dir/ready-bad-commit.json"
 cp "$ready" "$ready_bad_commit"
 perl -0pi -e 's/89abcdef89abcdef89abcdef89abcdef89abcdef/3333/' "$ready_bad_commit"

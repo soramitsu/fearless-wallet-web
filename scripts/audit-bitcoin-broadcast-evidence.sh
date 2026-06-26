@@ -49,6 +49,7 @@ const fs = require('fs');
 const [evidenceFile, requireReadyRaw] = process.argv.slice(2);
 const requireReady = requireReadyRaw === 'true';
 const errors = [];
+const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const REQUIRED_BLOCKERS = ['funded-testnet-broadcast-evidence-missing'];
 const REQUIRED_EVIDENCE_FIELDS = [
@@ -223,6 +224,15 @@ function isPositiveInteger(value) {
 function isOutpoint(value) {
   const match = /^([0-9a-f]{64}):(\d+)$/i.exec(String(value || ''));
   return Boolean(match && Number.isSafeInteger(Number(match[2])));
+}
+
+function isIsoUtcSecond(value) {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(String(value || ''));
+}
+
+function isFutureTimestamp(value) {
+  const millis = Date.parse(value);
+  return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
 }
 
 function secretLikeKeyReason(value, path = '$') {
@@ -434,8 +444,10 @@ if (manifest) {
       fail(`evidence[${index}].indexerUrl must be a valid URL`);
     }
 
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(String(entry.timestamp || ''))) {
+    if (!isIsoUtcSecond(entry.timestamp)) {
       fail(`evidence[${index}].timestamp must be an ISO-8601 UTC second timestamp`);
+    } else if (isFutureTimestamp(entry.timestamp)) {
+      fail(`evidence[${index}].timestamp must not be in the future`);
     }
 
     if (!/^[0-9a-f]{40}$/i.test(String(entry.commit || ''))) {

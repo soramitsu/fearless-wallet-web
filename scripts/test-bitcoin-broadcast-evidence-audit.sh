@@ -183,6 +183,11 @@ cp "$ready" "$ready_no_evidence"
 perl -0pi -e 's/"evidence": \[[\s\S]*?\n  \]/"evidence": []/' "$ready_no_evidence"
 expect_failure "ready evidence without funded broadcast" "ready Bitcoin broadcast evidence requires at least one funded testnet broadcast record" run_audit "$ready_no_evidence" --require-ready
 
+ready_with_blocker="$tmp_dir/ready-with-blocker.json"
+cp "$ready" "$ready_with_blocker"
+perl -0pi -e 's/"blockers": \[\]/"blockers": ["funded-testnet-broadcast-evidence-missing"]/' "$ready_with_blocker"
+expect_failure "ready evidence carries blockers" "blockers must be empty when Bitcoin broadcast evidence is ready" run_audit "$ready_with_blocker" --require-ready
+
 ready_bad_txid="$tmp_dir/ready-bad-txid.json"
 cp "$ready" "$ready_bad_txid"
 perl -0pi -e 's/1111111111111111111111111111111111111111111111111111111111111111/1234/' "$ready_bad_txid"
@@ -255,5 +260,15 @@ ready_bad_commit="$tmp_dir/ready-bad-commit.json"
 cp "$ready" "$ready_bad_commit"
 perl -0pi -e 's/3333333333333333333333333333333333333333/3333/' "$ready_bad_commit"
 expect_failure "ready evidence bad commit" "commit must be a 40-character git commit" run_audit "$ready_bad_commit" --require-ready
+
+secret_top_level="$tmp_dir/secret-top-level.json"
+cp "$ready" "$secret_top_level"
+perl -0pi -e 's/"evidence": \[/"mnemonic": "do-not-commit",\n  "evidence": [/' "$secret_top_level"
+expect_failure "secret-like Bitcoin broadcast evidence key" "must not be included in public Bitcoin broadcast evidence" run_audit "$secret_top_level" --require-ready
+
+secret_nested="$tmp_dir/secret-nested.json"
+cp "$ready" "$secret_nested"
+perl -0pi -e 's/"commit": "3333333333333333333333333333333333333333"/"commit": "3333333333333333333333333333333333333333",\n      "authorization": "Bearer do-not-commit"/' "$secret_nested"
+expect_failure "nested secret-like Bitcoin broadcast evidence key" "must not be included in public Bitcoin broadcast evidence" run_audit "$secret_nested" --require-ready
 
 echo "[bitcoin-broadcast-evidence-test] all assertions passed"

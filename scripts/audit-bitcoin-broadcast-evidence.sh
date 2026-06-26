@@ -204,10 +204,54 @@ function isOutpoint(value) {
   return Boolean(match && Number.isSafeInteger(Number(match[2])));
 }
 
+function secretLikeKeyReason(value, path = '$') {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const reason = secretLikeKeyReason(value[index], `${path}[${index}]`);
+      if (reason) {
+        return reason;
+      }
+    }
+    return null;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    const normalized = key.toLowerCase();
+    if (
+      normalized.includes('privatekey') ||
+      normalized.includes('mnemonic') ||
+      normalized.includes('seed') ||
+      normalized.includes('secret') ||
+      normalized.includes('password') ||
+      normalized.includes('authorization') ||
+      normalized.includes('credential') ||
+      normalized.includes('clientdatajson')
+    ) {
+      return `${path}.${key}`;
+    }
+
+    const reason = secretLikeKeyReason(child, `${path}.${key}`);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  return null;
+}
+
 const manifest = readJson(evidenceFile);
 
 if (manifest) {
   requireObject(manifest, 'manifest');
+
+  const secretLikePath = secretLikeKeyReason(manifest);
+  if (secretLikePath) {
+    fail(`${secretLikePath} must not be included in public Bitcoin broadcast evidence`);
+  }
 
   if (manifest.schemaVersion !== 1) {
     fail('schemaVersion must be 1');
@@ -233,7 +277,8 @@ if (manifest) {
     fail('defaultIndexerUrl must be https://blockstream.info/testnet/api');
   }
 
-  const blockers = new Set(requireArray(manifest.blockers, 'blockers'));
+  const manifestBlockers = requireArray(manifest.blockers, 'blockers');
+  const blockers = new Set(manifestBlockers);
   const envVars = new Set(requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment'));
   const commands = requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands').join('\n');
   const requiredEvidenceFields = new Set(requireArray(manifest.requiredEvidenceFields, 'requiredEvidenceFields'));
@@ -277,6 +322,10 @@ if (manifest) {
   if (readyClaimed) {
     if (!manifest.releaseEnabled) {
       fail('releaseEnabled must be true when Bitcoin broadcast evidence is ready');
+    }
+
+    if (manifestBlockers.length > 0) {
+      fail('blockers must be empty when Bitcoin broadcast evidence is ready');
     }
 
     if (evidence.length === 0) {

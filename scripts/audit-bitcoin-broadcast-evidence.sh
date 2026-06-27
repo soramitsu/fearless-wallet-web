@@ -43,11 +43,11 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
-node - "$EVIDENCE_FILE" "$REQUIRE_READY" <<'NODE'
+node - "$EVIDENCE_FILE" "$REQUIRE_READY" "$ROOT_DIR" <<'NODE'
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 
-const [evidenceFile, requireReadyRaw] = process.argv.slice(2);
+const [evidenceFile, requireReadyRaw, rootDir] = process.argv.slice(2);
 const requireReady = requireReadyRaw === 'true';
 const errors = [];
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -293,6 +293,32 @@ function rejectUnsupportedKeys(value, allowedFields, path) {
   }
 }
 
+function resolveCurrentReleaseCommit() {
+  const override = process.env.BITCOIN_BROADCAST_EVIDENCE_COMMIT;
+  let commit = override;
+
+  if (!commit) {
+    try {
+      commit = execFileSync('git', ['-C', rootDir, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+    } catch (error) {
+      fail(`current release commit could not be resolved: ${error.message}`);
+      return null;
+    }
+  }
+
+  if (!/^[0-9a-f]{40}$/i.test(String(commit || ''))) {
+    fail('BITCOIN_BROADCAST_EVIDENCE_COMMIT must be a 40-character git commit');
+    return null;
+  }
+
+  if (isRepeatedHexPlaceholder(commit)) {
+    fail('BITCOIN_BROADCAST_EVIDENCE_COMMIT must not be a placeholder git commit');
+    return null;
+  }
+
+  return String(commit).toLowerCase();
+}
+
 function splitOutpoint(value) {
   const match = /^([0-9a-f]{64}):(\d+)$/i.exec(String(value || ''));
   if (!match) return null;
@@ -345,10 +371,11 @@ function loadIndexerTransaction(entry, index) {
 }
 
 function verifyBroadcastRecord(entry, index) {
+  const errorCountBefore = errors.length;
   const transaction = loadIndexerTransaction(entry, index);
   if (!transaction || typeof transaction !== 'object' || Array.isArray(transaction)) {
     fail(`evidence[${index}] indexer transaction response must be an object`);
-    return;
+    return false;
   }
 
   const txid = String(entry.txid || '').toLowerCase();
@@ -376,7 +403,7 @@ function verifyBroadcastRecord(entry, index) {
   );
   if (matchingInputs.length === 0) {
     fail(`evidence[${index}] indexer transaction missing funding outpoint ${entry.outpoint}`);
-    return;
+    return false;
   }
 
   if (!matchingInputs.some((input) => input.prevout && input.prevout.scriptpubkey_address === entry.sourceAddress)) {
@@ -386,12 +413,12 @@ function verifyBroadcastRecord(entry, index) {
   const status = transaction.status && typeof transaction.status === 'object' ? transaction.status : null;
   if (!status || status.confirmed !== true) {
     fail(`evidence[${index}] indexer transaction must be confirmed before ready evidence is accepted`);
-    return;
+    return false;
   }
 
   if (!Number.isSafeInteger(status.block_time) || status.block_time <= 0) {
     fail(`evidence[${index}] confirmed indexer transaction must include a positive block_time`);
-    return;
+    return false;
   }
 
   const evidenceTimestampMillis = parseIsoUtcSecondMillis(entry.timestamp);
@@ -399,6 +426,8 @@ function verifyBroadcastRecord(entry, index) {
   if (evidenceTimestampMillis !== null && evidenceTimestampMillis < blockTimeMillis) {
     fail(`evidence[${index}] timestamp must be at or after the confirmed transaction block_time`);
   }
+
+  return errors.length === errorCountBefore;
 }
 
 const manifest = readJson(evidenceFile);
@@ -588,8 +617,19 @@ if (manifest) {
     }
   });
 
+  const currentReleaseCommit = readyClaimed ? resolveCurrentReleaseCommit() : null;
   if (readyClaimed && errors.length === 0) {
-    evidence.forEach(verifyBroadcastRecord);
+    let verifiedCurrentCommitRecords = 0;
+    evidence.forEach((entry, index) => {
+      const verified = verifyBroadcastRecord(entry, index);
+      if (verified && currentReleaseCommit && String(entry.commit || '').toLowerCase() === currentReleaseCommit) {
+        verifiedCurrentCommitRecords += 1;
+      }
+    });
+
+    if (currentReleaseCommit && verifiedCurrentCommitRecords === 0) {
+      fail(`ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record for current release commit ${currentReleaseCommit}`);
+    }
   }
 }
 

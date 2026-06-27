@@ -141,7 +141,10 @@ JSON
 run_audit() {
   local manifest="$1"
   shift
-  BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE="$indexer_fixture" bash "$AUDIT_SCRIPT" --evidence "$manifest" "$@"
+  local expected_commit="${BITCOIN_BROADCAST_EVIDENCE_COMMIT:-89abcdef89abcdef89abcdef89abcdef89abcdef}"
+  BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE="$indexer_fixture" \
+    BITCOIN_BROADCAST_EVIDENCE_COMMIT="$expected_commit" \
+    bash "$AUDIT_SCRIPT" --evidence "$manifest" "$@"
 }
 
 expect_failure() {
@@ -495,6 +498,13 @@ ready_placeholder_commit="$tmp_dir/ready-placeholder-commit.json"
 cp "$ready" "$ready_placeholder_commit"
 perl -0pi -e 's/89abcdef89abcdef89abcdef89abcdef89abcdef/3333333333333333333333333333333333333333/' "$ready_placeholder_commit"
 expect_failure "ready evidence placeholder commit" "commit must not be a placeholder git commit" run_audit "$ready_placeholder_commit" --require-ready
+
+ready_wrong_current_commit="$tmp_dir/ready-wrong-current-commit.json"
+cp "$ready" "$ready_wrong_current_commit"
+perl -0pi -e 's/89abcdef89abcdef89abcdef89abcdef89abcdef/abcdef0123456789abcdef0123456789abcdef01/' "$ready_wrong_current_commit"
+expect_failure "ready evidence wrong current commit" "ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record for current release commit" run_audit "$ready_wrong_current_commit" --require-ready
+
+BITCOIN_BROADCAST_EVIDENCE_COMMIT=not-a-commit expect_failure "ready evidence invalid current commit override" "BITCOIN_BROADCAST_EVIDENCE_COMMIT must be a 40-character git commit" run_audit "$ready" --require-ready
 
 secret_top_level="$tmp_dir/secret-top-level.json"
 cp "$ready" "$secret_top_level"

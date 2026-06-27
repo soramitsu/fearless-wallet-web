@@ -430,6 +430,25 @@ function verifyBroadcastRecord(entry, index) {
   return errors.length === errorCountBefore;
 }
 
+function validateReadyEnvelope(manifest, manifestBlockers, evidence, requireReady) {
+  const readyClaimed = manifest.status === 'ready' || manifest.releaseEnabled || requireReady;
+  if (!readyClaimed) return false;
+
+  if (!manifest.releaseEnabled) {
+    fail('releaseEnabled must be true when Bitcoin broadcast evidence is ready');
+  }
+
+  if (manifestBlockers.length > 0) {
+    fail('blockers must be empty when Bitcoin broadcast evidence is ready');
+  }
+
+  if (evidence.length === 0) {
+    fail('ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record');
+  }
+
+  return true;
+}
+
 const manifest = readJson(evidenceFile);
 
 if (manifest) {
@@ -528,20 +547,7 @@ if (manifest) {
     }
   }
 
-  const readyClaimed = manifest.status === 'ready' || manifest.releaseEnabled || requireReady;
-  if (readyClaimed) {
-    if (!manifest.releaseEnabled) {
-      fail('releaseEnabled must be true when Bitcoin broadcast evidence is ready');
-    }
-
-    if (manifestBlockers.length > 0) {
-      fail('blockers must be empty when Bitcoin broadcast evidence is ready');
-    }
-
-    if (evidence.length === 0) {
-      fail('ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record');
-    }
-  }
+  const readyClaimed = validateReadyEnvelope(manifest, manifestBlockers, evidence, requireReady);
 
   const seenTxids = new Set();
   evidence.forEach((entry, index) => {

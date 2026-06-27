@@ -217,6 +217,9 @@ if (manifest) {
 
   const requiredFields = requireArray(manifest.requiredEvidenceFields, 'requiredEvidenceFields');
   const requiredFieldSet = new Set(requiredFields);
+  if (requiredFieldSet.size !== requiredFields.length) {
+    fail('duplicate Bitcoin broadcast evidence required field in manifest');
+  }
 
   for (const field of REQUIRED_EVIDENCE_FIELDS) {
     if (!requiredFieldSet.has(field)) {
@@ -246,7 +249,10 @@ if (manifest) {
     fail('duplicate Bitcoin broadcast evidence blocker in manifest');
   }
 
-  requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands');
+  const commands = requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands');
+  if (new Set(commands).size !== commands.length) {
+    fail('duplicate Bitcoin broadcast evidence verification command in manifest');
+  }
   requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment');
   validateCommittedEvidence(manifest.evidence);
 }

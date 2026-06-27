@@ -209,10 +209,32 @@ cp "$blocked" "$missing_template_generator_command"
 perl -0pi -e 's/"yarn generate:bitcoin-broadcast-evidence-template -- --output build\/reports\/bitcoin-broadcast-evidence-template.json",\n//' "$missing_template_generator_command"
 expect_failure "missing template generator command" "readyVerificationCommands missing yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json" run_audit "$missing_template_generator_command"
 
+duplicate_ready_command="$tmp_dir/duplicate-ready-command.json"
+cp "$blocked" "$duplicate_ready_command"
+node - "$duplicate_ready_command" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.readyVerificationCommands.push('yarn test:bitcoin-broadcast-evidence-audit');
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "duplicate Bitcoin broadcast evidence verification command" "duplicate Bitcoin broadcast evidence verification command" run_audit "$duplicate_ready_command"
+
 missing_required_field="$tmp_dir/missing-required-field.json"
 cp "$blocked" "$missing_required_field"
 perl -0pi -e 's/"txid",\n//' "$missing_required_field"
 expect_failure "missing txid evidence field" "requiredEvidenceFields missing txid" run_audit "$missing_required_field"
+
+duplicate_required_field="$tmp_dir/duplicate-required-field.json"
+cp "$blocked" "$duplicate_required_field"
+node - "$duplicate_required_field" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.requiredEvidenceFields.push('txid');
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "duplicate Bitcoin broadcast evidence required field" "duplicate Bitcoin broadcast evidence required field" run_audit "$duplicate_required_field"
 
 unsupported_required_field="$tmp_dir/unsupported-required-field.json"
 cp "$blocked" "$unsupported_required_field"

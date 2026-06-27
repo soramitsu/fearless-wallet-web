@@ -324,10 +324,18 @@ if (manifest) {
   const manifestBlockers = requireArray(manifest.blockers, 'blockers');
   const blockers = new Set(manifestBlockers);
   const envVars = new Set(requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment'));
-  const commands = requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands').join('\n');
+  const commandList = requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands');
+  const commands = commandList.join('\n');
   const requiredEvidenceFieldList = requireArray(manifest.requiredEvidenceFields, 'requiredEvidenceFields');
   const requiredEvidenceFields = new Set(requiredEvidenceFieldList);
   const evidence = requireArray(manifest.evidence, 'evidence');
+
+  if (new Set(commandList).size !== commandList.length) {
+    fail('duplicate Bitcoin broadcast evidence verification command');
+  }
+  if (requiredEvidenceFields.size !== requiredEvidenceFieldList.length) {
+    fail('duplicate Bitcoin broadcast evidence required field');
+  }
 
   if (manifest.status === 'blocked') {
     for (const blocker of REQUIRED_BLOCKERS) {

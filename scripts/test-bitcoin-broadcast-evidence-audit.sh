@@ -107,10 +107,40 @@ write_ready_manifest() {
 JSON
 }
 
+write_indexer_fixture() {
+  local file="$1"
+  cat >"$file" <<'JSON'
+{
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+    "txid": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "vin": [
+      {
+        "txid": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+        "vout": 0,
+        "prevout": {
+          "scriptpubkey_address": "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl",
+          "value": 2000
+        }
+      }
+    ],
+    "vout": [
+      {
+        "scriptpubkey_address": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+        "value": 1000
+      }
+    ],
+    "status": {
+      "confirmed": false
+    }
+  }
+}
+JSON
+}
+
 run_audit() {
   local manifest="$1"
   shift
-  bash "$AUDIT_SCRIPT" --evidence "$manifest" "$@"
+  BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE="$indexer_fixture" bash "$AUDIT_SCRIPT" --evidence "$manifest" "$@"
 }
 
 expect_failure() {
@@ -140,8 +170,10 @@ trap 'rm -rf "$tmp_dir"' EXIT
 
 blocked="$tmp_dir/blocked.json"
 ready="$tmp_dir/ready.json"
+indexer_fixture="$tmp_dir/indexer-fixture.json"
 write_blocked_manifest "$blocked"
 write_ready_manifest "$ready"
+write_indexer_fixture "$indexer_fixture"
 
 run_audit "$blocked" >/dev/null
 run_audit "$ready" --require-ready >/dev/null
@@ -329,6 +361,55 @@ manifest.evidence.push({ ...manifest.evidence[0] });
 fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "ready evidence duplicate txid" "duplicate Bitcoin broadcast txid evidence" run_audit "$ready_duplicate_txid" --require-ready
+
+ready_missing_indexer_tx="$tmp_dir/ready-missing-indexer-tx.json"
+missing_indexer_fixture="$tmp_dir/missing-indexer-fixture.json"
+cp "$ready" "$ready_missing_indexer_tx"
+printf '{}\n' >"$missing_indexer_fixture"
+indexer_fixture="$missing_indexer_fixture" expect_failure "ready evidence missing indexer tx" "txid was not found in Bitcoin broadcast indexer fixture" run_audit "$ready_missing_indexer_tx" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_wrong_recipient_output="$tmp_dir/ready-wrong-recipient-output.json"
+wrong_recipient_fixture="$tmp_dir/wrong-recipient-fixture.json"
+cp "$ready" "$ready_wrong_recipient_output"
+cp "$indexer_fixture" "$wrong_recipient_fixture"
+node - "$wrong_recipient_fixture" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
+fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vout[0].value = 999;
+fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
+NODE
+indexer_fixture="$wrong_recipient_fixture" expect_failure "ready evidence wrong recipient output" "indexer transaction missing recipient output" run_audit "$ready_wrong_recipient_output" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_missing_outpoint="$tmp_dir/ready-missing-outpoint.json"
+missing_outpoint_fixture="$tmp_dir/missing-outpoint-fixture.json"
+cp "$ready" "$ready_missing_outpoint"
+cp "$indexer_fixture" "$missing_outpoint_fixture"
+node - "$missing_outpoint_fixture" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
+fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vin[0].vout = 1;
+fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
+NODE
+indexer_fixture="$missing_outpoint_fixture" expect_failure "ready evidence missing funding outpoint" "indexer transaction missing funding outpoint" run_audit "$ready_missing_outpoint" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_wrong_source="$tmp_dir/ready-wrong-source.json"
+wrong_source_fixture="$tmp_dir/wrong-source-fixture.json"
+cp "$ready" "$ready_wrong_source"
+cp "$indexer_fixture" "$wrong_source_fixture"
+node - "$wrong_source_fixture" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
+fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vin[0].prevout.scriptpubkey_address = 'tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f';
+fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
+NODE
+indexer_fixture="$wrong_source_fixture" expect_failure "ready evidence wrong source address" "funding outpoint source address does not match evidence sourceAddress" run_audit "$ready_wrong_source" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 unsupported_top_level="$tmp_dir/unsupported-top-level.json"
 cp "$ready" "$unsupported_top_level"

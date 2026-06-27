@@ -45,6 +45,7 @@ fi
 
 node - "$EVIDENCE_FILE" "$REQUIRE_READY" <<'NODE'
 const fs = require('fs');
+const { execFileSync } = require('child_process');
 
 const [evidenceFile, requireReadyRaw] = process.argv.slice(2);
 const requireReady = requireReadyRaw === 'true';
@@ -286,6 +287,97 @@ function rejectUnsupportedKeys(value, allowedFields, path) {
   }
 }
 
+function splitOutpoint(value) {
+  const match = /^([0-9a-f]{64}):(\d+)$/i.exec(String(value || ''));
+  if (!match) return null;
+  return {
+    txid: match[1].toLowerCase(),
+    vout: Number(match[2])
+  };
+}
+
+function transactionFromFixture(fixture, txid) {
+  if (Array.isArray(fixture)) {
+    return fixture.find((transaction) => String(transaction && transaction.txid || '').toLowerCase() === txid) || null;
+  }
+
+  if (fixture && typeof fixture === 'object') {
+    if (fixture[txid]) return fixture[txid];
+    if (Array.isArray(fixture.transactions)) {
+      return fixture.transactions.find((transaction) => String(transaction && transaction.txid || '').toLowerCase() === txid) || null;
+    }
+  }
+
+  return null;
+}
+
+function loadIndexerTransaction(entry, index) {
+  const txid = String(entry.txid || '').toLowerCase();
+  const fixtureFile = process.env.BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE;
+
+  if (fixtureFile) {
+    try {
+      const fixture = JSON.parse(fs.readFileSync(fixtureFile, 'utf8'));
+      const transaction = transactionFromFixture(fixture, txid);
+      if (!transaction) {
+        fail(`evidence[${index}] txid was not found in Bitcoin broadcast indexer fixture`);
+      }
+      return transaction;
+    } catch (error) {
+      fail(`Bitcoin broadcast indexer fixture must be valid JSON: ${error.message}`);
+      return null;
+    }
+  }
+
+  const requestUrl = `${String(entry.indexerUrl).replace(/\/+$/, '')}/tx/${txid}`;
+  try {
+    return JSON.parse(execFileSync('curl', ['--fail', '--silent', '--show-error', '--max-time', '20', requestUrl], { encoding: 'utf8' }));
+  } catch (error) {
+    fail(`evidence[${index}] txid could not be verified through ${entry.indexerUrl}: ${error.message}`);
+    return null;
+  }
+}
+
+function verifyBroadcastRecord(entry, index) {
+  const transaction = loadIndexerTransaction(entry, index);
+  if (!transaction || typeof transaction !== 'object' || Array.isArray(transaction)) {
+    fail(`evidence[${index}] indexer transaction response must be an object`);
+    return;
+  }
+
+  const txid = String(entry.txid || '').toLowerCase();
+  if (String(transaction.txid || '').toLowerCase() !== txid) {
+    fail(`evidence[${index}] indexer transaction txid does not match evidence txid`);
+  }
+
+  const amountSat = Number(entry.amountSat);
+  const outputs = Array.isArray(transaction.vout) ? transaction.vout : [];
+  const hasRecipientOutput = outputs.some((output) =>
+    output &&
+    output.scriptpubkey_address === entry.recipientAddress &&
+    Number(output.value) === amountSat
+  );
+  if (!hasRecipientOutput) {
+    fail(`evidence[${index}] indexer transaction missing recipient output ${entry.recipientAddress}:${entry.amountSat}`);
+  }
+
+  const outpoint = splitOutpoint(entry.outpoint);
+  const inputs = Array.isArray(transaction.vin) ? transaction.vin : [];
+  const matchingInputs = inputs.filter((input) =>
+    input &&
+    String(input.txid || '').toLowerCase() === outpoint.txid &&
+    Number(input.vout) === outpoint.vout
+  );
+  if (matchingInputs.length === 0) {
+    fail(`evidence[${index}] indexer transaction missing funding outpoint ${entry.outpoint}`);
+    return;
+  }
+
+  if (!matchingInputs.some((input) => input.prevout && input.prevout.scriptpubkey_address === entry.sourceAddress)) {
+    fail(`evidence[${index}] funding outpoint source address does not match evidence sourceAddress`);
+  }
+}
+
 const manifest = readJson(evidenceFile);
 
 if (manifest) {
@@ -472,6 +564,10 @@ if (manifest) {
       fail(`evidence[${index}].commit must not be a placeholder git commit`);
     }
   });
+
+  if (readyClaimed && errors.length === 0) {
+    evidence.forEach(verifyBroadcastRecord);
+  }
 }
 
 if (errors.length > 0) {

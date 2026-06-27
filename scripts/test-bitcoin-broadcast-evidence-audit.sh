@@ -130,7 +130,8 @@ write_indexer_fixture() {
       }
     ],
     "status": {
-      "confirmed": false
+      "confirmed": true,
+      "block_time": 1782345600
     }
   }
 }
@@ -409,6 +410,48 @@ fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vin[
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$wrong_source_fixture" expect_failure "ready evidence wrong source address" "funding outpoint source address does not match evidence sourceAddress" run_audit "$ready_wrong_source" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_unconfirmed="$tmp_dir/ready-unconfirmed.json"
+unconfirmed_fixture="$tmp_dir/unconfirmed-fixture.json"
+cp "$ready" "$ready_unconfirmed"
+cp "$indexer_fixture" "$unconfirmed_fixture"
+node - "$unconfirmed_fixture" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
+fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].status = { confirmed: false };
+fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
+NODE
+indexer_fixture="$unconfirmed_fixture" expect_failure "ready evidence unconfirmed indexer tx" "indexer transaction must be confirmed before ready evidence is accepted" run_audit "$ready_unconfirmed" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_missing_block_time="$tmp_dir/ready-missing-block-time.json"
+missing_block_time_fixture="$tmp_dir/missing-block-time-fixture.json"
+cp "$ready" "$ready_missing_block_time"
+cp "$indexer_fixture" "$missing_block_time_fixture"
+node - "$missing_block_time_fixture" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
+delete fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].status.block_time;
+fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
+NODE
+indexer_fixture="$missing_block_time_fixture" expect_failure "ready evidence missing block time" "confirmed indexer transaction must include a positive block_time" run_audit "$ready_missing_block_time" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_timestamp_before_block="$tmp_dir/ready-timestamp-before-block.json"
+timestamp_before_block_fixture="$tmp_dir/timestamp-before-block-fixture.json"
+cp "$ready" "$ready_timestamp_before_block"
+cp "$indexer_fixture" "$timestamp_before_block_fixture"
+node - "$timestamp_before_block_fixture" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
+fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].status.block_time = 1782604800;
+fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
+NODE
+indexer_fixture="$timestamp_before_block_fixture" expect_failure "ready evidence timestamp before block" "timestamp must be at or after the confirmed transaction block_time" run_audit "$ready_timestamp_before_block" --require-ready
 indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 unsupported_top_level="$tmp_dir/unsupported-top-level.json"

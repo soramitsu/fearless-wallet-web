@@ -236,6 +236,12 @@ function isFutureTimestamp(value) {
   return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
 }
 
+function parseIsoUtcSecondMillis(value) {
+  if (!isIsoUtcSecond(value)) return null;
+  const millis = Date.parse(value);
+  return Number.isFinite(millis) ? millis : null;
+}
+
 function secretLikeKeyReason(value, path = '$') {
   if (!value || typeof value !== 'object') {
     return null;
@@ -375,6 +381,23 @@ function verifyBroadcastRecord(entry, index) {
 
   if (!matchingInputs.some((input) => input.prevout && input.prevout.scriptpubkey_address === entry.sourceAddress)) {
     fail(`evidence[${index}] funding outpoint source address does not match evidence sourceAddress`);
+  }
+
+  const status = transaction.status && typeof transaction.status === 'object' ? transaction.status : null;
+  if (!status || status.confirmed !== true) {
+    fail(`evidence[${index}] indexer transaction must be confirmed before ready evidence is accepted`);
+    return;
+  }
+
+  if (!Number.isSafeInteger(status.block_time) || status.block_time <= 0) {
+    fail(`evidence[${index}] confirmed indexer transaction must include a positive block_time`);
+    return;
+  }
+
+  const evidenceTimestampMillis = parseIsoUtcSecondMillis(entry.timestamp);
+  const blockTimeMillis = status.block_time * 1000;
+  if (evidenceTimestampMillis !== null && evidenceTimestampMillis < blockTimeMillis) {
+    fail(`evidence[${index}] timestamp must be at or after the confirmed transaction block_time`);
   }
 }
 

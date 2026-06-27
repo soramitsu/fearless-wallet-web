@@ -162,6 +162,17 @@ fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "unsupported Bitcoin broadcast evidence blocker" "unsupported Bitcoin broadcast evidence blocker in manifest: manual-approval-pending" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_blocker"
 
+duplicate_blocker="$tmp_dir/duplicate-blocker.json"
+cp "$DEFAULT_MANIFEST" "$duplicate_blocker"
+node - "$duplicate_blocker" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.blockers.push('funded-testnet-broadcast-evidence-missing');
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "duplicate Bitcoin broadcast evidence blocker" "duplicate Bitcoin broadcast evidence blocker in manifest" bash "$GENERATOR_SCRIPT" --manifest "$duplicate_blocker"
+
 missing_required_field="$tmp_dir/missing-required-field.json"
 cp "$DEFAULT_MANIFEST" "$missing_required_field"
 node - "$missing_required_field" <<'NODE'

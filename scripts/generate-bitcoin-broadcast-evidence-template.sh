@@ -231,6 +231,7 @@ if (manifest) {
   }
 
   const blockers = requireArray(manifest.blockers, 'blockers');
+  const blockerSet = new Set(blockers);
   for (const blocker of REQUIRED_BLOCKERS) {
     if (!blockers.includes(blocker)) {
       fail(`blocked Bitcoin broadcast evidence missing ${blocker}`);
@@ -240,6 +241,9 @@ if (manifest) {
     if (!REQUIRED_BLOCKERS.includes(blocker)) {
       fail(`unsupported Bitcoin broadcast evidence blocker in manifest: ${blocker}`);
     }
+  }
+  if (blockerSet.size !== blockers.length) {
+    fail('duplicate Bitcoin broadcast evidence blocker in manifest');
   }
 
   requireArray(manifest.readyVerificationCommands, 'readyVerificationCommands');

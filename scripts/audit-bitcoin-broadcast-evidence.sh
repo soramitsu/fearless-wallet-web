@@ -340,6 +340,9 @@ if (manifest) {
         fail(`unsupported Bitcoin broadcast evidence blocker: ${blocker}`);
       }
     }
+    if (blockers.size !== manifestBlockers.length) {
+      fail('duplicate Bitcoin broadcast evidence blocker');
+    }
   }
 
   if (manifest.status === 'blocked' && manifest.releaseEnabled) {

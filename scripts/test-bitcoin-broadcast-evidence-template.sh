@@ -151,6 +151,17 @@ fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "wrong evidence scope" "scope must be web-bitcoin-testnet-broadcast-readiness" bash "$GENERATOR_SCRIPT" --manifest "$bad_scope"
 
+unsupported_blocker="$tmp_dir/unsupported-blocker.json"
+cp "$DEFAULT_MANIFEST" "$unsupported_blocker"
+node - "$unsupported_blocker" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.blockers.push('manual-approval-pending');
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported Bitcoin broadcast evidence blocker" "unsupported Bitcoin broadcast evidence blocker in manifest: manual-approval-pending" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_blocker"
+
 missing_required_field="$tmp_dir/missing-required-field.json"
 cp "$DEFAULT_MANIFEST" "$missing_required_field"
 node - "$missing_required_field" <<'NODE'

@@ -66,6 +66,7 @@ const REQUIRED_EVIDENCE_FIELDS = [
   'operator',
   'commit'
 ];
+const REQUIRED_BLOCKERS = ['funded-testnet-broadcast-evidence-missing'];
 const PLACEHOLDERS = {
   txid: 'TODO_64_HEX_TESTNET_TXID',
   sourceAddress: 'TODO_TESTNET_SOURCE_TB1Q_ADDRESS',
@@ -226,6 +227,18 @@ if (manifest) {
   for (const field of requiredFields) {
     if (!Object.prototype.hasOwnProperty.call(PLACEHOLDERS, field)) {
       fail(`unsupported evidence field in manifest: ${field}`);
+    }
+  }
+
+  const blockers = requireArray(manifest.blockers, 'blockers');
+  for (const blocker of REQUIRED_BLOCKERS) {
+    if (!blockers.includes(blocker)) {
+      fail(`blocked Bitcoin broadcast evidence missing ${blocker}`);
+    }
+  }
+  for (const blocker of blockers) {
+    if (!REQUIRED_BLOCKERS.includes(blocker)) {
+      fail(`unsupported Bitcoin broadcast evidence blocker in manifest: ${blocker}`);
     }
   }
 

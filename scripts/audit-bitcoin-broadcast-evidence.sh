@@ -335,6 +335,11 @@ if (manifest) {
         fail(`blocked evidence missing blocker ${blocker}`);
       }
     }
+    for (const blocker of manifestBlockers) {
+      if (!REQUIRED_BLOCKERS.includes(blocker)) {
+        fail(`unsupported Bitcoin broadcast evidence blocker: ${blocker}`);
+      }
+    }
   }
 
   if (manifest.status === 'blocked' && manifest.releaseEnabled) {

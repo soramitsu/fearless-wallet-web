@@ -167,6 +167,17 @@ cp "$blocked" "$missing_blocker"
 perl -0pi -e 's/"funded-testnet-broadcast-evidence-missing"//' "$missing_blocker"
 expect_failure "blocked evidence missing funded broadcast blocker" "blocked evidence missing blocker funded-testnet-broadcast-evidence-missing" run_audit "$missing_blocker"
 
+unsupported_blocker="$tmp_dir/unsupported-blocker.json"
+cp "$blocked" "$unsupported_blocker"
+node - "$unsupported_blocker" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.blockers.push('manual-approval-pending');
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unsupported Bitcoin broadcast evidence blocker" "unsupported Bitcoin broadcast evidence blocker: manual-approval-pending" run_audit "$unsupported_blocker"
+
 missing_env="$tmp_dir/missing-env.json"
 cp "$blocked" "$missing_env"
 perl -0pi -e 's/,\n    "FEARLESS_BITCOIN_TESTNET_OUTPOINT"//' "$missing_env"

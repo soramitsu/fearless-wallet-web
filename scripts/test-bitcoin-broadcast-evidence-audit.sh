@@ -286,7 +286,7 @@ expect_failure "unsupported required Bitcoin broadcast evidence field" "unsuppor
 ready_no_evidence="$tmp_dir/ready-no-evidence.json"
 cp "$ready" "$ready_no_evidence"
 perl -0pi -e 's/"evidence": \[[\s\S]*?\n  \]/"evidence": []/' "$ready_no_evidence"
-expect_failure "ready evidence without funded broadcast" "ready Bitcoin broadcast evidence requires at least one funded testnet broadcast record" run_audit "$ready_no_evidence" --require-ready
+expect_failure "ready evidence without funded broadcast" "ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record" run_audit "$ready_no_evidence" --require-ready
 
 ready_with_blocker="$tmp_dir/ready-with-blocker.json"
 cp "$ready" "$ready_with_blocker"

@@ -539,7 +539,7 @@ if (manifest) {
     }
 
     if (evidence.length === 0) {
-      fail('ready Bitcoin broadcast evidence requires at least one funded testnet broadcast record');
+      fail('ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record');
     }
   }
 

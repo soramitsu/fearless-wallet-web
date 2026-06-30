@@ -4,11 +4,9 @@ src/extension/background/extension-base/src/api/evm/types.ts	// TODO: unify spec
 src/extension/background/extension-base/src/api/evm/types.ts	name: string; // is Network Name, TODO name -> networkName
 src/extension/background/extension-base/src/api/substrate/crossChain.ts	const limit = { Unlimited: null }; // TODO возможно в будущем нужно будет доделать
 src/extension/background/extension-base/src/api/substrate/crossChain.ts	key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
-src/extension/background/extension-base/src/api/substrate/crossChain.ts	key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
 src/extension/background/extension-base/src/api/substrate/index.ts	// TODO AUSD
 src/extension/background/extension-base/src/api/ton/transfer.ts	// TODO ton add init options for new accounts
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This now could happen with re-subscriptions. The issue is that with a re-sub
-src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider can disconnect
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider can disconnect
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider has subscriptions
 src/extension/background/extension-base/src/services/balance-service/EquilibriumBalanceService.ts	// TODO

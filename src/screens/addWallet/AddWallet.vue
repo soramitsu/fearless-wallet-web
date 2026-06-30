@@ -154,10 +154,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
-import { deriveBitcoinReceiveAddress } from '@/util/bitcoinKeyring';
-import { deriveIrohaAddress } from '@/util/irohaKeyring';
-import { deriveSolanaAddress } from '@/util/solanaKeyring';
-import { deriveTonAccount } from '@/util/tonKeyring';
+import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
 import {
   forgetAccount,
   isDerivationPathValid,
@@ -620,16 +617,7 @@ export default defineComponent({ name: 'AddWallet',
           };
 
           if (this.mnemonic) {
-            meta.bitcoinAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic });
-            meta.bitcoinTestnetAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic, network: 'testnet' });
-            meta.solanaAddress = deriveSolanaAddress({ mnemonic: this.mnemonic });
-            const ton = deriveTonAccount({ mnemonic: this.mnemonic });
-            const iroha = deriveIrohaAddress({ mnemonic: this.mnemonic, network: 'taira' });
-
-            meta.tonAddress = ton.addressNonBounceable;
-            meta.tonPublicKeyHex = ton.publicKeyHex;
-            meta.irohaPublicKeyHex = iroha.publicKeyHex;
-            meta.irohaAddress = iroha.address;
+            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
           }
 
           const {

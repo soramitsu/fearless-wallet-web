@@ -67,6 +67,69 @@ write_fixture_repo() {
   )
 }
 
+write_fake_gh() {
+  local repo="$1"
+
+  mkdir -p "$repo/fake-bin"
+  cat > "$repo/fake-bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$1" != "release" || "$2" != "download" ]]; then
+  echo "unexpected gh command: $*" >&2
+  exit 1
+fi
+
+tag="$3"
+shift 3
+repo=""
+pattern=""
+download_dir=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo)
+      repo="$2"
+      shift 2
+      ;;
+    --pattern)
+      pattern="$2"
+      shift 2
+      ;;
+    --dir)
+      download_dir="$2"
+      shift 2
+      ;;
+    --clobber)
+      shift
+      ;;
+    *)
+      echo "unexpected gh argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+[[ "$repo" == "${FAKE_IROHA_JS_RELEASE_REPO:-}" ]] || { echo "unexpected repo: $repo" >&2; exit 1; }
+[[ "$tag" == "${FAKE_IROHA_JS_RELEASE_TAG:-}" ]] || { echo "unexpected tag: $tag" >&2; exit 1; }
+[[ "$pattern" == "${FAKE_IROHA_JS_RELEASE_ASSET:-}" ]] || { echo "unexpected asset: $pattern" >&2; exit 1; }
+[[ -n "$download_dir" ]] || { echo "missing download dir" >&2; exit 1; }
+
+cp "$FAKE_IROHA_JS_RELEASE_ASSET_SOURCE" "$download_dir/$pattern"
+EOF
+  chmod +x "$repo/fake-bin/gh"
+}
+
+write_fixture_tarball() {
+  local tarball="$1"
+  local source_dir
+  source_dir="$(dirname "$tarball")/iroha-js-release-src"
+
+  mkdir -p "$source_dir/package"
+  write_fixture_package "$source_dir/package"
+  tar -czf "$tarball" -C "$source_dir" package
+}
+
 run_audit() {
   local repo="$1"
   shift
@@ -132,5 +195,33 @@ write_fixture_package "$ENABLED_REPO/iroha-js-package"
   git add .env.example
 )
 run_audit "$ENABLED_REPO" env IROHA_JS_SDK_PACKAGE_DIR="$ENABLED_REPO/iroha-js-package" >/dev/null
+
+GITHUB_RELEASE_REPO="$TMP_DIR/enabled-with-github-release-sdk"
+write_fixture_repo "$GITHUB_RELEASE_REPO"
+write_fake_gh "$GITHUB_RELEASE_REPO"
+printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=true\n' > "$GITHUB_RELEASE_REPO/.env.example"
+github_asset="$GITHUB_RELEASE_REPO/iroha-js-release.tgz"
+write_fixture_tarball "$github_asset"
+github_sha="$(shasum -a 256 "$github_asset" | awk '{print $1}')"
+(
+  cd "$GITHUB_RELEASE_REPO"
+  git add .env.example
+)
+run_audit "$GITHUB_RELEASE_REPO" env \
+  PATH="$GITHUB_RELEASE_REPO/fake-bin:$PATH" \
+  FAKE_IROHA_JS_RELEASE_REPO="hyperledger-iroha/iroha" \
+  FAKE_IROHA_JS_RELEASE_TAG="v1.2.3" \
+  FAKE_IROHA_JS_RELEASE_ASSET="iroha-js-release.tgz" \
+  FAKE_IROHA_JS_RELEASE_ASSET_SOURCE="$github_asset" \
+  IROHA_JS_SDK_RELEASE_REPO="hyperledger-iroha/iroha" \
+  IROHA_JS_SDK_RELEASE_TAG="v1.2.3" \
+  IROHA_JS_SDK_RELEASE_ASSET="iroha-js-release.tgz" \
+  IROHA_JS_SDK_RELEASE_SHA256="$github_sha" >/dev/null
+
+expect_failure \
+  "partial GitHub release SDK artifact pin" \
+  "$GITHUB_RELEASE_REPO" \
+  "IROHA_JS_SDK_RELEASE_REPO, IROHA_JS_SDK_RELEASE_TAG, IROHA_JS_SDK_RELEASE_ASSET, and IROHA_JS_SDK_RELEASE_SHA256 are required together" \
+  env IROHA_JS_SDK_RELEASE_REPO="hyperledger-iroha/iroha"
 
 echo "[public-artifacts-audit-test] all tests passed"

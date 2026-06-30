@@ -48,6 +48,14 @@ if [[ "${VUE_APP_ENABLE_IROHA_TRANSFERS:-}" == "true" ]]; then
   iroha_transfers_enabled=true
 fi
 
+iroha_js_github_release_configured=false
+if [[ -n "${IROHA_JS_SDK_RELEASE_REPO:-}" || -n "${IROHA_JS_SDK_RELEASE_TAG:-}" || -n "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -n "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
+  if [[ -z "${IROHA_JS_SDK_RELEASE_REPO:-}" || -z "${IROHA_JS_SDK_RELEASE_TAG:-}" || -z "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -z "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
+    fail 'IROHA_JS_SDK_RELEASE_REPO, IROHA_JS_SDK_RELEASE_TAG, IROHA_JS_SDK_RELEASE_ASSET, and IROHA_JS_SDK_RELEASE_SHA256 are required together'
+  fi
+  iroha_js_github_release_configured=true
+fi
+
 for env_file in .env.example .env.extension .env.web; do
   [[ -f "$env_file" ]] || continue
 
@@ -78,8 +86,8 @@ for env_file in .env.example .env.extension .env.web; do
   done < "$env_file"
 done
 
-if [[ "$iroha_transfers_enabled" == "true" && -z "${IROHA_JS_SDK_TARBALL:-}" && -z "${IROHA_JS_SDK_PACKAGE_DIR:-}" && -z "${IROHA_JS_SDK_VERSION:-}" ]]; then
-  fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true requires IROHA_JS_SDK_VERSION, IROHA_JS_SDK_TARBALL, or IROHA_JS_SDK_PACKAGE_DIR'
+if [[ "$iroha_transfers_enabled" == "true" && -z "${IROHA_JS_SDK_TARBALL:-}" && -z "${IROHA_JS_SDK_PACKAGE_DIR:-}" && "$iroha_js_github_release_configured" != "true" && -z "${IROHA_JS_SDK_VERSION:-}" ]]; then
+  fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true requires IROHA_JS_SDK_VERSION, IROHA_JS_SDK_TARBALL, IROHA_JS_SDK_PACKAGE_DIR, or IROHA_JS_SDK_RELEASE_*'
 fi
 
 ./scripts/check-iroha-js-sdk-artifact.sh --self-test
@@ -88,6 +96,13 @@ if [[ -n "${IROHA_JS_SDK_TARBALL:-}" ]]; then
   ./scripts/check-iroha-js-sdk-artifact.sh --tarball "$IROHA_JS_SDK_TARBALL"
 elif [[ -n "${IROHA_JS_SDK_PACKAGE_DIR:-}" ]]; then
   ./scripts/check-iroha-js-sdk-artifact.sh --package-dir "$IROHA_JS_SDK_PACKAGE_DIR"
+elif [[ "$iroha_js_github_release_configured" == "true" ]]; then
+  ./scripts/check-iroha-js-sdk-artifact.sh \
+    --github-release \
+    --repo "$IROHA_JS_SDK_RELEASE_REPO" \
+    --tag "$IROHA_JS_SDK_RELEASE_TAG" \
+    --asset "$IROHA_JS_SDK_RELEASE_ASSET" \
+    --sha256 "$IROHA_JS_SDK_RELEASE_SHA256"
 elif [[ -n "${IROHA_JS_SDK_VERSION:-}" ]]; then
   ./scripts/check-iroha-js-sdk-artifact.sh --download --version "$IROHA_JS_SDK_VERSION" --registry "${IROHA_JS_SDK_REGISTRY:-https://registry.npmjs.org/}"
 fi

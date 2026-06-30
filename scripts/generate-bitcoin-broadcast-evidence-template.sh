@@ -120,6 +120,27 @@ function requireArray(value, name) {
   return value;
 }
 
+function parseIsoUtcDateStartMillis(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const millis = Date.UTC(year, month - 1, day);
+  const parsed = new Date(millis);
+
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return millis;
+}
+
 function secretLikeKeyReason(value, currentPath = '$') {
   if (!value || typeof value !== 'object') {
     return null;
@@ -204,6 +225,13 @@ if (manifest) {
 
   if (manifest.smokeCommand !== 'yarn test:smoke:bitcoin') {
     fail('smokeCommand must be yarn test:smoke:bitcoin');
+  }
+
+  const lastReviewedStartMillis = parseIsoUtcDateStartMillis(manifest.lastReviewed);
+  if (lastReviewedStartMillis === null) {
+    fail('lastReviewed must be a YYYY-MM-DD UTC review date');
+  } else if (lastReviewedStartMillis > Date.now() + 5 * 60 * 1000) {
+    fail('lastReviewed must not be in the future');
   }
 
   try {

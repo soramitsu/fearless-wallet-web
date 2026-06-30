@@ -17,6 +17,7 @@ write_blocked_manifest() {
   "scope": "web-bitcoin-testnet-broadcast-readiness",
   "status": "blocked",
   "releaseEnabled": false,
+  "lastReviewed": "2026-06-26",
   "blockers": [
     "funded-testnet-broadcast-evidence-missing"
   ],
@@ -61,6 +62,7 @@ write_ready_manifest() {
   "scope": "web-bitcoin-testnet-broadcast-readiness",
   "status": "ready",
   "releaseEnabled": true,
+  "lastReviewed": "2026-06-26",
   "blockers": [],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
@@ -192,6 +194,21 @@ bad_schema="$tmp_dir/bad-schema.json"
 cp "$blocked" "$bad_schema"
 perl -0pi -e 's/"schemaVersion": 1/"schemaVersion": 2/' "$bad_schema"
 expect_failure "bad schema" "schemaVersion must be 1" run_audit "$bad_schema"
+
+missing_last_reviewed="$tmp_dir/missing-last-reviewed.json"
+cp "$blocked" "$missing_last_reviewed"
+perl -0pi -e 's/\n  "lastReviewed": "2026-06-26",//' "$missing_last_reviewed"
+expect_failure "missing Bitcoin broadcast review date" "lastReviewed must be a YYYY-MM-DD UTC review date" run_audit "$missing_last_reviewed"
+
+bad_last_reviewed="$tmp_dir/bad-last-reviewed.json"
+cp "$blocked" "$bad_last_reviewed"
+perl -0pi -e 's/"lastReviewed": "2026-06-26"/"lastReviewed": "TODO_YYYY_MM_DD"/' "$bad_last_reviewed"
+expect_failure "bad Bitcoin broadcast review date" "lastReviewed must be a YYYY-MM-DD UTC review date" run_audit "$bad_last_reviewed"
+
+future_last_reviewed="$tmp_dir/future-last-reviewed.json"
+cp "$blocked" "$future_last_reviewed"
+perl -0pi -e 's/"lastReviewed": "2026-06-26"/"lastReviewed": "2999-01-01"/' "$future_last_reviewed"
+expect_failure "future Bitcoin broadcast review date" "lastReviewed must not be in the future" run_audit "$future_last_reviewed"
 
 release_enabled_blocked="$tmp_dir/release-enabled-blocked.json"
 cp "$blocked" "$release_enabled_blocked"
@@ -456,6 +473,11 @@ fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$timestamp_before_block_fixture" expect_failure "ready evidence timestamp before block" "timestamp must be at or after the confirmed transaction block_time" run_audit "$ready_timestamp_before_block" --require-ready
 indexer_fixture="$tmp_dir/indexer-fixture.json"
+
+ready_stale_review_date="$tmp_dir/ready-stale-review-date.json"
+cp "$ready" "$ready_stale_review_date"
+perl -0pi -e 's/"lastReviewed": "2026-06-26"/"lastReviewed": "2026-06-25"/' "$ready_stale_review_date"
+expect_failure "ready evidence stale review date" "lastReviewed must be on or after the latest evidence timestamp date" run_audit "$ready_stale_review_date" --require-ready
 
 unsupported_top_level="$tmp_dir/unsupported-top-level.json"
 cp "$ready" "$unsupported_top_level"

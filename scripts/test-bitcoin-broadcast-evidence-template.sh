@@ -151,6 +151,28 @@ fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "wrong evidence scope" "scope must be web-bitcoin-testnet-broadcast-readiness" bash "$GENERATOR_SCRIPT" --manifest "$bad_scope"
 
+missing_last_reviewed="$tmp_dir/missing-last-reviewed.json"
+cp "$DEFAULT_MANIFEST" "$missing_last_reviewed"
+node - "$missing_last_reviewed" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+delete manifest.lastReviewed;
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "missing Bitcoin broadcast review date" "lastReviewed must be a YYYY-MM-DD UTC review date" bash "$GENERATOR_SCRIPT" --manifest "$missing_last_reviewed"
+
+future_last_reviewed="$tmp_dir/future-last-reviewed.json"
+cp "$DEFAULT_MANIFEST" "$future_last_reviewed"
+node - "$future_last_reviewed" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.lastReviewed = '2999-01-01';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "future Bitcoin broadcast review date" "lastReviewed must not be in the future" bash "$GENERATOR_SCRIPT" --manifest "$future_last_reviewed"
+
 unsupported_blocker="$tmp_dir/unsupported-blocker.json"
 cp "$DEFAULT_MANIFEST" "$unsupported_blocker"
 node - "$unsupported_blocker" <<'NODE'

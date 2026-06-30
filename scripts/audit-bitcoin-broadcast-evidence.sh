@@ -231,8 +231,33 @@ function isIsoUtcSecond(value) {
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(String(value || ''));
 }
 
+function parseIsoUtcDateStartMillis(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const millis = Date.UTC(year, month - 1, day);
+  const parsed = new Date(millis);
+
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return millis;
+}
+
 function isFutureTimestamp(value) {
   const millis = Date.parse(value);
+  return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
+}
+
+function isFutureDateStart(millis) {
   return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
 }
 
@@ -240,6 +265,11 @@ function parseIsoUtcSecondMillis(value) {
   if (!isIsoUtcSecond(value)) return null;
   const millis = Date.parse(value);
   return Number.isFinite(millis) ? millis : null;
+}
+
+function startOfUtcDate(millis) {
+  const date = new Date(millis);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
 function secretLikeKeyReason(value, path = '$') {
@@ -484,6 +514,13 @@ if (manifest) {
     fail('defaultIndexerUrl must be https://blockstream.info/testnet/api');
   }
 
+  const lastReviewedStartMillis = parseIsoUtcDateStartMillis(manifest.lastReviewed);
+  if (lastReviewedStartMillis === null) {
+    fail('lastReviewed must be a YYYY-MM-DD UTC review date');
+  } else if (isFutureDateStart(lastReviewedStartMillis)) {
+    fail('lastReviewed must not be in the future');
+  }
+
   const manifestBlockers = requireArray(manifest.blockers, 'blockers');
   const blockers = new Set(manifestBlockers);
   const envVars = new Set(requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment'));
@@ -550,6 +587,7 @@ if (manifest) {
   const readyClaimed = validateReadyEnvelope(manifest, manifestBlockers, evidence, requireReady);
 
   const seenTxids = new Set();
+  let latestEvidenceDateStartMillis = null;
   evidence.forEach((entry, index) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       fail(`evidence[${index}] must be an object`);
@@ -614,6 +652,14 @@ if (manifest) {
       fail(`evidence[${index}].timestamp must be an ISO-8601 UTC second timestamp`);
     } else if (isFutureTimestamp(entry.timestamp)) {
       fail(`evidence[${index}].timestamp must not be in the future`);
+    } else {
+      const timestampMillis = parseIsoUtcSecondMillis(entry.timestamp);
+      if (timestampMillis !== null) {
+        latestEvidenceDateStartMillis = Math.max(
+          latestEvidenceDateStartMillis || 0,
+          startOfUtcDate(timestampMillis)
+        );
+      }
     }
 
     if (!/^[0-9a-f]{40}$/i.test(String(entry.commit || ''))) {
@@ -622,6 +668,15 @@ if (manifest) {
       fail(`evidence[${index}].commit must not be a placeholder git commit`);
     }
   });
+
+  if (
+    readyClaimed &&
+    latestEvidenceDateStartMillis !== null &&
+    lastReviewedStartMillis !== null &&
+    lastReviewedStartMillis < latestEvidenceDateStartMillis
+  ) {
+    fail('lastReviewed must be on or after the latest evidence timestamp date');
+  }
 
   const currentReleaseCommit = readyClaimed ? resolveCurrentReleaseCommit() : null;
   if (readyClaimed && errors.length === 0) {

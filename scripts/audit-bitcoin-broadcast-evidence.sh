@@ -93,6 +93,7 @@ const REQUIRED_COMMAND_MARKERS = [
   'yarn audit:bitcoin-broadcast-evidence --require-ready',
   'FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin'
 ];
+const CANONICAL_TESTNET_INDEXER_URL = 'https://blockstream.info/testnet/api';
 
 function fail(message) {
   errors.push(message);
@@ -259,6 +260,14 @@ function isFutureTimestamp(value) {
 
 function isFutureDateStart(millis) {
   return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
+}
+
+function normalizeIndexerUrl(value) {
+  try {
+    return new URL(String(value || '')).toString().replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
 }
 
 function parseIsoUtcSecondMillis(value) {
@@ -510,7 +519,7 @@ if (manifest) {
     fail('smokeCommand must be yarn test:smoke:bitcoin');
   }
 
-  if (manifest.defaultIndexerUrl !== 'https://blockstream.info/testnet/api') {
+  if (manifest.defaultIndexerUrl !== CANONICAL_TESTNET_INDEXER_URL) {
     fail('defaultIndexerUrl must be https://blockstream.info/testnet/api');
   }
 
@@ -646,6 +655,9 @@ if (manifest) {
       }
     } catch {
       fail(`evidence[${index}].indexerUrl must be a valid URL`);
+    }
+    if (normalizeIndexerUrl(entry.indexerUrl) !== normalizeIndexerUrl(manifest.defaultIndexerUrl)) {
+      fail(`evidence[${index}].indexerUrl must match defaultIndexerUrl ${manifest.defaultIndexerUrl}`);
     }
 
     if (!isIsoUtcSecond(entry.timestamp)) {

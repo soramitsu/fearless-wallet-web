@@ -35,8 +35,9 @@ Use this checklist for every browser-extension release PR from `develop` to
   release-ready, use the generated template to prepare the manifest, run a
   funded live testnet broadcast with
   `FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin`, record the txid,
-  outpoint, amount, source/recipient testnet addresses, indexer URL, operator,
-  timestamp, and commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,
+  outpoint, amount, source/recipient testnet addresses, canonical
+  `https://blockstream.info/testnet/api` indexer URL, operator, timestamp, and
+  commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,
   set `status: ready` and `releaseEnabled: true`, then rerun
   `yarn audit:bitcoin-broadcast-evidence --require-ready`.
 - Run or confirm green CI for branch-flow audit, public artifact audit,

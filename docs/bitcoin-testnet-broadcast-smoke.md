@@ -44,8 +44,9 @@ yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitc
 ```
 
 After a live run, record the broadcast txid, selected outpoint, source and
-recipient testnet addresses, amount, indexer URL, UTC timestamp, operator, and
-commit, then run:
+recipient testnet addresses, amount, canonical
+`https://blockstream.info/testnet/api` indexer URL, UTC timestamp, operator,
+and commit, then run:
 
 ```sh
 yarn test:bitcoin-broadcast-evidence-template

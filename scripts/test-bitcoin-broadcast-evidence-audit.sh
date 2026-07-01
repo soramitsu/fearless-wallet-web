@@ -372,6 +372,17 @@ fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "ready evidence malformed indexer" "indexerUrl must be a valid URL" run_audit "$ready_bad_indexer" --require-ready
 
+ready_unreviewed_indexer="$tmp_dir/ready-unreviewed-indexer.json"
+cp "$ready" "$ready_unreviewed_indexer"
+node - "$ready_unreviewed_indexer" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].indexerUrl = 'https://example.invalid/testnet/api';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "ready evidence unreviewed indexer" "indexerUrl must match defaultIndexerUrl https://blockstream.info/testnet/api" run_audit "$ready_unreviewed_indexer" --require-ready
+
 ready_duplicate_txid="$tmp_dir/ready-duplicate-txid.json"
 cp "$ready" "$ready_duplicate_txid"
 node - "$ready_duplicate_txid" <<'NODE'

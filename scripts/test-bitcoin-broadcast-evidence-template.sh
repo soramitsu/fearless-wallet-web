@@ -304,4 +304,15 @@ fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "unsafe default indexer" "defaultIndexerUrl must use https" bash "$GENERATOR_SCRIPT" --manifest "$http_indexer"
 
+custom_indexer="$tmp_dir/custom-indexer.json"
+cp "$DEFAULT_MANIFEST" "$custom_indexer"
+node - "$custom_indexer" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.defaultIndexerUrl = 'https://example.invalid/testnet/api';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "unreviewed default indexer" "defaultIndexerUrl must be https://blockstream.info/testnet/api" bash "$GENERATOR_SCRIPT" --manifest "$custom_indexer"
+
 echo "[bitcoin-broadcast-template-test] all assertions passed"

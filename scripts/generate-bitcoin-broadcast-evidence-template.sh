@@ -67,6 +67,7 @@ const REQUIRED_EVIDENCE_FIELDS = [
   'commit'
 ];
 const REQUIRED_BLOCKERS = ['funded-testnet-broadcast-evidence-missing'];
+const CANONICAL_TESTNET_INDEXER_URL = 'https://blockstream.info/testnet/api';
 const PLACEHOLDERS = {
   txid: 'TODO_64_HEX_TESTNET_TXID',
   sourceAddress: 'TODO_TESTNET_SOURCE_TB1Q_ADDRESS',
@@ -139,6 +140,14 @@ function parseIsoUtcDateStartMillis(value) {
   }
 
   return millis;
+}
+
+function normalizeIndexerUrl(value) {
+  try {
+    return new URL(String(value || '')).toString().replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
 }
 
 function secretLikeKeyReason(value, currentPath = '$') {
@@ -241,6 +250,9 @@ if (manifest) {
     }
   } catch {
     fail('defaultIndexerUrl must be a valid URL');
+  }
+  if (normalizeIndexerUrl(manifest.defaultIndexerUrl) !== CANONICAL_TESTNET_INDEXER_URL) {
+    fail('defaultIndexerUrl must be https://blockstream.info/testnet/api');
   }
 
   const requiredFields = requireArray(manifest.requiredEvidenceFields, 'requiredEvidenceFields');

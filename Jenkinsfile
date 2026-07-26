@@ -35,6 +35,15 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'FL_WEB_DWELLIR_API_KEY', variable: 'FL_DWELLIR_API_KEY']
 ]
 
+def jobParams  = [
+    [$class: 'BooleanParameterDefinition', name: 'upload_to_nexus', defaultValue: false, description: 'Upload builds to nexus (master,stage and develop branches upload always)'],
+    [$class: 'BooleanParameterDefinition', name: 'upload_to_google', defaultValue: false, description: 'Upload builds to google (master branches upload always)'],
+    [$class: 'BooleanParameterDefinition', name: 'upload_to_firefox', defaultValue: false, description: 'Upload builds to firefox (master branches upload always)'],
+    [$class: 'BooleanParameterDefinition', name: 'squash_commits', defaultValue: false, description: 'Squash all commits'],
+    [$class: 'StringParameterDefinition', name: 'squash_commits_message', defaultValue: '', trim: true],
+    [$class: 'BooleanParameterDefinition', name: 'isWeb', defaultValue: true, description: 'build as the web version']
+]
+
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
@@ -82,6 +91,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     initialSecretName:          "fearless-dev-wallet-web-wallet-web-web-eso-base",
     initialNameSpace:           "fearless-dev-web",
     targetNameSpace:            "fearless-${env.CHANGE_ID}-web",
-    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base"
+    targetSecretName:           "fearless-${env.CHANGE_ID}-wallet-web-pr-wallet-web-eso-base",
+    jobParams:                  jobParams
 )
 pipeline.runPipeline()

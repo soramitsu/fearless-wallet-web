@@ -239,14 +239,20 @@ class IrohaToriiMcpClient {
   }
 
   async notifyInitialized(options: IrohaToriiRequestOptions = {}): Promise<void> {
-    const { response, body } = await requestJson(this.fetchFn, this.endpointUrl, {
-      method: 'POST',
-      headers: this.buildHeaders(options.headers, true),
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'notifications/initialized',
-      }),
-    }, this.timeoutMs, this.maxResponseBytes);
+    const { response, body } = await requestJson(
+      this.fetchFn,
+      this.endpointUrl,
+      {
+        method: 'POST',
+        headers: this.buildHeaders(options.headers, true),
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'notifications/initialized',
+        }),
+      },
+      this.timeoutMs,
+      this.maxResponseBytes
+    );
 
     if (response.status === 202) return;
 
@@ -321,7 +327,11 @@ class IrohaToriiMcpClient {
     );
   }
 
-  callToolAsync(name: string, args: JsonObject = {}, options: IrohaToriiRequestOptions = {}): Promise<IrohaMcpAsyncJob> {
+  callToolAsync(
+    name: string,
+    args: JsonObject = {},
+    options: IrohaToriiRequestOptions = {}
+  ): Promise<IrohaMcpAsyncJob> {
     return this.jsonRpc(
       'tools/call_async',
       {
@@ -342,10 +352,16 @@ class IrohaToriiMcpClient {
   }
 
   private async httpGet<T>(options: IrohaToriiRequestOptions): Promise<T> {
-    const { response, body } = await requestJson(this.fetchFn, this.endpointUrl, {
-      method: 'GET',
-      headers: this.buildHeaders(options.headers, false),
-    }, this.timeoutMs, this.maxResponseBytes);
+    const { response, body } = await requestJson(
+      this.fetchFn,
+      this.endpointUrl,
+      {
+        method: 'GET',
+        headers: this.buildHeaders(options.headers, false),
+      },
+      this.timeoutMs,
+      this.maxResponseBytes
+    );
 
     if (!response.ok) {
       throw new IrohaToriiMcpError(`iroha_mcp_http_${response.status}`, response.status, body);
@@ -356,16 +372,22 @@ class IrohaToriiMcpClient {
 
   private async jsonRpc<T>(method: string, params: JsonObject, options: IrohaToriiRequestOptions): Promise<T> {
     const requestId = this.nextRequestId++;
-    const { response, body } = await requestJson(this.fetchFn, this.endpointUrl, {
-      method: 'POST',
-      headers: this.buildHeaders(options.headers, true),
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: requestId,
-        method,
-        params,
-      }),
-    }, this.timeoutMs, this.maxResponseBytes);
+    const { response, body } = await requestJson(
+      this.fetchFn,
+      this.endpointUrl,
+      {
+        method: 'POST',
+        headers: this.buildHeaders(options.headers, true),
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: requestId,
+          method,
+          params,
+        }),
+      },
+      this.timeoutMs,
+      this.maxResponseBytes
+    );
 
     if (!response.ok) {
       throw new IrohaToriiMcpError(`iroha_mcp_http_${response.status}`, response.status, body);
@@ -425,11 +447,11 @@ class IrohaToriiWalletClient {
   private readonly timeoutMs: number;
 
   constructor(
-    options: (Omit<IrohaToriiMcpClientOptions, 'baseUrl'> & {
+    options: Omit<IrohaToriiMcpClientOptions, 'baseUrl'> & {
       baseUrl?: string | null;
       client?: IrohaToriiMcpClient;
       network?: IrohaNetworkKey;
-    }) = {}
+    } = {}
   ) {
     this.network = options.network ?? 'taira';
     this.fetchFn = options.fetchFn ?? globalThis.fetch.bind(globalThis);
@@ -607,8 +629,8 @@ class IrohaToriiWalletClient {
       this.fetchFn,
       `${this.resolveToriiBaseUrl(options.baseUrl)}${pathAndQuery}`,
       {
-      method,
-      headers: this.buildHeaders(options.headers, contentHeaders),
+        method,
+        headers: this.buildHeaders(options.headers, contentHeaders),
       },
       this.timeoutMs,
       this.maxResponseBytes
@@ -751,10 +773,7 @@ function normalizeBatchRouteResponse<TBody>(
   return normalizeRouteResponse<TBody>(entry.result.structuredContent, toolName);
 }
 
-function normalizeRouteResponse<TBody>(
-  structuredContent: unknown,
-  toolName: string
-): IrohaToriiRouteResponse<TBody> {
+function normalizeRouteResponse<TBody>(structuredContent: unknown, toolName: string): IrohaToriiRouteResponse<TBody> {
   if (!isRecord(structuredContent) || Array.isArray(structuredContent)) {
     throw new IrohaToriiMcpError('invalid_route_response', undefined, structuredContent, undefined, { toolName });
   }
@@ -766,17 +785,12 @@ function normalizeRouteResponse<TBody>(
     body,
     error_code: errorCodeValue,
   } = structuredContent;
-  if (
-    typeof statusValue !== 'number' ||
-    !Number.isInteger(statusValue) ||
-    statusValue < 100 ||
-    statusValue > 599
-  ) {
+  if (typeof statusValue !== 'number' || !Number.isInteger(statusValue) || statusValue < 100 || statusValue > 599) {
     throw new IrohaToriiMcpError('invalid_route_response', undefined, structuredContent, undefined, { toolName });
   }
 
   const status = statusValue;
-  if (status >= 400) {
+  if (status < 200 || status > 299) {
     const errorCode = typeof errorCodeValue === 'string' ? errorCodeValue : undefined;
 
     throw new IrohaToriiMcpError('iroha_mcp_route_error', status, structuredContent, undefined, errorCode);
@@ -798,12 +812,7 @@ function normalizeRouteResponse<TBody>(
   };
 }
 
-function assertCompleteFanout(
-  headers: Record<string, string>,
-  status: number,
-  body: unknown,
-  toolName: string
-): void {
+function assertCompleteFanout(headers: Record<string, string>, status: number, body: unknown, toolName: string): void {
   const headerNames = {
     attempted: 'x-iroha-fanout-routes-attempted',
     succeeded: 'x-iroha-fanout-routes-succeeded',
@@ -827,7 +836,9 @@ function assertCompleteFanout(
     summary.attempted < 1 ||
     summary.succeeded > summary.attempted ||
     summary.failed !== failedByDifference ||
-    summary.denied + summary.unavailable + summary.notFound > summary.failed
+    summary.denied > summary.failed ||
+    summary.unavailable > summary.failed - summary.denied ||
+    summary.notFound > summary.failed - summary.denied - summary.unavailable
   ) {
     throw new IrohaToriiMcpError('invalid_fanout_headers', status, body, undefined, { toolName, summary });
   }
@@ -876,7 +887,10 @@ function normalizeSubmitAndWaitResult(value: unknown, expectedHash: string): Iro
     throw new IrohaToriiMcpError('invalid_submit_and_wait_response', undefined, value);
   }
 
-  const submit = normalizeRouteResponse<Record<string, unknown>>(result.submit, 'iroha.transactions.submit_and_wait.submit');
+  const submit = normalizeRouteResponse<Record<string, unknown>>(
+    result.submit,
+    'iroha.transactions.submit_and_wait.submit'
+  );
   const finalStatus = normalizeRouteResponse<Record<string, unknown>>(
     result.final_status,
     'iroha.transactions.submit_and_wait.final_status'
@@ -950,11 +964,13 @@ function normalizeRouteString(value: unknown, errorCode: string): string {
     throw new IrohaToriiMcpError(errorCode);
   }
 
-  if (Array.from(value).some((char) => {
-    const code = char.charCodeAt(0);
+  if (
+    Array.from(value).some((char) => {
+      const code = char.charCodeAt(0);
 
-    return code <= 0x1f || code === 0x7f;
-  })) {
+      return code <= 0x1f || code === 0x7f;
+    })
+  ) {
     throw new IrohaToriiMcpError(errorCode);
   }
 
@@ -1095,7 +1111,7 @@ async function requestJson(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetchFn(input, { ...init, signal: controller.signal });
+    const response = await fetchFn(input, { ...init, redirect: 'error', signal: controller.signal });
     const body = await readResponseBody(response, maxResponseBytes);
 
     return { response, body };

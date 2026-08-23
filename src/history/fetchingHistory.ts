@@ -649,7 +649,7 @@ function parseIrohaAssetTransfer(
   const sourceAccount =
     getRecordString(value, ['source_account', 'from', 'account']) ?? extractIrohaAssetAccount(source);
   const isIncoming = isSameIrohaLiteral(destination, address);
-  const isOutgoing = isSameIrohaLiteral(sourceAccount, address) || (source?.includes(address) ?? false);
+  const isOutgoing = isSameIrohaLiteral(sourceAccount, address);
 
   if (!isIncoming && !isOutgoing) return null;
 

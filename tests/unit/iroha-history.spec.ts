@@ -293,6 +293,53 @@ describe('Iroha history fetching', () => {
     });
   });
 
+  it('rejects asset sources that only contain the wallet address as a substring', async () => {
+    const fetchFn = vi.fn(async (input: string | URL) => {
+      if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+      return rpcResult({
+        isError: false,
+        structuredContent: {
+          status: 200,
+          headers: COMPLETE_FANOUT_HEADERS,
+          content_type: 'application/json',
+          body: {
+            items: [
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: {
+                        destination: COUNTERPARTY,
+                        object: '1.25',
+                        source: `${TAIRA_XOR_ASSET_ID}#prefix${WALLET}suffix`,
+                      },
+                    },
+                  },
+                },
+              }),
+            ],
+          },
+        },
+      });
+    });
+    vi.stubGlobal('fetch', fetchFn);
+
+    const result = await fetchHistory(
+      'https://taira.sora.org',
+      WALLET,
+      'iroha',
+      'Taira Testnet',
+      TAIRA_XOR_ASSET_ID,
+      true,
+      undefined,
+      TAIRA_CHAIN_ID
+    );
+
+    expect(result).toEqual([]);
+  });
+
   it('drops malformed, unrelated, and unsafe Iroha instruction payloads', async () => {
     const fetchFn = vi.fn(async (input: string | URL) => {
       if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();

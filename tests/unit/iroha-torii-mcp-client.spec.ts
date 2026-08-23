@@ -129,6 +129,7 @@ describe('IrohaToriiMcpClient', () => {
 
     expect(result.structuredContent).toEqual({ status: 200, body: { account: 'alice@wonderland.universal' } });
     expect(calls.every(({ url }) => url === 'https://taira.sora.org/v1/mcp')).toBe(true);
+    expect(calls.every(({ init }) => init?.redirect === 'error')).toBe(true);
     expect(calls[1]?.init?.headers).toEqual({ 'content-type': 'application/json' });
 
     const listBody = JSON.parse(calls[2]?.init?.body as string);
@@ -767,6 +768,27 @@ describe('IrohaToriiWalletClient', () => {
     });
   });
 
+  it('rejects nested routed redirects even with complete fanout evidence', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 302,
+            headers: COMPLETE_FANOUT_HEADERS,
+            content_type: 'application/json',
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'iroha_mcp_route_error',
+      status: 302,
+    });
+  });
+
   it('fails closed on incomplete fanout reads even when Torii returns HTTP 200', async () => {
     const client = new IrohaToriiWalletClient({
       fetchFn: vi.fn(async () =>
@@ -851,6 +873,33 @@ describe('IrohaToriiWalletClient', () => {
               'x-iroha-fanout-routes-denied': '0',
               'x-iroha-fanout-routes-unavailable': '0',
               'x-iroha-fanout-routes-not-found': '0',
+            },
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'invalid_fanout_headers',
+    });
+  });
+
+  it('rejects overflowing fanout counter totals without unsafe arithmetic', async () => {
+    const maximum = String(Number.MAX_SAFE_INTEGER);
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: {
+              'x-iroha-fanout-routes-attempted': maximum,
+              'x-iroha-fanout-routes-succeeded': '0',
+              'x-iroha-fanout-routes-failed': maximum,
+              'x-iroha-fanout-routes-denied': maximum,
+              'x-iroha-fanout-routes-unavailable': maximum,
+              'x-iroha-fanout-routes-not-found': maximum,
             },
             body: { items: [] },
           },

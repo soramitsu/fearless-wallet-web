@@ -821,6 +821,22 @@ describe('IrohaToriiWalletClient', () => {
     });
   });
 
+  it('rejects direct routed HTTP reads that omit all fanout evidence', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(
+        async () =>
+          new Response(JSON.stringify({ items: [] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+      ),
+    });
+
+    await expect(client.getAssetDefinitions()).rejects.toMatchObject({
+      message: 'invalid_fanout_headers',
+    });
+  });
+
   it('rejects a routed response that claims zero attempted routes', async () => {
     const client = new IrohaToriiWalletClient({
       fetchFn: vi.fn(async () =>

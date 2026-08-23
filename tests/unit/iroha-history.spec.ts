@@ -1,8 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createPinia, setActivePinia } from 'pinia';
 
+import type { TokenGroup } from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
+import type { HistoryElement } from '@/interfaces';
 import { fetchHistory } from '@/history/fetchingHistory';
-import { getFormattedHistory } from '@/helpers/history';
+import { getFormattedHistory, getHistoryValue } from '@/helpers/history';
+import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
 vi.mock('@/extension/messaging', () => ({
   getHistory: vi.fn(),
@@ -90,6 +96,21 @@ function instruction(overrides: Record<string, unknown> = {}) {
 }
 
 describe('Iroha history fetching', () => {
+  beforeEach(() => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      clear: () => values.clear(),
+      getItem: (key: string) => values.get(key) ?? null,
+      key: (index: number) => [...values.keys()][index] ?? null,
+      removeItem: (key: string) => values.delete(key),
+      setItem: (key: string, value: string) => values.set(key, value),
+      get length() {
+        return values.size;
+      },
+    });
+    setActivePinia(createPinia());
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -197,6 +218,28 @@ describe('Iroha history fetching', () => {
         },
       },
     ]);
+
+    useAccountsStore().balances = [
+      {
+        groupId: TAIRA_XOR_ASSET_ID,
+        symbol: 'XOR',
+        balances: [{ id: TAIRA_XOR_ASSET_ID, name: 'Taira Testnet', precision: 9, symbol: 'XOR' }],
+      } as unknown as TokenGroup,
+    ];
+    useNetworksStore().allNetworks = [
+      {
+        name: 'Taira Testnet',
+        chainId: TAIRA_CHAIN_ID,
+        externalApi: { history: { type: 'iroha', url: 'https://taira.sora.org' } },
+        assets: [],
+      } as unknown as NetworkJson,
+    ];
+    const [firstHistoryElement] = result as HistoryElement[];
+
+    expect(getHistoryValue(firstHistoryElement, TAIRA_XOR_ASSET_ID, 'Taira Testnet', WALLET, true)).toEqual({
+      signTransfer: '-',
+      value: 1.25,
+    });
   });
 
   it('converts very large exact Torii decimals to base units without rounding', async () => {

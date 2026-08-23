@@ -340,6 +340,157 @@ describe('Iroha history fetching', () => {
     expect(result).toEqual([]);
   });
 
+  it('rejects case-mutated noncanonical I105 source accounts', async () => {
+    const caseMutatedWallet = `T${WALLET.slice(1)}`;
+    const fetchFn = vi.fn(async (input: string | URL) => {
+      if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+      return rpcResult({
+        isError: false,
+        structuredContent: {
+          status: 200,
+          headers: COMPLETE_FANOUT_HEADERS,
+          content_type: 'application/json',
+          body: {
+            items: [
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: {
+                        destination: COUNTERPARTY,
+                        object: '1.25',
+                        source: `${TAIRA_XOR_ASSET_ID}#${caseMutatedWallet}`,
+                      },
+                    },
+                  },
+                },
+              }),
+            ],
+          },
+        },
+      });
+    });
+    vi.stubGlobal('fetch', fetchFn);
+
+    const result = await fetchHistory(
+      'https://taira.sora.org',
+      WALLET,
+      'iroha',
+      'Taira Testnet',
+      TAIRA_XOR_ASSET_ID,
+      true,
+      undefined,
+      TAIRA_CHAIN_ID
+    );
+
+    expect(result).toEqual([]);
+  });
+
+  it('fails closed on every noncanonical committed transaction status', async () => {
+    for (const transactionStatus of [undefined, 'Pending', 'Expired', 'Commited']) {
+      const fetchFn = vi.fn(async (input: string | URL) => {
+        if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+        return rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: COMPLETE_FANOUT_HEADERS,
+            content_type: 'application/json',
+            body: { items: [instruction({ transaction_status: transactionStatus })] },
+          },
+        });
+      });
+      vi.stubGlobal('fetch', fetchFn);
+
+      await expect(
+        fetchHistory(
+          'https://taira.sora.org',
+          WALLET,
+          'iroha',
+          'Taira Testnet',
+          TAIRA_XOR_ASSET_ID,
+          true,
+          undefined,
+          TAIRA_CHAIN_ID
+        )
+      ).resolves.toBeUndefined();
+    }
+  });
+
+  it('rejects legacy and ambiguous top-level history field aliases', async () => {
+    const aliasedItems = [
+      instruction({ transaction_status: undefined, status: 'Committed' }),
+      instruction({ transactionStatus: 'Committed' }),
+      instruction({ transactionHash: HASH_2 }),
+      instruction({ createdAt: '2026-06-24T00:00:00Z' }),
+    ];
+
+    for (const item of aliasedItems) {
+      const fetchFn = vi.fn(async (input: string | URL) => {
+        if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+        return rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: COMPLETE_FANOUT_HEADERS,
+            content_type: 'application/json',
+            body: { items: [item] },
+          },
+        });
+      });
+      vi.stubGlobal('fetch', fetchFn);
+
+      await expect(
+        fetchHistory(
+          'https://taira.sora.org',
+          WALLET,
+          'iroha',
+          'Taira Testnet',
+          TAIRA_XOR_ASSET_ID,
+          true,
+          undefined,
+          TAIRA_CHAIN_ID
+        )
+      ).resolves.toBeUndefined();
+    }
+  });
+
+  it('fails closed when a valid history route omits its items array', async () => {
+    for (const body of [{}, { items: null }, { items: {} }]) {
+      const fetchFn = vi.fn(async (input: string | URL) => {
+        if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+        return rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: COMPLETE_FANOUT_HEADERS,
+            content_type: 'application/json',
+            body,
+          },
+        });
+      });
+      vi.stubGlobal('fetch', fetchFn);
+
+      await expect(
+        fetchHistory(
+          'https://taira.sora.org',
+          WALLET,
+          'iroha',
+          'Taira Testnet',
+          TAIRA_XOR_ASSET_ID,
+          true,
+          undefined,
+          TAIRA_CHAIN_ID
+        )
+      ).resolves.toBeUndefined();
+    }
+  });
+
   it('drops malformed, unrelated, and unsafe Iroha instruction payloads', async () => {
     const fetchFn = vi.fn(async (input: string | URL) => {
       if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
@@ -450,7 +601,7 @@ describe('Iroha history fetching', () => {
         undefined,
         TAIRA_CHAIN_ID
       )
-    ).resolves.toEqual([]);
+    ).resolves.toBeUndefined();
 
     expect(fetchFn).toHaveBeenCalledTimes(1);
     expect(fetchFn.mock.calls[0]?.[0].toString()).toContain('/v1/assets/definitions?');
@@ -465,7 +616,7 @@ describe('Iroha history fetching', () => {
 
     await expect(
       fetchHistory('', NEXUS_WALLET, 'iroha', 'SORA Nexus', 'xor#sora', true, undefined, NEXUS_CHAIN_ID)
-    ).resolves.toEqual([]);
+    ).resolves.toBeUndefined();
     expect(fetchFn.mock.calls[0]?.[0].toString()).toContain('https://minamoto.sora.org/v1/assets/definitions?');
   });
 
@@ -476,7 +627,7 @@ describe('Iroha history fetching', () => {
 
     await expect(
       fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', TAIRA_XOR_ASSET_ID, true)
-    ).resolves.toEqual([]);
+    ).resolves.toBeUndefined();
     expect(fetchFn).not.toHaveBeenCalled();
     info.mockRestore();
   });

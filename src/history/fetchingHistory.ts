@@ -508,7 +508,10 @@ async function fetchIrohaHistory(
     perPage: 100,
     transactionStatus: 'committed',
   });
-  const items = isRecord(body) && Array.isArray(body.items) ? body.items : [];
+  if (!isRecord(body) || !Array.isArray(body.items)) {
+    throw new Error('invalid_iroha_history_response');
+  }
+  const items = body.items;
 
   return items.reduce<HistoryElement[]>((result, item) => {
     result.push(...toIrohaHistoryElements(item, address, assetId, precision));
@@ -560,15 +563,22 @@ async function validateIrohaHistoryAssetDefinition(
 function toIrohaHistoryElements(item: unknown, address: string, assetId: string, precision: number): HistoryElement[] {
   if (!isRecord(item)) return [];
 
-  const hash = getRecordString(item, ['transaction_hash', 'transactionHash', 'hash']);
-  const timestamp = parseIrohaTimestamp(getRecordString(item, ['created_at', 'createdAt', 'timestamp']));
+  const hash = getCanonicalIrohaHistoryString(item, 'transaction_hash', ['transactionHash', 'hash']);
+  const timestamp = parseIrohaTimestamp(
+    getCanonicalIrohaHistoryString(item, 'created_at', ['createdAt', 'timestamp'])
+  );
   const payload = getIrohaInstructionPayload(item);
 
   if (!hash || !timestamp || !payload) return [];
 
+  const transactionStatus = getCanonicalIrohaHistoryString(item, 'transaction_status', [
+    'transactionStatus',
+    'status',
+  ]);
+  if (transactionStatus !== 'Committed') throw new Error('invalid_iroha_history_transaction_status');
+
   const transfers = parseIrohaTransferPayload(payload, address, assetId, precision);
   const blockHeight = parseSafeInteger(item.block);
-  const success = getRecordString(item, ['transaction_status', 'transactionStatus', 'status']) !== 'Rejected';
 
   return transfers.map(({ amount, from, to }, index) => ({
     address,
@@ -576,7 +586,7 @@ function toIrohaHistoryElements(item: unknown, address: string, assetId: string,
     blockHeight,
     extrinsicHash: hash,
     id: transfers.length === 1 ? hash : `${hash}:${index}`,
-    success,
+    success: true,
     timestamp,
     transfer: {
       amount,
@@ -778,12 +788,26 @@ function getRecordString(record: Record<string, unknown>, keys: string[]): strin
   return null;
 }
 
+function getCanonicalIrohaHistoryString(
+  record: Record<string, unknown>,
+  canonicalKey: string,
+  aliases: string[]
+): string | null {
+  if (aliases.some((alias) => Object.hasOwn(record, alias))) {
+    throw new Error('noncanonical_iroha_history_field');
+  }
+
+  const value = record[canonicalKey];
+
+  return typeof value === 'string' && value.length > 0 && value === value.trim() ? value : null;
+}
+
 function parseSafeInteger(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 function isSameIrohaLiteral(left: string | null | undefined, right: string): boolean {
-  return typeof left === 'string' && left.toLowerCase() === right.toLowerCase();
+  return typeof left === 'string' && left === right;
 }
 
 function getIrohaNetworkKind(chainId: string | undefined): IrohaNetworkKind {
@@ -864,7 +888,7 @@ export async function fetchHistory(
       error
     );
 
-    if (type === 'bitcoin') return undefined;
+    if (type === 'bitcoin' || type === 'iroha') return undefined;
 
     return [];
   }

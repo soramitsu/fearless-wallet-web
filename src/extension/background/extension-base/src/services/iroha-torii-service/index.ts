@@ -1025,7 +1025,13 @@ function normalizeToriiBaseUrl(baseUrl: string | null): string {
 function assertSafeToriiUrl(url: URL): void {
   const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
 
-  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) || url.username || url.password) {
+  if (
+    (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
     throw new IrohaToriiMcpError('invalid_base_url');
   }
 }

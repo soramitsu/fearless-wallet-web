@@ -195,6 +195,13 @@ describe('IrohaToriiMcpClient', () => {
     expect(() => new IrohaToriiMcpClient({ baseUrl: 'https://user:secret@taira.sora.org', fetchFn: vi.fn() })).toThrow(
       IrohaToriiMcpError
     );
+    for (const baseUrl of [
+      'https://taira.sora.org?route=/v1/mcp',
+      'https://taira.sora.org#route=/v1/mcp',
+    ]) {
+      expect(() => new IrohaToriiMcpClient({ baseUrl, fetchFn: vi.fn() })).toThrow(IrohaToriiMcpError);
+      expect(() => new IrohaToriiWalletClient({ baseUrl, fetchFn: vi.fn() })).toThrow(IrohaToriiMcpError);
+    }
 
     const fetchFn = vi.fn();
     const client = new IrohaToriiMcpClient({ fetchFn });

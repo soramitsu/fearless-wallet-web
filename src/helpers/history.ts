@@ -129,7 +129,7 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
 
-    if (fee === null) return 0;
+    if (fee === null) return null;
 
     if (historyType === 'oklink' || historyType === 'etherscan') return +fee;
 
@@ -171,7 +171,7 @@ function getHistoryValue(
     const targetValue = +(element.data?.targetAssetAmount ?? 0);
 
     // fee в индексере с учетом decimals
-    const fee = getHumanTransferFee(historyElement, networkName);
+    const fee = getHumanTransferFee(historyElement, networkName) ?? 0;
 
     const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;
 
@@ -191,7 +191,7 @@ function getHistoryValue(
 
   if (type === TransactionType.transfer && transfer) {
     const value = getHumanValue(transfer.amount, assetId, networkName);
-    const fee = getHumanTransferFee(historyElement, networkName);
+    const fee = getHumanTransferFee(historyElement, networkName) ?? 0;
     const result = withFee ? value + fee : value;
 
     return { signTransfer, value: result };

@@ -45,12 +45,15 @@ function getBitcoinHistoryUrl(networkName: string, chainId?: string): string {
     : UNIVERSAL_WALLET_INDEXERS.bitcoin.mainnet;
 }
 
-function getIrohaHistoryUrl(networkName: string, chainId?: string): string {
-  const descriptor = `${networkName} ${chainId ?? ''}`.toLowerCase();
+function getIrohaHistoryUrl(chainId: string): string {
+  if (chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId) {
+    return UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl;
+  }
+  if (chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId) {
+    return UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl ?? '';
+  }
 
-  if (descriptor.includes('nexus')) return UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl ?? '';
-
-  return UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl;
+  throw new Error(`unsupported_iroha_chain_id:${chainId}`);
 }
 
 export const actions: Actions = {
@@ -183,7 +186,7 @@ export const actions: Actions = {
       url: isBitcoinNetwork
         ? getBitcoinHistoryUrl(network.name, network.chainId)
         : isIrohaNetwork
-          ? getIrohaHistoryUrl(network.name, network.chainId)
+          ? getIrohaHistoryUrl(network.chainId)
           : UNIVERSAL_WALLET_INDEXERS.solana,
     };
     const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
@@ -254,7 +257,8 @@ export const actions: Actions = {
       networkName,
       searchedAsset.id,
       isUtility,
-      bitcoinAddresses
+      bitcoinAddresses,
+      network.chainId
     );
 
     if (history) {

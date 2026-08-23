@@ -13,9 +13,7 @@ vi.mock('@/extension/messaging/price', () => ({
   getFiats: vi.fn(),
 }));
 
-const fixture = JSON.parse(
-  readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')
-) as {
+const fixture = JSON.parse(readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')) as {
   vectors: Array<{
     expected: {
       iroha: {
@@ -29,13 +27,23 @@ const fixture = JSON.parse(
 const WALLET = fixture.vectors[0].expected.iroha.taira.i105;
 const NEXUS_WALLET = fixture.vectors[0].expected.iroha.nexus.i105;
 const COUNTERPARTY = fixture.vectors[1].expected.iroha.taira.i105;
+const TAIRA_CHAIN_ID = 'fc56984b-2be7-431d-840e-21514d1883f0';
+const NEXUS_CHAIN_ID = 'sora:nexus:global';
 const TAIRA_XOR_ASSET_ID = '6TEAJqbb8oEPmLncoNiMRbLEK6tw';
 const HASH_1 = '11'.repeat(32);
 const HASH_2 = '22'.repeat(32);
+const COMPLETE_FANOUT_HEADERS = {
+  'x-iroha-fanout-routes-attempted': '1',
+  'x-iroha-fanout-routes-succeeded': '1',
+  'x-iroha-fanout-routes-failed': '0',
+  'x-iroha-fanout-routes-denied': '0',
+  'x-iroha-fanout-routes-unavailable': '0',
+  'x-iroha-fanout-routes-not-found': '0',
+};
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...COMPLETE_FANOUT_HEADERS },
     status,
   });
 }
@@ -123,7 +131,7 @@ describe('Iroha history fetching', () => {
             ],
           },
           content_type: 'application/json',
-          headers: {},
+          headers: COMPLETE_FANOUT_HEADERS,
           status: 200,
         },
       });
@@ -136,7 +144,9 @@ describe('Iroha history fetching', () => {
       'iroha',
       'Taira Testnet',
       TAIRA_XOR_ASSET_ID,
-      true
+      true,
+      undefined,
+      TAIRA_CHAIN_ID
     );
 
     expect(fetchFn).toHaveBeenCalledWith('https://taira.sora.org/v1/mcp', expect.objectContaining({ method: 'POST' }));
@@ -165,8 +175,8 @@ describe('Iroha history fetching', () => {
         success: true,
         timestamp: '1782259200',
         transfer: {
-          amount: '1.25',
-          fee: '0',
+          amount: '1250000000',
+          fee: null,
           from: WALLET,
           to: COUNTERPARTY,
         },
@@ -180,13 +190,64 @@ describe('Iroha history fetching', () => {
         success: true,
         timestamp: '1719187200',
         transfer: {
-          amount: '4.56',
-          fee: '0',
+          amount: '4560000000',
+          fee: null,
           from: COUNTERPARTY,
           to: WALLET,
         },
       },
     ]);
+  });
+
+  it('converts very large exact Torii decimals to base units without rounding', async () => {
+    const quantity = '340282366920938463463374607431768211455.000000001';
+    const fetchFn = vi.fn(async (input: string | URL) => {
+      if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+      return rpcResult({
+        isError: false,
+        structuredContent: {
+          status: 200,
+          headers: COMPLETE_FANOUT_HEADERS,
+          content_type: 'application/json',
+          body: {
+            items: [
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: {
+                        destination: COUNTERPARTY,
+                        object: quantity,
+                        source: `${TAIRA_XOR_ASSET_ID}#${WALLET}`,
+                      },
+                    },
+                  },
+                },
+              }),
+            ],
+          },
+        },
+      });
+    });
+    vi.stubGlobal('fetch', fetchFn);
+
+    const result = await fetchHistory(
+      'https://taira.sora.org',
+      WALLET,
+      'iroha',
+      'Taira Testnet',
+      TAIRA_XOR_ASSET_ID,
+      true,
+      undefined,
+      TAIRA_CHAIN_ID
+    );
+
+    expect(result?.[0]?.transfer).toMatchObject({
+      amount: '340282366920938463463374607431768211455000000001',
+      fee: null,
+    });
   });
 
   it('drops malformed, unrelated, and unsafe Iroha instruction payloads', async () => {
@@ -199,14 +260,70 @@ describe('Iroha history fetching', () => {
           body: {
             items: [
               instruction({ box: { json: { payload: { variant: 'Domain', value: {} } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: '-1', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` } } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: ' 1.5 ', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` } } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: '1', source: `bad#sora#${COUNTERPARTY}` } } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: COUNTERPARTY, object: '1', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` } } } } }),
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: { destination: WALLET, object: '-1', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` },
+                    },
+                  },
+                },
+              }),
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: { destination: WALLET, object: ' 1.5 ', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` },
+                    },
+                  },
+                },
+              }),
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: {
+                        destination: WALLET,
+                        object: '1.0000000001',
+                        source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}`,
+                      },
+                    },
+                  },
+                },
+              }),
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: { destination: WALLET, object: '1', source: `bad#sora#${COUNTERPARTY}` },
+                    },
+                  },
+                },
+              }),
+              instruction({
+                box: {
+                  json: {
+                    payload: {
+                      variant: 'Asset',
+                      value: {
+                        destination: COUNTERPARTY,
+                        object: '1',
+                        source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}`,
+                      },
+                    },
+                  },
+                },
+              }),
               instruction({ created_at: 'not-a-date' }),
               instruction({ box: { json: {} } }),
             ],
           },
+          content_type: 'application/json',
+          headers: COMPLETE_FANOUT_HEADERS,
           status: 200,
         },
       });
@@ -214,17 +331,35 @@ describe('Iroha history fetching', () => {
     vi.stubGlobal('fetch', fetchFn);
 
     await expect(
-      fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', TAIRA_XOR_ASSET_ID, true)
+      fetchHistory(
+        'https://taira.sora.org',
+        WALLET,
+        'iroha',
+        'Taira Testnet',
+        TAIRA_XOR_ASSET_ID,
+        true,
+        undefined,
+        TAIRA_CHAIN_ID
+      )
     ).resolves.toEqual([]);
   });
 
   it('rejects a null canonical Taira XOR scale before querying instructions', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
-    const fetchFn = vi.fn(async () => tairaDefinitionResponse(null));
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL) => tairaDefinitionResponse(null));
     vi.stubGlobal('fetch', fetchFn);
 
     await expect(
-      fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', TAIRA_XOR_ASSET_ID, true)
+      fetchHistory(
+        'https://taira.sora.org',
+        WALLET,
+        'iroha',
+        'Taira Testnet',
+        TAIRA_XOR_ASSET_ID,
+        true,
+        undefined,
+        TAIRA_CHAIN_ID
+      )
     ).resolves.toEqual([]);
 
     expect(fetchFn).toHaveBeenCalledTimes(1);
@@ -232,14 +367,28 @@ describe('Iroha history fetching', () => {
     info.mockRestore();
   });
 
-  it('uses Minamoto for Nexus history by default and fails closed when unavailable', async () => {
-    const fetchFn = vi.fn(async () => {
+  it('uses Minamoto for an exact Nexus chain id and fails closed when definitions are unavailable', async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL) => {
       throw new Error('minamoto_unavailable');
     });
     vi.stubGlobal('fetch', fetchFn);
 
-    await expect(fetchHistory('', NEXUS_WALLET, 'iroha', 'SORA Nexus', 'xor#sora', true)).resolves.toEqual([]);
-    expect(fetchFn).toHaveBeenCalledWith('https://minamoto.sora.org/v1/mcp', expect.objectContaining({ method: 'POST' }));
+    await expect(
+      fetchHistory('', NEXUS_WALLET, 'iroha', 'SORA Nexus', 'xor#sora', true, undefined, NEXUS_CHAIN_ID)
+    ).resolves.toEqual([]);
+    expect(fetchFn.mock.calls[0]?.[0].toString()).toContain('https://minamoto.sora.org/v1/assets/definitions?');
+  });
+
+  it('rejects ambiguous Iroha networks before issuing a request', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const fetchFn = vi.fn();
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(
+      fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', TAIRA_XOR_ASSET_ID, true)
+    ).resolves.toEqual([]);
+    expect(fetchFn).not.toHaveBeenCalled();
+    info.mockRestore();
   });
 
   it('formats Iroha history arrays for store pagination shape', () => {

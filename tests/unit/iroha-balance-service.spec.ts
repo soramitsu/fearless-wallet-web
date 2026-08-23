@@ -1,6 +1,8 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import BalanceService from '@extension-base/services/balance-service';
-import IrohaBalanceService, { type IrohaBalanceClient } from '@extension-base/services/balance-service/IrohaBalanceService';
+import IrohaBalanceService, {
+  type IrohaBalanceClient,
+} from '@extension-base/services/balance-service/IrohaBalanceService';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -28,7 +30,7 @@ const TAIRA_XOR_ASSET_ID = '6TEAJqbb8oEPmLncoNiMRbLEK6tw';
 const irohaNetwork = (name: string, chainId: string): NetworkJson => {
   const isTaira = name === 'Taira';
 
-  return ({
+  return {
     active: true,
     addressPrefix: 0,
     assets: [
@@ -63,7 +65,7 @@ const irohaNetwork = (name: string, chainId: string): NetworkJson => {
     providers: {},
     ss58Format: 0,
     types: { name, url: '' },
-  }) as unknown as NetworkJson;
+  } as unknown as NetworkJson;
 };
 
 const routeBody = <TBody>(body: TBody) => ({
@@ -177,11 +179,14 @@ describe('IrohaBalanceService', () => {
     const { state } = createState([taira]);
     const client: IrohaBalanceClient = {
       getAccountAssets: vi.fn().mockResolvedValue(routeBody({ items: [] })),
-      getAssetDefinitions: vi.fn().mockResolvedValue(
-        routeBody({ items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale } }] })
-      ),
+      getAssetDefinitions: vi
+        .fn()
+        .mockResolvedValue(routeBody({ items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale } }] })),
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
@@ -219,7 +224,10 @@ describe('IrohaBalanceService', () => {
       getAccountAssets: getAccountAssets as IrohaBalanceClient['getAccountAssets'],
       getAssetDefinitions: getAssetDefinitions as IrohaBalanceClient['getAssetDefinitions'],
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     const result = await service.fetchBalance({
       address: SUBSTRATE_ADDRESS,
@@ -264,7 +272,10 @@ describe('IrohaBalanceService', () => {
       ),
       getAssetDefinitions: getAssetDefinitions as IrohaBalanceClient['getAssetDefinitions'],
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await service.fetchBalance({
       address: SUBSTRATE_ADDRESS,
@@ -300,12 +311,17 @@ describe('IrohaBalanceService', () => {
     } as TokenGroup;
     const { state } = createState([taira], { [SUBSTRATE_ADDRESS]: [existingGroup] });
     const client: IrohaBalanceClient = {
-      getAccountAssets: vi.fn().mockResolvedValue(
-        routeBody({ items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '9' }] })
-      ),
+      getAccountAssets: vi
+        .fn()
+        .mockResolvedValue(
+          routeBody({ items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '9' }] })
+        ),
       getAssetDefinitions: vi.fn().mockRejectedValue(new Error('definitions_down')),
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
@@ -333,12 +349,17 @@ describe('IrohaBalanceService', () => {
     const { state } = createState([taira], { [SUBSTRATE_ADDRESS]: [existingGroup] });
     const getAssetDefinitions = vi.fn().mockResolvedValue(routeBody({ has_more: true, items: repeatedPage }));
     const client: IrohaBalanceClient = {
-      getAccountAssets: vi.fn().mockResolvedValue(
-        routeBody({ items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '9' }] })
-      ),
+      getAccountAssets: vi
+        .fn()
+        .mockResolvedValue(
+          routeBody({ items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '9' }] })
+        ),
       getAssetDefinitions,
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
@@ -376,7 +397,10 @@ describe('IrohaBalanceService', () => {
       getAccountAssets: vi.fn().mockRejectedValue(new Error('torii_down')),
       getAssetDefinitions: vi.fn(),
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await expect(
       service.fetchBalance({
@@ -422,13 +446,14 @@ describe('IrohaBalanceService', () => {
       getAccountAssets: vi.fn().mockRejectedValue(new Error('iroha_torii_partial_response')),
       getAssetDefinitions: vi.fn(),
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([
-      { assetId: '7YWHMfk9JZeLQPBznJqwr8fh9fUo', balance: '19', network: 'Taira' },
-    ]);
+    ).resolves.toEqual([{ assetId: '7YWHMfk9JZeLQPBznJqwr8fh9fUo', balance: '19', network: 'Taira' }]);
 
     expect(existingGroup.balances[0]).toMatchObject({ state: APIItemState.ERROR, total: '19' });
     expect(updateBalanceStore).not.toHaveBeenCalledWith(
@@ -444,9 +469,11 @@ describe('IrohaBalanceService', () => {
     const { state, updateBalanceStore } = createState([taira]);
     const getAccountAssets = vi
       .fn()
-      .mockResolvedValueOnce(routeBody({
-        items: [{ account_id: TAIRA_ACCOUNT_ID, asset: 'val#wonderland', quantity: '19' }],
-      }))
+      .mockResolvedValueOnce(
+        routeBody({
+          items: [{ account_id: TAIRA_ACCOUNT_ID, asset: 'val#wonderland', quantity: '19' }],
+        })
+      )
       .mockResolvedValueOnce(routeBody({ items: [] }));
     const client: IrohaBalanceClient = {
       getAccountAssets: getAccountAssets as IrohaBalanceClient['getAccountAssets'],
@@ -459,13 +486,16 @@ describe('IrohaBalanceService', () => {
         })
       ),
     };
-    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
 
     await service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] });
     await service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] });
 
-    const token = state.balanceService.balanceMap[SUBSTRATE_ADDRESS]
-      .find(({ groupId }) => groupId === 'val#wonderland')?.balances[0];
+    const token = state.balanceService.balanceMap[SUBSTRATE_ADDRESS].find(({ groupId }) => groupId === 'val#wonderland')
+      ?.balances[0];
     expect(token).toMatchObject({
       id: 'val#wonderland',
       state: APIItemState.READY,
@@ -506,15 +536,29 @@ describe('IrohaBalanceService', () => {
 
     warn.mockRestore();
   });
+
+  it('rejects Iroha network descriptors without an exact registry chain id', async () => {
+    const unknown = irohaNetwork('Taira', 'taira-like-but-unknown');
+    const { state } = createState([unknown]);
+    const clientFactory = vi.fn();
+    const service = new IrohaBalanceService(state, clientFactory);
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        irohaAddress: TAIRA_ACCOUNT_ID,
+        networks: ['Taira'],
+      })
+    ).rejects.toThrow('unsupported_iroha_chain_id:taira-like-but-unknown');
+    expect(clientFactory).not.toHaveBeenCalled();
+  });
 });
 
 describe('BalanceService Iroha routing', () => {
   it('routes Iroha wallet balance refreshes to IrohaBalanceService', async () => {
     const state = { networkService: {}, timeoutService: {} } as unknown as State;
     const balanceService = new BalanceService(state);
-    const fetchBalance = vi.fn().mockResolvedValue([
-      { assetId: TAIRA_XOR_ASSET_ID, balance: '1', network: 'Taira' },
-    ]);
+    const fetchBalance = vi.fn().mockResolvedValue([{ assetId: TAIRA_XOR_ASSET_ID, balance: '1', network: 'Taira' }]);
 
     balanceService.irohaBalanceService = { fetchBalance } as never;
 

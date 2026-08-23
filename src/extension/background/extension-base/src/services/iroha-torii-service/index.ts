@@ -8,6 +8,7 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 const DEFAULT_SUBMIT_WAIT_TIMEOUT_MS = 120_000;
 const DEFAULT_SUBMIT_WAIT_POLL_INTERVAL_MS = 500;
 const MAX_RESPONSE_BYTES = 1_048_576;
+const MAX_IROHA_DATASPACE_ID = (1n << 64n) - 1n;
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -67,10 +68,11 @@ type IrohaToriiDirectRequestOptions = IrohaToriiRequestOptions & {
 };
 
 type IrohaToriiAssetDefinitionsOptions = IrohaToriiDirectRequestOptions & {
-  assetId?: string;
   limit?: number;
   offset?: number;
 };
+
+type IrohaToriiAssetDefinitionOptions = IrohaToriiDirectRequestOptions;
 
 type IrohaToriiTransactionStatusScope = 'local' | 'auto' | 'global';
 
@@ -91,6 +93,8 @@ type IrohaToriiFanoutSummary = {
   unavailable: number;
   notFound: number;
 };
+
+type IrohaToriiFanoutPolicy = 'required' | 'optional';
 
 type IrohaMcpCapabilities = {
   protocolVersion: string;
@@ -540,23 +544,36 @@ class IrohaToriiWalletClient {
         ...jsonAcceptArg(options),
         ...instructionsListArgs(options, this.network),
       },
-      options
+      options,
+      'optional'
     );
   }
 
   async getAssetDefinitions<TBody = JsonValue>(
     options: IrohaToriiAssetDefinitionsOptions = {}
   ): Promise<IrohaToriiRouteResponse<TBody>> {
-    const { assetId, limit, offset, ...requestOptions } = options;
+    const { limit, offset, ...requestOptions } = options;
     const query = new URLSearchParams();
 
-    if (assetId !== undefined) query.set('asset_id', normalizeAssetDefinitionId(assetId, this.network));
     if (limit !== undefined) query.set('limit', String(normalizeInteger(limit, 'invalid_limit', 1, 500)));
     if (offset !== undefined) query.set('offset', String(normalizeInteger(offset, 'invalid_offset', 0, 1_000_000)));
 
     const suffix = query.size ? `?${query.toString()}` : '';
 
     return this.directHttp<TBody>('GET', `/v1/assets/definitions${suffix}`, requestOptions);
+  }
+
+  async getAssetDefinition<TBody = JsonValue>(
+    assetId: string,
+    options: IrohaToriiAssetDefinitionOptions = {}
+  ): Promise<IrohaToriiRouteResponse<TBody>> {
+    const normalizedAssetId = normalizeAssetDefinitionId(assetId, this.network);
+
+    return this.directHttp<TBody>(
+      'GET',
+      `/v1/assets/definitions/${encodeURIComponent(normalizedAssetId)}`,
+      options
+    );
   }
 
   async getTransactionStatus<TBody = JsonValue>(
@@ -612,11 +629,12 @@ class IrohaToriiWalletClient {
   private async callReadRoute<TBody>(
     toolName: string,
     args: JsonObject,
-    options: IrohaToriiRequestOptions
+    options: IrohaToriiRequestOptions,
+    fanoutPolicy: IrohaToriiFanoutPolicy = 'required'
   ): Promise<IrohaToriiRouteResponse<TBody>> {
     const result = await this.client.callTool<IrohaToriiRouteStructuredContent<TBody>>(toolName, args, options);
 
-    return normalizeRouteResponse<TBody>(result.structuredContent, toolName);
+    return normalizeRouteResponse<TBody>(result.structuredContent, toolName, fanoutPolicy);
   }
 
   private async directHttp<TBody>(
@@ -739,8 +757,8 @@ function instructionsListArgs(options: IrohaToriiInstructionsListOptions, networ
   }
   if (options.block !== undefined) args.block = normalizeInteger(options.block, 'invalid_block', 1, 1_000_000_000);
   if (options.kind !== undefined) args.kind = normalizeRouteString(options.kind, 'invalid_instruction_kind');
-  if (options.assetId !== undefined) args.asset_id = normalizeAssetDefinitionId(options.assetId, network);
-  if (options.page !== undefined) args.page = normalizeInteger(options.page, 'invalid_page', 0, 1_000_000);
+  if (options.assetId !== undefined) args.asset_id = normalizeIrohaAssetId(options.assetId, network);
+  if (options.page !== undefined) args.page = normalizeInteger(options.page, 'invalid_page', 1, 1_000_000);
   if (options.perPage !== undefined) args.per_page = normalizeInteger(options.perPage, 'invalid_per_page', 1, 500);
   if (options.query !== undefined) args.query = normalizeJsonObject(options.query, 'invalid_query');
 
@@ -773,7 +791,11 @@ function normalizeBatchRouteResponse<TBody>(
   return normalizeRouteResponse<TBody>(entry.result.structuredContent, toolName);
 }
 
-function normalizeRouteResponse<TBody>(structuredContent: unknown, toolName: string): IrohaToriiRouteResponse<TBody> {
+function normalizeRouteResponse<TBody>(
+  structuredContent: unknown,
+  toolName: string,
+  fanoutPolicy: IrohaToriiFanoutPolicy = 'required'
+): IrohaToriiRouteResponse<TBody> {
   if (!isRecord(structuredContent) || Array.isArray(structuredContent)) {
     throw new IrohaToriiMcpError('invalid_route_response', undefined, structuredContent, undefined, { toolName });
   }
@@ -802,7 +824,7 @@ function normalizeRouteResponse<TBody>(structuredContent: unknown, toolName: str
 
   const normalizedHeaders = normalizeRouteHeaders(headers);
 
-  assertCompleteFanout(normalizedHeaders, status, structuredContent, toolName);
+  assertCompleteFanout(normalizedHeaders, status, structuredContent, toolName, fanoutPolicy);
 
   return {
     status,
@@ -812,7 +834,13 @@ function normalizeRouteResponse<TBody>(structuredContent: unknown, toolName: str
   };
 }
 
-function assertCompleteFanout(headers: Record<string, string>, status: number, body: unknown, toolName: string): void {
+function assertCompleteFanout(
+  headers: Record<string, string>,
+  status: number,
+  body: unknown,
+  toolName: string,
+  policy: IrohaToriiFanoutPolicy
+): void {
   const headerNames = {
     attempted: 'x-iroha-fanout-routes-attempted',
     succeeded: 'x-iroha-fanout-routes-succeeded',
@@ -822,6 +850,8 @@ function assertCompleteFanout(headers: Record<string, string>, status: number, b
     notFound: 'x-iroha-fanout-routes-not-found',
   } as const;
   const present = Object.values(headerNames).filter((name) => Object.hasOwn(headers, name));
+
+  if (policy === 'optional' && present.length === 0) return;
 
   if (present.length !== Object.keys(headerNames).length) {
     throw new IrohaToriiMcpError('invalid_fanout_headers', status, body, undefined, { toolName, headers });
@@ -985,6 +1015,27 @@ function normalizeAssetDefinitionId(value: unknown, network: IrohaNetworkKey): s
   }
 
   return normalized;
+}
+
+function normalizeIrohaAssetId(value: unknown, network: IrohaNetworkKey): string {
+  const normalized = normalizeRouteString(value, 'invalid_asset_id');
+  const parts = normalized.split('#');
+
+  if (parts.length !== 2 && parts.length !== 3) throw new IrohaToriiMcpError('invalid_asset_id');
+
+  const [definition, account, scope] = parts;
+  const normalizedDefinition = normalizeAssetDefinitionId(definition, network);
+  const normalizedAccount = normalizeIrohaAccountId(account, network);
+
+  if (scope === undefined) return `${normalizedDefinition}#${normalizedAccount}`;
+
+  const dataspace = scope.match(/^dataspace:(0|[1-9]\d*)$/u)?.[1];
+
+  if (!dataspace || dataspace.length > 20 || BigInt(dataspace) > MAX_IROHA_DATASPACE_ID) {
+    throw new IrohaToriiMcpError('invalid_asset_id');
+  }
+
+  return `${normalizedDefinition}#${normalizedAccount}#dataspace:${dataspace}`;
 }
 
 function normalizeMcpEndpoint(baseUrl: string | null): string {
@@ -1224,6 +1275,7 @@ export {
   type IrohaMcpToolResult,
   type IrohaMcpToolsList,
   type IrohaToriiAccountAssetsOptions,
+  type IrohaToriiAssetDefinitionOptions,
   type IrohaToriiDirectRequestOptions,
   type IrohaToriiInstructionsListOptions,
   type IrohaToriiMcpClientOptions,

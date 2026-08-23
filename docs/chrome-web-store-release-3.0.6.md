@@ -87,6 +87,9 @@ source commit, and writes a non-secret
 `untagged-candidate`. The production build forcibly disables test-only, smoke,
 Bitcoin-send, and Iroha-send flags and the artifact audit verifies those values
 in `extension-build-metadata.json`.
+The runner isolates Vitest and development-extension gates under
+`NODE_ENV=test`; credentialed production builds and their smoke remain under
+the audited `NODE_ENV=production` release environment.
 
 After the reviewed merge commit is tagged `3.0.6` or `v3.0.6`, rerun the exact
 tagged artifact gate:

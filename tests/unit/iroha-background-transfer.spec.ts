@@ -31,9 +31,7 @@ import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
 
-const fixture = JSON.parse(
-  readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')
-) as {
+const fixture = JSON.parse(readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')) as {
   vectors: Array<{
     mnemonic: string;
     expected: {
@@ -58,6 +56,14 @@ const TAIRA_CHAIN_ID = 'fc56984b-2be7-431d-840e-21514d1883f0';
 const TAIRA_XOR_ASSET_ID = '6TEAJqbb8oEPmLncoNiMRbLEK6tw';
 const ROUTE_GOVERNANCE_ACTION_HASH = `sha256:${'33'.repeat(32)}`;
 const WALLET_COMMIT = '44'.repeat(20);
+const COMPLETE_FANOUT_HEADERS = {
+  'x-iroha-fanout-routes-attempted': '1',
+  'x-iroha-fanout-routes-succeeded': '1',
+  'x-iroha-fanout-routes-failed': '0',
+  'x-iroha-fanout-routes-denied': '0',
+  'x-iroha-fanout-routes-unavailable': '0',
+  'x-iroha-fanout-routes-not-found': '0',
+};
 
 function irohaNetwork(
   name: string,
@@ -149,13 +155,13 @@ function submitAndWaitResponse(requestId: number, receiptHash = HASH): Response 
         elapsed_ms: 500,
         submit: {
           status: 202,
-          headers: {},
+          headers: COMPLETE_FANOUT_HEADERS,
           content_type: 'application/json',
           body: { tx_hash_hex: receiptHash },
         },
         final_status: {
           status: 200,
-          headers: {},
+          headers: COMPLETE_FANOUT_HEADERS,
           content_type: 'application/json',
           body: { hash: HASH, status: { kind: 'Applied' } },
         },
@@ -213,9 +219,7 @@ describe('background Iroha transfer adapter', () => {
     const prepared = prepareIrohaTransfer(transferParams(state));
 
     expect(isIrohaTransferEnabled()).toBe(true);
-    await expect(estimateIrohaTransferFee(transferParams(state))).rejects.toThrow(
-      'iroha_fee_estimation_unavailable'
-    );
+    await expect(estimateIrohaTransferFee(transferParams(state))).rejects.toThrow('iroha_fee_estimation_unavailable');
     expect(prepared).toMatchObject({
       amount: '12.34',
       assetDefinitionId: TAIRA_XOR_ASSET_ID,
@@ -261,9 +265,7 @@ describe('background Iroha transfer adapter', () => {
   });
 
   it('rejects malformed amounts, assets, missing sources, and malformed network config', () => {
-    expect(normalizeIrohaTransferAmount('0.0000000000000000000000000001')).toBe(
-      '0.0000000000000000000000000001'
-    );
+    expect(normalizeIrohaTransferAmount('0.0000000000000000000000000001')).toBe('0.0000000000000000000000000001');
     expect(() => normalizeIrohaTransferAmount(' 1')).toThrow('invalid_iroha_amount');
     expect(() => normalizeIrohaTransferAmount('0')).toThrow('invalid_iroha_amount');
     expect(() => normalizeIrohaTransferAmount('1.00000000000000000000000000000')).toThrow('invalid_iroha_amount');
@@ -306,18 +308,14 @@ describe('background Iroha transfer adapter', () => {
     expect(() => resolveIrohaTransferSource(createState({ seed: '' }), TAIRA_ACCOUNT_ID, 'taira')).toThrow(
       'iroha_mnemonic_unavailable'
     );
-    expect(() => getIrohaNetworkKey(irohaNetwork('Unknown', 'iroha:unknown'))).toThrow(
+    expect(() => getIrohaNetworkKey(irohaNetwork('Unknown', 'iroha:unknown'))).toThrow('unsupported_iroha_network');
+    expect(() => getIrohaNetworkKey(irohaNetwork('Taira', TAIRA_CHAIN_ID, { chainDiscriminant: 753 }))).toThrow(
+      'ambiguous_iroha_network'
+    );
+    expect(() => getIrohaNetworkKey(irohaNetwork('Nexus', 'sora:nexus:global', { chainDiscriminant: 999 }))).toThrow(
       'unsupported_iroha_network'
     );
-    expect(() =>
-      getIrohaNetworkKey(irohaNetwork('Taira', TAIRA_CHAIN_ID, { chainDiscriminant: 753 }))
-    ).toThrow('ambiguous_iroha_network');
-    expect(() =>
-      getIrohaNetworkKey(irohaNetwork('Nexus', 'sora:nexus:global', { chainDiscriminant: 999 }))
-    ).toThrow('unsupported_iroha_network');
-    expect(normalizeIrohaToriiBaseUrl('https://minamoto.sora.org/v1/mcp')).toBe(
-      'https://minamoto.sora.org/v1/mcp'
-    );
+    expect(normalizeIrohaToriiBaseUrl('https://minamoto.sora.org/v1/mcp')).toBe('https://minamoto.sora.org/v1/mcp');
     expect(normalizeIrohaToriiBaseUrl('http://[::1]:8080')).toBe('http://[::1]:8080');
     expect(() => normalizeIrohaToriiBaseUrl('ftp://localhost/torii')).toThrow('invalid_iroha_torii_url');
     expect(() => normalizeIrohaToriiBaseUrl('https://user:secret@minamoto.sora.org')).toThrow(
@@ -426,9 +424,9 @@ describe('background Iroha transfer adapter', () => {
     ];
 
     for (const metadata of invalidMetadata) {
-      await expect(
-        codec.buildAndSignTransfer(transferCodecInput({ metadata }))
-      ).rejects.toThrow('invalid_iroha_wallet_smoke_metadata');
+      await expect(codec.buildAndSignTransfer(transferCodecInput({ metadata }))).rejects.toThrow(
+        'invalid_iroha_wallet_smoke_metadata'
+      );
     }
 
     expect(accessorCalls).toBe(0);
@@ -465,8 +463,9 @@ describe('background Iroha transfer adapter', () => {
       buildTransferAssetPayload: vi.fn(() => ({ payloadBytes: new Uint8Array([0xaa, 0xbb]) })),
       finalizeSignedTransaction: finalized,
     };
-    (globalThis as typeof globalThis & { __IROHA_NATIVE_BINDING__?: NativeBrowserTransactionBinding })
-      .__IROHA_NATIVE_BINDING__ = binding;
+    (
+      globalThis as typeof globalThis & { __IROHA_NATIVE_BINDING__?: NativeBrowserTransactionBinding }
+    ).__IROHA_NATIVE_BINDING__ = binding;
 
     await expect(loadProductionIrohaTransferCodec()).resolves.toBeUndefined();
 
@@ -718,21 +717,16 @@ describe('background Iroha transfer adapter', () => {
       [ROUTE_GOVERNANCE_ACTION_HASH, 'AA'.repeat(20)],
       [ROUTE_GOVERNANCE_ACTION_HASH, '00'.repeat(20)],
     ]) {
-      await expect(
-        makeIrohaWalletSmokeTransfer(nexusParams, routeHash, commit, codec)
-      ).rejects.toThrow('invalid_iroha_wallet_smoke_metadata');
+      await expect(makeIrohaWalletSmokeTransfer(nexusParams, routeHash, commit, codec)).rejects.toThrow(
+        'invalid_iroha_wallet_smoke_metadata'
+      );
     }
 
     const tairaState = createState();
 
     rejectedRouteStates.push(tairaState);
     await expect(
-      makeIrohaWalletSmokeTransfer(
-        transferParams(tairaState),
-        ROUTE_GOVERNANCE_ACTION_HASH,
-        WALLET_COMMIT,
-        codec
-      )
+      makeIrohaWalletSmokeTransfer(transferParams(tairaState), ROUTE_GOVERNANCE_ACTION_HASH, WALLET_COMMIT, codec)
     ).rejects.toThrow('iroha_wallet_smoke_requires_nexus');
 
     for (const chainId of ['attacker:nexus:chain', 'SORA:NEXUS:GLOBAL']) {
@@ -964,10 +958,9 @@ describe('background Iroha transfer adapter', () => {
     expect(Object.isFrozen(draftInputs[0].metadata)).toBe(true);
 
     await expect(
-      codec.buildAndSignTransfer(transferCodecInput({ metadata: createIrohaWalletSmokeMetadata(
-        ROUTE_GOVERNANCE_ACTION_HASH,
-        WALLET_COMMIT
-      ) }))
+      codec.buildAndSignTransfer(
+        transferCodecInput({ metadata: createIrohaWalletSmokeMetadata(ROUTE_GOVERNANCE_ACTION_HASH, WALLET_COMMIT) })
+      )
     ).rejects.toThrow('iroha_wallet_smoke_requires_nexus');
     expect(draftInputs).toHaveLength(1);
     expect(signEd25519).toHaveBeenCalledTimes(1);
@@ -1117,9 +1110,9 @@ describe('background Iroha transfer adapter', () => {
     await expect(
       makeCodec({ signingPublicKey: new Uint8Array(32).fill(0xff) }).buildAndSignTransfer(input)
     ).rejects.toThrow('iroha_signable_public_key_mismatch');
-    await expect(
-      makeCodec({}, () => '33'.repeat(32)).buildAndSignTransfer(input)
-    ).rejects.toThrow('iroha_payload_hash_mismatch');
+    await expect(makeCodec({}, () => '33'.repeat(32)).buildAndSignTransfer(input)).rejects.toThrow(
+      'iroha_payload_hash_mismatch'
+    );
     expect(transactionCodec.finalizeSignedTransaction).not.toHaveBeenCalled();
   });
 });

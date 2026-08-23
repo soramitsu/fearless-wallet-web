@@ -59,9 +59,17 @@ function runCommand(command, arguments_, label) {
 }
 
 function runYarn(yarnPath, script, ...arguments_) {
+  runYarnWithEnvironment(yarnPath, {}, script, ...arguments_);
+}
+
+export function createCommandEnvironment(overrides = {}) {
+  return { ...process.env, ...overrides };
+}
+
+function runYarnWithEnvironment(yarnPath, environmentOverrides, script, ...arguments_) {
   const result = spawnYarn(yarnPath, [script, ...arguments_], {
     cwd: rootDir,
-    env: process.env,
+    env: createCommandEnvironment(environmentOverrides),
     stdio: 'inherit',
   });
   if (result.error) fail(`cannot run yarn ${script}: ${result.error.message}`);
@@ -122,6 +130,7 @@ function runAutomatedReleaseGates(yarnPath) {
 
   const debtMarker = ['to', 'do'].join('');
 
+  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin']);
   for (const [script, ...arguments_] of [
     ['scripts/test-branch-flow-audit.sh'],
     ['scripts/audit-branch-flow.sh'],
@@ -155,7 +164,12 @@ function runAutomatedReleaseGates(yarnPath) {
     ['test:bitcoin-broadcast-evidence-audit'],
     ['audit:bitcoin-broadcast-evidence'],
   ]) {
-    runYarn(yarnPath, script, ...arguments_);
+    runYarnWithEnvironment(
+      yarnPath,
+      testEnvironmentScripts.has(script) ? { NODE_ENV: 'test' } : {},
+      script,
+      ...arguments_
+    );
   }
 }
 
@@ -239,6 +253,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
       productionChromeSmoke: true,
       tagRequired: requireTag,
       tagVerified: sourceAfter.tag !== null,
+      testEnvironmentIsolated: true,
       vendoredIrohaSdkAudit: true,
     },
   };

@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { spawnYarn } from './prepare-chrome-release.mjs';
+import { createCommandEnvironment, spawnYarn } from './prepare-chrome-release.mjs';
 
 const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-prepare-release-test-'));
 
@@ -25,7 +25,15 @@ try {
   assert.equal(JavaScriptResult.status, 0);
   assert.equal(JavaScriptResult.stdout.trim(), 'javascript:--version');
 
-  console.log('Chrome release preparation runner self-test passed (2 checks)');
+  const originalNodeEnvironment = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  const testEnvironment = createCommandEnvironment({ NODE_ENV: 'test' });
+  assert.equal(testEnvironment.NODE_ENV, 'test');
+  assert.equal(process.env.NODE_ENV, 'production');
+  if (originalNodeEnvironment === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = originalNodeEnvironment;
+
+  console.log('Chrome release preparation runner self-test passed (4 checks)');
 } finally {
   await fs.rm(temporaryDirectory, { recursive: true, force: true });
 }

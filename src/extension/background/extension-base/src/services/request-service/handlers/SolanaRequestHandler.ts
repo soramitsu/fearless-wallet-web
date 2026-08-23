@@ -422,6 +422,13 @@ function normalizeSolanaSignAndSendOptions(
     normalized.maxRetries = options.maxRetries;
   }
 
+  if (options.minContextSlot !== undefined) {
+    if (!Number.isSafeInteger(options.minContextSlot) || options.minContextSlot < 0) {
+      throw new Error('Invalid Solana minimum context slot');
+    }
+    normalized.minContextSlot = options.minContextSlot;
+  }
+
   if (options.preflightCommitment !== undefined) {
     if (
       options.preflightCommitment !== 'processed' &&

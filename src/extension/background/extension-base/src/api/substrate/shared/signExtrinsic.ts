@@ -8,10 +8,11 @@ interface SignExtrinsicProps {
   apiProps: ApiProps;
   extrinsic: SubmittableExtrinsic<'promise'>;
   isMobile: boolean;
+  finalGuard?: () => void;
 }
 
 export const signExtrinsic = async (
-  { address, apiProps, extrinsic, isMobile }: SignExtrinsicProps,
+  { address, apiProps, extrinsic, isMobile, finalGuard }: SignExtrinsicProps,
   state: State
 ): Promise<void> => {
   const keyPair = state.keyringService.getPair(address);
@@ -20,5 +21,6 @@ export const signExtrinsic = async (
   const registry = apiProps.api!.registry;
   const signer = new KeyringSigner({ registry, keyPair, isMobile });
 
+  finalGuard?.();
   await extrinsic.signAsync(address, { signer, nonce });
 };

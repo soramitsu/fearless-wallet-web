@@ -18,6 +18,14 @@
     <Scroll>
       <div class="swap">
         <div class="swap-content">
+          <div v-if="capabilityReasons.length && !showSettings" class="capability-state" data-testid="polkaswapCapability">
+            <Icon icon="info" className="capability-state__icon" :hover="false" />
+            <div>
+              <strong>Polkaswap setup required</strong>
+              <span v-for="reason in capabilityReasons" :key="reason">{{ reason }}</span>
+            </div>
+          </div>
+
           <PolkaswapSettings
             v-if="showSettings"
             :marketType="marketType"
@@ -175,6 +183,7 @@
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"
       :tx="tx"
+      :disclaimerAccepted="!accountsStore.showPolkaswapAlert"
       extrinsicType="swap"
       @close="confirmationPasswordPopupClose"
     />
@@ -185,6 +194,7 @@
 import { defineComponent } from 'vue';
 
 import { FPNumber } from '@sora-substrate/util';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
@@ -206,6 +216,8 @@ import { addNumbers } from '@/helpers/numbers';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useExtensionStore } from '@/stores/extension';
+import { getPolkaswapCapabilityReasons } from '@/defi/polkaswapCapability';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
@@ -225,6 +237,7 @@ export default defineComponent({ name: 'SwapForm',
       soraNetworkName: SORA_NETWORK_NAME,
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
+      extensionStore: useExtensionStore(),
       step: 1,
       slippage: 0.5,
       temporarySlippage: 0.5,
@@ -248,6 +261,69 @@ export default defineComponent({ name: 'SwapForm',
     };
   },
   computed: {
+    soraNetwork() {
+      return this.networksStore.allNetworks.find(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
+    },
+    selectedAccount() {
+      return this.accountsStore.accounts.find(({ address }) => address === this.accountsStore.selectedWallet.address);
+    },
+    soraCurrencies() {
+      return this.accountsStore.balances.filter(({ balances }) =>
+        balances.some(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase())
+      );
+    },
+    xorCurrencyForGate() {
+      return this.soraCurrencies.find(({ balances }) =>
+        balances.some(
+          ({ id, isUtility, name }) =>
+            name.toLowerCase() === this.soraNetworkName.toLowerCase() &&
+            (isUtility || id.toLowerCase() === SORA_XOR_ASSET_ID.toLowerCase())
+        )
+      );
+    },
+    hasUsableAssets() {
+      const xorBalance = this.xorCurrencyForGate?.balances.find(
+        ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
+      );
+      const hasXorForFees = new FPNumber(xorBalance?.transferable ?? '0').isGreaterThan(FPNumber.ZERO);
+      const hasPositiveAsset = this.soraCurrencies.some(({ balances }) => {
+        const balance = balances.find(({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase());
+
+        return new FPNumber(balance?.transferable ?? '0').isGreaterThan(FPNumber.ZERO);
+      });
+
+      return this.soraCurrencies.length >= 2 && hasXorForFees && hasPositiveAsset;
+    },
+    runtimeAvailable() {
+      if (!this.soraNetwork || this.soraNetwork.disabled) return false;
+
+      return this.soraNetwork.active && this.soraNetwork.networkStatus !== NETWORK_STATUS.DISCONNECTED;
+    },
+    accountSignable() {
+      if (!this.selectedAccount || !this.soraCurrencies.length) return false;
+
+      return !(
+        this.selectedAccount.isExternal ||
+        this.selectedAccount.isInjected ||
+        this.selectedAccount.isHardware
+      );
+    },
+    polkaswapActionEnabled() {
+      return this.extensionStore.features?.actions?.polkaswap === true;
+    },
+    capabilityReasons() {
+      return getPolkaswapCapabilityReasons({
+        hasSoraAccount: Boolean(this.selectedAccount && this.soraCurrencies.length),
+        signable: this.accountSignable,
+        runtimeAvailable: this.runtimeAvailable,
+        usableAssets: this.hasUsableAssets,
+        disclaimerAccepted: !this.accountsStore.showPolkaswapAlert,
+        actionEnabled: this.polkaswapActionEnabled,
+      });
+    },
+    canMutate() {
+      return this.capabilityReasons.length === 0;
+    },
     showBackIcon() {
       return !this.showSettings;
     },
@@ -406,7 +482,11 @@ export default defineComponent({ name: 'SwapForm',
           return this.step === 1 ? 'assets.preview' : 'common.confirm';
     },
     buttonPreviewDisabled() {
-      if (this.step === 2 || this.showSettings) return false;
+      if (this.showSettings) return false;
+
+      if (!this.canMutate) return true;
+
+      if (this.step === 2) return false;
 
           if (
             this.fee === '' ||
@@ -495,6 +575,8 @@ export default defineComponent({ name: 'SwapForm',
           this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
     },
     async checkSwap() {
+      if (!this.runtimeAvailable || !this.hasUsableAssets) return;
+
       if (this.sendAssetId === '' || this.receiveAssetId === '') {
             if (this.isExchangeB) this.sendAmount = '';
             else this.receiveAmount = '';
@@ -597,7 +679,8 @@ export default defineComponent({ name: 'SwapForm',
             this.showSettings = false;
 
             await this.checkSwap();
-          } else if (this.step === 1) this.step += 1;
+          } else if (!this.canMutate) return;
+          else if (this.step === 1) this.step += 1;
           else this.showConfirmationPasswordPopup = true;
     },
     resetSettings() {
@@ -707,6 +790,36 @@ export default defineComponent({ name: 'SwapForm',
 
 .swap-content {
   color: $default-white;
+
+  .capability-state {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 12px;
+    border: $default-border;
+    border-radius: 10px;
+    background: $secondary-background-color;
+    text-align: left;
+
+    &__icon {
+      width: 22px;
+      color: $grayish-white;
+    }
+
+    div,
+    span {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    span {
+      color: $gray-color;
+      font-size: 0.72rem;
+      line-height: 1.3;
+    }
+  }
 
   .receive-input {
     margin: 7px 0 14px;

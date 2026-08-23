@@ -19,13 +19,16 @@ export default class EvmBalanceService {
 
     if (ethereumAddress === '') return [];
 
-    const filteredNetworks = this.state.networkService.activeNetworkByEcosystem.evm.filter(({ name }) =>
-      networks?.includes(name.toLowerCase())
+    const requested = new Set((networks ?? []).map((name) => name.toLowerCase()));
+    const filteredNetworks = this.state.networkService.networkValues.filter(
+      ({ ecosystem, name }) => ecosystem === 'ethereum' && requested.has(name.toLowerCase())
     );
 
     const promises: Promise<ResponseBalanceRequest[]>[] = filteredNetworks.map(
       async ({ assets, name, networkStatus }) => {
         const api = this.state.getEvmApi(name);
+
+        if (!api) return [];
 
         const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
         const timeDiff = Date.now() - timeout;
@@ -34,7 +37,7 @@ export default class EvmBalanceService {
         if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return [];
 
         // Save timeout [network api][ethereum address]
-        if (api) api.timeout[ethereumAddress] = Date.now();
+        api.timeout[ethereumAddress] = Date.now();
 
         if (assetId) {
           const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, assetId, this.state);
@@ -109,6 +112,7 @@ export default class EvmBalanceService {
 
       return utilityBalance;
     } catch {
+      const cachedBalance = this.getCachedBalance(address, networkKey, id);
       state.balanceService.setBalanceItem(
         networkKey,
         {
@@ -127,7 +131,7 @@ export default class EvmBalanceService {
 
       this.state.networkService.evmApiHandler.refreshEvmApi(networkKey);
 
-      return '0';
+      return cachedBalance ?? '0';
     }
   }
 
@@ -166,6 +170,7 @@ export default class EvmBalanceService {
 
       return balance;
     } catch {
+      const cachedBalance = this.getCachedBalance(address, networkKey, id);
       state.balanceService.setBalanceItem(
         networkKey,
         {
@@ -182,7 +187,15 @@ export default class EvmBalanceService {
         address
       );
 
-      return '0';
+      return cachedBalance ?? '0';
     }
+  }
+
+  private getCachedBalance(address: string, network: string, assetId: string): string | undefined {
+    const balance = (this.state.balanceService.balanceMap[address] ?? [])
+      .flatMap(({ balances }) => balances)
+      .find(({ id, name }) => id === assetId && name.toLowerCase() === network.toLowerCase());
+
+    return balance?.transferable ?? balance?.total ?? balance?.free;
   }
 }

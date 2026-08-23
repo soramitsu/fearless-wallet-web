@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
 import nodeProcess from 'node:process';
+import packageJson from '../../package.json';
 
 const require = createRequire(import.meta.url);
 const makeManifest = require('../../src/extension/makeManifest.cjs') as (browser: string) => Record<string, unknown>;
@@ -9,8 +10,11 @@ describe('extension manifest generation', () => {
   const originalOauthClientId = nodeProcess.env.OAUTH_CLIENT_ID;
 
   afterEach(() => {
-    nodeProcess.env.EXTENSION_PUBLIC_KEY = originalPublicKey;
-    nodeProcess.env.OAUTH_CLIENT_ID = originalOauthClientId;
+    if (originalPublicKey === undefined) delete nodeProcess.env.EXTENSION_PUBLIC_KEY;
+    else nodeProcess.env.EXTENSION_PUBLIC_KEY = originalPublicKey;
+
+    if (originalOauthClientId === undefined) delete nodeProcess.env.OAUTH_CLIENT_ID;
+    else nodeProcess.env.OAUTH_CLIENT_ID = originalOauthClientId;
   });
 
   it('generates a hardened chromium mv3 manifest', () => {
@@ -21,11 +25,15 @@ describe('extension manifest generation', () => {
     const csp = (manifest.content_security_policy as { extension_pages: string }).extension_pages;
 
     expect(manifest.manifest_version).toBe(3);
+    expect(manifest.version).toBe(packageJson.version);
+    expect(manifest.description).toBe(packageJson.description);
     expect(manifest.background).toEqual({ service_worker: 'background.js', type: 'module' });
     expect(manifest).not.toHaveProperty('browser_action');
     expect(manifest.host_permissions).toEqual(['<all_urls>']);
+    expect(manifest.permissions).toContain('alarms');
     expect(manifest.permissions).not.toContain('*://www.googleapis.com/*');
     expect(manifest.key).toBe('abcdefghi');
+    expect(manifest.minimum_chrome_version).toBe('102');
     expect(manifest.oauth2).toEqual({
       scopes: ['https://www.googleapis.com/auth/drive.appdata'],
       client_id: 'oauth-client',
@@ -40,6 +48,7 @@ describe('extension manifest generation', () => {
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.background).toEqual({ scripts: ['background.js'], type: 'module' });
     expect(manifest.host_permissions).toEqual(['<all_urls>']);
+    expect(manifest.permissions).toContain('alarms');
     expect(manifest.permissions).not.toContain('*://www.googleapis.com/*');
     expect(manifest.browser_specific_settings).toEqual({
       gecko: {
@@ -62,7 +71,7 @@ describe('extension manifest generation', () => {
 
     expect(manifest).not.toHaveProperty('key');
     expect(manifest).not.toHaveProperty('oauth2');
-    expect(manifest.minimum_chrome_version).toBe('92');
+    expect(manifest.minimum_chrome_version).toBe('102');
   });
 
   it('exposes only expected runtime scripts to page contexts', () => {

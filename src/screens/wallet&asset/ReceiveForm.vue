@@ -128,6 +128,19 @@ export default defineComponent({ name: 'ReceiveForm' ,
     address() {
       if (this.accountsStore.selectedWallet.address === '') return '';
 
+      if (BaseApi.isBitcoinNetwork(this.selectedNetwork)) {
+        const balance = this.accountsStore.balances
+          .flatMap(({ balances }) => balances)
+          .find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()) as
+          | { bitcoinNextReceiveAddress?: string }
+          | undefined;
+        const nextReceiveAddress = balance?.bitcoinNextReceiveAddress;
+
+        if (nextReceiveAddress && BaseApi.validateAddress(nextReceiveAddress, this.selectedNetwork)) {
+          return nextReceiveAddress;
+        }
+      }
+
           return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
     },
     cutAddress() {

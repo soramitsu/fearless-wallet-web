@@ -4,6 +4,10 @@ import { parseIrohaI105Address } from '@/util/iroha';
 const IROHA_MCP_PROTOCOL_VERSION = '2025-06-18';
 const DEFAULT_MCP_PATH = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.mcpPath;
 const MAX_BATCH_CALLS = 25;
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_SUBMIT_WAIT_TIMEOUT_MS = 120_000;
+const DEFAULT_SUBMIT_WAIT_POLL_INTERVAL_MS = 500;
+const MAX_RESPONSE_BYTES = 1_048_576;
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -25,7 +29,9 @@ type IrohaToriiMcpClientOptions = {
   endpointUrl?: string;
   fetchFn?: FetchLike;
   headers?: IrohaToriiRuntimeHeaders;
+  maxResponseBytes?: number;
   requireIrohaToolPrefix?: boolean;
+  timeoutMs?: number;
 };
 
 type IrohaToriiRequestOptions = {
@@ -60,14 +66,30 @@ type IrohaToriiDirectRequestOptions = IrohaToriiRequestOptions & {
   baseUrl?: string | null;
 };
 
+type IrohaToriiAssetDefinitionsOptions = IrohaToriiDirectRequestOptions & {
+  assetId?: string;
+  limit?: number;
+  offset?: number;
+};
+
 type IrohaToriiTransactionStatusScope = 'local' | 'auto' | 'global';
 
 type IrohaToriiTransactionStatusOptions = IrohaToriiDirectRequestOptions & {
   scope?: IrohaToriiTransactionStatusScope;
 };
 
-type IrohaToriiSubmitTransactionOptions = IrohaToriiDirectRequestOptions & {
-  accept?: 'application/json';
+type IrohaToriiSubmitAndWaitOptions = IrohaToriiRequestOptions & {
+  pollIntervalMs?: number;
+  timeoutMs?: number;
+};
+
+type IrohaToriiFanoutSummary = {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  denied: number;
+  unavailable: number;
+  notFound: number;
 };
 
 type IrohaMcpCapabilities = {
@@ -146,6 +168,19 @@ type IrohaToriiRouteResponse<TBody = JsonValue> = {
   body: TBody;
 };
 
+type IrohaSubmitAndWaitResult = {
+  status: number;
+  hash: string;
+  tx_hash: string;
+  terminal_kind: string;
+  terminal_statuses: string[];
+  attempts: number;
+  elapsed_ms: number;
+  submit: IrohaToriiRouteStructuredContent;
+  final_status: IrohaToriiRouteStructuredContent;
+  final?: IrohaToriiRouteStructuredContent;
+};
+
 type JsonRpcResponse<T> = {
   jsonrpc?: '2.0';
   id?: JsonRpcId;
@@ -174,7 +209,9 @@ class IrohaToriiMcpClient {
   readonly endpointUrl: string;
   private readonly fetchFn: FetchLike;
   private readonly defaultHeaders: IrohaToriiRuntimeHeaders;
+  private readonly maxResponseBytes: number;
   private readonly requireIrohaToolPrefix: boolean;
+  private readonly timeoutMs: number;
   private nextRequestId = 1;
 
   constructor(options: IrohaToriiMcpClientOptions = {}) {
@@ -183,7 +220,14 @@ class IrohaToriiMcpClient {
     this.endpointUrl = normalizeMcpEndpoint(baseUrl);
     this.fetchFn = options.fetchFn ?? globalThis.fetch.bind(globalThis);
     this.defaultHeaders = options.headers ?? {};
+    this.maxResponseBytes = normalizeInteger(
+      options.maxResponseBytes ?? MAX_RESPONSE_BYTES,
+      'invalid_max_response_bytes',
+      1,
+      MAX_RESPONSE_BYTES
+    );
     this.requireIrohaToolPrefix = options.requireIrohaToolPrefix ?? true;
+    this.timeoutMs = normalizeInteger(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS, 'invalid_timeout', 1, 300_000);
   }
 
   getCapabilities(options: IrohaToriiRequestOptions = {}): Promise<IrohaMcpCapabilities> {
@@ -195,18 +239,17 @@ class IrohaToriiMcpClient {
   }
 
   async notifyInitialized(options: IrohaToriiRequestOptions = {}): Promise<void> {
-    const response = await this.fetchFn(this.endpointUrl, {
+    const { response, body } = await requestJson(this.fetchFn, this.endpointUrl, {
       method: 'POST',
       headers: this.buildHeaders(options.headers, true),
       body: JSON.stringify({
         jsonrpc: '2.0',
         method: 'notifications/initialized',
       }),
-    });
+    }, this.timeoutMs, this.maxResponseBytes);
 
     if (response.status === 202) return;
 
-    const body = await readResponseBody(response);
     if (!response.ok) {
       throw new IrohaToriiMcpError(`iroha_mcp_http_${response.status}`, response.status, body);
     }
@@ -299,11 +342,10 @@ class IrohaToriiMcpClient {
   }
 
   private async httpGet<T>(options: IrohaToriiRequestOptions): Promise<T> {
-    const response = await this.fetchFn(this.endpointUrl, {
+    const { response, body } = await requestJson(this.fetchFn, this.endpointUrl, {
       method: 'GET',
       headers: this.buildHeaders(options.headers, false),
-    });
-    const body = await readResponseBody(response);
+    }, this.timeoutMs, this.maxResponseBytes);
 
     if (!response.ok) {
       throw new IrohaToriiMcpError(`iroha_mcp_http_${response.status}`, response.status, body);
@@ -313,17 +355,17 @@ class IrohaToriiMcpClient {
   }
 
   private async jsonRpc<T>(method: string, params: JsonObject, options: IrohaToriiRequestOptions): Promise<T> {
-    const response = await this.fetchFn(this.endpointUrl, {
+    const requestId = this.nextRequestId++;
+    const { response, body } = await requestJson(this.fetchFn, this.endpointUrl, {
       method: 'POST',
       headers: this.buildHeaders(options.headers, true),
       body: JSON.stringify({
         jsonrpc: '2.0',
-        id: this.nextRequestId++,
+        id: requestId,
         method,
         params,
       }),
-    });
-    const body = await readResponseBody(response);
+    }, this.timeoutMs, this.maxResponseBytes);
 
     if (!response.ok) {
       throw new IrohaToriiMcpError(`iroha_mcp_http_${response.status}`, response.status, body);
@@ -332,6 +374,12 @@ class IrohaToriiMcpClient {
     if (!isRecord(body)) throw new IrohaToriiMcpError('invalid_jsonrpc_response', response.status, body);
 
     const rpcResponse = body as JsonRpcResponse<T>;
+    if (rpcResponse.jsonrpc !== '2.0' || rpcResponse.id !== requestId) {
+      throw new IrohaToriiMcpError('invalid_jsonrpc_response', response.status, body);
+    }
+    if (Object.hasOwn(rpcResponse, 'result') === Object.hasOwn(rpcResponse, 'error')) {
+      throw new IrohaToriiMcpError('invalid_jsonrpc_response', response.status, body);
+    }
     if (rpcResponse.error) {
       throw new IrohaToriiMcpError(
         rpcResponse.error.message || `iroha_mcp_jsonrpc_${rpcResponse.error.code}`,
@@ -371,8 +419,10 @@ class IrohaToriiWalletClient {
   private readonly client: IrohaToriiMcpClient;
   private readonly defaultHeaders: IrohaToriiRuntimeHeaders;
   private readonly fetchFn: FetchLike;
+  private readonly maxResponseBytes: number;
   private readonly toriiBaseUrl: string | null;
   private readonly network: IrohaNetworkKey;
+  private readonly timeoutMs: number;
 
   constructor(
     options: (Omit<IrohaToriiMcpClientOptions, 'baseUrl'> & {
@@ -384,7 +434,14 @@ class IrohaToriiWalletClient {
     this.network = options.network ?? 'taira';
     this.fetchFn = options.fetchFn ?? globalThis.fetch.bind(globalThis);
     this.defaultHeaders = options.headers ?? {};
+    this.maxResponseBytes = normalizeInteger(
+      options.maxResponseBytes ?? MAX_RESPONSE_BYTES,
+      'invalid_max_response_bytes',
+      1,
+      MAX_RESPONSE_BYTES
+    );
     this.toriiBaseUrl = options.baseUrl ?? UNIVERSAL_WALLET_IROHA_NETWORKS[this.network].toriiBaseUrl;
+    this.timeoutMs = normalizeInteger(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS, 'invalid_timeout', 1, 300_000);
     this.client = options.client ?? createIrohaToriiMcpClient(this.network, options);
   }
 
@@ -411,7 +468,7 @@ class IrohaToriiWalletClient {
       {
         account_id: normalizeIrohaAccountId(accountId, this.network),
         ...jsonAcceptArg(options),
-        ...accountAssetsArgs(options),
+        ...accountAssetsArgs(options, this.network),
       },
       options
     );
@@ -439,7 +496,7 @@ class IrohaToriiWalletClient {
           arguments: {
             account_id: normalizedAccountId,
             ...jsonAcceptArg(options),
-            ...accountAssetsArgs(options),
+            ...accountAssetsArgs(options, this.network),
           },
         },
       ],
@@ -466,15 +523,24 @@ class IrohaToriiWalletClient {
   }
 
   async getAssetDefinitions<TBody = JsonValue>(
-    options: IrohaToriiDirectRequestOptions = {}
-  ): Promise<TBody> {
-    return this.directHttp<TBody>('GET', '/v1/assets/definitions', options);
+    options: IrohaToriiAssetDefinitionsOptions = {}
+  ): Promise<IrohaToriiRouteResponse<TBody>> {
+    const { assetId, limit, offset, ...requestOptions } = options;
+    const query = new URLSearchParams();
+
+    if (assetId !== undefined) query.set('asset_id', normalizeAssetDefinitionId(assetId, this.network));
+    if (limit !== undefined) query.set('limit', String(normalizeInteger(limit, 'invalid_limit', 1, 500)));
+    if (offset !== undefined) query.set('offset', String(normalizeInteger(offset, 'invalid_offset', 0, 1_000_000)));
+
+    const suffix = query.size ? `?${query.toString()}` : '';
+
+    return this.directHttp<TBody>('GET', `/v1/assets/definitions${suffix}`, requestOptions);
   }
 
   async getTransactionStatus<TBody = JsonValue>(
     hash: string,
     options: IrohaToriiTransactionStatusOptions = {}
-  ): Promise<TBody> {
+  ): Promise<IrohaToriiRouteResponse<TBody>> {
     const normalizedHash = normalizeTransactionHash(hash);
     const scope = normalizeTransactionStatusScope(options.scope ?? 'auto');
 
@@ -485,24 +551,40 @@ class IrohaToriiWalletClient {
     );
   }
 
-  async submitTransaction<TBody = JsonValue>(
+  async submitTransactionAndWait(
     noritoPayload: unknown,
-    options: IrohaToriiSubmitTransactionOptions = {}
-  ): Promise<TBody> {
-    if (options.accept !== undefined && options.accept !== 'application/json') {
-      throw new IrohaToriiMcpError('invalid_accept');
-    }
-
-    return this.directHttp<TBody>(
-      'POST',
-      '/v1/pipeline/transactions',
-      options,
-      normalizeNoritoPayload(noritoPayload),
+    expectedHash: string,
+    options: IrohaToriiSubmitAndWaitOptions = {}
+  ): Promise<IrohaSubmitAndWaitResult> {
+    const hash = normalizeTransactionHash(expectedHash);
+    const timeoutMs = normalizeInteger(
+      options.timeoutMs ?? DEFAULT_SUBMIT_WAIT_TIMEOUT_MS,
+      'invalid_timeout',
+      1,
+      300_000
+    );
+    const pollIntervalMs = normalizeInteger(
+      options.pollIntervalMs ?? DEFAULT_SUBMIT_WAIT_POLL_INTERVAL_MS,
+      'invalid_poll_interval',
+      100,
+      60_000
+    );
+    const payload = normalizeNoritoPayload(noritoPayload);
+    const result = await this.client.callTool<IrohaSubmitAndWaitResult>(
+      'iroha.transactions.submit_and_wait',
       {
         accept: 'application/json',
-        'content-type': 'application/x-norito',
-      }
+        body_base64: encodeBase64(payload),
+        hash,
+        poll_interval_ms: pollIntervalMs,
+        status_accept: 'application/json',
+        terminal_statuses: ['Applied'],
+        timeout_ms: timeoutMs,
+      },
+      options
     );
+
+    return normalizeSubmitAndWaitResult(result.structuredContent, hash);
   }
 
   private async callReadRoute<TBody>(
@@ -516,24 +598,35 @@ class IrohaToriiWalletClient {
   }
 
   private async directHttp<TBody>(
-    method: 'GET' | 'POST',
+    method: 'GET',
     pathAndQuery: string,
     options: IrohaToriiDirectRequestOptions,
-    body?: BodyInit,
     contentHeaders: Record<string, string> = {}
-  ): Promise<TBody> {
-    const response = await this.fetchFn(`${this.resolveToriiBaseUrl(options.baseUrl)}${pathAndQuery}`, {
+  ): Promise<IrohaToriiRouteResponse<TBody>> {
+    const { response, body } = await requestJson(
+      this.fetchFn,
+      `${this.resolveToriiBaseUrl(options.baseUrl)}${pathAndQuery}`,
+      {
       method,
       headers: this.buildHeaders(options.headers, contentHeaders),
-      body,
-    });
-    const responseBody = await readResponseBody(response);
+      },
+      this.timeoutMs,
+      this.maxResponseBytes
+    );
 
     if (!response.ok) {
-      throw new IrohaToriiMcpError(`iroha_torii_http_${response.status}`, response.status, responseBody);
+      throw new IrohaToriiMcpError(`iroha_torii_http_${response.status}`, response.status, body);
     }
 
-    return responseBody as TBody;
+    return normalizeRouteResponse<TBody>(
+      {
+        body: body as JsonValue,
+        content_type: response.headers.get('content-type'),
+        headers: Object.fromEntries(response.headers.entries()),
+        status: response.status,
+      },
+      pathAndQuery
+    );
   }
 
   private resolveToriiBaseUrl(baseUrl?: string | null): string {
@@ -602,10 +695,10 @@ function jsonAcceptArg(options: IrohaToriiWalletReadOptions): JsonObject {
   return { accept: 'application/json' };
 }
 
-function accountAssetsArgs(options: IrohaToriiAccountAssetsOptions): JsonObject {
+function accountAssetsArgs(options: IrohaToriiAccountAssetsOptions, network: IrohaNetworkKey): JsonObject {
   const args: JsonObject = {};
 
-  if (options.assetId !== undefined) args.asset_id = normalizeRouteString(options.assetId, 'invalid_asset_id');
+  if (options.assetId !== undefined) args.asset_id = normalizeAssetDefinitionId(options.assetId, network);
   if (options.limit !== undefined) args.limit = normalizeInteger(options.limit, 'invalid_limit', 1, 500);
   if (options.offset !== undefined) args.offset = normalizeInteger(options.offset, 'invalid_offset', 0, 1_000_000);
   if (options.query !== undefined) args.query = normalizeJsonObject(options.query, 'invalid_query');
@@ -624,7 +717,7 @@ function instructionsListArgs(options: IrohaToriiInstructionsListOptions, networ
   }
   if (options.block !== undefined) args.block = normalizeInteger(options.block, 'invalid_block', 1, 1_000_000_000);
   if (options.kind !== undefined) args.kind = normalizeRouteString(options.kind, 'invalid_instruction_kind');
-  if (options.assetId !== undefined) args.asset_id = normalizeRouteString(options.assetId, 'invalid_asset_id');
+  if (options.assetId !== undefined) args.asset_id = normalizeAssetDefinitionId(options.assetId, network);
   if (options.page !== undefined) args.page = normalizeInteger(options.page, 'invalid_page', 0, 1_000_000);
   if (options.perPage !== undefined) args.per_page = normalizeInteger(options.perPage, 'invalid_per_page', 1, 500);
   if (options.query !== undefined) args.query = normalizeJsonObject(options.query, 'invalid_query');
@@ -693,12 +786,135 @@ function normalizeRouteResponse<TBody>(
     throw new IrohaToriiMcpError('invalid_route_response', status, structuredContent, undefined, { toolName });
   }
 
+  const normalizedHeaders = normalizeRouteHeaders(headers);
+
+  assertCompleteFanout(normalizedHeaders, status, structuredContent, toolName);
+
   return {
     status,
-    headers: normalizeRouteHeaders(headers),
+    headers: normalizedHeaders,
     contentType: normalizeRouteContentType(contentType, structuredContent),
     body: body as TBody,
   };
+}
+
+function assertCompleteFanout(
+  headers: Record<string, string>,
+  status: number,
+  body: unknown,
+  toolName: string
+): void {
+  const headerNames = {
+    attempted: 'x-iroha-fanout-routes-attempted',
+    succeeded: 'x-iroha-fanout-routes-succeeded',
+    failed: 'x-iroha-fanout-routes-failed',
+    denied: 'x-iroha-fanout-routes-denied',
+    unavailable: 'x-iroha-fanout-routes-unavailable',
+    notFound: 'x-iroha-fanout-routes-not-found',
+  } as const;
+  const present = Object.values(headerNames).filter((name) => Object.hasOwn(headers, name));
+
+  if (present.length !== Object.keys(headerNames).length) {
+    throw new IrohaToriiMcpError('invalid_fanout_headers', status, body, undefined, { toolName, headers });
+  }
+
+  const summary = Object.fromEntries(
+    Object.entries(headerNames).map(([key, name]) => [key, normalizeFanoutCount(headers[name])])
+  ) as IrohaToriiFanoutSummary;
+  const failedByDifference = summary.attempted - summary.succeeded;
+
+  if (
+    summary.attempted < 1 ||
+    summary.succeeded > summary.attempted ||
+    summary.failed !== failedByDifference ||
+    summary.denied + summary.unavailable + summary.notFound > summary.failed
+  ) {
+    throw new IrohaToriiMcpError('invalid_fanout_headers', status, body, undefined, { toolName, summary });
+  }
+  if (summary.failed > 0) {
+    throw new IrohaToriiMcpError('iroha_torii_partial_response', status, body, undefined, {
+      toolName,
+      fanout: summary,
+    });
+  }
+}
+
+function normalizeFanoutCount(value: unknown): number {
+  if (typeof value !== 'string' || !/^(?:0|[1-9]\d*)$/u.test(value)) {
+    throw new IrohaToriiMcpError('invalid_fanout_headers');
+  }
+
+  const count = Number(value);
+
+  if (!Number.isSafeInteger(count)) throw new IrohaToriiMcpError('invalid_fanout_headers');
+
+  return count;
+}
+
+function normalizeSubmitAndWaitResult(value: unknown, expectedHash: string): IrohaSubmitAndWaitResult {
+  if (!isRecord(value) || Array.isArray(value)) {
+    throw new IrohaToriiMcpError('invalid_submit_and_wait_response', undefined, value);
+  }
+
+  const result = value as Partial<IrohaSubmitAndWaitResult>;
+
+  if (
+    result.status !== 200 ||
+    normalizeReturnedTransactionHash(result.hash) !== expectedHash ||
+    normalizeReturnedTransactionHash(result.tx_hash) !== expectedHash ||
+    result.terminal_kind !== 'Applied' ||
+    !Array.isArray(result.terminal_statuses) ||
+    result.terminal_statuses.length !== 1 ||
+    result.terminal_statuses[0] !== 'Applied' ||
+    typeof result.attempts !== 'number' ||
+    !Number.isSafeInteger(result.attempts) ||
+    result.attempts < 1 ||
+    typeof result.elapsed_ms !== 'number' ||
+    !Number.isSafeInteger(result.elapsed_ms) ||
+    result.elapsed_ms < 0
+  ) {
+    throw new IrohaToriiMcpError('invalid_submit_and_wait_response', undefined, value);
+  }
+
+  const submit = normalizeRouteResponse<Record<string, unknown>>(result.submit, 'iroha.transactions.submit_and_wait.submit');
+  const finalStatus = normalizeRouteResponse<Record<string, unknown>>(
+    result.final_status,
+    'iroha.transactions.submit_and_wait.final_status'
+  );
+  const receiptHash = extractSubmissionReceiptHash(submit.body);
+  const pipelineStatus = isRecord(finalStatus.body.status) ? finalStatus.body.status : undefined;
+  const finalHash = finalStatus.body.hash ?? finalStatus.body.tx_hash ?? finalStatus.body.transaction_hash;
+
+  if (
+    receiptHash !== expectedHash ||
+    !pipelineStatus ||
+    pipelineStatus.kind !== 'Applied' ||
+    finalHash === undefined ||
+    normalizeReturnedTransactionHash(finalHash) !== expectedHash
+  ) {
+    throw new IrohaToriiMcpError('iroha_transaction_receipt_mismatch', undefined, value);
+  }
+
+  return value as IrohaSubmitAndWaitResult;
+}
+
+function extractSubmissionReceiptHash(body: unknown): string {
+  if (!isRecord(body) || Array.isArray(body)) {
+    throw new IrohaToriiMcpError('invalid_submission_receipt', undefined, body);
+  }
+
+  const payload = isRecord(body.payload) ? body.payload : undefined;
+  const hash = body.tx_hash_hex ?? body.tx_hash ?? body.transaction_hash ?? payload?.entrypoint_hash;
+
+  return normalizeReturnedTransactionHash(hash);
+}
+
+function normalizeReturnedTransactionHash(value: unknown): string {
+  if (typeof value !== 'string' || value !== value.trim()) {
+    throw new IrohaToriiMcpError('invalid_hash', undefined, value);
+  }
+
+  return normalizeTransactionHash(value);
 }
 
 function normalizeRouteHeaders(value: unknown): Record<string, string> {
@@ -745,14 +961,22 @@ function normalizeRouteString(value: unknown, errorCode: string): string {
   return value;
 }
 
+function normalizeAssetDefinitionId(value: unknown, network: IrohaNetworkKey): string {
+  const normalized = normalizeRouteString(value, 'invalid_asset_id');
+
+  if (network === 'taira' && !/^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(normalized)) {
+    throw new IrohaToriiMcpError('invalid_asset_id');
+  }
+
+  return normalized;
+}
+
 function normalizeMcpEndpoint(baseUrl: string | null): string {
   if (!baseUrl) throw new IrohaToriiMcpError('invalid_base_url');
 
   const url = new URL(baseUrl);
 
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
-    throw new IrohaToriiMcpError('invalid_base_url');
-  }
+  assertSafeToriiUrl(url);
 
   let path = url.pathname.replace(/\/+$/, '');
   if (!path) path = DEFAULT_MCP_PATH;
@@ -770,9 +994,7 @@ function normalizeToriiBaseUrl(baseUrl: string | null): string {
 
   const url = new URL(baseUrl);
 
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
-    throw new IrohaToriiMcpError('invalid_base_url');
-  }
+  assertSafeToriiUrl(url);
 
   let path = url.pathname.replace(/\/+$/, '');
   if (path.endsWith(DEFAULT_MCP_PATH)) path = path.slice(0, -DEFAULT_MCP_PATH.length);
@@ -784,11 +1006,19 @@ function normalizeToriiBaseUrl(baseUrl: string | null): string {
   return url.toString().replace(/\/+$/, '');
 }
 
+function assertSafeToriiUrl(url: URL): void {
+  const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+
+  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) || url.username || url.password) {
+    throw new IrohaToriiMcpError('invalid_base_url');
+  }
+}
+
 function normalizeTransactionHash(hash: unknown): string {
   if (typeof hash !== 'string') throw new IrohaToriiMcpError('invalid_hash');
 
   const normalized = hash.trim().replace(/^0x/u, '').toLowerCase();
-  if (!/^[0-9a-f]{64}$/u.test(normalized)) throw new IrohaToriiMcpError('invalid_hash');
+  if (!/^[0-9a-f]{63}[13579bdf]$/u.test(normalized)) throw new IrohaToriiMcpError('invalid_hash');
 
   return normalized;
 }
@@ -799,14 +1029,33 @@ function normalizeTransactionStatusScope(scope: unknown): IrohaToriiTransactionS
   throw new IrohaToriiMcpError('invalid_scope');
 }
 
-function normalizeNoritoPayload(payload: unknown): BodyInit {
-  if (payload instanceof ArrayBuffer && payload.byteLength > 0) return payload;
+function normalizeNoritoPayload(payload: unknown): Uint8Array {
+  if (payload instanceof ArrayBuffer && payload.byteLength > 0) return new Uint8Array(payload.slice(0));
 
-  if (ArrayBuffer.isView(payload) && payload.byteLength > 0) return payload as BodyInit;
-
-  if (typeof Blob !== 'undefined' && payload instanceof Blob && payload.size > 0) return payload;
+  if (ArrayBuffer.isView(payload) && payload.byteLength > 0) {
+    return new Uint8Array(payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength));
+  }
 
   throw new IrohaToriiMcpError('invalid_norito_payload');
+}
+
+function encodeBase64(bytes: Uint8Array): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let output = '';
+
+  for (let index = 0; index < bytes.length; index += 3) {
+    const first = bytes[index] ?? 0;
+    const second = bytes[index + 1];
+    const third = bytes[index + 2];
+    const packed = (first << 16) | ((second ?? 0) << 8) | (third ?? 0);
+
+    output += alphabet[(packed >>> 18) & 63];
+    output += alphabet[(packed >>> 12) & 63];
+    output += second === undefined ? '=' : alphabet[(packed >>> 6) & 63];
+    output += third === undefined ? '=' : alphabet[packed & 63];
+  }
+
+  return output;
 }
 
 function normalizeToolName(name: string, requireIrohaToolPrefix: boolean): string {
@@ -835,8 +1084,47 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-async function readResponseBody(response: Response): Promise<unknown> {
-  const text = await response.text();
+async function requestJson(
+  fetchFn: FetchLike,
+  input: string | URL,
+  init: RequestInit,
+  timeoutMs: number,
+  maxResponseBytes: number
+): Promise<{ response: Response; body: unknown }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchFn(input, { ...init, signal: controller.signal });
+    const body = await readResponseBody(response, maxResponseBytes);
+
+    return { response, body };
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new IrohaToriiMcpError('iroha_request_timeout', undefined, undefined, undefined, error);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readResponseBody(response: Response, maxResponseBytes: number): Promise<unknown> {
+  const contentLength = response.headers.get('content-length');
+
+  if (contentLength !== null && (!/^\d+$/u.test(contentLength) || Number(contentLength) > maxResponseBytes)) {
+    throw new IrohaToriiMcpError('iroha_response_too_large', response.status);
+  }
+
+  const bytes = await readBoundedResponseBytes(response, maxResponseBytes);
+  let text: string;
+
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new IrohaToriiMcpError('invalid_json', response.status);
+  }
   if (!text) return null;
 
   try {
@@ -844,6 +1132,50 @@ async function readResponseBody(response: Response): Promise<unknown> {
   } catch {
     throw new IrohaToriiMcpError('invalid_json', response.status, text);
   }
+}
+
+async function readBoundedResponseBytes(response: Response, maxResponseBytes: number): Promise<Uint8Array> {
+  if (!response.body) {
+    const bytes = new TextEncoder().encode(await response.text());
+
+    if (bytes.byteLength > maxResponseBytes) {
+      throw new IrohaToriiMcpError('iroha_response_too_large', response.status);
+    }
+
+    return bytes;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+      if (!value) continue;
+
+      total += value.byteLength;
+      if (total > maxResponseBytes) {
+        await reader.cancel('iroha_response_too_large');
+        throw new IrohaToriiMcpError('iroha_response_too_large', response.status);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+
+  chunks.forEach((chunk) => {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  });
+
+  return bytes;
 }
 
 const ALLOWED_RUNTIME_HEADERS = new Set([
@@ -877,7 +1209,8 @@ export {
   type IrohaToriiRouteResponse,
   type IrohaToriiRouteStructuredContent,
   type IrohaToriiRuntimeHeaders,
-  type IrohaToriiSubmitTransactionOptions,
+  type IrohaToriiSubmitAndWaitOptions,
+  type IrohaSubmitAndWaitResult,
   type IrohaToriiTransactionStatusOptions,
   type IrohaToriiTransactionStatusScope,
   type IrohaToriiWalletReadOptions,

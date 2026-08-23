@@ -104,7 +104,7 @@
       "fetchInfo": "Подтягиваем информацию из Google Drive",
       "backupWallet": "Cохранить в Google Drive",
       "saved": "Сохранено",
-      "dataWillStoreOnGDrive": "Кликая 'Подтвердить', вы соглашаетесь, чтобы ваши секретные ключи были сохранены в приватном хранилище Google Drive",
+      "dataWillStoreOnGDrive": "Нажимая «Подтвердить», вы соглашаетесь загрузить защищённую паролем резервную копию кошелька, его название и адрес в приватное хранилище данных приложения в Google Drive для резервного копирования и восстановления.",
       "passphraseSaved": "Кошелек был успешно сохранен в Google Drive",
       "noWallets": "Не нашли кошельки в вашем Google Drive"
     }
@@ -243,6 +243,10 @@
     "preview": "Предпросмотр",
     "calculateFee": "Расчет комиссии",
     "lockedDetails": "Детализация заблокированного баланса",
+    "legacyCrowdloan": "Устаревший краудлоан",
+    "legacyCrowdloanContribution": "Обнаружено исторических взносов: {count}",
+    "legacyCrowdloanRecovery": "Обнаружено возвратов или получений: {count}",
+    "legacyCrowdloanContributionAndRecovery": "Взносы: {contributionCount} · возвраты или получения: {recoveryCount}",
     "buyHeader": "Купить {asset} через",
     "buy": "Купить",
     "polkaswap": "Polkaswap",
@@ -282,15 +286,23 @@
     "transaction": "Транзакция",
     "transactionDone": "Транзакция завершена",
     "transactionError": "Ошибка транзакции",
+    "transactionFailedDetails": "Транзакция не выполнена. Проверьте её данные и повторите попытку.",
     "transactionPending": "Ожидание транзакции",
     "saveQR": "Сохранить QR-код",
     "copyQR": "Скопировать QR-код",
     "incorrectAddress": "Некорректный адрес",
     "insufficientBalance": "Недостаточный баланс {asset}",
+    "insufficientBalanceGeneric": "Недостаточный баланс",
     "insufficientLiquidity": "Недостаточно ликвидности",
     "isSameAddress": "Переводы на свой адрес запрещены",
+    "bitcoinTransfersDisabled": "Переводы Bitcoin не включены в этом релизе",
     "irohaTransfersDisabled": "Переводы Iroha не включены в этом релизе",
     "unsupportedSolanaTokenTransfer": "Переводы токенов Solana пока не поддерживаются",
+    "crossChainRuntimeUnavailable": "Необходимая сеть недоступна. Повторите попытку позже",
+    "crossChainProviderDisabled": "Этот кросс-чейн провайдер временно отключен",
+    "crossChainSignableAccountRequired": "Выберите аккаунт, который может подписать этот маршрут",
+    "crossChainAmountBelowMinimum": "Сумма ниже текущего минимума маршрута",
+    "crossChainRouteUnavailable": "Для текущих возможностей сетей нет поддерживаемого маршрута",
     "minReceived": "Минимум получено",
     "maxSales": "Максимум продано",
     "priceImpact": "Влияние на цену",
@@ -706,6 +718,6 @@
     "estimateFeeError": "Не удалось посчитать фии",
     "copyHash": "Скопировать hash",
     "fearlessSupport": "Fearless support",
-    "evmDApps":"EVM DApps"
+    "evmDApps": "EVM DApps"
   }
 }

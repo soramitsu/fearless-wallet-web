@@ -60,24 +60,30 @@ import type { FearlessNft, NftCollection } from '@extension-base/services/nft-se
 import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
 import { cut, setClipboard } from '@/helpers';
 import { Components } from '@/router/routes';
+import { buildAvailableNftKey, findNftCollection } from '@/portfolio/nftIdentity';
 import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
 const router = useRouter();
 const route = useRoute();
 const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
 
 const selectedWallet = computed(() => accountsStore.selectedWallet);
 const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
 const id = computed(() => routeParam(route.params.id));
 const contract = computed(() => routeParam(route.params.contract));
-const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? []);
+const chainId = computed(() => routeParam(route.params.chainId));
 const collection = computed<NftCollection>(
-  () => nfts.value.find((nft) => nft.address === contract.value) ?? { ownedNfts: [], address: '', network: '' }
+  () =>
+    findNftCollection(accountsStore.nfts, networksStore.allNetworks, chainId.value, contract.value) ??
+    { ownedNfts: [], address: '', network: '' }
 );
 
 const nft = computed<Partial<FearlessNft>>(() => {
-  const nftCollectionFromStore = accountsStore.availableNfts[contract.value]?.collection ?? [];
+  const nftCollectionFromStore =
+    accountsStore.availableNfts[buildAvailableNftKey(chainId.value, contract.value)]?.collection ?? [];
 
   const ownedNfts = collection.value.ownedNfts ?? [];
 
@@ -101,7 +107,11 @@ const shareBtnType = computed(() => (nft.value.isOwned ? 'thirdly' : 'primary'))
 const isOwned = computed(() => !!nft.value.isOwned);
 const showSendBtn = computed(() => isOwned.value && !collection.value.isSpam);
 const onClose = () => router.back();
-const onSend = () => router.push({ name: Components.NftSendForm, params: { id: id.value } });
+const onSend = () =>
+  router.push({
+    name: Components.NftSendForm,
+    params: { chainId: chainId.value, contract: contract.value, id: id.value },
+  });
 
 onMounted(() => {
   if (!Object.keys(nft.value).length) router.push({ name: Components.Nfts });

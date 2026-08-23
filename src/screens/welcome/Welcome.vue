@@ -50,7 +50,7 @@
           />
 
           <FButton
-            v-if="isExtension && isSubstrate"
+            v-if="isExtension && isSubstrate && googleDriveBackupEnabled"
             class="import-button button--content-wrap"
             size="big"
             fontSize="big"
@@ -118,12 +118,14 @@ import { hasMasterPassword, initGoogleAuth } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
 import { type WalletEcosystem } from '@/interfaces';
+import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
 
 export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem } ,
   data() {
     return {
       isExtension: IS_EXTENSION,
+      googleDriveBackupEnabled: isGoogleDriveBackupEnabled(),
       accountsStore: useAccountsStore(),
       showGoogleAuthPopup: false,
       isAuthFlowInit: false,

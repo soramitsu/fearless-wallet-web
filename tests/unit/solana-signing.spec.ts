@@ -57,6 +57,7 @@ const signAndSendRequest = (transactionBase64 = validTransactionBase64()): Solan
   method: 'signAndSendTransaction',
   options: {
     maxRetries: 2,
+    minContextSlot: 123,
     preflightCommitment: 'finalized',
     skipPreflight: true,
   },
@@ -117,6 +118,7 @@ describe('Solana signing approval helpers', () => {
     expect(broadcastTransaction).toHaveBeenCalledOnce();
     expect(broadcastTransaction).toHaveBeenCalledWith(expect.any(String), {
       maxRetries: 2,
+      minContextSlot: 123,
       preflightCommitment: 'finalized',
       skipPreflight: true,
     });

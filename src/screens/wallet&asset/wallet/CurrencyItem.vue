@@ -73,6 +73,7 @@
 
       <template v-else-if="!showWarning">
         <CircleButton
+          v-if="showSendButton"
           iconName="send-white"
           backgroundColor="black"
           class="button send"
@@ -121,6 +122,8 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { WalletEcosystem } from '@/interfaces';
+import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
 
 export default defineComponent({ name: 'CurrencyItem' ,
   props: {
@@ -139,6 +142,11 @@ export default defineComponent({ name: 'CurrencyItem' ,
   computed: {
     isCrv() {
       return this.assetData.symbol === 'crv';
+    },
+    showSendButton() {
+      const network = this.networksStore.getNetwork(this.mainNetwork);
+
+      return network?.ecosystem !== WalletEcosystem.Bitcoin || isBitcoinTransfersEnabled();
     },
     showPriceRow() {
       return this.priceJson.isExist;

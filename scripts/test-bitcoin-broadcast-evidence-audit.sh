@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AUDIT_SCRIPT="$SCRIPT_DIR/audit-bitcoin-broadcast-evidence.sh"
+negative_count=0
 
 fail() {
   echo "[bitcoin-broadcast-evidence-test][error] $*" >&2
@@ -113,7 +114,11 @@ write_indexer_fixture() {
   local file="$1"
   cat >"$file" <<'JSON'
 {
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+  "status": 200,
+  "contentType": "application/json",
+  "effectiveUrl": "https://blockstream.info/testnet/api/tx/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "redirectCount": 0,
+  "body": {
     "txid": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     "vin": [
       {
@@ -143,10 +148,11 @@ JSON
 run_audit() {
   local manifest="$1"
   shift
-  local expected_commit="${BITCOIN_BROADCAST_EVIDENCE_COMMIT:-89abcdef89abcdef89abcdef89abcdef89abcdef}"
-  BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE="$indexer_fixture" \
-    BITCOIN_BROADCAST_EVIDENCE_COMMIT="$expected_commit" \
-    bash "$AUDIT_SCRIPT" --evidence "$manifest" "$@"
+  /bin/bash "$AUDIT_SCRIPT" \
+    --selftest-fixture-root "$tmp_dir" \
+    --selftest-indexer-response "$indexer_fixture" \
+    --evidence "$manifest" \
+    "$@"
 }
 
 expect_failure() {
@@ -154,6 +160,7 @@ expect_failure() {
   local expected="$2"
   shift 2
   local output
+  negative_count=$((negative_count + 1))
 
   set +e
   output="$("$@" 2>&1)"
@@ -171,7 +178,86 @@ expect_failure() {
   fi
 }
 
-tmp_dir="$(mktemp -d)"
+expect_success() {
+  local name="$1"
+  shift
+  local output
+
+  set +e
+  output="$("$@" 2>&1)"
+  local status=$?
+  set -e
+
+  if [[ "$status" -ne 0 ]]; then
+    echo "$output" >&2
+    fail "$name unexpectedly failed"
+  fi
+}
+
+write_indexer_url_variant() {
+  local source="$1"
+  local destination="$2"
+  local url="$3"
+  cp "$source" "$destination"
+  node - "$destination" "$url" <<'NODE'
+const fs = require('fs');
+const [file, url] = process.argv.slice(2);
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].indexerUrl = url;
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+}
+
+write_response_field_variant() {
+  local source="$1"
+  local destination="$2"
+  local field="$3"
+  local json_value="$4"
+  cp "$source" "$destination"
+  node - "$destination" "$field" "$json_value" <<'NODE'
+const fs = require('fs');
+const [file, field, jsonValue] = process.argv.slice(2);
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response[field] = JSON.parse(jsonValue);
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+}
+
+assert_audit_source_contract() {
+  local source
+  source="$(<"$AUDIT_SCRIPT")"
+  local marker
+  for marker in \
+    "const CURL_BIN = '/usr/bin/curl';" \
+    "const GIT_BIN = '/usr/bin/git';" \
+    "/usr/bin/env -i" \
+    '"$NODE_BIN" -' \
+    "execFileSync(CURL_BIN, [" \
+    "execFileSync(GIT_BIN," \
+    "'--disable'," \
+    "'--proto', '=https'," \
+    "'--max-redirs', '0'," \
+    "'--max-filesize', String(MAX_RESPONSE_BODY_BYTES)," \
+    "'--noproxy', '*'," \
+    "'--proxy', ''," \
+    "env: sealedToolEnvironment(homeDir)" \
+    "env: sealedToolEnvironment('/')" \
+    "PATH: '/usr/bin:/bin'" \
+    "CURL_HOME: homeDir" \
+    "GIT_CONFIG_NOSYSTEM: '1'" \
+    "GIT_CONFIG_GLOBAL: '/dev/null'" \
+    "contentType !== 'application/json'" \
+    "effectiveUrl !== requestUrl"; do
+    [[ "$source" == *"$marker"* ]] || fail "production transport contract marker missing: $marker"
+  done
+  [[ "$source" != *"execFileSync('curl'"* ]] || fail "production transport must not resolve curl through PATH"
+  [[ "$source" != *"execFileSync('git'"* ]] || fail "production commit verifier must not resolve git through PATH"
+  local curl_invocation="${source#*"execFileSync(CURL_BIN, ["}"
+  [[ "$curl_invocation" == *"'--disable',"* ]] || fail "curl invocation is missing --disable"
+  [[ "${curl_invocation%%"'--disable',"*}" != *"'--"* ]] || fail "--disable must be the first curl option"
+}
+
+tmp_dir="$(cd -P "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 blocked="$tmp_dir/blocked.json"
@@ -180,9 +266,14 @@ indexer_fixture="$tmp_dir/indexer-fixture.json"
 write_blocked_manifest "$blocked"
 write_ready_manifest "$ready"
 write_indexer_fixture "$indexer_fixture"
+printf '%s\n' '89abcdef89abcdef89abcdef89abcdef89abcdef' >"$tmp_dir/current-commit.txt"
+printf '%s\n' '2026-06-26T00:05:00Z' >"$tmp_dir/current-time.txt"
+
+assert_audit_source_contract
 
 run_audit "$blocked" >/dev/null
-run_audit "$ready" --require-ready >/dev/null
+selftest_ready_output="$(run_audit "$ready" --require-ready)"
+[[ "$selftest_ready_output" == *"mode=selftest-not-release-evidence"* ]] || fail "self-test success must be visibly marked as non-production evidence"
 
 expect_failure "missing Bitcoin broadcast evidence manifest" "Bitcoin broadcast evidence manifest missing" run_audit "$tmp_dir/missing.json"
 
@@ -219,6 +310,17 @@ missing_blocker="$tmp_dir/missing-blocker.json"
 cp "$blocked" "$missing_blocker"
 perl -0pi -e 's/"funded-testnet-broadcast-evidence-missing"//' "$missing_blocker"
 expect_failure "blocked evidence missing funded broadcast blocker" "blocked evidence missing blocker funded-testnet-broadcast-evidence-missing" run_audit "$missing_blocker"
+
+blocked_with_evidence="$tmp_dir/blocked-with-evidence.json"
+node - "$blocked" "$ready" "$blocked_with_evidence" <<'NODE'
+const fs = require('fs');
+const [blockedFile, readyFile, outputFile] = process.argv.slice(2);
+const blockedManifest = JSON.parse(fs.readFileSync(blockedFile, 'utf8'));
+const readyManifest = JSON.parse(fs.readFileSync(readyFile, 'utf8'));
+blockedManifest.evidence = readyManifest.evidence;
+fs.writeFileSync(outputFile, `${JSON.stringify(blockedManifest, null, 2)}\n`);
+NODE
+expect_failure "blocked evidence contains funded broadcast record" "blocked Bitcoin broadcast evidence must not contain evidence records" run_audit "$blocked_with_evidence"
 
 unsupported_blocker="$tmp_dir/unsupported-blocker.json"
 cp "$blocked" "$unsupported_blocker"
@@ -340,6 +442,33 @@ cp "$ready" "$ready_zero_amount"
 perl -0pi -e 's/"amountSat": "1000"/"amountSat": "0"/' "$ready_zero_amount"
 expect_failure "ready evidence zero amount" "amountSat must be a positive integer string" run_audit "$ready_zero_amount" --require-ready
 
+ready_placeholder_operator="$tmp_dir/ready-placeholder-operator.json"
+cp "$ready" "$ready_placeholder_operator"
+perl -0pi -e 's/"operator": "release"/"operator": "TODO_OPERATOR"/' "$ready_placeholder_operator"
+expect_failure "ready evidence placeholder operator" "operator must not be a placeholder operator" run_audit "$ready_placeholder_operator" --require-ready
+
+ready_multiline_operator="$tmp_dir/ready-multiline-operator.json"
+cp "$ready" "$ready_multiline_operator"
+node - "$ready_multiline_operator" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].operator = 'release\noperator';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "ready evidence multiline operator" "operator must be a single-line public value" run_audit "$ready_multiline_operator" --require-ready
+
+ready_secret_operator="$tmp_dir/ready-secret-operator.json"
+cp "$ready" "$ready_secret_operator"
+node - "$ready_secret_operator" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].operator = 'ghp_1234567890abcdefghijklmnop';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "ready evidence secret-like operator" "operator must not contain secret-like token" run_audit "$ready_secret_operator" --require-ready
+
 ready_bad_outpoint="$tmp_dir/ready-bad-outpoint.json"
 cp "$ready" "$ready_bad_outpoint"
 perl -0pi -e 's/fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210:0/2222:0/' "$ready_bad_outpoint"
@@ -381,7 +510,7 @@ const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
 manifest.evidence[0].indexerUrl = 'https://example.invalid/testnet/api';
 fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
-expect_failure "ready evidence unreviewed indexer" "indexerUrl must match defaultIndexerUrl https://blockstream.info/testnet/api" run_audit "$ready_unreviewed_indexer" --require-ready
+expect_failure "ready evidence unreviewed indexer" "indexerUrl must be exactly the reviewed origin and path https://blockstream.info/testnet/api" run_audit "$ready_unreviewed_indexer" --require-ready
 
 ready_duplicate_txid="$tmp_dir/ready-duplicate-txid.json"
 cp "$ready" "$ready_duplicate_txid"
@@ -398,7 +527,7 @@ ready_missing_indexer_tx="$tmp_dir/ready-missing-indexer-tx.json"
 missing_indexer_fixture="$tmp_dir/missing-indexer-fixture.json"
 cp "$ready" "$ready_missing_indexer_tx"
 printf '{}\n' >"$missing_indexer_fixture"
-indexer_fixture="$missing_indexer_fixture" expect_failure "ready evidence missing indexer tx" "txid was not found in Bitcoin broadcast indexer fixture" run_audit "$ready_missing_indexer_tx" --require-ready
+indexer_fixture="$missing_indexer_fixture" expect_failure "ready evidence missing indexer tx" "indexer HTTP status must be exactly 200" run_audit "$ready_missing_indexer_tx" --require-ready
 indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 ready_wrong_recipient_output="$tmp_dir/ready-wrong-recipient-output.json"
@@ -409,7 +538,7 @@ node - "$wrong_recipient_fixture" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vout[0].value = 999;
+fixture.body.vout[0].value = 999;
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$wrong_recipient_fixture" expect_failure "ready evidence wrong recipient output" "indexer transaction missing recipient output" run_audit "$ready_wrong_recipient_output" --require-ready
@@ -423,7 +552,7 @@ node - "$missing_outpoint_fixture" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vin[0].vout = 1;
+fixture.body.vin[0].vout = 1;
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$missing_outpoint_fixture" expect_failure "ready evidence missing funding outpoint" "indexer transaction missing funding outpoint" run_audit "$ready_missing_outpoint" --require-ready
@@ -437,7 +566,7 @@ node - "$wrong_source_fixture" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].vin[0].prevout.scriptpubkey_address = 'tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f';
+fixture.body.vin[0].prevout.scriptpubkey_address = 'tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f';
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$wrong_source_fixture" expect_failure "ready evidence wrong source address" "funding outpoint source address does not match evidence sourceAddress" run_audit "$ready_wrong_source" --require-ready
@@ -451,7 +580,7 @@ node - "$unconfirmed_fixture" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].status = { confirmed: false };
+fixture.body.status = { confirmed: false };
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$unconfirmed_fixture" expect_failure "ready evidence unconfirmed indexer tx" "indexer transaction must be confirmed before ready evidence is accepted" run_audit "$ready_unconfirmed" --require-ready
@@ -465,7 +594,7 @@ node - "$missing_block_time_fixture" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-delete fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].status.block_time;
+delete fixture.body.status.block_time;
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$missing_block_time_fixture" expect_failure "ready evidence missing block time" "confirmed indexer transaction must include a positive block_time" run_audit "$ready_missing_block_time" --require-ready
@@ -479,7 +608,7 @@ node - "$timestamp_before_block_fixture" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-fixture['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'].status.block_time = 1782604800;
+fixture.body.status.block_time = 1782604800;
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
 indexer_fixture="$timestamp_before_block_fixture" expect_failure "ready evidence timestamp before block" "timestamp must be at or after the confirmed transaction block_time" run_audit "$ready_timestamp_before_block" --require-ready
@@ -517,10 +646,46 @@ cp "$ready" "$ready_bad_timestamp"
 perl -0pi -e 's/2026-06-26T00:00:00Z/2026-06-26/' "$ready_bad_timestamp"
 expect_failure "ready evidence bad timestamp" "timestamp must be an ISO-8601 UTC second timestamp" run_audit "$ready_bad_timestamp" --require-ready
 
+ready_impossible_timestamp="$tmp_dir/ready-impossible-timestamp.json"
+cp "$ready" "$ready_impossible_timestamp"
+perl -0pi -e 's/2026-06-26T00:00:00Z/2026-99-99T99:99:99Z/' "$ready_impossible_timestamp"
+expect_failure "ready evidence impossible timestamp fields" "timestamp must be an ISO-8601 UTC second timestamp" run_audit "$ready_impossible_timestamp" --require-ready
+
+ready_invalid_leap_day="$tmp_dir/ready-invalid-leap-day.json"
+cp "$ready" "$ready_invalid_leap_day"
+perl -0pi -e 's/2026-06-26T00:00:00Z/2025-02-29T00:00:00Z/' "$ready_invalid_leap_day"
+expect_failure "ready evidence invalid leap-day timestamp" "timestamp must be an ISO-8601 UTC second timestamp" run_audit "$ready_invalid_leap_day" --require-ready
+
 ready_future_timestamp="$tmp_dir/ready-future-timestamp.json"
 cp "$ready" "$ready_future_timestamp"
 perl -0pi -e 's/2026-06-26T00:00:00Z/2999-01-01T00:00:00Z/' "$ready_future_timestamp"
 expect_failure "ready evidence future timestamp" "timestamp must not be in the future" run_audit "$ready_future_timestamp" --require-ready
+
+future_block_response="$tmp_dir/response-future-block.json"
+cp "$indexer_fixture" "$future_block_response"
+node - "$future_block_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.status.block_time = 1782432601;
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+indexer_fixture="$future_block_response" expect_failure "future confirmed indexer block time" "confirmed indexer transaction block_time must not be in the future" run_audit "$ready" --require-ready
+
+boundary_timestamp_manifest="$tmp_dir/ready-clock-skew-boundary.json"
+cp "$ready" "$boundary_timestamp_manifest"
+perl -0pi -e 's/2026-06-26T00:00:00Z/2026-06-26T00:10:00Z/' "$boundary_timestamp_manifest"
+boundary_block_response="$tmp_dir/response-clock-skew-boundary.json"
+cp "$tmp_dir/indexer-fixture.json" "$boundary_block_response"
+node - "$boundary_block_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.status.block_time = 1782432600;
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+indexer_fixture="$boundary_block_response" expect_success "exact future clock-skew boundary" run_audit "$boundary_timestamp_manifest" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 ready_bad_commit="$tmp_dir/ready-bad-commit.json"
 cp "$ready" "$ready_bad_commit"
@@ -537,7 +702,11 @@ cp "$ready" "$ready_wrong_current_commit"
 perl -0pi -e 's/89abcdef89abcdef89abcdef89abcdef89abcdef/abcdef0123456789abcdef0123456789abcdef01/' "$ready_wrong_current_commit"
 expect_failure "ready evidence wrong current commit" "ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record for current release commit" run_audit "$ready_wrong_current_commit" --require-ready
 
-BITCOIN_BROADCAST_EVIDENCE_COMMIT=not-a-commit expect_failure "ready evidence invalid current commit override" "BITCOIN_BROADCAST_EVIDENCE_COMMIT must be a 40-character git commit" run_audit "$ready" --require-ready
+BITCOIN_BROADCAST_EVIDENCE_COMMIT=not-a-commit expect_failure "ready evidence forbidden current commit override" "BITCOIN_BROADCAST_EVIDENCE_COMMIT is forbidden" run_audit "$ready" --require-ready
+
+printf '%s\n' 'not-a-commit' >"$tmp_dir/current-commit.txt"
+expect_failure "ready evidence invalid confined current commit fixture" "current release commit must be a 40-character git commit" run_audit "$ready" --require-ready
+printf '%s\n' '89abcdef89abcdef89abcdef89abcdef89abcdef' >"$tmp_dir/current-commit.txt"
 
 secret_top_level="$tmp_dir/secret-top-level.json"
 cp "$ready" "$secret_top_level"
@@ -549,4 +718,251 @@ cp "$ready" "$secret_nested"
 perl -0pi -e 's/"commit": "89abcdef89abcdef89abcdef89abcdef89abcdef"/"commit": "89abcdef89abcdef89abcdef89abcdef89abcdef",\n      "authorization": "Bearer do-not-commit"/' "$secret_nested"
 expect_failure "nested secret-like Bitcoin broadcast evidence key" "must not be included in public Bitcoin broadcast evidence" run_audit "$secret_nested" --require-ready
 
-echo "[bitcoin-broadcast-evidence-test] all assertions passed"
+secret_value="$tmp_dir/secret-value.json"
+cp "$ready" "$secret_value"
+node - "$secret_value" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].sourceAddress = 'tb1qghp_12345678901234567890';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "secret-like Bitcoin broadcast evidence value" "sourceAddress must not contain secret-like token" run_audit "$secret_value" --require-ready
+
+canonical_fixture="$tmp_dir/indexer-fixture.json"
+
+# Production mode must never accept environment-selected roots, commits,
+# fixtures, tools, or clocks, even for the otherwise harmless blocked manifest.
+for override_name in \
+  BITCOIN_BROADCAST_EVIDENCE_ROOT \
+  BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE \
+  BITCOIN_BROADCAST_EVIDENCE_CURL \
+  BITCOIN_BROADCAST_EVIDENCE_GIT \
+  BITCOIN_BROADCAST_EVIDENCE_NOW \
+  BITCOIN_BROADCAST_EVIDENCE_NODE; do
+  expect_failure \
+    "forbidden ambient override $override_name" \
+    "$override_name is forbidden" \
+    /usr/bin/env "$override_name=$tmp_dir/attacker" /bin/bash "$AUDIT_SCRIPT" --evidence "$blocked"
+done
+
+# Exact URL equality rejects parser differentials and authority/path tricks.
+url_case_index=0
+while IFS='|' read -r url_case_name url_case_value; do
+  [[ -n "$url_case_name" ]] || continue
+  url_case_index=$((url_case_index + 1))
+  url_case_file="$tmp_dir/url-case-$url_case_index.json"
+  write_indexer_url_variant "$ready" "$url_case_file" "$url_case_value"
+  expect_failure \
+    "Bitcoin indexer URL attack: $url_case_name" \
+    "indexerUrl must be exactly the reviewed origin and path" \
+    run_audit "$url_case_file" --require-ready
+done <<'CASES'
+userinfo-host-confusion|https://blockstream.info@evil.example/testnet/api
+userinfo-password-confusion|https://blockstream.info:secret@evil.example/testnet/api
+idn-homograph|https://blockstreɑm.info/testnet/api
+punycode-homograph|https://xn--blockstream-9za.info/testnet/api
+percent-encoded-host|https://%62lockstream.info/testnet/api
+uppercase-host|https://BLOCKSTREAM.INFO/testnet/api
+explicit-default-port|https://blockstream.info:443/testnet/api
+unexpected-port|https://blockstream.info:444/testnet/api
+trailing-slash|https://blockstream.info/testnet/api/
+double-slash-path|https://blockstream.info/testnet//api
+encoded-path-byte|https://blockstream.info/testnet/%61pi
+encoded-path-traversal|https://blockstream.info/testnet/api/%2e%2e
+query-confusion|https://blockstream.info/testnet/api?next=https://evil.example
+fragment-confusion|https://blockstream.info/testnet/api#@evil.example
+CASES
+
+# A successful proof requires an exact, direct, bounded JSON response.
+bad_status_response="$tmp_dir/response-status-204.json"
+write_response_field_variant "$canonical_fixture" "$bad_status_response" status '204'
+indexer_fixture="$bad_status_response" expect_failure "non-200 indexer response" "indexer HTTP status must be exactly 200" run_audit "$ready" --require-ready
+
+redirect_status_response="$tmp_dir/response-status-302.json"
+write_response_field_variant "$canonical_fixture" "$redirect_status_response" status '302'
+indexer_fixture="$redirect_status_response" expect_failure "redirect status response" "indexer HTTP status must be exactly 200" run_audit "$ready" --require-ready
+
+redirect_count_response="$tmp_dir/response-redirect-count.json"
+write_response_field_variant "$canonical_fixture" "$redirect_count_response" redirectCount '1'
+indexer_fixture="$redirect_count_response" expect_failure "followed indexer redirect" "indexer response must not follow redirects" run_audit "$ready" --require-ready
+
+redirect_url_response="$tmp_dir/response-effective-url.json"
+write_response_field_variant "$canonical_fixture" "$redirect_url_response" effectiveUrl '"https://evil.example/tx/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"'
+indexer_fixture="$redirect_url_response" expect_failure "changed effective indexer URL" "indexer effective URL must remain exactly" run_audit "$ready" --require-ready
+
+html_response="$tmp_dir/response-html.json"
+write_response_field_variant "$canonical_fixture" "$html_response" contentType '"text/html"'
+indexer_fixture="$html_response" expect_failure "HTML indexer response" "indexer Content-Type must be exactly application/json" run_audit "$ready" --require-ready
+
+charset_response="$tmp_dir/response-json-charset.json"
+write_response_field_variant "$canonical_fixture" "$charset_response" contentType '"application/json; charset=utf-8"'
+indexer_fixture="$charset_response" expect_failure "non-exact JSON content type" "indexer Content-Type must be exactly application/json" run_audit "$ready" --require-ready
+
+unsupported_transport_field="$tmp_dir/response-extra-field.json"
+write_response_field_variant "$canonical_fixture" "$unsupported_transport_field" location '"https://evil.example"'
+indexer_fixture="$unsupported_transport_field" expect_failure "unsupported transport metadata" "indexer transport response contains unsupported field location" run_audit "$ready" --require-ready
+
+null_body_response="$tmp_dir/response-null-body.json"
+write_response_field_variant "$canonical_fixture" "$null_body_response" body 'null'
+indexer_fixture="$null_body_response" expect_failure "null indexer response body" "indexer transaction response must be an object" run_audit "$ready" --require-ready
+
+mismatched_txid_response="$tmp_dir/response-mismatched-txid.json"
+cp "$canonical_fixture" "$mismatched_txid_response"
+node - "$mismatched_txid_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.txid = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+indexer_fixture="$mismatched_txid_response" expect_failure "mismatched response transaction id" "indexer transaction txid does not match evidence txid" run_audit "$ready" --require-ready
+
+malformed_response="$tmp_dir/response-malformed.json"
+printf '{' >"$malformed_response"
+indexer_fixture="$malformed_response" expect_failure "malformed indexer JSON response" "self-test indexer response must be valid JSON" run_audit "$ready" --require-ready
+
+invalid_utf8_response="$tmp_dir/response-invalid-utf8.json"
+printf '\377' >"$invalid_utf8_response"
+indexer_fixture="$invalid_utf8_response" expect_failure "invalid UTF-8 indexer response" "self-test indexer response must be valid UTF-8" run_audit "$ready" --require-ready
+
+oversize_response="$tmp_dir/response-oversize.json"
+node - "$canonical_fixture" "$oversize_response" <<'NODE'
+const fs = require('fs');
+const [source, destination] = process.argv.slice(2);
+const response = JSON.parse(fs.readFileSync(source, 'utf8'));
+response.body.padding = 'x'.repeat(1024 * 1024 + 1);
+fs.writeFileSync(destination, JSON.stringify(response));
+NODE
+indexer_fixture="$oversize_response" expect_failure "oversize indexer response" "indexer response body exceeds 1048576 bytes" run_audit "$ready" --require-ready
+indexer_fixture="$canonical_fixture"
+
+stale_evidence="$tmp_dir/ready-stale-evidence.json"
+cp "$ready" "$stale_evidence"
+node - "$stale_evidence" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+manifest.evidence[0].timestamp = '2026-06-01T00:00:00Z';
+manifest.lastReviewed = '2026-06-26';
+fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+expect_failure "stale funded broadcast evidence" "timestamp is stale; release evidence must be at most 7 days old" run_audit "$stale_evidence" --require-ready
+
+delayed_record_response="$tmp_dir/response-delayed-record.json"
+cp "$canonical_fixture" "$delayed_record_response"
+node - "$delayed_record_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.status.block_time = 1782255600;
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+indexer_fixture="$delayed_record_response" expect_failure "evidence recorded too long after block" "timestamp is too far after the confirmed transaction block_time" run_audit "$ready" --require-ready
+
+stale_block_response="$tmp_dir/response-stale-block.json"
+cp "$canonical_fixture" "$stale_block_response"
+node - "$stale_block_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.status.block_time = 1780272000;
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+indexer_fixture="$stale_block_response" expect_failure "stale confirmed indexer transaction" "confirmed indexer transaction is stale" run_audit "$ready" --require-ready
+indexer_fixture="$canonical_fixture"
+
+# Self-test seams are explicit and confined: paths cannot escape or use links.
+outside_response="$(mktemp)"
+write_indexer_fixture "$outside_response"
+expect_failure "self-test response outside fixture root" "self-test indexer response must remain beneath the self-test fixture root" \
+  /bin/bash "$AUDIT_SCRIPT" --selftest-fixture-root "$tmp_dir" --selftest-indexer-response "$outside_response" --evidence "$ready" --require-ready
+rm -f "$outside_response"
+
+outside_evidence="$(mktemp)"
+write_ready_manifest "$outside_evidence"
+expect_failure "self-test evidence outside fixture root" "self-test evidence manifest must remain beneath the self-test fixture root" \
+  /bin/bash "$AUDIT_SCRIPT" --selftest-fixture-root "$tmp_dir" --selftest-indexer-response "$canonical_fixture" --evidence "$outside_evidence" --require-ready
+rm -f "$outside_evidence"
+
+symlink_response="$tmp_dir/symlink-response.json"
+ln -s "$canonical_fixture" "$symlink_response"
+indexer_fixture="$symlink_response" expect_failure "symlinked self-test response" "self-test indexer response must be a regular file and must not be a symlink" run_audit "$ready" --require-ready
+rm -f "$symlink_response"
+indexer_fixture="$canonical_fixture"
+
+symlink_evidence="$tmp_dir/symlink-evidence.json"
+ln -s "$ready" "$symlink_evidence"
+expect_failure "symlinked self-test evidence" "self-test evidence manifest must be a regular file and must not be a symlink" run_audit "$symlink_evidence" --require-ready
+rm -f "$symlink_evidence"
+
+expect_failure "partial self-test seam" "--selftest-fixture-root and --selftest-indexer-response must be supplied together" \
+  /bin/bash "$AUDIT_SCRIPT" --selftest-fixture-root "$tmp_dir" --evidence "$blocked"
+expect_failure "relative self-test root" "self-test fixture root must be an absolute path" \
+  /bin/bash "$AUDIT_SCRIPT" --selftest-fixture-root . --selftest-indexer-response "$canonical_fixture" --evidence "$ready" --require-ready
+
+printf '%s\n' 'not-a-time' >"$tmp_dir/current-time.txt"
+expect_failure "malformed confined clock fixture" "self-test current-time fixture must contain one ISO-8601 UTC second timestamp" run_audit "$ready" --require-ready
+printf '%s\n' '2026-06-26T00:05:00Z' >"$tmp_dir/current-time.txt"
+
+clock_target="$tmp_dir/clock-target.txt"
+printf '%s\n' '2026-06-26T00:05:00Z' >"$clock_target"
+mv "$tmp_dir/current-time.txt" "$tmp_dir/current-time-original.txt"
+ln -s "$clock_target" "$tmp_dir/current-time.txt"
+expect_failure "symlinked confined clock fixture" "self-test current-time fixture must be a regular file and must not be a symlink" run_audit "$ready" --require-ready
+rm -f "$tmp_dir/current-time.txt"
+mv "$tmp_dir/current-time-original.txt" "$tmp_dir/current-time.txt"
+
+commit_target="$tmp_dir/commit-target.txt"
+printf '%s\n' '89abcdef89abcdef89abcdef89abcdef89abcdef' >"$commit_target"
+mv "$tmp_dir/current-commit.txt" "$tmp_dir/current-commit-original.txt"
+ln -s "$commit_target" "$tmp_dir/current-commit.txt"
+expect_failure "symlinked confined commit fixture" "self-test current-commit fixture must be a regular file and must not be a symlink" run_audit "$ready" --require-ready
+rm -f "$tmp_dir/current-commit.txt"
+mv "$tmp_dir/current-commit-original.txt" "$tmp_dir/current-commit.txt"
+
+# Ambient curl/git configuration, proxies, CA overrides, PATH shims and exported
+# shell functions cannot influence the isolated verifier contract.
+attack_home="$tmp_dir/attack-home"
+attack_bin="$tmp_dir/attack-bin"
+attack_marker="$tmp_dir/ambient-tool-was-executed"
+node_preload="$tmp_dir/attacker-node-preload.cjs"
+mkdir -p "$attack_home/xdg" "$attack_bin"
+printf '%s\n' 'url = "https://evil.example"' 'location' >"$attack_home/.curlrc"
+printf '%s\n' '#!/bin/sh' "printf attacked >'$attack_marker'" 'exit 0' >"$attack_bin/curl"
+printf '%s\n' '#!/bin/sh' "printf attacked >'$attack_marker'" 'exit 0' >"$attack_bin/git"
+printf '%s\n' '#!/bin/sh' "printf attacked >'$attack_marker'" 'exit 0' >"$attack_bin/node"
+printf '%s\n' "require('fs').writeFileSync('$attack_marker', 'attacked');" >"$node_preload"
+chmod +x "$attack_bin/curl" "$attack_bin/git" "$attack_bin/node"
+expect_success "ambient curlrc/proxy/CA/PATH attack" \
+  /usr/bin/env \
+    HOME="$attack_home" \
+    XDG_CONFIG_HOME="$attack_home/xdg" \
+    CURL_HOME="$attack_home" \
+    http_proxy="http://evil.example:8080" \
+    https_proxy="http://evil.example:8080" \
+    ALL_PROXY="socks5://evil.example:1080" \
+    SSL_CERT_FILE="$attack_home/evil-ca.pem" \
+    SSL_CERT_DIR="$attack_home" \
+    CURL_CA_BUNDLE="$attack_home/evil-ca.pem" \
+    NODE_OPTIONS="--require=$node_preload" \
+    NODE_PATH="$attack_home" \
+    PATH="$attack_bin:$PATH" \
+    /bin/bash "$AUDIT_SCRIPT" \
+      --selftest-fixture-root "$tmp_dir" \
+      --selftest-indexer-response "$canonical_fixture" \
+      --evidence "$ready" \
+      --require-ready
+[[ ! -e "$attack_marker" ]] || fail "ambient PATH shim was executed"
+
+curl() { printf 'attacked' >"$attack_marker"; }
+git() { printf 'attacked' >"$attack_marker"; }
+export -f curl git
+expect_success "exported curl/git function attack" run_audit "$ready" --require-ready
+export -n -f curl git
+unset -f curl git
+[[ ! -e "$attack_marker" ]] || fail "exported curl/git function was executed"
+
+[[ "$negative_count" == "103" ]] || fail "expected exactly 103 negative/adversarial cases, found $negative_count"
+
+echo "[bitcoin-broadcast-evidence-test] all assertions passed (103 negative/adversarial cases)"

@@ -38,7 +38,9 @@ const ENV_KEYS = [
   'FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY',
   'FL_WEB_SNOWTRACE_API_KEY',
   'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY',
+  'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
   'VUE_APP_ENABLE_IROHA_TRANSFERS',
+  'VUE_APP_EXTENSION_SMOKE',
   'VUE_APP_TEST_ONLY',
   'VUE_APP_FL_WEB_X1_TESTNET_API_KEY',
 ];
@@ -52,6 +54,7 @@ const CARDANO_MESSAGE_SIGNING_BROWSER = path.resolve(
 );
 const NOOP_DEVTOOLS_API = path.resolve(__dirname, 'src/util/noopDevtoolsApi.ts');
 const VUEDRAGGABLE_ESM = path.resolve(__dirname, 'node_modules/vuedraggable/src/vuedraggable.js');
+const UNSUPPORTED_NODE_VM = path.resolve(__dirname, 'src/util/unsupportedNodeVm.ts');
 
 function createSymbolId(template, file) {
   return template.replace('[name]', path.basename(file, '.svg'));
@@ -140,6 +143,18 @@ export function makeDefine(mode, extraEnv = {}) {
 }
 
 export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true }) {
+  if (process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
+    throw new Error(
+      'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
+    );
+  }
+
+  if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true') {
+    throw new Error(
+      'browser_transaction_codec_unpublished_source_only: local browser codec source is not a reviewed immutable release artifact; Iroha transfers must remain disabled in every build mode'
+    );
+  }
+
   return {
     publicDir,
     plugins: [
@@ -166,6 +181,8 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         '@extension-base': path.resolve(__dirname, 'src/extension/background/extension-base/src'),
         ...(mode === 'production' ? { '@vue/devtools-api': NOOP_DEVTOOLS_API } : {}),
         store: path.resolve(__dirname, 'src/util/browserStore.ts'),
+        vm: UNSUPPORTED_NODE_VM,
+        'node:vm': UNSUPPORTED_NODE_VM,
         vuedraggable: VUEDRAGGABLE_ESM,
       },
     },
@@ -188,7 +205,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       outDir,
       emptyOutDir,
       sourcemap: mode !== 'production',
-      target: 'es2022',
+      target: 'es2020',
       cssCodeSplit: true,
       rollupOptions: {
         output: {

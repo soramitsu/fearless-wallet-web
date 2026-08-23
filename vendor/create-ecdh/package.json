@@ -1,0 +1,9 @@
+{
+  "name": "create-ecdh",
+  "version": "4.0.4",
+  "private": true,
+  "description": "Fearless fail-closed shim for the unused Node-style browser ECDH API",
+  "main": "index.cjs",
+  "browser": "index.cjs",
+  "license": "MIT"
+}

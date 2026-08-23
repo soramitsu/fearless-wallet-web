@@ -1,5 +1,8 @@
 <template>
-  <Fragment v-if="isAuthsExist">
+  <div v-if="!isSupportedAuthType" class="no-auths" data-testid="unsupportedConnectionType">
+    Connection management for this protocol is unavailable in this build.
+  </div>
+  <Fragment v-else-if="isAuthsExist">
     <AuthItem
       v-for="request in list"
       :key="request.id"
@@ -26,6 +29,8 @@ const router = useRouter();
 const route = useRoute();
 
 const type = computed(() => route.params.type ?? 'substrate');
+const supportedAuthTypes = new Set(['substrate', 'evm']);
+const isSupportedAuthType = computed(() => supportedAuthTypes.has(String(type.value)));
 
 const allDappList = computed<AuthUrlInfo[]>(() => {
   const auths = extensionStore.authList;
@@ -50,6 +55,9 @@ const getAuthorizedAccounts = (item: AuthUrlInfo, authType: string): string[] =>
 
 const list = computed(() => {
   const authType = String(type.value);
+
+  if (!isSupportedAuthType.value) return [];
+
   const authList = allDappList.value.filter((item) => hasAuthType(item, authType));
 
   return authList.map((item) => ({
@@ -62,7 +70,11 @@ const isAuthsExist = computed(() => Object.keys(list.value).length);
 
 const getAuthList = () => extensionStore.getAuthList();
 
-onMounted(async () => getAuthList());
+onMounted(async () => {
+  if (!isSupportedAuthType.value) return;
+
+  await getAuthList();
+});
 
 const openAuthDetails = (stripedUrl: string) => {
   router.push({

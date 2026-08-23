@@ -12,11 +12,37 @@ import {
 } from '@/extension/messaging';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { getUniversalWalletMigrationRequiredAction } from '@/util/universalWalletMigrationContract';
+import { resolvePrimaryBackTarget, type PrimaryDestination } from '@/router/primaryNavigation';
+import { useAccountsStore } from '@/stores/accounts';
 
 const router = createRouter({
   history: createWebHashHistory(IS_EXTENSION ? process.env.BASE_URL : undefined),
   routes,
 });
+
+// Component-level back actions stay inside the active destination stack. Tab
+// switches use replace(), so the browser history does not interleave tabs.
+const browserBack = router.back.bind(router);
+router.back = () => {
+  const route = router.currentRoute.value;
+  const destination = route.meta.primaryNavigation as PrimaryDestination | undefined;
+
+  if (!destination) {
+    browserBack();
+    return;
+  }
+
+  const roots = {
+    portfolio: { name: Components.Wallet },
+    defi: { name: Components.Defi },
+    polkaswap: { name: Components.Polkaswap },
+    'cross-chain': { name: Components.CrossChain },
+    settings: { name: Components.Settings },
+  };
+  const walletAddress = useAccountsStore().selectedWallet.address;
+
+  void router.replace(resolvePrimaryBackTarget(walletAddress, route, roots[destination]));
+};
 
 router.beforeEach(async (to, from, next) => {
   // setTimeout нужен, чтобы установить нужный title после обновления страницы

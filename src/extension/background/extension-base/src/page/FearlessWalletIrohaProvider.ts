@@ -17,7 +17,12 @@ const getOrigin = (): string => {
   return window.location.hostname;
 };
 
-const normalizeNetwork = (network: unknown): IrohaNetworkKey => (network === 'taira' ? 'taira' : 'nexus');
+const normalizeNetwork = (network: unknown): IrohaNetworkKey => {
+  if (network === undefined || network === 'nexus') return 'nexus';
+  if (network === 'taira') return 'taira';
+
+  throw new Error('invalid_iroha_network');
+};
 
 const sameAccounts = (a: readonly IrohaAccountInfo[], b: readonly IrohaAccountInfo[]): boolean =>
   JSON.stringify(a.map(({ address, network }) => `${network}:${address}`)) ===
@@ -29,15 +34,15 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   readonly name = eip6963ProviderInfo.name;
 
   #accounts: readonly IrohaAccountInfo[] = Object.freeze([]);
+  #connectGeneration = 0;
   #network: IrohaNetworkKey = 'nexus';
+  readonly #subscribedNetworks = new Set<IrohaNetworkKey>();
 
   constructor() {
     super();
 
     this.refreshAccounts().catch(() => undefined);
-    sendMessage('iroha(events.subscribe)', { network: this.#network, origin: getOrigin(), silent: true }, ({ accounts }) => {
-      this.applyAccounts(accounts);
-    }).catch(() => undefined);
+    this.ensureNetworkSubscription(this.#network);
   }
 
   get accounts(): readonly IrohaAccountInfo[] {
@@ -63,19 +68,29 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   async connect(input: IrohaConnectInput = {}): Promise<IrohaConnectResponse> {
     const network = normalizeNetwork(input.network);
     const silent = input.onlyIfTrusted ?? input.silent ?? false;
+    const generation = ++this.#connectGeneration;
+    const networkChanged = network !== this.#network;
 
     this.#network = network;
+    if (networkChanged) this.applyAccounts([], network);
+    this.ensureNetworkSubscription(network);
 
     const response = silent
       ? await this.refreshAccounts()
       : await sendMessage('iroha(authorizeUrl)', { network, origin: getOrigin(), silent: false });
 
-    return this.applyAccounts(response.accounts);
+    if (generation !== this.#connectGeneration || network !== this.#network) {
+      throw new Error('iroha_connect_superseded');
+    }
+
+    return this.applyAccounts(response.accounts, network);
   }
 
   async disconnect(): Promise<void> {
+    const generation = ++this.#connectGeneration;
+
     await sendMessage('iroha(disconnect)');
-    this.applyAccounts([]);
+    if (generation === this.#connectGeneration) this.applyAccounts([]);
   }
 
   async request<T = unknown>({ method, params }: { method: string; params?: unknown }): Promise<T> {
@@ -97,12 +112,47 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   }
 
   private async refreshAccounts(): Promise<IrohaConnectResponse> {
-    return sendMessage('iroha(accounts)', { network: this.#network, origin: getOrigin(), silent: true });
+    const generation = this.#connectGeneration;
+    const network = this.#network;
+    const response = await sendMessage('iroha(accounts)', { network, origin: getOrigin(), silent: true });
+
+    if (generation === this.#connectGeneration && network === this.#network) {
+      this.applyAccounts(response.accounts, network);
+    }
+
+    return response;
   }
 
-  private applyAccounts(accounts: IrohaAccountInfo[]): IrohaConnectResponse {
+  private ensureNetworkSubscription(network: IrohaNetworkKey): void {
+    if (this.#subscribedNetworks.has(network)) return;
+
+    this.#subscribedNetworks.add(network);
+    sendMessage(
+      'iroha(events.subscribe)',
+      { network, origin: getOrigin(), silent: true },
+      ({ accounts }) => {
+        if (network !== this.#network) return;
+
+        try {
+          this.applyAccounts(accounts, network);
+        } catch (error) {
+          console.error('Ignored invalid Iroha account subscription payload', error);
+        }
+      }
+    ).catch(() => {
+      this.#subscribedNetworks.delete(network);
+    });
+  }
+
+  private applyAccounts(accounts: IrohaAccountInfo[], network: IrohaNetworkKey = this.#network): IrohaConnectResponse {
+    accounts.forEach((account) => {
+      const expectedChain = network === 'taira' ? 'iroha:taira' : 'sora:nexus';
+
+      if (account.network !== network || account.chain !== expectedChain) throw new Error('iroha_account_network_mismatch');
+    });
+
     const previousAccounts = this.#accounts;
-    const nextAccounts = Object.freeze(accounts);
+    const nextAccounts = Object.freeze([...accounts]);
 
     this.#accounts = nextAccounts;
 

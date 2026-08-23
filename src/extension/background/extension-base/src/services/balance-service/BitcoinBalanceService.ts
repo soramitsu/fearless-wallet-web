@@ -5,13 +5,34 @@ import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload, ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import { isSameString } from '@/helpers';
-import { getBitcoinAddressNetwork, type BitcoinNetworkKind } from '@/util/bitcoin';
+import { getBitcoinAddressNetwork, isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
+import {
+  aggregateBitcoinAddressBalances,
+  aggregateBitcoinDiscoveryBalance,
+  discoverBitcoinWalletAddresses,
+  type BitcoinDiscoveredAddress,
+  type BitcoinDiscoveryClient,
+  type BitcoinWalletDiscoveryResult,
+} from '@/util/bitcoinDiscovery';
+import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
 
-type BitcoinBalanceClient = Pick<BitcoinEsploraClient, 'getBalance'>;
+type BitcoinBalanceClient = Pick<BitcoinEsploraClient, 'getBalance'> & Partial<BitcoinDiscoveryClient>;
 type BitcoinBalanceClientFactory = (network: NetworkJson, bitcoinNetwork: BitcoinNetworkKind) => BitcoinBalanceClient;
+type BitcoinBalanceDiscoveryOptions = {
+  gapLimit?: number;
+  maxLookahead?: number;
+};
+type BitcoinBalanceItem = BalanceItem & {
+  bitcoinAddresses?: Array<Pick<BitcoinDiscoveredAddress, 'address' | 'change' | 'index' | 'path'>>;
+  bitcoinNextChangeAddress?: string;
+  bitcoinNextChangePath?: string;
+  bitcoinNextReceiveAddress?: string;
+  bitcoinNextReceivePath?: string;
+};
 
 const BITCOIN_FALLBACK_NETWORK = 'Bitcoin';
 const BITCOIN_FALLBACK_ASSET_ID = 'BTC';
+const BITCOIN_BALANCE_ADDRESS_CONCURRENCY = 8;
 const BITCOIN_FALLBACK_ICON = 'bitcoin';
 const BITCOIN_FALLBACK_PRECISION = 8;
 
@@ -19,7 +40,8 @@ export default class BitcoinBalanceService {
   constructor(
     private readonly state: State,
     private readonly clientFactory: BitcoinBalanceClientFactory = (_network, bitcoinNetwork) =>
-      new BitcoinEsploraClient({ network: bitcoinNetwork })
+      new BitcoinEsploraClient({ network: bitcoinNetwork }),
+    private readonly discoveryOptions: BitcoinBalanceDiscoveryOptions = {}
   ) {}
 
   async fetchBalance({
@@ -56,19 +78,75 @@ export default class BitcoinBalanceService {
     const asset = this.getNativeAsset(network);
 
     if (!wallet || addressNetwork !== bitcoinNetwork) {
-      this.setNativeBalance(accountAddress, network, undefined, APIItemState.ERROR);
+      await this.deleteStoredBitcoinBalance(accountAddress, network, asset.id);
+      this.setNativeBalance(accountAddress, network, undefined, APIItemState.ERROR, undefined, false);
 
       return { assetId: asset.id, balance: '0', network: network.name };
     }
 
+    let client: BitcoinBalanceClient | undefined;
+
     try {
-      const balance = await this.clientFactory(network, bitcoinNetwork).getBalance(wallet);
+      client = this.clientFactory(network, bitcoinNetwork);
+      const mnemonicOrSeed = this.resolveMnemonic(accountAddress, wallet, bitcoinNetwork);
+      const storedAddresses = mnemonicOrSeed
+        ? []
+        : this.getStoredBitcoinAddresses(accountAddress, wallet, network, bitcoinNetwork);
+      const discovery = mnemonicOrSeed && typeof client.getAddress === 'function'
+        ? await discoverBitcoinWalletAddresses({
+            client: client as BitcoinDiscoveryClient,
+            gapLimit: this.discoveryOptions.gapLimit,
+            maxLookahead: this.discoveryOptions.maxLookahead,
+            mnemonicOrSeed,
+            network: bitcoinNetwork,
+          })
+        : undefined;
+      const balance = discovery
+        ? aggregateBitcoinDiscoveryBalance(discovery.addresses)
+        : storedAddresses.length
+          ? aggregateBitcoinAddressBalances(await this.fetchStoredAddressBalances(client, storedAddresses))
+          : await client.getBalance(wallet);
       const balanceString = this.satsToBitcoinString(balance.totalSats);
 
-      this.setNativeBalance(accountAddress, network, balance, APIItemState.READY);
+      this.setNativeBalance(
+        accountAddress,
+        network,
+        balance,
+        APIItemState.READY,
+        discovery,
+        Boolean(discovery || storedAddresses.length)
+      );
 
       return { assetId: asset.id, balance: balanceString, network: network.name };
     } catch (error) {
+      if (error instanceof Error && error.message === 'bitcoin_account_seed_mismatch') {
+        this.clearCachedBitcoinDiscovery(accountAddress, network);
+
+        try {
+          if (!client) throw new Error('bitcoin_balance_client_unavailable', { cause: error });
+          const fallbackBalance = await client.getBalance(wallet);
+          const fallbackBalanceString = this.satsToBitcoinString(fallbackBalance.totalSats);
+
+          const cleanBalanceItem = this.setNativeBalance(
+            accountAddress,
+            network,
+            fallbackBalance,
+            APIItemState.READY,
+            undefined,
+            false,
+            false
+          );
+          await this.state.balanceService.updateBalanceStore(network.name, cleanBalanceItem, accountAddress);
+
+          return { assetId: asset.id, balance: fallbackBalanceString, network: network.name };
+        } catch (fallbackError) {
+          console.warn('Bitcoin seed mismatch; unable to refresh the first receive address', fallbackError);
+          await this.deleteStoredBitcoinBalance(accountAddress, network, asset.id);
+          this.setNativeBalance(accountAddress, network, undefined, APIItemState.ERROR, undefined, false);
+
+          return { assetId: asset.id, balance: '0', network: network.name };
+        }
+      }
       const cachedBalances = this.markCachedBalancesErrored(accountAddress, network);
 
       if (cachedBalances.length) {
@@ -77,12 +155,96 @@ export default class BitcoinBalanceService {
         return cachedBalances[0];
       }
 
-      this.setNativeBalance(accountAddress, network, undefined, APIItemState.ERROR);
+      this.setNativeBalance(
+        accountAddress,
+        network,
+        undefined,
+        APIItemState.ERROR,
+        undefined,
+        !(error instanceof Error && error.message === 'bitcoin_account_seed_mismatch')
+      );
 
       console.warn('Failed to fetch Bitcoin balance', error);
 
       return { assetId: asset.id, balance: '0', network: network.name };
     }
+  }
+
+  private resolveMnemonic(accountAddress: string, walletAddress: string, network: BitcoinNetworkKind): string | null {
+    const account = this.state.keyringService?.getAllAccounts?.().find(({ address, meta }) => {
+      const bitcoinAddress = meta.bitcoinAddress as string | undefined;
+      const bitcoinTestnetAddress = meta.bitcoinTestnetAddress as string | undefined;
+
+      return (
+        isSameString(address, accountAddress) ||
+        isSameString(bitcoinAddress ?? '', walletAddress) ||
+        isSameString(bitcoinTestnetAddress ?? '', walletAddress)
+      );
+    });
+
+    if (!account) return null;
+
+    const { seed } = this.state.keyringService.exportMnemonic({
+      address: account.address,
+      walletEcosystem: account.meta.walletEcosystem,
+    });
+
+    if (!seed) return null;
+
+    const firstReceiveAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: seed, network });
+
+    if (!isSameString(firstReceiveAddress, walletAddress)) throw new Error('bitcoin_account_seed_mismatch');
+
+    return seed;
+  }
+
+  private getStoredBitcoinAddresses(
+    accountAddress: string,
+    walletAddress: string,
+    network: NetworkJson,
+    bitcoinNetwork: BitcoinNetworkKind
+  ): string[] {
+    const balance = this.state.balanceService.balanceMap[accountAddress]
+      ?.flatMap(({ balances }) => balances)
+      .find(({ name }) => isSameString(name, network.name)) as BitcoinBalanceItem | undefined;
+    const descriptors = balance?.bitcoinAddresses ?? [];
+    const firstReceivePath = getBitcoinReceivePath(bitcoinNetwork, 0);
+    const firstReceive = descriptors.find(({ change, index, path }) =>
+      change === 0 && index === 0 && path === firstReceivePath
+    );
+
+    if (!firstReceive || !isSameString(firstReceive.address, walletAddress)) return [];
+
+    const addresses = descriptors
+      .map(({ address }) => address)
+      .filter((address) => isBitcoinAddress(address, bitcoinNetwork));
+
+    return Array.from(new Set(addresses.map((address) => address.toLowerCase())));
+  }
+
+  private async fetchStoredAddressBalances(
+    client: BitcoinBalanceClient,
+    addresses: readonly string[]
+  ): Promise<BitcoinAddressBalance[]> {
+    const balances: BitcoinAddressBalance[] = [];
+
+    for (let offset = 0; offset < addresses.length; offset += BITCOIN_BALANCE_ADDRESS_CONCURRENCY) {
+      const batch = addresses.slice(offset, offset + BITCOIN_BALANCE_ADDRESS_CONCURRENCY);
+
+      balances.push(...await Promise.all(batch.map((address) => client.getBalance(address))));
+    }
+
+    return balances;
+  }
+
+  private async deleteStoredBitcoinBalance(
+    accountAddress: string,
+    network: NetworkJson,
+    assetId: string
+  ): Promise<void> {
+    await Promise.resolve(
+      this.state.balanceService.deleteBalanceStore(network.name, { id: assetId }, accountAddress)
+    ).catch((error) => console.warn('Unable to delete stale Bitcoin balance storage', error));
   }
 
   private getBitcoinNetworks(networks: string[]): NetworkJson[] {
@@ -147,7 +309,9 @@ export default class BitcoinBalanceService {
     return fallbackAddress && getBitcoinAddressNetwork(fallbackAddress) === bitcoinNetwork ? fallbackAddress : undefined;
   }
 
-  private getNativeAsset(network: NetworkJson): { id: string; icon: string; precision: number; symbol: string } {
+  private getNativeAsset(
+    network: NetworkJson
+  ): { id: string; icon: string; precision: number; symbol: string; priceId?: string } {
     const asset = network.assets.find(({ isUtility, isNative, symbol }) => isUtility || isNative || symbol === 'BTC');
 
     return {
@@ -155,6 +319,7 @@ export default class BitcoinBalanceService {
       icon: asset?.icon ?? BITCOIN_FALLBACK_ICON,
       precision: asset?.precision ?? BITCOIN_FALLBACK_PRECISION,
       symbol: asset?.symbol ?? 'BTC',
+      priceId: asset?.priceId,
     };
   }
 
@@ -162,12 +327,26 @@ export default class BitcoinBalanceService {
     address: string,
     network: NetworkJson,
     balance: BitcoinAddressBalance | undefined,
-    state: APIItemState
-  ): void {
-    const { id, icon, precision, symbol } = this.getNativeAsset(network);
+    state: APIItemState,
+    discovery?: BitcoinWalletDiscoveryResult,
+    preserveExistingDiscovery = true,
+    persist = true
+  ): BitcoinBalanceItem {
+    const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
     const balanceString = balance ? this.satsToBitcoinString(balance.totalSats) : '0';
-    const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol);
-    const balanceItem: BalanceItem = {
+    const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol, priceId);
+    const existingIndex = tokenGroup.balances.findIndex(({ name }) => isSameString(name, network.name));
+    const existing = existingIndex >= 0 ? tokenGroup.balances[existingIndex] as BitcoinBalanceItem : undefined;
+    const existingDiscovery = !discovery && preserveExistingDiscovery && existing
+      ? {
+          bitcoinAddresses: existing.bitcoinAddresses,
+          bitcoinNextChangeAddress: existing.bitcoinNextChangeAddress,
+          bitcoinNextChangePath: existing.bitcoinNextChangePath,
+          bitcoinNextReceiveAddress: existing.bitcoinNextReceiveAddress,
+          bitcoinNextReceivePath: existing.bitcoinNextReceivePath,
+        }
+      : {};
+    const balanceItem: BitcoinBalanceItem = {
       address,
       icon: network.icon || icon,
       id,
@@ -187,14 +366,55 @@ export default class BitcoinBalanceService {
       symbol,
       type: 'bitcoin',
       timestamp: Date.now(),
+      assetMetadataTrust: 'verified',
+      assetMetadataSource: 'registry',
+      priceId,
+      scanCoverage: discovery?.addresses.length || existingDiscovery.bitcoinAddresses?.length ? 'complete' : 'limited',
+      ...existingDiscovery,
+      ...(discovery
+        ? {
+            bitcoinAddresses: discovery.addresses.map(({ address, change, index, path }) => ({
+              address,
+              change,
+              index,
+              path,
+            })),
+            bitcoinNextChangeAddress: discovery.nextChangeAddress,
+            bitcoinNextChangePath: discovery.nextChangePath,
+            bitcoinNextReceiveAddress: discovery.nextReceiveAddress,
+            bitcoinNextReceivePath: discovery.nextReceivePath,
+          }
+        : {}),
     };
-    const existingIndex = tokenGroup.balances.findIndex(({ name }) => isSameString(name, network.name));
+
+    let storedBalanceItem = balanceItem;
 
     if (existingIndex === -1) tokenGroup.balances.push(balanceItem);
-    else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
+    else {
+      storedBalanceItem = { ...tokenGroup.balances[existingIndex], ...balanceItem };
+      if (!discovery && !preserveExistingDiscovery) this.stripBitcoinDiscovery(storedBalanceItem);
+      tokenGroup.balances[existingIndex] = storedBalanceItem;
+    }
 
-    this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
+    if (persist) this.state.balanceService.updateBalanceStore(network.name, storedBalanceItem, address);
     this.state.timeoutService.lazyNext('setBitcoinBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+
+    return storedBalanceItem;
+  }
+
+  private clearCachedBitcoinDiscovery(address: string, network: NetworkJson): void {
+    (this.state.balanceService.balanceMap[address] ?? [])
+      .flatMap(({ balances }) => balances)
+      .filter(({ name }) => isSameString(name, network.name))
+      .forEach((balance) => this.stripBitcoinDiscovery(balance as BitcoinBalanceItem));
+  }
+
+  private stripBitcoinDiscovery(balance: BitcoinBalanceItem): void {
+    delete balance.bitcoinAddresses;
+    delete balance.bitcoinNextChangeAddress;
+    delete balance.bitcoinNextChangePath;
+    delete balance.bitcoinNextReceiveAddress;
+    delete balance.bitcoinNextReceivePath;
   }
 
   private markCachedBalancesErrored(address: string, network: NetworkJson): ResponseBalanceRequest[] {
@@ -212,7 +432,7 @@ export default class BitcoinBalanceService {
         const balanceItem = {
           ...existing,
           state: APIItemState.ERROR,
-          timestamp: Date.now(),
+          timestamp: existing.timestamp,
         };
 
         group.balances[balanceIndex] = balanceItem;
@@ -232,7 +452,8 @@ export default class BitcoinBalanceService {
     network: NetworkJson,
     assetId: string,
     assetIcon: string,
-    symbol: string
+    symbol: string,
+    priceId?: string
   ): TokenGroup {
     if (!this.state.balanceService.balanceMap[address]) this.state.balanceService.balanceMap[address] = [];
 
@@ -243,6 +464,7 @@ export default class BitcoinBalanceService {
     if (existing) {
       existing.mainNetwork = network.name;
       existing.relayChain = 'bitcoin';
+      if (priceId) existing.priceId = priceId;
 
       return existing;
     }
@@ -252,7 +474,7 @@ export default class BitcoinBalanceService {
       groupId: assetId,
       icon: assetIcon,
       mainNetwork: network.name,
-      priceId: symbol,
+      priceId,
       providers: [],
       relayChain: 'bitcoin',
       symbol,
@@ -274,4 +496,4 @@ export default class BitcoinBalanceService {
   }
 }
 
-export type { BitcoinBalanceClient, BitcoinBalanceClientFactory };
+export type { BitcoinBalanceClient, BitcoinBalanceClientFactory, BitcoinBalanceDiscoveryOptions, BitcoinBalanceItem };

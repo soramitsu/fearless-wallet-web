@@ -1,44 +1,60 @@
 <template>
-  <Scroll>
+  <Scroll class="portfolio-scroll">
+    <div class="portfolio-actions">
+      <span v-if="refreshError" class="refresh-error" role="status">{{ refreshError }}</span>
+      <button
+        class="portfolio-refresh"
+        data-testid="portfolioRefresh"
+        type="button"
+        :disabled="refreshing"
+        :aria-busy="refreshing"
+        @click="refreshPortfolio"
+      >
+        {{ refreshing ? 'Syncing' : 'Refresh' }}
+      </button>
+    </div>
+
     <Loader v-if="showLoader" class="asset-loader" />
 
-    <div v-else-if="showHiddenText" class="info-text" data-testid="infoText">{{ $t(mainText()) }}</div>
+    <div v-else-if="showEmptyState" class="portfolio-empty" data-testid="infoText">
+      <Icon icon="wallet" className="empty-icon" :hover="false" />
+      <strong>{{ emptyTitle }}</strong>
+      <span>{{ emptyDescription }}</span>
+    </div>
 
-    <Draggable v-else v-model="filteredTokenGroups" handle=".handle" :key="accountsStore.selectedWallet.address">
-      <CurrencyItem
-        v-for="(asset, assetKey) in filteredTokenGroups"
-        :assetData="asset"
-        :price="getAssetPrice(asset.priceId)"
-        :priceChange="getPriceChange(asset.priceId)"
-        :key="assetKey"
-        :selectedNetwork="accountsStore.selectedNetwork"
-        :showAssetsManagementForm="showAssetsManagementForm"
-        :timeoutCallback="timeoutCallback"
-        @toggleVisibleActivityForm="$emit('toggleVisibleActivityForm', ...arguments)"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+    <div v-else class="network-list" data-testid="portfolioNetworkList">
+      <PortfolioNetworkSection
+        v-for="section in filteredSections"
+        :key="section.key"
+        :section="section"
+        :manage="showAssetsManagementForm"
+        :search="filterValue"
       />
-    </Draggable>
+    </div>
   </Scroll>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
-import Draggable from 'vuedraggable';
-import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
+import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
+import type { NetworkJson } from '@extension-base/types';
+import {
+  buildAssetPreferenceSnapshot,
+  buildPortfolioSections,
+  type PortfolioNetworkSection as PortfolioSection,
+} from '@/portfolio/assetIdentity';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { isSameString } from '@/helpers';
+import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useExtensionStore } from '@/stores/extension';
+import { forceAssetDiscoverySweep } from '@/extension/messaging/asset-discovery';
+import { fetchNfts } from '@/extension/messaging/nfts';
 
-type TimeoutSubscription = {
-  subscription: NodeJS.Timeout;
-  fn: () => void;
-};
-
-export default defineComponent({ name: 'Currencies',
-  components: {
-    Draggable,
-    CurrencyItem,
-  },
+export default defineComponent({
+  name: 'Currencies',
+  components: { PortfolioNetworkSection },
   props: {
     balances: Array,
     filterValue: String,
@@ -48,95 +64,192 @@ export default defineComponent({ name: 'Currencies',
     return {
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
-      timeoutSubscriptions: [] as TimeoutSubscription[],
+      extensionStore: useExtensionStore(),
+      refreshing: false,
+      refreshError: '',
     };
   },
   computed: {
     showLoader() {
-      return this.isEmptyBalances || this.accountsStore.isBalanceLoading;
+      return this.accountsStore.isBalanceLoading;
     },
-    isEmptyBalances() {
-      return this.accountsStore.balances.length === 0;
+    portfolioSections(): PortfolioSection[] {
+      return buildPortfolioSections({
+        groups: this.accountsStore.balances,
+        networks: this.networksStore.allNetworks,
+        prices: this.networksStore.assetsPrice.tokenPriceMap,
+        preferences: this.accountsStore.assetPreferences,
+        scanStates: this.accountsStore.networkScanStates,
+        surfaceDiscoveredAssets:
+          (this.extensionStore.features?.assetDiscoveryMode ??
+            this.extensionStore.features?.portfolio?.assetDiscoveryMode ??
+            'shadow') === 'visible',
+        addressForNetwork: this.addressForNetwork,
+      });
     },
-    isOnline() {
-      return navigator.onLine;
-    },
-    showHiddenText() {
-      if (!this.isOnline || !this.balances) return true;
+    filteredSections(): PortfolioSection[] {
+      const selected = this.accountsStore.selectedNetwork;
+      const search = this.filterValue?.trim().toLowerCase() ?? '';
+      let sections = this.portfolioSections;
 
-          if (this.showAssetsManagementForm) return false;
+      if (selected === POPULAR_NETWORKS) {
+        sections = sections.filter((section) => this.networksStore.getNetwork(section.chainId)?.rank !== undefined);
+      } else if (selected === FAVORITE_NETWORKS) {
+        sections = sections.filter((section) =>
+          this.networksStore.getNetwork(section.chainId)?.favorite.includes(this.accountsStore.selectedWallet.address)
+        );
+      } else if (!isSameString(selected, ALL_NETWORKS)) {
+        sections = sections.filter((section) => isSameString(section.name, selected));
+      }
 
-          const allHidden = this.balances.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
-
-          return this.balances.length === this.accountsStore.hiddenAssets.length || allHidden || !navigator.onLine;
+      if (!search) return sections;
+      return sections.filter(
+        (section) =>
+          section.name.toLowerCase().includes(search) ||
+          [...section.assets, ...section.detectedAssets].some((asset) =>
+            `${asset.symbol} ${asset.name}`.toLowerCase().includes(search)
+          )
+      );
     },
-    filteredTokenGroups: {
-      get() {
-        return this.balances;
+    showEmptyState() {
+      return !this.showLoader && this.filteredSections.length === 0;
+    },
+    emptyTitle() {
+      if (!navigator.onLine) return 'Portfolio is offline';
+      if (this.filterValue?.trim()) return 'No matching assets';
+      return 'No assets detected yet';
+    },
+    emptyDescription() {
+      if (!navigator.onLine) return 'Last known balances will return when this device reconnects.';
+      if (this.filterValue?.trim()) return 'Try another asset or network name.';
+      return 'Fearless scans supported networks independently from this display filter.';
+    },
+    preferenceMigrationAssets() {
+      return buildAssetPreferenceSnapshot(this.accountsStore.balances, this.networksStore.allNetworks).map(
+        ({ key, groupId }) => ({ key, groupId })
+      );
+    },
+    preferenceMigrationReady() {
+      return (
+        !this.accountsStore.isBalanceLoading &&
+        this.networksStore.allNetworks.length > 0 &&
+        this.accountsStore.balances.length > 0
+      );
+    },
+  },
+  watch: {
+    preferenceMigrationReady: {
+      handler(ready) {
+        if (ready) {
+          this.accountsStore.migrateLegacyAssetPreferences({
+            assets: this.preferenceMigrationAssets,
+            complete: true,
+          });
+        }
       },
-      set(balances) {
-        this.accountsStore.setBalance({
-              details: balances,
-              reset: false,
-              saveSequence: true,
-            });
-      },
+      immediate: true,
     },
   },
   methods: {
-    getAssetPrice(assetKey: string | undefined) {
-      if (assetKey === undefined) return 0;
+    async refreshPortfolio() {
+      if (this.refreshing) return;
 
-          if (Object.keys(this.networksStore.assetsPrice).length && this.networksStore.assetsPrice.tokenPriceMap[assetKey])
-            return this.networksStore.assetsPrice.tokenPriceMap[assetKey];
+      this.refreshing = true;
+      this.refreshError = '';
 
-          return 0;
+      try {
+        const refreshes: Promise<unknown>[] = [forceAssetDiscoverySweep()];
+        const ethereumAddress = this.accountsStore.selectedWallet.ethereumAddress;
+
+        if (ethereumAddress) refreshes.push(fetchNfts(ethereumAddress));
+
+        await Promise.all(refreshes);
+      } catch {
+        this.refreshError = 'Sync could not complete. Last known balances are still shown.';
+      } finally {
+        this.refreshing = false;
+      }
     },
-    getPriceChange(assetKey: string | undefined) {
-      if (
-            this.networksStore.assetsPrice === undefined ||
-            this.networksStore.assetsPrice.tokenPriceChange === undefined ||
-            assetKey === undefined
-          )
-            return 0;
-
-          if (this.networksStore.assetsPrice.tokenPriceChange[assetKey])
-            return this.networksStore.assetsPrice.tokenPriceChange[assetKey] / 100;
-
-          return 0;
-    },
-    timeoutCallback(fn: () => void) {
-      this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
-
-          this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-            const subscription = setTimeout(() => fn(), 0);
-
-            return { subscription, fn };
-          });
-    },
-    mainText() {
-      if (!navigator.onLine) return 'common.offlineStatus';
-
-          return this.filterValue !== '' ? 'common.nothingFound' : 'wallet.allAssetsHidden';
+    addressForNetwork(network: NetworkJson): string {
+      try {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, network.name);
+      } catch {
+        return this.accountsStore.selectedWallet.address;
+      }
     },
   },
 });
 </script>
 
 <style lang="scss" scoped>
-.info-text {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: -16px;
+.portfolio-scroll {
+  margin-right: -16px;
 }
 
-.asset-loader {
-  height: 100%;
+.network-list {
+  min-height: 100%;
+}
+
+.portfolio-actions {
+  min-height: 28px;
+  padding: 0 16px 4px 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.portfolio-refresh {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: $pink-color;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+}
+
+.refresh-error {
+  color: $gray-color;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.portfolio-empty,
+.asset-loader {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portfolio-empty {
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 16px;
+  color: $gray-color;
+  text-align: center;
+
+  strong {
+    color: $plain-white;
+  }
+
+  span {
+    max-width: 290px;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+}
+
+.empty-icon {
+  width: 34px;
+  height: 34px;
+  color: $gray-color;
 }
 </style>

@@ -80,6 +80,7 @@ describe('SolanaRpcClient', () => {
     await expect(
       client.sendRawTransaction(TRANSACTION, {
         maxRetries: 3,
+        minContextSlot: 120,
         preflightCommitment: 'confirmed',
         skipPreflight: true,
       })
@@ -154,6 +155,7 @@ describe('SolanaRpcClient', () => {
             {
               encoding: 'base64',
               maxRetries: 3,
+              minContextSlot: 120,
               preflightCommitment: 'confirmed',
               skipPreflight: true,
             },
@@ -181,6 +183,7 @@ describe('SolanaRpcClient', () => {
       SolanaRpcError
     );
     await expect(client.sendRawTransaction(TRANSACTION, { maxRetries: 11 })).rejects.toThrow(SolanaRpcError);
+    await expect(client.sendRawTransaction(TRANSACTION, { minContextSlot: -1 })).rejects.toThrow(SolanaRpcError);
     await expect(client.sendRawTransaction(TRANSACTION, { preflightCommitment: 'bad' as never })).rejects.toThrow(
       SolanaRpcError
     );

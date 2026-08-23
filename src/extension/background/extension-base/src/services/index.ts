@@ -17,3 +17,6 @@ export * from '@extension-base/services/timeout-service';
 export * from '@extension-base/services/solana-indexer-service';
 export * from '@extension-base/services/bitcoin-indexer-service';
 export * from '@extension-base/services/iroha-torii-service';
+export * from '@extension-base/services/asset-discovery-service';
+export * from '@extension-base/services/action-capability-service';
+export * from '@extension-base/services/sora-disclaimer-service';

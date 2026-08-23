@@ -1,9 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="${BITCOIN_BROADCAST_EVIDENCE_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+case "$SCRIPT_SOURCE" in
+  */*) SCRIPT_PARENT="${SCRIPT_SOURCE%/*}" ;;
+  *) SCRIPT_PARENT="." ;;
+esac
+ROOT_DIR="$(cd -P -- "$SCRIPT_PARENT/.." && pwd -P)"
 EVIDENCE_FILE="$ROOT_DIR/scripts/bitcoin-testnet-broadcast-evidence.json"
 REQUIRE_READY=false
+SELFTEST_FIXTURE_ROOT=""
+SELFTEST_INDEXER_RESPONSE=""
+
+reject_ambient_override() {
+  local name="$1"
+  echo "[bitcoin-broadcast-evidence][error] $name is forbidden; production evidence inputs cannot be supplied through ambient environment overrides" >&2
+  exit 1
+}
+
+[[ "${BITCOIN_BROADCAST_EVIDENCE_ROOT+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_ROOT
+[[ "${BITCOIN_BROADCAST_EVIDENCE_COMMIT+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_COMMIT
+[[ "${BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE
+[[ "${BITCOIN_BROADCAST_EVIDENCE_CURL+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_CURL
+[[ "${BITCOIN_BROADCAST_EVIDENCE_GIT+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_GIT
+[[ "${BITCOIN_BROADCAST_EVIDENCE_NOW+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_NOW
+[[ "${BITCOIN_BROADCAST_EVIDENCE_NODE+x}" != "x" ]] || reject_ambient_override BITCOIN_BROADCAST_EVIDENCE_NODE
 
 usage() {
   cat <<'USAGE'
@@ -12,6 +33,11 @@ Usage: scripts/audit-bitcoin-broadcast-evidence.sh [--evidence <path>] [--requir
 Validates the web Bitcoin funded-testnet broadcast evidence manifest. The
 default audit allows the current blocked state, but refuses any ready or release
 claim unless funded testnet broadcast evidence is recorded.
+
+The --selftest-fixture-root and --selftest-indexer-response options are reserved
+for this script's isolated negative-test harness. Self-test output is never
+production release evidence, and every self-test input must resolve beneath the
+fixture root without symlinks.
 USAGE
 }
 
@@ -26,6 +52,16 @@ while (($#)); do
       REQUIRE_READY=true
       shift
       ;;
+    --selftest-fixture-root)
+      [[ $# -ge 2 ]] || { echo "[bitcoin-broadcast-evidence][error] --selftest-fixture-root requires a path" >&2; exit 2; }
+      SELFTEST_FIXTURE_ROOT="$2"
+      shift 2
+      ;;
+    --selftest-indexer-response)
+      [[ $# -ge 2 ]] || { echo "[bitcoin-broadcast-evidence][error] --selftest-indexer-response requires a path" >&2; exit 2; }
+      SELFTEST_INDEXER_RESPONSE="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -38,19 +74,52 @@ while (($#)); do
   esac
 done
 
-if ! command -v node >/dev/null 2>&1; then
+NODE_BIN=""
+for node_candidate in /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
+  if [[ -x "$node_candidate" ]]; then
+    NODE_BIN="$node_candidate"
+    break
+  fi
+done
+if [[ -z "$NODE_BIN" ]]; then
+  NODE_BIN="$(command -v node 2>/dev/null || true)"
+fi
+if [[ "$NODE_BIN" != /* || ! -x "$NODE_BIN" ]]; then
   echo "[bitcoin-broadcast-evidence][error] node is required for structured JSON validation" >&2
   exit 1
 fi
 
-node - "$EVIDENCE_FILE" "$REQUIRE_READY" "$ROOT_DIR" <<'NODE'
+/usr/bin/env -i \
+  HOME=/ \
+  XDG_CONFIG_HOME=/ \
+  PATH=/usr/bin:/bin \
+  LANG=C \
+  LC_ALL=C \
+  "$NODE_BIN" - "$EVIDENCE_FILE" "$REQUIRE_READY" "$ROOT_DIR" "$SELFTEST_FIXTURE_ROOT" "$SELFTEST_INDEXER_RESPONSE" <<'NODE'
 const fs = require('fs');
+const path = require('path');
 const { execFileSync } = require('child_process');
+const { TextDecoder } = require('util');
 
-const [evidenceFile, requireReadyRaw, rootDir] = process.argv.slice(2);
+const [evidenceFile, requireReadyRaw, rootDir, selftestFixtureRootRaw, selftestIndexerResponseRaw] = process.argv.slice(2);
 const requireReady = requireReadyRaw === 'true';
 const errors = [];
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const MAX_EVIDENCE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_RECORDING_DELAY_MS = 24 * 60 * 60 * 1000;
+const MAX_RESPONSE_BODY_BYTES = 1024 * 1024;
+const MAX_RESPONSE_HEADERS_BYTES = 64 * 1024;
+const CURL_BIN = '/usr/bin/curl';
+const GIT_BIN = '/usr/bin/git';
+const FORBIDDEN_AMBIENT_OVERRIDES = [
+  'BITCOIN_BROADCAST_EVIDENCE_ROOT',
+  'BITCOIN_BROADCAST_EVIDENCE_COMMIT',
+  'BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE',
+  'BITCOIN_BROADCAST_EVIDENCE_CURL',
+  'BITCOIN_BROADCAST_EVIDENCE_GIT',
+  'BITCOIN_BROADCAST_EVIDENCE_NOW',
+  'BITCOIN_BROADCAST_EVIDENCE_NODE'
+];
 
 const REQUIRED_BLOCKERS = ['funded-testnet-broadcast-evidence-missing'];
 const REQUIRED_EVIDENCE_FIELDS = [
@@ -94,10 +163,108 @@ const REQUIRED_COMMAND_MARKERS = [
   'FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin'
 ];
 const CANONICAL_TESTNET_INDEXER_URL = 'https://blockstream.info/testnet/api';
+const CANONICAL_TESTNET_TRANSACTION_PREFIX = `${CANONICAL_TESTNET_INDEXER_URL}/tx/`;
+const SECRET_VALUE_PATTERN =
+  /(?:AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})/u;
 
 function fail(message) {
   errors.push(message);
 }
+
+for (const name of FORBIDDEN_AMBIENT_OVERRIDES) {
+  if (Object.prototype.hasOwnProperty.call(process.env, name)) {
+    fail(`${name} is forbidden; production evidence inputs cannot be supplied through ambient environment overrides`);
+  }
+}
+
+const selftestMode = selftestFixtureRootRaw.length > 0 || selftestIndexerResponseRaw.length > 0;
+let selftestRoot = null;
+let auditedEvidenceFile = selftestMode ? null : evidenceFile;
+
+if ((selftestFixtureRootRaw.length > 0) !== (selftestIndexerResponseRaw.length > 0)) {
+  fail('--selftest-fixture-root and --selftest-indexer-response must be supplied together');
+} else if (selftestMode) {
+  try {
+    if (!path.isAbsolute(selftestFixtureRootRaw)) {
+      throw new Error('self-test fixture root must be an absolute path');
+    }
+    const rootStat = fs.lstatSync(selftestFixtureRootRaw);
+    if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
+      throw new Error('self-test fixture root must be a real directory, not a symlink');
+    }
+    selftestRoot = fs.realpathSync(selftestFixtureRootRaw);
+  } catch (error) {
+    fail(`invalid self-test fixture root: ${error.message}`);
+  }
+}
+
+function isWithinSelftestRoot(candidate) {
+  return Boolean(
+    selftestRoot &&
+    (candidate === selftestRoot || candidate.startsWith(`${selftestRoot}${path.sep}`))
+  );
+}
+
+function resolveSelftestFile(file, label, { allowMissing = false } = {}) {
+  if (!selftestRoot) return null;
+  if (!path.isAbsolute(file)) {
+    fail(`${label} must be an absolute path beneath the self-test fixture root`);
+    return null;
+  }
+
+  const lexicalPath = path.resolve(file);
+  if (!isWithinSelftestRoot(lexicalPath)) {
+    fail(`${label} must remain beneath the self-test fixture root`);
+    return null;
+  }
+
+  if (!fs.existsSync(lexicalPath)) {
+    if (!allowMissing) fail(`${label} is missing: ${lexicalPath}`);
+    return lexicalPath;
+  }
+
+  try {
+    const stat = fs.lstatSync(lexicalPath);
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      fail(`${label} must be a regular file and must not be a symlink`);
+      return null;
+    }
+    const realPath = fs.realpathSync(lexicalPath);
+    if (!isWithinSelftestRoot(realPath)) {
+      fail(`${label} resolved outside the self-test fixture root`);
+      return null;
+    }
+    return realPath;
+  } catch (error) {
+    fail(`${label} could not be inspected: ${error.message}`);
+    return null;
+  }
+}
+
+let selftestNowMillis = null;
+if (selftestMode && selftestRoot) {
+  const evidenceFixturePath = resolveSelftestFile(evidenceFile, 'self-test evidence manifest', { allowMissing: true });
+  if (evidenceFixturePath) auditedEvidenceFile = evidenceFixturePath;
+  const currentTimeFile = resolveSelftestFile(
+    path.join(selftestRoot, 'current-time.txt'),
+    'self-test current-time fixture'
+  );
+  if (currentTimeFile) {
+    const value = fs.readFileSync(currentTimeFile, 'utf8').trim();
+    const parsedMillis = Date.parse(value);
+    const canonicalValue = Number.isFinite(parsedMillis)
+      ? new Date(parsedMillis).toISOString().replace('.000Z', 'Z')
+      : null;
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(value) || canonicalValue !== value) {
+      fail('self-test current-time fixture must contain one ISO-8601 UTC second timestamp');
+    } else {
+      selftestNowMillis = parsedMillis;
+    }
+  }
+  resolveSelftestFile(selftestIndexerResponseRaw, 'self-test indexer response');
+}
+
+const auditNowMillis = selftestNowMillis === null ? Date.now() : selftestNowMillis;
 
 function readJson(file) {
   if (!fs.existsSync(file)) {
@@ -142,6 +309,24 @@ function isTxid(value) {
 function isRepeatedHexPlaceholder(value) {
   const normalized = String(value || '').trim().toLowerCase();
   return /^[0-9a-f]{8,}$/.test(normalized) && new Set(normalized).size === 1;
+}
+
+function isTemplatePlaceholder(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return (
+    normalized === 'todo' ||
+    normalized === 'tbd' ||
+    normalized === 'n/a' ||
+    normalized === 'na' ||
+    normalized === 'sample' ||
+    normalized === 'example' ||
+    normalized === 'dummy' ||
+    normalized === 'placeholder' ||
+    normalized === 'operator' ||
+    normalized.startsWith('todo_') ||
+    normalized.startsWith('todo-') ||
+    normalized.includes('placeholder')
+  );
 }
 
 const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
@@ -229,7 +414,7 @@ function isOutpoint(value) {
 }
 
 function isIsoUtcSecond(value) {
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(String(value || ''));
+  return parseIsoUtcSecondMillis(value) !== null;
 }
 
 function parseIsoUtcDateStartMillis(value) {
@@ -254,26 +439,21 @@ function parseIsoUtcDateStartMillis(value) {
 }
 
 function isFutureTimestamp(value) {
-  const millis = Date.parse(value);
-  return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
+  const millis = parseIsoUtcSecondMillis(value);
+  return Number.isFinite(millis) && millis > auditNowMillis + MAX_CLOCK_SKEW_MS;
 }
 
 function isFutureDateStart(millis) {
-  return Number.isFinite(millis) && millis > Date.now() + MAX_CLOCK_SKEW_MS;
-}
-
-function normalizeIndexerUrl(value) {
-  try {
-    return new URL(String(value || '')).toString().replace(/\/+$/, '');
-  } catch {
-    return null;
-  }
+  return Number.isFinite(millis) && millis > auditNowMillis + MAX_CLOCK_SKEW_MS;
 }
 
 function parseIsoUtcSecondMillis(value) {
-  if (!isIsoUtcSecond(value)) return null;
-  const millis = Date.parse(value);
-  return Number.isFinite(millis) ? millis : null;
+  const normalized = String(value || '');
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(normalized)) return null;
+  const millis = Date.parse(normalized);
+  if (!Number.isFinite(millis)) return null;
+  const canonical = new Date(millis).toISOString().replace('.000Z', 'Z');
+  return canonical === normalized ? millis : null;
 }
 
 function startOfUtcDate(millis) {
@@ -320,6 +500,38 @@ function secretLikeKeyReason(value, path = '$') {
   return null;
 }
 
+function secretLikeValueReason(value, path = '$') {
+  if (typeof value === 'string') {
+    if (SECRET_VALUE_PATTERN.test(value)) {
+      return `${path} must not contain secret-like token`;
+    }
+    return null;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const reason = secretLikeValueReason(value[index], `${path}[${index}]`);
+      if (reason) {
+        return reason;
+      }
+    }
+    return null;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    const reason = secretLikeValueReason(child, `${path}.${key}`);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  return null;
+}
+
 function rejectUnsupportedKeys(value, allowedFields, path) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return;
@@ -332,13 +544,38 @@ function rejectUnsupportedKeys(value, allowedFields, path) {
   }
 }
 
-function resolveCurrentReleaseCommit() {
-  const override = process.env.BITCOIN_BROADCAST_EVIDENCE_COMMIT;
-  let commit = override;
+function validatePublicOperator(value, path) {
+  if (typeof value !== 'string') return;
+  if (/[\u0000-\u001f\u007f]/u.test(value)) {
+    fail(`${path}: operator must be a single-line public value`);
+  }
+  if (SECRET_VALUE_PATTERN.test(value)) {
+    fail(`${path}: operator must not contain secret-like token`);
+  }
+  if (isTemplatePlaceholder(value)) {
+    fail(`${path}: operator must not be a placeholder operator`);
+  }
+}
 
-  if (!commit) {
+function resolveCurrentReleaseCommit() {
+  let commit = null;
+
+  if (selftestMode) {
+    const commitFile = resolveSelftestFile(
+      path.join(selftestRoot || '', 'current-commit.txt'),
+      'self-test current-commit fixture'
+    );
+    if (commitFile) commit = fs.readFileSync(commitFile, 'utf8').trim();
+  } else {
     try {
-      commit = execFileSync('git', ['-C', rootDir, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+      if (!fs.existsSync(GIT_BIN)) throw new Error(`${GIT_BIN} is missing`);
+      commit = execFileSync(GIT_BIN, ['-C', rootDir, 'rev-parse', '--verify', 'HEAD^{commit}'], {
+        encoding: 'utf8',
+        env: sealedToolEnvironment('/'),
+        maxBuffer: 4096,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 10000
+      }).trim();
     } catch (error) {
       fail(`current release commit could not be resolved: ${error.message}`);
       return null;
@@ -346,12 +583,12 @@ function resolveCurrentReleaseCommit() {
   }
 
   if (!/^[0-9a-f]{40}$/i.test(String(commit || ''))) {
-    fail('BITCOIN_BROADCAST_EVIDENCE_COMMIT must be a 40-character git commit');
+    fail('current release commit must be a 40-character git commit');
     return null;
   }
 
   if (isRepeatedHexPlaceholder(commit)) {
-    fail('BITCOIN_BROADCAST_EVIDENCE_COMMIT must not be a placeholder git commit');
+    fail('current release commit must not be a placeholder git commit');
     return null;
   }
 
@@ -367,46 +604,171 @@ function splitOutpoint(value) {
   };
 }
 
-function transactionFromFixture(fixture, txid) {
-  if (Array.isArray(fixture)) {
-    return fixture.find((transaction) => String(transaction && transaction.txid || '').toLowerCase() === txid) || null;
+function sealedToolEnvironment(homeDir) {
+  return {
+    HOME: homeDir,
+    XDG_CONFIG_HOME: homeDir,
+    CURL_HOME: homeDir,
+    PATH: '/usr/bin:/bin',
+    LANG: 'C',
+    LC_ALL: 'C',
+    NO_PROXY: '*',
+    no_proxy: '*',
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: '/dev/null',
+    GIT_TERMINAL_PROMPT: '0',
+    GIT_OPTIONAL_LOCKS: '0'
+  };
+}
+
+function parseStrictUtf8Json(buffer, label) {
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+  } catch (error) {
+    throw new Error(`${label} must be valid UTF-8: ${error.message}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`${label} must be valid JSON: ${error.message}`);
+  }
+}
+
+function validateIndexerResponse(response, requestUrl, index) {
+  if (!response || typeof response !== 'object' || Array.isArray(response)) {
+    fail(`evidence[${index}] indexer transport response must be an object`);
+    return null;
   }
 
-  if (fixture && typeof fixture === 'object') {
-    if (fixture[txid]) return fixture[txid];
-    if (Array.isArray(fixture.transactions)) {
-      return fixture.transactions.find((transaction) => String(transaction && transaction.txid || '').toLowerCase() === txid) || null;
+  const allowedFields = new Set(['status', 'contentType', 'effectiveUrl', 'redirectCount', 'body']);
+  for (const field of Object.keys(response)) {
+    if (!allowedFields.has(field)) {
+      fail(`evidence[${index}] indexer transport response contains unsupported field ${field}`);
     }
   }
+  if (response.status !== 200) {
+    fail(`evidence[${index}] indexer HTTP status must be exactly 200`);
+  }
+  if (response.contentType !== 'application/json') {
+    fail(`evidence[${index}] indexer Content-Type must be exactly application/json`);
+  }
+  if (response.effectiveUrl !== requestUrl) {
+    fail(`evidence[${index}] indexer effective URL must remain exactly ${requestUrl}`);
+  }
+  if (response.redirectCount !== 0) {
+    fail(`evidence[${index}] indexer response must not follow redirects`);
+  }
 
-  return null;
+  let bodyBytes = Infinity;
+  try {
+    bodyBytes = Buffer.byteLength(JSON.stringify(response.body), 'utf8');
+  } catch {
+    // The size diagnostic below is intentionally fail closed.
+  }
+  if (bodyBytes > MAX_RESPONSE_BODY_BYTES) {
+    fail(`evidence[${index}] indexer response body exceeds ${MAX_RESPONSE_BODY_BYTES} bytes`);
+  }
+
+  return response.body;
+}
+
+function loadSelftestIndexerResponse(requestUrl, index) {
+  const fixtureFile = resolveSelftestFile(
+    selftestIndexerResponseRaw,
+    'self-test indexer response'
+  );
+  if (!fixtureFile) return null;
+
+  try {
+    const stat = fs.statSync(fixtureFile);
+    if (stat.size > MAX_RESPONSE_BODY_BYTES + MAX_RESPONSE_HEADERS_BYTES) {
+      fail(`self-test indexer response exceeds the bounded transport fixture size`);
+      return null;
+    }
+    const response = parseStrictUtf8Json(fs.readFileSync(fixtureFile), 'self-test indexer response');
+    return validateIndexerResponse(response, requestUrl, index);
+  } catch (error) {
+    fail(error.message);
+    return null;
+  }
+}
+
+function loadProductionIndexerResponse(requestUrl, index) {
+  let tempDir = null;
+  try {
+    if (!fs.existsSync(CURL_BIN)) throw new Error(`${CURL_BIN} is missing`);
+    tempDir = fs.mkdtempSync('/tmp/fearless-bitcoin-evidence-');
+    const homeDir = path.join(tempDir, 'home');
+    const bodyFile = path.join(tempDir, 'body');
+    const headersFile = path.join(tempDir, 'headers');
+    fs.mkdirSync(homeDir, { mode: 0o700 });
+
+    const writeOut = execFileSync(CURL_BIN, [
+      '--disable',
+      '--silent',
+      '--show-error',
+      '--request', 'GET',
+      '--proto', '=https',
+      '--proto-redir', '=https',
+      '--max-redirs', '0',
+      '--connect-timeout', '5',
+      '--max-time', '20',
+      '--max-filesize', String(MAX_RESPONSE_BODY_BYTES),
+      '--noproxy', '*',
+      '--proxy', '',
+      '--header', 'Accept: application/json',
+      '--header', 'Cache-Control: no-cache',
+      '--output', bodyFile,
+      '--dump-header', headersFile,
+      '--write-out', '%{http_code}\n%{url_effective}\n%{size_download}\n%{content_type}\n%{num_redirects}\n',
+      requestUrl
+    ], {
+      encoding: 'utf8',
+      env: sealedToolEnvironment(homeDir),
+      maxBuffer: 64 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 25000
+    });
+
+    const fields = writeOut.trimEnd().split('\n');
+    if (fields.length !== 5) throw new Error('curl returned malformed transport metadata');
+    const bodyStat = fs.statSync(bodyFile);
+    const headersStat = fs.statSync(headersFile);
+    const declaredBodyBytes = Number(fields[2]);
+    if (
+      bodyStat.size > MAX_RESPONSE_BODY_BYTES ||
+      !Number.isSafeInteger(declaredBodyBytes) ||
+      declaredBodyBytes !== bodyStat.size
+    ) {
+      throw new Error(`indexer response body exceeds or mismatches the ${MAX_RESPONSE_BODY_BYTES}-byte bound`);
+    }
+    if (headersStat.size > MAX_RESPONSE_HEADERS_BYTES) {
+      throw new Error(`indexer response headers exceed the ${MAX_RESPONSE_HEADERS_BYTES}-byte bound`);
+    }
+
+    return validateIndexerResponse({
+      status: Number(fields[0]),
+      effectiveUrl: fields[1],
+      contentType: fields[3],
+      redirectCount: Number(fields[4]),
+      body: parseStrictUtf8Json(fs.readFileSync(bodyFile), 'indexer response body')
+    }, requestUrl, index);
+  } catch (error) {
+    fail(`evidence[${index}] txid could not be verified through the canonical Bitcoin indexer: ${error.message}`);
+    return null;
+  } finally {
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 function loadIndexerTransaction(entry, index) {
   const txid = String(entry.txid || '').toLowerCase();
-  const fixtureFile = process.env.BITCOIN_BROADCAST_EVIDENCE_INDEXER_FIXTURE;
+  const requestUrl = `${CANONICAL_TESTNET_TRANSACTION_PREFIX}${txid}`;
 
-  if (fixtureFile) {
-    try {
-      const fixture = JSON.parse(fs.readFileSync(fixtureFile, 'utf8'));
-      const transaction = transactionFromFixture(fixture, txid);
-      if (!transaction) {
-        fail(`evidence[${index}] txid was not found in Bitcoin broadcast indexer fixture`);
-      }
-      return transaction;
-    } catch (error) {
-      fail(`Bitcoin broadcast indexer fixture must be valid JSON: ${error.message}`);
-      return null;
-    }
-  }
-
-  const requestUrl = `${String(entry.indexerUrl).replace(/\/+$/, '')}/tx/${txid}`;
-  try {
-    return JSON.parse(execFileSync('curl', ['--fail', '--silent', '--show-error', '--max-time', '20', requestUrl], { encoding: 'utf8' }));
-  } catch (error) {
-    fail(`evidence[${index}] txid could not be verified through ${entry.indexerUrl}: ${error.message}`);
-    return null;
-  }
+  return selftestMode
+    ? loadSelftestIndexerResponse(requestUrl, index)
+    : loadProductionIndexerResponse(requestUrl, index);
 }
 
 function verifyBroadcastRecord(entry, index) {
@@ -462,8 +824,19 @@ function verifyBroadcastRecord(entry, index) {
 
   const evidenceTimestampMillis = parseIsoUtcSecondMillis(entry.timestamp);
   const blockTimeMillis = status.block_time * 1000;
+  if (blockTimeMillis > auditNowMillis + MAX_CLOCK_SKEW_MS) {
+    fail(`evidence[${index}] confirmed indexer transaction block_time must not be in the future`);
+  }
   if (evidenceTimestampMillis !== null && evidenceTimestampMillis < blockTimeMillis) {
     fail(`evidence[${index}] timestamp must be at or after the confirmed transaction block_time`);
+  } else if (
+    evidenceTimestampMillis !== null &&
+    evidenceTimestampMillis - blockTimeMillis > MAX_RECORDING_DELAY_MS
+  ) {
+    fail(`evidence[${index}] timestamp is too far after the confirmed transaction block_time`);
+  }
+  if (auditNowMillis - blockTimeMillis > MAX_EVIDENCE_AGE_MS) {
+    fail(`evidence[${index}] confirmed indexer transaction is stale; release evidence must be at most 7 days old`);
   }
 
   return errors.length === errorCountBefore;
@@ -488,7 +861,7 @@ function validateReadyEnvelope(manifest, manifestBlockers, evidence, requireRead
   return true;
 }
 
-const manifest = readJson(evidenceFile);
+const manifest = auditedEvidenceFile ? readJson(auditedEvidenceFile) : null;
 
 if (manifest) {
   requireObject(manifest, 'manifest');
@@ -496,6 +869,10 @@ if (manifest) {
   const secretLikePath = secretLikeKeyReason(manifest);
   if (secretLikePath) {
     fail(`${secretLikePath} must not be included in public Bitcoin broadcast evidence`);
+  }
+  const secretLikeValuePath = secretLikeValueReason(manifest);
+  if (secretLikeValuePath) {
+    fail(secretLikeValuePath);
   }
   rejectUnsupportedKeys(manifest, ALLOWED_MANIFEST_FIELDS, 'manifest');
 
@@ -547,6 +924,9 @@ if (manifest) {
   }
 
   if (manifest.status === 'blocked') {
+    if (evidence.length !== 0) {
+      fail('blocked Bitcoin broadcast evidence must not contain evidence records');
+    }
     for (const blocker of REQUIRED_BLOCKERS) {
       if (!blockers.has(blocker)) {
         fail(`blocked evidence missing blocker ${blocker}`);
@@ -639,6 +1019,8 @@ if (manifest) {
       fail(`evidence[${index}].amountSat must be a positive integer string`);
     }
 
+    validatePublicOperator(entry.operator, `evidence[${index}].operator`);
+
     if (!isOutpoint(entry.outpoint)) {
       fail(`evidence[${index}].outpoint must be formatted as <txid>:<vout>`);
     } else {
@@ -650,14 +1032,12 @@ if (manifest) {
 
     try {
       const url = new URL(entry.indexerUrl);
-      if (url.protocol !== 'https:') {
-        fail(`evidence[${index}].indexerUrl must use https`);
-      }
+      if (url.protocol !== 'https:') fail(`evidence[${index}].indexerUrl must use https`);
     } catch {
       fail(`evidence[${index}].indexerUrl must be a valid URL`);
     }
-    if (normalizeIndexerUrl(entry.indexerUrl) !== normalizeIndexerUrl(manifest.defaultIndexerUrl)) {
-      fail(`evidence[${index}].indexerUrl must match defaultIndexerUrl ${manifest.defaultIndexerUrl}`);
+    if (entry.indexerUrl !== CANONICAL_TESTNET_INDEXER_URL) {
+      fail(`evidence[${index}].indexerUrl must be exactly the reviewed origin and path ${CANONICAL_TESTNET_INDEXER_URL}`);
     }
 
     if (!isIsoUtcSecond(entry.timestamp)) {
@@ -667,6 +1047,9 @@ if (manifest) {
     } else {
       const timestampMillis = parseIsoUtcSecondMillis(entry.timestamp);
       if (timestampMillis !== null) {
+        if (readyClaimed && auditNowMillis - timestampMillis > MAX_EVIDENCE_AGE_MS) {
+          fail(`evidence[${index}].timestamp is stale; release evidence must be at most 7 days old`);
+        }
         latestEvidenceDateStartMillis = Math.max(
           latestEvidenceDateStartMillis || 0,
           startOfUtcDate(timestampMillis)
@@ -713,5 +1096,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`[bitcoin-broadcast-evidence] status=${manifest.status} releaseEnabled=${manifest.releaseEnabled} evidence=${manifest.evidence.length}`);
+console.log(`[bitcoin-broadcast-evidence] status=${manifest.status} releaseEnabled=${manifest.releaseEnabled} evidence=${manifest.evidence.length} mode=${selftestMode ? 'selftest-not-release-evidence' : 'production'}`);
 NODE

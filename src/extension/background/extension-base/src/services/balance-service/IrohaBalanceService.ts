@@ -1,5 +1,7 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { FPNumber } from '@sora-substrate/util';
 import { createIrohaToriiWalletClient, type IrohaToriiRouteResponse } from '@extension-base/services/iroha-torii-service';
+import { reconcileSuccessfulDynamicScan } from './reconcileSuccessfulScan';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload, ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
@@ -13,6 +15,9 @@ type IrohaNetworkKey = keyof typeof UNIVERSAL_WALLET_IROHA_NETWORKS;
 
 type IrohaAccountAssetListResponse = {
   items?: IrohaAccountAssetListItem[];
+  has_more?: boolean;
+  hasMore?: boolean;
+  total?: number | string;
 };
 
 type IrohaAccountAssetListItem = {
@@ -32,6 +37,9 @@ type IrohaAccountAssetListItem = {
 
 type IrohaAssetDefinitionListResponse = {
   items?: IrohaAssetDefinitionListItem[];
+  has_more?: boolean;
+  hasMore?: boolean;
+  total?: number | string;
 };
 
 type IrohaAssetDefinitionListItem = {
@@ -39,23 +47,29 @@ type IrohaAssetDefinitionListItem = {
   name?: string;
   alias?: string;
   metadata?: Record<string, unknown> | null;
+  spec?: {
+    scale?: number | null;
+  } | null;
 };
 
 type IrohaBalanceClient = {
   getAccountAssets<TBody = unknown>(
     accountId: string,
-    options?: { limit?: number }
+    options?: { limit?: number; offset?: number }
   ): Promise<IrohaToriiRouteResponse<TBody>>;
-  getAssetDefinitions<TBody = unknown>(): Promise<TBody>;
+  getAssetDefinitions<TBody = unknown>(
+    options?: { assetId?: string; limit?: number; offset?: number }
+  ): Promise<IrohaToriiRouteResponse<TBody>>;
 };
 
 type IrohaBalanceClientFactory = (network: NetworkJson, irohaNetwork: IrohaNetworkKey) => IrohaBalanceClient;
 
 const IROHA_FALLBACK_NETWORK = 'Taira';
-const IROHA_FALLBACK_ASSET_ID = 'xor#sora';
+const IROHA_NEXUS_FALLBACK_ASSET_ID = 'xor#sora';
 const IROHA_FALLBACK_ICON = 'iroha';
 const IROHA_FALLBACK_SYMBOL = 'XOR';
-const IROHA_MAX_BALANCE_ITEMS = 500;
+const IROHA_BALANCE_PAGE_SIZE = 200;
+const IROHA_DEFINITION_PAGE_SIZE = 200;
 
 export default class IrohaBalanceService {
   private readonly clientFactory: IrohaBalanceClientFactory;
@@ -81,10 +95,34 @@ export default class IrohaBalanceService {
     if (!irohaNetworks.length) return [];
 
     const results = await Promise.all(
-      irohaNetworks.map((network) => this.fetchNetworkBalance(accountAddress, irohaAddress ?? address, network))
+      irohaNetworks.map((network) =>
+        this.fetchNetworkBalance(
+          accountAddress,
+          this.resolveWalletAddress(accountAddress, irohaAddress ?? address, network),
+          network
+        )
+      )
     );
 
     return results.flat();
+  }
+
+  private resolveWalletAddress(
+    accountAddress: string,
+    fallback: string | undefined,
+    network: NetworkJson
+  ): string | undefined {
+    const account = this.state.keyringService?.getAllMainAccounts?.().find(({ address }) =>
+      isSameString(address, accountAddress)
+    );
+    const networkKey = this.getIrohaNetworkKey(network);
+    const publicAccount = account?.meta.universalWallet?.publicAccounts.find(
+      (item) =>
+        item.ecosystem === 'iroha' &&
+        (isSameString(item.chainId, network.chainId) || item.chainId?.toLowerCase().includes(networkKey))
+    );
+
+    return publicAccount?.address ?? fallback;
   }
 
   private async fetchNetworkBalance(
@@ -103,20 +141,62 @@ export default class IrohaBalanceService {
 
     try {
       const client = this.clientFactory(network, irohaNetwork);
-      const [assetsResponse, definitionsResponse] = await Promise.all([
-        client.getAccountAssets<IrohaAccountAssetListResponse>(walletAddress, { limit: IROHA_MAX_BALANCE_ITEMS }),
-        this.fetchAssetDefinitions(client),
-      ]);
-      const definitions = this.getAssetDefinitionMap(definitionsResponse);
-      const items = this.normalizeAssetItems(assetsResponse.body);
+      const items = await this.fetchAllAccountAssets(client, walletAddress);
+      const requiredDefinitionIds = new Set(items.map((item) => this.getAssetId(item)));
 
-      if (!items.length) {
+      if (irohaNetwork === 'taira') {
+        requiredDefinitionIds.add(UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.id);
+      }
+
+      if (!requiredDefinitionIds.size) {
         this.setNativeBalance(accountAddress, network, undefined, APIItemState.READY);
+        reconcileSuccessfulDynamicScan(this.state, {
+          address: accountAddress,
+          network: network.name,
+          observedAssetIds: [],
+          includes: ({ isNative, isUtility, type }) => type === 'iroha' && !isNative && !isUtility,
+        });
 
         return [{ assetId: nativeAsset.id, balance: '0', network: network.name }];
       }
 
-      items.forEach((item) => this.setAssetBalance(accountAddress, network, item, definitions.get(this.getAssetId(item))));
+      const definitionsResponse = await this.fetchAssetDefinitions(
+        client,
+        requiredDefinitionIds
+      );
+      const definitions = this.getAssetDefinitionMap(definitionsResponse);
+      this.validateTairaNativeDefinition(network, definitions);
+
+      if (!items.length) {
+        this.setNativeBalance(accountAddress, network, undefined, APIItemState.READY);
+        reconcileSuccessfulDynamicScan(this.state, {
+          address: accountAddress,
+          network: network.name,
+          observedAssetIds: [],
+          includes: ({ isNative, isUtility, type }) => type === 'iroha' && !isNative && !isUtility,
+        });
+
+        return [{ assetId: nativeAsset.id, balance: '0', network: network.name }];
+      }
+
+      items.forEach((item) => {
+        const assetId = this.getAssetId(item);
+        const definition = definitions.get(assetId);
+
+        if (!definition) throw new Error(`iroha_asset_definition_missing:${assetId}`);
+
+        this.setAssetBalance(accountAddress, network, item, definition);
+      });
+      const observedAssetIds = items.map((item) => this.getAssetId(item));
+      if (!observedAssetIds.includes(nativeAsset.id)) {
+        this.setNativeBalance(accountAddress, network, undefined, APIItemState.READY);
+      }
+      reconcileSuccessfulDynamicScan(this.state, {
+        address: accountAddress,
+        network: network.name,
+        observedAssetIds,
+        includes: ({ isNative, isUtility, type }) => type === 'iroha' && !isNative && !isUtility,
+      });
 
       return items.map((item) => ({
         assetId: this.getAssetId(item),
@@ -140,14 +220,92 @@ export default class IrohaBalanceService {
     }
   }
 
-  private async fetchAssetDefinitions(client: IrohaBalanceClient): Promise<IrohaAssetDefinitionListResponse> {
-    try {
-      return await client.getAssetDefinitions<IrohaAssetDefinitionListResponse>();
-    } catch (error) {
-      console.warn('Failed to fetch Iroha asset definitions', error);
+  private async fetchAllAccountAssets(
+    client: IrohaBalanceClient,
+    accountId: string
+  ): Promise<IrohaAccountAssetListItem[]> {
+    const assets = new Map<string, IrohaAccountAssetListItem>();
+    const seenPages = new Set<string>();
+    let offset = 0;
 
-      return { items: [] };
+    while (true) {
+      const response = await client.getAccountAssets<IrohaAccountAssetListResponse>(accountId, {
+        limit: IROHA_BALANCE_PAGE_SIZE,
+        offset,
+      });
+      const page = this.normalizeAssetItems(response.body);
+      const rawPageSize = Array.isArray(response.body?.items) ? response.body.items.length : 0;
+      const fingerprint = page.map((item) => `${this.getAssetId(item)}=${this.getQuantity(item)}`).join('|');
+
+      if (seenPages.has(fingerprint)) throw new Error('iroha_pagination_cycle');
+      seenPages.add(fingerprint);
+
+      page.forEach((item) => {
+        const assetId = this.getAssetId(item);
+        const existing = assets.get(assetId);
+        const quantity = existing
+          ? new FPNumber(this.getQuantity(existing)).add(new FPNumber(this.getQuantity(item))).toString()
+          : this.getQuantity(item);
+
+        assets.set(assetId, { ...(existing ?? item), quantity, value: undefined });
+      });
+
+      const explicitHasMore = response.body?.has_more ?? response.body?.hasMore;
+      const total = Number(response.body?.total);
+      const nextOffset = offset + rawPageSize;
+      const totalHasMore = Number.isSafeInteger(total) && total >= 0 ? nextOffset < total : false;
+      const shouldContinue = explicitHasMore === true || totalHasMore || (explicitHasMore === undefined && rawPageSize >= IROHA_BALANCE_PAGE_SIZE);
+
+      if (!shouldContinue || rawPageSize === 0) break;
+      offset = nextOffset;
     }
+
+    return [...assets.values()];
+  }
+
+  private async fetchAssetDefinitions(
+    client: IrohaBalanceClient,
+    heldAssetIds: Set<string>
+  ): Promise<IrohaAssetDefinitionListResponse> {
+    const definitions = new Map<string, IrohaAssetDefinitionListItem>();
+    const seenPages = new Set<string>();
+    let offset = 0;
+
+    while (true) {
+      const response = await client.getAssetDefinitions<IrohaAssetDefinitionListResponse>({
+        limit: IROHA_DEFINITION_PAGE_SIZE,
+        offset,
+      });
+      const page = this.normalizeDefinitionItems(response.body);
+      const rawPageSize = Array.isArray(response.body?.items) ? response.body.items.length : 0;
+      const fingerprint = page.map(({ id }) => id).join('|');
+
+      if (rawPageSize > 0 && seenPages.has(fingerprint)) throw new Error('iroha_definition_pagination_cycle');
+      if (rawPageSize > 0) seenPages.add(fingerprint);
+
+      page.forEach((definition) => {
+        if (definitions.has(definition.id)) {
+          throw new Error(`iroha_duplicate_asset_definition:${definition.id}`);
+        }
+        definitions.set(definition.id, definition);
+      });
+
+      if ([...heldAssetIds].every((assetId) => definitions.has(assetId))) break;
+
+      const explicitHasMore = response.body?.has_more ?? response.body?.hasMore;
+      const total = Number(response.body?.total);
+      const nextOffset = offset + rawPageSize;
+      const totalHasMore = Number.isSafeInteger(total) && total >= 0 ? nextOffset < total : false;
+      const shouldContinue =
+        explicitHasMore === true ||
+        totalHasMore ||
+        (explicitHasMore === undefined && rawPageSize >= IROHA_DEFINITION_PAGE_SIZE);
+
+      if (!shouldContinue || rawPageSize === 0) break;
+      offset = nextOffset;
+    }
+
+    return { items: [...definitions.values()] };
   }
 
   private getIrohaNetworks(networks: string[]): NetworkJson[] {
@@ -247,21 +405,35 @@ export default class IrohaBalanceService {
     return definitions;
   }
 
-  private getNativeAsset(network: NetworkJson): { id: string; icon: string; precision: number; symbol: string } {
+  private normalizeDefinitionItems(response: IrohaAssetDefinitionListResponse): IrohaAssetDefinitionListItem[] {
+    if (!response || !Array.isArray(response.items)) return [];
+
+    return response.items.filter(
+      (item): item is IrohaAssetDefinitionListItem =>
+        !!item && typeof item === 'object' && typeof item.id === 'string' && item.id.length > 0
+    );
+  }
+
+  private getNativeAsset(
+    network: NetworkJson
+  ): { id: string; icon: string; precision: number; symbol: string; priceId?: string } {
     const asset = network.assets.find(({ isUtility, isNative }) => isUtility || isNative);
+    const tairaNative = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset;
+    const isTaira = this.getIrohaNetworkKey(network) === 'taira';
 
     return {
-      id: asset?.id ?? IROHA_FALLBACK_ASSET_ID,
+      id: asset?.id ?? (isTaira ? tairaNative.id : IROHA_NEXUS_FALLBACK_ASSET_ID),
       icon: asset?.icon ?? IROHA_FALLBACK_ICON,
-      precision: asset?.precision ?? 0,
-      symbol: asset?.symbol ?? IROHA_FALLBACK_SYMBOL,
+      precision: asset?.precision ?? (isTaira ? tairaNative.decimals : 0),
+      symbol: asset?.symbol ?? (isTaira ? tairaNative.symbol : IROHA_FALLBACK_SYMBOL),
+      priceId: asset?.priceId,
     };
   }
 
   private setNativeBalance(address: string, network: NetworkJson, balance: string | undefined, state: APIItemState): void {
-    const { id, icon, precision, symbol } = this.getNativeAsset(network);
+    const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
     const balanceString = balance ?? '0';
-    const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol, symbol);
+    const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol, symbol, priceId);
     const balanceItem = this.createBalanceItem({
       address,
       assetId: id,
@@ -271,8 +443,11 @@ export default class IrohaBalanceService {
       isUtility: true,
       network,
       precision,
+      priceId,
       state,
       symbol,
+      trust: 'verified',
+      source: 'registry',
     });
 
     this.upsertBalanceItem(tokenGroup, balanceItem, network, address);
@@ -282,17 +457,29 @@ export default class IrohaBalanceService {
     address: string,
     network: NetworkJson,
     item: IrohaAccountAssetListItem,
-    definition: IrohaAssetDefinitionListItem | undefined
+    definition: IrohaAssetDefinitionListItem
   ): void {
     const assetId = this.getAssetId(item);
     const quantity = this.getQuantity(item);
-    const networkAsset = network.assets.find(({ id, symbol }) => id === assetId || isSameString(symbol, assetId));
-    const metadata = definition?.metadata ?? {};
+    const networkAsset = network.assets.find(({ id, currencyId }) => id === assetId || currencyId === assetId);
     const symbol = this.getSymbol(item, definition, networkAsset?.symbol);
     const tokenName = definition?.name ?? this.getString(item.asset_name ?? item.assetName) ?? symbol;
-    const precision = networkAsset?.precision ?? this.getMetadataPrecision(metadata) ?? 0;
+    const precision = this.getDefinitionScale(definition);
+
+    if (precision === undefined) throw new Error(`iroha_asset_scale_missing:${assetId}`);
+    if (networkAsset?.precision !== undefined && networkAsset.precision !== precision) {
+      throw new Error(`iroha_asset_scale_mismatch:${assetId}`);
+    }
     const icon = networkAsset?.icon ?? network.icon ?? IROHA_FALLBACK_ICON;
-    const tokenGroup = this.getOrCreateTokenGroup(address, network, assetId, icon, symbol, tokenName);
+    const tokenGroup = this.getOrCreateTokenGroup(
+      address,
+      network,
+      assetId,
+      icon,
+      symbol,
+      tokenName,
+      networkAsset?.priceId
+    );
     const balanceItem = this.createBalanceItem({
       address,
       assetId,
@@ -302,8 +489,11 @@ export default class IrohaBalanceService {
       isUtility: networkAsset?.isUtility ?? false,
       network,
       precision,
+      priceId: networkAsset?.priceId,
       state: APIItemState.READY,
       symbol,
+      trust: networkAsset ? 'verified' : 'unverified',
+      source: networkAsset ? 'registry' : 'chain',
     });
 
     this.upsertBalanceItem(tokenGroup, balanceItem, network, address);
@@ -318,8 +508,11 @@ export default class IrohaBalanceService {
     isUtility,
     network,
     precision,
+    priceId,
+    source,
     state,
     symbol,
+    trust,
   }: {
     address: string;
     assetId: string;
@@ -329,8 +522,11 @@ export default class IrohaBalanceService {
     isUtility: boolean;
     network: NetworkJson;
     precision: number;
+    priceId?: string;
+    source: NonNullable<BalanceItem['assetMetadataSource']>;
     state: APIItemState;
     symbol: string;
+    trust: NonNullable<BalanceItem['assetMetadataTrust']>;
   }): BalanceItem {
     return {
       address,
@@ -341,6 +537,7 @@ export default class IrohaBalanceService {
       mainNetwork: network.name,
       name: network.name,
       precision,
+      priceId,
       relayChain: 'iroha' as RelayChainName,
       reserved: '0',
       frozen: '0',
@@ -352,6 +549,9 @@ export default class IrohaBalanceService {
       symbol,
       type: 'iroha',
       timestamp: Date.now(),
+      assetMetadataTrust: trust,
+      assetMetadataSource: source,
+      scanCoverage: state === APIItemState.READY ? 'complete' : 'limited',
     };
   }
 
@@ -385,7 +585,7 @@ export default class IrohaBalanceService {
         const balanceItem = {
           ...existing,
           state: APIItemState.ERROR,
-          timestamp: Date.now(),
+          timestamp: existing.timestamp,
         };
 
         group.balances[balanceIndex] = balanceItem;
@@ -406,7 +606,8 @@ export default class IrohaBalanceService {
     assetId: string,
     assetIcon: string,
     symbol: string,
-    tokenName: string
+    tokenName: string,
+    priceId?: string
   ): TokenGroup {
     if (!this.state.balanceService.balanceMap[address]) this.state.balanceService.balanceMap[address] = [];
 
@@ -417,6 +618,7 @@ export default class IrohaBalanceService {
     if (existing) {
       existing.mainNetwork = network.name;
       existing.relayChain = 'iroha' as RelayChainName;
+      if (priceId) existing.priceId = priceId;
 
       return existing;
     }
@@ -426,7 +628,7 @@ export default class IrohaBalanceService {
       groupId: assetId,
       icon: assetIcon,
       mainNetwork: network.name,
-      priceId: symbol,
+      priceId,
       providers: [],
       relayChain: 'iroha' as RelayChainName,
       symbol,
@@ -460,18 +662,33 @@ export default class IrohaBalanceService {
     return symbol ? symbol.toUpperCase() : IROHA_FALLBACK_SYMBOL;
   }
 
-  private getMetadataPrecision(metadata: Record<string, unknown>): number | undefined {
-    const value = metadata.precision ?? metadata.decimals ?? metadata.scale;
+  private getDefinitionScale(definition: IrohaAssetDefinitionListItem | undefined): number | undefined {
+    const scale = definition?.spec?.scale;
 
-    if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 255) return value;
+    return typeof scale === 'number' && Number.isInteger(scale) && scale >= 0 && scale <= 28
+      ? scale
+      : undefined;
+  }
 
-    if (typeof value === 'string' && /^[0-9]+$/u.test(value)) {
-      const parsed = Number(value);
+  private validateTairaNativeDefinition(
+    network: NetworkJson,
+    definitions: Map<string, IrohaAssetDefinitionListItem>
+  ): void {
+    if (this.getIrohaNetworkKey(network) !== 'taira') return;
 
-      if (parsed >= 0 && parsed <= 255) return parsed;
+    const canonical = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset;
+    const configured = this.getNativeAsset(network);
+    const definition = definitions.get(canonical.id);
+
+    if (
+      configured.id !== canonical.id ||
+      configured.symbol !== canonical.symbol ||
+      configured.precision !== canonical.decimals ||
+      !definition ||
+      this.getDefinitionScale(definition) !== canonical.decimals
+    ) {
+      throw new Error('iroha_taira_native_asset_definition_mismatch');
     }
-
-    return undefined;
   }
 
   private getString(value: unknown): string | undefined {

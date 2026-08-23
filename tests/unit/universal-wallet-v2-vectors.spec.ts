@@ -66,9 +66,7 @@ type Vector = {
   expected: VectorExpected;
 };
 
-const fixture = JSON.parse(
-  readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')
-) as {
+const fixture = JSON.parse(readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')) as {
   version: number;
   vectors: Vector[];
   negativeCases: Array<{ id: string; reason: string }>;
@@ -85,19 +83,14 @@ describe('Universal Wallet V2 vectors', () => {
       'solana-wrong-path',
       'ton-testnet-flag',
     ]);
-    expect(new Set(Object.values(WalletEcosystem))).toEqual(new Set(['substrate', 'evm', 'ton', 'bitcoin', 'solana', 'iroha']));
+    expect(new Set(Object.values(WalletEcosystem))).toEqual(
+      new Set(['substrate', 'evm', 'ton', 'bitcoin', 'solana', 'iroha'])
+    );
 
     for (const vector of fixture.vectors) {
       expect(vector.mnemonic.split(' ')).toHaveLength(vector.wordCount);
       expect([12, 24]).toContain(vector.wordCount);
-      expect(Object.keys(vector.expected).sort()).toEqual([
-        'bitcoin',
-        'evm',
-        'iroha',
-        'solana',
-        'substrate',
-        'ton',
-      ]);
+      expect(Object.keys(vector.expected).sort()).toEqual(['bitcoin', 'evm', 'iroha', 'solana', 'substrate', 'ton']);
 
       expect(vector.expected.substrate.cryptoType).toBe('sr25519');
       expect(vector.expected.substrate.ss58Prefix).toBe(0);
@@ -221,11 +214,17 @@ describe('Universal Wallet V2 vectors', () => {
 
     expect(UNIVERSAL_WALLET_IROHA_NETWORKS.taira).toEqual({
       id: 'taira-testnet',
-      chainId: 'iroha3-taira',
+      chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
       chainDiscriminant: 369,
       toriiBaseUrl: 'https://taira.sora.org',
       mcpPath: '/v1/mcp',
       enabledByDefault: true,
+      nativeAsset: {
+        id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
+        symbol: 'XOR',
+        decimals: 9,
+        name: 'XOR',
+      },
     });
     expect(UNIVERSAL_WALLET_IROHA_NETWORKS.nexus).toEqual({
       id: 'sora-nexus-mainnet',
@@ -243,9 +242,13 @@ describe('Universal Wallet V2 vectors', () => {
     expect(expected.substrate.derivationPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.substrateRoot);
     expect(expected.evm.derivationPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.evmDefault);
     expect(expected.bitcoin.mainnet.accountPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.bitcoinMainnetAccount);
-    expect(expected.bitcoin.mainnet.firstReceivePath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.bitcoinMainnetFirstReceive);
+    expect(expected.bitcoin.mainnet.firstReceivePath).toBe(
+      UNIVERSAL_WALLET_DERIVATION_PATHS.bitcoinMainnetFirstReceive
+    );
     expect(expected.bitcoin.testnet.accountPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.bitcoinTestnetAccount);
-    expect(expected.bitcoin.testnet.firstReceivePath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.bitcoinTestnetFirstReceive);
+    expect(expected.bitcoin.testnet.firstReceivePath).toBe(
+      UNIVERSAL_WALLET_DERIVATION_PATHS.bitcoinTestnetFirstReceive
+    );
     expect(expected.solana.derivationPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.solanaDefault);
     expect(expected.ton.derivationPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.tonDefault);
     expect(expected.iroha.derivationPath).toBe(UNIVERSAL_WALLET_DERIVATION_PATHS.irohaDefault);

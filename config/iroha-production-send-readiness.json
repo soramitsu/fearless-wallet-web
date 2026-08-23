@@ -1,0 +1,422 @@
+{
+  "schemaVersion": 1,
+  "platform": "browser-extension",
+  "status": "blocked",
+  "releaseEnabled": false,
+  "nexusEnabledByDefault": false,
+  "upstream": {
+    "repository": "hyperledger/iroha",
+    "tag": "v2.0.0-rc.2.1-fearless-mobile-sdk.3",
+    "releaseUrl": "https://github.com/hyperledger/iroha/releases/tag/v2.0.0-rc.2.1-fearless-mobile-sdk.3"
+  },
+  "artifact": {
+    "name": "iroha-js-0.0.2-v2.0.0-rc.2.1-fearless-mobile-sdk.3.tgz",
+    "sha256": "68def75061c3842cd2fddbd4629b1ceaf80b2b1ff3069a477596ada9bae61339",
+    "bytes": 1843179,
+    "browserTransactionEncoder": false,
+    "containsTransactionCodecSubpath": false,
+    "nativeBrowserError": "iroha_js_host is unavailable in browser builds."
+  },
+  "sourceEvidence": {
+    "observedAt": "2026-07-12",
+    "state": "validated-durable-local-candidate-unpublished",
+    "sourceBaseCommit": "b423c0f8bcd317fd945d6f66ce3fa679401dba7f",
+    "sourceBranch": "optimizations",
+    "sourceClean": false,
+    "sourcePushed": false,
+    "frozenCandidatePatch": true,
+    "packageVersion": "0.0.3",
+    "publishedImmutableArtifact": false,
+    "pinnedByThisProject": false,
+    "bundledProductionImport": false,
+    "publicSubpath": "@iroha/iroha-js/transaction-codec",
+    "candidateArtifact": {
+      "name": "iroha-iroha-js-0.0.3.tgz",
+      "evidencePath": "artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f",
+      "evidenceManifestSha256": "723c46192d369dac939f75d1ef1fb2f82456b3cd6afbd0ac51c0071383871a4d",
+      "patchSha256": "b50de5592570e96f9d48374ed39d55cb4a4cc8298e99fc0657e698d3e4c81049",
+      "sourceBaseTree": "f5e47336c7ba64f43e629636fd0b0b31ca39a22e",
+      "evidenceVendored": true,
+      "ephemeral": false,
+      "replayable": true,
+      "sourceReplayRequiresExternalRepository": false,
+      "baseSourceArchiveBundled": true,
+      "baseSourceArchiveSha256": "cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c",
+      "baseSourceArchiveBytes": 2412361,
+      "baseSourceArchiveEntries": 305,
+      "baseSourceInventorySha256": "949e4b1f101cc47ebcd37f933784bffa183224262c94200708c1fcf237bf61d4",
+      "reconstructedSubsetTree": "04fbf3b60512c7daf734d3f72c6a60ceb79316af",
+      "baseRepositoryBundled": false,
+      "offlineCandidateReplayable": true,
+      "offlineFullSourceReplayable": false,
+      "exactTarRepackVerified": true,
+      "files": 154,
+      "archiveEntries": 154,
+      "packedBytes": 1281259,
+      "unpackedBytes": 7914958,
+      "npmShasumSha1": "8ee3a23653fc4e2648f81dc12ce5cf00d36b4439",
+      "tarSha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+      "integrity": "sha512-D/B55Y6GWQGsiBjy07PUbUOzSb8+zBRYgutNew8Wb3kJxMjahxHYOvcHbTBln1kOcgKogn/eCnQ/CC6iYrwStA==",
+      "published": false,
+      "reviewed": false,
+      "pinnedByThisProject": false,
+      "bundledByThisProject": false
+    },
+    "upstreamWorkspaceReleaseGates": {
+      "scopedRustFmt": "passed",
+      "fullRustWorkspaceCompile": "passed-with-28-pre-existing-dead-code-warnings",
+      "cargoFmtAll": "passed"
+    },
+    "kagemushaV2PolicyClosure": {
+      "toriiCargoCheck": {
+        "status": "passed",
+        "errors": 0,
+        "existingCoreWarnings": 28,
+        "testProfileWarnings": 31
+      },
+      "toriiFocused": { "passed": 12, "failed": 0 },
+      "coreGlobalOperationId": { "passed": 3, "failed": 0 },
+      "javascriptStaticParity": { "passed": 76, "failed": 0 },
+      "mainPolicy": "passed",
+      "canonicalOpenApi": {
+        "generatorAndSync": "passed",
+        "rootCurrentByteIdentical": true,
+        "specBytes": 663006,
+        "sha256": "d773d734b5baddc20725982874ed7ef76320ab74e4b99402b2a36d4892764ae3",
+        "blake3": "e771c3beac43c73b9628c7798b7401631b84508f8cd2fb3edc547124c157f960",
+        "dirtySourceDigest": "665e6c059696facaadbd84e2f8203dc6aaf2a0bd8d24329e7774e4f0fe6ce36c",
+        "generatorCommit": null,
+        "dirty": true,
+        "signed": false,
+        "redeemRoute": "503-fail-closed-200-conditional-unreachable-future",
+        "defaultReleaseVerification": "rejects-dirty-source",
+        "developmentVerification": "passed-with-explicit-allow-unsigned",
+        "xtask": { "passed": 20, "failed": 0 },
+        "portal": { "passed": 54, "failed": 0 },
+        "focusedTorii": { "passed": 1, "failed": 0 },
+        "ciChecker": "passed"
+      },
+      "productionCaveat": "v2-redeem-fail-closed-until-canonical-atomic-operation-receipt-backend"
+    },
+    "focusedTests": {
+      "browserAndPackageFocused": { "passed": 23, "failed": 0 },
+      "packageAndTypes": { "passed": 5, "failed": 0 },
+      "affectedRegressionSelection": { "passed": 220, "failed": 0 },
+      "packageDistFull": { "passed": 132, "failed": 0 },
+      "localCryptoAdapterGuard": { "passed": 8, "failed": 0 },
+      "kagemushaStaticParity": { "passed": 76, "failed": 0 },
+      "sourceDistChangedRuntimeParity": { "passed": 6, "failed": 0 },
+      "broaderPackedRuntimeComposition": { "passed": 14, "failed": 0 },
+      "finalNodeCommand": {
+        "command": "node --test",
+        "total": 2317,
+        "passed": 2244,
+        "skipped": 73,
+        "intentionalSkips": 73,
+        "failed": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "qualityGates": {
+        "eslint": "passed",
+        "buildDist": "passed",
+        "bundleCheck": "passed",
+        "gitDiffCheck": "passed",
+        "changelogCheck": "passed",
+        "sourceDistPairs": "changed-runtime-6-of-6-and-broader-packed-14-of-14-byte-identical"
+      },
+      "safariRuntimeQa": {
+        "status": "passed-native-safari-loopback",
+        "webDriverBindingAvailable": false,
+        "appleEventJavaScriptAvailable": false,
+        "readOnlyDocumentTextBridgeAvailable": true,
+        "remoteAutomationRequired": false,
+        "appleEventJavaScriptRequired": false,
+        "realSafariScenarios": 6,
+        "realSafariAssertions": 91,
+        "passed": true,
+        "releaseBlocker": false,
+        "safariVersion": "26.5.2",
+        "tarSha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+        "bundleSha256": "f7781764f541f2c27b70b36f92bda81cddcad128918de73d67404746474a04ab",
+        "bundleBytes": 1127726,
+        "bundleInputs": 79,
+        "candidatePackageInputs": 39,
+        "assertionInventorySha256": "31b68d1c57fa6c652ceea255c43952bab43ef294358db31d31a4e03573543572",
+        "evidencePath": "artifacts/iroha-js-candidate-safari-qa/15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8/safari-26.5.2.json",
+        "evidenceSha256": "02184886d34343924cfe9de378249759fb41b3430d2cd36ec83337955401368a",
+        "contractAdversarialChecks": 46,
+        "evidenceAdversarialChecks": 21,
+        "launcherChecks": 11,
+        "staticOrNodeRuntimeChecksAreSafariEvidence": false
+      },
+      "safari17TargetStaticHarness": {
+        "status": "passed-static-and-node-runtime-only",
+        "ephemeral": true,
+        "replayable": false,
+        "tarSha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+        "installedOnlyFinalTarAndEsbuild": true,
+        "esbuildVersion": "0.28.1",
+        "publicSubpaths": 18,
+        "aggregateBytes": 1648973,
+        "esbuildInputs": 67,
+        "packageInputs": 28,
+        "forbiddenNodeInputs": 0,
+        "staticBufferMutations": 0,
+        "nodeNamespacesExposed": 18,
+        "nodeEvaluationStartedWithoutGlobalBuffer": true,
+        "nodeEvaluationLeftGlobalBufferAbsent": true,
+        "genericRootExpectedFailureUnresolvedNodeBuiltinEdges": 22,
+        "realSafariEvidence": false
+      },
+      "historicalFrozenCandidateBundleMeasurementsKiB": {
+        "evidenceScope": "frozen-unpublished-candidate-recorded-2026-07-12",
+        "esbuildVersion": "0.28.1",
+        "toriiClient": {
+          "measured": "834.7",
+          "measuredBytes": 854715,
+          "modules": 57,
+          "forbiddenNodeInputs": 0,
+          "globalBufferAssignments": 0,
+          "cap": 840
+        },
+        "browserTransactionCodec": {
+          "measured": "122.5",
+          "measuredBytes": 125424,
+          "modules": 36,
+          "forbiddenNodeInputs": 0,
+          "cap": 132
+        },
+        "nexusBrowser": {
+          "measured": "201.7",
+          "measuredBytes": 206556,
+          "modules": 45,
+          "forbiddenNodeInputs": 0,
+          "cap": 205
+        },
+        "canonicalRequest": {
+          "measured": "67.9",
+          "measuredBytes": 69529,
+          "modules": 31,
+          "forbiddenNodeInputs": 0,
+          "cap": 75
+        },
+        "ivmBrowser": { "measured": "9.4", "measuredBytes": 9644, "modules": 7, "forbiddenNodeInputs": 0, "cap": 12 },
+        "kotodamaBrowser": {
+          "measured": "49.8",
+          "measuredBytes": 51000,
+          "modules": 6,
+          "forbiddenNodeInputs": 0,
+          "cap": 51
+        },
+        "publicBrowserAggregate": {
+          "measured": "297.3",
+          "measuredBytes": 304385,
+          "modules": 51,
+          "forbiddenNodeInputs": 0,
+          "globalBufferAssignments": 0,
+          "cap": 300
+        }
+      },
+      "reviewedUpstreamBundleContract": {
+        "reviewedAt": "2026-07-16",
+        "contractSourceCommit": "f6f8706977f5b3589ddbaea4d92f0e871b1cbe82",
+        "esbuildVersion": "0.28.1",
+        "releaseArtifactEvidence": false,
+        "nexusBrowser": {
+          "baselineBytes": 215950,
+          "baselineKiB": "210.9",
+          "modules": 46,
+          "capKiB": 216,
+          "capBytes": 221184,
+          "headroomBytes": 5234,
+          "headroomPercent": "2.42",
+          "forbiddenNodeInputs": 0,
+          "globalBufferAssignments": 0
+        },
+        "publicBrowserAggregate": {
+          "baselineBytes": 314580,
+          "baselineKiB": "307.2",
+          "modules": 52,
+          "capKiB": 328,
+          "capBytes": 335872,
+          "headroomBytes": 21292,
+          "headroomPercent": "6.77",
+          "forbiddenNodeInputs": 0,
+          "globalBufferAssignments": 0
+        }
+      },
+      "dirtyTreeBundleObservation": {
+        "observedAt": "2026-07-16",
+        "sourceCommit": "0fcb6a6961b8a15913c73a265a92877f69ceed4b",
+        "sourceClean": false,
+        "reviewedBaselineEvidence": false,
+        "releaseArtifactEvidence": false,
+        "esbuildVersion": "0.28.1",
+        "nexusBrowser": {
+          "observedBytes": 216052,
+          "modules": 46,
+          "deltaFromReviewedBaselineBytes": 102,
+          "underReviewedCap": true,
+          "forbiddenNodeInputs": 0,
+          "globalBufferAssignments": 0
+        },
+        "publicBrowserAggregate": {
+          "observedBytes": 314735,
+          "modules": 52,
+          "deltaFromReviewedBaselineBytes": 155,
+          "underReviewedCap": true,
+          "forbiddenNodeInputs": 0,
+          "globalBufferAssignments": 0
+        },
+        "fullBundleCheck": {
+          "status": "failed-on-unrelated-dirty-torii-cap",
+          "toriiObservedBytes": 933497,
+          "toriiCapKiB": 896
+        }
+      },
+      "browserExportGraphValidation": {
+        "uniqueExplicitExportGraphs": 10,
+        "nodeEdgeGuards": "passed",
+        "staticBufferGuards": "passed",
+        "runtimeBufferGuards": "passed",
+        "forbiddenNodeInputs": 0,
+        "globalBufferAssignments": 0,
+        "realSafariEvidence": false
+      },
+      "dependencyAudits": {
+        "fullVulnerabilities": 0,
+        "productionVulnerabilities": 0
+      },
+      "packVerification": {
+        "name": "@iroha/iroha-js",
+        "version": "0.0.3",
+        "files": 154,
+        "archiveEntries": 154,
+        "packedBytes": 1281259,
+        "unpackedBytes": 7914958,
+        "npmShasumSha1": "8ee3a23653fc4e2648f81dc12ce5cf00d36b4439",
+        "tarSha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+        "integrity": "sha512-D/B55Y6GWQGsiBjy07PUbUOzSb8+zBRYgutNew8Wb3kJxMjahxHYOvcHbTBln1kOcgKogn/eCnQ/CC6iYrwStA=="
+      },
+      "rustDataModel": { "passed": 1, "failed": 0 },
+      "rustNapi": { "passed": 1, "failed": 0 },
+      "crossLanguageVerification": {
+        "fixtureFamilyEntries": {
+          "canonical": 27,
+          "android": 27,
+          "swift": 27,
+          "python": 27
+        },
+        "fixtureFamilyFingerprint": "f4f93f7ca4c6c244130e7bbd5b518df8",
+        "xtaskNoritoRpcVerify": { "verifiedEntries": 27, "failed": 0 },
+        "rustExporter": { "passed": 20, "failed": 0 },
+        "rustXtaskUnit": { "passed": 17, "failed": 0 },
+        "javascriptFixtureConsumers": { "passed": 22, "failed": 0 },
+        "javaQa": { "passed": 111, "failed": 0 },
+        "javaExporterEntries": { "passed": 27, "failed": 0 },
+        "kotlinSelected": { "passed": 14, "failed": 0 },
+        "pythonFixtureSuite": { "passed": 47, "failed": 0 },
+        "swiftTransactionParity": { "executed": 11, "passed": 6, "expectedSkips": 5, "failed": 0 },
+        "swiftBroaderChangedCallsites": { "executed": 123, "passed": 89, "expectedSkips": 34, "failed": 0 },
+        "swiftValidationFeeFocused": { "passed": 5, "failed": 0 },
+        "swiftIndependentQaSeam": { "passed": 3, "failed": 0 },
+        "swiftBridgeAbi": { "artifact": 8, "minimum": 14, "source": 17 },
+        "bridgeAbi17Parity": {
+          "proofSymbols": 6,
+          "protocolSymbols": 15,
+          "totalSymbols": 21,
+          "rustInventory": 21,
+          "cHeaderInventory": 21,
+          "swiftInventory": 21,
+          "exactRustCSignatures": 21,
+          "freeSymbolExactAcrossRustCAndSwift": true,
+          "headerPositive": { "passed": 1, "failed": 0 },
+          "headerNegativeControls": { "passed": 15, "failed": 0 },
+          "javascriptParity": { "passed": 76, "failed": 0 },
+          "swiftV2": { "passed": 3, "failed": 0 }
+        },
+        "alignmentMismatches": 0,
+        "intentionalAlignmentOmissions": []
+      },
+      "sharedVectorLanguages": ["rust", "javascript", "kotlin", "java", "swift", "python"],
+      "modes": [
+        "native-payload-and-prehash-parity",
+        "native-finalizer-and-pipeline-hash-parity",
+        "package-subpath-tarball-and-typescript-surface",
+        "cross-language-compact-framing-and-hasher-contract",
+        "strict-ed25519-canonical-points-small-order-and-mixed-torsion-rejection",
+        "unicode-scalar-control-and-rust-plain-json-escaping-parity",
+        "exact-canonical-raw-metadata-json-and-duplicate-key-rejection",
+        "dense-data-only-metadata-and-accessor-prototype-rejection",
+        "bounds-before-bigint-utf8-decode-and-byte-copy",
+        "defensive-buffer-arraybuffer-sharedarraybuffer-snapshots",
+        "nexus-payload-and-transaction-hash-recomputation-and-alias-conflict-rejection",
+        "browser-only-nexus-fetch-transport-and-explicit-buffer-import",
+        "descriptor-snapshots-and-exact-field-allowlists-at-nexus-boundaries",
+        "signer-prevalidation-confused-deputy-alias-conflict-and-side-effect-ordering",
+        "packed-browser-declarations-without-ambient-node-types",
+        "public-browser-aggregate-node-free-graph-and-local-crypto-adapter",
+        "canonical-request-webcrypto-nonce-ed25519-exact-message-and-strict-dom-types",
+        "four-family-exact-fixture-alignment-and-pre-map-identity-rejection",
+        "enforced-pinned-esbuild-bundle-size-gates",
+        "source-dist-byte-identity",
+        "negative-and-adversarial-rejection"
+      ]
+    },
+    "sharedVector": {
+      "sourceTag": "v2.0.0-rc.2.1-fearless-mobile-sdk.3",
+      "sourceCommit": "4f8cfbdd17aa6a3b049e619f23ec02501e5297b6",
+      "versionedBytes": 565,
+      "bareBytes": 564,
+      "versionedSha256": "73dd9a04a34c0acb5c4b44021389bd06910a60eeab05936c3afe425aa5374c7e",
+      "payloadPrehash": "e673f611d9d42b02f5c1ff55ec6c2133c51b9a20be1f4eaa84f32ed9ffb2c395",
+      "compactLengthHex": "b404",
+      "canonicalPrefixHex": "00000000b404",
+      "canonicalHash": "2332d0004eb24d97fd965fe68f6f31b0e51339764b4dd80f3ea50a3b6f7e5003",
+      "fixedWidthDefectiveHash": "2b5e69a0a3d333756f4ac2a54bf7eaff88a2c87484d89e6e7da98abea659662d"
+    }
+  },
+  "blocker": {
+    "code": "browser_transaction_codec_unpublished_source_only",
+    "testOnlyRuntimeSeam": "globalThis.__IROHA_NATIVE_BINDING__",
+    "reason": "A browser-safe codec candidate was built from source base b423c0f8bcd317fd945d6f66ce3fa679401dba7f plus a frozen candidate patch and durably vendored as exact evidence tar SHA-256 15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8. It is not pushed, independently reviewed, published as an immutable release artifact, checksum-pinned as the production dependency, or integrated as a bundled production import. Native Safari 26.5.2 separately passed 6 scenarios and 91 assertions through the nonce-bound loopback harness without WebDriver or Apple-event JavaScript; this closes only the local Safari runtime gate. Production send remains disabled."
+  },
+  "liveGates": [
+    {
+      "code": "reviewed_immutable_codec_artifact",
+      "reason": "Publish, independently review, checksum-pin, and bundle the exact browser transaction-codec release artifact."
+    },
+    {
+      "code": "taira_live_asset_resolution",
+      "reason": "Resolve and verify the live Taira asset definition and source holding instead of treating UI asset text as ledger truth."
+    },
+    {
+      "code": "nexus_live_asset_resolution",
+      "reason": "Resolve and verify the live Nexus asset definition and source holding before Nexus send is enabled."
+    },
+    {
+      "code": "live_fee_balance_preflight",
+      "reason": "Replace the zero-fee placeholder with node-backed fee, balance, and spendability preflight for the selected asset and fee asset."
+    },
+    {
+      "code": "production_node_capability_tls",
+      "reason": "Confirm reviewed Taira and Nexus Torii endpoints, TLS, chain identifiers, discriminants, codec compatibility, and submission/status capabilities."
+    },
+    {
+      "code": "funded_taira_broadcast_evidence",
+      "reason": "Record a funded, status-confirmed Taira broadcast made by the pinned production bundle."
+    },
+    {
+      "code": "funded_nexus_broadcast_evidence",
+      "reason": "Record a funded, status-confirmed Nexus broadcast made by the pinned production bundle."
+    }
+  ],
+  "exitCriteria": [
+    "publish-a-reviewed-immutable-browser-transaction-codec-release-artifact",
+    "pin-audit-and-bundle-the-transaction-codec-subpath-without-a-runtime-global",
+    "rerun-shared-golden-parity-and-adversarial-tests-against-the-pinned-artifact",
+    "complete-live-asset-fee-balance-node-and-status-preflight-for-taira-and-nexus",
+    "record-funded-taira-and-nexus-live-broadcast-evidence-before-enablement"
+  ]
+}

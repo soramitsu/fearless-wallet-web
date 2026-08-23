@@ -65,7 +65,6 @@ import NetworkItem from './NetworkItem.vue';
 import type { Tab } from '@/interfaces/ui';
 import { isNetworkGroup } from '@/helpers/common';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useNetworksStore } from '@/stores/networks';
@@ -156,9 +155,6 @@ export default defineComponent({ name: 'NetworkManagement',
   async mounted() {
     if (isNetworkGroup(this.accountsStore.selectedNetwork))
           this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
-  },
-  beforeUnmount() {
-    updateCurrentNetwork(this.accountsStore.selectedNetwork);
   },
   methods: {
     changeFilterValue(value: string) {

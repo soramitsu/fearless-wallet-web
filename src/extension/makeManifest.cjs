@@ -9,7 +9,7 @@ module.exports = (browser) => {
 
   const firefoxBase = {
     manifest_version: 3,
-    permissions: ['storage', 'tabs', 'identity', 'clipboardRead'],
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     background: {
       scripts: ['background.js'],
       type: 'module',
@@ -34,7 +34,7 @@ module.exports = (browser) => {
 
   const chromiumBase = {
     manifest_version: 3,
-    permissions: ['storage', 'tabs', 'identity', 'clipboardRead'],
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     background: {
       service_worker: 'background.js',
       type: 'module',
@@ -53,7 +53,7 @@ module.exports = (browser) => {
           },
         }
       : {}),
-    minimum_chrome_version: '92',
+    minimum_chrome_version: '102',
     content_security_policy: {
       extension_pages: baseContentSecurityPolicy,
     },

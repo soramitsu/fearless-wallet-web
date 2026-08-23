@@ -1,0 +1,3351 @@
+diff --git a/.gitignore b/.gitignore
+index 2aa08640917078be7209e3f93074be5b0bae3514..bccffd9979951d021ce97c6aa919db71e44caa28 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -68,6 +68,7 @@ npm-iroha-js.log
+ javascript/npm-iroha-js.log
+ javascript/iroha_js/**/*.log
+ javascript/iroha_js/native/*.node
++javascript/iroha_js/native/iroha_js_host.checksums.json
+ javascript/iroha_js/scripts/release_matrix.targets.json
+ build/*
+ dist/*
+diff --git a/crates/iroha_js_host/src/lib.rs b/crates/iroha_js_host/src/lib.rs
+index 0f71b5662ccd6997fe26eb908f6a4d2c70c52a9c..c51608463ef46c256cacec12a3ff129e5632893e 100644
+--- a/crates/iroha_js_host/src/lib.rs
++++ b/crates/iroha_js_host/src/lib.rs
+@@ -386,10 +386,10 @@ pub struct JsKeyPair {
+ 
+ /// Canonical Kotodama compilation result envelope returned by the Rust compiler.
+ ///
+-/// Source errors are data, not rejected JavaScript promises. Exactly one of
+-/// `output` and `diagnostics_json` is present according to `ok`; rejected
+-/// promises are reserved for task or serialization failures in the binding.
+-#[napi(object)]
++/// Source errors are data, not rejected JavaScript promises. Both result fields
++/// are always present: the inactive field is an explicit JavaScript `null`;
++/// rejected promises are reserved for task or serialization failures.
++#[napi(object, use_nullable = true)]
+ pub struct JsKotodamaCompileResult {
+     /// Whether canonical compilation succeeded.
+     pub ok: bool,
+@@ -15315,7 +15315,7 @@ mod tests {
+                 hajimari() {}
+                 kaizen() {}
+                 kotoage fn run() authorize("RunDemo") {}
+-                view fn ping() -> i64 { return 1; }
++                view fn ping() -> int { return 1; }
+             }"#,
+         );
+         let result = compile_kotodama_request(&request).expect("compile canonical Kotodama source");
+diff --git a/javascript/iroha_js/CHANGELOG.md b/javascript/iroha_js/CHANGELOG.md
+index 3b51529da10bbbf361fb7b8ae6d3b4e5f01129ad..2952c8d275d8c6f47af5adfebc581f75805cf632 100644
+--- a/javascript/iroha_js/CHANGELOG.md
++++ b/javascript/iroha_js/CHANGELOG.md
+@@ -15,14 +15,23 @@ All notable changes to `@iroha/iroha-js` are documented in this file.
+   Remote compilation now has a 30-second total deadline (bounded to two
+   minutes when overridden), supports caller cancellation without trusting
+   instance accessors, and races uncooperative Fetch/body readers while
+-  deterministically releasing listeners, timers, and streams. Its complete
+-  browser export bundles to 43,384 bytes (42.4 KiB, six modules, zero
+-  Node-only inputs or global `Buffer` assignments) under a 43 KiB gate.
++  deterministically releasing listeners, timers, and streams. Compiler URLs
++  and Fetch implementations are retained in private immutable state; responses
++  require absent/identity content encoding and exact result/null sentinels.
++  Successful output now checks exact IVM 1.1 deployable mode/code-memory bounds,
++  zero-padded CNTR framing, ABI-1 literal descriptors and pointer TLVs, embedded
++  identity/capability/count bindings, and null provenance before Rust performs
++  final semantic admission. Its complete browser export bundles to exactly
++  51,000 bytes (49.8 KiB, six modules, zero Node-only inputs or global `Buffer`
++  assignments) under a 51 KiB gate with 1,224 bytes (2.40%) of headroom.
+ - Rebased only the complete Node Torii bundle ceiling to 840 KiB after the
+-  pinned-esbuild security-hardening baseline reached exactly 852,966 bytes.
+-  The gate retains 7,194 bytes (0.84%) of headroom, while regression tests keep
+-  every browser ceiling unchanged and require all browser bundles to exclude
+-  Node-only inputs and global `Buffer` shims.
++  pinned-esbuild security-hardening baseline reached exactly 854,715 bytes.
++  The gate retains 5,445 bytes (0.63%) of headroom, while regression tests keep
++  every browser ceiling unchanged and require every explicit browser-
++  conditioned package export—not only the size-budget entries—to exclude
++  Node-only inputs and global `Buffer` shims. The complete public browser
++  aggregate is 304,385 bytes across 51 modules, leaving 2,815 bytes (0.92%)
++  under its unchanged 300 KiB ceiling.
+ - Made native-host publication repeatable on Windows and fail closed across
+   replacement failures. The publisher now locks the destination, verifies and
+   probes a staged addon for the required Norito and Kotodama exports, moves an
+@@ -34,9 +43,33 @@ All notable changes to `@iroha/iroha-js` are documented in this file.
+   inventories, and lock-held startup recovery resolve every replacement phase
+   without guessing. Ambiguous, duplicated, missing, symlinked, or tampered
+   recovery artifacts are preserved and rejected. Distribution/native locking
+-  now fingerprints the exact owner file, rechecks ownership before destructive
+-  phases, and atomically quarantines stale candidates so a replacement lock is
+-  never unlinked through a stale-lock time-of-check/time-of-use race.
++  no longer seeds source checkouts with an orphan checksum manifest, so a clean
++  checkout can bootstrap its first verified native binary without weakening
++  the publisher's fail-closed handling of unjournaled partial pairs. The real
++  required-export probe now uses Node's native loader directly while retaining
++  the legacy private staging name, preserving crash recovery across upgrades.
++  Lock ownership now fingerprints the exact owner file, rechecks ownership
++  before destructive phases, and atomically quarantines stale candidates so a
++  replacement lock is never unlinked through a stale-lock
++  time-of-check/time-of-use race. Lock
++  acquisition pins the exact bytes it fsynced and observes lease mtime changes;
++  staged distribution trees are recursively fsynced and rehashed around
++  publication. Canonical bounded journal phases, alternate valid manifest
++  encodings for an identical addon, and ambiguous crash backups now fail or
++  recover deterministically.
++- Fixed the npm package surface to include the canonical Apache-2.0 license and
++  reject stale README or backup artifacts during pack verification.
++- Fixed the Node Kotodama binding to emit its canonical three-field result
++  envelope with explicit null sentinels for inactive output or diagnostics.
++- Tightened instruction and Torii Numeric admission to bound text before
++  `BigInt`, reject lossy unsafe-integer `number` inputs, and enforce Rust's
++  exact signed 512-bit canonical mantissa and scale. Instruction builders emit
++  canonical Numeric JSON after trailing-zero reduction; typed Torii responses
++  reject noncanonical Numeric text; ZK lock hints are canonicalized; and plain
++  governance ballots now enforce the backend's actual unsigned-`u128` integer
++  contract before fetch. Governance modes fail closed on case-folded aliases,
++  while native-only nested instructions retain their authenticated unknown-
++  schema frames.
+ - Replaced lossy Kotodama compiler exceptions with a discriminated asynchronous
+   result. Node and browser-service compilation now preserve the canonical Rust
+   diagnostic fields and UTF-8 byte spans, validate artifact/manifest/sidecar
+diff --git a/javascript/iroha_js/README.md b/javascript/iroha_js/README.md
+index 9a77b1d1495d4e65f1f46730f846b74b4bb2c340..2877c1904c582f512a1f5d6059eb6633894d9765 100644
+--- a/javascript/iroha_js/README.md
++++ b/javascript/iroha_js/README.md
+@@ -17,6 +17,12 @@ npm install
+ npm run build:native
+ ```
+ 
++When upgrading a source checkout from a revision that tracked the checksum
++manifest but ignored the generated binary, Git can remove the manifest while
++leaving an old `native/iroha_js_host.node`. The publisher intentionally rejects
++that binary-only state. Remove that unverified leftover and rerun
++`npm run build:native`; never manufacture a replacement checksum by hand.
++
+ The registry tarball intentionally contains no platform-specific `.node`
+ binary, Cargo workspace, install hook, or implicit downloader. Consequently,
+ `npm run build:native` is a source-checkout command, not a supported operation
+@@ -463,10 +469,15 @@ before invoking the native binding or making a network request.
+ Validated service URLs and Fetch implementations are kept in immutable private
+ client state, so later property mutation cannot redirect source. Responses must
+ be HTTP 200 with exact `application/json`, absent/identity content encoding, and
+-consistent byte framing. Successful artifacts are bounded to the ledger's 4 MiB
+-limit and must carry canonical IVM 1.1/ABI-1 metadata, a checksummed CNTR Norito
+-interface whose identity/capabilities and collection counts match the manifest,
+-valid literal-section bounds, and a non-empty word-aligned instruction stream.
++consistent byte framing. Successful artifacts are bounded to the ledger's exact
++1 MiB post-header IVM code-memory limit and must carry canonical IVM 1.1/ABI-1
++metadata, a checksummed CNTR Norito interface whose identity/capabilities and
++collection counts match the manifest, fully framed ABI-1 indexed literals, and
++a non-empty word-aligned instruction stream. These JavaScript framing checks do
++not replace Rust instruction decoding or its control-flow, syscall, entrypoint,
++access-claim, and other semantic admission checks. The service must therefore be
++a trusted canonical Rust compiler endpoint; the ledger remains the final
++authority on whether an artifact is deployable.
+ The first release accepts only `provenance: null`; signed provenance remains
+ disabled until its exact message and public-key algorithm can be verified.
+ The native binding and service receive the same canonical JSON-shaped request,
+@@ -1412,7 +1423,10 @@ pinned to the configured base.
+ - Use string quantities (`"10"`) for `Numeric` values whenever you want to avoid
+   JavaScript floating-point pitfalls; the builders accept `string | number |
+   bigint` but require plain decimal literals (no exponent), with up to 28
+-  fractional digits and a 512-bit mantissa.
++  canonical fractional digits and a signed 512-bit mantissa. Integer `number`
++  inputs outside JavaScript's safe-integer range are rejected; use a decimal
++  string or `bigint` for those values. Builders canonicalize accepted alternate
++  decimal spellings before Norito encoding.
+ - Keep asset IDs in canonical holding form
+   (`<base58-asset-definition-id>#<i105-account-id>` with optional `#dataspace:<id>`) when
+   chaining mint and transfer steps. The helpers do not guess missing account or
+@@ -3817,6 +3831,8 @@ const ballot = await torii.governanceSubmitPlainBallot({
+   durationBlocks: 7200,
+   direction: "Aye",
+ }, { signal: writeController.signal });
++// Plain ballot amounts are unsigned u128 integers on Torii. Fractions,
++// negatives, overflow, and unsafe integer Number values fail before fetch.
+ if (!ballot.accepted) {
+   console.warn("ballot rejected:", ballot.reason);
+ }
+diff --git a/javascript/iroha_js/dist/instructionBuilders.js b/javascript/iroha_js/dist/instructionBuilders.js
+index cc8b2dc5244548206da20043391cb63ea823b845..5c2b737e5c0148f30fdf6717e8b9d83df4855ff9 100644
+--- a/javascript/iroha_js/dist/instructionBuilders.js
++++ b/javascript/iroha_js/dist/instructionBuilders.js
+@@ -29,6 +29,9 @@ const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
+ const MAX_SAFE_INTEGER_BIGINT = BigInt(MAX_SAFE_INTEGER);
+ const MAX_NUMERIC_SCALE = 28;
+ const MAX_NUMERIC_BITS = 512;
++const MAX_NUMERIC_TEXT_LENGTH = 185;
++const MIN_NUMERIC_MANTISSA = -(1n << BigInt(MAX_NUMERIC_BITS - 1));
++const MAX_NUMERIC_MANTISSA = (1n << BigInt(MAX_NUMERIC_BITS - 1)) - 1n;
+ const UINT32_MAX = 0xffff_ffff;
+ const DEFAULT_PRIVACY_MAX_PROOF_BYTES = 64 * 1024 * 1024;
+ const DEFAULT_PRIVACY_MAX_PUBLIC_INPUT_BYTES = 1024 * 1024;
+@@ -283,6 +286,13 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+     if (!Number.isFinite(value)) {
+       fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a finite number`, name);
+     }
++    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
++      fail(
++        ValidationErrorCode.VALUE_OUT_OF_RANGE,
++        `${name} integer Numbers must be within JavaScript's safe integer range; use a string or bigint`,
++        name,
++      );
++    }
+     raw = value.toString();
+   } else if (typeof value === "bigint") {
+     raw = value.toString();
+@@ -297,6 +307,13 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!raw) {
+     fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a valid Numeric literal`, name);
+   }
++  if (raw.length > MAX_NUMERIC_TEXT_LENGTH) {
++    fail(
++      ValidationErrorCode.VALUE_OUT_OF_RANGE,
++      `${name} exceeds the bounded Numeric text length`,
++      name,
++    );
++  }
+ 
+   let digits = raw;
+   const sign = digits[0];
+@@ -332,6 +349,17 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!mantissa) {
+     fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a valid Numeric literal`, name);
+   }
++  // Match Numeric construction: fractional trailing zeroes are removed before
++  // enforcing the canonical scale and signed-mantissa bounds.  The instruction
++  // JSON encoder accepts only canonical Numeric text, so emit that canonical
++  // spelling instead of preserving an accepted alternate input form.
++  while (scale > 0 && mantissa.endsWith("0")) {
++    mantissa = mantissa.slice(0, -1);
++    scale -= 1;
++  }
++  if (!mantissa) {
++    fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a valid Numeric literal`, name);
++  }
+   if (scale > MAX_NUMERIC_SCALE) {
+     fail(
+       ValidationErrorCode.VALUE_OUT_OF_RANGE,
+@@ -344,16 +372,30 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (sign === "-") {
+     mantissaValue = -mantissaValue;
+   }
+-  const absValue = mantissaValue < 0n ? -mantissaValue : mantissaValue;
+-  if (absValue !== 0n && absValue.toString(2).length > MAX_NUMERIC_BITS) {
++  if (
++    mantissaValue < MIN_NUMERIC_MANTISSA ||
++    mantissaValue > MAX_NUMERIC_MANTISSA
++  ) {
+     fail(
+       ValidationErrorCode.VALUE_OUT_OF_RANGE,
+-      `${name} mantissa exceeds ${MAX_NUMERIC_BITS} bits`,
++      `${name} mantissa exceeds the signed ${MAX_NUMERIC_BITS}-bit range`,
+       name,
+     );
+   }
+ 
+-  return raw;
++  if (mantissaValue === 0n) {
++    return "0";
++  }
++  const negative = mantissaValue < 0n;
++  let canonicalDigits = (negative ? -mantissaValue : mantissaValue).toString(10);
++  if (scale > 0) {
++    if (canonicalDigits.length <= scale) {
++      canonicalDigits = `${"0".repeat(scale + 1 - canonicalDigits.length)}${canonicalDigits}`;
++    }
++    const decimalIndex = canonicalDigits.length - scale;
++    canonicalDigits = `${canonicalDigits.slice(0, decimalIndex)}.${canonicalDigits.slice(decimalIndex)}`;
++  }
++  return `${negative ? "-" : ""}${canonicalDigits}`;
+ }
+ 
+ function asNumericQuantity(value, name) {
+diff --git a/javascript/iroha_js/dist/kotodamaCompiler/normalize.js b/javascript/iroha_js/dist/kotodamaCompiler/normalize.js
+index 2fe009cdeb1a1196cfdaefb1f83b79307ee61d9d..f37b4651876ad0be21ba4e3fefc4bb92bfb46790 100644
+--- a/javascript/iroha_js/dist/kotodamaCompiler/normalize.js
++++ b/javascript/iroha_js/dist/kotodamaCompiler/normalize.js
+@@ -15,7 +15,10 @@ const MANIFEST_ENTRYPOINT_KINDS = new Set([
+   "Kaizen",
+ ]);
+ const MAX_DIAGNOSTICS = 64;
++// Keep the allocation boundary independent from ledger admission. The exact
++// deployable image limit is checked after the fixed IVM header is available.
+ const MAX_ARTIFACT_BYTES = 4 * 1024 * 1024;
++const MAX_IVM_CODE_REGION_BYTES = 0x0010_0000;
+ const MAX_WIRE_JSON_BYTES = 16 * 1024 * 1024;
+ const MAX_MANIFEST_ITEMS = 65_536;
+ const MAX_ENTRYPOINT_PARAMETERS = 13;
+@@ -29,7 +32,10 @@ const UTF8_ENCODER = new TextEncoder();
+ const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
+ const IVM_HEADER_BYTES = 17;
+ const NORITO_FRAME_HEADER_BYTES = 40;
+-const NORITO_MAX_PADDING_BYTES = 64;
++// `Archived<EmbeddedContractInterfaceV1>` is at most 8-byte aligned, and the
++// 40-byte NRT0 header is already aligned. The Rust decoder requires this exact
++// schema padding rather than the looser unknown-schema 64-byte fallback.
++const NORITO_EMBEDDED_INTERFACE_PADDING_BYTES = 0;
+ const NORITO_COMPACT_LENGTHS_FLAG = 0x02;
+ const NORITO_CRC64_MASK = 0xffff_ffff_ffff_ffffn;
+ const NORITO_CRC64_POLYNOMIAL = 0xc96c5795d7870f42n;
+@@ -393,6 +399,18 @@ function readU32Le(bytes, offset, label) {
+   ) >>> 0;
+ }
+ 
++function readU32Be(bytes, offset, label) {
++  if (offset < 0 || offset + 4 > bytes.length) {
++    throw new TypeError(`${label} is truncated`);
++  }
++  return (
++    bytes[offset] * 0x1000000 +
++    (bytes[offset + 1] << 16) +
++    (bytes[offset + 2] << 8) +
++    bytes[offset + 3]
++  ) >>> 0;
++}
++
+ function readU64Le(bytes, offset, label) {
+   if (offset < 0 || offset + 8 > bytes.length) {
+     throw new TypeError(`${label} is truncated`);
+@@ -487,8 +505,8 @@ function validateEmbeddedInterfaceFrame(frame, manifest, headerMode) {
+   }
+   const safePayloadLength = Number(payloadLength);
+   const paddingLength = frame.length - NORITO_FRAME_HEADER_BYTES - safePayloadLength;
+-  if (paddingLength < 0 || paddingLength > NORITO_MAX_PADDING_BYTES) {
+-    throw new TypeError(`${label} has an invalid alignment padding length`);
++  if (paddingLength !== NORITO_EMBEDDED_INTERFACE_PADDING_BYTES) {
++    throw new TypeError(`${label} has a noncanonical alignment padding length`);
+   }
+   const payloadOffset = NORITO_FRAME_HEADER_BYTES + paddingLength;
+   if (frame.subarray(NORITO_FRAME_HEADER_BYTES, payloadOffset).some((byte) => byte !== 0)) {
+@@ -579,7 +597,7 @@ function validateLiteralSection(bytes, start) {
+   const count = readU32Le(bytes, start + 4, `${label} count`);
+   const padding = readU32Le(bytes, start + 8, `${label} padding`);
+   const dataLength = readU32Le(bytes, start + 12, `${label} data length`);
+-  if (count === 0 || count > 0x1_0000 || padding > 3) {
++  if (count > 0x1_0000 || padding > 3) {
+     throw new TypeError(`${label} has invalid bounds`);
+   }
+   const entriesLength = count * 8;
+@@ -596,6 +614,7 @@ function validateLiteralSection(bytes, start) {
+   ) {
+     throw new TypeError(`${label} uses noncanonical alignment padding`);
+   }
++  const descriptors = [];
+   for (let index = 0; index < count; index += 1) {
+     const descriptor = readU64Le(
+       bytes,
+@@ -603,30 +622,89 @@ function validateLiteralSection(bytes, start) {
+       `${label} descriptor ${index}`,
+     );
+     const kind = Number(descriptor >> 56n);
+-    const relativeOffset = Number(descriptor & 0x00ff_ffff_ffff_ffffn);
++    const relativeOffsetBigInt = descriptor & 0x00ff_ffff_ffff_ffffn;
++    if (relativeOffsetBigInt > BigInt(Number.MAX_SAFE_INTEGER)) {
++      throw new TypeError(`${label} descriptor ${index} offset is invalid`);
++    }
++    const relativeOffset = Number(relativeOffsetBigInt);
+     const absoluteOffset = start + relativeOffset;
+     if (
+       (kind !== 0 && kind !== 1) ||
+       relativeOffset < 16 + entriesLength ||
+       absoluteOffset < dataStart ||
+-      absoluteOffset >= dataEnd ||
+-      (kind === 1 && absoluteOffset + 8 > dataEnd)
++      absoluteOffset >= dataEnd
+     ) {
+       throw new TypeError(`${label} descriptor ${index} is invalid`);
+     }
++    if (
++      descriptors.length !== 0 &&
++      absoluteOffset <= descriptors[descriptors.length - 1].absoluteOffset
++    ) {
++      throw new TypeError(`${label} descriptor targets must be strictly increasing`);
++    }
++    descriptors.push({ kind, absoluteOffset });
++  }
++  if (descriptors.length === 0) {
++    if (dataLength !== 0) {
++      throw new TypeError(`${label} cannot contain unindexed literal data`);
++    }
++  } else if (descriptors[0].absoluteOffset !== dataStart) {
++    throw new TypeError(`${label} first descriptor must target the first data byte`);
++  }
++  for (let index = 0; index < descriptors.length; index += 1) {
++    const { kind, absoluteOffset } = descriptors[index];
++    const end = descriptors[index + 1]?.absoluteOffset ?? dataEnd;
++    const literal = bytes.subarray(absoluteOffset, end);
++    if (kind === 0) {
++      validatePointerLiteralV1(literal, `${label} descriptor ${index}`);
++    } else if (literal.length !== 8) {
++      throw new TypeError(`${label} i64 descriptor ${index} must contain exactly 8 bytes`);
++    }
+   }
+   return codeOffset;
+ }
+ 
++function validatePointerLiteralV1(bytes, label) {
++  if (bytes.length < 39) {
++    throw new TypeError(`${label} pointer TLV is truncated`);
++  }
++  const typeId = (bytes[0] << 8) | bytes[1];
++  const allowedType =
++    (typeId >= 0x0001 && typeId <= 0x000f) ||
++    (typeId >= 0x0011 && typeId <= 0x0013);
++  if (!allowedType) {
++    throw new TypeError(`${label} pointer TLV type is not allowed by ABI v1`);
++  }
++  if (bytes[2] !== 1) {
++    throw new TypeError(`${label} pointer TLV must use version 1`);
++  }
++  const payloadLength = readU32Be(bytes, 3, `${label} pointer TLV length`);
++  const expectedLength = 7 + payloadLength + 32;
++  if (bytes.length !== expectedLength) {
++    throw new TypeError(`${label} pointer TLV length does not match its envelope`);
++  }
++  const payload = bytes.subarray(7, 7 + payloadLength);
++  const expectedHash = blake2b256(payload);
++  expectedHash[expectedHash.length - 1] |= 1;
++  if (!equalBytes(bytes.subarray(7 + payloadLength), expectedHash)) {
++    throw new TypeError(`${label} pointer TLV payload hash is invalid`);
++  }
++}
++
+ function validateCompiledArtifactV1(bytes, manifest) {
+   const label = "Kotodama compiler artifact";
+   if (bytes.length < IVM_HEADER_BYTES + 8 + NORITO_FRAME_HEADER_BYTES + 4) {
+     throw new TypeError(`${label} is too short to be a deployable IVM contract`);
+   }
++  if (bytes.length - IVM_HEADER_BYTES > MAX_IVM_CODE_REGION_BYTES) {
++    throw new RangeError(
++      `${label} post-header image exceeds the ${MAX_IVM_CODE_REGION_BYTES}-byte IVM code-memory limit`,
++    );
++  }
+   if (!equalBytes(bytes.subarray(0, 4), Uint8Array.from([0x49, 0x56, 0x4d, 0x00]))) {
+     throw new TypeError(`${label} has invalid IVM header magic`);
+   }
+-  if (bytes[4] !== 1 || bytes[5] !== 1 || (bytes[6] & ~0x07) !== 0 || bytes[7] > 64) {
++  if (bytes[4] !== 1 || bytes[5] !== 1 || (bytes[6] & ~0x03) !== 0 || bytes[7] > 64) {
+     throw new TypeError(`${label} has unsupported IVM execution metadata`);
+   }
+   if (bytes[16] !== 1) {
+diff --git a/javascript/iroha_js/dist/norito.js b/javascript/iroha_js/dist/norito.js
+index 4afd6ca93dde49e9de62837bd80d9e2a4c367001..76dfb85a3a25f6df6ee3950bedbf29af9e0b08b8 100644
+--- a/javascript/iroha_js/dist/norito.js
++++ b/javascript/iroha_js/dist/norito.js
+@@ -442,6 +442,17 @@ function shouldUsePureJsInstructionFallback(error) {
+ }
+ 
+ function encodeNormalizedInstruction(normalized) {
++  const deployProposal = normalized?.ProposeDeployContract;
++  if (
++    isPlainObject(deployProposal) &&
++    deployProposal.mode !== undefined &&
++    deployProposal.mode !== null
++  ) {
++    // Rust's JSON bridge has historically accepted case-folded enum text.
++    // Bind the public JS wire contract to the exact canonical spellings before
++    // native dispatch so non-canonical JSON cannot acquire canonical bytes.
++    encodeVotingModeValue(deployProposal.mode, "ProposeDeployContract.mode");
++  }
+   let encoded;
+   if (forcePureJsInstructionCodec) {
+     encoded = encodePureJsInstruction(normalized);
+@@ -7339,7 +7350,10 @@ function decodeNoritoFrame(buffer, context, expectedSchemaHash) {
+     // helper reports the more specific SCCP-facing short-header error.
+     throw new Error(`${context} reader overran payload while reading Norito header`);
+   }
+-  return validateNoritoFrame(buffer, { context, expectedSchemaHash });
++  return validateNoritoFrame(buffer, {
++    context,
++    ...(expectedSchemaHash == null ? {} : { expectedSchemaHash }),
++  });
+ }
+ 
+ function frameNoritoPayload(payload, schemaHash, flags = 0, padding = 0) {
+diff --git a/javascript/iroha_js/dist/toriiClient.js b/javascript/iroha_js/dist/toriiClient.js
+index 8c0f35ba24a5b529b3b3ca7794de9b07983311e5..96e8938029ca631d4a0d63938eee7176d74b5292 100644
+--- a/javascript/iroha_js/dist/toriiClient.js
++++ b/javascript/iroha_js/dist/toriiClient.js
+@@ -234,10 +234,14 @@ const MIN_ISO_POLL_INTERVAL_MS = 10;
+ const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
+ const MAX_SAFE_INTEGER_BIGINT = BigInt(MAX_SAFE_INTEGER);
+ const MAX_UINT64_BIGINT = (1n << 64n) - 1n;
++const MAX_UINT128_BIGINT = (1n << 128n) - 1n;
+ const MAX_SIGNED_INT32 = 0x7fffffff;
+ const MAX_SIGNED_INT32_BIGINT = BigInt(MAX_SIGNED_INT32);
+ const MAX_NUMERIC_SCALE = 28;
+ const MAX_NUMERIC_BITS = 512;
++const MAX_NUMERIC_TEXT_LENGTH = 185;
++const MIN_NUMERIC_MANTISSA = -(1n << BigInt(MAX_NUMERIC_BITS - 1));
++const MAX_NUMERIC_MANTISSA = (1n << BigInt(MAX_NUMERIC_BITS - 1)) - 1n;
+ const UINT64_MASK = 0xffff_ffff_ffff_ffffn;
+ const RAW_UTF8_HEADERS_INIT_KEY = "__irohaRawUtf8Headers";
+ const RAW_UTF8_HEADER_SUPPORT_FLAG = "__irohaSupportsRawUtf8Headers";
+@@ -16616,7 +16620,7 @@ function normalizeReservedLabel(payload, context) {
+ function normalizeSnsTokenValue(payload, context) {
+   const record = ensureRecord(payload ?? {}, context);
+   const assetId = ToriiClient._normalizeAssetId(record.asset_id, `${context}.asset_id`);
+-  const amount = normalizeNumericString(record.amount, `${context}.amount`);
++  const amount = normalizeCanonicalNumericString(record.amount, `${context}.amount`);
+   return { assetId, amount };
+ }
+ 
+@@ -20310,7 +20314,11 @@ function computeHashLiteralCrc(tag, body) {
+   return (crc & 0xffff).toString(16).toUpperCase().padStart(4, "0");
+ }
+ 
+-function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
++function normalizeNumericLiteral(
++  value,
++  name,
++  { allowNegative = false, canonicalize = false } = {},
++) {
+   let raw;
+   if (typeof value === "string") {
+     raw = value.trim();
+@@ -20318,6 +20326,11 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+     if (!Number.isFinite(value)) {
+       throw new TypeError(`${name} must be a finite number`);
+     }
++    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
++      throw new TypeError(
++        `${name} integer Numbers must be within JavaScript's safe integer range; use a string or bigint`,
++      );
++    }
+     raw = value.toString();
+   } else if (typeof value === "bigint") {
+     raw = value.toString();
+@@ -20328,6 +20341,9 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!raw) {
+     throw new TypeError(`${name} must be a valid Numeric literal`);
+   }
++  if (raw.length > MAX_NUMERIC_TEXT_LENGTH) {
++    throw new TypeError(`${name} exceeds the bounded Numeric text length`);
++  }
+ 
+   let digits = raw;
+   const sign = digits[0];
+@@ -20363,6 +20379,15 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!mantissa) {
+     throw new TypeError(`${name} must be a valid Numeric literal`);
+   }
++  // Rust canonicalizes fractional trailing zeroes before checking Numeric's
++  // scale and signed-mantissa bounds.
++  while (scale > 0 && mantissa.endsWith("0")) {
++    mantissa = mantissa.slice(0, -1);
++    scale -= 1;
++  }
++  if (!mantissa) {
++    throw new TypeError(`${name} must be a valid Numeric literal`);
++  }
+   if (scale > MAX_NUMERIC_SCALE) {
+     throw new TypeError(`${name} scale exceeds ${MAX_NUMERIC_SCALE} decimal places`);
+   }
+@@ -20371,23 +20396,91 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (sign === "-") {
+     mantissaValue = -mantissaValue;
+   }
+-  const absValue = mantissaValue < 0n ? -mantissaValue : mantissaValue;
+-  if (absValue !== 0n && absValue.toString(2).length > MAX_NUMERIC_BITS) {
+-    throw new TypeError(`${name} mantissa exceeds ${MAX_NUMERIC_BITS} bits`);
++  if (
++    mantissaValue < MIN_NUMERIC_MANTISSA ||
++    mantissaValue > MAX_NUMERIC_MANTISSA
++  ) {
++    throw new TypeError(
++      `${name} mantissa exceeds the signed ${MAX_NUMERIC_BITS}-bit range`,
++    );
+   }
+ 
+-  return raw;
++  if (!canonicalize) {
++    return raw;
++  }
++  if (mantissaValue === 0n) {
++    return "0";
++  }
++  const negative = mantissaValue < 0n;
++  let canonicalDigits = (negative ? -mantissaValue : mantissaValue).toString(10);
++  if (scale > 0) {
++    if (canonicalDigits.length <= scale) {
++      canonicalDigits = `${"0".repeat(scale + 1 - canonicalDigits.length)}${canonicalDigits}`;
++    }
++    const decimalIndex = canonicalDigits.length - scale;
++    canonicalDigits = `${canonicalDigits.slice(0, decimalIndex)}.${canonicalDigits.slice(decimalIndex)}`;
++  }
++  return `${negative ? "-" : ""}${canonicalDigits}`;
+ }
+ 
+-function normalizeNumericString(value, name) {
+-  return normalizeNumericLiteral(value, name, { allowNegative: false });
++function normalizeCanonicalNumericString(value, name) {
++  if (typeof value !== "string") {
++    throw new TypeError(`${name} must be canonical Numeric text`);
++  }
++  const canonical = normalizeNumericLiteral(value, name, {
++    allowNegative: false,
++    canonicalize: true,
++  });
++  if (value !== canonical) {
++    throw new TypeError(`${name} must be canonical Numeric text`);
++  }
++  return canonical;
+ }
+ 
+ function normalizeAmountLike(value, name) {
+   if (value === undefined || value === null) {
+     throw new TypeError(`${name} is required`);
+   }
+-  return normalizeNumericLiteral(value, name, { allowNegative: false });
++  return normalizeNumericLiteral(value, name, {
++    allowNegative: false,
++    canonicalize: true,
++  });
++}
++
++function normalizeUnsignedU128String(value, name) {
++  let raw;
++  if (typeof value === "string") {
++    raw = value.trim();
++  } else if (typeof value === "bigint") {
++    if (value < 0n) {
++      throw new TypeError(`${name} must be an unsigned 128-bit integer`);
++    }
++    raw = value.toString(10);
++  } else if (typeof value === "number") {
++    if (!Number.isSafeInteger(value) || value < 0) {
++      throw new TypeError(`${name} must be a JSON-safe unsigned 128-bit integer`);
++    }
++    raw = value.toString(10);
++  } else {
++    throw new TypeError(`${name} must be a string, bigint, or safe integer`);
++  }
++
++  if (raw.startsWith("+")) {
++    raw = raw.slice(1);
++  }
++  // A u128 has at most 39 decimal digits.  Enforce this before BigInt so
++  // hostile request strings cannot force unbounded integer parsing.
++  if (raw.length > 39) {
++    throw new TypeError(`${name} exceeds the unsigned 128-bit range`);
++  }
++  if (!/^[0-9]+$/u.test(raw)) {
++    throw new TypeError(`${name} must be an unsigned 128-bit integer`);
++  }
++  const numeric = BigInt(raw);
++  if (numeric > MAX_UINT128_BIGINT) {
++    throw new TypeError(`${name} exceeds the unsigned 128-bit range`);
++  }
++  return numeric.toString(10);
+ }
+ 
+ function normalizeOptionalHexString(value, name) {
+@@ -21446,7 +21539,10 @@ function normalizeGovernancePlainBallotPayload(input) {
+       record.owner,
+       "governanceSubmitPlainBallot.owner",
+     ),
+-    amount: normalizeNumericString(record.amount, "governanceSubmitPlainBallot.amount"),
++    amount: normalizeUnsignedU128String(
++      record.amount,
++      "governanceSubmitPlainBallot.amount",
++    ),
+     duration_blocks: ToriiClient._normalizeUnsignedInteger(
+       record.duration_blocks ?? record.durationBlocks,
+       "governanceSubmitPlainBallot.durationBlocks",
+@@ -21666,7 +21762,7 @@ function normalizeGovernanceZkBallotV1Payload(input) {
+     );
+   }
+   if (record.amount !== undefined && record.amount !== null) {
+-    payload.amount = normalizeNumericString(
++    payload.amount = normalizeAmountLike(
+       record.amount,
+       "governanceSubmitZkBallotV1.amount",
+     );
+@@ -31087,7 +31183,7 @@ function normalizeSubscriptionUsageRequest(input, context) {
+   const payload = {
+     ...credentials,
+     unit_key: requireNonEmptyString(unitKey, `${context}.unitKey`),
+-    delta: normalizeNumericLiteral(delta, `${context}.delta`),
++    delta: normalizeAmountLike(delta, `${context}.delta`),
+   };
+   const usageTriggerId = pickOverride(record, "usage_trigger_id", "usageTriggerId");
+   if (usageTriggerId !== undefined && usageTriggerId !== null) {
+diff --git a/javascript/iroha_js/index.d.ts b/javascript/iroha_js/index.d.ts
+index 12c683f9ff5c3afdf9b66137f676d168fa211ce8..d1d9e1337f0a2c2896b8153f2b3c2a9bd5f48b03 100644
+--- a/javascript/iroha_js/index.d.ts
++++ b/javascript/iroha_js/index.d.ts
+@@ -6278,6 +6278,7 @@ export interface ToriiGovernancePlainBallotRequest {
+   chainId: string;
+   referendumId: string;
+   owner: string;
++  /** Unsigned u128 integer; fractional and unsafe integer Number values are rejected. */
+   amount: NumericLike;
+   durationBlocks: number | string | bigint;
+   direction: ToriiGovernanceBallotDirection | string;
+diff --git a/javascript/iroha_js/kotodama-compiler.d.ts b/javascript/iroha_js/kotodama-compiler.d.ts
+index 4d958eff5a2fdb41dfd0166fdcd33cc291d513d1..73c6c4e4aa1720c73f2b9c706132d6c389f4e86a 100644
+--- a/javascript/iroha_js/kotodama-compiler.d.ts
++++ b/javascript/iroha_js/kotodama-compiler.d.ts
+@@ -201,7 +201,8 @@ export interface KotodamaCompiledManifestMetadata {
+   states: KotodamaCompiledStateDescriptor[];
+   error_codes: KotodamaCompiledErrorCodeDescriptor[] | null;
+   kotoba: KotodamaCompiledKotobaEntry[] | null;
+-  provenance: KotodamaCompiledManifestProvenance | null;
++  /** Signed provenance is not accepted until its exact V1 message can be verified. */
++  provenance: null;
+ }
+ 
+ export interface KotodamaCompilerRequestOptions {
+diff --git a/javascript/iroha_js/native/iroha_js_host.checksums.json b/javascript/iroha_js/native/iroha_js_host.checksums.json
+deleted file mode 100644
+index 26ee4fc46b66359e2b18bb37ffd2a3a57a6aa5d1..0000000000000000000000000000000000000000
+--- a/javascript/iroha_js/native/iroha_js_host.checksums.json
++++ /dev/null
+@@ -1,7 +0,0 @@
+-{
+-  "entries": {
+-    "darwin-arm64": {
+-      "sha256": "14ebd20b12c4d839924bfc10e338d6a0dcec5b8b966d6412328ada6d03dfe43c"
+-    }
+-  }
+-}
+diff --git a/javascript/iroha_js/package.json b/javascript/iroha_js/package.json
+index e3b81fecb6b8a74b19464eb2e08585af17c3631e..b38b2103296e89e9ffa1e75fefa884e86cd443de 100644
+--- a/javascript/iroha_js/package.json
++++ b/javascript/iroha_js/package.json
+@@ -193,6 +193,7 @@
+   },
+   "files": [
+     "README.md",
++    "LICENSE",
+     "index.d.ts",
+     "canonical-request.d.ts",
+     "ivm-artifact.d.ts",
+diff --git a/javascript/iroha_js/scripts/build-dist.mjs b/javascript/iroha_js/scripts/build-dist.mjs
+index 88aabd0ca9885395dce94a7e40663721d7e1635f..0289c0549a883aa4b215a1e50c5345de558f4b0f 100644
+--- a/javascript/iroha_js/scripts/build-dist.mjs
++++ b/javascript/iroha_js/scripts/build-dist.mjs
+@@ -73,6 +73,40 @@ export function syncDirectory(directory) {
+   }
+ }
+ 
++function syncFile(path) {
++  const descriptor = openSync(path, constants.O_RDONLY);
++  try {
++    fsyncSync(descriptor);
++  } finally {
++    closeSync(descriptor);
++  }
++}
++
++/** Persist every staged file and directory before its tree is made public. */
++function syncTree(directory) {
++  const metadata = lstatSync(directory);
++  if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
++    throw new Error(`build:dist cannot sync non-directory root: ${directory}`);
++  }
++  const entries = readdirSync(directory, { withFileTypes: true }).sort((left, right) =>
++    left.name.localeCompare(right.name),
++  );
++  for (const entry of entries) {
++    const entryPath = join(directory, entry.name);
++    const entryMetadata = lstatSync(entryPath);
++    if (entryMetadata.isDirectory()) {
++      syncTree(entryPath);
++    } else if (entryMetadata.isSymbolicLink()) {
++      throw new Error(`build:dist cannot sync symbolic link: ${entryPath}`);
++    } else if (entryMetadata.isFile()) {
++      syncFile(entryPath);
++    } else {
++      throw new Error(`build:dist cannot sync unsupported entry: ${entryPath}`);
++    }
++  }
++  syncDirectory(directory);
++}
++
+ function processIsRunning(pid) {
+   if (!Number.isSafeInteger(pid) || pid <= 0) return false;
+   try {
+@@ -135,6 +169,7 @@ function sameLockSnapshot(left, right) {
+   return (
+     sameLockIdentity(left?.identity, right?.identity) &&
+     left?.digest === right?.digest &&
++    left?.mtimeMs === right?.mtimeMs &&
+     left?.owner?.pid === right?.owner?.pid &&
+     left?.owner?.token === right?.owner?.token
+   );
+@@ -224,23 +259,25 @@ export async function acquireDistLock({
+   while (true) {
+     const token = randomUUID();
+     let descriptor;
++    let createdDigest;
+     let createdIdentity;
+     try {
+       descriptor = openSync(lockPath, "wx", 0o600);
+-      writeFileSync(
+-        descriptor,
+-        `${JSON.stringify({ pid: process.pid, token, createdAt: new Date().toISOString() })}\n`,
+-        { encoding: "utf8" },
+-      );
++      const ownerRecord = `${JSON.stringify({
++        pid: process.pid,
++        token,
++        createdAt: new Date().toISOString(),
++      })}\n`;
++      writeFileSync(descriptor, ownerRecord, { encoding: "utf8" });
+       fsyncSync(descriptor);
++      createdDigest = createHash("sha256").update(ownerRecord, "utf8").digest("hex");
+       createdIdentity = lockIdentity(fstatSync(descriptor));
+       closeSync(descriptor);
+       descriptor = undefined;
+       onLockCreated?.({ lockPath });
+       syncDirectory(resolvedRoot);
+-      const current = snapshotLock(lockPath);
+       const lock = {
+-        digest: current.digest,
++        digest: createdDigest,
+         identity: createdIdentity,
+         lockPath,
+         pid: process.pid,
+@@ -376,14 +413,26 @@ function recoverInterruptedPublication(root, lock) {
+   const backups = publicationArtifacts(root, BACKUP_PREFIX);
+ 
+   if (!existsSync(dist)) {
+-    const recoverable = backups.find(isValidDistribution);
++    const recoverableBackups = backups.filter(isValidDistribution);
++    if (recoverableBackups.length > 1) {
++      throw new Error(
++        "build:dist found multiple valid crash backups and cannot prove their generation order",
++      );
++    }
++    const recoverable = recoverableBackups[0];
+     if (recoverable) {
+       assertDistLockOwnership(lock);
+       renameSync(recoverable, dist);
+       syncDirectory(root);
+     }
+   } else if (!isValidDistribution(dist)) {
+-    const recoverable = backups.find(isValidDistribution);
++    const recoverableBackups = backups.filter(isValidDistribution);
++    if (recoverableBackups.length > 1) {
++      throw new Error(
++        "build:dist found multiple valid crash backups and cannot prove their generation order",
++      );
++    }
++    const recoverable = recoverableBackups[0];
+     if (recoverable) {
+       const failed = join(root, `${FAILED_PREFIX}${process.pid}-${randomUUID()}`);
+       assertDistLockOwnership(lock);
+@@ -447,7 +496,7 @@ function triggerTestFailpoint(failpoint, point) {
+   }
+ }
+ 
+-function publishStagingTree({ root, dist, staging, failpoint, lock }) {
++function publishStagingTree({ root, dist, staging, stagingDigest, failpoint, lock }) {
+   const backup = join(root, `${BACKUP_PREFIX}${process.pid}-${randomUUID()}`);
+   const failed = join(root, `${FAILED_PREFIX}${process.pid}-${randomUUID()}`);
+   let previousMoved = false;
+@@ -467,6 +516,10 @@ function publishStagingTree({ root, dist, staging, failpoint, lock }) {
+     stagingPublished = true;
+     triggerTestFailpoint(failpoint, "after-publish");
+     validateDistOutputs(dist);
++    const publishedDigest = directoryDigest(dist);
++    if (publishedDigest !== stagingDigest) {
++      throw new Error("build:dist published tree changed after staged verification");
++    }
+   } catch (error) {
+     let rollbackError;
+     try {
+@@ -516,6 +569,10 @@ export async function buildDistribution({ root = ROOT } = {}) {
+     cpSync(src, staging, { recursive: true, errorOnExist: true });
+     validateDistOutputs(staging);
+     const stagingDigest = directoryDigest(staging);
++    syncTree(staging);
++    if (directoryDigest(staging) !== stagingDigest) {
++      throw new Error("build:dist staging tree changed while it was being persisted");
++    }
+     let distDigest;
+     try {
+       if (existsSync(dist)) distDigest = directoryDigest(dist);
+@@ -525,7 +582,14 @@ export async function buildDistribution({ root = ROOT } = {}) {
+     if (distDigest === stagingDigest) {
+       return { changed: false, digest: distDigest };
+     }
+-    publishStagingTree({ root: resolvedRoot, dist, staging, failpoint, lock });
++    publishStagingTree({
++      root: resolvedRoot,
++      dist,
++      staging,
++      stagingDigest,
++      failpoint,
++      lock,
++    });
+     return { changed: true, digest: stagingDigest };
+   } catch (error) {
+     resultError = error;
+diff --git a/javascript/iroha_js/scripts/bundle-size-check.mjs b/javascript/iroha_js/scripts/bundle-size-check.mjs
+index 5e5f61cfd6fd10fcd08f11aabc2c920ddc37800e..3553bd3d24e5510669b37e803b2b83377e5ae455 100644
+--- a/javascript/iroha_js/scripts/bundle-size-check.mjs
++++ b/javascript/iroha_js/scripts/bundle-size-check.mjs
+@@ -3,6 +3,7 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ import { readFile } from "node:fs/promises";
++import { spawn } from "node:child_process";
+ import process from "node:process";
+ import { join, resolve } from "node:path";
+ import { fileURLToPath, pathToFileURL } from "node:url";
+@@ -18,8 +19,8 @@ export const BUNDLE_TARGETS = Object.freeze([
+     platform: "node",
+     target: "node18",
+     // This direct entrypoint intentionally exposes the complete Torii surface. The audited
+-    // security-hardening baseline is 852,966 bytes with pinned esbuild; 840 KiB (860,160
+-    // bytes) leaves 7,194 bytes, or 0.84%, of regression headroom.
++    // security-hardening baseline is 854,715 bytes with pinned esbuild; 840 KiB (860,160
++    // bytes) leaves 5,445 bytes, or 0.63%, of regression headroom.
+     limitKb: 840,
+   }),
+   Object.freeze({
+@@ -71,10 +72,10 @@ export const BUNDLE_TARGETS = Object.freeze([
+     entryPoint: join(ROOT, "dist", "kotodamaCompiler", "browser.js"),
+     platform: "browser",
+     target: "es2020",
+-    // Pinned-esbuild baseline is 49,487 bytes (48.3 KiB); 49 KiB leaves 689
+-    // bytes (1.39%) while covering artifact/CNTR validation and the complete
++    // Pinned-esbuild baseline is 51,000 bytes (49.8 KiB); 51 KiB leaves 1,224
++    // bytes (2.40%) while covering artifact/CNTR validation and the complete
+     // remote compiler transport boundary.
+-    limitKb: 49,
++    limitKb: 51,
+     forbidNodeInputs: true,
+     forbidGlobalBuffer: true,
+   }),
+@@ -83,8 +84,8 @@ export const BUNDLE_TARGETS = Object.freeze([
+     entryPoint: join(ROOT, "dist", "browser.js"),
+     platform: "browser",
+     target: "es2020",
+-    // The browser-clean public aggregate is 303,676 bytes (296.6 KiB) with
+-    // pinned esbuild, leaving 3,524 bytes (1.16%) for the complete namespace.
++    // The browser-clean public aggregate is 304,385 bytes (297.3 KiB) with
++    // pinned esbuild, leaving 2,815 bytes (0.92%) for the complete namespace.
+     limitKb: 300,
+     forbidNodeInputs: true,
+     forbidGlobalBuffer: true,
+@@ -93,10 +94,18 @@ export const BUNDLE_TARGETS = Object.freeze([
+ 
+ const NODE_ONLY_BROWSER_INPUT_PATTERNS = Object.freeze([
+   /^node:/u,
+-  /[/\\](?:src|dist)[/\\]crypto\.js$/u,
+-  /[/\\](?:src|dist)[/\\]cryptoHash\.js$/u,
+-  /[/\\](?:src|dist)[/\\]native\.js$/u,
+-  /[/\\](?:src|dist)[/\\]toriiClient\.js$/u,
++  /(?:^|[/\\])(?:src|dist)[/\\]crypto\.js$/u,
++  /(?:^|[/\\])(?:src|dist)[/\\]cryptoHash\.js$/u,
++  /(?:^|[/\\])(?:src|dist)[/\\]native\.js$/u,
++  /(?:^|[/\\])(?:src|dist)[/\\]toriiClient\.js$/u,
++]);
++
++const GLOBAL_BUFFER_MUTATION_PATTERNS = Object.freeze([
++  /(?:globalThis|window|global|self)(?:\.Buffer|\[["']Buffer["']\])\s*(?:=|\|\|=|\?\?=|&&=|\+=|-=|\*=|\/=|%=|\*\*=|<<=|>>=|>>>=|&=|\^=|\|=|\+\+|--)/u,
++  /(?:\+\+|--)(?:globalThis|window|global|self)(?:\.Buffer|\[["']Buffer["']\])/u,
++  /(?:Object|Reflect)\.defineProperty\(\s*(?:globalThis|window|global|self)\s*,\s*["']Buffer["']/u,
++  /Object\.defineProperties\(\s*(?:globalThis|window|global|self)\s*,\s*\{[^}]{0,512}(?:["']Buffer["']|Buffer)\s*:/u,
++  /Object\.assign\(\s*(?:globalThis|window|global|self)\s*,\s*\{[^}]{0,512}(?:["']Buffer["']|Buffer)\s*:/u,
+ ]);
+ 
+ export function findForbiddenBrowserInputs(inputs) {
+@@ -105,6 +114,70 @@ export function findForbiddenBrowserInputs(inputs) {
+   );
+ }
+ 
++export function hasForbiddenGlobalBufferMutation(source) {
++  return GLOBAL_BUFFER_MUTATION_PATTERNS.some((pattern) => pattern.test(source));
++}
++
++const BUFFER_RUNTIME_PROBE = [
++  'import { readFileSync } from "node:fs";',
++  'const source = readFileSync(0, "utf8");',
++  '// Initialize Node\'s lazy Fetch/Undici globals while its own Buffer is still present.',
++  'void globalThis.fetch; void globalThis.Headers; void globalThis.Request; void globalThis.Response;',
++  'if (!Reflect.deleteProperty(globalThis, "Buffer")) {',
++  '  throw new Error("runtime probe could not remove global Buffer");',
++  '}',
++  'await import("data:text/javascript;charset=utf-8," + encodeURIComponent(source) + "#iroha-buffer-probe");',
++  'if (Object.prototype.hasOwnProperty.call(globalThis, "Buffer")) {',
++  '  throw new Error("browser bundle installed global Buffer");',
++  '}',
++].join("\n");
++
++async function assertNoRuntimeGlobalBufferInstall(source, label) {
++  await new Promise((resolvePromise, rejectPromise) => {
++    const child = spawn(
++      process.execPath,
++      ["--input-type=module", "--eval", BUFFER_RUNTIME_PROBE],
++      {
++        stdio: ["pipe", "ignore", "pipe"],
++        env: {},
++      },
++    );
++    let stderr = "";
++    const timeout = setTimeout(() => {
++      child.kill("SIGKILL");
++    }, 15_000);
++    child.stderr.setEncoding("utf8");
++    child.stderr.on("data", (chunk) => {
++      if (stderr.length < 8_192) {
++        stderr += chunk.slice(0, 8_192 - stderr.length);
++      }
++    });
++    child.once("error", (error) => {
++      clearTimeout(timeout);
++      rejectPromise(
++        new Error(`${label} browser runtime Buffer probe failed to start`, {
++          cause: error,
++        }),
++      );
++    });
++    child.once("close", (code, signal) => {
++      clearTimeout(timeout);
++      if (code === 0) {
++        resolvePromise();
++        return;
++      }
++      const diagnostic = stderr.replace(/\s+/gu, " ").trim().slice(0, 500);
++      rejectPromise(
++        new Error(
++          `${label} installs a forbidden global Buffer shim at runtime` +
++            `${signal ? ` (${signal})` : ""}${diagnostic ? `: ${diagnostic}` : ""}`,
++        ),
++      );
++    });
++    child.stdin.end(source, "utf8");
++  });
++}
++
+ async function loadRequiredEsbuild(loadEsbuild) {
+   let esbuild;
+   try {
+@@ -140,8 +213,13 @@ async function checkBundle(esbuild, target, log) {
+   }
+   const bytes = output.contents?.byteLength ?? Buffer.byteLength(output.text ?? "", "utf8");
+   const kb = (bytes / 1024).toFixed(1);
+-  log(`Bundled ${target.label}: ${kb} KiB (limit ${target.limitKb} KiB)`);
+-  if (bytes > target.limitKb * 1024) {
++  const hasSizeLimit = Number.isFinite(target.limitKb);
++  log(
++    hasSizeLimit
++      ? `Bundled ${target.label}: ${kb} KiB (limit ${target.limitKb} KiB)`
++      : `Audited ${target.label}: ${kb} KiB browser graph`,
++  );
++  if (hasSizeLimit && bytes > target.limitKb * 1024) {
+     throw new Error(
+       `${target.label} bundle size ${kb} KiB exceeds limit ${target.limitKb} KiB`,
+     );
+@@ -156,12 +234,59 @@ async function checkBundle(esbuild, target, log) {
+       );
+     }
+   }
+-  if (
+-    target.forbidGlobalBuffer === true &&
+-    /(?:globalThis|window|global)\.Buffer\s*=/u.test(output.text ?? "")
+-  ) {
++  const outputText = output.text ?? Buffer.from(output.contents ?? []).toString("utf8");
++  if (target.forbidGlobalBuffer === true && hasForbiddenGlobalBufferMutation(outputText)) {
+     throw new Error(`${target.label} installs a forbidden global Buffer shim`);
+   }
++  if (target.runtimeNoGlobalBuffer === true) {
++    await assertNoRuntimeGlobalBufferInstall(outputText, target.label);
++  }
++}
++
++export function listExplicitBrowserExports(pkg) {
++  const grouped = new Map();
++  for (const [subpath, configured] of Object.entries(pkg?.exports ?? {})) {
++    if (
++      configured === null ||
++      typeof configured !== "object" ||
++      !Object.prototype.hasOwnProperty.call(configured, "browser")
++    ) {
++      continue;
++    }
++    const target = configured.browser;
++    if (typeof target !== "string" || !target.startsWith("./dist/")) {
++      throw new Error(
++        `${subpath} explicit browser export should point to built dist artifacts`,
++      );
++    }
++    const subpaths = grouped.get(target) ?? [];
++    subpaths.push(subpath);
++    grouped.set(target, subpaths);
++  }
++  return Array.from(grouped, ([target, subpaths]) =>
++    Object.freeze({
++      target,
++      subpaths: Object.freeze(subpaths.slice()),
++    }),
++  );
++}
++
++async function checkExplicitBrowserExportGraphs(esbuild, pkg, log) {
++  for (const { target, subpaths } of listExplicitBrowserExports(pkg)) {
++    await checkBundle(
++      esbuild,
++      {
++        label: `${subpaths.join(", ")} explicit browser export`,
++        entryPoint: resolve(ROOT, target),
++        platform: "browser",
++        target: "es2020",
++        forbidNodeInputs: true,
++        forbidGlobalBuffer: true,
++        runtimeNoGlobalBuffer: true,
++      },
++      log,
++    );
++  }
+ }
+ 
+ function exportTarget(pkg, subpath, condition) {
+@@ -196,6 +321,7 @@ export async function runBundleSizeCheck({
+   }
+ 
+   const pkg = JSON.parse(await readFile(join(ROOT, "package.json"), "utf8"));
++  await checkExplicitBrowserExportGraphs(esbuild, pkg, log);
+   await checkDistExport(pkg, "./torii", "import");
+   await checkDistExport(pkg, "./transaction-codec", "browser");
+   await checkDistExport(pkg, "./nexus-app", "browser");
+diff --git a/javascript/iroha_js/scripts/copy-native.mjs b/javascript/iroha_js/scripts/copy-native.mjs
+index 32488498a0ae53135c326201e11e01f642999561..947d08ae387094fec2e9199905a884174c92c761 100644
+--- a/javascript/iroha_js/scripts/copy-native.mjs
++++ b/javascript/iroha_js/scripts/copy-native.mjs
+@@ -16,6 +16,7 @@ import {
+   mkdirSync,
+   openSync,
+   readFileSync,
++  readSync,
+   readdirSync,
+   renameSync,
+   rmSync,
+@@ -41,6 +42,8 @@ const CHECKSUM_FILENAME = "iroha_js_host.checksums.json";
+ const TRANSACTION_PREFIX = ".iroha-js-host-txn-";
+ const CLEANUP_PREFIX = ".iroha-js-host-cleanup-";
+ const JOURNAL_VERSION = 1;
++const MAX_JOURNAL_BYTES = 16 * 1024;
++const MAX_CHECKSUM_MANIFEST_BYTES = 1024 * 1024;
+ const JOURNAL_PATTERN = /^journal-(\d{6})\.json$/u;
+ const JOURNAL_TEMP_PATTERN = /^\.journal-(\d{6})-[0-9a-f-]+\.tmp$/u;
+ const NEXT_NATIVE_FILENAME = `${NATIVE_FILENAME}.next`;
+@@ -75,6 +78,15 @@ function assertRegularFile(path, label) {
+   if (!metadata.isFile() || metadata.isSymbolicLink()) {
+     throw new Error(`${label} must be a regular non-symbolic-link file: ${path}`);
+   }
++  return metadata;
++}
++
++function assertChecksumManifest(path, label) {
++  const metadata = assertRegularFile(path, label);
++  if (metadata.size > MAX_CHECKSUM_MANIFEST_BYTES) {
++    throw new Error(`${label} exceeds the native checksum manifest size limit`);
++  }
++  return metadata;
+ }
+ 
+ function assertDirectory(path, label) {
+@@ -122,7 +134,20 @@ export function probeNativeBindingExports(
+     throw new TypeError("required native exports must be a non-empty identifier array");
+   }
+   const probeSource = String.raw`
+-const binding = require(process.argv[1]);
++const bindingPath = process.argv[1];
++let binding;
++if (/\.(?:cjs|js)$/iu.test(bindingPath)) {
++  // Test-only fixture support; production stages a native library.
++  binding = require(bindingPath);
++} else {
++  // Publication deliberately retains the legacy .node.next transaction name
++  // for crash-recovery compatibility. require() dispatches by the last
++  // extension and would parse that Mach-O/ELF/PE file as JavaScript, whereas
++  // process.dlopen loads the addon independent of its private filename.
++  const nativeModule = { exports: {} };
++  process.dlopen(nativeModule, bindingPath);
++  binding = nativeModule.exports;
++}
+ const required = JSON.parse(process.argv[2]);
+ const missing = required.filter((name) => typeof binding[name] !== "function");
+ if (missing.length > 0) {
+@@ -170,7 +195,19 @@ function verificationError(label, verification) {
+ }
+ 
+ function sha256File(path) {
+-  return createHash("sha256").update(readFileSync(path)).digest("hex");
++  const hash = createHash("sha256");
++  const descriptor = openSync(path, constants.O_RDONLY);
++  const buffer = Buffer.allocUnsafe(64 * 1024);
++  try {
++    let bytesRead;
++    do {
++      bytesRead = readSync(descriptor, buffer, 0, buffer.length, null);
++      if (bytesRead > 0) hash.update(buffer.subarray(0, bytesRead));
++    } while (bytesRead > 0);
++  } finally {
++    closeSync(descriptor);
++  }
++  return hash.digest("hex");
+ }
+ 
+ function assertSha256(value, label) {
+@@ -202,7 +239,7 @@ function verifyExactPair({
+   label,
+ }) {
+   assertRegularFile(nativePath, `${label} native binding`);
+-  assertRegularFile(manifestPath, `${label} checksum manifest`);
++  assertChecksumManifest(manifestPath, `${label} checksum manifest`);
+   const actual = pairIdentity(nativePath, manifestPath);
+   if (!samePairIdentity(actual, expected)) {
+     throw new Error(`${label} does not match its journaled binary/checksum identity`);
+@@ -306,6 +343,7 @@ function readTransaction(directory) {
+     .sort();
+   if (journalNames.length === 0) return null;
+   let baseline;
++  let expectedPhases;
+   let last;
+   for (let index = 0; index < journalNames.length; index += 1) {
+     const expectedName = `journal-${String(index).padStart(6, "0")}.json`;
+@@ -313,7 +351,13 @@ function readTransaction(directory) {
+       throw new Error("native publication journal contains a gap or duplicate sequence");
+     }
+     const journalPath = join(directory, expectedName);
+-    assertRegularFile(journalPath, "Native publication journal entry");
++    const journalMetadata = assertRegularFile(
++      journalPath,
++      "Native publication journal entry",
++    );
++    if (journalMetadata.size > MAX_JOURNAL_BYTES) {
++      throw new Error(`native publication journal entry exceeds ${MAX_JOURNAL_BYTES} bytes`);
++    }
+     let parsed;
+     try {
+       parsed = JSON.parse(readFileSync(journalPath, "utf8"));
+@@ -323,6 +367,15 @@ function readTransaction(directory) {
+       });
+     }
+     const entry = validateJournalEntry(parsed, transactionId, index);
++    expectedPhases ??= entry.previous === null
++      ? JOURNAL_PHASES.filter(
++          (phase) =>
++            phase !== "previous-manifest-moved" && phase !== "previous-native-moved",
++        )
++      : JOURNAL_PHASES;
++    if (entry.phase !== expectedPhases[index]) {
++      throw new Error("native publication journal phases are non-canonical");
++    }
+     const invariant = JSON.stringify({
+       next: entry.next,
+       platformKey: entry.platformKey,
+@@ -334,11 +387,6 @@ function readTransaction(directory) {
+     else if (baseline !== invariant) {
+       throw new Error("native publication journal invariants changed between phases");
+     }
+-    const expectedPhaseIndex = JOURNAL_PHASES.indexOf(entry.phase);
+-    const previousPhaseIndex = last === undefined ? -1 : JOURNAL_PHASES.indexOf(last.phase);
+-    if (expectedPhaseIndex <= previousPhaseIndex) {
+-      throw new Error("native publication journal phases are not strictly ordered");
+-    }
+     last = entry;
+   }
+   return {
+@@ -400,7 +448,15 @@ function assertTransactionEntries(transaction) {
+   for (const name of readdirSync(transaction.directory)) {
+     if (JOURNAL_PATTERN.test(name) || JOURNAL_TEMP_PATTERN.test(name) || allowed.has(name)) {
+       const path = join(transaction.directory, name);
+-      assertRegularFile(path, "Native publication transaction artifact");
++      if (
++        name === NEXT_MANIFEST_FILENAME ||
++        name === PREVIOUS_MANIFEST_FILENAME ||
++        name === DISCARDED_MANIFEST_FILENAME
++      ) {
++        assertChecksumManifest(path, "Native publication transaction checksum manifest");
++      } else {
++        assertRegularFile(path, "Native publication transaction artifact");
++      }
+       continue;
+     }
+     throw new Error(`native publication transaction contains an unexpected artifact: ${name}`);
+@@ -706,7 +762,7 @@ function recoverInterruptedPublications({
+   }
+   if (!nativeExists) return { outcome: "none" };
+   assertRegularFile(dest, "Existing native binding after recovery");
+-  assertRegularFile(manifest, "Existing native checksum manifest after recovery");
++  assertChecksumManifest(manifest, "Existing native checksum manifest after recovery");
+   const verification = verifyBinding(dest, { manifestPath: manifest, platformKey });
+   if (!verification?.ok) {
+     throw verificationError("Existing native binding after recovery", verification);
+@@ -861,7 +917,7 @@ export async function publishNativeBinding({
+     }
+     if (nativeExists) {
+       assertRegularFile(dest, "Existing native binding");
+-      assertRegularFile(checksumManifestPath, "Existing native checksum manifest");
++      assertChecksumManifest(checksumManifestPath, "Existing native checksum manifest");
+     }
+ 
+     let previous = null;
+@@ -901,9 +957,7 @@ export async function publishNativeBinding({
+     syncDirectory(transaction.directory);
+     phaseHook?.("staged-native-synced");
+ 
+-    const sha256 = createHash("sha256")
+-      .update(readFileSync(stagedNative))
+-      .digest("hex");
++    const sha256 = sha256File(stagedNative);
+     writeFileSync(
+       stagedManifest,
+       `${JSON.stringify(
+@@ -932,7 +986,15 @@ export async function publishNativeBinding({
+     if (staged.sha256 !== undefined && staged.sha256 !== transaction.next.nativeSha256) {
+       throw new Error("Staged native verifier returned an inconsistent checksum");
+     }
+-    if (transaction.previous !== null && samePairIdentity(transaction.previous, transaction.next)) {
++    // A checksum manifest is an authentication sidecar, not part of the
++    // executable generation. Existing valid manifests may differ in harmless
++    // formatting or contain additional platform entries. Treat an identical
++    // probed binary as idempotent so recovery never has to distinguish two
++    // byte-identical native generations by their filesystem position alone.
++    if (
++      transaction.previous !== null &&
++      transaction.previous.nativeSha256 === transaction.next.nativeSha256
++    ) {
+       const matchingSha256 = transaction.next.nativeSha256;
+       cleanupTransactionDirectory(transaction.directory, destinationDirectory, lock);
+       transaction = undefined;
+@@ -993,10 +1055,12 @@ export async function publishNativeBinding({
+         }
+         transaction = undefined;
+       } catch (recoveryError) {
+-        throw new AggregateError(
++        const aggregate = new AggregateError(
+           [error, recoveryError],
+           "native publication failed and durable recovery could not restore the exact prior pair",
+         );
++        primaryError = aggregate;
++        throw aggregate;
+       }
+     }
+     throw error;
+diff --git a/javascript/iroha_js/src/instructionBuilders.js b/javascript/iroha_js/src/instructionBuilders.js
+index cc8b2dc5244548206da20043391cb63ea823b845..5c2b737e5c0148f30fdf6717e8b9d83df4855ff9 100644
+--- a/javascript/iroha_js/src/instructionBuilders.js
++++ b/javascript/iroha_js/src/instructionBuilders.js
+@@ -29,6 +29,9 @@ const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
+ const MAX_SAFE_INTEGER_BIGINT = BigInt(MAX_SAFE_INTEGER);
+ const MAX_NUMERIC_SCALE = 28;
+ const MAX_NUMERIC_BITS = 512;
++const MAX_NUMERIC_TEXT_LENGTH = 185;
++const MIN_NUMERIC_MANTISSA = -(1n << BigInt(MAX_NUMERIC_BITS - 1));
++const MAX_NUMERIC_MANTISSA = (1n << BigInt(MAX_NUMERIC_BITS - 1)) - 1n;
+ const UINT32_MAX = 0xffff_ffff;
+ const DEFAULT_PRIVACY_MAX_PROOF_BYTES = 64 * 1024 * 1024;
+ const DEFAULT_PRIVACY_MAX_PUBLIC_INPUT_BYTES = 1024 * 1024;
+@@ -283,6 +286,13 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+     if (!Number.isFinite(value)) {
+       fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a finite number`, name);
+     }
++    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
++      fail(
++        ValidationErrorCode.VALUE_OUT_OF_RANGE,
++        `${name} integer Numbers must be within JavaScript's safe integer range; use a string or bigint`,
++        name,
++      );
++    }
+     raw = value.toString();
+   } else if (typeof value === "bigint") {
+     raw = value.toString();
+@@ -297,6 +307,13 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!raw) {
+     fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a valid Numeric literal`, name);
+   }
++  if (raw.length > MAX_NUMERIC_TEXT_LENGTH) {
++    fail(
++      ValidationErrorCode.VALUE_OUT_OF_RANGE,
++      `${name} exceeds the bounded Numeric text length`,
++      name,
++    );
++  }
+ 
+   let digits = raw;
+   const sign = digits[0];
+@@ -332,6 +349,17 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!mantissa) {
+     fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a valid Numeric literal`, name);
+   }
++  // Match Numeric construction: fractional trailing zeroes are removed before
++  // enforcing the canonical scale and signed-mantissa bounds.  The instruction
++  // JSON encoder accepts only canonical Numeric text, so emit that canonical
++  // spelling instead of preserving an accepted alternate input form.
++  while (scale > 0 && mantissa.endsWith("0")) {
++    mantissa = mantissa.slice(0, -1);
++    scale -= 1;
++  }
++  if (!mantissa) {
++    fail(ValidationErrorCode.INVALID_NUMERIC, `${name} must be a valid Numeric literal`, name);
++  }
+   if (scale > MAX_NUMERIC_SCALE) {
+     fail(
+       ValidationErrorCode.VALUE_OUT_OF_RANGE,
+@@ -344,16 +372,30 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (sign === "-") {
+     mantissaValue = -mantissaValue;
+   }
+-  const absValue = mantissaValue < 0n ? -mantissaValue : mantissaValue;
+-  if (absValue !== 0n && absValue.toString(2).length > MAX_NUMERIC_BITS) {
++  if (
++    mantissaValue < MIN_NUMERIC_MANTISSA ||
++    mantissaValue > MAX_NUMERIC_MANTISSA
++  ) {
+     fail(
+       ValidationErrorCode.VALUE_OUT_OF_RANGE,
+-      `${name} mantissa exceeds ${MAX_NUMERIC_BITS} bits`,
++      `${name} mantissa exceeds the signed ${MAX_NUMERIC_BITS}-bit range`,
+       name,
+     );
+   }
+ 
+-  return raw;
++  if (mantissaValue === 0n) {
++    return "0";
++  }
++  const negative = mantissaValue < 0n;
++  let canonicalDigits = (negative ? -mantissaValue : mantissaValue).toString(10);
++  if (scale > 0) {
++    if (canonicalDigits.length <= scale) {
++      canonicalDigits = `${"0".repeat(scale + 1 - canonicalDigits.length)}${canonicalDigits}`;
++    }
++    const decimalIndex = canonicalDigits.length - scale;
++    canonicalDigits = `${canonicalDigits.slice(0, decimalIndex)}.${canonicalDigits.slice(decimalIndex)}`;
++  }
++  return `${negative ? "-" : ""}${canonicalDigits}`;
+ }
+ 
+ function asNumericQuantity(value, name) {
+diff --git a/javascript/iroha_js/src/kotodamaCompiler/normalize.js b/javascript/iroha_js/src/kotodamaCompiler/normalize.js
+index 2fe009cdeb1a1196cfdaefb1f83b79307ee61d9d..f37b4651876ad0be21ba4e3fefc4bb92bfb46790 100644
+--- a/javascript/iroha_js/src/kotodamaCompiler/normalize.js
++++ b/javascript/iroha_js/src/kotodamaCompiler/normalize.js
+@@ -15,7 +15,10 @@ const MANIFEST_ENTRYPOINT_KINDS = new Set([
+   "Kaizen",
+ ]);
+ const MAX_DIAGNOSTICS = 64;
++// Keep the allocation boundary independent from ledger admission. The exact
++// deployable image limit is checked after the fixed IVM header is available.
+ const MAX_ARTIFACT_BYTES = 4 * 1024 * 1024;
++const MAX_IVM_CODE_REGION_BYTES = 0x0010_0000;
+ const MAX_WIRE_JSON_BYTES = 16 * 1024 * 1024;
+ const MAX_MANIFEST_ITEMS = 65_536;
+ const MAX_ENTRYPOINT_PARAMETERS = 13;
+@@ -29,7 +32,10 @@ const UTF8_ENCODER = new TextEncoder();
+ const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
+ const IVM_HEADER_BYTES = 17;
+ const NORITO_FRAME_HEADER_BYTES = 40;
+-const NORITO_MAX_PADDING_BYTES = 64;
++// `Archived<EmbeddedContractInterfaceV1>` is at most 8-byte aligned, and the
++// 40-byte NRT0 header is already aligned. The Rust decoder requires this exact
++// schema padding rather than the looser unknown-schema 64-byte fallback.
++const NORITO_EMBEDDED_INTERFACE_PADDING_BYTES = 0;
+ const NORITO_COMPACT_LENGTHS_FLAG = 0x02;
+ const NORITO_CRC64_MASK = 0xffff_ffff_ffff_ffffn;
+ const NORITO_CRC64_POLYNOMIAL = 0xc96c5795d7870f42n;
+@@ -393,6 +399,18 @@ function readU32Le(bytes, offset, label) {
+   ) >>> 0;
+ }
+ 
++function readU32Be(bytes, offset, label) {
++  if (offset < 0 || offset + 4 > bytes.length) {
++    throw new TypeError(`${label} is truncated`);
++  }
++  return (
++    bytes[offset] * 0x1000000 +
++    (bytes[offset + 1] << 16) +
++    (bytes[offset + 2] << 8) +
++    bytes[offset + 3]
++  ) >>> 0;
++}
++
+ function readU64Le(bytes, offset, label) {
+   if (offset < 0 || offset + 8 > bytes.length) {
+     throw new TypeError(`${label} is truncated`);
+@@ -487,8 +505,8 @@ function validateEmbeddedInterfaceFrame(frame, manifest, headerMode) {
+   }
+   const safePayloadLength = Number(payloadLength);
+   const paddingLength = frame.length - NORITO_FRAME_HEADER_BYTES - safePayloadLength;
+-  if (paddingLength < 0 || paddingLength > NORITO_MAX_PADDING_BYTES) {
+-    throw new TypeError(`${label} has an invalid alignment padding length`);
++  if (paddingLength !== NORITO_EMBEDDED_INTERFACE_PADDING_BYTES) {
++    throw new TypeError(`${label} has a noncanonical alignment padding length`);
+   }
+   const payloadOffset = NORITO_FRAME_HEADER_BYTES + paddingLength;
+   if (frame.subarray(NORITO_FRAME_HEADER_BYTES, payloadOffset).some((byte) => byte !== 0)) {
+@@ -579,7 +597,7 @@ function validateLiteralSection(bytes, start) {
+   const count = readU32Le(bytes, start + 4, `${label} count`);
+   const padding = readU32Le(bytes, start + 8, `${label} padding`);
+   const dataLength = readU32Le(bytes, start + 12, `${label} data length`);
+-  if (count === 0 || count > 0x1_0000 || padding > 3) {
++  if (count > 0x1_0000 || padding > 3) {
+     throw new TypeError(`${label} has invalid bounds`);
+   }
+   const entriesLength = count * 8;
+@@ -596,6 +614,7 @@ function validateLiteralSection(bytes, start) {
+   ) {
+     throw new TypeError(`${label} uses noncanonical alignment padding`);
+   }
++  const descriptors = [];
+   for (let index = 0; index < count; index += 1) {
+     const descriptor = readU64Le(
+       bytes,
+@@ -603,30 +622,89 @@ function validateLiteralSection(bytes, start) {
+       `${label} descriptor ${index}`,
+     );
+     const kind = Number(descriptor >> 56n);
+-    const relativeOffset = Number(descriptor & 0x00ff_ffff_ffff_ffffn);
++    const relativeOffsetBigInt = descriptor & 0x00ff_ffff_ffff_ffffn;
++    if (relativeOffsetBigInt > BigInt(Number.MAX_SAFE_INTEGER)) {
++      throw new TypeError(`${label} descriptor ${index} offset is invalid`);
++    }
++    const relativeOffset = Number(relativeOffsetBigInt);
+     const absoluteOffset = start + relativeOffset;
+     if (
+       (kind !== 0 && kind !== 1) ||
+       relativeOffset < 16 + entriesLength ||
+       absoluteOffset < dataStart ||
+-      absoluteOffset >= dataEnd ||
+-      (kind === 1 && absoluteOffset + 8 > dataEnd)
++      absoluteOffset >= dataEnd
+     ) {
+       throw new TypeError(`${label} descriptor ${index} is invalid`);
+     }
++    if (
++      descriptors.length !== 0 &&
++      absoluteOffset <= descriptors[descriptors.length - 1].absoluteOffset
++    ) {
++      throw new TypeError(`${label} descriptor targets must be strictly increasing`);
++    }
++    descriptors.push({ kind, absoluteOffset });
++  }
++  if (descriptors.length === 0) {
++    if (dataLength !== 0) {
++      throw new TypeError(`${label} cannot contain unindexed literal data`);
++    }
++  } else if (descriptors[0].absoluteOffset !== dataStart) {
++    throw new TypeError(`${label} first descriptor must target the first data byte`);
++  }
++  for (let index = 0; index < descriptors.length; index += 1) {
++    const { kind, absoluteOffset } = descriptors[index];
++    const end = descriptors[index + 1]?.absoluteOffset ?? dataEnd;
++    const literal = bytes.subarray(absoluteOffset, end);
++    if (kind === 0) {
++      validatePointerLiteralV1(literal, `${label} descriptor ${index}`);
++    } else if (literal.length !== 8) {
++      throw new TypeError(`${label} i64 descriptor ${index} must contain exactly 8 bytes`);
++    }
+   }
+   return codeOffset;
+ }
+ 
++function validatePointerLiteralV1(bytes, label) {
++  if (bytes.length < 39) {
++    throw new TypeError(`${label} pointer TLV is truncated`);
++  }
++  const typeId = (bytes[0] << 8) | bytes[1];
++  const allowedType =
++    (typeId >= 0x0001 && typeId <= 0x000f) ||
++    (typeId >= 0x0011 && typeId <= 0x0013);
++  if (!allowedType) {
++    throw new TypeError(`${label} pointer TLV type is not allowed by ABI v1`);
++  }
++  if (bytes[2] !== 1) {
++    throw new TypeError(`${label} pointer TLV must use version 1`);
++  }
++  const payloadLength = readU32Be(bytes, 3, `${label} pointer TLV length`);
++  const expectedLength = 7 + payloadLength + 32;
++  if (bytes.length !== expectedLength) {
++    throw new TypeError(`${label} pointer TLV length does not match its envelope`);
++  }
++  const payload = bytes.subarray(7, 7 + payloadLength);
++  const expectedHash = blake2b256(payload);
++  expectedHash[expectedHash.length - 1] |= 1;
++  if (!equalBytes(bytes.subarray(7 + payloadLength), expectedHash)) {
++    throw new TypeError(`${label} pointer TLV payload hash is invalid`);
++  }
++}
++
+ function validateCompiledArtifactV1(bytes, manifest) {
+   const label = "Kotodama compiler artifact";
+   if (bytes.length < IVM_HEADER_BYTES + 8 + NORITO_FRAME_HEADER_BYTES + 4) {
+     throw new TypeError(`${label} is too short to be a deployable IVM contract`);
+   }
++  if (bytes.length - IVM_HEADER_BYTES > MAX_IVM_CODE_REGION_BYTES) {
++    throw new RangeError(
++      `${label} post-header image exceeds the ${MAX_IVM_CODE_REGION_BYTES}-byte IVM code-memory limit`,
++    );
++  }
+   if (!equalBytes(bytes.subarray(0, 4), Uint8Array.from([0x49, 0x56, 0x4d, 0x00]))) {
+     throw new TypeError(`${label} has invalid IVM header magic`);
+   }
+-  if (bytes[4] !== 1 || bytes[5] !== 1 || (bytes[6] & ~0x07) !== 0 || bytes[7] > 64) {
++  if (bytes[4] !== 1 || bytes[5] !== 1 || (bytes[6] & ~0x03) !== 0 || bytes[7] > 64) {
+     throw new TypeError(`${label} has unsupported IVM execution metadata`);
+   }
+   if (bytes[16] !== 1) {
+diff --git a/javascript/iroha_js/src/norito.js b/javascript/iroha_js/src/norito.js
+index 4afd6ca93dde49e9de62837bd80d9e2a4c367001..76dfb85a3a25f6df6ee3950bedbf29af9e0b08b8 100644
+--- a/javascript/iroha_js/src/norito.js
++++ b/javascript/iroha_js/src/norito.js
+@@ -442,6 +442,17 @@ function shouldUsePureJsInstructionFallback(error) {
+ }
+ 
+ function encodeNormalizedInstruction(normalized) {
++  const deployProposal = normalized?.ProposeDeployContract;
++  if (
++    isPlainObject(deployProposal) &&
++    deployProposal.mode !== undefined &&
++    deployProposal.mode !== null
++  ) {
++    // Rust's JSON bridge has historically accepted case-folded enum text.
++    // Bind the public JS wire contract to the exact canonical spellings before
++    // native dispatch so non-canonical JSON cannot acquire canonical bytes.
++    encodeVotingModeValue(deployProposal.mode, "ProposeDeployContract.mode");
++  }
+   let encoded;
+   if (forcePureJsInstructionCodec) {
+     encoded = encodePureJsInstruction(normalized);
+@@ -7339,7 +7350,10 @@ function decodeNoritoFrame(buffer, context, expectedSchemaHash) {
+     // helper reports the more specific SCCP-facing short-header error.
+     throw new Error(`${context} reader overran payload while reading Norito header`);
+   }
+-  return validateNoritoFrame(buffer, { context, expectedSchemaHash });
++  return validateNoritoFrame(buffer, {
++    context,
++    ...(expectedSchemaHash == null ? {} : { expectedSchemaHash }),
++  });
+ }
+ 
+ function frameNoritoPayload(payload, schemaHash, flags = 0, padding = 0) {
+diff --git a/javascript/iroha_js/src/toriiClient.js b/javascript/iroha_js/src/toriiClient.js
+index 8c0f35ba24a5b529b3b3ca7794de9b07983311e5..96e8938029ca631d4a0d63938eee7176d74b5292 100644
+--- a/javascript/iroha_js/src/toriiClient.js
++++ b/javascript/iroha_js/src/toriiClient.js
+@@ -234,10 +234,14 @@ const MIN_ISO_POLL_INTERVAL_MS = 10;
+ const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
+ const MAX_SAFE_INTEGER_BIGINT = BigInt(MAX_SAFE_INTEGER);
+ const MAX_UINT64_BIGINT = (1n << 64n) - 1n;
++const MAX_UINT128_BIGINT = (1n << 128n) - 1n;
+ const MAX_SIGNED_INT32 = 0x7fffffff;
+ const MAX_SIGNED_INT32_BIGINT = BigInt(MAX_SIGNED_INT32);
+ const MAX_NUMERIC_SCALE = 28;
+ const MAX_NUMERIC_BITS = 512;
++const MAX_NUMERIC_TEXT_LENGTH = 185;
++const MIN_NUMERIC_MANTISSA = -(1n << BigInt(MAX_NUMERIC_BITS - 1));
++const MAX_NUMERIC_MANTISSA = (1n << BigInt(MAX_NUMERIC_BITS - 1)) - 1n;
+ const UINT64_MASK = 0xffff_ffff_ffff_ffffn;
+ const RAW_UTF8_HEADERS_INIT_KEY = "__irohaRawUtf8Headers";
+ const RAW_UTF8_HEADER_SUPPORT_FLAG = "__irohaSupportsRawUtf8Headers";
+@@ -16616,7 +16620,7 @@ function normalizeReservedLabel(payload, context) {
+ function normalizeSnsTokenValue(payload, context) {
+   const record = ensureRecord(payload ?? {}, context);
+   const assetId = ToriiClient._normalizeAssetId(record.asset_id, `${context}.asset_id`);
+-  const amount = normalizeNumericString(record.amount, `${context}.amount`);
++  const amount = normalizeCanonicalNumericString(record.amount, `${context}.amount`);
+   return { assetId, amount };
+ }
+ 
+@@ -20310,7 +20314,11 @@ function computeHashLiteralCrc(tag, body) {
+   return (crc & 0xffff).toString(16).toUpperCase().padStart(4, "0");
+ }
+ 
+-function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
++function normalizeNumericLiteral(
++  value,
++  name,
++  { allowNegative = false, canonicalize = false } = {},
++) {
+   let raw;
+   if (typeof value === "string") {
+     raw = value.trim();
+@@ -20318,6 +20326,11 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+     if (!Number.isFinite(value)) {
+       throw new TypeError(`${name} must be a finite number`);
+     }
++    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
++      throw new TypeError(
++        `${name} integer Numbers must be within JavaScript's safe integer range; use a string or bigint`,
++      );
++    }
+     raw = value.toString();
+   } else if (typeof value === "bigint") {
+     raw = value.toString();
+@@ -20328,6 +20341,9 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!raw) {
+     throw new TypeError(`${name} must be a valid Numeric literal`);
+   }
++  if (raw.length > MAX_NUMERIC_TEXT_LENGTH) {
++    throw new TypeError(`${name} exceeds the bounded Numeric text length`);
++  }
+ 
+   let digits = raw;
+   const sign = digits[0];
+@@ -20363,6 +20379,15 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (!mantissa) {
+     throw new TypeError(`${name} must be a valid Numeric literal`);
+   }
++  // Rust canonicalizes fractional trailing zeroes before checking Numeric's
++  // scale and signed-mantissa bounds.
++  while (scale > 0 && mantissa.endsWith("0")) {
++    mantissa = mantissa.slice(0, -1);
++    scale -= 1;
++  }
++  if (!mantissa) {
++    throw new TypeError(`${name} must be a valid Numeric literal`);
++  }
+   if (scale > MAX_NUMERIC_SCALE) {
+     throw new TypeError(`${name} scale exceeds ${MAX_NUMERIC_SCALE} decimal places`);
+   }
+@@ -20371,23 +20396,91 @@ function normalizeNumericLiteral(value, name, { allowNegative = false } = {}) {
+   if (sign === "-") {
+     mantissaValue = -mantissaValue;
+   }
+-  const absValue = mantissaValue < 0n ? -mantissaValue : mantissaValue;
+-  if (absValue !== 0n && absValue.toString(2).length > MAX_NUMERIC_BITS) {
+-    throw new TypeError(`${name} mantissa exceeds ${MAX_NUMERIC_BITS} bits`);
++  if (
++    mantissaValue < MIN_NUMERIC_MANTISSA ||
++    mantissaValue > MAX_NUMERIC_MANTISSA
++  ) {
++    throw new TypeError(
++      `${name} mantissa exceeds the signed ${MAX_NUMERIC_BITS}-bit range`,
++    );
+   }
+ 
+-  return raw;
++  if (!canonicalize) {
++    return raw;
++  }
++  if (mantissaValue === 0n) {
++    return "0";
++  }
++  const negative = mantissaValue < 0n;
++  let canonicalDigits = (negative ? -mantissaValue : mantissaValue).toString(10);
++  if (scale > 0) {
++    if (canonicalDigits.length <= scale) {
++      canonicalDigits = `${"0".repeat(scale + 1 - canonicalDigits.length)}${canonicalDigits}`;
++    }
++    const decimalIndex = canonicalDigits.length - scale;
++    canonicalDigits = `${canonicalDigits.slice(0, decimalIndex)}.${canonicalDigits.slice(decimalIndex)}`;
++  }
++  return `${negative ? "-" : ""}${canonicalDigits}`;
+ }
+ 
+-function normalizeNumericString(value, name) {
+-  return normalizeNumericLiteral(value, name, { allowNegative: false });
++function normalizeCanonicalNumericString(value, name) {
++  if (typeof value !== "string") {
++    throw new TypeError(`${name} must be canonical Numeric text`);
++  }
++  const canonical = normalizeNumericLiteral(value, name, {
++    allowNegative: false,
++    canonicalize: true,
++  });
++  if (value !== canonical) {
++    throw new TypeError(`${name} must be canonical Numeric text`);
++  }
++  return canonical;
+ }
+ 
+ function normalizeAmountLike(value, name) {
+   if (value === undefined || value === null) {
+     throw new TypeError(`${name} is required`);
+   }
+-  return normalizeNumericLiteral(value, name, { allowNegative: false });
++  return normalizeNumericLiteral(value, name, {
++    allowNegative: false,
++    canonicalize: true,
++  });
++}
++
++function normalizeUnsignedU128String(value, name) {
++  let raw;
++  if (typeof value === "string") {
++    raw = value.trim();
++  } else if (typeof value === "bigint") {
++    if (value < 0n) {
++      throw new TypeError(`${name} must be an unsigned 128-bit integer`);
++    }
++    raw = value.toString(10);
++  } else if (typeof value === "number") {
++    if (!Number.isSafeInteger(value) || value < 0) {
++      throw new TypeError(`${name} must be a JSON-safe unsigned 128-bit integer`);
++    }
++    raw = value.toString(10);
++  } else {
++    throw new TypeError(`${name} must be a string, bigint, or safe integer`);
++  }
++
++  if (raw.startsWith("+")) {
++    raw = raw.slice(1);
++  }
++  // A u128 has at most 39 decimal digits.  Enforce this before BigInt so
++  // hostile request strings cannot force unbounded integer parsing.
++  if (raw.length > 39) {
++    throw new TypeError(`${name} exceeds the unsigned 128-bit range`);
++  }
++  if (!/^[0-9]+$/u.test(raw)) {
++    throw new TypeError(`${name} must be an unsigned 128-bit integer`);
++  }
++  const numeric = BigInt(raw);
++  if (numeric > MAX_UINT128_BIGINT) {
++    throw new TypeError(`${name} exceeds the unsigned 128-bit range`);
++  }
++  return numeric.toString(10);
+ }
+ 
+ function normalizeOptionalHexString(value, name) {
+@@ -21446,7 +21539,10 @@ function normalizeGovernancePlainBallotPayload(input) {
+       record.owner,
+       "governanceSubmitPlainBallot.owner",
+     ),
+-    amount: normalizeNumericString(record.amount, "governanceSubmitPlainBallot.amount"),
++    amount: normalizeUnsignedU128String(
++      record.amount,
++      "governanceSubmitPlainBallot.amount",
++    ),
+     duration_blocks: ToriiClient._normalizeUnsignedInteger(
+       record.duration_blocks ?? record.durationBlocks,
+       "governanceSubmitPlainBallot.durationBlocks",
+@@ -21666,7 +21762,7 @@ function normalizeGovernanceZkBallotV1Payload(input) {
+     );
+   }
+   if (record.amount !== undefined && record.amount !== null) {
+-    payload.amount = normalizeNumericString(
++    payload.amount = normalizeAmountLike(
+       record.amount,
+       "governanceSubmitZkBallotV1.amount",
+     );
+@@ -31087,7 +31183,7 @@ function normalizeSubscriptionUsageRequest(input, context) {
+   const payload = {
+     ...credentials,
+     unit_key: requireNonEmptyString(unitKey, `${context}.unitKey`),
+-    delta: normalizeNumericLiteral(delta, `${context}.delta`),
++    delta: normalizeAmountLike(delta, `${context}.delta`),
+   };
+   const usageTriggerId = pickOverride(record, "usage_trigger_id", "usageTriggerId");
+   if (usageTriggerId !== undefined && usageTriggerId !== null) {
+diff --git a/javascript/iroha_js/test/buildDistConcurrency.test.js b/javascript/iroha_js/test/buildDistConcurrency.test.js
+index 1408963ef175abf29336fcd2df9fcfb49c2729b3..33685fd041d00d822186df4526504e4f44709873 100644
+--- a/javascript/iroha_js/test/buildDistConcurrency.test.js
++++ b/javascript/iroha_js/test/buildDistConcurrency.test.js
+@@ -181,6 +181,27 @@ test("post-close lock replacement reports the ownership race without masking or
+   }
+ });
+ 
++test("post-close same-inode mutation cannot become the accepted lock record", async () => {
++  const fixtureRoot = mkdtempSync(join(tmpdir(), "iroha-js-build-dist-post-close-rewrite-"));
++  try {
++    const lockPath = join(fixtureRoot, ".build-dist.lock");
++    await assert.rejects(
++      acquireDistLock({
++        root: fixtureRoot,
++        onLockCreated() {
++          const modified = JSON.parse(readFileSync(lockPath, "utf8"));
++          modified.attacker = "same-inode-post-close-rewrite";
++          writeFileSync(lockPath, `${JSON.stringify(modified)}\n`);
++        },
++      }),
++      /lost ownership/u,
++    );
++    assertNoPublicationArtifacts(fixtureRoot);
++  } finally {
++    rmSync(fixtureRoot, { recursive: true, force: true });
++  }
++});
++
+ test("stale malformed locks are quarantined while live stale-looking locks are preserved", async () => {
+   const fixtureRoot = mkdtempSync(join(tmpdir(), "iroha-js-build-dist-stale-owner-"));
+   try {
+@@ -300,6 +321,45 @@ try {
+   }
+ });
+ 
++test("stale takeover preserves a same-inode lock whose lease mtime is refreshed", async () => {
++  const fixtureRoot = mkdtempSync(join(tmpdir(), "iroha-js-build-dist-stale-refresh-"));
++  try {
++    const lockPath = join(fixtureRoot, ".build-dist.lock");
++    const staleRecord = `${JSON.stringify({
++      pid: 2_147_483_647,
++      token: "dead-owner-refreshed-before-takeover",
++      createdAt: "1970-01-01T00:00:00.000Z",
++    })}\n`;
++    writeFileSync(lockPath, staleRecord, { mode: 0o600 });
++    const old = new Date(Date.now() - 10 * 60_000);
++    utimesSync(lockPath, old, old);
++
++    let refreshed = false;
++    await assert.rejects(
++      acquireDistLock({
++        root: fixtureRoot,
++        staleLockMs: 60_000,
++        timeoutMs: 125,
++        onStaleCandidate() {
++          if (refreshed) return;
++          refreshed = true;
++          const fresh = new Date();
++          utimesSync(lockPath, fresh, fresh);
++        },
++      }),
++      /timed out waiting/u,
++    );
++    assert.equal(refreshed, true);
++    assert.equal(readFileSync(lockPath, "utf8"), staleRecord);
++    assert.deepEqual(
++      readdirSync(fixtureRoot).filter((entry) => entry.startsWith(".build-dist.lock.retired-")),
++      [],
++    );
++  } finally {
++    rmSync(fixtureRoot, { recursive: true, force: true });
++  }
++});
++
+ test("a lock-aware reader holds a complete old snapshot until changed source is published", async () => {
+   const fixtureRoot = mkdtempSync(join(tmpdir(), "iroha-js-build-dist-reader-"));
+   try {
+@@ -400,6 +460,30 @@ test("a stale crashed transaction restores its backup before rebuilding", async
+   }
+ });
+ 
++test("ambiguous valid crash backups are preserved instead of choosing by mtime", async () => {
++  const fixtureRoot = mkdtempSync(join(tmpdir(), "iroha-js-build-dist-backup-ambiguity-"));
++  try {
++    cpSync(join(ROOT, "src"), join(fixtureRoot, "src"), { recursive: true });
++    cpSync(join(fixtureRoot, "src"), join(fixtureRoot, ".dist-backup-first"), {
++      recursive: true,
++    });
++    cpSync(join(fixtureRoot, "src"), join(fixtureRoot, ".dist-backup-second"), {
++      recursive: true,
++    });
++
++    await assert.rejects(
++      runBuild(fixtureRoot),
++      /multiple valid crash backups.*cannot prove their generation order/u,
++    );
++    assert.equal(existsSync(join(fixtureRoot, "dist")), false);
++    assert.equal(existsSync(join(fixtureRoot, ".dist-backup-first")), true);
++    assert.equal(existsSync(join(fixtureRoot, ".dist-backup-second")), true);
++    assert.equal(existsSync(join(fixtureRoot, ".build-dist.lock")), false);
++  } finally {
++    rmSync(fixtureRoot, { recursive: true, force: true });
++  }
++});
++
+ test("a staged symbolic link is rejected without replacing the last-good dist", async () => {
+   const fixtureRoot = mkdtempSync(join(tmpdir(), "iroha-js-build-dist-symlink-"));
+   try {
+diff --git a/javascript/iroha_js/test/bundleSizeCheck.test.js b/javascript/iroha_js/test/bundleSizeCheck.test.js
+index 93b31a6383bca92789302da1313f1f337eacec77..be341acb20fd416424ee89b8ba80c973fd16e225 100644
+--- a/javascript/iroha_js/test/bundleSizeCheck.test.js
++++ b/javascript/iroha_js/test/bundleSizeCheck.test.js
+@@ -2,11 +2,14 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ import assert from "node:assert/strict";
++import { readFile } from "node:fs/promises";
+ import test from "node:test";
+ 
+ import {
+   BUNDLE_TARGETS,
+   findForbiddenBrowserInputs,
++  hasForbiddenGlobalBufferMutation,
++  listExplicitBrowserExports,
+   runBundleSizeCheck,
+ } from "../scripts/bundle-size-check.mjs";
+ 
+@@ -63,7 +66,7 @@ test("bundle-size targets retain audited ceilings and browser graph guards", ()
+       },
+       {
+         label: "kotodamaCompiler/browser.js (browser)",
+-        limitKb: 49,
++        limitKb: 51,
+         forbidNodeInputs: true,
+         forbidGlobalBuffer: true,
+       },
+@@ -130,12 +133,16 @@ test("bundle-size check gates the remote Kotodama compiler browser export", () =
+   assert.match(target.entryPoint, /dist[/\\]kotodamaCompiler[/\\]browser\.js$/u);
+   assert.equal(target.forbidNodeInputs, true);
+   assert.equal(target.forbidGlobalBuffer, true);
+-  assert.equal(target.limitKb, 49);
++  assert.equal(target.limitKb, 51);
+ });
+ 
+ test("browser graph guard detects every forbidden Node-only edge", () => {
+   const candidates = [
+     "node:crypto",
++    "src/crypto.js",
++    "dist/cryptoHash.js",
++    "src/native.js",
++    "dist/toriiClient.js",
+     "/package/dist/crypto.js",
+     "/package/dist/cryptoHash.js",
+     "/package/dist/native.js",
+@@ -144,7 +151,94 @@ test("browser graph guard detects every forbidden Node-only edge", () => {
+     "/package/dist/native.browser.js",
+     "/package/dist/toriiBrowserClient.js",
+   ];
+-  assert.deepEqual(findForbiddenBrowserInputs(candidates), candidates.slice(0, 5));
++  assert.deepEqual(findForbiddenBrowserInputs(candidates), candidates.slice(0, 9));
++});
++
++test("global Buffer guard rejects assignment and property-definition bypasses", () => {
++  for (const source of [
++    "globalThis.Buffer = value",
++    "window.Buffer ||= value",
++    "global['Buffer'] ??= value",
++    "self[\"Buffer\"] &&= value",
++    "globalThis.Buffer++",
++    "--window['Buffer']",
++    'Object.defineProperty(globalThis, "Buffer", { value })',
++    "Reflect.defineProperty(window, 'Buffer', { value })",
++    "Object.defineProperties(global, { Buffer: { value } })",
++    "Object.assign(self, { Buffer: value })",
++  ]) {
++    assert.equal(hasForbiddenGlobalBufferMutation(source), true, source);
++  }
++  assert.equal(hasForbiddenGlobalBufferMutation("const Buffer = LocalBuffer"), false);
++  assert.equal(hasForbiddenGlobalBufferMutation("delete globalThis.Buffer"), false);
++});
++
++test("browser graph audit derives every explicit browser-conditioned package export", async () => {
++  const pkg = JSON.parse(
++    await readFile(new URL("../package.json", import.meta.url), "utf8"),
++  );
++  assert.deepEqual(listExplicitBrowserExports(pkg), [
++    { target: "./dist/browser.js", subpaths: ["./browser"] },
++    { target: "./dist/transactionCodec.js", subpaths: ["./transaction-codec"] },
++    { target: "./dist/normalizers.js", subpaths: ["./normalizers"] },
++    { target: "./dist/blake2b.js", subpaths: ["./blake2b"] },
++    { target: "./dist/ivmArtifact.js", subpaths: ["./ivm-artifact"] },
++    {
++      target: "./dist/toriiBrowserClient.js",
++      subpaths: ["./torii", "./torii-browser"],
++    },
++    { target: "./dist/canonicalRequest.js", subpaths: ["./canonical-request"] },
++    { target: "./dist/crypto.browser.js", subpaths: ["./crypto"] },
++    { target: "./dist/nexusApp.js", subpaths: ["./nexus-app"] },
++    {
++      target: "./dist/kotodamaCompiler/browser.js",
++      subpaths: ["./kotodama-compiler"],
++    },
++  ]);
++});
++
++test("browser graph audit catches Node edges in an export omitted from size budgets", async () => {
++  await assert.rejects(
++    runBundleSizeCheck({
++      loadEsbuild: async () => ({
++        async build(options) {
++          const entryPoint = options.entryPoints[0];
++          return {
++            outputFiles: [{ contents: new Uint8Array(), text: "" }],
++            metafile: {
++              inputs: entryPoint.endsWith("/dist/normalizers.js")
++                ? { "node:fs": {} }
++                : { [entryPoint]: {} },
++            },
++          };
++        },
++      }),
++      log() {},
++    }),
++    /\.\/normalizers explicit browser export includes forbidden Node-only inputs: node:fs/u,
++  );
++});
++
++test("browser runtime probe catches aliased global Buffer installation", async () => {
++  await assert.rejects(
++    runBundleSizeCheck({
++      loadEsbuild: async () => ({
++        async build(options) {
++          const entryPoint = options.entryPoints[0];
++          const installsBuffer = entryPoint.endsWith("/dist/browser.js");
++          const text = installsBuffer
++            ? "const root = globalThis; root.Buffer = class BufferShim {};"
++            : "export {};";
++          return {
++            outputFiles: [{ contents: new TextEncoder().encode(text), text }],
++            metafile: { inputs: { [entryPoint]: {} } },
++          };
++        },
++      }),
++      log() {},
++    }),
++    /\.\/browser explicit browser export installs a forbidden global Buffer shim at runtime/u,
++  );
+ });
+ 
+ test("public browser aggregate bundles without Node inputs or global Buffer shims", async () => {
+@@ -168,7 +262,7 @@ test("public browser aggregate bundles without Node inputs or global Buffer shim
+     [],
+   );
+   assert.equal(Object.keys(result.metafile.inputs).length, 51);
+-  assert.equal(result.outputFiles[0].contents.byteLength, 303_676);
++  assert.equal(result.outputFiles[0].contents.byteLength, 304_385);
+   assert.ok(result.outputFiles[0].contents.byteLength <= target.limitKb * 1024);
+   assert.doesNotMatch(
+     result.outputFiles[0].text,
+@@ -207,7 +301,7 @@ test("IVM artifact browser leaf stays below 12 KiB without Node or Buffer shims"
+ 
+ test("remaining bundle targets retain exact pinned-esbuild baselines", async () => {
+   const expected = new Map([
+-    ["toriiClient.js", { bytes: 852_966, modules: 57 }],
++    ["toriiClient.js", { bytes: 854_715, modules: 57 }],
+     ["transactionCodec.js (browser)", { bytes: 125_424, modules: 36 }],
+     ["nexusApp.js (browser)", { bytes: 206_556, modules: 45 }],
+     ["canonicalRequest.js (browser)", { bytes: 69_529, modules: 31 }],
+@@ -237,7 +331,7 @@ test("remaining bundle targets retain exact pinned-esbuild baselines", async ()
+   }
+ });
+ 
+-test("Kotodama compiler browser export stays below 49 KiB without Node or Buffer shims", async () => {
++test("Kotodama compiler browser export stays below 51 KiB without Node or Buffer shims", async () => {
+   const target = BUNDLE_TARGETS.find(({ label }) =>
+     label.includes("kotodamaCompiler/browser"),
+   );
+@@ -260,7 +354,7 @@ test("Kotodama compiler browser export stays below 49 KiB without Node or Buffer
+     [],
+   );
+   assert.equal(Object.keys(result.metafile.inputs).length, 6);
+-  assert.equal(result.outputFiles[0].contents.byteLength, 49_487);
++  assert.equal(result.outputFiles[0].contents.byteLength, 51_000);
+   assert.ok(result.outputFiles[0].contents.byteLength <= target.limitKb * 1024);
+   assert.doesNotMatch(
+     result.outputFiles[0].text,
+diff --git a/javascript/iroha_js/test/copyNative.test.js b/javascript/iroha_js/test/copyNative.test.js
+index b8c632a813f23096d7e1ca94975923a3d5e0362c..4715c2ea88ed5b8e22a93d705fb32f53ce375245 100644
+--- a/javascript/iroha_js/test/copyNative.test.js
++++ b/javascript/iroha_js/test/copyNative.test.js
+@@ -213,6 +213,39 @@ test("same-source publication is idempotent after a fresh probe and returns the
+   assertVerifiedPair(layout, bytes);
+ });
+ 
++test("an identical binary with a different valid manifest encoding is idempotent", async (t) => {
++  const layout = createLayout(t);
++  const bytes = Buffer.from("same native with alternate manifest encoding");
++  const logs = [];
++  const options = publicationOptions(layout, {
++    log(message) {
++      logs.push(message);
++    },
++  });
++  writeFileSync(layout.source, bytes);
++  const first = await publishNativeBinding(options);
++
++  const alternateManifest = `${JSON.stringify(
++    JSON.parse(readFileSync(layout.manifestPath, "utf8")),
++  )}\n`;
++  writeFileSync(layout.manifestPath, alternateManifest);
++  assert.equal(
++    verifyNativeBinding(layout.bindingPath, {
++      manifestPath: layout.manifestPath,
++      platformKey: PLATFORM_KEY,
++    }).ok,
++    true,
++  );
++
++  // This failpoint would make the old implementation enter an unrecoverable
++  // transaction because the old and next binaries have the same digest.
++  const second = await publishNativeBinding({ ...options, failpoint: "after-native" });
++  assert.equal(second.sha256, first.sha256);
++  assert.equal(readFileSync(layout.manifestPath, "utf8"), alternateManifest);
++  assert.match(logs.at(-1), /already matches the verified build output/u);
++  assertVerifiedPair(layout, bytes);
++});
++
+ test("every publication failpoint restores the exact previous pair and cleans staging", async (t) => {
+   for (const failpoint of ["after-backup", "after-native", "after-manifest"]) {
+     await t.test(failpoint, async (subtest) => {
+@@ -453,6 +486,62 @@ test("recovery rejects a journal with injected fields before mutating the prior
+   assert.ok(publicationArtifacts(layout.destDir).includes(transaction));
+ });
+ 
++test("recovery rejects a journal that skips durable phases", async (t) => {
++  const layout = createLayout(t);
++  const previous = Buffer.from("journal-phase-previous");
++  writeFileSync(layout.source, previous);
++  await publishNativeBinding(publicationOptions(layout));
++  writeFileSync(layout.source, Buffer.from("journal-phase-next"));
++  await killPublisherAtPhase(layout, "journal-prepared");
++
++  const transaction = readdirSync(layout.destDir).find((name) =>
++    name.startsWith(".iroha-js-host-txn-"),
++  );
++  assert.ok(transaction);
++  const journal = path.join(layout.destDir, transaction, "journal-000000.json");
++  const malicious = JSON.parse(readFileSync(journal, "utf8"));
++  malicious.phase = "committed";
++  writeFileSync(journal, `${JSON.stringify(malicious)}\n`);
++
++  await assert.rejects(
++    recoverNativeBindingPublication({
++      destDir: layout.destDir,
++      platform: PLATFORM,
++      arch: ARCH,
++    }),
++    /journal phases are non-canonical/u,
++  );
++  assert.deepEqual(readFileSync(layout.bindingPath), previous);
++  assert.ok(publicationArtifacts(layout.destDir).includes(transaction));
++});
++
++test("recovery bounds a maliciously oversized journal before parsing", async (t) => {
++  const layout = createLayout(t);
++  const previous = Buffer.from("oversized-journal-previous");
++  writeFileSync(layout.source, previous);
++  await publishNativeBinding(publicationOptions(layout));
++  writeFileSync(layout.source, Buffer.from("oversized-journal-next"));
++  await killPublisherAtPhase(layout, "journal-prepared");
++
++  const transaction = readdirSync(layout.destDir).find((name) =>
++    name.startsWith(".iroha-js-host-txn-"),
++  );
++  assert.ok(transaction);
++  const journal = path.join(layout.destDir, transaction, "journal-000000.json");
++  writeFileSync(journal, "[".repeat(16 * 1024 + 1));
++
++  await assert.rejects(
++    recoverNativeBindingPublication({
++      destDir: layout.destDir,
++      platform: PLATFORM,
++      arch: ARCH,
++    }),
++    /journal entry exceeds 16384 bytes/u,
++  );
++  assert.deepEqual(readFileSync(layout.bindingPath), previous);
++  assert.ok(publicationArtifacts(layout.destDir).includes(transaction));
++});
++
+ test("recovery rejects duplicated exact old components instead of guessing ownership", async (t) => {
+   const layout = createLayout(t);
+   writeFileSync(layout.source, Buffer.from("duplicate-old-previous"));
+@@ -576,3 +665,20 @@ test("required-export probe accepts a complete module and rejects missing symbol
+     /non-empty identifier array/u,
+   );
+ });
++
++test(
++  "required-export probe loads a real addon through the recovery-compatible private suffix",
++  { skip: !existsSync(path.resolve("native", NATIVE_FILENAME)) },
++  (t) => {
++    const root = mkdtempSync(path.join(os.tmpdir(), "iroha-js-native-dlopen-probe-"));
++    t.after(() => rmSync(root, { recursive: true, force: true }));
++    const staged = path.join(root, `${NATIVE_FILENAME}.next`);
++    copyFileSync(path.resolve("native", NATIVE_FILENAME), staged);
++    // This test isolates the loader path from the release export contract so a
++    // locally cached addon from an older compatible build cannot make the
++    // focused unit suite ambient-state dependent.
++    assert.doesNotThrow(() =>
++      probeNativeBindingExports(staged, ["noritoEncodeInstruction"]),
++    );
++  },
++);
+diff --git a/javascript/iroha_js/test/fixtures/validationFeeOverlayV1.js b/javascript/iroha_js/test/fixtures/validationFeeOverlayV1.js
+index 9c8678372b36f0a3c8bfe7b4b15edc24dbc51fcf..ad35b57ea9aab341c2eeb2a1d2c167748bee87f4 100644
+--- a/javascript/iroha_js/test/fixtures/validationFeeOverlayV1.js
++++ b/javascript/iroha_js/test/fixtures/validationFeeOverlayV1.js
+@@ -2,11 +2,17 @@
+ // Keeping these as base64 fixtures ensures overlay validation does not rely on
+ // the decoded-object shortcuts used by older tests.
+ export const VALIDATION_FEE_DIRECT_OVERLAY_BASE64 = Object.freeze([
+-  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQAbAQAAAAAAAMKQl5ltMHosAg8OaXJvaGEudHJhbnNmZXKJAgEBAAAAAAAATlJUMAAApBdMeNY0H4+Y/Cra6O1nuQDZAAAAAAAAAK4edCL/uq4eAgIAAADTAXZPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBAyAB1wEVAREB4gExAaUBTQFcAb4BzwFnAf8BwQHbAa4BUgQAAAAACwUBAAAAZAQCAAAATwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQE=",
+-  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQAbAQAAAAAAAFF7NUCI3G9QAg8OaXJvaGEudHJhbnNmZXKJAgEBAAAAAAAATlJUMAAApBdMeNY0H4+Y/Cra6O1nuQDZAAAAAAAAAGl64cMqUEKEAgIAAADTAXZPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBAyAB1wEVAREB4gExAaUBTQFcAb4BzwFnAf8BwQHbAa4BUgQAAAAACwUBAAAACgQCAAAATwAAAABKIQAAAAAAAAABAAFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUk=",
++  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQAbAQAAAAAAAMrdhjF97yGIAg8OaXJvaGEudHJhbnNmZXKJAgEBAAAAAAAATlJUMAAApBdMeNY0H4+Y/Cra6O1nuQDZAAAAAAAAAFEqFMQuAlCEAgIAAADTAXZPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBAyAB1wEVAREB4gExAaUBTQFcAb4BzwFnAf8BwQHbAa4BUgQAAAAACwUBAAAAAQQAAAAATwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQE=",
++  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQAbAQAAAAAAAD2IJEb5PdqbAg8OaXJvaGEudHJhbnNmZXKJAgEBAAAAAAAATlJUMAAApBdMeNY0H4+Y/Cra6O1nuQDZAAAAAAAAAB4mxSx1bRyxAgIAAADTAXZPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBAyAB1wEVAREB4gExAaUBTQFcAb4BzwFnAf8BwQHbAa4BUgQAAAAACwUBAAAAAQQBAAAATwAAAABKIQAAAAAAAAABAAFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUk=",
+   "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQAbAQAAAAAAAN2HSY3mEY/rAg8OaXJvaGEudHJhbnNmZXKJAgEBAAAAAAAATlJUMAAApBdMeNY0H4+Y/Cra6O1nuQDZAAAAAAAAAL7fQfzvmZq5AgIAAADTAXZPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBAyAB1wEVAREB4gExAaUBTQFcAb4BzwFnAf8BwQHbAa4BUgQAAAAACwUBAAAAAgQBAAAATwAAAABKIQAAAAAAAAABAAFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUk=",
+ ]);
+ 
+ export const VALIDATION_FEE_BATCH_OVERLAY_BASE64 = Object.freeze([
+-  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQDAAgAAAAAAAMpeWQ825B4NAhUUaXJvaGEudHJhbnNmZXJfYmF0Y2ioBaACAAAAAAAATlJUMAAA12qLYHkJgSBhti3/WSKnzAB4AgAAAAAAAMAoSvezFe8/AvYEAwAAAAAAAADNAU8AAAAASiEAAAAAAAAAAQABzgF/AaQBbAGdAc4BfgGkAbEBJQHiAeMBawHbAWMB6gEzAQcBPgF1AZABrAGSAYEBagHhAegBYQG3AQQBiwEDTwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQEgAdcBFQERAeIBMQGlAU0BXAG+Ac8BZwH/AcEB2wGuAVILBQEAAABkBAIAAADOAU8AAAAASiEAAAAAAAAAAQABzgF/AaQBbAGdAc4BfgGkAbEBJQHiAeMBawHbAWMB6gEzAQcBPgF1AZABrAGSAYEBagHhAegBYQG3AQQBiwEDTwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQEgAdcBFQERAeIBMQGlAU0BXAG+Ac8BZwH/AcEB2wGuAVIMBgIAAADIAAQCAAAAzQFPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBA08AAAAASiEAAAAAAAAAAQABSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJIAHXARUBEQHiATEBpQFNAVwBvgHPAWcB/wHBAdsBrgFSCwUBAAAAFAQCAAAA",
++  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQC/AgAAAAAAAPWMmnamUT4uAhUUaXJvaGEudHJhbnNmZXJfYmF0Y2inBZ8CAAAAAAAATlJUMAAA12qLYHkJgSBhti3/WSKnzAB3AgAAAAAAAJrZ0uVNWZVSAvUEAwAAAAAAAADNAU8AAAAASiEAAAAAAAAAAQABzgF/AaQBbAGdAc4BfgGkAbEBJQHiAeMBawHbAWMB6gEzAQcBPgF1AZABrAGSAYEBagHhAegBYQG3AQQBiwEDTwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQEgAdcBFQERAeIBMQGlAU0BXAG+Ac8BZwH/AcEB2wGuAVILBQEAAAABBAAAAADNAU8AAAAASiEAAAAAAAAAAQABzgF/AaQBbAGdAc4BfgGkAbEBJQHiAeMBawHbAWMB6gEzAQcBPgF1AZABrAGSAYEBagHhAegBYQG3AQQBiwEDTwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQEgAdcBFQERAeIBMQGlAU0BXAG+Ac8BZwH/AcEB2wGuAVILBQEAAAACBAAAAADNAU8AAAAASiEAAAAAAAAAAQABzgF/AaQBbAGdAc4BfgGkAbEBJQHiAeMBawHbAWMB6gEzAQcBPgF1AZABrAGSAYEBagHhAegBYQG3AQQBiwEDTwAAAABKIQAAAAAAAAABAAFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkBSQFJAUkgAdcBFQERAeIBMQGlAU0BXAG+Ac8BZwH/AcEB2wGuAVILBQEAAAACBAEAAAA=",
++]);
++
++// Legacy archive retained only as a negative fixture. Its `1.00` Numeric has
++// redundant scale and must fail the canonical Rust decoder.
++export const NONCANONICAL_VALIDATION_FEE_OVERLAY_BASE64 = Object.freeze([
++  "TlJUMAAAhip9dwddTSP/bBJh2wJ4EQAbAQAAAAAAAMKQl5ltMHosAg8OaXJvaGEudHJhbnNmZXKJAgEBAAAAAAAATlJUMAAApBdMeNY0H4+Y/Cra6O1nuQDZAAAAAAAAAK4edCL/uq4eAgIAAADTAXZPAAAAAEohAAAAAAAAAAEAAc4BfwGkAWwBnQHOAX4BpAGxASUB4gHjAWsB2wFjAeoBMwEHAT4BdQGQAawBkgGBAWoB4QHoAWEBtwEEAYsBAyAB1wEVAREB4gExAaUBTQFcAb4BzwFnAf8BwQHbAa4BUgQAAAAACwUBAAAAZAQCAAAATwAAAABKIQAAAAAAAAABAAFkARIBlwEHAZMBVwEiAZ8BKQFZATgBpAG1AaMBMwHeATUBBgGbAfQBewGdAQcBBAHkAVgBBQFxAT0BEwHCAQE=",
+ ]);
+diff --git a/javascript/iroha_js/test/instructionBuilders.test.js b/javascript/iroha_js/test/instructionBuilders.test.js
+index f80c904f4af50e0bf072933c27660ea065d1c7a0..8afc5e0694e7a727fe24c1e8d5be7772aab51c39 100644
+--- a/javascript/iroha_js/test/instructionBuilders.test.js
++++ b/javascript/iroha_js/test/instructionBuilders.test.js
+@@ -448,7 +448,9 @@ test("buildMintAssetInstruction rejects invalid Numeric literals", () => {
+       return true;
+     },
+   );
+-  const tooLarge = 1n << 512n;
++  // Numeric is a signed 512-bit domain, so non-negative quantities end at
++  // 2^511 - 1 rather than 2^512 - 1.
++  const tooLarge = 1n << 511n;
+   assert.throws(
+     () => buildMintAssetInstruction({ assetId: ASSET_ID, quantity: tooLarge }),
+     (error) => {
+@@ -465,6 +467,88 @@ test("buildMintAssetInstruction rejects invalid Numeric literals", () => {
+       return true;
+     },
+   );
++  assert.throws(
++    () => buildMintAssetInstruction({ assetId: ASSET_ID, quantity: "1".repeat(100_000) }),
++    (error) => {
++      assert.equal(error?.code, ValidationErrorCode.VALUE_OUT_OF_RANGE);
++      assert.match(String(error?.message), /bounded Numeric text length/i);
++      return true;
++    },
++  );
++  assert.throws(
++    () =>
++      buildMintAssetInstruction({
++        assetId: ASSET_ID,
++        quantity: Number.MAX_SAFE_INTEGER + 1,
++      }),
++    (error) => {
++      assert.equal(error?.code, ValidationErrorCode.VALUE_OUT_OF_RANGE);
++      assert.match(String(error?.message), /safe integer range.*string or bigint/i);
++      return true;
++    },
++  );
++});
++
++test("buildMintAssetInstruction accepts the positive signed-Numeric boundary", () => {
++  const maximumQuantity = (1n << 511n) - 1n;
++  const instruction = buildMintAssetInstruction({
++    assetId: ASSET_ID,
++    quantity: maximumQuantity,
++  });
++  assert.equal(instruction.Mint.Asset.object, maximumQuantity.toString());
++  assert.deepEqual(encodeAndDecode(instruction), canonicalizeClone(instruction));
++});
++
++test("buildMintAssetInstruction emits canonical Numeric text after bounded parsing", () => {
++  const maximumQuantity = ((1n << 511n) - 1n).toString();
++  const validSpellings = [
++    [`${maximumQuantity}.0`, maximumQuantity],
++    [`${maximumQuantity}.${"0".repeat(29)}`, maximumQuantity],
++    [`0.${"0".repeat(29)}`, "0"],
++    ["01", "1"],
++    ["+1", "1"],
++    [".5", "0.5"],
++    ["1.", "1"],
++  ];
++
++  for (const [quantity, canonical] of validSpellings) {
++    const instruction = buildMintAssetInstruction({ assetId: ASSET_ID, quantity });
++    assert.equal(instruction.Mint.Asset.object, canonical);
++    assert.deepEqual(encodeAndDecode(instruction), canonicalizeClone(instruction));
++  }
++
++  assert.throws(
++    () =>
++      buildMintAssetInstruction({
++        assetId: ASSET_ID,
++        quantity: `0.${"0".repeat(28)}1`,
++      }),
++    (error) => {
++      assert.equal(error?.code, ValidationErrorCode.VALUE_OUT_OF_RANGE);
++      assert.match(String(error?.message), /scale exceeds/i);
++      return true;
++    },
++  );
++  assert.throws(
++    () =>
++      buildMintAssetInstruction({
++        assetId: ASSET_ID,
++        quantity: `${1n << 511n}.0`,
++      }),
++    (error) => {
++      assert.equal(error?.code, ValidationErrorCode.VALUE_OUT_OF_RANGE);
++      assert.match(String(error?.message), /mantissa exceeds/i);
++      return true;
++    },
++  );
++  assert.throws(
++    () => buildMintAssetInstruction({ assetId: ASSET_ID, quantity: ".0" }),
++    (error) => {
++      assert.equal(error?.code, ValidationErrorCode.INVALID_NUMERIC);
++      assert.match(String(error?.message), /Numeric literal/i);
++      return true;
++    },
++  );
+ });
+ 
+ test("buildBurnAssetInstruction produces canonical Norito payload", () => {
+diff --git a/javascript/iroha_js/test/kotodamaCompiler.test.js b/javascript/iroha_js/test/kotodamaCompiler.test.js
+index 7301797aa8af3f19d56d03280f343faf0e538092..1ae8cce3d2b6bdb7a62d24423cdb30f043143bb4 100644
+--- a/javascript/iroha_js/test/kotodamaCompiler.test.js
++++ b/javascript/iroha_js/test/kotodamaCompiler.test.js
+@@ -35,6 +35,24 @@ function u32Le(value) {
+   ]);
+ }
+ 
++function u32Be(value) {
++  return Uint8Array.from([
++    (value >>> 24) & 0xff,
++    (value >>> 16) & 0xff,
++    (value >>> 8) & 0xff,
++    value & 0xff,
++  ]);
++}
++
++function readU32LeForTest(bytes, offset) {
++  return (
++    bytes[offset] |
++    (bytes[offset + 1] << 8) |
++    (bytes[offset + 2] << 16) |
++    (bytes[offset + 3] * 0x1000000)
++  ) >>> 0;
++}
++
+ function u64Le(value) {
+   let remaining = BigInt(value);
+   return Uint8Array.from({ length: 8 }, () => {
+@@ -132,6 +150,58 @@ function compilerArtifactFixture({
+   );
+ }
+ 
++function pointerLiteralFixture({
++  typeId = 0x0006,
++  version = 1,
++  payload = Uint8Array.from([1, 2, 3]),
++  declaredLength = payload.length,
++} = {}) {
++  const hash = blake2b256(payload);
++  hash[hash.length - 1] |= 1;
++  return concatBytes(
++    Uint8Array.from([(typeId >>> 8) & 0xff, typeId & 0xff, version]),
++    u32Be(declaredLength),
++    payload,
++    hash,
++  );
++}
++
++function literalSectionStart(artifact) {
++  return 25 + readU32LeForTest(artifact, 21);
++}
++
++function literalArtifactFixture(literals, { unindexedData = new Uint8Array() } = {}) {
++  const artifact = compilerArtifactFixture();
++  const start = literalSectionStart(artifact);
++  const entriesLength = literals.length * 8;
++  const descriptors = [];
++  const payloads = [];
++  let relativeOffset = 16 + entriesLength;
++  for (const literal of literals) {
++    descriptors.push(u64Le((BigInt(literal.kind) << 56n) | BigInt(relativeOffset)));
++    payloads.push(literal.bytes);
++    relativeOffset += literal.bytes.length;
++  }
++  const data = concatBytes(...payloads, unindexedData);
++  const unpaddedLengthFromHeader =
++    start - 17 + 16 + entriesLength + data.length;
++  const padding = (4 - (unpaddedLengthFromHeader % 4)) % 4;
++  const section = concatBytes(
++    new TextEncoder().encode("LTLB"),
++    u32Le(literals.length),
++    u32Le(padding),
++    u32Le(data.length),
++    ...descriptors,
++    data,
++    new Uint8Array(padding),
++  );
++  return concatBytes(
++    artifact.subarray(0, start),
++    section,
++    artifact.subarray(start),
++  );
++}
++
+ const SERVICE_ARTIFACT = compilerArtifactFixture();
+ const CONTRACT_HASH_DOMAIN = new TextEncoder().encode("iroha:ivm:contract-artifact:v1\0");
+ const SERVICE_HASH_INPUT = new Uint8Array(
+@@ -770,6 +840,17 @@ test("compiler output requires a framed self-describing IVM artifact bound to ma
+       bytes[16] = 2;
+       return bytes;
+     })()],
++    ["contract HTM mode", (() => {
++      const bytes = SERVICE_ARTIFACT.slice();
++      bytes[6] = 0x04;
++      return bytes;
++    })()],
++    ["post-header image beyond IVM code memory", (() => {
++      const postHeaderBytes = SERVICE_ARTIFACT.length - 17;
++      const minimumExtra = 0x0010_0000 - postHeaderBytes + 1;
++      const alignedExtra = Math.ceil(minimumExtra / 4) * 4;
++      return concatBytes(SERVICE_ARTIFACT, new Uint8Array(alignedExtra));
++    })()],
+     ["bad CNTR marker", (() => {
+       const bytes = SERVICE_ARTIFACT.slice();
+       bytes[17] ^= 1;
+@@ -780,6 +861,16 @@ test("compiler output requires a framed self-describing IVM artifact bound to ma
+       bytes[25 + 31] ^= 1;
+       return bytes;
+     })()],
++    ["noncanonical CNTR frame padding", (() => {
++      const frameLength = readU32LeForTest(SERVICE_ARTIFACT, 21);
++      const payloadOffset = 25 + 40;
++      const bytes = new Uint8Array(SERVICE_ARTIFACT.length + 1);
++      bytes.set(SERVICE_ARTIFACT.subarray(0, payloadOffset), 0);
++      bytes[payloadOffset] = 0;
++      bytes.set(SERVICE_ARTIFACT.subarray(payloadOffset), payloadOffset + 1);
++      bytes.set(u32Le(frameLength + 1), 21);
++      return bytes;
++    })()],
+     ["unaligned instruction stream", SERVICE_ARTIFACT.slice(0, -1)],
+   ];
+   for (const [label, artifact] of malformedArtifacts) {
+@@ -824,6 +915,92 @@ test("compiler output requires a framed self-describing IVM artifact bound to ma
+   );
+ });
+ 
++test("compiler literal-table validation matches Rust ABI-v1 framing", async () => {
++  const validPointer = pointerLiteralFixture();
++  const validArtifact = literalArtifactFixture([
++    { kind: 0, bytes: validPointer },
++    { kind: 1, bytes: u64Le(42) },
++  ]);
++  const validResult = await compileKotodamaWithNativeBinding(
++    { async compileKotodama() { return serviceSuccessWithArtifact(validArtifact); } },
++    "seiyaku Demo {}",
++  );
++  assert.equal(validResult.ok, true);
++
++  const emptyArtifact = literalArtifactFixture([]);
++  const emptyResult = await compileKotodamaWithNativeBinding(
++    { async compileKotodama() { return serviceSuccessWithArtifact(emptyArtifact); } },
++    "seiyaku Demo {}",
++  );
++  assert.equal(emptyResult.ok, true);
++
++  const duplicateTargets = literalArtifactFixture([
++    { kind: 0, bytes: validPointer },
++    { kind: 1, bytes: u64Le(7) },
++  ]);
++  const duplicateStart = literalSectionStart(duplicateTargets);
++  duplicateTargets.set(
++    duplicateTargets.subarray(duplicateStart + 16, duplicateStart + 24),
++    duplicateStart + 24,
++  );
++
++  const skippedFirstByte = literalArtifactFixture([
++    { kind: 0, bytes: validPointer },
++  ]);
++  const skippedStart = literalSectionStart(skippedFirstByte);
++  skippedFirstByte.set(u64Le(16 + 8 + 1), skippedStart + 16);
++
++  const badPointerHash = pointerLiteralFixture();
++  badPointerHash[badPointerHash.length - 1] ^= 1;
++
++  for (const [label, artifact, expected] of [
++    [
++      "unindexed data",
++      literalArtifactFixture([], { unindexedData: Uint8Array.from([1]) }),
++      /unindexed literal data/u,
++    ],
++    ["duplicate targets", duplicateTargets, /strictly increasing/u],
++    ["first target gap", skippedFirstByte, /first descriptor/u],
++    [
++      "short i64",
++      literalArtifactFixture([{ kind: 1, bytes: new Uint8Array(7) }]),
++      /exactly 8 bytes/u,
++    ],
++    [
++      "retired pointer type",
++      literalArtifactFixture([{ kind: 0, bytes: pointerLiteralFixture({ typeId: 0x0010 }) }]),
++      /not allowed by ABI v1/u,
++    ],
++    [
++      "pointer version",
++      literalArtifactFixture([{ kind: 0, bytes: pointerLiteralFixture({ version: 2 }) }]),
++      /must use version 1/u,
++    ],
++    [
++      "pointer declared length",
++      literalArtifactFixture([{
++        kind: 0,
++        bytes: pointerLiteralFixture({ declaredLength: 4 }),
++      }]),
++      /length does not match/u,
++    ],
++    [
++      "pointer payload hash",
++      literalArtifactFixture([{ kind: 0, bytes: badPointerHash }]),
++      /payload hash is invalid/u,
++    ],
++  ]) {
++    await assert.rejects(
++      compileKotodamaWithNativeBinding(
++        { async compileKotodama() { return serviceSuccessWithArtifact(artifact); } },
++        "seiyaku Demo {}",
++      ),
++      expected,
++      label,
++    );
++  }
++});
++
+ test("compiler trigger metadata is exact, bounded, and non-recursive beyond policy", async () => {
+   const filter = JSON.parse(
+     readFileSync(new URL("./fixtures/contract_manifest_v1.json", import.meta.url), "utf8"),
+diff --git a/javascript/iroha_js/test/norito.test.js b/javascript/iroha_js/test/norito.test.js
+index cc9297b617d167e592d3e20328362043f4737792..c4d4b139de6ef5d700db5113e2001f79a33f632f 100644
+--- a/javascript/iroha_js/test/norito.test.js
++++ b/javascript/iroha_js/test/norito.test.js
+@@ -1156,20 +1156,44 @@ test("native multisig proposal DTO rejects malformed validation-fee metadata", (
+ });
+ 
+ test("native multisig proposal DTO preserves native instruction frames without JS schema entries", () => {
++  const instruction = {
++    Unregister: {
++      Domain: "wonderland.sora",
++    },
++  };
+   const request = {
+     multisig_account_alias: "cbdc@hbl.sbp",
+     signer_account_id: ACCOUNT_ID,
+-    instructions: [
+-      {
+-        Unregister: {
+-          Domain: "wonderland.sora",
+-        },
+-      },
+-    ],
++    instructions: [instruction],
+   };
+ 
++  const standalone = Buffer.from(noritoEncodeInstruction(instruction));
++  const unknownSchema = Buffer.from(
++    "42c6839dfa39c0ac8218a781820d6eae",
++    "hex",
++  );
++  const schemaOffset = standalone.indexOf(unknownSchema);
++  assert.ok(schemaOffset >= 6, "native inner instruction schema must be present");
++  const innerFrameStart = schemaOffset - 6;
++  const innerFrameLength =
++    40 + Number(standalone.readBigUInt64LE(innerFrameStart + 23));
++  const innerFrame = standalone.subarray(
++    innerFrameStart,
++    innerFrameStart + innerFrameLength,
++  );
++  assert.equal(
++    innerFrame.toString("hex"),
++    "4e525430000042c6839dfa39c0ac8218a781820d6eae0018000000000000007563fdda331e2d11020100000013120b0a776f6e6465726c616e640504736f7261",
++  );
++
+   const body = Buffer.from(noritoEncodeMultisigProposeRequest(request));
+-  assert.ok(body.length > 32);
++  const embeddedOffset = body.indexOf(innerFrame);
++  assert.ok(embeddedOffset >= 0, "multisig DTO must contain the exact native inner frame");
++  assert.equal(
++    body.indexOf(innerFrame, embeddedOffset + 1),
++    -1,
++    "multisig DTO must contain the native inner frame exactly once",
++  );
+ });
+ 
+ baseTest("native multisig DTO encoders reject noncanonical signature_b64 text", () => {
+diff --git a/javascript/iroha_js/test/toriiClient.test.js b/javascript/iroha_js/test/toriiClient.test.js
+index 3746034de776db4210097a4f31ea50267cc9fbbe..cf2df60d0e20b14763bac728b624ee40a6e0b307 100644
+--- a/javascript/iroha_js/test/toriiClient.test.js
++++ b/javascript/iroha_js/test/toriiClient.test.js
+@@ -13099,10 +13099,36 @@ test("governanceSubmitPlainBallot normalizes amount and direction", async () =>
+   assert.equal(ballot.accepted, true);
+ });
+ 
+-test("governanceSubmitPlainBallot accepts decimal Numeric amounts", async () => {
++test("governanceSubmitPlainBallot rejects decimal amounts before fetch", async () => {
++  let fetchCalls = 0;
++  const client = new ToriiClient(BASE_URL, {
++    fetchImpl: async () => {
++      fetchCalls += 1;
++      throw new Error("fetch should not run for an invalid u128 amount");
++    },
++  });
++  await assert.rejects(
++    () =>
++      client.governanceSubmitPlainBallot({
++        authority: FIXTURE_ALICE_ID,
++        chainId: "chain-0",
++        referendumId: "ref-plain-decimal",
++        owner: FIXTURE_ALICE_ID,
++        amount: "12.500",
++        durationBlocks: 1,
++        direction: "aye",
++      }),
++    /unsigned 128-bit integer/u,
++  );
++  assert.equal(fetchCalls, 0);
++});
++
++test("governanceSubmitPlainBallot enforces the backend unsigned-u128 contract", async () => {
++  let fetchCalls = 0;
+   let capturedBody;
+   const client = new ToriiClient(BASE_URL, {
+     fetchImpl: async (_url, init) => {
++      fetchCalls += 1;
+       capturedBody = JSON.parse(init.body);
+       return createResponse({
+         status: 200,
+@@ -13111,16 +13137,53 @@ test("governanceSubmitPlainBallot accepts decimal Numeric amounts", async () =>
+       });
+     },
+   });
+-  await client.governanceSubmitPlainBallot({
++  const maximumAmount = (1n << 128n) - 1n;
++  const payload = {
+     authority: FIXTURE_ALICE_ID,
+     chainId: "chain-0",
+-    referendumId: "ref-plain-decimal",
++    referendumId: "ref-plain-bounds",
+     owner: FIXTURE_ALICE_ID,
+-    amount: "12.500",
+     durationBlocks: 1,
+     direction: "aye",
+-  });
+-  assert.equal(capturedBody.amount, "12.500");
++  };
++
++  await client.governanceSubmitPlainBallot({ ...payload, amount: maximumAmount });
++  assert.equal(capturedBody.amount, maximumAmount.toString());
++  assert.equal(fetchCalls, 1);
++
++  await client.governanceSubmitPlainBallot({ ...payload, amount: "+0001" });
++  assert.equal(capturedBody.amount, "1");
++  assert.equal(fetchCalls, 2);
++
++  await assert.rejects(
++    () => client.governanceSubmitPlainBallot({ ...payload, amount: 1n << 128n }),
++    /unsigned 128-bit range/u,
++  );
++  await assert.rejects(
++    () =>
++      client.governanceSubmitPlainBallot({
++        ...payload,
++        amount: "1".repeat(100_000),
++      }),
++    /unsigned 128-bit range/u,
++  );
++  await assert.rejects(
++    () => client.governanceSubmitPlainBallot({ ...payload, amount: "0.0" }),
++    /unsigned 128-bit integer/u,
++  );
++  await assert.rejects(
++    () => client.governanceSubmitPlainBallot({ ...payload, amount: -1n }),
++    /unsigned 128-bit integer/u,
++  );
++  await assert.rejects(
++    () =>
++      client.governanceSubmitPlainBallot({
++        ...payload,
++        amount: Number.MAX_SAFE_INTEGER + 1,
++      }),
++    /JSON-safe unsigned 128-bit integer/u,
++  );
++  assert.equal(fetchCalls, 2);
+ });
+ 
+ test("governanceSubmitPlainBallot forwards AbortSignal to fetch", async () => {
+@@ -13303,12 +13366,16 @@ test("governanceSubmitZk ballots encode proofs and hints", async () => {
+     backend: "halo2/ipa",
+     envelope: [4, 5],
+     root_hint: `blake2b32:${"Ab".repeat(32)}`,
+-    owner: null,
++    owner: SAMPLE_ACCOUNT_FORMS.i105,
++    amount: `${(1n << 511n) - 1n}.0`,
++    durationBlocks: 128,
+     nullifier: Buffer.alloc(32, 0xff),
+   });
+   assert.equal(calls[1].body.envelope_b64, "BAU=");
+   assert.equal(calls[1].body.root_hint, "ab".repeat(32));
+   assert.equal(calls[1].body.nullifier, "ff".repeat(32));
++  assert.equal(calls[1].body.amount, ((1n << 511n) - 1n).toString());
++  assert.equal(calls[1].body.duration_blocks, 128);
+   assert.equal(zkV1Result.accepted, false);
+   assert.equal(zkV1Result.reason, "build transaction skeleton");
+ 
+@@ -13461,6 +13528,31 @@ test("governanceSubmitZkBallotV1 rejects partial lock hints", async () => {
+   );
+ });
+ 
++test("governanceSubmitZkBallotV1 rejects lossy Numeric number hints before fetch", async () => {
++  let fetchCalls = 0;
++  const client = new ToriiClient(BASE_URL, {
++    fetchImpl: async () => {
++      fetchCalls += 1;
++      throw new Error("fetch should not run");
++    },
++  });
++  await assert.rejects(
++    () =>
++      client.governanceSubmitZkBallotV1({
++        authority: FIXTURE_BOB_ID,
++        chainId: "chain-0",
++        electionId: "ref-zk",
++        backend: "halo2/ipa",
++        envelope: [4, 5],
++        owner: SAMPLE_ACCOUNT_FORMS.i105,
++        amount: Number.MAX_SAFE_INTEGER + 1,
++        durationBlocks: 1,
++      }),
++    /safe integer range.*string or bigint/u,
++  );
++  assert.equal(fetchCalls, 0);
++});
++
+ test("governanceSubmitZkBallotV1 rejects noncanonical owner", async () => {
+   const client = new ToriiClient(BASE_URL, {
+     fetchImpl: async () => {
+@@ -24937,6 +25029,7 @@ test("SNS mutation helpers reject unsupported option fields", async () => {
+ });
+ 
+ test("getSnsPolicy fetches and normalizes suffix policy", async () => {
++  let basePriceAmount = "100";
+   const fetchImpl = async (url, init) => {
+     assert.equal(url, `${BASE_URL}/v1/sns/policies/2`);
+     assert.equal(init.method, "GET");
+@@ -24958,7 +25051,7 @@ test("getSnsPolicy fetches and normalizes suffix policy", async () => {
+           {
+             tier_id: 1,
+             label_regex: ".*",
+-            base_price: { asset_id: FIXTURE_ASSET_ID_A, amount: "100" },
++            base_price: { asset_id: FIXTURE_ASSET_ID_A, amount: basePriceAmount },
+             auction_kind: "DutchReopen",
+             dutch_floor: { asset_id: FIXTURE_ASSET_ID_A, amount: "10" },
+             min_duration_years: 1,
+@@ -24979,6 +25072,12 @@ test("getSnsPolicy fetches and normalizes suffix policy", async () => {
+   assert.equal(policy.suffix, "sora");
+   assert.equal(policy.pricing[0].auctionKind, "DutchReopen");
+   assert.equal(policy.reservedLabels[0].normalizedLabel, "gov");
++
++  basePriceAmount = "100.0";
++  await assert.rejects(
++    () => client.getSnsPolicy(2),
++    /base_price\.amount must be canonical Numeric text/u,
++  );
+ });
+ 
+ test("SNS read helpers reject unsupported option fields", async () => {
+diff --git a/javascript/iroha_js/test/toriiSubscriptions.test.js b/javascript/iroha_js/test/toriiSubscriptions.test.js
+index cfe6e4382aa729b4d472f0ce61904a47ac55d3ff..c6446675b657bcdf91d5d215e16e539f18176f92 100644
+--- a/javascript/iroha_js/test/toriiSubscriptions.test.js
++++ b/javascript/iroha_js/test/toriiSubscriptions.test.js
+@@ -213,7 +213,7 @@ test("subscription action endpoints send normalized payloads", async () => {
+     authority: SAMPLE_ACCOUNT_ID,
+     privateKey: "ed25519:deadbeef",
+     unitKey: "compute_ms",
+-    delta: "12.5",
++    delta: "12.500",
+     usageTriggerId: "sub-usage",
+   });
+ 
+@@ -240,6 +240,69 @@ test("subscription action endpoints send normalized payloads", async () => {
+   assert.equal(usageBody.usage_trigger_id, "sub-usage");
+ });
+ 
++test("recordSubscriptionUsage canonicalizes bounded Numeric inputs before fetch", async () => {
++  const observed = [];
++  const client = new ToriiClient(BASE_URL, {
++    fetchImpl: async (_url, init = {}) => {
++      observed.push(JSON.parse(init.body).delta);
++      return createResponse({
++        status: 200,
++        jsonData: {
++          ok: true,
++          subscription_id: "sub-1$subscriptions",
++          tx_hash_hex: "tx-usage",
++        },
++      });
++    },
++  });
++  const request = {
++    authority: SAMPLE_ACCOUNT_ID,
++    privateKey: "ed25519:deadbeef",
++    unitKey: "compute_ms",
++  };
++  for (const [delta, canonical] of [
++    ["1.0", "1"],
++    ["01", "1"],
++    ["+1", "1"],
++    [".5", "0.5"],
++    ["1.", "1"],
++  ]) {
++    await client.recordSubscriptionUsage("sub-1$subscriptions", {
++      ...request,
++      delta,
++    });
++    assert.equal(observed.at(-1), canonical);
++  }
++  assert.deepEqual(observed, ["1", "1", "1", "0.5", "1"]);
++});
++
++test("recordSubscriptionUsage rejects lossy or out-of-domain Numeric inputs before fetch", async () => {
++  let fetchCalls = 0;
++  const client = new ToriiClient(BASE_URL, {
++    fetchImpl: async () => {
++      fetchCalls += 1;
++      throw new Error("fetch should not run");
++    },
++  });
++  const request = {
++    authority: SAMPLE_ACCOUNT_ID,
++    privateKey: "ed25519:deadbeef",
++    unitKey: "compute_ms",
++  };
++  for (const delta of [
++    Number.MAX_SAFE_INTEGER + 1,
++    ".0",
++    `0.${"0".repeat(28)}1`,
++    1n << 511n,
++    "1".repeat(100_000),
++  ]) {
++    await assert.rejects(
++      () => client.recordSubscriptionUsage("sub-1$subscriptions", { ...request, delta }),
++    );
++  }
++  assert.equal(fetchCalls, 0);
++});
++
+ test("getSubscription returns null on 404", async () => {
+   const fetchImpl = async () => createResponse({ status: 404 });
+   const client = new ToriiClient(BASE_URL, { fetchImpl });
+diff --git a/javascript/iroha_js/test/transactionBuilder.test.js b/javascript/iroha_js/test/transactionBuilder.test.js
+index 0f4c637b5bf4db0ed18cc5c6186181aaeba0ea18..1ec3063a54f3f84bbf28e42fa5b828a7874b1a4c 100644
+--- a/javascript/iroha_js/test/transactionBuilder.test.js
++++ b/javascript/iroha_js/test/transactionBuilder.test.js
+@@ -75,6 +75,7 @@ import {
+   validationFeePolicyFixture,
+ } from "./fixtures/validationFeePolicyV1.js";
+ import {
++  NONCANONICAL_VALIDATION_FEE_OVERLAY_BASE64,
+   VALIDATION_FEE_BATCH_OVERLAY_BASE64,
+   VALIDATION_FEE_DIRECT_OVERLAY_BASE64,
+ } from "./fixtures/validationFeeOverlayV1.js";
+@@ -2303,7 +2304,7 @@ test("submitValidationFeeIvmProvedContractCall decodes a real base64 direct over
+   // identifies the fee. The middle transfer remains qualifying principal.
+   assert.equal(result.validationFeePolicy.qualifyingTransferCount, 2);
+   assert.equal(result.validationFeePolicy.feeQuantity, "0.20");
+-  assert.equal(result.requiredOverlayTransfer.Transfer.Asset.object, "0.20");
++  assert.equal(result.requiredOverlayTransfer.Transfer.Asset.object, "0.2");
+   assert.deepEqual(signedProved.overlay, VALIDATION_FEE_DIRECT_OVERLAY_BASE64);
+ });
+ 
+@@ -2322,6 +2323,17 @@ test("submitValidationFeeIvmProvedContractCall decodes a real base64 batch overl
+   assert.deepEqual(signedProved.overlay, VALIDATION_FEE_BATCH_OVERLAY_BASE64);
+ });
+ 
++test("validation-fee submission rejects a legacy archive with noncanonical Numeric scale", async () => {
++  await assert.rejects(
++    () =>
++      submitBase64ValidationFeeOverlayFixture({
++        overlay: NONCANONICAL_VALIDATION_FEE_OVERLAY_BASE64,
++        feeInstructionIndex: 0,
++      }),
++    /noncanonical numeric|unique canonical representation/u,
++  );
++});
++
+ test("submitIvmProvedContractCall rejects a missing required transfer before proving or signing", async () => {
+   const policyFixture = validationFeePolicyFixture();
+   const principalTransfer = buildTransferAssetInstruction({
+@@ -3000,7 +3012,7 @@ test("submitIvmProvedContractCall derives counts by coordinate and rejects unsup
+   });
+   const overScaledPrincipal = buildTransferAssetInstruction({
+     sourceAssetHoldingId: source,
+-    quantity: "1.000",
++    quantity: "1.001",
+     destinationAccountId: RELAY_ACCOUNT_ID_INPUT,
+   });
+   const fee = buildTransferAssetInstruction({
+@@ -3010,7 +3022,7 @@ test("submitIvmProvedContractCall derives counts by coordinate and rejects unsup
+   });
+   const overScaledFee = buildTransferAssetInstruction({
+     sourceAssetHoldingId: source,
+-    quantity: "0.100",
++    quantity: "0.101",
+     destinationAccountId: policyFixture.policy.treasury_account_id,
+   });
+ 
+diff --git a/javascript/iroha_js/LICENSE b/javascript/iroha_js/LICENSE
+new file mode 100644
+index 0000000000000000000000000000000000000000..857e425343c9e8bf00218bcb0b6f708f8a8398a3
+--- /dev/null
++++ b/javascript/iroha_js/LICENSE
+@@ -0,0 +1,202 @@
++
++                                 Apache License
++                           Version 2.0, January 2004
++                        http://www.apache.org/licenses/
++
++   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
++
++   1. Definitions.
++
++      "License" shall mean the terms and conditions for use, reproduction,
++      and distribution as defined by Sections 1 through 9 of this document.
++
++      "Licensor" shall mean the copyright owner or entity authorized by
++      the copyright owner that is granting the License.
++
++      "Legal Entity" shall mean the union of the acting entity and all
++      other entities that control, are controlled by, or are under common
++      control with that entity. For the purposes of this definition,
++      "control" means (i) the power, direct or indirect, to cause the
++      direction or management of such entity, whether by contract or
++      otherwise, or (ii) ownership of fifty percent (50%) or more of the
++      outstanding shares, or (iii) beneficial ownership of such entity.
++
++      "You" (or "Your") shall mean an individual or Legal Entity
++      exercising permissions granted by this License.
++
++      "Source" form shall mean the preferred form for making modifications,
++      including but not limited to software source code, documentation
++      source, and configuration files.
++
++      "Object" form shall mean any form resulting from mechanical
++      transformation or translation of a Source form, including but
++      not limited to compiled object code, generated documentation,
++      and conversions to other media types.
++
++      "Work" shall mean the work of authorship, whether in Source or
++      Object form, made available under the License, as indicated by a
++      copyright notice that is included in or attached to the work
++      (an example is provided in the Appendix below).
++
++      "Derivative Works" shall mean any work, whether in Source or Object
++      form, that is based on (or derived from) the Work and for which the
++      editorial revisions, annotations, elaborations, or other modifications
++      represent, as a whole, an original work of authorship. For the purposes
++      of this License, Derivative Works shall not include works that remain
++      separable from, or merely link (or bind by name) to the interfaces of,
++      the Work and Derivative Works thereof.
++
++      "Contribution" shall mean any work of authorship, including
++      the original version of the Work and any modifications or additions
++      to that Work or Derivative Works thereof, that is intentionally
++      submitted to Licensor for inclusion in the Work by the copyright owner
++      or by an individual or Legal Entity authorized to submit on behalf of
++      the copyright owner. For the purposes of this definition, "submitted"
++      means any form of electronic, verbal, or written communication sent
++      to the Licensor or its representatives, including but not limited to
++      communication on electronic mailing lists, source code control systems,
++      and issue tracking systems that are managed by, or on behalf of, the
++      Licensor for the purpose of discussing and improving the Work, but
++      excluding communication that is conspicuously marked or otherwise
++      designated in writing by the copyright owner as "Not a Contribution."
++
++      "Contributor" shall mean Licensor and any individual or Legal Entity
++      on behalf of whom a Contribution has been received by Licensor and
++      subsequently incorporated within the Work.
++
++   2. Grant of Copyright License. Subject to the terms and conditions of
++      this License, each Contributor hereby grants to You a perpetual,
++      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
++      copyright license to reproduce, prepare Derivative Works of,
++      publicly display, publicly perform, sublicense, and distribute the
++      Work and such Derivative Works in Source or Object form.
++
++   3. Grant of Patent License. Subject to the terms and conditions of
++      this License, each Contributor hereby grants to You a perpetual,
++      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
++      (except as stated in this section) patent license to make, have made,
++      use, offer to sell, sell, import, and otherwise transfer the Work,
++      where such license applies only to those patent claims licensable
++      by such Contributor that are necessarily infringed by their
++      Contribution(s) alone or by combination of their Contribution(s)
++      with the Work to which such Contribution(s) was submitted. If You
++      institute patent litigation against any entity (including a
++      cross-claim or counterclaim in a lawsuit) alleging that the Work
++      or a Contribution incorporated within the Work constitutes direct
++      or contributory patent infringement, then any patent licenses
++      granted to You under this License for that Work shall terminate
++      as of the date such litigation is filed.
++
++   4. Redistribution. You may reproduce and distribute copies of the
++      Work or Derivative Works thereof in any medium, with or without
++      modifications, and in Source or Object form, provided that You
++      meet the following conditions:
++
++      (a) You must give any other recipients of the Work or
++          Derivative Works a copy of this License; and
++
++      (b) You must cause any modified files to carry prominent notices
++          stating that You changed the files; and
++
++      (c) You must retain, in the Source form of any Derivative Works
++          that You distribute, all copyright, patent, trademark, and
++          attribution notices from the Source form of the Work,
++          excluding those notices that do not pertain to any part of
++          the Derivative Works; and
++
++      (d) If the Work includes a "NOTICE" text file as part of its
++          distribution, then any Derivative Works that You distribute must
++          include a readable copy of the attribution notices contained
++          within such NOTICE file, excluding those notices that do not
++          pertain to any part of the Derivative Works, in at least one
++          of the following places: within a NOTICE text file distributed
++          as part of the Derivative Works; within the Source form or
++          documentation, if provided along with the Derivative Works; or,
++          within a display generated by the Derivative Works, if and
++          wherever such third-party notices normally appear. The contents
++          of the NOTICE file are for informational purposes only and
++          do not modify the License. You may add Your own attribution
++          notices within Derivative Works that You distribute, alongside
++          or as an addendum to the NOTICE text from the Work, provided
++          that such additional attribution notices cannot be construed
++          as modifying the License.
++
++      You may add Your own copyright statement to Your modifications and
++      may provide additional or different license terms and conditions
++      for use, reproduction, or distribution of Your modifications, or
++      for any such Derivative Works as a whole, provided Your use,
++      reproduction, and distribution of the Work otherwise complies with
++      the conditions stated in this License.
++
++   5. Submission of Contributions. Unless You explicitly state otherwise,
++      any Contribution intentionally submitted for inclusion in the Work
++      by You to the Licensor shall be under the terms and conditions of
++      this License, without any additional terms or conditions.
++      Notwithstanding the above, nothing herein shall supersede or modify
++      the terms of any separate license agreement you may have executed
++      with Licensor regarding such Contributions.
++
++   6. Trademarks. This License does not grant permission to use the trade
++      names, trademarks, service marks, or product names of the Licensor,
++      except as required for reasonable and customary use in describing the
++      origin of the Work and reproducing the content of the NOTICE file.
++
++   7. Disclaimer of Warranty. Unless required by applicable law or
++      agreed to in writing, Licensor provides the Work (and each
++      Contributor provides its Contributions) on an "AS IS" BASIS,
++      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
++      implied, including, without limitation, any warranties or conditions
++      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
++      PARTICULAR PURPOSE. You are solely responsible for determining the
++      appropriateness of using or redistributing the Work and assume any
++      risks associated with Your exercise of permissions under this License.
++
++   8. Limitation of Liability. In no event and under no legal theory,
++      whether in tort (including negligence), contract, or otherwise,
++      unless required by applicable law (such as deliberate and grossly
++      negligent acts) or agreed to in writing, shall any Contributor be
++      liable to You for damages, including any direct, indirect, special,
++      incidental, or consequential damages of any character arising as a
++      result of this License or out of the use or inability to use the
++      Work (including but not limited to damages for loss of goodwill,
++      work stoppage, computer failure or malfunction, or any and all
++      other commercial damages or losses), even if such Contributor
++      has been advised of the possibility of such damages.
++
++   9. Accepting Warranty or Additional Liability. While redistributing
++      the Work or Derivative Works thereof, You may choose to offer,
++      and charge a fee for, acceptance of support, warranty, indemnity,
++      or other liability obligations and/or rights consistent with this
++      License. However, in accepting such obligations, You may act only
++      on Your own behalf and on Your sole responsibility, not on behalf
++      of any other Contributor, and only if You agree to indemnify,
++      defend, and hold each Contributor harmless for any liability
++      incurred by, or claims asserted against, such Contributor by reason
++      of your accepting any such warranty or additional liability.
++
++   END OF TERMS AND CONDITIONS
++
++   APPENDIX: How to apply the Apache License to your work.
++
++      To apply the Apache License to your work, attach the following
++      boilerplate notice, with the fields enclosed by brackets "[]"
++      replaced with your own identifying information. (Don't include
++      the brackets!)  The text should be enclosed in the appropriate
++      comment syntax for the file format. We also recommend that a
++      file or class name and description of purpose be included on the
++      same "printed page" as the copyright notice for easier
++      identification within third-party archives.
++
++   Copyright 2017 Soramitsu LLC
++
++   Licensed under the Apache License, Version 2.0 (the "License");
++   you may not use this file except in compliance with the License.
++   You may obtain a copy of the License at
++
++       http://www.apache.org/licenses/LICENSE-2.0
++
++   Unless required by applicable law or agreed to in writing, software
++   distributed under the License is distributed on an "AS IS" BASIS,
++   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++   See the License for the specific language governing permissions and
++   limitations under the License.
+\ No newline at end of file
+diff --git a/javascript/iroha_js/test/kotodamaCompiler.native.test.js b/javascript/iroha_js/test/kotodamaCompiler.native.test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..91df42313057c5117e7a613970297379effbafe3
+--- /dev/null
++++ b/javascript/iroha_js/test/kotodamaCompiler.native.test.js
+@@ -0,0 +1,36 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++
++import { normalizeCompilerResult } from "../src/kotodamaCompiler/normalize.js";
++import { makeNativeTest, nativeBinding } from "./helpers/native.js";
++
++const nativeTest = makeNativeTest(test, { require: "compileKotodama" });
++const RESULT_FIELDS = ["diagnosticsJson", "ok", "output"];
++
++nativeTest("native Kotodama success uses an explicit null diagnostics sentinel", async () => {
++  const raw = await nativeBinding.compileKotodama({
++    source: "seiyaku Demo { view fn ping() -> int { return 1; } }",
++    zk: false,
++  });
++
++  assert.deepEqual(Object.keys(raw).sort(), RESULT_FIELDS);
++  assert.equal(raw.ok, true);
++  assert.notEqual(raw.output, null);
++  assert.equal(raw.diagnosticsJson, null);
++  assert.equal(normalizeCompilerResult(raw).ok, true);
++});
++
++nativeTest("native Kotodama failure uses an explicit null output sentinel", async () => {
++  const raw = await nativeBinding.compileKotodama({
++    source: "seiyaku Demo {\n🙂\n}",
++    zk: false,
++  });
++
++  assert.deepEqual(Object.keys(raw).sort(), RESULT_FIELDS);
++  assert.equal(raw.ok, false);
++  assert.equal(raw.output, null);
++  assert.equal(typeof raw.diagnosticsJson, "string");
++  const normalized = normalizeCompilerResult(raw);
++  assert.equal(normalized.ok, false);
++  assert.ok(normalized.diagnostics.length > 0);
++});
+diff --git a/javascript/iroha_js/test/packageSurface.test.js b/javascript/iroha_js/test/packageSurface.test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e97f5fc5a3701e350de31bb5c10942b9736459c3
+--- /dev/null
++++ b/javascript/iroha_js/test/packageSurface.test.js
+@@ -0,0 +1,116 @@
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import fs from "node:fs";
++import path from "node:path";
++import test from "node:test";
++import { fileURLToPath } from "node:url";
++
++const PACKAGE_ROOT = fileURLToPath(new URL("..", import.meta.url));
++const REPOSITORY_ROOT = path.resolve(PACKAGE_ROOT, "../..");
++const CANONICAL_README = "README.md";
++const ALLOWED_README_PATHS = new Set([CANONICAL_README, "recipes/README.md"]);
++const BACKUP_ARTIFACT_SUFFIX = /(?:\.bak|\.backup|\.old|\.orig|\.rej|\.save|\.tmp|~)$/iu;
++
++function readPackManifest() {
++  const packed = spawnSync(
++    "npm",
++    ["pack", "--dry-run", "--ignore-scripts", "--json"],
++    { cwd: PACKAGE_ROOT, encoding: "utf8" },
++  );
++  assert.equal(
++    packed.status,
++    0,
++    `npm pack --dry-run failed:\n${packed.stdout}\n${packed.stderr}`,
++  );
++
++  let result;
++  assert.doesNotThrow(() => {
++    result = JSON.parse(packed.stdout);
++  }, `npm pack --dry-run emitted invalid JSON:\n${packed.stdout}`);
++  assert.equal(result.length, 1, "npm pack must describe exactly one package");
++  assert.ok(Array.isArray(result[0].files), "npm pack manifest is missing files");
++  return result[0];
++}
++
++function findForbiddenPackageArtifacts(packagedPaths) {
++  return packagedPaths.filter((entry) => {
++    const segments = entry.split("/");
++    const malformedPath =
++      entry.startsWith("/") ||
++      entry.includes("\\") ||
++      path.posix.normalize(entry) !== entry ||
++      segments.some((segment) => segment === "" || segment === "." || segment === "..");
++    const readmeArtifact =
++      !ALLOWED_README_PATHS.has(entry) &&
++      segments.some((segment) => /^readme/iu.test(segment));
++    const backupArtifact = segments.some((segment) =>
++      BACKUP_ARTIFACT_SUFFIX.test(segment),
++    );
++    return malformedPath || readmeArtifact || backupArtifact;
++  });
++}
++
++test("package artifact filter rejects nested documentation and backup path bypasses", () => {
++  assert.deepEqual(
++    findForbiddenPackageArtifacts([
++      "README.md",
++      "recipes/README.md",
++      "src/README.md",
++      "docs/readme-extra.md",
++      "docs.orig/guide.md",
++      "nested/file.tmp",
++      "nested/../escape.js",
++      "safe/docs.md",
++    ]),
++    [
++      "src/README.md",
++      "docs/readme-extra.md",
++      "docs.orig/guide.md",
++      "nested/file.tmp",
++      "nested/../escape.js",
++    ],
++  );
++});
++
++test("npm package surface includes exact license and no backup documentation", () => {
++  const packageJson = JSON.parse(
++    fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"),
++  );
++  assert.equal(packageJson.files.includes("README.md"), true);
++  assert.equal(packageJson.files.includes("LICENSE"), true);
++
++  const packageLicense = fs.readFileSync(path.join(PACKAGE_ROOT, "LICENSE"));
++  const repositoryLicense = fs.readFileSync(
++    path.join(REPOSITORY_ROOT, "LICENSE"),
++  );
++  assert.deepEqual(
++    packageLicense,
++    repositoryLicense,
++    "package LICENSE must exactly match the repository license",
++  );
++
++  const manifest = readPackManifest();
++  const packagedPaths = manifest.files.map((entry) => entry.path);
++  assert.equal(
++    packagedPaths.filter((entry) => entry === "LICENSE").length,
++    1,
++    "package must contain exactly one root LICENSE",
++  );
++  assert.equal(
++    manifest.files.find((entry) => entry.path === "LICENSE")?.size,
++    packageLicense.byteLength,
++    "packed LICENSE size must match the canonical package license",
++  );
++  assert.equal(
++    packagedPaths.filter((entry) => entry === CANONICAL_README).length,
++    1,
++    "package must contain exactly one canonical root README",
++  );
++
++  const forbiddenArtifacts = findForbiddenPackageArtifacts(packagedPaths);
++  assert.deepEqual(
++    forbiddenArtifacts,
++    [],
++    `package contains backup or non-canonical README artifacts: ${forbiddenArtifacts.join(", ")}`,
++  );
++});

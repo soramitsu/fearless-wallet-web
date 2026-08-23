@@ -114,6 +114,7 @@ import ContentForm from '@/components/ContentForm.vue';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { useAccountsStore } from '@/stores/accounts';
+import { findNftCollection } from '@/portfolio/nftIdentity';
 import { useNetworksStore } from '@/stores/networks';
 
 const accountsStore = useAccountsStore();
@@ -147,9 +148,10 @@ const routeParam = (value: string | string[] | undefined): string => (Array.isAr
 
 const id = computed(() => routeParam(route.params.id));
 const contract = computed(() => routeParam(route.params.contract));
-const nfts = computed(() => accountsStore.nftsByActiveNetworks ?? []);
-
-const collection = computed(() => nfts.value.find((nft) => nft.address === contract.value));
+const chainId = computed(() => routeParam(route.params.chainId));
+const collection = computed(() =>
+  findNftCollection(accountsStore.nfts, networksStore.allNetworks, chainId.value, contract.value)
+);
 
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 const nft = computed(() => ownedNfts.value.find((nft) => nft.id === id.value));

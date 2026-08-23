@@ -10,6 +10,8 @@ import { APP_VERSION } from '@/consts/global';
 
 console.info('background initialization');
 
+const ASSET_DISCOVERY_ALARM = 'fearless-asset-discovery-sweep';
+
 axios.defaults.adapter = 'fetch';
 
 async function getActiveTabs() {
@@ -43,6 +45,13 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 chrome.runtime.onUpdateAvailable.addListener(() => chrome.runtime.reload());
+
+chrome.alarms.create(ASSET_DISCOVERY_ALARM, { periodInMinutes: 60 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === ASSET_DISCOVERY_ALARM && state.isReady()) {
+    void state.assetDiscoverySweepService.runIfDue();
+  }
+});
 
 chrome.runtime.onConnect.addListener((port: Port) =>
   port.onMessage.addListener((data: TransportRequestMessage<MessageTypes>) => handlers(data, port))

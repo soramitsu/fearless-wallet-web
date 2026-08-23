@@ -1,4 +1,5 @@
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
+import type { AssetPreference } from '@/portfolio/assetIdentity';
 import type { WalletAddress, NetworkName, WalletEcosystem } from '@/interfaces';
 import { type AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
@@ -31,6 +32,18 @@ export type HiddenAssets = {
 export type SetHiddenAsset = {
   groupId: string;
   value: boolean;
+};
+
+export type AssetPreferences = Record<WalletAddress, Record<string, AssetPreference>>;
+
+export type SetAssetPreference = {
+  key: string;
+  preference: AssetPreference;
+};
+
+export type MigrateLegacyAssetPreferences = {
+  assets: Array<{ key: string; groupId: string }>;
+  complete: boolean;
 };
 
 export type SetAccountsProps = {

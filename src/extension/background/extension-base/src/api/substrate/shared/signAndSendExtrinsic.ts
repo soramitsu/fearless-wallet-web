@@ -15,10 +15,11 @@ interface SignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   errorMessage: string;
   apiProps: ApiProps;
   isMobile: boolean;
+  finalGuard?: () => void;
 }
 
 export const signAndSendExtrinsic = async (
-  { address, apiProps, callback, errorMessage, extrinsic, txState = {}, isMobile }: SignAndSendExtrinsicProps,
+  { address, apiProps, callback, errorMessage, extrinsic, txState = {}, isMobile, finalGuard }: SignAndSendExtrinsicProps,
   state: State
 ) => {
   if (!extrinsic) {
@@ -35,6 +36,7 @@ export const signAndSendExtrinsic = async (
       apiProps,
       extrinsic,
       isMobile,
+      finalGuard,
     },
     state
   );

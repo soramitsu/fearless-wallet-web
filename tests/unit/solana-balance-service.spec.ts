@@ -72,9 +72,13 @@ const tokenBalance = (
   uiAmountString: string,
   decimals: number,
   program: SolanaTokenBalance['program']
-): SolanaTokenBalance => ({
+): SolanaTokenBalance => {
+  const [whole, fraction = ''] = uiAmountString.split('.');
+  const amount = `${whole}${fraction.padEnd(decimals, '0')}`.replace(/^0+(?=\d)/, '');
+
+  return {
   accountAddress: `${mint.slice(0, 8)}TokenAccount111111111111111111111`,
-  amount: uiAmountString.replace('.', ''),
+  amount,
   decimals,
   delegatedAmount: null,
   isNative: false,
@@ -86,7 +90,8 @@ const tokenBalance = (
   state: 'initialized',
   type: 'token',
   uiAmountString,
-});
+  };
+};
 
 const tokenMetadata = (
   mint: string,
@@ -323,6 +328,75 @@ describe('SolanaBalanceService', () => {
     );
   });
 
+  it('aggregates multiple token accounts by canonical mint without losing precision', async () => {
+    const { state } = createState();
+    const first = {
+      ...tokenBalance(SPL_MINT, '9007199254740993.000001', 6, 'spl-token'),
+      accountAddress: 'FirstTokenAccount111111111111111111111111111',
+      amount: '9007199254740993000001',
+    };
+    const second = {
+      ...tokenBalance(SPL_MINT, '0.999999', 6, 'spl-token'),
+      accountAddress: 'SecondTokenAccount11111111111111111111111111',
+      amount: '999999',
+    };
+    const client = {
+      getBalances: vi.fn().mockResolvedValue(balancesResponse('0', '0', [first, second])),
+      getTokenMetadataBatch: vi.fn().mockResolvedValue({
+        syncedAt: 1,
+        tokens: [tokenMetadata(SPL_MINT, 'USDC', 'USD Coin', 'spl-token')],
+        total: 1,
+      }),
+    };
+    const service = new SolanaBalanceService(state, client);
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        solanaAddress: WALLET,
+        networks: ['Solana'],
+      })
+    ).resolves.toEqual([
+      { assetId: 'SOL', balance: '0', network: 'Solana' },
+      { assetId: SPL_MINT, balance: '9007199254740994', network: 'Solana' },
+    ]);
+
+    const token = state.balanceService.balanceMap[SUBSTRATE_ADDRESS].find(({ groupId }) => groupId === SPL_MINT)
+      ?.balances[0];
+
+    expect(token).toMatchObject({
+      id: SPL_MINT,
+      solanaTokenAccountAddress: first.accountAddress,
+      solanaTokenAccountAddresses: [first.accountAddress, second.accountAddress],
+      solanaTokenSourceAmount: first.amount,
+      total: '9007199254740994',
+    });
+    expect(client.getTokenMetadataBatch).toHaveBeenCalledWith([SPL_MINT]);
+  });
+
+  it('rejects conflicting program identity for the same mint instead of overwriting it', async () => {
+    const { state } = createState();
+    const first = tokenBalance(SPL_MINT, '1', 6, 'spl-token');
+    const second = {
+      ...tokenBalance(SPL_MINT, '2', 6, 'token-2022'),
+      accountAddress: 'ConflictingTokenAccount1111111111111111111111',
+    };
+    const client = {
+      getBalances: vi.fn().mockResolvedValue(balancesResponse('0', '0', [first, second])),
+    };
+    const service = new SolanaBalanceService(state, client);
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        solanaAddress: WALLET,
+        networks: ['Solana'],
+      })
+    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS]).toHaveLength(1);
+  });
+
   it('keeps token balances available when SI metadata lookup fails', async () => {
     const { state } = createState();
     const client = {
@@ -490,5 +564,41 @@ describe('SolanaBalanceService', () => {
     );
 
     warn.mockRestore();
+  });
+
+  it('zeros a formerly held SPL mint when a later successful scan omits it', async () => {
+    const { state, updateBalanceStore } = createState();
+    const spl = tokenBalance(SPL_MINT, '12.5', 6, 'spl-token');
+    const client = {
+      getBalances: vi
+        .fn()
+        .mockResolvedValueOnce(balancesResponse('2500000000', '2.5', [spl]))
+        .mockResolvedValueOnce(balancesResponse('2500000000', '2.5', [])),
+      getTokenMetadataBatch: vi.fn().mockResolvedValue({
+        syncedAt: 1,
+        tokens: [tokenMetadata(SPL_MINT, 'USDC', 'USD Coin', 'spl-token')],
+        total: 1,
+      }),
+    };
+    const service = new SolanaBalanceService(state, client);
+
+    await service.fetchBalance({ address: SUBSTRATE_ADDRESS, solanaAddress: WALLET, networks: ['Solana'] });
+    await service.fetchBalance({ address: SUBSTRATE_ADDRESS, solanaAddress: WALLET, networks: ['Solana'] });
+
+    const token = state.balanceService.balanceMap[SUBSTRATE_ADDRESS]
+      .find(({ groupId }) => groupId === SPL_MINT)?.balances[0];
+    expect(token).toMatchObject({
+      id: SPL_MINT,
+      state: APIItemState.READY,
+      total: '0',
+      transferable: '0',
+      solanaTokenSourceAmount: '0',
+    });
+    expect(token?.solanaTokenAccountAddress).toBeUndefined();
+    expect(updateBalanceStore).toHaveBeenCalledWith(
+      'Solana',
+      expect.objectContaining({ id: SPL_MINT, state: APIItemState.READY, total: '0' }),
+      SUBSTRATE_ADDRESS
+    );
   });
 });

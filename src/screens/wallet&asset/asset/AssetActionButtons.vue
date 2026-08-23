@@ -1,6 +1,7 @@
 <template>
   <div class="activity">
     <BorderButton
+      v-if="showSendButton"
       class="activity-button"
       text="assets.sendButtonText"
       iconName="send"
@@ -61,6 +62,8 @@ import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { WalletEcosystem } from '@/interfaces';
+import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -102,6 +105,11 @@ export default defineComponent({ name: 'AssetActionButtons' ,
     },
     showSwapButton() {
       return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
+    },
+    showSendButton() {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+
+      return network?.ecosystem !== WalletEcosystem.Bitcoin || isBitcoinTransfersEnabled();
     },
     isNeedPopupButton() {
       return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;

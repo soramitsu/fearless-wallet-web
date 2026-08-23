@@ -137,6 +137,10 @@ export class RequestService {
     return this.authRequestHandler.ensureUrlAuthorized(url);
   }
 
+  public ensureAccountAuthorized(url: string, address: string): Promise<boolean> {
+    return this.authRequestHandler.ensureAccountAuthorized(url, address);
+  }
+
   // Substrate requests
   public get signSubject(): BehaviorSubject<SigningRequest[]> {
     return this.substrateRequestHandler.signSubject;

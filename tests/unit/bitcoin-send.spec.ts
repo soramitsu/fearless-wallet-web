@@ -123,6 +123,27 @@ describe('Bitcoin send service', () => {
     expect(client.getUtxos).toHaveBeenCalledTimes(2);
   });
 
+  it('rejects a duplicated outpoint returned for different discovered addresses', async () => {
+    const secondPath = getBitcoinReceivePath('mainnet', 1);
+    const secondAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: mnemonic, path: secondPath });
+    const client = mockClient({ utxos: [confirmedUtxo(100_000)] });
+
+    await expectBitcoinSendError(
+      prepareBitcoinSend({
+        amountSat: 50_000,
+        client,
+        feeRateSatPerVbyte: 1,
+        mnemonicOrSeed: mnemonic,
+        sources: [
+          { address: mainnetAddress },
+          { address: secondAddress, derivationPath: secondPath },
+        ],
+        toAddress: mainnetRecipient,
+      }),
+      'duplicate_utxo'
+    );
+  });
+
   it('spends exactly the requested coin-control outpoints without auto-adding larger UTXOs', async () => {
     const client = mockClient({
       utxos: [

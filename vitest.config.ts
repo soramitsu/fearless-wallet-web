@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => {
         reportsDirectory: 'coverage',
         include: ['src/**/*.{js,jsx,ts,tsx,vue}'],
         exclude: ['src/**/*.d.ts'],
+        thresholds: {
+          // Repository-wide ratchet: raise these floors as legacy surfaces gain tests.
+          branches: 26,
+          functions: 16,
+          lines: 23,
+        },
       },
     },
   };

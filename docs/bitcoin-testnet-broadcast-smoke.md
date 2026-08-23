@@ -53,3 +53,20 @@ yarn test:bitcoin-broadcast-evidence-template
 yarn test:bitcoin-broadcast-evidence-audit
 yarn audit:bitcoin-broadcast-evidence --require-ready
 ```
+
+The ready audit deliberately has no production environment override for the
+repository root, expected commit, indexer response, verifier tools, or clock.
+It resolves the current commit from the audited checkout and verifies the
+transaction through the exact reviewed URL
+`https://blockstream.info/testnet/api/tx/<txid>` using `/usr/bin/curl` with
+curl configuration disabled. Redirects, proxies, alternate ports or paths,
+non-200 responses, non-JSON content types, malformed UTF-8/JSON, and responses
+larger than 1 MiB are rejected. Evidence and its confirmed transaction must be
+no more than seven days old, and the recorded timestamp may trail confirmation
+by no more than 24 hours.
+
+`--selftest-fixture-root` and `--selftest-indexer-response` exist only for the
+negative-test suite. Both must be supplied together, every manifest/clock/
+commit/response fixture must be a regular non-symlink file confined beneath
+that absolute root. Successful fixture runs are explicitly labeled
+`mode=selftest-not-release-evidence`; they are never production evidence.

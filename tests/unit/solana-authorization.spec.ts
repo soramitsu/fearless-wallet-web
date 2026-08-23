@@ -1,4 +1,6 @@
+import { stripUrl } from '@extension-base/background/helpers';
 import { AuthRequestHandler } from '@extension-base/services/request-service/handlers/AuthRequestHandler';
+import { SubstrateRequestHandler } from '@extension-base/services/request-service/handlers/SubstrateRequestHandler';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type State from '@extension-base/background/handlers/State';
 import type { AuthUrls } from '@extension-base/background/types/types';
@@ -6,11 +8,13 @@ import type { RequestService } from '@extension-base/services';
 
 const storeState = vi.hoisted(() => ({
   authUrls: {} as AuthUrls,
+  getCalls: 0,
 }));
 
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class MockAuthorizeStore {
     get(_key: string, update: (value: AuthUrls) => void): void {
+      storeState.getCalls += 1;
       update(storeState.authUrls);
     }
 
@@ -27,7 +31,7 @@ const TAIRA_IROHA_ADDRESS = vectors.vectors[0].expected.iroha.taira.i105;
 const SUBSTRATE_ADDRESS = 'substrate-address';
 const EVM_ADDRESS = '0x0000000000000000000000000000000000000001';
 const URL = 'https://dapp.example/swap';
-const URL_KEY = 'dapp.example';
+const URL_KEY = 'https://dapp.example';
 
 const createHandler = () => {
   const requestService = {
@@ -36,6 +40,7 @@ const createHandler = () => {
   } as unknown as RequestService;
   const state = {
     keyringService: {
+      encodeAddress: vi.fn((address: string) => address),
       getAccount: vi.fn((address: string) =>
         address === SUBSTRATE_ADDRESS
           ? {
@@ -70,6 +75,76 @@ function approveFirstRequest(handler: AuthRequestHandler, authorizedAccounts: st
 describe('Solana origin-scoped authorization', () => {
   beforeEach(() => {
     storeState.authUrls = {};
+    storeState.getCalls = 0;
+  });
+
+  it('keeps HTTP and HTTPS permission origins distinct and rejects credential-bearing URLs', () => {
+    expect(stripUrl('https://dapp.example/swap')).toBe('https://dapp.example');
+    expect(stripUrl('http://dapp.example/swap')).toBe('http://dapp.example');
+    expect(() => stripUrl('https://operator:secret@dapp.example/swap')).toThrow(/credential-bearing/i);
+  });
+
+  it('rejects denied origins and signing accounts outside the authorized account scope', async () => {
+    storeState.authUrls = {
+      [URL_KEY]: {
+        count: 0,
+        id: URL_KEY,
+        isAllowed: true,
+        origin: URL,
+        url: URL,
+        authorizedAccounts: [SUBSTRATE_ADDRESS],
+        evmAuthorizedAccount: '',
+        solanaAuthorizedAccount: '',
+        irohaAuthorizedAccount: '',
+        allowedAccountsMap: {},
+      },
+      'http://dapp.example': {
+        count: 0,
+        id: 'http://dapp.example',
+        isAllowed: false,
+        origin: 'http://dapp.example',
+        url: 'http://dapp.example',
+        authorizedAccounts: [SUBSTRATE_ADDRESS],
+        evmAuthorizedAccount: '',
+        solanaAuthorizedAccount: '',
+        irohaAuthorizedAccount: '',
+        allowedAccountsMap: {},
+      },
+    };
+    const { handler } = createHandler();
+
+    await expect(handler.ensureUrlAuthorized(URL)).resolves.toBe(true);
+    await expect(handler.ensureUrlAuthorized('http://dapp.example')).rejects.toThrow(/has not been enabled/i);
+    await expect(handler.ensureAccountAuthorized(URL, SUBSTRATE_ADDRESS)).resolves.toBe(true);
+    await expect(handler.ensureAccountAuthorized(URL, 'another-account')).rejects.toThrow(/not authorized/i);
+  });
+
+  it('rejects unauthorized Substrate signing before enqueueing a prompt', async () => {
+    const requestService = {
+      ensureAccountAuthorized: vi.fn().mockRejectedValue(new Error('account scope rejected')),
+      popupOpen: vi.fn(),
+      updateIcon: vi.fn(),
+    } as unknown as RequestService;
+    const handler = new SubstrateRequestHandler(requestService, {} as State);
+
+    await expect(
+      handler.sign(URL, {} as never, { address: 'another-account' } as never)
+    ).rejects.toThrow('account scope rejected');
+    expect(handler.numSubstrateRequests).toBe(0);
+    expect(requestService.popupOpen).not.toHaveBeenCalled();
+  });
+
+  it('loads an empty authorization store once without recursively re-emitting it', async () => {
+    const { handler } = createHandler();
+    const emissions: AuthUrls[] = [];
+    const subscription = handler.subscribeAuthorizeUrlSubject.subscribe((value) => emissions.push(value));
+
+    await expect(handler.getAuthList()).resolves.toEqual({});
+    await expect(handler.getAuthList()).resolves.toEqual({});
+
+    expect(storeState.getCalls).toBe(1);
+    expect(emissions).toEqual([{}]);
+    subscription.unsubscribe();
   });
 
   it('stores Solana grants separately from substrate and evm accounts for one origin', async () => {

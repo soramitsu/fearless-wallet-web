@@ -100,6 +100,7 @@ export { sendMessage };
 
 export * from '@/extension/messaging/staking';
 export * from '@/extension/messaging/pools';
+export * from '@/extension/messaging/polkamarkt';
 export * from '@/extension/messaging/accounts';
 export * from '@/extension/messaging/transfers';
 export * from '@/extension/messaging/substrate-requests';
@@ -107,6 +108,8 @@ export * from '@/extension/messaging/onboarding';
 export * from '@/extension/messaging/google';
 export * from '@/extension/messaging/networks';
 export * from '@/extension/messaging/balance';
+export * from '@/extension/messaging/asset-discovery';
+export * from '@/extension/messaging/sora-policy';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
 export * from '@/extension/messaging/pools';

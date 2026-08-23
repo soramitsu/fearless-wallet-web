@@ -38,7 +38,6 @@
       />
 
       <CircleButton
-        v-if="!isTonWallet"
         backgroundColor="none"
         tooltipText="wallet.assetManagement"
         placement="left"
@@ -57,7 +56,6 @@ import { defineComponent } from 'vue';
 
 import type { TabWallet } from '@/interfaces/common';
 import { Components } from '@/router/routes';
-import { useAccountsStore } from '@/stores/accounts';
 
 interface TabsOptions {
   label: string;
@@ -70,14 +68,13 @@ interface TabsOptions {
 export default defineComponent({ name: 'ContentSettings' ,
   props: {
     tokenGroups: Array,
+    allAssetsHidden: Boolean,
     activeTabName: { type: String },
     filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
   },
   data() {
-    return {
-      accountsStore: useAccountsStore(),
-    };
+    return {};
   },
   computed: {
     tabsOptions() {
@@ -91,8 +88,7 @@ export default defineComponent({ name: 'ContentSettings' ,
             },
           ];
 
-          if (!this.accountsStore.selectedWallet.isTon)
-            baseTabs.push({
+          baseTabs.push({
               label: 'wallet.nfts',
               tabName: Components.Nfts,
               tooltipText: 'wallet.nonFungibleTokens',
@@ -102,14 +98,11 @@ export default defineComponent({ name: 'ContentSettings' ,
 
           return baseTabs;
     },
-    isTonWallet() {
-      return this.accountsStore.selectedWallet.isTon;
-    },
     target() {
       return `.${this.iconName}`;
     },
     allTokenGroupsHidden() {
-      return this.tokenGroups.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
+      return this.allAssetsHidden;
     },
     searchInputWidth() {
       return '100%';

@@ -23,7 +23,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+
+      - name: Enable Corepack
+        run: |
+          npm install -g corepack@0.34.1
+          corepack enable
 
       - name: Branch flow audit
         run: |
@@ -40,20 +49,31 @@ jobs:
           bash ./scripts/test-todo-debt-audit.sh
           bash ./scripts/audit-todo-debt.sh
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Enable Corepack
+      - name: Iroha production send readiness gate
         run: |
-          npm install -g corepack@latest
-          corepack enable
+          bash ./scripts/test-iroha-js-candidate-verifier.sh
+          bash ./scripts/verify-iroha-js-candidate.sh
+          bash ./scripts/test-iroha-production-send-readiness-audit.sh
+          bash ./scripts/audit-iroha-production-send-readiness.sh
 
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Validate vendored and installed Iroha browser SDK artifact
+        run: |
+          yarn test:vendored-iroha-sdk-audit
+          yarn audit:vendored-iroha-sdk
+
       - name: Production dependency audit
-        run: yarn npm audit --environment production
+        run: |
+          yarn audit:dependencies
+          yarn audit:dependencies:production
+
+      - name: Fail-closed crypto dependency shims
+        run: yarn test:crypto-dependency-shims
+
+      - name: Iroha native Safari QA contract self-test
+        run: yarn test:iroha-safari-qa
 
       - name: Typecheck
         run: yarn typecheck
@@ -67,8 +87,22 @@ jobs:
       - name: Build web app
         run: yarn build:web
 
+      - name: Deterministic extension package self-test
+        run: |
+          yarn test:extension-package
+          yarn test:extension-build-environment
+          yarn test:import-chrome-release-config
+          yarn test:prepare-chrome-release
+          yarn test:release-source-audit
+
       - name: Build Chrome extension
-        run: yarn build:extension
+        run: yarn build:extension:zip
+
+      - name: Chrome release package audit self-test
+        run: yarn test:chrome-release-audit
+
+      - name: Chrome production popup smoke
+        run: yarn test:smoke:chrome:production
 
       - name: Solana extension e2e smoke
         run: yarn test:e2e:solana
@@ -86,3 +120,14 @@ jobs:
 
       - name: Lint Firefox extension package
         run: yarn lint:webext:firefox
+
+      - name: Set up Firefox
+        id: setup-firefox
+        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1.7.2
+        with:
+          firefox-version: 152.0.4
+
+      - name: Firefox extension runtime and CSP smoke
+        run: yarn test:smoke:firefox
+        env:
+          FIREFOX_BINARY: ${{ steps.setup-firefox.outputs.firefox-path }}

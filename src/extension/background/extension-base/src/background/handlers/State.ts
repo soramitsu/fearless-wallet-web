@@ -20,6 +20,11 @@ import {
   ScamService,
   PricesService,
   TimeoutService,
+  AssetDiscoverySweepService,
+  canScanSubstrateBackedDiscoveryNetwork,
+  resolveAssetDiscoveryEvmAddress,
+  ActionCapabilityService,
+  SoraDisclaimerService,
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
@@ -86,11 +91,27 @@ export default class State {
   eventService = new EventService();
   evmContractService = new EvmContractService();
   keyringService = new KeyringService(this.eventService);
-  networkService = new NetworkService(this.keyringService, this);
+  networkService = new NetworkService(this.keyringService, this, () => {
+    if (this.ready) void this.assetDiscoverySweepService.runIfDue();
+  });
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
   walletConnectDappService = new WalletConnectDAppService(this);
   balanceService = new BalanceService(this);
+  assetDiscoverySweepService = new AssetDiscoverySweepService({
+    getRegistryNetworks: () => this.networkService.authoritativeDiscoveryNetworks,
+    scanNetwork: (network) => this.scanDiscoveryNetwork(network),
+    readState: async () => (await storage.get(['assetDiscoverySweep'])).assetDiscoverySweep,
+    writeState: async (assetDiscoverySweep) => storage.set({ assetDiscoverySweep }),
+  });
+  actionCapabilityService = new ActionCapabilityService({
+    read: async () => (await storage.get(['actionCapabilities'])).actionCapabilities,
+    write: async (actionCapabilities) => storage.set({ actionCapabilities }),
+  });
+  soraDisclaimerService = new SoraDisclaimerService({
+    read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
+    write: async (soraDisclaimerAcceptance) => storage.set({ soraDisclaimerAcceptance }),
+  });
   pricesService = new PricesService(this);
   nftService = new NftService(this);
   stakingService = new StakingService(this);
@@ -161,14 +182,15 @@ export default class State {
     const url = new URL(tab.url);
     const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
+    const tabAuthKey = isSelf ? null : stripUrl(tab.url);
 
     const cb = () => (authUrls: AuthUrls) => {
-      const authorizeUrls = Object.keys(authUrls).filter((url) => url === tabHostName);
-      const isAuthorize = authorizeUrls.length !== 0;
+      const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
+      const isAuthorize = auth?.isAllowed === true;
 
       this.currentTabStatus = {
         isAuthorize,
-        authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+        authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
         dAppName: tabHostName,
       };
     };
@@ -416,13 +438,21 @@ export default class State {
 
   async init() {
     await this.eventService.waitCryptoReady;
-    await this.networkService.initNetworkMap();
+    await Promise.all([
+      this.networkService.initNetworkMap(),
+      this.actionCapabilityService.init(),
+      this.soraDisclaimerService.init(),
+    ]);
 
-    this.keyringService.getAllMainAccounts().forEach(({ address, meta }) => {
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    accounts.forEach(({ address, meta }) => {
       const { walletEcosystem } = meta as FWKeyringMeta;
 
       return this.balanceService.generateDefaultBalance(address, walletEcosystem!);
     });
+
+    await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
 
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
@@ -431,6 +461,82 @@ export default class State {
     this.networkService.initNetworkApis();
     this.onReady();
     this.updateServiceInfo();
+    void this.assetDiscoverySweepService.runIfDue();
+  }
+
+  private async scanDiscoveryNetwork(registryNetwork: NetworkJson): Promise<void> {
+    const network = this.networkService.networkMap[registryNetwork.name];
+    if (!network) return;
+
+    const ecosystem = network.ecosystem;
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    for (const account of accounts) {
+      const meta = account.meta as FWKeyringMeta;
+      const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
+      const publicAddress = (walletEcosystem: WalletEcosystem) =>
+        publicAccounts.find(
+          (item) =>
+            item.ecosystem === walletEcosystem &&
+            (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
+        )?.address;
+      const supports = (walletEcosystem: WalletEcosystem) =>
+        meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
+      const evmAddress = resolveAssetDiscoveryEvmAddress({
+        primaryAddress: account.address,
+        primaryEcosystem: meta.walletEcosystem,
+        ethereumAddress: meta.ethereumAddress,
+        publicAccounts,
+      });
+      const supportsSubstrate = supports(WalletEcosystem.Substrate);
+
+      if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
+        await this.balanceService.solanaBalanceService.fetchBalance({
+          address: account.address,
+          solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
+        await this.balanceService.bitcoinBalanceService.fetchBalance({
+          address: account.address,
+          bitcoinAddress: meta.bitcoinAddress,
+          bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
+        await this.balanceService.irohaBalanceService.fetchBalance({
+          address: account.address,
+          irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
+        if (!this.getTonApiMap[network.name]) await this.networkService.tonApiHandler.initApi(network);
+        await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
+      } else if (ecosystem === 'ethereum' && evmAddress) {
+        const wasActive = network.active;
+        if (!this.getEvmApi(network.name)) this.networkService.evmApiHandler.initEvmApi(network);
+        await this.balanceService.evmBalanceService.fetchBalance({
+          ethereumAddress: evmAddress,
+          networks: [network.name.toLowerCase()],
+          force: true,
+        });
+        if (!wasActive) this.networkService.evmApiHandler.destroyApi(network.name);
+      } else if (
+        canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
+      ) {
+        const networkKey = network.name.toLowerCase();
+        const wasActive = network.active;
+        if (!this.getSubstrateApiMap[networkKey]?.api) await this.networkService.substrateApiHandler.initApi(network);
+        const api = this.getSubstrateApiMap[networkKey]?.api;
+        if (api) await Promise.race([api.isReady, new Promise((_, reject) => setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000))]);
+        await this.balanceService.substrateBalanceService.fetchBalance({
+          address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
+          ethereumAddress: evmAddress,
+          networks: [network.name],
+        });
+        if (!wasActive) await this.networkService.substrateApiHandler.destroyApi(network.name);
+      }
+    }
   }
 
   updateNetworkForNewWallet(address: string) {
@@ -456,6 +562,7 @@ export default class State {
       if (isNew) this.setActiveNetworks(activeValue);
 
       this.nftService.publishNfts();
+      if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
     });
 
     return true;

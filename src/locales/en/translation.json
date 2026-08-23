@@ -26,7 +26,7 @@
   },
   "addWallet": {
     "createWallet": "Create a new wallet",
-    "exampleNameWallet": "Example: Savings, Investments, Crowdloans, Staking. This nickname will be displayed only for you and stored locally.",
+    "exampleNameWallet": "Example: Savings, Investments, DeFi, Staking. This nickname will be displayed only for you and stored locally.",
     "backupNonDigital": "Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it.",
     "backupPassphrase": "Backup the passphrase for your new wallet",
     "confirmPassphrase": "Confirm the passphrase",
@@ -107,7 +107,7 @@
       "fetchInfo": "Fetching info from google",
       "backupWallet": "Google Drive backup",
       "saved": "Saved",
-      "dataWillStoreOnGDrive": "By clicking “Confirm” you agree with using Google Drive as a storage for your keys",
+      "dataWillStoreOnGDrive": "By clicking “Confirm”, you agree to upload a password-encrypted wallet backup and its wallet label and address to your private Google Drive app data storage for backup and restore.",
       "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
       "noWallets": "No saved wallets have been found on the Google Drive"
     }
@@ -247,6 +247,10 @@
     "preview": "Preview",
     "calculateFee": "Fee calculation",
     "lockedDetails": "Locked details",
+    "legacyCrowdloan": "Legacy crowdloan",
+    "legacyCrowdloanContribution": "{count} historical contribution detected",
+    "legacyCrowdloanRecovery": "{count} claim or recovery detected",
+    "legacyCrowdloanContributionAndRecovery": "{contributionCount} contributions · {recoveryCount} claims or recoveries",
     "buyHeader": "Buy {asset} with",
     "buy": "Buy",
     "swap": "Swap",
@@ -287,15 +291,23 @@
     "transaction": "Transaction",
     "transactionDone": "Transaction Done",
     "transactionError": "Transaction Error",
+    "transactionFailedDetails": "The transaction failed. Review the transaction details and try again.",
     "transactionPending": "Transaction is pending",
     "saveQR": "Save QR-code",
     "copyQR": "Copy QR-code",
     "incorrectAddress": "Incorrect address",
     "insufficientBalance": "Insufficient balance {asset}",
+    "insufficientBalanceGeneric": "Insufficient balance",
     "insufficientLiquidity": "Insufficient Liquidity",
     "isSameAddress": "Transfers to your own account are prohibited",
+    "bitcoinTransfersDisabled": "Bitcoin transfers are not enabled in this release",
     "irohaTransfersDisabled": "Iroha transfers are not enabled in this release",
     "unsupportedSolanaTokenTransfer": "Solana token transfers are not supported yet",
+    "crossChainRuntimeUnavailable": "A required network is unavailable. Try this route again later",
+    "crossChainProviderDisabled": "This cross-chain provider is temporarily disabled",
+    "crossChainSignableAccountRequired": "Select an account that can sign this route",
+    "crossChainAmountBelowMinimum": "Amount is below the current route minimum",
+    "crossChainRouteUnavailable": "No supported route is available with the current network capabilities",
     "minReceived": "Min received",
     "maxSales": "Max sales ",
     "priceImpact": "Price impact",
@@ -744,6 +756,6 @@
     "networkFees": "Network fee",
     "copyHash": "Copy hash",
     "fearlessSupport": "Fearless support",
-    "evmDApps":"EVM DApps"
+    "evmDApps": "EVM DApps"
   }
 }

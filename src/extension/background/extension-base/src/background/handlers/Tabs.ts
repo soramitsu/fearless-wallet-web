@@ -46,6 +46,7 @@ import type {
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import { requiresGenericUrlAuthorization } from '@/extension/background/extension-base/src/background/handlers/tabAuthorization';
 import {
   transformAccounts,
   transformAddresses,
@@ -367,8 +368,10 @@ export default class Tabs {
     return true;
   }
 
-  bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
+  async bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
     const address = request.address;
+
+    await this.state.requestService.ensureAccountAuthorized(url, address);
 
     const pair = this.state.keyringService.getPair(address)!;
     const signer = new RequestBytesSign(request);
@@ -381,8 +384,10 @@ export default class Tabs {
     });
   }
 
-  extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
+  async extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = this.state.keyringService.encodeAddress(request.address);
+
+    await this.state.requestService.ensureAccountAuthorized(url, address);
     const isMobile = !!this.state.keyringService.getAddress(address, 'address')?.meta.isMobile;
     const pair = this.state.keyringService.getPair(address);
 
@@ -468,16 +473,7 @@ export default class Tabs {
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
-    if (
-      type !== 'pub(authorize.tab)' &&
-      type !== 'evm(request)' &&
-      type !== 'evm(authorizeUrl)' &&
-      type !== 'solana(authorizeUrl)' &&
-      type !== 'solana(accounts)' &&
-      type !== 'solana(disconnect)' &&
-      type !== 'solana(events.subscribe)'
-    )
-      await this.state.requestService.ensureUrlAuthorized(url);
+    if (requiresGenericUrlAuthorization(type)) await this.state.requestService.ensureUrlAuthorized(url);
 
     if (
       (type === 'pub(authorize.tab)' ||

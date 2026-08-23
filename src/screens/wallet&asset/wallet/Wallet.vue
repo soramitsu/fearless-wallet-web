@@ -19,6 +19,7 @@
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
           :tokenGroups="filteredTokenGroups"
+          :allAssetsHidden="allAssetsHidden"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementForm"
@@ -60,7 +61,7 @@
 import { defineComponent } from 'vue';
 
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import type { BalanceItem } from '@extension-base/api/evm/types';
+import { FPNumber } from '@sora-substrate/util';
 import type { TabWallet } from '@/interfaces';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -72,7 +73,8 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
+import { isNetworkGroup } from '@/helpers/common';
+import { buildAssetPreferenceSnapshot, buildPortfolioSummary } from '@/portfolio/assetIdentity';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
@@ -80,7 +82,6 @@ import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
 
 export default defineComponent({ name: 'Wallet',
   components: {
@@ -111,9 +112,7 @@ export default defineComponent({ name: 'Wallet',
       return this.$route.name;
     },
     contentFormHeight() {
-      const isTonWallet = this.accountsStore.selectedWallet.isTon;
-
-          return isTonWallet ? CONTENT_FORM_HEIGHT + MENU_HEIGHT : CONTENT_FORM_HEIGHT;
+      return CONTENT_FORM_HEIGHT;
     },
     showNetworkUnavailablePopup() {
       return this.networkUnavailable !== '';
@@ -135,23 +134,38 @@ export default defineComponent({ name: 'Wallet',
     networksWithWarning() {
       return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
     },
+    portfolioSummary() {
+      return buildPortfolioSummary({
+        groups: this.accountsStore.balances,
+        networks: this.networksStore.allNetworks,
+        prices: this.networksStore.assetsPrice.tokenPriceMap,
+        priceChanges: this.networksStore.assetsPrice.tokenPriceChange,
+        addressForNetwork: (network) => {
+          try {
+            return BaseApi.formatAddress(this.accountsStore.selectedWallet, network.name);
+          } catch {
+            return this.accountsStore.selectedWallet.address;
+          }
+        },
+      });
+    },
     summaryTransferableBalance() {
-      return getSummaryTransferableWalletBalance(
-            this.accountsStore.selectedWallet.address,
-            this.accountsStore.balances,
-            this.networksStore.assetsPrice,
-            this.accountsStore.selectedNetwork,
-            this.networksStore.networks
-          );
+      return this.portfolioSummary.total;
     },
     changeWalletBalance() {
-      if (this.accountsStore.balances.length === 0) return { percent: 0, amount: 0 };
-
-          return getChangeWalletBalance(
-            this.accountsStore.balances,
-            this.networksStore.assetsPrice,
-            this.accountsStore.selectedNetwork
-          );
+      return {
+        percent: this.portfolioSummary.changePercent,
+        amount: this.portfolioSummary.changeAmount,
+      };
+    },
+    assetPreferenceSnapshot() {
+      return buildAssetPreferenceSnapshot(this.accountsStore.balances, this.networksStore.allNetworks);
+    },
+    allAssetsHidden() {
+      return (
+        this.assetPreferenceSnapshot.length > 0 &&
+        this.assetPreferenceSnapshot.every(({ key }) => this.accountsStore.assetPreferences[key] === 'hidden')
+      );
     },
     sortedTokenGroups() {
       const balances = this.accountsStore.selectedWallet.hasEthereum
@@ -270,47 +284,17 @@ export default defineComponent({ name: 'Wallet',
     },
     toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
       if (allCurrenciesHidden) {
-            this.accountsStore.balances.forEach(({ groupId }) =>
-              this.accountsStore.setHiddenAssets({ groupId, value: true })
+            this.assetPreferenceSnapshot.forEach(({ key }) =>
+              this.accountsStore.setAssetPreference({ key, preference: 'shown' })
             );
 
             return;
           }
 
-          const nonZeroBalanceCb = ({ transferable }: BalanceItem) => transferable && +transferable > 0;
-
-          this.accountsStore.balances.forEach(({ groupId, balances }) => {
-            const index = balances.findIndex(nonZeroBalanceCb);
-            const isZeroBalance = index === -1;
-
-            if (isZeroBalance) this.accountsStore.setHiddenAssets({ groupId, value: false });
-          });
-
-          const assetsVisibleWithBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
-            const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-            const isVisibleAsset = !this.accountsStore.hiddenAssets.includes(groupId);
-
-            return isVisibleAsset && haveAssets;
-          });
-
-          const assetsInvisibleWithBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
-            const haveAssets = balances.findIndex(nonZeroBalanceCb) !== -1;
-            const isHiddenAsset = this.accountsStore.hiddenAssets.includes(groupId);
-
-            return isHiddenAsset && haveAssets;
-          });
-
-          const assetsInvisibleWithoutBalance = this.accountsStore.balances.filter(({ balances, groupId }) => {
-            const notHaveAssets = balances.findIndex(nonZeroBalanceCb) === -1;
-            const isHiddenAsset = this.accountsStore.hiddenAssets.includes(groupId);
-
-            return isHiddenAsset && notHaveAssets;
-          });
-
-          this.accountsStore.setBalance({
-            details: [...assetsVisibleWithBalance, ...assetsInvisibleWithBalance, ...assetsInvisibleWithoutBalance],
-            reset: false,
-            saveSequence: true,
+          this.assetPreferenceSnapshot.forEach(({ key, balanceText }) => {
+            if (new FPNumber(balanceText).isZero()) {
+              this.accountsStore.setAssetPreference({ key, preference: 'hidden' });
+            }
           });
     },
     updateFilterValue(value: string) {

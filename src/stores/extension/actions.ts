@@ -46,6 +46,21 @@ import {
 import router from '@/router';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
+import { LocalStorage } from '@/controllers/localStorageController';
+
+const featureStorage = new LocalStorage('feature_');
+const failClosedFeatures = (): Features => ({
+  fiat: { moonpay: false, ramp: false },
+  actions: {
+    polkaswap: false,
+    demeter: false,
+    polkamarkt: false,
+    crossChainXcm: false,
+    crossChainSoraBridge: false,
+    crossChainLiberland: false,
+  },
+  assetDiscoveryMode: 'shadow',
+});
 
 export type ApprovePayload = {
   id: string;
@@ -295,9 +310,23 @@ export const actions: Actions = {
   },
 
   async fetchFeatures() {
-    const { data } = await axios.get<Features>(URLS.FEATURES);
+    const cached = featureStorage.get<Features>('action-capabilities').value;
+    this.setFeatures(cached ?? failClosedFeatures());
 
-    this.setFeatures(data);
+    try {
+      const { data } = await axios.get<Features>(URLS.FEATURES);
+      const features: Features = {
+        ...failClosedFeatures(),
+        ...data,
+        fiat: { ...failClosedFeatures().fiat, ...data.fiat },
+        actions: { ...failClosedFeatures().actions, ...data.actions },
+      };
+
+      featureStorage.set('action-capabilities', features as unknown as Record<string, unknown>);
+      this.setFeatures(features);
+    } catch {
+      // Keep the persisted snapshot; first-run mutations remain fail-closed.
+    }
   },
 
   async subscribeWcConnectRequests() {

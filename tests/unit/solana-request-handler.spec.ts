@@ -137,6 +137,7 @@ describe('SolanaRequestHandler', () => {
       {
         options: {
           maxRetries: 3,
+          minContextSlot: 123,
           preflightCommitment: 'finalized',
           skipPreflight: true,
         },
@@ -152,6 +153,7 @@ describe('SolanaRequestHandler', () => {
       method: 'signAndSendTransaction',
       options: {
         maxRetries: 3,
+        minContextSlot: 123,
         preflightCommitment: 'finalized',
         skipPreflight: true,
       },
@@ -449,6 +451,13 @@ describe('SolanaRequestHandler', () => {
         account
       )
     ).toThrow('Invalid Solana max retries');
+    expect(() =>
+      handler.confirmSignAndSendTransaction(
+        'https://dapp.example',
+        { options: { minContextSlot: -1 }, transactionBase64: 'AQIDBA==', origin: 'dApp' },
+        account
+      )
+    ).toThrow('Invalid Solana minimum context slot');
     expect(() =>
       handler.confirmSignAndSendTransaction(
         'https://dapp.example',

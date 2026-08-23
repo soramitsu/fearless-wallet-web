@@ -2,7 +2,7 @@ import { type RequestGetHistory } from '../../background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { type TonEventTokens } from '@/interfaces';
 import { TON_ID } from '@/consts/currencies';
-import { getJettonAssetId, isSameString } from '@/helpers';
+import { isSameString } from '@/helpers';
 
 // Сейчас здесь парсится только история для тон сети, тк она достается из ноды
 // Вся остальная история парсится на клиенте
@@ -64,10 +64,8 @@ export class HistoryService {
               const from = item[type]?.sender?.address.toString();
               const comment = item[type]?.comment;
               const symbol = item[type]?.jetton.symbol.toLowerCase() ?? '';
-              const name = item[type]?.jetton.name.toLowerCase() ?? '';
               const isOutEvent = isSameString(from, contactAddress);
-
-              const groupId = getJettonAssetId(name, symbol);
+              const groupId = item[type]?.jetton.address.toString() ?? '';
 
               if (!result[groupId]) result[groupId] = [];
 
@@ -94,10 +92,8 @@ export class HistoryService {
               const dex = item[type]?.dex;
               const userWallet = item[type]?.userWallet.address.toString();
               const symbol = item[type]?.jettonMasterOut?.symbol.toLowerCase() ?? '';
-              const name = item[type]?.jettonMasterOut?.name.toLowerCase() ?? '';
               const symbolIn = item[type]?.jettonMasterIn?.symbol.toLowerCase() ?? '';
-
-              const groupId = getJettonAssetId(name, symbol);
+              const groupId = item[type]?.jettonMasterOut?.address.toString() ?? '';
 
               if (!result[groupId]) result[groupId] = [];
 

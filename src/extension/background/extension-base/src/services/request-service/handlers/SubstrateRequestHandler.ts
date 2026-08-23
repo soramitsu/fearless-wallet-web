@@ -69,7 +69,8 @@ export class SubstrateRequestHandler {
     return Object.keys(this.substrateRequests).length;
   }
 
-  public sign(url: string, request: RequestSign, account: AccountJson, _id?: string): Promise<ResponseSigning> {
+  public async sign(url: string, request: RequestSign, account: AccountJson, _id?: string): Promise<ResponseSigning> {
+    await this.requestService.ensureAccountAuthorized(url, account.address);
     const id = _id || getId();
 
     return new Promise((resolve, reject): void => {

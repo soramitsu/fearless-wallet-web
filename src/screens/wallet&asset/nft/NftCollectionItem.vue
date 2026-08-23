@@ -21,6 +21,7 @@ import { Components } from '@/router/routes';
 
 type Props = {
   collection: NftCollection;
+  chainId: string;
 };
 
 const props = defineProps<Props>();
@@ -31,7 +32,7 @@ const image = computed(() => props.collection.image ?? fallbackNftImage);
 const onClick = () =>
   router.push({
     name: Components.NftCollection,
-    params: { contract: props.collection.address },
+    params: { chainId: props.chainId, contract: props.collection.address },
   });
 </script>
 

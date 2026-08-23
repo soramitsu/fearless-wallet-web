@@ -53,6 +53,9 @@ export class AuthRequestHandler {
 
   readonly authRequests: Record<string, AuthRequest> = {};
   private authorizeCached: AuthUrls = {};
+  private authorizeLoaded = false;
+  private authorizeLoading = false;
+  private authorizeWaiters: Array<(value: AuthUrls) => void> = [];
   private readonly authorizeStore = new AuthorizeStore();
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
@@ -101,23 +104,42 @@ export class AuthRequestHandler {
   public setAuthorize(data: AuthUrls, callback?: () => void): void {
     this.authorizeStore.set(AUTH_URLS_KEY, data, () => {
       this.authorizeCached = data;
+      this.authorizeLoaded = true;
 
       this.authorizeUrlSubject.next(this.authorizeCached);
+      this.flushAuthorizeWaiters();
 
       callback?.();
     });
   }
 
   public getAuthorize(update: (value: AuthUrls) => void): void {
-    // This action can be use many by DApp interaction => caching it in memory
-    if (Object.keys(this.authorizeCached).length) update(this.authorizeCached);
-    else
-      this.authorizeStore.get('authUrls', (data) => {
-        this.authorizeCached = data || {};
-        this.authorizeUrlSubject.next(this.authorizeCached);
+    if (this.authorizeLoaded) {
+      update(this.authorizeCached);
 
-        update(this.authorizeCached);
-      });
+      return;
+    }
+
+    this.authorizeWaiters.push(update);
+    if (this.authorizeLoading) return;
+
+    this.authorizeLoading = true;
+    this.authorizeStore.get(AUTH_URLS_KEY, (data) => {
+      this.authorizeLoading = false;
+      if (!this.authorizeLoaded) {
+        this.authorizeCached = data || {};
+        this.authorizeLoaded = true;
+        this.authorizeUrlSubject.next(this.authorizeCached);
+      }
+
+      this.flushAuthorizeWaiters();
+    });
+  }
+
+  private flushAuthorizeWaiters(): void {
+    const waiters = this.authorizeWaiters.splice(0);
+
+    waiters.forEach((update) => update(this.authorizeCached));
   }
 
   public getAuthList(): Promise<AuthUrls> {
@@ -264,18 +286,41 @@ export class AuthRequestHandler {
     return this.authRequests[id];
   }
 
-  public ensureUrlAuthorized(url: string): Promise<boolean> {
+  public async ensureUrlAuthorized(url: string): Promise<boolean> {
     const idStr = stripUrl(url);
+    const authUrls = await this.getAuthList();
+    const entry = authUrls[idStr];
 
-    return new Promise((resolve, reject) => {
-      this.getAuthorize((authUrls) => {
-        const entry = Object.keys(authUrls).includes(idStr);
+    if (!entry || entry.isAllowed !== true) {
+      throw new Error(`The source ${url} has not been enabled`);
+    }
 
-        if (!entry) reject(new Error(`The source ${url} has not been enabled yet`));
+    return true;
+  }
 
-        resolve(true);
-      });
+  public async ensureAccountAuthorized(url: string, address: string): Promise<boolean> {
+    await this.ensureUrlAuthorized(url);
+    const authUrls = await this.getAuthList();
+    const entry = authUrls[stripUrl(url)];
+    let requestedAddress: string;
+
+    try {
+      requestedAddress = this.keyringService.encodeAddress(address);
+    } catch {
+      throw new Error('The requested signing account is invalid');
+    }
+
+    const authorized = Array.isArray(entry.authorizedAccounts) && entry.authorizedAccounts.some((candidate) => {
+      try {
+        return this.keyringService.encodeAddress(candidate) === requestedAddress;
+      } catch {
+        return false;
+      }
     });
+
+    if (!authorized) throw new Error(`The source ${url} is not authorized for the requested signing account`);
+
+    return true;
   }
 
   getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {

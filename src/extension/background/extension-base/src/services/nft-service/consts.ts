@@ -13,7 +13,7 @@ export const NFT_FILTERS = {
 
 export type NftFilter = (typeof NFT_FILTERS)[keyof typeof NFT_FILTERS];
 
-const testNets: Record<number, AlchemyNetwork> = {
+export const TEST_NFT_NETWORKS: Record<number, AlchemyNetwork> = {
   80001: 'polygon-mumbai',
   11155111: 'eth-sepolia',
 };
@@ -23,5 +23,9 @@ export const PROD_NFT_NETWORKS: Record<number, AlchemyNetwork> = {
   10: 'opt-mainnet',
   42161: 'arb-mainnet',
   137: 'polygon-mainnet',
-  ...testNets,
+};
+
+export const SUPPORTED_NFT_NETWORKS: Record<number, AlchemyNetwork> = {
+  ...PROD_NFT_NETWORKS,
+  ...TEST_NFT_NETWORKS,
 };

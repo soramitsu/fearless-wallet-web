@@ -14,10 +14,21 @@ import type {
   SolanaSignAndSendTransactionRequest,
   SolanaSignMessageRequest,
   SolanaWalletStandardAccount,
+  SolanaWalletStandardSignAndSendTransactionInput,
+  SolanaWalletStandardSignAndSendTransactionOutput,
+  SolanaWalletStandardSignMessageInput,
+  SolanaWalletStandardSignMessageOutput,
+  SolanaWalletStandardSignTransactionInput,
+  SolanaWalletStandardSignTransactionOutput,
 } from '@extension-base/page/types';
 
 const SOLANA_MAINNET_CHAIN: SolanaChainId = 'solana:mainnet';
-const SOLANA_ACCOUNT_FEATURES: readonly string[] = [];
+const SOLANA_ACCOUNT_FEATURES = Object.freeze([
+  'solana:signMessage',
+  'solana:signTransaction',
+  'solana:signAndSendTransaction',
+] as const);
+const SOLANA_SUPPORTED_TRANSACTION_VERSIONS = Object.freeze(['legacy', 0] as const);
 
 type SolanaEventName = 'connect' | 'disconnect' | 'accountChanged' | 'change';
 type WalletStandardRegisterApi = {
@@ -99,6 +110,12 @@ const base64ToBytes = (value: string): Uint8Array => {
   return bytes;
 };
 
+const requireEd25519Signature = (value: Uint8Array): Uint8Array => {
+  if (value.byteLength !== 64) throw new Error('Solana signing returned an invalid Ed25519 signature');
+
+  return value;
+};
+
 const normalizeSignMessageParams = (params: unknown): {
   display?: SolanaSignMessageRequest['display'];
   message: Uint8Array;
@@ -160,10 +177,11 @@ const normalizeSignAndSendTransactionOptions = (
     throw new Error('Solana signAndSendTransaction expects an options object');
   }
 
-  const { maxRetries, preflightCommitment, skipPreflight } = value as SolanaSignAndSendTransactionOptions;
+  const { maxRetries, minContextSlot, preflightCommitment, skipPreflight } = value as SolanaSignAndSendTransactionOptions;
   const options: SolanaSignAndSendTransactionOptions = {};
 
   if (maxRetries !== undefined) options.maxRetries = maxRetries;
+  if (minContextSlot !== undefined) options.minContextSlot = minContextSlot;
   if (preflightCommitment !== undefined) options.preflightCommitment = preflightCommitment;
   if (skipPreflight !== undefined) options.skipPreflight = skipPreflight;
 
@@ -265,6 +283,23 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
           return () => this.off(event, listener);
         },
       },
+      'solana:signMessage': {
+        version: '1.1.0',
+        signMessage: (...inputs: readonly SolanaWalletStandardSignMessageInput[]) =>
+          this.signWalletStandardMessages(inputs),
+      },
+      'solana:signTransaction': {
+        version: '1.0.0',
+        supportedTransactionVersions: SOLANA_SUPPORTED_TRANSACTION_VERSIONS,
+        signTransaction: (...inputs: readonly SolanaWalletStandardSignTransactionInput[]) =>
+          this.signWalletStandardTransactions(inputs),
+      },
+      'solana:signAndSendTransaction': {
+        version: '1.0.0',
+        supportedTransactionVersions: SOLANA_SUPPORTED_TRANSACTION_VERSIONS,
+        signAndSendTransaction: (...inputs: readonly SolanaWalletStandardSignAndSendTransactionInput[]) =>
+          this.signAndSendWalletStandardTransactions(inputs),
+      },
     };
   }
 
@@ -325,7 +360,7 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
 
     return {
       publicKey: new SolanaPublicKey(response.publicKey),
-      signature: base64ToBytes(response.signatureBase64),
+      signature: requireEd25519Signature(base64ToBytes(response.signatureBase64)),
     };
   }
 
@@ -386,6 +421,102 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
     if (!this.connected) throw new Error('Solana account is not connected');
   }
 
+  private requireWalletStandardInputs<T extends { account: SolanaWalletStandardAccount; chain?: string }>(
+    inputs: readonly T[],
+    { requireChain = false }: { requireChain?: boolean } = {}
+  ): readonly T[] {
+    if (!inputs.length) throw new Error('Solana Wallet Standard signing requires at least one input');
+
+    inputs.forEach(({ account, chain }) => {
+      const currentAccount = this.#accounts.find(({ address }) => address === account?.address);
+
+      if (
+        !currentAccount ||
+        !(account.publicKey instanceof Uint8Array) ||
+        !equalBytes(currentAccount.publicKey, account.publicKey)
+      ) {
+        throw new Error('Solana Wallet Standard account is not connected');
+      }
+      if (requireChain && chain === undefined) throw new Error('Solana Wallet Standard chain is required');
+      if (chain !== undefined && chain !== SOLANA_MAINNET_CHAIN) {
+        throw new Error(`Unsupported Solana Wallet Standard chain: ${chain}`);
+      }
+    });
+
+    return inputs;
+  }
+
+  private async signWalletStandardMessages(
+    inputs: readonly SolanaWalletStandardSignMessageInput[]
+  ): Promise<readonly SolanaWalletStandardSignMessageOutput[]> {
+    this.requireWalletStandardInputs(inputs);
+    inputs.forEach(({ message }) => {
+      if (!(message instanceof Uint8Array)) throw new Error('Solana Wallet Standard message must be a Uint8Array');
+    });
+
+    const outputs: SolanaWalletStandardSignMessageOutput[] = [];
+
+    for (const { message } of inputs) {
+      const { signature } = await this.signMessage(message);
+
+      outputs.push({
+        signature,
+        signatureType: 'ed25519',
+        signedMessage: message.slice(),
+      });
+    }
+
+    return outputs;
+  }
+
+  private async signWalletStandardTransactions(
+    inputs: readonly SolanaWalletStandardSignTransactionInput[]
+  ): Promise<readonly SolanaWalletStandardSignTransactionOutput[]> {
+    this.requireWalletStandardInputs(inputs);
+    inputs.forEach(({ options, transaction }) => {
+      normalizeWalletStandardTransactionOptions(options, false);
+      if (!(transaction instanceof Uint8Array)) {
+        throw new Error('Solana Wallet Standard transaction must be a Uint8Array');
+      }
+    });
+
+    const signedTransactions = await this.signAllTransactions(inputs.map(({ transaction }) => transaction));
+
+    return signedTransactions.map((signedTransaction) => ({
+      signedTransaction: requireUint8Array(signedTransaction),
+    }));
+  }
+
+  private async signAndSendWalletStandardTransactions(
+    inputs: readonly SolanaWalletStandardSignAndSendTransactionInput[]
+  ): Promise<readonly SolanaWalletStandardSignAndSendTransactionOutput[]> {
+    this.requireWalletStandardInputs(inputs, { requireChain: true });
+    const normalizedOptions = inputs.map(({ options, transaction }) => {
+      if (!(transaction instanceof Uint8Array)) {
+        throw new Error('Solana Wallet Standard transaction must be a Uint8Array');
+      }
+
+      return normalizeWalletStandardTransactionOptions(options, true);
+    });
+
+    const outputs: SolanaWalletStandardSignAndSendTransactionOutput[] = [];
+
+    for (const [index, { transaction }] of inputs.entries()) {
+      const options = normalizedOptions[index];
+      const { signature } = await this.signAndSendTransaction(transaction, {
+        maxRetries: options?.maxRetries,
+        minContextSlot: options?.minContextSlot,
+        preflightCommitment: options?.preflightCommitment,
+        skipPreflight: options?.skipPreflight,
+      });
+      const signatureBytes = base58Decode(signature);
+
+      outputs.push({ signature: requireEd25519Signature(signatureBytes) });
+    }
+
+    return outputs;
+  }
+
   private applyAccounts(accounts: SolanaAccountInfo[]): SolanaConnectResponse {
     const previousAccounts = this.#accounts;
     const nextAccounts = Object.freeze(accounts.map(toWalletStandardAccount));
@@ -403,6 +534,69 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
 
     return { accounts };
   }
+}
+
+function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
+  return left.byteLength === right.byteLength && left.every((byte, index) => byte === right[index]);
+}
+
+function requireUint8Array(value: unknown): Uint8Array {
+  if (!(value instanceof Uint8Array)) throw new Error('Solana signing returned an invalid transaction');
+
+  return value;
+}
+
+function normalizeWalletStandardTransactionOptions(
+  options: unknown,
+  broadcast: boolean
+): SolanaSignAndSendTransactionOptions | undefined {
+  if (options === undefined) return undefined;
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new Error('Invalid Solana Wallet Standard transaction options');
+  }
+
+  const input = options as Record<string, unknown>;
+  const normalized: SolanaSignAndSendTransactionOptions = {};
+
+  if (input.minContextSlot !== undefined) {
+    if (!Number.isSafeInteger(input.minContextSlot) || (input.minContextSlot as number) < 0) {
+      throw new Error('Invalid Solana Wallet Standard minimum context slot');
+    }
+    normalized.minContextSlot = input.minContextSlot as number;
+  }
+  if (input.preflightCommitment !== undefined) {
+    if (!isSolanaCommitment(input.preflightCommitment)) {
+      throw new Error('Invalid Solana Wallet Standard preflight commitment');
+    }
+    normalized.preflightCommitment = input.preflightCommitment;
+  }
+
+  if (!broadcast) return normalized;
+
+  if (input.maxRetries !== undefined) {
+    if (!Number.isInteger(input.maxRetries) || (input.maxRetries as number) < 0 || (input.maxRetries as number) > 10) {
+      throw new Error('Invalid Solana Wallet Standard max retries');
+    }
+    normalized.maxRetries = input.maxRetries as number;
+  }
+  if (input.skipPreflight !== undefined) {
+    if (typeof input.skipPreflight !== 'boolean') {
+      throw new Error('Invalid Solana Wallet Standard skipPreflight option');
+    }
+    normalized.skipPreflight = input.skipPreflight;
+  }
+  if (input.commitment !== undefined) {
+    if (!isSolanaCommitment(input.commitment)) {
+      throw new Error('Invalid Solana Wallet Standard commitment');
+    }
+    throw new Error('Solana Wallet Standard commitment confirmation is not supported');
+  }
+
+  return normalized;
+}
+
+function isSolanaCommitment(value: unknown): value is 'processed' | 'confirmed' | 'finalized' {
+  return value === 'processed' || value === 'confirmed' || value === 'finalized';
 }
 
 export function registerSolanaWalletStandard(wallet: FWSolanaProvider): void {

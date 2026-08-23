@@ -36,6 +36,24 @@ expect_failure() {
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+BITCOIN_BROADCAST_EVIDENCE_ROOT="$tmp_dir" expect_failure \
+  "ambient Bitcoin evidence template root override" \
+  "BITCOIN_BROADCAST_EVIDENCE_ROOT is forbidden" \
+  bash "$GENERATOR_SCRIPT"
+
+template_attack_marker="$tmp_dir/template-node-environment-executed"
+template_node_preload="$tmp_dir/template-node-preload.cjs"
+template_attack_bin="$tmp_dir/template-attack-bin"
+mkdir -p "$template_attack_bin"
+printf '%s\n' "require('fs').writeFileSync('$template_attack_marker', 'attacked');" >"$template_node_preload"
+printf '%s\n' '#!/bin/sh' "printf attacked >'$template_attack_marker'" 'exit 0' >"$template_attack_bin/node"
+chmod +x "$template_attack_bin/node"
+NODE_OPTIONS="--require=$template_node_preload" \
+NODE_PATH="$tmp_dir" \
+PATH="$template_attack_bin:$PATH" \
+  bash "$GENERATOR_SCRIPT" --manifest "$DEFAULT_MANIFEST" >/dev/null
+[[ ! -e "$template_attack_marker" ]] || fail "ambient Node configuration influenced template generation"
+
 stdout_template="$tmp_dir/stdout-template.json"
 output_template="$tmp_dir/output-template.json"
 

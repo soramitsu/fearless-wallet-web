@@ -22,6 +22,7 @@ import { getFormattedHistory } from '@/helpers/history';
 import { SORA_VAL_ASSET_ID, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { getFiats } from '@/extension/messaging/price';
 import { UNIVERSAL_WALLET_INDEXERS, UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
+import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
 
 type Actions = {
   getFiats(this: NetworksStore): Promise<void>;
@@ -95,22 +96,25 @@ export const actions: Actions = {
 
     if (serviceType === 'sora') {
       const typedHistory = history as SoraHistoryElement[];
-      const historyAssets = typedHistory.reduce((result, item) => {
-        const baseAssetId = item.data?.baseAssetId ?? item.data?.assetId;
+      const historyAssets = typedHistory.reduce(
+        (result, item) => {
+          const baseAssetId = item.data?.baseAssetId ?? item.data?.assetId;
 
-        const networkJson = this.networks.find(({ name }) => isSora(name));
-        const asset = networkJson?.assets.find(({ currencyId }) => currencyId === baseAssetId);
-        const id = item.method === 'rewarded' ? SORA_VAL_ASSET_ID : asset?.id ?? SORA_XOR_ASSET_ID;
+          const networkJson = this.networks.find(({ name }) => isSora(name));
+          const asset = networkJson?.assets.find(({ currencyId }) => currencyId === baseAssetId);
+          const id = item.method === 'rewarded' ? SORA_VAL_ASSET_ID : (asset?.id ?? SORA_XOR_ASSET_ID);
 
-        if (result[id] === undefined) result[id] = [];
+          if (result[id] === undefined) result[id] = [];
 
-        result[id].push({
-          ...item,
-          success: item.execution.success,
-        });
+          result[id].push({
+            ...item,
+            success: item.execution.success,
+          });
 
-        return result;
-      }, {} as Record<string, SoraHistoryElement[]>);
+          return result;
+        },
+        {} as Record<string, SoraHistoryElement[]>
+      );
 
       Object.entries(historyAssets).forEach(([id, history]) => saveHistory(id, history));
     } else saveHistory(assetId, history);
@@ -170,7 +174,7 @@ export const actions: Actions = {
         ? (address ?? BaseApi.formatAddress(wallet, networkName))
         : isIrohaNetwork
           ? (address ?? wallet.irohaAddress)
-        : BaseApi.formatAddress(wallet, networkName);
+          : BaseApi.formatAddress(wallet, networkName);
 
     if (!formattedAddress) return;
 
@@ -190,32 +194,68 @@ export const actions: Actions = {
     const asset = isUniversalIndexerNetwork
       ? balances.find(
           ({ balances, groupId }) =>
-            groupId === assetId || balances.some(({ id, name }) => id === assetId && isSameString(name, networkName))
+            groupId === assetId ||
+            balances.some(
+              (balance) =>
+                isSameString(balance.name, networkName) &&
+                (balance.id === assetId || getCanonicalAssetId(balance) === assetId)
+            )
         )
       : isNativeEvm
-        ? balances.find(({ balances }) => balances.some((asset) => asset.id === assetId))
+        ? balances.find(({ balances, groupId }) =>
+            balances.some(
+              (balance) =>
+                isSameString(balance.name, networkName) &&
+                (groupId === assetId || balance.id === assetId || getCanonicalAssetId(balance) === assetId)
+            )
+          )
         : getUtilityAsset(balances, networkName);
 
     if (!asset) return;
 
-    const utilityId = isUniversalIndexerNetwork
-      ? asset.balances.find(({ name, isUtility }) => isSameString(name, networkName) && isUtility)?.id
-      : isNativeEvm
-        ? asset.balances.find(({ name, isUtility }) => isSameString(name, networkName) && isUtility)?.id
-        : asset?.groupId;
+    const searchedAsset = asset.balances.find(({ name }) => isSameString(name, networkName));
+    if (!searchedAsset) return;
 
-    const isUtility = isNativeEvm ? utilityId !== undefined : assetId === utilityId;
+    const utilityGroup = balances.find(({ balances }) =>
+      balances.some(
+        ({ name, isNative, isUtility }) => isSameString(name, networkName) && Boolean(isUtility || isNative)
+      )
+    );
+    const utilityBalance = utilityGroup?.balances.find(
+      ({ name, isNative, isUtility }) => isSameString(name, networkName) && Boolean(isUtility || isNative)
+    );
+    const utilityIds = new Set(
+      [utilityGroup?.groupId, utilityBalance?.id, utilityBalance && getCanonicalAssetId(utilityBalance)].filter(
+        (value): value is string => Boolean(value)
+      )
+    );
+    const isUtility = utilityIds.has(assetId) && Boolean(searchedAsset.isUtility || searchedAsset.isNative);
 
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
     if (!isSora(networkName))
       if (!isUtility && type !== 'etherscan' && type !== 'solana' && type !== 'bitcoin' && type !== 'iroha') return;
 
-    const searchedAsset = asset.balances.find(({ name }) => isSameString(name, networkName));
+    const bitcoinAddresses =
+      isBitcoinNetwork && !address
+        ? (
+            searchedAsset as typeof searchedAsset & {
+              bitcoinAddresses?: Array<{ address?: unknown }>;
+            }
+          ).bitcoinAddresses
+            ?.map(({ address }) => address)
+            .filter((item): item is string => typeof item === 'string' && item.length > 0)
+        : undefined;
 
-    if (!searchedAsset) return;
-
-    const history = await fetchHistory(url, formattedAddress, type, networkName, searchedAsset.id, isUtility);
+    const history = await fetchHistory(
+      url,
+      formattedAddress,
+      type,
+      networkName,
+      searchedAsset.id,
+      isUtility,
+      bitcoinAddresses
+    );
 
     if (history) {
       this.setHistory({

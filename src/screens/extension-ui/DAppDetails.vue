@@ -1,5 +1,8 @@
 <template>
-  <div class="update-accounts">
+  <div v-if="!isSupportedAuthType" class="unsupported-auth" data-testid="unsupportedConnectionDetails">
+    Connection management for this protocol is unavailable in this build.
+  </div>
+  <div v-else class="update-accounts">
     <SelectAuthAccountForm
       :selectAll="selectAll"
       :accounts="state"
@@ -51,6 +54,8 @@ const state = ref<Record<string, WalletInfo>>({});
 const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
 const authType = computed(() => (routeParam(route.params.type) || 'substrate') as AuthType);
+const supportedAuthTypes = new Set<AuthType>(['substrate', 'evm']);
+const isSupportedAuthType = computed(() => supportedAuthTypes.has(authType.value));
 const isEVM = computed(() => authType.value === 'evm');
 const isSolana = computed(() => authType.value === 'solana');
 const isIroha = computed(() => authType.value === 'iroha');
@@ -81,6 +86,8 @@ const list = computed(() => extensionStore.authList);
 const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
 
 onMounted(async () => {
+  if (!isSupportedAuthType.value) return;
+
   await extensionStore.getAuthList();
 
   const { authorizedAccounts, evmAuthorizedAccount, irohaAuthorizedAccount, solanaAuthorizedAccount } =
@@ -140,6 +147,8 @@ const onSelectAll = (value: boolean) => {
 };
 
 const updateAuths = async () => {
+  if (!isSupportedAuthType.value) return;
+
   await updateAuthorization(prepAccounts.value, url.value, authType.value);
   await extensionStore.getAuthList();
 
@@ -183,6 +192,12 @@ const deriveIrohaAddresses = (publicKeyHex?: string): string[] => {
   flex-flow: column;
   justify-content: space-between;
   height: 100%;
+}
+
+.unsupported-auth {
+  padding: 20px;
+  color: $gray-color;
+  line-height: 1.45;
 }
 
 .connect-button {

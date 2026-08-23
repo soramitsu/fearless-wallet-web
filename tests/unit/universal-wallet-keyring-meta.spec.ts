@@ -1,4 +1,5 @@
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
+import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
 import {
   UNIVERSAL_WALLET_KEYRING_META_VERSION,
@@ -165,7 +166,7 @@ describe('Universal Wallet keyring metadata', () => {
           accountId: 'iroha-taira',
           ecosystem: WalletEcosystem.Iroha,
           address: iroha.taira.i105,
-          chainId: 'iroha3-taira',
+          chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId,
           publicKeyHex: iroha.taira.publicKeyHex,
           isDefault: true,
         }),

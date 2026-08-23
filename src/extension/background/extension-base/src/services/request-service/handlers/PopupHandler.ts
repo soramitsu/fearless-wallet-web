@@ -1,7 +1,7 @@
 import { chrome } from '@extension-base/utils/crossenv';
 import type State from '../../../background/handlers/State';
 import { withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
-import { IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION, IS_EXTENSION_SMOKE } from '@/consts/global';
 
 const NOTIFICATION_URL = IS_EXTENSION ? chrome.runtime.getURL('popup.html') : '';
 
@@ -37,6 +37,8 @@ export class PopupHandler {
   }
 
   public popupOpen(): void {
+    if (IS_EXTENSION_SMOKE) return;
+
     chrome.windows.getCurrent((win) => {
       const popupOptions = { ...POPUP_WINDOW_OPTS };
 

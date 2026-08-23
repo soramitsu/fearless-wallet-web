@@ -29,6 +29,7 @@ const fixture = JSON.parse(
 const WALLET = fixture.vectors[0].expected.iroha.taira.i105;
 const NEXUS_WALLET = fixture.vectors[0].expected.iroha.nexus.i105;
 const COUNTERPARTY = fixture.vectors[1].expected.iroha.taira.i105;
+const TAIRA_XOR_ASSET_ID = '6TEAJqbb8oEPmLncoNiMRbLEK6tw';
 const HASH_1 = '11'.repeat(32);
 const HASH_2 = '22'.repeat(32);
 
@@ -47,6 +48,13 @@ function rpcResult(result: unknown): Response {
   });
 }
 
+function tairaDefinitionResponse(scale: number | null = 9): Response {
+  return jsonResponse({
+    has_more: false,
+    items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale } }],
+  });
+}
+
 function instruction(overrides: Record<string, unknown> = {}) {
   return {
     authority: WALLET,
@@ -57,8 +65,8 @@ function instruction(overrides: Record<string, unknown> = {}) {
         payload: {
           value: {
             destination: COUNTERPARTY,
-            object: '123',
-            source: `xor#sora#${WALLET}`,
+            object: '1.25',
+            source: `${TAIRA_XOR_ASSET_ID}#${WALLET}`,
           },
           variant: 'Asset',
         },
@@ -80,7 +88,9 @@ describe('Iroha history fetching', () => {
 
   it('normalizes committed Iroha asset transfer instructions from Torii MCP', async () => {
     const requests: unknown[] = [];
-    const fetchFn = vi.fn(async (_input: string | URL, init?: RequestInit) => {
+    const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
       const request = JSON.parse(init?.body as string);
 
       requests.push(request);
@@ -99,9 +109,9 @@ describe('Iroha history fetching', () => {
                         destination: WALLET,
                         object: {
                           mantissa: '456',
-                          scale: 0,
+                          scale: 2,
                         },
-                        source: `xor#sora#${COUNTERPARTY}`,
+                        source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}`,
                       },
                       variant: 'Asset',
                     },
@@ -120,7 +130,14 @@ describe('Iroha history fetching', () => {
     });
     vi.stubGlobal('fetch', fetchFn);
 
-    const result = await fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', 'xor#sora', true);
+    const result = await fetchHistory(
+      'https://taira.sora.org',
+      WALLET,
+      'iroha',
+      'Taira Testnet',
+      TAIRA_XOR_ASSET_ID,
+      true
+    );
 
     expect(fetchFn).toHaveBeenCalledWith('https://taira.sora.org/v1/mcp', expect.objectContaining({ method: 'POST' }));
     expect(requests[0]).toMatchObject({
@@ -130,7 +147,7 @@ describe('Iroha history fetching', () => {
         arguments: {
           account: WALLET,
           accept: 'application/json',
-          asset_id: 'xor#sora',
+          asset_id: TAIRA_XOR_ASSET_ID,
           kind: 'Transfer',
           page: 0,
           per_page: 100,
@@ -148,7 +165,7 @@ describe('Iroha history fetching', () => {
         success: true,
         timestamp: '1782259200',
         transfer: {
-          amount: '123',
+          amount: '1.25',
           fee: '0',
           from: WALLET,
           to: COUNTERPARTY,
@@ -163,7 +180,7 @@ describe('Iroha history fetching', () => {
         success: true,
         timestamp: '1719187200',
         transfer: {
-          amount: '456',
+          amount: '4.56',
           fee: '0',
           from: COUNTERPARTY,
           to: WALLET,
@@ -173,28 +190,46 @@ describe('Iroha history fetching', () => {
   });
 
   it('drops malformed, unrelated, and unsafe Iroha instruction payloads', async () => {
-    const fetchFn = vi.fn(async () =>
-      rpcResult({
+    const fetchFn = vi.fn(async (input: string | URL) => {
+      if (!input.toString().endsWith('/v1/mcp')) return tairaDefinitionResponse();
+
+      return rpcResult({
         isError: false,
         structuredContent: {
           body: {
             items: [
               instruction({ box: { json: { payload: { variant: 'Domain', value: {} } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: '-1', source: `xor#sora#${COUNTERPARTY}` } } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: '1.5', source: `xor#sora#${COUNTERPARTY}` } } } } }),
+              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: '-1', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` } } } } }),
+              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: ' 1.5 ', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` } } } } }),
               instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: WALLET, object: '1', source: `bad#sora#${COUNTERPARTY}` } } } } }),
-              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: COUNTERPARTY, object: '1', source: `xor#sora#${COUNTERPARTY}` } } } } }),
+              instruction({ box: { json: { payload: { variant: 'Asset', value: { destination: COUNTERPARTY, object: '1', source: `${TAIRA_XOR_ASSET_ID}#${COUNTERPARTY}` } } } } }),
               instruction({ created_at: 'not-a-date' }),
               instruction({ box: { json: {} } }),
             ],
           },
           status: 200,
         },
-      })
-    );
+      });
+    });
     vi.stubGlobal('fetch', fetchFn);
 
-    await expect(fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', 'xor#sora', true)).resolves.toEqual([]);
+    await expect(
+      fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', TAIRA_XOR_ASSET_ID, true)
+    ).resolves.toEqual([]);
+  });
+
+  it('rejects a null canonical Taira XOR scale before querying instructions', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const fetchFn = vi.fn(async () => tairaDefinitionResponse(null));
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(
+      fetchHistory('https://taira.sora.org', WALLET, 'iroha', 'Taira Testnet', TAIRA_XOR_ASSET_ID, true)
+    ).resolves.toEqual([]);
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    expect(fetchFn.mock.calls[0]?.[0].toString()).toContain('/v1/assets/definitions?');
+    info.mockRestore();
   });
 
   it('uses Minamoto for Nexus history by default and fails closed when unavailable', async () => {

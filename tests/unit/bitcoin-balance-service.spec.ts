@@ -1,13 +1,16 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import BitcoinBalanceService from '@extension-base/services/balance-service/BitcoinBalanceService';
+import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type { BitcoinAddressBalance } from '@extension-base/services/bitcoin-indexer-service';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
 
 const MAINNET_ADDRESS = 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu';
 const TESTNET_ADDRESS = 'tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl';
 const SUBSTRATE_ADDRESS = 'substrate-address';
+const MNEMONIC = vectors.vectors[0].mnemonic;
 
 const bitcoinNetwork = (name: string, chainId: string): NetworkJson =>
   ({
@@ -53,7 +56,26 @@ const balance = (totalSats: number): BitcoinAddressBalance => ({
   totalSats,
 });
 
+const addressStats = (address: string, txCount = 0, totalSats = 0) => ({
+  address,
+  chain_stats: {
+    funded_txo_count: txCount,
+    funded_txo_sum: totalSats,
+    spent_txo_count: 0,
+    spent_txo_sum: 0,
+    tx_count: txCount,
+  },
+  mempool_stats: {
+    funded_txo_count: 0,
+    funded_txo_sum: 0,
+    spent_txo_count: 0,
+    spent_txo_sum: 0,
+    tx_count: 0,
+  },
+});
+
 const createState = (networks: NetworkJson[], balanceMap: Record<string, TokenGroup[]> = {}) => {
+  const deleteBalanceStore = vi.fn();
   const updateBalanceStore = vi.fn();
   const publishBalance = vi.fn();
   const networkMap = networks.reduce<Record<string, NetworkJson>>((result, network) => {
@@ -64,6 +86,7 @@ const createState = (networks: NetworkJson[], balanceMap: Record<string, TokenGr
   const state = {
     balanceService: {
       balanceMap,
+      deleteBalanceStore,
       publishBalance,
       updateBalanceStore,
     },
@@ -78,7 +101,7 @@ const createState = (networks: NetworkJson[], balanceMap: Record<string, TokenGr
     },
   } as unknown as State;
 
-  return { publishBalance, state, updateBalanceStore };
+  return { deleteBalanceStore, publishBalance, state, updateBalanceStore };
 };
 
 describe('BitcoinBalanceService', () => {
@@ -113,6 +136,121 @@ describe('BitcoinBalanceService', () => {
       SUBSTRATE_ADDRESS
     );
     expect(publishBalance).toHaveBeenCalled();
+  });
+
+  it('aggregates discovered receive-index and change-branch balances and publishes derivation descriptors', async () => {
+    const mainnet = bitcoinNetwork('Bitcoin', 'bitcoin:mainnet');
+    const { state } = createState([mainnet]);
+    const receive0 = deriveBitcoinReceiveAddress({ mnemonicOrSeed: MNEMONIC, path: getBitcoinReceivePath('mainnet', 0) });
+    const receive2 = deriveBitcoinReceiveAddress({ mnemonicOrSeed: MNEMONIC, path: getBitcoinReceivePath('mainnet', 2) });
+    const change1 = deriveBitcoinReceiveAddress({
+      mnemonicOrSeed: MNEMONIC,
+      path: getBitcoinReceivePath('mainnet', 1, 1),
+    });
+    const activity = new Map([
+      [receive0, { balance: 0, txCount: 1 }],
+      [receive2, { balance: 1_000, txCount: 1 }],
+      [change1, { balance: 2_000, txCount: 1 }],
+    ]);
+    const client = {
+      getAddress: vi.fn(async (address: string) => {
+        const item = activity.get(address);
+
+        return addressStats(address, item?.txCount ?? 0, item?.balance ?? 0);
+      }),
+      getBalance: vi.fn(),
+    };
+    const exportMnemonic = vi.fn(() => ({ seed: MNEMONIC }));
+    state.keyringService = {
+      exportMnemonic,
+      getAllAccounts: vi.fn(() => [
+        {
+          address: SUBSTRATE_ADDRESS,
+          meta: {
+            bitcoinAddress: MAINNET_ADDRESS,
+            walletEcosystem: 'substrate',
+          },
+        },
+      ]),
+    } as never;
+    const service = new BitcoinBalanceService(state, vi.fn(() => client), { gapLimit: 2, maxLookahead: 20 });
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        bitcoinAddress: MAINNET_ADDRESS,
+        networks: ['Bitcoin'],
+      })
+    ).resolves.toEqual([{ assetId: 'BTC', balance: '0.00003', network: 'Bitcoin' }]);
+
+    expect(client.getBalance).not.toHaveBeenCalled();
+    expect(client.getAddress).toHaveBeenCalledTimes(9);
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
+      bitcoinAddresses: expect.arrayContaining([
+        { address: receive2, change: 0, index: 2, path: "m/84'/0'/0'/0/2" },
+        { address: change1, change: 1, index: 1, path: "m/84'/0'/0'/1/1" },
+      ]),
+      bitcoinNextChangeAddress: deriveBitcoinReceiveAddress({
+        mnemonicOrSeed: MNEMONIC,
+        path: getBitcoinReceivePath('mainnet', 2, 1),
+      }),
+      bitcoinNextChangePath: "m/84'/0'/0'/1/2",
+      bitcoinNextReceiveAddress: deriveBitcoinReceiveAddress({
+        mnemonicOrSeed: MNEMONIC,
+        path: getBitcoinReceivePath('mainnet', 3),
+      }),
+      bitcoinNextReceivePath: "m/84'/0'/0'/0/3",
+      total: '0.00003',
+    });
+
+    exportMnemonic.mockReturnValue({ seed: '' });
+    let activeBalanceRequests = 0;
+    let maxActiveBalanceRequests = 0;
+    client.getBalance.mockImplementation(async (address: string) => {
+      activeBalanceRequests += 1;
+      maxActiveBalanceRequests = Math.max(maxActiveBalanceRequests, activeBalanceRequests);
+      await Promise.resolve();
+      activeBalanceRequests -= 1;
+
+      return balance(activity.get(address)?.balance ?? 0);
+    });
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        bitcoinAddress: MAINNET_ADDRESS,
+        networks: ['Bitcoin'],
+      })
+    ).resolves.toEqual([{ assetId: 'BTC', balance: '0.00003', network: 'Bitcoin' }]);
+    expect(client.getAddress).toHaveBeenCalledTimes(9);
+    expect(client.getBalance).toHaveBeenCalledTimes(9);
+    expect(maxActiveBalanceRequests).toBe(8);
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
+      bitcoinNextChangePath: "m/84'/0'/0'/1/2",
+      bitcoinNextReceivePath: "m/84'/0'/0'/0/3",
+      total: '0.00003',
+    });
+
+    const storedBalance = state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0] as unknown as {
+      bitcoinAddresses?: Array<{ address: string; change: number; index: number; path: string }>;
+    };
+    const storedRoot = storedBalance.bitcoinAddresses?.find(({ change, index }) => change === 0 && index === 0);
+
+    if (!storedRoot) throw new Error('Expected stored BIP84 root descriptor');
+    storedRoot.address = receive2;
+    client.getBalance.mockClear();
+    client.getBalance.mockResolvedValue(balance(7));
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        bitcoinAddress: MAINNET_ADDRESS,
+        networks: ['Bitcoin'],
+      })
+    ).resolves.toEqual([{ assetId: 'BTC', balance: '0.00000007', network: 'Bitcoin' }]);
+    expect(client.getBalance).toHaveBeenCalledOnce();
+    expect(client.getBalance).toHaveBeenCalledWith(MAINNET_ADDRESS);
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).not.toHaveProperty('bitcoinAddresses');
   });
 
   it('routes selected testnet balance reads to a testnet client', async () => {
@@ -205,7 +343,7 @@ describe('BitcoinBalanceService', () => {
 
   it('marks the network errored and avoids fetch when address and network are incompatible', async () => {
     const testnet = bitcoinNetwork('Bitcoin Testnet', 'bitcoin:testnet');
-    const { state, updateBalanceStore } = createState([testnet]);
+    const { deleteBalanceStore, state, updateBalanceStore } = createState([testnet]);
     const clientFactory = vi.fn();
     const service = new BitcoinBalanceService(state, clientFactory);
 
@@ -218,6 +356,7 @@ describe('BitcoinBalanceService', () => {
     ).resolves.toEqual([{ assetId: 'BTC', balance: '0', network: 'Bitcoin Testnet' }]);
 
     expect(clientFactory).not.toHaveBeenCalled();
+    expect(deleteBalanceStore).toHaveBeenCalledWith('Bitcoin Testnet', { id: 'BTC' }, SUBSTRATE_ADDRESS);
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       state: APIItemState.ERROR,
       total: '0',
@@ -306,6 +445,113 @@ describe('BitcoinBalanceService', () => {
       SUBSTRATE_ADDRESS
     );
     expect(publishBalance).toHaveBeenCalled();
+
+    warn.mockRestore();
+  });
+
+  it('invalidates cached discovery descriptors when stored seed material no longer matches the wallet root', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const mainnet = bitcoinNetwork('Bitcoin', 'bitcoin:mainnet');
+    const cachedGroup = {
+      balances: [
+        {
+          address: SUBSTRATE_ADDRESS,
+          bitcoinAddresses: [
+            {
+              address: MAINNET_ADDRESS,
+              change: 0,
+              index: 0,
+              path: getBitcoinReceivePath('mainnet', 0),
+            },
+          ],
+          bitcoinNextReceiveAddress: MAINNET_ADDRESS,
+          free: '1.25',
+          id: 'BTC',
+          mainNetwork: 'Bitcoin',
+          name: 'Bitcoin',
+          precision: 8,
+          state: APIItemState.READY,
+          symbol: 'BTC',
+          total: '1.25',
+          transferable: '1.25',
+          type: 'bitcoin',
+        },
+      ],
+      groupId: 'BTC',
+      icon: 'bitcoin',
+      mainNetwork: 'Bitcoin',
+      priceId: 'BTC',
+      providers: [],
+      relayChain: 'bitcoin',
+      symbol: 'BTC',
+      tokenName: 'BTC',
+    } as unknown as TokenGroup;
+    const { state } = createState([mainnet], { [SUBSTRATE_ADDRESS]: [cachedGroup] });
+    const client = { getAddress: vi.fn(), getBalance: vi.fn().mockResolvedValue(balance(7)) };
+    const deleteBalanceStore = vi.fn();
+
+    state.balanceService.deleteBalanceStore = deleteBalanceStore;
+
+    state.keyringService = {
+      exportMnemonic: vi.fn(() => ({ seed: vectors.vectors[1].mnemonic })),
+      getAllAccounts: vi.fn(() => [
+        {
+          address: SUBSTRATE_ADDRESS,
+          meta: { bitcoinAddress: MAINNET_ADDRESS, walletEcosystem: 'substrate' },
+        },
+      ]),
+    } as never;
+
+    const service = new BitcoinBalanceService(state, vi.fn(() => client));
+
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        bitcoinAddress: MAINNET_ADDRESS,
+        networks: ['Bitcoin'],
+      })
+    ).resolves.toEqual([{ assetId: 'BTC', balance: '0.00000007', network: 'Bitcoin' }]);
+    expect(client.getAddress).not.toHaveBeenCalled();
+    expect(client.getBalance).toHaveBeenCalledOnce();
+    expect(client.getBalance).toHaveBeenCalledWith(MAINNET_ADDRESS);
+    expect(deleteBalanceStore).not.toHaveBeenCalled();
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
+      state: APIItemState.READY,
+      total: '0.00000007',
+    });
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).not.toHaveProperty(
+      'bitcoinAddresses'
+    );
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).not.toHaveProperty(
+      'bitcoinNextReceiveAddress'
+    );
+
+    let finishDeletion: (() => void) | undefined;
+    const deletion = new Promise<void>((resolve) => {
+      finishDeletion = resolve;
+    });
+    let settled = false;
+
+    deleteBalanceStore.mockReturnValue(deletion);
+    client.getBalance.mockRejectedValue(new Error('indexer unavailable'));
+    const failedFallback = service.fetchBalance({
+      address: SUBSTRATE_ADDRESS,
+      bitcoinAddress: MAINNET_ADDRESS,
+      networks: ['Bitcoin'],
+    }).finally(() => {
+      settled = true;
+    });
+
+    await vi.waitFor(() =>
+      expect(deleteBalanceStore).toHaveBeenCalledWith('Bitcoin', { id: 'BTC' }, SUBSTRATE_ADDRESS)
+    );
+    expect(settled).toBe(false);
+    finishDeletion?.();
+    await expect(failedFallback).resolves.toEqual([{ assetId: 'BTC', balance: '0', network: 'Bitcoin' }]);
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
+      state: APIItemState.ERROR,
+      total: '0',
+    });
 
     warn.mockRestore();
   });

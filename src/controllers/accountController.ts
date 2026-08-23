@@ -2,6 +2,7 @@ import type { NftSettings } from '@extension-base/services/nft-service/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
 import type { HiddenAssets } from '@/stores/accounts/types';
+import type { AssetPreference } from '@/portfolio/assetIdentity';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 class AccountController {
@@ -14,6 +15,8 @@ class AccountController {
   private readonly customSort = 'custom-sort';
   private readonly assetTipData = 'asset-tip-data';
   private readonly hiddenAssets = 'hidden-assets';
+  private readonly assetPreferences = 'asset-preferences-v1';
+  private readonly assetPreferencesMigrated = 'asset-preferences-v1-migrated';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hidingPoolsBanner = 'hiding-pools-banner';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
@@ -55,6 +58,10 @@ class AccountController {
     this.lsAccount.set(this.agreeSwapDisclaimer, true);
   }
 
+  public clearAgreeSwapDisclaimer(): void {
+    this.lsAccount.remove(this.agreeSwapDisclaimer);
+  }
+
   public getLang(): Lang {
     const lang = this.lsAccount.get<Lang>(this.langStorageName);
 
@@ -79,6 +86,25 @@ class AccountController {
 
   public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
     this.lsAccount.set(this.hiddenAssets, hiddenAssets);
+  }
+
+  public getAssetPreferences(): Record<WalletAddress, Record<string, AssetPreference>> {
+    return this.lsAccount.get<Record<WalletAddress, Record<string, AssetPreference>>>(this.assetPreferences).value ?? {};
+  }
+
+  public setAssetPreferences(preferences: Record<WalletAddress, Record<string, AssetPreference>>): void {
+    this.lsAccount.set(this.assetPreferences, preferences);
+  }
+
+  public getAssetPreferenceMigrationState(): Record<WalletAddress, boolean> {
+    return this.lsAccount.get<Record<WalletAddress, boolean>>(this.assetPreferencesMigrated).value ?? {};
+  }
+
+  public setAssetPreferenceMigrationComplete(address: WalletAddress): void {
+    this.lsAccount.set(this.assetPreferencesMigrated, {
+      ...this.getAssetPreferenceMigrationState(),
+      [address]: true,
+    });
   }
 
   private getSequenceAssets(): Record<string, string> {

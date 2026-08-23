@@ -61,6 +61,7 @@ export default defineComponent({ name: 'SelectInput' ,
     totalAmount: { default: 0 },
     showBalance: { default: true },
     readonly: { default: false },
+    disableSelection: { type: Boolean, default: false },
     showIcon: { default: true },
     showOriginValue: { default: false },
     amount: { type: String },
@@ -74,7 +75,7 @@ export default defineComponent({ name: 'SelectInput' ,
   },
   computed: {
     showIconRotate() {
-      return this.showIcon && !this.readonly;
+      return this.showIcon && !this.readonly && !this.disableSelection;
     },
     isSelected() {
       return this.inputIsFocused && !this.readonly;
@@ -198,7 +199,7 @@ export default defineComponent({ name: 'SelectInput' ,
           this.$emit('setMax');
     },
     click() {
-      if (this.readonly) return;
+      if (this.readonly || this.disableSelection) return;
 
           this.$emit('togglePopupVisibility');
     },

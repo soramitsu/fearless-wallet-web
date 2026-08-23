@@ -35,6 +35,12 @@ export interface BalanceItem {
   chain?: string;
   chainHash?: string;
   address?: string;
+  assetMetadataTrust?: 'verified' | 'unverified' | 'missing';
+  assetMetadataSource?: 'registry' | 'chain' | 'indexer';
+  priceId?: string;
+  /** Explicit proof that priceId was resolved for this canonical AssetKey. */
+  priceAssetKey?: string;
+  scanCoverage?: 'complete' | 'catalogOnly' | 'limited';
 
   // sora
   muchTotal?: string;
@@ -45,6 +51,8 @@ export interface BalanceItem {
 
   // solana
   solanaTokenAccountAddress?: string;
+  solanaTokenAccountAddresses?: string[];
+  solanaTokenSourceAmount?: string;
   solanaTokenExtensions?: string[];
   solanaTokenMint?: string;
   solanaTokenProgram?: string;
@@ -52,6 +60,14 @@ export interface BalanceItem {
   solanaTokenState?: string | null;
   solanaTokenTransferFeeConfig?: unknown;
   solanaTokenTransferHook?: unknown;
+}
+
+export interface NetworkScanState {
+  lastAttempt: number;
+  lastSuccess?: number;
+  stale: boolean;
+  error?: string;
+  coverage: 'complete' | 'catalogOnly' | 'limited';
 }
 
 export enum CustomTokenType {

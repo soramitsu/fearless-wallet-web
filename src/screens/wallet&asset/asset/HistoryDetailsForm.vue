@@ -155,6 +155,9 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
+      if (BaseApi.isBitcoinNetwork(this.selectedNetwork)) {
+        return this.historyElement.address ?? BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
+      }
 
           return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, this.networkProps.addressPrefix);
     },

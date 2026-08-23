@@ -1,407 +1,257 @@
-import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
-import { decodeAddress } from '@polkadot/util-crypto';
-import { estimateSoraCrossChainFee, makeSoraCrossChain, getSoraParaId } from '@extension-base/api/substrate/sora';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getPrecisionValue } from '@extension-base/api/substrate';
-import { createLiberlandCrossChain } from './liberland';
-import type { CrossChainProps, Extrinsic, MakeCrossChainProps } from '@extension-base/api/substrate/types';
+import type { CrossChainProps, MakeCrossChainProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
-import type { TokenGroup, BasicTxResponse } from '@extension-base/background/types/types';
-import type { AssetId, Interiors, NetworkName } from '@/interfaces';
-import { getAssetBalance, getAssetInfo } from '@/extension/background/extension-base/src/background/helpers';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
+import type { KeyringPair } from '@subwallet/keyring/types';
+import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import {
-  isEthereumNetwork,
-  getUtilityProps,
-  getNativeAssetName,
-} from '@/extension/background/extension-base/src/background/handlers/utils';
-import {
-  NATIVE_NETWORKS,
-  RELAY_CHAINS,
-  CHAIN_IDS,
-  NETWORKS_ALIASES,
-  VALID_ETHEREUM_ADDRESS,
-  VALID_SUBSTRATE_ADDRESS,
-} from '@/consts/networks';
-import { firstCharToUp, isLiberland, isSora } from '@/helpers';
-import { IS_PRODUCTION } from '@/consts/global';
+  createReviewedCrossChainExtrinsic,
+  createReviewedExecutionFingerprint,
+  resolveReviewedRuntimeCall,
+  type ReviewedExecutionApi,
+} from '@/cross-chain/reviewedExecution';
+import { assertReviewedRuntimeAuthority } from '@/cross-chain/reviewedRuntimeAuthority';
+import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidation';
+import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
 
-enum XcmVersions {
-  V1 = 'V1',
-  V3 = 'V3',
+export type CrossChainQuote = {
+  originFee: FPNumber;
+  destinationFee: FPNumber;
+  minimum: FPNumber;
+  runtimeFingerprint: string;
+  executionFingerprint: string;
+  extrinsic: NonNullable<Awaited<ReturnType<typeof createReviewedCrossChainExtrinsic>>['extrinsic']>;
+};
+
+function maximum(left: FPNumber, right: FPNumber): FPNumber {
+  return left.gte(right) ? left : right;
 }
 
-const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
+export function assertCrossChainSignerCapability(pair: KeyringPair | null, isMobile: boolean): void {
+  if (!pair) throw new Error('cross_chain_signable_account_required');
 
-function isNativeNetwork(networkName: NetworkName) {
-  return NATIVE_NETWORKS.includes(networkName.toLowerCase());
+  const meta = pair.meta ?? {};
+  if (isMobile) {
+    if (meta.isMobile !== true) throw new Error('cross_chain_mobile_signer_mismatch');
+  } else if (meta.isExternal || meta.isInjected || meta.isHardware || meta.isMobile) {
+    throw new Error('cross_chain_signable_account_required');
+  }
 }
 
-function isRelayChain(network: string) {
-  return RELAY_CHAINS.includes(network.toLowerCase());
+export async function refreshCrossChainOriginBalance(
+  { from, originNet }: Pick<CrossChainProps, 'from' | 'originNet'>,
+  state: State
+): Promise<void> {
+  const address = state.keyringService.getSubstrateAddress(from);
+  const network = state.networkService.networkMap[originNet];
+  if (!network) throw new Error('cross_chain_network_unavailable');
+
+  let api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
+  if (!api || api.isConnected === false) {
+    state.networkService.substrateApiHandler.initApi(network);
+    const deadline = Date.now() + 15_000;
+
+    while (Date.now() < deadline) {
+      api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
+      if (api && api.isConnected !== false) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  if (!api || api.isConnected === false) throw new Error('cross_chain_runtime_unavailable');
+  await api.isReadyOrError;
+
+  await state.balanceService.substrateBalanceService.fetchBalance({
+    address,
+    networks: [originNet],
+  });
 }
 
-function interiorHelper(interiors: Interiors) {
-  const array = interiors.reduce((result, interior) => {
-    const formattedInterior = Object.fromEntries(
-      Object.entries(interior).map(([key, value]) => {
-        const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
+function assertReviewedRouteAndAccount(props: MakeCrossChainProps, state: State) {
+  const substrateAddress = state.keyringService.getSubstrateAddress(props.from);
+  const selectedAddress = state.keyringService.getSubstrateAddress(state.getAccountAddress());
+  const currentPair = state.keyringService.getPair(substrateAddress);
+  const selectedPair = state.keyringService.getPair(selectedAddress);
+  if (currentPair !== props.capturedPair || selectedPair !== props.capturedPair) {
+    throw new Error('cross_chain_selected_account_changed');
+  }
+  assertCrossChainSignerCapability(currentPair, props.isMobile);
 
-        return [firstCharToUp(newKey, false), value];
-      })
-    );
+  const tokenBalance = state.balanceService.getTokenBalance(substrateAddress, props.assetId, props.relayChain);
+  const validation = validateReviewedCrossChainRequest({
+    routeId: props.routeId,
+    providerId: props.routeProviderId,
+    assetKey: props.assetKey,
+    assetId: props.assetId,
+    origin: state.networkService.networkMap[props.originNet],
+    destination: state.networkService.networkMap[props.destinationNet],
+    tokenBalance,
+    amount: props.amount,
+    requireAmount: true,
+  });
+  if (!state.actionCapabilityService.isActionEnabled(validation.action)) {
+    throw new Error('cross_chain_provider_temporarily_disabled');
+  }
+  if (
+    validation.xcmAssetId !== props.xcmAssetId ||
+    JSON.stringify(validation.execution) !== JSON.stringify(props.execution) ||
+    validation.minimum !== props.reviewedMinimum
+  ) {
+    throw new Error('cross_chain_route_fingerprint_changed');
+  }
 
-    return [...result, formattedInterior];
-  }, []);
+  const apiProps = state.getSubstrateApiMap[props.originNet.toLowerCase()];
+  if (!apiProps?.api || apiProps.api.isConnected === false) throw new Error('cross_chain_runtime_unavailable');
 
-  return array.length === 1 ? (array[0] as Record<string, string>) : (array as Record<string, string>[]);
+  return { apiProps, tokenBalance, validation };
 }
 
-function getConcreteAsset(
-  originNet: NetworkName,
-  isToRelayChain: boolean,
-  xcmAssetId: AssetId,
-  isNative: boolean,
-  state: State,
-  destNet?: NetworkName
-) {
-  const networkKey = state.networkService.getNetworkJson(originNet)?.name;
-  const { parentId } = state.networkService.networkMap[networkKey];
+function parseExpected(value: string, error: string): FPNumber {
+  try {
+    const parsed = new FPNumber(value);
+    if (!parsed.isFinity() || !parsed.isGteZero()) throw new Error(error);
 
-  // This Polkadot or Kusama
-  if (parentId === undefined)
-    return {
-      interior: { Here: '' },
-      parents: isToRelayChain ? 1 : 0, // Это isNative телепорт, потому что он из RelayChain -> соответственно parents формируется как для isNative
-    };
+    return parsed;
+  } catch {
+    throw new Error(error);
+  }
+}
 
-  const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
-  const { interiors } = xcmLocationsAssets.find(({ id }) => id === xcmAssetId)!;
-  const interiorValue = interiorHelper(interiors);
-  const interiorXcmLength = Array.isArray(interiorValue) ? interiorValue.length : 1;
+function assertConfirmedQuote(props: MakeCrossChainProps, quote: CrossChainQuote, state: State): void {
+  const expectedOriginFee = parseExpected(props.expectedOriginFee, 'cross_chain_fee_confirmation_required');
+  const expectedDestinationFee = parseExpected(
+    props.expectedDestinationFee,
+    'cross_chain_destination_fee_confirmation_required'
+  );
+  if (!quote.originFee.eq(expectedOriginFee)) throw new Error('cross_chain_fee_changed');
+  if (!quote.destinationFee.eq(expectedDestinationFee)) throw new Error('cross_chain_destination_fee_changed');
+  if (quote.executionFingerprint !== props.expectedExecutionFingerprint) {
+    throw new Error('cross_chain_runtime_fingerprint_changed');
+  }
 
-  const interior =
-    interiorXcmLength === 0
-      ? { Here: '' }
-      : {
-          [`X${interiorXcmLength}`]: interiorValue,
-        };
+  const amount = new FPNumber(props.amount);
+  if (amount.lt(quote.minimum)) throw new Error('cross_chain_amount_below_runtime_minimum');
 
-  const haveParachainParameter = Array.isArray(interiorValue)
-    ? interiorValue?.some((interior) => Object.keys(interior).some((key) => key === 'Parachain'))
-    : interiorValue.Parachain !== undefined;
+  const substrateAddress = state.keyringService.getSubstrateAddress(props.from);
+  const utility = getUtilityProps(props.originNet, state);
+  const utilityGroup = state.balanceService.getTokenBalance(substrateAddress, utility.id, props.relayChain);
+  const rows = utilityGroup?.balances.filter(({ name }) => name.toLowerCase() === props.originNet.toLowerCase()) ?? [];
+  if (rows.length !== 1) throw new Error('cross_chain_fee_balance_unavailable');
 
-  const parents1 = isToRelayChain ? 1 : 0;
-  const parents2 = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
+  const available = new FPNumber(rows[0].transferable ?? '');
+  const required = utility.id === props.assetId ? amount.add(quote.originFee) : quote.originFee;
+  if (!available.isFinity() || !available.isGteZero() || available.lt(required)) {
+    throw new Error('cross_chain_fee_balance_insufficient');
+  }
+}
 
-  // Hack for ASTR to SORA Network
-  const isASTRtoSORA = xcmAssetId === '5ab1e8d-81ed-4130-9d29-55b549cc6bab' && isSora(destNet, true);
+function assertRuntimeFingerprint(props: MakeCrossChainProps, quote: CrossChainQuote, api: ReviewedExecutionApi): void {
+  const { descriptor } = resolveReviewedRuntimeCall(props.execution, api);
+  const current = createReviewedExecutionFingerprint(props.execution, descriptor, api);
+
+  if (current !== quote.runtimeFingerprint) throw new Error('cross_chain_runtime_fingerprint_changed');
+}
+
+export async function estimateCrossChainQuote(props: CrossChainProps, state: State): Promise<CrossChainQuote> {
+  const { execution, originNet, destinationNet, xcmAssetId } = props;
+  const origin = state.networkService.networkMap[originNet];
+  const destination = state.networkService.networkMap[destinationNet];
+  if (!origin || !destination) throw new Error('cross_chain_network_unavailable');
+
+  const { originApi, runtimeMinimum } = await assertReviewedRuntimeAuthority(execution, state);
+  const precisionAmount = getPrecisionValue(props.amount, execution.assetPrecision);
+  const substrateAddress = state.keyringService.getSubstrateAddress(props.from);
+  const resolved = await createReviewedCrossChainExtrinsic({
+    execution,
+    originChainId: String(origin.chainId),
+    destinationChainId: String(destination.chainId),
+    xcmAssetId,
+    to: props.to,
+    precisionAmount,
+    api: originApi,
+  });
+  if (!resolved.extrinsic) throw new Error('cross_chain_runtime_execution_drift');
+
+  const paymentInfo = await resolved.extrinsic.paymentInfo(substrateAddress);
+  const utility = getUtilityProps(originNet, state);
+  const originFee = FPNumber.fromCodecValue(paymentInfo.partialFee.toString(), utility.precision);
+  if (!originFee.isFinity() || !originFee.isGteZero()) throw new Error('cross_chain_fee_unavailable');
+
+  const reviewedMinimum = new FPNumber(props.reviewedMinimum ?? '0');
+  const minimum = maximum(reviewedMinimum, new FPNumber(runtimeMinimum));
+  const amount = new FPNumber(props.amount);
+  if (!minimum.isFinity() || !minimum.isGteZero()) throw new Error('cross_chain_runtime_minimum_unavailable');
+  if (amount.lt(minimum)) throw new Error('cross_chain_amount_below_runtime_minimum');
 
   return {
-    interior: interior,
-    parents: isASTRtoSORA ? 0 : isNative ? parents1 : parents2,
+    originFee,
+    destinationFee: new FPNumber(execution.destinationFee),
+    minimum,
+    runtimeFingerprint: resolved.executionFingerprint,
+    executionFingerprint: createCrossChainQuoteFingerprint({
+      props,
+      originChainId: String(origin.chainId),
+      destinationChainId: String(destination.chainId),
+      substrateAddress,
+      precisionAmount,
+      runtimeFingerprint: resolved.executionFingerprint,
+    }),
+    extrinsic: resolved.extrinsic,
   };
 }
 
-function getNativeTeleportParams(
-  originNet: NetworkName,
-  destNet: NetworkName,
-  toAddress: string,
-  amount: string,
-  xcmAssetId: AssetId,
-  state: State
-) {
-  const originNetworkKey = state.networkService.getNetworkJson(originNet)?.name;
-  const destNetworkKey = state.networkService.getNetworkJson(destNet)?.name;
-  const isFromRelayChain = isRelayChain(originNet);
-  const isToRelayChain = isRelayChain(destNet);
-  const { xcm, parentId, name } = state.networkService.networkMap[originNetworkKey];
-  const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
+export async function estimateCrossChainFee(props: CrossChainProps, state: State): Promise<[FPNumber, FPNumber]> {
+  const quote = await estimateCrossChainQuote(props, state);
 
-  const paraId = isSora(destNet, true)
-    ? getSoraParaId(relayChain, state)
-    : state.networkService.networkMap[destNetworkKey]?.paraId ?? '0';
-
-  const xcmVersion = xcm!.xcmVersion.toUpperCase();
-  const publicKey = decodeAddress(toAddress);
-  const value = new BN(amount);
-
-  const network = xcmVersion === XcmVersions.V1 ? { network: { Any: '' } } : { network: { [relayChain]: '' } };
-
-  const receiverLocation = isEthereumNetwork(destNet)
-    ? {
-        AccountKey20: {
-          ...network,
-          key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
-        },
-      }
-    : {
-        AccountId32: {
-          ...network,
-          id: publicKey,
-        },
-      };
-
-  const destinationChain = {
-    [xcmVersion]: {
-      interior: isToRelayChain ? { Here: '' } : { X1: { Parachain: paraId } },
-      parents: isFromRelayChain ? 0 : 1,
-    },
-  };
-
-  const receiver = {
-    [xcmVersion]: {
-      parents: 0,
-      interior: { X1: receiverLocation },
-    },
-  };
-
-  const asset = {
-    [xcmVersion]: [
-      {
-        fun: { Fungible: value },
-        id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, true, state) },
-      },
-    ],
-  };
-
-  const limit = { Unlimited: null }; // TODO возможно в будущем нужно будет доделать
-
-  return [destinationChain, receiver, asset, 0, limit];
+  return [quote.originFee, quote.destinationFee];
 }
 
-function getOrmlTeleportParams(
-  originNet: string,
-  destNet: string,
-  toAddress: string,
-  amount: string,
-  xcmAssetId: AssetId,
-  state: State
-) {
-  const originNetworkKey = state.networkService.getNetworkJson(originNet)?.name;
-  const destNetworkKey = state.networkService.getNetworkJson(destNet)?.name;
-  const isToRelayChain = isRelayChain(destNet);
-  const { xcm, parentId, name } = state.networkService.networkMap[originNetworkKey];
-  const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
-
-  const paraId = isSora(destNet, true)
-    ? getSoraParaId(relayChain, state)
-    : state.networkService.networkMap[destNetworkKey]?.paraId ?? 0;
-
-  const xcmVersion = xcm!.xcmVersion.toUpperCase();
-  const publicKey = decodeAddress(toAddress);
-  const value = new BN(amount);
-
-  const network = xcmVersion === XcmVersions.V1 ? { network: { Any: '' } } : { network: { [relayChain]: '' } };
-
-  const receiverLocation = isEthereumNetwork(destNet)
-    ? {
-        AccountKey20: {
-          ...network,
-          key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
-        },
-      }
-    : {
-        AccountId32: {
-          ...network,
-          id: publicKey,
-        },
-      };
-
-  const asset = {
-    [xcmVersion]: {
-      fun: { Fungible: value },
-      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, xcmAssetId, false, state, destNet) },
-    },
-  };
-
-  const interiorDestinationChain = isToRelayChain
-    ? { X1: receiverLocation }
-    : { X2: [{ Parachain: +paraId! }, receiverLocation] };
-
-  const destinationChain = {
-    [xcmVersion]: {
-      parents: 1,
-      interior: interiorDestinationChain,
-    },
-  };
-
-  const limit = { Unlimited: null };
-
-  return [asset, destinationChain, limit];
-}
-
-async function createNativeCrossChainExtrinsic(
-  xcmAssetId: AssetId,
-  originNet: NetworkName,
-  destNet: NetworkName,
-  toAddress: string,
-  amount: string,
-  tokenBalance: TokenGroup,
-  state: State
-): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
-
-  if (!api) return;
-
-  await api.isReadyOrError;
-
-  const { precision } = getAssetBalance(originNet, tokenBalance);
-
-  const precisionAmount = getPrecisionValue(amount, precision);
-  const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
-  const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
-  const tx = api!.tx[pallet][module];
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId, state);
-
-  return tx(...params);
-}
-
-async function createOrmlCrossChainExtrinsic(
-  xcmAssetId: AssetId,
-  originNet: NetworkName,
-  destNet: NetworkName,
-  toAddress: string,
-  amount: string,
-  tokenBalance: TokenGroup,
-  state: State
-): Promise<Extrinsic> {
-  const api = state.getSubstrateApiMap[originNet.toLowerCase()].api;
-
-  if (!api) return;
-
-  await api.isReadyOrError;
-
-  const { precision } = getAssetBalance(originNet, tokenBalance);
-  const precisionAmount = getPrecisionValue(amount, precision);
-
-  // В большинстве случаев используется xTokens, но он есть не всегда
-  if (api.tx?.xTokens?.transferMultiasset) {
-    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId, state);
-
-    return api.tx?.xTokens?.transferMultiasset(...params);
-  }
-
-  const module = isRelayChain(destNet) ? 'limitedReserveWithdrawAssets' : 'limitedReserveTransferAssets';
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, xcmAssetId, state);
-
-  // Если нет xTokens используется polkadotXcm, с соответствующим модулем
-  return api.tx?.polkadotXcm[module](...params);
-}
-
-async function createCrossChainExtrinsic(props: CrossChainProps, amount: string, state: State): Promise<Extrinsic> {
-  const { originNet, assetId, destinationNet, to, tokenBalance } = props;
-  const originNetworkKey = state.networkService.getNetworkJson(originNet)?.name;
-  const destNetworkKey = state.networkService.getNetworkJson(destinationNet)?.name;
-  const { symbol } = getAssetInfo(assetId, state);
-  const { xcm } = state.networkService.networkMap[originNetworkKey];
-
-  // Структура assets в availableDestinations всегда одинаковая
-  // id у конкретного токена(например DOT), для всех сетей внутри availableDestinations одинаковый
-  // Поэтому просто берем первый попавшийся элемент из массива availableDestinations, берем его assets и ищем нужный токен внутри assets
-  const { chainId: destChainId } = state.networkService.networkMap[destNetworkKey];
-  const { assets } = xcm!.availableDestinations.find(({ chainId }) => chainId === destChainId)!;
-  const { id: xcmAssetId } = assets.find(
-    ({ symbol: _symbol }) => _symbol.toLowerCase() === getNativeAssetName(symbol)
-  )!;
-
-  if (isLiberland(originNet)) return createLiberlandCrossChain(props, state);
-
-  if (isNativeNetwork(originNet)) {
-    // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) pallet = xcmPallet, module = limitedReserveTransferAssets
-    // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) pallet = xcmPallet, module = limitedTeleportAssets
-    // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAsset
-    return createNativeCrossChainExtrinsic(xcmAssetId, originNet, destinationNet, to, amount, tokenBalance, state);
-  }
-
-  // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
-  // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
-  return createOrmlCrossChainExtrinsic(xcmAssetId, originNet, destinationNet, to, amount, tokenBalance, state);
-}
-
-async function estimateCrossChainFee(props: CrossChainProps, state: State): Promise<[FPNumber, FPNumber]> {
-  const { originNet, destinationNet, amount, tokenBalance } = props;
-
-  // Crosschain fee calculation
-  const destFees = state.xcmFees.find(({ destChain }) => {
-    const destChainLower = destChain.toLowerCase();
-    const destinationNetLower = destinationNet.toLowerCase();
-
-    return (
-      (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
-      (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
-    );
-  });
-
-  const asset = getNativeAssetName(tokenBalance.symbol);
-
-  const destEstimateFee = destFees?.destXcmFee?.find(({ symbol: _symbol }) => _symbol.toLowerCase() === asset);
-
-  const { precision } = getAssetBalance(originNet, tokenBalance);
-
-  const crossChainFee = FPNumber.fromCodecValue(
-    destEstimateFee?.feeInPlanks ?? '0',
-    +(destEstimateFee?.precision ?? precision)
-  );
-
-  if (isSora(originNet, true)) {
-    const originFee = await estimateSoraCrossChainFee(props);
-
-    return [originFee, crossChainFee];
-  }
-
-  // Добавляем CrossChain комиссию к amount, потому что она списывается из суммы amount`а
-  const amountWithCrossChainFee = new FPNumber(amount, precision).add(crossChainFee).toString();
-
-  const extrinsic = await createCrossChainExtrinsic(props, amountWithCrossChainFee, state);
-
-  if (!IS_PRODUCTION) console.info('CrossChain', extrinsic);
-
-  // Далее рассчет origin fee
-  try {
-    const { precision: utilityPrecision } = getUtilityProps(originNet, state)!;
-    const address = isEthereumNetwork(originNet) ? VALID_ETHEREUM_ADDRESS : VALID_SUBSTRATE_ADDRESS;
-
-    const paymentInfo = await extrinsic?.paymentInfo(address);
-
-    const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
-    const originFee = FPNumber.fromCodecValue(partialFee, utilityPrecision);
-
-    return [originFee, crossChainFee];
-  } catch {
-    return [FPNumber.ZERO, crossChainFee];
-  }
-}
-
-async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
-  const { originNet, from, amount, tokenBalance, isMobile, callback } = props;
-
-  if (isSora(originNet, true)) return await makeSoraCrossChain(props, state);
-
+export async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
+  const { from, isMobile, callback } = props;
   const txState: BasicTxResponse = {};
-  const apiProps = state.getSubstrateApiMap[originNet.toLowerCase()];
 
-  await apiProps.api?.isReady;
+  await refreshCrossChainOriginBalance(props, state);
+  const initial = assertReviewedRouteAndAccount(props, state);
+  await initial.apiProps.api?.isReady;
+  const initialQuote = await estimateCrossChainQuote(props, state);
+  assertConfirmedQuote(props, initialQuote, state);
+  let guardedQuote = initialQuote;
 
-  const { precision } = getAssetBalance(originNet, tokenBalance);
-  const [, crossChainFee] = await estimateCrossChainFee(props, state);
+  const syncFinalGuard = () => {
+    const current = assertReviewedRouteAndAccount(props, state);
+    if (current.apiProps !== initial.apiProps) throw new Error('cross_chain_runtime_changed');
+    assertConfirmedQuote(props, guardedQuote, state);
+    assertRuntimeFingerprint(props, guardedQuote, current.apiProps.api as unknown as ReviewedExecutionApi);
+  };
 
-  const amountWithCrossChainFee = new FPNumber(amount, precision).add(crossChainFee).toString(); // добавляем CrossChain комиссию, потому что она списывается из суммы amount`а
+  syncFinalGuard();
+  if (!isMobile && !state.keyringService.unlockPair(props.capturedPair)) {
+    throw new Error('cross_chain_account_unlock_failed');
+  }
 
-  const extrinsic = await createCrossChainExtrinsic(props, amountWithCrossChainFee, state);
+  await refreshCrossChainOriginBalance(props, state);
+  const current = assertReviewedRouteAndAccount(props, state);
+  if (current.apiProps !== initial.apiProps) throw new Error('cross_chain_runtime_changed');
+  const finalQuote = await estimateCrossChainQuote(props, state);
+  assertConfirmedQuote(props, finalQuote, state);
+  if (finalQuote.executionFingerprint !== initialQuote.executionFingerprint) {
+    throw new Error('cross_chain_runtime_fingerprint_changed');
+  }
+  guardedQuote = finalQuote;
+  syncFinalGuard();
 
   await signAndSendExtrinsic(
     {
       isMobile,
-      apiProps,
+      apiProps: initial.apiProps,
       callback,
-      extrinsic,
+      extrinsic: finalQuote.extrinsic,
       txState,
-      address: from,
+      address: state.keyringService.getSubstrateAddress(from),
       errorMessage: 'CrossChain error',
+      finalGuard: syncFinalGuard,
     },
     state
   );
 }
-
-export { estimateCrossChainFee, makeCrossChain };

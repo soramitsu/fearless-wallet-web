@@ -68,7 +68,7 @@ describe('Solana provider browser-boundary integration', () => {
 
     await expect(provider.signMessage(message)).resolves.toMatchObject({
       publicKey: expect.objectContaining({ address: SOLANA_ADDRESS }),
-      signature: new Uint8Array([1, 2, 3, 4]),
+      signature: new Uint8Array(64).fill(4),
     });
 
     await expect(provider.signTransaction(new Uint8Array([10, 11]))).resolves.toEqual(new Uint8Array([12, 13]));
@@ -79,6 +79,7 @@ describe('Solana provider browser-boundary integration', () => {
     await expect(
       provider.signAndSendTransaction(new Uint8Array([30]), {
         maxRetries: 1,
+        minContextSlot: 123,
         preflightCommitment: 'confirmed',
         skipPreflight: false,
       })
@@ -96,6 +97,7 @@ describe('Solana provider browser-boundary integration', () => {
     expect(postedMessages[6].request).toMatchObject({
       options: {
         maxRetries: 1,
+        minContextSlot: 123,
         preflightCommitment: 'confirmed',
         skipPreflight: false,
       },
@@ -154,7 +156,7 @@ function respondFromBackground(request: PostedMessage): void {
       respond(request.id, {
         publicKey: SOLANA_ADDRESS,
         signatureBase58: RPC_SIGNATURE,
-        signatureBase64: bytesBase64(new Uint8Array([1, 2, 3, 4])),
+        signatureBase64: bytesBase64(new Uint8Array(64).fill(4)),
       } satisfies SolanaSignMessageResponse);
       break;
     case 'solana(signTransaction)':

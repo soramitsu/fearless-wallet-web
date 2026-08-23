@@ -127,8 +127,9 @@ export default abstract class BaseWebStore<T> {
   public get(_key: string, update: (value: T) => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    const value = this.readFromDB(key);
-    update(value as T);
+    this.readFromDB(key)
+      .then((value) => update(value as T))
+      .catch((error) => console.error('Error reading from database:', error));
   }
 
   public remove(_key: string, update?: () => void): void {

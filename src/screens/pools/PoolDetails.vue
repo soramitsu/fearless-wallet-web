@@ -191,21 +191,27 @@ export default defineComponent({ name: 'PoolDetails',
             : this.networksStore.soraFees?.RemoveLiquidity;
     },
     poolParams() {
+      const asset1Key = Array.isArray(this.$route.query.asset1Key)
+        ? this.$route.query.asset1Key[0]
+        : this.$route.query.asset1Key;
+      const asset2Key = Array.isArray(this.$route.query.asset2Key)
+        ? this.$route.query.asset2Key[0]
+        : this.$route.query.asset2Key;
+
+      if (!asset1Key || !asset2Key) return undefined;
+
       return [...this.poolsStore.poolsItems, ...this.poolsStore.myPoolsItems].find(
-            ({ asset1, asset2 }) => isSameString(asset1.name, this.asset1) && isSameString(asset2.name, this.asset2)
+            ({ asset1, asset2 }) => asset1.assetKey === asset1Key && asset2.assetKey === asset2Key
           );
     },
     showLiquidityWarning() {
       return this.step === 2 && this.poolParams?.asset1.reserve === '0' && this.poolParams?.asset2.reserve === '0';
     },
-    splitPoolName() {
-      return this.$route.params.poolName.split('-');
-    },
     asset1() {
-      return this.splitPoolName[0];
+      return this.poolParams?.asset1.name ?? '';
     },
     asset2() {
-      return this.splitPoolName[1];
+      return this.poolParams?.asset2.name ?? '';
     },
     showPolkaswapIcon() {
       return this.step === 2 && !this.showSettings;
@@ -371,6 +377,8 @@ export default defineComponent({ name: 'PoolDetails',
             assetId2: this.poolParams?.asset2.id,
             networkName: this.network,
             slippage: this.slippage,
+            isExchangeB: this.isExchangeB,
+            expectedFee: this.fee,
           } as RequestPool;
     },
   },

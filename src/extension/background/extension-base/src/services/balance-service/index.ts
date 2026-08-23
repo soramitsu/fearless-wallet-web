@@ -10,7 +10,7 @@ import SolanaBalanceService from './SolanaBalanceService';
 import BitcoinBalanceService from './BitcoinBalanceService';
 import IrohaBalanceService from './IrohaBalanceService';
 import type State from '@extension-base/background/handlers/State';
-import type { BalanceItem } from '@extension-base/api/evm/types';
+import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
 import type {
   BalanceMap,
   BalanceJson,
@@ -20,9 +20,8 @@ import type {
 } from '@extension-base/background/types/types';
 import { getMockAssets } from '@/extension/background/extension-base/src/background/helpers/assets';
 import { isSameString, isTonNetwork } from '@/helpers';
-import { ALL_NETWORKS } from '@/consts/networks';
-import { getSummaryTransferableWalletBalance, getChangeWalletBalance } from '@/helpers/common';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
+import { buildPortfolioSummary, createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
@@ -32,7 +31,9 @@ export default class BalanceService {
   bitcoinBalanceService: BitcoinBalanceService;
   irohaBalanceService: IrohaBalanceService;
   balanceMap: BalanceMap = {};
+  networkScanStates: Record<string, Record<string, NetworkScanState>> = {};
   balanceSubject = new Subject<BalanceJson>();
+  private balanceStorageMutation = Promise.resolve();
 
   constructor(private state: State) {
     this.substrateBalanceService = new SubstrateBalanceService(state);
@@ -43,6 +44,53 @@ export default class BalanceService {
     this.irohaBalanceService = new IrohaBalanceService(state);
   }
 
+  public async hydrateBalanceStorage(addresses: string[]): Promise<void> {
+    const { assetBalances, networkScanStates } = await storage.get(['assetBalances', 'networkScanStates']);
+
+    addresses.forEach((address) => {
+      this.networkScanStates[address] = { ...(networkScanStates?.[address] ?? {}) };
+      const cached = assetBalances?.[address];
+      if (!cached) return;
+      if (!this.balanceMap[address]) this.balanceMap[address] = [];
+
+      Object.entries(cached).forEach(([storedKey, item]) => {
+        if (!item?.id || !item.chain || item.state !== APIItemState.READY) return;
+        if (storedKey !== this.getStorageAssetKey(item.chain, item)) return;
+
+        const group = this.balanceMap[address].find(({ balances }) =>
+          balances.some(
+            (balance) =>
+              isSameString(balance.name, item.chain) &&
+              this.getStorageAssetKey(item.chain, balance) === storedKey
+          )
+        );
+        const existing = group?.balances.findIndex(
+          (balance) =>
+            isSameString(balance.name, item.chain) &&
+            this.getStorageAssetKey(item.chain, balance) === storedKey
+        ) ?? -1;
+
+        if (group && existing >= 0) {
+          group.balances[existing] = { ...group.balances[existing], ...item };
+          if (item.priceId) group.priceId = item.priceId;
+          return;
+        }
+
+        this.balanceMap[address].push({
+          balances: [{ ...item }],
+          groupId: item.id,
+          icon: item.assetIcon ?? item.icon,
+          mainNetwork: item.chain,
+          priceId: item.priceId,
+          providers: [],
+          relayChain: item.relayChain as RelayChainName,
+          symbol: item.symbol,
+          tokenName: item.symbol,
+        });
+      });
+    });
+  }
+
   getAccountBalance(address: string) {
     return this.balanceMap[address];
   }
@@ -51,30 +99,107 @@ export default class BalanceService {
     if (!this.balanceMap[address]) return;
 
     delete this.balanceMap[address];
+    delete this.networkScanStates[address];
   }
 
-  public updateBalanceStore(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    this.updateBalanceStorage(networkKey, address, item).catch((e) => console.warn(e));
+  public updateBalanceStore(networkKey: string, item: BalanceItem, address: string) {
+    const itemSnapshot = { ...item };
+
+    return this.enqueueBalanceStorageMutation(() =>
+      this.updateBalanceStorage(networkKey, address, itemSnapshot)
+    ).catch((e) => console.warn(e));
   }
 
-  private async updateBalanceStorage(chain: string, address: string, item: Partial<BalanceItem>) {
-    if (item.state !== APIItemState.READY) return;
+  public deleteBalanceStore(
+    networkKey: string,
+    identity: Pick<BalanceItem, 'id'> & Partial<BalanceItem>,
+    address: string
+  ) {
+    const identitySnapshot = { ...identity };
+    return this.enqueueBalanceStorageMutation(() =>
+      this.deleteBalanceStorage(networkKey, identitySnapshot, address)
+    );
+  }
 
-    const { balances } = await storage.get(['balances']);
-    const copyBalance = { ...(balances ?? {}) };
-    const { symbol } = item;
+  private enqueueBalanceStorageMutation(mutation: () => Promise<void>): Promise<void> {
+    const pending = this.balanceStorageMutation.then(mutation);
 
-    if (!symbol) return;
+    this.balanceStorageMutation = pending.catch(() => undefined);
 
-    if (!copyBalance[address]) copyBalance[address] = {};
+    return pending;
+  }
 
-    if (item.state !== APIItemState.READY) return;
+  private async deleteBalanceStorage(
+    chain: string,
+    identity: Pick<BalanceItem, 'id'> & Partial<BalanceItem>,
+    address: string
+  ) {
+    const { assetBalances } = await storage.get(['assetBalances']);
+    const copyAssetBalances = { ...(assetBalances ?? {}) };
+    const canonicalForAccount = { ...(copyAssetBalances[address] ?? {}) };
+    const canonicalKey = this.getStorageAssetKey(chain, identity);
 
-    if (!copyBalance[address][symbol]) copyBalance[address][symbol] = {};
+    if (!canonicalForAccount[canonicalKey]) return;
 
-    copyBalance[address][symbol][chain] = { chain, ...item } as BalanceItem;
+    delete canonicalForAccount[canonicalKey];
+    if (Object.keys(canonicalForAccount).length) copyAssetBalances[address] = canonicalForAccount;
+    else delete copyAssetBalances[address];
 
-    await storage.set({ balances: copyBalance });
+    await storage.set({ assetBalances: copyAssetBalances });
+  }
+
+  private async updateBalanceStorage(chain: string, address: string, item: BalanceItem) {
+    if (item.state !== APIItemState.READY && item.state !== APIItemState.ERROR) return;
+
+    const { assetBalances, networkScanStates } = await storage.get(['assetBalances', 'networkScanStates']);
+    const copyAssetBalances = { ...(assetBalances ?? {}) };
+    const copyScanStates = { ...(networkScanStates ?? {}) };
+    const accountScanStates = { ...(copyScanStates[address] ?? {}) };
+    const previousScan = accountScanStates[chain];
+    const now = Date.now();
+    const coverage = item.scanCoverage ?? previousScan?.coverage ?? 'limited';
+
+    accountScanStates[chain] = item.state === APIItemState.READY
+      ? {
+          lastAttempt: now,
+          lastSuccess: item.timestamp ?? now,
+          stale: false,
+          coverage,
+        }
+      : {
+          lastAttempt: now,
+          lastSuccess: previousScan?.lastSuccess,
+          stale: true,
+          error: 'balance_scan_failed',
+          coverage,
+        };
+    copyScanStates[address] = accountScanStates;
+    this.networkScanStates[address] = accountScanStates;
+
+    if (item.state === APIItemState.ERROR) {
+      await storage.set({ networkScanStates: copyScanStates });
+      return;
+    }
+
+    const canonicalKey = this.getStorageAssetKey(chain, item);
+    copyAssetBalances[address] = {
+      ...(copyAssetBalances[address] ?? {}),
+      [canonicalKey]: { chain, ...item } as BalanceItem & { chain: NetworkName },
+    };
+
+    await storage.set({ assetBalances: copyAssetBalances, networkScanStates: copyScanStates });
+  }
+
+  private getStorageAssetKey(
+    chain: string,
+    item: Pick<BalanceItem, 'id'> & Partial<BalanceItem>
+  ): string {
+    const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, chain));
+    const ecosystem = String(network?.ecosystem ?? item.relayChain ?? 'unknown');
+    const chainId = String(network?.chainId ?? chain);
+    const assetId = getCanonicalAssetId(item as BalanceItem);
+
+    return createAssetKey({ ecosystem, chainId, assetId });
   }
 
   public async updateUtilityED(networkName: NetworkName): Promise<void> {
@@ -107,13 +232,9 @@ export default class BalanceService {
 
     const accountAddress = this.state.keyringService.getSubstrateAddress(address);
 
-    const groupIndex = this.balanceMap[accountAddress].findIndex(({ groupId, symbol, relayChain }) => {
-      const isExistingAssetId = groupId === item.id;
-      const isExistingDisplayName = symbol === item.symbol;
-      const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
-
-      return isExistingAssetId || isExistingAsset;
-    });
+    const groupIndex = this.balanceMap[accountAddress].findIndex(({ balances }) =>
+      balances.some(({ id, name }) => id === item.id && isSameString(PREP_NETWORKS_NAME[name] ?? name, networkKey))
+    );
 
     if (groupIndex === -1) {
       if (isTonNetwork(networkKey)) {
@@ -123,25 +244,35 @@ export default class BalanceService {
       } else throw new Error(`Failed to find ${item.symbol} on ${networkKey}`);
     }
 
-    const assetIndex = this.balanceMap[accountAddress][groupIndex].balances.findIndex(({ name }) => {
+    const assetIndex = this.balanceMap[accountAddress][groupIndex].balances.findIndex(({ id, name }) => {
       const key = PREP_NETWORKS_NAME[name] ?? name;
 
-      return isSameString(key, networkKey);
+      return id === item.id && isSameString(key, networkKey);
     });
 
-    this.balanceMap[accountAddress][groupIndex].balances[assetIndex] = {
-      ...this.balanceMap[accountAddress][groupIndex].balances[assetIndex],
-      reserved: item.reserved,
-      free: item.free,
-      locked: item.locked,
-      frozen: item.frozen,
-      total: item.total,
-      transferable: item.transferable,
-      state: item.state!,
-      timestamp: +new Date(),
-    };
+    if (assetIndex === -1) throw new Error(`Failed to find ${item.id} on ${networkKey}`);
 
-    this.updateBalanceStore(networkKey, item, address);
+    const existingBalance = this.balanceMap[accountAddress][groupIndex].balances[assetIndex];
+    const nextItem = { ...item };
+
+    if (item.state === APIItemState.ERROR && existingBalance.timestamp !== undefined) {
+      (['free', 'reserved', 'locked', 'miscFrozen', 'frozen', 'total', 'transferable', 'muchTotal'] as const).forEach(
+        (field) => delete nextItem[field]
+      );
+    }
+
+    const mergedBalance: BalanceItem = {
+      ...existingBalance,
+      ...nextItem,
+      state: item.state!,
+      timestamp:
+        item.state === APIItemState.ERROR
+          ? existingBalance.timestamp
+          : Date.now(),
+    };
+    this.balanceMap[accountAddress][groupIndex].balances[assetIndex] = mergedBalance;
+
+    this.updateBalanceStore(networkKey, mergedBalance, address);
 
     this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
   }
@@ -162,6 +293,11 @@ export default class BalanceService {
       symbol: item.symbol!,
       type: 'jetton',
       id: item.id!,
+      priceId: item.priceId,
+      priceAssetKey: item.priceAssetKey,
+      assetMetadataTrust: item.assetMetadataTrust,
+      assetMetadataSource: item.assetMetadataSource,
+      scanCoverage: item.scanCoverage,
       walletAddress: item.walletAddress,
     };
 
@@ -173,7 +309,7 @@ export default class BalanceService {
       symbol: item.symbol!,
       tokenName: item.name!,
       relayChain: item.relayChain as RelayChainName,
-      priceId: item.symbol,
+      priceId: item.priceId,
       balances: [balance],
     };
 
@@ -193,18 +329,23 @@ export default class BalanceService {
   async getTotalBalances(): Promise<ResponseTotalBalances[]> {
     return new Promise<ResponseTotalBalances[]>((res) =>
       this.state.pricesService.getPrice((prices) => {
+        const registryNetworks = this.state.networkService.networksGithub?.length
+          ? this.state.networkService.networksGithub
+          : this.state.networkService.networkValues ?? [];
         const totalBalances = Object.keys(this.balanceMap).map((address) => {
-          const total = getSummaryTransferableWalletBalance(
+          const summary = buildPortfolioSummary({
+            groups: this.balanceMap[address],
+            networks: registryNetworks,
+            prices: prices.tokenPriceMap,
+            priceChanges: prices.tokenPriceChange,
+            addressForNetwork: () => address,
+          });
+
+          return {
             address,
-            this.balanceMap[address],
-            prices,
-            ALL_NETWORKS,
-            this.state.networkService.networksGithub
-          );
-
-          const change = getChangeWalletBalance(this.balanceMap[address], prices, ALL_NETWORKS);
-
-          return { address, total, change };
+            total: summary.total,
+            change: { amount: summary.changeAmount, percent: summary.changePercent },
+          };
         });
 
         res(totalBalances);
@@ -217,7 +358,10 @@ export default class BalanceService {
 
     if (account) {
       return new Promise((resolve) => {
-        resolve({ details: this.balanceMap[account.address] ?? [] });
+        resolve({
+          details: this.balanceMap[account.address] ?? [],
+          scanStates: this.networkScanStates[account.address] ?? {},
+        });
       });
     }
 
@@ -229,6 +373,23 @@ export default class BalanceService {
 
     if (this.balanceMap?.[address] === undefined)
       this.balanceMap[address] = getMockAssets(this.state.networkService.networkMap, walletEcosystem);
+  }
+
+  private ensureUniversalDefaultBalances(address: string, ecosystems: Set<WalletEcosystem>): void {
+    if (!this.balanceMap[address]) this.balanceMap[address] = [];
+
+    ecosystems.forEach((ecosystem) => {
+      getMockAssets(this.state.networkService.networkMap, ecosystem).forEach((candidate) => {
+        const missingBalances = candidate.balances.filter(
+          (balance) =>
+            !this.balanceMap[address].some(({ balances }) =>
+              balances.some(({ id, name }) => id === balance.id && isSameString(name, balance.name))
+            )
+        );
+
+        if (missingBalances.length) this.balanceMap[address].push({ ...candidate, balances: missingBalances });
+      });
+    });
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {
@@ -257,6 +418,63 @@ export default class BalanceService {
     irohaAddress,
     walletEcosystem,
   }: GetBalancesProps): Promise<ResponseBalanceRequest[]> {
+    const account = this.state.keyringService?.getAllMainAccounts?.().find(({ address: accountAddress }) =>
+      isSameString(accountAddress, address)
+    );
+    const publicAccounts = account?.meta.universalWallet?.publicAccounts ?? [];
+    const ecosystems = new Set(publicAccounts.map(({ ecosystem }) => ecosystem));
+    const isUniversal = ecosystems.size > 1;
+
+    if (isUniversal) {
+      this.ensureUniversalDefaultBalances(address, ecosystems);
+      const publicAddress = (ecosystem: WalletEcosystem, chain?: string): string | undefined =>
+        publicAccounts.find(
+          (item) => item.ecosystem === ecosystem && (!chain || item.chainId?.toLowerCase().includes(chain))
+        )?.address;
+      const tasks: Promise<ResponseBalanceRequest[]>[] = [];
+
+      if (ecosystems.has(WalletEcosystem.Substrate)) {
+        tasks.push(this.substrateBalanceService.fetchBalance({
+          address: publicAddress(WalletEcosystem.Substrate) ?? address,
+          networks: substrateNetworks,
+          ethereumAddress: ethereumAddress ?? publicAddress(WalletEcosystem.Evm),
+        }));
+      }
+      if (ecosystems.has(WalletEcosystem.Evm)) {
+        tasks.push(this.evmBalanceService.fetchBalance({
+          networks: evmNetworks,
+          ethereumAddress: ethereumAddress || publicAddress(WalletEcosystem.Evm),
+        }));
+      }
+      if (ecosystems.has(WalletEcosystem.Ton)) {
+        tasks.push(this.tonBalanceService.fetchBalance(address, tonNetworks));
+      }
+      if (ecosystems.has(WalletEcosystem.Solana)) {
+        tasks.push(this.solanaBalanceService.fetchBalance({
+          address,
+          solanaAddress: solanaAddress ?? publicAddress(WalletEcosystem.Solana),
+          networks: solanaNetworks,
+        }));
+      }
+      if (ecosystems.has(WalletEcosystem.Bitcoin)) {
+        tasks.push(this.bitcoinBalanceService.fetchBalance({
+          address,
+          bitcoinAddress: bitcoinAddress ?? publicAddress(WalletEcosystem.Bitcoin, 'mainnet'),
+          bitcoinTestnetAddress: bitcoinTestnetAddress ?? publicAddress(WalletEcosystem.Bitcoin, 'testnet'),
+          networks: bitcoinNetworks,
+        }));
+      }
+      if (ecosystems.has(WalletEcosystem.Iroha)) {
+        tasks.push(this.irohaBalanceService.fetchBalance({
+          address,
+          irohaAddress: irohaAddress ?? publicAddress(WalletEcosystem.Iroha, 'taira'),
+          networks: irohaNetworks,
+        }));
+      }
+
+      return (await Promise.all(tasks)).flat();
+    }
+
     if (walletEcosystem === WalletEcosystem.Ton) return this.tonBalanceService.fetchBalance(address, tonNetworks);
     if (walletEcosystem === WalletEcosystem.Solana)
       return this.solanaBalanceService.fetchBalance({ address, solanaAddress, networks: solanaNetworks });

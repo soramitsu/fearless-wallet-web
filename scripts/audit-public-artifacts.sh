@@ -48,6 +48,11 @@ if [[ "${VUE_APP_ENABLE_IROHA_TRANSFERS:-}" == "true" ]]; then
   iroha_transfers_enabled=true
 fi
 
+bitcoin_transfers_enabled=false
+if [[ "${VUE_APP_ENABLE_BITCOIN_TRANSFERS:-}" == "true" ]]; then
+  bitcoin_transfers_enabled=true
+fi
+
 iroha_js_github_release_configured=false
 if [[ -n "${IROHA_JS_SDK_RELEASE_REPO:-}" || -n "${IROHA_JS_SDK_RELEASE_TAG:-}" || -n "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -n "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
   if [[ -z "${IROHA_JS_SDK_RELEASE_REPO:-}" || -z "${IROHA_JS_SDK_RELEASE_TAG:-}" || -z "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -z "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
@@ -80,14 +85,28 @@ for env_file in .env.example .env.extension .env.web; do
       fi
     fi
 
+    if [[ "$key" == "VUE_APP_ENABLE_BITCOIN_TRANSFERS" ]]; then
+      if [[ "$value" != "true" && "$value" != "false" ]]; then
+        fail "$env_file contains invalid VUE_APP_ENABLE_BITCOIN_TRANSFERS=$value; expected true or false"
+      fi
+
+      if [[ "$value" == "true" ]]; then
+        bitcoin_transfers_enabled=true
+      fi
+    fi
+
     if [[ "$key" =~ (^|_)(API.*KEY|API_?KEY|SECRET|TOKEN|PRIVATE_?KEY|CLIENT_?SECRET|OAUTH_?CLIENT_?ID|EXTENSION_?PUBLIC_?KEY|MNEMONIC|SEED|PASSWORD)$ ]]; then
       fail "$env_file contains a non-empty sensitive value for $key"
     fi
   done < "$env_file"
 done
 
-if [[ "$iroha_transfers_enabled" == "true" && -z "${IROHA_JS_SDK_TARBALL:-}" && -z "${IROHA_JS_SDK_PACKAGE_DIR:-}" && "$iroha_js_github_release_configured" != "true" && -z "${IROHA_JS_SDK_VERSION:-}" ]]; then
-  fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true requires IROHA_JS_SDK_VERSION, IROHA_JS_SDK_TARBALL, IROHA_JS_SDK_PACKAGE_DIR, or IROHA_JS_SDK_RELEASE_*'
+if [[ "$iroha_transfers_enabled" == "true" ]]; then
+  fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true is blocked: browser codec source exists locally, but no reviewed immutable release artifact is published, pinned, and bundled (browser_transaction_codec_unpublished_source_only)'
+fi
+
+if [[ "$bitcoin_transfers_enabled" == "true" ]]; then
+  fail 'VUE_APP_ENABLE_BITCOIN_TRANSFERS=true is blocked until funded testnet broadcast evidence is marked ready and release-enabled (bitcoin_testnet_broadcast_evidence_missing)'
 fi
 
 ./scripts/check-iroha-js-sdk-artifact.sh --self-test

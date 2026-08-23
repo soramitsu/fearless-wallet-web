@@ -33,6 +33,7 @@ import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
+import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 
 export default defineComponent({ name: 'WalletDetailsPopup' ,
   props: {
@@ -53,7 +54,7 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
       return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
     },
     isExportPossible() {
-      if (!this.isExtension || this.selectedAccount?.isMobile) return false;
+      if (!this.isExtension || !isGoogleDriveBackupEnabled() || this.selectedAccount?.isMobile) return false;
 
           return this.selectedAccountIsSubstrate;
     },

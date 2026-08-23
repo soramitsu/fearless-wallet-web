@@ -33,17 +33,17 @@ interfaces must use the lowercase identifiers above.
 
 Wallet metadata uses a versioned JSON envelope with these fields:
 
-| Field | Requirement |
-| --- | --- |
-| `schemaVersion` | Must be `2`. |
-| `walletId` | Stable local id matching `uw2_[A-Za-z0-9_-]{16,64}`. |
-| `displayName` | Non-empty user-visible name, at most 64 characters, no control characters. |
-| `source` | One of `created-24-word`, `imported-12-word`, `imported-24-word`, `legacy-import`. |
-| `status` | One of `active`, `migration-required`, `legacy-export-only`. |
-| `publicAccounts` | Public account descriptors only; no mnemonic, seed, private key, or encrypted secret material. |
-| `createdAtMillis` | Positive Unix epoch timestamp in milliseconds. |
-| `updatedAtMillis` | Optional Unix epoch timestamp in milliseconds, greater than or equal to `createdAtMillis`. |
-| `legacyExportOnlyReason` | Required only for `legacy-export-only`; otherwise must be absent or blank. |
+| Field                    | Requirement                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `schemaVersion`          | Must be `2`.                                                                                   |
+| `walletId`               | Stable local id matching `uw2_[A-Za-z0-9_-]{16,64}`.                                           |
+| `displayName`            | Non-empty user-visible name, at most 64 characters, no control characters.                     |
+| `source`                 | One of `created-24-word`, `imported-12-word`, `imported-24-word`, `legacy-import`.             |
+| `status`                 | One of `active`, `migration-required`, `legacy-export-only`.                                   |
+| `publicAccounts`         | Public account descriptors only; no mnemonic, seed, private key, or encrypted secret material. |
+| `createdAtMillis`        | Positive Unix epoch timestamp in milliseconds.                                                 |
+| `updatedAtMillis`        | Optional Unix epoch timestamp in milliseconds, greater than or equal to `createdAtMillis`.     |
+| `legacyExportOnlyReason` | Required only for `legacy-export-only`; otherwise must be absent or blank.                     |
 
 An `active` identity must include at least one public account for every supported
 ecosystem: `substrate`, `evm`, `ton`, `bitcoin`, `solana`, and `iroha`.
@@ -124,15 +124,15 @@ Redux/Pinia state, logs, or test fixtures.
 
 ## Derivation Defaults
 
-| Ecosystem | Default |
-| --- | --- |
-| Substrate/DOT | Existing sr25519 root derivation; SS58 prefix is chain-specific. |
-| EVM | `m/44'/60'/0'/0/0` |
-| Bitcoin mainnet | BIP84 account path `m/84'/0'/0'`; first receive path `m/84'/0'/0'/0/0`. |
-| Bitcoin testnet | BIP84 account path `m/84'/1'/0'`; first receive path `m/84'/1'/0'/0/0`. |
-| Solana | `m/44'/501'/0'/0'` |
-| TON | `m/44'/607'/0'/0'/0'`, Wallet V4 R2, workchain `0`. |
-| SORA Nexus/Iroha | `m/44'/617'/0'/0'`, Ed25519 I105 account address. |
+| Ecosystem        | Default                                                                 |
+| ---------------- | ----------------------------------------------------------------------- |
+| Substrate/DOT    | Existing sr25519 root derivation; SS58 prefix is chain-specific.        |
+| EVM              | `m/44'/60'/0'/0/0`                                                      |
+| Bitcoin mainnet  | BIP84 account path `m/84'/0'/0'`; first receive path `m/84'/0'/0'/0/0`. |
+| Bitcoin testnet  | BIP84 account path `m/84'/1'/0'`; first receive path `m/84'/1'/0'/0/0`. |
+| Solana           | `m/44'/501'/0'/0'`                                                      |
+| TON              | `m/44'/607'/0'/0'/0'`, Wallet V4 R2, workchain `0`.                     |
+| SORA Nexus/Iroha | `m/44'/617'/0'/0'`, Ed25519 I105 account address.                       |
 
 Solana import compatibility may support common existing Solana paths, but new
 Universal Wallet V2 accounts must use `m/44'/501'/0'/0'`.
@@ -168,10 +168,41 @@ endpoints, never a public indexer endpoint.
 - `si.soramitsu.io` is read-only. Transaction simulation and broadcast use the
   configured Solana RPC endpoint directly.
 - Taira testnet is enabled with I105 chain discriminant `369`, Torii root
-  `https://taira.sora.org`, and chain id `iroha3-taira`.
+  `https://taira.sora.org`, and chain id
+  `fc56984b-2be7-431d-840e-21514d1883f0`.
 - Nexus mainnet uses I105 chain discriminant `753` and chain id
   `sora:nexus:global`, but remains registry-gated until the
   production Torii/TLS endpoint is confirmed.
+- Iroha `features: ['transfer']` is capability metadata, not a production-send
+  enablement claim. Browser send remains fail closed under
+  `config/iroha-production-send-readiness.json`; see
+  `docs/iroha-production-send-readiness.md` for the unpublished-source-only
+  artifact blocker and the remaining live asset, fee, node, and funded-send
+  gates.
+
+### Nexus wallet-smoke transaction metadata
+
+The operator-only `makeIrohaWalletSmokeTransfer` seam binds a web smoke
+transaction to the exact route-governance action whose canonical Norito bytes
+were published. It is not wired to extension or dapp request handlers, does not
+enable production sending, requires the canonical Nexus chain and Minamoto
+Torii endpoint, and fails before signing or network access unless metadata is
+exactly:
+
+```json
+{
+  "evidence_role": "wallet-smoke",
+  "route_governance_action_hash": "sha256:<64 lowercase hex>",
+  "wallet_platform": "web",
+  "wallet_commit": "<40 lowercase git hex>"
+}
+```
+
+Missing, additional, inherited, accessor, symbol, incorrectly cased, all-zero
+sentinel, or otherwise malformed fields are rejected. The validated values are copied into
+a frozen snapshot before the Nexus SDK builds the signable payload, preventing
+caller mutation from changing the evidence binding during signing. Ordinary
+wallet transfers omit transaction metadata.
 
 ## Normalized Indexer Contract
 

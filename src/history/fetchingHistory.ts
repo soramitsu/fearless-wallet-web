@@ -45,6 +45,7 @@ type IrohaTransferInstruction = {
 };
 
 const BITCOIN_ESPLORA_HISTORY_PAGE_SIZE = 25;
+const BITCOIN_HISTORY_ADDRESS_CONCURRENCY = 8;
 const BITCOIN_HISTORY_MAX_PAGES = 12;
 
 async function fetchSubqueryHistory(
@@ -294,7 +295,7 @@ function toBigIntOrNull(value: string | null | undefined): bigint | null {
 
 async function fetchBitcoinHistory(
   url: string,
-  address: string,
+  addresses: readonly string[],
   networkName: NetworkName,
   assetId: string,
   isUtility: boolean
@@ -302,19 +303,53 @@ async function fetchBitcoinHistory(
   if (!isUtility || assetId !== 'BTC') return [];
 
   const network = getBitcoinNetworkKind(networkName);
+  const normalizedAddresses = Array.from(new Set(addresses.map((address) => address.toLowerCase())));
 
-  if (!isBitcoinAddress(address, network)) return [];
+  if (!normalizedAddresses.length || normalizedAddresses.some((address) => !isBitcoinAddress(address, network))) return [];
+  if (normalizedAddresses.length > 2_000) throw new Error('too_many_bitcoin_history_addresses');
 
   const client = new BitcoinEsploraClient({ baseUrl: url, network });
-  const transactions = await fetchBitcoinTransactionPages(client, address);
+  const transactionPages = await fetchBitcoinAddressTransactionPages(client, normalizedAddresses);
+  const transactions = Array.from(
+    transactionPages.reduce<Map<string, BitcoinEsploraTransaction>>((result, page) => {
+      page.forEach((transaction) => {
+        const existing = result.get(transaction.txid);
+
+        if (existing && JSON.stringify(existing) !== JSON.stringify(transaction)) {
+          throw new Error('bitcoin_history_transaction_mismatch');
+        }
+
+        result.set(transaction.txid, transaction);
+      });
+
+      return result;
+    }, new Map()).values()
+  ).sort((left, right) => (right.status.block_time ?? 0) - (left.status.block_time ?? 0));
 
   return transactions.reduce<HistoryElement[]>((result, transaction) => {
-    const historyElement = toBitcoinHistoryElement(transaction, address);
+    const historyElement = toBitcoinHistoryElement(transaction, normalizedAddresses);
 
     if (historyElement) result.push(historyElement);
 
     return result;
   }, []);
+}
+
+async function fetchBitcoinAddressTransactionPages(
+  client: BitcoinEsploraClient,
+  addresses: readonly string[]
+): Promise<BitcoinEsploraTransaction[][]> {
+  const transactionPages: BitcoinEsploraTransaction[][] = [];
+
+  for (let offset = 0; offset < addresses.length; offset += BITCOIN_HISTORY_ADDRESS_CONCURRENCY) {
+    const batch = addresses.slice(offset, offset + BITCOIN_HISTORY_ADDRESS_CONCURRENCY);
+
+    transactionPages.push(...await Promise.all(
+      batch.map((address) => fetchBitcoinTransactionPages(client, address))
+    ));
+  }
+
+  return transactionPages;
 }
 
 async function fetchBitcoinTransactionPages(
@@ -354,12 +389,13 @@ async function fetchBitcoinTransactionPages(
   return transactions;
 }
 
-function toBitcoinHistoryElement(transaction: BitcoinEsploraTransaction, address: string): HistoryElement | null {
-  const walletAddress = address.toLowerCase();
+function toBitcoinHistoryElement(transaction: BitcoinEsploraTransaction, addresses: readonly string[]): HistoryElement | null {
+  const address = addresses[0];
+  const walletAddresses = new Set(addresses.map((walletAddress) => walletAddress.toLowerCase()));
   const inputs = getBitcoinInputPrevouts(transaction);
   const outputs = getBitcoinOutputs(transaction);
-  const sent = sumBitcoinValues(inputs, ({ address }) => address.toLowerCase() === walletAddress);
-  const received = sumBitcoinValues(outputs, ({ address }) => address.toLowerCase() === walletAddress);
+  const sent = sumBitcoinValues(inputs, ({ address }) => walletAddresses.has(address.toLowerCase()));
+  const received = sumBitcoinValues(outputs, ({ address }) => walletAddresses.has(address.toLowerCase()));
 
   if (sent === null || received === null || (sent === 0 && received === 0)) return null;
 
@@ -370,8 +406,8 @@ function toBitcoinHistoryElement(transaction: BitcoinEsploraTransaction, address
   if (!Number.isSafeInteger(fee) || fee < 0 || !Number.isSafeInteger(amount) || amount <= 0) return null;
 
   const counterparty = isOutgoing
-    ? outputs.find((output) => output.address.toLowerCase() !== walletAddress && output.value > 0)?.address
-    : inputs.find((input) => input.address.toLowerCase() !== walletAddress && input.value > 0)?.address;
+    ? outputs.find((output) => !walletAddresses.has(output.address.toLowerCase()) && output.value > 0)?.address
+    : inputs.find((input) => !walletAddresses.has(input.address.toLowerCase()) && input.value > 0)?.address;
 
   return {
     address,
@@ -455,6 +491,7 @@ async function fetchIrohaHistory(
   if (!baseUrl) return [];
 
   const client = new IrohaToriiWalletClient({ baseUrl, network });
+  await validateIrohaHistoryAssetDefinition(client, network, assetId, isUtility);
   const { body } = await client.getInstructions<{ items?: unknown[] }>({
     account: address,
     assetId,
@@ -470,6 +507,40 @@ async function fetchIrohaHistory(
 
     return result;
   }, []);
+}
+
+async function validateIrohaHistoryAssetDefinition(
+  client: IrohaToriiWalletClient,
+  network: IrohaNetworkKind,
+  assetId: string,
+  isUtility: boolean
+): Promise<void> {
+  if (network !== 'taira') return;
+
+  const nativeAsset = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset;
+
+  if (isUtility && assetId !== nativeAsset.id) throw new Error('iroha_taira_native_asset_id_mismatch');
+  if (assetId !== nativeAsset.id) return;
+
+  const { body } = await client.getAssetDefinitions<{ has_more?: boolean; hasMore?: boolean; items?: unknown[] }>({
+    assetId,
+    limit: 2,
+    offset: 0,
+  });
+  const items = isRecord(body) && Array.isArray(body.items) ? body.items : [];
+  const definitions = items.filter(
+    (item): item is Record<string, unknown> => isRecord(item) && item.id === nativeAsset.id
+  );
+  const definition = definitions[0];
+  const spec = definition && isRecord(definition.spec) ? definition.spec : undefined;
+
+  if (
+    (isRecord(body) && (body.has_more === true || body.hasMore === true)) ||
+    definitions.length !== 1 ||
+    spec?.scale !== nativeAsset.decimals
+  ) {
+    throw new Error('iroha_taira_native_asset_definition_mismatch');
+  }
 }
 
 function toIrohaHistoryElements(item: unknown, address: string, assetId: string): HistoryElement[] {
@@ -582,21 +653,47 @@ function normalizeIrohaAmount(value: unknown): string | null {
   }
 
   if (typeof value === 'string') {
-    const trimmed = value.trim();
+    if (value !== value.trim() || !/^(?:0|[1-9]\d*)(?:\.\d{1,28})?$/u.test(value)) return null;
 
-    return /^[1-9]\d*$/u.test(trimmed) ? trimmed : null;
+    return /^0+(?:\.0+)?$/u.test(value) ? null : value;
   }
 
   if (isRecord(value)) {
     const scale = value.scale;
     const amount = value.value ?? value.amount ?? value.mantissa;
 
-    if (scale !== undefined && scale !== 0 && scale !== '0') return null;
+    if (scale === undefined) return normalizeIrohaAmount(amount);
 
-    return normalizeIrohaAmount(amount);
+    return normalizeIrohaScaledAmount(amount, scale);
   }
 
   return null;
+}
+
+function normalizeIrohaScaledAmount(amount: unknown, scaleValue: unknown): string | null {
+  const scale = typeof scaleValue === 'string' && /^(?:0|[1-9]\d*)$/u.test(scaleValue)
+    ? Number(scaleValue)
+    : scaleValue;
+  const mantissa = typeof amount === 'number' && Number.isSafeInteger(amount) ? amount.toString() : amount;
+
+  if (
+    typeof scale !== 'number' ||
+    !Number.isInteger(scale) ||
+    scale < 0 ||
+    scale > 28 ||
+    typeof mantissa !== 'string' ||
+    !/^[1-9]\d*$/u.test(mantissa)
+  ) {
+    return null;
+  }
+
+  if (scale === 0) return mantissa;
+
+  const padded = mantissa.padStart(scale + 1, '0');
+  const whole = padded.slice(0, -scale);
+  const fraction = padded.slice(-scale);
+
+  return `${whole}.${fraction}`;
 }
 
 function irohaAssetMatches(source: string, assetId: string): boolean {
@@ -663,7 +760,8 @@ export async function fetchHistory(
   type: HistoryServiceType,
   networkName: NetworkName,
   assetId: string,
-  isUtility: boolean
+  isUtility: boolean,
+  bitcoinAddresses?: readonly string[]
 ) {
   try {
     if (type === 'ton') {
@@ -680,7 +778,9 @@ export async function fetchHistory(
 
     if (type === 'solana') return await fetchSolanaHistory(url, address, assetId, isUtility);
 
-    if (type === 'bitcoin') return await fetchBitcoinHistory(url, address, networkName, assetId, isUtility);
+    if (type === 'bitcoin') {
+      return await fetchBitcoinHistory(url, bitcoinAddresses?.length ? bitcoinAddresses : [address], networkName, assetId, isUtility);
+    }
 
     if (type === 'iroha') return await fetchIrohaHistory(url, address, networkName, assetId, isUtility);
 

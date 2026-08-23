@@ -5,6 +5,7 @@ import {
   type SolanaTokenBalance,
   type SolanaTokenMetadata,
 } from '@extension-base/services/solana-indexer-service';
+import { reconcileSuccessfulDynamicScan } from './reconcileSuccessfulScan';
 import type State from '@extension-base/background/handlers/State';
 import type { ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
@@ -45,14 +46,25 @@ export default class SolanaBalanceService {
       await this.ensureServiceInfoVerified();
 
       const { native, tokens } = await this.client.getBalances(wallet);
-      const metadataByMint = await this.getTokenMetadataByMint(tokens);
+      const aggregatedTokens = this.aggregateTokenBalances(tokens);
+      const metadataByMint = await this.getTokenMetadataByMint(aggregatedTokens);
 
       this.setNativeBalance(address, network, native, APIItemState.READY);
-      tokens.forEach((token) => this.setTokenBalance(address, network, token, metadataByMint[token.mint]));
+      aggregatedTokens.forEach((token) => this.setTokenBalance(address, network, token, metadataByMint[token.mint]));
+      reconcileSuccessfulDynamicScan(this.state, {
+        address,
+        network: network.name,
+        observedAssetIds: aggregatedTokens.map(({ mint }) => mint),
+        includes: ({ isNative, isUtility, type }) => type === 'solana' && !isNative && !isUtility,
+      });
 
       return [
         { balance: native.uiAmountString, network: network.name, assetId: this.getNativeAsset(network).id },
-        ...tokens.map(({ mint, uiAmountString }) => ({ balance: uiAmountString, network: network.name, assetId: mint })),
+        ...aggregatedTokens.map(({ mint, uiAmountString }) => ({
+          balance: uiAmountString,
+          network: network.name,
+          assetId: mint,
+        })),
       ];
     } catch (error) {
       const cachedBalances = this.markCachedBalancesErrored(address, network);
@@ -82,13 +94,20 @@ export default class SolanaBalanceService {
     const activeSolanaNetworks = this.state.networkService.activeNetworkByEcosystem.solana;
 
     if (networks.length) {
-      return activeSolanaNetworks.find(({ name }) => networks.some((network) => isSameString(network, name)));
+      return (
+        activeSolanaNetworks.find(({ name }) => networks.some((network) => isSameString(network, name))) ??
+        Object.values(this.state.networkService.networkMap).find(
+          (candidate) =>
+            candidate.ecosystem === 'solana' &&
+            networks.some((network) => [candidate.name, candidate.chainId].some((id) => isSameString(network, id)))
+        )
+      );
     }
 
     return activeSolanaNetworks[0] ?? this.state.networkService.networkMap[SOLANA_FALLBACK_NETWORK];
   }
 
-  private getNativeAsset(network: NetworkJson): { id: string; icon: string; precision: number; symbol: string } {
+  private getNativeAsset(network: NetworkJson): { id: string; icon: string; precision: number; symbol: string; priceId?: string } {
     const asset = network.assets.find(({ isUtility, isNative, symbol }) => isUtility || isNative || symbol === 'SOL');
 
     return {
@@ -96,6 +115,7 @@ export default class SolanaBalanceService {
       icon: asset?.icon ?? SOLANA_FALLBACK_ICON,
       precision: asset?.precision ?? 9,
       symbol: asset?.symbol ?? 'SOL',
+      priceId: asset?.priceId,
     };
   }
 
@@ -105,9 +125,9 @@ export default class SolanaBalanceService {
     native: SolanaNativeBalance | undefined,
     state: APIItemState
   ): void {
-    const { id, icon, precision, symbol } = this.getNativeAsset(network);
+    const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
     const balance = native?.uiAmountString ?? '0';
-    const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol);
+    const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol, symbol, priceId);
     const balanceItem: BalanceItem = {
       address,
       icon: network.icon || icon,
@@ -128,6 +148,10 @@ export default class SolanaBalanceService {
       symbol,
       type: 'solana',
       timestamp: Date.now(),
+      assetMetadataTrust: 'verified',
+      assetMetadataSource: 'registry',
+      priceId,
+      scanCoverage: /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete',
     };
     const existingIndex = tokenGroup.balances.findIndex(({ name }) => isSameString(name, network.name));
 
@@ -153,7 +177,7 @@ export default class SolanaBalanceService {
         const balanceItem = {
           ...existing,
           state: APIItemState.ERROR,
-          timestamp: Date.now(),
+          timestamp: existing.timestamp,
         };
 
         group.balances[balanceIndex] = balanceItem;
@@ -187,16 +211,102 @@ export default class SolanaBalanceService {
     }
   }
 
+  /**
+   * Solana wallets can own more than one token account for the same mint. The
+   * portfolio identity is the mint, so expose one exact, arbitrary-precision
+   * balance while retaining every source account for transfer capability
+   * checks. A mint changing decimals or token program is malformed indexer
+   * data and must not be silently collapsed into the same AssetKey.
+   */
+  private aggregateTokenBalances(tokens: SolanaTokenBalance[]): SolanaTokenBalance[] {
+    const aggregates = new Map<
+      string,
+      {
+        token: SolanaTokenBalance;
+        amount: bigint;
+        sourceAmount: bigint;
+        accountAddresses: string[];
+      }
+    >();
+
+    tokens.forEach((token) => {
+      if (!/^\d+$/.test(token.amount)) throw new Error(`invalid_solana_token_amount:${token.mint}`);
+
+      const amount = BigInt(token.amount);
+      const existing = aggregates.get(token.mint);
+
+      if (!existing) {
+        aggregates.set(token.mint, {
+          token: { ...token },
+          amount,
+          sourceAmount: amount,
+          accountAddresses: [token.accountAddress],
+        });
+        return;
+      }
+
+      if (
+        existing.token.decimals !== token.decimals ||
+        existing.token.program !== token.program ||
+        existing.token.programId !== token.programId
+      ) {
+        throw new Error(`inconsistent_solana_token_identity:${token.mint}`);
+      }
+
+      existing.amount += amount;
+      existing.accountAddresses.push(token.accountAddress);
+
+      // Preserve the largest source account for the existing single-source
+      // transfer path. The full source set is stored alongside it.
+      if (amount > existing.sourceAmount) {
+        existing.token = { ...token };
+        existing.sourceAmount = amount;
+      }
+    });
+
+    return [...aggregates.values()].map(({ token, amount, sourceAmount, accountAddresses }) => ({
+      ...token,
+      amount: amount.toString(),
+      uiAmountString: this.formatRawTokenAmount(amount, token.decimals),
+      accountAddresses,
+      sourceAmount: sourceAmount.toString(),
+    })) as Array<SolanaTokenBalance & { accountAddresses: string[]; sourceAmount: string }>;
+  }
+
+  private formatRawTokenAmount(amount: bigint, decimals: number): string {
+    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) {
+      throw new Error('invalid_solana_token_decimals');
+    }
+
+    if (decimals === 0) return amount.toString();
+
+    const padded = amount.toString().padStart(decimals + 1, '0');
+    const whole = padded.slice(0, -decimals);
+    const fraction = padded.slice(-decimals).replace(/0+$/, '');
+
+    return fraction ? `${whole}.${fraction}` : whole;
+  }
+
   private setTokenBalance(
     address: string,
     network: NetworkJson,
     token: SolanaTokenBalance,
     metadata: SolanaTokenMetadata | undefined
   ): void {
-    const symbol = this.getTokenSymbol(token, metadata);
-    const tokenName = this.getTokenName(token, metadata);
-    const icon = network.icon || SOLANA_FALLBACK_ICON;
-    const tokenGroup = this.getOrCreateTokenGroup(address, network, token.mint, icon, symbol, tokenName);
+    const aggregatedToken = token as SolanaTokenBalance & { accountAddresses?: string[]; sourceAmount?: string };
+    const registryAsset = network.assets.find(({ id, currencyId }) => id === token.mint || currencyId === token.mint);
+    const symbol = registryAsset?.symbol ?? this.getTokenSymbol(token, metadata);
+    const tokenName = registryAsset?.name ?? this.getTokenName(token, metadata);
+    const icon = registryAsset?.icon ?? network.icon ?? SOLANA_FALLBACK_ICON;
+    const tokenGroup = this.getOrCreateTokenGroup(
+      address,
+      network,
+      token.mint,
+      icon,
+      symbol,
+      tokenName,
+      registryAsset?.priceId
+    );
     const balance = token.uiAmountString;
     const balanceItem: BalanceItem = {
       address,
@@ -219,6 +329,8 @@ export default class SolanaBalanceService {
       type: 'solana',
       timestamp: Date.now(),
       solanaTokenAccountAddress: token.accountAddress,
+      solanaTokenAccountAddresses: aggregatedToken.accountAddresses ?? [token.accountAddress],
+      solanaTokenSourceAmount: aggregatedToken.sourceAmount ?? token.amount,
       solanaTokenExtensions: metadata?.extensions ?? [],
       solanaTokenMint: token.mint,
       solanaTokenProgram: token.program,
@@ -226,6 +338,10 @@ export default class SolanaBalanceService {
       solanaTokenState: token.state,
       solanaTokenTransferFeeConfig: metadata?.transferFeeConfig ?? null,
       solanaTokenTransferHook: metadata?.transferHook ?? null,
+      assetMetadataTrust: registryAsset ? 'verified' : 'unverified',
+      assetMetadataSource: registryAsset ? 'registry' : 'indexer',
+      priceId: registryAsset?.priceId,
+      scanCoverage: /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete',
     };
     const existingIndex = tokenGroup.balances.findIndex(({ name }) => isSameString(name, network.name));
 
@@ -242,7 +358,8 @@ export default class SolanaBalanceService {
     assetId: string,
     assetIcon: string,
     symbol: string,
-    tokenName = symbol
+    tokenName = symbol,
+    priceId?: string
   ): TokenGroup {
     if (!this.state.balanceService.balanceMap[address]) this.state.balanceService.balanceMap[address] = [];
 
@@ -250,14 +367,17 @@ export default class SolanaBalanceService {
       ({ groupId, relayChain }) => groupId === assetId && relayChain === 'solana'
     );
 
-    if (existing) return existing;
+    if (existing) {
+      if (priceId) existing.priceId = priceId;
+      return existing;
+    }
 
     const tokenGroup: TokenGroup = {
       balances: [],
       groupId: assetId,
       icon: assetIcon,
       mainNetwork: network.name,
-      priceId: symbol,
+      priceId,
       providers: [],
       relayChain: 'solana',
       symbol,

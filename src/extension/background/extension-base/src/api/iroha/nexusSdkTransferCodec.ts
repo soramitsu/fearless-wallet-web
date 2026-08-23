@@ -1,4 +1,11 @@
-import type { IrohaSignedTransaction, IrohaTransferCodec, IrohaTransferCodecInput } from './transfer';
+import {
+  normalizeIrohaWalletSmokeMetadata,
+  type IrohaSignedTransaction,
+  type IrohaTransferCodec,
+  type IrohaTransferCodecInput,
+  type IrohaWalletSmokeMetadata,
+} from './transfer';
+import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { deriveIrohaSigningKey } from '@/util/irohaKeyring';
 
 type BinaryLike = ArrayBuffer | ArrayBufferView | number[] | string;
@@ -34,6 +41,7 @@ type NexusTransactionCodec = {
 type NexusAppClient = {
   buildTransferDraft(input: {
     destinationAccountId: string;
+    metadata?: IrohaWalletSmokeMetadata;
     quantity: string;
     sourceAssetHoldingId: string;
   }): NexusTransferDraft;
@@ -48,12 +56,14 @@ type NexusAppClientConstructor = new (config: {
 
 type IrohaNexusSdkTransferCodecDeps = {
   NexusAppClient: NexusAppClientConstructor;
+  payloadHashHex?: (payloadBytes: Uint8Array) => string;
   signEd25519(message: Uint8Array, privateKey: Uint8Array): BinaryLike;
   transactionCodec: NexusTransactionCodec;
 };
 
 function createIrohaNexusSdkTransferCodec({
   NexusAppClient,
+  payloadHashHex,
   signEd25519,
   transactionCodec,
 }: IrohaNexusSdkTransferCodecDeps): IrohaTransferCodec {
@@ -69,6 +79,14 @@ function createIrohaNexusSdkTransferCodec({
 
   return {
     async buildAndSignTransfer(input: IrohaTransferCodecInput): Promise<IrohaSignedTransaction> {
+      const metadata = input.metadata === undefined ? undefined : normalizeIrohaWalletSmokeMetadata(input.metadata);
+
+      if (
+        metadata &&
+        (input.network !== 'nexus' || input.chainId !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId)
+      ) {
+        throw new Error('iroha_wallet_smoke_requires_nexus');
+      }
       const publicKey = normalizeHexBytes(input.signingPublicKeyHex, 32, 'invalid_iroha_signing_public_key');
       const signingKey = deriveIrohaSigningKey({
         mnemonic: input.mnemonicOrSeed,
@@ -87,10 +105,30 @@ function createIrohaNexusSdkTransferCodec({
       });
       const draft = client.buildTransferDraft({
         destinationAccountId: input.destinationAccountId,
+        ...(metadata ? { metadata } : {}),
         quantity: input.amount,
         sourceAssetHoldingId: input.sourceAssetId,
       });
       const signable = normalizeSignable(draft.signable);
+      const payloadBytes = binaryToBytes(signable.payloadBytes, 'invalid_iroha_signable_transaction');
+
+      if (signable.authority !== input.authority) throw new Error('iroha_signable_authority_mismatch');
+      if (signable.signingPublicKey === null || !equalBytes(binaryToBytes(
+        signable.signingPublicKey,
+        'invalid_iroha_signing_public_key'
+      ), publicKey)) {
+        throw new Error('iroha_signable_public_key_mismatch');
+      }
+      if (payloadHashHex) {
+        const computedPayloadHash = bytesToHex(
+          normalizeHexBytes(payloadHashHex(payloadBytes), 32, 'invalid_iroha_payload_hash')
+        );
+        const sdkPayloadHash = bytesToHex(
+          normalizeHexBytes(signable.payloadHashHex, 32, 'invalid_iroha_payload_hash')
+        );
+
+        if (computedPayloadHash !== sdkPayloadHash) throw new Error('iroha_payload_hash_mismatch');
+      }
       const signature = binaryToBytes(
         signEd25519(normalizeHexBytes(signable.payloadHashHex, 32, 'invalid_iroha_payload_hash'), signingKey.privateKeySeed),
         'invalid_iroha_signature'
@@ -189,6 +227,10 @@ function hexToBytes(hex: string): Uint8Array {
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
+  return left.byteLength === right.byteLength && left.every((byte, index) => byte === right[index]);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

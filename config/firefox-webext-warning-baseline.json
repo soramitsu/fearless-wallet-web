@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "webExtVersion": "10.4.0",
+  "sourceDir": "dist/extension/firefox",
+  "warningCount": 45,
+  "warningCodes": {
+    "DANGEROUS_EVAL": 44,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "warningFiles": {
+    "chunks/_plugin-vue_export-helper.js": 1,
+    "chunks/accounts.js": 17,
+    "chunks/background-vendor/assert-B9II5MFb.js": 8,
+    "chunks/background-vendor/bcryptjs-D92nEwNN.js": 9,
+    "chunks/background-vendor/core-js-pure-CNQyowns.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js": 2,
+    "chunks/background-vendor/lodash-rSFLjCOa.js": 1,
+    "chunks/background-vendor/lodash.merge-CNVuAApE.js": 1,
+    "chunks/soramitsuUI.js": 1,
+    "popup.js": 4
+  },
+  "warningSetSha256": "2ca8145150d2b320857597b322703aa415000fd99d2100c5b8e79d187247d67e",
+  "artifacts": [
+    {
+      "file": "chunks/_plugin-vue_export-helper.js",
+      "sha256": "25d6d87f61b934d15d253151bf82d5f147dcb0950b75a6431c4ec53f9c772367"
+    },
+    {
+      "file": "chunks/accounts.js",
+      "sha256": "ec430648eac1cdca9380e7459b27eebead5b67d46da0dd7d74f9727db0d92a4c"
+    },
+    {
+      "file": "chunks/background-vendor/assert-B9II5MFb.js",
+      "sha256": "60d7816487901997668312b5f8a0e8e872865bc125342979b4ef9ab8be3715ef"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-D92nEwNN.js",
+      "sha256": "2bea1719fa4d350f806140648837d8f64f920cfdd8ddf9e2e6f070e2935440df"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-CNQyowns.js",
+      "sha256": "d649438777abb7c5003c225d5c44cd7d0828edf63f0fb0611d9362332cd1e908"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js",
+      "sha256": "913f4c68014032b75b320a3ed688bcd655570e80868a4a0e935db2e1322574f1"
+    },
+    {
+      "file": "chunks/background-vendor/lodash-rSFLjCOa.js",
+      "sha256": "bbe53a4067943f98e4d1a483f38ea3a7c4dfb72600de5c68908ac1d4dfdc6a10"
+    },
+    {
+      "file": "chunks/background-vendor/lodash.merge-CNVuAApE.js",
+      "sha256": "a0a495665cdc7d9e604d7f62a07df33f9960e1c7354abc217a7bf3c430aed4df"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "1857b1ae06cd6fa84e3f8ce5257bffc2874f132022ab0d47bd517634cec4df2c"
+    },
+    {
+      "file": "popup.js",
+      "sha256": "2aa112c85bafa6d2a26904fd8f761da69a67a31132e43e696fca181cb202a90f"
+    }
+  ]
+}

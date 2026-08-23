@@ -170,6 +170,10 @@ export default defineComponent({ name: 'PoolsPage',
             params: {
               poolName: `${asset1}-${asset2}`,
             },
+            query: {
+              asset1Key: poolParams.asset1.assetKey,
+              asset2Key: poolParams.asset2.assetKey,
+            },
           });
     },
     closeForm() {

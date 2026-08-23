@@ -1,0 +1,444 @@
+{
+  "schemaVersion": 1,
+  "kind": "fearless-iroha-js-candidate-safari-qa-evidence",
+  "status": "passed",
+  "observedAt": "2026-07-12T06:46:04.646Z",
+  "candidateTarSha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+  "packageName": "@iroha/iroha-js",
+  "packageVersion": "0.0.3",
+  "assertionInventorySha256": "31b68d1c57fa6c652ceea255c43952bab43ef294358db31d31a4e03573543572",
+  "safariVersion": "26.5.2",
+  "nodeVersion": "26.5.0",
+  "esbuildVersion": "0.28.1",
+  "origin": "http://127.0.0.1:52911",
+  "nonce": "1758e4afc1b27602481a3257b15bf7108542d633699d0ab0a4e9d7145051a5b6",
+  "bundleSha256": "f7781764f541f2c27b70b36f92bda81cddcad128918de73d67404746474a04ab",
+  "bundleBytes": 1127726,
+  "bundleInputs": 79,
+  "candidatePackageInputs": 39,
+  "scenarioTotal": 6,
+  "assertionTotal": 91,
+  "reportSha256": "084543f21ceceb0fe036b87cf7b64e0928c520b76daaa4ab3319d353434e4a35",
+  "runtimeReport": {
+    "schemaVersion": 1,
+    "kind": "fearless-iroha-js-candidate-safari-qa",
+    "status": "passed",
+    "nonce": "1758e4afc1b27602481a3257b15bf7108542d633699d0ab0a4e9d7145051a5b6",
+    "origin": "http://127.0.0.1:52911",
+    "candidateTarSha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+    "bundleSha256": "f7781764f541f2c27b70b36f92bda81cddcad128918de73d67404746474a04ab",
+    "packageName": "@iroha/iroha-js",
+    "packageVersion": "0.0.3",
+    "assertionInventorySha256": "31b68d1c57fa6c652ceea255c43952bab43ef294358db31d31a4e03573543572",
+    "navigator": {
+      "vendor": "Apple Computer, Inc.",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Safari/605.1.15",
+      "platform": "MacIntel",
+      "language": "ja"
+    },
+    "scenarios": [
+      {
+        "id": "runtime_identity",
+        "assertions": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "id": "package_surface",
+        "assertions": 19,
+        "passed": 19,
+        "failed": 0
+      },
+      {
+        "id": "transaction_codec_positive",
+        "assertions": 20,
+        "passed": 20,
+        "failed": 0
+      },
+      {
+        "id": "transaction_codec_negative",
+        "assertions": 18,
+        "passed": 18,
+        "failed": 0
+      },
+      {
+        "id": "canonical_request",
+        "assertions": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "id": "nexus_browser",
+        "assertions": 14,
+        "passed": 14,
+        "failed": 0
+      }
+    ],
+    "assertions": [
+      {
+        "id": "runtime.protocol",
+        "passed": true
+      },
+      {
+        "id": "runtime.hostname",
+        "passed": true
+      },
+      {
+        "id": "runtime.origin",
+        "passed": true
+      },
+      {
+        "id": "runtime.pathname_nonce",
+        "passed": true
+      },
+      {
+        "id": "runtime.navigator_vendor",
+        "passed": true
+      },
+      {
+        "id": "runtime.navigator_safari",
+        "passed": true
+      },
+      {
+        "id": "runtime.navigator_not_chromium",
+        "passed": true
+      },
+      {
+        "id": "runtime.crypto_subtle",
+        "passed": true
+      },
+      {
+        "id": "runtime.text_encoder",
+        "passed": true
+      },
+      {
+        "id": "runtime.global_buffer_initially_absent",
+        "passed": true
+      },
+      {
+        "id": "surface.address",
+        "passed": true
+      },
+      {
+        "id": "surface.browser",
+        "passed": true
+      },
+      {
+        "id": "surface.transaction_codec",
+        "passed": true
+      },
+      {
+        "id": "surface.normalizers",
+        "passed": true
+      },
+      {
+        "id": "surface.blake2b",
+        "passed": true
+      },
+      {
+        "id": "surface.ivm_artifact",
+        "passed": true
+      },
+      {
+        "id": "surface.instruction_builders",
+        "passed": true
+      },
+      {
+        "id": "surface.torii",
+        "passed": true
+      },
+      {
+        "id": "surface.torii_browser",
+        "passed": true
+      },
+      {
+        "id": "surface.norito",
+        "passed": true
+      },
+      {
+        "id": "surface.offline_cash",
+        "passed": true
+      },
+      {
+        "id": "surface.canonical_request",
+        "passed": true
+      },
+      {
+        "id": "surface.sccp",
+        "passed": true
+      },
+      {
+        "id": "surface.sorafs",
+        "passed": true
+      },
+      {
+        "id": "surface.crypto",
+        "passed": true
+      },
+      {
+        "id": "surface.connect_browser",
+        "passed": true
+      },
+      {
+        "id": "surface.nexus_app",
+        "passed": true
+      },
+      {
+        "id": "surface.kotodama_compiler",
+        "passed": true
+      },
+      {
+        "id": "surface.exact_namespace_count",
+        "passed": true
+      },
+      {
+        "id": "codec.api_builder",
+        "passed": true
+      },
+      {
+        "id": "codec.api_payload_hash",
+        "passed": true
+      },
+      {
+        "id": "codec.api_validate",
+        "passed": true
+      },
+      {
+        "id": "codec.api_finalize",
+        "passed": true
+      },
+      {
+        "id": "codec.api_signed_hash",
+        "passed": true
+      },
+      {
+        "id": "codec.address_authority",
+        "passed": true
+      },
+      {
+        "id": "codec.address_destination",
+        "passed": true
+      },
+      {
+        "id": "codec.payload_nonempty",
+        "passed": true
+      },
+      {
+        "id": "codec.payload_deterministic",
+        "passed": true
+      },
+      {
+        "id": "codec.metadata_canonical",
+        "passed": true
+      },
+      {
+        "id": "codec.payload_hash_format",
+        "passed": true
+      },
+      {
+        "id": "codec.payload_hash_golden",
+        "passed": true
+      },
+      {
+        "id": "codec.signable_authority",
+        "passed": true
+      },
+      {
+        "id": "codec.signable_key",
+        "passed": true
+      },
+      {
+        "id": "codec.signature_length",
+        "passed": true
+      },
+      {
+        "id": "codec.finalized_version",
+        "passed": true
+      },
+      {
+        "id": "codec.finalized_hash_format",
+        "passed": true
+      },
+      {
+        "id": "codec.finalized_hash_recomputed",
+        "passed": true
+      },
+      {
+        "id": "codec.finalized_hash_golden",
+        "passed": true
+      },
+      {
+        "id": "codec.global_buffer_after_positive",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_unknown_field",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_inherited_input",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_quantity_zero",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_quantity_leading_zero",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_quantity_fractional_zero",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_quantity_exponent",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_nonce_zero",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_holding_authority_mismatch",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_cyclic_metadata",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_lone_surrogate",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_chain_bound",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_quantity_bound",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_payload_hash_mismatch",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_authority_mismatch",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_signing_key_mismatch",
+        "passed": true
+      },
+      {
+        "id": "codec.reject_signature_tamper",
+        "passed": true
+      },
+      {
+        "id": "codec.proxy_get_trap_not_invoked",
+        "passed": true
+      },
+      {
+        "id": "codec.accessor_not_invoked",
+        "passed": true
+      },
+      {
+        "id": "canonical.query_order",
+        "passed": true
+      },
+      {
+        "id": "canonical.message_type",
+        "passed": true
+      },
+      {
+        "id": "canonical.message_golden",
+        "passed": true
+      },
+      {
+        "id": "canonical.json_method",
+        "passed": true
+      },
+      {
+        "id": "canonical.json_body",
+        "passed": true
+      },
+      {
+        "id": "canonical.account_header",
+        "passed": true
+      },
+      {
+        "id": "canonical.nonce_header",
+        "passed": true
+      },
+      {
+        "id": "canonical.timestamp_header",
+        "passed": true
+      },
+      {
+        "id": "canonical.signature_valid",
+        "passed": true
+      },
+      {
+        "id": "canonical.global_buffer_after_request",
+        "passed": true
+      },
+      {
+        "id": "nexus.hash_matches_codec",
+        "passed": true
+      },
+      {
+        "id": "nexus.reject_url_scheme",
+        "passed": true
+      },
+      {
+        "id": "nexus.reject_url_credentials",
+        "passed": true
+      },
+      {
+        "id": "nexus.reject_url_query",
+        "passed": true
+      },
+      {
+        "id": "nexus.reject_url_fragment",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_url",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_method",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_content_type",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_credentials",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_redirect",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_referrer",
+        "passed": true
+      },
+      {
+        "id": "nexus.submit_body",
+        "passed": true
+      },
+      {
+        "id": "nexus.response_hash",
+        "passed": true
+      },
+      {
+        "id": "nexus.global_buffer_after_submit",
+        "passed": true
+      }
+    ]
+  }
+}

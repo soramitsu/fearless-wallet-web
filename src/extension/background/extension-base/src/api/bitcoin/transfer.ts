@@ -8,6 +8,11 @@ import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import { getBitcoinAddressNetwork, isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
 import { getBitcoinReceivePath } from '@/util/bitcoinKeyring';
 import {
+  discoverBitcoinWalletAddresses,
+  type BitcoinDiscoveryClient,
+  type BitcoinWalletDiscoveryResult,
+} from '@/util/bitcoinDiscovery';
+import {
   prepareBitcoinSend,
   selectBitcoinFeeRateSatPerVbyte,
   sendBitcoinTransaction,
@@ -17,6 +22,7 @@ import {
 } from '@/util/bitcoinSend';
 import { estimateP2wpkhTransactionVSize } from '@/util/bitcoinTransaction';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
+import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
 
 const BITCOIN_DECIMALS = 8;
 const MAX_SATOSHI = 2_100_000_000_000_000n;
@@ -46,6 +52,12 @@ type BitcoinTransferSource = {
   mnemonicOrSeed: string;
   source: BitcoinSendSource;
 };
+type BitcoinTransferClient = BitcoinSendClient & BitcoinDiscoveryClient;
+type BitcoinDiscoveredTransferSources = {
+  changeAddress: string;
+  discovery: BitcoinWalletDiscoveryResult;
+  sources: BitcoinSendSource[];
+};
 
 export function isBitcoinTransferNetwork(network: NetworkJson | undefined): boolean {
   return network?.ecosystem === WalletEcosystem.Bitcoin;
@@ -58,6 +70,8 @@ export async function estimateBitcoinTransferFee({
   client?: Pick<BitcoinEsploraClient, 'getFeeEstimates'>;
   network: BitcoinNetworkKind;
 }): Promise<string> {
+  if (!isBitcoinTransfersEnabled()) throw new Error('bitcoin_transfer_disabled');
+
   const feeRateSatPerVbyte = selectBitcoinFeeRateSatPerVbyte(
     await (client ?? new BitcoinEsploraClient({ network })).getFeeEstimates()
   );
@@ -70,17 +84,21 @@ export async function estimateBitcoinTransferFee({
 
 export async function makeBitcoinTransfer(
   params: BitcoinTransferParams,
-  client?: BitcoinSendClient
+  client?: BitcoinTransferClient,
+  discoveryOptions: { gapLimit?: number; maxLookahead?: number } = {}
 ): Promise<void> {
+  if (!isBitcoinTransfersEnabled()) throw new Error('bitcoin_transfer_disabled');
+
   const { amount, callback, networkKey, state, to } = params;
   const network = getBitcoinNetworkKind(state.networkService.networkMap[networkKey]);
   const source = resolveBitcoinTransferSource(state, params.from, network);
   const indexer = client ?? new BitcoinEsploraClient({ network });
   const amountSat = bitcoinAmountToSats(amount);
+  const discovered = await discoverBitcoinTransferSources(source, network, indexer, discoveryOptions);
 
   const result = await sendBitcoinTransaction({
     amountSat,
-    changeAddress: source.source.address,
+    changeAddress: discovered.changeAddress,
     feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
     feeTargetBlocks: params.bitcoinFeeTargetBlocks,
     includeUnconfirmed: params.bitcoinIncludeUnconfirmed,
@@ -89,7 +107,7 @@ export async function makeBitcoinTransfer(
     mnemonicOrSeed: source.mnemonicOrSeed,
     network,
     selectedOutpoints: params.bitcoinSelectedOutpoints,
-    sources: [source.source],
+    sources: discovered.sources,
     toAddress: normalizeRecipient(to, network),
   });
 
@@ -113,14 +131,16 @@ export async function makeBitcoinTransfer(
 
 export async function prepareBitcoinTransferForTest(
   params: BitcoinTransferParams,
-  client: BitcoinSendClient
+  client: BitcoinTransferClient,
+  discoveryOptions: { gapLimit?: number; maxLookahead?: number } = {}
 ): Promise<Awaited<ReturnType<typeof prepareBitcoinSend>>> {
   const network = getBitcoinNetworkKind(params.state.networkService.networkMap[params.networkKey]);
   const source = resolveBitcoinTransferSource(params.state, params.from, network);
+  const discovered = await discoverBitcoinTransferSources(source, network, client, discoveryOptions);
 
   return prepareBitcoinSend({
     amountSat: bitcoinAmountToSats(params.amount),
-    changeAddress: source.source.address,
+    changeAddress: discovered.changeAddress,
     client,
     feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
     feeTargetBlocks: params.bitcoinFeeTargetBlocks,
@@ -129,9 +149,40 @@ export async function prepareBitcoinTransferForTest(
     mnemonicOrSeed: source.mnemonicOrSeed,
     network,
     selectedOutpoints: params.bitcoinSelectedOutpoints,
-    sources: [source.source],
+    sources: discovered.sources,
     toAddress: normalizeRecipient(params.to, network),
   });
+}
+
+export async function discoverBitcoinTransferSources(
+  source: BitcoinTransferSource,
+  network: BitcoinNetworkKind,
+  client: BitcoinDiscoveryClient,
+  options: { gapLimit?: number; maxLookahead?: number } = {}
+): Promise<BitcoinDiscoveredTransferSources> {
+  const discovery = await discoverBitcoinWalletAddresses({
+    client,
+    gapLimit: options.gapLimit,
+    maxLookahead: options.maxLookahead,
+    mnemonicOrSeed: source.mnemonicOrSeed,
+    network,
+  });
+  const firstReceive = discovery.receive.addresses[0];
+
+  if (!firstReceive || firstReceive.address.toLowerCase() !== source.source.address.toLowerCase()) {
+    throw new Error('bitcoin_discovery_source_mismatch');
+  }
+
+  const sources = discovery.usedAddresses.map(({ address, path }) => ({
+    address,
+    derivationPath: path,
+  }));
+
+  return {
+    changeAddress: discovery.nextChangeAddress,
+    discovery,
+    sources: sources.length ? sources : [source.source],
+  };
 }
 
 export function getBitcoinNetworkKind(network: NetworkJson | undefined): BitcoinNetworkKind {
@@ -217,4 +268,11 @@ export function normalizeRecipient(address: string, network: BitcoinNetworkKind)
   return address.toLowerCase();
 }
 
-export type { BitcoinFeeEstimates, BitcoinOutpoint, BitcoinTransferParams, BitcoinTransferSource };
+export type {
+  BitcoinDiscoveredTransferSources,
+  BitcoinFeeEstimates,
+  BitcoinOutpoint,
+  BitcoinTransferClient,
+  BitcoinTransferParams,
+  BitcoinTransferSource,
+};

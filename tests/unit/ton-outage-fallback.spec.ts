@@ -112,10 +112,12 @@ const createTonState = (balanceMap: Record<string, TokenGroup[]> = {}) => {
   const getAccount = vi.fn();
   const getAccountJettonsBalances = vi.fn();
   const setBalanceItem = vi.fn();
+  const updateBalanceStore = vi.fn();
   const state = {
     balanceService: {
       balanceMap,
       setBalanceItem,
+      updateBalanceStore,
     },
     getTonApiMap: {
       [NETWORK_KEY]: {
@@ -145,9 +147,14 @@ const createTonState = (balanceMap: Record<string, TokenGroup[]> = {}) => {
     networkService: {
       networksGithub: [tonNetwork],
     },
+    pricesService: {
+      fiatSymbol: 'USD',
+      setPriceValue: vi.fn(),
+      tonPricingService: { tonParseRates: vi.fn() },
+    },
   } as unknown as State;
 
-  return { getAccount, getAccountJettonsBalances, setBalanceItem, state };
+  return { getAccount, getAccountJettonsBalances, setBalanceItem, state, updateBalanceStore };
 };
 
 const createHistoryState = () => {
@@ -183,6 +190,29 @@ const createHistoryState = () => {
 };
 
 describe('TON outage fallback behavior', () => {
+  it('zeros a cached Jetton only after a successful complete response omits it', async () => {
+    const { getAccount, getAccountJettonsBalances, state, updateBalanceStore } = createTonState({
+      [ADDRESS]: [nativeGroup('1'), jettonGroup('7.25')],
+    });
+    getAccount.mockResolvedValue({ balance: '1000000000' });
+    getAccountJettonsBalances.mockResolvedValue({ balances: [] });
+    const service = new TonBalance(state);
+
+    await service.fetchBalance(ADDRESS, [NETWORK_KEY]);
+
+    expect(state.balanceService.balanceMap[ADDRESS][1].balances[0]).toMatchObject({
+      id: 'jetton-usdc',
+      state: APIItemState.READY,
+      total: '0',
+      transferable: '0',
+    });
+    expect(updateBalanceStore).toHaveBeenCalledWith(
+      NETWORK_NAME,
+      expect.objectContaining({ id: 'jetton-usdc', state: APIItemState.READY, total: '0' }),
+      ADDRESS
+    );
+  });
+
   it('keeps the previous native and jetton balances when TI is unavailable', async () => {
     const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { getAccount, getAccountJettonsBalances, setBalanceItem, state } = createTonState({

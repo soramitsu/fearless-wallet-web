@@ -16,6 +16,7 @@ export interface DefaultParams {
 }
 
 export interface AssetPool {
+  assetKey: string;
   name: string;
   icon: string;
   id: string;
@@ -43,6 +44,7 @@ export type PoolsParamsResponse = DefaultPoolsParams[];
 
 export interface AddLiquidity extends DefaultParams {
   slippage: number;
+  expectedFee: string;
 }
 
 export type RequestAddLiquidity = ActivityRequestSign<AddLiquidity>;
@@ -51,6 +53,7 @@ export type RequestAddLiquidity = ActivityRequestSign<AddLiquidity>;
 
 export interface RemoveLiquidity extends DefaultParams {
   slippage: number;
+  expectedFee: string;
 }
 
 export type RequestRemoveLiquidity = ActivityRequestSign<RemoveLiquidity>;
@@ -69,3 +72,52 @@ export interface GetShareOfPoolRequest extends DefaultParams {
 }
 
 export type GetShareOfPoolResponse = string;
+
+export type DemeterOperation = 'deposit' | 'withdraw' | 'claim';
+
+export type DemeterPoolAsset = {
+  id: string;
+  symbol: string;
+  precision: number;
+  icon: string;
+};
+
+export type DemeterPoolView = {
+  key: string;
+  baseAsset: DemeterPoolAsset;
+  poolAsset: DemeterPoolAsset;
+  rewardAsset: DemeterPoolAsset;
+  isFarm: boolean;
+  isCore: boolean;
+  isRemoved: boolean;
+  multiplier: string;
+  depositFee: string;
+  totalTokensInPool: string;
+  rewards: string;
+  rewardsToBeDistributed: string;
+  tokenPerBlock: string | null;
+  tvl: string | null;
+  apr: string | null;
+  pooledTokens: string;
+  earnedRewards: string;
+};
+
+export type DemeterPoolsResponse = {
+  available: boolean;
+  reason?: string;
+  canSign: boolean;
+  signReason?: string;
+  fees: Record<DemeterOperation, string>;
+  pools: DemeterPoolView[];
+};
+
+export type DemeterMutationRequest = {
+  operation: DemeterOperation;
+  pool: Pick<DemeterPoolView, 'key' | 'isFarm'> & {
+    baseAssetId: string;
+    poolAssetId: string;
+    rewardAssetId: string;
+  };
+  amount?: string;
+  expectedFee: string;
+};

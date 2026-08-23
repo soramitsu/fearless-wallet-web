@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="${BITCOIN_BROADCAST_EVIDENCE_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+if [[ "${BITCOIN_BROADCAST_EVIDENCE_ROOT+x}" == "x" ]]; then
+  echo "[bitcoin-broadcast-template][error] BITCOIN_BROADCAST_EVIDENCE_ROOT is forbidden; the schema root is derived from the audited script location" >&2
+  exit 1
+fi
+
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+case "$SCRIPT_SOURCE" in
+  */*) SCRIPT_PARENT="${SCRIPT_SOURCE%/*}" ;;
+  *) SCRIPT_PARENT="." ;;
+esac
+ROOT_DIR="$(cd -P -- "$SCRIPT_PARENT/.." && pwd -P)"
 MANIFEST_FILE="$ROOT_DIR/scripts/bitcoin-testnet-broadcast-evidence.json"
 OUTPUT_FILE=""
 
@@ -43,12 +53,28 @@ while (($#)); do
   esac
 done
 
-if ! command -v node >/dev/null 2>&1; then
+NODE_BIN=""
+for node_candidate in /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
+  if [[ -x "$node_candidate" ]]; then
+    NODE_BIN="$node_candidate"
+    break
+  fi
+done
+if [[ -z "$NODE_BIN" ]]; then
+  NODE_BIN="$(command -v node 2>/dev/null || true)"
+fi
+if [[ "$NODE_BIN" != /* || ! -x "$NODE_BIN" ]]; then
   echo "[bitcoin-broadcast-template][error] node is required for structured JSON generation" >&2
   exit 1
 fi
 
-node - "$MANIFEST_FILE" "$OUTPUT_FILE" <<'NODE'
+/usr/bin/env -i \
+  HOME=/ \
+  XDG_CONFIG_HOME=/ \
+  PATH=/usr/bin:/bin \
+  LANG=C \
+  LC_ALL=C \
+  "$NODE_BIN" - "$MANIFEST_FILE" "$OUTPUT_FILE" <<'NODE'
 const fs = require('fs');
 const path = require('path');
 

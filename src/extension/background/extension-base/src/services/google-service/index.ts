@@ -12,6 +12,7 @@ import type {
   VerifyTokenResponse,
 } from '@/interfaces';
 import { FEARLESS_TITLE } from '@/consts/global';
+import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 
 export class GoogleService {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
@@ -77,6 +78,8 @@ ${json}
   }
 
   public async authExtension({ type = 'main', wallet }: GoogleAuthTypes) {
+    if (!isGoogleDriveBackupEnabled()) throw new Error('google_drive_backup_unavailable');
+
     return new Promise<void>((res) => {
       chrome.identity.launchWebAuthFlow(
         {

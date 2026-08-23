@@ -1,6 +1,6 @@
 <template>
   <div :class="containerClasses">
-    <div class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ $n(balance, 'price') }}</div>
+    <div class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ formattedBalance }}</div>
 
     <div v-if="changeWalletBalance" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
   </div>
@@ -8,14 +8,14 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
-
+import { FPNumber } from '@sora-substrate/util';
 import { useAccountsStore } from '@/stores/accounts';
+import { formatDecimalString } from '@/helpers/numbers';
 
 export default defineComponent({ name: 'WalletBalance' ,
   props: {
     changeWalletBalance: Object,
-    balance: Number,
+    balance: { type: [String, Number], default: '0' },
     staticWidth: { default: true },
   },
   data() {
@@ -34,26 +34,34 @@ export default defineComponent({ name: 'WalletBalance' ,
 
           return array;
     },
+    formattedBalance() {
+      return formatDecimalString(this.balance, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     percentString() {
       const { percent, amount } = this.changeWalletBalance;
+      const percentValue = new FPNumber(String(percent ?? '0'));
+      const amountValue = new FPNumber(String(amount ?? '0'));
 
-          if (percent === 0) return `${this.$n(0, 'percent')}`;
+          if (percentValue.isZero()) return '0.00%';
 
-          const sign = percent > 0 ? '+' : '';
-          const displayAmount = amount < 0 ? amount * -1 : amount;
-          const percentage = percent / 100;
+          const sign = percentValue.isGtZero() ? '+' : '';
+          const displayAmount = amountValue.isLtZero() ? amountValue.mul(new FPNumber('-1')) : amountValue;
 
-          return `${sign}${this.$n(percentage, 'percent')}(${this.accountsStore.fiatSymbol}${this.$n(
-            displayAmount ?? 0,
-            'price'
-          )})`;
+          return `${sign}${formatDecimalString(percentValue.toString(), {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}%(${this.accountsStore.fiatSymbol}${formatDecimalString(displayAmount.toString(), {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })})`;
     },
     percentClasses() {
       const { percent } = this.changeWalletBalance;
+          const percentValue = new FPNumber(String(percent ?? '0'));
           const classes = ['percent'];
 
-          if (percent > 0) classes.push('up-percent');
-          else if (percent < 0) classes.push('down-percent');
+          if (percentValue.isGtZero()) classes.push('up-percent');
+          else if (percentValue.isLtZero()) classes.push('down-percent');
 
           return classes;
     },

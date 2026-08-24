@@ -12,6 +12,7 @@ import {
   makeBitcoinTransfer,
 } from '@extension-base/api/bitcoin/transfer';
 import {
+  assertIrohaLiveSubmissionSupported,
   estimateIrohaTransferFee,
   isIrohaTransferNetwork,
   makeIrohaTransfer,
@@ -1250,7 +1251,7 @@ export default class Extension extends FWExtensionBase {
 
       return {
         destEstimateFee: '0',
-        estimateFee: fee.toString(),
+        estimateFee: errors.length === 0 ? fee.toString() : '',
         errors,
       };
     }
@@ -1275,7 +1276,7 @@ export default class Extension extends FWExtensionBase {
 
       return {
         destEstimateFee: '0',
-        estimateFee: fee.toString(),
+        estimateFee: errors.length === 0 ? fee.toString() : '',
         errors,
       };
     }
@@ -1347,11 +1348,13 @@ export default class Extension extends FWExtensionBase {
 
   private async makeTransfer(id: string, request: RequestTransfer, port?: Port): Promise<BasicTxResponse | undefined> {
     const { networkKey, from, to, assetId, isMobile, relayChain, amount = '0' } = request;
+    const network = this.state.networkService.networkMap[networkKey];
+
+    if (isIrohaTransferNetwork(network)) assertIrohaLiveSubmissionSupported();
 
     this.state.keyringService.unlockPair(from);
 
     const callback = this.state.subscriptionService.createSubscription<'pri(accounts.makeTransfer)'>(id, port);
-    const network = this.state.networkService.networkMap[networkKey];
 
     let tokenSymbol = assetId;
     let balance;

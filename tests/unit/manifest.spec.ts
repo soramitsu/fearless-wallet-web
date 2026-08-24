@@ -8,6 +8,7 @@ const makeManifest = require('../../src/extension/makeManifest.cjs') as (browser
 describe('extension manifest generation', () => {
   const originalPublicKey = nodeProcess.env.EXTENSION_PUBLIC_KEY;
   const originalOauthClientId = nodeProcess.env.OAUTH_CLIENT_ID;
+  const originalTransferTesting = nodeProcess.env.VUE_APP_TRANSFER_TESTING;
 
   afterEach(() => {
     if (originalPublicKey === undefined) delete nodeProcess.env.EXTENSION_PUBLIC_KEY;
@@ -15,6 +16,9 @@ describe('extension manifest generation', () => {
 
     if (originalOauthClientId === undefined) delete nodeProcess.env.OAUTH_CLIENT_ID;
     else nodeProcess.env.OAUTH_CLIENT_ID = originalOauthClientId;
+
+    if (originalTransferTesting === undefined) delete nodeProcess.env.VUE_APP_TRANSFER_TESTING;
+    else nodeProcess.env.VUE_APP_TRANSFER_TESTING = originalTransferTesting;
   });
 
   it('generates a hardened chromium mv3 manifest', () => {
@@ -72,6 +76,24 @@ describe('extension manifest generation', () => {
     expect(manifest).not.toHaveProperty('key');
     expect(manifest).not.toHaveProperty('oauth2');
     expect(manifest.minimum_chrome_version).toBe('102');
+  });
+
+  it('makes the transfer-test build visibly distinct and omits Store OAuth', () => {
+    nodeProcess.env.VUE_APP_TRANSFER_TESTING = 'true';
+    nodeProcess.env.EXTENSION_PUBLIC_KEY = 'test-public-key';
+    nodeProcess.env.OAUTH_CLIENT_ID = '';
+
+    const manifest = makeManifest('chrome');
+
+    expect(manifest.name).toBe('Fearless Wallet Transfer Test');
+    expect(manifest.short_name).toBe('FW Test');
+    expect(manifest.version).toBe('0.0.0.306');
+    expect(manifest.action).toEqual({
+      default_title: 'Fearless Wallet Transfer Test',
+      default_popup: 'popup.html#/',
+    });
+    expect(manifest.key).toBe('test-public-key');
+    expect(manifest).not.toHaveProperty('oauth2');
   });
 
   it('exposes only expected runtime scripts to page contexts', () => {

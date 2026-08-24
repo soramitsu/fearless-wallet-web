@@ -36,6 +36,12 @@ describe('transaction failure presentation', () => {
     expect(
       getTransactionFailurePresentation({
         status: false,
+        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'iroha_transfer_protocol_mismatch' }],
+      })
+    ).toEqual({ key: 'assets.irohaProtocolTestOnly' });
+    expect(
+      getTransactionFailurePresentation({
+        status: false,
         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: '<script>steal()</script>' }],
       })
     ).toEqual({ key: 'assets.transactionFailedDetails' });

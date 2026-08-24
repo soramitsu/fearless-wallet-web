@@ -28,7 +28,9 @@
     "packageVersion": "0.0.3",
     "publishedImmutableArtifact": false,
     "pinnedByThisProject": false,
+    "pinnedByThisProjectForTransferTest": true,
     "bundledProductionImport": false,
+    "bundledTransferTestImport": true,
     "publicSubpath": "@iroha/iroha-js/transaction-codec",
     "candidateArtifact": {
       "name": "iroha-iroha-js-0.0.3.tgz",
@@ -60,7 +62,10 @@
       "published": false,
       "reviewed": false,
       "pinnedByThisProject": false,
-      "bundledByThisProject": false
+      "pinnedByThisProjectForTransferTest": true,
+      "bundledByThisProject": false,
+      "bundledByThisProjectForTransferTest": true,
+      "transferTestCompatibility": "legacy-offline-only"
     },
     "upstreamWorkspaceReleaseGates": {
       "scopedRustFmt": "passed",
@@ -379,8 +384,9 @@
   },
   "blocker": {
     "code": "browser_transaction_codec_unpublished_source_only",
-    "testOnlyRuntimeSeam": "globalThis.__IROHA_NATIVE_BINDING__",
-    "reason": "A browser-safe codec candidate was built from source base b423c0f8bcd317fd945d6f66ce3fa679401dba7f plus a frozen candidate patch and durably vendored as exact evidence tar SHA-256 15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8. It is not pushed, independently reviewed, published as an immutable release artifact, checksum-pinned as the production dependency, or integrated as a bundled production import. Native Safari 26.5.2 separately passed 6 scenarios and 91 assertions through the nonce-bound loopback harness without WebDriver or Apple-event JavaScript; this closes only the local Safari runtime gate. Production send remains disabled."
+    "testOnlyRuntimeSeam": null,
+    "transferTestCompatibility": "legacy-offline-only",
+    "reason": "A browser-safe codec candidate was built from source base b423c0f8bcd317fd945d6f66ce3fa679401dba7f plus a frozen candidate patch and durably vendored as exact evidence tar SHA-256 15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8. It is checksum-pinned and bundled only for the non-Store transfer-test profile, where live submission is blocked before key export or signing because the legacy chainId transaction format is incompatible with current Torii wire protocol v4. It is not pushed, independently reviewed, published as an immutable release artifact, checksum-pinned as the production dependency, or integrated into the Store runtime. The former runtime global binding seam has been removed. Native Safari 26.5.2 separately passed 6 scenarios and 91 assertions through the nonce-bound loopback harness without WebDriver or Apple-event JavaScript; this closes only the local Safari runtime gate. Store production send remains disabled."
   },
   "liveGates": [
     {
@@ -397,7 +403,7 @@
     },
     {
       "code": "live_fee_balance_preflight",
-      "reason": "Replace the zero-fee placeholder with node-backed fee, balance, and spendability preflight for the selected asset and fee asset."
+      "reason": "Implement node-backed fee, balance, and spendability preflight for the selected asset and fee asset; no fabricated fee is accepted."
     },
     {
       "code": "production_node_capability_tls",

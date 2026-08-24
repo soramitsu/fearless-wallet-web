@@ -1,6 +1,7 @@
 const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',
   iroha_transfer_disabled: 'assets.irohaTransfersDisabled',
+  iroha_transfer_protocol_mismatch: 'assets.irohaProtocolTestOnly',
   unsupported_solana_asset: 'assets.unsupportedSolanaTokenTransfer',
   cross_chain_network_unavailable: 'assets.crossChainRuntimeUnavailable',
   cross_chain_runtime_unavailable: 'assets.crossChainRuntimeUnavailable',

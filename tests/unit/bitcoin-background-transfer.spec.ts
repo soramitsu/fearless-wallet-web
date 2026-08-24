@@ -1,6 +1,7 @@
 import * as bitcoin from 'bitcoinjs-lib';
 
 import {
+  assertBitcoinTransferNetworkAllowed,
   bitcoinAmountToSats,
   estimateBitcoinTransferFee,
   getBitcoinNetworkKind,
@@ -22,6 +23,8 @@ const mainnetAddress = vectors.vectors[0].expected.bitcoin.mainnet.firstReceiveA
 const testnetAddress = vectors.vectors[0].expected.bitcoin.testnet.firstReceiveAddress;
 const recipient = vectors.vectors[1].expected.bitcoin.mainnet.firstReceiveAddress;
 const originalEnableBitcoinTransfers = process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS;
+const originalBitcoinNetworkPolicy = process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY;
+const originalTransferTesting = process.env.VUE_APP_TRANSFER_TESTING;
 
 const network = (name: string, chainId: string): NetworkJson =>
   ({
@@ -108,12 +111,18 @@ const createState = ({
 describe('background Bitcoin transfer adapter', () => {
   beforeEach(() => {
     process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
+    delete process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY;
+    delete process.env.VUE_APP_TRANSFER_TESTING;
   });
 
   afterEach(() => {
     vi.useRealTimers();
     if (originalEnableBitcoinTransfers === undefined) delete process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS;
     else process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = originalEnableBitcoinTransfers;
+    if (originalBitcoinNetworkPolicy === undefined) delete process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY;
+    else process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY = originalBitcoinNetworkPolicy;
+    if (originalTransferTesting === undefined) delete process.env.VUE_APP_TRANSFER_TESTING;
+    else process.env.VUE_APP_TRANSFER_TESTING = originalTransferTesting;
   });
 
   it('fails closed before estimating or broadcasting when Bitcoin release evidence is not enabled', async () => {
@@ -160,6 +169,48 @@ describe('background Bitcoin transfer adapter', () => {
     expect(getBitcoinNetworkKind(network('Bitcoin', 'bitcoin:mainnet'))).toBe('mainnet');
     expect(getBitcoinNetworkKind(network('Bitcoin Testnet', 'bitcoin:testnet'))).toBe('testnet');
     expect(() => getBitcoinNetworkKind({ ecosystem: 'substrate' } as NetworkJson)).toThrow('unsupported_bitcoin_network');
+    expect(() =>
+      getBitcoinNetworkKind(network('Bitcoin Preview', 'bitcoin:preview'))
+    ).toThrow('unsupported_bitcoin_network');
+    expect(() =>
+      getBitcoinNetworkKind({
+        ...network('Bitcoin Testnet', 'bitcoin:preview'),
+        options: ['testnet'],
+      })
+    ).toThrow('unsupported_bitcoin_network');
+  });
+
+  it('restricts the transfer-test profile to Bitcoin testnet before network access', async () => {
+    process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY = 'testnet-only';
+    process.env.VUE_APP_TRANSFER_TESTING = 'true';
+    const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(),
+      getFeeEstimates: vi.fn(async () => ({ 1: 2 })),
+      getUtxos: vi.fn(),
+    };
+
+    expect(() => assertBitcoinTransferNetworkAllowed('mainnet')).toThrow('bitcoin_transfer_testnet_only');
+    expect(() => assertBitcoinTransferNetworkAllowed('testnet')).not.toThrow();
+    await expect(estimateBitcoinTransferFee({ client, network: 'mainnet' })).rejects.toThrow(
+      'bitcoin_transfer_testnet_only'
+    );
+    await expect(
+      makeBitcoinTransfer(
+        {
+          amount: '0.0005',
+          from: 'stored-substrate-account',
+          networkKey: 'Bitcoin',
+          state: createState(),
+          to: recipient,
+        },
+        client
+      )
+    ).rejects.toThrow('bitcoin_transfer_testnet_only');
+    expect(client.getFeeEstimates).not.toHaveBeenCalled();
+    expect(client.getAddress).not.toHaveBeenCalled();
+    expect(client.getUtxos).not.toHaveBeenCalled();
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
   });
 
   it('resolves the stored wallet account, mnemonic, network address, and BIP84 source path', () => {

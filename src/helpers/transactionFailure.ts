@@ -21,6 +21,7 @@ type OwnDataProperty = { kind: 'invalid' } | { kind: 'missing' } | { kind: 'valu
 const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
+  ['iroha_transfer_protocol_mismatch', 'assets.irohaProtocolTestOnly'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
 ]);
 

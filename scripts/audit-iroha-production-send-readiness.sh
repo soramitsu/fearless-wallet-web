@@ -37,7 +37,7 @@ SAFARI_QA_EVIDENCE_VERIFIER="$ROOT_DIR/scripts/verify-iroha-js-candidate-safari-
 SAFARI_QA_EVIDENCE_TEST="$ROOT_DIR/scripts/test-iroha-js-candidate-safari-qa-evidence.mjs"
 SAFARI_QA_EVIDENCE="$ROOT_DIR/artifacts/iroha-js-candidate-safari-qa/15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8/safari-26.5.2.json"
 BUILD_CONFIG="$ROOT_DIR/vite.config.shared.mjs"
-EXPECTED_MANIFEST_SHA256="b8d9f4797b182338096b2ee124ab337e4bf38985405f3a3e98df46acbaa40d1b"
+EXPECTED_MANIFEST_SHA256="a97dbe37dc58a6d0aabe72aa17b67e5dd17d52cf468749c82e3e682c165fdd79"
 SDK_DEPENDENCY="file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz"
 SDK_TARBALL_BYTES="1843179"
 SDK_TARBALL_SHA256="68def75061c3842cd2fddbd4629b1ceaf80b2b1ff3069a477596ada9bae61339"
@@ -135,7 +135,9 @@ assert(manifest.sourceEvidence?.frozenCandidatePatch === true, 'final candidate 
 assert(manifest.sourceEvidence?.packageVersion === '0.0.3', 'unexpected local upstream package version');
 assert(manifest.sourceEvidence?.publishedImmutableArtifact === false, 'local source must not claim a published immutable artifact');
 assert(manifest.sourceEvidence?.pinnedByThisProject === false, 'source-only codec must not claim to be pinned');
+assert(manifest.sourceEvidence?.pinnedByThisProjectForTransferTest === true, 'transfer-test codec must remain checksum-pinned');
 assert(manifest.sourceEvidence?.bundledProductionImport === false, 'source-only codec must not claim production integration');
+assert(manifest.sourceEvidence?.bundledTransferTestImport === true, 'transfer-test codec must remain bundled');
 assert(manifest.sourceEvidence?.publicSubpath === '@iroha/iroha-js/transaction-codec', 'unexpected local browser codec subpath');
 assert(JSON.stringify(manifest.sourceEvidence?.candidateArtifact) === JSON.stringify({
   name: 'iroha-iroha-js-0.0.3.tgz',
@@ -167,7 +169,10 @@ assert(JSON.stringify(manifest.sourceEvidence?.candidateArtifact) === JSON.strin
   published: false,
   reviewed: false,
   pinnedByThisProject: false,
+  pinnedByThisProjectForTransferTest: true,
   bundledByThisProject: false,
+  bundledByThisProjectForTransferTest: true,
+  transferTestCompatibility: 'legacy-offline-only',
 }), 'unexpected final local candidate artifact facts');
 assert(JSON.stringify(manifest.sourceEvidence?.upstreamWorkspaceReleaseGates) === JSON.stringify({
   scopedRustFmt: 'passed',
@@ -439,7 +444,8 @@ assert(vector?.compactLengthHex === 'b404' && vector?.canonicalPrefixHex === '00
 assert(vector?.canonicalHash === '2332d0004eb24d97fd965fe68f6f31b0e51339764b4dd80f3ea50a3b6f7e5003', 'unexpected canonical transaction hash');
 assert(vector?.fixedWidthDefectiveHash === '2b5e69a0a3d333756f4ac2a54bf7eaff88a2c87484d89e6e7da98abea659662d', 'unexpected defective fixed-width hash sentinel');
 assert(manifest.blocker?.code === 'browser_transaction_codec_unpublished_source_only', 'unexpected blocker code');
-assert(manifest.blocker?.testOnlyRuntimeSeam === 'globalThis.__IROHA_NATIVE_BINDING__', 'unexpected test-only runtime seam');
+assert(manifest.blocker?.testOnlyRuntimeSeam === null, 'the removed runtime global seam must remain absent');
+assert(manifest.blocker?.transferTestCompatibility === 'legacy-offline-only', 'unexpected transfer-test compatibility boundary');
 assert(manifest.blocker?.reason.includes('source base b423c0f8bcd317fd945d6f66ce3fa679401dba7f plus a frozen candidate patch'), 'blocker must acknowledge the exact final candidate source');
 assert(manifest.blocker?.reason.includes('15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8'), 'blocker must acknowledge the exact final candidate digest');
 assert(manifest.blocker?.reason.includes('durably vendored as exact evidence'), 'blocker must acknowledge durable evidence without claiming publication');
@@ -447,7 +453,9 @@ assert(manifest.blocker?.reason.includes('not pushed, independently reviewed, pu
 assert(manifest.blocker?.reason.includes('checksum-pinned as the production dependency'), 'blocker must require production dependency pinning');
 assert(manifest.blocker?.reason.includes('Native Safari 26.5.2 separately passed 6 scenarios and 91 assertions'), 'blocker must preserve exact native Safari evidence');
 assert(manifest.blocker?.reason.includes('closes only the local Safari runtime gate'), 'blocker must not overstate native Safari evidence');
-assert(manifest.blocker?.reason.includes('Production send remains disabled'), 'blocker must preserve production non-enablement');
+assert(manifest.blocker?.reason.includes('Store production send remains disabled'), 'blocker must preserve Store production non-enablement');
+assert(manifest.blocker?.reason.includes('current Torii wire protocol v4'), 'blocker must record the current live protocol mismatch');
+assert(manifest.blocker?.reason.includes('former runtime global binding seam has been removed'), 'blocker must record global seam removal');
 const expectedLiveGates = [
   'reviewed_immutable_codec_artifact',
   'taira_live_asset_resolution',
@@ -660,8 +668,14 @@ require_fixed "$PRODUCTION_CODEC" \
   "if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS !== 'true') return undefined;" \
   "release flag gate"
 require_fixed "$PRODUCTION_CODEC" \
-  'const binding = (globalThis as IrohaBrowserGlobal).__IROHA_NATIVE_BINDING__;' \
-  "explicit unavailable browser codec seam"
+  "process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY !== LEGACY_OFFLINE_COMPATIBILITY" \
+  "legacy-offline transfer-test codec boundary"
+require_fixed "$TRANSFER" \
+  "const REVIEWED_LIVE_COMPATIBILITY = 'reviewed-live-torii-v4';" \
+  "reviewed live compatibility marker"
+require_fixed "$TRANSFER" \
+  "process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY !== REVIEWED_LIVE_COMPATIBILITY" \
+  "default-deny live compatibility guard"
 require_fixed "$BUILD_CONFIG" \
   "if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true')" \
   "all-build-mode fail-closed gate"
@@ -672,17 +686,23 @@ require_fixed "$TRANSFER_TEST" \
   "it('fails closed while Iroha transfers are not release-enabled'" \
   "disabled-release test"
 require_fixed "$TRANSFER_TEST" \
-  "it('fails closed when transfers are enabled but no reviewed bundled Iroha transaction codec artifact is configured'" \
-  "unpublished-artifact fail-closed test"
+  "it('loads the checksum-pinned browser transaction codec when transfers are enabled'" \
+  "transfer-test bundled-codec test"
 require_fixed "$TRANSFER_TEST" \
-  "it('exercises the global transaction host only as an isolated test seam'" \
-  "test-only global seam test"
+  "it('keeps the transfer-test Iroha surface offline before key export, signing, or Torii access'" \
+  "transfer-test no-secret/no-network test"
+require_fixed "$TRANSFER_TEST" \
+  "it('fails closed for absent or unreviewed live compatibility before secrets or network access'" \
+  "default-deny compatibility test"
 require_fixed "$TRANSFER_TEST" \
   "it('rejects Nexus SDK signing when the stored mnemonic does not match the account public key'" \
   "key-mismatch adversarial test"
 require_fixed "$EXTENSION_HANDLER" \
   "import { requireProductionIrohaTransferCodec } from '@extension-base/api/iroha/productionTransferCodec';" \
   "production codec loader import"
+require_fixed "$EXTENSION_HANDLER" \
+  'if (isIrohaTransferNetwork(network)) assertIrohaLiveSubmissionSupported();' \
+  "pre-unlock transfer-test protocol guard"
 require_fixed "$EXTENSION_HANDLER" \
   'transferProm = requireProductionIrohaTransferCodec().then((codec) =>' \
   "production codec loader routing"
@@ -694,8 +714,21 @@ const routeBranches = source.match(/else if \(isIrohaTransferNetwork\(network\)\
 const loaderCalls = source.match(/\brequireProductionIrohaTransferCodec\s*\(\s*\)/g) ?? [];
 const expected = `transferProm = requireProductionIrohaTransferCodec().then((codec) =>
         makeIrohaTransfer(`;
+const methodStart = source.indexOf('private async makeTransfer(');
+const methodEnd = source.indexOf('\n  private ', methodStart + 1);
+const method = source.slice(methodStart, methodEnd < 0 ? undefined : methodEnd);
+const protocolGuard = method.indexOf('if (isIrohaTransferNetwork(network)) assertIrohaLiveSubmissionSupported();');
+const unlock = method.indexOf('this.state.keyringService.unlockPair(from);');
 
-if (routeBranches.length !== 1 || loaderCalls.length !== 1 || !source.includes(expected)) {
+if (
+  routeBranches.length !== 1 ||
+  loaderCalls.length !== 1 ||
+  !source.includes(expected) ||
+  methodStart < 0 ||
+  protocolGuard < 0 ||
+  unlock < 0 ||
+  protocolGuard > unlock
+) {
   console.error('[iroha-send-readiness][web][error] extension send routing must use exactly one audited production codec loader');
   process.exit(1);
 }
@@ -711,9 +744,9 @@ expected_loader_files="$(printf '%s\n%s\n' "$PRODUCTION_CODEC" "$EXTENSION_HANDL
 }
 
 global_files="$(find "$ROOT_DIR/src" -type f -exec grep -Il '__IROHA_NATIVE_BINDING__' {} + | sort || true)"
-[[ "$global_files" == "$PRODUCTION_CODEC" ]] || {
+[[ -z "$global_files" ]] || {
   printf '%s\n' "$global_files" >&2
-  fail "the native binding seam appeared outside the single audited codec loader"
+  fail "the removed native binding seam appeared in production source"
 }
 source_symlink="$(find "$ROOT_DIR/src" -type l -print -quit)"
 [[ -z "$source_symlink" ]] || fail "production source tree contains a symlink: ${source_symlink#"$ROOT_DIR/"}"
@@ -723,12 +756,20 @@ if grep -REn '__IROHA_NATIVE_BINDING__[[:space:]]*=' "$ROOT_DIR/src" >"$TMP_MATC
 fi
 : > "$TMP_MATCHES"
 
-if grep -REn \
-  '@iroha/iroha-js/transaction-codec|buildBrowserTransferPayload|browserTransactionCodec' \
-  "$ROOT_DIR/src" >"$TMP_MATCHES" 2>/dev/null; then
-  cat "$TMP_MATCHES" >&2
-  fail "the unpublished source-only browser codec was integrated into production source"
-fi
+codec_source_files="$(
+  find "$ROOT_DIR/src" -type f -exec grep -EIl \
+    '@iroha/iroha-js[^[:space:]"'\''/]*/transaction-codec|buildBrowserTransferPayload|browserTransactionCodec' {} + | sort || true
+)"
+[[ "$codec_source_files" == "$PRODUCTION_CODEC" ]] || {
+  printf '%s\n' "$codec_source_files" >&2
+  fail "the source-only browser codec was integrated into production source outside the audited transfer-test loader"
+}
+require_fixed "$PRODUCTION_CODEC" \
+  "import('@iroha/iroha-js-transfer-codec/transaction-codec')" \
+  "checksum-pinned transfer-test codec import"
+require_fixed "$PACKAGE_JSON" \
+  '"@iroha/iroha-js-transfer-codec": "file:artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f/iroha-iroha-js-0.0.3.tgz"' \
+  "checksum-pinned transfer-test codec dependency"
 : > "$TMP_MATCHES"
 
 node - "$REGISTRY" <<'NODE'
@@ -866,7 +907,9 @@ for marker in \
   'e673f611d9d42b02f5c1ff55ec6c2133c51b9a20be1f4eaa84f32ed9ffb2c395' \
   '2332d0004eb24d97fd965fe68f6f31b0e51339764b4dd80f3ea50a3b6f7e5003' \
   '2b5e69a0a3d333756f4ac2a54bf7eaff88a2c87484d89e6e7da98abea659662d' \
-  'zero-fee placeholder' \
+  'iroha_transfer_protocol_mismatch' \
+  'no fabricated fee is accepted' \
+  '`globalThis.__IROHA_NATIVE_BINDING__` seam has been removed from source' \
   'funded, status-confirmed Taira and Nexus broadcasts' \
   'iroha_js_host is unavailable in browser builds.' \
   'Passing it does **not** make Iroha send production-ready'; do
@@ -875,7 +918,12 @@ done
 for marker in \
   'b423c0f8bcd317fd945d6f66ce3fa679401dba7f' \
   'artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f' \
-  'This path is not a `package.json` dependency or production-loader import' \
+  'This path is pinned only through the development-only' \
+  '`@iroha/iroha-js-transfer-codec` alias used by the explicitly gated' \
+  'Store profile keeps Iroha send disabled' \
+  '`legacy-offline-only` compatibility' \
+  'current wire-protocol-v4 transaction form' \
+  'former `globalThis.__IROHA_NATIVE_BINDING__` seam has been removed' \
   'adversarial verifier passes 40 checks' \
   'requires no live checkout or Git/network access' \
   'cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c' \

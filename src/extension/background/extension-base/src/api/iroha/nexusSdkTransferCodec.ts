@@ -23,7 +23,16 @@ type NexusTransferDraft = {
 };
 
 type NexusTransactionCodec = {
-  buildTransferPayload(input: Record<string, unknown>): BinaryLike;
+  buildTransferPayload(input: Record<string, unknown>): BinaryLike | {
+    bytes?: BinaryLike;
+    hash?: BinaryLike;
+    hashHex?: string;
+    hash_hex?: string;
+    payloadBytes?: BinaryLike;
+    payloadHashHex?: string;
+    payload_bytes?: BinaryLike;
+    payload_hash_hex?: string;
+  };
   finalizeSignedTransaction(
     signable: NexusSignableTransaction,
     signature: { algorithm: 'ed25519'; signature: Uint8Array },

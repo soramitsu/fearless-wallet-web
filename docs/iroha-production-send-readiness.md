@@ -1,17 +1,19 @@
 # Iroha Production Send Readiness (Browser Extension)
 
-Status: **BLOCKED / fail closed**. This is not an implemented production-send
-claim. `VUE_APP_ENABLE_IROHA_TRANSFERS=false`, SORA Nexus remains
-`enabledByDefault: false`, and the production codec loader returns unavailable
-while that release flag is false. Isolated unit tests that set the flag still
-require an out-of-band `globalThis.__IROHA_NATIVE_BINDING__` supplying both a
-transaction payload builder and signed-transaction finalizer. That global is a
-test-only seam and is not production integration evidence.
+Status for the Chrome Web Store profile: **BLOCKED / fail closed**. This is not
+an implemented production-send claim. `VUE_APP_ENABLE_IROHA_TRANSFERS=false`,
+SORA Nexus remains `enabledByDefault: false`, and the codec loader returns
+unavailable while the Store release flag is false. The former
+`globalThis.__IROHA_NATIVE_BINDING__` seam has been removed from source and is
+forbidden in both Store and transfer-test artifacts.
 
-The shared Vite configuration also rejects
-`VUE_APP_ENABLE_IROHA_TRANSFERS=true` in every build mode. This prevents a
-custom or staging mode from being packaged as a release around the production
-mode guard; direct codec seam tests remain isolated to the unit-test runtime.
+One separately identified non-Store `transfer-test` profile sets the Iroha
+policy flag to true and bundles the checksum-pinned legacy candidate for local
+UI and offline signing compatibility checks. Its exact compatibility policy is
+`legacy-offline-only`: fee estimation and submission return
+`iroha_transfer_protocol_mismatch` before account lookup, mnemonic export,
+signing, or Torii access. The shared Vite configuration rejects Iroha enablement
+outside that exact production-mode Chrome test profile.
 
 Current 2026-08-24 status: the GitHub release and tag referenced below still
 exist, but the JavaScript 0.0.2 asset is no longer attached and its former URL
@@ -22,9 +24,9 @@ digest, fail-closed browser surface, and installed contents. This restores
 durable account/read dependency installation, not browser transaction-codec
 availability or production-send approval. Historical release URLs, ABI values,
 fixture counts, and bundle measurements below remain dated evidence. A
-separate local ABI-21/V4 reconciliation now has stricter
-source-bound fixtures, reviewed dependency-lock and browser-graph gates, but it
-is isolated, uncommitted, unpublished, and not bundled by this wallet. It
+separate local ABI-21/V4 reconciliation now has stricter source-bound fixtures,
+reviewed dependency-lock and browser-graph gates, but it is isolated,
+uncommitted, unpublished, and not bundled into the Store runtime. It
 cannot unblock production send until a clean native build, independent review,
 immutable publication, checksum-pinned integration, and funded live receipt
 evidence all pass.
@@ -47,21 +49,20 @@ The Nexus client's default payload builder and finalizer call that native
 binding and otherwise raise `transaction_codec_unavailable`. No official WASM
 artifact is present in the release.
 
-The current injected codec seam is useful for contract tests, but it cannot be
-a production trust boundary: JavaScript function identity cannot prove that an
-injected global implements the reviewed Norito consensus encoding. Private key
-material must never be sent to a server to compensate for an unpublished
-client artifact.
+The runtime global codec seam has been removed. Private key material must never
+be sent to a server to compensate for an unpublished or incompatible client
+artifact.
 
 ## Final local SDK candidate is not a release artifact
 
 The final browser-safe `0.0.3` candidate was built from source base
 `b423c0f8bcd317fd945d6f66ce3fa679401dba7f` plus the frozen candidate patch.
 It exposes `@iroha/iroha-js/transaction-codec`, but neither that source nor the
-candidate tar has been pushed, independently reviewed, published as an
-immutable release, checksum-pinned by this project, or integrated through a
-bundled production import. The production dependency therefore remains the
-vendored exact `0.0.2` release artifact, which has no transaction-codec subpath.
+candidate tar has been pushed, independently reviewed, or published as an
+immutable release. It is checksum-pinned and bundled only by the explicitly
+non-Store `transfer-test` profile, not as the Store production dependency. The
+Store production dependency remains the vendored exact `0.0.2` release
+artifact, which has no transaction-codec subpath.
 
 The exact local candidate recorded on 2026-07-12 is now durably preserved as
 non-production evidence under
@@ -71,8 +72,9 @@ The evidence manifest SHA-256 is
 the frozen patch SHA-256 is
 `b50de5592570e96f9d48374ed39d55cb4a4cc8298e99fc0657e698d3e4c81049`;
 and the exact base tree is `f5e47336c7ba64f43e629636fd0b0b31ca39a22e`.
-This evidence path is not referenced by `package.json`, the production loader,
-or any release flag. Its package identity is:
+This evidence path is referenced by the development-only
+`@iroha/iroha-js-transfer-codec` package alias and the exact gated transfer-test
+loader. It remains excluded from the Store runtime. Its package identity is:
 
 - 154 package files and 154 archive entries
 - 1,281,259 packed bytes and 7,914,958 unpacked bytes
@@ -245,14 +247,14 @@ node scripts/verify-iroha-js-candidate-safari-qa-evidence.mjs
 bash scripts/audit-iroha-production-send-readiness.sh
 ```
 
-The audit rejects any build environment or checked-in environment file that
-enables Iroha transfers. It also fails if the exact package pin changes, Nexus
-becomes enabled by default, the global seam is initialized in production code,
-a native/WASM encoder or the unpublished source-only JavaScript codec is
-silently integrated, the extension send handler bypasses the audited codec
-loader, fail-closed tests disappear, the durable candidate evidence is missing
-or tampered, or this evidence loses its exact tag/digest/size/test-total/bundle
-markers or falsely claims Safari evidence.
+The Store-readiness audit rejects any ordinary build environment or checked-in
+environment file that enables Iroha transfers. It also fails if the exact test
+package pin changes, Nexus becomes enabled by default, the removed global seam
+reappears, the candidate codec appears outside the audited transfer-test
+loader, the extension send handler bypasses that loader, no-secret/no-network
+tests disappear, the durable candidate evidence is tampered with, or this
+evidence loses its exact tag/digest/size/test-total/bundle markers or falsely
+claims Safari evidence.
 
 `yarn test:vendored-iroha-sdk-audit` and
 `yarn audit:vendored-iroha-sdk` prove the 0.0.2 package integrity and confirm
@@ -273,8 +275,8 @@ Before enablement, Fearless must:
    adversarial tests against that exact artifact.
 2. Resolve and verify the live Taira and Nexus asset definition/source holding
    instead of treating UI asset text as ledger truth.
-3. Replace the current zero-fee placeholder with node-backed fee, fee-asset,
-   balance, and spendability preflight.
+3. Implement node-backed fee, fee-asset, balance, and spendability preflight;
+   no fabricated fee is accepted by the current test profile.
 4. Confirm reviewed production Torii endpoints and TLS, chain identifiers,
    I105 discriminants, codec compatibility, submission, and status behavior for
    both Taira and Nexus. Nexus has no approved production endpoint today.
@@ -282,5 +284,5 @@ Before enablement, Fearless must:
    production bundle before changing either release flag or Nexus default.
 
 Mnemonic/private-key material must remain local, copied secret material must be
-cleared on a best-effort basis, and the runtime global must not become a
-production dependency.
+cleared on a best-effort basis, and no runtime global codec dependency may be
+introduced.

@@ -125,6 +125,8 @@
               <slot name="step1Warning"></slot>
 
               <InfoRow
+                v-if="!estimateFeeError"
+                data-testid="networkFeeRow"
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
                 :price="fiatFeeCut"
@@ -870,10 +872,13 @@ export default defineComponent({
         if (transferError) {
           this.estimateFeeError = true;
           this.estimateFeeErrorMessage = getTransferErrorLocaleKey(transferError.message);
+          this.syncedFee = '';
+          this.syncedDestNetFee = '';
+        } else {
+          this.syncedFee = estimateFee ?? '';
+          this.syncedDestNetFee = destEstimateFee ?? '';
         }
 
-        this.syncedFee = estimateFee ?? '';
-        this.syncedDestNetFee = destEstimateFee ?? '';
         this.crossChainExecutionFingerprint = executionFingerprint ?? '';
         this.crossChainRuntimeMinimum = minimum ?? '';
         this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);

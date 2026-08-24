@@ -9,7 +9,15 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const productionPopupOnly = process.argv.includes('--production-popup');
-const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
+const extensionDirArgumentIndex = process.argv.indexOf('--extension-dir');
+const extensionDirArgument = extensionDirArgumentIndex === -1 ? undefined : process.argv[extensionDirArgumentIndex + 1];
+if (extensionDirArgumentIndex !== -1 && (!extensionDirArgument || extensionDirArgument.startsWith('--'))) {
+  throw new Error('--extension-dir requires a path');
+}
+const extensionDir = path.resolve(
+  root,
+  extensionDirArgument ?? `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`
+);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
 let chromeBinary =

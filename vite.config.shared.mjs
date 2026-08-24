@@ -40,6 +40,9 @@ const ENV_KEYS = [
   'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY',
   'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
   'VUE_APP_ENABLE_IROHA_TRANSFERS',
+  'VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY',
+  'VUE_APP_IROHA_TRANSFER_COMPATIBILITY',
+  'VUE_APP_TRANSFER_TESTING',
   'VUE_APP_EXTENSION_SMOKE',
   'VUE_APP_TEST_ONLY',
   'VUE_APP_FL_WEB_X1_TESTNET_API_KEY',
@@ -144,15 +147,39 @@ export function makeDefine(mode, extraEnv = {}) {
 
 export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true }) {
   if (process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
-    throw new Error(
-      'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
-    );
+    if (process.env.VUE_APP_TRANSFER_TESTING !== 'true') {
+      throw new Error(
+        'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
+      );
+    }
+    if (process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY !== 'testnet-only') {
+      throw new Error('invalid_bitcoin_transfer_network_policy');
+    }
   }
 
   if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true') {
-    throw new Error(
-      'browser_transaction_codec_unpublished_source_only: local browser codec source is not a reviewed immutable release artifact; Iroha transfers must remain disabled in every build mode'
-    );
+    if (process.env.VUE_APP_TRANSFER_TESTING !== 'true') {
+      throw new Error(
+        'browser_transaction_codec_unpublished_source_only: local browser codec source is not a reviewed immutable release artifact; Iroha transfers must remain disabled in every build mode'
+      );
+    }
+    if (process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY !== 'legacy-offline-only') {
+      throw new Error('invalid_iroha_transfer_compatibility');
+    }
+  }
+
+  if (
+    process.env.VUE_APP_TRANSFER_TESTING === 'true' &&
+    (mode !== 'production' ||
+      process.env.IS_EXTENSION !== 'true' ||
+      process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS !== 'true' ||
+      process.env.VUE_APP_ENABLE_IROHA_TRANSFERS !== 'true' ||
+      process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY !== 'testnet-only' ||
+      process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY !== 'legacy-offline-only' ||
+      process.env.VUE_APP_TEST_ONLY === 'true' ||
+      process.env.VUE_APP_EXTENSION_SMOKE === 'true')
+  ) {
+    throw new Error('invalid_transfer_test_profile: transfer testing requires both send paths in a production extension');
   }
 
   return {

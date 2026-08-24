@@ -8,6 +8,7 @@ import { encodeIrohaI105Address, parseIrohaI105Address } from '@/util/iroha';
 
 type HandleBasicTx = (data: BasicTxResponse) => void;
 type IrohaNetworkKey = 'taira' | 'nexus';
+const REVIEWED_LIVE_COMPATIBILITY = 'reviewed-live-torii-v4';
 
 type IrohaTransferParams = {
   amount: string;
@@ -85,14 +86,16 @@ function isIrohaTransferEnabled(): boolean {
 
 async function estimateIrohaTransferFee(params: IrohaTransferParams): Promise<string> {
   if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
+  assertIrohaLiveSubmissionSupported();
 
   prepareIrohaTransfer(params);
 
-  throw new Error('iroha_fee_estimation_unavailable');
+  throw new Error('iroha_transfer_fee_unavailable');
 }
 
 async function makeIrohaTransfer(params: IrohaTransferParams, codec?: IrohaTransferCodec): Promise<void> {
   if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
+  assertIrohaLiveSubmissionSupported();
 
   const prepared = prepareIrohaTransfer(params);
 
@@ -108,6 +111,7 @@ async function makeIrohaWalletSmokeTransfer(
   codec?: IrohaTransferCodec
 ): Promise<void> {
   if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
+  assertIrohaLiveSubmissionSupported();
 
   const metadata = createIrohaWalletSmokeMetadata(routeGovernanceActionHash, walletCommit);
   const route = resolveIrohaTransferRoute(params);
@@ -132,6 +136,7 @@ async function submitPreparedIrohaTransfer(
   codec: IrohaTransferCodec,
   metadata?: IrohaWalletSmokeMetadata
 ): Promise<void> {
+  assertIrohaLiveSubmissionSupported();
 
   const result = await codec.buildAndSignTransfer({
     amount: prepared.amount,
@@ -166,6 +171,12 @@ async function submitPreparedIrohaTransfer(
     .catch((error) => console.warn('Failed to refresh Iroha balance after transfer', error));
 
   console.info(`Iroha transfer applied: ${signedTransactionHash}`);
+}
+
+function assertIrohaLiveSubmissionSupported(): void {
+  if (process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY !== REVIEWED_LIVE_COMPATIBILITY) {
+    throw new Error('iroha_transfer_protocol_mismatch');
+  }
 }
 
 function createIrohaWalletSmokeMetadata(
@@ -460,6 +471,7 @@ function normalizeSignedTransactionHash(value: string | undefined): string {
 }
 
 export {
+  assertIrohaLiveSubmissionSupported,
   createIrohaWalletSmokeMetadata,
   estimateIrohaTransferFee,
   getIrohaNetworkKey,

@@ -71,6 +71,7 @@ export async function estimateBitcoinTransferFee({
   network: BitcoinNetworkKind;
 }): Promise<string> {
   if (!isBitcoinTransfersEnabled()) throw new Error('bitcoin_transfer_disabled');
+  assertBitcoinTransferNetworkAllowed(network);
 
   const feeRateSatPerVbyte = selectBitcoinFeeRateSatPerVbyte(
     await (client ?? new BitcoinEsploraClient({ network })).getFeeEstimates()
@@ -91,6 +92,7 @@ export async function makeBitcoinTransfer(
 
   const { amount, callback, networkKey, state, to } = params;
   const network = getBitcoinNetworkKind(state.networkService.networkMap[networkKey]);
+  assertBitcoinTransferNetworkAllowed(network);
   const source = resolveBitcoinTransferSource(state, params.from, network);
   const indexer = client ?? new BitcoinEsploraClient({ network });
   const amountSat = bitcoinAmountToSats(amount);
@@ -135,6 +137,7 @@ export async function prepareBitcoinTransferForTest(
   discoveryOptions: { gapLimit?: number; maxLookahead?: number } = {}
 ): Promise<Awaited<ReturnType<typeof prepareBitcoinSend>>> {
   const network = getBitcoinNetworkKind(params.state.networkService.networkMap[params.networkKey]);
+  assertBitcoinTransferNetworkAllowed(network);
   const source = resolveBitcoinTransferSource(params.state, params.from, network);
   const discovered = await discoverBitcoinTransferSources(source, network, client, discoveryOptions);
 
@@ -188,11 +191,24 @@ export async function discoverBitcoinTransferSources(
 export function getBitcoinNetworkKind(network: NetworkJson | undefined): BitcoinNetworkKind {
   if (!isBitcoinTransferNetwork(network)) throw new Error('unsupported_bitcoin_network');
 
-  const descriptor = [network.name, network.key, network.chainId, ...(network.options ?? [])].join(' ').toLowerCase();
+  const chainId = String(network.chainId ?? '');
 
-  return descriptor.includes('testnet') || descriptor.includes('test net') || descriptor.includes('bitcoin:testnet')
-    ? 'testnet'
-    : 'mainnet';
+  if (chainId === 'bitcoin:testnet') return 'testnet';
+  if (chainId === 'bitcoin:mainnet') return 'mainnet';
+
+  throw new Error('unsupported_bitcoin_network');
+}
+
+export function assertBitcoinTransferNetworkAllowed(network: BitcoinNetworkKind): void {
+  if (
+    process.env.VUE_APP_TRANSFER_TESTING === 'true' &&
+    process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY !== 'testnet-only'
+  ) {
+    throw new Error('bitcoin_transfer_policy_invalid');
+  }
+  if (process.env.VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY === 'testnet-only' && network !== 'testnet') {
+    throw new Error('bitcoin_transfer_testnet_only');
+  }
 }
 
 export function bitcoinAmountToSats(amount: string): number {

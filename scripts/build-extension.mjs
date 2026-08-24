@@ -16,20 +16,41 @@ const root = path.resolve(__dirname, '..');
 
 const args = new Set(process.argv.slice(2));
 const watch = args.has('--watch');
+const transferTest = args.has('--transfer-test');
 const modeIndex = process.argv.indexOf('--mode');
 const mode = modeIndex === -1 ? 'production' : process.argv[modeIndex + 1];
 const browser = process.env.EXTENSION_TYPE || 'chrome';
 const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
 export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
+  VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY: 'disabled',
   VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
   VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_IROHA_TRANSFER_COMPATIBILITY: 'disabled',
   VUE_APP_TEST_ONLY: 'false',
+  VUE_APP_TRANSFER_TESTING: 'false',
 });
+export const TRANSFER_TEST_RELEASE_FLAGS = Object.freeze({
+  VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY: 'testnet-only',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_TRANSFERS: 'true',
+  VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_IROHA_TRANSFER_COMPATIBILITY: 'legacy-offline-only',
+  VUE_APP_TEST_ONLY: 'false',
+  VUE_APP_TRANSFER_TESTING: 'true',
+});
+export const TRANSFER_TEST_EXTENSION_PUBLIC_KEY =
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn+8GsdWVqfR8rNIzaVG1E63O7dMkK2REMTe0eFc/anBc+R3cCIIvTGbnXWphVawNmrfcMNCK0B7gnZBpiiDZ43Ues0xsqlZdtZdutQN7F1tDYId9zbSYGkow82jeKIBibUZ8V4e+SuMH6D6hT89LtlTsLFgXR6A+RTc16Xm4wdb1+5Z9q1hRnNX/gm9sme88EM4HNps+9tjKWaW1F4D1ugHnha9Yz8N7kMIV9Hp40+J4qZBieLMo4NBm+3TddwANA24ny2DHLP5tvr55J6eKfN3q94+H6+QOxQG7Hr8UmD/S4oPw4d2VCqoXI16Lvg0lPntA0vX9Fv+L5ks8/dMK9wIDAQAB';
 
-export function enforceProductionReleaseEnvironment(environment, buildMode) {
-  if (buildMode === 'production') Object.assign(environment, PRODUCTION_RELEASE_FLAGS);
+export function enforceProductionReleaseEnvironment(environment, buildMode, { transferTest = false } = {}) {
+  if (buildMode === 'production') {
+    Object.assign(environment, transferTest ? TRANSFER_TEST_RELEASE_FLAGS : PRODUCTION_RELEASE_FLAGS);
+    if (transferTest) {
+      environment.EXTENSION_PUBLIC_KEY = TRANSFER_TEST_EXTENSION_PUBLIC_KEY;
+      environment.OAUTH_CLIENT_ID = '';
+    }
+  }
   return environment;
 }
 
@@ -112,10 +133,11 @@ async function writeStaticAssets() {
       {
         browser,
         mode,
+        profile: transferTest ? 'transfer-test' : 'release',
         releaseFlags: Object.fromEntries(
           Object.keys(PRODUCTION_RELEASE_FLAGS).map((key) => [key, process.env[key] ?? ''])
         ),
-        schemaVersion: 1,
+        schemaVersion: 2,
       },
       null,
       2
@@ -138,7 +160,10 @@ async function normalizePopupHtml() {
 }
 
 async function run() {
-  enforceProductionReleaseEnvironment(process.env, mode);
+  if (transferTest && (mode !== 'production' || watch || browser !== 'chrome')) {
+    throw new Error('the transfer-test profile requires a non-watch production Chrome build');
+  }
+  enforceProductionReleaseEnvironment(process.env, mode, { transferTest });
   if (!watch) await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
 

@@ -302,6 +302,7 @@
     "isSameAddress": "Transfers to your own account are prohibited",
     "bitcoinTransfersDisabled": "Bitcoin transfers are not enabled in this release",
     "irohaTransfersDisabled": "Iroha transfers are not enabled in this release",
+    "irohaProtocolTestOnly": "Iroha compatibility testing is available, but live submission is unavailable for this network version",
     "unsupportedSolanaTokenTransfer": "Solana token transfers are not supported yet",
     "crossChainRuntimeUnavailable": "A required network is unavailable. Try this route again later",
     "crossChainProviderDisabled": "This cross-chain provider is temporarily disabled",

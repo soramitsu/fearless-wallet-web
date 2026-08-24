@@ -25,7 +25,6 @@ import {
   loadProductionIrohaTransferCodec,
   requireProductionIrohaTransferCodec,
   resetProductionIrohaTransferCodecForTest,
-  type NativeBrowserTransactionBinding,
 } from '@extension-base/api/iroha/productionTransferCodec';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
@@ -64,6 +63,7 @@ const COMPLETE_FANOUT_HEADERS = {
   'x-iroha-fanout-routes-unavailable': '0',
   'x-iroha-fanout-routes-not-found': '0',
 };
+const REVIEWED_LIVE_COMPATIBILITY = 'reviewed-live-torii-v4';
 
 function irohaNetwork(
   name: string,
@@ -200,6 +200,11 @@ function transferCodecInput(overrides: Record<string, unknown> = {}): IrohaTrans
 
 describe('background Iroha transfer adapter', () => {
   const originalEnableIrohaTransfers = process.env.VUE_APP_ENABLE_IROHA_TRANSFERS;
+  const originalIrohaCompatibility = process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY;
+
+  beforeEach(() => {
+    process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY = REVIEWED_LIVE_COMPATIBILITY;
+  });
 
   afterEach(() => {
     if (originalEnableIrohaTransfers === undefined) {
@@ -207,9 +212,13 @@ describe('background Iroha transfer adapter', () => {
     } else {
       process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = originalEnableIrohaTransfers;
     }
+    if (originalIrohaCompatibility === undefined) {
+      delete process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY;
+    } else {
+      process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY = originalIrohaCompatibility;
+    }
     vi.useRealTimers();
     vi.unstubAllGlobals();
-    delete (globalThis as typeof globalThis & { __IROHA_NATIVE_BINDING__?: unknown }).__IROHA_NATIVE_BINDING__;
     resetProductionIrohaTransferCodecForTest();
   });
 
@@ -219,7 +228,7 @@ describe('background Iroha transfer adapter', () => {
     const prepared = prepareIrohaTransfer(transferParams(state));
 
     expect(isIrohaTransferEnabled()).toBe(true);
-    await expect(estimateIrohaTransferFee(transferParams(state))).rejects.toThrow('iroha_fee_estimation_unavailable');
+    await expect(estimateIrohaTransferFee(transferParams(state))).rejects.toThrow('iroha_transfer_fee_unavailable');
     expect(prepared).toMatchObject({
       amount: '12.34',
       assetDefinitionId: TAIRA_XOR_ASSET_ID,
@@ -446,94 +455,71 @@ describe('background Iroha transfer adapter', () => {
     expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
   });
 
-  it('fails closed when transfers are enabled but no reviewed bundled Iroha transaction codec artifact is configured', async () => {
+  it('keeps the transfer-test Iroha surface offline before key export, signing, or Torii access', async () => {
     process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
+    process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY = 'legacy-offline-only';
+    const state = createState();
+    const params = transferParams(state);
+    const codec: IrohaTransferCodec = {
+      buildAndSignTransfer: vi.fn(async () => ({
+        signedTransaction: new Uint8Array([1, 2, 3]),
+        signedTransactionHashHex: HASH,
+      })),
+    };
+    const fetchFn = vi.fn();
+    vi.stubGlobal('fetch', fetchFn);
 
-    await expect(makeIrohaTransfer(transferParams())).rejects.toThrow('iroha_transfer_codec_unavailable');
-    await expect(loadProductionIrohaTransferCodec()).resolves.toBeUndefined();
-    await expect(requireProductionIrohaTransferCodec()).rejects.toThrow('iroha_transfer_codec_unavailable');
+    await expect(estimateIrohaTransferFee(params)).rejects.toThrow('iroha_transfer_protocol_mismatch');
+    await expect(makeIrohaTransfer(params, codec)).rejects.toThrow('iroha_transfer_protocol_mismatch');
+    await expect(
+      makeIrohaWalletSmokeTransfer(params, ROUTE_GOVERNANCE_ACTION_HASH, WALLET_COMMIT, codec)
+    ).rejects.toThrow('iroha_transfer_protocol_mismatch');
+    expect(state.keyringService.getAllAccounts).not.toHaveBeenCalled();
+    expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();
+    expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(state.balanceService.fetchBalance).not.toHaveBeenCalled();
   });
 
-  it('exercises the global transaction host only as an isolated test seam', async () => {
-    const finalized = vi.fn((_input: Record<string, unknown>) => ({
-      hashHex: HASH,
-      signedTransaction: new Uint8Array([1, 2, 3]),
-    }));
-    const binding: NativeBrowserTransactionBinding = {
-      buildTransferAssetPayload: vi.fn(() => ({ payloadBytes: new Uint8Array([0xaa, 0xbb]) })),
-      finalizeSignedTransaction: finalized,
-    };
-    (
-      globalThis as typeof globalThis & { __IROHA_NATIVE_BINDING__?: NativeBrowserTransactionBinding }
-    ).__IROHA_NATIVE_BINDING__ = binding;
-
-    await expect(loadProductionIrohaTransferCodec()).resolves.toBeUndefined();
-
+  it('fails closed for absent or unreviewed live compatibility before secrets or network access', async () => {
     process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
-    const codec = await requireProductionIrohaTransferCodec();
-    const result = await codec.buildAndSignTransfer({
-      amount: '12.34',
-      assetDefinitionId: TAIRA_XOR_ASSET_ID,
-      authority: TAIRA_ACCOUNT_ID,
-      chainId: TAIRA_CHAIN_ID,
-      derivationPath: "m/44'/617'/0'/0'",
-      destinationAccountId: TAIRA_COUNTERPARTY,
-      mnemonicOrSeed: MNEMONIC,
-      network: 'taira',
-      signingPublicKeyHex: IROHA_PUBLIC_KEY,
-      sourceAccountId: TAIRA_ACCOUNT_ID,
-      sourceAssetId: `${TAIRA_XOR_ASSET_ID}#${TAIRA_ACCOUNT_ID}`,
-    });
 
-    expect(result).toEqual({ signedTransaction: new Uint8Array([1, 2, 3]), signedTransactionHashHex: HASH });
-    expect(binding.buildTransferAssetPayload).toHaveBeenCalledWith(
-      TAIRA_CHAIN_ID,
-      TAIRA_ACCOUNT_ID,
-      `${TAIRA_XOR_ASSET_ID}#${TAIRA_ACCOUNT_ID}`,
-      '12.34',
-      TAIRA_COUNTERPARTY,
-      null,
-      null,
-      null,
-      null
-    );
-    expect(finalized).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authority: TAIRA_ACCOUNT_ID,
-        payloadHashHex: expect.stringMatching(/^[0-9a-f]{64}$/u),
-        signature: expect.any(Uint8Array),
-        signingPublicKey: expect.any(Uint8Array),
-      })
-    );
-    expect((finalized.mock.calls[0]![0].signature as Uint8Array).byteLength).toBe(64);
+    for (const compatibility of [undefined, 'typo-live-compatibility']) {
+      if (compatibility === undefined) delete process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY;
+      else process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY = compatibility;
 
-    await codec.buildAndSignTransfer(
-      transferCodecInput({
-        authority: NEXUS_ACCOUNT_ID,
-        chainId: 'sora:nexus:global',
-        destinationAccountId: NEXUS_COUNTERPARTY,
-        metadata: createIrohaWalletSmokeMetadata(ROUTE_GOVERNANCE_ACTION_HASH, WALLET_COMMIT),
-        network: 'nexus',
-        sourceAccountId: NEXUS_ACCOUNT_ID,
-        sourceAssetId: `xor#sora#${NEXUS_ACCOUNT_ID}`,
-      })
-    );
-    expect(binding.buildTransferAssetPayload).toHaveBeenCalledWith(
-      'sora:nexus:global',
-      NEXUS_ACCOUNT_ID,
-      `xor#sora#${NEXUS_ACCOUNT_ID}`,
-      '1',
-      NEXUS_COUNTERPARTY,
-      JSON.stringify({
-        evidence_role: 'wallet-smoke',
-        route_governance_action_hash: ROUTE_GOVERNANCE_ACTION_HASH,
-        wallet_platform: 'web',
-        wallet_commit: WALLET_COMMIT,
-      }),
-      null,
-      null,
-      null
-    );
+      const state = createState();
+      const params = transferParams(state);
+      const codec: IrohaTransferCodec = {
+        buildAndSignTransfer: vi.fn(async () => ({
+          signedTransaction: new Uint8Array([1, 2, 3]),
+          signedTransactionHashHex: HASH,
+        })),
+      };
+      const fetchFn = vi.fn();
+      vi.stubGlobal('fetch', fetchFn);
+
+      await expect(estimateIrohaTransferFee(params)).rejects.toThrow('iroha_transfer_protocol_mismatch');
+      await expect(makeIrohaTransfer(params, codec)).rejects.toThrow('iroha_transfer_protocol_mismatch');
+      expect(state.keyringService.getAllAccounts).not.toHaveBeenCalled();
+      expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();
+      expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
+      expect(fetchFn).not.toHaveBeenCalled();
+    }
+  });
+
+  it('loads the checksum-pinned browser transaction codec when transfers are enabled', async () => {
+    process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
+    process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY = 'legacy-offline-only';
+
+    const loaded = await loadProductionIrohaTransferCodec();
+    const required = await requireProductionIrohaTransferCodec();
+    const signed = await required.buildAndSignTransfer(transferCodecInput());
+
+    expect(loaded).toBe(required);
+    expect(ArrayBuffer.isView(signed.signedTransaction)).toBe(true);
+    expect((signed.signedTransaction as ArrayBufferView).byteLength).toBeGreaterThan(0);
+    expect(signed.signedTransactionHashHex).toMatch(/^[0-9a-f]{64}$/u);
   });
 
   it('reports success and refreshes balance only after Torii confirms Applied', async () => {

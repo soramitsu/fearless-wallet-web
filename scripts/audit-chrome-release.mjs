@@ -9,6 +9,7 @@ import { inflateRawSync, inflateSync } from 'node:zlib';
 
 export const CURRENT_PUBLISHED_VERSION = '3.0.5';
 export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
+export const EXPECTED_TRANSFER_TEST_EXTENSION_ID = 'aaohenakjkjcnnhgofihmnndeejaadbg';
 export const MINIMUM_SUPPORTED_CHROME_VERSION = '102';
 const EXPECTED_EXTENSION_AUTHOR = 'Soramitsu';
 const EXPECTED_EXTENSION_DESCRIPTION =
@@ -16,6 +17,9 @@ const EXPECTED_EXTENSION_DESCRIPTION =
 const EXPECTED_EXTENSION_HOMEPAGE = 'https://fearlesswallet.io/';
 const EXPECTED_EXTENSION_NAME = 'Fearless Wallet';
 const EXPECTED_EXTENSION_SHORT_NAME = 'FW';
+const EXPECTED_TRANSFER_TEST_NAME = 'Fearless Wallet Transfer Test';
+const EXPECTED_TRANSFER_TEST_SHORT_NAME = 'FW Test';
+const EXPECTED_TRANSFER_TEST_VERSION = '0.0.0.306';
 const EXPECTED_OAUTH_CLIENT_ID_SHA256 = '06863ed12787664ce1a3433d70d645b4d5fbc7e8dc72bec0f437e95d24edc69c';
 export const REQUIRED_PUBLIC_CONFIG_KEYS = [
   'OAUTH_CLIENT_ID',
@@ -58,10 +62,22 @@ const EXPECTED_WEB_RESOURCE_MATCHES = ['https://*/*', 'http://*/*', 'http://loca
 const EXPECTED_EXTENSION_CSP =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
 const EXPECTED_RELEASE_FLAGS = {
+  VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY: 'disabled',
   VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
   VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_IROHA_TRANSFER_COMPATIBILITY: 'disabled',
   VUE_APP_TEST_ONLY: 'false',
+  VUE_APP_TRANSFER_TESTING: 'false',
+};
+const EXPECTED_TRANSFER_TEST_FLAGS = {
+  VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY: 'testnet-only',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_TRANSFERS: 'true',
+  VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_IROHA_TRANSFER_COMPATIBILITY: 'legacy-offline-only',
+  VUE_APP_TEST_ONLY: 'false',
+  VUE_APP_TRANSFER_TESTING: 'true',
 };
 const REQUIRED_MANIFEST_KEYS = [
   'action',
@@ -255,6 +271,10 @@ function reviewedRuntimeJavaScript(files, manifest, label) {
   }
 
   return [...reviewed].map((name) => [name, files.get(name)]);
+}
+
+function artifactJavaScript(files) {
+  return [...files].filter(([name]) => name.endsWith('.js'));
 }
 
 function validateSafeRelativePath(value, label, allowDirectory) {
@@ -681,20 +701,38 @@ function validateManifest(
   label,
   release,
   releaseEnvironment,
-  expectedOAuthClientIdSha256
+  expectedOAuthClientIdSha256,
+  expectedBuildProfile,
+  expectedReleaseFlags
 ) {
+  const transferTest = expectedBuildProfile === 'transfer-test';
+  const expectedExtensionName = transferTest ? EXPECTED_TRANSFER_TEST_NAME : EXPECTED_EXTENSION_NAME;
+  const expectedExtensionShortName = transferTest
+    ? EXPECTED_TRANSFER_TEST_SHORT_NAME
+    : EXPECTED_EXTENSION_SHORT_NAME;
   validateObjectKeyAllowlist(manifest, REQUIRED_MANIFEST_KEYS, OPTIONAL_MANIFEST_KEYS, `${label} top-level manifest`);
   requireCondition(manifest.manifest_version === 3, `${label} must use manifest_version 3`);
   const manifestVersion = parseChromeVersion(manifest.version, `${label} version`);
   const publishedVersion = parseChromeVersion(CURRENT_PUBLISHED_VERSION, 'published Chrome version');
-  requireCondition(
-    compareVersionComponents(manifestVersion, publishedVersion) > 0,
-    `${label} version ${manifest.version} must be greater than published version ${CURRENT_PUBLISHED_VERSION}`
-  );
-  requireCondition(
-    manifest.version === packageJson.version,
-    `${label} version ${manifest.version} does not match package.json version ${packageJson.version}`
-  );
+  if (transferTest) {
+    requireCondition(
+      manifest.version === EXPECTED_TRANSFER_TEST_VERSION,
+      `${label} transfer-test version must be ${EXPECTED_TRANSFER_TEST_VERSION}`
+    );
+    requireCondition(
+      compareVersionComponents(manifestVersion, publishedVersion) < 0,
+      `${label} transfer-test version must remain below published version ${CURRENT_PUBLISHED_VERSION}`
+    );
+  } else {
+    requireCondition(
+      compareVersionComponents(manifestVersion, publishedVersion) > 0,
+      `${label} version ${manifest.version} must be greater than published version ${CURRENT_PUBLISHED_VERSION}`
+    );
+    requireCondition(
+      manifest.version === packageJson.version,
+      `${label} version ${manifest.version} does not match package.json version ${packageJson.version}`
+    );
+  }
   parseChromeVersion(manifest.minimum_chrome_version, `${label} minimum_chrome_version`);
   requireCondition(
     manifest.minimum_chrome_version === MINIMUM_SUPPORTED_CHROME_VERSION,
@@ -710,10 +748,10 @@ function validateManifest(
     `${label} description exceeds Chrome's 132-character limit`
   );
   validateExactObjectKeys(manifest.background, ['service_worker', 'type'], `${label} background`);
-  requireCondition(manifest.name === EXPECTED_EXTENSION_NAME, `${label} name must be ${EXPECTED_EXTENSION_NAME}`);
+  requireCondition(manifest.name === expectedExtensionName, `${label} name must be ${expectedExtensionName}`);
   requireCondition(
-    manifest.short_name === EXPECTED_EXTENSION_SHORT_NAME,
-    `${label} short_name must be ${EXPECTED_EXTENSION_SHORT_NAME}`
+    manifest.short_name === expectedExtensionShortName,
+    `${label} short_name must be ${expectedExtensionShortName}`
   );
   requireCondition(
     manifest.author === EXPECTED_EXTENSION_AUTHOR,
@@ -734,8 +772,8 @@ function validateManifest(
     `${label} action.default_popup must equal popup.html#/`
   );
   requireCondition(
-    manifest.action.default_title === 'Fearless Wallet',
-    `${label} action.default_title must be Fearless Wallet`
+    manifest.action.default_title === expectedExtensionName,
+    `${label} action.default_title must be ${expectedExtensionName}`
   );
   validateExactObjectKeys(manifest.icons, REQUIRED_ICON_SIZES, `${label} icons`);
 
@@ -771,18 +809,22 @@ function validateManifest(
   const buildMetadata = parseJson(files.get('extension-build-metadata.json'), `${label} extension build metadata`);
   validateExactObjectKeys(
     buildMetadata,
-    ['browser', 'mode', 'releaseFlags', 'schemaVersion'],
+    ['browser', 'mode', 'profile', 'releaseFlags', 'schemaVersion'],
     `${label} extension build metadata`
   );
-  requireCondition(buildMetadata.schemaVersion === 1, `${label} extension build metadata schemaVersion must be 1`);
+  requireCondition(buildMetadata.schemaVersion === 2, `${label} extension build metadata schemaVersion must be 2`);
   requireCondition(buildMetadata.browser === 'chrome', `${label} extension build metadata browser must be chrome`);
   requireCondition(buildMetadata.mode === 'production', `${label} extension build metadata mode must be production`);
+  requireCondition(
+    buildMetadata.profile === expectedBuildProfile,
+    `${label} extension build metadata profile must be ${expectedBuildProfile}`
+  );
   validateExactObjectKeys(
     buildMetadata.releaseFlags,
-    Object.keys(EXPECTED_RELEASE_FLAGS),
+    Object.keys(expectedReleaseFlags),
     `${label} extension build release flags`
   );
-  for (const [key, expected] of Object.entries(EXPECTED_RELEASE_FLAGS)) {
+  for (const [key, expected] of Object.entries(expectedReleaseFlags)) {
     requireCondition(
       buildMetadata.releaseFlags[key] === expected,
       `${label} extension build release flag ${key} must be ${expected}`
@@ -831,34 +873,81 @@ function validateManifest(
       typeof manifest.key === 'string' && manifest.key.trim().length > 0,
       `${label} release mode requires manifest key`
     );
-    requireCondition(isPlainObject(manifest.oauth2), `${label} release mode requires manifest oauth2 configuration`);
-    requireCondition(
-      typeof manifest.oauth2.client_id === 'string' &&
-        /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?\.apps\.googleusercontent\.com$/u.test(manifest.oauth2.client_id),
-      `${label} release mode requires a Google OAuth client_id ending in .apps.googleusercontent.com`
-    );
-    requireCondition(
-      Array.isArray(manifest.oauth2.scopes) &&
-        manifest.oauth2.scopes.length === 1 &&
-        manifest.oauth2.scopes[0] === 'https://www.googleapis.com/auth/drive.appdata',
-      `${label} release mode requires exactly the Google Drive appdata OAuth scope`
-    );
-    requireCondition(
-      manifest.oauth2.client_id === releaseEnvironment.OAUTH_CLIENT_ID,
-      `${label} release OAuth client_id does not match OAUTH_CLIENT_ID`
-    );
-    requireCondition(
-      createHash('sha256').update(manifest.oauth2.client_id).digest('hex') === expectedOAuthClientIdSha256,
-      `${label} release OAuth client_id does not match the reviewed published client`
-    );
     const runtimeJavaScript = reviewedRuntimeJavaScript(files, manifest, label);
+    const allJavaScript = artifactJavaScript(files);
     requireCondition(
-      runtimeJavaScript.some(
-        ([name, content]) => name.endsWith('.js') && content.includes(Buffer.from(manifest.oauth2.client_id))
-      ),
-      `${label} release OAuth client_id is not compiled into a reviewed entrypoint or popup preload`
+      allJavaScript.every(([, content]) => !content.includes(Buffer.from('__IROHA_NATIVE_BINDING__'))),
+      `${label} runtime must not contain the removed Iroha global binding seam`
     );
-    for (const key of REQUIRED_COMPILED_PUBLIC_CONFIG_KEYS) {
+    if (transferTest) {
+      for (const marker of ['bitcoin_transfer_testnet_only', 'iroha_transfer_protocol_mismatch']) {
+        requireCondition(
+          runtimeJavaScript.some(([, content]) => content.includes(Buffer.from(marker))),
+          `${label} transfer-test runtime is missing required marker ${marker}`
+        );
+      }
+      const codecMarker = 'signed transaction must be canonical version-1 single-signature Transfer::Asset bytes';
+      const codecChunks = allJavaScript.filter(([, content]) => content.includes(Buffer.from(codecMarker)));
+      requireCondition(codecChunks.length > 0, `${label} transfer-test runtime is missing required marker ${codecMarker}`);
+      requireCondition(
+        codecChunks.some(([name]) =>
+          runtimeJavaScript.some(([, content]) => content.includes(Buffer.from(path.posix.basename(name))))
+        ),
+        `${label} transfer-test background does not reference the bundled Iroha codec chunk`
+      );
+      requireCondition(
+        manifest.oauth2 === undefined,
+        `${label} transfer-test profile must not include Store OAuth configuration`
+      );
+      const publishedOAuthClientId = releaseEnvironment.OAUTH_CLIENT_ID;
+      requireCondition(
+        typeof publishedOAuthClientId === 'string' && publishedOAuthClientId.length > 0,
+        `${label} transfer-test audit requires the published OAuth identity for exclusion checking`
+      );
+      requireCondition(
+        runtimeJavaScript.every(([, content]) => !content.includes(Buffer.from(publishedOAuthClientId))),
+        `${label} transfer-test runtime must not compile the published OAuth client_id`
+      );
+    } else {
+      for (const marker of [
+        'legacy-offline-only',
+        'signed transaction must be canonical version-1 single-signature Transfer::Asset bytes',
+      ]) {
+        requireCondition(
+          allJavaScript.every(([, content]) => !content.includes(Buffer.from(marker))),
+          `${label} Store runtime must not contain transfer-test marker ${marker}`
+        );
+      }
+      requireCondition(isPlainObject(manifest.oauth2), `${label} release mode requires manifest oauth2 configuration`);
+      requireCondition(
+        typeof manifest.oauth2.client_id === 'string' &&
+          /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?\.apps\.googleusercontent\.com$/u.test(manifest.oauth2.client_id),
+        `${label} release mode requires a Google OAuth client_id ending in .apps.googleusercontent.com`
+      );
+      requireCondition(
+        Array.isArray(manifest.oauth2.scopes) &&
+          manifest.oauth2.scopes.length === 1 &&
+          manifest.oauth2.scopes[0] === 'https://www.googleapis.com/auth/drive.appdata',
+        `${label} release mode requires exactly the Google Drive appdata OAuth scope`
+      );
+      requireCondition(
+        manifest.oauth2.client_id === releaseEnvironment.OAUTH_CLIENT_ID,
+        `${label} release OAuth client_id does not match OAUTH_CLIENT_ID`
+      );
+      requireCondition(
+        createHash('sha256').update(manifest.oauth2.client_id).digest('hex') === expectedOAuthClientIdSha256,
+        `${label} release OAuth client_id does not match the reviewed published client`
+      );
+      requireCondition(
+        runtimeJavaScript.some(
+          ([name, content]) => name.endsWith('.js') && content.includes(Buffer.from(manifest.oauth2.client_id))
+        ),
+        `${label} release OAuth client_id is not compiled into a reviewed entrypoint or popup preload`
+      );
+    }
+    for (const key of REQUIRED_COMPILED_PUBLIC_CONFIG_KEYS.filter(
+      (candidate) => !transferTest || candidate !== 'OAUTH_CLIENT_ID'
+    )) {
       const value = releaseEnvironment[key];
       requireCondition(
         typeof value === 'string' && value.length > 0,
@@ -870,9 +959,12 @@ function validateManifest(
       );
     }
     extensionId = deriveChromeExtensionId(manifest.key);
+    const expectedExtensionId = transferTest
+      ? EXPECTED_TRANSFER_TEST_EXTENSION_ID
+      : EXPECTED_CHROME_EXTENSION_ID;
     requireCondition(
-      extensionId === EXPECTED_CHROME_EXTENSION_ID,
-      `${label} key derives Chrome extension ID ${extensionId}, expected ${EXPECTED_CHROME_EXTENSION_ID}`
+      extensionId === expectedExtensionId,
+      `${label} key derives Chrome extension ID ${extensionId}, expected ${expectedExtensionId}`
     );
   }
 
@@ -937,6 +1029,7 @@ export async function auditChromeRelease({
   rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   distDir = path.join(rootDir, 'dist/extension/chrome'),
   zipPath = path.join(distDir, DEFAULT_ARCHIVE_NAME),
+  transferTest = false,
 } = {}) {
   rootDir = path.resolve(rootDir);
   distDir = path.resolve(distDir);
@@ -963,6 +1056,8 @@ export async function auditChromeRelease({
   }
   const zipFiles = readZipEntries(archive, 'Chrome release ZIP');
   const zipManifest = parseJson(zipFiles.get('manifest.json'), 'Chrome ZIP manifest.json');
+  const expectedBuildProfile = transferTest ? 'transfer-test' : 'release';
+  const expectedReleaseFlags = transferTest ? EXPECTED_TRANSFER_TEST_FLAGS : EXPECTED_RELEASE_FLAGS;
 
   validateNoProductionDebugOutput(directoryFiles, 'Chrome directory artifact');
   validateNoProductionDebugOutput(zipFiles, 'Chrome ZIP artifact');
@@ -973,7 +1068,9 @@ export async function auditChromeRelease({
     'Chrome directory manifest',
     release,
     releaseEnvironment,
-    expectedOAuthClientIdSha256
+    expectedOAuthClientIdSha256,
+    expectedBuildProfile,
+    expectedReleaseFlags
   );
   const zipExtensionId = validateManifest(
     zipManifest,
@@ -982,7 +1079,9 @@ export async function auditChromeRelease({
     'Chrome ZIP manifest',
     release,
     releaseEnvironment,
-    expectedOAuthClientIdSha256
+    expectedOAuthClientIdSha256,
+    expectedBuildProfile,
+    expectedReleaseFlags
   );
   compareArtifacts(directoryFiles, zipFiles);
   requireCondition(
@@ -995,6 +1094,7 @@ export async function auditChromeRelease({
     extensionId: directoryExtensionId,
     fileCount: directoryFiles.size,
     release,
+    profile: expectedBuildProfile,
     version: directoryManifest.version,
     zipSha256: createHash('sha256').update(archive).digest('hex'),
     zipPath,
@@ -1002,14 +1102,16 @@ export async function auditChromeRelease({
 }
 
 function usage() {
-  return `Usage: node scripts/audit-chrome-release.mjs [--release] [--root DIR] [--dist DIR] [--zip FILE]
+  return `Usage: node scripts/audit-chrome-release.mjs [--release] [--transfer-test] [--root DIR] [--dist DIR] [--zip FILE]
 
 Audits dist/extension/chrome and fearless-wallet-extension-chrome.zip as a Chrome Web Store release package.
---release additionally requires the production manifest key and OAuth client ID and verifies the stable extension ID.`;
+--release additionally requires the production manifest key and OAuth client ID and verifies the stable extension ID.
+--transfer-test requires the explicit transfer-test build profile with Bitcoin and Iroha send enabled.`;
 }
 
 function parseArguments(argv) {
   let release = false;
+  let transferTest = false;
   let rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   let distDir;
   let zipPath;
@@ -1019,6 +1121,10 @@ function parseArguments(argv) {
     if (argument === '--help' || argument === '-h') return { help: true };
     if (argument === '--release') {
       release = true;
+      continue;
+    }
+    if (argument === '--transfer-test') {
+      transferTest = true;
       continue;
     }
     if (argument === '--root' || argument === '--dist' || argument === '--zip') {
@@ -1035,7 +1141,7 @@ function parseArguments(argv) {
 
   distDir ??= path.join(rootDir, 'dist/extension/chrome');
   zipPath ??= path.join(distDir, DEFAULT_ARCHIVE_NAME);
-  return { distDir, release, rootDir, zipPath };
+  return { distDir, release, rootDir, transferTest, zipPath };
 }
 
 async function main() {

@@ -297,6 +297,7 @@
     "isSameAddress": "Переводы на свой адрес запрещены",
     "bitcoinTransfersDisabled": "Переводы Bitcoin не включены в этом релизе",
     "irohaTransfersDisabled": "Переводы Iroha не включены в этом релизе",
+    "irohaProtocolTestOnly": "Доступно тестирование совместимости Iroha, но отправка в сеть недоступна для этой версии протокола",
     "unsupportedSolanaTokenTransfer": "Переводы токенов Solana пока не поддерживаются",
     "crossChainRuntimeUnavailable": "Необходимая сеть недоступна. Повторите попытку позже",
     "crossChainProviderDisabled": "Этот кросс-чейн провайдер временно отключен",

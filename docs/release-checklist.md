@@ -71,7 +71,14 @@ bash ./scripts/test-iroha-production-send-readiness-audit.sh && bash ./scripts/a
   `723c46192d369dac939f75d1ef1fb2f82456b3cd6afbd0ac51c0071383871a4d`
   and the patch SHA-256 is
   `b50de5592570e96f9d48374ed39d55cb4a4cc8298e99fc0657e698d3e4c81049`.
-  This path is not a `package.json` dependency or production-loader import.
+  This path is pinned only through the development-only
+  `@iroha/iroha-js-transfer-codec` alias used by the explicitly gated
+  `transfer-test` profile; it is not the normal production dependency and the
+  Store profile keeps Iroha send disabled. The test profile declares
+  `legacy-offline-only` compatibility and blocks live Iroha submission before
+  account lookup, mnemonic export, signing, or Torii access because the frozen
+  candidate does not implement the current wire-protocol-v4 transaction form.
+  The former `globalThis.__IROHA_NATIVE_BINDING__` seam has been removed.
   Candidate source replay is entirely offline from the stored bounded archive:
   2,412,361 compressed bytes, 15,319,040 expanded bytes, 305 entries, archive
   SHA-256 `cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c`,

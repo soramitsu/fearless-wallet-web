@@ -262,14 +262,26 @@ sed -i.bak 's/requireProductionIrohaTransferCodec().then((codec) =>/Promise.reso
 rm -f "$fixture/src/extension/background/extension-base/src/background/handlers/Extension.ts.bak"
 expect_failure "send handler loader bypass" "$fixture" "production codec loader routing"
 
+fixture="$(new_fixture pre-unlock-protocol-guard-removed)"
+sed -i.bak 's/if (isIrohaTransferNetwork(network)) assertIrohaLiveSubmissionSupported();/if (false) assertIrohaLiveSubmissionSupported();/' \
+  "$fixture/src/extension/background/extension-base/src/background/handlers/Extension.ts"
+rm -f "$fixture/src/extension/background/extension-base/src/background/handlers/Extension.ts.bak"
+expect_failure "pre-unlock protocol guard removed" "$fixture" "pre-unlock transfer-test protocol guard"
+
+fixture="$(new_fixture live-compatibility-default-open)"
+sed -i.bak "s/process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY !== REVIEWED_LIVE_COMPATIBILITY/process.env.VUE_APP_IROHA_TRANSFER_COMPATIBILITY === 'legacy-offline-only'/" \
+  "$fixture/src/extension/background/extension-base/src/api/iroha/transfer.ts"
+rm -f "$fixture/src/extension/background/extension-base/src/api/iroha/transfer.ts.bak"
+expect_failure "live compatibility default-open" "$fixture" "default-deny live compatibility guard"
+
 fixture="$(new_fixture global-initialized)"
 printf '\n(globalThis as any).__IROHA_NATIVE_BINDING__ = unsafeBinding;\n' >> \
   "$fixture/src/extension/background/extension-base/src/api/iroha/productionTransferCodec.ts"
-expect_failure "global initialized" "$fixture" "initializes the unreviewed native binding global"
+expect_failure "global initialized" "$fixture" "removed native binding seam appeared in production source"
 
 fixture="$(new_fixture global-spread)"
 printf 'export const leaked = globalThis.__IROHA_NATIVE_BINDING__;\n' > "$fixture/src/leakedBinding.ts"
-expect_failure "global seam spread" "$fixture" "appeared outside the single audited codec loader"
+expect_failure "global seam spread" "$fixture" "removed native binding seam appeared in production source"
 
 fixture="$(new_fixture source-codec-integrated)"
 printf 'import { browserTransactionCodec } from "@iroha/iroha-js/transaction-codec";\nexport { browserTransactionCodec };\n' > \
@@ -309,11 +321,11 @@ sed -i.bak 's/fails closed while Iroha transfers are not release-enabled/disable
 rm -f "$fixture/tests/unit/iroha-background-transfer.spec.ts.bak"
 expect_failure "fail-closed test removed" "$fixture" "disabled-release test"
 
-fixture="$(new_fixture test-only-seam-claim-removed)"
-sed -i.bak 's/exercises the global transaction host only as an isolated test seam/loads a production transaction host/' \
+fixture="$(new_fixture transfer-test-offline-guard-removed)"
+sed -i.bak 's/keeps the transfer-test Iroha surface offline before key export, signing, or Torii access/allows live transfer-test submission/' \
   "$fixture/tests/unit/iroha-background-transfer.spec.ts"
 rm -f "$fixture/tests/unit/iroha-background-transfer.spec.ts.bak"
-expect_failure "test-only seam claim removed" "$fixture" "test-only global seam test"
+expect_failure "transfer-test offline guard removed" "$fixture" "transfer-test no-secret/no-network test"
 
 fixture="$(new_fixture mismatch-test-removed)"
 sed -i.bak 's/rejects Nexus SDK signing when the stored mnemonic does not match the account public key/rejects mismatch/' \
@@ -352,7 +364,7 @@ rm -f "$fixture/docs/iroha-production-send-readiness.md.bak"
 expect_failure "source vector redacted" "$fixture" "pinned blocker evidence marker"
 
 fixture="$(new_fixture live-gates-redacted)"
-sed -i.bak 's/zero-fee placeholder/fee placeholder/g' "$fixture/docs/iroha-production-send-readiness.md"
+sed -i.bak 's/no fabricated fee is accepted/fabricated fee accepted/g' "$fixture/docs/iroha-production-send-readiness.md"
 rm -f "$fixture/docs/iroha-production-send-readiness.md.bak"
 expect_failure "live gates redacted" "$fixture" "pinned blocker evidence marker"
 
@@ -432,5 +444,5 @@ fixture_modes="$(awk '
   }
 ' "$0" | paste -sd, -)"
 fixture_count="$(printf '%s\n' "$fixture_modes" | tr ',' '\n' | awk 'NF { count += 1 } END { print count + 0 }')"
-[[ "$fixture_count" -eq 48 ]] || fail "internal fixture inventory changed: expected 48, found $fixture_count"
-echo "[iroha-send-readiness-test][web] 48 fixtures passed (1 blocked baseline, 47 adversarial): $fixture_modes"
+[[ "$fixture_count" -eq 50 ]] || fail "internal fixture inventory changed: expected 50, found $fixture_count"
+echo "[iroha-send-readiness-test][web] 50 fixtures passed (1 blocked baseline, 49 adversarial): $fixture_modes"

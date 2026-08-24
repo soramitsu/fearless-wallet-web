@@ -13,6 +13,7 @@ import {
   auditChromeRelease,
   deriveChromeExtensionId,
   EXPECTED_CHROME_EXTENSION_ID,
+  EXPECTED_TRANSFER_TEST_EXTENSION_ID,
   REQUIRED_PUBLIC_CONFIG_KEYS,
 } from './audit-chrome-release.mjs';
 
@@ -20,6 +21,8 @@ const TEST_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1/GrfVJTMm3BhHOSkdgMWyd2KR7DtyEwOXKxDetfPP6c9ZLXN8EdmOlhIVK5AOr14mY2Rdf/mtyFA0VgwyWl1P8OZiKs1gtn1TPm7wvGpd4ccwIaWQlh+8vIaaG2/bRPc3GtK8WeUT97eSYRTgC7XeFqlP4oHYm3gnqwzKGBQ0tS2cG3scrUuq7OhxXV8GNwDFwVgW3rnBm9KhwP8MpbDBXuapS/0f+4dzp576BjHNuO+EbaLrhYzIE2OwXb0s+w5cO6NVqpjSjpldnZPiicGQzJwyPMfUGclcoj/lUQRF/JtYg5lAiYU6qsh0eiiWn8tsc7f6zJh/Wj1DI0gae0vQIDAQAB';
 const WRONG_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAj/u/XDdjlDyw7gHEtaaasZ9GdG8WOKAyJzXd8HFrDtz2Jcuy7er7MtWvHgNDA0bwpznbI5YdZeV4UfCEsA4SrA5b3MnWTHwA1bgbiDM+L9rrqvcadcKuOlTeN48Q0ijmhHlNFbTzvT9W0zw/GKv8LgXAHggxtmHQ/Z9PP2QNF5O8rUHHSL4AJ6hNcEKSBVSmbbjeVm4gSXDuED5r0nwxvRtupDxGYp8IZpP5KlExqNu1nbkPc+igCTIB6XsqijagzxewUHCdovmkb2JNtskx/PMIEv+TvWIx2BzqGp71gSh/dV7SJ3rClvWd2xj8dtxG8FfAWDTIIi0qZXWn2QhizQIDAQAB';
+const TEST_TRANSFER_PUBLIC_KEY =
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn+8GsdWVqfR8rNIzaVG1E63O7dMkK2REMTe0eFc/anBc+R3cCIIvTGbnXWphVawNmrfcMNCK0B7gnZBpiiDZ43Ues0xsqlZdtZdutQN7F1tDYId9zbSYGkow82jeKIBibUZ8V4e+SuMH6D6hT89LtlTsLFgXR6A+RTc16Xm4wdb1+5Z9q1hRnNX/gm9sme88EM4HNps+9tjKWaW1F4D1ugHnha9Yz8N7kMIV9Hp40+J4qZBieLMo4NBm+3TddwANA24ny2DHLP5tvr55J6eKfN3q94+H6+QOxQG7Hr8UmD/S4oPw4d2VCqoXI16Lvg0lPntA0vX9Fv+L5ks8/dMK9wIDAQAB';
 const ZIP_NAME = 'fearless-wallet-extension-chrome.zip';
 const TEST_RELEASE_ENVIRONMENT = Object.fromEntries(
   REQUIRED_PUBLIC_CONFIG_KEYS.map((key) => [
@@ -29,6 +32,24 @@ const TEST_RELEASE_ENVIRONMENT = Object.fromEntries(
 );
 const TEST_OAUTH_CLIENT_ID_SHA256 = createHash('sha256').update(TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID).digest('hex');
 Object.assign(process.env, TEST_RELEASE_ENVIRONMENT);
+const RELEASE_FLAGS = {
+  VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY: 'disabled',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
+  VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+  VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_IROHA_TRANSFER_COMPATIBILITY: 'disabled',
+  VUE_APP_TEST_ONLY: 'false',
+  VUE_APP_TRANSFER_TESTING: 'false',
+};
+const TRANSFER_TEST_FLAGS = {
+  VUE_APP_BITCOIN_TRANSFER_NETWORK_POLICY: 'testnet-only',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_TRANSFERS: 'true',
+  VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_IROHA_TRANSFER_COMPATIBILITY: 'legacy-offline-only',
+  VUE_APP_TEST_ONLY: 'false',
+  VUE_APP_TRANSFER_TESTING: 'true',
+};
 const CRC32_TABLE = makeCrc32Table();
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const auditScript = path.join(scriptDirectory, 'audit-chrome-release.mjs');
@@ -75,9 +96,12 @@ function pngIcon(size) {
   ]);
 }
 
-function baseManifest() {
+function baseManifest(profile = 'release') {
+  const transferTest = profile === 'transfer-test';
+  const extensionName = transferTest ? 'Fearless Wallet Transfer Test' : 'Fearless Wallet';
+
   return {
-    action: { default_popup: 'popup.html#/', default_title: 'Fearless Wallet' },
+    action: { default_popup: 'popup.html#/', default_title: extensionName },
     author: 'Soramitsu',
     background: { service_worker: 'background.js', type: 'module' },
     content_scripts: [{ js: ['content.js'], matches: ['https://*/*', 'http://*/*'], run_at: 'document_start' }],
@@ -95,25 +119,40 @@ function baseManifest() {
       64: 'icons/logo-64.png',
       128: 'icons/logo-128.png',
     },
-    key: TEST_PUBLIC_KEY,
+    key: transferTest ? TEST_TRANSFER_PUBLIC_KEY : TEST_PUBLIC_KEY,
     manifest_version: 3,
     minimum_chrome_version: '102',
-    name: 'Fearless Wallet',
-    oauth2: {
-      client_id: TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID,
-      scopes: ['https://www.googleapis.com/auth/drive.appdata'],
-    },
+    name: extensionName,
+    ...(transferTest
+      ? {}
+      : {
+          oauth2: {
+            client_id: TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID,
+            scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+          },
+        }),
     permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
-    short_name: 'FW',
-    version: '3.0.6',
+    short_name: transferTest ? 'FW Test' : 'FW',
+    version: transferTest ? '0.0.0.306' : '3.0.6',
     web_accessible_resources: [
       { matches: ['https://*/*', 'http://*/*', 'http://localhost/*'], resources: ['page.js'] },
     ],
   };
 }
 
-function baseFiles(manifest) {
-  const compiledReleaseEnvironment = Object.values(TEST_RELEASE_ENVIRONMENT).join('|');
+function baseFiles(manifest, releaseFlags = RELEASE_FLAGS, profile = 'release') {
+  const compiledReleaseEnvironment = Object.entries(TEST_RELEASE_ENVIRONMENT)
+    .filter(([key]) => profile !== 'transfer-test' || key !== 'OAUTH_CLIENT_ID')
+    .map(([, value]) => value)
+    .join('|');
+  const transferTestRuntimeMarkers =
+    profile === 'transfer-test'
+      ? [
+          'bitcoin_transfer_testnet_only',
+          'iroha_transfer_protocol_mismatch',
+        ].join('|')
+      : '';
+  const fixtureCodecChunk = 'chunks/background-vendor/iroha-iroha-js-transfer-codec-fixture.js';
   const files = new Map([
     ['manifest.json', Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`)],
     [
@@ -123,13 +162,9 @@ function baseFiles(manifest) {
           {
             browser: 'chrome',
             mode: 'production',
-            releaseFlags: {
-              VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-              VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
-              VUE_APP_EXTENSION_SMOKE: 'false',
-              VUE_APP_TEST_ONLY: 'false',
-            },
-            schemaVersion: 1,
+            profile,
+            releaseFlags,
+            schemaVersion: 2,
           },
           null,
           2
@@ -141,7 +176,11 @@ function baseFiles(manifest) {
       Buffer.from(
         `export const background = true; export const oauthClient = ${JSON.stringify(
           manifest.oauth2?.client_id ?? ''
-        )}; export const releaseEnvironment = ${JSON.stringify(compiledReleaseEnvironment)};\n`
+        )}; export const releaseEnvironment = ${JSON.stringify(
+          compiledReleaseEnvironment
+        )}; export const transferTestMarkers = ${JSON.stringify(
+          transferTestRuntimeMarkers
+        )}; ${profile === 'transfer-test' ? `import(${JSON.stringify(`./${fixtureCodecChunk}`)});` : ''}\n`
       ),
     ],
     ['content.js', Buffer.from('globalThis.fearlessContent = true;\n')],
@@ -149,6 +188,14 @@ function baseFiles(manifest) {
     ['popup.html', Buffer.from('<!doctype html><script type="module" src="./popup.js"></script>\n')],
     ['popup.js', Buffer.from('export const popup = true;\n')],
   ]);
+  if (profile === 'transfer-test') {
+    files.set(
+      fixtureCodecChunk,
+      Buffer.from(
+        'export const codecMarker = "signed transaction must be canonical version-1 single-signature Transfer::Asset bytes";\n'
+      )
+    );
+  }
   for (const size of [16, 32, 48, 64, 128]) files.set(`icons/logo-${size}.png`, pngIcon(size));
   return files;
 }
@@ -217,16 +264,17 @@ async function createFixture(tempRoot, label, options = {}) {
   );
   const distDir = path.join(rootDir, 'dist/extension/chrome');
   const zipPath = path.join(distDir, ZIP_NAME);
-  const manifest = baseManifest();
+  const profile = options.profile ?? 'release';
+  const manifest = baseManifest(profile);
   options.mutateManifest?.(manifest);
-  const packageVersion = options.packageVersion ?? manifest.version;
+  const packageVersion = options.packageVersion ?? '3.0.6';
   await fs.mkdir(distDir, { recursive: true });
   await fs.writeFile(
     path.join(rootDir, 'package.json'),
     `${JSON.stringify({ description: manifest.description, name: 'fixture', version: packageVersion }, null, 2)}\n`
   );
 
-  const files = baseFiles(manifest);
+  const files = baseFiles(manifest, options.releaseFlags, profile);
   for (const name of options.removeFiles ?? []) files.delete(name);
   for (const [name, content] of options.extraFiles ?? []) files.set(name, Buffer.from(content));
   options.mutateFiles?.(files);
@@ -270,8 +318,143 @@ async function run() {
     if (deriveChromeExtensionId(TEST_PUBLIC_KEY) !== EXPECTED_CHROME_EXTENSION_ID)
       throw new Error('known Chrome public key did not derive the stable extension ID');
     passed += 1;
+    if (deriveChromeExtensionId(TEST_TRANSFER_PUBLIC_KEY) !== EXPECTED_TRANSFER_TEST_EXTENSION_ID)
+      throw new Error('transfer-test Chrome public key did not derive the dedicated extension ID');
+    passed += 1;
 
     const clean = await expectPass(tempRoot, 'clean-release', {}, { release: true });
+    await expectPass(
+      tempRoot,
+      'transfer-test-release',
+      { profile: 'transfer-test', releaseFlags: TRANSFER_TEST_FLAGS },
+      { release: true, transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'transfer-test-requires-explicit-audit-profile',
+      {
+        profile: 'transfer-test',
+        releaseFlags: TRANSFER_TEST_FLAGS,
+        mutateManifest(manifest) {
+          manifest.action.default_title = 'Fearless Wallet';
+          manifest.key = TEST_PUBLIC_KEY;
+          manifest.name = 'Fearless Wallet';
+          manifest.oauth2 = {
+            client_id: TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID,
+            scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+          };
+          manifest.short_name = 'FW';
+          manifest.version = '3.0.6';
+        },
+      },
+      /build metadata profile must be release/u
+    );
+    await expectFailure(
+      tempRoot,
+      'release-cannot-pass-as-transfer-test',
+      {
+        mutateManifest(manifest) {
+          manifest.action.default_title = 'Fearless Wallet Transfer Test';
+          manifest.key = TEST_TRANSFER_PUBLIC_KEY;
+          manifest.name = 'Fearless Wallet Transfer Test';
+          delete manifest.oauth2;
+          manifest.short_name = 'FW Test';
+          manifest.version = '0.0.0.306';
+        },
+      },
+      /build metadata profile must be transfer-test/u,
+      { transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'transfer-test-rejects-store-key',
+      {
+        profile: 'transfer-test',
+        releaseFlags: TRANSFER_TEST_FLAGS,
+        mutateManifest: (manifest) => (manifest.key = TEST_PUBLIC_KEY),
+      },
+      /derives Chrome extension ID .* expected/u,
+      { release: true, transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'transfer-test-rejects-oauth',
+      {
+        profile: 'transfer-test',
+        releaseFlags: TRANSFER_TEST_FLAGS,
+        mutateManifest(manifest) {
+          manifest.oauth2 = {
+            client_id: TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID,
+            scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+          };
+        },
+      },
+      /must not include Store OAuth/u,
+      { release: true, transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'transfer-test-version-drift',
+      {
+        profile: 'transfer-test',
+        releaseFlags: TRANSFER_TEST_FLAGS,
+        mutateManifest: (manifest) => (manifest.version = '3.0.6'),
+      },
+      /transfer-test version must be 0\.0\.0\.306/u,
+      { release: true, transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'transfer-test-name-drift',
+      {
+        profile: 'transfer-test',
+        releaseFlags: TRANSFER_TEST_FLAGS,
+        mutateManifest(manifest) {
+          manifest.name = 'Fearless Wallet';
+          manifest.action.default_title = 'Fearless Wallet';
+        },
+      },
+      /name must be Fearless Wallet Transfer Test/u,
+      { release: true, transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'transfer-test-missing-bundled-codec-marker',
+      {
+        profile: 'transfer-test',
+        releaseFlags: TRANSFER_TEST_FLAGS,
+        mutateFiles(files) {
+          files.set(
+            'chunks/background-vendor/iroha-iroha-js-transfer-codec-fixture.js',
+            Buffer.from(
+              files
+                .get('chunks/background-vendor/iroha-iroha-js-transfer-codec-fixture.js')
+                .toString('utf8')
+                .replace(
+                  'signed transaction must be canonical version-1 single-signature Transfer::Asset bytes',
+                  'candidate-codec-removed'
+                )
+            )
+          );
+        },
+      },
+      /transfer-test runtime is missing required marker/u,
+      { release: true, transferTest: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'release-rejects-iroha-global-binding-seam',
+      {
+        mutateFiles(files) {
+          files.set(
+            'background.js',
+            Buffer.concat([files.get('background.js'), Buffer.from('\nglobalThis.__IROHA_NATIVE_BINDING__ = {};\n')])
+          );
+        },
+      },
+      /must not contain the removed Iroha global binding seam/u,
+      { release: true }
+    );
     const cli = spawnSync(
       process.execPath,
       [auditScript, '--root', clean.rootDir, '--dist', clean.distDir, '--zip', clean.zipPath],

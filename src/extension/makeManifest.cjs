@@ -2,6 +2,10 @@ const nodeProcess = require('node:process');
 const packageJson = require('../../package.json');
 
 module.exports = (browser) => {
+  const transferTest = nodeProcess.env.VUE_APP_TRANSFER_TESTING === 'true';
+  const extensionName = transferTest ? 'Fearless Wallet Transfer Test' : 'Fearless Wallet';
+  const extensionShortName = transferTest ? 'FW Test' : 'FW';
+  const extensionVersion = transferTest ? '0.0.0.306' : packageJson.version;
   const baseContentSecurityPolicy =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
   const chromiumKey = nodeProcess.env.EXTENSION_PUBLIC_KEY?.replace(/ /g, '');
@@ -23,7 +27,7 @@ module.exports = (browser) => {
       },
     },
     action: {
-      default_title: 'Fearless Wallet',
+      default_title: extensionName,
       default_popup: 'popup.html#/',
     },
     host_permissions: ['<all_urls>'],
@@ -40,7 +44,7 @@ module.exports = (browser) => {
       type: 'module',
     },
     action: {
-      default_title: 'Fearless Wallet',
+      default_title: extensionName,
       default_popup: 'popup.html#/',
     },
     host_permissions: ['<all_urls>'],
@@ -60,11 +64,11 @@ module.exports = (browser) => {
   };
 
   return {
-    version: packageJson.version,
+    version: extensionVersion,
     description: packageJson.description,
     homepage_url: 'https://fearlesswallet.io/',
-    name: 'Fearless Wallet',
-    short_name: 'FW',
+    name: extensionName,
+    short_name: extensionShortName,
     author: 'Soramitsu',
     icons: {
       16: 'icons/logo-16.png',

@@ -806,6 +806,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@iroha/iroha-js-transfer-codec@file:artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f/iroha-iroha-js-0.0.3.tgz::locator=fearless-wallet%40workspace%3A.":
+  version: 0.0.3
+  resolution: "@iroha/iroha-js-transfer-codec@file:artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f/iroha-iroha-js-0.0.3.tgz#artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f/iroha-iroha-js-0.0.3.tgz::hash=0ff079&locator=fearless-wallet%40workspace%3A."
+  dependencies:
+    "@noble/ciphers": "npm:^1.2.0"
+    "@noble/curves": "npm:^1.4.0"
+    "@noble/hashes": "npm:^1.5.0"
+    "@scure/bip39": "npm:^2.2.0"
+    buffer: "npm:^6.0.3"
+  checksum: 10/cfa9724ce4000233830e6325a163e981097e70aee5cbe36f29b71884c35f49453c20ff415313789a42dde2f7581aac5e6a86f75e7f6e8c484a35b0597ba6214c
+  languageName: node
+  linkType: hard
+
 "@iroha/iroha-js@file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz::locator=fearless-wallet%40workspace%3A.":
   version: 0.0.2
   resolution: "@iroha/iroha-js@file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz#vendor/iroha-js/iroha-iroha-js-0.0.2.tgz::hash=c60602&locator=fearless-wallet%40workspace%3A."
@@ -6956,6 +6969,7 @@ __metadata:
     "@fontsource-variable/sora": "npm:^5.2.8"
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz"
+    "@iroha/iroha-js-transfer-codec": "file:artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f/iroha-iroha-js-0.0.3.tgz"
     "@metamask/safe-event-emitter": "npm:^3.1.2"
     "@noble/curves": "npm:^1.7.0"
     "@noble/hashes": "npm:^1.4.0"

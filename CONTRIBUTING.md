@@ -64,9 +64,14 @@ nonstandard location. CI pins the repeatedly verified Firefox `152.0.4`
 runtime, passes its executable path through one contiguous setup/smoke block,
 and fails before launch unless that exact executable reports `Mozilla Firefox
 152.0.4`; GitHub Actions cannot fall back to a system Firefox. Mutable channels such as `latest`,
-`beta`, `nightly`, and `esr` are rejected by the smoke-policy test. Upgrade the
-pin, its policy constant, and this documentation together only after the full
-`yarn test:e2e:firefox` gate passes on the candidate version.
+`beta`, `nightly`, and `esr` are rejected by the smoke-policy test.
+`scripts/ci-install-firefox.sh` installs that runtime from Mozilla's release
+archive (no third-party action) and refuses to extract a tarball unless it
+matches both the pinned SHA-256 in the script and Mozilla's release
+`SHA256SUMS`; `yarn test:ci-install-firefox` proves a wrong checksum stops
+before extraction. Upgrade the pin, its checksum, its policy constant, and this
+documentation together only after the full `yarn test:e2e:firefox` gate passes
+on the candidate version.
 
 ## Pull Requests
 

@@ -33,6 +33,7 @@
     "lint:webext:firefox:raw": "web-ext lint --source-dir dist/extension/firefox --warnings-as-errors",
     "test:firefox-build-warning-policy": "node scripts/test-firefox-build-warning-policy.mjs",
     "test:firefox-smoke-policy": "node scripts/test-firefox-extension-smoke-policy.mjs",
+    "test:ci-install-firefox": "bash scripts/ci-install-firefox.sh --self-test",
     "lint:precommit": "NODE_ENV=production eslint --fix --quiet 'src/**/*.{js,jsx,vue,ts,tsx}'",
     "test:e2e:extension": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs",
     "test:e2e:firefox": "yarn build:extension:firefox && yarn lint:webext:firefox && yarn test:smoke:firefox",

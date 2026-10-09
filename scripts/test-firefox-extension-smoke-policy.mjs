@@ -27,15 +27,33 @@ function expectFailure(label, operation, expected) {
 }
 
 const ciWorkflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-const configuredFirefoxVersions = [...ciWorkflow.matchAll(/^\s*firefox-version:\s*([^\s#]+)\s*(?:#.*)?$/gmu)].map(
-  (match) => match[1]
-);
+const configuredFirefoxVersions = [
+  ...ciWorkflow.matchAll(/^\s*run:\s*bash \.\/scripts\/ci-install-firefox\.sh\s+([^\s#]+)\s*(?:#.*)?$/gmu),
+].map((match) => match[1]);
 assert.deepEqual(configuredFirefoxVersions, [VERIFIED_FIREFOX_VERSION]);
 assert.equal(assertPinnedFirefoxVersion(configuredFirefoxVersions[0]), VERIFIED_FIREFOX_VERSION);
 assertFirefoxWorkflowContract(ciWorkflow);
 assertions += 3;
+const firefoxInstaller = await readFile(new URL('./ci-install-firefox.sh', import.meta.url), 'utf8');
+const installerVersions = [...firefoxInstaller.matchAll(/^FIREFOX_VERSION="([^"]*)"$/gmu)].map((match) => match[1]);
+assert.deepEqual(installerVersions, [VERIFIED_FIREFOX_VERSION]);
+assert.match(firefoxInstaller, /^FIREFOX_SHA256="[0-9a-f]{64}"$/mu);
+assert.doesNotMatch(ciWorkflow, /setup-firefox@|firefox-version:/u);
+assertions += 3;
 for (const [label, mutation] of [
   ['missing setup step id', (value) => value.replace('id: setup-firefox', 'id: unbound-firefox')],
+  [
+    'third-party setup action',
+    (value) =>
+      value.replace(
+        'run: bash ./scripts/ci-install-firefox.sh 152.0.4',
+        'uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1.7.2\n        with:\n          firefox-version: 152.0.4'
+      ),
+  ],
+  [
+    'unpinned installer version',
+    (value) => value.replace('ci-install-firefox.sh 152.0.4', 'ci-install-firefox.sh latest'),
+  ],
   [
     'detached setup and runtime steps',
     (value) => value.replace('\n\n      - name: Firefox extension runtime', '\n\n      - name: Interposed unpinned step\n        run: true\n\n      - name: Firefox extension runtime'),

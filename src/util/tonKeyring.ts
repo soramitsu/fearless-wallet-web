@@ -105,15 +105,42 @@ export async function deriveCompatibleTonKeyPair(
 ): Promise<{ publicKey: Uint8Array; secretKey: Uint8Array }> {
   const matches = (publicKey: Uint8Array) => !expectedPublicKey ||
     (publicKey.length === expectedPublicKey.length && publicKey.every((byte, index) => byte === expectedPublicKey[index]));
+  // A wrong-password decrypt can yield ''. tonweb's HMAC rejects an empty phrase with a
+  // WebCrypto DataError, so answer as for any other phrase that is not this account's.
+  if (!mnemonic.some(Boolean)) throw new TonKeyringError(expectedPublicKey ? 'account_key_mismatch' : 'invalid_mnemonic');
   if (!password && validateMnemonic(mnemonic.join(' '))) {
     const universal = deriveTonAccount({ mnemonic: mnemonic.join(' ') });
     if (matches(universal.publicKey)) return universal;
   }
+  let nativeTried = false;
   if (await tonWebMnemonic.validateMnemonic(mnemonic, password)) {
+    nativeTried = true;
     const native = await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
     if (matches(native.publicKey)) return native;
   }
+  // Fearless 3.0.1-3.0.5 applied tonweb's KDF to every accepted phrase, including BIP39
+  // phrases that fail TON's own validity check. Existing accounts only, exact key match only:
+  // the words are replayed exactly as stored because tonweb hashes words.join(' ').
+  if (expectedPublicKey && !nativeTried) {
+    const legacy = await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
+    if (matches(legacy.publicKey)) return legacy;
+  }
   throw new TonKeyringError(expectedPublicKey ? 'account_key_mismatch' : 'invalid_mnemonic');
+}
+
+// True when the words derive the stored public key under any derivation Fearless has shipped
+// (universal, native TON or the 3.0.x legacy KDF). The words are used exactly as given, so
+// callers decide which spacing/case candidates to try.
+export async function verifyTonPhrase(words: string[], publicKey: Uint8Array): Promise<boolean> {
+  try {
+    await deriveCompatibleTonKeyPair(words, publicKey);
+
+    return true;
+  } catch (error) {
+    if (error instanceof TonKeyringError) return false;
+
+    throw error;
+  }
 }
 
 export function createTonWalletContractV4R2(

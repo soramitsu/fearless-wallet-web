@@ -389,6 +389,18 @@ export function buildUnavailableCrossChainRoutes({
   });
 }
 
+/**
+ * True when release policy, not network data, keeps this route closed: its
+ * reviewed authority is bundled but the provider's capability is switched off.
+ * Catalogued legacy bridges that are unavailable by design are never "paused".
+ */
+export function isRoutePausedByCapability(
+  route: Pick<ReviewedCrossChainRoute, 'action' | 'enabled' | 'providerId'>,
+  actions: Partial<Record<MutableAction, boolean>>
+): boolean {
+  return !route.enabled && route.providerId !== 'sora-evm-bridge' && actions[route.action] !== true;
+}
+
 export function findReviewedCrossChainRoute(
   routeId: string,
   assets: CrossChainOwnedAsset[],

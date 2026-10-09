@@ -1,4 +1,4 @@
-import { type RouteRecordRaw } from 'vue-router';
+import { type LocationQueryValue, type RouteRecordRaw } from 'vue-router';
 import { ADD_WALLET_PATH, PASSWORD_SETUP_PATH } from './accountFlowPaths';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
 import type { NetworkName } from '@/interfaces';
@@ -71,6 +71,9 @@ const NetworksAssetsSettings = () => import('@/screens/settings/NetworksAssetsSe
 const IrohaConnect = () => import('@/screens/irohaConnect/IrohaConnectPage.vue');
 const Farming = () => import('@/screens/defi/FarmingPage.vue');
 const Polkamarkt = () => import('@/screens/defi/polkamarkt/PolkamarktPage.vue');
+
+const firstQueryValue = (value: LocationQueryValue | LocationQueryValue[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) ?? '';
 
 const MigrationDescription = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/keyringMigration/MigrationDescription.vue');
@@ -539,6 +542,10 @@ const routes: Array<RouteRecordRaw> = [
         path: 'cross-chain',
         name: Components.CrossChain,
         component: CrossChain,
+        props: (route) => ({
+          requestedOriginChainId: firstQueryValue(route.query.originChainId),
+          requestedAssetKey: firstQueryValue(route.query.assetKey),
+        }),
         meta: { title: 'crossChain', primaryNavigation: 'cross-chain' },
       },
       {

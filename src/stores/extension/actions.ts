@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resolveActionCapabilities, type MutableAction } from '@extension-base/services/action-capability-service';
 import type { HexString } from '@polkadot/util/types';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { RequestsPayload } from './types';
@@ -49,18 +50,38 @@ import { URLS } from '@/consts/urls';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 const featureStorage = new LocalStorage('feature_');
-const failClosedFeatures = (): Features => ({
-  fiat: { moonpay: false, ramp: false },
-  actions: {
-    polkaswap: false,
-    demeter: false,
-    polkamarkt: false,
-    crossChainXcm: false,
-    crossChainSoraBridge: false,
-    crossChainLiberland: false,
-  },
-  assetDiscoveryMode: 'shadow',
-});
+// Holds the remote config itself (fiat, remembered explicit capability values,
+// discovery mode) so the background's veto-only policy can be re-applied. The
+// unversioned `action-capabilities` key stored defaulted `false` values that
+// cannot be told apart from vetoes, so it is ignored and left untouched.
+const FEATURES_CACHE_KEY = 'action-capabilities-v2';
+
+type CachedFeatures = {
+  fiat?: Record<string, unknown>;
+  actions?: Partial<Record<MutableAction, boolean>>;
+  assetDiscoveryMode?: Features['assetDiscoveryMode'];
+};
+
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
+const readCachedFeatures = (): CachedFeatures | undefined => {
+  try {
+    return featureStorage.get<CachedFeatures>(FEATURES_CACHE_KEY).value;
+  } catch {
+    return undefined;
+  }
+};
+
+const toFeatures = (remote: CachedFeatures | undefined): Features => {
+  const capabilities = resolveActionCapabilities(remote ?? {});
+
+  return {
+    fiat: { moonpay: false, ramp: false, ...record(remote?.fiat) },
+    actions: capabilities.actions,
+    assetDiscoveryMode: capabilities.assetDiscoveryMode,
+  };
+};
 
 export type ApprovePayload = {
   id: string;
@@ -310,22 +331,23 @@ export const actions: Actions = {
   },
 
   async fetchFeatures() {
-    const cached = featureStorage.get<Features>('action-capabilities').value;
-    this.setFeatures(cached ?? failClosedFeatures());
+    const cached = readCachedFeatures();
+    this.setFeatures(toFeatures(cached));
 
     try {
-      const { data } = await axios.get<Features>(URLS.FEATURES);
-      const features: Features = {
-        ...failClosedFeatures(),
-        ...data,
-        fiat: { ...failClosedFeatures().fiat, ...data.fiat },
-        actions: { ...failClosedFeatures().actions, ...data.actions },
+      const { data } = await axios.get<unknown>(URLS.FEATURES);
+      const capabilities = resolveActionCapabilities(data, Date.now(), cached?.actions);
+      const remote: CachedFeatures = {
+        fiat: record(record(data).fiat),
+        actions: capabilities.remoteActions,
+        assetDiscoveryMode: capabilities.assetDiscoveryMode,
       };
 
-      featureStorage.set('action-capabilities', features as unknown as Record<string, unknown>);
-      this.setFeatures(features);
+      this.setFeatures(toFeatures(remote));
+      featureStorage.set(FEATURES_CACHE_KEY, remote);
     } catch {
-      // Keep the persisted snapshot; first-run mutations remain fail-closed.
+      // Keep the cached remote config: a remembered veto stays in force offline,
+      // and without one the release defaults apply.
     }
   },
 

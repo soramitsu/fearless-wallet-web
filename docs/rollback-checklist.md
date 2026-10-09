@@ -15,7 +15,9 @@ Use this when a released browser extension causes a production-impacting issue.
 - Capture failing version, browser version, feature flags, extension manifest
   details, and relevant backend/indexer status.
 - Disable remote config or feature gates first when that removes the issue
-  without republishing.
+  without republishing. A remote `false` in `web_config.json` `actions` is a
+  sticky veto; lift it later with an explicit `true`
+  (`docs/release/web-config-actions.md`).
 - If a republish is required, prepare a hotfix branch from `master`.
 
 ## Hotfix Path

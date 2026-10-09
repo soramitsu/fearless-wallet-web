@@ -39,6 +39,11 @@ jobs:
           bash ./scripts/test-branch-flow-audit.sh
           bash ./scripts/audit-branch-flow.sh
 
+      - name: Package manager audit
+        run: |
+          node scripts/test-package-manager-audit.mjs
+          node scripts/audit-package-manager.mjs
+
       - name: Audit public artifacts
         run: |
           bash ./scripts/test-public-artifacts-audit.sh

@@ -52,6 +52,8 @@
     "test:prepare-chrome-release": "node scripts/test-prepare-chrome-release.mjs",
     "test:release-source-audit": "node scripts/test-release-source-audit.mjs",
     "test:vendored-iroha-sdk-audit": "node scripts/test-vendored-iroha-js-sdk-audit.mjs",
+    "audit:package-manager": "node scripts/audit-package-manager.mjs",
+    "test:package-manager-audit": "node scripts/test-package-manager-audit.mjs",
     "test:smoke:firefox": "yarn test:firefox-smoke-policy && node scripts/firefox-extension-smoke.mjs",
     "test:smoke:bitcoin": "vitest run tests/smoke/bitcoin-testnet-broadcast.spec.ts",
     "generate:bitcoin-broadcast-evidence-template": "bash scripts/generate-bitcoin-broadcast-evidence-template.sh",

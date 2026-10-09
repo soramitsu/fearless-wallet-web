@@ -7,15 +7,23 @@ export type PolkaswapCapabilityInput = {
   actionEnabled: boolean;
 };
 
-export function getPolkaswapCapabilityReasons(input: PolkaswapCapabilityInput): string[] {
-  const reasons: string[] = [];
+export type PolkaswapCapabilityReason =
+  | 'account'
+  | 'signer'
+  | 'runtime'
+  | 'assets'
+  | 'disclaimer'
+  | 'disabled';
 
-  if (!input.hasSoraAccount) reasons.push('Add a SORA account to use Polkaswap.');
-  else if (!input.signable) reasons.push('This wallet is watch-only or requires an unsupported external signer.');
-  if (!input.runtimeAvailable) reasons.push('The SORA runtime is not available right now.');
-  if (!input.usableAssets) reasons.push('Fund a SORA asset and enough XOR for network fees.');
-  if (!input.disclaimerAccepted) reasons.push('Read and accept the Polkaswap risk disclaimer.');
-  if (!input.actionEnabled) reasons.push('Polkaswap actions are temporarily disabled.');
+export function getPolkaswapCapabilityReasons(input: PolkaswapCapabilityInput): PolkaswapCapabilityReason[] {
+  const reasons: PolkaswapCapabilityReason[] = [];
+
+  if (!input.hasSoraAccount) reasons.push('account');
+  else if (!input.signable) reasons.push('signer');
+  if (!input.runtimeAvailable) reasons.push('runtime');
+  if (!input.usableAssets) reasons.push('assets');
+  if (!input.disclaimerAccepted) reasons.push('disclaimer');
+  if (!input.actionEnabled) reasons.push('disabled');
 
   return reasons;
 }

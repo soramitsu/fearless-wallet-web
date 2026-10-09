@@ -79,19 +79,17 @@ export default defineComponent({ name: 'BackupWalletsList' ,
           else this.migrateAccounts(index);
     },
     async migrateAccounts(index: number) {
-      this.setItemValue(index, { isLoading: true });
-
-          const { address, password } = this.items[index];
-
-          const isSuccess = await migrateMasterPassword({ address: address!, password: password! });
-
-          const fields = {
-            isError: !isSuccess,
-            isComplete: isSuccess,
-            isLoading: false,
-          };
-
-          this.setItemValue(index, fields);
+      this.setItemValue(index, { isLoading: true, isError: false });
+      const { address, password } = this.items[index];
+      let isSuccess = false;
+      try {
+        isSuccess = await migrateMasterPassword({ address: address!, password: password! });
+      } catch {
+        // A worker/storage interruption leaves the row and password available
+        // for retry. It must not strand the upgrade behind a loading spinner.
+      } finally {
+        this.setItemValue(index, { isError: !isSuccess, isComplete: isSuccess, isLoading: false });
+      }
     },
     async importFromGoogle(index: number) {
       this.setItemValue(index, { isLoading: true });

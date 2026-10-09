@@ -3,9 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 function createDatabaseHarness() {
   const put = vi.fn();
+  const read = { result: { authUrls: { existing: true } }, onsuccess: null as (() => void) | null };
   const transaction = {
     error: null as Error | null,
-    objectStore: vi.fn(() => ({ put })),
+    objectStore: vi.fn(() => ({ put, get: () => read })),
     onabort: null as ((event: Event) => void) | null,
     oncomplete: null as ((event: Event) => void) | null,
     onerror: null as ((event: Event) => void) | null,
@@ -14,12 +15,12 @@ function createDatabaseHarness() {
     transaction: vi.fn(() => transaction),
   };
 
-  return { database, put, transaction };
+  return { database, put, transaction, read };
 }
 
 describe('StorageWeb', () => {
   it('resolves set only after the IndexedDB transaction commits', async () => {
-    const { database, put, transaction } = createDatabaseHarness();
+    const { database, put, transaction, read } = createDatabaseHarness();
     const storage = new StorageWeb();
     const settled = vi.fn();
 
@@ -28,7 +29,9 @@ describe('StorageWeb', () => {
 
     void write.then(settled);
     await Promise.resolve();
+    read.onsuccess?.();
     expect(put).toHaveBeenCalledOnce();
+    expect(put).toHaveBeenCalledWith({ authUrls: { existing: true }, balances: {} }, 'storageItem');
     expect(settled).not.toHaveBeenCalled();
 
     transaction.oncomplete?.(new Event('complete'));

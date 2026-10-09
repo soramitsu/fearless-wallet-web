@@ -1,8 +1,10 @@
+import { sign, signVerify } from '@ton/crypto';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import {
   createTonWalletContractV4R2,
   deriveTonAccount,
   deriveTonAddress,
+  deriveCompatibleTonKeyPair,
   TON_DEFAULT_DERIVATION_PATH,
   TON_DEFAULT_WORKCHAIN,
   TON_WALLET_VERSION,
@@ -25,6 +27,28 @@ function errorCodeOf(action: () => unknown): string {
 }
 
 describe('TON keyring derivation', () => {
+  // Public TonSwift upstream mnemonic test vector, also used by iOS upgrade tests.
+  const nativePhrase = 'cluster notice abandon frost gospel boring element situate click mix vague replace imitate garment useful crater resource dose tenant theme foam ancient phrase slight';
+  const nativePublicKey = '34eb4b67d64f74d989ce2bc2e3dfddb7ed4cb0eec92f29fbecd05b1eabab0254';
+
+  it('preserves released native TON signing keys without treating the phrase as BIP39', async () => {
+    const restored = await deriveCompatibleTonKeyPair(nativePhrase.split(' '), Buffer.from(nativePublicKey, 'hex'));
+    expect(Buffer.from(restored.publicKey).toString('hex')).toBe(nativePublicKey);
+    const payload = Buffer.from('public legacy TON upgrade fixture');
+    expect(signVerify(payload, sign(payload, Buffer.from(restored.secretKey)), Buffer.from(restored.publicKey))).toBe(true);
+    expect((await deriveCompatibleTonKeyPair(nativePhrase.split(' '))).publicKey).toEqual(restored.publicKey);
+  });
+
+  it('keeps universal TON derivation for its matching existing account', async () => {
+    const restored = await deriveCompatibleTonKeyPair(mnemonic.split(' '), Buffer.from(expected.publicKeyHex, 'hex'));
+    expect(Buffer.from(restored.publicKey).toString('hex')).toBe(expected.publicKeyHex);
+  });
+
+  it('refuses signing with a valid phrase belonging to a different stored account', async () => {
+    await expect(deriveCompatibleTonKeyPair(nativePhrase.split(' '), new Uint8Array(32))).rejects.toMatchObject({ code: 'account_key_mismatch' });
+    await expect(deriveCompatibleTonKeyPair(['invalid'])).rejects.toMatchObject({ code: 'invalid_mnemonic' });
+  });
+
   it('derives Universal Wallet V2 TON v4r2 accounts from golden vectors', () => {
     for (const vector of vectors.vectors) {
       const account = deriveTonAccount({ mnemonic: vector.mnemonic });

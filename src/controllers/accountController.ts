@@ -1,8 +1,8 @@
 import type { NftSettings } from '@extension-base/services/nft-service/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
-import type { Lang } from '@/locales';
 import type { HiddenAssets } from '@/stores/accounts/types';
 import type { AssetPreference } from '@/portfolio/assetIdentity';
+import { isLang, type Lang } from '@/locales/languages';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 class AccountController {
@@ -63,9 +63,9 @@ class AccountController {
   }
 
   public getLang(): Lang {
-    const lang = this.lsAccount.get<Lang>(this.langStorageName);
+    const lang = this.lsAccount.get<unknown>(this.langStorageName);
 
-    return lang.value ?? 'en-EN';
+    return isLang(lang.value) ? lang.value : 'en-EN';
   }
 
   public setLang(lang: Lang): void {
@@ -89,7 +89,9 @@ class AccountController {
   }
 
   public getAssetPreferences(): Record<WalletAddress, Record<string, AssetPreference>> {
-    return this.lsAccount.get<Record<WalletAddress, Record<string, AssetPreference>>>(this.assetPreferences).value ?? {};
+    return (
+      this.lsAccount.get<Record<WalletAddress, Record<string, AssetPreference>>>(this.assetPreferences).value ?? {}
+    );
   }
 
   public setAssetPreferences(preferences: Record<WalletAddress, Record<string, AssetPreference>>): void {

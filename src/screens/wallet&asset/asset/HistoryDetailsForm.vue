@@ -1,10 +1,10 @@
 <template>
-  <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
+  <AboveForm header="historyDetails.details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <Scroll>
         <div class="descriptions">
           <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
-            Extrinsic Hash
+            {{ $t('historyDetails.extrinsicHash') }}
 
             <div class="item-value item-icon" data-testid="extrinsicHash">
               {{ displayExtrinsicHash }}
@@ -14,7 +14,7 @@
           </div>
 
           <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
-            Block Hash
+            {{ $t('historyDetails.blockHash') }}
 
             <div class="item-value item-icon" data-testid="extrinsicHash">
               {{ displayBlockHash }}
@@ -25,7 +25,7 @@
 
           <template v-if="isTransfer">
             <div class="item">
-              From
+              {{ $t('historyDetails.from') }}
 
               <div class="item-value item-icon">
                 <Identicon v-if="!isTon" :address="fromAddress" />
@@ -37,7 +37,7 @@
             </div>
 
             <div class="item">
-              To
+              {{ $t('historyDetails.to') }}
 
               <div class="item-value item-icon">
                 <Identicon v-if="!isTon" :address="toAddress" />
@@ -50,7 +50,7 @@
           </template>
 
           <div v-if="isReward" class="item">
-            Validator
+            {{ $t('historyDetails.validator') }}
 
             <div class="item-value item-icon">
               <Identicon :address="validator" />
@@ -62,49 +62,49 @@
           </div>
 
           <div class="item" data-testid="statusLabel">
-            Status
+            {{ $t('historyDetails.status') }}
 
             <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
           </div>
 
           <div class="item" data-testid="dateLabel">
-            Date
+            {{ $t('historyDetails.date') }}
 
             <div class="item-value" data-testid="dateValue">{{ date }}</div>
           </div>
 
           <div v-if="isReward" class="item" data-testid="eraLabel">
-            Era
+            {{ $t('historyDetails.era') }}
 
             <div class="item-value" data-testid="eraValue">{{ era }}</div>
           </div>
 
           <div v-if="!!moduleType" class="item" data-testid="moduleLabel">
-            Module
+            {{ $t('historyDetails.module') }}
 
             <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
           </div>
 
           <div v-if="!!method" class="item" data-testid="methodLabel">
-            Method
+            {{ $t('historyDetails.method') }}
 
             <div class="item-value" data-testid="methodValue">{{ method }}</div>
           </div>
 
           <div v-if="showAmount" class="item" data-testid="amountLabel">
-            Amount
+            {{ $t('historyDetails.amount') }}
 
             <div class="item-value" data-testid="amountValue">{{ value }}</div>
           </div>
 
           <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
-            Target Amount
+            {{ $t('historyDetails.targetAmount') }}
 
             <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
           </div>
 
           <div v-if="showFee" class="item" data-testid="feeLabel">
-            Transfer fee
+            {{ $t('historyDetails.transferFee') }}
 
             <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
           </div>
@@ -227,7 +227,7 @@ export default defineComponent({
       return this.historyElement.reward?.validator;
     },
     displayValidator() {
-      if (!this.validator) return 'no validator info';
+      if (!this.validator) return this.$t('historyDetails.noValidatorInfo');
 
       return cut(this.validator, 10);
     },
@@ -238,7 +238,7 @@ export default defineComponent({
       return ['item-value', this.statusIsSuccess ? 'status-success' : 'status-reject'];
     },
     statusText() {
-      return this.statusIsSuccess ? 'Completed' : 'Reject';
+      return this.$t(this.statusIsSuccess ? 'historyDetails.completed' : 'historyDetails.rejected');
     },
     fromAddress() {
       if (this.isTon) return this.historyElementTonType?.from;

@@ -47,6 +47,7 @@ vi.mock('@/router/routes', () => ({
     AccountSetting: 'AccountSetting',
     DAppDetails: 'DAppDetails',
     DAppsAuths: 'DAppsAuths',
+    IrohaConnect: 'IrohaConnect',
     SettingsChangePassword: 'SettingsChangePassword',
     SettingsNetworksAssets: 'SettingsNetworksAssets',
     Unlock: 'Unlock',
@@ -55,6 +56,19 @@ vi.mock('@/router/routes', () => ({
 }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accountsStore }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.extensionStore }));
+vi.mock('@/locales/useI18n', () => ({
+  useI18n: () => ({
+    t: (key: string) =>
+      ({
+        'settingsPage.irohaConnectDescription': 'SORA 3 wallet sessions for Uranai and Iroha dApps',
+        'settingsPage.tonConnectDescription': 'TonConnect sessions are not supported in this build yet.',
+        'settingsPage.buildUnavailable': 'Build unavailable',
+        'settingsPage.connectedDappsDescription': 'Substrate and EVM permissions',
+        'authorize.unsupportedConnectionManagement':
+          'Connection management for this protocol is unavailable in this build.',
+      } as Record<string, string>)[key] ?? key,
+  }),
+}));
 
 import DAppDetails from '@/screens/extension-ui/DAppDetails.vue';
 import DAppsAuths from '@/screens/extension-ui/DAppsAuths.vue';
@@ -106,6 +120,17 @@ describe('settings connection reachability', () => {
     await wrapper.get('[data-testid="settings-wallet-connect"]').trigger('click');
 
     expect(mocks.push).toHaveBeenCalledWith({ name: 'WalletConnectInitAuth', params: undefined });
+  });
+
+  it('exposes IrohaConnect as a SORA 3 wallet connection', async () => {
+    const wrapper = mountSettings();
+    const irohaConnect = wrapper.get('[data-testid="settings-iroha-connect"]');
+
+    expect(irohaConnect.text()).toContain('SORA 3 wallet sessions for Uranai and Iroha dApps');
+
+    await irohaConnect.trigger('click');
+
+    expect(mocks.push).toHaveBeenCalledWith({ name: 'IrohaConnect', params: undefined });
   });
 
   it('exposes an honest, non-actionable TonConnect state for TON wallets', async () => {

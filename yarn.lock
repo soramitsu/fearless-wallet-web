@@ -720,6 +720,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource/noto-sans-egyptian-hieroglyphs@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/noto-sans-egyptian-hieroglyphs@npm:5.3.0"
+  checksum: 10/45571ff365b284fa12020811de54127a1c3da6649eaa6bb0835cbf3753713135463464d9d73847ad2c03fb29d40f5c1fc979ad60cd1e6eb1dc7c577cf929bb0c
+  languageName: node
+  linkType: hard
+
 "@fregante/relaxed-json@npm:2.0.0":
   version: 2.0.0
   resolution: "@fregante/relaxed-json@npm:2.0.0"
@@ -6955,6 +6962,7 @@ __metadata:
     "@eslint/js": "npm:^10.0.1"
     "@fontsource-variable/sora": "npm:^5.2.8"
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
+    "@fontsource/noto-sans-egyptian-hieroglyphs": "npm:^5.3.0"
     "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz"
     "@metamask/safe-event-emitter": "npm:^3.1.2"
     "@noble/curves": "npm:^1.7.0"

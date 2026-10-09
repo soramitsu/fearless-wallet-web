@@ -59,6 +59,7 @@ export type ReviewedCrossChainRoute = {
   destinationChainId: string;
   protocol: string;
   minimum: string | null;
+  destinationFee: string | null;
   feeDescription: string;
   estimatedTime: string;
   warnings: string[];
@@ -260,6 +261,7 @@ export function buildReviewedCrossChainRoutes({
         destinationChainId: definition.destinationChainId,
         protocol: provider.protocol,
         minimum: definition.minimum,
+        destinationFee: definition.execution.destinationFee,
         feeDescription:
           definition.execution.destinationFee === '0'
             ? 'Origin network fee quoted live before confirmation'
@@ -378,6 +380,7 @@ export function buildUnavailableCrossChainRoutes({
         destinationChainId: definition.destinationChainId,
         protocol: provider.protocol,
         minimum: null,
+        destinationFee: null,
         feeDescription: 'Multi-step fees cannot be quoted safely in this release',
         estimatedTime: provider.estimatedTime,
         warnings: ['No funds are submitted while this capability is unavailable.'],

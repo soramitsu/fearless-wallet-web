@@ -71,6 +71,12 @@ import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/service
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
+import type {
+  IrohaConnectAccountRequest,
+  IrohaConnectPendingRequest,
+  IrohaConnectSnapshot,
+  IrohaConnectStartRequest,
+} from '@extension-base/services/iroha-connect-service/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type {
   EvmRequests,
@@ -179,7 +185,7 @@ import {
   isLocallySignableSelectedSoraPair,
 } from '@/defi/soraAccountBinding';
 import { WalletEcosystem } from '@/interfaces';
-import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import {
   isNativeEVMNetwork,
   uniqueStringArray,
@@ -363,10 +369,21 @@ export default class Extension extends FWExtensionBase {
       }
     );
 
+    // Restoring the selected account is asynchronous in the web store. Publish
+    // that selection even when the account collection itself has not changed.
+    const currentAccountSubscription = this.state.keyringService.currentAccountSubject.subscribe(() => {
+      cb([
+        ...this.convertAccounts(this.state.keyringService.addressSubject.value),
+        ...this.convertAccounts(this.state.keyringService.accountSubject.value),
+        ...this.convertAccounts(this.state.keyringService.tonKeyring.accountSubject.value, WalletEcosystem.Ton),
+      ]);
+    });
+
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
       substrateAddressesSubscription.unsubscribe();
       substrateAccountsSubscription.unsubscribe();
       tonSubscription.unsubscribe();
+      currentAccountSubscription.unsubscribe();
     });
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
@@ -425,7 +442,8 @@ export default class Extension extends FWExtensionBase {
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 
-    if (!tab || !tab.url) {
+    const target = getTabAuthorizationTarget(tab?.url);
+    if (!target) {
       return {
         isAuthorize: false,
         authorizeAccountsCount: 0,
@@ -433,8 +451,7 @@ export default class Extension extends FWExtensionBase {
       };
     }
 
-    const tabHostName = new URL(tab.url).hostname;
-    const tabAuthKey = stripUrl(tab.url);
+    const { hostname: tabHostName, key: tabAuthKey } = target;
 
     return new Promise((resolve) => {
       this.state.requestService.getAuthorize((authUrls) => {
@@ -2184,6 +2201,16 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
+  private irohaConnectSubscribe(id: string, port?: Port): IrohaConnectSnapshot {
+    const cb = this.state.subscriptionService.createSubscription<'pri(irohaConnect.subscribe)'>(id, port);
+    const subscription = this.state.irohaConnectService.stateSubject.subscribe(cb);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+    return this.state.irohaConnectService.snapshot;
+  }
+
   changeMasterPassword(request: RequestChangePassword): boolean {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
@@ -2567,6 +2594,31 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(walletConnect.app.pairing)':
         return this.walletConnectDappPairing();
+
+      // IrohaConnect wallet relay
+      case 'pri(irohaConnect.connect)':
+        return this.state.irohaConnectService.connect((request as IrohaConnectStartRequest).uri);
+
+      case 'pri(irohaConnect.subscribe)':
+        return this.irohaConnectSubscribe(id, port);
+
+      case 'pri(irohaConnect.session.approve)':
+        return this.state.irohaConnectService.approveSession((request as IrohaConnectAccountRequest).accountId);
+
+      case 'pri(irohaConnect.session.reject)':
+        return this.state.irohaConnectService.rejectSession();
+
+      case 'pri(irohaConnect.request.approve)':
+        return this.state.irohaConnectService.approveRequest((request as IrohaConnectPendingRequest).requestId);
+
+      case 'pri(irohaConnect.request.reject)':
+        return this.state.irohaConnectService.rejectRequest((request as IrohaConnectPendingRequest).requestId);
+
+      case 'pri(irohaConnect.disconnect)':
+        return this.state.irohaConnectService.disconnect();
+
+      case 'pri(irohaConnect.error.clear)':
+        return this.state.irohaConnectService.clearError();
 
       // OnBoarding
       case 'pri(onboarding.getStories)':

@@ -9,7 +9,7 @@ import type { FWKeyringMeta } from '../../types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { Address, WalletContractV4 } from '@ton/ton';
 import { WalletEcosystem } from '@/interfaces';
-import { createTonWalletContractV4R2, deriveTonAccount } from '@/util/tonKeyring';
+import { createTonWalletContractV4R2, deriveCompatibleTonKeyPair } from '@/util/tonKeyring';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 type TonAccountInfo = Omit<TonStoreAccount, 'publicKeyHex'> & {
@@ -117,15 +117,8 @@ export class TonKeyringService {
     return validateBip39Mnemonic(mnemonic) || (await tonWebMnemonic.validateMnemonic(mnemonic, password));
   }
 
-  async mnemonicToKeyPair(mnemonic: string[], password?: string) {
-    if (password) return await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
-
-    const account = deriveTonAccount({ mnemonic: mnemonic.join(' ') });
-
-    return {
-      publicKey: account.publicKey,
-      secretKey: account.secretKey,
-    };
+  async mnemonicToKeyPair(mnemonic: string[], password?: string, expectedPublicKey?: Uint8Array) {
+    return deriveCompatibleTonKeyPair(mnemonic, expectedPublicKey, password);
   }
 
   async isPasswordNeeded(mnemonic: string[]) {
@@ -175,24 +168,23 @@ export class TonKeyringService {
             ...meta,
             walletEcosystem: WalletEcosystem.Ton,
           };
-    const account = deriveTonAccount({ mnemonic: suriArray.join(' ') });
+    const account = await deriveCompatibleTonKeyPair(suriArray);
     const wallet = this.createContractV4(account.publicKey);
-    const address = account.addressNonBounceable;
+    const address = this.getUserFriendlyAddress(wallet.address);
+    const publicKeyHex = bytesToHex(account.publicKey);
     const name = initialMeta.name ?? '';
     const universalMeta = withUniversalWalletKeyringMeta(
       address,
       {
         ...initialMeta,
-        tonAddress: account.addressNonBounceable,
-        tonPublicKeyHex: account.publicKeyHex,
+        tonAddress: address,
+        tonPublicKeyHex: publicKeyHex,
       },
       WalletEcosystem.Ton
     );
 
     if (password) {
       const cipherSeed = this.encodeMnemonic(suriArray, password);
-      const publicKeyHex = account.publicKeyHex;
-
       tonStore.set(address, { name, address, cipherSeed, meta: universalMeta, publicKeyHex });
 
       this.setAccounts({ address, name, cipherSeed, meta: universalMeta, publicKeyHex });

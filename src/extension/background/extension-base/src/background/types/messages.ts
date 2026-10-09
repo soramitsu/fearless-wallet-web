@@ -55,6 +55,12 @@ import type {
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import type {
+  IrohaConnectAccountRequest,
+  IrohaConnectPendingRequest,
+  IrohaConnectSnapshot,
+  IrohaConnectStartRequest,
+} from '@extension-base/services/iroha-connect-service/types';
+import type {
   StakingParamsRequest,
   StakingParamsResponse,
   MyStakingInfoResponse,
@@ -372,6 +378,16 @@ export interface RequestSignatures {
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
   'pri(walletConnect.app.pairing)': [null, string];
+
+  // IrohaConnect wallet relay (Uranai-compatible v1)
+  'pri(irohaConnect.connect)': [IrohaConnectStartRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.subscribe)': [null, IrohaConnectSnapshot, IrohaConnectSnapshot];
+  'pri(irohaConnect.session.approve)': [IrohaConnectAccountRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.session.reject)': [null, IrohaConnectSnapshot];
+  'pri(irohaConnect.request.approve)': [IrohaConnectPendingRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.request.reject)': [IrohaConnectPendingRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.disconnect)': [null, IrohaConnectSnapshot];
+  'pri(irohaConnect.error.clear)': [null, IrohaConnectSnapshot];
 
   // Nfts
   'pri(nft.get.all)': [string, AlchemyOwnedNftsResponse];

@@ -69,8 +69,8 @@ export default class FWExtensionBase {
     return this.state.keyringService.decodeAddress(key, ignoreChecksum, ss58Format);
   };
 
-  updatePairMeta({ address, meta }: RequestUpdateMeta) {
-    this.state.keyringService.saveAccountMeta(address, meta);
+  async updatePairMeta({ address, meta }: RequestUpdateMeta) {
+    await this.state.keyringService.saveAccountMeta(address, meta);
 
     // если передали ethereumAddress, нужно сохранить ethereumAddress для аккаунта
     if (meta.ethereumAddress) {
@@ -95,9 +95,9 @@ export default class FWExtensionBase {
     return true;
   }
 
-  accountUpdateName({ address, name, walletEcosystem }: RequestAccountName): boolean {
+  async accountUpdateName({ address, name, walletEcosystem }: RequestAccountName): Promise<boolean> {
     if (walletEcosystem === WalletEcosystem.Ton) this.state.keyringService.tonKeyring.updateAccountName(address, name);
-    else this.state.keyringService.saveAccountMeta(address, { name });
+    else await this.state.keyringService.saveAccountMeta(address, { name });
 
     return true;
   }

@@ -59,6 +59,7 @@ describe('Universal Wallet registry network mapping', () => {
 
   it('supplements missing networks and corrects stale registry-backed history endpoints', () => {
     const solana = createUniversalWalletRegistryNetworks().find(({ name }) => name === 'Solana')!;
+    const taira = createUniversalWalletRegistryNetworks().find(({ name }) => name === 'Taira Testnet')!;
     const networkMap: Record<string, NetworkJson> = {
       Solana: {
         ...solana,
@@ -71,6 +72,10 @@ describe('Universal Wallet registry network mapping', () => {
           },
         } as NetworkJson['externalApi'],
         favorite: ['old-address'],
+      },
+      'Taira Testnet': {
+        ...taira,
+        chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId.toUpperCase(),
       },
     };
 

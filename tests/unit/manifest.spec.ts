@@ -33,7 +33,7 @@ describe('extension manifest generation', () => {
     expect(manifest.permissions).toContain('alarms');
     expect(manifest.permissions).not.toContain('*://www.googleapis.com/*');
     expect(manifest.key).toBe('abcdefghi');
-    expect(manifest.minimum_chrome_version).toBe('102');
+    expect(manifest.minimum_chrome_version).toBe('116');
     expect(manifest.oauth2).toEqual({
       scopes: ['https://www.googleapis.com/auth/drive.appdata'],
       client_id: 'oauth-client',
@@ -71,7 +71,7 @@ describe('extension manifest generation', () => {
 
     expect(manifest).not.toHaveProperty('key');
     expect(manifest).not.toHaveProperty('oauth2');
-    expect(manifest.minimum_chrome_version).toBe('102');
+    expect(manifest.minimum_chrome_version).toBe('116');
   });
 
   it('exposes only expected runtime scripts to page contexts', () => {

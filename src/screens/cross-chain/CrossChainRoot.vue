@@ -2,18 +2,22 @@
   <div class="cross-chain-root">
     <header class="workspace-header">
       <div>
-        <h1>Cross-chain</h1>
-        <p>Choose an origin first. Only reviewed routes are enabled.</p>
+        <h1>{{ t('crossChainPage.title') }}</h1>
+        <p>{{ t('crossChainPage.subtitle') }}</p>
       </div>
     </header>
 
     <ContentForm :height="contentHeight">
       <Scroll>
         <div class="route-builder">
+          <div v-if="!originNetworks.length" class="capability-state" role="status">
+            <strong>{{ t('portfolioPage.noAssetsDetected') }}</strong>
+            <FButton type="secondary" text="primaryMenu.portfolio" @click="router.push({ name: Components.Wallet })" />
+          </div>
           <label>
-            <span>Origin network</span>
-            <select v-model="originChainId">
-              <option value="">Select network</option>
+            <span>{{ t('crossChainPage.originNetwork') }}</span>
+            <select v-model="originChainId" :disabled="!originNetworks.length">
+              <option value="">{{ t('crossChainPage.selectNetwork') }}</option>
               <option v-for="network in originNetworks" :key="network.chainId" :value="network.chainId">
                 {{ network.name }} · {{ network.ecosystem }}
               </option>
@@ -21,15 +25,15 @@
           </label>
 
           <div v-if="originChainId" class="route-account">
-            <span>Origin account</span>
-            <strong>{{ accountsStore.selectedWallet.name || 'Selected wallet' }}</strong>
+            <span>{{ t('crossChainPage.originAccount') }}</span>
+            <strong>{{ accountsStore.selectedWallet.name || t('crossChainPage.selectedWallet') }}</strong>
             <small>{{ shortOriginAddress }}</small>
           </div>
 
           <label>
-            <span>Asset</span>
+            <span>{{ t('crossChainPage.asset') }}</span>
             <select v-model="assetKey" :disabled="!originChainId">
-              <option value="">Select asset</option>
+              <option value="">{{ t('crossChainPage.selectAsset') }}</option>
               <option v-for="asset in originAssets" :key="asset.key" :value="asset.key">
                 {{ asset.symbol }} · {{ asset.name }}
               </option>
@@ -38,16 +42,16 @@
 
           <div v-if="originChainId && selectedAsset && !reviewedRoutes.length" class="capability-state">
             <Icon icon="info" className="state-icon" :hover="false" />
-            <strong>No reviewed route</strong>
+            <strong>{{ t('crossChainPage.noReviewedRoute') }}</strong>
             <span>{{ unavailableMessage }}</span>
           </div>
 
           <label v-else-if="reviewedRoutes.length">
-            <span>Destination network</span>
+            <span>{{ t('crossChainPage.destinationNetwork') }}</span>
             <select v-model="routeId">
-              <option value="">Select destination</option>
+              <option value="">{{ t('crossChainPage.selectDestination') }}</option>
               <option v-for="route in reviewedRoutes" :key="route.id" :value="route.id">
-                {{ route.destinationNetwork }} · {{ route.protocol }}
+                {{ route.destinationNetwork }} · {{ route.enabled ? route.protocol : t('crossChainPage.unavailable') }}
               </option>
             </select>
           </label>
@@ -57,30 +61,34 @@
             <strong>{{ selectedRoute.protocol }}</strong>
 
             <dl class="route-facts">
-              <div><dt>Minimum</dt><dd>{{ minimumLabel }}</dd></div>
-              <div><dt>Fees</dt><dd>{{ selectedRoute.feeDescription }}</dd></div>
-              <div><dt>Estimated time</dt><dd>{{ selectedRoute.estimatedTime }}</dd></div>
+              <div>
+                <dt>{{ t('crossChainPage.minimum') }}</dt>
+                <dd>{{ minimumLabel }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('crossChainPage.fees') }}</dt>
+                <dd>{{ localizedFeeDescription }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('crossChainPage.estimatedTime') }}</dt>
+                <dd>{{ localizedEstimatedTime }}</dd>
+              </div>
             </dl>
 
-            <small v-for="warning in selectedRoute.warnings" :key="warning">{{ warning }}</small>
+            <small v-for="(warning, index) in localizedWarnings" :key="index">{{ warning }}</small>
 
-            <span v-if="!selectedRoute.enabled" class="route-disabled">{{ selectedRoute.disabledReason }}</span>
+            <span v-if="!selectedRoute.enabled" class="route-disabled">{{ localizedDisabledReason }}</span>
             <span v-else-if="!accountCapability.signable" class="route-disabled">{{ accountCapability.reason }}</span>
           </div>
 
-          <FButton
-            size="big"
-            text="common.continue"
-            :disabled="!canContinue"
-            width="100%"
-            @click="continueRoute"
-          />
+          <FButton size="big" text="common.continue" :disabled="!canContinue" width="100%" @click="continueRoute" />
 
-          <section class="provider-coverage" data-testid="crossChainProviderCoverage">
+          <details class="provider-coverage" data-testid="crossChainProviderCoverage">
+            <summary>{{ t('ux.supportedRoutes') }}</summary>
             <div class="provider-coverage__heading">
               <div>
-                <span>Provider coverage</span>
-                <small>Availability does not depend on the asset selected above.</small>
+                <span>{{ t('crossChainPage.providerCoverage') }}</span>
+                <small>{{ t('crossChainPage.coverageIndependent') }}</small>
               </div>
               <strong>{{ providerCapabilities.length }}</strong>
             </div>
@@ -100,14 +108,11 @@
                   {{ providerStatus(provider.availability) }}
                 </em>
               </div>
-              <p>{{ provider.reason }}</p>
+              <p>{{ providerReason(provider) }}</p>
             </article>
 
-            <p class="other-ecosystems">
-              TON, Bitcoin, Solana, Iroha, and any provider not listed here remain unavailable until an exact route
-              and execution authority are reviewed.
-            </p>
-          </section>
+            <p class="other-ecosystems">{{ t('crossChainPage.otherEcosystems') }}</p>
+          </details>
         </div>
       </Scroll>
     </ContentForm>
@@ -125,13 +130,16 @@ import {
   buildOwnedCrossChainAssets,
   buildReviewedCrossChainRoutes,
   buildUnavailableCrossChainRoutes,
+  type CrossChainProviderCapability,
   type CrossChainProviderAvailability,
 } from '@/cross-chain/routeRegistry';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
+import { useI18n } from '@/locales/useI18n';
 
 const router = useRouter();
+const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 const extensionStore = useExtensionStore();
 const networksStore = useNetworksStore();
@@ -146,9 +154,7 @@ const originNetworks = computed<NetworkJson[]>(() =>
     ownedAssets.value.some((asset) => asset.networkChainId === String(network.chainId))
   )
 );
-const originAssets = computed(() =>
-  ownedAssets.value.filter((asset) => asset.networkChainId === originChainId.value)
-);
+const originAssets = computed(() => ownedAssets.value.filter((asset) => asset.networkChainId === originChainId.value));
 const selectedAsset = computed(() => originAssets.value.find((asset) => asset.key === assetKey.value));
 const network = computed(() =>
   networksStore.allNetworks.find(({ chainId }) => String(chainId) === originChainId.value)
@@ -170,19 +176,22 @@ const reviewedRoutes = computed(() => {
       origin: network.value,
       networks: networksStore.allNetworks,
     }),
-  ];
+  ].sort(
+    (left, right) =>
+      Number(right.enabled) - Number(left.enabled) || left.destinationNetwork.localeCompare(right.destinationNetwork)
+  );
 });
 const selectedRoute = computed(() => reviewedRoutes.value.find((route) => route.id === routeId.value));
 const selectedAccount = computed(() =>
   accountsStore.accounts.find(({ address }) => address === accountsStore.selectedWallet.address)
 );
 const accountCapability = computed(() => {
-  if (!selectedAccount.value) return { signable: false, reason: 'Add an account for the origin network.' };
+  if (!selectedAccount.value) return { signable: false, reason: t('crossChainPage.accountReason.addOrigin') };
   if (selectedAccount.value.isHardware) {
-    return { signable: false, reason: 'This hardware account is not supported for this route yet.' };
+    return { signable: false, reason: t('crossChainPage.accountReason.hardware') };
   }
   if (selectedAccount.value.isExternal || selectedAccount.value.isInjected) {
-    return { signable: false, reason: 'This wallet is watch-only or needs an unsupported external signer.' };
+    return { signable: false, reason: t('crossChainPage.accountReason.external') };
   }
 
   return { signable: true, reason: '' };
@@ -190,30 +199,91 @@ const accountCapability = computed(() => {
 const shortOriginAddress = computed(() => {
   const address = accountsStore.selectedWallet.address;
 
-  return address.length > 18 ? `${address.slice(0, 8)}…${address.slice(-6)}` : address || 'No account';
+  return address.length > 18 ? `${address.slice(0, 8)}…${address.slice(-6)}` : address || t('crossChainPage.noAccount');
 });
 const ecosystem = computed(() => String(network.value?.ecosystem ?? '').toLowerCase());
 const unavailableMessage = computed(() => {
   if (['ton', 'bitcoin', 'solana', 'iroha', 'ethereum', 'evm'].includes(ecosystem.value)) {
-    return `${network.value?.name} routes are not supported by a reviewed provider yet.`;
+    return t('crossChainPage.networkRoutesUnavailable', { network: network.value?.name ?? '' });
   }
-  return 'This exact asset has no reviewed XCM or bridge route from the selected origin.';
+  return t('crossChainPage.assetRouteUnavailable');
 });
 const minimumLabel = computed(() =>
   selectedRoute.value?.enabled === false
-    ? 'Unavailable'
+    ? t('crossChainPage.unavailable')
     : selectedRoute.value?.minimum === null
-    ? 'Quoted live'
-    : `${selectedRoute.value?.minimum ?? ''} ${selectedAsset.value?.symbol ?? ''}`
+      ? t('crossChainPage.quotedLive')
+      : `${selectedRoute.value?.minimum ?? ''} ${selectedAsset.value?.symbol ?? ''}`
 );
-const canContinue = computed(
-  () => Boolean(selectedRoute.value?.enabled && accountCapability.value.signable)
-);
-const providerStatus = (availability: CrossChainProviderAvailability): string => {
-  if (availability === 'available') return 'Reviewed';
-  if (availability === 'action-disabled') return 'Disabled';
+const localizedFeeDescription = computed(() => {
+  if (!selectedRoute.value) return '';
+  if (selectedRoute.value.providerId === 'sora-evm-bridge') return t('crossChainPage.route.multiStepFees');
+  if (selectedRoute.value.destinationFee === '0') return t('crossChainPage.route.originFeeLive');
 
-  return 'Unavailable';
+  return t('crossChainPage.route.originAndDownstreamFee', {
+    fee: selectedRoute.value.destinationFee ?? '',
+    symbol: selectedAsset.value?.symbol ?? '',
+  });
+});
+const localizedEstimatedTime = computed(() => {
+  switch (selectedRoute.value?.providerId) {
+    case 'wallet-xcm':
+      return t('crossChainPage.estimatedTimeValues.walletXcm');
+    case 'sora-substrate-bridge':
+      return t('crossChainPage.estimatedTimeValues.soraSubstrate');
+    case 'sora-evm-bridge':
+      return t('crossChainPage.estimatedTimeValues.soraEvm');
+    case 'liberland-bridge':
+      return t('crossChainPage.estimatedTimeValues.liberland');
+    default:
+      return '';
+  }
+});
+const localizedWarnings = computed(() => {
+  if (!selectedRoute.value) return [];
+  if (selectedRoute.value.providerId === 'sora-evm-bridge') {
+    return [t('crossChainPage.route.noFundsSubmitted')];
+  }
+
+  return [
+    t('crossChainPage.route.onlyReviewedRoute', {
+      origin: selectedRoute.value.originNetwork,
+      destination: selectedRoute.value.destinationNetwork,
+    }),
+    t('crossChainPage.route.conditionsChange'),
+    ...(selectedRoute.value.destinationFee === '0' ? [] : [t('crossChainPage.route.downstreamEstimate')]),
+  ];
+});
+const localizedDisabledReason = computed(() => {
+  if (!selectedRoute.value) return '';
+  if (selectedRoute.value.providerId !== 'sora-evm-bridge') return t('crossChainPage.route.disabled');
+
+  return t(
+    selectedRoute.value.originChainId === '1'
+      ? 'crossChainPage.route.ethereumToSoraUnavailable'
+      : 'crossChainPage.route.ethereumClaimUnavailable'
+  );
+});
+const canContinue = computed(() => Boolean(selectedRoute.value?.enabled && accountCapability.value.signable));
+const providerStatus = (availability: CrossChainProviderAvailability): string => {
+  if (availability === 'available') return t('crossChainPage.providerStatus.reviewed');
+  if (availability === 'action-disabled') return t('crossChainPage.providerStatus.disabled');
+
+  return t('crossChainPage.providerStatus.unavailable');
+};
+const providerReason = (provider: CrossChainProviderCapability): string => {
+  if (provider.availability === 'unavailable') {
+    return t(
+      provider.id === 'sora-evm-bridge'
+        ? 'crossChainPage.providerReason.noClaimRecovery'
+        : 'crossChainPage.providerReason.noExecutableRoute'
+    );
+  }
+  if (provider.availability === 'action-disabled') return t('crossChainPage.providerReason.policyDisabled');
+
+  return tc('crossChainPage.providerReason.availableCount', provider.reviewedRouteCount, {
+    count: provider.reviewedRouteCount,
+  });
 };
 
 watch(originChainId, () => {

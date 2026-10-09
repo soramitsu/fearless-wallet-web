@@ -1,41 +1,24 @@
 import { EXTENSION_PREFIX } from '../defaults';
+import BaseExtensionStore from './BaseExtension';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
 
-type StoreValue = Record<string, unknown>;
+class PasswordRecordStore extends BaseExtensionStore<KeyringPasswordJson> {}
 
-const FEARLESS_KEYRING = `${EXTENSION_PREFIX}:keyring`;
-
-const lastError = (type: string): void => {
-  const error = chrome.runtime.lastError;
-
-  if (error) {
-    console.error(`KeyringStore.${type}:: runtime.lastError:`, error);
-  }
-};
-
+// Share the extension mutation queue with encrypted accounts. The handler's
+// flush acknowledges the password record and every associated account write.
 export default class KeyringStore implements PasswordStore {
-  public get(update: (value: KeyringPasswordJson) => void): void {
-    chrome.storage.local.get([FEARLESS_KEYRING], (result: StoreValue): void => {
-      lastError('get');
+  private readonly store = new PasswordRecordStore(EXTENSION_PREFIX);
 
-      update(result[FEARLESS_KEYRING] as KeyringPasswordJson);
-    });
+  public get(update: (value: KeyringPasswordJson) => void): void {
+    this.store.get('keyring', update);
   }
 
   public remove(update?: () => void): void {
-    chrome.storage.local.remove(FEARLESS_KEYRING, (): void => {
-      lastError('remove');
-
-      update?.();
-    });
+    this.store.remove('keyring', update);
   }
 
   public set(value: KeyringPasswordJson, update?: () => void): void {
-    chrome.storage.local.set({ [FEARLESS_KEYRING]: value }, (): void => {
-      lastError('set');
-
-      update?.();
-    });
+    this.store.set('keyring', value, update);
   }
 }

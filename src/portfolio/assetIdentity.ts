@@ -145,7 +145,7 @@ function assetDisplayName(
   if (registryName) return registryName;
   const value = group.tokenName?.trim();
   if (value) return value;
-  return balance.symbol || group.symbol || 'Unknown asset';
+  return balance.symbol || group.symbol || '';
 }
 
 /**

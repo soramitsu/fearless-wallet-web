@@ -150,7 +150,7 @@ async function run() {
           input: path.resolve(root, 'src/extension/popup.html'),
         },
       },
-      { buildTarget: 'popup' }
+      { buildTarget: 'popup', nativeAsyncModules: true }
     )
   );
   await normalizePopupHtml();
@@ -160,10 +160,11 @@ async function run() {
       {
         rollupOptions: {
           input: {
-            background: path.resolve(root, 'src/extension/entry/background.ts'),
+            background: path.resolve(root, 'src/extension/entry/backgroundRuntime.ts'),
           },
+          preserveEntrySignatures: 'strict',
           output: {
-            entryFileNames: 'background.js',
+            entryFileNames: 'background-runtime.js',
             chunkFileNames: 'chunks/background-[name]-[hash].js',
             manualChunks: manualVendorChunk,
           },
@@ -172,6 +173,28 @@ async function run() {
       { buildTarget: 'background' }
     )
   );
+
+  // Keep MV3 wake listeners outside the async WASM dependency transform. Static
+  // imports work in extension workers; dynamic import() is unsupported there.
+  const bootstrapConfig = withBuild(
+    {
+      rollupOptions: {
+        input: path.resolve(root, 'src/extension/entry/background.ts'),
+        output: {
+          entryFileNames: 'background.js',
+        },
+      },
+    },
+    { buildTarget: 'background', asyncWasm: false }
+  );
+  bootstrapConfig.plugins.push({
+    name: 'external-background-runtime',
+    enforce: 'pre',
+    resolveId(source) {
+      if (source === './backgroundRuntime') return { id: './background-runtime.js', external: true };
+    },
+  });
+  await build(bootstrapConfig);
 
   for (const [entryName, globalName] of [
     ['content', 'FearlessContentScript'],

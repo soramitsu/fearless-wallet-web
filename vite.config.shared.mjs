@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import fg from 'fast-glob';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
+import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
+import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -60,16 +62,6 @@ function createSymbolId(template, file) {
   return template.replace('[name]', path.basename(file, '.svg'));
 }
 
-function svgToSymbol(svg, id) {
-  const svgMatch = svg.match(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/i);
-  if (!svgMatch) return '';
-
-  const [, attrs, body] = svgMatch;
-  const viewBox = attrs.match(/\bviewBox=(["'])(.*?)\1/i)?.[2] ?? '0 0 24 24';
-
-  return `<symbol id="${id}" viewBox="${viewBox}">${body}</symbol>`;
-}
-
 async function loadSvgSprite(iconDirs, symbolId, pluginContext) {
   const files = (
     await Promise.all(iconDirs.map((dir) => fg('*.svg', { absolute: true, cwd: dir, onlyFiles: true })))
@@ -85,7 +77,7 @@ async function loadSvgSprite(iconDirs, symbolId, pluginContext) {
     })
   );
 
-  return `<svg xmlns="http://www.w3.org/2000/svg">${symbols.join('')}</svg>`;
+  return wrapSvgSymbols(symbols);
 }
 
 function svgSpritePlugin({ iconDirs, symbolId }) {
@@ -110,6 +102,7 @@ const mountSprite = () => {
   spriteContainer.id = '__fearless_svg_sprite__';
   spriteContainer.style.display = 'none';
   const spriteDocument = new DOMParser().parseFromString(sprite, 'image/svg+xml');
+  if (spriteDocument.querySelector('parsererror')) throw new Error('Wallet artwork could not load.');
   const spriteElement = document.importNode(spriteDocument.documentElement, true);
 
   spriteContainer.appendChild(spriteElement);
@@ -142,7 +135,7 @@ export function makeDefine(mode, extraEnv = {}) {
   return define;
 }
 
-export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true }) {
+export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
   if (process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
     throw new Error(
       'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
@@ -159,7 +152,8 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
     publicDir,
     plugins: [
       vue(),
-      ...(asyncWasm ? [wasm(), topLevelAwait()] : []),
+      subwalletPackageCompatPlugin(),
+      ...(asyncWasm ? [wasm(), ...(nativeAsyncModules ? [] : [topLevelAwait()])] : []),
       nodePolyfills({
         include: ['buffer', 'crypto', 'events', 'http', 'https', 'os', 'stream', 'url', 'util', 'zlib'],
         globals: {
@@ -173,6 +167,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         symbolId: 'icon-[name]',
       }),
     ],
+    optimizeDeps: { exclude: ['@subwallet/keyring', '@subwallet/ui-keyring'] },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
@@ -205,7 +200,9 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       outDir,
       emptyOutDir,
       sourcemap: mode !== 'production',
-      target: 'es2020',
+      // Supported browsers handle top-level await natively. Rewriting it into
+      // exported promises breaks initialization across the popup's cyclic chunks.
+      target: nativeAsyncModules ? 'es2022' : 'es2020',
       cssCodeSplit: true,
       rollupOptions: {
         output: {

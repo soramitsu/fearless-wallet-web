@@ -18,6 +18,9 @@ import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
+import { upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
+import { updateAccountMetadata } from './AccountMetadata';
+import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
 import type { EventService } from '@extension-base/services';
 import type {
   DecryptForCosignerData,
@@ -45,21 +48,60 @@ import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMet
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
+function needsLegacyPasswordMigration(pair: KeyringPair | null): pair is KeyringPair {
+  if (!pair || pair.meta.isMasterPassword) return false;
+  // These accounts sign outside the local encrypted keyring. Prompting for an
+  // old local password would make their otherwise valid upgrade impossible.
+  const meta = pair.meta;
+  return !meta.isExternal && !meta.isHardware && !meta.isInjected && !meta.isMobile;
+}
+
 export class KeyringService {
   private readonly currentAccountStore = new CurrentAccountStore();
   readonly tonKeyring = new TonKeyringService(this);
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
+  readonly currentAccountReady: Promise<void>;
 
   private password = '';
+  private enrollmentEpoch = 0;
+  private enrollmentWork: Promise<void> = Promise.resolve();
+
+  // Public completion seam for lifecycle qualification; normal unlock never
+  // awaits optional account generation or requires it to succeed.
+  waitForLegacyNetworkEnrollment(): Promise<void> {
+    return this.enrollmentWork ?? Promise.resolve();
+  }
+
+  private scheduleLegacyNetworkEnrollment(): void {
+    if (!this.password) return;
+    const password = this.password;
+    const epoch = (this.enrollmentEpoch ?? 0) + 1;
+    this.enrollmentEpoch = epoch;
+    const isCurrent = () => this.enrollmentEpoch === epoch && this.password === password;
+    this.enrollmentWork = (this.enrollmentWork ?? Promise.resolve()).catch(() => {}).then(async () => {
+      // Start after the successful unlock response can be delivered.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      if (!isCurrent()) return;
+      for (const account of this.getAccounts()) {
+        if (!isCurrent()) return;
+        const pair = this.getPair(account.address);
+        if (!pair) continue;
+        try { await enrollLegacyAccountNetworks(pair, password, isCurrent); } catch { /* Retry on a later unlock. */ }
+      }
+    }).catch(() => {});
+  }
 
   constructor(eventService: EventService) {
-    eventService.waitCryptoReady
+    this.currentAccountReady = eventService.waitCryptoReady
       .then(() => {
-        this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
-          if (rs) this.currentAccountSubject.next(rs);
+        return new Promise<void>((resolve) => {
+          this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
+            if (rs) this.currentAccountSubject.next(rs);
+            resolve();
+          });
         });
-      })
-      .catch(console.error);
+      });
+    void this.currentAccountReady.catch(console.error);
   }
 
   get addressSubject() {
@@ -71,7 +113,7 @@ export class KeyringService {
   }
 
   get hasAccounts() {
-    return this.getAllAccounts().length !== 0;
+    return this.getAllAccounts().length !== 0 || this.tonKeyring.getAccounts().length !== 0;
   }
 
   get hasMasterPassword() {
@@ -93,11 +135,13 @@ export class KeyringService {
   }
 
   loadAll() {
-    return keyring.loadAll({
-      store: new AccountsStore(),
+    const store = new AccountsStore();
+    keyring.loadAll({
+      store,
       type: 'sr25519',
       password_store: IS_EXTENSION ? new KeyringStore() : new KeyringStoreWeb(),
     });
+    return store.allLoaded;
   }
 
   getAccounts() {
@@ -126,9 +170,21 @@ export class KeyringService {
     return this.getAllAccounts().filter(({ address }) => isEthereumAddress(address));
   }
 
-  // return all walletEcosystem accounts [substrate[without ethereum], ton]
+  // A linked EVM child is displayed with its parent. An independently imported
+  // EVM account must remain selectable even when no Substrate parent exists.
   getAllMainAccounts() {
-    return [...this.getAllAccounts().filter(({ address }) => !isEthereumAddress(address)), ...this.tonKeyring.getAccounts()];
+    const accounts = this.getAllAccounts();
+    const linkedEthereumAddresses = new Set(accounts
+      .filter(({ address }) => !isEthereumAddress(address))
+      .map(({ meta }) => (meta.ethereumAddress as string | undefined)?.toLowerCase())
+      .filter(Boolean));
+    const mainAccounts = accounts
+      .filter(({ address }) => !isEthereumAddress(address) || !linkedEthereumAddresses.has(address.toLowerCase()))
+      .map((account) => isEthereumAddress(account.address) ? {
+        ...account,
+        meta: { ...account.meta, walletEcosystem: WalletEcosystem.Evm, ethereumAddress: account.address },
+      } : account);
+    return [...mainAccounts, ...this.tonKeyring.getAccounts()];
   }
 
   triggerWalletsSubscription(address: string, walletEcosystem: WalletEcosystem) {
@@ -165,7 +221,7 @@ export class KeyringService {
     const pair = this.getPair(address);
 
     if (pair) {
-      keyring.saveAccountMeta(pair, withUniversalWalletKeyringMeta(address, initialMeta, effectiveEcosystem));
+      await this.saveAccountMeta(address, { ...initialMeta, walletEcosystem: effectiveEcosystem });
     }
 
     return address;
@@ -303,7 +359,7 @@ export class KeyringService {
     return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
   }
 
-  saveAccountMeta(address: string, meta: FWKeyringMeta) {
+  async saveAccountMeta(address: string, meta: FWKeyringMeta) {
     const pair = this.getPair(address);
 
     if (pair) {
@@ -312,9 +368,8 @@ export class KeyringService {
           ? WalletEcosystem.Evm
           : meta.walletEcosystem ?? (pair.meta as FWKeyringMeta).walletEcosystem;
 
-      return keyring.saveAccountMeta(
-        pair,
-        withUniversalWalletKeyringMeta(address, { ...(pair.meta as FWKeyringMeta), ...meta }, walletEcosystem)
+      return updateAccountMetadata(pair, (current) =>
+        withUniversalWalletKeyringMeta(address, { ...current, ...meta }, walletEcosystem)
       );
     }
 
@@ -393,9 +448,9 @@ export class KeyringService {
 
   changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
     try {
-      this.password = newPassword;
-
       keyring.changeMasterPassword(newPassword, oldPassword);
+      this.password = newPassword;
+      this.scheduleLegacyNetworkEnrollment();
 
       return true;
     } catch (e) {
@@ -526,9 +581,9 @@ export class KeyringService {
 
   unlockKeyring({ password }: RequestUnlockExtension): boolean {
     try {
-      this.password = password;
-
       keyring.unlockKeyring(password);
+      this.password = password;
+      this.scheduleLegacyNetworkEnrollment();
 
       return true;
     } catch (e) {
@@ -543,6 +598,7 @@ export class KeyringService {
       keyring.lockAll();
 
       this.password = '';
+      this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
 
       return true;
     } catch (e) {
@@ -555,6 +611,8 @@ export class KeyringService {
   resetWallet(): boolean {
     try {
       keyring.resetWallet(true);
+      this.password = '';
+      this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
 
       return true;
     } catch (e) {
@@ -566,9 +624,8 @@ export class KeyringService {
 
   getMigrationAccounts() {
     return this.getAccounts()
-      .map(({ address }) => this.getPair(address)!)
-      .filter(({ type }) => type !== 'ethereum')
-      .filter(({ meta: { isMasterPassword } }) => !isMasterPassword);
+      .map(({ address }) => this.getPair(address))
+      .filter(needsLegacyPasswordMigration);
   }
 
   isNeedMigration(): boolean {
@@ -591,15 +648,29 @@ export class KeyringService {
     });
   }
 
-  keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {
+  async keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): Promise<boolean> {
     try {
-      const account = this.getAccount(address);
-      const meta = account?.meta as FWKeyringMeta;
-      const ethereumAddress = meta.ethereumAddress;
-
-      keyring.migrateWithMasterPassword(address, password);
-
-      if (ethereumAddress) keyring.migrateWithMasterPassword(ethereumAddress, password);
+      const pair = this.getPair(address);
+      if (!pair) return false;
+      const ethereumAddress = pair.meta.ethereumAddress as string | undefined;
+      const child = ethereumAddress ? this.getPair(ethereumAddress) : null;
+      // Keep independently encrypted children discoverable after a partial
+      // migration. Each pair is migrated once and remains retryable on reopen.
+      const pending = [...new Set([child, pair])].filter(needsLegacyPasswordMigration);
+      for (const candidate of pending) {
+        // Validate every old password before changing either pair. A linked
+        // account may have its own password and can be migrated separately.
+        const wasLocked = candidate.isLocked;
+        try {
+          candidate.decodePkcs8(password);
+        } finally {
+          if (wasLocked) candidate.lock();
+        }
+      }
+      for (const candidate of pending) {
+        await upgradeLegacyAccountPassword(candidate, password);
+      }
+      this.scheduleLegacyNetworkEnrollment();
 
       return true;
     } catch (e) {

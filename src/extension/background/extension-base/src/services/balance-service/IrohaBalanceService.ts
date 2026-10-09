@@ -1,5 +1,4 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
 import {
   createIrohaToriiWalletClient,
   type IrohaToriiRouteResponse,
@@ -19,7 +18,7 @@ type IrohaNetworkKey = keyof typeof UNIVERSAL_WALLET_IROHA_NETWORKS;
 type IrohaAccountAssetListResponse = {
   items?: IrohaAccountAssetListItem[];
   has_more?: boolean;
-  hasMore?: boolean;
+  count_mode?: string;
   total?: number | string;
 };
 
@@ -41,7 +40,7 @@ type IrohaAccountAssetListItem = {
 type IrohaAssetDefinitionListResponse = {
   items?: IrohaAssetDefinitionListItem[];
   has_more?: boolean;
-  hasMore?: boolean;
+  count_mode?: string;
   total?: number | string;
 };
 
@@ -58,10 +57,11 @@ type IrohaAssetDefinitionListItem = {
 type IrohaBalanceClient = {
   getAccountAssets<TBody = unknown>(
     accountId: string,
-    options?: { limit?: number; offset?: number }
+    options?: { countMode?: 'bounded' | 'exact'; limit?: number; offset?: number }
   ): Promise<IrohaToriiRouteResponse<TBody>>;
   getAssetDefinitions<TBody = unknown>(options?: {
     assetId?: string;
+    countMode?: 'bounded' | 'exact';
     limit?: number;
     offset?: number;
   }): Promise<IrohaToriiRouteResponse<TBody>>;
@@ -73,8 +73,11 @@ const IROHA_FALLBACK_NETWORK = 'Taira';
 const IROHA_NEXUS_FALLBACK_ASSET_ID = 'xor#sora';
 const IROHA_FALLBACK_ICON = 'iroha';
 const IROHA_FALLBACK_SYMBOL = 'XOR';
-const IROHA_BALANCE_PAGE_SIZE = 200;
-const IROHA_DEFINITION_PAGE_SIZE = 200;
+const IROHA_BALANCE_PAGE_SIZE = 500;
+const IROHA_DEFINITION_PAGE_SIZE = 500;
+const MAX_IROHA_NUMERIC_SCALE = 28;
+const MAX_IROHA_NUMERIC_DIGITS = 154;
+const MAX_IROHA_NUMERIC = (1n << 511n) - 1n;
 
 export default class IrohaBalanceService {
   private readonly clientFactory: IrohaBalanceClientFactory;
@@ -122,7 +125,7 @@ export default class IrohaBalanceService {
   ): string | undefined {
     const account = this.state.keyringService
       ?.getAllMainAccounts?.()
-      .find(({ address }) => isSameString(address, accountAddress));
+      .find(({ address }) => address === accountAddress);
     const publicAccount = account?.meta.universalWallet?.publicAccounts.find(
       (item) => item.ecosystem === 'iroha' && item.chainId === network.chainId
     );
@@ -146,7 +149,7 @@ export default class IrohaBalanceService {
 
     try {
       const client = this.clientFactory(network, irohaNetwork);
-      const items = await this.fetchAllAccountAssets(client, walletAddress);
+      const items = await this.fetchAllAccountAssets(client, walletAddress, irohaNetwork);
       const requiredDefinitionIds = new Set(items.map((item) => this.getAssetId(item)));
 
       if (irohaNetwork === 'taira') {
@@ -165,7 +168,7 @@ export default class IrohaBalanceService {
         return [{ assetId: nativeAsset.id, balance: '0', network: network.name }];
       }
 
-      const definitionsResponse = await this.fetchAssetDefinitions(client, requiredDefinitionIds);
+      const definitionsResponse = await this.fetchAssetDefinitions(client, requiredDefinitionIds, irohaNetwork);
       const definitions = this.getAssetDefinitionMap(definitionsResponse);
       this.validateTairaNativeDefinition(network, definitions);
 
@@ -224,93 +227,70 @@ export default class IrohaBalanceService {
 
   private async fetchAllAccountAssets(
     client: IrohaBalanceClient,
-    accountId: string
+    accountId: string,
+    network: IrohaNetworkKey
   ): Promise<IrohaAccountAssetListItem[]> {
-    const assets = new Map<string, IrohaAccountAssetListItem>();
-    const seenPages = new Set<string>();
-    let offset = 0;
+    const response = await client.getAccountAssets<IrohaAccountAssetListResponse>(accountId, {
+      countMode: 'bounded',
+      limit: IROHA_BALANCE_PAGE_SIZE,
+      offset: 0,
+    });
+    const page = this.normalizeAssetItems(response.body, accountId, network);
 
-    while (true) {
-      const response = await client.getAccountAssets<IrohaAccountAssetListResponse>(accountId, {
-        limit: IROHA_BALANCE_PAGE_SIZE,
-        offset,
-      });
-      const page = this.normalizeAssetItems(response.body);
-      const rawPageSize = Array.isArray(response.body?.items) ? response.body.items.length : 0;
-      const fingerprint = page.map((item) => `${this.getAssetId(item)}=${this.getQuantity(item)}`).join('|');
-
-      if (seenPages.has(fingerprint)) throw new Error('iroha_pagination_cycle');
-      seenPages.add(fingerprint);
-
-      page.forEach((item) => {
-        const assetId = this.getAssetId(item);
-        const existing = assets.get(assetId);
-        const quantity = existing
-          ? new FPNumber(this.getQuantity(existing)).add(new FPNumber(this.getQuantity(item))).toString()
-          : this.getQuantity(item);
-
-        assets.set(assetId, { ...(existing ?? item), quantity, value: undefined });
-      });
-
-      const explicitHasMore = response.body?.has_more ?? response.body?.hasMore;
-      const total = Number(response.body?.total);
-      const nextOffset = offset + rawPageSize;
-      const totalHasMore = Number.isSafeInteger(total) && total >= 0 ? nextOffset < total : false;
-      const shouldContinue =
-        explicitHasMore === true ||
-        totalHasMore ||
-        (explicitHasMore === undefined && rawPageSize >= IROHA_BALANCE_PAGE_SIZE);
-
-      if (!shouldContinue || rawPageSize === 0) break;
-      offset = nextOffset;
+    if (response.body?.has_more !== false || response.body?.count_mode !== 'bounded') {
+      throw new Error('iroha_incomplete_account_asset_snapshot');
     }
 
-    return [...assets.values()];
+    const assets = new Map<string, { item: IrohaAccountAssetListItem; quantities: string[] }>();
+    const seenScopes = new Set<string>();
+    page.forEach((item) => {
+      const assetId = this.getAssetId(item);
+      const scopeKey = `${assetId}\u0000${item.scope}`;
+
+      if (seenScopes.has(scopeKey)) throw new Error('iroha_duplicate_account_asset_scope');
+      seenScopes.add(scopeKey);
+
+      const existing = assets.get(assetId);
+      const quantity = this.getQuantity(item);
+
+      if (existing) existing.quantities.push(quantity);
+      else assets.set(assetId, { item, quantities: [quantity] });
+    });
+
+    return [...assets.values()].map(({ item, quantities }) => ({
+      ...item,
+      quantity: sumCanonicalIrohaQuantities(quantities),
+    }));
   }
 
   private async fetchAssetDefinitions(
     client: IrohaBalanceClient,
-    heldAssetIds: Set<string>
+    heldAssetIds: Set<string>,
+    network: IrohaNetworkKey
   ): Promise<IrohaAssetDefinitionListResponse> {
-    const definitions = new Map<string, IrohaAssetDefinitionListItem>();
-    const seenPages = new Set<string>();
-    let offset = 0;
+    const response = await client.getAssetDefinitions<IrohaAssetDefinitionListResponse>({
+      countMode: 'bounded',
+      limit: IROHA_DEFINITION_PAGE_SIZE,
+      offset: 0,
+    });
+    const page = this.normalizeDefinitionItems(response.body, network);
 
-    while (true) {
-      const response = await client.getAssetDefinitions<IrohaAssetDefinitionListResponse>({
-        limit: IROHA_DEFINITION_PAGE_SIZE,
-        offset,
-      });
-      const page = this.normalizeDefinitionItems(response.body);
-      const rawPageSize = Array.isArray(response.body?.items) ? response.body.items.length : 0;
-      const fingerprint = page.map(({ id }) => id).join('|');
-
-      if (rawPageSize > 0 && seenPages.has(fingerprint)) throw new Error('iroha_definition_pagination_cycle');
-      if (rawPageSize > 0) seenPages.add(fingerprint);
-
-      page.forEach((definition) => {
-        if (definitions.has(definition.id)) {
-          throw new Error(`iroha_duplicate_asset_definition:${definition.id}`);
-        }
-        definitions.set(definition.id, definition);
-      });
-
-      if ([...heldAssetIds].every((assetId) => definitions.has(assetId))) break;
-
-      const explicitHasMore = response.body?.has_more ?? response.body?.hasMore;
-      const total = Number(response.body?.total);
-      const nextOffset = offset + rawPageSize;
-      const totalHasMore = Number.isSafeInteger(total) && total >= 0 ? nextOffset < total : false;
-      const shouldContinue =
-        explicitHasMore === true ||
-        totalHasMore ||
-        (explicitHasMore === undefined && rawPageSize >= IROHA_DEFINITION_PAGE_SIZE);
-
-      if (!shouldContinue || rawPageSize === 0) break;
-      offset = nextOffset;
+    if (response.body?.has_more !== false || response.body?.count_mode !== 'bounded') {
+      throw new Error('iroha_incomplete_asset_definition_snapshot');
     }
 
-    return { items: [...definitions.values()] };
+    const definitions = new Map<string, IrohaAssetDefinitionListItem>();
+    page.forEach((definition) => {
+      if (definitions.has(definition.id)) {
+        throw new Error(`iroha_duplicate_asset_definition:${definition.id}`);
+      }
+      definitions.set(definition.id, definition);
+    });
+    if (![...heldAssetIds].every((assetId) => definitions.has(assetId))) {
+      throw new Error('iroha_required_asset_definition_missing');
+    }
+
+    return { items: [...definitions.values()], has_more: false, count_mode: 'bounded' };
   }
 
   private getIrohaNetworks(networks: string[]): NetworkJson[] {
@@ -351,7 +331,10 @@ export default class IrohaBalanceService {
   }
 
   private matchesNetwork(network: NetworkJson, requestedNetwork: string): boolean {
-    return [network.name, network.key, network.chainId].some((value) => value && isSameString(value, requestedNetwork));
+    return (
+      [network.name, network.key].some((value) => value && isSameString(value, requestedNetwork)) ||
+      network.chainId === requestedNetwork
+    );
   }
 
   private getIrohaNetworkKey(network: NetworkJson): IrohaNetworkKey {
@@ -378,16 +361,31 @@ export default class IrohaBalanceService {
     }
   }
 
-  private normalizeAssetItems(body: IrohaAccountAssetListResponse): IrohaAccountAssetListItem[] {
-    if (!body || !Array.isArray(body.items)) return [];
+  private normalizeAssetItems(
+    body: IrohaAccountAssetListResponse,
+    requestedAccountId: string,
+    network: IrohaNetworkKey
+  ): IrohaAccountAssetListItem[] {
+    if (!body || !Array.isArray(body.items)) throw new Error('invalid_iroha_account_asset_response');
 
-    return body.items.filter((item) => {
-      if (!item || typeof item !== 'object') return false;
-      if (typeof item.asset !== 'string' || !item.asset) return false;
+    return body.items.map((item) => {
+      if (!item || typeof item !== 'object') throw new Error('invalid_iroha_account_asset_item');
+      if (
+        item.accountId !== undefined ||
+        typeof item.account_id !== 'string' ||
+        item.account_id !== requestedAccountId
+      ) {
+        throw new Error('invalid_iroha_account_asset_account');
+      }
+      if (!isCanonicalIrohaAssetScope(item.scope)) {
+        throw new Error('invalid_iroha_account_asset_scope');
+      }
+      if (!isCanonicalIrohaAssetDefinitionId(this.getAssetId(item), network)) {
+        throw new Error('invalid_iroha_account_asset_id');
+      }
+      this.getQuantity(item);
 
-      const quantity = this.getQuantity(item);
-
-      return typeof quantity === 'string' && quantity.length > 0;
+      return item;
     });
   }
 
@@ -405,13 +403,24 @@ export default class IrohaBalanceService {
     return definitions;
   }
 
-  private normalizeDefinitionItems(response: IrohaAssetDefinitionListResponse): IrohaAssetDefinitionListItem[] {
-    if (!response || !Array.isArray(response.items)) return [];
+  private normalizeDefinitionItems(
+    response: IrohaAssetDefinitionListResponse,
+    network: IrohaNetworkKey
+  ): IrohaAssetDefinitionListItem[] {
+    if (!response || !Array.isArray(response.items)) throw new Error('invalid_iroha_asset_definition_response');
 
-    return response.items.filter(
-      (item): item is IrohaAssetDefinitionListItem =>
-        !!item && typeof item === 'object' && typeof item.id === 'string' && item.id.length > 0
-    );
+    return response.items.map((item) => {
+      if (
+        !item ||
+        typeof item !== 'object' ||
+        typeof item.id !== 'string' ||
+        !isCanonicalIrohaAssetDefinitionId(item.id, network)
+      ) {
+        throw new Error('invalid_iroha_asset_definition_item');
+      }
+
+      return item;
+    });
   }
 
   private getNativeAsset(network: NetworkJson): {
@@ -650,11 +659,27 @@ export default class IrohaBalanceService {
   }
 
   private getAssetId(item: IrohaAccountAssetListItem): string {
-    return this.getString(item.asset_id ?? item.assetId) ?? item.asset;
+    if (
+      item.asset_id !== undefined ||
+      item.assetId !== undefined ||
+      item.assetName !== undefined ||
+      item.assetAlias !== undefined
+    ) {
+      throw new Error('noncanonical_iroha_account_asset_field');
+    }
+    if (typeof item.asset !== 'string' || !item.asset || item.asset !== item.asset.trim()) {
+      throw new Error('invalid_iroha_account_asset_id');
+    }
+
+    return item.asset;
   }
 
   private getQuantity(item: IrohaAccountAssetListItem): string {
-    return this.getString(item.quantity ?? item.value) ?? '0';
+    if (item.value !== undefined || !isCanonicalIrohaQuantity(item.quantity)) {
+      throw new Error('invalid_iroha_account_asset_quantity');
+    }
+
+    return item.quantity;
   }
 
   private getSymbol(
@@ -664,9 +689,8 @@ export default class IrohaBalanceService {
   ): string {
     const metadata = definition?.metadata ?? {};
     const metadataSymbol = this.getString(metadata.symbol ?? metadata.ticker);
-    const alias = this.getString(item.asset_alias ?? item.assetAlias ?? definition?.alias);
-    const raw =
-      networkSymbol ?? metadataSymbol ?? alias ?? this.getString(item.asset_name ?? item.assetName) ?? item.asset;
+    const alias = this.getString(item.asset_alias ?? definition?.alias);
+    const raw = networkSymbol ?? metadataSymbol ?? alias ?? this.getString(item.asset_name) ?? item.asset;
     const symbol = raw.split('#')[0].trim();
 
     return symbol ? symbol.toUpperCase() : IROHA_FALLBACK_SYMBOL;
@@ -702,6 +726,64 @@ export default class IrohaBalanceService {
   private getString(value: unknown): string | undefined {
     return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
   }
+}
+
+function isCanonicalIrohaQuantity(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/u.test(value)) return false;
+
+  const [whole, fraction = ''] = value.split('.');
+  const digits = `${whole}${fraction}`;
+
+  return (
+    fraction.length <= MAX_IROHA_NUMERIC_SCALE &&
+    digits.length <= MAX_IROHA_NUMERIC_DIGITS &&
+    BigInt(digits) <= MAX_IROHA_NUMERIC
+  );
+}
+
+function isCanonicalIrohaAssetScope(value: unknown): value is string {
+  if (value === 'global') return true;
+  if (typeof value !== 'string' || !/^dataspace:(?:0|[1-9]\d*)$/u.test(value)) return false;
+
+  return BigInt(value.slice('dataspace:'.length)) <= (1n << 64n) - 1n;
+}
+
+function isCanonicalIrohaAssetDefinitionId(value: string, network: IrohaNetworkKey): boolean {
+  return network === 'taira'
+    ? /^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(value)
+    : /^[^\s%/?:#]+#[^\s%/?:#]+$/u.test(value);
+}
+
+function sumCanonicalIrohaQuantities(values: string[]): string {
+  if (!values.length || !values.every(isCanonicalIrohaQuantity)) {
+    throw new Error('invalid_iroha_account_asset_quantity');
+  }
+
+  const parts = values.map((value) => {
+    const [whole, fraction = ''] = value.split('.');
+
+    return { fraction, whole };
+  });
+  const scale = Math.max(...parts.map(({ fraction }) => fraction.length));
+  let sum = parts.reduce(
+    (total, { fraction, whole }) =>
+      total + BigInt(`${whole}${fraction}`) * 10n ** BigInt(scale - fraction.length),
+    0n
+  );
+  let normalizedScale = scale;
+
+  while (normalizedScale > 0 && sum % 10n === 0n) {
+    sum /= 10n;
+    normalizedScale -= 1;
+  }
+  if (sum > MAX_IROHA_NUMERIC) throw new Error('iroha_account_asset_quantity_overflow');
+  if (normalizedScale === 0) return sum.toString();
+
+  const digits = sum.toString().padStart(normalizedScale + 1, '0');
+  const fraction = digits.slice(-normalizedScale);
+  const whole = digits.slice(0, -normalizedScale);
+
+  return `${whole}.${fraction}`;
 }
 
 export type { IrohaBalanceClient, IrohaBalanceClientFactory };

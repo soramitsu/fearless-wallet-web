@@ -1,18 +1,26 @@
 <template>
-  <AboveForm :fullScreen="true" header="migration.universalWalletRequired" :showCloseIcon="false">
+  <AboveForm
+    :fullScreen="true"
+    :header="snapshot.legacyVaults.length ? 'migration.universalWalletRequired' : 'ux.walletTaskTitle'"
+    :showCloseIcon="false"
+  >
     <div class="universal-migration">
       <div>
-        <div class="universal-migration__title">{{ t('migration.universalWalletActionRequired') }}</div>
+        <div class="universal-migration__title">
+          {{ t(snapshot.legacyVaults.length ? 'migration.universalWalletActionRequired' : 'ux.walletTaskDescription') }}
+        </div>
         <div class="universal-migration__text">
-          {{ t(snapshot.legacyVaults.length ? 'migration.universalWalletLegacyText' : 'migration.universalWalletEmptyText') }}
+          {{
+            t(
+              snapshot.legacyVaults.length
+                ? 'migration.universalWalletLegacyText'
+                : 'migration.universalWalletEmptyText'
+            )
+          }}
         </div>
 
         <div v-if="snapshot.legacyVaults.length" class="universal-migration__legacy">
-          <div
-            v-for="vault in snapshot.legacyVaults"
-            :key="vault.vaultId"
-            class="universal-migration__vault"
-          >
+          <div v-for="vault in snapshot.legacyVaults" :key="vault.vaultId" class="universal-migration__vault">
             <div class="universal-migration__vault-name">
               {{ vault.displayName || vault.ecosystem }}
             </div>
@@ -28,10 +36,7 @@
               :disabled="!canExportVault(vault)"
               @click="exportLegacyVault(vault)"
             />
-            <div
-              v-if="exportFailureVaultId === vault.vaultId"
-              class="universal-migration__vault-error"
-            >
+            <div v-if="exportFailureVaultId === vault.vaultId" class="universal-migration__vault-error">
               {{ t('migration.exportLegacyVaultUnavailable') }}
             </div>
           </div>
@@ -57,7 +62,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
-import { getUniversalWalletMigrationSnapshot, hasAccounts, hasMasterPassword } from '@/extension/messaging';
+import { getUniversalWalletMigrationSnapshot, hasMasterPassword } from '@/extension/messaging';
 import { WalletEcosystem } from '@/interfaces';
 import { cut } from '@/helpers';
 import { useI18n } from '@/locales/useI18n';
@@ -97,7 +102,7 @@ const openAddWallet = async (type: 'create' | 'import') => {
     },
   };
 
-  if (!(await hasMasterPassword()) && (await hasAccounts())) {
+  if (!(await hasMasterPassword())) {
     router.push({
       name: Components.ChangePassword,
       params: {
@@ -140,8 +145,11 @@ const exportLegacyVault = (vault: UniversalWalletLegacyVaultDescriptor) => {
 .universal-migration {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+  justify-content: flex-start;
+  height: auto;
+  min-height: 100%;
+  max-width: 640px;
+  margin: 0 auto;
   gap: 24px;
 
   &__title {

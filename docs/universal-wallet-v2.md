@@ -81,20 +81,78 @@ Clients must reject malformed request ids, account ids, ecosystems, chain ids,
 origins, timestamps, invalid base64/hex payloads, oversized transaction batches,
 and result payloads that do not match their status and method.
 
-## Hard-Cutoff Migration
+## IrohaConnect Wallet Relay
 
-After the migration cutoff, normal wallet access is allowed only when a valid
-Universal Wallet V2 identity exists. A wallet with legacy accounts and no
-universal wallet must enter `migrate-before-access`: normal balance, transfer,
-staking, dApp, and signing flows stay blocked until the user creates or imports a
-universal wallet. A fresh install with no legacy material enters
-`create-universal-wallet`.
+The browser wallet exposes a wallet-side IrohaConnect flow under **Settings →
+IrohaConnect** for SORA Nexus and Taira. It accepts the deployed
+Uranai-compatible v1 wallet URI in either `iroha://connect` or
+`irohaconnect://connect` form. The URI must contain exactly `sid`, `chain_id`,
+`node`, `v`, `role`, and `token`; the chain id and Torii root must match one of
+the canonical profiles below.
 
-Legacy vault descriptors are export-only. They may expose backup/export and
-fund-safety recovery metadata, but they must set `canExportSecrets = true`,
-`canSignTransactions = false`, and `mode = export-only`. Legacy vaults must not
-be used for new signatures, broadcasts, staking actions, dApp approvals, or
-normal account selection after the cutoff.
+| Network | Chain id                               | Torii root                  |
+| ------- | -------------------------------------- | --------------------------- |
+| Taira   | `fc56984b-2be7-431d-840e-21514d1883f0` | `https://taira.sora.org`    |
+| Nexus   | `sora:nexus:global`                    | `https://minamoto.sora.org` |
+
+The background service owns the authenticated WebSocket so closing the popup
+does not approve, sign, or silently discard a live request. The visible UI and
+private extension messages receive only a bounded public snapshot: app name and
+HTTPS origin, canonical network, public account descriptors, and a summarized
+contract request. Relay tokens, ephemeral private keys, mnemonic material, and
+raw signing bytes never enter the UI snapshot.
+
+An incoming contract signature request opens or focuses the dedicated
+IrohaConnect review route, contributes to the shared approval badge, and keeps
+that route as the post-unlock destination when the keyring is locked. Stale
+notification windows are discarded and recreated at the review route; a popup
+failure does not alter or implicitly approve the protocol request.
+
+During session review and approved sessions, the background sends the text
+frame `keepalive` every 20 seconds for Chrome 116+ extension-service-worker
+liveness. Torii ignores text frames, so this does not create an IrohaConnect
+message, consume a protocol sequence number, or require the dApp to answer a
+Ping. Protocol Ping controls received from the dApp are still answered with a
+matching Pong.
+
+Connection approval signs the IrohaConnect approval preimage with the selected
+Iroha Ed25519 key. A connection does not authorize unattended signing. Each
+`uranai.irohaconnect.contract-call-signature.v1` request is checked against the
+approved I105 account, capped, held for at most 90 seconds, and shown for a
+separate user decision with the exact byte length and SHA-256 digest. Approval
+signs the exact decoded bytes; rejection, expiry, account mismatch, concurrent
+requests, replayed sequence numbers, and socket teardown fail closed. Key
+material is derived only inside the background keyring boundary and temporary
+byte arrays are cleared after use.
+Sessions and pending approvals are intentionally not persisted; a background
+restart requires a fresh dApp pairing and never restores a signing grant.
+
+Uranai's optional private-trade-proof extension is not a generic signature and
+requires a dedicated proof system. This wallet responds with the protocol-level
+`unsupported_private_proof` rejection instead of fabricating or auto-signing a
+proof. Public Uranai contract calls use the supported per-request signature
+flow.
+
+## Legacy upgrade continuity
+
+The 6 September 2026 upgrade requirement supersedes the hard-cutoff policy.
+Existing wallets retain balance, transfer, staking, dApp, signing and export
+access without having a complete Universal Wallet V2 identity. Missing network
+metadata must not send an existing installation to wallet creation. A fresh
+install with no accounts enters `create-universal-wallet`. The historical
+`migrate-before-access` value is accepted as normal legacy access for compatibility.
+
+Legacy vault descriptors describe export operations and keep their existing wire
+format: `canExportSecrets = true`, `canSignTransactions = false`, and
+`mode = export-only`. They are not account permissions. Existing account signers
+and normal account selection remain available through their original keyring
+identities. Account passwords and ordinary signing authorization still apply.
+
+The older per-account-password migration validates linked credentials before
+reencryption, retains pending EVM children after interruption, and retries each
+remaining pair. It never deletes an account as a way of skipping migration.
+Temporary inventory or worker failures leave account data and entered passwords
+available for retry.
 
 Migration snapshots contain `schemaVersion`, `platform`, `hasUniversalWallet`,
 `legacyVaults`, `cutoffAtMillis`, and `evaluatedAtMillis`. Clients must reject

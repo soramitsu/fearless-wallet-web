@@ -4,13 +4,13 @@ import {
 } from '@/router/universalWalletMigrationGuard';
 
 describe('Universal Wallet migration route guard', () => {
-  it('redirects normal wallet routes to the hard-cutoff screen before a universal wallet exists', () => {
+  it('keeps legacy wallet routes accessible and reserves onboarding for empty installs', () => {
     expect(
       resolveUniversalWalletMigrationRedirect({
         action: 'migrate-before-access',
         routeName: Routes.Wallet,
       })
-    ).toBe(Routes.UniversalWalletMigration);
+    ).toBeNull();
     expect(
       resolveUniversalWalletMigrationRedirect({
         action: 'create-universal-wallet',
@@ -19,7 +19,7 @@ describe('Universal Wallet migration route guard', () => {
     ).toBe(Routes.UniversalWalletMigration);
   });
 
-  it('allows only wallet creation, export, password, lock, reset, onboarding, and migration routes during cutoff', () => {
+  it('preserves all existing wallet actions for historical migration snapshots', () => {
     for (const routeName of [
       Routes.AddWallet,
       Routes.ChangePassword,
@@ -29,7 +29,10 @@ describe('Universal Wallet migration route guard', () => {
       Routes.Onboarding,
       Routes.ResetWallet,
       Routes.Unlock,
-      Routes.UniversalWalletMigration,
+      Routes.Wallet,
+      'SendForm',
+      'ReceiveForm',
+      'Staking',
     ]) {
       expect(
         resolveUniversalWalletMigrationRedirect({
@@ -40,7 +43,7 @@ describe('Universal Wallet migration route guard', () => {
     }
   });
 
-  it('allows export only when legacy vault migration is required', () => {
+  it('keeps legacy export available and avoids export on empty installs', () => {
     expect(
       resolveUniversalWalletMigrationRedirect({
         action: 'migrate-before-access',
@@ -55,7 +58,7 @@ describe('Universal Wallet migration route guard', () => {
     ).toBe(Routes.UniversalWalletMigration);
   });
 
-  it('prevents the hard-cutoff screen from lingering after normal access is allowed', () => {
+  it('leaves the obsolete cutoff screen when normal access is allowed', () => {
     expect(
       resolveUniversalWalletMigrationRedirect({
         action: 'normal-access',
@@ -70,18 +73,18 @@ describe('Universal Wallet migration route guard', () => {
     ).toBeNull();
   });
 
-  it('treats unknown or symbol route names as unsafe while cutoff is active', () => {
+  it('leaves unknown legacy routes to the normal router rather than forcing migration', () => {
     expect(
       resolveUniversalWalletMigrationRedirect({
         action: 'migrate-before-access',
         routeName: Symbol('unsafe'),
       })
-    ).toBe(Routes.UniversalWalletMigration);
+    ).toBeNull();
     expect(
       resolveUniversalWalletMigrationRedirect({
         action: 'migrate-before-access',
         routeName: undefined,
       })
-    ).toBe(Routes.UniversalWalletMigration);
+    ).toBeNull();
   });
 });

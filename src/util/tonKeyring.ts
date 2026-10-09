@@ -2,6 +2,7 @@ import { keyPairFromSeed } from '@ton/crypto';
 import { beginCell, type Address, Cell, contractAddress } from '@ton/core';
 import { WalletContractV4 } from '@ton/ton';
 import { mnemonicToSeedSync, validateMnemonic } from 'bip39';
+import * as tonWebMnemonic from 'tonweb-mnemonic';
 
 import { UNIVERSAL_WALLET_DERIVATION_PATHS } from '@/consts/universalWallet';
 import {
@@ -93,6 +94,26 @@ export function deriveTonAccount({
 
 export function deriveTonAddress(payload: TonDerivationPayload): string {
   return deriveTonAccount(payload).address;
+}
+
+// An existing account's public key determines its derivation. Some native TON
+// phrases also pass BIP39 validation, so phrase shape alone cannot select a key.
+export async function deriveCompatibleTonKeyPair(
+  mnemonic: string[],
+  expectedPublicKey?: Uint8Array,
+  password?: string
+): Promise<{ publicKey: Uint8Array; secretKey: Uint8Array }> {
+  const matches = (publicKey: Uint8Array) => !expectedPublicKey ||
+    (publicKey.length === expectedPublicKey.length && publicKey.every((byte, index) => byte === expectedPublicKey[index]));
+  if (!password && validateMnemonic(mnemonic.join(' '))) {
+    const universal = deriveTonAccount({ mnemonic: mnemonic.join(' ') });
+    if (matches(universal.publicKey)) return universal;
+  }
+  if (await tonWebMnemonic.validateMnemonic(mnemonic, password)) {
+    const native = await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
+    if (matches(native.publicKey)) return native;
+  }
+  throw new TonKeyringError(expectedPublicKey ? 'account_key_mismatch' : 'invalid_mnemonic');
 }
 
 export function createTonWalletContractV4R2(

@@ -7,6 +7,8 @@
         <input
           v-model="amountInternal"
           placeholder="0.00"
+          :aria-label="header"
+          inputmode="decimal"
           :readonly="readonly"
           data-testid="amountInternal"
           @focus="setFocusValue(true)"
@@ -18,18 +20,18 @@
       </div>
 
       <div class="column right-column">
-        <FCorners class="FCorners-button" @click="click">
-          <button data-testid="selectBtn" :class="selectButtonClasses">
+        <FCorners class="FCorners-button">
+          <button type="button" data-testid="selectBtn" :class="selectButtonClasses" :disabled="readonly || disableSelection" :aria-label="`${header}: ${asset || $t('common.select')}`" :aria-expanded="syncedIsRotate" @click="click">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
               <div class="asset" data-testid="asset">{{ asset.toUpperCase() }}</div>
             </template>
 
-            <div v-else class="select-label">Select</div>
+            <div v-else class="select-label">{{ $t('common.select') }}</div>
 
             <Rotate v-if="showIconRotate" :isActive="syncedIsRotate" class="rotate-asset">
-              <Icon icon="down" data-testid="rotateAsset" />
+              <Icon icon="down" width="16px" height="16px" data-testid="rotateAsset" />
             </Rotate>
           </button>
         </FCorners>
@@ -37,9 +39,9 @@
         <div v-if="showBalance" class="balance" data-testid="balance">
           {{ $t('assets.balance') }}
 
-          <div :class="balanceValueClasses" data-testid="balanceValue" @click="setMax">
+          <button type="button" :class="balanceValueClasses" data-testid="balanceValue" :disabled="readonly" :aria-label="`${$t('common.max')}: ${$n(+totalAmount, 'decimal')} ${asset}`" @click="setMax">
             &nbsp;{{ $n(+totalAmount, 'decimal') }}
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -351,5 +353,27 @@ export default defineComponent({ name: 'SelectInput' ,
       }
     }
   }
+}
+</style>
+
+<style lang="scss" scoped>
+.select {
+  box-sizing: border-box;
+  min-height: 128px;
+  height: auto;
+  gap: 12px;
+}
+.select .column { min-width: 0; }
+.select .left-column { flex: 1; max-width: none; }
+.select .left-column input { width: 100%; min-width: 0; box-sizing: border-box; }
+.select .right-column .select-button { min-height: 44px; height: auto; padding: 8px; }
+.select .right-column .balance { white-space: normal; overflow: visible; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.select .right-column .balance-value { background: transparent; border: 0; padding: 4px 0; font: inherit; min-height: 44px; overflow-wrap: anywhere; }
+.select .right-column .select-button:disabled { cursor: default; }
+@media (max-width: 620px) {
+  .select { flex-direction: column; }
+  .select .column { max-width: none; }
+  .select .right-column { flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .select .right-column .balance { margin-top: 0; }
 }
 </style>

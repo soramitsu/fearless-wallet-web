@@ -117,7 +117,10 @@ function mergeRegistryNetworkDefaults(
     ...existing,
     key: existing.key || registryNetwork.key,
     chain: existing.chain || registryNetwork.chain,
-    chainId: existing.chainId || registryNetwork.chainId,
+    chainId:
+      registryNetwork.ecosystem === WalletEcosystem.Iroha
+        ? registryNetwork.chainId
+        : existing.chainId || registryNetwork.chainId,
     ecosystem: registryNetwork.ecosystem,
     externalApi: mergeExternalApi(existing.externalApi, registryNetwork.externalApi),
     assets: mergeNativeAssets(existing.assets, registryNetwork.assets),

@@ -18,6 +18,9 @@ const mountSelectPopup = (options: Option[], value?: string) =>
       showIcon: false,
     },
     global: {
+      mocks: {
+        $t: (key: string) => (key === 'common.nothingFound' ? 'Nothing found' : key),
+      },
       stubs: {
         Popup: { template: '<div><slot /></div>' },
         Icon: { template: '<span />' },

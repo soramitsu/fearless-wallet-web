@@ -1,6 +1,6 @@
 <template>
   <div v-if="!isSupportedAuthType" class="no-auths" data-testid="unsupportedConnectionType">
-    Connection management for this protocol is unavailable in this build.
+    {{ t('authorize.unsupportedConnectionManagement') }}
   </div>
   <Fragment v-else-if="isAuthsExist">
     <AuthItem
@@ -23,10 +23,12 @@ import type { AuthUrlInfo } from '@extension-base/background/types/types';
 import AuthItem from '@/screens/extension-ui/AuthItem.vue';
 import { Components } from '@/router/routes';
 import { useExtensionStore } from '@/stores/extension';
+import { useI18n } from '@/locales/useI18n';
 
 const extensionStore = useExtensionStore();
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 
 const type = computed(() => route.params.type ?? 'substrate');
 const supportedAuthTypes = new Set(['substrate', 'evm']);

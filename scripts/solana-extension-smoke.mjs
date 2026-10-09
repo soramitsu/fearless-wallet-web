@@ -1039,7 +1039,12 @@ async function assertProductionPopup(cdp, extensionId, backgroundSession) {
     await setupExtensionMessaging(cdp, sessionId);
     await eventually(() => extensionSend(cdp, sessionId, 'pri(app.port.ping)', null), 'production background ping');
     await eventually(() => extensionSend(cdp, sessionId, 'pri(app.isReady)', null), 'production app readiness');
-    await sleep(1_000);
+    await waitForExpression(
+      cdp,
+      sessionId,
+      'Boolean(document.querySelector("#app[data-v-app] button, #app[data-v-app] input, #app[data-v-app] a"))',
+      'production popup interactive route'
+    );
 
     const state = await evaluate(
       cdp,

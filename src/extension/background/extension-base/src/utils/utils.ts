@@ -16,9 +16,10 @@ export function sumBN(inputArr: BN[]) {
 }
 
 let counter = 0;
+const webMessageSession = IS_EXTENSION ? '' : globalThis.crypto.randomUUID();
 
 export function getId(message = ''): string {
-  return `${EXTENSION_PREFIX}.${IS_EXTENSION ? Date.now() + '.' : ''}${++counter}.${message}`;
+  return `${EXTENSION_PREFIX}.${IS_EXTENSION ? Date.now() + '.' : webMessageSession + '.'}${++counter}.${message}`;
 }
 
 export const getCurrentProvider = (data: NetworkJson): string | undefined => {

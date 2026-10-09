@@ -1,4 +1,14 @@
 {
+  "portfolioPage": {
+    "balanceStatus": {
+      "failed": "Не удалось обновить балансы",
+      "outdated": "Балансы могут быть устаревшими",
+      "notLoaded": "Балансы не загружены"
+    },
+    "coverage": {
+      "catalogOnly": "Некоторые токены могут не отображаться"
+    }
+  },
   "welcome": {
     "importWallet": "У меня уже есть кошелек",
     "joinEvmSubstrate": "Создание или импорт учетных записей Substrate или EVM",
@@ -18,12 +28,34 @@
     "resetWallet": "Сбросить кошелек",
     "wantReset": "Вы уверены, что хотите сбросить настройки своего кошелька?",
     "walletWillBeDeleted": "Ваш текущий кошелек, счета и активы будут удалены из Fearless Wallet. Вам нужно будет повторно импортировать свой исходный счет, используя фразу восстановления или закрытый ключ.",
-    "enterReset": "Чтобы продолжить, введите 'Reset wallet'",
+    "enterReset": "Чтобы продолжить, введите '{phrase}'",
     "resetWarning": "Сброс кошелька удалит ваши текущие данные и активы. Мы не можем восстановить ваш пароль, так как он хранится только на вашем устройстве. Попробуйте другие пароли. Если вы хотите сбросить кошелек, импортируйте свою исходную фразу восстановления. Продолжайте, только если у вас есть фраза восстановления.",
     "passwordWarning": "Ваш пароль используется для разблокировки кошелька и надежно хранится на вашем устройстве. Мы рекомендуем использовать 12 символов, включая заглавные и строчные буквы, символы и цифры."
   },
+  "onboarding": {
+    "titleFirst": "DeFi-кошелек для",
+    "titleLast": "будущего"
+  },
+  "primaryMenu": {
+    "ariaLabel": "Основная навигация",
+    "portfolio": "Кошелёк",
+    "defi": "Доход",
+    "polkaswap": "Обмен",
+    "crossChain": "Перевод",
+    "settings": "Настройки"
+  },
+  "walletDetailsPopup": {
+    "details": "Сведения о кошельке",
+    "exportToGoogle": "Экспортировать в Google",
+    "deleteWallet": "Удалить кошелек"
+  },
   "addWallet": {
     "createWallet": "Создать новый кошелек",
+    "importTypes": {
+      "mnemonicPassphrase": "Мнемоническая фраза",
+      "rawSeed": "Исходный seed",
+      "restoreJson": "Восстановить из JSON"
+    },
     "exampleNameWallet": "Пример: сбережения, инвестиции, краудлоны, стейкинг. Этот никнейм будет отображаться только для вас и храниться локально.",
     "backupNonDigital": "Используйте нецифровой способ резервного копирования. Запишите его на бумаге (или выгравируйте на металле) и следите за тем, чтобы не потерять.",
     "backupPassphrase": "Сделайте резервную копию парольной фразы для вашего нового кошелька",
@@ -180,6 +212,158 @@
       "groupSelected": "{group} сети выбраны",
       "addFavorite": "{network} сеть добавлена в избранные",
       "deleteFavorite": "{network} сеть удалена из избранного"
+    }
+  },
+  "settingsPage": {
+    "title": "Настройки",
+    "subtitle": "Управление кошельками, сетями, подключениями и безопасностью.",
+    "groups": {
+      "walletsAccounts": "Кошельки и счета",
+      "networksAssets": "Сети и активы",
+      "connections": "Подключения",
+      "security": "Безопасность",
+      "preferences": "Предпочтения",
+      "about": "О приложении"
+    },
+    "walletDetails": "Сведения о кошельке и резервная копия",
+    "walletDetailsDescription": "Счета, ключи и экспорт",
+    "networksAssets": "Сети и активы",
+    "networksAssetsDescription": "Фильтры отображения, узлы и настройки активов",
+    "irohaConnectDescription": "Сеансы кошелька SORA 3 для Uranai и Iroha dApps",
+    "walletConnectDescription": "Сеансы WalletConnect для совместимых экосистем",
+    "tonConnectDescription": "Сеансы TonConnect пока не поддерживаются в этой сборке.",
+    "buildUnavailable": "Недоступно в сборке",
+    "connectedDapps": "Подключенные dApps",
+    "connectedDappsDescription": "Разрешения Substrate и EVM",
+    "changePassword": "Изменить пароль",
+    "changePasswordDescription": "Обновить локальный мастер-пароль",
+    "lockApp": "Заблокировать приложение",
+    "lockAppDescription": "Запрашивать пароль при следующем открытии",
+    "fiatCurrency": "Фиатная валюта",
+    "fiatCurrencyDescription": "Валюта отображения портфеля",
+    "language": "Язык",
+    "languageDescription": "Язык интерфейса приложения",
+    "aboutFearless": "О Fearless",
+    "aboutFearlessDescription": "Версия, поддержка и правовая информация"
+  },
+  "irohaConnectPage": {
+    "backToSettings": "Назад к настройкам",
+    "walletBridge": "Мост кошелька SORA 3",
+    "walletMode": "Режим кошелька · совместимо с Uranai",
+    "sakuraTitle": "Подключитесь под падающей сакурой.",
+    "intro": "Свяжите dApp со своей учетной записью SORA Nexus или Taira. Fearless запрашивает подтверждение перед сеансом и каждой подписью.",
+    "linkLabel": "Ссылка IrohaConnect",
+    "pasteHint": "Вставьте ссылку кошелька, показанную Uranai или другим совместимым dApp.",
+    "paste": "Вставить",
+    "openingRelay": "Открываем ретранслятор…",
+    "connectWallet": "Подключить кошелек",
+    "waitingForDapp": "Ожидание dApp",
+    "openingApprovedRelay": "Открываем одобренный ретранслятор и проверяем запрос приложения.",
+    "cancel": "Отмена",
+    "connectionRequest": "Запрос на подключение",
+    "network": "Сеть",
+    "relay": "Ретранслятор",
+    "app": "Приложение",
+    "permission": "Разрешение",
+    "requestSignatures": "Запрашивать подписи",
+    "chooseAccount": "Выберите учетную запись Iroha",
+    "irohaAccount": "Учетная запись Iroha",
+    "noSignableAccount": "В этом кошельке нет локальной учетной записи Iroha для подписи в {network}.",
+    "seedSafety": "Приложение никогда не получает ваш seed. Это подтверждение только раскрывает выбранную публичную учетную запись.",
+    "reject": "Отклонить",
+    "approving": "Подтверждаем…",
+    "approveConnection": "Одобрить подключение",
+    "signatureRequest": "Запрос подписи",
+    "reviewBytes": "Проверьте точные байты",
+    "entrypoint": "Точка входа",
+    "contract": "Контракт",
+    "account": "Учетная запись",
+    "payload": "Полезная нагрузка",
+    "byteCount": "{count} байт",
+    "approveOnlyIfMatches": "Подтверждайте только тогда, когда сведения о контракте соответствуют действию, проверенному в {appName}.",
+    "signing": "Подписываем…",
+    "approveSignature": "Одобрить подпись",
+    "connected": "Подключено",
+    "waitingForRequest": "Ожидание запроса",
+    "disconnect": "Отключить",
+    "status": {
+      "pairing": "Связывание",
+      "review": "Проверка",
+      "connected": "Подключено",
+      "attention": "Внимание",
+      "ready": "Готово"
+    },
+    "live": {
+      "connectionRequested": "{appName} запрашивает подключение.",
+      "signatureReview": "Подпись контракта требует вашей проверки.",
+      "connectedTo": "Подключено к {appName}.",
+      "openingRelay": "Открываем ретранслятор IrohaConnect.",
+      "ready": "IrohaConnect готов."
+    },
+    "contractCall": "Вызов контракта",
+    "invalidUrl": "Недопустимый URL",
+    "actionFailed": "IrohaConnect не смог завершить это действие.",
+    "clipboardUnavailable": "Буфер обмена недоступен. Вставьте ссылку в поле."
+  },
+  "crossChainPage": {
+    "title": "Межсетевой перевод",
+    "subtitle": "Сначала выберите исходную сеть. Доступны только проверенные маршруты.",
+    "originNetwork": "Исходная сеть",
+    "selectNetwork": "Выберите сеть",
+    "originAccount": "Исходная учетная запись",
+    "selectedWallet": "Выбранный кошелек",
+    "asset": "Актив",
+    "selectAsset": "Выберите актив",
+    "noReviewedRoute": "Нет проверенного маршрута",
+    "destinationNetwork": "Сеть назначения",
+    "selectDestination": "Выберите назначение",
+    "minimum": "Минимум",
+    "fees": "Комиссии",
+    "estimatedTime": "Расчетное время",
+    "protocol": "Протокол",
+    "providerCoverage": "Охват провайдеров",
+    "coverageIndependent": "Доступность не зависит от выбранного выше актива.",
+    "otherEcosystems": "TON, Bitcoin, Solana, Iroha и все не указанные здесь провайдеры недоступны, пока не будут проверены точный маршрут и полномочия на выполнение.",
+    "noSupportedRoute": "Нет поддерживаемого маршрута",
+    "routeMissing": "Этот маршрут отсутствует, изменился или больше не входит в проверенный реестр.",
+    "unavailable": "Недоступно",
+    "quotedLive": "Рассчитывается сейчас",
+    "noAccount": "Нет учетной записи",
+    "accountReason": {
+      "addOrigin": "Добавьте учетную запись для исходной сети.",
+      "hardware": "Эта аппаратная учетная запись пока не поддерживается для данного маршрута.",
+      "external": "Этот кошелек доступен только для просмотра либо требует неподдерживаемой внешней подписи."
+    },
+    "networkRoutesUnavailable": "Маршруты {network} пока не поддерживаются проверенным провайдером.",
+    "assetRouteUnavailable": "Для этого актива нет проверенного маршрута XCM или моста из выбранной исходной сети.",
+    "providerStatus": {
+      "reviewed": "Проверено",
+      "disabled": "Отключено",
+      "unavailable": "Недоступно"
+    },
+    "providerReason": {
+      "noClaimRecovery": "Проверенный исполняемый процесс получения и восстановления не включен. Переводы SORA ↔ Ethereum остаются недоступны.",
+      "noExecutableRoute": "Для этого провайдера не включен проверенный исполняемый маршрут.",
+      "policyDisabled": "Полномочия проверенного маршрута включены, но текущая политика возможностей не разрешает переводы.",
+      "availableCount": "Доступен 1 проверенный маршрут при точном совпадении метаданных сети, собственного актива и локальной подписи. | Доступно {count} проверенных маршрута при точном совпадении метаданных сети, собственного актива и локальной подписи."
+    },
+    "route": {
+      "disabled": "Переводы через этого проверенного провайдера временно отключены.",
+      "originFeeLive": "Комиссия исходной сети рассчитывается перед подтверждением",
+      "originAndDownstreamFee": "Исходная комиссия рассчитывается сейчас; оценка последующей комиссии — {fee} {symbol}",
+      "onlyReviewedRoute": "Доступен только проверенный маршрут {origin} → {destination}.",
+      "conditionsChange": "Состояние сети может изменить итоговую комиссию и время доставки.",
+      "downstreamEstimate": "Последующая комиссия является проверенной оценкой и включается в подтверждение.",
+      "ethereumClaimUnavailable": "Доставка в Ethereum требует второй транзакции получения и отслеживания восстановления. Маршрут недоступен до проверки всего процесса.",
+      "ethereumToSoraUnavailable": "Ethereum → SORA требует транзакции контракта, актуальной проверки gas и разрешения, а также отслеживания восстановления. Маршрут недоступен до проверки всего процесса.",
+      "multiStepFees": "В этой версии нельзя безопасно рассчитать комиссии многоэтапного процесса",
+      "noFundsSubmitted": "Пока эта возможность недоступна, средства не отправляются."
+    },
+    "estimatedTimeValues": {
+      "walletXcm": "2–10 минут",
+      "soraSubstrate": "5–20 минут",
+      "soraEvm": "10–60 минут и получение",
+      "liberland": "5–20 минут"
     }
   },
   "menu": {
@@ -719,5 +903,45 @@
     "copyHash": "Скопировать hash",
     "fearlessSupport": "Fearless support",
     "evmDApps": "EVM DApps"
+  },
+  "ux": {
+    "refresh": "Обновить",
+    "retry": "Повторить",
+    "search": "Поиск",
+    "moreOptions": "Другие действия",
+    "verifyRecipient": "Проверьте полный адрес и сеть перед подтверждением.",
+    "supportedRoutes": "Поддерживаемые направления",
+    "transferNetworks": "Перевод между сетями",
+    "loadingPositions": "Загрузка ваших позиций…",
+    "incompletePositions": "Часть позиций не удалось обновить. Список может быть неполным.",
+    "positionsUnavailable": "Не удалось загрузить позиции. Повторите попытку.",
+    "positionsEmpty": "У вас нет активных позиций. Выберите способ получения дохода ниже.",
+    "knownPositions": "Загружено позиций: {count}",
+    "managePosition": "Управление",
+    "deposited": "Внесено",
+    "rewards": "Награды",
+    "staking": "В стейкинге",
+    "poolShare": "Доля в пуле",
+    "shares": "Доли",
+    "claimable": "Доступно к получению",
+    "walletTaskTitle": "Ваш кошелёк",
+    "walletTaskDescription": "Создайте новый кошелёк или восстановите существующий.",
+    "chooseNetworks": "Выберите сети",
+    "chooseNetworksDescription": "Другие сети можно добавить позже.",
+    "primaryNetworks": "Ethereum, Polkadot и другие",
+    "tonNetwork": "TON",
+    "primaryNetworksDescription": "Активы Ethereum, Polkadot, Bitcoin, Solana и SORA.",
+    "continueWithNetworks": "Продолжить с этими сетями",
+    "otherWays": "Другие способы подключения",
+    "tonNetworkDescription": "Toncoin и токены в сети The Open Network.",
+    "back": "Назад",
+    "openExplorer": "Открыть в обозревателе",
+    "share": "Поделиться",
+    "add": "Добавить",
+    "liquidityTokens": "Токены ликвидности",
+    "startingWallet": "Запускаем кошелёк…",
+    "startupUnavailable": "Не удалось запустить кошелёк. Проверьте соединение и попробуйте ещё раз.",
+    "settingUpWallet": "Настраиваем кошелёк…",
+    "accountSetupFailed": "Не удалось настроить кошелёк. Введённые данные сохранены на этом экране. Попробуйте ещё раз или вернитесь и проверьте их."
   }
 }

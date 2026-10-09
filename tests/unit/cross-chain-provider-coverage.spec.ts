@@ -31,6 +31,32 @@ vi.mock('@/router/routes', () => ({ Components: { CrossChainForm: 'CrossChainFor
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accountsStore }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.extensionStore }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => mocks.networksStore }));
+vi.mock('@/locales/useI18n', () => {
+  const messages: Record<string, string> = {
+    'crossChainPage.title': 'Cross-chain',
+    'crossChainPage.subtitle': 'Choose an origin first. Only reviewed routes are enabled.',
+    'crossChainPage.originNetwork': 'Origin network',
+    'crossChainPage.selectNetwork': 'Select network',
+    'crossChainPage.providerCoverage': 'Provider coverage',
+    'crossChainPage.coverageIndependent': 'Availability does not depend on the asset selected above.',
+    'crossChainPage.otherEcosystems': 'Other ecosystems are unavailable.',
+    'crossChainPage.providerStatus.reviewed': 'Reviewed',
+    'crossChainPage.providerStatus.disabled': 'Disabled',
+    'crossChainPage.providerStatus.unavailable': 'Unavailable',
+    'crossChainPage.providerReason.noClaimRecovery':
+      'No reviewed executable claim and recovery flow is bundled.',
+    'crossChainPage.providerReason.noExecutableRoute': 'No reviewed executable route is bundled.',
+    'crossChainPage.providerReason.policyDisabled':
+      'Reviewed route authority is bundled, but transfers are not enabled by the current capability policy.',
+  };
+
+  return {
+    useI18n: () => ({
+      t: (key: string) => messages[key] ?? key,
+      tc: (_key: string, count: number) => `${count} reviewed route available`,
+    }),
+  };
+});
 
 import CrossChainRoot from '@/screens/cross-chain/CrossChainRoot.vue';
 

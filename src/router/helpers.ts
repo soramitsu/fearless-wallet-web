@@ -55,7 +55,10 @@ const updateTitle = (to: RouteLocationNormalized) => {
     }
   } else {
     const toTitle = String(meta?.title ?? '');
-    const tabName = toTitle !== '' ? i18n.global.t(`browserTabs.${toTitle}`) : '';
+    const titleKey = i18n.global.te(`browserTabs.${toTitle}`)
+      ? `browserTabs.${toTitle}`
+      : i18n.global.te(`primaryMenu.${toTitle}`) ? `primaryMenu.${toTitle}` : '';
+    const tabName = titleKey ? i18n.global.t(titleKey) : '';
 
     const title = `${FEARLESS_TITLE} ${tabName !== '' ? '|' : ''} ${tabName.toUpperCase()}`;
 

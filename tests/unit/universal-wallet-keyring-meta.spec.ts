@@ -54,6 +54,21 @@ describe('Universal Wallet keyring metadata', () => {
     ]);
   });
 
+  it.each([undefined, null, {}, [null], [1]])('repairs incomplete optional account inventory %j without changing legacy addresses', (publicAccounts) => {
+    const original = fullMeta();
+    const interrupted = {
+      ...original,
+      universalWallet: { status: 'active', publicAccounts } as unknown as UniversalWalletKeyringMeta,
+    };
+    expect(validateUniversalWalletKeyringMeta(interrupted.universalWallet)).toEqual(['publicAccountsRequired']);
+    const repaired = withUniversalWalletKeyringMeta(SUBSTRATE_ADDRESS, interrupted, WalletEcosystem.Substrate, NOW);
+    expect(validateUniversalWalletKeyringMeta(repaired.universalWallet)).toEqual([]);
+    for (const [field, value] of Object.entries(original)) {
+      expect(repaired[field as keyof typeof original]).toEqual(value);
+    }
+    expect(interrupted.universalWallet.publicAccounts).toBe(publicAccounts);
+  });
+
   it('preserves existing stable wallet identity fields during metadata updates', () => {
     const original = buildUniversalWalletKeyringMeta({
       address: SUBSTRATE_ADDRESS,
@@ -76,6 +91,30 @@ describe('Universal Wallet keyring metadata', () => {
     expect(updated.createdAtMillis).toBe(original.createdAtMillis);
     expect(updated.updatedAtMillis).toBe(NOW + 1000);
     expect(updated.displayName).toBe('Renamed');
+  });
+
+  it('retains valid identity header fields and custom accounts when an optional inventory row is malformed', () => {
+    const original = buildUniversalWalletKeyringMeta({ address: SUBSTRATE_ADDRESS,
+      meta: fullMeta(), source: 'legacy-import', nowMillis: NOW });
+    const custom = { accountId: 'legacy-custom', ecosystem: WalletEcosystem.Ton,
+      address: 'exact-legacy-native-address', isDefault: true, derivationPath: 'legacy-native-phrase', publicKeyHex: '99'.repeat(32) };
+    original.publicAccounts.push(custom);
+    expect(validateUniversalWalletKeyringMeta(original)).toContain('invalidDerivationPath');
+    const updated = buildUniversalWalletKeyringMeta({ address: SUBSTRATE_ADDRESS,
+      meta: { name: 'Renamed', universalWallet: original }, nowMillis: NOW + 1000 });
+    expect(updated.walletId).toBe(original.walletId);
+    expect(updated.createdAtMillis).toBe(NOW);
+    expect(updated.source).toBe('legacy-import');
+    expect(updated.primaryEcosystem).toBe(original.primaryEcosystem);
+    expect(updated.publicAccounts).toEqual(expect.arrayContaining(original.publicAccounts));
+    expect(updated.displayName).toBe('Renamed');
+    const partial = { ...original, publicAccounts: [null, custom] } as unknown as UniversalWalletKeyringMeta;
+    const repaired = buildUniversalWalletKeyringMeta({ address: SUBSTRATE_ADDRESS,
+      meta: { name: 'Renamed', universalWallet: partial }, nowMillis: NOW + 2000 });
+    expect(repaired.walletId).toBe(original.walletId);
+    expect(repaired.createdAtMillis).toBe(NOW);
+    expect(repaired.source).toBe('legacy-import');
+    expect(repaired.publicAccounts).toContainEqual(custom);
   });
 
   it('rejects adversarial embedded metadata and replaces it with a valid envelope', () => {

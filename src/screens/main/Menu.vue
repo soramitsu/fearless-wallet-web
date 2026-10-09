@@ -1,5 +1,5 @@
 <template>
-  <nav class="menu" data-testid="menu" aria-label="Primary">
+  <nav class="menu" data-testid="menu" :aria-label="t('primaryMenu.ariaLabel')">
     <MenuItem
       v-for="item in menuItems"
       :key="item.id"
@@ -7,6 +7,7 @@
       :icon="item.icon"
       :isActive="activeDestination === item.id"
       :emphasized="item.id === 'polkaswap'"
+      :aria-label="item.id === 'polkaswap' ? 'Polkaswap' : item.label"
       @click="open(item)"
     />
   </nav>
@@ -24,6 +25,7 @@ import {
 } from '@/router/primaryNavigation';
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { useAccountsStore } from '@/stores/accounts';
+import { useI18n } from '@/locales/useI18n';
 
 type MenuDefinition = {
   id: PrimaryDestination;
@@ -35,13 +37,14 @@ type MenuDefinition = {
 const route = useRoute();
 const router = useRouter();
 const accountsStore = useAccountsStore();
-const menuItems: MenuDefinition[] = [
-  { id: 'portfolio', label: 'Portfolio', icon: 'wallet', route: Components.Wallet },
-  { id: 'defi', label: 'DeFi', icon: 'pools', route: Components.Defi },
-  { id: 'polkaswap', label: 'Polkaswap', icon: 'polkaswap', route: Components.Polkaswap },
-  { id: 'cross-chain', label: 'Cross-chain', icon: 'cross-chain', route: Components.CrossChain },
-  { id: 'settings', label: 'Settings', icon: 'settings', route: Components.Settings },
-];
+const { t } = useI18n();
+const menuItems = computed<MenuDefinition[]>(() => [
+  { id: 'portfolio', label: t('primaryMenu.portfolio'), icon: 'wallet', route: Components.Wallet },
+  { id: 'defi', label: t('primaryMenu.defi'), icon: 'pools', route: Components.Defi },
+  { id: 'polkaswap', label: t('primaryMenu.polkaswap'), icon: 'polkaswap', route: Components.Polkaswap },
+  { id: 'cross-chain', label: t('primaryMenu.crossChain'), icon: 'cross-chain', route: Components.CrossChain },
+  { id: 'settings', label: t('primaryMenu.settings'), icon: 'settings', route: Components.Settings },
+]);
 
 const activeDestination = computed(
   () => (route.meta.primaryNavigation as PrimaryDestination | undefined) ?? 'portfolio'
@@ -61,12 +64,7 @@ function open(item: MenuDefinition): void {
     return;
   }
   router.replace(
-    resolvePrimaryNavigationTarget(
-      accountsStore.selectedWallet.address,
-      activeDestination.value,
-      item.id,
-      root
-    )
+    resolvePrimaryNavigationTarget(accountsStore.selectedWallet.address, activeDestination.value, item.id, root)
   );
 }
 </script>

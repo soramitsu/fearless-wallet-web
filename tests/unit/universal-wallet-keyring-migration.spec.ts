@@ -17,7 +17,7 @@ const TON_ADDRESS = 'UQDxAUFadQXDd3EXGa3TLF_EF66gMc9h3_aZ0j0zXNoIYUCc';
 const IROHA_ADDRESS = 'testuAddressForMigration';
 
 describe('web Universal Wallet keyring migration snapshot', () => {
-  it('requires migration when legacy accounts exist without an active universal wallet', () => {
+  it('preserves access when legacy accounts exist without an active universal wallet', () => {
     const snapshot = buildWebUniversalWalletMigrationSnapshot({
       accounts: [legacyAccount()],
       nowMillis: NOW,
@@ -34,7 +34,7 @@ describe('web Universal Wallet keyring migration snapshot', () => {
       }),
     ]);
     expect(getWebUniversalWalletMigrationRequiredAction({ accounts: [legacyAccount()], nowMillis: NOW })).toBe(
-      'migrate-before-access'
+      'normal-access'
     );
   });
 
@@ -53,7 +53,7 @@ describe('web Universal Wallet keyring migration snapshot', () => {
     expect(getWebUniversalWalletMigrationRequiredAction({ accounts, nowMillis: NOW })).toBe('normal-access');
   });
 
-  it('does not treat malformed or partial universal metadata as normal-access capable', () => {
+  it('keeps existing accounts usable while malformed or partial universal metadata is repaired', () => {
     const invalidUniversal = universalAccount();
 
     invalidUniversal.meta!.universalWallet = {
@@ -70,7 +70,7 @@ describe('web Universal Wallet keyring migration snapshot', () => {
     expect(snapshot.hasUniversalWallet).toBe(false);
     expect(snapshot.legacyVaults).toHaveLength(1);
     expect(getWebUniversalWalletMigrationRequiredAction({ accounts: [invalidUniversal], nowMillis: NOW })).toBe(
-      'migrate-before-access'
+      'normal-access'
     );
   });
 

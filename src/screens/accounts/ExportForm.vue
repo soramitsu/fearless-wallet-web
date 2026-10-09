@@ -47,10 +47,10 @@ import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-enum ExportTypeText {
-  mnemonic = 'Mnemonic',
-  rawSeed = 'Raw seed',
-  json = 'JSON',
+enum ExportTypeTextKey {
+  mnemonic = 'accounts.mnemonic',
+  rawSeed = 'accounts.rawSeed',
+  json = 'accounts.json',
 }
 
 export default defineComponent({ name: 'ExportForm', components: { MnemonicBackupForm } ,
@@ -69,7 +69,7 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
   },
   computed: {
     exportTypeText() {
-      return ExportTypeText[this.exportType];
+      return this.$t(ExportTypeTextKey[this.exportType]);
     },
     mnemonicLength() {
       return this.mnemonicArray.length;

@@ -105,11 +105,9 @@ export default defineComponent({ name: 'WalletBalance' ,
 
   .fiat-balance {
     font-weight: 800;
-    text-overflow: ellipsis;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    height: 23px;
-    line-height: 23px;
+    overflow-wrap: anywhere;
+    min-height: 23px;
+    line-height: 1.2;
   }
 }
 </style>

@@ -9,7 +9,7 @@ Store listing: <https://chromewebstore.google.com/detail/fearless-wallet/nhlneho
 ## Release scope
 
 - Universal Wallet v2 account derivation and migration, with legacy wallets
-  retained for export-only recovery.
+  retaining their original keys, normal functionality and export access.
 - Solana accounts, balances, dApp authorization, message signing, and
   transaction signing.
 - Bitcoin account discovery, balances, and history. Bitcoin sending is hidden
@@ -48,9 +48,9 @@ password-encrypted wallet JSON plus the wallet label and public address used as
 Drive file metadata. The feature is absent from public/credentialless builds
 and only appears when the release OAuth client is supplied.
 
-The Chrome manifest requires Chrome 102 or newer. This matches the first
-Manifest V3 Chrome release that accepts the extension's required
-`wasm-unsafe-eval` CSP directive.
+The Chrome manifest requires Chrome 116 or newer. This keeps the existing
+Manifest V3 and `wasm-unsafe-eval` requirements while guaranteeing Chrome's
+WebSocket lifetime support for background IrohaConnect wallet sessions.
 
 ## Local production configuration
 

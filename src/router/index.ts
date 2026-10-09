@@ -4,14 +4,12 @@ import routes, { Components } from '@/router/routes';
 import { resolveUniversalWalletMigrationRedirect } from '@/router/universalWalletMigrationGuard';
 import {
   keyringIsLocked,
-  getUniversalWalletMigrationSnapshot,
   hasMasterPassword,
   hasAccounts,
   isNeedMigration,
   isOnboardingRequired,
 } from '@/extension/messaging';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
-import { getUniversalWalletMigrationRequiredAction } from '@/util/universalWalletMigrationContract';
 import { resolvePrimaryBackTarget, type PrimaryDestination } from '@/router/primaryNavigation';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -89,9 +87,10 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
 
-    const universalMigrationSnapshot = await getUniversalWalletMigrationSnapshot();
+    // Account presence is authoritative for continuity of access. Optional
+    // network metadata or its export inventory can be absent after an upgrade.
     const universalMigrationRedirect = resolveUniversalWalletMigrationRedirect({
-      action: getUniversalWalletMigrationRequiredAction(universalMigrationSnapshot),
+      action: (await hasAccounts()) ? 'normal-access' : 'create-universal-wallet',
       routeName: to.name,
     });
 
@@ -121,8 +120,9 @@ router.beforeEach(async (to, from, next) => {
       else next();
     } else if (to.name === Components.ResetWallet) next();
     else {
-      if (isLock && to.name !== Components.Onboarding) next({ name: Components.Unlock });
-      else next();
+      if (isLock && to.name !== Components.Onboarding) {
+        next({ name: Components.Unlock, query: { redirect: to.fullPath } });
+      } else next();
     }
   }
 });

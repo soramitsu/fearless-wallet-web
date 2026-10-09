@@ -59,6 +59,13 @@ const mountPortfolio = () =>
       showAssetsManagementForm: false,
     },
     global: {
+      mocks: {
+        $t: (key: string) =>
+          ({
+            'portfolioPage.refresh': 'Refresh',
+            'portfolioPage.syncing': 'Syncing',
+          })[key] ?? key,
+      },
       stubs: {
         Icon: { template: '<span />' },
         Loader: { template: '<span />' },

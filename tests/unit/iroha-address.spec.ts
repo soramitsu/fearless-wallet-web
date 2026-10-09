@@ -9,8 +9,10 @@ import {
   IrohaAddressError,
   isIrohaI105Address,
   parseIrohaI105Address,
+  resolveCanonicalIrohaAddressNetwork,
   type IrohaAddressErrorCode,
 } from '@/util/iroha';
+import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 
 type IrohaNetworkVector = {
   publicKeyHex: string;
@@ -51,6 +53,23 @@ const errorCodeOf = (action: () => unknown): IrohaAddressErrorCode => {
 const tamperLastSymbol = (address: string): string => `${address.slice(0, -1)}${address.endsWith('1') ? '2' : '1'}`;
 
 describe('Iroha I105 address codec', () => {
+  it('resolves address networks only from byte-exact canonical chain IDs', () => {
+    expect(resolveCanonicalIrohaAddressNetwork(UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId)).toBe('taira');
+    expect(resolveCanonicalIrohaAddressNetwork(UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId)).toBe('nexus');
+
+    for (const rejected of [
+      UNIVERSAL_WALLET_IROHA_NETWORKS.taira.id,
+      UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.id,
+      UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId.toUpperCase(),
+      UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant,
+      'Taira Testnet',
+      'SORA Nexus',
+      undefined,
+    ]) {
+      expect(() => resolveCanonicalIrohaAddressNetwork(rejected)).toThrow('unsupported_iroha_chain_id');
+    }
+  });
+
   it('encodes Taira and Nexus I105 addresses from the golden public keys', () => {
     for (const vector of fixture.vectors) {
       const { taira, nexus } = vector.expected.iroha;

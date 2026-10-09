@@ -3,45 +3,30 @@ import { formatNetworkSyncFreshness, formatSyncAge } from '@/portfolio/syncFresh
 describe('Portfolio network sync freshness', () => {
   const now = Date.UTC(2026, 7, 1, 12, 0, 0);
 
-  it('shows a useful relative age for a successful scan', () => {
-    expect(
-      formatNetworkSyncFreshness(
-        { coverage: 'complete', lastSuccess: now - 2 * 60_000, stale: false },
-        { now }
-      )
-    ).toBe('complete · Synced 2m ago');
+  it.each(['complete', 'catalogOnly', 'limited'] as const)('keeps successful %s scans quiet', (coverage) => {
+    expect(formatNetworkSyncFreshness({ coverage, lastSuccess: now - 2 * 60_000, stale: false }, { now })).toBe('');
   });
 
-  it('retains and renders the last successful time after an endpoint error', () => {
-    expect(
-      formatNetworkSyncFreshness(
-        {
-          coverage: 'catalogOnly',
-          lastSuccess: now - 3 * 60 * 60_000,
-          stale: true,
-          error: 'endpoint_unavailable',
-        },
-        { now }
-      )
-    ).toBe('catalogOnly · Sync failed · Last synced 3h ago');
+  it.each([undefined, now - 3 * 60 * 60_000])('keeps an update failure visible with last success %s', (lastSuccess) => {
+    expect(formatNetworkSyncFreshness({ coverage: 'catalogOnly', lastSuccess, stale: true, error: 'endpoint_unavailable' }, { now }))
+      .toBe('Balance update failed');
   });
 
-  it('marks old successes stale and supports an injected timestamp formatter', () => {
-    const formatAge = vi.fn((timestamp: number) => `at ${new Date(timestamp).toISOString()}`);
-
-    expect(
-      formatNetworkSyncFreshness(
-        { coverage: 'limited', lastSuccess: now - 20 * 60_000, stale: false },
-        { now, formatAge }
-      )
-    ).toBe(`limited · Stale · Last synced at ${new Date(now - 20 * 60_000).toISOString()}`);
-    expect(formatAge).toHaveBeenCalledWith(now - 20 * 60_000, now);
+  it('marks old successes outdated without repeating timestamps or discovery coverage', () => {
+    expect(formatNetworkSyncFreshness({ coverage: 'limited', lastSuccess: now - 20 * 60_000, stale: false }, { now }))
+      .toBe('Balances may be outdated');
+    expect(formatNetworkSyncFreshness({ coverage: 'complete', lastSuccess: now, stale: true }, { now }))
+      .toBe('Balances may be outdated');
   });
 
-  it('normalizes second timestamps and reports pending scans honestly', () => {
+  it('distinguishes unloaded balances from a failed first scan', () => {
+    expect(formatNetworkSyncFreshness({ coverage: 'limited', stale: false }, { now })).toBe('Balances not loaded');
+    expect(formatNetworkSyncFreshness({ coverage: 'limited', stale: true }, { now })).toBe('Balance update failed');
+  });
+
+  it('normalizes second timestamps while leaving a healthy heading quiet', () => {
     expect(formatSyncAge((now - 60_000) / 1000, now)).toBe('1m ago');
-    expect(formatNetworkSyncFreshness({ coverage: 'limited', stale: false }, { now })).toBe(
-      'limited · Sync pending'
-    );
+    expect(formatNetworkSyncFreshness({ coverage: 'limited', lastSuccess: (now - 60_000) / 1000, stale: false }, { now }))
+      .toBe('');
   });
 });

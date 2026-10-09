@@ -16,14 +16,11 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { Lang } from '@/locales';
+import { languageOptions, syncDocumentLanguage, type Lang } from '@/locales';
 import { useI18n } from '@/locales/useI18n';
 import { accountController } from '@/controllers';
 
-const options = [
-  { name: 'English', value: 'en-EN' },
-  { name: 'Русский', value: 'ru-RU' },
-];
+const options = [...languageOptions];
 const i18n = useI18n();
 const emit = defineEmits(['handlerClose']);
 
@@ -33,6 +30,7 @@ const language = computed({
   },
   set: (language: Lang) => {
     i18n.locale.value = language;
+    syncDocumentLanguage(language);
 
     accountController.setLang(language);
   },

@@ -1,98 +1,54 @@
 <template>
   <div class="wallet-ecosystem">
-    <ContentForm :isStaticHeight="true" :bottomRightCorner="true">
-      <div class="content-form-ecosystem">
-        <div>{{ $t('welcome.ecosystemEvmSubstrate') }}</div>
-
-        <FButton
-          width="140px"
-          size="small"
-          fontSize="small"
-          type="secondary"
-          text="welcome.joinEvmSubstrate"
-          class="ecosystem-button"
-          :border="false"
-          data-testid="substrateEcosystem"
-          @click="setEcosystem('substrate')"
-        />
-
-        <Icon icon="ethereum-ecosystem" class="ecosystem-img ethereum-img" :hover="false" />
-
-        <Icon icon="substrate-ecosystem" class="ecosystem-img substrate-img" :hover="false" />
-      </div>
-    </ContentForm>
-
-    <ContentForm :isStaticHeight="true" :bottomRightCorner="true">
-      <div class="content-form-ecosystem">
-        <div>{{ $t('welcome.ecosystemTon') }}</div>
-
-        <Icon icon="ton-ecosystem" class="ecosystem-img ton-img" :hover="false" />
-
-        <FButton
-          width="80px"
-          size="small"
-          fontSize="small"
-          type="secondary"
-          text="welcome.joinTon"
-          class="ecosystem-button"
-          :border="false"
-          data-testid="substrateEcosystem"
-          @click="setEcosystem('ton')"
-        />
-      </div>
-    </ContentForm>
+    <button class="ecosystem-option" type="button" data-testid="substrateEcosystem" @click="setEcosystem('substrate')">
+      <strong>{{ $t('ux.primaryNetworks') }}</strong>
+      <span>{{ $t('ux.primaryNetworksDescription') }}</span>
+      <span class="ecosystem-action">{{ $t('common.continue') }} →</span>
+    </button>
+    <button class="ecosystem-option" type="button" data-testid="tonEcosystem" @click="setEcosystem('ton')">
+      <strong>{{ $t('ux.tonNetwork') }}</strong>
+      <span>{{ $t('ux.tonNetworkDescription') }}</span>
+      <span class="ecosystem-action">{{ $t('common.continue') }} →</span>
+    </button>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { type WalletEcosystem } from '@/interfaces';
-
 const emit = defineEmits(['setEcosystem']);
-
 const setEcosystem = (ecosystem: WalletEcosystem) => emit('setEcosystem', ecosystem);
 </script>
 
 <style lang="scss" scoped>
 .wallet-ecosystem {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  gap: 12px;
 }
-
-.button--content-wrap {
-  flex: 1 1 100px;
-}
-
-.content-form-ecosystem {
-  display: flex;
-  flex-direction: column;
+.ecosystem-option {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border: $default-border;
+  border-radius: 8px;
+  background: $secondary-background-color;
   text-align: left;
-  height: 109px;
-  width: 260px;
-  padding: 16px 22px 16px 14px;
-  justify-content: space-between;
-  font-size: 14px;
-  font-weight: 700;
-  user-select: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
-
-.ecosystem-img {
-  position: absolute;
-  height: 45px;
-  width: 45px;
+.ecosystem-option strong {
+  font-size: 1.125rem;
 }
-
-.ethereum-img {
-  top: 34px;
-  right: 5px;
+.ecosystem-option span {
+  font-size: 0.875rem;
+  color: $default-white;
+  line-height: 1.5;
 }
-
-.substrate-img {
-  top: 63px;
-  right: 40px;
+.ecosystem-option .ecosystem-action {
+  color: $pink-lavender-color;
+  margin-top: 8px;
 }
-
-.ton-img {
-  top: 48px;
-  right: 20px;
+.ecosystem-option:hover {
+  border-color: $pink-lavender-color;
 }
 </style>

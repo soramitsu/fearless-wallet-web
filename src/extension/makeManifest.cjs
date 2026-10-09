@@ -53,7 +53,7 @@ module.exports = (browser) => {
           },
         }
       : {}),
-    minimum_chrome_version: '102',
+    minimum_chrome_version: '116',
     content_security_policy: {
       extension_pages: baseContentSecurityPolicy,
     },

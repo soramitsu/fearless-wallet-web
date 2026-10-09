@@ -30,7 +30,9 @@ function connectCallback(data: Message['data']) {
   const handler = handlers[data.id];
 
   if (!handler) {
-    console.error(`Unknown response: ${JSON.stringify(data)}`);
+    // Web replies share a channel across windows. Each window only consumes its
+    // own session's request ids, including after reloading or switching wallets.
+    if (IS_EXTENSION) console.warn('Unknown wallet response id', data.id);
 
     return;
   }
@@ -112,4 +114,5 @@ export * from '@/extension/messaging/asset-discovery';
 export * from '@/extension/messaging/sora-policy';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
+export * from '@/extension/messaging/iroha-connect-requests';
 export * from '@/extension/messaging/pools';

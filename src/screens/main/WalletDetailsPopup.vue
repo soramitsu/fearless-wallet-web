@@ -11,15 +11,15 @@
   >
     <div class="wallet-details">
       <div v-if="selectedAccountIsSubstrate" class="row" @click="openWalletDetails">
-        <div class="label" data-testid="walletDetails">Wallet Details</div>
+        <div class="label" data-testid="walletDetails">{{ $t('walletDetailsPopup.details') }}</div>
       </div>
 
       <div v-if="isExportPossible" class="row" @click="exportToGoogleDrive">
-        <div class="label google" data-testid="exportToGoogle">Export to Google</div>
+        <div class="label google" data-testid="exportToGoogle">{{ $t('walletDetailsPopup.exportToGoogle') }}</div>
       </div>
 
       <div class="row" @click="deleteWallet">
-        <div class="label delete" data-testid="deleteWallet">Delete Wallet</div>
+        <div class="label delete" data-testid="deleteWallet">{{ $t('walletDetailsPopup.deleteWallet') }}</div>
       </div>
     </div>
   </Popup>

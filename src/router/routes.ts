@@ -1,4 +1,5 @@
 import { type RouteRecordRaw } from 'vue-router';
+import { ADD_WALLET_PATH, PASSWORD_SETUP_PATH } from './accountFlowPaths';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
 import type { NetworkName } from '@/interfaces';
 import { keyringIsLocked } from '@/extension/messaging';
@@ -6,6 +7,7 @@ import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { useStakingStore } from '@/stores/staking';
 import Unlock from '@/screens/welcome/Unlock.vue';
+import { initialAccountsReady } from '@/bootstrap/accountsReady';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -66,6 +68,7 @@ const DeFi = () => import('@/screens/defi/DeFiHub.vue');
 const CrossChain = () => import('@/screens/cross-chain/CrossChainRoot.vue');
 const Settings = () => import('@/screens/settings/SettingsPage.vue');
 const NetworksAssetsSettings = () => import('@/screens/settings/NetworksAssetsSettings.vue');
+const IrohaConnect = () => import('@/screens/irohaConnect/IrohaConnectPage.vue');
 const Farming = () => import('@/screens/defi/FarmingPage.vue');
 const Polkamarkt = () => import('@/screens/defi/polkamarkt/PolkamarktPage.vue');
 
@@ -120,6 +123,7 @@ export enum Components {
   Settings = 'Settings',
   SettingsNetworksAssets = 'SettingsNetworksAssets',
   SettingsChangePassword = 'SettingsChangePassword',
+  IrohaConnect = 'IrohaConnect',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInitAuth = 'WalletConnectInitAuth',
@@ -166,7 +170,7 @@ const routes: Array<RouteRecordRaw> = [
   },
 
   {
-    path: '/change-password',
+    path: PASSWORD_SETUP_PATH,
     name: Components.ChangePassword,
     component: ChangePassword,
     meta: {
@@ -219,7 +223,7 @@ const routes: Array<RouteRecordRaw> = [
     component: CreateGoogle,
   },
   {
-    path: '/add-wallet/:type',
+    path: ADD_WALLET_PATH,
     name: Components.AddWallet,
     component: AddWallet,
     meta: {
@@ -562,6 +566,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: 'changePassword', primaryNavigation: 'settings' },
       },
       {
+        path: 'settings/iroha-connect',
+        name: Components.IrohaConnect,
+        component: IrohaConnect,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+      },
+      {
         path: 'settings/wallet-connect',
         name: Components.WalletConnectInitAuth,
         component: WalletConnectInitAuth,
@@ -638,9 +648,9 @@ const routes: Array<RouteRecordRaw> = [
         ],
       },
     ],
-    beforeEnter: (to, from, next) => {
+    beforeEnter: async (to, from, next) => {
       const accountsStore = useAccountsStore();
-
+      await initialAccountsReady;
       if (!hasSelectedWallet(accountsStore)) next({ name: Components.Welcome });
       else next();
     },

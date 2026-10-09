@@ -157,7 +157,7 @@ function submitAndWaitResponse(requestId: number, receiptHash = HASH): Response 
           status: 202,
           headers: COMPLETE_FANOUT_HEADERS,
           content_type: 'application/json',
-          body: { tx_hash_hex: receiptHash },
+          body: { payload: { entrypoint_hash: receiptHash } },
         },
         final_status: {
           status: 200,
@@ -289,6 +289,9 @@ describe('background Iroha transfer adapter', () => {
     expect(() => prepareIrohaTransfer({ ...transferParams(createState()), from: 'missing' })).toThrow(
       'iroha_account_not_found'
     );
+    expect(() =>
+      prepareIrohaTransfer({ ...transferParams(createState()), from: TAIRA_ACCOUNT_ID.toLowerCase() })
+    ).toThrow('iroha_account_not_found');
     expect(() =>
       prepareIrohaTransfer({
         amount: '1',
@@ -636,6 +639,31 @@ describe('background Iroha transfer adapter', () => {
       )
     ).rejects.toThrow('invalid_iroha_transaction_hash');
     expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects non-canonical locally derived transaction hash spellings before submission', async () => {
+    process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
+
+    const uppercaseHash = `${'a'.repeat(63)}b`.toUpperCase();
+    for (const signedTransactionHashHex of [`0x${HASH}`, uppercaseHash, ` ${HASH}`]) {
+      const callback = vi.fn();
+      const fetchFn = vi.fn();
+      vi.stubGlobal('fetch', fetchFn);
+
+      await expect(
+        makeIrohaTransfer(
+          { ...transferParams(createState()), callback },
+          {
+            buildAndSignTransfer: vi.fn(async () => ({
+              signedTransaction: new Uint8Array([1, 2, 3]),
+              signedTransactionHashHex,
+            })),
+          }
+        )
+      ).rejects.toThrow('invalid_iroha_transaction_hash');
+      expect(fetchFn).not.toHaveBeenCalled();
+      expect(callback).not.toHaveBeenCalled();
+    }
   });
 
   it('submits an operator-only Nexus wallet smoke with exact bound metadata', async () => {

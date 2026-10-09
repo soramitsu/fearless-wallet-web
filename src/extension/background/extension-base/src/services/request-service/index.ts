@@ -46,7 +46,10 @@ export class RequestService {
   readonly evmRequestHandler: EvmRequestHandler;
   readonly solanaRequestHandler: SolanaRequestHandler;
 
-  constructor(readonly keyringService: KeyringService, private readonly state: State) {
+  constructor(
+    readonly keyringService: KeyringService,
+    private readonly state: State
+  ) {
     this.popupHandler = new PopupHandler(state);
     this.connectWCRequestHandler = new ConnectWCRequestHandler(this);
     this.notSupportWCRequestHandler = new NotSupportWCRequestHandler(this);
@@ -62,13 +65,21 @@ export class RequestService {
   }
 
   // Popup
-  public popupOpen(): void {
+  public popupOpen(path?: string): void {
     // Not open new popup and use existed
     const popupList = this.popupHandler.popup;
 
-    if (popupList?.length > 0)
-      chrome.windows.update(popupList[0], { focused: true })?.catch(() => this.popupHandler.popupOpen());
-    else this.popupHandler.popupOpen();
+    if (popupList?.length > 0) {
+      const windowId = popupList[0];
+
+      void this.popupHandler
+        .popupNavigate(windowId, path)
+        .then(() => chrome.windows.update(windowId, { focused: true }))
+        .catch(() => {
+          this.popupHandler.forgetPopup(windowId);
+          this.popupOpen(path);
+        });
+    } else this.popupHandler.popupOpen(path);
   }
 
   // Metadata
@@ -233,7 +244,13 @@ export class RequestService {
   }
 
   // General methods
-  public get numRequests(): number {
+  public get numIrohaConnectRequests(): number {
+    const irohaConnectPhase = this.state.irohaConnectService?.snapshot.phase;
+
+    return irohaConnectPhase === 'session-approval' || irohaConnectPhase === 'request-approval' ? 1 : 0;
+  }
+
+  public get numStandardRequests(): number {
     return (
       this.numMetaRequests +
       this.numAuthRequests +
@@ -243,6 +260,10 @@ export class RequestService {
       this.numSignWCRequests +
       this.numSolanaSignRequests
     );
+  }
+
+  public get numRequests(): number {
+    return this.numStandardRequests + this.numIrohaConnectRequests;
   }
 
   async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {

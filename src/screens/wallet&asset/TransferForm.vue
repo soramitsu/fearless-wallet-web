@@ -41,6 +41,14 @@
         <div v-else class="transfer-form">
           <div>
             <template v-if="step === 1">
+              <button
+                v-if="isTransfer"
+                type="button"
+                class="network-transfer-link"
+                @click="$router.push({ name: 'CrossChain' })"
+              >
+                {{ $t('ux.transferNetworks') }} →
+              </button>
               <InputWithIcon
                 v-if="isTransfer"
                 :value="syncedNetwork"
@@ -144,7 +152,7 @@
 
               <InfoRow
                 v-if="isCrossChain && crossChainRuntimeMinimum"
-                text="Minimum"
+                text="crossChainPage.minimum"
                 :value="`${crossChainRuntimeMinimum} ${sendAssetName?.toUpperCase()}`"
               />
 
@@ -1135,5 +1143,18 @@ export default defineComponent({
     user-select: none;
     margin-bottom: 30px;
   }
+}
+</style>
+
+<style lang="scss" scoped>
+.network-transfer-link {
+  display: block;
+  color: $pink-lavender-color;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  padding: 12px 0;
+  text-align: left;
+  cursor: pointer;
 }
 </style>

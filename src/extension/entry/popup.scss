@@ -1,0 +1,7 @@
+// Toolbar popups size themselves from the document. Viewport-relative minimums
+// create a circular constraint at Chrome's initial 32px popup viewport.
+html,
+body {
+  min-width: $extension-width;
+  min-height: $extension-height;
+}

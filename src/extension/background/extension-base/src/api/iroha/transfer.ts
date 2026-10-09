@@ -249,12 +249,9 @@ function resolveIrohaTransferRoute({ networkKey, state }: IrohaTransferParams): 
 
   const network = getIrohaNetworkKey(networkJson);
   const configuredToriiBaseUrl = getConfiguredIrohaToriiBaseUrl(networkJson, network);
-  const chainId = normalizeIrohaChainId(networkJson.chainId);
+  const chainId = networkJson.chainId;
 
   if (!configuredToriiBaseUrl) throw new Error('iroha_network_unavailable');
-  if (chainId !== UNIVERSAL_WALLET_IROHA_NETWORKS[network].chainId) {
-    throw new Error('noncanonical_iroha_chain_id');
-  }
 
   return {
     chainId,
@@ -292,7 +289,7 @@ function resolveIrohaTransferSource(state: State, from: string, network: IrohaNe
   const account = state.keyringService.getAllAccounts().find(({ address, meta }) => {
     const { irohaAddress } = meta as FWKeyringMeta;
 
-    return address === from || irohaAddress?.toLowerCase() === from.toLowerCase();
+    return address === from || irohaAddress === from;
   });
 
   if (!account) throw new Error('iroha_account_not_found');
@@ -324,22 +321,37 @@ function resolveIrohaAccountAddress(meta: FWKeyringMeta, fallbackAddress: string
 }
 
 function getIrohaNetworkKey(network: NetworkJson): IrohaNetworkKey {
+  if (typeof network.chainId !== 'string' || !network.chainId || network.chainId !== network.chainId.trim()) {
+    throw new Error('invalid_iroha_chain_id');
+  }
   const discriminant = (network as { chainDiscriminant?: unknown; i105Prefix?: unknown }).chainDiscriminant ??
     (network as { i105Prefix?: unknown }).i105Prefix;
-  const descriptor = [network.chainId, network.name, network.key, ...(network.options ?? [])].join(' ').toLowerCase();
-  const discriminantIsNexus = discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant;
-  const discriminantIsTaira = discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant;
-  const descriptorIsNexus = descriptor.includes('nexus');
-  const descriptorIsTaira = descriptor.includes('taira') || descriptor.includes('testnet');
-
-  if (discriminant !== undefined && discriminant !== null && !discriminantIsNexus && !discriminantIsTaira) {
+  if (
+    discriminant !== undefined &&
+    discriminant !== null &&
+    discriminant !== UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant &&
+    discriminant !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant
+  ) {
     throw new Error('unsupported_iroha_network');
   }
-  if ((discriminantIsNexus || descriptorIsNexus) && (discriminantIsTaira || descriptorIsTaira)) {
-    throw new Error('ambiguous_iroha_network');
+  const matches = (key: IrohaNetworkKey): boolean => {
+    const profile = UNIVERSAL_WALLET_IROHA_NETWORKS[key];
+
+    if (network.chainId !== profile.chainId) return false;
+    if (discriminant === undefined || discriminant === null) return true;
+    if (discriminant !== profile.chainDiscriminant) throw new Error('ambiguous_iroha_network');
+
+    return true;
+  };
+
+  if (matches('taira')) return 'taira';
+  if (matches('nexus')) return 'nexus';
+  if (
+    discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant ||
+    discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant
+  ) {
+    throw new Error('noncanonical_iroha_chain_id');
   }
-  if (discriminantIsNexus || descriptorIsNexus) return 'nexus';
-  if (discriminantIsTaira || descriptorIsTaira) return 'taira';
 
   throw new Error('unsupported_iroha_network');
 }
@@ -416,14 +428,6 @@ function normalizeIrohaAssetDefinitionId(assetId: string, network: IrohaNetworkK
   return assetId;
 }
 
-function normalizeIrohaChainId(chainId: string): string {
-  const normalized = chainId.trim();
-
-  if (!normalized || normalized !== chainId) throw new Error('invalid_iroha_chain_id');
-
-  return normalized;
-}
-
 function normalizeSignedTransactionPayload(payload: ArrayBuffer | ArrayBufferView | string): BodyInit {
   if (typeof payload === 'string') return hexToArrayBuffer(payload);
   if (payload instanceof ArrayBuffer && payload.byteLength > 0) return payload;
@@ -450,13 +454,11 @@ function hexToArrayBuffer(value: string): ArrayBuffer {
 }
 
 function normalizeSignedTransactionHash(value: string | undefined): string {
-  if (typeof value !== 'string' || value !== value.trim()) throw new Error('invalid_iroha_transaction_hash');
+  if (typeof value !== 'string' || !/^[0-9a-f]{63}[13579bdf]$/u.test(value)) {
+    throw new Error('invalid_iroha_transaction_hash');
+  }
 
-  const normalized = value.replace(/^0x/u, '').toLowerCase();
-
-  if (!/^[0-9a-f]{63}[13579bdf]$/u.test(normalized)) throw new Error('invalid_iroha_transaction_hash');
-
-  return normalized;
+  return value;
 }
 
 export {

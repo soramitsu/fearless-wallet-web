@@ -21,74 +21,50 @@
     </div>
 
     <div>
-      <ChoiceEcosystem v-if="showChoiceEcosystem" @setEcosystem="setEcosystem" />
-
-      <div v-else>
-        <FButton
-          v-if="isSubstrate"
-          width="100%"
-          size="big"
-          fontSize="big"
-          text="addWallet.createWallet"
-          data-testid="createWalletBtn"
-          @click="openAddWalletComponent('create')"
-        />
-
-        <div class="additional-options">
+      <div class="welcome-task">
+        <h1>{{ $t(showChoiceEcosystem ? 'ux.chooseNetworks' : 'ux.walletTaskTitle') }}</h1>
+        <p>{{ $t(showChoiceEcosystem ? 'ux.chooseNetworksDescription' : 'ux.walletTaskDescription') }}</p>
+        <ChoiceEcosystem v-if="showChoiceEcosystem" @setEcosystem="setEcosystem" />
+        <div v-else class="wallet-task-actions">
           <FButton
-            v-if="isSubstrate"
-            class="import-button button--content-wrap"
+            width="100%"
             size="big"
             fontSize="big"
-            type="secondary"
-            iconName="connectMobile"
-            iconType="big"
-            text="welcome.connectMobile"
-            :border="false"
-            data-testid="connectMobileBtn"
-            @click="openAddWalletMobile"
-          />
-
-          <FButton
-            v-if="isExtension && isSubstrate && googleDriveBackupEnabled"
-            class="import-button button--content-wrap"
-            size="big"
-            fontSize="big"
-            type="secondary"
-            iconName="googleManage"
-            iconType="big"
-            text="welcome.manageGoogle"
-            :border="false"
-            data-testid="googleManageBtn"
-            @click="manageGoogle"
-          />
-
-          <FButton
-            v-if="!isSubstrate"
-            class="import-button button--content-wrap"
-            size="big"
-            fontSize="big"
-            type="secondary"
-            iconName="createButton"
-            iconType="big"
             text="addWallet.createWallet"
-            :border="false"
             data-testid="createWalletBtn"
-            @click="openAddWalletComponent('create')"
+            @click="walletTask = 'create'"
           />
-
           <FButton
-            class="import-button button--content-wrap"
+            width="100%"
             size="big"
             fontSize="big"
             type="secondary"
-            iconName="importButton"
-            iconType="big"
             text="welcome.importWallet"
-            :border="false"
             data-testid="importBtn"
-            @click="openAddWalletComponent('import')"
+            @click="walletTask = 'import'"
           />
+          <details class="other-wallet-options">
+            <summary>{{ $t('ux.otherWays') }}</summary>
+            <FButton
+              width="100%"
+              size="big"
+              type="secondary"
+              iconName="connectMobile"
+              text="welcome.connectMobile"
+              data-testid="connectMobileBtn"
+              @click="openAddWalletMobile"
+            />
+            <FButton
+              v-if="isExtension && googleDriveBackupEnabled"
+              width="100%"
+              size="big"
+              type="secondary"
+              iconName="googleManage"
+              text="welcome.manageGoogle"
+              data-testid="googleManageBtn"
+              @click="manageGoogle"
+            />
+          </details>
         </div>
       </div>
 
@@ -121,7 +97,9 @@ import { type WalletEcosystem } from '@/interfaces';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
 
-export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem } ,
+export default defineComponent({
+  name: 'Welcome',
+  components: { ChoiceEcosystem },
   data() {
     return {
       isExtension: IS_EXTENSION,
@@ -131,17 +109,18 @@ export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem 
       isAuthFlowInit: false,
       hasMasterPassword: false,
       walletEcosystem: null,
+      walletTask: '' as '' | 'create' | 'import',
     };
   },
   computed: {
     showChoiceEcosystem() {
-      return !this.walletEcosystem;
+      return Boolean(this.walletTask);
     },
     isSubstrate() {
       return this.walletEcosystem === 'substrate';
     },
     showBackWalletIcon() {
-      return this.accountsStore.accounts.length !== 0;
+      return Boolean(this.walletTask) || this.accountsStore.accounts.length !== 0;
     },
     accessToken() {
       return this.$route.params.access_token;
@@ -150,11 +129,12 @@ export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem 
   async created() {
     this.hasMasterPassword = await hasMasterPassword();
 
-        if (this.accessToken) this.showGoogleAuthPopup = true;
+    if (this.accessToken) this.showGoogleAuthPopup = true;
   },
   methods: {
     setEcosystem(value: WalletEcosystem) {
       this.walletEcosystem = value;
+      if (this.walletTask) void this.openAddWalletComponent(this.walletTask);
     },
     closeGooglePopup() {
       this.showGoogleAuthPopup = false;
@@ -166,46 +146,47 @@ export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem 
       window.open(URLS.FEARLESS_PRIVACY);
     },
     backToWallet() {
-      if (this.walletEcosystem) {
-            this.walletEcosystem = null;
+      if (this.walletTask) {
+        this.walletTask = '';
+        this.walletEcosystem = null;
 
-            return;
-          }
+        return;
+      }
 
-          this.$router.push({ name: Components.Wallet });
+      this.$router.push({ name: Components.Wallet });
     },
     async manageGoogle() {
       if (!this.hasMasterPassword) {
-            this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
+        this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
 
-            return;
-          }
+        return;
+      }
 
-          if (!this.isAuthFlowInit) {
-            this.isAuthFlowInit = true;
+      if (!this.isAuthFlowInit) {
+        this.isAuthFlowInit = true;
 
-            initGoogleAuth().finally(() => (this.isAuthFlowInit = false));
-          }
+        initGoogleAuth().finally(() => (this.isAuthFlowInit = false));
+      }
     },
     async openAddWalletComponent(type: string) {
       if (this.hasMasterPassword)
-            this.$router.push({ name: Components.AddWallet, params: { type, walletEcosystem: this.walletEcosystem! } });
-          else
-            this.$router.push({
-              name: Components.ChangePassword,
-              params: {
-                name: 'AddWallet',
-                type,
-                walletEcosystem: this.walletEcosystem!,
-              },
-            });
+        this.$router.push({ name: Components.AddWallet, params: { type, walletEcosystem: this.walletEcosystem! } });
+      else
+        this.$router.push({
+          name: Components.ChangePassword,
+          params: {
+            name: 'AddWallet',
+            type,
+            walletEcosystem: this.walletEcosystem!,
+          },
+        });
     },
     async openAddWalletMobile() {
       const path = this.hasMasterPassword
-            ? { name: Components.MobileWalletAuth }
-            : { name: Components.ChangePassword, params: { name: 'MobileWalletAuth' } };
+        ? { name: Components.MobileWalletAuth }
+        : { name: Components.ChangePassword, params: { name: 'MobileWalletAuth' } };
 
-          this.$router.push(path);
+      this.$router.push(path);
     },
   },
 });
@@ -217,14 +198,16 @@ export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem 
   flex-direction: column;
   height: $default-height-page;
   justify-content: space-between;
-  min-height: 561px;
+  min-height: 0;
+  gap: 24px;
+  overflow-y: auto;
 
   .back-wallet-container {
     height: 32px;
   }
 
   .description {
-    margin-top: 69px;
+    margin-top: 24px;
   }
 
   .privacy-policy {
@@ -279,5 +262,32 @@ export default defineComponent({ name: 'Welcome', components: { ChoiceEcosystem 
   .additional-options {
     font-size: 1.25rem;
   }
+}
+</style>
+
+<style lang="scss" scoped>
+.welcome-task {
+  text-align: left;
+}
+.welcome-task h1 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 16px 0 8px;
+}
+.welcome-task p {
+  color: $default-white;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+.wallet-task-actions {
+  display: grid;
+  gap: 12px;
+}
+.other-wallet-options {
+  margin-top: 8px;
+  color: $default-white;
+}
+.other-wallet-options :deep(.button-size-big) {
+  margin-block: 8px;
 }
 </style>

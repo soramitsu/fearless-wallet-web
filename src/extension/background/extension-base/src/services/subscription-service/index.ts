@@ -87,7 +87,12 @@ export class SubscriptionService {
     return (subscription: unknown): void => {
       if (this.subscriptionsPorts[id]) {
         try {
-          port?.postMessage({ id, subscription });
+          if (port) port.postMessage({ id, subscription });
+          else {
+            const channel = new BroadcastChannel('sw-messages');
+            channel.postMessage({ id, subscription });
+            channel.close();
+          }
         } catch (error) {
           console.info('Error occurred while trying to post message', error);
 

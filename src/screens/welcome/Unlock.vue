@@ -14,7 +14,7 @@
       </div>
 
       <div class="logo-container">
-        <img class="logo-animated" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
+        <img class="logo-animated" src="@/assets/fearless-logo-animated.gif" :alt="t('common.fearlessLogo')" />
 
         <Logo
           class="description"
@@ -64,15 +64,17 @@
 
 <script lang="ts" setup>
 import { watch, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';
 import { URLS } from '@/consts/urls';
 import ResetPopup from '@/screens/welcome/ResetPopup.vue';
+import { resolveUnlockRedirect } from '@/router/unlockRedirect';
 
 const router = useRouter();
+const route = useRoute();
 const password = ref('');
 const isError = ref(false);
 const showResetPopup = ref(false);
@@ -90,7 +92,7 @@ const unlock = async () => {
   const isUnlock = await unlockExtension({ password: password.value });
 
   if (isUnlock) {
-    router.push({ name: Components.Wallet });
+    router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
 
     return;
   }
@@ -100,7 +102,7 @@ const unlock = async () => {
 };
 
 const openFullScreen = () => {
-  windowOpen('/');
+  windowOpen(resolveUnlockRedirect(route.query.redirect) ?? '/');
   window.close();
 };
 

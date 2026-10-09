@@ -9,7 +9,7 @@
       </span>
 
       <span class="network-status">
-        <span>{{ section.collections.length }} collection{{ section.collections.length === 1 ? '' : 's' }}</span>
+        <span>{{ tc('portfolioPage.collectionCount', section.collections.length, { count: section.collections.length }) }}</span>
         <span class="sync-state">{{ syncLabel }}</span>
       </span>
 
@@ -31,30 +31,34 @@
 import { computed, ref } from 'vue';
 import type { PortfolioNftNetworkSection } from '@/portfolio/nftIdentity';
 import NftCollectionItem from '@/screens/wallet&asset/nft/NftCollectionItem.vue';
+import { useI18n } from '@/locales/useI18n';
 
 const props = defineProps<{ section: PortfolioNftNetworkSection; search?: string }>();
+const { t, tc } = useI18n();
 const expanded = ref(true);
 
 const ecosystemLabel = computed(() => {
   const value = props.section.ecosystem;
 
-  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : 'Unknown network';
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : t('portfolioPage.unknownNetwork');
 });
 
 const shortAddress = computed(() => {
   const value = props.section.address;
 
-  if (!value) return 'No account';
+  if (!value) return t('portfolioPage.noAccount');
   if (value.length < 15) return value;
 
   return `${value.slice(0, 6)}…${value.slice(-5)}`;
 });
 
 const syncLabel = computed(() => {
-  if (props.section.stale) return 'Stale';
-  if (!props.section.latestTimestamp) return 'Sync pending';
+  if (props.section.stale) return t('portfolioPage.sync.stale');
+  if (!props.section.latestTimestamp) return t('portfolioPage.sync.pending');
 
-  return Date.now() - props.section.latestTimestamp > 15 * 60 * 1000 ? 'Stale' : 'Synced';
+  return Date.now() - props.section.latestTimestamp > 15 * 60 * 1000
+    ? t('portfolioPage.sync.stale')
+    : t('portfolioPage.sync.synced');
 });
 
 const visibleCollections = computed(() => {

@@ -1,6 +1,6 @@
 <template>
   <div v-if="!isSupportedAuthType" class="unsupported-auth" data-testid="unsupportedConnectionDetails">
-    Connection management for this protocol is unavailable in this build.
+    {{ t('authorize.unsupportedConnectionManagement') }}
   </div>
   <div v-else class="update-accounts">
     <SelectAuthAccountForm
@@ -35,6 +35,7 @@ import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 import { encodeIrohaI105Address } from '@/util/iroha';
+import { useI18n } from '@/locales/useI18n';
 
 type IrohaAuthAccount = {
   address: string;
@@ -47,6 +48,7 @@ const router = useRouter();
 const route = useRoute();
 const extensionStore = useExtensionStore();
 const accountsStore = useAccountsStore();
+const { t } = useI18n();
 
 const selectAll = ref(false);
 const state = ref<Record<string, WalletInfo>>({});

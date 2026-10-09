@@ -39,7 +39,7 @@ function isLegacyVaultAccount(account: AccountJson, vault: UniversalWalletLegacy
     account.bitcoinTestnetAddress,
     account.solanaAddress,
     account.irohaAddress,
-  ].some((address) => isSameAddressText(address, vault.address));
+  ].some((address) => isSameAddressText(address, vault.address, vault.ecosystem));
 }
 
 function resolveLegacyExportNetwork(vault: UniversalWalletLegacyVaultDescriptor, account?: AccountJson): string {
@@ -64,7 +64,9 @@ function isConcreteNetwork(network: string | undefined): boolean {
   return !!network && !GROUP_NETWORKS.has(network);
 }
 
-function isSameAddressText(left: string | undefined, right: string): boolean {
+function isSameAddressText(left: string | undefined, right: string, ecosystem: WalletEcosystem): boolean {
+  if (ecosystem === WalletEcosystem.Iroha) return left === right;
+
   return left?.toLowerCase() === right.toLowerCase();
 }
 

@@ -23,9 +23,9 @@ describe('Polkaswap capability state', () => {
         usableAssets: false,
       })
     ).toEqual([
-      'Add a SORA account to use Polkaswap.',
-      'The SORA runtime is not available right now.',
-      'Fund a SORA asset and enough XOR for network fees.',
+      'account',
+      'runtime',
+      'assets',
     ]);
   });
 
@@ -38,9 +38,9 @@ describe('Polkaswap capability state', () => {
         signable: false,
       })
     ).toEqual([
-      'This wallet is watch-only or requires an unsupported external signer.',
-      'Read and accept the Polkaswap risk disclaimer.',
-      'Polkaswap actions are temporarily disabled.',
+      'signer',
+      'disclaimer',
+      'disabled',
     ]);
   });
 });

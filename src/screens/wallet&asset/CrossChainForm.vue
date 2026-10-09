@@ -1,9 +1,9 @@
 <template>
-  <AboveForm v-if="!reviewedRoute" :fullScreen="true" header="Cross-chain" @closeHandler="closeForm">
+  <AboveForm v-if="!reviewedRoute" :fullScreen="true" header="crossChainPage.title" @closeHandler="closeForm">
     <div class="route-unavailable">
       <Icon icon="info" className="route-unavailable__icon" :hover="false" />
-      <strong>No supported route</strong>
-      <span>This route is missing, changed, or is no longer in the reviewed registry.</span>
+      <strong>{{ $t('crossChainPage.noSupportedRoute') }}</strong>
+      <span>{{ $t('crossChainPage.routeMissing') }}</span>
       <FButton size="big" text="common.back" width="100%" @click="closeForm" />
     </div>
   </AboveForm>
@@ -38,7 +38,7 @@
   >
     <template v-slot:step1Warning>
       <Alert v-if="showSoraAlert" :message="soraCrossChainALert" />
-      <Alert v-if="!reviewedRoute.enabled" :message="reviewedRoute.disabledReason" />
+      <Alert v-if="!reviewedRoute.enabled" :message="disabledRouteKey" />
     </template>
 
     <template v-slot:step2>
@@ -62,7 +62,7 @@
         <FCorners size="big" class="row">
           <div class="summary">
             <InfoRow text="assets.direction" data-testid="directionCC" :value="directionText" />
-            <InfoRow text="Protocol" data-testid="protocolCC" :value="reviewedRoute.protocol" />
+            <InfoRow text="crossChainPage.protocol" data-testid="protocolCC" :value="reviewedRoute.protocol" />
 
             <InfoRow
               text="assets.assetsAmount"
@@ -89,7 +89,7 @@
               :iconClasses="['cross-chain-fee']"
             />
 
-            <InfoRow text="Minimum" data-testid="minimumCC" :value="runtimeMinimumString" />
+            <InfoRow text="crossChainPage.minimum" data-testid="minimumCC" :value="runtimeMinimumString" />
           </div>
 
           <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
@@ -154,6 +154,13 @@ export default defineComponent({ name: 'CrossChainForm',
         this.networksStore.allNetworks,
         this.extensionStore.features?.actions ?? {}
       );
+    },
+    disabledRouteKey() {
+      if (this.reviewedRoute?.providerId !== 'sora-evm-bridge') return 'crossChainPage.route.disabled';
+
+      return this.reviewedRoute.originChainId === '1'
+        ? 'crossChainPage.route.ethereumToSoraUnavailable'
+        : 'crossChainPage.route.ethereumClaimUnavailable';
     },
     routeAsset() {
       return this.ownedRouteAssets.find(({ key }) => key === this.reviewedRoute?.assetKey);

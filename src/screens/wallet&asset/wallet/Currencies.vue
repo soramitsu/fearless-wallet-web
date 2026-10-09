@@ -10,7 +10,7 @@
         :aria-busy="refreshing"
         @click="refreshPortfolio"
       >
-        {{ refreshing ? 'Syncing' : 'Refresh' }}
+        {{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}
       </button>
     </div>
 
@@ -115,14 +115,14 @@ export default defineComponent({
       return !this.showLoader && this.filteredSections.length === 0;
     },
     emptyTitle() {
-      if (!navigator.onLine) return 'Portfolio is offline';
-      if (this.filterValue?.trim()) return 'No matching assets';
-      return 'No assets detected yet';
+      if (!navigator.onLine) return this.$t('portfolioPage.offline');
+      if (this.filterValue?.trim()) return this.$t('portfolioPage.noMatchingAssets');
+      return this.$t('portfolioPage.noAssetsDetected');
     },
     emptyDescription() {
-      if (!navigator.onLine) return 'Last known balances will return when this device reconnects.';
-      if (this.filterValue?.trim()) return 'Try another asset or network name.';
-      return 'Fearless scans supported networks independently from this display filter.';
+      if (!navigator.onLine) return this.$t('portfolioPage.offlineDescription');
+      if (this.filterValue?.trim()) return this.$t('portfolioPage.searchDescription');
+      return this.$t('portfolioPage.scanDescription');
     },
     preferenceMigrationAssets() {
       return buildAssetPreferenceSnapshot(this.accountsStore.balances, this.networksStore.allNetworks).map(
@@ -165,7 +165,7 @@ export default defineComponent({
 
         await Promise.all(refreshes);
       } catch {
-        this.refreshError = 'Sync could not complete. Last known balances are still shown.';
+        this.refreshError = this.$t('portfolioPage.syncFailedBalancesShown');
       } finally {
         this.refreshing = false;
       }

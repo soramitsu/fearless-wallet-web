@@ -17,9 +17,10 @@
             <span>{{ $t('assets.walletAddress') }}</span>
 
             <div class="address" data-testid="cutAddress">
-              {{ cutAddress }}
-
-              <Icon icon="copy" className="copy-icon" data-testid="copyAddress" @click="copyAddress" />
+              <span class="full-address">{{ address }}</span>
+              <button type="button" class="copy-icon" :aria-label="$t('common.copyToClipboard')" data-testid="copyAddress" @click="copyAddress">
+                <Icon icon="copy" width="24px" height="24px" />
+              </button>
             </div>
           </div>
 
@@ -80,7 +81,7 @@ import { defineComponent } from 'vue';
 
 import { saveAs } from 'file-saver';
 import BaseApi from '@/util/BaseApi';
-import { cut, setClipboard } from '@/helpers';
+import { setClipboard } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -142,9 +143,6 @@ export default defineComponent({ name: 'ReceiveForm' ,
       }
 
           return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
-    },
-    cutAddress() {
-      return cut(this.address, 5);
     },
     widthSaveBtn() {
       return IS_EXTENSION ? (this.showCopyBtn ? '260px' : '530px') : '100%';
@@ -260,5 +258,41 @@ export default defineComponent({ name: 'ReceiveForm' ,
   .activity-buttons {
     display: flex;
   }
+}
+</style>
+
+<style lang="scss" scoped>
+.full-address {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  user-select: all;
+  min-width: 0;
+}
+.receive-form .address-wrapper {
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+.address-wrapper .address {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.address-wrapper button.copy-icon {
+  appearance: none;
+  flex: 0 0 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  margin: 0;
+}
+.receive-form .activity-buttons {
+  flex-wrap: wrap;
+  gap: 12px;
+  .button { max-width: 100%; }
 }
 </style>

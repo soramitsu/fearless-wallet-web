@@ -24,6 +24,7 @@ import BaseApi from '@/util/BaseApi';
 import { getEthereumExplorerApiKey } from '@/helpers/history';
 import { SEC1 } from '@/consts/time';
 import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
+import { isIrohaI105Address } from '@/util/iroha';
 import {
   computedGiantSquidRequest,
   computedSoraRequest,
@@ -41,6 +42,7 @@ type IrohaNetworkKind = 'taira' | 'nexus';
 type IrohaTransferInstruction = {
   amount: string;
   from: string;
+  legId: string | null;
   to: string;
 };
 
@@ -48,7 +50,12 @@ const BITCOIN_ESPLORA_HISTORY_PAGE_SIZE = 25;
 const BITCOIN_HISTORY_ADDRESS_CONCURRENCY = 8;
 const BITCOIN_HISTORY_MAX_PAGES = 12;
 const MAX_IROHA_PRECISION = 28;
-const MAX_IROHA_QUANTITY_DIGITS = 256;
+const MAX_IROHA_QUANTITY_DIGITS = 154;
+const MAX_IROHA_QUANTITY = (1n << 511n) - 1n;
+const MAX_IROHA_BATCH_ENTRIES = 1_000;
+const MAX_IROHA_BATCH_LEG_ID_LENGTH = 256;
+const IROHA_HISTORY_PER_PAGE = 100;
+const MAX_IROHA_HISTORY_PAGES = 100;
 
 async function fetchSubqueryHistory(
   url: string,
@@ -500,24 +507,81 @@ async function fetchIrohaHistory(
 
   const client = new IrohaToriiWalletClient({ baseUrl, network });
   const precision = await validateIrohaHistoryAssetDefinition(client, network, assetId, isUtility);
-  const { body } = await client.getInstructions<{ items?: unknown[] }>({
-    account: address,
-    assetId,
-    kind: 'Transfer',
-    page: 0,
-    perPage: 100,
-    transactionStatus: 'committed',
-  });
-  if (!isRecord(body) || !Array.isArray(body.items)) {
+  const history: HistoryElement[] = [];
+  let expectedTotalItems: number | null = null;
+  let expectedTotalPages: number | null = null;
+
+  for (let page = 1; page <= MAX_IROHA_HISTORY_PAGES; page += 1) {
+    const { body } = await client.getInstructions<unknown>({
+      account: address,
+      assetId,
+      kind: 'Transfer',
+      page,
+      perPage: IROHA_HISTORY_PER_PAGE,
+      transactionStatus: 'committed',
+    });
+    const parsed = parseIrohaHistoryPage(body, page, IROHA_HISTORY_PER_PAGE);
+
+    if (expectedTotalItems === null) {
+      expectedTotalItems = parsed.totalItems;
+      expectedTotalPages = parsed.totalPages;
+      if (parsed.totalPages > MAX_IROHA_HISTORY_PAGES) throw new Error('iroha_history_page_limit_exceeded');
+    } else if (parsed.totalItems !== expectedTotalItems || parsed.totalPages !== expectedTotalPages) {
+      throw new Error('iroha_history_pagination_changed');
+    }
+
+    for (const item of parsed.items) {
+      history.push(...toIrohaHistoryElements(item, address, assetId, precision, network));
+    }
+
+    if (page >= parsed.totalPages) break;
+  }
+
+  if (new Set(history.map(({ id }) => id)).size !== history.length) {
+    throw new Error('duplicate_iroha_history_id');
+  }
+
+  return history;
+}
+
+function parseIrohaHistoryPage(
+  body: unknown,
+  requestedPage: number,
+  requestedPerPage: number
+): { items: unknown[]; totalItems: number; totalPages: number } {
+  if (
+    !isRecord(body) ||
+    !hasExactRecordKeys(body, ['pagination', 'items']) ||
+    !Array.isArray(body.items) ||
+    !isRecord(body.pagination) ||
+    !hasExactRecordKeys(body.pagination, ['page', 'per_page', 'total_pages', 'total_items'])
+  ) {
     throw new Error('invalid_iroha_history_response');
   }
-  const items = body.items;
 
-  return items.reduce<HistoryElement[]>((result, item) => {
-    result.push(...toIrohaHistoryElements(item, address, assetId, precision));
+  const page = parseSafeInteger(body.pagination.page);
+  const perPage = parseSafeInteger(body.pagination.per_page);
+  const totalPages = parseSafeInteger(body.pagination.total_pages);
+  const totalItems = parseSafeInteger(body.pagination.total_items);
 
-    return result;
-  }, []);
+  if (
+    page !== requestedPage ||
+    perPage !== requestedPerPage ||
+    totalPages === undefined ||
+    totalItems === undefined ||
+    totalPages !== Math.ceil(totalItems / requestedPerPage)
+  ) {
+    throw new Error('invalid_iroha_history_pagination');
+  }
+
+  const start = (requestedPage - 1) * requestedPerPage;
+  const expectedItems = start >= totalItems ? 0 : Math.min(requestedPerPage, totalItems - start);
+
+  if (!Number.isSafeInteger(start) || body.items.length !== expectedItems) {
+    throw new Error('truncated_iroha_history_page');
+  }
+
+  return { items: body.items, totalItems, totalPages };
 }
 
 async function validateIrohaHistoryAssetDefinition(
@@ -532,22 +596,13 @@ async function validateIrohaHistoryAssetDefinition(
     throw new Error('iroha_taira_native_asset_id_mismatch');
   }
 
-  const { body } = await client.getAssetDefinitions<{ has_more?: boolean; hasMore?: boolean; items?: unknown[] }>({
-    assetId,
-    limit: 2,
-    offset: 0,
-  });
-  const items = isRecord(body) && Array.isArray(body.items) ? body.items : [];
-  const definitions = items.filter((item): item is Record<string, unknown> => isRecord(item) && item.id === assetId);
-  const definition = definitions[0];
+  const { body } = await client.getAssetDefinition<unknown>(assetId);
+  const definition = isRecord(body) ? body : undefined;
   const spec = definition && isRecord(definition.spec) ? definition.spec : undefined;
   const scale = spec?.scale;
-  const hasMore = isRecord(body) ? (body.has_more ?? body.hasMore) : undefined;
 
   if (
-    hasMore !== false ||
-    items.length !== 1 ||
-    definitions.length !== 1 ||
+    definition?.id !== assetId ||
     typeof scale !== 'number' ||
     !Number.isInteger(scale) ||
     scale < 0 ||
@@ -560,16 +615,44 @@ async function validateIrohaHistoryAssetDefinition(
   return scale;
 }
 
-function toIrohaHistoryElements(item: unknown, address: string, assetId: string, precision: number): HistoryElement[] {
-  if (!isRecord(item)) return [];
+function toIrohaHistoryElements(
+  item: unknown,
+  address: string,
+  assetId: string,
+  precision: number,
+  network: IrohaNetworkKind
+): HistoryElement[] {
+  if (!isRecord(item)) throw new Error('invalid_iroha_history_item');
+  if (
+    !hasExactRecordKeys(item, [
+      'authority',
+      'created_at',
+      'kind',
+      'box',
+      'transaction_hash',
+      'transaction_status',
+      'block',
+      'index',
+    ]) ||
+    typeof item.authority !== 'string' ||
+    !isIrohaI105Address(item.authority, network)
+  ) {
+    throw new Error('invalid_iroha_history_item');
+  }
 
-  const hash = getCanonicalIrohaHistoryString(item, 'transaction_hash', ['transactionHash', 'hash']);
+  const hash = parseCanonicalIrohaHash(
+    getCanonicalIrohaHistoryString(item, 'transaction_hash', ['transactionHash', 'hash'])
+  );
   const timestamp = parseIrohaTimestamp(
     getCanonicalIrohaHistoryString(item, 'created_at', ['createdAt', 'timestamp'])
   );
   const payload = getIrohaInstructionPayload(item);
+  const instructionIndex = parseIrohaInstructionIndex(item.index);
+  const blockHeight = parseSafeInteger(item.block);
 
-  if (!hash || !timestamp || !payload) return [];
+  if (!hash || !timestamp || instructionIndex === null || blockHeight === undefined || blockHeight < 1) {
+    throw new Error('invalid_iroha_history_item');
+  }
 
   const transactionStatus = getCanonicalIrohaHistoryString(item, 'transaction_status', [
     'transactionStatus',
@@ -577,15 +660,13 @@ function toIrohaHistoryElements(item: unknown, address: string, assetId: string,
   ]);
   if (transactionStatus !== 'Committed') throw new Error('invalid_iroha_history_transaction_status');
 
-  const transfers = parseIrohaTransferPayload(payload, address, assetId, precision);
-  const blockHeight = parseSafeInteger(item.block);
-
-  return transfers.map(({ amount, from, to }, index) => ({
+  const transfers = parseIrohaTransferPayload(payload, address, assetId, precision, network);
+  return transfers.map(({ amount, from, legId, to }) => ({
     address,
     blockHash: hash,
     blockHeight,
     extrinsicHash: hash,
-    id: transfers.length === 1 ? hash : `${hash}:${index}`,
+    id: legId === null ? `${hash}:${instructionIndex}` : `${hash}:${instructionIndex}:${legId}`,
     success: true,
     timestamp,
     transfer: {
@@ -597,67 +678,96 @@ function toIrohaHistoryElements(item: unknown, address: string, assetId: string,
   }));
 }
 
-function getIrohaInstructionPayload(item: Record<string, unknown>): unknown {
-  const box = item.box;
+function getIrohaInstructionPayload(item: Record<string, unknown>): Record<string, unknown> {
+  if (item.kind !== 'Transfer') throw new Error('invalid_iroha_instruction_kind');
+  const box = item['box'];
 
-  if (!isRecord(box)) return null;
+  if (!isRecord(box) || !hasExactRecordKeys(box, ['encoded', 'framed_sha256', 'json'])) {
+    throw new Error('invalid_iroha_instruction_box');
+  }
 
   const json = box.json;
 
-  if (!isRecord(json)) return null;
+  if (!isRecord(json) || !hasExactRecordKeys(json, ['kind', 'payload', 'wire_id', 'encoded'])) {
+    throw new Error('invalid_iroha_instruction_json');
+  }
+  if (json.kind !== 'Transfer' || typeof json.encoded !== 'string' || !/^(?:[0-9a-f]{2})+$/u.test(json.encoded)) {
+    throw new Error('invalid_iroha_instruction_json');
+  }
+  if (
+    box.encoded !== `0x${json.encoded}` ||
+    typeof box.framed_sha256 !== 'string' ||
+    !/^0x[0-9a-f]{64}$/u.test(box.framed_sha256)
+  ) {
+    throw new Error('invalid_iroha_instruction_box');
+  }
 
-  return json.payload;
+  const payload = json.payload;
+
+  if (!isRecord(payload) || !hasExactRecordKeys(payload, ['variant', 'value'])) {
+    throw new Error('invalid_iroha_instruction_payload');
+  }
+  if (payload.variant === 'Asset' && json.wire_id !== 'iroha.transfer') {
+    throw new Error('invalid_iroha_instruction_wire_id');
+  }
+  if (payload.variant === 'AssetBatch' && json.wire_id !== 'iroha.transfer_batch') {
+    throw new Error('invalid_iroha_instruction_wire_id');
+  }
+
+  return payload;
 }
 
 function parseIrohaTransferPayload(
   payload: unknown,
   address: string,
   assetId: string,
-  precision: number
+  precision: number,
+  network: IrohaNetworkKind
 ): IrohaTransferInstruction[] {
-  if (!isRecord(payload)) return [];
+  if (!isRecord(payload)) throw new Error('invalid_iroha_transfer_payload');
 
   const variant = getRecordString(payload, ['variant']);
   const value = payload.value;
 
   if (variant === 'Asset') {
-    const transfer = parseIrohaAssetTransfer(value, address, assetId, precision);
+    const transfer = parseIrohaAssetTransfer(value, address, assetId, precision, network);
 
     return transfer ? [transfer] : [];
   }
 
   if (variant === 'AssetBatch') {
-    const entries = getIrohaBatchEntries(value);
-
-    return entries.reduce<IrohaTransferInstruction[]>((result, entry) => {
-      const transfer = parseIrohaAssetTransfer(entry, address, assetId, precision);
-
-      if (transfer) result.push(transfer);
-
-      return result;
-    }, []);
+    return parseIrohaAssetBatch(value, address, assetId, precision, network);
   }
 
-  return [];
+  throw new Error('invalid_iroha_transfer_variant');
 }
 
 function parseIrohaAssetTransfer(
   value: unknown,
   address: string,
   assetId: string,
-  precision: number
+  precision: number,
+  network: IrohaNetworkKind
 ): IrohaTransferInstruction | null {
-  if (!isRecord(value)) return null;
+  if (!isRecord(value) || !hasExactRecordKeys(value, ['source', 'object', 'destination'])) {
+    throw new Error('invalid_iroha_asset_transfer');
+  }
 
-  const source = getRecordString(value, ['source', 'source_id', 'asset', 'asset_id']);
-  const destination = getRecordString(value, ['destination', 'destination_id', 'to', 'account_id']);
-  const amount = normalizeIrohaAmount(value.object ?? value.amount ?? value.quantity ?? value.value, precision);
+  const source = getCanonicalRecordString(value, 'source');
+  const destination = getCanonicalRecordString(value, 'destination');
+  const amount = normalizeIrohaAmount(value.object, precision);
+  const sourceParts = source ? parseIrohaAssetIdLiteral(source) : null;
+  const sourceAccount = sourceParts?.account ?? null;
 
-  if (!destination || !amount) return null;
-  if (source && assetId && !irohaAssetMatches(source, assetId)) return null;
+  if (!source || !sourceAccount || !destination || !amount) throw new Error('invalid_iroha_asset_transfer');
+  if (network === 'taira' && !/^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(sourceParts?.definition ?? '')) {
+    throw new Error('invalid_iroha_asset_transfer');
+  }
+  if (!isIrohaI105Address(sourceAccount, network) || !isIrohaI105Address(destination, network)) {
+    throw new Error('invalid_iroha_asset_transfer_account');
+  }
+  if (sourceParts?.definition !== assetId) return null;
 
-  const sourceAccount =
-    getRecordString(value, ['source_account', 'from', 'account']) ?? extractIrohaAssetAccount(source);
   const isIncoming = isSameIrohaLiteral(destination, address);
   const isOutgoing = isSameIrohaLiteral(sourceAccount, address);
 
@@ -666,74 +776,122 @@ function parseIrohaAssetTransfer(
   return {
     amount,
     from: isOutgoing ? address : (sourceAccount ?? ''),
+    legId: null,
     to: isIncoming ? address : destination,
   };
 }
 
-function getIrohaBatchEntries(value: unknown): unknown[] {
-  if (!isRecord(value)) return [];
+function parseIrohaAssetBatch(
+  value: unknown,
+  address: string,
+  assetId: string,
+  precision: number,
+  network: IrohaNetworkKind
+): IrohaTransferInstruction[] {
+  if (!isRecord(value) || !hasExactRecordKeys(value, ['mode', 'entries'])) {
+    throw new Error('invalid_iroha_asset_batch');
+  }
+  const mode = value.mode;
 
-  for (const key of ['entries', 'transfers', 'items']) {
-    const candidate = value[key];
-
-    if (Array.isArray(candidate)) return candidate;
+  if (
+    !isRecord(mode) ||
+    !hasExactRecordKeys(mode, ['mode', 'value']) ||
+    mode.mode !== 'Atomic' ||
+    mode.value !== null
+  ) {
+    throw new Error('invalid_iroha_asset_batch_mode');
+  }
+  if (!Array.isArray(value.entries) || value.entries.length > MAX_IROHA_BATCH_ENTRIES) {
+    throw new Error('invalid_iroha_asset_batch');
   }
 
-  return [];
+  const transfers: IrohaTransferInstruction[] = [];
+  const legIds = new Set<string>();
+
+  for (const entry of value.entries) {
+    const parsed = parseIrohaAssetBatchEntry(entry, address, assetId, precision, network);
+
+    if (!parsed.canonical) throw new Error('invalid_iroha_asset_batch_entry');
+    if (parsed.legId === null || legIds.has(parsed.legId)) throw new Error('duplicate_iroha_asset_batch_leg');
+    legIds.add(parsed.legId);
+    if (parsed.transfer) transfers.push(parsed.transfer);
+  }
+
+  return transfers;
+}
+
+function parseIrohaAssetBatchEntry(
+  value: unknown,
+  address: string,
+  assetId: string,
+  precision: number,
+  network: IrohaNetworkKind
+): { canonical: boolean; legId: string | null; transfer: IrohaTransferInstruction | null } {
+  if (!isRecord(value) || !hasExactRecordKeys(value, ['leg_id', 'from', 'to', 'asset_definition', 'amount'])) {
+    return { canonical: false, legId: null, transfer: null };
+  }
+
+  const legId = getCanonicalRecordString(value, 'leg_id');
+  const from = getCanonicalRecordString(value, 'from');
+  const to = getCanonicalRecordString(value, 'to');
+  const definition = getCanonicalRecordString(value, 'asset_definition');
+  const amount = normalizeIrohaAmount(value.amount, precision);
+
+  if (
+    !legId ||
+    new TextEncoder().encode(legId).length > MAX_IROHA_BATCH_LEG_ID_LENGTH ||
+    !from ||
+    !to ||
+    !definition ||
+    !amount
+  ) {
+    return { canonical: false, legId: null, transfer: null };
+  }
+  if (!isIrohaI105Address(from, network) || !isIrohaI105Address(to, network)) {
+    return { canonical: false, legId: null, transfer: null };
+  }
+  if (network === 'taira' && !/^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(definition)) {
+    return { canonical: false, legId: null, transfer: null };
+  }
+  if (definition !== assetId) return { canonical: true, legId, transfer: null };
+
+  const isIncoming = isSameIrohaLiteral(to, address);
+  const isOutgoing = isSameIrohaLiteral(from, address);
+
+  if (!isIncoming && !isOutgoing) return { canonical: true, legId, transfer: null };
+
+  return {
+    canonical: true,
+    legId,
+    transfer: {
+      amount,
+      from: isOutgoing ? address : from,
+      legId,
+      to: isIncoming ? address : to,
+    },
+  };
 }
 
 function normalizeIrohaAmount(value: unknown, precision: number): string | null {
   if (!Number.isInteger(precision) || precision < 0 || precision > MAX_IROHA_PRECISION) return null;
 
-  if (typeof value === 'number') {
-    return Number.isSafeInteger(value) && value > 0
-      ? decimalIrohaQuantityToBaseUnits(value.toString(), precision)
-      : null;
-  }
-
-  if (typeof value === 'string') {
-    return decimalIrohaQuantityToBaseUnits(value, precision);
-  }
-
-  if (isRecord(value)) {
-    const scale = value.scale;
-    const amount = value.value ?? value.amount ?? value.mantissa;
-
-    if (scale === undefined) return normalizeIrohaAmount(amount, precision);
-
-    return normalizeIrohaScaledAmount(amount, scale, precision);
-  }
-
-  return null;
+  return typeof value === 'string' ? decimalIrohaQuantityToBaseUnits(value, precision) : null;
 }
 
-function normalizeIrohaScaledAmount(amount: unknown, scaleValue: unknown, precision: number): string | null {
-  const scale =
-    typeof scaleValue === 'string' && /^(?:0|[1-9]\d*)$/u.test(scaleValue) ? Number(scaleValue) : scaleValue;
-  const mantissa = typeof amount === 'number' && Number.isSafeInteger(amount) ? amount.toString() : amount;
-
+function decimalIrohaQuantityToBaseUnits(value: string, precision: number): string | null {
   if (
-    typeof scale !== 'number' ||
-    !Number.isInteger(scale) ||
-    scale < 0 ||
-    scale > MAX_IROHA_PRECISION ||
-    typeof mantissa !== 'string' ||
-    !/^[1-9]\d*$/u.test(mantissa) ||
-    mantissa.length > MAX_IROHA_QUANTITY_DIGITS
+    value.length > MAX_IROHA_QUANTITY_DIGITS + 1 ||
+    value !== value.trim() ||
+    !/^(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/u.test(value)
   ) {
     return null;
   }
 
-  return scaledIrohaIntegerToBaseUnits(mantissa, scale, precision);
-}
-
-function decimalIrohaQuantityToBaseUnits(value: string, precision: number): string | null {
-  if (value !== value.trim() || !/^(?:0|[1-9]\d*)(?:\.\d+)?$/u.test(value)) return null;
-
   const [whole, fraction = ''] = value.split('.');
   const mantissa = `${whole}${fraction}`;
 
-  if (mantissa.length > MAX_IROHA_QUANTITY_DIGITS) return null;
+  if (fraction.length > MAX_IROHA_PRECISION || mantissa.length > MAX_IROHA_QUANTITY_DIGITS) return null;
+  if (BigInt(mantissa) > MAX_IROHA_QUANTITY) return null;
 
   return scaledIrohaIntegerToBaseUnits(mantissa, fraction.length, precision);
 }
@@ -752,30 +910,66 @@ function scaledIrohaIntegerToBaseUnits(mantissa: string, scale: number, precisio
   return (value / divisor).toString();
 }
 
-function irohaAssetMatches(source: string, assetId: string): boolean {
-  return source === assetId || source.startsWith(`${assetId}#`);
-}
-
-function extractIrohaAssetAccount(source: string | null): string | null {
-  if (!source) return null;
-
-  const separatorIndex = source.lastIndexOf('#');
-
-  if (separatorIndex < 0 || separatorIndex === source.length - 1) return null;
-
-  return source.slice(separatorIndex + 1);
-}
-
 function parseIrohaTimestamp(value: string | null): string | null {
-  if (!value) return null;
+  const match = value?.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{0,8}[1-9]))?Z$/u
+  );
 
-  if (/^\d+$/u.test(value)) return value;
+  if (!match) return null;
 
-  const timestamp = Date.parse(value);
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, fraction = ''] = match;
+  const [year, month, day, hour, minute, second] = [
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+    secondText,
+  ].map(Number);
 
-  if (!Number.isFinite(timestamp)) return null;
+  if (year < 1970 || month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) return null;
 
-  return Math.floor(timestamp / SEC1).toString();
+  const milliseconds = Number(fraction.padEnd(3, '0').slice(0, 3));
+  const timestamp = Date.UTC(year, month - 1, day, hour, minute, second, milliseconds);
+  const parsed = new Date(timestamp);
+
+  if (
+    !Number.isFinite(timestamp) ||
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day ||
+    parsed.getUTCHours() !== hour ||
+    parsed.getUTCMinutes() !== minute ||
+    parsed.getUTCSeconds() !== second
+  ) {
+    return null;
+  }
+
+  const seconds = Math.floor(timestamp / SEC1);
+
+  return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds.toString() : null;
+}
+
+function parseCanonicalIrohaHash(value: string | null): string | null {
+  return value && /^[0-9a-f]{63}[13579bdf]$/u.test(value) ? value : null;
+}
+
+function parseIrohaInstructionIndex(value: unknown): number | null {
+  const parsed = parseSafeInteger(value);
+
+  return parsed !== undefined && parsed <= 0xffff_ffff ? parsed : null;
+}
+
+function parseIrohaAssetIdLiteral(value: string): { account: string; definition: string } | null {
+  const parts = value.split('#');
+
+  if (parts.length !== 2) return null;
+
+  const [definition, account] = parts;
+
+  if (!definition || !account) return null;
+
+  return { account, definition };
 }
 
 function getRecordString(record: Record<string, unknown>, keys: string[]): string | null {
@@ -786,6 +980,18 @@ function getRecordString(record: Record<string, unknown>, keys: string[]): strin
   }
 
   return null;
+}
+
+function getCanonicalRecordString(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+
+  return typeof value === 'string' && value.length > 0 && value === value.trim() ? value : null;
+}
+
+function hasExactRecordKeys(record: Record<string, unknown>, keys: string[]): boolean {
+  const actualKeys = Object.keys(record);
+
+  return actualKeys.length === keys.length && keys.every((key) => Object.hasOwn(record, key));
 }
 
 function getCanonicalIrohaHistoryString(

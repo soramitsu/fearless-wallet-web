@@ -9,7 +9,7 @@ import { inflateRawSync, inflateSync } from 'node:zlib';
 
 export const CURRENT_PUBLISHED_VERSION = '3.0.5';
 export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
-export const MINIMUM_SUPPORTED_CHROME_VERSION = '102';
+export const MINIMUM_SUPPORTED_CHROME_VERSION = '116';
 const EXPECTED_EXTENSION_AUTHOR = 'Soramitsu';
 const EXPECTED_EXTENSION_DESCRIPTION =
   'Non-custodial multichain wallet for Polkadot, Ethereum, TON, Bitcoin, Solana, and SORA ecosystems.';

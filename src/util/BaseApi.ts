@@ -2,6 +2,7 @@ import { decodeAddress, encodeAddress, hdValidatePath, isEthereumAddress } from 
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { KeyringPairs$Json } from '@subwallet/ui-keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { Wallet } from '@/stores';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
@@ -9,9 +10,14 @@ import { ETHEREUM_NETWORKS, NATIVE_ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORK
 import { IS_PRODUCTION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { isSameString } from '@/helpers';
 import { isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
-import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
-import { encodeIrohaI105Address, isIrohaI105Address, type IrohaNetworkInput } from '@/util/iroha';
+import {
+  encodeIrohaI105Address,
+  isIrohaI105Address,
+  resolveCanonicalIrohaAddressNetwork,
+  type IrohaNetworkInput,
+} from '@/util/iroha';
 
 type WalletTypes = 'mobile' | 'native';
 
@@ -104,11 +110,9 @@ export default class BaseApi {
     if (!network) return false;
 
     try {
-      return useNetworksStore().getNetwork(network)?.ecosystem === WalletEcosystem.Iroha;
+      return BaseApi.getIrohaExpectedNetwork(network) !== null;
     } catch {
-      const normalized = network.toLowerCase();
-
-      return normalized.includes('iroha') || normalized.includes('taira') || normalized.includes('nexus');
+      return false;
     }
   }
 
@@ -132,30 +136,26 @@ export default class BaseApi {
     return bitcoinAddress ?? address;
   }
 
-  private static getIrohaExpectedNetwork(network: string): IrohaNetworkInput {
-    try {
-      const networkJson = useNetworksStore().getNetwork(network);
-      const contract = `${networkJson?.chainId ?? ''} ${networkJson?.name ?? ''} ${network}`.toLowerCase();
-      const discriminant =
-        (networkJson as { chainDiscriminant?: unknown; i105Prefix?: unknown } | undefined)?.chainDiscriminant ??
-        (networkJson as { i105Prefix?: unknown } | undefined)?.i105Prefix;
+  private static getIrohaExpectedNetwork(network: string): IrohaNetworkInput | null {
+    let networkJson: NetworkJson | undefined;
 
-      if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant) return 'taira';
-      if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant) return 'nexus';
-      if (typeof discriminant === 'number') return discriminant;
-      if (networkJson?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId || contract.includes('taira')) {
-        return 'taira';
-      }
-      if (networkJson?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId || contract.includes('nexus')) {
-        return 'nexus';
-      }
+    try {
+      networkJson = useNetworksStore().allNetworks.find(
+        ({ chainId, name }) => chainId === network || isSameString(name, network)
+      );
     } catch {
-      // Fallback below keeps tests and legacy static calls deterministic.
+      return null;
     }
 
-    const normalized = network.toLowerCase();
+    if (!networkJson) return null;
 
-    return normalized.includes('taira') || normalized.includes('testnet') ? 'taira' : 'nexus';
+    try {
+      return resolveCanonicalIrohaAddressNetwork(networkJson.chainId);
+    } catch (error) {
+      if (networkJson.ecosystem === WalletEcosystem.Iroha) throw error;
+
+      return null;
+    }
   }
 
   public static parseJson(jsonString: string): KeyringPair$Json {
@@ -183,14 +183,22 @@ export default class BaseApi {
   }
 
   public static validateAddress(address: string, network: string): boolean {
+    let irohaNetwork: IrohaNetworkInput | null;
+
+    try {
+      irohaNetwork = BaseApi.getIrohaExpectedNetwork(network);
+    } catch {
+      return false;
+    }
+
+    if (irohaNetwork) return isIrohaI105Address(address, irohaNetwork);
+
     const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
     const isSolanaNetwork = BaseApi.isSolanaNetwork(network);
     const isBitcoinNetwork = BaseApi.isBitcoinNetwork(network);
-    const isIrohaNetwork = BaseApi.isIrohaNetwork(network);
 
     if (isSolanaNetwork) return BaseApi.isSolanaAddress(address);
     if (isBitcoinNetwork) return BaseApi.isBitcoinAddress(address, BaseApi.getBitcoinExpectedNetwork(network));
-    if (isIrohaNetwork) return isIrohaI105Address(address, BaseApi.getIrohaExpectedNetwork(network));
 
     if (isEthereumNetwork && !BaseApi.isEthereumAddress(address)) return false;
 
@@ -210,10 +218,18 @@ export default class BaseApi {
   }
 
   public static validateAddressByNetwork(address: string, network: string): boolean {
+    let irohaNetwork: IrohaNetworkInput | null;
+
+    try {
+      irohaNetwork = BaseApi.getIrohaExpectedNetwork(network);
+    } catch {
+      return false;
+    }
+
+    if (irohaNetwork) return isIrohaI105Address(address, irohaNetwork);
     if (BaseApi.isSolanaNetwork(network)) return BaseApi.isSolanaAddress(address);
     if (BaseApi.isBitcoinNetwork(network))
       return BaseApi.isBitcoinAddress(address, BaseApi.getBitcoinExpectedNetwork(network));
-    if (BaseApi.isIrohaNetwork(network)) return isIrohaI105Address(address, BaseApi.getIrohaExpectedNetwork(network));
 
     if (BaseApi.isEthereumNetwork(network)) return BaseApi.isEthereumAddress(address);
 
@@ -232,13 +248,12 @@ export default class BaseApi {
     }: Wallet,
     networkName: NetworkName = 'westend'
   ): string {
-    if (BaseApi.isSolanaNetwork(networkName)) return solanaAddress ?? address;
-    if (BaseApi.isBitcoinNetwork(networkName))
-      return BaseApi.formatBitcoinAddress({ address, ethereumAddress, bitcoinAddress, bitcoinTestnetAddress }, networkName);
-    if (BaseApi.isIrohaNetwork(networkName)) {
+    const irohaNetwork = BaseApi.getIrohaExpectedNetwork(networkName);
+
+    if (irohaNetwork) {
       if (irohaPublicKeyHex) {
         try {
-          return encodeIrohaI105Address(irohaPublicKeyHex, BaseApi.getIrohaExpectedNetwork(networkName));
+          return encodeIrohaI105Address(irohaPublicKeyHex, irohaNetwork);
         } catch {
           return irohaAddress ?? address;
         }
@@ -246,6 +261,10 @@ export default class BaseApi {
 
       return irohaAddress ?? address;
     }
+
+    if (BaseApi.isSolanaNetwork(networkName)) return solanaAddress ?? address;
+    if (BaseApi.isBitcoinNetwork(networkName))
+      return BaseApi.formatBitcoinAddress({ address, ethereumAddress, bitcoinAddress, bitcoinTestnetAddress }, networkName);
 
     const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
 

@@ -40,7 +40,7 @@
         </template>
 
         <template v-else-if="popupControls.showConfirmScreen">
-          <img :src="image" class="nft-img" alt="nft" />
+          <img :src="image" class="nft-img" :alt="$t('common.nftImage')" />
 
           <ContentForm bottomRightCorner>
             <InfoRow v-for="(value, key) in nftDetails" :text="key" :value="value" :key="key" />

@@ -1,0 +1,21 @@
+import { mount } from '@vue/test-utils';
+import { expect, it } from 'vitest';
+import Header from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
+it('provides separate named Back and Settings buttons and honors disabled settings', async () => {
+  const wrapper = mount(Header, { props: { showBackIcon: true, header: 'Polkaswap' }, global: { mocks: { $t: (key: string) => key }, stubs: { Icon: true } } });
+  const buttons = wrapper.findAll('button');
+  expect(buttons.map((button) => button.attributes('aria-label'))).toEqual(['ux.back', 'primaryMenu.settings']);
+  await buttons[0].trigger('click');
+  expect(wrapper.emitted('back')).toHaveLength(1);
+  await buttons[1].trigger('click');
+  expect(wrapper.emitted('toggleSettingsVisibility')).toHaveLength(1);
+  await wrapper.setProps({ settingHide: true });
+  expect(buttons[1].attributes('disabled')).toBeDefined();
+  await buttons[1].trigger('click');
+  expect(wrapper.emitted('toggleSettingsVisibility')).toHaveLength(1);
+  await wrapper.setProps({ showCloseIcon: true });
+  const close = wrapper.get('button[aria-label="common.close"]');
+  await close.trigger('click');
+  expect(wrapper.emitted('closeForm')).toHaveLength(1);
+  wrapper.unmount();
+});

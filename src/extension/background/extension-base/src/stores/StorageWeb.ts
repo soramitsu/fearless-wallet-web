@@ -1,34 +1,25 @@
+import { openWebDatabase, WEB_STORE_NAME } from './WebDatabase';
 import type { IState } from '@extension-base/background/types/types';
 
 const storageItem = 'storageItem';
-const db_name = 'fw-wallet';
 
 export class StorageWeb {
   openDatabase(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(db_name, 1);
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        db.createObjectStore(db_name);
-      };
-
-      request.onsuccess = (event) => resolve((event.target as IDBOpenDBRequest).result);
-      request.onerror = (event) => reject((event.target as IDBOpenDBRequest).error);
-    });
+    return openWebDatabase();
   }
 
   async set(value: Partial<IState>): Promise<void> {
     const db = await this.openDatabase();
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(db_name, 'readwrite');
-      const store = transaction.objectStore(db_name);
+      const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(WEB_STORE_NAME);
 
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB storage write failed'));
       transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB storage write aborted'));
-      store.put(value, storageItem);
+      const current = store.get(storageItem);
+      current.onsuccess = () => store.put({ ...(current.result ?? {}), ...value }, storageItem);
     });
   }
 
@@ -36,8 +27,8 @@ export class StorageWeb {
     const db = await this.openDatabase();
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(db_name, 'readonly');
-      const store = transaction.objectStore(db_name);
+      const transaction = db.transaction(WEB_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(WEB_STORE_NAME);
       const request = store.get(storageItem);
 
       request.onsuccess = (event) => {

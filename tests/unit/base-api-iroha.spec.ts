@@ -40,6 +40,10 @@ const EVM_ADDRESS = '0x0000000000000000000000000000000000000001';
 const IROHA_PUBLIC_KEY = fixture.vectors[0].expected.iroha.taira.publicKeyHex;
 const TAIRA_ADDRESS = fixture.vectors[0].expected.iroha.taira.i105;
 const NEXUS_ADDRESS = fixture.vectors[0].expected.iroha.nexus.i105;
+const STATE_SOURCE = readFileSync(
+  resolve(__dirname, '../../src/extension/background/extension-base/src/background/handlers/State.ts'),
+  'utf8'
+);
 
 const irohaNetwork = (name: string, chainId: string, chainDiscriminant: number): NetworkJson =>
   ({
@@ -129,5 +133,56 @@ describe('BaseApi Iroha address support', () => {
     expect(BaseApi.validateAddress(TAIRA_ADDRESS, 'SORA Nexus')).toBe(false);
     expect(BaseApi.validateAddress(EVM_ADDRESS, 'Taira Testnet')).toBe(false);
     expect(BaseApi.validateAddress('not-an-i105-address', 'Taira Testnet')).toBe(false);
+  });
+
+  it('rejects Iroha names, aliases, discriminants, and case-mutated chain IDs without fallthrough', async () => {
+    const { useNetworksStore } = await import('@/stores/networks');
+    const adversarialNetworks = [
+      irohaNetwork(
+        'Taira Alias Metadata',
+        UNIVERSAL_WALLET_IROHA_NETWORKS.taira.id,
+        UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant
+      ),
+      irohaNetwork(
+        'Taira Case Mutation',
+        UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId.toUpperCase(),
+        UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant
+      ),
+      irohaNetwork(
+        'SORA Nexus By Name And Discriminant',
+        'iroha:unknown',
+        UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant
+      ),
+    ];
+    useNetworksStore().allNetworks.push(...adversarialNetworks);
+
+    for (const network of adversarialNetworks) {
+      expect(BaseApi.isIrohaNetwork(network.name)).toBe(false);
+      expect(BaseApi.validateAddress(TAIRA_ADDRESS, network.name)).toBe(false);
+      expect(BaseApi.validateAddressByNetwork(TAIRA_ADDRESS, network.name)).toBe(false);
+      expect(() =>
+        BaseApi.formatAddress(
+          {
+            address: SUBSTRATE_ADDRESS,
+            ethereumAddress: EVM_ADDRESS,
+            irohaAddress: TAIRA_ADDRESS,
+            irohaPublicKeyHex: IROHA_PUBLIC_KEY,
+          },
+          network.name
+        )
+      ).toThrow('unsupported_iroha_chain_id');
+    }
+
+    const uppercaseCanonicalId = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId.toUpperCase();
+    expect(BaseApi.isIrohaNetwork(uppercaseCanonicalId)).toBe(false);
+    expect(BaseApi.validateAddress(TAIRA_ADDRESS, uppercaseCanonicalId)).toBe(false);
+    expect(BaseApi.validateAddressByNetwork(TAIRA_ADDRESS, uppercaseCanonicalId)).toBe(false);
+  });
+
+  it('keeps background Iroha address routing bound to the shared canonical chain-ID resolver', () => {
+    expect(STATE_SOURCE).toContain('resolveCanonicalIrohaAddressNetwork(network.chainId)');
+    expect(STATE_SOURCE).not.toContain("contract.includes('taira')");
+    expect(STATE_SOURCE).not.toContain("contract.includes('nexus')");
+    expect(STATE_SOURCE).not.toMatch(/chainDiscriminant[^\n]*return ['"](?:taira|nexus)['"]/u);
   });
 });

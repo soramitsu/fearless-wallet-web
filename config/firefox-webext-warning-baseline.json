@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "webExtVersion": "10.4.0",
+  "webExtVersion": "10.6.0",
   "sourceDir": "dist/extension/firefox",
-  "warningCount": 45,
+  "warningCount": 41,
   "warningCodes": {
-    "DANGEROUS_EVAL": 44,
+    "DANGEROUS_EVAL": 40,
     "UNSAFE_VAR_ASSIGNMENT": 1
   },
   "warningFiles": {
@@ -16,30 +16,29 @@
     "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js": 2,
     "chunks/background-vendor/lodash-rSFLjCOa.js": 1,
     "chunks/background-vendor/lodash.merge-CNVuAApE.js": 1,
-    "chunks/soramitsuUI.js": 1,
-    "popup.js": 4
+    "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "2ca8145150d2b320857597b322703aa415000fd99d2100c5b8e79d187247d67e",
+  "warningSetSha256": "86a5af4b021bdabfb23feda601dc25b362607e1a7845cd70f3aba3f894e7462c",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "25d6d87f61b934d15d253151bf82d5f147dcb0950b75a6431c4ec53f9c772367"
+      "sha256": "42c39b85a2db4866a25d6366db122abaa17f35a79c3205ae4070a78a4902f73b"
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "ec430648eac1cdca9380e7459b27eebead5b67d46da0dd7d74f9727db0d92a4c"
+      "sha256": "26f73e0d7fb60cef931b0c0756d1fa0d0e9a09932fdb96946fd3729ccf818299"
     },
     {
       "file": "chunks/background-vendor/assert-B9II5MFb.js",
-      "sha256": "60d7816487901997668312b5f8a0e8e872865bc125342979b4ef9ab8be3715ef"
+      "sha256": "da1e748275cdcd86b2e4237ec45fcf553f99aadf61b13ebc518a02e47932a1d6"
     },
     {
       "file": "chunks/background-vendor/bcryptjs-D92nEwNN.js",
-      "sha256": "2bea1719fa4d350f806140648837d8f64f920cfdd8ddf9e2e6f070e2935440df"
+      "sha256": "221cba4f4e4a4ceca2e0bf4b134d3ecdde8a531c43683fc34cb7f6db21bc4c54"
     },
     {
       "file": "chunks/background-vendor/core-js-pure-CNQyowns.js",
-      "sha256": "d649438777abb7c5003c225d5c44cd7d0828edf63f0fb0611d9362332cd1e908"
+      "sha256": "41565eaacb2cd641d8557a991954a3bd4717e0ec6206f964e336365fe5c5a055"
     },
     {
       "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js",
@@ -47,19 +46,15 @@
     },
     {
       "file": "chunks/background-vendor/lodash-rSFLjCOa.js",
-      "sha256": "bbe53a4067943f98e4d1a483f38ea3a7c4dfb72600de5c68908ac1d4dfdc6a10"
+      "sha256": "aa833782c3a0954a52b8b236b51171e3b109b66045333c20b7e888566633ddbb"
     },
     {
       "file": "chunks/background-vendor/lodash.merge-CNVuAApE.js",
-      "sha256": "a0a495665cdc7d9e604d7f62a07df33f9960e1c7354abc217a7bf3c430aed4df"
+      "sha256": "2188461bde6214e2cb2d45a61365ff5726bd0526eca6fe43c37762064e5cbe19"
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "1857b1ae06cd6fa84e3f8ce5257bffc2874f132022ab0d47bd517634cec4df2c"
-    },
-    {
-      "file": "popup.js",
-      "sha256": "2aa112c85bafa6d2a26904fd8f761da69a67a31132e43e696fca181cb202a90f"
+      "sha256": "27e8b7b1e83a414fa22eb0376809a39ef90142519361d1948bc4f0f9e8378214"
     }
   ]
 }

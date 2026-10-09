@@ -115,7 +115,7 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 - Run or confirm green CI for branch-flow audit, public artifact audit,
   TODO-debt audit, production dependency audit, typecheck, lint, unit tests,
   extension build, Solana extension e2e smoke, and Bitcoin broadcast smoke.
-- Confirm Universal Wallet migrations, legacy export-only access, and supported
+- Confirm Universal Wallet migrations, preserved legacy signing/export access, and supported
   network registry changes are documented in the PR.
 - Confirm rollback owner, monitoring owner, and release communication channel.
 

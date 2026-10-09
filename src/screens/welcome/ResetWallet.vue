@@ -9,17 +9,11 @@
 
           <div class="be-deleted">{{ t('welcome.walletWillBeDeleted') }}</div>
 
-          <div class="enter-reset">{{ t('welcome.enterReset') }}</div>
+          <div class="enter-reset">{{ t('welcome.enterReset', { phrase }) }}</div>
         </div>
 
         <div>
-          <FInput
-            ref="passInput"
-            size="big"
-            :value="password"
-            :placeholder="$t('welcome.resetWallet')"
-            @change="changeOPassword"
-          />
+          <FInput ref="passInput" size="big" :value="password" :placeholder="phrase" @change="changeOPassword" />
 
           <FButton
             class="pass"

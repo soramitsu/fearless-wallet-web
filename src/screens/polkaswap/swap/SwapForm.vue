@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :fullScreen="true" @closeHandler="closeForm">
+  <AboveForm :fullScreen="true" :contained="true" @closeHandler="closeForm">
     <template v-slot:header>
       <PolkaswapSettingsHeader
         :marketType="marketType"
@@ -21,8 +21,10 @@
           <div v-if="capabilityReasons.length && !showSettings" class="capability-state" data-testid="polkaswapCapability">
             <Icon icon="info" className="capability-state__icon" :hover="false" />
             <div>
-              <strong>Polkaswap setup required</strong>
-              <span v-for="reason in capabilityReasons" :key="reason">{{ reason }}</span>
+              <strong>{{ $t('assets.polkaswapSetupRequired') }}</strong>
+              <span v-for="reason in capabilityReasons" :key="reason">
+                {{ $t(`assets.polkaswapCapability.${reason}`) }}
+              </span>
             </div>
           </div>
 

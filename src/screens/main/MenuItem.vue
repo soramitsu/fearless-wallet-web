@@ -1,5 +1,10 @@
 <template>
-  <button :class="menuItemClasses" type="button" data-testid="menuItemStatus" :aria-current="isActive ? 'page' : undefined">
+  <button
+    :class="menuItemClasses"
+    type="button"
+    data-testid="menuItemStatus"
+    :aria-current="isActive ? 'page' : undefined"
+  >
     <span class="icon-shell">
       <Icon :icon="icon" :className="iconClass" :hover="false" />
     </span>
@@ -34,7 +39,14 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
   justify-content: flex-end;
   gap: 5px;
   border: 0;
-  padding: 0 2px;
+  min-height: 56px;
+  padding: 4px 2px;
+
+  &:focus-visible {
+    outline: 2px solid $pink-color;
+    outline-offset: -2px;
+    border-radius: 6px;
+  }
   background: transparent;
   color: $gray-color;
   cursor: pointer;
@@ -52,7 +64,7 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
 
   .name {
     font-weight: 600;
-    font-size: 0.61rem;
+    font-size: 0.8125rem;
     line-height: 1.15;
     max-width: 100%;
     overflow: hidden;
@@ -78,7 +90,9 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
   display: grid;
   place-items: center;
   border-radius: 50%;
-  transition: transform 160ms ease, background-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
 }
 
 .emphasized {

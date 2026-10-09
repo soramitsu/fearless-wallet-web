@@ -1,17 +1,17 @@
 <template>
   <FCorners size="big">
-    <div :class="contentClasses" data-testid="walletInfo" @click="setWallet">
-      <div class="content" data-testid="content">
+    <div :class="contentClasses" data-testid="walletInfo">
+      <button type="button" class="content" data-testid="content" :aria-label="name" :aria-pressed="isSelected" @click="$emit('setWallet')">
         <div class="name" data-testid="name">{{ name }}</div>
 
         <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
-      </div>
+      </button>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
-      <div v-if="showMenu" class="dots-container" :ref="dotsHorizontalRef" data-testid="dots">
-        <Icon icon="dots-horizontal" className="dots" />
-      </div>
+      <button v-if="showMenu" type="button" class="dots-container" :ref="dotsHorizontalRef" data-testid="dots" :aria-label="`${$t('ux.moreOptions')}: ${name}`" @click.stop="showWalletDetails">
+        <Icon icon="dots-horizontal" className="dots" aria-hidden="true" />
+      </button>
     </div>
   </FCorners>
 </template>
@@ -21,7 +21,6 @@ import { defineComponent } from 'vue';
 
 
 
-import { type CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { getTotalBalances } from '@/extension/messaging';
 
@@ -70,20 +69,9 @@ export default defineComponent({ name: 'WalletInfo',
     clearInterval(this.interval);
   },
   methods: {
-    setWallet({ target: { classList } }: CustomEvent) {
-      const shouldUpdateSelectedWallet = !(
-            classList.contains('dots-container') ||
-            classList.contains('dots') ||
-            classList.contains('dots-horizontal') ||
-            classList.contains('icon__inner')
-          );
-
-          if (shouldUpdateSelectedWallet) this.$emit('setWallet');
-          else {
-            const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLDivElement).getBoundingClientRect().top;
-
-            this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
-          }
+    showWalletDetails() {
+      const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLButtonElement).getBoundingClientRect().top;
+      this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
     },
   },
 });
@@ -109,7 +97,19 @@ export default defineComponent({ name: 'WalletInfo',
     opacity: 1;
   }
 
+  button {
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    &:focus-visible { outline: 2px solid $pink-lavender-color; outline-offset: 2px; }
+  }
+
   .content {
+    min-width: 0;
     min-height: 45px; // TODO: delete after adding percent
     flex-grow: 1;
   }
@@ -136,8 +136,8 @@ export default defineComponent({ name: 'WalletInfo',
   }
 
   .dots-container {
-    height: 25px;
-    width: 25px;
+    min-height: 44px;
+    min-width: 44px;
     opacity: 0.9;
     display: flex;
 

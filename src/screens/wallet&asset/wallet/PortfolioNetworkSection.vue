@@ -5,12 +5,11 @@
 
       <span class="network-identity">
         <span class="network-title">{{ section.name }}</span>
-        <span class="network-meta">{{ ecosystemLabel }} · {{ shortAddress }}</span>
+        <span v-if="syncLabel" class="sync-state">{{ syncLabel }}</span>
       </span>
 
       <span class="network-value">
-        <span>{{ formattedSubtotal }}</span>
-        <span class="sync-state">{{ syncLabel }}</span>
+        <span v-if="formattedSubtotal">{{ formattedSubtotal }}</span>
       </span>
 
       <Icon :icon="expanded ? 'down' : 'chevron-right'" className="chevron" :hover="false" />
@@ -29,9 +28,9 @@
         <span class="asset-identity">
           <span class="asset-symbol">
             {{ asset.symbol }}
-            <span v-if="asset.trust !== 'verified'" class="trust-badge">Unverified</span>
+            <span v-if="asset.trust !== 'verified'" class="trust-badge">{{ t('portfolioPage.unverified') }}</span>
           </span>
-          <span class="asset-name">{{ asset.name }}</span>
+          <span class="asset-name">{{ asset.name || t('portfolioPage.unknownAsset') }}</span>
         </span>
 
         <span class="asset-balance">
@@ -50,20 +49,20 @@
 
       <div v-if="section.detectedAssets.length && !manage" class="detected-assets">
         <button class="detected-header" type="button" @click="showDetected = !showDetected">
-          <span>Detected assets ({{ section.detectedAssets.length }})</span>
+          <span>{{ tc('portfolioPage.detectedAssets', section.detectedAssets.length, { count: section.detectedAssets.length }) }}</span>
           <Icon :icon="showDetected ? 'down' : 'chevron-right'" :hover="false" />
         </button>
 
         <div v-if="showDetected" class="detected-list">
           <div v-for="asset in section.detectedAssets" :key="asset.key" class="detected-row">
             <span class="asset-identity">
-              <span class="asset-symbol">{{ asset.symbol || 'Unknown asset' }}</span>
-              <span class="asset-name">Unverified {{ asset.source }} metadata</span>
+              <span class="asset-symbol">{{ asset.symbol || t('portfolioPage.unknownAsset') }}</span>
+              <span class="asset-name">{{ t('portfolioPage.unverifiedMetadata', { source: sourceLabel(asset.source) }) }}</span>
               <span class="asset-name canonical-id">{{ asset.assetId }}</span>
             </span>
             <span class="detected-balance">{{ formatAmount(asset.balanceText) }}</span>
-            <button type="button" class="review-action" @click="setPreference(asset, 'shown')">Show</button>
-            <button type="button" class="review-action secondary" @click="setPreference(asset, 'hidden')">Hide</button>
+            <button type="button" class="review-action" @click="setPreference(asset, 'shown')">{{ t('portfolioPage.show') }}</button>
+            <button type="button" class="review-action secondary" @click="setPreference(asset, 'hidden')">{{ t('portfolioPage.hide') }}</button>
           </div>
         </div>
       </div>
@@ -79,6 +78,7 @@ import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 import { formatDecimalString } from '@/helpers/numbers';
 import { formatNetworkSyncFreshness } from '@/portfolio/syncFreshness';
+import { useI18n } from '@/locales/useI18n';
 
 const props = defineProps<{
   section: PortfolioNetworkSection;
@@ -87,24 +87,13 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 const expanded = ref(true);
 const showDetected = ref(false);
 
-const ecosystemLabel = computed(() => {
-  const value = props.section.ecosystem;
-  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : 'Unknown network';
-});
-
-const shortAddress = computed(() => {
-  const value = props.section.address;
-  if (!value) return 'No account';
-  if (value.length < 15) return value;
-  return `${value.slice(0, 6)}…${value.slice(-5)}`;
-});
-
 const formattedSubtotal = computed(() => {
-  if (!props.section.hasPricedAssets) return 'Price unavailable';
+  if (!props.section.hasPricedAssets) return '';
   return `${accountsStore.fiatSymbol}${formatDecimalString(props.section.subtotal, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -112,12 +101,15 @@ const formattedSubtotal = computed(() => {
 });
 
 const syncLabel = computed(() =>
-  formatNetworkSyncFreshness({
-    coverage: props.section.coverage,
-    lastSuccess: props.section.latestTimestamp,
-    stale: props.section.stale,
-    error: props.section.error,
-  })
+  formatNetworkSyncFreshness(
+    {
+      coverage: props.section.coverage,
+      lastSuccess: props.section.latestTimestamp,
+      stale: props.section.stale,
+      error: props.section.error,
+    },
+    { translate: (key, values) => t(key, values) }
+  )
 );
 
 const visibleAssets = computed(() => {
@@ -139,11 +131,15 @@ function formatAmount(value: string): string {
 
 function formatFiat(value: string | null): string {
   return value === null
-    ? 'Price unavailable'
+    ? t('portfolioPage.priceUnavailable')
     : `${accountsStore.fiatSymbol}${formatDecimalString(value, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`;
+}
+
+function sourceLabel(source: PortfolioAsset['source']): string {
+  return t(`portfolioPage.source.${source}`);
 }
 
 function setPreference(asset: PortfolioAsset, preference: AssetPreference): void {
@@ -198,10 +194,9 @@ function openAsset(asset: PortfolioAsset): void {
 .network-title,
 .asset-symbol {
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
-.network-meta,
-.sync-state,
 .asset-name,
 .asset-fiat {
   margin-top: 4px;
@@ -210,6 +205,13 @@ function openAsset(asset: PortfolioAsset): void {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sync-state {
+  margin-top: 4px;
+  color: $gray-color;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
 }
 
 .canonical-id {
@@ -221,7 +223,7 @@ function openAsset(asset: PortfolioAsset): void {
 .asset-balance {
   align-items: flex-end;
   text-align: right;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .network-assets {
@@ -303,5 +305,32 @@ function openAsset(asset: PortfolioAsset): void {
 .chevron,
 .asset-chevron {
   color: $gray-color;
+}
+
+@media (max-width: 600px) {
+  .network-header,
+  .asset-row {
+    grid-template-columns: 32px minmax(0, 1fr) 20px;
+    gap: 6px 10px;
+  }
+  .network-value,
+  .asset-balance {
+    grid-column: 2;
+    grid-row: 2;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .chevron,
+  .asset-chevron { grid-column: 3; grid-row: 1 / 3; width: 20px; }
+  .network-icon,
+  .asset-icon { grid-row: 1 / 3; }
+  .asset-name,
+  .asset-fiat {
+    font-size: 0.75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .network-assets { padding-left: 0; }
+  .asset-row { padding-left: 0; }
 }
 </style>

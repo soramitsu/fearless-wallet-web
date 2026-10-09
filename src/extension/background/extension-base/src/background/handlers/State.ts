@@ -25,6 +25,7 @@ import {
   resolveAssetDiscoveryEvmAddress,
   ActionCapabilityService,
   SoraDisclaimerService,
+  IrohaConnectService,
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
@@ -60,8 +61,7 @@ import { isEthereumNetwork } from '@/extension/background/extension-base/src/bac
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
-import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
-import { encodeIrohaI105Address, type IrohaNetworkInput } from '@/util/iroha';
+import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
 
 type Wallet = {
   address: string;
@@ -97,6 +97,17 @@ export default class State {
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
   walletConnectDappService = new WalletConnectDAppService(this);
+  irohaConnectService = new IrohaConnectService(this, {
+    onStateChange: (snapshot, previous) => {
+      const isApproval = snapshot.phase === 'session-approval' || snapshot.phase === 'request-approval';
+      const wasApproval = previous.phase === 'session-approval' || previous.phase === 'request-approval';
+
+      if (isApproval !== wasApproval) this.requestService.updateIcon(!isApproval);
+      if (snapshot.phase === 'request-approval' && previous.phase !== 'request-approval') {
+        this.requestService.popupOpen('/fearless/settings/iroha-connect');
+      }
+    },
+  });
   balanceService = new BalanceService(this);
   assetDiscoverySweepService = new AssetDiscoverySweepService({
     getRegistryNetworks: () => this.networkService.authoritativeDiscoveryNetworks,
@@ -655,11 +666,13 @@ export default class State {
 
   getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
     const currentAccount = _currentAccount ?? this.currentAccount;
-    const ecosystem = this.getNetworkEcosystem(network);
+    const networkProfile = this.networkService.networkValues.find(({ name }) => isSameString(name, network));
+    const irohaNetwork = this.getIrohaExpectedNetwork(networkProfile);
+    const ecosystem = networkProfile?.ecosystem;
 
+    if (irohaNetwork) return this.formatIrohaAddress(currentAccount!, irohaNetwork);
     if (ecosystem === WalletEcosystem.Solana) return currentAccount!.solanaAddress ?? currentAccount!.address;
     if (ecosystem === WalletEcosystem.Bitcoin) return this.formatBitcoinAddress(currentAccount!, network);
-    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress(currentAccount!, network);
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
@@ -674,26 +687,22 @@ export default class State {
     return contract.includes('testnet') ? 'testnet' : 'mainnet';
   }
 
-  private getIrohaExpectedNetwork(networkName: string): IrohaNetworkInput {
-    const network = this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
-    const discriminant =
-      (network as { chainDiscriminant?: unknown; i105Prefix?: unknown } | undefined)?.chainDiscriminant ??
-      (network as { i105Prefix?: unknown } | undefined)?.i105Prefix;
-    const contract = `${network?.chainId ?? ''} ${network?.name ?? ''} ${networkName}`.toLowerCase();
+  private getIrohaExpectedNetwork(network: NetworkJson | undefined): IrohaNetworkInput | null {
+    if (!network) return null;
 
-    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant) return 'taira';
-    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant) return 'nexus';
-    if (typeof discriminant === 'number') return discriminant;
-    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId || contract.includes('taira')) return 'taira';
-    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId || contract.includes('nexus')) return 'nexus';
+    try {
+      return resolveCanonicalIrohaAddressNetwork(network.chainId);
+    } catch (error) {
+      if (network.ecosystem === WalletEcosystem.Iroha) throw error;
 
-    return contract.includes('testnet') ? 'taira' : 'nexus';
+      return null;
+    }
   }
 
-  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, networkName: string): string {
+  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, network: IrohaNetworkInput): string {
     if (irohaPublicKeyHex) {
       try {
-        return encodeIrohaI105Address(irohaPublicKeyHex, this.getIrohaExpectedNetwork(networkName));
+        return encodeIrohaI105Address(irohaPublicKeyHex, network);
       } catch {
         return irohaAddress ?? address;
       }
@@ -720,13 +729,16 @@ export default class State {
     }: Wallet,
     networkName: string = 'westend'
   ): string {
-    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName)) ??
+      this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
+    const irohaNetwork = this.getIrohaExpectedNetwork(network);
     const ecosystem = network?.ecosystem ?? this.getNetworkEcosystem(networkName);
 
+    if (irohaNetwork)
+      return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, irohaNetwork);
     if (ecosystem === WalletEcosystem.Solana) return solanaAddress ?? address;
     if (ecosystem === WalletEcosystem.Bitcoin)
       return this.formatBitcoinAddress({ address, ethereumAddress, bitcoinAddress, bitcoinTestnetAddress }, networkName);
-    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, networkName);
 
     const isEthereumNet = isEthereumNetwork(networkName);
 

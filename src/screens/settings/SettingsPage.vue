@@ -1,8 +1,8 @@
 <template>
   <div class="settings-page">
     <header class="workspace-header">
-      <h1>Settings</h1>
-      <p>Wallet, network, connection, and security controls.</p>
+      <h1>{{ t('settingsPage.title') }}</h1>
+      <p>{{ t('settingsPage.subtitle') }}</p>
     </header>
 
     <ContentForm :height="contentHeight">
@@ -41,6 +41,7 @@ import { Components } from '@/router/routes';
 import { lockExtension } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
+import { useI18n } from '@/locales/useI18n';
 
 type SettingsItem = {
   id: string;
@@ -60,6 +61,7 @@ type SettingsGroup = {
 const emit = defineEmits(['openFiatsPopup', 'openLanguagePopup', 'openAboutPopup']);
 const router = useRouter();
 const accountsStore = useAccountsStore();
+const { t } = useI18n();
 const contentHeight = CONTENT_FORM_HEIGHT;
 const open = (name: Components, params?: Record<string, string>) => () => router.push({ name, params });
 const lock = () => {
@@ -78,36 +80,43 @@ const hasTonAccount = computed(() => {
 
 const groups = computed<SettingsGroup[]>(() => [
   {
-    title: 'Wallets & accounts',
+    title: t('settingsPage.groups.walletsAccounts'),
     items: [
       {
         id: 'wallet-details',
-        label: 'Wallet details & backup',
-        description: 'Accounts, keys, and export',
+        label: t('settingsPage.walletDetails'),
+        description: t('settingsPage.walletDetailsDescription'),
         icon: 'account',
         open: open(Components.AccountSetting),
       },
     ],
   },
   {
-    title: 'Networks & assets',
+    title: t('settingsPage.groups.networksAssets'),
     items: [
       {
         id: 'networks-assets',
-        label: 'Networks & assets',
-        description: 'Display filters, nodes, and asset preferences',
+        label: t('settingsPage.networksAssets'),
+        description: t('settingsPage.networksAssetsDescription'),
         icon: 'globus',
         open: open(Components.SettingsNetworksAssets),
       },
     ],
   },
   {
-    title: 'Connections',
+    title: t('settingsPage.groups.connections'),
     items: [
+      {
+        id: 'iroha-connect',
+        label: 'IrohaConnect',
+        description: t('settingsPage.irohaConnectDescription'),
+        icon: 'iroha-connect',
+        open: open(Components.IrohaConnect),
+      },
       {
         id: 'wallet-connect',
         label: 'WalletConnect',
-        description: 'WalletConnect sessions for compatible ecosystems',
+        description: t('settingsPage.walletConnectDescription'),
         icon: 'wallet-connect',
         open: open(Components.WalletConnectInitAuth),
       },
@@ -116,11 +125,11 @@ const groups = computed<SettingsGroup[]>(() => [
             {
               id: 'ton-connect',
               label: 'TonConnect',
-              description: 'TonConnect sessions are not supported in this build yet.',
+              description: t('settingsPage.tonConnectDescription'),
               icon: 'ton',
               open: () => undefined,
               disabled: true,
-              status: 'Build unavailable',
+              status: t('settingsPage.buildUnavailable'),
             },
           ]
         : []),
@@ -128,8 +137,8 @@ const groups = computed<SettingsGroup[]>(() => [
         ? [
             {
               id: 'connected-dapps',
-              label: 'Connected dApps',
-              description: 'Substrate and EVM permissions',
+              label: t('settingsPage.connectedDapps'),
+              description: t('settingsPage.connectedDappsDescription'),
               icon: 'mechanic-tool',
               open: open(Components.DAppsAuths, { type: 'substrate' }),
             },
@@ -138,50 +147,50 @@ const groups = computed<SettingsGroup[]>(() => [
     ],
   },
   {
-    title: 'Security',
+    title: t('settingsPage.groups.security'),
     items: [
       {
         id: 'change-password',
-        label: 'Change password',
-        description: 'Update the local master password',
+        label: t('settingsPage.changePassword'),
+        description: t('settingsPage.changePasswordDescription'),
         icon: 'key',
         open: open(Components.SettingsChangePassword),
       },
       {
         id: 'lock',
-        label: 'Lock app',
-        description: 'Require the password on next open',
+        label: t('settingsPage.lockApp'),
+        description: t('settingsPage.lockAppDescription'),
         icon: 'lock',
         open: lock,
       },
     ],
   },
   {
-    title: 'Preferences',
+    title: t('settingsPage.groups.preferences'),
     items: [
       {
         id: 'fiat',
-        label: 'Fiat currency',
-        description: 'Portfolio display currency',
+        label: t('settingsPage.fiatCurrency'),
+        description: t('settingsPage.fiatCurrencyDescription'),
         icon: 'dollar-circle',
         open: () => emit('openFiatsPopup', true),
       },
       {
         id: 'language',
-        label: 'Language',
-        description: 'App display language',
+        label: t('settingsPage.language'),
+        description: t('settingsPage.languageDescription'),
         icon: 'language',
         open: () => emit('openLanguagePopup'),
       },
     ],
   },
   {
-    title: 'About',
+    title: t('settingsPage.groups.about'),
     items: [
       {
         id: 'about',
-        label: 'About Fearless',
-        description: 'Version, support, and legal',
+        label: t('settingsPage.aboutFearless'),
+        description: t('settingsPage.aboutFearlessDescription'),
         icon: 'info',
         open: () => emit('openAboutPopup'),
       },

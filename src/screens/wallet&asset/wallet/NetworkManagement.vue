@@ -14,7 +14,7 @@
             <div class="description">
               <div class="name">{{ name }}</div>
 
-              <div class="unavailable">Network is unavailable</div>
+              <div class="unavailable">{{ $t('wallet.networkUnavailable') }}</div>
             </div>
 
             <FButton

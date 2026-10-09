@@ -46,6 +46,17 @@ export function stripUrl(url: string): string {
   return `${parsed.protocol}//${parsed.host}`;
 }
 
+// Browser-internal tabs have no dApp authorization target. Keep stripUrl strict
+// for permission requests while allowing the header's read-only status to settle.
+export function getTabAuthorizationTarget(url?: string): { key: string; hostname: string } | undefined {
+  if (!url) return undefined;
+  try {
+    return { key: stripUrl(url), hostname: new URL(url).hostname };
+  } catch {
+    return undefined;
+  }
+}
+
 export async function isOpenClient() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore

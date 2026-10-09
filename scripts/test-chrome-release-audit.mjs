@@ -97,7 +97,7 @@ function baseManifest() {
     },
     key: TEST_PUBLIC_KEY,
     manifest_version: 3,
-    minimum_chrome_version: '102',
+    minimum_chrome_version: '116',
     name: 'Fearless Wallet',
     oauth2: {
       client_id: TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID,
@@ -407,13 +407,13 @@ async function run() {
       tempRoot,
       'unsupported-minimum-chrome-version',
       { mutateManifest: (manifest) => (manifest.minimum_chrome_version = '101') },
-      /minimum_chrome_version must equal the reviewed value 102/u
+      /minimum_chrome_version must equal the reviewed value 116/u
     );
     await expectFailure(
       tempRoot,
       'raised-minimum-chrome-version',
       { mutateManifest: (manifest) => (manifest.minimum_chrome_version = '9999') },
-      /minimum_chrome_version must equal the reviewed value 102/u
+      /minimum_chrome_version must equal the reviewed value 116/u
     );
     await expectFailure(
       tempRoot,

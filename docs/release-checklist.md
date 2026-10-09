@@ -148,9 +148,13 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 
 ## After Release
 
-- Verify the packed extension artifact matches the tagged commit: its
+- Verify the packed Chrome artifact matches the tagged commit: its
   `extension-build-metadata.json` `sourceCommit` is the tagged commit and
   `sourceDirty` is `false`.
+- Firefox packages carry no Git provenance, so AMO reviewers can rebuild them
+  from a source archive. Verify the uploaded Firefox ZIP by rebuilding
+  `yarn build:extension:firefox:zip` from `git archive <tag>` (the AMO source
+  upload) and confirming the ZIP is byte-identical.
 - Monitor install/update failures, wallet creation/import, dApp provider
   requests, signing errors, and indexer error rates.
 - Keep the hotfix path ready from `master` until rollout completes.

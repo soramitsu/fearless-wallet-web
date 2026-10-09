@@ -122,6 +122,10 @@ The same metadata file records `sourceCommit`, `sourceDirty`, and
 `prepare:chrome-release`) requires `sourceCommit` to be the checked-out `HEAD`,
 `sourceDirty` to be `false`, and `yarnLockSha256` to match the checked-out
 `yarn.lock`, so a stale, foreign, dirty, or pre-provenance ZIP cannot pass.
+Only the Chrome package records `sourceCommit` and `sourceDirty`. The Firefox
+package leaves them out: AMO reviewers rebuild it from a `git archive` source
+upload, which has no Git metadata, and diff the result against the uploaded
+XPI, so a Firefox package must not depend on Git.
 The runner isolates Vitest and development-extension gates under
 `NODE_ENV=test`; credentialed production builds and their smoke remain under
 the audited `NODE_ENV=production` release environment.

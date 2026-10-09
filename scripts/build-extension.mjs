@@ -37,9 +37,8 @@ export function enforceProductionReleaseEnvironment(environment, buildMode) {
 }
 
 // Records which source the artifact was built from so the release audit can
-// reject stale or foreign ZIPs. A tree without its own Git metadata (such as an
-// add-on store's source-archive build) is recorded as unknown and can never
-// pass the release audit.
+// reject stale or foreign ZIPs. A tree without its own Git metadata is recorded
+// as unknown and can never pass the release audit.
 export function readSourceProvenance(sourceRoot) {
   const git = (args) =>
     execFileSync('git', ['-C', sourceRoot, ...args], {
@@ -74,6 +73,27 @@ async function sha256File(file) {
   return createHash('sha256')
     .update(await fs.readFile(file))
     .digest('hex');
+}
+
+// Only Chrome packages carry Git provenance, because only the Chrome release
+// audit binds a package to its source commit. AMO reviewers rebuild a Firefox
+// package from a source archive that has no Git metadata and diff it against
+// the uploaded XPI, so nothing in a Firefox package may depend on Git.
+export async function createExtensionBuildMetadata({ browser, mode, environment, sourceRoot, sourceBefore }) {
+  const sourceProvenance =
+    browser === 'chrome' ? combineSourceProvenance(sourceBefore, readSourceProvenance(sourceRoot)) : null;
+
+  return {
+    browser,
+    mode,
+    releaseFlags: Object.fromEntries(Object.keys(PRODUCTION_RELEASE_FLAGS).map((key) => [key, environment[key] ?? ''])),
+    schemaVersion: 2,
+    ...(sourceProvenance && {
+      sourceCommit: sourceProvenance.sourceCommit,
+      sourceDirty: sourceProvenance.sourceDirty,
+    }),
+    yarnLockSha256: await sha256File(path.resolve(sourceRoot, 'yarn.lock')),
+  };
 }
 
 function withBuild(overrides, configOptions = {}) {
@@ -149,25 +169,14 @@ async function writeStaticAssets(sourceBefore) {
   await copyRecursive(path.resolve(root, 'public/icons'), path.join(outDir, 'icons'));
   await fs.copyFile(path.resolve(root, 'public/favicon.ico'), path.join(outDir, 'favicon.ico'));
   await fs.writeFile(path.join(outDir, 'manifest.json'), `${JSON.stringify(makeManifest(browser), null, 2)}\n`);
-  const source = combineSourceProvenance(sourceBefore, readSourceProvenance(root));
-  await fs.writeFile(
-    path.join(outDir, 'extension-build-metadata.json'),
-    `${JSON.stringify(
-      {
-        browser,
-        mode,
-        releaseFlags: Object.fromEntries(
-          Object.keys(PRODUCTION_RELEASE_FLAGS).map((key) => [key, process.env[key] ?? ''])
-        ),
-        schemaVersion: 2,
-        sourceCommit: source.sourceCommit,
-        sourceDirty: source.sourceDirty,
-        yarnLockSha256: await sha256File(path.resolve(root, 'yarn.lock')),
-      },
-      null,
-      2
-    )}\n`
-  );
+  const metadata = await createExtensionBuildMetadata({
+    browser,
+    mode,
+    environment: process.env,
+    sourceRoot: root,
+    sourceBefore,
+  });
+  await fs.writeFile(path.join(outDir, 'extension-build-metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`);
   if (process.env.VUE_APP_EXTENSION_SMOKE === 'true') {
     await fs.writeFile(
       path.join(outDir, 'smoke-control.html'),

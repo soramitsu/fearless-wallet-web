@@ -8,6 +8,7 @@ import path from 'node:path';
 
 import {
   combineSourceProvenance,
+  createExtensionBuildMetadata,
   enforceProductionReleaseEnvironment,
   PRODUCTION_RELEASE_FLAGS,
   readSourceProvenance,
@@ -51,7 +52,21 @@ assert.deepEqual(combineSourceProvenance({ sourceCommit: null, sourceDirty: null
   sourceDirty: null,
 });
 
+const serializedBuildMetadata = async (browser, sourceRoot) =>
+  `${JSON.stringify(
+    await createExtensionBuildMetadata({
+      browser,
+      mode: 'production',
+      environment: PRODUCTION_RELEASE_FLAGS,
+      sourceRoot,
+      sourceBefore: readSourceProvenance(sourceRoot),
+    }),
+    null,
+    2
+  )}\n`;
+
 const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-build-provenance-test-'));
+const sourceArchiveDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-build-source-archive-test-'));
 try {
   const git = (...args) =>
     execFileSync(
@@ -72,14 +87,44 @@ try {
   await fs.writeFile(path.join(temporaryDirectory, 'dist/ignored-build-output.js'), 'export {};\n');
   assert.deepEqual(readSourceProvenance(temporaryDirectory), { sourceCommit: head, sourceDirty: false });
 
+  // An AMO source-code submission is a `git archive` of the release commit, so
+  // the reviewer's rebuild has no Git metadata to read.
+  execFileSync('tar', ['-x', '-C', sourceArchiveDirectory], {
+    input: execFileSync('git', ['-C', temporaryDirectory, 'archive', '--format=tar', 'HEAD']),
+  });
+  assert.deepEqual(readSourceProvenance(sourceArchiveDirectory), { sourceCommit: null, sourceDirty: null });
+
+  const firefoxCheckoutMetadata = await serializedBuildMetadata('firefox', temporaryDirectory);
+  assert.equal(await serializedBuildMetadata('firefox', sourceArchiveDirectory), firefoxCheckoutMetadata);
+  assert.deepEqual(Object.keys(JSON.parse(firefoxCheckoutMetadata)), [
+    'browser',
+    'mode',
+    'releaseFlags',
+    'schemaVersion',
+    'yarnLockSha256',
+  ]);
+
+  const chromeCheckoutMetadata = JSON.parse(await serializedBuildMetadata('chrome', temporaryDirectory));
+  assert.deepEqual(
+    { sourceCommit: chromeCheckoutMetadata.sourceCommit, sourceDirty: chromeCheckoutMetadata.sourceDirty },
+    { sourceCommit: head, sourceDirty: false }
+  );
+  const chromeArchiveMetadata = JSON.parse(await serializedBuildMetadata('chrome', sourceArchiveDirectory));
+  assert.deepEqual(
+    { sourceCommit: chromeArchiveMetadata.sourceCommit, sourceDirty: chromeArchiveMetadata.sourceDirty },
+    { sourceCommit: null, sourceDirty: null }
+  );
+
   await fs.writeFile(path.join(temporaryDirectory, 'untracked.txt'), 'not reviewed\n');
   assert.deepEqual(readSourceProvenance(temporaryDirectory), { sourceCommit: head, sourceDirty: true });
+  assert.equal(await serializedBuildMetadata('firefox', temporaryDirectory), firefoxCheckoutMetadata);
 
   const nestedSource = path.join(temporaryDirectory, 'nested-source');
   await fs.mkdir(nestedSource);
   assert.deepEqual(readSourceProvenance(nestedSource), { sourceCommit: null, sourceDirty: null });
 } finally {
   await fs.rm(temporaryDirectory, { recursive: true, force: true });
+  await fs.rm(sourceArchiveDirectory, { recursive: true, force: true });
 }
 
-console.log('Extension production environment self-test passed (12 checks)');
+console.log('Extension production environment self-test passed (18 checks)');

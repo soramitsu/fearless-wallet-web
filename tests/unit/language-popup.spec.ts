@@ -39,7 +39,7 @@ describe('LanguagePopup', () => {
     document.documentElement.dir = 'ltr';
   });
 
-  it('offers Old Akkadian and persists it when selected', async () => {
+  it('offers Old Akkadian cuneiform and persists it when selected', async () => {
     const wrapper = mount(LanguagePopup, {
       global: {
         stubs: { SelectPopup: SelectPopupStub },
@@ -50,12 +50,14 @@ describe('LanguagePopup', () => {
     expect(select.props('options')).toEqual(languageOptions);
     expect(select.props('value')).toBe('en-EN');
 
-    select.vm.$emit('toggleValue', 'akk-Latn-x-old');
+    select.vm.$emit('toggleValue', 'akk-Xsux-x-old');
     await nextTick();
 
-    expect(mocks.locale.value).toBe('akk-Latn-x-old');
+    expect(mocks.locale.value).toBe('akk-Xsux-x-old');
     expect(mocks.setLang).toHaveBeenCalledOnce();
-    expect(mocks.setLang).toHaveBeenCalledWith('akk-Latn-x-old');
+    expect(mocks.setLang).toHaveBeenCalledWith('akk-Xsux-x-old');
+    expect(document.documentElement.lang).toBe('akk-Xsux-x-old');
+    expect(document.documentElement.dir).toBe('ltr');
     expect(wrapper.emitted('handlerClose')).toHaveLength(1);
   });
 

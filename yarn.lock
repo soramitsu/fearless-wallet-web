@@ -720,6 +720,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource/noto-sans-cuneiform@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/noto-sans-cuneiform@npm:5.3.0"
+  checksum: 10/da5fcb70c6490021b8cd85acd849b2667b8538c6bb72f5fa3f71900e04fe36b178ed4674ab11f6b352a630b19a88d51caa2bcd5cafa631d2b5a86fcfdf6f9a98
+  languageName: node
+  linkType: hard
+
 "@fontsource/noto-sans-egyptian-hieroglyphs@npm:^5.3.0":
   version: 5.3.0
   resolution: "@fontsource/noto-sans-egyptian-hieroglyphs@npm:5.3.0"
@@ -6962,6 +6969,7 @@ __metadata:
     "@eslint/js": "npm:^10.0.1"
     "@fontsource-variable/sora": "npm:^5.2.8"
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
+    "@fontsource/noto-sans-cuneiform": "npm:^5.3.0"
     "@fontsource/noto-sans-egyptian-hieroglyphs": "npm:^5.3.0"
     "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz"
     "@metamask/safe-event-emitter": "npm:^3.1.2"

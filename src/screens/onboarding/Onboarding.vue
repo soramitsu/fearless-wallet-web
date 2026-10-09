@@ -107,7 +107,7 @@ export default defineComponent({
   }
 
   &__header {
-    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', sans-serif;
+    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
     font-size: 2.875em;
     font-weight: 700;
     letter-spacing: 0.54px;

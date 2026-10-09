@@ -71,6 +71,7 @@
   "main": "index.js",
   "dependencies": {
     "@emurgo/cardano-serialization-lib-browser": "^15.0.3",
+    "@fontsource/noto-sans-cuneiform": "^5.3.0",
     "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz",
     "@metamask/safe-event-emitter": "^3.1.2",
     "@noble/curves": "^1.7.0",

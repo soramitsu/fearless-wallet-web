@@ -1,5 +1,4 @@
 # Existing TODO/FIXME/STOPSHIP baseline. Remove entries when debt is resolved.
-src/App.vue	// TODO send message to SW, dont use import state, MigrationService
 src/extension/background/extension-base/src/api/evm/types.ts	// TODO: unify specialOption, assetId, assetIndex
 src/extension/background/extension-base/src/api/evm/types.ts	name: string; // is Network Name, TODO name -> networkName
 src/extension/background/extension-base/src/api/substrate/index.ts	// TODO AUSD

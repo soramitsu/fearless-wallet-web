@@ -22,6 +22,11 @@ jobs:
           node scripts/test-package-manager-audit.mjs
           node scripts/audit-package-manager.mjs
 
+      - name: GitHub Actions policy audit
+        run: |
+          node scripts/test-github-actions-audit.mjs
+          node scripts/audit-github-actions.mjs
+
       - name: Branch flow audit self-test
         run: bash scripts/test-branch-flow-audit.sh
 

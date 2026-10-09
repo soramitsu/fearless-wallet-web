@@ -44,6 +44,11 @@ jobs:
           node scripts/test-package-manager-audit.mjs
           node scripts/audit-package-manager.mjs
 
+      - name: GitHub Actions policy audit
+        run: |
+          node scripts/test-github-actions-audit.mjs
+          node scripts/audit-github-actions.mjs
+
       - name: Audit public artifacts
         run: |
           bash ./scripts/test-public-artifacts-audit.sh

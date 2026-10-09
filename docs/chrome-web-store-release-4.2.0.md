@@ -1,32 +1,51 @@
-# Chrome Web Store release 3.0.6
+# Chrome Web Store release 4.2.0
 
 This is the release handoff for the production Chrome artifact. The live Chrome
-Web Store version was `3.0.5` when checked on 2026-08-23, so the next upload is
-`3.0.6`.
+Web Store version is still `3.0.5` (`600a64d5`), so the next upload is `4.2.0`,
+the same release number as the Android and iOS apps. The Firefox build ships
+the same `4.2.0` version from the same `package.json`.
 
 Store listing: <https://chromewebstore.google.com/detail/fearless-wallet/nhlnehondigmgckngjomcpcefcdplmgc>
 
+## Superseded and unsafe 3.0.6 candidates
+
+No `3.0.6` was ever published. These artifacts and refs were prepared for it
+and are **not release sources**. Never upload or tag an artifact built from
+them as they stand; `4.2.0` is built from `develop` plus the upgrade-safety
+work on top of it:
+
+- `dist/extension/chrome` in older checkouts (built 2026-09-05, manifest
+  `3.0.6`). Its `extension-build-metadata.json` has no source provenance, so
+  the artifact audit now rejects it.
+- Branch `codex/chrome-3.0.6-release` (`5001b466`) and branch
+  `codex/chrome-3.0.6-release-ready` (`f9e6ec55`).
+- Commits `a3928b78` ("Prepare Fearless Wallet 3.0.6 Chrome release") and
+  `d212c037`. `a3928b78` and `5001b466` were direct, unsigned pushes without a
+  reviewed PR or green CI.
+
+They predate the upgrade-safety fixes for existing 2.x and 3.0.x profiles
+(legacy migration, TON phrase derivation and re-encryption, background start-up
+ordering). Release owner step (manual, no upload): open the Chrome Web Store
+developer dashboard, check for a pending `3.0.6` draft or submission built from
+these candidates, and cancel it before submitting `4.2.0`. This effort deletes
+no branches and pushes nothing.
+
 ## Release scope
 
+Confirm this section and the release note against the merged release branch
+before submission; do not reuse the `3.0.6` copy.
+
+- Upgrade safety for every earlier extension profile: existing keys, accounts,
+  and passwords keep working, and any recovery is guided and scoped to the
+  affected account.
 - Universal Wallet v2 account derivation and migration, with legacy wallets
   retaining their original keys, normal functionality and export access.
-- Solana accounts, balances, dApp authorization, message signing, and
-  transaction signing.
-- Bitcoin account discovery, balances, and history. Bitcoin sending is hidden
-  and rejected by the background API in this release because the funded
-  testnet broadcast evidence is not ready.
-- Iroha Nexus and Taira accounts, balances, and dApp authorization. Iroha
-  sending remains disabled until its reviewed browser SDK artifact and live
-  release evidence are ready.
+- Solana and Bitcoin accounts, balances, and history, with sending as decided
+  for `4.2.0` (remote kill switch is veto-only).
+- Cross-chain transfers are paused with an in-app explanation and a
+  same-network send alternative; IrohaConnect is off in release builds.
 - Reliability and fail-closed handling across network, signing, and transfer
   flows.
-
-Suggested short release note:
-
-> Fearless Wallet 3.0.6 adds Universal Wallet v2 migration, Solana dApp and
-> signing support, Bitcoin balances and history, Iroha account support, and
-> reliability improvements. Bitcoin and Iroha transfers remain disabled while
-> their release evidence is completed.
 
 ## Permission justifications
 
@@ -48,9 +67,19 @@ password-encrypted wallet JSON plus the wallet label and public address used as
 Drive file metadata. The feature is absent from public/credentialless builds
 and only appears when the release OAuth client is supplied.
 
-The Chrome manifest requires Chrome 116 or newer. This keeps the existing
-Manifest V3 and `wasm-unsafe-eval` requirements while guaranteeing Chrome's
-WebSocket lifetime support for background IrohaConnect wallet sessions.
+The Chrome manifest requires Chrome 116 or newer (`minimum_chrome_version`
+stays `116`):
+
+- The background worker calls `chrome.runtime.getContexts`, which exists only
+  from Chrome 116, so 116 is a hard API floor.
+- Chrome 116 also guarantees the Manifest V3 service-worker WebSocket lifetime
+  the background connections rely on, alongside the existing `wasm-unsafe-eval`
+  requirement.
+- Users on Chrome older than 116 (August 2023) simply do not receive `4.2.0`;
+  they keep a working `3.0.5` with no data loss, and the update arrives
+  automatically once their Chrome updates.
+- Lowering the floor would mean replacing `getContexts` and testing on
+  browsers older than Chrome for Testing provides (it starts at 113).
 
 ## Local production configuration
 
@@ -87,11 +116,17 @@ source commit, and writes a non-secret
 `untagged-candidate`. The production build forcibly disables test-only, smoke,
 Bitcoin-send, and Iroha-send flags and the artifact audit verifies those values
 in `extension-build-metadata.json`.
+
+The same metadata file records `sourceCommit`, `sourceDirty`, and
+`yarnLockSha256`. The release audit (`--release`, also run by
+`prepare:chrome-release`) requires `sourceCommit` to be the checked-out `HEAD`,
+`sourceDirty` to be `false`, and `yarnLockSha256` to match the checked-out
+`yarn.lock`, so a stale, foreign, dirty, or pre-provenance ZIP cannot pass.
 The runner isolates Vitest and development-extension gates under
 `NODE_ENV=test`; credentialed production builds and their smoke remain under
 the audited `NODE_ENV=production` release environment.
 
-After the reviewed merge commit is tagged `3.0.6` or `v3.0.6`, rerun the exact
+After the reviewed merge commit is tagged `4.2.0` or `v4.2.0`, rerun the exact
 tagged artifact gate:
 
 ```sh
@@ -129,7 +164,9 @@ Policy references:
 ## Exact release gates
 
 Run the authoritative gate with the repository's exact Node 24.19.0 and Yarn
-4.17.0 toolchain:
+4.17.0 toolchain (see `CONTRIBUTING.md` for the Homebrew `node@24` and
+Corepack setup). `yarn.lock` is the only lockfile; `yarn audit:package-manager`
+fails if a pnpm or npm lockfile reappears or the Node pins drift:
 
 ```sh
 yarn env-cmd -f .env.chrome-release.local -- yarn prepare:chrome-release
@@ -157,9 +194,14 @@ not reached the provenance gate.
 
 ## Human/external gates
 
-- Review and commit the complete dirty working tree on a release branch; tag
-  only the reviewed merge commit. A ZIP built from an unreviewed dirty tree is
-  not a releasable artifact.
+- Release commits reach `develop` only through reviewed PRs with green CI
+  (the `verify` job must actually start, not end in `startup_failure`); the
+  `3.0.6` preparation commits were direct, unreviewed pushes. Tag only the
+  reviewed merge commit. A ZIP built from an unreviewed dirty tree is not a
+  releasable artifact, and the release audit rejects one whose recorded
+  source commit differs from the release checkout.
+- Signed commits and tags need a real release signing key and are out of scope
+  for this release; record the unsigned status with the release evidence.
 - Approve and publish the browser-extension privacy-policy update, then update
   the Chrome Web Store privacy declarations and permission explanations.
 - Load the production extension public key, Google OAuth client, and existing

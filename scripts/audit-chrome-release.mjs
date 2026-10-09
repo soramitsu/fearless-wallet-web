@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { execFileSync } from 'node:child_process';
 import { createHash, createPublicKey } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
@@ -86,6 +88,8 @@ const MAX_ENTRY_BYTES = 256 * 1024 * 1024;
 const MAX_ARCHIVE_UNCOMPRESSED_BYTES = 512 * 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const CRC32_TABLE = makeCrc32Table();
+
+const GIT_COMMIT_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 
 export class ChromeReleaseAuditError extends Error {
   constructor(message) {
@@ -681,7 +685,8 @@ function validateManifest(
   label,
   release,
   releaseEnvironment,
-  expectedOAuthClientIdSha256
+  expectedOAuthClientIdSha256,
+  releaseSource
 ) {
   validateObjectKeyAllowlist(manifest, REQUIRED_MANIFEST_KEYS, OPTIONAL_MANIFEST_KEYS, `${label} top-level manifest`);
   requireCondition(manifest.manifest_version === 3, `${label} must use manifest_version 3`);
@@ -771,10 +776,10 @@ function validateManifest(
   const buildMetadata = parseJson(files.get('extension-build-metadata.json'), `${label} extension build metadata`);
   validateExactObjectKeys(
     buildMetadata,
-    ['browser', 'mode', 'releaseFlags', 'schemaVersion'],
+    ['browser', 'mode', 'releaseFlags', 'schemaVersion', 'sourceCommit', 'sourceDirty', 'yarnLockSha256'],
     `${label} extension build metadata`
   );
-  requireCondition(buildMetadata.schemaVersion === 1, `${label} extension build metadata schemaVersion must be 1`);
+  requireCondition(buildMetadata.schemaVersion === 2, `${label} extension build metadata schemaVersion must be 2`);
   requireCondition(buildMetadata.browser === 'chrome', `${label} extension build metadata browser must be chrome`);
   requireCondition(buildMetadata.mode === 'production', `${label} extension build metadata mode must be production`);
   validateExactObjectKeys(
@@ -786,6 +791,32 @@ function validateManifest(
     requireCondition(
       buildMetadata.releaseFlags[key] === expected,
       `${label} extension build release flag ${key} must be ${expected}`
+    );
+  }
+  requireCondition(
+    buildMetadata.sourceCommit === null ||
+      (typeof buildMetadata.sourceCommit === 'string' && GIT_COMMIT_PATTERN.test(buildMetadata.sourceCommit)),
+    `${label} extension build metadata sourceCommit must be a full Git commit SHA or null`
+  );
+  requireCondition(
+    buildMetadata.sourceCommit === null
+      ? buildMetadata.sourceDirty === null
+      : typeof buildMetadata.sourceDirty === 'boolean',
+    `${label} extension build metadata sourceDirty must be a boolean for a Git build and null otherwise`
+  );
+  requireCondition(
+    typeof buildMetadata.yarnLockSha256 === 'string' && /^[0-9a-f]{64}$/u.test(buildMetadata.yarnLockSha256),
+    `${label} extension build metadata yarnLockSha256 must be a SHA-256 digest`
+  );
+  if (release) {
+    requireCondition(
+      buildMetadata.sourceCommit === releaseSource.commit,
+      `${label} was built from source commit ${buildMetadata.sourceCommit ?? 'unknown'}, not the release source commit ${releaseSource.commit}`
+    );
+    requireCondition(buildMetadata.sourceDirty === false, `${label} was built from a dirty source tree`);
+    requireCondition(
+      buildMetadata.yarnLockSha256 === releaseSource.yarnLockSha256,
+      `${label} was built with a yarn.lock that differs from the release source`
     );
   }
 
@@ -930,10 +961,36 @@ export function deriveChromeExtensionId(manifestKey) {
     .join('');
 }
 
+// The release artifact must come from the exact commit being released, so a ZIP
+// left over from an earlier candidate (or built elsewhere) is rejected even when
+// its manifest looks right.
+export function readReleaseSourceCommit(rootDir) {
+  const git = (args) =>
+    execFileSync('git', ['-C', rootDir, ...args], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+
+  let topLevel;
+  let commit;
+  try {
+    topLevel = git(['rev-parse', '--show-toplevel']);
+    commit = git(['rev-parse', 'HEAD']);
+  } catch (error) {
+    fail(`release mode cannot determine the source commit: ${error.stderr?.trim() || error.message}`);
+  }
+  requireCondition(
+    realpathSync(topLevel) === realpathSync(rootDir),
+    `release mode requires ${rootDir} to be the root of its own Git checkout`
+  );
+  return commit;
+}
+
 export async function auditChromeRelease({
   release = false,
   releaseEnvironment = process.env,
   expectedOAuthClientIdSha256 = EXPECTED_OAUTH_CLIENT_ID_SHA256,
+  expectedSourceCommit,
   rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   distDir = path.join(rootDir, 'dist/extension/chrome'),
   zipPath = path.join(distDir, DEFAULT_ARCHIVE_NAME),
@@ -950,6 +1007,20 @@ export async function auditChromeRelease({
   }
   const packageJson = parseJson(packageBytes, 'package.json');
   parseChromeVersion(packageJson.version, 'package.json version');
+
+  let releaseSource = null;
+  if (release) {
+    let yarnLock;
+    try {
+      yarnLock = await fs.readFile(path.join(rootDir, 'yarn.lock'));
+    } catch (error) {
+      fail(`release mode cannot read yarn.lock: ${error.message}`);
+    }
+    releaseSource = {
+      commit: expectedSourceCommit ?? readReleaseSourceCommit(rootDir),
+      yarnLockSha256: createHash('sha256').update(yarnLock).digest('hex'),
+    };
+  }
 
   const directoryFiles = await readDirectoryArtifact(distDir, zipPath);
   requireCondition(directoryFiles.has('manifest.json'), `${distDir} has no root manifest.json`);
@@ -973,7 +1044,8 @@ export async function auditChromeRelease({
     'Chrome directory manifest',
     release,
     releaseEnvironment,
-    expectedOAuthClientIdSha256
+    expectedOAuthClientIdSha256,
+    releaseSource
   );
   const zipExtensionId = validateManifest(
     zipManifest,
@@ -982,7 +1054,8 @@ export async function auditChromeRelease({
     'Chrome ZIP manifest',
     release,
     releaseEnvironment,
-    expectedOAuthClientIdSha256
+    expectedOAuthClientIdSha256,
+    releaseSource
   );
   compareArtifacts(directoryFiles, zipFiles);
   requireCondition(
@@ -1005,7 +1078,8 @@ function usage() {
   return `Usage: node scripts/audit-chrome-release.mjs [--release] [--root DIR] [--dist DIR] [--zip FILE]
 
 Audits dist/extension/chrome and fearless-wallet-extension-chrome.zip as a Chrome Web Store release package.
---release additionally requires the production manifest key and OAuth client ID and verifies the stable extension ID.`;
+--release additionally requires the production manifest key and OAuth client ID, verifies the stable extension ID,
+and requires the build metadata to name the checked-out HEAD commit, a clean source tree, and the current yarn.lock.`;
 }
 
 function parseArguments(argv) {

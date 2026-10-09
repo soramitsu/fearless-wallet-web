@@ -3,13 +3,25 @@
 Use this checklist for every browser-extension release PR from `develop` to
 `master`.
 
-For Chrome `3.0.6`, also use the store copy, permission/privacy handoff, and
-credentialed artifact gates in `docs/chrome-web-store-release-3.0.6.md`.
+For Chrome and Firefox `4.2.0`, also use the store copy, permission/privacy
+handoff, and credentialed artifact gates in
+`docs/chrome-web-store-release-4.2.0.md`. The unpublished `3.0.6` candidates
+listed there are not release sources.
 
 ## Before The Release PR
 
-- Confirm all release work has landed on `develop`.
-- Confirm extension version, changelog, and release notes are final.
+- Confirm all release work has landed on `develop` through reviewed PRs with
+  green CI, and that the CI `verify` job actually started (a
+  `startup_failure` means a workflow references an action the repository
+  policy refuses).
+- Confirm extension version, changelog, and release notes are final. The
+  version in `package.json` feeds both the Chrome and Firefox manifests and
+  must be above the published Chrome Web Store `3.0.5`.
+- Run `yarn test:package-manager-audit && yarn audit:package-manager` and
+  `yarn test:github-actions-audit && yarn audit:github-actions`; confirm
+  `yarn.lock` is the only lockfile, Node `24.19.0` / Yarn `4.17.0` pins agree,
+  and every workflow action is a SHA-pinned GitHub-owned action or allowlisted
+  under the repository Actions policy.
 - Confirm no private extension keys, OAuth client IDs, analytics tokens, store
   credentials, or local environment files are committed.
 - Run `bash ./scripts/test-branch-flow-audit.sh && bash ./scripts/audit-branch-flow.sh`
@@ -38,7 +50,10 @@ credentialed artifact gates in `docs/chrome-web-store-release-3.0.6.md`.
   and public service configuration are available without being committed.
 - From a fresh, clean reviewed checkout, run
   `yarn env-cmd -f .env.chrome-release.local -- yarn prepare:chrome-release` to
-  produce the untagged candidate provenance. After the reviewed merge commit is
+  produce the untagged candidate provenance. The release audit rejects any ZIP
+  whose `extension-build-metadata.json` does not name the checked-out commit,
+  a clean source tree, and the checked-out `yarn.lock` digest; never upload a
+  ZIP from an older checkout or another branch. After the reviewed merge commit is
   tagged, rerun with `--require-tag`; diagnostic `--skip-automated-gates` runs
   are not release evidence and never write provenance.
 - Run `IROHA_JS_SDK_RELEASE_REPO=<repo> IROHA_JS_SDK_RELEASE_TAG=<tag>
@@ -127,10 +142,15 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 - Require review and green CI before merge.
 - Merge with a merge commit so the release boundary is visible.
 - Create the release tag only after the merge commit is on `master`.
+- Check the Chrome Web Store developer dashboard for a pending draft built from
+  an unreviewed candidate (for example the unpublished `3.0.6`) and cancel it
+  before submitting.
 
 ## After Release
 
-- Verify the packed extension artifact matches the tagged commit.
+- Verify the packed extension artifact matches the tagged commit: its
+  `extension-build-metadata.json` `sourceCommit` is the tagged commit and
+  `sourceDirty` is `false`.
 - Monitor install/update failures, wallet creation/import, dApp provider
   requests, signing errors, and indexer error rates.
 - Keep the hotfix path ready from `master` until rollout completes.

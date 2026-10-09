@@ -1,6 +1,6 @@
 {
   "name": "fearless-wallet",
-  "version": "3.0.6",
+  "version": "4.2.0",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
@@ -33,6 +33,7 @@
     "lint:webext:firefox:raw": "web-ext lint --source-dir dist/extension/firefox --warnings-as-errors",
     "test:firefox-build-warning-policy": "node scripts/test-firefox-build-warning-policy.mjs",
     "test:firefox-smoke-policy": "node scripts/test-firefox-extension-smoke-policy.mjs",
+    "test:ci-install-firefox": "bash scripts/ci-install-firefox.sh --self-test",
     "lint:precommit": "NODE_ENV=production eslint --fix --quiet 'src/**/*.{js,jsx,vue,ts,tsx}'",
     "test:e2e:extension": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs",
     "test:e2e:firefox": "yarn build:extension:firefox && yarn lint:webext:firefox && yarn test:smoke:firefox",
@@ -52,6 +53,10 @@
     "test:prepare-chrome-release": "node scripts/test-prepare-chrome-release.mjs",
     "test:release-source-audit": "node scripts/test-release-source-audit.mjs",
     "test:vendored-iroha-sdk-audit": "node scripts/test-vendored-iroha-js-sdk-audit.mjs",
+    "audit:package-manager": "node scripts/audit-package-manager.mjs",
+    "test:package-manager-audit": "node scripts/test-package-manager-audit.mjs",
+    "audit:github-actions": "node scripts/audit-github-actions.mjs",
+    "test:github-actions-audit": "node scripts/test-github-actions-audit.mjs",
     "test:smoke:firefox": "yarn test:firefox-smoke-policy && node scripts/firefox-extension-smoke.mjs",
     "test:smoke:bitcoin": "vitest run tests/smoke/bitcoin-testnet-broadcast.spec.ts",
     "generate:bitcoin-broadcast-evidence-template": "bash scripts/generate-bitcoin-broadcast-evidence-template.sh",

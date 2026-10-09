@@ -39,6 +39,16 @@ jobs:
           bash ./scripts/test-branch-flow-audit.sh
           bash ./scripts/audit-branch-flow.sh
 
+      - name: Package manager audit
+        run: |
+          node scripts/test-package-manager-audit.mjs
+          node scripts/audit-package-manager.mjs
+
+      - name: GitHub Actions policy audit
+        run: |
+          node scripts/test-github-actions-audit.mjs
+          node scripts/audit-github-actions.mjs
+
       - name: Audit public artifacts
         run: |
           bash ./scripts/test-public-artifacts-audit.sh
@@ -115,6 +125,9 @@ jobs:
           yarn test:bitcoin-broadcast-evidence-audit
           yarn audit:bitcoin-broadcast-evidence
 
+      - name: Firefox installer self-test
+        run: yarn test:ci-install-firefox
+
       - name: Build Firefox extension
         run: yarn build:extension:firefox
 
@@ -123,9 +136,7 @@ jobs:
 
       - name: Set up Firefox
         id: setup-firefox
-        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1.7.2
-        with:
-          firefox-version: 152.0.4
+        run: bash ./scripts/ci-install-firefox.sh 152.0.4
 
       - name: Firefox extension runtime and CSP smoke
         run: yarn test:smoke:firefox

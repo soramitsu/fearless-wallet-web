@@ -1,3 +1,4 @@
+import { base58Encode } from '@polkadot/util-crypto';
 import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/universalWallet';
 import {
   EndpointFailover,
@@ -6,6 +7,7 @@ import {
   withTimeout,
   type EndpointFailoverOptions,
 } from '@/util/endpointFailover';
+import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -119,6 +121,27 @@ class SolanaRpcError extends Error {
   ) {
     super(message);
     this.name = 'SolanaRpcError';
+  }
+}
+
+/**
+ * `ambiguous` means an attempt may have reached a node (timeout, network
+ * error, throttling, a server error or an unreadable answer) and none
+ * confirmed the transaction, so it may still land. Otherwise every node that
+ * answered refused it before relaying it, for example in preflight.
+ */
+class SolanaBroadcastError extends SolanaRpcError {
+  constructor(
+    message: 'solana_broadcast_ambiguous' | 'solana_broadcast_rejected',
+    readonly ambiguous: boolean,
+    readonly lastError?: unknown
+  ) {
+    super(
+      message,
+      lastError instanceof SolanaRpcError ? lastError.status : undefined,
+      lastError instanceof SolanaRpcError ? lastError.body : undefined
+    );
+    this.name = 'SolanaBroadcastError';
   }
 }
 
@@ -327,6 +350,15 @@ class SolanaRpcClient {
     );
   }
 
+  /**
+   * Posts the signed transaction to each endpoint in turn, once, until one
+   * accepts it. Sending the identical signed bytes again is idempotent, but a
+   * node that timed out may already have relayed them: every later post skips
+   * preflight, where a lagging node would answer "Blockhash not found" or
+   * "already processed", and a later refusal is reported as ambiguous, never as
+   * "nothing was sent". "Already processed" always means the transaction is out
+   * there. Fails with a `SolanaBroadcastError`.
+   */
   async sendRawTransaction(
     transactionBase64: string,
     {
@@ -352,10 +384,41 @@ class SolanaRpcClient {
       options.minContextSlot = requireSafeInteger(minContextSlot, 'invalid_min_context_slot');
     }
 
-    return this.request(
-      'sendTransaction',
-      [normalizeTransactionBase64(transactionBase64), options],
-      normalizeSignature
+    const transaction = normalizeTransactionBase64(transactionBase64);
+    let ambiguous = false;
+    let lastError: unknown;
+
+    for (const rpcUrl of this.endpoints.endpoints) {
+      try {
+        return await this.requestOnce(
+          rpcUrl,
+          'sendTransaction',
+          [transaction, ambiguous ? { ...options, skipPreflight: true } : options],
+          normalizeSignature
+        );
+      } catch (error) {
+        lastError = error;
+
+        if (isAlreadyProcessed(error)) {
+          const signature = firstSignatureOf(transaction);
+
+          if (signature) return signature;
+        }
+        if (isAlreadyProcessed(error) || mayHaveReachedNode(error)) {
+          ambiguous = true;
+          continue;
+        }
+        // A node that is behind refuses before relaying; another may take it.
+        if (isRetryableRpcError(error)) continue;
+
+        break;
+      }
+    }
+
+    throw new SolanaBroadcastError(
+      ambiguous ? 'solana_broadcast_ambiguous' : 'solana_broadcast_rejected',
+      ambiguous,
+      lastError
     );
   }
 
@@ -419,6 +482,38 @@ class SolanaRpcClient {
     if (!('result' in body)) throw new SolanaRpcError('invalid_rpc_response');
 
     return normalizeResult(body.result);
+  }
+}
+
+// Preflight answers -32002 with `AlreadyProcessed` when the node already has
+// this exact transaction.
+function isAlreadyProcessed(error: unknown): boolean {
+  if (!(error instanceof SolanaRpcError) || error.message !== 'solana_rpc_error') return false;
+
+  const { data, message } = (error.body ?? {}) as Partial<SolanaJsonRpcErrorPayload>;
+
+  return (isRecord(data) && data.err === 'AlreadyProcessed') || /already been processed/iu.test(message ?? '');
+}
+
+// A failed post the node may still have acted on. A JSON-RPC error or a
+// refused request (400, 401, 403, ...) is an answer given before relaying.
+function mayHaveReachedNode(error: unknown): boolean {
+  if (!(error instanceof SolanaRpcError)) return true;
+  if (error.message === 'solana_rpc_error') return false;
+  if (error.message.startsWith('solana_rpc_http_')) return isRetryableHttpStatus(error.status);
+
+  return true;
+}
+
+// The transaction id is its first signature.
+function firstSignatureOf(transactionBase64: string): string | undefined {
+  try {
+    const { signaturesOffset } = parseSolanaSerializedTransaction(transactionBase64);
+    const bytes = Uint8Array.from(atob(transactionBase64), (char) => char.charCodeAt(0));
+
+    return base58Encode(bytes.slice(signaturesOffset, signaturesOffset + 64));
+  } catch {
+    return undefined;
   }
 }
 
@@ -643,6 +738,7 @@ const BASE58_32_TO_64 = /^[1-9A-HJ-NP-Za-km-z]{32,64}$/;
 const BASE58_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,128}$/;
 
 export {
+  SolanaBroadcastError,
   SolanaRpcClient,
   SolanaRpcError,
   type SolanaBroadcastOptions,

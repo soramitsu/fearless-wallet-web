@@ -1,3 +1,4 @@
+import { SolanaBroadcastError } from '@extension-base/services/solana-rpc-service';
 import type { SolanaRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
   SolanaSignAndSendTransactionOptions,
@@ -125,7 +126,18 @@ export async function resolveSolanaSignAndSendTransaction({
     mnemonic: seed,
     transaction: request.transactionBase64,
   });
-  const signature = await broadcastTransaction(signed.signedTransactionBase64, request.options);
+  let signature: string;
+
+  try {
+    signature = await broadcastTransaction(signed.signedTransactionBase64, request.options);
+  } catch (error) {
+    // The transaction may already be on its way. Its signature lets the dApp
+    // follow the outcome; an error would invite it to have a second, different
+    // transaction signed.
+    if (!(error instanceof SolanaBroadcastError && error.ambiguous)) throw error;
+
+    signature = signed.signatureBase58;
+  }
 
   return {
     publicKey: signed.signer,

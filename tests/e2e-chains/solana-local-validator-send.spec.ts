@@ -205,6 +205,37 @@ describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
     expect(pendingRecords).toEqual([]);
   });
 
+  it('lands exactly one transfer when a node relays it but its answer is lost and the next node is asked', async () => {
+    const recipient = randomSolanaAddress();
+    const lostUrl = `${RPC_URL!.replace(/\/+$/u, '')}/lost-response`;
+    const posts: Array<{ skipPreflight: unknown; url: string }> = [];
+    const fetchFn = async (input: string | URL, init?: RequestInit) => {
+      const url = String(input);
+      const body = JSON.parse(String(init?.body));
+
+      if (body.method === 'sendTransaction') posts.push({ skipPreflight: body.params[1].skipPreflight, url });
+      if (url !== lostUrl) return fetch(url, init);
+
+      const relayed = await fetch(RPC_URL!, init);
+
+      // This node relays the transaction, but its answer never arrives.
+      return body.method === 'sendTransaction' ? new Promise<Response>(() => {}) : relayed;
+    };
+    const failover = new SolanaRpcClient({ fetchFn, requestTimeoutMs: 2_000, rpcUrls: [lostUrl, RPC_URL!] });
+    const transfer = params(recipient, '0.4');
+
+    await makeSolanaTransfer(transfer, failover, options);
+
+    // Reported as sent, not as "nothing was sent", and paid exactly once.
+    expect(transfer.callback).toHaveBeenCalledWith({ status: true });
+    expect(posts.slice(0, 2)).toEqual([
+      { skipPreflight: false, url: lostUrl },
+      { skipPreflight: true, url: RPC_URL!.replace(/\/+$/u, '') },
+    ]);
+    expect(await lamports(recipient)).toBe(400_000_000n);
+    expect(pendingRecords).toEqual([]);
+  });
+
   it('reports a transaction that never reached the network as expired, with nothing sent', async () => {
     const recipient = randomSolanaAddress();
     const before = await lamports(walletAddress);

@@ -12,7 +12,7 @@ import {
   type SolanaTransferClient,
 } from '@extension-base/api/solana/transfer';
 import { resolveSolanaPendingSends, type SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
-import { SolanaRpcClient, SolanaRpcError } from '@extension-base/services/solana-rpc-service';
+import { SolanaBroadcastError, SolanaRpcClient, SolanaRpcError } from '@extension-base/services/solana-rpc-service';
 import { createSolanaRpcBalanceClient } from '@extension-base/services/balance-service/solanaRpcBalances';
 import { base58Decode } from '@polkadot/util-crypto';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
@@ -403,11 +403,88 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
   it('forgets a transaction the node refused in preflight', async () => {
     const store = memoryPendingStore();
     const client = createClient({
-      sendError: new SolanaRpcError('solana_rpc_error', 200, { code: -32002, message: 'Transaction simulation failed' }),
+      sendError: new SolanaBroadcastError(
+        'solana_broadcast_rejected',
+        false,
+        new SolanaRpcError('solana_rpc_error', 200, { code: -32002, message: 'Transaction simulation failed' })
+      ),
     });
 
     await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_simulation_failed');
     expect(store.records).toEqual([]);
+    expect(client.getSignatureStatuses).not.toHaveBeenCalled();
+  });
+
+  it('keeps polling when an error does not prove the transaction was refused', async () => {
+    const store = memoryPendingStore();
+    const client = createClient({
+      sendError: new SolanaRpcError('solana_rpc_error', 200, { code: -32002, message: 'Transaction simulation failed' }),
+    });
+    const params = solParams();
+
+    await makeSolanaTransfer(params, client, sendOptions(store));
+
+    expect(client.getSignatureStatuses).toHaveBeenCalled();
+    expect(params.callback).toHaveBeenCalledWith({ status: true });
+  });
+
+  describe('through real RPC failover after a timed-out first post', () => {
+    const relayedThenRefused = (refusal: { code: number; data?: unknown; message: string }, base = createClient()) => {
+      const posts: Array<{ skipPreflight: unknown; url: string }> = [];
+      const fetchFn = async (url: string | URL, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+
+        if (body.method !== 'sendTransaction') throw new Error(`unexpected ${body.method}`);
+        posts.push({ skipPreflight: body.params[1].skipPreflight, url: String(url) });
+        // The first node relays the transaction, but its answer never arrives.
+        if (String(url).startsWith('https://slow.example')) return new Promise<Response>(() => {});
+
+        return new Response(JSON.stringify({ error: refusal, id: body.id, jsonrpc: '2.0' }), { status: 200 });
+      };
+      const rpc = new SolanaRpcClient({
+        fetchFn: fetchFn as never,
+        requestTimeoutMs: 5,
+        rpcUrls: ['https://slow.example', 'https://second.example'],
+      });
+
+      return { client: { ...base, sendRawTransaction: rpc.sendRawTransaction.bind(rpc) }, base, posts };
+    };
+
+    it('polls the signature when the next node says the transaction was already processed', async () => {
+      const { base, client, posts } = relayedThenRefused({
+        code: -32002,
+        data: { err: 'AlreadyProcessed', logs: [] },
+        message: 'Transaction simulation failed: This transaction has already been processed',
+      });
+      const store = memoryPendingStore();
+      const params = solParams();
+
+      await makeSolanaTransfer(params, client, sendOptions(store));
+
+      expect(posts.slice(0, 2).map(({ url }) => url)).toEqual(['https://slow.example', 'https://second.example']);
+      expect(base.getSignatureStatuses).toHaveBeenCalled();
+      expect(params.callback).toHaveBeenCalledWith({ status: true });
+      expect(store.records).toEqual([]);
+    });
+
+    it('keeps the record and polls when a lagging node refuses the transaction', async () => {
+      // Never confirmed while the user waits, and the blockhash is still valid.
+      const { client, posts } = relayedThenRefused(
+        { code: -32002, message: 'Transaction simulation failed: Blockhash not found' },
+        createClient({ blockHeights: [100], statuses: [null] })
+      );
+      const store = memoryPendingStore();
+
+      await expect(makeSolanaTransfer(solParams(), client, sendOptions(store, 5_000))).rejects.toThrow(
+        'solana_broadcast_ambiguous'
+      );
+      // The failover post skipped preflight; the transfer was never called failed.
+      expect(posts[1]).toMatchObject({ skipPreflight: true, url: 'https://second.example' });
+      expect(store.records).toHaveLength(1);
+      await expect(makeSolanaTransfer(solParams(), createClient({ blockHeights: [100], statuses: [null] }), sendOptions(store))).rejects.toThrow(
+        'solana_previous_send_pending'
+      );
+    });
   });
 
   it('honours a remote veto before touching keys', async () => {

@@ -5,6 +5,7 @@ import {
   type SolanaKeyringAccount,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { base58Decode } from '@polkadot/util-crypto';
+import { SolanaBroadcastError } from '@extension-base/services/solana-rpc-service';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type { SolanaRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type { SolanaSignAndSendTransactionOptions } from '@extension-base/page/types';
@@ -129,6 +130,32 @@ describe('Solana signing approval helpers', () => {
       signedTransactionBase64,
     });
     expect(response.signatureBase58).toMatch(/^[1-9A-HJ-NP-Za-km-z]{64,128}$/);
+  });
+
+  it('hands the dApp the signature when the broadcast may already have reached the network', async () => {
+    const response = await resolveSolanaSignAndSendTransaction({
+      accounts: [account],
+      broadcastTransaction: vi.fn<BroadcastTransaction>(async () => {
+        throw new SolanaBroadcastError('solana_broadcast_ambiguous', true);
+      }),
+      exportMnemonic: vi.fn(() => ({ seed: vector.mnemonic })),
+      request: signAndSendRequest(),
+    });
+
+    expect(response.signature).toBe(response.signatureBase58);
+  });
+
+  it('passes a definite refusal on to the dApp', async () => {
+    await expect(
+      resolveSolanaSignAndSendTransaction({
+        accounts: [account],
+        broadcastTransaction: vi.fn<BroadcastTransaction>(async () => {
+          throw new SolanaBroadcastError('solana_broadcast_rejected', false);
+        }),
+        exportMnemonic: vi.fn(() => ({ seed: vector.mnemonic })),
+        request: signAndSendRequest(),
+      })
+    ).rejects.toThrow('solana_broadcast_rejected');
   });
 
   it('rejects invalid Solana sign-and-send approval payloads before broadcasting', async () => {

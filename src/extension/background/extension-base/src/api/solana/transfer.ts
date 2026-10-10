@@ -2,8 +2,8 @@ import { ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha2';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import {
+  SolanaBroadcastError,
   SolanaRpcClient,
-  SolanaRpcError,
   type SolanaLatestBlockhash,
   type SolanaParsedAccount,
   type SolanaRpcNetwork,
@@ -310,14 +310,16 @@ async function makeSolanaTransfer(
     // relayed ours is unknown, so the record stays until the next send resolves it.
     if (broadcastSignature !== signature) throw new Error('solana_broadcast_signature_mismatch');
   } catch (error) {
-    if (error instanceof SolanaRpcError && error.message === 'solana_rpc_error') {
-      // The node ran preflight and refused the transaction: nothing was relayed.
+    if (error instanceof SolanaBroadcastError && !error.ambiguous) {
+      // Every node that answered refused the transaction before relaying it
+      // (preflight), and no earlier post may have reached one: nothing was sent.
       await pendingStore.remove([signature]);
       throw new Error('solana_simulation_failed', { cause: error });
     }
     if (error instanceof Error && error.message === 'solana_broadcast_signature_mismatch') throw error;
-    // Anything else (timeout, throttling, every node unreachable) is ambiguous:
-    // keep polling the signature and rebroadcasting the same bytes.
+    // Anything else (a timeout, throttling, every node unreachable, a refusal
+    // after a post that may have been relayed) is ambiguous: keep polling the
+    // signature and rebroadcasting the same bytes until it lands or expires.
   }
 
   const outcome = await waitForSolanaSignature({

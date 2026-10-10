@@ -40,8 +40,8 @@ before submission; do not reuse the `3.0.6` copy.
   affected account.
 - Universal Wallet v2 account derivation and migration, with legacy wallets
   retaining their original keys, normal functionality and export access.
-- Solana and Bitcoin accounts, balances, and history, with sending as decided
-  for `4.2.0` (remote kill switch is veto-only).
+- Solana and Bitcoin accounts, balances, history, and sending, on by default
+  (remote kill switch is veto-only; see `docs/send-kill-switch.md`).
 - Cross-chain transfers are paused with an in-app explanation and a
   same-network send alternative; IrohaConnect is off in release builds.
 - Reliability and fail-closed handling across network, signing, and transfer
@@ -113,9 +113,10 @@ requires identical ZIP hashes, audits the real store identity and compiled
 public configuration, performs the production Chrome smoke, rechecks the clean
 source commit, and writes a non-secret
 `dist/extension/chrome-release-provenance.json` report with status
-`untagged-candidate`. The production build forcibly disables test-only, smoke,
-Bitcoin-send, and Iroha-send flags and the artifact audit verifies those values
-in `extension-build-metadata.json`.
+`untagged-candidate`. The production build forcibly sets the reviewed release
+flags (Bitcoin and Solana send on; Iroha send, IrohaConnect, test-only and
+smoke off) and the artifact audit verifies those values in
+`extension-build-metadata.json`.
 
 The same metadata file records `sourceCommit`, `sourceDirty`, and
 `yarnLockSha256`. The release audit (`--release`, also run by
@@ -179,8 +180,8 @@ yarn env-cmd -f .env.chrome-release.local -- yarn prepare:chrome-release
 This command covers the immutable dependency/cache install and vendored Iroha
 SDK audit; branch-flow,
 public-artifact, TODO, Iroha candidate/readiness, dependency, crypto-shim, and
-stored Safari QA gates; typecheck, lint, unit, web-build, extension E2E, and
-Bitcoin blocked-send/evidence gates; release-tool adversarial tests; two
+stored Safari QA gates; typecheck, lint, unit, web-build, extension E2E,
+local-chain Bitcoin and Solana send E2E, and Bitcoin evidence gates; release-tool adversarial tests; two
 credentialed Chrome builds; byte-identical reproducibility; the release
 artifact audit; and the production popup smoke. The tagged rerun adds
 `--require-tag` as shown above.

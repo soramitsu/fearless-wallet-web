@@ -59,6 +59,7 @@
     "test:github-actions-audit": "node scripts/test-github-actions-audit.mjs",
     "test:smoke:firefox": "yarn test:firefox-smoke-policy && node scripts/firefox-extension-smoke.mjs",
     "test:smoke:bitcoin": "vitest run tests/smoke/bitcoin-testnet-broadcast.spec.ts",
+    "test:e2e:local-chains": "node scripts/test-local-chain-sends.mjs",
     "generate:bitcoin-broadcast-evidence-template": "bash scripts/generate-bitcoin-broadcast-evidence-template.sh",
     "audit:bitcoin-broadcast-evidence": "bash scripts/audit-bitcoin-broadcast-evidence.sh",
     "test:bitcoin-broadcast-evidence-audit": "bash scripts/test-bitcoin-broadcast-evidence-audit.sh",

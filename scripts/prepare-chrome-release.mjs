@@ -132,7 +132,7 @@ function runAutomatedReleaseGates(yarnPath) {
 
   const debtMarker = ['to', 'do'].join('');
 
-  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin']);
+  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin', 'test:e2e:local-chains']);
   for (const [script, ...arguments_] of [
     ['scripts/test-branch-flow-audit.sh'],
     ['scripts/audit-branch-flow.sh'],
@@ -157,6 +157,8 @@ function runAutomatedReleaseGates(yarnPath) {
     ['build:web'],
     ['test:e2e:extension'],
     ['test:smoke:bitcoin'],
+    // Bitcoin and Solana sends against bitcoind -regtest and solana-test-validator.
+    ['test:e2e:local-chains'],
     ['test:bitcoin-broadcast-evidence-template'],
     [
       'generate:bitcoin-broadcast-evidence-template',

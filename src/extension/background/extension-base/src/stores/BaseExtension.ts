@@ -41,27 +41,42 @@ export default abstract class BaseExtensionStore<T> {
     return this.prefix;
   }
 
-  public all(update: (key: string, value: T) => void): void {
+  public all(update: (key: string, value: T) => void): Promise<void> {
     const cb1 = ([key, value]: [string, T]) => update(key, value);
     const cb2 = (map: Record<string, T>) => Object.entries(map).forEach(cb1);
 
-    this.allMap(cb2);
+    return this.allMap(cb2);
   }
 
-  public allMap(update: (value: Record<string, T>) => void): void {
-    chrome.storage.local.get(null, (result: StoreValue) => {
-      lastError('all');
+  // Settles only after `update` has seen every record, so start-up can wait for the
+  // wallet to be in memory. A failed read rejects instead of reporting an empty store.
+  public allMap(update: (value: Record<string, T>) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get(null, (result: StoreValue) => {
+        const error = chrome.runtime.lastError;
 
-      const entries = Object.entries(result);
-      const map: Record<string, T> = {};
+        if (error) {
+          reject(new Error(error.message || 'Wallet storage read failed.'));
 
-      for (let i = 0; i < entries.length; i++) {
-        const [key, value] = entries[i];
+          return;
+        }
 
-        if (key.startsWith(this.prefix)) map[key.replace(this.prefix, '')] = value as T;
-      }
+        const entries = Object.entries(result);
+        const map: Record<string, T> = {};
 
-      update(map);
+        for (let i = 0; i < entries.length; i++) {
+          const [key, value] = entries[i];
+
+          if (key.startsWith(this.prefix)) map[key.replace(this.prefix, '')] = value as T;
+        }
+
+        try {
+          update(map);
+          resolve();
+        } catch (updateError) {
+          reject(updateError);
+        }
+      });
     });
   }
 
@@ -69,7 +84,13 @@ export default abstract class BaseExtensionStore<T> {
     const key = `${this.prefix}${_key}`;
 
     chrome.storage.local.get([key], (result: StoreValue) => {
-      lastError('get');
+      // A failed read is not an absent record: the password store must never report
+      // "no master password" because storage could not be read.
+      if (chrome.runtime.lastError) {
+        lastError('get');
+
+        return;
+      }
 
       update(result[key] as T);
     });

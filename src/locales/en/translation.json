@@ -1235,6 +1235,7 @@
     "liquidityTokens": "LP tokens",
     "startingWallet": "Starting your wallet…",
     "startupUnavailable": "Your wallet could not start. Check your connection and try again.",
+    "storageUnavailable": "Your wallet data could not be read. Nothing was changed. Please try again.",
     "settingUpWallet": "Setting up your wallet…",
     "accountSetupFailed": "Your wallet could not be set up. Your input is still here. Try again or go back to review it."
   }

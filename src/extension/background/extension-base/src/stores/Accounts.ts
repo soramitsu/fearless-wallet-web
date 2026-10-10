@@ -12,6 +12,9 @@ export default class AccountsStore
   extends (IS_EXTENSION ? BaseExtensionStore : BaseWebStore)<FWKeyringJson>
   implements KeyringStore
 {
+  /** Settles once the keyring's latest full read has loaded every stored account, and
+   * rejects if storage could not be read. `KeyringService.loadAll()` returns it so the
+   * background answers no request before the accounts are in memory. */
   public allLoaded: Promise<void> = Promise.resolve();
 
   constructor() {
@@ -47,7 +50,9 @@ export default class AccountsStore
     super.remove(key, update);
   }
 
-  public all(update: (key: string, value: FWKeyringJson) => void): void {
-    this.allLoaded = Promise.resolve(super.all(update));
+  public all(update: (key: string, value: FWKeyringJson) => void): Promise<void> {
+    this.allLoaded = super.all(update);
+
+    return this.allLoaded;
   }
 }

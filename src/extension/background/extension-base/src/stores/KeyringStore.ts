@@ -14,6 +14,11 @@ export default class KeyringStore implements PasswordStore {
     this.store.get('keyring', update);
   }
 
+  // Unlike get(), a failed read rejects, so start-up can tell it from an absent record.
+  public getAndWait(): Promise<KeyringPasswordJson | undefined> {
+    return this.store.getAndWait('keyring');
+  }
+
   public remove(update?: () => void): void {
     this.store.remove('keyring', update);
   }

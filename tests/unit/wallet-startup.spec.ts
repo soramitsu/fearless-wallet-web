@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { prepareWebWorker, startWallet } from '@/bootstrap/startup';
+import { WALLET_STORAGE_UNAVAILABLE } from '@/extension/entry/backgroundBootstrap';
+import en from '@/locales/en/translation.json';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -27,6 +29,15 @@ describe('wallet startup recovery', () => {
     await startWallet(() => Promise.reject(new Error('module unavailable')));
     const surface = document.querySelector('[role="alert"]');
     expect(surface?.textContent).toContain('could not start');
+    const retry = surface?.querySelector('button');
+    expect(retry?.hidden).toBe(false);
+    expect(document.activeElement).toBe(retry);
+  });
+  it('says the wallet data could not be read, and offers a retry, when the background reports it', async () => {
+    await startWallet(() => Promise.reject(new Error(WALLET_STORAGE_UNAVAILABLE)));
+    const surface = document.querySelector('[role="alert"]');
+    expect(surface?.textContent).toContain(en.ux.storageUnavailable);
+    expect(surface?.textContent).not.toContain(en.ux.startupUnavailable);
     const retry = surface?.querySelector('button');
     expect(retry?.hidden).toBe(false);
     expect(document.activeElement).toBe(retry);

@@ -1,5 +1,6 @@
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { initStorage } from '@extension-base/stores/Storage';
+import { tonStore } from '@extension-base/stores/TonStore';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import MigrationService from '@extension-base/services/migration-service';
@@ -16,8 +17,10 @@ const initialize = retryableInitialization(async () => {
   await initStorage();
   await KeyringStoreWeb.initialize();
   await state.keyringService.loadAll();
+  // A failed read is read again here; a later request retries the whole initialization.
+  await tonStore.loaded.catch(() => state.keyringService.tonKeyring.loadAll());
   state.eventService.emit('crypto.ready', true);
-  await state.keyringService.currentAccountReady;
+  await state.keyringService.currentAccountReady.catch(() => state.keyringService.restoreCurrentAccount());
   await keyring.restoreKeyringPassword();
   await MigrationService.start();
 });

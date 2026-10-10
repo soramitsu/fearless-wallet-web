@@ -22,11 +22,15 @@ export default abstract class SubscribableStore<T> extends (IS_EXTENSION ? BaseE
     super.remove(_key, update);
   }
 
-  public all(update: (key: string, value: T) => void): void {
-    super.all(update);
+  public all(update: (key: string, value: T) => void): Promise<void> {
+    return super.all(update);
   }
 
   public get(_key: string, update: (value: T) => void): void {
     super.get(_key, update);
+  }
+
+  public getAndWait(_key: string): Promise<T | undefined> {
+    return super.getAndWait(_key);
   }
 }

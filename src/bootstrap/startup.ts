@@ -1,4 +1,5 @@
 import { installWebPasswordStorage } from './webPasswordStore';
+import { WALLET_STORAGE_UNAVAILABLE } from '@/extension/entry/backgroundBootstrap';
 import en from '@/locales/en/translation.json';
 import ru from '@/locales/ru/translation.json';
 
@@ -70,7 +71,9 @@ export async function startWallet(
   } catch (error) {
     console.error('Wallet initialization failed', error);
     expired = true;
-    message.textContent = copy.startupUnavailable;
+    // The background could not read the wallet's stored records and changed nothing.
+    const storageUnavailable = error instanceof Error && error.message === WALLET_STORAGE_UNAVAILABLE;
+    message.textContent = storageUnavailable ? copy.storageUnavailable : copy.startupUnavailable;
     surface.setAttribute('role', 'alert');
     retry.hidden = false;
     retry.focus();

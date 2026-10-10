@@ -11,8 +11,18 @@ export interface TonStoreAccount {
 }
 
 class TonStore extends SubscribableStore<TonStoreAccount> {
+  /** The latest full read of the TON accounts. Background start-up waits for it, so a
+   * TON-only wallet is never reported as having no accounts. */
+  public loaded: Promise<void> = Promise.resolve();
+
   constructor() {
     super(EXTENSION_PREFIX ? `${EXTENSION_PREFIX}:ton` : null);
+  }
+
+  public all(update: (key: string, value: TonStoreAccount) => void): Promise<void> {
+    this.loaded = super.all(update);
+
+    return this.loaded;
   }
 }
 

@@ -6,8 +6,6 @@ import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
 
-export const FETCH_INTERVAL = 2901000;
-
 export class TonBalanceService {
   constructor(private readonly state: State) {}
 

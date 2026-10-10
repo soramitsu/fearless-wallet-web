@@ -119,21 +119,6 @@ export class TonKeyringService {
     tonStore.remove(address);
   }
 
-  decode(value: string) {
-    const password = this.keyringService.getPassword();
-
-    const bytes = CryptoJS.AES.decrypt(value, password);
-    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-
-    return decryptedText;
-  }
-
-  encode(value: string) {
-    const cipherText = CryptoJS.AES.encrypt(value, '').toString();
-
-    return cipherText;
-  }
-
   createContractV4(publicKey: Uint8Array) {
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: Buffer.from(publicKey) });
 

@@ -7,6 +7,7 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import { createAssetKey } from '@/portfolio/assetIdentity';
 import { createReviewedCrossChainRouteId } from '@/cross-chain/reviewedRoutes';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
 const POLKADOT = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const POLKADOT_ASSET_HUB = '68d56f15f85d3136970ec16946040bc1752654e906147f7e43e9d539d7c3de2f';
@@ -158,6 +159,30 @@ const dotGroup = (transferable = '10') =>
     tokenName: 'Polkadot',
   }) as unknown as TokenGroup;
 
+const SOLANA = 'solana-mainnet-fixture';
+const SOL = 'sol-fixture';
+
+const solana = {
+  active: true,
+  assets: [registryAsset(SOL, 'SOL', 9)],
+  chainId: SOLANA,
+  ecosystem: 'solana',
+  icon: 'solana',
+  name: 'Solana',
+  options: [],
+} as unknown as NetworkJson;
+
+const solGroup = () =>
+  ({
+    balances: [{ id: SOL, name: 'Solana', state: APIItemState.READY, symbol: 'SOL', total: '2', transferable: '2' }],
+    groupId: 'sol',
+    icon: 'sol',
+    mainNetwork: 'Solana',
+    providers: [],
+    symbol: 'SOL',
+    tokenName: 'Solana',
+  }) as unknown as TokenGroup;
+
 const mountRoot = (props: Record<string, string> = {}) => mount(CrossChainRoot, { props, global: { stubs } });
 
 describe('cross-chain entry without dead ends', () => {
@@ -276,6 +301,43 @@ describe('cross-chain entry without dead ends', () => {
       await flushPromises();
 
       expect(wrapper.find('[data-testid="crossChainPaused"]').exists()).toBe(false);
+    });
+
+    describe('on a network whose send has a remote kill switch', () => {
+      const previous = process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS;
+
+      beforeEach(() => {
+        process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = 'true';
+        mocks.accountsStore.balances = [dotGroup(), solGroup()];
+        mocks.networksStore.allNetworks = [polkadot, assetHub, solana];
+      });
+      afterEach(() => {
+        process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = previous;
+      });
+
+      const selectSol = async () => {
+        const wrapper = mountRoot({ requestedOriginChainId: SOLANA });
+        await flushPromises();
+        const asset = wrapper.findAll('select')[1];
+        await asset.setValue((asset.findAll('option')[1].element as HTMLOptionElement).value);
+
+        return wrapper;
+      };
+
+      it('offers Send on that network while its send is not vetoed', async () => {
+        const wrapper = await selectSol();
+
+        expect(wrapper.find('[data-testid="crossChainPaused"]').exists()).toBe(true);
+        expect(wrapper.get('[data-testid="crossChainSendOnNetwork"]').text()).toBe('Send on Solana');
+      });
+
+      it('does not offer a send that the remote kill switch vetoed', async () => {
+        useSendKillSwitchStore().killSwitch.vetoes.solanaSend = true;
+        const wrapper = await selectSol();
+
+        expect(wrapper.find('[data-testid="crossChainPaused"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="crossChainSendOnNetwork"]').exists()).toBe(false);
+      });
     });
 
     it('claims no pause while capabilities are still loading', () => {

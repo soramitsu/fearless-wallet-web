@@ -43,6 +43,8 @@ function legacyRegistryGroups(networks: NetworkJson[]): Legacy305Group[] {
   return registryGroupsCache.groups;
 }
 
+let walletListGroups: { networks: NetworkJson[]; groups: Legacy305Group[] } | undefined;
+
 /**
  * One wallet's hidden asset keys without its balances: explicit hides plus the 3.0.5 registry-group hides.
  * 3.0.5 jetton hides need the wallet's jetton balances and are left out; jettons are unverified and unpriced in
@@ -53,9 +55,12 @@ export function hiddenKeysForWallet(
   explicit: Record<string, AssetPreference>,
   networks: NetworkJson[]
 ): string[] {
+  // The wallet list asks every few seconds with the same network list; only a new list is fingerprinted again.
+  if (walletListGroups?.networks !== networks) walletListGroups = { networks, groups: legacyRegistryGroups(networks) };
+
   const derived = resolveLegacy305Hidden({
     legacyHiddenIds: accountController.getLegacy305Preferences(address).hiddenIds,
-    registryGroups: legacyRegistryGroups(networks),
+    registryGroups: walletListGroups.groups,
   });
 
   return Object.entries(mergeAssetPreferences(explicit, derived))

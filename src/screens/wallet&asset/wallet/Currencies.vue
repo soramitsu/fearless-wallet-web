@@ -36,7 +36,7 @@
           :key="section.key"
           :section="section"
           :manage="showAssetsManagementForm"
-          :forceExpanded="searching"
+          :forceExpanded="searching || hiddenOnly"
         />
 
         <PortfolioZeroNetworks
@@ -50,7 +50,7 @@
             :key="section.key"
             :section="section"
             :manage="showAssetsManagementForm"
-            :forceExpanded="searching"
+            :forceExpanded="searching || hiddenOnly"
           />
         </PortfolioZeroNetworks>
       </div>
@@ -146,10 +146,9 @@ export default defineComponent({
       });
     },
     visibleSections(): PortfolioSection[] {
-      const sections =
-        this.showAssetsManagementForm && this.manageHiddenOnly
-          ? filterSectionAssets(this.portfolioSections, (asset) => asset.hidden)
-          : this.portfolioSections;
+      const sections = this.hiddenOnly
+        ? filterSectionAssets(this.portfolioSections, (asset) => asset.hidden)
+        : this.portfolioSections;
 
       return filterSectionsBySearch(sections, this.filterValue);
     },
@@ -166,8 +165,12 @@ export default defineComponent({
         ? this.$t('portfolioPage.popularNoBalance')
         : this.$t('portfolioPage.zeroNetworks', count, { count });
     },
+    // A search or the Hidden filter opens the block, so a match or a hidden asset with no balance is never tucked away.
     zeroNetworksExpanded(): boolean {
-      return this.searching || this.viewSettings.zeroNetworksExpanded;
+      return this.searching || this.hiddenOnly || this.viewSettings.zeroNetworksExpanded;
+    },
+    hiddenOnly(): boolean {
+      return this.showAssetsManagementForm && this.manageHiddenOnly;
     },
     // Nothing to list, or a wallet that holds nothing yet (its popular networks stay below, collapsed).
     showEmptyState(): boolean {
@@ -186,13 +189,13 @@ export default defineComponent({
     },
     emptyTitle() {
       if (!navigator.onLine) return this.$t('portfolioPage.offline');
-      if (this.showAssetsManagementForm && this.manageHiddenOnly) return this.$t('portfolioPage.noHiddenAssets');
+      if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssets');
       if (this.searching) return this.$t('portfolioPage.noMatchingAssets');
       return this.$t('portfolioPage.noAssetsDetected');
     },
     emptyDescription() {
       if (!navigator.onLine) return this.$t('portfolioPage.offlineDescription');
-      if (this.showAssetsManagementForm && this.manageHiddenOnly) return this.$t('portfolioPage.noHiddenAssetsDescription');
+      if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssetsDescription');
       if (this.searching) return this.$t('portfolioPage.searchDescription');
       return this.$t('portfolioPage.scanDescription');
     },

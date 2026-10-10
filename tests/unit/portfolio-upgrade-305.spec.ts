@@ -304,9 +304,13 @@ describe('the hidden-with-funds notice', () => {
     expect(reopened.emitted('toggleAssetsManagementForm')).toEqual([[true]]);
     expect(reopened.emitted('update:manageHiddenOnly')).toEqual([[true]]);
 
-    // Review: Manage lists only hidden assets; showing one writes one explicit preference and nothing else.
+    // Review: Manage lists only hidden assets, zero-balance ones too even with the zero block closed;
+    // showing one writes one explicit preference and nothing else.
+    accountsStore.updatePortfolioView({ zeroNetworksExpanded: false });
     await reopened.setProps({ showAssetsManagementForm: true, manageHiddenOnly: true });
-    expect(rows(reopened)).toEqual(expect.arrayContaining(['Kusama:KSM:hidden', 'Polkadot AssetHub:USDT:hidden']));
+    expect(rows(reopened)).toEqual(
+      expect.arrayContaining(['Kusama:KSM:hidden', 'Polkadot AssetHub:USDT:hidden', 'Kusama AssetHub:KSM:hidden'])
+    );
     expect(rows(reopened).every((row) => row.endsWith(':hidden'))).toBe(true);
     const kusama = reopened.findAll('.network-section').find((section) => section.attributes('data-network') === 'Kusama')!;
     await kusama.get('.switcher-stub').trigger('click');

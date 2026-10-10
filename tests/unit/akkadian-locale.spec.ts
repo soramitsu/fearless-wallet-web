@@ -36,6 +36,11 @@ const cuneiformSigns = (value: string): string[] => value.match(/[\u{12000}-\u{1
 const containsCuneiform = (value: string): boolean => cuneiformSigns(value).length > 0;
 // Normalized transliteration marks; none may survive the conversion to cuneiform.
 const transliterationMarks = /[āēīūâêîûšṣṭḫʾ]/iu;
+// Every sign of the locale's fixed syllabary (see the sign list in src/locales/akk/README.md). Each phonetic
+// syllable has exactly one of these signs, so a sign outside the list means a word was spelled another way.
+const syllabarySigns = new Set(
+  '𒀀𒀉𒀊𒀜𒀝𒀠𒀪𒀭𒀸𒁀𒁁𒁉𒁍𒁕𒁲𒁺𒂊𒂖𒂗𒂵𒄀𒄑𒄖𒄠𒄩𒄭𒄴𒄷𒄿𒅀𒅁𒅅𒅆𒅈𒅋𒅎𒅔𒅕𒅖𒅗𒆠𒆥𒆪𒆷𒇷𒇻𒈠𒈨𒈪𒈬𒈾𒉆𒉈𒉌𒉡𒉺𒉿𒊌𒊍𒊏𒊑𒊒𒊓𒊭𒊺𒊻𒋗𒋛𒋡𒋢𒋫𒋼𒋾𒌅𒌌𒌍𒌑𒌒𒌓𒌔𒌝𒌦𒌨𒍑𒍝𒍣𒍪'
+);
 
 const readRepositoryFile = (path: string): string => readFileSync(resolve(__dirname, '../..', path), 'utf8');
 
@@ -243,6 +248,21 @@ describe('Old Akkadian cuneiform locale', () => {
     expect([...signs].filter((sign) => !covered(sign))).toEqual([]);
   });
 
+  it('spells every word with the signs of the fixed syllabary', () => {
+    const offSyllabary = [
+      ...Object.entries(akkadianMessages),
+      ...onboardingText.map((text, index) => [`onboarding.${index}`, text]),
+      ['languageOptions.akk', akkadianOption!.name],
+    ].flatMap(([key, value]) =>
+      cuneiformSigns(value)
+        .filter((sign) => !syllabarySigns.has(sign))
+        .map((sign) => `${key}: ${sign} U+${sign.codePointAt(0)!.toString(16).toUpperCase()}`)
+    );
+
+    expect(syllabarySigns.size).toBe(87);
+    expect(offSyllabary).toEqual([]);
+  });
+
   it('bundles the cuneiform font into every text fallback stack', () => {
     expect(readRepositoryFile('src/styles/index.ts')).toContain("import '@fontsource/noto-sans-cuneiform';");
     expect(readRepositoryFile('package.json')).toContain('"@fontsource/noto-sans-cuneiform"');
@@ -271,12 +291,19 @@ describe('Old Akkadian cuneiform locale', () => {
       ['network fee', '𒈪𒅅'],
       ['private key', '𒈾𒄠𒍝𒀝'],
       ['indexer', '𒌅𒌒𒊭'],
+      ['testnet', '𒆷𒈠𒁲𒅎'],
+      ['not confirmed yet', '𒀀𒁲𒉌 𒌌'],
     ] as const) {
       for (const [key, source] of Object.entries(englishMessages)) {
         if (source.toLocaleLowerCase('en-US').includes(sourceTerm)) {
           expect(akkadianMessages[key], `${key} (${sourceTerm})`).toContain(anchor);
         }
       }
+    }
+
+    // SOL, the Solana coin, is "silver of Solana", never the Latin ticker.
+    for (const [key, source] of Object.entries(englishMessages)) {
+      if (/\bSOL\b/.test(source)) expect(akkadianMessages[key], key).toContain('𒅗𒊍𒁍𒌝 𒊭 Solana');
     }
   });
 

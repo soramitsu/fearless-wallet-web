@@ -71,10 +71,11 @@ vi.mock('@subwallet/ui-keyring/observable/accounts', () => ({ accounts: { subjec
 vi.mock('@subwallet/ui-keyring/observable/addresses', () => ({ addresses: { subject: { value: {} } } }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 
+import { EventService } from '@extension-base/services/event-service';
+import { KeyringService } from '@extension-base/services/keyring-service';
+
 describe('KeyringService.loadAll after a failed account read', () => {
   it('reads the stored accounts again instead of initialising ui-keyring a second time', async () => {
-    const { EventService } = await import('@extension-base/services/event-service');
-    const { KeyringService } = await import('@extension-base/services/keyring-service');
     const service = new KeyringService(new EventService());
     const stored = { address: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', meta: { name: 'Stored' } };
 

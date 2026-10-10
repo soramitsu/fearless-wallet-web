@@ -88,7 +88,7 @@ describe('Bitcoin send service', () => {
     expect(tx.outs.map(({ value }) => value)).toEqual([50_000, result.change]);
     expect(client.getFeeEstimates).toHaveBeenCalledTimes(1);
     expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
-    expect(client.broadcastTransaction).toHaveBeenCalledWith(result.txHex);
+    expect(client.broadcastTransaction).toHaveBeenCalledWith(result.txHex, result.txid);
   });
 
   it('selects deterministic spendable UTXOs across discovered receive addresses', async () => {

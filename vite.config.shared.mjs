@@ -41,7 +41,9 @@ const ENV_KEYS = [
   'FL_WEB_SNOWTRACE_API_KEY',
   'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY',
   'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
+  'VUE_APP_ENABLE_IROHA_CONNECT',
   'VUE_APP_ENABLE_IROHA_TRANSFERS',
+  'VUE_APP_ENABLE_SOLANA_TRANSFERS',
   'VUE_APP_EXTENSION_SMOKE',
   'VUE_APP_TEST_ONLY',
   'VUE_APP_FL_WEB_X1_TESTNET_API_KEY',
@@ -136,9 +138,9 @@ export function makeDefine(mode, extraEnv = {}) {
 }
 
 export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
-  if (process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
+  if (process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true' && mode === 'production') {
     throw new Error(
-      'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
+      'iroha_connect_blind_signing_unreviewed: IrohaConnect must stay disabled in production builds until decoded-payload signing ships'
     );
   }
 

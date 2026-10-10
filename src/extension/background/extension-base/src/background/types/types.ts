@@ -35,6 +35,10 @@ import type { WarningValueName } from '@/consts/messages';
 import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
+import type { SendKillSwitchState } from '@/util/sendKillSwitch';
+import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
+import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
+import type { BitcoinRecipientType } from '@/util/bitcoin';
 import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
 
 type KeysWithDefinedValues<T> = {
@@ -347,6 +351,8 @@ export interface RequestCheckTransfer extends BaseRequestSign {
     txid: string;
     vout: number;
   }>;
+  /** Priority fee quoted on the Send screen; the send never pays more. */
+  solanaComputeUnitPriceMicroLamports?: number;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -365,10 +371,40 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   expectedExecutionFingerprint?: string;
 }
 
+export interface ResponseBitcoinTransferQuote {
+  /** Unconfirmed incoming BTC that becomes spendable once confirmed. */
+  awaitingConfirmation: string;
+  fee: string;
+  feeRateSatPerVbyte: number;
+  maxSendable: string;
+  /** An earlier send's broadcast outcome is still unknown; its coins are reused. */
+  pendingPreviousSend: boolean;
+  recipientType?: BitcoinRecipientType;
+  spendable: string;
+  unavailableReason?: string;
+  vsize?: number;
+}
+
+export interface ResponseSolanaTransferQuote {
+  /** One-time deposit that creates the recipient's token account, in SOL. */
+  accountCreationDeposit: string;
+  baseFee: string;
+  computeUnitLimit: number;
+  computeUnitPriceMicroLamports: number;
+  /** Largest amount of the selected asset this account can send. */
+  maxSendable: string;
+  priorityFee: string;
+  /** Sends straight into an existing token account the user pasted. */
+  recipientIsTokenAccount: boolean;
+  unavailableReason?: string;
+}
+
 export interface ResponseCheckTransfer {
   estimateFee?: string;
   destEstimateFee: '0';
   errors?: BasicTxError[];
+  bitcoin?: ResponseBitcoinTransferQuote;
+  solana?: ResponseSolanaTransferQuote;
 }
 
 export interface ResponseCheckCrossChain {
@@ -741,6 +777,9 @@ export type IState = {
   networkScanStates: Record<WalletAddress, Record<NetworkName, NetworkScanState>>;
   assetDiscoverySweep: AssetDiscoverySweepState;
   actionCapabilities: ActionCapabilityConfig;
+  sendKillSwitch: SendKillSwitchState;
+  bitcoinPendingSends: BitcoinPendingSend[];
+  solanaPendingSends: SolanaPendingSend[];
   soraDisclaimerAcceptance: SoraDisclaimerAcceptance;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;

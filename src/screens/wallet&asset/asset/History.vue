@@ -31,6 +31,17 @@
               @click="openHistoryDetails(historyElement)"
             />
           </template>
+
+          <a
+            v-if="solanaExplorerUrl && !showLoader"
+            class="history-explorer"
+            :href="solanaExplorerUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="solanaExplorerHistory"
+          >
+            {{ $t('assets.viewSolanaHistoryOnExplorer') }}
+          </a>
         </div>
       </Scroll>
     </div>
@@ -153,6 +164,20 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
     isEthereumNativeNetwork() {
       return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
     },
+    // Solana history comes from an optional indexer; the explorer always has
+    // the full record, so the list never ends in an empty dead end.
+    solanaExplorerUrl() {
+      if (!BaseApi.isSolanaNetwork(this.selectedNetwork)) return '';
+
+      const address = this.accountsStore.selectedWallet.solanaAddress;
+
+      if (!address) return '';
+
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+      const isDevnet = /devnet|testnet/iu.test(`${network?.name ?? ''} ${network?.chainId ?? ''}`);
+
+      return `https://solscan.io/account/${encodeURIComponent(address)}${isDevnet ? '?cluster=devnet' : ''}`;
+    },
   },
   watch: {
     "selectedNetwork": 'watchSelectedNetwork',
@@ -216,6 +241,14 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
     align-items: center;
     justify-content: center;
     margin-top: -26px;
+  }
+
+  .history-explorer {
+    display: block;
+    margin: 12px auto;
+    color: $pink-lavender-color;
+    font-size: 0.8rem;
+    text-align: center;
   }
 }
 </style>

@@ -47,6 +47,7 @@ import router from '@/router';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import { LocalStorage } from '@/controllers/localStorageController';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
 const featureStorage = new LocalStorage('feature_');
 const failClosedFeatures = (): Features => ({
@@ -312,9 +313,16 @@ export const actions: Actions = {
   async fetchFeatures() {
     const cached = featureStorage.get<Features>('action-capabilities').value;
     this.setFeatures(cached ?? failClosedFeatures());
+    // The Bitcoin and Solana send kill switch is veto-only and sticky.
+    const sendKillSwitch = useSendKillSwitchStore();
+
+    sendKillSwitch.restoreRemembered();
 
     try {
       const { data } = await axios.get<Features>(URLS.FEATURES);
+
+      sendKillSwitch.applyRemoteConfig(data);
+
       const features: Features = {
         ...failClosedFeatures(),
         ...data,

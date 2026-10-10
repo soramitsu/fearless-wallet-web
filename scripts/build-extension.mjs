@@ -25,8 +25,10 @@ const browser = process.env.EXTENSION_TYPE || 'chrome';
 const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
 export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+  VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 });

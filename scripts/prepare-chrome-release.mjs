@@ -21,8 +21,10 @@ const provenanceTemporaryPath = `${provenancePath}.tmp`;
 const EXPECTED_RELEASE_ENVIRONMENT = {
   IS_EXTENSION: 'true',
   NODE_ENV: 'production',
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+  VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 };
@@ -130,7 +132,7 @@ function runAutomatedReleaseGates(yarnPath) {
 
   const debtMarker = ['to', 'do'].join('');
 
-  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin']);
+  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin', 'test:e2e:local-chains']);
   for (const [script, ...arguments_] of [
     ['scripts/test-branch-flow-audit.sh'],
     ['scripts/audit-branch-flow.sh'],
@@ -155,6 +157,8 @@ function runAutomatedReleaseGates(yarnPath) {
     ['build:web'],
     ['test:e2e:extension'],
     ['test:smoke:bitcoin'],
+    // Bitcoin and Solana sends against bitcoind -regtest and solana-test-validator.
+    ['test:e2e:local-chains'],
     ['test:bitcoin-broadcast-evidence-template'],
     [
       'generate:bitcoin-broadcast-evidence-template',

@@ -122,8 +122,8 @@ import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { WalletEcosystem } from '@/interfaces';
-import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
 export default defineComponent({ name: 'CurrencyItem' ,
   props: {
@@ -137,6 +137,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
       countDisplayedNetworks: 5,
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
     };
   },
   computed: {
@@ -146,7 +147,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
     showSendButton() {
       const network = this.networksStore.getNetwork(this.mainNetwork);
 
-      return network?.ecosystem !== WalletEcosystem.Bitcoin || isBitcoinTransfersEnabled();
+      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
     },
     showPriceRow() {
       return this.priceJson.isExist;

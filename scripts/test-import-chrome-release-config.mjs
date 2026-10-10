@@ -57,7 +57,7 @@ try {
 
   const imported = await importChromeReleaseConfig({ crxPath, expectedSha256, outputPath });
   assert.equal(imported.extensionId, 'nhlnehondigmgckngjomcpcefcdplmgc');
-  assert.equal(imported.fieldCount, 32);
+  assert.equal(imported.fieldCount, 34);
   const output = await fs.readFile(outputPath, 'utf8');
   assert.match(output, /OAUTH_CLIENT_ID=fixture\.apps\.googleusercontent\.com/u);
   assert.match(output, /EXTENSION_PUBLIC_KEY=MIIB/u);

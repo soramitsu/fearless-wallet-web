@@ -6,10 +6,9 @@ import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
-  estimateBitcoinTransferFee,
-  getBitcoinNetworkKind,
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
+  quoteBitcoinTransfer,
 } from '@extension-base/api/bitcoin/transfer';
 import {
   estimateIrohaTransferFee,
@@ -18,9 +17,9 @@ import {
 } from '@extension-base/api/iroha/transfer';
 import { requireProductionIrohaTransferCodec } from '@extension-base/api/iroha/productionTransferCodec';
 import {
-  estimateSolanaTransferFee,
   isSolanaTransferNetwork,
   makeSolanaTransfer,
+  quoteSolanaTransfer,
 } from '@extension-base/api/solana/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
@@ -65,10 +64,15 @@ import {
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
+import {
+  requireEnabledIrohaConnect,
+  subscribeIrohaConnectState,
+} from '@extension-base/services/iroha-connect-service/releaseGate';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
@@ -712,6 +716,10 @@ export default class Extension extends FWExtensionBase {
           password: this.state.keyringService.getPassword(),
           walletEcosystem: walletEcosystem as WalletEcosystem,
         });
+      // A dApp's sign-and-send moves funds too, so the Solana send kill switch
+      // covers it; sign-only requests are unaffected.
+      if (request.method === 'signAndSendTransaction') await assertSendCapability(this.state, 'solanaSend');
+
       const response =
         request.method === 'signAndSendTransaction'
           ? await resolveSolanaSignAndSendTransaction({
@@ -1260,11 +1268,27 @@ export default class Extension extends FWExtensionBase {
 
     if (isBitcoinTransferNetwork(network)) {
       try {
-        fee = await estimateBitcoinTransferFee({ network: getBitcoinNetworkKind(network) });
+        const bitcoin = await quoteBitcoinTransfer({
+          amount: amount ?? '0',
+          bitcoinFeeRateSatPerVbyte: request.bitcoinFeeRateSatPerVbyte,
+          bitcoinFeeTargetBlocks: request.bitcoinFeeTargetBlocks,
+          bitcoinIncludeUnconfirmed: request.bitcoinIncludeUnconfirmed,
+          bitcoinMaxInputs: request.bitcoinMaxInputs,
+          from,
+          networkKey,
+          state: this.state,
+          to,
+        });
+
+        if (bitcoin.unavailableReason) {
+          errors.push({ message: bitcoin.unavailableReason, code: TransferErrorCode.TRANSFER_ERROR });
+        }
+
+        return { destEstimateFee: '0', estimateFee: bitcoin.fee, errors, bitcoin };
       } catch (e) {
         console.info(e);
         errors.push({
-          message: 'common.estimateFeeError',
+          message: (e as Error).message,
           code: TransferErrorCode.TRANSFER_ERROR,
         });
       }
@@ -1303,7 +1327,7 @@ export default class Extension extends FWExtensionBase {
 
     if (isSolanaTransferNetwork(network)) {
       try {
-        fee = await estimateSolanaTransferFee({
+        const { fee: quotedFee, ...solana } = await quoteSolanaTransfer({
           amount: amount ?? '0',
           assetId,
           from,
@@ -1311,6 +1335,12 @@ export default class Extension extends FWExtensionBase {
           state: this.state,
           to,
         });
+
+        if (solana.unavailableReason) {
+          errors.push({ message: solana.unavailableReason, code: TransferErrorCode.TRANSFER_ERROR });
+        }
+
+        return { destEstimateFee: '0', estimateFee: quotedFee, errors, solana };
       } catch (e) {
         console.info(e);
         errors.push({
@@ -1435,6 +1465,7 @@ export default class Extension extends FWExtensionBase {
         callback,
         from,
         networkKey,
+        solanaComputeUnitPriceMicroLamports: request.solanaComputeUnitPriceMicroLamports,
         state: this.state,
         to,
       });
@@ -2206,13 +2237,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   private irohaConnectSubscribe(id: string, port?: Port): IrohaConnectSnapshot {
-    const cb = this.state.subscriptionService.createSubscription<'pri(irohaConnect.subscribe)'>(id, port);
-    const subscription = this.state.irohaConnectService.stateSubject.subscribe(cb);
+    return subscribeIrohaConnectState(this.state, id, port);
+  }
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
-
-    return this.state.irohaConnectService.snapshot;
+  private get enabledIrohaConnectService() {
+    return requireEnabledIrohaConnect(this.state.irohaConnectService);
   }
 
   changeMasterPassword(request: RequestChangePassword): boolean {
@@ -2601,28 +2630,28 @@ export default class Extension extends FWExtensionBase {
 
       // IrohaConnect wallet relay
       case 'pri(irohaConnect.connect)':
-        return this.state.irohaConnectService.connect((request as IrohaConnectStartRequest).uri);
+        return this.enabledIrohaConnectService.connect((request as IrohaConnectStartRequest).uri);
 
       case 'pri(irohaConnect.subscribe)':
         return this.irohaConnectSubscribe(id, port);
 
       case 'pri(irohaConnect.session.approve)':
-        return this.state.irohaConnectService.approveSession((request as IrohaConnectAccountRequest).accountId);
+        return this.enabledIrohaConnectService.approveSession((request as IrohaConnectAccountRequest).accountId);
 
       case 'pri(irohaConnect.session.reject)':
-        return this.state.irohaConnectService.rejectSession();
+        return this.enabledIrohaConnectService.rejectSession();
 
       case 'pri(irohaConnect.request.approve)':
-        return this.state.irohaConnectService.approveRequest((request as IrohaConnectPendingRequest).requestId);
+        return this.enabledIrohaConnectService.approveRequest((request as IrohaConnectPendingRequest).requestId);
 
       case 'pri(irohaConnect.request.reject)':
-        return this.state.irohaConnectService.rejectRequest((request as IrohaConnectPendingRequest).requestId);
+        return this.enabledIrohaConnectService.rejectRequest((request as IrohaConnectPendingRequest).requestId);
 
       case 'pri(irohaConnect.disconnect)':
-        return this.state.irohaConnectService.disconnect();
+        return this.enabledIrohaConnectService.disconnect();
 
       case 'pri(irohaConnect.error.clear)':
-        return this.state.irohaConnectService.clearError();
+        return this.enabledIrohaConnectService.clearError();
 
       // OnBoarding
       case 'pri(onboarding.getStories)':

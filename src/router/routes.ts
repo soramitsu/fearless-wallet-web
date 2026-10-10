@@ -1,6 +1,7 @@
 import { type RouteRecordRaw } from 'vue-router';
 import { ADD_WALLET_PATH, PASSWORD_SETUP_PATH } from './accountFlowPaths';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
+import { createIrohaConnectRouteGuard } from './irohaConnectGate';
 import type { NetworkName } from '@/interfaces';
 import { keyringIsLocked } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -570,6 +571,7 @@ const routes: Array<RouteRecordRaw> = [
         name: Components.IrohaConnect,
         component: IrohaConnect,
         meta: { title: 'settings', primaryNavigation: 'settings' },
+        beforeEnter: createIrohaConnectRouteGuard(Components.Settings),
       },
       {
         path: 'settings/wallet-connect',

@@ -24,6 +24,7 @@ import {
   canScanSubstrateBackedDiscoveryNetwork,
   resolveAssetDiscoveryEvmAddress,
   ActionCapabilityService,
+  SendKillSwitchService,
   SoraDisclaimerService,
   IrohaConnectService,
 } from '@extension-base/services';
@@ -119,6 +120,10 @@ export default class State {
   actionCapabilityService = new ActionCapabilityService({
     read: async () => (await storage.get(['actionCapabilities'])).actionCapabilities,
     write: async (actionCapabilities) => storage.set({ actionCapabilities }),
+  });
+  sendKillSwitchService = new SendKillSwitchService({
+    read: async () => (await storage.get(['sendKillSwitch'])).sendKillSwitch,
+    write: async (sendKillSwitch) => storage.set({ sendKillSwitch }),
   });
   soraDisclaimerService = new SoraDisclaimerService({
     read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
@@ -419,6 +424,7 @@ export default class State {
     await Promise.all([
       this.networkService.initNetworkMap(),
       this.actionCapabilityService.init(),
+      this.sendKillSwitchService.init(),
       this.soraDisclaimerService.init(),
     ]);
 

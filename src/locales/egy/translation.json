@@ -226,7 +226,8 @@
     "language": "𓂋 𓈖 𓆎𓅓𓏏",
     "languageDescription": "𓉐 𓈖 𓂓𓏏 𓁹 𓂋 𓈖 𓆎𓅓𓏏",
     "aboutFearless": "𓂋𓐍 Fearless",
-    "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪"
+    "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪",
+    "irohaConnectUnavailable": "𓈖𓈖 IrohaConnect 𓅓 𓋴𓈙 𓊪𓈖 · 𓈖 𓐍𓏏𓅓𓏏𓅱 𓐍𓏏 ·"
   },
   "menu": {
     "wallet": "𓉒",
@@ -373,7 +374,33 @@
       "assets": "𓂋𓂧𓇋 SORA 𓇋𓐍𓏏 𓎛𓈖𓂝 XOR 𓂋 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥",
       "disclaimer": "𓈙𓂋𓇌 𓎛𓈖𓂝 𓈙𓋴𓊪 𓋴𓂧𓄿 𓈖 Polkaswap",
       "disabled": "Polkaswap 𓇋𓂋𓏏𓏥 𓐍𓏏𓅓 𓅓 𓉔𓂋𓅱 𓊪𓈖"
-    }
+    },
+    "bitcoinSupportedAddresses": "𓂋𓐍𓏏𓅱 𓉔𓄿𓃀 Bitcoin 𓂋 𓊨𓏥 𓈖 𓂋𓈖 𓈖𓏏𓅱 𓎛𓄿𓏏𓋴𓈖 𓅓 {prefixes} ·",
+    "bitcoinFeeRate": "𓎛𓋴𓃀 𓈖 𓇋𓋴𓅱",
+    "bitcoinFeeRateValue": "{rate} 𓊪𓋴𓈙𓏥 𓈖 𓎛𓆓 𓈖𓆓𓋴𓅱 𓈖 𓈖𓆓𓋴𓅱 𓂋 𓎛𓋴𓃀 𓈖 𓋴𓈙",
+    "bitcoinAwaitingConfirmation": "{amount} 𓁷 𓋴𓄿 𓋴𓅓𓈖 𓈖 𓄡𓈖𓅓𓏥 · 𓂋𓐍𓏏𓅱 𓉔𓄿𓃀𓆑 𓅓 𓐍𓏏 𓋴𓅓𓈖𓆑 ·",
+    "bitcoinPreviousSendReused": "𓈖 𓋴𓅓𓈖𓏏𓅱 𓋴𓍿𓄿 𓈖 𓐍𓂋 𓎛𓄿𓏏 · 𓁹𓏏𓅱 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓊪𓋴𓈙𓏥𓆑 𓈖 𓎛𓆓 𓅓 𓅱𓎛𓅓 · 𓂋𓐍 𓋴𓍿𓄿 𓅱𓂝 𓅓 𓋴𓈖𓅱𓇋 𓋴𓊪𓂋 𓅱𓂝𓆑 ·",
+    "bitcoinAmountBelowDust": "𓈖𓆓𓋴 𓅱𓂋𓏏 𓂝𓈙𓄿 𓊪𓈖 𓂋 𓋴𓍿𓄿𓆑 𓇋𓈖 𓄡𓈖𓅓𓏥 𓈖 Bitcoin · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓂝𓄿 𓂋𓆑 ·",
+    "bitcoinInsufficientSpendable": "𓈖𓈖 𓅓𓎛 BTC 𓋴𓅓𓈖𓅱 𓂋 𓂝𓈙𓄿 𓊪𓈖 𓎛𓈖𓂝 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 ·",
+    "bitcoinPreviousSendPending": "𓋴𓍿𓄿𓎡 𓈖 Bitcoin 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓁷 𓇋𓊪 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏𓏥 𓈖𓆓𓋴𓏏 ·",
+    "bitcoinTooManyInputs": "𓅓𓂋 𓂝𓈙𓄿 𓊪𓈖 𓊪𓋴𓈙𓏥 𓈖 𓎛𓆓 𓈖𓆓𓋴𓅱 𓂝𓈙𓄿𓅱 𓅱𓂋𓏏 𓈖 𓁹𓏏 𓈖 𓋴𓍿𓄿 𓅱𓂝𓏏 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓈖𓆓𓋴 𓂋𓆑 ·",
+    "bitcoinBroadcastUnconfirmed": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓈖𓏏𓏏 𓈙𓋴𓊪𓈖𓆑 𓋴𓍿𓄿 𓊪𓈖 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓇋𓂋 𓉔𓄿𓃀𓎡 𓅓 𓅱𓎛𓅓 · 𓉒 𓂋 𓁹𓏏 𓅓 𓊪𓋴𓈙𓏥 𓈖 𓎛𓆓 𓇋𓊪𓅱 𓅓 𓅱𓎛𓅓 · 𓂋𓐍 𓋴𓍿𓄿 𓅱𓂝 𓋴𓊪𓂋 𓅱𓂝𓆑 ·",
+    "bitcoinBroadcastRejected": "𓐍𓋴𓆑𓈖 𓄡𓈖𓅓𓏥 𓈖 Bitcoin 𓋴𓍿𓄿 𓊪𓈖 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏 ·",
+    "solanaAccountCreation": "𓎼𓂋𓎼 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈙𓋴𓊪",
+    "solanaAccountCreationHint": "𓅓 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥: 𓎛𓆓 𓅱𓄿𓎛𓅱 𓋴𓊪 𓅱𓂝 𓂋 𓅱𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈙𓋴𓊪 𓈖 {asset} ·",
+    "solanaAmountBelowRent": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈙𓋴𓊪 𓅓𓄿𓅱 · 𓅓𓂋 𓄡𓈖𓅓𓏥 𓎛𓆓 𓅱𓄿𓎛𓅱 𓏏𓊪𓇋 𓂝𓄿 𓂋𓆑 𓂋 𓅱𓈖𓆑 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓂝𓄿 𓂋𓆑 ·",
+    "solanaSenderBelowRent": "𓇋𓂋 𓁹𓏏𓅱 𓈖𓈖 · Solana 𓎛𓆓 𓅓𓈖𓅱 𓈖𓆓𓋴 𓂋 𓆓𓂋 𓌨𓂋𓇋 𓈖 𓎛𓆓 𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓋴𓅓𓈖𓅱 𓇋𓈖 𓄡𓈖𓅓𓏥 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓈖𓆓𓋴 𓂋𓆑 𓅓 𓈖𓆓𓋴 · 𓂋 𓊪𓅱 𓋴𓏏𓊪 «𓏏𓅓» 𓂋 𓉔𓄿𓃀 𓐍𓏏 𓎟𓏏 ·",
+    "solanaInsufficientSolForFee": "Solana 𓎛𓆓 𓈖𓈖 𓅓𓎛 𓂋 𓂞𓏏 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓍿𓄿 𓊪𓈖 ·",
+    "solanaPreviousSendPending": "𓋴𓍿𓄿𓎡 𓈖 Solana 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓁷 𓋴𓅓𓈖 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏 ·",
+    "solanaRecipientOffCurve": "𓈖 𓂋𓐍 𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓐍𓏏𓅓 𓁹𓏏𓏥 𓈖 𓋴𓍿𓄿 · 𓂋𓐍 𓎛𓆓 𓉔𓄿𓃀𓅱 𓂋𓋴 𓎛𓏏𓅓 · 𓇋𓊪 𓊨 𓈖 𓂋𓈖 ·",
+    "solanaRecipientProgram": "𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓈖 𓋴𓈙 𓈖 𓅱𓆓𓅱𓏥 · 𓈖𓈖 𓈖 𓉒 · 𓂋𓐍 𓉔𓄿𓃀 𓂋𓋴 𓋴𓎛𓏏𓅓 𓎛𓆓𓎡 ·",
+    "solanaRecipientTokenAccount": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓐍𓏏 𓊪𓅱 · 𓈖𓈖 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 · 𓂞 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 𓈖 𓈙𓋴𓊪 𓅓 𓊨𓋴 ·",
+    "solanaRecipientTokenAccountFrozen": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓐍𓏏 𓈖 𓈙𓋴𓊪 𓈙𓈖𓂝𓅱 · 𓈖 𓂋𓐍𓆑 𓈙𓋴𓊪 𓐍𓏏 𓏏𓈖 ·",
+    "solanaSimulationFailed": "𓐍𓋴𓆑𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓇋𓊪 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓇋𓊪 𓂝𓈙𓄿 𓎛𓈖𓂝 𓊨 𓈖 𓂋𓈖 ·",
+    "solanaTransactionExpired": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓂝𓏏𓆑 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓂋𓐍𓎡 𓁹𓏏 𓋴𓊪 𓅱𓎛𓅓 ·",
+    "solanaTransactionFailed": "𓁹𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 · 𓈖 𓅓𓈖𓐍𓆑 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓂝𓈙𓄿 · 𓈙𓋴𓊪𓏏𓅱 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓅱𓂝𓆑 ·",
+    "solanaBroadcastUnconfirmed": "𓈖 𓋴𓅓𓈖𓏏𓅱 𓋴𓍿𓄿 𓊪𓈖 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓈖𓈖 𓈙𓄿𓂝 𓉒 𓋴𓍿𓄿 𓎡𓇋 𓈖 Solana 𓂋 𓊪𓎛𓅱𓇋 𓈖 𓊪𓈖 ·",
+    "viewSolanaHistoryOnExplorer": "𓅓𓄿𓄿 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓎟𓅱 𓈖 Solana 𓅓 𓅓𓄿𓄿 𓋴𓈙𓅱 𓈖 Solana"
   },
   "accounts": {
     "invalidAccountAddress": "𓈖 𓐙 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊨 𓈖 𓂋𓈖",

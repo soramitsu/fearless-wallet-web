@@ -128,6 +128,10 @@
                 />
               </div>
 
+              <p v-if="bitcoinRecipientHint" class="send-note" data-testid="bitcoinRecipientTypes">
+                {{ $t('assets.bitcoinSupportedAddresses', { prefixes: bitcoinRecipientHint }) }}
+              </p>
+
               <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
 
               <slot name="step1Warning"></slot>
@@ -156,11 +160,48 @@
                 :value="`${crossChainRuntimeMinimum} ${sendAssetName?.toUpperCase()}`"
               />
 
+              <template v-if="isTransfer">
+                <InfoRow
+                  v-if="bitcoinQuote"
+                  text="assets.bitcoinFeeRate"
+                  :value="$t('assets.bitcoinFeeRateValue', { rate: $n(bitcoinQuote.feeRateSatPerVbyte, 'decimalPrecise') })"
+                  data-testid="bitcoinFeeRate"
+                />
+                <InfoRow
+                  v-if="solanaAccountCreationDeposit"
+                  text="assets.solanaAccountCreation"
+                  :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+                  data-testid="solanaAccountCreation"
+                />
+                <p v-if="solanaAccountCreationDeposit" class="send-note">
+                  {{ $t('assets.solanaAccountCreationHint', { asset: sendAssetName?.toUpperCase() }) }}
+                </p>
+                <p v-if="bitcoinAwaitingConfirmation" class="send-note" data-testid="bitcoinAwaitingConfirmation">
+                  {{ $t('assets.bitcoinAwaitingConfirmation', { amount: bitcoinAwaitingConfirmation }) }}
+                </p>
+                <p v-if="bitcoinQuote?.pendingPreviousSend" class="send-note" data-testid="bitcoinPreviousSendReused">
+                  {{ $t('assets.bitcoinPreviousSendReused') }}
+                </p>
+              </template>
+
               <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot name="step2" v-else-if="step === 2"></slot>
+            <template v-else-if="step === 2">
+              <slot name="step2"></slot>
+
+              <InfoRow
+                v-if="isTransfer && bitcoinQuote"
+                text="assets.bitcoinFeeRate"
+                :value="$t('assets.bitcoinFeeRateValue', { rate: $n(bitcoinQuote.feeRateSatPerVbyte, 'decimalPrecise') })"
+              />
+              <InfoRow
+                v-if="isTransfer && solanaAccountCreationDeposit"
+                text="assets.solanaAccountCreation"
+                :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+              />
+            </template>
           </div>
 
           <FButton
@@ -229,7 +270,13 @@ import { Reasons } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
-import type { AccountJson, RequestCheckTransfer, RequestCheckCrossChain } from '@extension-base/background/types/types';
+import type {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  ResponseBitcoinTransferQuote,
+  ResponseSolanaTransferQuote,
+} from '@extension-base/background/types/types';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
@@ -261,6 +308,7 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 
@@ -298,6 +346,7 @@ export default defineComponent({
     return {
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
       timeoutSubscription: undefined as ReturnType<typeof setTimeout> | undefined,
       timeoutSetMax: undefined as ReturnType<typeof setTimeout> | undefined,
       showSelectedAssetPopup: false,
@@ -315,6 +364,8 @@ export default defineComponent({
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
       crossChainRuntimeMinimum: '',
+      bitcoinQuote: null as ResponseBitcoinTransferQuote | null,
+      solanaQuote: null as ResponseSolanaTransferQuote | null,
       isScamAddress: false,
       scamInfo: null,
       step: 1,
@@ -517,7 +568,7 @@ export default defineComponent({
     isBitcoinTransferDisabled() {
       if (!this.isTransfer) return false;
 
-      return !isNetworkTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork));
+      return !this.isTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork));
     },
     isValidRecipientAddress() {
       if (this.isSameAddress) return false;
@@ -558,7 +609,30 @@ export default defineComponent({
       return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
     },
     transferableAmount() {
+      // Bitcoin can send only confirmed coins worth more than their fee.
+      if (this.isTransfer && this.bitcoinQuote) return +this.bitcoinQuote.spendable;
+
       return +(this.currencyBalance?.transferable ?? 0);
+    },
+    isQuotedTransferNetwork() {
+      return this.isTransfer && (BaseApi.isBitcoinNetwork(this.syncedNetwork) || BaseApi.isSolanaNetwork(this.syncedNetwork));
+    },
+    bitcoinRecipientHint() {
+      if (!this.isTransfer || !BaseApi.isBitcoinNetwork(this.syncedNetwork)) return '';
+
+      return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.syncedNetwork)
+        ? 'm, n, 2, tb1q, tb1p'
+        : '1, 3, bc1q, bc1p';
+    },
+    bitcoinAwaitingConfirmation() {
+      const amount = this.bitcoinQuote?.awaitingConfirmation;
+
+      return amount && +amount > 0 ? `${this.$n(+amount, 'decimalPrecise')} BTC` : '';
+    },
+    solanaAccountCreationDeposit() {
+      const deposit = this.solanaQuote?.accountCreationDeposit;
+
+      return deposit && +deposit > 0 ? deposit : '';
     },
     options() {
       const filter = this.filterValue.trim().toLowerCase();
@@ -581,7 +655,7 @@ export default defineComponent({
         return prepBalances.some(({ name }) => {
           const { active, rank, favorite } = this.networksStore.getNetwork(name);
 
-          if (!active || !isNetworkTransferEnabled(this.networksStore.getNetwork(name))) return false;
+          if (!active || !this.isTransferEnabled(this.networksStore.getNetwork(name))) return false;
 
           if (this.isSelectedNetworkGroup) {
             if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
@@ -607,7 +681,7 @@ export default defineComponent({
 
       if (this.isTransfer) {
         const balances = this.accountsStore.balances.filter(({ balances: networkBalances }) =>
-          networkBalances.some(({ name }) => isNetworkTransferEnabled(this.networksStore.getNetwork(name)))
+          networkBalances.some(({ name }) => this.isTransferEnabled(this.networksStore.getNetwork(name)))
         );
 
         return getCurrencyOptions(balances);
@@ -632,7 +706,7 @@ export default defineComponent({
       return walletBalance.flatMap(({ name, icon }) => {
         const network = this.networksStore.getNetwork(name);
 
-        if (!network.active || !isNetworkTransferEnabled(network)) return [];
+        if (!network.active || !this.isTransferEnabled(network)) return [];
 
         return [
           {
@@ -718,6 +792,9 @@ export default defineComponent({
         return {
           ...baseRequest,
           networkKey: this.syncedNetwork,
+          // The send pays the fee rate and priority fee the user reviewed.
+          bitcoinFeeRateSatPerVbyte: this.bitcoinQuote?.feeRateSatPerVbyte,
+          solanaComputeUnitPriceMicroLamports: this.solanaQuote?.computeUnitPriceMicroLamports,
         } as RequestCheckTransfer;
 
       return {
@@ -811,6 +888,9 @@ export default defineComponent({
     this.calculateEstimates();
   },
   methods: {
+    isTransferEnabled(network: Parameters<typeof isNetworkTransferEnabled>[0]) {
+      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
+    },
     async checkScam() {
       if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
         const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
@@ -872,8 +952,12 @@ export default defineComponent({
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
-        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors } = await this.verifyTx();
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, bitcoin, solana } =
+          await this.verifyTx();
         const transferError = errors?.[0];
+
+        this.bitcoinQuote = bitcoin ?? null;
+        this.solanaQuote = solana ?? null;
 
         if (transferError) {
           this.estimateFeeError = true;
@@ -888,6 +972,8 @@ export default defineComponent({
       } catch {
         this.syncedFee = '';
         this.syncedDestNetFee = '';
+        this.bitcoinQuote = null;
+        this.solanaQuote = null;
         this.crossChainExecutionFingerprint = '';
         this.crossChainRuntimeMinimum = '';
         this.$emit('update:runtimeMinimum', '');
@@ -973,6 +1059,20 @@ export default defineComponent({
     async setMax() {
       if (!this.currency) return;
 
+      if (this.isQuotedTransferNetwork) {
+        // Bitcoin and Solana quote the exact maximum: spendable coins or
+        // balance minus the fee (and any account deposit) for this recipient.
+        const { bitcoin, solana } = await this.verifyTx('0');
+        const max = bitcoin?.maxSendable ?? solana?.maxSendable;
+
+        if (max === undefined) return;
+
+        this.syncedAmount = max;
+        this.syncedValue = getCostOfAssets(+max, this.assetPrice).toString();
+
+        return;
+      }
+
       const setMax = async () => {
         const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
         const transferable = this.calcTransferableSendMinusFee(estimateFee!);
@@ -994,10 +1094,14 @@ export default defineComponent({
       this.toggleLoading();
 
       // A cross-chain quote is intentionally bound to the confirmed recipient.
+      // Bitcoin and Solana quotes depend on the recipient too (output type,
+      // token account to create, recipient checks), so they use it once valid.
       const to =
-        !this.isTransfer && this.isValidRecipientAddress ? this.syncedRecipient : this.getFeeEstimateRecipient();
-
-      const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0' ? this.syncedAmount : '1');
+        (!this.isTransfer || this.isQuotedTransferNetwork) && this.isValidRecipientAddress
+          ? this.syncedRecipient
+          : this.getFeeEstimateRecipient();
+      const hasAmount = this.syncedAmount !== '' && this.syncedAmount !== '0';
+      const amount = _amount ?? (hasAmount ? this.syncedAmount : this.isQuotedTransferNetwork ? '0' : '1');
 
       if (this.isTransfer) {
         const ex = await checkTransfer({
@@ -1036,6 +1140,11 @@ export default defineComponent({
         return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.targetNetwork)
           ? VALID_BITCOIN_TESTNET_ADDRESS
           : VALID_BITCOIN_ADDRESS;
+      }
+      // Until a recipient is entered, a Solana quote prices a transfer to the
+      // wallet's own Solana address.
+      if (BaseApi.isSolanaNetwork(this.targetNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.targetNetwork);
       }
 
       return BaseApi.formatAddress(
@@ -1147,6 +1256,14 @@ export default defineComponent({
 </style>
 
 <style lang="scss" scoped>
+.send-note {
+  margin: 6px 0 0;
+  color: $gray-color;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .network-transfer-link {
   display: block;
   color: $pink-lavender-color;

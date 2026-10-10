@@ -113,20 +113,28 @@ bash ./scripts/test-iroha-production-send-readiness-audit.sh && bash ./scripts/a
   vector, and cross-language raw-hasher checks remain green. This evidence does
   not replace publication, pinning, bundle integration, live preflight, or
   funded broadcast gates.
+- Run `yarn test:e2e:local-chains` (needs `bitcoind` and
+  `solana-test-validator` on `PATH`, or `FEARLESS_BITCOIND` /
+  `FEARLESS_SOLANA_TEST_VALIDATOR`). It drives the real Bitcoin and Solana send
+  code against `bitcoind -regtest` (through the Esplora-compatible shim in
+  `scripts/local-chains/`) and `solana-test-validator`, and checks amounts,
+  change, fees, confirmations, maximum sends, recipient checks, account
+  deposits, and that an ambiguous or lost broadcast can never pay twice. These
+  local chains hold no value; nothing contacts mainnet or testnet.
 - Run `yarn test:smoke:bitcoin`,
   `yarn test:bitcoin-broadcast-evidence-template`,
   `yarn generate:bitcoin-broadcast-evidence-template -- --output
 build/reports/bitcoin-broadcast-evidence-template.json`,
   `yarn test:bitcoin-broadcast-evidence-audit`, and
-  `yarn audit:bitcoin-broadcast-evidence`. Before treating Bitcoin send as
-  release-ready, use the generated template to prepare the manifest, run a
-  funded live testnet broadcast with
-  `FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin`, record the txid,
-  outpoint, amount, source/recipient testnet addresses, canonical
-  `https://blockstream.info/testnet/api` indexer URL, operator, timestamp, and
-  commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,
-  set `status: ready` and `releaseEnabled: true`, then rerun
-  `yarn audit:bitcoin-broadcast-evidence --require-ready`.
+  `yarn audit:bitcoin-broadcast-evidence`.
+- Bitcoin and Solana sends ship enabled; the remote kill switch is veto-only
+  (see `docs/send-kill-switch.md`). Do not publish the emergency veto template
+  as part of the release.
+- Team task during the staged rollout: from a team-owned wallet holding a small
+  amount, make one mainnet canary send per platform with the release candidate
+  (BTC to a Taproot or SegWit address with change; SOL to a new account; one
+  SPL token to a recipient without a token account). Record the txids and
+  signatures in the release notes before widening the rollout.
 - Run or confirm green CI for branch-flow audit, public artifact audit,
   TODO-debt audit, production dependency audit, typecheck, lint, unit tests,
   extension build, Solana extension e2e smoke, and Bitcoin broadcast smoke.

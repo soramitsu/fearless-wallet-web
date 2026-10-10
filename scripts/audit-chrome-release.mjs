@@ -60,8 +60,10 @@ const EXPECTED_WEB_RESOURCE_MATCHES = ['https://*/*', 'http://*/*', 'http://loca
 const EXPECTED_EXTENSION_CSP =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
 const EXPECTED_RELEASE_FLAGS = {
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+  VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 };

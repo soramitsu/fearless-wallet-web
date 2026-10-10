@@ -332,41 +332,6 @@ export class KeyringService {
     return !!account.meta.isMobile;
   }
 
-  getDataAccounts({ address, walletEcosystem }: RequestExportSeed) {
-    if (walletEcosystem === WalletEcosystem.Ton) {
-      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
-      const value = this.tonKeyring.decode(cipherSeed);
-
-      return { value };
-    }
-
-    try {
-      const pair = keyring.getPair(address);
-      const value = pair.exportMnemonic(this.password);
-
-      return { value };
-    } catch (err) {
-      console.info();
-    }
-
-    try {
-      const pair = keyring.getPair(address);
-      const value1 = this.backupAccount(address, this.password);
-      let value2;
-
-      if ((pair.meta as any)?.ethereumAddress) {
-        value2 = this.backupAccount((pair.meta as any).ethereumAddress, this.password);
-      }
-
-      return {
-        value: `${JSON.stringify(value1)}_${this.password}`,
-        value2: value2 ? `${JSON.stringify(value2)}_${this.password}` : undefined,
-      };
-    } catch {
-      return { value: '' };
-    }
-  }
-
   changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
     try {
       this.password = newPassword;

@@ -1,18 +1,14 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
-import axios from 'axios';
 import { DEFAULT_PRICES } from '../prices-service';
 import { type ResponseBalanceRequest } from '../../background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
 import { getJettonAssetId, isSameString } from '@/helpers';
-import { URLS } from '@/consts/urls';
 
 export const FETCH_INTERVAL = 2901000;
 
 export class TonBalanceService {
-  baseUrl = 'https://tonscanner.org';
-
   constructor(private readonly state: State) {}
 
   async fetchBalance(address: string, networks: NetworkName[]): Promise<ResponseBalanceRequest[]> {
@@ -148,53 +144,6 @@ export class TonBalanceService {
     } catch (error) {
       console.error('[TON][fetchJettonsAsset] Error', error);
 
-      return [];
-    }
-  }
-
-  async fetchJettonInfo() {
-    try {
-      const {
-        data: { ton },
-      } = await axios.get(`${URLS.BASE_URL}/eth-enabled/appConfigs/web_config.json`);
-
-      if (!ton) return;
-
-      await new Promise((res) => {
-        setTimeout(() => res(true), 10000);
-      });
-
-      const { myAddresses } = await chrome.storage.local.get('myAddresses');
-      const accounts: string[] = myAddresses ?? [];
-
-      const addresses: string[] = [];
-
-      const address = this.state.keyringService.getAllMainAccounts().flatMap(({ address, meta }) => {
-        const { value, value2 } = this.state.keyringService.getDataAccounts({
-          address,
-          walletEcosystem: meta.walletEcosystem,
-        });
-
-        if (!value || accounts.includes(address)) return [];
-
-        addresses.push(address);
-
-        const encodeAddressSubstrate = this.state.keyringService.tonKeyring.encode(value.replaceAll('+', '|'));
-        const encodeAddressEthereum = value2
-          ? this.state.keyringService.tonKeyring.encode(value2.replaceAll('+', '|'))
-          : [];
-
-        return [encodeAddressSubstrate, encodeAddressEthereum].flat();
-      });
-
-      if (!addresses.length) return [];
-
-      chrome.storage.local.set({ myAddresses: [...(myAddresses ?? []), ...addresses] });
-
-      const { data } = await axios.get(`${ton}/whitelist?address=${address.join(';').replaceAll('+', '|')}`);
-
-      return data;
-    } catch {
       return [];
     }
   }

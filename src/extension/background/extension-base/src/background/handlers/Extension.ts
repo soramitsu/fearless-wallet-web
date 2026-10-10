@@ -1508,8 +1508,6 @@ export default class Extension extends FWExtensionBase {
 
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
 
-    this.state.balanceService.tonBalanceService.fetchJettonInfo();
-
     return isSuccess;
   }
 

@@ -994,6 +994,9 @@
     "refresh": "𓅱𓎛𓅓",
     "unavailable": "Demeter 𓈖𓈖 𓅱𓈖",
     "browseOnly": "𓅓𓄿𓄿 𓏤",
+    "pausedTitle": "𓇋𓅱 𓇋𓂋𓏏𓏥 𓈖 𓋴𓂓𓄿 𓊵𓏏𓊪𓅱 𓂋 𓄿𓏏𓇳 ·",
+    "pausedBody": "𓇋𓅱 𓅓𓄿𓄿𓏏𓅱 𓈙𓏥𓎡 𓈖 Demeter 𓎛𓈖𓂝 𓋴𓏏𓏥𓎡 𓎛𓈖𓂝 𓆑𓈎𓄿𓏥𓎡 𓅓 𓐪𓂧𓏛 𓊪𓈖 · 𓇋𓅱 𓂋𓂧𓇋 𓅓 𓋴𓏏 𓎛𓈖𓂝 𓈙𓂧 𓎛𓈖𓂝 𓈙𓋴𓊪𓏥 𓊵𓏏𓊪𓅱 𓐍𓆑𓏏 𓆓𓂝𓂋 𓇋𓂋𓏏 𓎟𓏏 · 𓈖𓈖 𓋴𓍿𓄿𓏏𓅱 𓐍𓏏𓏥 𓎟𓏏 𓅓 𓃀𓅱 𓊪𓈖 · 𓇋𓅱 𓋴𓏏𓏥𓎡 𓎛𓈖𓂝 𓆑𓈎𓄿𓏥𓎡 𓏠𓈖𓅱 𓅓 𓄡𓈖𓅓𓏥 𓈖 SORA ·",
+    "openPools": "𓅱𓈖 𓈙𓏥 𓈖 𓈗 𓈖 𓎛𓂧",
     "yourPositions": "𓋴𓏏𓏥𓎡",
     "positionsEmpty": "𓂋𓂧𓇋𓏥 𓅓 𓋴𓏏 𓎛𓈖𓂝 𓆑𓈎𓄿𓏥 𓂋 𓅱𓈖 𓅓 𓋴𓏏 𓏏𓈖",
     "farmingPools": "𓈙𓏥 𓈖 𓋴𓂓𓄿",
@@ -1048,6 +1051,7 @@
     "markets": "𓋴𓅱𓏏𓏥",
     "polkamarktDescription": "𓋴𓅱𓏏𓏥 𓈖 𓅓𓂧𓅱 𓈖 𓐍𓏏 𓋴𓄿𓅱 𓅓 KUSD",
     "soraXorFees": "SORA · XOR 𓇋𓋴𓅱𓏥",
+    "browseOnly": "𓅓𓄿𓄿 𓏤",
     "availableNetworks": "𓄡𓈖𓅓𓏥 𓅱𓈖",
     "addSubstrateAccount": "𓂋𓂧𓇋 Substrate 𓇋𓊪𓏥 𓈖 𓂋𓈖"
   },
@@ -1131,6 +1135,8 @@
     "indexerDelayed": "𓋴𓈙 𓈖 𓇋𓊪𓏥 𓅱𓄿𓎛",
     "catalogSynced": "𓅓𓆓𓄿𓏏𓏥 𓋴𓅓𓄿𓂝",
     "capabilityStatus": "𓐍𓊪𓂋𓅱 𓈖 𓋴𓐍𓂋 𓋹",
+    "pausedTitle": "𓇋𓅱 𓋴𓅱𓏏 𓊵𓏏𓊪𓅱 𓅓 𓐪𓂧𓏛 𓊪𓈖 ·",
+    "pausedBody": "𓇋𓅱 Polkamarkt 𓏠𓈖 𓈖 𓅓𓄿𓄿 𓏤 𓐍𓆑𓏏 𓆓𓂝𓂋 𓇋𓈖 𓎛𓈖𓂝 𓂋𓂧𓇋 𓈖 𓇋𓋴𓅱 𓎛𓈖𓂝 𓈙𓋴𓊪𓏥 · 𓇋𓅱 𓅓𓄿𓄿𓏏𓅱 𓋴𓅱𓏏𓏥 𓎛𓈖𓂝 𓇋𓋴𓅱𓏥 𓎛𓈖𓂝 𓋴𓏏𓏥𓎡 𓅓 𓃀𓅱 𓊪𓈖 · 𓈖𓈖 𓇋𓐍𓏏 𓉔𓄿𓃀 ·",
     "risk": {
       "title": "SORA 𓋴𓅱𓏏 𓋴𓂧𓄿 𓂋 𓂋𓐍",
       "description": "Polkamarkt 𓋴𓅱𓏏𓏥 𓇋𓂋𓇋 𓅓 KUSD 𓋴𓄿𓅱 𓁷 SORA 𓎛𓈖𓂝 𓂋𓂧𓇋 XOR 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥. 𓎛𓋴𓃀 𓈖 𓇋𓋴𓅱 𓐍𓊪𓂋 𓅓 𓐍𓏏 𓈖 𓋴𓈖𓏥; 𓇋𓐍𓏏𓎡 𓐍𓅓𓂋 𓂋 𓎟𓏏",
@@ -1205,6 +1211,7 @@
     "marketUnavailable": "𓋴𓅱𓏏 #{id} 𓈖𓈖 𓅱𓈖 𓁷 SORA",
     "actionReason": {
       "loading": "𓉔𓄿𓃀 𓐍𓊪𓂋𓅱 𓈖 𓋴𓅱𓏏",
+      "paused": "𓇋𓅱 𓇋𓈖 𓎛𓈖𓂝 𓂋𓂧𓇋 𓈖 𓇋𓋴𓅱 𓎛𓈖𓂝 𓈙𓋴𓊪𓏥 𓊵𓏏𓊪𓅱 𓅓 𓐪𓂧𓏛 𓊪𓈖 ·",
       "closed": "𓋴𓅱𓏏 𓊪𓈖 𓐍𓏏𓅓 𓈖 𓋴𓅱𓏏",
       "addAccount": "𓂋𓂧𓇋 SORA 𓇋𓊪𓏥 𓈖 𓂋𓈖",
       "unsupportedSigner": "𓐍𓏏𓅓 𓇋𓂋𓏏 𓅓 SORA 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓋴𓏏 𓊪𓈖",

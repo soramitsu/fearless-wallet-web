@@ -37,6 +37,11 @@
           </span>
         </div>
 
+        <div v-if="snapshot.actionsPaused" class="capability-state" role="status" data-testid="polkamarkt-paused">
+          <strong>{{ t('polkamarktPage.pausedTitle') }}</strong>
+          <span>{{ t('polkamarktPage.pausedBody') }}</span>
+        </div>
+
         <div v-if="uniqueWarnings.length" class="capability-state" data-testid="polkamarkt-capability-state">
           <strong>{{ t('polkamarktPage.capabilityStatus') }}</strong>
           <span>{{ t('polkamarktPage.fallback.dataError') }}</span>
@@ -160,6 +165,7 @@
               <h2>{{ t('polkamarktPage.claims') }}</h2>
               <span>{{ t('polkamarktPage.authoritativeState') }}</span>
             </div>
+            <p v-if="snapshot.actionsPaused" class="inline-reason">{{ t('polkamarktPage.actionReason.paused') }}</p>
             <div v-if="positive(selectedClaim.claimablePayout ?? selectedClaim.traderPayout)">
               <span>{{ t('polkamarktPage.traderPayout') }}</span>
               <strong>{{ codecMoney(selectedClaim.claimablePayout ?? selectedClaim.traderPayout) }} KUSD</strong>
@@ -335,6 +341,7 @@ const filteredMarkets = computed(() => {
 const actionReason = computed(() => {
   const state = snapshot.value;
   if (!state) return t('polkamarktPage.actionReason.loading');
+  if (state.actionsPaused) return t('polkamarktPage.actionReason.paused');
   if (selectedMarket.value?.displayStatus !== 'open') return t('polkamarktPage.actionReason.closed');
   if (!state.account.signable) {
     return state.account.address

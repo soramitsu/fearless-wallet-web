@@ -28,6 +28,7 @@ const MINT = env.FEARLESS_E2E_SOLANA_MINT ?? '';
 const mnemonic = vectors.vectors[0].mnemonic;
 const walletAddress = vectors.vectors[0].expected.solana.address;
 const NETWORK_KEY = 'Solana Local';
+const EXPIRY_WAIT_MS = 600_000;
 
 describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
   const rpc = new SolanaRpcClient({ rpcUrls: [RPC_URL!] });
@@ -236,6 +237,9 @@ describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
     expect(pendingRecords).toEqual([]);
   });
 
+  // The blockhash expires after 150 blocks, about a minute on an idle machine.
+  // A loaded machine slows the validator's block production, so this case waits
+  // for the real expiry instead of a wall-clock guess.
   it('reports a transaction that never reached the network as expired, with nothing sent', async () => {
     const recipient = randomSolanaAddress();
     const before = await lamports(walletAddress);
@@ -245,11 +249,13 @@ describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
       throw new SolanaRpcError('solana_rpc_unavailable');
     };
 
-    await expect(makeSolanaTransfer(params(recipient, '0.3'), silent, options)).rejects.toThrow('solana_transaction_expired');
+    await expect(
+      makeSolanaTransfer(params(recipient, '0.3'), silent, { ...options, maxConfirmationWaitMs: EXPIRY_WAIT_MS })
+    ).rejects.toThrow('solana_transaction_expired');
     expect(await rpc.getAccountInfo(recipient)).toBeNull();
     expect(await lamports(walletAddress)).toBe(before);
     expect(pendingRecords).toEqual([]);
-  });
+  }, EXPIRY_WAIT_MS + 60_000);
 
   it('sends the quoted SOL maximum, leaving the account empty', async () => {
     const recipient = randomSolanaAddress();

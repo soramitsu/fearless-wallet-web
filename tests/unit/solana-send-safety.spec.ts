@@ -338,6 +338,49 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(store.records).toEqual([]);
   });
 
+  it('waits past a processed-only failure, which a fork switch can still undo', async () => {
+    const store = memoryPendingStore();
+    const client = createClient({
+      statuses: [
+        { confirmationStatus: 'processed', confirmations: 0, err: { InstructionError: [2, 'Custom'] }, slot: 1 },
+        { confirmationStatus: 'confirmed', confirmations: 1, err: null, slot: 2 },
+      ],
+    });
+    const params = solParams();
+
+    await makeSolanaTransfer(params, client, sendOptions(store));
+
+    expect(params.callback).toHaveBeenCalledWith({ status: true });
+    expect(client.getSignatureStatuses).toHaveBeenCalledTimes(2);
+    expect(store.records).toEqual([]);
+  });
+
+  it('keeps a processed-only failure pending when it never confirms', async () => {
+    const store = memoryPendingStore();
+    const client = createClient({
+      statuses: [{ confirmationStatus: 'processed', confirmations: 0, err: { InstructionError: [2, 'Custom'] }, slot: 1 }],
+    });
+
+    await expect(makeSolanaTransfer(solParams(), client, sendOptions(store, 5_000))).rejects.toThrow(
+      'solana_broadcast_ambiguous'
+    );
+    expect(store.records).toHaveLength(1);
+  });
+
+  it('reports a transfer that lands in the last valid block as confirmed', async () => {
+    const store = memoryPendingStore();
+    const client = createClient({
+      blockHeights: [457],
+      statuses: [null, null, null, { confirmationStatus: 'confirmed', confirmations: 1, err: null, slot: 4 }],
+    });
+    const params = solParams();
+
+    await makeSolanaTransfer(params, client, sendOptions(store));
+
+    expect(params.callback).toHaveBeenCalledWith({ status: true });
+    expect(store.records).toEqual([]);
+  });
+
   it('reports an expired blockhash as nothing sent, so a retry is safe', async () => {
     const store = memoryPendingStore();
     const client = createClient({ blockHeights: [457], statuses: [null] });
@@ -519,6 +562,39 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
 
     expect(resolved.map(({ signature }) => signature[0])).toEqual(['a', 'b']);
     expect(unresolved.map(({ signature }) => signature[0])).toEqual(['c']);
+  });
+
+  it('keeps a processed-only record in flight until it confirms or its blockhash expires', async () => {
+    const record = (signature: string, lastValidBlockHeight: number): SolanaPendingSend => ({
+      accountAddress: 'a',
+      createdAt: 1,
+      lastValidBlockHeight,
+      network: 'mainnet',
+      signature,
+      transactionBase64: 'AQID',
+    });
+    const client = {
+      getBlockHeight: vi.fn(async () => 200),
+      getSignatureStatuses: vi.fn(
+        async () =>
+          [
+            { confirmationStatus: 'processed', confirmations: 0, err: { InstructionError: [0, 'Custom'] }, slot: 1 },
+            { confirmationStatus: 'processed', confirmations: 0, err: null, slot: 1 },
+            { confirmationStatus: null, confirmations: null, err: null, slot: 1 },
+          ] as never
+      ),
+      sendRawTransaction: vi.fn(async () => 'sig'),
+    };
+    const { resolved, unresolved } = await resolveSolanaPendingSends(
+      [record('a'.repeat(88), 300), record('b'.repeat(88), 100), record('c'.repeat(88), 300)],
+      client
+    );
+
+    // `a` can still be rolled back and land; `b` is past its last valid block
+    // height, so its outcome is fixed; `c` is rooted.
+    expect(resolved.map(({ signature }) => signature[0])).toEqual(['b', 'c']);
+    expect(unresolved.map(({ signature }) => signature[0])).toEqual(['a']);
+    expect(client.sendRawTransaction).toHaveBeenCalledOnce();
   });
 });
 

@@ -13,6 +13,7 @@ import { type BalanceItem } from '@extension-base/api/evm/types';
 import { type BasicTxResponse, type ResponseSolanaTransferQuote } from '@extension-base/background/types/types';
 import {
   getDefaultSolanaPendingSendStore,
+  isConfirmedSolanaStatus,
   resolveSolanaPendingSends,
   type SolanaPendingSendStore,
 } from './pendingSends';
@@ -384,15 +385,17 @@ async function waitForSolanaSignature({
     try {
       const [status] = await client.getSignatureStatuses([signature]);
 
-      if (status?.err) return 'failed';
-      if (status?.confirmationStatus === 'confirmed' || status?.confirmationStatus === 'finalized') return 'confirmed';
+      // A `processed` result, failed or not, can still be rolled back with its
+      // fork and the same bytes land elsewhere, so only a confirmed one counts.
+      if (status && isConfirmedSolanaStatus(status)) return status.err ? 'failed' : 'confirmed';
       if (!status && poll % BLOCK_HEIGHT_CHECK_EVERY_POLLS === BLOCK_HEIGHT_CHECK_EVERY_POLLS - 1) {
         if ((await client.getBlockHeight('confirmed')) > lastValidBlockHeight) {
-          // One last look: it may have landed in the final valid block.
+          // One last look: it may have landed in the final valid block. A
+          // status that is not confirmed yet is followed by the next polls.
           const [finalStatus] = await client.getSignatureStatuses([signature]);
 
           if (!finalStatus) return 'expired';
-          if (finalStatus.err) return 'failed';
+          if (isConfirmedSolanaStatus(finalStatus)) return finalStatus.err ? 'failed' : 'confirmed';
         }
       }
       if (!status && poll % REBROADCAST_EVERY_POLLS === REBROADCAST_EVERY_POLLS - 1) {

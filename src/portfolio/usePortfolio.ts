@@ -85,10 +85,13 @@ export function usePortfolio() {
   /** Wallet-wide in every lens and under every filter (portfolio contract §3). */
   const summary = computed<PortfolioSummary>(() => buildPortfolioSummary(summaryInput.value));
 
-  /** The filtered part of the total, shown as "Showing {network} · {value}" while a network filter is active. */
-  const filteredTotal = computed<string | null>(() =>
-    isFiltered.value ? buildPortfolioSummary({ ...summaryInput.value, networkFilter: networkFilter.value }).total : null
+  /** The same summary for the networks the display filter shows (the whole wallet when no filter is active). */
+  const filteredSummary = computed<PortfolioSummary>(() =>
+    isFiltered.value ? buildPortfolioSummary({ ...summaryInput.value, networkFilter: networkFilter.value }) : summary.value
   );
+
+  /** The filtered part of the total, shown as "Showing {network} · {value}" while a network filter is active. */
+  const filteredTotal = computed<string | null>(() => (isFiltered.value ? filteredSummary.value.total : null));
 
   return {
     effectivePreferences,
@@ -101,6 +104,7 @@ export function usePortfolio() {
     isFiltered,
     zeroRule,
     summary,
+    filteredSummary,
     filteredTotal,
   };
 }

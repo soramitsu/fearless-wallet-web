@@ -145,7 +145,19 @@ const close = (isClose = true) => {
 const changePassword = async () => {
   isWait.value = true;
 
-  await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value });
+  // The background answers false (or fails) when the old password does not check out or a TON phrase could not be
+  // stored under the new one. Nothing was changed then, so the user stays here and can try again.
+  const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value }).catch(
+    () => false
+  );
+
+  isWait.value = false;
+
+  if (!changed) {
+    notify({ title: t('welcome.changePasswordFailed'), message: '', type: 'error' });
+
+    return;
+  }
 
   const title = t(
     `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
@@ -154,8 +166,6 @@ const changePassword = async () => {
   notify({ title, message: '', type: 'success' });
 
   close(false);
-
-  isWait.value = false;
 };
 </script>
 

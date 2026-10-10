@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  beforeEach: vi.fn(), accounts: vi.fn(), locked: vi.fn(), migration: vi.fn(), snapshot: vi.fn(),
+  beforeEach: vi.fn(), accounts: vi.fn(), locked: vi.fn(), migration: vi.fn(), snapshot: vi.fn(), access: vi.fn(),
 }));
 vi.mock('vue-router', () => ({
   createWebHashHistory: vi.fn(),
@@ -18,6 +18,7 @@ vi.mock('@/extension/messaging', () => ({
   hasMasterPassword: async () => true,
   hasAccounts: mocks.accounts,
   isNeedMigration: mocks.migration,
+  getAccessStatus: mocks.access,
   isOnboardingRequired: async () => false,
   getUniversalWalletMigrationSnapshot: mocks.snapshot,
 }));
@@ -31,6 +32,7 @@ beforeEach(() => {
   mocks.locked.mockResolvedValue(false);
   mocks.migration.mockResolvedValue(false);
   mocks.snapshot.mockRejectedValue(new Error('Optional metadata unavailable'));
+  mocks.access.mockResolvedValue({ issues: [] });
 });
 
 describe('legacy upgrade navigation', () => {
@@ -58,5 +60,26 @@ describe('legacy upgrade navigation', () => {
     const next = vi.fn();
     await mocks.beforeEach.mock.calls[0][0]({ name: 'Wallet', fullPath: '/wallet' }, {}, next);
     expect(next).toHaveBeenCalledExactlyOnceWith({ name: 'UniversalWalletMigration' });
+  });
+
+  // Parent migrated, its EVM account still on its 2.6.3 password: not prompted (as in 3.0.5), but the row
+  // stays reachable and can be migrated.
+  it('keeps the password rows open while an account still waits for its legacy password', async () => {
+    mocks.access.mockResolvedValue({ promptPending: false, issues: [{ address: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94', kind: 'legacy_account_password' }] });
+    await import('@/router');
+    const next = vi.fn();
+    await mocks.beforeEach.mock.calls[0][0]({ name: 'MigrationAccounts', fullPath: '/migration-accounts' }, {}, next);
+    expect(next).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it.each([
+    ['no account waits', []],
+    ['only a key left under an earlier master password waits', [{ address: 'UQ', kind: 'previous_master_password' }]],
+  ])('leaves the password rows when %s', async (_, issues) => {
+    mocks.access.mockResolvedValue({ promptPending: false, issues });
+    await import('@/router');
+    const next = vi.fn();
+    await mocks.beforeEach.mock.calls[0][0]({ name: 'MigrationAccounts', fullPath: '/migration-accounts' }, {}, next);
+    expect(next).toHaveBeenCalledExactlyOnceWith({ name: 'Welcome' });
   });
 });

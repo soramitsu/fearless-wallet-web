@@ -22,7 +22,8 @@
     "walletWillBeDeleted": "Your current wallet, accounts, and assets will be deleted from Fearless Wallet. You will need to re-import your original account using the recovery phrase or private key.",
     "enterReset": "To proceed, enter '{phrase}'",
     "resetWarning": "Resetting the wallet will delete your current data and assets. We cannot recover your password as it is stored only on your device. Try other passwords. If you want to reset the wallet, import your original recovery phrase. Proceed only if you have the recovery phrase.",
-    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers."
+    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers.",
+    "changePasswordFailed": "Your password was not changed. Check your current password and try again."
   },
   "onboarding": {
     "titleFirst": "The DeFi Wallet for the",
@@ -502,7 +503,12 @@
     "transferable": "Transferable {amount}",
     "inclHidden": "incl. hidden",
     "noHiddenAssets": "No hidden assets",
-    "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again."
+    "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again.",
+    "testnetsNotShown": "1 testnet asset not shown · Show testnets | {count} testnet assets not shown · Show testnets",
+    "showAssetOnNetwork": "Show {symbol} on {network}",
+    "emptyWalletTitle": "No assets yet",
+    "emptyWalletDescription": "Receive or buy crypto to get started. Balances appear here as soon as they arrive.",
+    "noBalanceInView": "No balance in this view"
   },
   "polkamarktPage": {
     "backToMarkets": "Back to markets",
@@ -863,7 +869,8 @@
     "rawSeed": "Raw Seed",
     "json": "JSON",
     "backupKeyPair": "Backup Key Pair",
-    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
+    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?",
+    "exportFailed": "The export could not be completed. Nothing was changed. Go back and try again."
   },
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
@@ -1151,7 +1158,8 @@
     "exportLegacyVault": "Export legacy wallet",
     "exportLegacyVaultUnavailable": "This legacy wallet is not available for export on this device.",
     "createUniversalWallet": "Create Universal Wallet",
-    "importUniversalWallet": "Import Universal Wallet"
+    "importUniversalWallet": "Import Universal Wallet",
+    "legacyPasswordRequired": "This account still uses the password it had in an earlier version of Fearless. Unlock it to send or export."
   },
   "common": {
     "lockApp": "Lock extension",
@@ -1303,5 +1311,28 @@
     "storageUnavailable": "Your wallet data could not be read. Nothing was changed. Please try again.",
     "settingUpWallet": "Setting up your wallet…",
     "accountSetupFailed": "Your wallet could not be set up. Your input is still here. Try again or go back to review it."
+  },
+  "accountAccess": {
+    "title": "Account access",
+    "description": "These accounts stay in Fearless and nothing is deleted. Balances and receiving keep working; sending and export are paused for an account until you unlock it.",
+    "settingsDescription": "1 account needs a password to unlock | {count} accounts need a password to unlock",
+    "previousPasswordRequired": "This account is locked with a password you used before. Unlock it to send or export.",
+    "unlockAccount": "Unlock this account",
+    "legacyPasswordHint": "Enter the password this account had in an earlier version of Fearless, before the master password.",
+    "previousPasswordHint": "Enter a password you used before, for example before you changed your password.",
+    "phraseHint": "Enter this account's recovery phrase. It is checked against the account before anything is saved.",
+    "passwordPlaceholder": "Earlier password",
+    "phrasePlaceholder": "Recovery phrase",
+    "unlock": "Unlock",
+    "usePhrase": "Use the recovery phrase instead",
+    "usePassword": "Use a password instead",
+    "wrongPassword": "This password does not unlock the account. Nothing was changed.",
+    "phraseMismatch": "This phrase belongs to a different account. Nothing was changed.",
+    "unlockFailed": "The account could not be unlocked. Nothing was changed. Try again.",
+    "unlocked": "{name} is unlocked",
+    "allUnlocked": "Every account opens with your password. Nothing needs to be unlocked.",
+    "keepLocked": "Keep locked for now",
+    "loadFailed": "The list of locked accounts could not be loaded.",
+    "evmAccountOf": "Ethereum account of {name}"
   }
 }

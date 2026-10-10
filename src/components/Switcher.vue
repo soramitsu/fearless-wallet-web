@@ -1,6 +1,13 @@
 <template>
   <label class="switch" data-testid="switch">
-    <input v-model="vModel" class="switch__input" type="checkbox" :disabled="disabled" />
+    <input
+      v-model="vModel"
+      class="switch__input"
+      type="checkbox"
+      role="switch"
+      :aria-label="ariaLabel || undefined"
+      :disabled="disabled"
+    />
     <span class="switch__core"></span>
     <span v-if="activeText || inactiveText" class="switch__text">{{ vModel ? activeText : inactiveText }}</span>
   </label>
@@ -14,6 +21,8 @@ interface Props {
   activeText?: string;
   inactiveText?: string;
   disabled?: boolean;
+  /** Names the switch for screen readers when no visible text sits next to it. */
+  ariaLabel?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
   activeText: '',
   inactiveText: '',
   disabled: false,
+  ariaLabel: '',
 });
 
 const emit = defineEmits(['change']);
@@ -37,13 +47,24 @@ const disabled = computed(() => props.disabled);
 
 <style lang="scss">
 .switch {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
+// Hidden visually only: the checkbox stays focusable and is what keyboards and screen readers operate.
 .switch__input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .switch__core {
@@ -66,6 +87,11 @@ const disabled = computed(() => props.disabled);
     background: $plain-white;
     transition: transform 0.15s ease;
   }
+}
+
+.switch__input:focus-visible + .switch__core {
+  outline: 2px solid $pink-lavender-color;
+  outline-offset: 2px;
 }
 
 .switch__input:checked + .switch__core {

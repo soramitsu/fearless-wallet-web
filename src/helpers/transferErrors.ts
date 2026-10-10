@@ -27,8 +27,24 @@ export const SEND_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.f
   solana_transaction_failed: 'assets.solanaTransactionFailed',
 });
 
+// The account is in the wallet but its key waits for a password or phrase (Account access). Every screen
+// that shows one of these offers "Unlock this account".
+export const ACCOUNT_ACCESS_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  legacy_password_required: 'migration.legacyPasswordRequired',
+  previous_password_required: 'accountAccess.previousPasswordRequired',
+  ton_seed_needs_previous_password: 'accountAccess.previousPasswordRequired',
+});
+
+/** The message key for an Account access error, or undefined for any other error. */
+export function getAccountAccessErrorLocaleKey(error: unknown): string | undefined {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
+
+  return message ? ACCOUNT_ACCESS_ERROR_LOCALE_KEYS[message] : undefined;
+}
+
 const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   ...SEND_ERROR_LOCALE_KEYS,
+  ...ACCOUNT_ACCESS_ERROR_LOCALE_KEYS,
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',
   iroha_transfer_disabled: 'assets.irohaTransfersDisabled',
   unsupported_solana_asset: 'assets.unsupportedSolanaTokenTransfer',

@@ -37,13 +37,14 @@ const createLocalStorageStub = () => {
   };
 };
 
-const mountPopup = async (rejectDirectRequest = false, props: Record<string, unknown> = {}) => {
+const mountPopup = async (rejectDirectRequest: boolean | Error = false, props: Record<string, unknown> = {}) => {
   vi.stubGlobal('localStorage', createLocalStorageStub());
   setActivePinia(createPinia());
   transferCallback = undefined;
   makeTransfer.mockImplementation(async (_request: unknown, callback: (response: BasicTxResponse) => void) => {
     transferCallback = callback;
 
+    if (rejectDirectRequest instanceof Error) throw rejectDirectRequest;
     if (rejectDirectRequest) throw new Error('private transport failure');
 
     return { status: true };
@@ -202,5 +203,50 @@ describe('confirmation popup for a send the network may already have', () => {
     expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe('assets.bitcoinBroadcastRejected');
     expect(wrapper.find('[data-testid="confirmedTransferAmount"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="viewHistoryBtn"]').exists()).toBe(false);
+  });
+});
+
+describe('a send from an account that waits for a password', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each([
+    ['legacy_password_required', 'migration.legacyPasswordRequired'],
+    ['previous_password_required', 'accountAccess.previousPasswordRequired'],
+  ])('%s: says why nothing was sent and opens Account access for the sender', async (code, message) => {
+    const wrapper = await mountPopup(new Error(code), {
+      tx: { from: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94', networkKey: 'Ethereum' },
+    });
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe(message);
+    await wrapper.get('[data-testid="unlockAccountBtn"]').trigger('click');
+
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({
+      name: 'AccountAccessRecovery',
+      query: { address: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94' },
+    });
+    expect(wrapper.emitted('close')).toBeUndefined();
+    // The popup names the route without importing the route table.
+    expect(readFileSync(resolve(__dirname, '../../src/router/routes.ts'), 'utf8')).toMatch(
+      /AccountAccessRecovery = 'AccountAccessRecovery'/u
+    );
+  });
+
+  it('offers the unlock for a TON phrase reported through the transfer callback', async () => {
+    const wrapper = await mountPopup(false, { tx: { from: 'UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI' } });
+
+    transferCallback?.({ status: false, errors: [{ message: 'ton_seed_needs_previous_password' }] });
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe(
+      'accountAccess.previousPasswordRequired'
+    );
+    expect(wrapper.find('[data-testid="unlockAccountBtn"]').exists()).toBe(true);
+  });
+
+  it('keeps other failures without the unlock action', async () => {
+    const wrapper = await mountPopup(true);
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe('assets.transactionFailedDetails');
+    expect(wrapper.find('[data-testid="unlockAccountBtn"]').exists()).toBe(false);
   });
 });

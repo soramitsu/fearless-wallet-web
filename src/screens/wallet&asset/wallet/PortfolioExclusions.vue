@@ -1,7 +1,14 @@
 <template>
-  <footer v-if="hiddenCount || unpricedCount || poolStakesExcluded" class="portfolio-exclusions" data-testid="portfolioExclusions">
+  <footer
+    v-if="hiddenCount || unpricedCount || poolStakesExcluded || testnetCount"
+    class="portfolio-exclusions"
+    data-testid="portfolioExclusions"
+  >
     <button v-if="hiddenCount" class="exclusion manage-link" type="button" data-testid="hiddenNotIncluded" @click="$emit('manageHidden')">
       {{ tc('portfolioPage.hiddenNotIncluded', hiddenCount, { count: hiddenCount }) }}
+    </button>
+    <button v-if="testnetCount" class="exclusion manage-link" type="button" data-testid="testnetsNotShown" @click="$emit('showTestnets')">
+      {{ tc('portfolioPage.testnetsNotShown', testnetCount, { count: testnetCount }) }}
     </button>
     <span v-if="unpricedCount" class="exclusion" data-testid="unpricedNotIncluded">
       {{ tc('portfolioPage.unpricedNotIncluded', unpricedCount, { count: unpricedCount }) }}
@@ -19,9 +26,11 @@ defineProps<{
   hiddenCount: number;
   unpricedCount: number;
   poolStakesExcluded: boolean;
+  /** Funded test-network assets the Testnets switch keeps out of the list. */
+  testnetCount?: number;
 }>();
 
-defineEmits<{ (event: 'manageHidden'): void }>();
+defineEmits<{ (event: 'manageHidden'): void; (event: 'showTestnets'): void }>();
 
 const { t, tc } = useI18n();
 </script>

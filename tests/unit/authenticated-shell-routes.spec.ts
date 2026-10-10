@@ -48,6 +48,7 @@ describe('authenticated shell routes', () => {
       [{ name: Components.Settings }, 'settings'],
       [{ name: Components.SettingsNetworksAssets }, 'settings'],
       [{ name: Components.SettingsChangePassword }, 'settings'],
+      [{ name: Components.AccountAccessRecovery, query: { address: '5Grw' } }, 'settings'],
       [{ name: Components.WalletConnectInitAuth }, 'settings'],
       [{ name: Components.DAppsAuths, params: { type: 'ton' } }, 'settings'],
       [{ name: Components.WcAuths }, 'settings'],

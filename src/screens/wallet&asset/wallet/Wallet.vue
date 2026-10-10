@@ -22,7 +22,7 @@
           :tokenGroups="filteredTokenGroups"
           :hideZero="accountsStore.portfolioView.hideZero"
           :showTestnets="accountsStore.portfolioView.showTestnets"
-          :hiddenAssetCount="portfolioSummary.hiddenAssetCount"
+          :hiddenAssetCount="hiddenAssetCount"
           :manageHiddenOnly="manageHiddenOnly"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
@@ -147,6 +147,12 @@ export default defineComponent({ name: 'Wallet',
     },
     networksWithWarning() {
       return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
+    },
+    // The "Hidden (N)" filter lists hidden testnet assets only while testnets are shown.
+    hiddenAssetCount() {
+      const { hiddenAssetCount, hiddenTestnetAssetCount } = this.portfolioSummary;
+
+      return hiddenAssetCount + (this.accountsStore.portfolioView.showTestnets ? hiddenTestnetAssetCount : 0);
     },
     // Wallet-wide under every filter: hidden, unpriced and testnet assets are excluded and labelled in the list.
     summaryTotalBalance() {

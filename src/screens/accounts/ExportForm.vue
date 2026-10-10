@@ -2,6 +2,32 @@
   <div class="export-form">
     <Loader v-if="isLoading" />
 
+    <div v-else-if="errorKey" class="export-blocked" data-testid="exportBlocked">
+      <p class="export-blocked__message" role="alert" data-testid="exportError">{{ $t(errorKey) }}</p>
+
+      <div class="export-blocked__actions">
+        <FButton
+          v-if="canUnlockAccount"
+          size="big"
+          fontSize="big"
+          width="100%"
+          text="accountAccess.unlockAccount"
+          data-testid="unlockAccountBtn"
+          @click="openAccountAccess"
+        />
+
+        <FButton
+          size="big"
+          fontSize="big"
+          width="100%"
+          type="secondary"
+          text="ux.back"
+          data-testid="exportBackBtn"
+          @click="$emit('closeHandler')"
+        />
+      </div>
+    </div>
+
     <template v-else>
       <div class="export-content">
         <div v-if="isMnemonic">
@@ -43,6 +69,9 @@ import BaseApi from '@/util/BaseApi';
 import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
 import { isSameString, setClipboard } from '@/helpers';
 import { downloadJsonAccount } from '@/helpers/files';
+import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
+import { Components } from '@/router/routes';
+import { WalletEcosystem } from '@/interfaces';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -58,6 +87,7 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     password: String,
     exportType: String,
   },
+  emits: ['closeHandler'],
   data() {
     return {
       networksStore: useNetworksStore(),
@@ -65,6 +95,9 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
       json: {} as KeyringPair$Json,
       isLoading: false,
       seed: '',
+      /** Why the export could not run; the screen then offers the next step instead of a phrase. */
+      errorKey: '',
+      canUnlockAccount: false,
     };
   },
   computed: {
@@ -108,28 +141,53 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     addressByNetwork() {
       return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.network);
     },
+    /** The key this export opens, which is the account Account access unlocks. */
+    exportedAccount(): { address: string; walletEcosystem?: WalletEcosystem } {
+      const { address, walletEcosystem } = this.accountsStore.selectedWallet;
+
+      if (this.isMnemonic) return { address, walletEcosystem };
+      if (this.isRowSeed && this.isEthereumNetwork) return { address: this.addressByNetwork, walletEcosystem: WalletEcosystem.Evm };
+
+      return { address: this.addressByNetwork, walletEcosystem };
+    },
   },
   async mounted() {
     this.isLoading = true;
 
-        if (this.isMnemonic) {
-          const { address, walletEcosystem } = this.accountsStore.selectedWallet;
-          const { seed } = await exportMnemonic(address, this.password, walletEcosystem);
+    try {
+      if (this.isMnemonic) {
+        const { address, walletEcosystem } = this.exportedAccount;
+        const { seed } = await exportMnemonic(address, this.password, walletEcosystem);
 
-          this.seed = seed;
-        } else if (this.isRowSeed) {
-          const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
+        this.seed = seed;
+      } else if (this.isRowSeed) {
+        const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
 
-          this.seed = seed;
-        } else {
-          const { json } = await exportJSON(this.addressByNetwork, this.password, this.network);
+        this.seed = seed;
+      } else {
+        const { json } = await exportJSON(this.addressByNetwork, this.password, this.network);
 
-          this.json = json;
-        }
+        this.json = json;
+      }
+    } catch (error) {
+      // A key that waits for a password used before can be unlocked in Account access; nothing was exported.
+      const accessErrorKey = getAccountAccessErrorLocaleKey(error);
 
-        this.isLoading = false;
+      this.errorKey = accessErrorKey ?? 'accounts.exportFailed';
+      this.canUnlockAccount = accessErrorKey !== undefined;
+    } finally {
+      this.isLoading = false;
+    }
   },
   methods: {
+    openAccountAccess() {
+      const { address, walletEcosystem } = this.exportedAccount;
+
+      this.$router.push({
+        name: Components.AccountAccessRecovery,
+        query: { address, ...(walletEcosystem ? { ecosystem: walletEcosystem } : {}) },
+      });
+    },
     proceed() {
       if (this.isMnemonic || this.isRowSeed) setClipboard(this.seed);
           else this.downloadJsonFile();
@@ -162,6 +220,28 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
 
   .row {
     margin-top: 16px;
+  }
+
+  .export-blocked {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    height: 100%;
+  }
+
+  .export-blocked__message {
+    margin: 0;
+    color: $grayish-white;
+    line-height: 1.4;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .export-blocked__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 </style>

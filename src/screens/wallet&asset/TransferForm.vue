@@ -526,7 +526,9 @@ export default defineComponent({
     buttonText() {
       if (!navigator.onLine) return 'common.offlineStatus';
 
-      if (this.isBitcoinTransferDisabled) return 'assets.bitcoinTransfersDisabled';
+      if (this.isBitcoinTransferDisabled) {
+        return this.originNet?.ecosystem === 'iroha' ? 'assets.irohaTransfersDisabled' : 'assets.bitcoinTransfersDisabled';
+      }
 
       if (!this.currency) return '';
 

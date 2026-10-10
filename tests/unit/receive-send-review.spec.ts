@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   wallet: { address: 'public-wallet', name: 'Test wallet' },
   balances: [] as unknown[],
-  networks: [] as { name: string; assets: { symbol: string }[] }[],
+  networks: [] as { name: string; assets: { symbol: string }[]; ecosystem?: string }[],
 }));
 vi.mock('@/helpers', async (importOriginal) => ({ ...(await importOriginal<object>()), setClipboard: mocks.copy }));
 vi.mock('@/helpers/numbers', async (importOriginal) => ({ ...(await importOriginal<object>()), addNumbers: () => '1.1' }));
@@ -117,6 +117,9 @@ describe('network-explicit Receive', () => {
       { name: 'Kusama AssetHub', assets: [{ symbol: 'ksm' }] },
       { name: 'Encointer on Kusama', assets: [{ symbol: 'ksm' }] },
       { name: 'Moonbeam', assets: [{ symbol: 'glmr' }] },
+      { name: 'SORA Nexus', assets: [{ symbol: 'xor' }], ecosystem: 'iroha' },
+      { name: 'Bitcoin', assets: [{ symbol: 'btc' }], ecosystem: 'bitcoin' },
+      { name: 'Solana', assets: [{ symbol: 'sol' }], ecosystem: 'solana' },
     ];
     mocks.balances = [
       group('usdt-eth', 'Ethereum', 'usdt'),
@@ -127,6 +130,9 @@ describe('network-explicit Receive', () => {
       group(KSM, 'Kusama AssetHub', 'ksm'),
       group(KSM, 'Encointer on Kusama', 'ksm'),
       group('xcdot-moonbeam', 'Moonbeam', 'xcDOT'),
+      group('xor-nexus', 'SORA Nexus', 'xor'),
+      group('btc', 'Bitcoin', 'btc'),
+      group('sol', 'Solana', 'sol'),
     ];
   });
 
@@ -189,6 +195,35 @@ describe('network-explicit Receive', () => {
 
     expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"KSM"');
     expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"network":"Kusama"');
+    wrapper.unmount();
+  });
+
+  it('says before the QR code that this version cannot send from an Iroha network', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: 'xor-nexus', network: 'SORA Nexus' }) });
+    await flushPromises();
+
+    const note = wrapper.get('[data-testid="receiveSendUnavailable"]');
+    expect(note.text()).toContain('assets.receiveSendUnavailable');
+    expect(note.text()).toContain('"symbol":"XOR"');
+    expect(note.text()).toContain('"network":"SORA Nexus"');
+    expect(note.element.compareDocumentPosition(wrapper.get('[data-qr]').element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // The usual network warning still follows the QR code.
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"network":"SORA Nexus"');
+
+    await wrapper.setData({ selectedNetwork: 'Polkadot' });
+    expect(wrapper.find('[data-testid="receiveSendUnavailable"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it.each([
+    ['btc', 'Bitcoin'],
+    ['sol', 'Solana'],
+  ])('never shows paused copy on %s Receive, whose send ships enabled', async (assetId, network) => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId, network }) });
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="receiveSendUnavailable"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain(`"network":"${network}"`);
     wrapper.unmount();
   });
 

@@ -740,6 +740,7 @@
     "onNetwork": "𒄿𒈾 {network}",
     "receiveOnlyOnNetwork": "𒀀𒈾 𒀸𒊑𒅎 𒀭𒉌𒄿𒅎 {symbol} 𒄿𒈾 {network} 𒋗𒁉𒅋, 𒆷 𒄿𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎 · 𒉿𒋡𒀜 𒆪𒉡𒊌𒆪 𒊭 𒄿𒈾 𒊑𒅅𒋛 𒊭𒉡𒌑𒋾𒅎 𒋗𒁍𒇻 𒄿𒄩𒀠𒇷𒆪 ·",
     "receiveEvmSameAddress": "𒀸𒊒𒌝 𒀭𒉡𒌑𒌝 𒄿𒈾 𒅗𒀠 𒊑𒅅𒋛 EVM 𒅖𒋼𒂗𒈠, 𒆪𒉡𒊌𒆪 𒄿𒈾 𒊑𒅅𒋛𒅎 𒊭 𒄿𒈾 𒇷𒅁𒁉𒋗 𒋗𒁍𒇻 𒄿𒅗𒀸𒊭𒁺, 𒆷 𒄿𒈾 𒊭𒉌𒄿𒅎 ·",
+    "receiveSendUnavailable": "𒋗𒁍𒇻𒌝 𒅖𒌅 𒊑𒅅𒋛𒅎 {network} 𒄿𒈾 𒊭𒉌𒄿𒅎 𒀭𒉌𒄿𒅎 𒊭 Fearless 𒆷 𒁉𒋾 · {symbol} 𒄿𒈾 𒀸𒊑𒅎 𒀭𒉌𒄿𒅎 𒈠𒄩𒊏𒄠 𒅇 𒄿𒈾 𒉌𒅅𒅗𒊍𒋛𒅗 𒀀𒈠𒊏𒋗 𒋼𒇷𒄿 ·",
     "networkIssues": "𒄭𒁕𒀜 𒊑𒅅𒋛𒅎",
     "originNet": "𒊑𒅅𒋢𒌝 𒊭 𒊑𒅆𒅎",
     "network": "𒊑𒅅𒋢𒌝",

@@ -316,6 +316,7 @@
     "onNetwork": "𓅓 {network}",
     "receiveOnlyOnNetwork": "𓅓 𓉔𓄿𓃀 {symbol} 𓂋 𓊨 𓏏𓈖 𓈖 𓂋𓈖 𓄋𓊪𓅱𓁷 𓅓 {network} · 𓋴𓅓𓅱𓈖 𓋴𓎡 𓇋𓐍𓏏𓏥 𓉔𓄿𓃀𓅱𓏏 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌𓏥 ·",
     "receiveEvmSameAddress": "𓅓𓇋𓏏𓏏 𓊪𓅱 𓊨 𓏏𓈖 𓈖 𓂋𓈖 𓅓 𓄡𓈖𓅓𓏥 𓎟𓅱 𓈖 EVM · 𓈖𓈖 𓋴𓅱𓏏 𓋴𓊪𓂋 𓈖 𓇋𓐍𓏏𓏥 𓄋𓊪𓅱𓁷 𓅓 𓄡𓈖𓅓𓏥 𓉔𓄿𓃀𓈖𓏏𓅱𓋴𓈖 𓇋𓅓 ·",
+    "receiveSendUnavailable": "𓈖𓈖 𓂞 𓉔𓄿𓃀 𓅓 {network} 𓅓 𓅓𓂧𓅱 𓊪𓈖 𓈖 Fearless · 𓇋𓅱 𓋴𓐍𓅓𓎡 𓅓 𓈙𓋴𓊪 {symbol} 𓅓 𓊨 𓏏𓈖 𓎛𓈖𓂝 𓅓𓄿𓄿𓆑 𓅓 𓇋𓊪𓏥𓎡 𓈖 𓐍𓏏𓏥 ·",
     "networkIssues": "𓄡𓈖𓅓𓏥 𓅓𓂧𓅱",
     "originNet": "𓄂 𓄡𓈖𓅓𓏥",
     "network": "𓄡𓈖𓅓𓏥",

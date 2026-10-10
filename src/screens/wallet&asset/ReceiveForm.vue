@@ -30,6 +30,10 @@
             </div>
           </div>
 
+          <Alert v-if="showSendUnavailable" class="network-warning send-unavailable" data-testid="receiveSendUnavailable">
+            {{ $t('assets.receiveSendUnavailable', { symbol: receiveSymbol, network: networkName }) }}
+          </Alert>
+
           <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
 
           <Alert v-if="showNetworkWarning" class="network-warning" data-testid="receiveNetworkWarning">
@@ -100,6 +104,7 @@ import BaseApi from '@/util/BaseApi';
 import { isSameString, setClipboard } from '@/helpers';
 import { findTransferAssetGroup } from '@/helpers/currencies';
 import { IS_EXTENSION } from '@/consts/global';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -152,6 +157,16 @@ export default defineComponent({ name: 'ReceiveForm' ,
     },
     isEvmNetwork() {
       return BaseApi.isEthereumNetwork(this.selectedNetwork);
+    },
+    showSendUnavailable() {
+      // Say before the QR code when this build cannot send from the network (Iroha), so
+      // nobody deposits expecting to move the funds on from Fearless. Bitcoin and Solana
+      // sends ship enabled and get no paused copy; only an emergency veto hides their Send.
+      const network = this.selectedNetworkJson;
+
+      if (!network?.name || network.ecosystem === 'bitcoin' || network.ecosystem === 'solana') return false;
+
+      return !isNetworkTransferEnabled(network);
     },
     assetNetworks() {
       // Every network that holds the same registry asset, e.g. KSM on Kusama and Kusama AssetHub.
@@ -253,6 +268,10 @@ export default defineComponent({ name: 'ReceiveForm' ,
 .network-warning {
   width: 100%;
   margin-bottom: 16px;
+
+  &.send-unavailable {
+    margin: 16px 0 0;
+  }
 
   .evm-note {
     display: block;

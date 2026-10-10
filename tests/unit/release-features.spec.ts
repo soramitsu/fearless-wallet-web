@@ -4,6 +4,7 @@ import {
   isBitcoinTransfersEnabled,
   isGoogleDriveBackupEnabled,
   isIrohaConnectEnabled,
+  isIrohaTransfersEnabled,
   isNetworkTransferEnabled,
   isSolanaTransfersEnabled,
 } from '@/util/releaseFeatures';
@@ -12,6 +13,7 @@ const FLAGS = [
   'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
   'VUE_APP_ENABLE_SOLANA_TRANSFERS',
   'VUE_APP_ENABLE_IROHA_CONNECT',
+  'VUE_APP_ENABLE_IROHA_TRANSFERS',
   'OAUTH_CLIENT_ID',
 ] as const;
 const originalFlags = Object.fromEntries(FLAGS.map((flag) => [flag, process.env[flag]]));
@@ -79,6 +81,19 @@ describe('release feature gates', () => {
 
     process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = 'false';
     expect(isNetworkTransferEnabled({ ecosystem: 'solana' }, { solanaSend: false })).toBe(false);
+  });
+
+  it('keeps Iroha networks out of transfer selectors unless Iroha transfers are compiled on', () => {
+    exactTrueOnly('VUE_APP_ENABLE_IROHA_TRANSFERS', isIrohaTransfersEnabled);
+
+    delete process.env.VUE_APP_ENABLE_IROHA_TRANSFERS;
+    expect(isNetworkTransferEnabled({ ecosystem: 'iroha' })).toBe(false);
+    // No remote value can enable a compiled-off send.
+    expect(isNetworkTransferEnabled({ ecosystem: 'iroha' }, { bitcoinSend: false, solanaSend: false })).toBe(false);
+    expect(isNetworkTransferEnabled({ ecosystem: 'substrate' })).toBe(true);
+
+    process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
+    expect(isNetworkTransferEnabled({ ecosystem: 'iroha' })).toBe(true);
   });
 
   it('exposes Google Drive backup only when a non-empty OAuth client is built in', () => {

@@ -188,6 +188,7 @@ const global = {
 };
 
 type TransferFormVm = {
+  buttonText: string;
   currency?: TokenGroup;
   currencyBalance?: BalanceItem;
   transferAssetId: string;
@@ -325,6 +326,28 @@ describe('TransferForm network-scoped asset selection', () => {
     await wrapper!.get('[data-test="asset-select"]').trigger('click');
     const selected = popupOptions().find((option) => option.attributes('data-selected') === 'true');
     expect(selected?.text()).toBe('USDT · Polkadot AssetHub');
+  });
+
+  it('never offers an Iroha network, whose sends stay compiled off, and names it when a route opens one', async () => {
+    mocks.networks.push(network('SORA Nexus', 9, 'xor-nexus', 'iroha'));
+    mocks.balances.push(
+      group({ id: 'xor-nexus', networkName: 'SORA Nexus', symbol: 'xor', total: '40', isUtility: true, relayChain: 'iroha' })
+    );
+
+    await mountTransfer('usdt-polygon', 'Polygon');
+    await wrapper!.get('[data-test="asset-select"]').trigger('click');
+
+    expect(popupOptions().map((option) => option.text())).not.toContain('XOR · SORA Nexus');
+    wrapper!.unmount();
+
+    mocks.checkTransfer.mockClear();
+    const { vm } = await mountTransfer('xor-nexus', 'SORA Nexus');
+    await vi.advanceTimersByTimeAsync(2000);
+    await flushPromises();
+
+    expect(vm.optionsNetworks).toEqual([]);
+    expect(vm.buttonText).toBe('assets.irohaTransfersDisabled');
+    expect(mocks.checkTransfer).not.toHaveBeenCalled();
   });
 
   it('round-trips the picked value to the same pair the transfer request uses', async () => {

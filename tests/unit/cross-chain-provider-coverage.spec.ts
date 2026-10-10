@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
@@ -62,6 +63,7 @@ import CrossChainRoot from '@/screens/cross-chain/CrossChainRoot.vue';
 
 describe('cross-chain provider coverage', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     mocks.extensionStore.features = {
       actions: {
         crossChainLiberland: false,

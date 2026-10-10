@@ -257,6 +257,9 @@ export class PoolsService {
   public async getDemeterPools(): Promise<DemeterPoolsResponse> {
     const fees = this.getDemeterFees();
     const signing = this.getDemeterSigningCapability();
+    // Release policy, not the runtime: the page stays browse-only and says so
+    // instead of letting a deposit, withdrawal or claim fail at submit.
+    const actionsPaused = !this.state.actionCapabilityService?.isActionEnabled('demeter');
     const module = apiSora.demeterFarming;
 
     if (
@@ -269,6 +272,7 @@ export class PoolsService {
         reason: 'Demeter farming is not available in the connected SORA runtime.',
         canSign: signing.available,
         signReason: signing.reason,
+        actionsPaused,
         fees,
         pools: [],
       };
@@ -327,6 +331,7 @@ export class PoolsService {
         available: true,
         canSign: signing.available,
         signReason: signing.reason,
+        actionsPaused,
         fees,
         pools: result,
       };
@@ -338,6 +343,7 @@ export class PoolsService {
         reason: 'The Demeter catalog is temporarily unavailable. Existing positions are preserved on-chain.',
         canSign: signing.available,
         signReason: signing.reason,
+        actionsPaused,
         fees,
         pools: [],
       };

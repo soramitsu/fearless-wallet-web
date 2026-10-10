@@ -1241,12 +1241,14 @@ export default class Extension extends FWExtensionBase {
 
   private async getPolkamarktSnapshot(request: { marketId?: string }) {
     const snapshot = await this.createPolkamarktService().snapshot(request.marketId);
-    if (!this.state.actionCapabilityService.isActionEnabled('polkamarkt')) {
+    // Release policy keeps trading and claims off; browsing stays available. The
+    // flag is separate from `warnings`, which report market data problems.
+    snapshot.actionsPaused = !this.state.actionCapabilityService.isActionEnabled('polkamarkt');
+    if (snapshot.actionsPaused) {
       snapshot.capabilities.buy = false;
       snapshot.capabilities.sell = false;
       snapshot.capabilities.claimMarket = false;
       snapshot.capabilities.claimCreatorFees = false;
-      snapshot.warnings.push('Polkamarkt actions are temporarily paused; browsing remains available.');
     }
     return snapshot;
   }

@@ -107,6 +107,8 @@ export type DemeterPoolsResponse = {
   reason?: string;
   canSign: boolean;
   signReason?: string;
+  /** Deposits, withdrawals and claims are switched off by the release capability policy. */
+  actionsPaused: boolean;
   fees: Record<DemeterOperation, string>;
   pools: DemeterPoolView[];
 };

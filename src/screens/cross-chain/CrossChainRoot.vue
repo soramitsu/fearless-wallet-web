@@ -151,6 +151,7 @@ import {
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 import { useI18n } from '@/locales/useI18n';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 
@@ -165,6 +166,7 @@ const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 const extensionStore = useExtensionStore();
 const networksStore = useNetworksStore();
+const sendKillSwitchStore = useSendKillSwitchStore();
 const contentHeight = CONTENT_FORM_HEIGHT;
 const originChainId = ref('');
 const assetKey = ref('');
@@ -302,7 +304,8 @@ const crossChainPaused = computed(() => {
   );
 });
 const sendAlternative = computed(() => {
-  if (!selectedAsset.value || !network.value || !isNetworkTransferEnabled(network.value)) return undefined;
+  if (!selectedAsset.value || !network.value) return undefined;
+  if (!isNetworkTransferEnabled(network.value, sendKillSwitchStore.vetoes)) return undefined;
 
   return { assetId: selectedAsset.value.assetId, network: network.value.name };
 });

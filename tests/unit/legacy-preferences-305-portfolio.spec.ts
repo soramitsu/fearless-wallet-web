@@ -3,15 +3,19 @@ import { createPinia, setActivePinia } from 'pinia';
 import { effectScope, nextTick } from 'vue';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getMockAssets } from '@extension-base/background/helpers/assets';
+import { getMockAssets as getMockAssets305 } from '../fixtures/legacy-305/getMockAssets.305';
 import {
+  EVM_ADDRESS,
   SECOND_SUBSTRATE_ADDRESS,
   SUBSTRATE_ADDRESS,
   TON_ADDRESS,
+  groupOf,
   networkMap305,
   readLegacy305Fixture,
   readSnapshot,
   type Legacy305FixtureName,
 } from '../fixtures/legacy-305/generate';
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
@@ -96,6 +100,36 @@ function registryKeys(symbol: string, networkNames: string[]): string[] {
           })
         )
     );
+}
+
+/** The keys of every member of one 3.0.5 group, taken from the 3.0.5 grouping code itself. */
+function legacyGroupKeys(symbol: string, relayChain: string): string[] {
+  const keyOf = (balance: BalanceItem) => {
+    const network = productionNetworks.find(({ name }) => name.toLowerCase() === balance.name)!;
+
+    return createAssetKey({
+      ecosystem: String(network.ecosystem),
+      chainId: network.chainId,
+      assetId: String(balance.currencyId ?? balance.id),
+    });
+  };
+
+  return groupOf(getMockAssets305(networkMap, WalletEcosystem.Substrate), symbol, relayChain).balances.map(keyOf);
+}
+
+/** What a develop build's one-shot v1 migration hid: only the rows whose own registry id was a stored group id. */
+function developV1MigratedKeys(legacyHiddenIds: string[]): string[] {
+  return productionNetworks.flatMap((network) =>
+    network.assets
+      .filter((asset) => legacyHiddenIds.includes(asset.id))
+      .map((asset) =>
+        createAssetKey({
+          ecosystem: String(network.ecosystem),
+          chainId: network.chainId,
+          assetId: String(asset.currencyId ?? asset.id),
+        })
+      )
+  );
 }
 
 const KUSAMA_KSM_NETWORKS = [
@@ -237,6 +271,112 @@ describe('portfolio preferences derived from 3.0.5', () => {
       [tonKey(tonId)]: 2,
       [tonKey('EQ_Notcoin')]: 3,
     });
+
+    scope.stop();
+    expectLegacyKeysUntouched(entries);
+  });
+
+  it('applies hides 3.0.5 stored under an 0x wallet address to every member of the hidden groups', () => {
+    const entries = seed('evm-standalone');
+    const accountsStore = useAccountsStore();
+    useNetworksStore().allNetworks = productionNetworks;
+    accountsStore.setSelectedWallet({
+      address: EVM_ADDRESS,
+      ethereumAddress: EVM_ADDRESS,
+      name: 'EVM',
+      walletEcosystem: WalletEcosystem.Evm,
+    } as AccountJson);
+
+    const scope = effectScope();
+    const preferences = scope.run(() => usePortfolioPreferences())!;
+    const ethKeys = legacyGroupKeys('eth', 'ethereum');
+    const usdcKeys = legacyGroupKeys('usdc', 'ethereum');
+
+    expect(ethKeys.length).toBeGreaterThan(1);
+    expect(usdcKeys.length).toBeGreaterThan(1);
+    expect([...preferences.hiddenKeys.value].sort()).toEqual([...new Set([...ethKeys, ...usdcKeys])].sort());
+    [...ethKeys, ...usdcKeys].forEach((key) => expect(preferences.preferenceSource(key)).toBe('legacy305'));
+
+    scope.stop();
+    expectLegacyKeysUntouched(entries);
+  });
+
+  it('keeps hides a develop build migrated into v1 and still hides the rest of their 3.0.5 groups', () => {
+    const entries = seed('switches');
+    const legacyHiddenIds = JSON.parse(entries['account_hidden-assets']).value[SUBSTRATE_ADDRESS] as string[];
+    const migratedKeys = developV1MigratedKeys(legacyHiddenIds);
+    // The develop build's one-shot migration left these behind; they are read as explicit hides and never rewritten.
+    const developV1 = JSON.stringify({
+      value: { [SUBSTRATE_ADDRESS]: Object.fromEntries(migratedKeys.map((key) => [key, 'hidden'])) },
+    });
+    const developMigrated = JSON.stringify({ value: { [SUBSTRATE_ADDRESS]: true } });
+    storage.setItem('account_asset-preferences-v1', developV1);
+    storage.setItem('account_asset-preferences-v1-migrated', developMigrated);
+    storage.setItem.mockClear();
+
+    const accountsStore = useAccountsStore();
+    useNetworksStore().allNetworks = productionNetworks;
+    accountsStore.setSelectedWallet(wallet(SUBSTRATE_ADDRESS));
+
+    const scope = effectScope();
+    const preferences = scope.run(() => usePortfolioPreferences())!;
+    const groupKeys = [...legacyGroupKeys('ksm', 'Kusama'), ...legacyGroupKeys('usdt', 'ethereum')];
+
+    // v1 reached one row per group; the rebuild covers the whole group.
+    expect(migratedKeys).toHaveLength(2);
+    expect(groupKeys.length).toBeGreaterThan(20);
+    groupKeys.forEach((key) => {
+      expect(preferences.effectivePreferences.value[key], key).toBe('hidden');
+      expect(preferences.preferenceSource(key), key).toBe(migratedKeys.includes(key) ? 'explicit' : 'legacy305');
+    });
+
+    scope.stop();
+    expect(storage.getItem('account_asset-preferences-v1')).toBe(developV1);
+    expect(storage.getItem('account_asset-preferences-v1-migrated')).toBe(developMigrated);
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expectLegacyKeysUntouched(entries);
+  });
+
+  it('applies 3.0.5 hides once the network list arrives, including to networks added since 3.0.5', () => {
+    const entries = seed('switches');
+    const accountsStore = useAccountsStore();
+    const networksStore = useNetworksStore();
+    accountsStore.setSelectedWallet(wallet(SUBSTRATE_ADDRESS));
+
+    const scope = effectScope();
+    const preferences = scope.run(() => usePortfolioPreferences())!;
+
+    // The popup can open before the registry loads: nothing maps yet, and the stored ids are not reported as gone.
+    expect(preferences.hiddenKeys.value.size).toBe(0);
+
+    networksStore.allNetworks = productionNetworks;
+    const ksmKeys = legacyGroupKeys('ksm', 'Kusama');
+    ksmKeys.forEach((key) => expect(preferences.hiddenKeys.value.has(key), key).toBe(true));
+
+    // A parachain added to the registry after 3.0.5 joins the KSM group exactly as 3.0.5 would have put it there.
+    const kusama = productionNetworks.find(({ name }) => name === 'Kusama')!;
+    const polkadot = productionNetworks.find(({ name }) => name === 'Polkadot')!;
+    const newParachain = (name: string, chainId: string, parentId: string): NetworkJson => ({
+      ...kusama,
+      name,
+      chainId,
+      parentId,
+      favorite: [],
+      assets: [{ ...kusama.assets[0], id: `${chainId}-ksm`, currencyId: undefined, isNative: undefined, isUtility: undefined }],
+    });
+    const newKey = (chainId: string) => createAssetKey({ ecosystem: 'substrate', chainId, assetId: `${chainId}-ksm` });
+    networksStore.allNetworks = [
+      ...productionNetworks,
+      newParachain('Kusama Newcomer', '0xkusama-newcomer', kusama.chainId),
+      newParachain('Polkadot Newcomer', '0xpolkadot-newcomer', polkadot.chainId),
+    ];
+
+    expect(preferences.effectivePreferences.value[newKey('0xkusama-newcomer')]).toBe('hidden');
+    expect(preferences.preferenceSource(newKey('0xkusama-newcomer'))).toBe('legacy305');
+    // KSM under the Polkadot relay chain was never part of the Kusama group.
+    expect(preferences.effectivePreferences.value[newKey('0xpolkadot-newcomer')]).toBeUndefined();
+    ksmKeys.forEach((key) => expect(preferences.hiddenKeys.value.has(key), key).toBe(true));
+    expect(console.info).not.toHaveBeenCalled();
 
     scope.stop();
     expectLegacyKeysUntouched(entries);

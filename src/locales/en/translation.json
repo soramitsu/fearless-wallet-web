@@ -376,6 +376,9 @@
     "refresh": "Refresh",
     "unavailable": "Demeter is unavailable",
     "browseOnly": "Browse only",
+    "pausedTitle": "Farming actions are paused",
+    "pausedBody": "This version shows your Demeter pools, positions and rewards but keeps deposits, withdrawals and claims off while they are verified. Nothing is moved: your positions and rewards stay on SORA.",
+    "openPools": "Open liquidity pools",
     "yourPositions": "Your positions",
     "positionsEmpty": "Deposits and claimable rewards will appear here.",
     "farmingPools": "Farming pools",
@@ -430,6 +433,7 @@
     "markets": "Markets",
     "polkamarktDescription": "Prediction markets collateralized in KUSD",
     "soraXorFees": "SORA · XOR fees",
+    "browseOnly": "Browse only",
     "availableNetworks": "Available networks",
     "addSubstrateAccount": "Add a Substrate account"
   },
@@ -513,6 +517,8 @@
     "indexerDelayed": "Indexer delayed",
     "catalogSynced": "Catalog synced",
     "capabilityStatus": "Live capability status",
+    "pausedTitle": "Trading is paused in this version",
+    "pausedBody": "Polkamarkt stays browse-only while buying, selling and claims are verified. Markets, prices and your positions are shown here; nothing is submitted.",
     "risk": {
       "title": "SORA market risk acknowledgement",
       "description": "Polkamarkt trades use KUSD collateral on SORA and pay XOR network fees. Quotes can move before inclusion and losses may be total.",
@@ -587,6 +593,7 @@
     "marketUnavailable": "Market #{id} is unavailable on SORA.",
     "actionReason": {
       "loading": "Loading market state.",
+      "paused": "Buying, selling and claims are paused in this version.",
       "closed": "This market is closed for trading.",
       "addAccount": "Add a SORA account.",
       "unsupportedSigner": "Use a locally signable SORA account.",
@@ -733,6 +740,7 @@
     "onNetwork": "on {network}",
     "receiveOnlyOnNetwork": "Only send {symbol} on {network} to this address. Tokens sent from other networks may be lost.",
     "receiveEvmSameAddress": "This address is the same on all EVM networks, but tokens only arrive on the network they were sent on.",
+    "receiveSendUnavailable": "Sending from {network} is not available in this version of Fearless. You can receive {symbol} here and see it in your balance.",
     "networkIssues": "Network Issues",
     "originNet": "ORIGINAL NETWORK",
     "network": "NETWORK",

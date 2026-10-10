@@ -6,6 +6,9 @@ export interface TonStoreAccount {
   name: string;
   address: string;
   cipherSeed: string;
+  /** The same phrase encrypted with the new password while a password change is in progress.
+   * Whichever of the two copies opens with the current master password is kept (TonSeedVault). */
+  pendingCipherSeed?: string;
   meta?: FWKeyringMeta;
   publicKeyHex: string;
 }

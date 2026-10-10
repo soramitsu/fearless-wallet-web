@@ -26,7 +26,7 @@ const global = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.migrate.mockResolvedValue(true);
-  mocks.list.mockResolvedValue([{ address: 'legacy-fixture', meta: { name: 'Legacy wallet' } }]);
+  mocks.list.mockResolvedValue([{ address: 'legacy-fixture', name: 'Legacy wallet', type: 'sr25519', walletEcosystem: 'substrate', isEthereum: false }]);
 });
 
 describe('legacy account upgrade recovery', () => {

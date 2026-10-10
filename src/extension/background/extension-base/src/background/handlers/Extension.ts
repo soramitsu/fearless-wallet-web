@@ -143,6 +143,8 @@ import type {
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
+  RequestRecoverAccountWithPassword,
+  RequestRecoverAccountWithPhrase,
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
   RequestUpdateCurrentAccount,
@@ -2244,7 +2246,7 @@ export default class Extension extends FWExtensionBase {
     return requireEnabledIrohaConnect(this.state.irohaConnectService);
   }
 
-  changeMasterPassword(request: RequestChangePassword): boolean {
+  changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
@@ -2314,11 +2316,23 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.reset)':
         return this.state.keyringService.resetWallet();
 
+      case 'pri(keyring.getAccessStatus)':
+        return this.state.keyringService.getAccessStatus();
+
       case 'pri(keyring.getMigrationAccounts)':
         return this.state.keyringService.getMigrationAccounts();
 
       case 'pri(keyring.isNeedMigration)':
         return this.state.keyringService.isNeedMigration();
+
+      case 'pri(keyring.deferLegacyPasswordMigration)':
+        return this.state.keyringService.deferLegacyPasswordMigration();
+
+      case 'pri(keyring.recoverAccountWithPassword)':
+        return this.state.keyringService.recoverAccountWithPassword(request as RequestRecoverAccountWithPassword);
+
+      case 'pri(keyring.recoverAccountWithPhrase)':
+        return this.state.keyringService.recoverAccountWithPhrase(request as RequestRecoverAccountWithPhrase);
 
       case 'pri(keyring.getUniversalWalletMigrationSnapshot)':
         return this.state.keyringService.getUniversalWalletMigrationSnapshot();
@@ -2327,7 +2341,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.keyringService.keyringMigrateMasterPassword(request as RequestMigratePassword);
 
       case 'pri(keyring.export.mnemonic)':
-        return this.state.keyringService.exportMnemonic(request as RequestExportSeed);
+        return this.state.keyringService.exportAccountMnemonic(request as RequestExportSeed);
 
       case 'pri(keyring.export.rowSeed)':
         return this.state.keyringService.accountExportRawSeed(request as RequestExportSeed);

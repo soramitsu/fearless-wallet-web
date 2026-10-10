@@ -14,26 +14,43 @@ import { decodePair } from '@polkadot/keyring/pair/decode';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
+import BaseExtensionStore from '@extension-base/stores/BaseExtension';
+import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
-import { upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
+import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
 import { updateAccountMetadata } from './AccountMetadata';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
+import {
+  AccountAccessService,
+  decodesWithPassword,
+  isMasterPasswordPair,
+  needsLegacyPasswordMigration,
+  summarizeLegacyPasswordAccounts,
+} from './AccountAccess';
+import { LEGACY_PASSWORD_REQUIRED, PREVIOUS_PASSWORD_REQUIRED } from './AccountAccessErrors';
+import type { StagedTonSeed } from './TonSeedVault';
 import type { EventService } from '@extension-base/services';
 import type {
+  AccountAccessStatus,
   DecryptForCosignerData,
   EncryptByCosignerData,
   FinalEncryptedStructure,
+  LegacyPasswordAccountSummary,
   RequestChangePassword,
   RequestExportSeed,
   RequestGenerateMnemonic,
   RequestMigratePassword,
+  RequestRecoverAccountWithPassword,
+  RequestRecoverAccountWithPhrase,
   RequestUnlockExtension,
   RequestValidateMnemonic,
   ResponseExportPrivateKey,
   ResponseExportSeed,
+  ResponseRecoverAccountWithPassword,
+  ResponseRecoverAccountWithPhrase,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@subwallet/keyring/types';
@@ -42,18 +59,23 @@ import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
+import { TonKeyringError } from '@/util/tonKeyring';
 import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWalletKeyringMigration';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
-function needsLegacyPasswordMigration(pair: KeyringPair | null): pair is KeyringPair {
-  if (!pair || pair.meta.isMasterPassword) return false;
-  // These accounts sign outside the local encrypted keyring. Prompting for an
-  // old local password would make their otherwise valid upgrade impossible.
-  const meta = pair.meta;
-  return !meta.isExternal && !meta.isHardware && !meta.isInjected && !meta.isMobile;
+type LegacyMigrationResult = 'migrated' | 'wrong_password' | 'not_found' | 'storage_failed';
+
+// Resolves once every wallet write queued so far has landed, and rejects if one of them failed.
+async function flushWalletWrites(): Promise<void> {
+  if (IS_EXTENSION) return BaseExtensionStore.flush();
+
+  const results = await Promise.allSettled([BaseWebStore.flush(), KeyringStoreWeb.flush()]);
+  const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+  if (failure) throw failure.reason;
 }
 
 export class KeyringService {
@@ -63,9 +85,19 @@ export class KeyringService {
   readonly currentAccountReady: Promise<void>;
 
   private accountsStore?: AccountsStore;
+  private accountAccess?: AccountAccessService;
   private password = '';
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
+
+  private get access(): AccountAccessService {
+    return (this.accountAccess ??= new AccountAccessService(this));
+  }
+
+  // Public completion seam, like waitForLegacyNetworkEnrollment: unlock never awaits the TON check.
+  waitForAccessScan(): Promise<void> {
+    return this.access.waitForScan();
+  }
 
   // Public completion seam for lifecycle qualification; normal unlock never
   // awaits optional account generation or requires it to succeed.
@@ -333,18 +365,43 @@ export class KeyringService {
 
     if (!substratePair) return false;
 
-    try {
-      keyring.unlockPair(substrateAddress);
+    // A stable code instead of a decryption failure; nothing is unlocked.
+    if (needsLegacyPasswordMigration(pair)) throw new Error(LEGACY_PASSWORD_REQUIRED);
 
-      if (ethereumAddress) keyring.unlockPair(ethereumAddress);
+    // Each key opens on its own: a linked account that still waits for its legacy password, or that
+    // was left under an earlier master password, does not keep this account from signing.
+    const linkedPairs = [...new Set([substratePair, ethereumPair])].filter(
+      (linkedPair): linkedPair is KeyringPair => !!linkedPair && !needsLegacyPasswordMigration(linkedPair)
+    );
+    let unlocked = true;
 
-      return true;
-    } catch {
-      substratePair.lock();
-      ethereumPair?.lock();
+    for (const linkedPair of linkedPairs) {
+      try {
+        keyring.unlockPair(linkedPair.address);
+      } catch {
+        linkedPair.lock();
 
-      return false;
+        const needsPreviousPassword = this.flagIfPreviousMasterPassword(linkedPair);
+
+        if (linkedPair !== pair) continue;
+        if (needsPreviousPassword) throw new Error(PREVIOUS_PASSWORD_REQUIRED);
+
+        unlocked = false;
+      }
     }
+
+    return unlocked;
+  }
+
+  // A local key that does not open with the current master password was left under an earlier one,
+  // for example by an interrupted password change. It is listed in Account access until recovered.
+  // Detected only when used: opening every key at unlock would cost about 100 ms of scrypt each.
+  private flagIfPreviousMasterPassword(pair: KeyringPair, passphrase = this.password): boolean {
+    if (!this.password || passphrase !== this.password || !isMasterPasswordPair(pair)) return false;
+
+    this.access.flagPreviousMasterPair(pair.address);
+
+    return true;
   }
 
   lockPair(addressOrPair: string | KeyringPair | undefined) {
@@ -452,18 +509,79 @@ export class KeyringService {
     }
   }
 
-  changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
-    try {
-      keyring.changeMasterPassword(newPassword, oldPassword);
+  // TON phrases are encrypted outside ui-keyring, so they are re-encrypted here: a verified copy under
+  // the new password is staged next to each ciphertext, the keyring password changes, and only then do
+  // the copies become current. An interruption at any point leaves a copy the current password opens.
+  async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
+    const { vault } = this.tonKeyring;
+
+    return vault.exclusive(async () => {
+      const wasLocked = !this.password;
+      const hadMasterPassword = this.hasMasterPassword;
+
+      if (!newPassword || (hadMasterPassword && !this.verifyMasterPassword(oldPassword))) return false;
+
+      let staged: StagedTonSeed[] = [];
+      let setAside: KeyringPair[];
+
+      try {
+        if (hadMasterPassword) staged = await vault.stage(oldPassword!, newPassword);
+        setAside = this.changeKeyringPassword(newPassword, hadMasterPassword ? oldPassword : undefined);
+      } catch (e) {
+        console.error(e);
+        await vault.rollback(staged);
+        if (wasLocked) keyring.lockAll();
+
+        return false;
+      }
+
       this.password = newPassword;
+      setAside.forEach(({ address }) => this.access.flagPreviousMasterPair(address));
+      // The staged TON copies become current only once the new password hash and keys are stored.
+      await flushWalletWrites();
+      await vault.commit(staged);
       this.scheduleLegacyNetworkEnrollment();
+      this.access.scheduleScan(newPassword);
 
       return true;
-    } catch (e) {
-      console.error(e);
+    });
+  }
 
+  // Checks the old password before anything is written. A wrong one changes nothing.
+  private verifyMasterPassword(password?: string): boolean {
+    if (!password) return false;
+    if (this.password) return password === this.password;
+
+    try {
+      keyring.unlockKeyring(password);
+
+      return true;
+    } catch {
       return false;
     }
+  }
+
+  // ui-keyring re-encrypts every master-password key and stores them only when all of them succeeded,
+  // after it has already stored the new password hash. One key left under an earlier password would
+  // abort that and strand every key under the old password. Such keys are set aside: they keep their
+  // stored ciphertext and are recovered with the password that opens them.
+  private changeKeyringPassword(newPassword: string, oldPassword?: string): KeyringPair[] {
+    const setAside = oldPassword
+      ? this.getAccounts()
+          .map(({ address }) => this.getPair(address))
+          .filter((pair): pair is KeyringPair => isMasterPasswordPair(pair))
+          .filter((pair) => pair.isLocked && !decodesWithPassword(pair, oldPassword))
+      : [];
+
+    setAside.forEach((pair) => pair.setMeta({ isMasterPassword: false }));
+
+    try {
+      keyring.changeMasterPassword(newPassword, oldPassword);
+    } finally {
+      setAside.forEach((pair) => pair.setMeta({ isMasterPassword: true }));
+    }
+
+    return setAside;
   }
 
   async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
@@ -486,15 +604,23 @@ export class KeyringService {
     return mnemonicValidate(seed);
   }
 
-  exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): ResponseExportSeed {
-    if (walletEcosystem === WalletEcosystem.Ton) {
-      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
-      const seed = this.tonKeyring.decodeMnemonic(cipherSeed);
+  // `pri(keyring.export.mnemonic)`. A TON phrase is returned exactly as stored, only after it derived the
+  // account's public key, and never empty: a phrase that does not open throws its recovery code.
+  async exportAccountMnemonic(request: RequestExportSeed): Promise<ResponseExportSeed> {
+    if (request.walletEcosystem !== WalletEcosystem.Ton) return this.exportMnemonic(request);
+    if (request.password !== undefined && request.password !== this.password) throw new TonKeyringError('wrong_password');
 
-      return { seed };
-    }
+    return { seed: await this.tonKeyring.decodeMnemonicVerified(request.address) };
+  }
+
+  // Keyring accounts only; TON phrases are verified asynchronously by exportAccountMnemonic.
+  exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): ResponseExportSeed {
+    if (walletEcosystem === WalletEcosystem.Ton) throw new TonKeyringError('ton_export_requires_verification');
 
     const passphrase = password ?? this.password;
+    const accountPair = this.getPair(address);
+
+    if (needsLegacyPasswordMigration(accountPair)) throw new Error(LEGACY_PASSWORD_REQUIRED);
 
     try {
       const pair = keyring.getPair(address);
@@ -502,8 +628,19 @@ export class KeyringService {
 
       return { seed };
     } catch {
+      let json: KeyringPair$Json | undefined;
+
       try {
-        const json = this.backupAccount(address, passphrase);
+        json = this.backupAccount(address, passphrase);
+      } catch {
+        if (accountPair && this.flagIfPreviousMasterPassword(accountPair, passphrase)) {
+          throw new Error(PREVIOUS_PASSWORD_REQUIRED);
+        }
+
+        return { seed: '' };
+      }
+
+      try {
         const seed = json ? decodeMnemonicFromJsonBackup(json, passphrase) : '';
 
         return { seed };
@@ -514,7 +651,19 @@ export class KeyringService {
   }
 
   public accountExportPrivateKey({ address }: RequestExportSeed): ResponseExportPrivateKey {
-    const json = this.backupAccount(address, this.password);
+    const pair = this.getPair(address);
+
+    if (needsLegacyPasswordMigration(pair)) throw new Error(LEGACY_PASSWORD_REQUIRED);
+
+    let json: KeyringPair$Json | undefined;
+
+    try {
+      json = this.backupAccount(address, this.password);
+    } catch (error) {
+      if (pair && this.flagIfPreviousMasterPassword(pair)) throw new Error(PREVIOUS_PASSWORD_REQUIRED, { cause: error });
+
+      throw error;
+    }
 
     if (!json) throw new Error('Json was not exported');
 
@@ -590,6 +739,7 @@ export class KeyringService {
       keyring.unlockKeyring(password);
       this.password = password;
       this.scheduleLegacyNetworkEnrollment();
+      this.access.scheduleScan(password);
 
       return true;
     } catch (e) {
@@ -605,6 +755,7 @@ export class KeyringService {
 
       this.password = '';
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
+      this.access.cancelScan();
 
       return true;
     } catch (e) {
@@ -619,6 +770,9 @@ export class KeyringService {
       keyring.resetWallet(true);
       this.password = '';
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
+      // TON records are not part of the reset (as in 3.0.5); they are listed for recovery after the
+      // new password is set.
+      this.access.reset();
 
       return true;
     } catch (e) {
@@ -628,14 +782,28 @@ export class KeyringService {
     }
   }
 
-  getMigrationAccounts() {
+  private getLegacyPasswordPairs(): KeyringPair[] {
     return this.getAccounts()
       .map(({ address }) => this.getPair(address))
-      .filter(needsLegacyPasswordMigration);
+      .filter((pair): pair is KeyringPair => needsLegacyPasswordMigration(pair));
   }
 
-  isNeedMigration(): boolean {
-    return this.getMigrationAccounts().length !== 0;
+  getMigrationAccounts(): LegacyPasswordAccountSummary[] {
+    return summarizeLegacyPasswordAccounts(this.getLegacyPasswordPairs(), this.getAccounts());
+  }
+
+  getAccessStatus(): Promise<AccountAccessStatus> {
+    return this.access.getStatus(this.getLegacyPasswordPairs());
+  }
+
+  // Whether to show the per-account password prompt now. Accounts that are still pending after the
+  // user chose "Skip for now" stay listed in getAccessStatus().issues.
+  async isNeedMigration(): Promise<boolean> {
+    return (await this.getAccessStatus()).promptPending;
+  }
+
+  deferLegacyPasswordMigration(): Promise<boolean> {
+    return this.access.defer();
   }
 
   getUniversalWalletMigrationSnapshot() {
@@ -654,35 +822,158 @@ export class KeyringService {
     });
   }
 
+  // True once the requested account is encrypted with the master password.
   async keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): Promise<boolean> {
-    try {
-      const pair = this.getPair(address);
-      if (!pair) return false;
-      const ethereumAddress = pair.meta.ethereumAddress as string | undefined;
-      const child = ethereumAddress ? this.getPair(ethereumAddress) : null;
-      // Keep independently encrypted children discoverable after a partial
-      // migration. Each pair is migrated once and remains retryable on reopen.
-      const pending = [...new Set([child, pair])].filter(needsLegacyPasswordMigration);
-      for (const candidate of pending) {
-        // Validate every old password before changing either pair. A linked
-        // account may have its own password and can be migrated separately.
-        const wasLocked = candidate.isLocked;
-        try {
-          candidate.decodePkcs8(password);
-        } finally {
-          if (wasLocked) candidate.lock();
-        }
-      }
-      for (const candidate of pending) {
-        await upgradeLegacyAccountPassword(candidate, password);
-      }
-      this.scheduleLegacyNetworkEnrollment();
+    return (await this.migrateLegacyAccount(address, password)) === 'migrated';
+  }
 
-      return true;
+  // Each pending key of the account that this password opens is migrated on its own. A linked EVM
+  // account with a different legacy password stays pending and is listed as its own row.
+  private async migrateLegacyAccount(address: string, password: string): Promise<LegacyMigrationResult> {
+    const pair = this.getPair(address);
+
+    if (!pair) return 'not_found';
+
+    const ethereumAddress = pair.meta.ethereumAddress as string | undefined;
+    const child = ethereumAddress ? this.getPair(ethereumAddress) : null;
+    const opened = [...new Set([pair, child])]
+      .filter((candidate): candidate is KeyringPair => needsLegacyPasswordMigration(candidate))
+      .filter((candidate) => decodesWithPassword(candidate, password));
+
+    if (needsLegacyPasswordMigration(pair) && !opened.includes(pair)) return 'wrong_password';
+
+    try {
+      for (const candidate of opened) await upgradeLegacyAccountPassword(candidate, password);
+    } catch (e) {
+      // Each pair commits on its own. One that failed stays pending and can be retried.
+      console.error(e);
+    }
+
+    if (needsLegacyPasswordMigration(this.getPair(address))) return 'storage_failed';
+
+    this.scheduleLegacyNetworkEnrollment();
+
+    return 'migrated';
+  }
+
+  // For an account in getAccessStatus().issues: a legacy account is migrated with its own old password;
+  // a key or TON phrase left under an earlier master password is re-encrypted with the current one.
+  // A wrong password writes nothing.
+  async recoverAccountWithPassword({
+    address,
+    walletEcosystem,
+    password,
+  }: RequestRecoverAccountWithPassword): Promise<ResponseRecoverAccountWithPassword> {
+    if (!this.password) return { ok: false, code: 'locked' };
+
+    if (walletEcosystem === WalletEcosystem.Ton) {
+      if (!this.tonKeyring.accountSubject.value[address]) return { ok: false, code: 'not_found' };
+
+      try {
+        const recovered = await this.tonKeyring.vault.recoverWithPassword(address, password, () => this.password);
+
+        return recovered ? { ok: true } : { ok: false, code: 'wrong_password' };
+      } catch (e) {
+        console.error(e);
+
+        return { ok: false, code: 'storage_failed' };
+      }
+    }
+
+    const pair = this.getPair(address);
+
+    if (!pair) return { ok: false, code: 'not_found' };
+
+    if (needsLegacyPasswordMigration(pair)) {
+      const result = await this.migrateLegacyAccount(address, password);
+
+      return result === 'migrated' ? { ok: true } : { ok: false, code: result };
+    }
+
+    if (!isMasterPasswordPair(pair)) return { ok: false, code: 'not_found' };
+    if (!decodesWithPassword(pair, password)) return { ok: false, code: 'wrong_password' };
+
+    try {
+      // The same verified copy-and-commit as the legacy upgrade; the record stays a master-password one.
+      await upgradeLegacyAccountPassword(pair, password);
     } catch (e) {
       console.error(e);
 
-      return false;
+      return { ok: false, code: 'storage_failed' };
     }
+
+    this.access.clearPreviousMasterPair(address);
+    this.scheduleLegacyNetworkEnrollment();
+
+    return { ok: true };
+  }
+
+  // For an account in getAccessStatus().issues: the recovery phrase is accepted only if it reproduces
+  // the stored address (TON: the stored public key). A mismatch writes nothing.
+  async recoverAccountWithPhrase({
+    address,
+    walletEcosystem,
+    phrase,
+    derivationPath,
+  }: RequestRecoverAccountWithPhrase): Promise<ResponseRecoverAccountWithPhrase> {
+    if (!this.password) return { ok: false, code: 'locked' };
+
+    if (walletEcosystem === WalletEcosystem.Ton) {
+      if (!this.tonKeyring.accountSubject.value[address]) return { ok: false, code: 'not_found' };
+
+      try {
+        const recovered = await this.tonKeyring.vault.recoverWithPhrase(address, phrase, () => this.password);
+
+        return recovered ? { ok: true } : { ok: false, code: 'phrase_mismatch' };
+      } catch (e) {
+        console.error(e);
+
+        return { ok: false, code: 'storage_failed' };
+      }
+    }
+
+    const pair = this.getPair(address);
+
+    if (!needsLegacyPasswordMigration(pair) && !isMasterPasswordPair(pair)) return { ok: false, code: 'not_found' };
+
+    const copy = this.pairFromPhrase(pair, phrase, derivationPath);
+
+    if (!copy) return { ok: false, code: 'phrase_mismatch' };
+
+    try {
+      await commitMasterEncryptedCopy(pair, copy);
+    } catch (e) {
+      console.error(e);
+
+      return { ok: false, code: 'storage_failed' };
+    }
+
+    this.access.clearPreviousMasterPair(address);
+    this.scheduleLegacyNetworkEnrollment();
+
+    return { ok: true };
+  }
+
+  // EVM accounts default to the path Fearless creates them with (AddWallet.vue suriEthereum).
+  private pairFromPhrase(pair: KeyringPair, phrase: string, derivationPath?: string): KeyringPair | undefined {
+    const isEthereum = isEthereumAddress(pair.address);
+    let suriPath = derivationPath?.trim() || (isEthereum ? ETHEREUM_DEFAULT_DERIVATION_PATH : '');
+    if (isEthereum && !suriPath.startsWith('/')) suriPath = `/${suriPath}`;
+    const words = phrase.trim().replace(/\s+/g, ' ');
+
+    for (const candidate of new Set([words, words.toLowerCase()])) {
+      if (!candidate) continue;
+
+      try {
+        const copy = keyring.createFromUri(`${candidate}${suriPath}`, { ...pair.meta }, pair.type);
+        const sameAddress = isEthereum ? isSameString(copy.address, pair.address) : copy.address === pair.address;
+
+        if (sameAddress) return copy;
+      } catch {
+        // Not a phrase or path for this key type.
+      }
+    }
+
+    return undefined;
   }
 }

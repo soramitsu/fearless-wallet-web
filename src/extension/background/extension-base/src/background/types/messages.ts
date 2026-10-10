@@ -1,4 +1,3 @@
-import { type KeyringAddress } from '@subwallet/ui-keyring/types';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
@@ -135,6 +134,12 @@ import type {
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
+  LegacyPasswordAccountSummary,
+  AccountAccessStatus,
+  RequestRecoverAccountWithPassword,
+  ResponseRecoverAccountWithPassword,
+  RequestRecoverAccountWithPhrase,
+  ResponseRecoverAccountWithPhrase,
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
   RequestUpdateCurrentAccount,
@@ -185,10 +190,14 @@ export interface RequestSignatures {
   'pri(keyring.lock)': [boolean, boolean];
   'pri(keyring.getPassword)': [null, string];
   'pri(keyring.reset)': [null, boolean];
-  'pri(keyring.getMigrationAccounts)': [null, KeyringAddress[]];
+  'pri(keyring.getAccessStatus)': [null, AccountAccessStatus];
+  'pri(keyring.getMigrationAccounts)': [null, LegacyPasswordAccountSummary[]];
   'pri(keyring.isNeedMigration)': [null, boolean];
   'pri(keyring.getUniversalWalletMigrationSnapshot)': [null, UniversalWalletMigrationSnapshot];
   'pri(keyring.migrateMasterPassword)': [RequestMigratePassword, boolean];
+  'pri(keyring.deferLegacyPasswordMigration)': [null, boolean];
+  'pri(keyring.recoverAccountWithPassword)': [RequestRecoverAccountWithPassword, ResponseRecoverAccountWithPassword];
+  'pri(keyring.recoverAccountWithPhrase)': [RequestRecoverAccountWithPhrase, ResponseRecoverAccountWithPhrase];
 
   // Account Management
   'pri(accounts.validate.path)': [DerivationPath, boolean];

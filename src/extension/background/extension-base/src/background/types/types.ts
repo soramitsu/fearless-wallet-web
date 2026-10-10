@@ -551,6 +551,68 @@ export interface RequestMigratePassword {
   password: string;
 }
 
+/** One account still encrypted with its own pre-2.7.1 password. Plain data, safe to message. */
+export interface LegacyPasswordAccountSummary {
+  address: string;
+  name: string;
+  type: SubwalletKeypairType;
+  walletEcosystem: WalletEcosystem;
+  isEthereum: boolean;
+  /** The Substrate account this EVM account belongs to. */
+  linkedParentAddress?: string;
+  linkedParentName?: string;
+  ethereumAddress?: string;
+  whenCreated?: number;
+}
+
+export type AccountAccessIssueKind = 'legacy_account_password' | 'previous_master_password';
+
+/** An account whose stored key does not open with the master password. It stays in the wallet:
+ * balances and receive work, signing and export wait until it is unlocked. */
+export interface AccountAccessIssue {
+  address: string;
+  walletEcosystem: WalletEcosystem;
+  kind: AccountAccessIssueKind;
+  name: string;
+  linkedParentAddress?: string;
+  /** Legacy accounts only: their original encrypted JSON, still under its old password. */
+  canDownloadEncryptedBackup: boolean;
+}
+
+export interface AccountAccessStatus {
+  hasMasterPassword: boolean;
+  mustCreateMasterPassword: boolean;
+  /** Show the per-account password prompt now. Same value as `pri(keyring.isNeedMigration)`. */
+  promptPending: boolean;
+  deferred: boolean;
+  issues: AccountAccessIssue[];
+  /** The background check of TON phrases after the last unlock has finished. */
+  scanComplete: boolean;
+}
+
+export interface RequestRecoverAccountWithPassword {
+  address: string;
+  walletEcosystem: WalletEcosystem;
+  password: string;
+}
+
+export interface ResponseRecoverAccountWithPassword {
+  ok: boolean;
+  code?: 'wrong_password' | 'locked' | 'not_found' | 'storage_failed';
+}
+
+export interface RequestRecoverAccountWithPhrase {
+  address: string;
+  walletEcosystem: WalletEcosystem;
+  phrase: string;
+  derivationPath?: string;
+}
+
+export interface ResponseRecoverAccountWithPhrase {
+  ok: boolean;
+  code?: 'phrase_mismatch' | 'locked' | 'not_found' | 'storage_failed';
+}
+
 export interface RequestExportSeed {
   address: string;
   password?: string;

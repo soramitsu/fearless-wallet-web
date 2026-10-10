@@ -119,7 +119,7 @@ export async function makeTransfer({
   await api?.isReady;
 
   const address = state.keyringService.getSubstrateAddress(from);
-  const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
+  const tokenBalance = state.balanceService.getTokenBalance(address, assetId, undefined, networkKey);
 
   const extrinsic = createExtrinsicTransfer(
     {

@@ -1323,7 +1323,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain, networkKey);
     const balance = getBalanceItem(tokenBalance.balances, networkKey)!;
 
     // Estimate with EVM API
@@ -1375,7 +1375,7 @@ export default class Extension extends FWExtensionBase {
 
     if (!isBitcoinTransferNetwork(network) && !isIrohaTransferNetwork(network) && !isSolanaTransferNetwork(network)) {
       const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-      const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+      const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain, networkKey);
 
       tokenSymbol = tokenBalance.symbol;
       balance = getBalanceItem(tokenBalance.balances, networkKey)!;
@@ -1486,7 +1486,7 @@ export default class Extension extends FWExtensionBase {
     try {
       await refreshCrossChainOriginBalance({ from, originNet }, this.state);
       const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-      const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+      const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain, originNet);
       const validation = validateReviewedCrossChainRequest({
         routeId,
         providerId: routeProviderId,
@@ -1560,7 +1560,7 @@ export default class Extension extends FWExtensionBase {
     try {
       await refreshCrossChainOriginBalance({ from, originNet }, this.state);
       const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-      tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+      tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain, originNet);
       capturedPair = this.state.keyringService.getPair(substrateAddress);
       const validation = validateReviewedCrossChainRequest({
         routeId,

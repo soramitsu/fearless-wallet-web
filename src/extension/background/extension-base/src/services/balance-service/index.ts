@@ -392,7 +392,17 @@ export default class BalanceService {
     });
   }
 
-  getTokenBalance(address: string, assetId: string, relayChain?: string) {
+  getTokenBalance(address: string, assetId: string, relayChain?: string, networkKey?: string) {
+    // The same registry id can live on several networks (DOT on Polkadot and Polkadot AssetHub,
+    // DAI on Arbitrum One and OP Mainnet), so a known network selects that network's group first.
+    const networkGroup = networkKey
+      ? this.balanceMap[address].find(({ balances }) =>
+          balances.some(({ id, name }) => id === assetId && isSameString(name, networkKey))
+        )
+      : undefined;
+
+    if (networkGroup) return networkGroup;
+
     // TODO проверить будет ли корректно работать если заменить на поиск по groupId
     return this.balanceMap[address].find((tokenGroup) => {
       const existId = tokenGroup.balances.some(({ id }) => id === assetId);

@@ -1,9 +1,14 @@
-import { type KeyringAddress } from '@subwallet/ui-keyring/types';
 import type {
+  AccountAccessStatus,
   ActiveTabAuthorizeStatus,
+  LegacyPasswordAccountSummary,
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
+  RequestRecoverAccountWithPassword,
+  RequestRecoverAccountWithPhrase,
+  ResponseRecoverAccountWithPassword,
+  ResponseRecoverAccountWithPhrase,
 } from '@extension-base/background/types/types';
 import type { UniversalWalletMigrationSnapshot } from '@/util/universalWalletMigrationContract';
 import { sendMessage } from '@/extension/messaging/index';
@@ -52,8 +57,24 @@ export function resetWallet(): Promise<boolean> {
   return sendMessage('pri(keyring.reset)');
 }
 
-export function getMigrationAccounts(): Promise<KeyringAddress[]> {
+export function getAccessStatus(): Promise<AccountAccessStatus> {
+  return sendMessage('pri(keyring.getAccessStatus)');
+}
+
+export function getMigrationAccounts(): Promise<LegacyPasswordAccountSummary[]> {
   return sendMessage('pri(keyring.getMigrationAccounts)');
+}
+
+export function deferLegacyPasswordMigration(): Promise<boolean> {
+  return sendMessage('pri(keyring.deferLegacyPasswordMigration)');
+}
+
+export function recoverAccountWithPassword(request: RequestRecoverAccountWithPassword): Promise<ResponseRecoverAccountWithPassword> {
+  return sendMessage('pri(keyring.recoverAccountWithPassword)', request);
+}
+
+export function recoverAccountWithPhrase(request: RequestRecoverAccountWithPhrase): Promise<ResponseRecoverAccountWithPhrase> {
+  return sendMessage('pri(keyring.recoverAccountWithPhrase)', request);
 }
 
 export function isNeedMigration(): Promise<boolean> {

@@ -42,7 +42,7 @@ const loadAccounts = async () => {
   loadError.value = false;
   try {
     const accounts = await getMigrationAccounts();
-    files.value = accounts.map(({ address, meta: { name } }) => ({
+    files.value = accounts.map(({ address, name }) => ({
       name,
       address,
       password: '',

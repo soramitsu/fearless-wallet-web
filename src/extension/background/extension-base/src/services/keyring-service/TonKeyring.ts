@@ -1,8 +1,8 @@
 import * as tonWebMnemonic from 'tonweb-mnemonic';
-import CryptoJS from 'crypto-js';
 import { BehaviorSubject } from 'rxjs';
 import { tonStore } from './../../stores/TonStore';
 import { validateBip39Mnemonic } from './Bip39';
+import { encryptTonSeed, TonSeedVault } from './TonSeedVault';
 import { type KeyringService } from '.';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import type { FWKeyringMeta } from '../../types';
@@ -30,6 +30,7 @@ export function hexToBytes(hex: string) {
 
 export class TonKeyringService {
   readonly accountSubject: BehaviorSubject<SubjectInfo & TonAccount> = new BehaviorSubject({});
+  readonly vault = new TonSeedVault(this);
 
   constructor(private keyringService: KeyringService) {
     // Background start-up awaits this read through `tonStore.loaded`.
@@ -38,13 +39,12 @@ export class TonKeyringService {
 
   // Reads every stored TON account again; start-up calls this after a failed read.
   loadAll(): Promise<void> {
-    const saveAccounts = async (address: string, { name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) =>
-      this.setAccounts({ address, name, cipherSeed, meta, publicKeyHex });
+    const saveAccounts = async (address: string, record: TonStoreAccount) => this.setAccounts({ ...record, address });
 
     return tonStore.all(saveAccounts);
   }
 
-  setAccounts({ address, name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) {
+  setAccounts({ address, name, cipherSeed, pendingCipherSeed, meta, publicKeyHex }: TonStoreAccount) {
     const accounts = this.accountSubject.value;
 
     const publicKey = hexToBytes(publicKeyHex);
@@ -61,6 +61,7 @@ export class TonKeyringService {
         name,
         address,
         cipherSeed,
+        pendingCipherSeed,
         walletContract,
         publicKey,
         walletEcosystem: WalletEcosystem.Ton,
@@ -77,13 +78,11 @@ export class TonKeyringService {
     });
   }
 
-  updateAccountName(address: string, name: string) {
+  // Only the name changes: the stored record keeps its ciphertexts and any field this version does not know.
+  async updateAccountName(address: string, name: string): Promise<void> {
     const {
-      cipherSeed,
       json: { meta },
-      publicKey: pubKey,
     } = this.accountSubject.value[address];
-    const publicKeyHex = bytesToHex(pubKey);
     const nextMeta = withUniversalWalletKeyringMeta(
       address,
       {
@@ -94,9 +93,11 @@ export class TonKeyringService {
       WalletEcosystem.Ton
     );
 
-    tonStore.set(address, { name, address, cipherSeed, meta: nextMeta, publicKeyHex });
-
-    this.setAccounts({ address, name, publicKeyHex, cipherSeed, meta: nextMeta });
+    await tonStore.updateAndWait(
+      address,
+      (current) => (current ? { ...current, name, meta: nextMeta } : undefined),
+      (record) => this.setAccounts({ ...record, address })
+    );
   }
 
   getAccount(_address: string) {
@@ -139,21 +140,6 @@ export class TonKeyringService {
     this.accountSubject.next({ ...accounts });
 
     tonStore.remove(address);
-  }
-
-  decode(value: string) {
-    const password = this.keyringService.getPassword();
-
-    const bytes = CryptoJS.AES.decrypt(value, password);
-    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-
-    return decryptedText;
-  }
-
-  encode(value: string) {
-    const cipherText = CryptoJS.AES.encrypt(value, '').toString();
-
-    return cipherText;
   }
 
   createContractV4(publicKey: Uint8Array) {
@@ -207,18 +193,12 @@ export class TonKeyringService {
   }
 
   encodeMnemonic(mnemonicArray: string[], password: string) {
-    const mnemonic = mnemonicArray.join(' ');
-    const cipherText = CryptoJS.AES.encrypt(mnemonic, password).toString();
-
-    return cipherText;
+    return encryptTonSeed(mnemonicArray.join(' '), password);
   }
 
-  decodeMnemonic(cipherMnemonic: string) {
-    const password = this.keyringService.getPassword();
-
-    const bytes = CryptoJS.AES.decrypt(cipherMnemonic, password);
-    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-
-    return decryptedText;
+  /** The stored phrase, exactly as stored, once it derives this account's public key. Throws
+   * `ton_seed_needs_previous_password` when it does not open with the current master password. */
+  decodeMnemonicVerified(address: string): Promise<string> {
+    return this.vault.decryptVerified(address, () => this.keyringService.getPassword());
   }
 }

@@ -17,6 +17,7 @@ vi.mock('@extension-base/stores/TonStore', () => ({
       Promise.resolve().then(() => mocks.records.forEach((record) => callback(record.address, record))),
     set: vi.fn(),
     remove: vi.fn(),
+    updateAndWait: vi.fn(),
   },
 }));
 
@@ -25,17 +26,22 @@ const NETWORK_KEY = 'TON Mainnet';
 const [account, recipient] = legacyVectors.vectors;
 
 // The record shape 3.0.1-3.0.5 TonKeyring.createAccount wrote: no meta, phrase encrypted with the master password.
-function legacyRecord(vector: (typeof legacyVectors.vectors)[number], phrase = vector.mnemonic): TonStoreAccount {
+function legacyRecord(
+  vector: (typeof legacyVectors.vectors)[number],
+  phrase = vector.mnemonic,
+  password = MASTER_PASSWORD
+): TonStoreAccount {
   return {
     name: 'TON from BIP39',
     address: vector.address,
-    cipherSeed: CryptoJS.AES.encrypt(phrase, MASTER_PASSWORD).toString(),
+    cipherSeed: CryptoJS.AES.encrypt(phrase, password).toString(),
     publicKeyHex: vector.publicKeyHex,
   };
 }
 
 async function upgradedState() {
   const sendBlockchainMessage = vi.fn();
+  const getAccountSeqno = vi.fn().mockResolvedValue({ seqno: 7 });
   const keyringService = { getPassword: () => MASTER_PASSWORD } as { getPassword: () => string; tonKeyring: TonKeyringService };
   keyringService.tonKeyring = new TonKeyringService(keyringService as never);
   await vi.waitFor(() => expect(Object.keys(keyringService.tonKeyring.accountSubject.value)).toHaveLength(mocks.records.length));
@@ -44,7 +50,7 @@ async function upgradedState() {
     getTonApiMap: {
       [NETWORK_KEY.toLowerCase()]: {
         api: {
-          wallet: { getAccountSeqno: vi.fn().mockResolvedValue({ seqno: 7 }) },
+          wallet: { getAccountSeqno },
           blockchain: { sendBlockchainMessage },
         },
       },
@@ -52,7 +58,7 @@ async function upgradedState() {
     keyringService,
   } as unknown as State;
 
-  return { sendBlockchainMessage, state };
+  return { getAccountSeqno, sendBlockchainMessage, state };
 }
 
 function transfer(state: State, amount = '0.5') {
@@ -104,9 +110,22 @@ describe('TON accounts imported from BIP39 phrases in 3.0.x', () => {
 
   it('refuse to sign when the stored phrase does not derive the stored key', async () => {
     mocks.records = [legacyRecord(account, recipient.mnemonic)];
-    const { sendBlockchainMessage, state } = await upgradedState();
+    const { getAccountSeqno, sendBlockchainMessage, state } = await upgradedState();
 
-    await expect(transfer(state)).rejects.toMatchObject({ code: 'account_key_mismatch' });
+    // Indistinguishable from a phrase encrypted with another password: it goes to Account access.
+    await expect(transfer(state)).rejects.toMatchObject({ code: 'ton_seed_needs_previous_password' });
+    expect(getAccountSeqno).not.toHaveBeenCalled();
+    expect(sendBlockchainMessage).not.toHaveBeenCalled();
+  });
+
+  // 3.0.5 changed the master password without re-encrypting TON phrases (W3).
+  it('reject before any network call when the phrase opens only with a previous password', async () => {
+    mocks.records = [legacyRecord(account, account.mnemonic, 'password used before the 3.0.5 change')];
+    const { getAccountSeqno, sendBlockchainMessage, state } = await upgradedState();
+
+    await expect(transfer(state)).rejects.toMatchObject({ code: 'ton_seed_needs_previous_password' });
+    expect(state.keyringService.tonKeyring.vault.needsPreviousPassword.has(account.address)).toBe(true);
+    expect(getAccountSeqno).not.toHaveBeenCalled();
     expect(sendBlockchainMessage).not.toHaveBeenCalled();
   });
 });

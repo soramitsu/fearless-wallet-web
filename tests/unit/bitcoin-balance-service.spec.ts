@@ -231,6 +231,23 @@ describe('BitcoinBalanceService', () => {
       total: '0.00003',
     });
 
+    // An account that needs a password to unlock (Account access) keeps the balance of its stored addresses.
+    exportMnemonic.mockImplementation(() => { throw new Error('previous_password_required'); });
+    await expect(
+      service.fetchBalance({
+        address: SUBSTRATE_ADDRESS,
+        bitcoinAddress: MAINNET_ADDRESS,
+        networks: ['Bitcoin'],
+      })
+    ).resolves.toEqual([{ assetId: 'BTC', balance: '0.00003', network: 'Bitcoin' }]);
+    expect(client.getAddress).toHaveBeenCalledTimes(9);
+    expect(client.getBalance).toHaveBeenCalledTimes(18);
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
+      state: APIItemState.READY,
+      total: '0.00003',
+    });
+    exportMnemonic.mockReturnValue({ seed: '' });
+
     const storedBalance = state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0] as unknown as {
       bitcoinAddresses?: Array<{ address: string; change: number; index: number; path: string }>;
     };

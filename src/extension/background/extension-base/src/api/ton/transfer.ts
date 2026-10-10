@@ -1,6 +1,7 @@
 import { Address, beginCell, external, internal, storeMessage, toNano, SendMode } from '@ton/core';
 import { type BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
+import { TonKeyringError } from '@/util/tonKeyring';
 
 interface TransferParams {
   balance: BalanceItem;
@@ -24,11 +25,20 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
 
   const api = state.getTonApiMap[networkKey.toLowerCase()];
 
-  const { walletContract, cipherSeed, publicKey } = state.keyringService.tonKeyring.accountSubject.value[from];
+  const { walletContract, publicKey } = state.keyringService.tonKeyring.accountSubject.value[from];
   if (!walletContract.address.equals(Address.parse(from))) throw new Error('TON account address mismatch');
-  const seed = state.keyringService.tonKeyring.decodeMnemonic(cipherSeed);
+  // Rejects with ton_seed_needs_previous_password, before any network call, when the phrase does not
+  // open with the current master password.
+  const seed = await state.keyringService.tonKeyring.decodeMnemonicVerified(from);
 
-  const { secretKey } = await state.keyringService.tonKeyring.mnemonicToKeyPair(seed.split(' '), undefined, publicKey);
+  const { secretKey } = await state.keyringService.tonKeyring
+    .mnemonicToKeyPair(seed.split(' '), undefined, publicKey)
+    .catch((error: unknown) => {
+      // The vault only returns phrases that derive this key, so this means the derivation itself changed.
+      if (error instanceof TonKeyringError && error.code === 'account_key_mismatch') throw new TonKeyringError('ton_key_mismatch');
+
+      throw error;
+    });
   const destinationAddress = Address.parse(to);
 
   const messageBody = beginCell()

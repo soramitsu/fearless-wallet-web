@@ -33,4 +33,14 @@ export default abstract class SubscribableStore<T> extends (IS_EXTENSION ? BaseE
   public getAndWait(_key: string): Promise<T | undefined> {
     return super.getAndWait(_key);
   }
+
+  // Read, transform and write one record in the shared write queue, keeping fields the caller does not set.
+  public updateAndWait(
+    _key: string,
+    transform: (current: T | undefined) => T | undefined,
+    publish?: (committed: T) => void,
+    trackFailure = true
+  ): Promise<T | undefined> {
+    return super.updateAndWait(_key, transform, publish, trackFailure);
+  }
 }

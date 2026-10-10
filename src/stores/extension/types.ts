@@ -1,5 +1,6 @@
 import { type SessionTypes } from '@walletconnect/types';
 import { type EvmRequests, type SolanaRequests } from '@extension-base/services/request-service/types';
+import type { MutableAction } from '@extension-base/services/action-capability-service';
 import type { AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types/types';
 import type {
   WalletConnectSessionRequest,
@@ -12,7 +13,8 @@ export interface Features {
     moonpay: boolean;
     ramp: boolean;
   };
-  actions?: Partial<Record<'polkaswap' | 'demeter' | 'polkamarkt' | 'crossChainXcm' | 'crossChainSoraBridge' | 'crossChainLiberland', boolean>>;
+  /** Resolved by the same veto-only policy the background enforces. */
+  actions: Record<MutableAction, boolean>;
   assetDiscoveryMode?: 'shadow' | 'visible';
   portfolio?: { assetDiscoveryMode?: 'shadow' | 'visible' };
 }

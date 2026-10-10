@@ -241,7 +241,6 @@ export interface RequestAccountCreateSuri {
 export interface BalanceJson {
   reset?: boolean;
   details: TokenGroup[];
-  saveSequence?: boolean;
   scanStates?: Record<NetworkName, NetworkScanState>;
 }
 

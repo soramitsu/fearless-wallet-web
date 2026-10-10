@@ -76,7 +76,7 @@
                 :totalAmount="transferableAmount"
                 :value="syncedValue"
                 :asset="sendAssetName"
-                :assetId="syncedAssetId"
+                :assetId="transferAssetId"
                 :amount="syncedAmount"
                 :isRotate="showSelectedAssetPopup"
                 :disableSelection="lockRouteSelection"
@@ -281,10 +281,13 @@ import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
 import {
-  getCurrencyOptions,
   calcTransferableSendMinusFee,
+  findTransferAssetGroup,
+  getTransferAssetOptions,
+  getTransferAssetOptionValue,
   isValidAmountAsset,
   getUtilityAsset,
+  parseTransferAssetOptionValue,
 } from '@/helpers/currencies';
 import { cut, getClipboard, isSameString, isTonNetwork } from '@/helpers';
 import {
@@ -487,7 +490,11 @@ export default defineComponent({
       return -160;
     },
     selectPopupValue() {
-      if (this.showSelectedAssetPopup) return this.syncedAssetId;
+      if (this.showSelectedAssetPopup) {
+        const network = this.networksStore.getNetwork(this.syncedNetwork)?.name ?? this.syncedNetwork;
+
+        return getTransferAssetOptionValue(this.transferAssetId, network);
+      }
 
       if (this.showSelectNetworkPopup) return this.syncedNetwork;
 
@@ -601,12 +608,14 @@ export default defineComponent({
         );
       }
 
-      return this.accountsStore.balances?.find(({ balances }) =>
-        balances.some((el) => isSameString(el.id, this.syncedAssetId))
-      );
+      return findTransferAssetGroup(this.accountsStore.balances, this.syncedAssetId, this.syncedNetwork);
     },
     currencyBalance() {
       return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
+    },
+    transferAssetId() {
+      // The route may carry a group or canonical id; the background resolves registry ids.
+      return this.currencyBalance?.id ?? this.syncedAssetId;
     },
     transferableAmount() {
       // Bitcoin can send only confirmed coins worth more than their fee.
@@ -672,20 +681,27 @@ export default defineComponent({
       return result;
     },
     optionsAssets() {
-      if (this.lockRouteSelection) return this.currency ? getCurrencyOptions([this.currency]) : [];
+      if (this.lockRouteSelection) {
+        return this.currency
+          ? getTransferAssetOptions([this.currency], this.networksStore.getNetwork, {
+              isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
+            })
+          : [];
+      }
+
+      const getPrice = (priceId: string) => this.networksStore.getAssetPrice(priceId).price;
+
+      if (this.isTransfer) {
+        return getTransferAssetOptions(this.accountsStore.balances, this.networksStore.getNetwork, {
+          getPrice,
+          isNetworkAvailable: (network) => network.active && this.isTransferEnabled(network),
+        });
+      }
 
       const { xcm, parentId } = this.networksStore.networks.find(
         ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
       )!;
       const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
-
-      if (this.isTransfer) {
-        const balances = this.accountsStore.balances.filter(({ balances: networkBalances }) =>
-          networkBalances.some(({ name }) => this.isTransferEnabled(this.networksStore.getNetwork(name)))
-        );
-
-        return getCurrencyOptions(balances);
-      }
 
       const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
         if (relayChain.toLowerCase() !== relay) return false;
@@ -697,25 +713,37 @@ export default defineComponent({
         });
       });
 
-      return getCurrencyOptions(balances);
+      // The origin network is chosen separately, so a cross-chain asset option never switches it.
+      return getTransferAssetOptions(balances, this.networksStore.getNetwork, {
+        getPrice,
+        isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
+      });
     },
     optionsNetworks() {
       // used only for transfer
-      const walletBalance = this.currency?.balances ?? [];
+      // Every network that holds the same registry asset (DOT on Polkadot and Polkadot AssetHub).
+      const assetId = this.currencyBalance?.id ?? this.currency?.balances[0]?.id ?? this.syncedAssetId;
+      const networkNames = new Set<string>();
 
-      return walletBalance.flatMap(({ name, icon }) => {
-        const network = this.networksStore.getNetwork(name);
+      return this.accountsStore.balances.flatMap(({ balances }) =>
+        balances.flatMap(({ id, name, icon }) => {
+          if (!isSameString(id, assetId)) return [];
 
-        if (!network.active || !this.isTransferEnabled(network)) return [];
+          const network = this.networksStore.getNetwork(name);
 
-        return [
-          {
-            name: network.name,
-            value: network.name,
-            icon,
-          },
-        ];
-      });
+          if (!network?.active || !this.isTransferEnabled(network) || networkNames.has(network.name)) return [];
+
+          networkNames.add(network.name);
+
+          return [
+            {
+              name: network.name,
+              value: network.name,
+              icon,
+            },
+          ];
+        })
+      );
     },
     originNet() {
       return this.networksStore.getNetwork(this.syncedNetwork);
@@ -784,7 +812,7 @@ export default defineComponent({
         to: this.syncedRecipient,
         from: this.transactionAddress,
         relayChain: this.currency?.relayChain,
-        assetId: this.syncedAssetId,
+        assetId: this.transferAssetId,
         amount: this.syncedAmount,
       };
 
@@ -931,7 +959,12 @@ export default defineComponent({
       this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
       this.syncedValue = '';
 
-      if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
+      if (!this.isTransfer) return;
+
+      // An asset option already names its network; keep it while that network still offers the asset.
+      if (this.optionsNetworks.some(({ value }) => isSameString(value, this.syncedNetwork))) return;
+
+      this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     },
     async clearRecipient() {
       this.$nextTick(() => {
@@ -1001,7 +1034,12 @@ export default defineComponent({
     },
     toggleSelectedNetwork(value: string) {
       if (this.showSelectedAssetPopup) {
-        this.syncedAssetId = value;
+        const { assetId, network } = parseTransferAssetOptionValue(value);
+
+        // The network goes first so the asset watcher sees the pair the user picked.
+        if (network) this.syncedNetwork = network;
+
+        this.syncedAssetId = assetId;
 
         this.toggleValue('showSelectedAssetPopup');
       } else if (this.showSelectNetworkPopup) {
@@ -1110,7 +1148,7 @@ export default defineComponent({
           to,
           relayChain: this.currency?.relayChain,
           amount,
-          assetId: this.syncedAssetId,
+          assetId: this.transferAssetId,
         });
 
         this.toggleLoading(false);
@@ -1125,7 +1163,7 @@ export default defineComponent({
         to,
         relayChain: this.currency?.relayChain,
         amount,
-        assetId: this.syncedAssetId,
+        assetId: this.transferAssetId,
         assetKey: this.canonicalAssetKey,
         routeId: this.reviewedRouteId,
         routeProviderId: this.reviewedRouteProviderId,

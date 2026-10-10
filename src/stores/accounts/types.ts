@@ -29,11 +29,6 @@ export type HiddenAssets = {
   [x: WalletAddress]: string[];
 };
 
-export type SetHiddenAsset = {
-  groupId: string;
-  value: boolean;
-};
-
 export type AssetPreferences = Record<WalletAddress, Record<string, AssetPreference>>;
 
 export type SetAssetPreference = {
@@ -41,9 +36,8 @@ export type SetAssetPreference = {
   preference: AssetPreference;
 };
 
-export type MigrateLegacyAssetPreferences = {
-  assets: Array<{ key: string; groupId: string }>;
-  complete: boolean;
+export type SetAssetPreferences = {
+  entries: SetAssetPreference[];
 };
 
 export type SetAccountsProps = {

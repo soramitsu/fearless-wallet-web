@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
     assetPreferences: {},
     balances: [],
     isBalanceLoading: false,
-    migrateLegacyAssetPreferences: vi.fn(),
     networkScanStates: {},
     selectedNetwork: 'All networks',
     selectedWallet: {
@@ -33,8 +32,10 @@ vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accountsStor
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => mocks.networksStore }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.extensionStore }));
 vi.mock('@/portfolio/assetIdentity', () => ({
-  buildAssetPreferenceSnapshot: () => [],
   buildPortfolioSections: () => [],
+}));
+vi.mock('@/portfolio/usePortfolioPreferences', () => ({
+  usePortfolioPreferences: () => ({ effectivePreferences: {} }),
 }));
 vi.mock('@/consts/networks', () => ({
   ALL_NETWORKS: 'All networks',

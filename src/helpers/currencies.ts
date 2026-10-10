@@ -11,6 +11,8 @@ import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSameString, isSora } from '@/helpers';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
+import { formatDecimalString } from '@/helpers/numbers';
+import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -116,6 +118,118 @@ function getCurrencyOptions(tokenGroup: TokenGroup[]) {
   });
 }
 
+// Unit separator: it cannot occur in registry asset ids or network names.
+const TRANSFER_ASSET_OPTION_SEPARATOR = '\u001f';
+
+type TransferAssetOption = {
+  name: string;
+  value: string;
+  subName: string;
+  icon: string;
+};
+
+type TransferAssetOptionsParams = {
+  getPrice?: (priceId: string) => number;
+  isNetworkAvailable?: (network: NetworkJson) => boolean;
+};
+
+function getTransferAssetOptionValue(assetId: string, network: string) {
+  return `${assetId}${TRANSFER_ASSET_OPTION_SEPARATOR}${network}`;
+}
+
+function parseTransferAssetOptionValue(value: string) {
+  const index = value.indexOf(TRANSFER_ASSET_OPTION_SEPARATOR);
+
+  if (index === -1) return { assetId: value, network: '' };
+
+  return { assetId: value.slice(0, index), network: value.slice(index + 1) };
+}
+
+function toPositiveNumber(value: unknown) {
+  const amount = Number(value ?? 0);
+
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+}
+
+// One option per (asset, network) balance. The same registry id can exist on several
+// networks (DOT on Polkadot and Polkadot AssetHub, DAI on Arbitrum One and OP Mainnet),
+// so the network is part of both the label and the value.
+function getTransferAssetOptions(
+  groups: TokenGroup[],
+  getNetwork: (name: string) => NetworkJson | undefined,
+  { getPrice = () => 0, isNetworkAvailable = () => true }: TransferAssetOptionsParams = {}
+): TransferAssetOption[] {
+  const values = new Set<string>();
+
+  const entries = groups.flatMap((group) =>
+    group.balances.flatMap((balance) => {
+      const network = getNetwork(balance.name);
+
+      if (!network || !isNetworkAvailable(network)) return [];
+
+      const value = getTransferAssetOptionValue(balance.id, network.name);
+
+      if (values.has(value)) return [];
+
+      values.add(value);
+
+      const symbol = getNativeAssetName(group.symbol || balance.symbol).toUpperCase();
+      const total = toPositiveNumber(balance.total);
+      const formattedTotal = formatDecimalString(balance.total ?? '0');
+
+      return [
+        {
+          option: {
+            name: `${symbol} · ${network.name}`,
+            value,
+            subName: group.tokenName ? `${group.tokenName} · ${formattedTotal}` : formattedTotal,
+            icon: group.icon,
+          },
+          // Only orders the list; no fiat value is shown in the picker.
+          fiat: total * toPositiveNumber(getPrice(balance.priceId ?? group.priceId ?? '')),
+          total,
+          symbol,
+          rank: network.rank ?? Number.POSITIVE_INFINITY,
+          networkName: network.name,
+        },
+      ];
+    })
+  );
+
+  entries.sort(
+    (a, b) =>
+      b.fiat - a.fiat ||
+      Number(b.total > 0) - Number(a.total > 0) ||
+      a.symbol.localeCompare(b.symbol) ||
+      a.rank - b.rank ||
+      a.networkName.localeCompare(b.networkName)
+  );
+
+  return entries.map(({ option }) => option);
+}
+
+// Network-scoped asset lookup: the asset id may be a registry id, a group id or a
+// canonical id (AssetHub `currencyId`, Solana mint) from the portfolio. A registry id
+// match on the network wins; only when no balance on the network matches does it fall
+// back to the id-only match that older routes relied on.
+function findTransferAssetGroup(groups: TokenGroup[] = [], assetId: string, network: string) {
+  if (!assetId) return undefined;
+
+  const findOnNetwork = (matches: (group: TokenGroup, balance: BalanceItem) => boolean) =>
+    groups.find((group) =>
+      group.balances.some((balance) => isSameString(balance.name, network) && matches(group, balance))
+    );
+
+  const networkGroup = network
+    ? (findOnNetwork((_, balance) => isSameString(balance.id, assetId)) ??
+      findOnNetwork(
+        (group, balance) => isSameString(group.groupId, assetId) || isSameString(getCanonicalAssetId(balance), assetId)
+      ))
+    : undefined;
+
+  return networkGroup ?? groups.find(({ balances }) => balances.some(({ id }) => isSameString(id, assetId)));
+}
+
 function getUtilityAsset(balances: TokenGroup[], _network: NetworkName) {
   return balances.find(({ balances }) =>
     balances.some(({ name, isUtility }) => isSameString(name, _network) && isUtility)
@@ -137,7 +251,11 @@ function calcTransferableSendMinusFee(
 
   const isCrossChain = destNetFee !== undefined;
 
-  const currencyBalance = currency.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
+  const currencyBalance = currency.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase());
+
+  // A group without a balance on this network has nothing to send there.
+  if (currencyBalance === undefined) return '0';
+
   const precision = currencyBalance.precision;
   const transferable = currencyBalance.transferable ?? '0';
 
@@ -229,6 +347,10 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
 
 export {
   getCurrencyOptions,
+  getTransferAssetOptions,
+  getTransferAssetOptionValue,
+  parseTransferAssetOptionValue,
+  findTransferAssetGroup,
   getProviderUrl,
   defaultSortingCurrencies,
   getUtilityAsset,

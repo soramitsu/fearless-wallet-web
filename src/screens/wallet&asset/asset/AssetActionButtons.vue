@@ -59,6 +59,7 @@ import { defineComponent } from 'vue';
 
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import { isSora } from '@/helpers';
+import { buildOwnedCrossChainAssets } from '@/cross-chain/routeRegistry';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -126,11 +127,31 @@ export default defineComponent({ name: 'AssetActionButtons' ,
 
           return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
     },
+    crossChainEntryQuery(): Record<string, string> {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+      if (!network) return {};
+
+      const assetId = String(this.$route.params.assetId ?? '');
+      const asset = buildOwnedCrossChainAssets(this.accountsStore.balances, this.networksStore.allNetworks).find(
+        (owned) =>
+          owned.networkName === network.name && [owned.groupId, owned.assetId, owned.canonicalAssetId].includes(assetId)
+      );
+
+      return asset
+        ? { originChainId: asset.networkChainId, assetKey: asset.key }
+        : { originChainId: String(network.chainId || network.name) };
+    },
   },
   methods: {
     onRoute(form: 'send' | 'receive' | 'crossChain') {
-      const name =
-            form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
+      // The route builder needs a reviewed route id, so the asset page opens it
+      // with this network and asset preselected instead of the transfer form.
+      if (form === 'crossChain') {
+        this.$router.push({ name: Components.CrossChain, query: this.crossChainEntryQuery });
+        return;
+      }
+
+      const name = form === 'send' ? Components.SendForm : Components.ReceiveForm;
 
           this.$router.push({
             name,

@@ -904,10 +904,20 @@ interface ValidateJsonResultNegative {
 
 export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
 
+export type RequestTotalBalances = {
+  /** Each wallet's hidden asset keys, so the wallet list can say how much of its total is hidden. */
+  hiddenKeysByAddress?: Record<string, string[]>;
+};
+
 export type ResponseTotalBalances = {
   address: string;
+  /** Every priced, non-testnet holding, hidden assets included (wallet-management screens show the full balance). */
   total: string;
   change: ChangeWalletBalance;
+  /** The header total: `total` without the hidden assets named in the request. */
+  visibleTotal?: string;
+  hiddenValue?: string;
+  hiddenCount?: number;
 };
 
 export interface TokenGroup {

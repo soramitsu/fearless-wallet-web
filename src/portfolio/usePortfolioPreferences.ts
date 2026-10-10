@@ -43,6 +43,31 @@ function legacyRegistryGroups(networks: NetworkJson[]): Legacy305Group[] {
   return registryGroupsCache.groups;
 }
 
+let walletListGroups: { networks: NetworkJson[]; groups: Legacy305Group[] } | undefined;
+
+/**
+ * One wallet's hidden asset keys without its balances: explicit hides plus the 3.0.5 registry-group hides.
+ * 3.0.5 jetton hides need the wallet's jetton balances and are left out; jettons are unverified and unpriced in
+ * almost every case, so they never reach a total. Used to label the wallet list ("incl. hidden").
+ */
+export function hiddenKeysForWallet(
+  address: string,
+  explicit: Record<string, AssetPreference>,
+  networks: NetworkJson[]
+): string[] {
+  // The wallet list asks every few seconds with the same network list; only a new list is fingerprinted again.
+  if (walletListGroups?.networks !== networks) walletListGroups = { networks, groups: legacyRegistryGroups(networks) };
+
+  const derived = resolveLegacy305Hidden({
+    legacyHiddenIds: accountController.getLegacy305Preferences(address).hiddenIds,
+    registryGroups: walletListGroups.groups,
+  });
+
+  return Object.entries(mergeAssetPreferences(explicit, derived))
+    .filter(([, { preference }]) => preference === 'hidden')
+    .map(([key]) => key);
+}
+
 /**
  * The asset preferences the portfolio renders with: the user's explicit choices, plus the hides and custom order
  * the wallet had in 3.0.5, derived on every read from the untouched legacy keys. Because nothing is migrated,

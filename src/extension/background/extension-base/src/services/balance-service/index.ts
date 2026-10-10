@@ -14,6 +14,7 @@ import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/type
 import type {
   BalanceMap,
   BalanceJson,
+  RequestTotalBalances,
   ResponseTotalBalances,
   ResponseBalanceRequest,
   TokenGroup,
@@ -22,6 +23,22 @@ import { getMockAssets } from '@/extension/background/extension-base/src/backgro
 import { isSameString, isTonNetwork } from '@/helpers';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
 import { buildPortfolioSummary, createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+
+const MAX_HIDDEN_KEYS_PER_WALLET = 5000;
+
+/** Keeps only string keys, per string address; the request only labels a total and never moves value. */
+function sanitizeHiddenKeysByAddress(value: unknown): Record<string, string[]> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, unknown[]] => Array.isArray(entry[1]))
+      .map(([address, keys]) => [
+        address,
+        keys.filter((key): key is string => typeof key === 'string').slice(0, MAX_HIDDEN_KEYS_PER_WALLET),
+      ])
+  );
+}
 
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
@@ -326,25 +343,44 @@ export default class BalanceService {
     return this.balanceSubject.next(balance);
   }
 
-  async getTotalBalances(): Promise<ResponseTotalBalances[]> {
+  /**
+   * Every wallet's total for the wallet list. `total` includes hidden assets, so a wallet whose funds are all
+   * hidden never looks empty there; the hidden keys the popup sends only split out `hiddenValue` for the label and
+   * `visibleTotal`, which equals the portfolio header. Testnet holdings are never counted.
+   */
+  async getTotalBalances(request?: RequestTotalBalances | null): Promise<ResponseTotalBalances[]> {
+    const hiddenKeysByAddress = sanitizeHiddenKeysByAddress(request?.hiddenKeysByAddress);
+
     return new Promise<ResponseTotalBalances[]>((res) =>
       this.state.pricesService.getPrice((prices) => {
+        // The remote registry plus the bundled Bitcoin, Solana and Iroha networks, as in the popup header.
         const registryNetworks = this.state.networkService.networksGithub?.length
-          ? this.state.networkService.networksGithub
+          ? this.state.networkService.authoritativeDiscoveryNetworks
           : this.state.networkService.networkValues ?? [];
         const totalBalances = Object.keys(this.balanceMap).map((address) => {
-          const summary = buildPortfolioSummary({
+          const input = {
             groups: this.balanceMap[address],
             networks: registryNetworks,
             prices: prices.tokenPriceMap,
             priceChanges: prices.tokenPriceChange,
             addressForNetwork: () => address,
-          });
+          };
+          const summary = buildPortfolioSummary(input);
+          const hiddenKeys = hiddenKeysByAddress[address] ?? [];
+          const visible = hiddenKeys.length
+            ? buildPortfolioSummary({
+                ...input,
+                preferences: Object.fromEntries(hiddenKeys.map((key) => [key, 'hidden' as const])),
+              })
+            : summary;
 
           return {
             address,
             total: summary.total,
             change: { amount: summary.changeAmount, percent: summary.changePercent },
+            visibleTotal: visible.total,
+            hiddenValue: visible.hiddenValue,
+            hiddenCount: visible.hiddenCount,
           };
         });
 

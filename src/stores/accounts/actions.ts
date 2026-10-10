@@ -2,6 +2,7 @@ import type { SetAssetPreference, SetAssetPreferences, SetAutoSelectNode, SetAcc
 import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
 import type { AccountStore } from '@/stores/accounts';
 import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
+import type { PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { accountController } from '@/controllers/accountController';
 import { WalletEcosystem } from '@/interfaces';
 import { acceptSoraDisclaimer, getSoraDisclaimerStatus } from '@/extension/messaging/sora-policy';
@@ -16,6 +17,7 @@ type Actions = {
   setAutoSelectNode(this: AccountStore, props: SetAutoSelectNode): void;
   setAssetPreference(this: AccountStore, props: SetAssetPreference): void;
   setAssetPreferences(this: AccountStore, props: SetAssetPreferences): void;
+  updatePortfolioView(this: AccountStore, patch: Partial<PortfolioViewSettings>): void;
   setSelectedNetwork(this: AccountStore, network: string): void;
   hidePolkaswapAlert(this: AccountStore): Promise<boolean>;
   syncSoraDisclaimerStatus(this: AccountStore): Promise<boolean>;
@@ -91,6 +93,23 @@ export const actions: Actions = {
     };
 
     accountController.setAssetPreferences(this.assetPreferencesForAllAccounts);
+  },
+
+  // View state only (filters, collapse, notice acknowledgement); it never writes an asset preference.
+  updatePortfolioView(patch) {
+    const address = this.selectedWallet.address;
+    if (!address) return;
+
+    this.portfolioViewForAllAccounts = {
+      ...this.portfolioViewForAllAccounts,
+      [address]: { ...this.portfolioView, ...patch },
+    };
+
+    try {
+      accountController.setPortfolioViewSettings(this.portfolioViewForAllAccounts);
+    } catch {
+      // A convenience preference: the in-memory value still applies until the popup closes.
+    }
   },
 
   setSelectedFiat(fiatName) {

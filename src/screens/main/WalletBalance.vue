@@ -3,6 +3,8 @@
     <div class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ formattedBalance }}</div>
 
     <div v-if="changeWalletBalance" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
+
+    <div v-if="caption" class="balance-caption" data-testid="balanceCaption">{{ caption }}</div>
   </div>
 </template>
 
@@ -16,6 +18,8 @@ export default defineComponent({ name: 'WalletBalance' ,
   props: {
     changeWalletBalance: Object,
     balance: { type: [String, Number], default: '0' },
+    /** A line under the amount, such as the filtered part of the total or "incl. hidden". */
+    caption: { type: String, default: '' },
     staticWidth: { default: true },
   },
   data() {
@@ -101,6 +105,14 @@ export default defineComponent({ name: 'WalletBalance' ,
 
   .down-percent {
     color: $orange-color;
+  }
+
+  .balance-caption {
+    color: $gray-color;
+    font-size: 0.7rem;
+    font-weight: 400;
+    line-height: 16px;
+    overflow-wrap: anywhere;
   }
 
   .fiat-balance {

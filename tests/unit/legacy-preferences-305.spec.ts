@@ -201,12 +201,14 @@ describe('rebuilding 3.0.5 groups from the registry', () => {
         Object.assign(balance, { state: APIItemState.READY, total: '1', transferable: '1' })
       )
     );
+    // 3.0.5 loaded the enabled test networks without the `testnet` option too (CAGA Ankara, Avail Turing).
     const rendered = buildPortfolioSections({
       groups,
       networks: productionNetworks,
       prices: {},
       preferences: {},
       addressForNetwork: () => 'wallet',
+      showTestnets: true,
     }).flatMap(({ assets }) => assets.map(({ key }) => key));
 
     expect(sorted(new Set(buildLegacy305Groups(productionNetworks).flatMap(({ keys }) => keys)))).toEqual(

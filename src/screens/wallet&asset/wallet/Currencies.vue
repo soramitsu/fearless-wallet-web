@@ -16,33 +16,71 @@
 
     <Loader v-if="showLoader" class="asset-loader" />
 
-    <div v-else-if="showEmptyState" class="portfolio-empty" data-testid="infoText">
-      <Icon icon="wallet" className="empty-icon" :hover="false" />
-      <strong>{{ emptyTitle }}</strong>
-      <span>{{ emptyDescription }}</span>
-    </div>
-
-    <div v-else class="network-list" data-testid="portfolioNetworkList">
-      <PortfolioNetworkSection
-        v-for="section in filteredSections"
-        :key="section.key"
-        :section="section"
-        :manage="showAssetsManagementForm"
-        :search="filterValue"
+    <template v-else>
+      <PortfolioHiddenFundsNotice
+        v-if="showHiddenFundsNotice"
+        :count="summary.hiddenCount"
+        @review="reviewHidden"
+        @keepHidden="keepHidden"
       />
-    </div>
+
+      <div v-if="showEmptyState" class="portfolio-empty" data-testid="infoText">
+        <Icon icon="wallet" className="empty-icon" :hover="false" />
+        <strong>{{ emptyTitle }}</strong>
+        <span>{{ emptyDescription }}</span>
+      </div>
+
+      <div v-if="visibleSections.length" class="network-list" data-testid="portfolioNetworkList">
+        <PortfolioNetworkSection
+          v-for="section in splitSections.funded"
+          :key="section.key"
+          :section="section"
+          :manage="showAssetsManagementForm"
+          :forceExpanded="searching || hiddenOnly"
+        />
+
+        <PortfolioZeroNetworks
+          v-if="splitSections.zeroOnly.length"
+          :label="zeroNetworksLabel"
+          :expanded="zeroNetworksExpanded"
+          @toggle="setZeroNetworksExpanded"
+        >
+          <PortfolioNetworkSection
+            v-for="section in splitSections.zeroOnly"
+            :key="section.key"
+            :section="section"
+            :manage="showAssetsManagementForm"
+            :forceExpanded="searching || hiddenOnly"
+          />
+        </PortfolioZeroNetworks>
+      </div>
+
+      <PortfolioExclusions
+        v-if="!showAssetsManagementForm"
+        :hiddenCount="summary.hiddenCount"
+        :unpricedCount="summary.unpricedCount"
+        :poolStakesExcluded="summary.poolStakesExcluded"
+        @manageHidden="reviewHidden"
+      />
+    </template>
   </Scroll>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
 import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
-import type { NetworkJson } from '@extension-base/types';
-import { buildPortfolioSections, type PortfolioNetworkSection as PortfolioSection } from '@/portfolio/assetIdentity';
-import { usePortfolioPreferences } from '@/portfolio/usePortfolioPreferences';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { isSameString } from '@/helpers';
-import BaseApi from '@/util/BaseApi';
+import PortfolioZeroNetworks from './PortfolioZeroNetworks.vue';
+import PortfolioExclusions from './PortfolioExclusions.vue';
+import PortfolioHiddenFundsNotice from './PortfolioHiddenFundsNotice.vue';
+import {
+  buildPortfolioSections,
+  filterSectionAssets,
+  filterSectionsBySearch,
+  splitZeroSections,
+  type PortfolioNetworkSection as PortfolioSection,
+} from '@/portfolio/assetIdentity';
+import { hiddenFundsSignature, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
+import { usePortfolio } from '@/portfolio/usePortfolio';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
@@ -51,16 +89,20 @@ import { fetchNfts } from '@/extension/messaging/nfts';
 
 export default defineComponent({
   name: 'Currencies',
-  components: { PortfolioNetworkSection },
+  components: { PortfolioNetworkSection, PortfolioZeroNetworks, PortfolioExclusions, PortfolioHiddenFundsNotice },
   props: {
     balances: Array,
     filterValue: String,
     showAssetsManagementForm: Boolean,
+    /** Manage mode lists only hidden assets (the "Hidden (N)" filter). */
+    manageHiddenOnly: Boolean,
   },
+  emits: ['toggleAssetsManagementForm', 'update:manageHiddenOnly', 'toggleNetworkManagementVisible'],
   setup() {
-    const { effectivePreferences } = usePortfolioPreferences();
+    const { effectivePreferences, preferenceSource, addressForNetwork, walletScope, networkFilter, zeroRule, summary } =
+      usePortfolio();
 
-    return { effectivePreferences };
+    return { effectivePreferences, preferenceSource, addressForNetwork, walletScope, networkFilter, zeroRule, summary };
   },
   data() {
     return {
@@ -75,55 +117,86 @@ export default defineComponent({
     showLoader() {
       return this.accountsStore.isBalanceLoading;
     },
+    viewSettings(): PortfolioViewSettings {
+      return this.accountsStore.portfolioView;
+    },
+    searching(): boolean {
+      return Boolean(this.filterValue?.trim());
+    },
     portfolioSections(): PortfolioSection[] {
       return buildPortfolioSections({
         groups: this.accountsStore.balances,
         networks: this.networksStore.allNetworks,
         prices: this.networksStore.assetsPrice.tokenPriceMap,
         preferences: this.effectivePreferences,
+        preferenceSource: this.preferenceSource,
         scanStates: this.accountsStore.networkScanStates,
         surfaceDiscoveredAssets:
           (this.extensionStore.features?.assetDiscoveryMode ??
             this.extensionStore.features?.portfolio?.assetDiscoveryMode ??
             'shadow') === 'visible',
         addressForNetwork: this.addressForNetwork,
+        mode: this.showAssetsManagementForm ? 'manage' : 'view',
+        hideZero: this.viewSettings.hideZero,
+        showHidden: this.viewSettings.showHidden,
+        showTestnets: this.viewSettings.showTestnets,
+        isDefaultVisibleAtZero: (network, asset) => this.zeroRule(network, asset.key),
+        walletScope: this.walletScope,
+        networkFilter: this.networkFilter,
       });
     },
-    filteredSections(): PortfolioSection[] {
-      const selected = this.accountsStore.selectedNetwork;
-      const search = this.filterValue?.trim().toLowerCase() ?? '';
-      let sections = this.portfolioSections;
+    visibleSections(): PortfolioSection[] {
+      const sections = this.hiddenOnly
+        ? filterSectionAssets(this.portfolioSections, (asset) => asset.hidden)
+        : this.portfolioSections;
 
-      if (selected === POPULAR_NETWORKS) {
-        sections = sections.filter((section) => this.networksStore.getNetwork(section.chainId)?.rank !== undefined);
-      } else if (selected === FAVORITE_NETWORKS) {
-        sections = sections.filter((section) =>
-          this.networksStore.getNetwork(section.chainId)?.favorite.includes(this.accountsStore.selectedWallet.address)
-        );
-      } else if (!isSameString(selected, ALL_NETWORKS)) {
-        sections = sections.filter((section) => isSameString(section.name, selected));
-      }
-
-      if (!search) return sections;
-      return sections.filter(
-        (section) =>
-          section.name.toLowerCase().includes(search) ||
-          [...section.assets, ...section.detectedAssets].some((asset) =>
-            `${asset.symbol} ${asset.name}`.toLowerCase().includes(search)
-          )
-      );
+      return filterSectionsBySearch(sections, this.filterValue);
     },
-    showEmptyState() {
-      return !this.showLoader && this.filteredSections.length === 0;
+    splitSections(): { funded: PortfolioSection[]; zeroOnly: PortfolioSection[] } {
+      return splitZeroSections(this.visibleSections);
+    },
+    walletIsEmpty(): boolean {
+      return this.splitSections.funded.length === 0 && !this.searching && !this.showAssetsManagementForm;
+    },
+    zeroNetworksLabel(): string {
+      const count = this.splitSections.zeroOnly.length;
+
+      return this.walletIsEmpty
+        ? this.$t('portfolioPage.popularNoBalance')
+        : this.$t('portfolioPage.zeroNetworks', count, { count });
+    },
+    // A search or the Hidden filter opens the block, so a match or a hidden asset with no balance is never tucked away.
+    zeroNetworksExpanded(): boolean {
+      return this.searching || this.hiddenOnly || this.viewSettings.zeroNetworksExpanded;
+    },
+    hiddenOnly(): boolean {
+      return this.showAssetsManagementForm && this.manageHiddenOnly;
+    },
+    // Nothing to list, or a wallet that holds nothing yet (its popular networks stay below, collapsed).
+    showEmptyState(): boolean {
+      return this.visibleSections.length === 0 || this.walletIsEmpty;
+    },
+    hiddenFundsSignature(): string {
+      return hiddenFundsSignature(this.summary.hiddenFundedKeys);
+    },
+    // 3.0.5 users whose "Hide zero" click hid assets that later received funds see this until they decide.
+    showHiddenFundsNotice(): boolean {
+      return (
+        !this.showAssetsManagementForm &&
+        this.summary.hiddenCount > 0 &&
+        this.viewSettings.hiddenFundsNoticeAck !== this.hiddenFundsSignature
+      );
     },
     emptyTitle() {
       if (!navigator.onLine) return this.$t('portfolioPage.offline');
-      if (this.filterValue?.trim()) return this.$t('portfolioPage.noMatchingAssets');
+      if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssets');
+      if (this.searching) return this.$t('portfolioPage.noMatchingAssets');
       return this.$t('portfolioPage.noAssetsDetected');
     },
     emptyDescription() {
       if (!navigator.onLine) return this.$t('portfolioPage.offlineDescription');
-      if (this.filterValue?.trim()) return this.$t('portfolioPage.searchDescription');
+      if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssetsDescription');
+      if (this.searching) return this.$t('portfolioPage.searchDescription');
       return this.$t('portfolioPage.scanDescription');
     },
   },
@@ -147,12 +220,15 @@ export default defineComponent({
         this.refreshing = false;
       }
     },
-    addressForNetwork(network: NetworkJson): string {
-      try {
-        return BaseApi.formatAddress(this.accountsStore.selectedWallet, network.name);
-      } catch {
-        return this.accountsStore.selectedWallet.address;
-      }
+    setZeroNetworksExpanded(expanded: boolean) {
+      this.accountsStore.updatePortfolioView({ zeroNetworksExpanded: expanded });
+    },
+    reviewHidden() {
+      this.$emit('toggleAssetsManagementForm', true);
+      this.$emit('update:manageHiddenOnly', true);
+    },
+    keepHidden() {
+      this.accountsStore.updatePortfolioView({ hiddenFundsNoticeAck: this.hiddenFundsSignature });
     },
   },
 });
@@ -164,7 +240,7 @@ export default defineComponent({
 }
 
 .network-list {
-  min-height: 100%;
+  min-height: 0;
 }
 
 .portfolio-actions {

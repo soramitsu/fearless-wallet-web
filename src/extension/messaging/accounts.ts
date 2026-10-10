@@ -4,6 +4,7 @@ import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   ValidateJsonResult,
   AccountJson,
+  RequestTotalBalances,
   ResponseTotalBalances,
   ResponseAccountExport,
   ResponseExportSeed,
@@ -98,8 +99,8 @@ export function updatePairMeta(address: string, meta: Partial<FWKeyringMeta>): P
   return sendMessage('pri(accounts.update.meta)', { address, meta });
 }
 
-export function getTotalBalances(): Promise<ResponseTotalBalances[]> {
-  return sendMessage('pri(accounts.totalBalances)', null);
+export function getTotalBalances(request: RequestTotalBalances | null = null): Promise<ResponseTotalBalances[]> {
+  return sendMessage('pri(accounts.totalBalances)', request);
 }
 
 export function getHistory(address: string, network: NetworkName): Promise<TonEventTokens> {

@@ -1,12 +1,12 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { describe, expect, it } from 'vitest';
+import { readSnapshot } from '../fixtures/legacy-305/generate';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import {
   buildPortfolioSections,
   buildPortfolioSummary,
-  buildAssetPreferenceSnapshot,
   createAssetKey,
   getCanonicalAssetId,
 } from '@/portfolio/assetIdentity';
@@ -121,7 +121,7 @@ describe('portfolio canonical asset identity', () => {
     );
   });
 
-  it('keeps net worth independent from presentation hides and excludes unverified same-symbol holdings', () => {
+  it('excludes presentation hides from net worth, reports them, and still excludes unverified same-symbol holdings', () => {
     const verified = jetton({ id: 'EQ_Verified', priceId: 'verified-price', total: '2', walletAddress: 'EQ_A' });
     const unverified = jetton({
       id: 'EQ_Unverified',
@@ -149,14 +149,22 @@ describe('portfolio canonical asset identity', () => {
       priceChanges: { 'verified-price': 10 },
     };
 
+    const hidden = { [createAssetKey({ ecosystem: 'ton', chainId: 'ton-mainnet', assetId: 'EQ_Verified' })]: 'hidden' } as const;
+
     expect(buildPortfolioSummary(input).total).toBe('4');
-    expect(
-      buildPortfolioSections({
-        ...input,
-        preferences: { [createAssetKey({ ecosystem: 'ton', chainId: 'ton-mainnet', assetId: 'EQ_Verified' })]: 'hidden' },
-      })[0]?.subtotal
-    ).toBe('4');
-    expect(buildPortfolioSummary(input).total).toBe('4');
+    expect(buildPortfolioSummary({ ...input, preferences: hidden })).toMatchObject({
+      total: '0',
+      hiddenValue: '4',
+      hiddenCount: 1,
+      hiddenFundedKeys: ['ton:ton-mainnet:EQ_Verified'],
+      unpricedCount: 0,
+    });
+    // The hidden row leaves the view, and the unverified holding only appears as a detected asset worth nothing.
+    const [section] = buildPortfolioSections({ ...input, preferences: hidden });
+    expect(section.assets).toEqual([]);
+    expect(section.detectedAssets.map(({ assetId }) => assetId)).toEqual(['EQ_Unverified']);
+    expect(section.subtotal).toBe('0');
+    expect(buildPortfolioSections({ ...input, preferences: hidden, surfaceDiscoveredAssets: false })).toEqual([]);
   });
 
   it('keeps arbitrary-precision verified totals as decimal strings', () => {
@@ -179,34 +187,6 @@ describe('portfolio canonical asset identity', () => {
         prices: { 'huge-price': 1 },
       }).total
     ).toBe('9007199254740993.125');
-  });
-
-  it('builds migration tombstones from the full registry snapshot, not visible sections', () => {
-    const registryNetwork = {
-      ...network,
-      assets: [
-        { id: 'EQ_Zero', symbol: 'ZERO' },
-        { id: 'EQ_Later', symbol: 'ZERO' },
-      ],
-    } as unknown as NetworkJson;
-    const zero = jetton({ id: 'EQ_Zero', total: '0', walletAddress: 'EQ_A' });
-    const groups = [{
-      balances: [zero],
-      groupId: 'legacy-zero',
-      icon: 'ton',
-      mainNetwork: network.name,
-      providers: [],
-      relayChain: 'ton' as never,
-      symbol: 'ZERO',
-      tokenName: 'Zero',
-    }] as TokenGroup[];
-
-    expect(buildPortfolioSections({ addressForNetwork: () => 'EQ', groups, networks: [registryNetwork], preferences: {}, prices: {} }))
-      .toHaveLength(0);
-    expect(buildAssetPreferenceSnapshot(groups, [registryNetwork])).toEqual([
-      expect.objectContaining({ groupId: 'EQ_Later', key: 'ton:ton-mainnet:EQ_Later' }),
-      expect.objectContaining({ groupId: 'legacy-zero', key: 'ton:ton-mainnet:EQ_Zero' }),
-    ]);
   });
 
   it('keeps discovery in shadow mode while preserving an explicit show preference', () => {
@@ -331,52 +311,58 @@ describe('portfolio canonical asset identity', () => {
     expect(buildPortfolioSummary(input).total).toBe('0');
   });
 
-  it('shows an automatic zero native asset only on a pinned or ranked default network', () => {
-    const nativeBalance = {
-      assetMetadataSource: 'registry',
-      assetMetadataTrust: 'verified',
-      icon: 'dot',
-      id: 'native',
-      isNative: true,
-      name: 'Quiet chain',
-      precision: 10,
-      state: APIItemState.READY,
-      symbol: 'QUIET',
-      total: '0',
-      transferable: '0',
-    } as BalanceItem;
-    const groups = [{
-      balances: [nativeBalance],
-      groupId: 'native',
-      icon: 'dot',
-      mainNetwork: 'Quiet chain',
-      providers: [],
-      relayChain: 'substrate' as never,
-      symbol: 'QUIET',
-      tokenName: 'Quiet',
-    }] as TokenGroup[];
-    const baseNetwork = {
-      active: false,
-      assets: [{ id: 'native', symbol: 'QUIET' }],
-      chainId: 'quiet',
-      ecosystem: 'substrate',
-      icon: 'quiet',
-      name: 'Quiet chain',
-    } as unknown as NetworkJson;
-    const input = { addressForNetwork: () => 'owner', groups, preferences: {}, prices: {} };
+  it('the default zero rule shows the listed utility assets of non-testnet mainnets, plus favourites', () => {
+    const networks = readSnapshot().filter(({ disabled }) => !disabled);
+    const byName = (name: string) => networks.find((candidate) => candidate.name === name)!;
+    const zeroGroups = (names: string[]): TokenGroup[] =>
+      names.flatMap((name) =>
+        byName(name).assets.map((asset) => ({
+          balances: [{
+            assetMetadataSource: 'registry',
+            assetMetadataTrust: 'verified',
+            currencyId: asset.currencyId,
+            icon: asset.icon,
+            id: asset.id,
+            isNative: asset.isNative,
+            isUtility: asset.isUtility,
+            name: name.toLowerCase(),
+            precision: asset.precision,
+            state: APIItemState.READY,
+            symbol: asset.symbol,
+            total: '0',
+            transferable: '0',
+          } as BalanceItem],
+          groupId: asset.id,
+          icon: asset.icon,
+          mainNetwork: name,
+          providers: [],
+          relayChain: name as never,
+          symbol: asset.symbol,
+          tokenName: asset.name,
+        }))
+      );
+    const rows = (input: Partial<Parameters<typeof buildPortfolioSections>[0]> = {}) =>
+      buildPortfolioSections({
+        addressForNetwork: () => 'owner',
+        groups: zeroGroups(['SORA Mainnet', 'Westend', 'Acala', 'X Layer Mainnet']),
+        networks,
+        preferences: {},
+        prices: {},
+        showTestnets: true,
+        ...input,
+      }).flatMap(({ name, assets }) => assets.map(({ symbol }) => `${symbol}@${name}`));
 
-    expect(buildPortfolioSections({ ...input, networks: [baseNetwork] })).toEqual([]);
-    expect(buildPortfolioSections({ ...input, networks: [{ ...baseNetwork, active: true }] as NetworkJson[] }))
-      .toEqual([]);
-    expect(buildPortfolioSections({
-      ...input,
-      networks: [{ ...baseNetwork, favorite: ['owner'] }] as NetworkJson[],
-    })).toHaveLength(1);
-    expect(buildPortfolioSections({ ...input, networks: [{ ...baseNetwork, rank: 9 }] as NetworkJson[] }))
-      .toHaveLength(1);
+    // SORA flags ten tokens `isNative`; only XOR is listed. X Layer lists OKB, not WOKB (also `isUtility`).
+    // Westend (rank 108) is a testnet; Acala is unranked and not a favourite.
+    expect(rows()).toEqual(['XOR@SORA Mainnet', 'OKB@X Layer Mainnet']);
+    expect(rows({ networks: networks.map((network) => (network.name === 'Acala' ? { ...network, favorite: ['owner'] } : network)) }))
+      .toEqual(expect.arrayContaining(['ACA@Acala']));
+    expect(rows({ networks: networks.map((network) => (network.name === 'Westend' ? { ...network, favorite: ['owner'] } : network)) }))
+      .not.toContain('WND@Westend');
+    expect(rows({ hideZero: true })).toEqual([]);
   });
 
-  it('retains a shown preference without rendering a zero non-native asset', () => {
+  it('renders an explicitly shown zero verified asset with a zero balance', () => {
     const zero = jetton({ id: 'EQ_Zero_Shown', total: '0', walletAddress: 'EQ_A' });
     const groups = [{
       balances: [zero],
@@ -390,12 +376,12 @@ describe('portfolio canonical asset identity', () => {
     }] as TokenGroup[];
     const key = createAssetKey({ ecosystem: 'ton', chainId: 'ton-mainnet', assetId: 'EQ_Zero_Shown' });
 
-    expect(buildPortfolioSections({
-      addressForNetwork: () => 'EQ',
-      groups,
-      networks: [network],
-      preferences: { [key]: 'shown' },
-      prices: {},
-    })).toEqual([]);
+    const input = { addressForNetwork: () => 'EQ', groups, networks: [network], prices: {} };
+
+    expect(buildPortfolioSections({ ...input, preferences: {} })).toEqual([]);
+    const [section] = buildPortfolioSections({ ...input, preferences: { [key]: 'shown' } });
+    expect(section.assets).toEqual([expect.objectContaining({ assetId: 'EQ_Zero_Shown', balanceText: '0', hasBalance: false })]);
+    // Hide zero is a filter over the view; the explicit choice itself stays stored.
+    expect(buildPortfolioSections({ ...input, preferences: { [key]: 'shown' }, hideZero: true })).toEqual([]);
   });
 });

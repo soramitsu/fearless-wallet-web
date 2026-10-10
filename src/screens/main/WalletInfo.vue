@@ -4,7 +4,7 @@
       <button type="button" class="content" data-testid="content" :aria-label="name" :aria-pressed="isSelected" @click="$emit('setWallet')">
         <div class="name" data-testid="name">{{ name }}</div>
 
-        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
+        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" :caption="balanceCaption" />
       </button>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
@@ -18,11 +18,13 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
-
-
+import { FPNumber } from '@sora-substrate/util';
+import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { getTotalBalances } from '@/extension/messaging';
+import { hiddenKeysForWallet } from '@/portfolio/usePortfolioPreferences';
+import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
 export default defineComponent({ name: 'WalletInfo',
   components: { WalletBalance },
@@ -37,8 +39,10 @@ export default defineComponent({ name: 'WalletInfo',
     return {
       dotsHorizontalRef: 'dotsHorizontal',
       showWalletMenu: false,
-      totalBalances: [],
+      totalBalances: [] as ResponseTotalBalances[],
       interval: undefined as ReturnType<typeof setInterval> | undefined,
+      accountsStore: useAccountsStore(),
+      networksStore: useNetworksStore(),
     };
   },
   computed: {
@@ -51,6 +55,11 @@ export default defineComponent({ name: 'WalletInfo',
     changeWalletBalance() {
       return this.totalBalance?.change ?? { percent: 0, amount: 0 };
     },
+    // The wallet list shows the full balance; when part of it is hidden in the portfolio, it says so.
+    balanceCaption(): string {
+      const hiddenValue = this.totalBalance?.hiddenValue;
+      return hiddenValue && new FPNumber(hiddenValue).isGtZero() ? this.$t('portfolioPage.inclHidden') : '';
+    },
     contentClasses() {
       return [
             'wallet-info',
@@ -61,14 +70,29 @@ export default defineComponent({ name: 'WalletInfo',
     },
   },
   async created() {
-    this.totalBalances = await getTotalBalances();
+    this.totalBalances = await this.fetchTotalBalances();
 
-        this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
+        this.interval = setInterval(async () => (this.totalBalances = await this.fetchTotalBalances()), 5000);
   },
   beforeUnmount() {
     clearInterval(this.interval);
   },
   methods: {
+    fetchTotalBalances(): Promise<ResponseTotalBalances[]> {
+      let hiddenKeys: string[] = [];
+
+      try {
+        hiddenKeys = hiddenKeysForWallet(
+          this.address,
+          this.accountsStore.assetPreferencesForAllAccounts[this.address] ?? {},
+          this.networksStore.allNetworks
+        );
+      } catch {
+        // Without hidden keys the full total still shows; only the "incl. hidden" label is missing.
+      }
+
+      return getTotalBalances(hiddenKeys.length ? { hiddenKeysByAddress: { [this.address]: hiddenKeys } } : null);
+    },
     showWalletDetails() {
       const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLButtonElement).getBoundingClientRect().top;
       this.$emit('setShowWalletDetailsPopupVisible', buttonTop);

@@ -479,7 +479,26 @@
       "stale": "𒆷𒁉𒊒𒌝",
       "syncedAge": "𒌓𒁲𒅖 {age}",
       "synced": "𒌓𒁲𒅖"
-    }
+    },
+    "zeroNetworks": "1 𒊑𒅅𒋢𒌝 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆 | {count} 𒊑𒅅𒊓𒌅𒌝 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆",
+    "popularNoBalance": "𒊑𒅅𒊓𒌅𒌝 𒊭 𒉌𒅆 𒈠𒀪𒁺𒋾𒅎 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒀀𒁲𒉌 𒆷 𒄿𒁀𒀸𒅆",
+    "hiddenNotIncluded": "1 𒈠𒀝𒆪𒊒𒌝 𒅗𒀜𒈬𒌝 𒄿𒈾 𒆪𒌌𒆷𒋾𒅎 𒆷 𒊭𒆠𒅔 · 𒉺𒆠𒀉 | {count} 𒈠𒀝𒆪𒊒 𒊭 𒅗𒀜𒈬 𒄿𒈾 𒆪𒌌𒆷𒋾𒅎 𒆷 𒊭𒀝𒉡 · 𒉺𒆠𒀉",
+    "unpricedNotIncluded": "1 𒈠𒀝𒆪𒊒𒌝 𒊭 𒆷 𒅆𒈪𒅎 𒄿𒈾 𒆪𒌌𒆷𒋾𒅎 𒆷 𒊭𒆠𒅔 | {count} 𒈠𒀝𒆪𒊒 𒊭 𒆷 𒅆𒈪𒅎 𒄿𒈾 𒆪𒌌𒆷𒋾𒅎 𒆷 𒊭𒀝𒉡",
+    "poolStakesNotIncluded": "𒈠𒀝𒆪𒊒 𒊭 𒊭𒀝𒉡 𒄿𒈾 𒁍𒊏𒀜 𒍝𒆠𒊑 𒋗𒈪 𒄿𒈾 𒆪𒌌𒆷𒋾𒅎 𒆷 𒊭𒀝𒉡",
+    "hiddenFundsNotice": "1 𒈠𒀝𒆪𒊒𒌝 𒅗𒀜𒈬𒌝: 𒅗𒊍𒁍𒌝 𒄿𒈾 𒇷𒅁𒁉𒋗 𒄿𒁀𒀸𒅆 | {count} 𒈠𒀝𒆪𒊒 𒊭 𒅗𒀜𒈬: 𒅗𒊍𒁍𒌝 𒄿𒈾 𒇷𒅁𒁉𒋗𒉡 𒄿𒁀𒀸𒅆",
+    "hiddenFundsDescription": "𒈠𒀝𒆪𒊒 𒊭 𒅗𒀜𒈬 𒄿𒈾 𒆪𒌌𒆷𒋾𒅗 𒆷 𒊭𒀝𒉡. 𒀀𒈬𒌨𒋗𒉡𒋾 𒌑 𒇻 𒅗𒀜𒈬 𒇷𒅁𒋗𒌑.",
+    "review": "𒀀𒈬𒌨",
+    "keepHidden": "𒅗𒀜𒈬 𒇷𒅁𒋗𒌑",
+    "hiddenBadge": "𒅗𒀜𒈬𒌝",
+    "hiddenPreviousVersion": "𒅗𒀜𒈬𒌝 𒄿𒈾 𒅆𒅁𒊑𒅎 𒆷𒁉𒊑𒅎",
+    "filterHidden": "𒊭 𒅗𒀜𒈬 ({count})",
+    "testnets": "𒊑𒅅𒊓𒌅𒌝 𒊭 𒆷𒈠𒁲𒅎",
+    "testnetBadge": "𒊑𒅅𒋢𒌝 𒊭 𒆷𒈠𒁲𒅎",
+    "showingFiltered": "{network} 𒅔𒈾𒈪𒅕 · {value}",
+    "transferable": "𒊭 𒋗𒁍𒇷𒅎 {amount}",
+    "inclHidden": "𒀉𒋾 𒊭 𒅗𒀜𒈬",
+    "noHiddenAssets": "𒈠𒀝𒆪𒊒 𒊭 𒅗𒀜𒈬 𒆷 𒁀𒋗𒌑",
+    "noHiddenAssetsDescription": "𒈠𒀝𒆪𒊒 𒊭 𒋫𒅗𒀜𒋫𒈬 𒀭𒈾𒅗𒄠 𒅔𒈾𒄠𒊒, 𒀀𒈾 𒌌𒇻𒈪𒋗𒉡 𒊭𒉌𒅖."
   },
   "polkamarktPage": {
     "backToMarkets": "𒀀𒈾 𒈠𒄭𒊑 𒌅𒌨",

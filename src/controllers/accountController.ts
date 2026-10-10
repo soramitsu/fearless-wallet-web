@@ -48,6 +48,7 @@ class AccountController {
   private readonly assetTipData = 'asset-tip-data';
   private readonly hiddenAssets = 'hidden-assets';
   private readonly assetPreferences = 'asset-preferences-v1';
+  private readonly portfolioView = 'portfolio-view-v1';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hidingPoolsBanner = 'hiding-pools-banner';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
@@ -141,6 +142,15 @@ class AccountController {
 
   public setAssetPreferences(preferences: Record<WalletAddress, Record<string, AssetPreference>>): void {
     this.lsAccount.set(this.assetPreferences, preferences);
+  }
+
+  /** Per-wallet portfolio view state (`portfolioViewSettings.ts`). Unparseable entries read as defaults. */
+  public getPortfolioViewSettings(): Record<WalletAddress, Record<string, unknown>> {
+    return this.safeGet(this.portfolioView, (value) => recordOf(value, (item) => (isRecord(item) ? item : undefined)), {});
+  }
+
+  public setPortfolioViewSettings(settings: Record<WalletAddress, Record<string, unknown>>): void {
+    this.lsAccount.set(this.portfolioView, settings);
   }
 
   /** Everything 3.0.5 stored about one wallet's asset list, for the read-only rebuild in `legacyPreferences305`. */

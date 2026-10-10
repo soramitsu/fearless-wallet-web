@@ -18,6 +18,11 @@
   >
     <template v-slot:step2>
       <div>
+        <div class="row network-review" data-testid="reviewNetworkRow">
+          <span>{{ $t('common.network') }}</span>
+          <strong data-testid="reviewNetwork">{{ networkName }}</strong>
+        </div>
+
         <div class="row direction-column">
           <FInput
             :value="accountsStore.selectedWallet.name"
@@ -32,8 +37,6 @@
           <div class="recipient-review">
             <span>{{ $t('assets.to') }}</span>
             <p class="recipient-address" data-testid="toAddress">{{ recipient }}</p>
-            <span>{{ $t('crossChainPage.destinationNetwork') }}</span>
-            <strong data-testid="reviewNetwork">{{ selectedNetwork }}</strong>
             <small>{{ $t('ux.verifyRecipient') }}</small>
           </div>
         </div>
@@ -57,7 +60,7 @@ import { defineComponent } from 'vue';
 
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { addNumbers } from '@/helpers/numbers';
-import { getUtilityAsset } from '@/helpers/currencies';
+import { findTransferAssetGroup, getUtilityAsset } from '@/helpers/currencies';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -79,9 +82,10 @@ export default defineComponent({
   },
   computed: {
     currency() {
-      return this.accountsStore.balances.find(({ balances }) =>
-        balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
-      );
+      return findTransferAssetGroup(this.accountsStore.balances, this.assetId, this.selectedNetwork);
+    },
+    networkName() {
+      return this.networksStore.getNetwork(this.selectedNetwork)?.name ?? this.selectedNetwork;
     },
     isUtilityAsset() {
       return this.currency?.balances.some(
@@ -124,9 +128,12 @@ export default defineComponent({
       return `${+this.amount} ${this.selectedAssetUpper}`;
     },
     selectedAsset() {
-      return this.currency?.balances?.find(
-        (el) =>
-          el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
+      return (
+        this.currency?.balances?.find(({ name }) => isSameString(name, this.selectedNetwork)) ??
+        this.currency?.balances?.find(
+          (el) =>
+            el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
+        )
       );
     },
     selectedAssetUpper() {
@@ -226,6 +233,26 @@ export default defineComponent({
 </style>
 
 <style lang="scss" scoped>
+.network-review {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  text-align: left;
+  background: $secondary-background-color;
+  border-radius: 8px;
+
+  span {
+    color: $default-white;
+    font-size: 0.875rem;
+  }
+
+  strong {
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+}
 .recipient-review {
   display: grid;
   gap: 8px;

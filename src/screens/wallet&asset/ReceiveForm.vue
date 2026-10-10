@@ -1,12 +1,12 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :fullScreen="true" @closeHandler="closeForm">
+  <AboveForm :header="formHeader" :fullScreen="true" @closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <InputWithIcon
           placeholder="assets.network"
           icon="rotate"
           data-testid="selectedNetwork"
-          :value="selectedNetwork"
+          :value="networkName"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -14,7 +14,13 @@
 
         <div class="receive-content">
           <div class="address-wrapper">
-            <span>{{ $t('assets.walletAddress') }}</span>
+            <div class="address-header">
+              <span>{{ $t('assets.walletAddress') }}</span>
+
+              <span v-if="networkName" class="network-chip" data-testid="receiveNetworkChip">
+                {{ $t('assets.onNetwork', { network: networkName }) }}
+              </span>
+            </div>
 
             <div class="address" data-testid="cutAddress">
               <span class="full-address">{{ address }}</span>
@@ -25,6 +31,15 @@
           </div>
 
           <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
+
+          <Alert v-if="showNetworkWarning" class="network-warning" data-testid="receiveNetworkWarning">
+            <span data-testid="receiveOnlyOnNetwork">
+              {{ $t('assets.receiveOnlyOnNetwork', { symbol: receiveSymbol, network: networkName }) }}
+            </span>
+            <span v-if="isEvmNetwork" class="evm-note" data-testid="receiveEvmSameAddress">
+              {{ $t('assets.receiveEvmSameAddress') }}
+            </span>
+          </Alert>
         </div>
 
         <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
@@ -62,7 +77,7 @@
       placeholder="common.searchNetwork"
       verticalPlacement="top"
       horizontalPlacement="left"
-      :value="selectedNetwork"
+      :value="networkName"
       :showBlur="false"
       :showBackground="false"
       :top="148"
@@ -80,8 +95,10 @@
 import { defineComponent } from 'vue';
 
 import { saveAs } from 'file-saver';
+import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import BaseApi from '@/util/BaseApi';
-import { setClipboard } from '@/helpers';
+import { isSameString, setClipboard } from '@/helpers';
+import { findTransferAssetGroup } from '@/helpers/currencies';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -108,23 +125,52 @@ export default defineComponent({ name: 'ReceiveForm' ,
     popupLeft() {
       return IS_EXTENSION ? -160 : 0;
     },
+    receiveBalance() {
+      const currency = findTransferAssetGroup(this.accountsStore.balances, this.selectedAssetId, this.selectedNetwork);
+
+      return currency?.balances.find(({ name }) => isSameString(name, this.selectedNetwork));
+    },
+    selectedNetworkJson() {
+      return this.selectedNetwork ? this.networksStore.getNetwork(this.selectedNetwork) : undefined;
+    },
+    networkName() {
+      return this.selectedNetworkJson?.name ?? this.selectedNetwork;
+    },
+    receiveSymbol() {
+      // Without the asset on this network, name the network's utility token instead.
+      const symbol = this.receiveBalance?.symbol ?? this.selectedNetworkJson?.assets?.[0]?.symbol ?? '';
+
+      return getNativeAssetName(symbol).toUpperCase();
+    },
+    formHeader() {
+      if (!this.receiveSymbol) return 'assets.receiveFunds';
+
+      return { text: 'assets.receiveTokenTitle', localeProps: { symbol: this.receiveSymbol } };
+    },
+    showNetworkWarning() {
+      return this.receiveSymbol !== '' && this.networkName !== '';
+    },
+    isEvmNetwork() {
+      return BaseApi.isEthereumNetwork(this.selectedNetwork);
+    },
     assetNetworks() {
-      const currency = this.accountsStore.balances.find(({ groupId }) => groupId === this.selectedAssetId);
-          const filter = this.filterValue.toLowerCase();
+      // Every network that holds the same registry asset, e.g. KSM on Kusama and Kusama AssetHub.
+      const assetId = this.receiveBalance?.id ?? this.selectedAssetId;
+      const filter = this.filterValue.toLowerCase();
+      const networkNames = new Set<string>();
 
-          return (
-            currency?.balances
-              .map(({ name, icon }) => {
-                const network = this.networksStore.getNetwork(name);
+      return this.accountsStore.balances
+        .flatMap(({ balances }) => balances)
+        .flatMap(({ id, name, icon }) => {
+          const network = isSameString(id, assetId) ? this.networksStore.getNetwork(name) : undefined;
 
-                return {
-                  name: network.name,
-                  value: network.name,
-                  icon,
-                };
-              })
-              .filter(({ name }) => name.toLowerCase().includes(filter)) ?? []
-          );
+          if (!network?.name || networkNames.has(network.name)) return [];
+
+          networkNames.add(network.name);
+
+          return [{ name: network.name, value: network.name, icon }];
+        })
+        .filter(({ name }) => name.toLowerCase().includes(filter));
     },
     address() {
       if (this.accountsStore.selectedWallet.address === '') return '';
@@ -204,6 +250,16 @@ export default defineComponent({ name: 'ReceiveForm' ,
   text-transform: capitalize;
 }
 
+.network-warning {
+  width: 100%;
+  margin-bottom: 16px;
+
+  .evm-note {
+    display: block;
+    margin-top: 8px;
+  }
+}
+
 .receive-form {
   height: 100%;
   display: flex;
@@ -273,6 +329,21 @@ export default defineComponent({ name: 'ReceiveForm' ,
   flex-direction: column;
   gap: 8px;
   text-align: left;
+}
+.address-wrapper .address-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.address-wrapper .network-chip {
+  padding: 2px 10px;
+  color: $default-white;
+  font-size: 0.875rem;
+  border: 1px solid $default-background-color;
+  border-radius: 999px;
+  overflow-wrap: anywhere;
 }
 .address-wrapper .address {
   display: flex;

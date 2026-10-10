@@ -116,7 +116,7 @@ export async function quoteBitcoinTransfer(
   const source = resolveBitcoinTransferSource(params.state, params.from, network);
   const indexer = client ?? new BitcoinEsploraClient({ network });
   const discovered = await discoverCachedBitcoinTransferSources(source, network, indexer, discoveryOptions);
-  const unresolved = await loadUnresolvedPendingSends(pendingStore, source.accountAddress, network, indexer);
+  const { inMempool, unresolved } = await loadPendingSends(pendingStore, source.accountAddress, network, indexer);
   const amountSat = optionalBitcoinAmountToSats(params.amount);
   const quote = await quoteBitcoinSend({
     amountSat,
@@ -131,15 +131,37 @@ export async function quoteBitcoinTransfer(
     toAddress: params.to,
   });
 
+  // The earlier send the Send screen describes: one waiting in the mempool
+  // blocks sending, an unknown one has its coins reused.
+  const previous = latestPendingSend(inMempool) ?? latestPendingSend(unresolved);
+  const unavailableReason = inMempool.length
+    ? 'bitcoin_previous_send_unconfirmed'
+    : quote.unavailableReason
+      ? toBitcoinTransferErrorCode(quote.unavailableReason)
+      : undefined;
+  const blockedByPreviousSend =
+    unavailableReason === 'bitcoin_previous_send_pending' || unavailableReason === 'bitcoin_previous_send_unconfirmed';
+
   return {
     awaitingConfirmation: satsToBitcoinString(quote.awaitingConfirmationSat),
     fee: satsToBitcoinString(quote.feeSat ?? 0),
     feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
     maxSendable: satsToBitcoinString(quote.maxSendableSat),
-    pendingPreviousSend: unresolved.length > 0,
+    // Claimed only while the coins really are reused, not when a missing coin
+    // or a send waiting in the mempool rules out sending.
+    pendingPreviousSend: unresolved.length > 0 && !blockedByPreviousSend,
+    previousSend: previous && {
+      amount:
+        Number.isSafeInteger(previous.amountSat) && previous.amountSat > 0
+          ? satsToBitcoinString(previous.amountSat)
+          : undefined,
+      inMempool: inMempool.includes(previous),
+      recipient: typeof previous.recipient === 'string' ? previous.recipient : undefined,
+      txid: previous.txid,
+    },
     recipientType: decodeBitcoinRecipient(params.to, network)?.type,
     spendable: satsToBitcoinString(quote.spendableSat),
-    unavailableReason: quote.unavailableReason ? toBitcoinTransferErrorCode(quote.unavailableReason) : undefined,
+    unavailableReason,
     vsize: quote.vsize,
   };
 }
@@ -159,7 +181,11 @@ export async function makeBitcoinTransfer(
   const amountSat = bitcoinAmountToSats(amount);
   const recipient = normalizeRecipient(to, network);
   const discovered = await discoverBitcoinTransferSources(source, network, indexer, discoveryOptions);
-  const unresolved = await loadUnresolvedPendingSends(pendingStore, source.accountAddress, network, indexer);
+  const { inMempool, unresolved } = await loadPendingSends(pendingStore, source.accountAddress, network, indexer);
+
+  // Its coins are spent in the mempool, so no new transaction could conflict
+  // with it: nothing new is signed until it confirms.
+  if (inMempool.length) throw new Error('bitcoin_previous_send_unconfirmed');
 
   const prepared = await prepareBitcoinSend({
     amountSat,
@@ -208,9 +234,15 @@ export async function makeBitcoinTransfer(
 
   if (broadcastTxid !== prepared.txid) throw new Error('bitcoin_broadcast_ambiguous');
 
-  // The new transaction spends every coin of the earlier unresolved ones, so
-  // those can no longer confirm.
-  await pendingStore.remove([prepared.txid, ...unresolved.map(({ txid }) => txid)]);
+  // An earlier unresolved send whose coins the new transaction spends again can
+  // no longer confirm alongside it. Coin selection requires all of them, but
+  // only what was actually spent is forgotten.
+  const spent = new Set(prepared.selectedUtxos.map(({ txid, vout }) => `${txid.toLowerCase()}:${vout}`));
+  const conflicting = unresolved.filter(({ outpoints }) =>
+    outpoints.every(({ txid, vout }) => spent.has(`${txid.toLowerCase()}:${vout}`))
+  );
+
+  await pendingStore.remove([prepared.txid, ...conflicting.map(({ txid }) => txid)]);
   invalidateBitcoinQuoteCache(source.accountAddress, network);
 
   callback?.({ status: true });
@@ -313,24 +345,36 @@ export function invalidateBitcoinQuoteCache(accountAddress?: string, network?: B
   else quoteDiscoveryCache.delete(`${accountAddress}:${network}`);
 }
 
-async function loadUnresolvedPendingSends(
+// Forgets the account's pending sends whose outcome is proven and returns the
+// ones still in the mempool or unknown.
+async function loadPendingSends(
   store: BitcoinPendingSendStore,
   accountAddress: string,
   network: BitcoinNetworkKind,
   client: Partial<BitcoinPendingSendClient>
-): Promise<BitcoinPendingSend[]> {
+): Promise<{ inMempool: BitcoinPendingSend[]; unresolved: BitcoinPendingSend[] }> {
   const records = (await store.list()).filter(
     (record) => record.accountAddress === accountAddress && record.network === network
   );
 
-  if (!records.length) return [];
-  if (!client.getTransactionStatus || !client.getOutspend) return records;
+  if (!records.length) return { inMempool: [], unresolved: [] };
+  if (!client.getTransactionStatus || !client.getOutspend) return { inMempool: [], unresolved: records };
 
-  const { resolved, unresolved } = await resolveBitcoinPendingSends(records, client as BitcoinPendingSendClient);
+  const { inMempool, resolved, unresolved } = await resolveBitcoinPendingSends(
+    records,
+    client as BitcoinPendingSendClient
+  );
 
   if (resolved.length) await store.remove(resolved.map(({ txid }) => txid));
 
-  return unresolved;
+  return { inMempool, unresolved };
+}
+
+function latestPendingSend(records: BitcoinPendingSend[]): BitcoinPendingSend | undefined {
+  return records.reduce<BitcoinPendingSend | undefined>(
+    (latest, record) => (!latest || record.createdAt > latest.createdAt ? record : latest),
+    undefined
+  );
 }
 
 // Send-preparation failures the Send screen explains; anything else stays a

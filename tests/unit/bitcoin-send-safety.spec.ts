@@ -129,6 +129,21 @@ const params = (state = createState(), overrides: Record<string, unknown> = {}) 
 
 const discovery = { gapLimit: 2, maxLookahead: 20 };
 
+const pendingRecord = (overrides: Partial<BitcoinPendingSend> = {}): BitcoinPendingSend => ({
+  accountAddress: 'stored-account',
+  amountSat: 1,
+  createdAt: 1,
+  network: 'mainnet',
+  outpoints: [{ txid: '22'.repeat(32), vout: 1 }],
+  recipient,
+  txHex: '00',
+  txid: 'aa'.repeat(32),
+  ...overrides,
+});
+
+const inputsOf = (tx: bitcoin.Transaction) =>
+  tx.ins.map(({ hash, index }) => `${Buffer.from(hash).reverse().toString('hex')}:${index}`);
+
 beforeEach(() => {
   process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
 });
@@ -328,27 +343,25 @@ describe('Bitcoin ambiguous broadcast guard', () => {
     await makeBitcoinTransfer(params(createState(), { amount: '0.0001' }), client, discovery, store);
 
     const [first, second] = broadcasts.map((hex) => bitcoin.Transaction.fromHex(hex));
-    const outpoints = (tx: bitcoin.Transaction) =>
-      tx.ins.map(({ hash, index }) => `${Buffer.from(hash).reverse().toString('hex')}:${index}`);
 
-    expect(outpoints(second)).toEqual(expect.arrayContaining(outpoints(first)));
+    expect(inputsOf(second)).toEqual(expect.arrayContaining(inputsOf(first)));
     expect(store.records).toEqual([]);
   });
 
-  it('lets a new send proceed normally once the earlier transaction is seen', async () => {
-    const store = memoryPendingStore([
-      {
-        accountAddress: 'stored-account',
-        amountSat: 1,
-        createdAt: 1,
-        network: 'mainnet',
-        outpoints: [{ txid: '22'.repeat(32), vout: 1 }],
-        recipient,
-        txHex: '00',
-        txid: 'aa'.repeat(32),
-      },
-    ]);
-    const client = transferClient({ statuses: { ['aa'.repeat(32)]: { confirmed: false } } });
+  it('sends nothing new while the earlier transaction waits in the mempool', async () => {
+    const store = memoryPendingStore([pendingRecord()]);
+    // Esplora no longer lists a coin spent by a mempool transaction, so a new
+    // transaction could not conflict with it.
+    const client = transferClient({ statuses: { ['aa'.repeat(32)]: { confirmed: false } }, utxos: [utxo(100_000, '11'.repeat(32))] });
+
+    await expect(makeBitcoinTransfer(params(), client, discovery, store)).rejects.toThrow('bitcoin_previous_send_unconfirmed');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+    expect(store.records).toHaveLength(1);
+  });
+
+  it('lets a new send proceed normally once the earlier transaction confirmed', async () => {
+    const store = memoryPendingStore([pendingRecord()]);
+    const client = transferClient({ statuses: { ['aa'.repeat(32)]: { confirmed: true } }, utxos: [utxo(100_000, '11'.repeat(32))] });
 
     await makeBitcoinTransfer(params(), client, discovery, store);
 
@@ -358,19 +371,74 @@ describe('Bitcoin ambiguous broadcast guard', () => {
     expect(store.records).toEqual([]);
   });
 
-  it('refuses coin control that leaves out a coin of an unresolved transaction', async () => {
-    const store = memoryPendingStore([
-      {
-        accountAddress: 'stored-account',
-        amountSat: 1,
-        createdAt: 1,
-        network: 'mainnet',
-        outpoints: [{ txid: '22'.repeat(32), vout: 1 }],
-        recipient,
-        txHex: '00',
-        txid: 'aa'.repeat(32),
+  it('never pays twice when the retry follows the first transaction into the mempool', async () => {
+    const store = memoryPendingStore();
+    let utxos = [utxo(100_000, '11'.repeat(32)), utxo(100_000, '22'.repeat(32), 1)];
+    const statuses: Record<string, { confirmed: boolean } | null> = {};
+    const broadcasts: string[] = [];
+    const client = transferClient({
+      broadcast: async (txHex) => {
+        broadcasts.push(txHex);
+        // The first send reached an endpoint but every response was lost.
+        if (broadcasts.length === 1) throw new BitcoinBroadcastError('bitcoin_broadcast_ambiguous', true);
+
+        return bitcoin.Transaction.fromHex(txHex).getId();
       },
-    ]);
+      statuses,
+    });
+
+    client.getUtxos.mockImplementation(async (address: string) => (address === mainnetAddress ? utxos : []));
+
+    await expect(makeBitcoinTransfer(params(), client, discovery, store)).rejects.toThrow('bitcoin_broadcast_ambiguous');
+
+    // The first transaction is now in the mempool: Esplora reports it and no
+    // longer lists the coin it spends.
+    const first = bitcoin.Transaction.fromHex(broadcasts[0]);
+
+    statuses[first.getId()] = { confirmed: false };
+    utxos = utxos.filter(({ txid, vout }) => !inputsOf(first).includes(`${txid}:${vout}`));
+
+    await expect(makeBitcoinTransfer(params(), client, discovery, store)).rejects.toThrow('bitcoin_previous_send_unconfirmed');
+    expect(broadcasts).toHaveLength(1);
+    expect(store.records.map(({ txid }) => txid)).toEqual([first.getId()]);
+  });
+
+  it('refuses to build from other coins when a coin of an unresolved send is not listed', async () => {
+    // Outcome unknown, yet the UTXO list (another endpoint's view, or a coin
+    // already spent in the mempool) no longer contains the earlier coin.
+    const store = memoryPendingStore([pendingRecord({ outpoints: [{ txid: '33'.repeat(32), vout: 0 }] })]);
+    const client = transferClient();
+
+    await expect(makeBitcoinTransfer(params(), client, discovery, store)).rejects.toThrow('bitcoin_previous_send_pending');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+    expect(store.records).toHaveLength(1);
+  });
+
+  it('keeps the guard when the indexer cannot be asked about the earlier send', async () => {
+    const store = memoryPendingStore([pendingRecord({ outpoints: [{ txid: '33'.repeat(32), vout: 0 }] })]);
+    const client = transferClient();
+
+    client.getTransactionStatus.mockRejectedValue(new Error('bitcoin_indexer_http_429'));
+
+    await expect(makeBitcoinTransfer(params(), client, discovery, store)).rejects.toThrow('bitcoin_previous_send_pending');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+    expect(store.records).toHaveLength(1);
+  });
+
+  it('spends an unconfirmed coin of an unresolved send again', async () => {
+    const store = memoryPendingStore([pendingRecord({ outpoints: [{ txid: '33'.repeat(32), vout: 0 }] })]);
+    const client = transferClient({ utxos: [utxo(100_000, '11'.repeat(32)), utxo(30_000, '33'.repeat(32), 0, false)] });
+
+    await makeBitcoinTransfer(params(), client, discovery, store);
+
+    const tx = bitcoin.Transaction.fromHex(client.broadcastTransaction.mock.calls[0][0]);
+
+    expect(inputsOf(tx)).toContain(`${'33'.repeat(32)}:0`);
+    expect(store.records).toEqual([]);
+  });
+
+  it('refuses coin control that leaves out a coin of an unresolved transaction', async () => {
+    const store = memoryPendingStore([pendingRecord()]);
 
     await expect(
       makeBitcoinTransfer(
@@ -383,54 +451,75 @@ describe('Bitcoin ambiguous broadcast guard', () => {
   });
 
   it('reports a pending earlier send in the quote', async () => {
-    const store = memoryPendingStore([
-      {
-        accountAddress: 'stored-account',
-        amountSat: 1,
-        createdAt: 1,
-        network: 'mainnet',
-        outpoints: [{ txid: '22'.repeat(32), vout: 1 }],
-        recipient,
-        txHex: '00',
-        txid: 'aa'.repeat(32),
-      },
-    ]);
+    const store = memoryPendingStore([pendingRecord({ amountSat: 40_000 })]);
     const quote = await quoteBitcoinTransfer(params(), transferClient(), discovery, store);
 
-    expect(quote).toMatchObject({ pendingPreviousSend: true, recipientType: 'p2wpkh', spendable: '0.0016' });
+    expect(quote).toMatchObject({
+      pendingPreviousSend: true,
+      previousSend: { amount: '0.0004', inMempool: false, recipient, txid: 'aa'.repeat(32) },
+      recipientType: 'p2wpkh',
+      spendable: '0.0016',
+    });
+    expect(quote.unavailableReason).toBeUndefined();
+  });
+
+  it('quotes an earlier send waiting in the mempool as blocking, with its details', async () => {
+    const store = memoryPendingStore([pendingRecord({ amountSat: 40_000 })]);
+    const client = transferClient({ statuses: { ['aa'.repeat(32)]: { confirmed: false } }, utxos: [utxo(100_000, '11'.repeat(32))] });
+
+    for (const amount of ['0', '0.0005']) {
+      const quote = await quoteBitcoinTransfer(params(createState(), { amount }), client, discovery, store);
+
+      expect(quote).toMatchObject({
+        pendingPreviousSend: false,
+        previousSend: { amount: '0.0004', inMempool: true, recipient, txid: 'aa'.repeat(32) },
+        unavailableReason: 'bitcoin_previous_send_unconfirmed',
+      });
+    }
+  });
+
+  it('does not claim the coins are reused when one of them is not listed', async () => {
+    const store = memoryPendingStore([pendingRecord({ outpoints: [{ txid: '33'.repeat(32), vout: 0 }] })]);
+
+    for (const amount of ['0', '0.0005']) {
+      const quote = await quoteBitcoinTransfer(params(createState(), { amount }), transferClient(), discovery, store);
+
+      expect(quote).toMatchObject({ pendingPreviousSend: false, unavailableReason: 'bitcoin_previous_send_pending' });
+    }
   });
 
   it('resolves pending sends only when the indexer proves the outcome', async () => {
-    const record = (txid: string): BitcoinPendingSend => ({
-      accountAddress: 'a',
-      amountSat: 1,
-      createdAt: 1,
-      network: 'mainnet',
-      outpoints: [{ txid: '11'.repeat(32), vout: 0 }],
-      recipient,
-      txHex: '00',
-      txid,
-    });
+    const record = (txid: string): BitcoinPendingSend => pendingRecord({ accountAddress: 'a', txid });
     const client = {
-      getOutspend: vi.fn(async (): Promise<{ spent: boolean }> => ({ spent: false })),
+      getOutspend: vi.fn(async (): Promise<{ spent: boolean; txid?: string }> => ({ spent: false })),
       getTransactionStatus: vi.fn(async (txid: string) => {
         if (txid === 'aa'.repeat(32)) return { confirmed: true };
+        if (txid === 'dd'.repeat(32)) return { confirmed: false };
         if (txid === 'cc'.repeat(32)) throw new Error('offline');
 
         return null;
       }),
     };
+    const txids = (records: BitcoinPendingSend[]) => records.map(({ txid }) => txid);
 
-    const { resolved, unresolved } = await resolveBitcoinPendingSends(
-      [record('aa'.repeat(32)), record('bb'.repeat(32)), record('cc'.repeat(32))],
+    const { inMempool, resolved, unresolved } = await resolveBitcoinPendingSends(
+      [record('aa'.repeat(32)), record('bb'.repeat(32)), record('cc'.repeat(32)), record('dd'.repeat(32))],
       client
     );
 
-    expect(resolved.map(({ txid }) => txid)).toEqual(['aa'.repeat(32)]);
-    expect(unresolved.map(({ txid }) => txid)).toEqual(['bb'.repeat(32), 'cc'.repeat(32)]);
+    expect(txids(resolved)).toEqual(['aa'.repeat(32)]);
+    expect(txids(inMempool)).toEqual(['dd'.repeat(32)]);
+    expect(txids(unresolved)).toEqual(['bb'.repeat(32), 'cc'.repeat(32)]);
 
+    // A coin spent by a different transaction: this one can never confirm.
+    client.getOutspend.mockResolvedValue({ spent: true, txid: 'ee'.repeat(32) });
+    expect(txids((await resolveBitcoinPendingSends([record('bb'.repeat(32))], client)).resolved)).toEqual(['bb'.repeat(32)]);
+    // A coin spent by this very transaction: it is in the mempool.
+    client.getOutspend.mockResolvedValue({ spent: true, txid: 'bb'.repeat(32) });
+    expect(txids((await resolveBitcoinPendingSends([record('bb'.repeat(32))], client)).inMempool)).toEqual(['bb'.repeat(32)]);
+    // Spent, but the indexer does not say by what: still unknown.
     client.getOutspend.mockResolvedValue({ spent: true });
-    expect((await resolveBitcoinPendingSends([record('bb'.repeat(32))], client)).resolved).toHaveLength(1);
+    expect(txids((await resolveBitcoinPendingSends([record('bb'.repeat(32))], client)).unresolved)).toEqual(['bb'.repeat(32)]);
   });
 
   it('persists pending sends through extension storage without losing concurrent writes', async () => {

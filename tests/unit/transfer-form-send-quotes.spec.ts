@@ -160,6 +160,55 @@ describe('Send screen Bitcoin quote', () => {
     expect((wrapper.vm as unknown as { tx: Record<string, unknown> }).tx).toMatchObject({ bitcoinFeeRateSatPerVbyte: 4 });
   });
 
+  it('names an earlier send waiting in the mempool and keeps Continue blocked until it confirms', async () => {
+    const previousSend = {
+      amount: '0.0004',
+      inMempool: true,
+      recipient: 'bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr',
+      txid: 'ab'.repeat(32),
+    };
+
+    mocks.checkTransfer.mockResolvedValue({
+      bitcoin: { ...bitcoinQuote, previousSend, unavailableReason: 'bitcoin_previous_send_unconfirmed' },
+      destEstimateFee: '0',
+      errors: [{ message: 'bitcoin_previous_send_unconfirmed' }],
+      estimateFee: bitcoinQuote.fee,
+    });
+
+    const wrapper = mountForm();
+
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="bitcoinPreviousSend"]').text()).toBe(
+      `assets.bitcoinPreviousSendOnNetwork:${JSON.stringify({
+        amount: '0.0004 BTC',
+        recipient: 'bc1p5cyx…kedrcr',
+        txid: 'abababab…abababab',
+      })}`
+    );
+    expect((wrapper.vm as unknown as { buttonText: string }).buttonText).toBe('assets.bitcoinPreviousSendUnconfirmed');
+  });
+
+  it('says an earlier send of unknown outcome has its coins reused', async () => {
+    mocks.checkTransfer.mockResolvedValue({
+      bitcoin: {
+        ...bitcoinQuote,
+        pendingPreviousSend: true,
+        previousSend: { amount: '0.0004', inMempool: false, recipient: '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2', txid: 'cd'.repeat(32) },
+      },
+      destEstimateFee: '0',
+      errors: [],
+      estimateFee: bitcoinQuote.fee,
+    });
+
+    const wrapper = mountForm();
+
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="bitcoinPreviousSend"]').text()).toContain('assets.bitcoinPreviousSendReused:');
+    expect(wrapper.get('[data-testid="bitcoinPreviousSend"]').text()).toContain('"recipient":"1BvBMSEY…JaNVN2"');
+  });
+
   it('hides the Bitcoin network from the Send pickers while a remote veto is remembered', async () => {
     const { useSendKillSwitchStore } = await import('@/stores/sendKillSwitch');
 

@@ -179,8 +179,8 @@
                 <p v-if="bitcoinAwaitingConfirmation" class="send-note" data-testid="bitcoinAwaitingConfirmation">
                   {{ $t('assets.bitcoinAwaitingConfirmation', { amount: bitcoinAwaitingConfirmation }) }}
                 </p>
-                <p v-if="bitcoinQuote?.pendingPreviousSend" class="send-note" data-testid="bitcoinPreviousSendReused">
-                  {{ $t('assets.bitcoinPreviousSendReused') }}
+                <p v-if="bitcoinPreviousSendNote" class="send-note" data-testid="bitcoinPreviousSend">
+                  {{ bitcoinPreviousSendNote }}
                 </p>
               </template>
 
@@ -450,6 +450,26 @@ export default defineComponent({
     },
     firstIcon() {
       return this.isTransfer ? this.syncedAssetId : this.syncedNetwork;
+    },
+    // An earlier Bitcoin send whose outcome is not settled: waiting in the mempool, so
+    // nothing new is sent until it confirms, or unknown, so its coins are reused.
+    bitcoinPreviousSendNote() {
+      const previous = this.bitcoinQuote?.previousSend;
+
+      if (!previous) return '';
+
+      const shorten = (value: string | undefined, tail: number) =>
+        value && value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-tail)}` : value ?? '—';
+      const details = {
+        amount: previous.amount ? `${previous.amount} BTC` : '—',
+        recipient: shorten(previous.recipient, 6),
+        txid: shorten(previous.txid, 8),
+      };
+
+      if (previous.inMempool) return this.$t('assets.bitcoinPreviousSendOnNetwork', details);
+      if (this.bitcoinQuote?.pendingPreviousSend) return this.$t('assets.bitcoinPreviousSendReused', details);
+
+      return '';
     },
     placeholderSelectPopup() {
       return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';

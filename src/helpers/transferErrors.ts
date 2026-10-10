@@ -6,6 +6,7 @@ export const SEND_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.f
   bitcoin_broadcast_rejected: 'assets.bitcoinBroadcastRejected',
   bitcoin_insufficient_spendable: 'assets.bitcoinInsufficientSpendable',
   bitcoin_previous_send_pending: 'assets.bitcoinPreviousSendPending',
+  bitcoin_previous_send_unconfirmed: 'assets.bitcoinPreviousSendUnconfirmed',
   bitcoin_too_many_inputs: 'assets.bitcoinTooManyInputs',
   invalid_bitcoin_recipient: 'assets.incorrectAddress',
   invalid_solana_recipient: 'assets.incorrectAddress',

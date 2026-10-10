@@ -8,10 +8,13 @@ import type { BitcoinOutpoint } from '@/util/bitcoinSend';
  * the indexer proves its outcome.
  *
  * The record holds only public data (the signed transaction and its inputs),
- * never key material. While a record is unresolved, the next send from the same
+ * never key material. While the outcome is unknown, the next send from the same
  * account spends every one of its inputs again, so the two transactions
- * conflict and the network can confirm at most one of them: a retry after an
- * ambiguous broadcast can never pay twice.
+ * conflict and the network can confirm at most one of them. Once the indexer
+ * sees the transaction waiting in the mempool its coins are no longer listed,
+ * so no new transaction could conflict with it; the account then sends nothing
+ * new until it confirms. Either way a retry after an ambiguous broadcast can
+ * never pay twice.
  */
 export type BitcoinPendingSend = {
   accountAddress: string;
@@ -88,33 +91,49 @@ export const getDefaultBitcoinPendingSendStore = (): BitcoinPendingSendStore =>
   (defaultStore ??= createStorageBitcoinPendingSendStore());
 
 /**
- * Splits the account's pending sends into those whose outcome the indexer has
- * proven (seen on chain or in the mempool, or one of their coins was spent by a
- * different transaction) and those still unknown. Any lookup failure keeps a
- * record unresolved: when in doubt the conflict guarantee stays in force.
+ * Sorts the account's pending sends by what the indexer proves about them:
+ * - `resolved`: the transaction confirmed, or one of its coins was spent by a
+ *   different transaction, so it can never confirm;
+ * - `inMempool`: the network has the transaction but has not confirmed it.
+ *   Its coins are no longer listed as spendable, so a new transaction cannot
+ *   conflict with it, and a new send has to wait until it confirms;
+ * - `unresolved`: the outcome is unknown, so the next send spends every one of
+ *   its coins again.
+ * Any lookup failure keeps a record unresolved: when in doubt the conflict
+ * guarantee stays in force.
  */
 export async function resolveBitcoinPendingSends(
   records: BitcoinPendingSend[],
   client: BitcoinPendingSendClient
-): Promise<{ resolved: BitcoinPendingSend[]; unresolved: BitcoinPendingSend[] }> {
+): Promise<{ inMempool: BitcoinPendingSend[]; resolved: BitcoinPendingSend[]; unresolved: BitcoinPendingSend[] }> {
+  const inMempool: BitcoinPendingSend[] = [];
   const resolved: BitcoinPendingSend[] = [];
   const unresolved: BitcoinPendingSend[] = [];
 
   for (const record of records) {
     try {
-      if (await client.getTransactionStatus(record.txid)) {
-        resolved.push(record);
+      const status = await client.getTransactionStatus(record.txid);
+
+      if (status) {
+        (status.confirmed ? resolved : inMempool).push(record);
         continue;
       }
 
       const outspends = await Promise.all(record.outpoints.map(({ txid, vout }) => client.getOutspend(txid, vout)));
 
-      if (outspends.some(({ spent }) => spent)) resolved.push(record);
-      else unresolved.push(record);
+      if (outspends.some(({ spent, txid }) => spent && txid !== undefined && txid !== record.txid)) {
+        resolved.push(record);
+      } else if (outspends.some(({ spent, txid }) => spent && txid === record.txid)) {
+        // Endpoints can lag each other: one that names this transaction as the
+        // spender of its coin has it, whatever the status lookup said.
+        inMempool.push(record);
+      } else {
+        unresolved.push(record);
+      }
     } catch {
       unresolved.push(record);
     }
   }
 
-  return { resolved, unresolved };
+  return { inMempool, resolved, unresolved };
 }

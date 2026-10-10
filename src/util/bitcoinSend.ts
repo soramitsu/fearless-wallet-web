@@ -215,8 +215,17 @@ export async function quoteBitcoinSend({
     utxos: walletUtxos,
   });
   const quote: BitcoinSendQuote = { ...summary, feeRateSatPerVbyte: feeRate };
+  const requiredOutpointKeys = normalizeOutpointList(requiredOutpoints, 'invalid_required_outpoint');
 
-  if (amountSat === undefined) return quote;
+  if (amountSat === undefined) {
+    // Nothing is selected without an amount, but a coin of an earlier send that
+    // the indexer no longer lists already rules out sending.
+    const listed = new Set(walletUtxos.map(({ txid, vout }) => normalizeOutpoint(txid, vout)));
+
+    return requiredOutpointKeys.every((outpoint) => listed.has(outpoint))
+      ? quote
+      : { ...quote, unavailableReason: 'pending_outpoint_required' };
+  }
 
   try {
     const amount = normalizeAmount(amountSat, recipientType);
@@ -226,8 +235,8 @@ export async function quoteBitcoinSend({
       feeRateSatPerVbyte: feeRate,
       maxInputs: normalizeMaxInputs(maxInputs),
       recipientType,
-      requiredOutpoints: normalizeOutpointList(requiredOutpoints, 'invalid_required_outpoint'),
-      utxos: spendableUtxos(walletUtxos, includeUnconfirmed),
+      requiredOutpoints: requiredOutpointKeys,
+      utxos: spendableUtxos(walletUtxos, includeUnconfirmed, requiredOutpointKeys),
     });
 
     return { ...quote, feeSat: selection.fee, vsize: selection.vsize };
@@ -315,9 +324,12 @@ async function planBitcoinSend({
   const selectedOutpointKeys = normalizeSelectedOutpoints(selectedOutpoints);
   const requiredOutpointKeys = normalizeOutpointList(requiredOutpoints, 'invalid_required_outpoint');
   const walletUtxos = await fetchWalletUtxos(indexer, normalizedSources);
-  const spendable = spendableUtxos(walletUtxos, includeUnconfirmed);
+  const spendable = spendableUtxos(walletUtxos, includeUnconfirmed, requiredOutpointKeys);
 
-  if (spendable.length === 0 && selectedOutpointKeys === undefined) throw new BitcoinSendError('no_spendable_utxos');
+  // With required coins, coin selection reports the more specific missing-coin error.
+  if (spendable.length === 0 && selectedOutpointKeys === undefined && requiredOutpointKeys.length === 0) {
+    throw new BitcoinSendError('no_spendable_utxos');
+  }
 
   const selection =
     selectedOutpointKeys === undefined
@@ -423,9 +435,19 @@ async function fetchWalletUtxos(client: BitcoinPlanClient, sources: BitcoinSendS
   return utxos;
 }
 
-function spendableUtxos(utxos: WalletUtxo[], includeUnconfirmed: boolean): BitcoinUtxo[] {
+// A coin of a possibly-broadcast earlier transaction stays eligible while it is
+// unconfirmed: the new transaction has to spend it again.
+function spendableUtxos(
+  utxos: WalletUtxo[],
+  includeUnconfirmed: boolean,
+  requiredOutpoints: string[] = []
+): BitcoinUtxo[] {
+  const required = new Set(requiredOutpoints);
+
   return utxos
-    .filter(({ confirmed }) => includeUnconfirmed || confirmed)
+    .filter(
+      ({ confirmed, txid, vout }) => includeUnconfirmed || confirmed || required.has(normalizeOutpoint(txid, vout))
+    )
     .map(({ confirmed: _confirmed, ...utxo }) => utxo);
 }
 
@@ -464,6 +486,11 @@ function selectBitcoinUtxos({
 }): CoinSelectionResult {
   const required = new Set(requiredOutpoints);
   const selected = utxos.filter((utxo) => required.has(normalizeOutpoint(utxo.txid, utxo.vout)));
+
+  // A coin the indexer no longer lists may already be spent by the earlier
+  // transaction; building from other coins would let both confirm.
+  if (selected.length !== required.size) throw new BitcoinSendError('pending_outpoint_required');
+
   const candidates = utxos
     .filter((utxo) => !required.has(normalizeOutpoint(utxo.txid, utxo.vout)) && isEconomical(utxo, feeRateSatPerVbyte))
     .sort(compareUtxos);

@@ -239,6 +239,40 @@ describe.skipIf(!ESPLORA_URL)('Bitcoin send on local regtest', () => {
     expect(await received(second)).toBe(500_000);
   });
 
+  it('sends nothing new while a relayed transaction waits in the mempool, so a retry cannot pay twice', async () => {
+    const first = await newRecipient('bech32');
+    const relaying = esplora();
+    const relay = relaying.broadcastTransaction.bind(relaying);
+
+    relaying.broadcastTransaction = async (txHex: string, txid?: string) => {
+      await relay(txHex, txid);
+      throw new BitcoinBroadcastError('bitcoin_broadcast_ambiguous', true);
+    };
+
+    await expect(send(first, '0.006', relaying)).rejects.toThrow('bitcoin_broadcast_ambiguous');
+
+    // The user tries the same payment again before a block is mined. The
+    // indexer no longer lists the relayed transaction's coins, so the wallet
+    // refuses instead of paying from other coins.
+    const retry = recording();
+
+    await expect(send(first, '0.006', retry.client)).rejects.toThrow('bitcoin_previous_send_unconfirmed');
+    expect(retry.broadcasts).toEqual([]);
+    await expect(quote(first, '0.006')).resolves.toMatchObject({
+      pendingPreviousSend: false,
+      previousSend: { amount: '0.006', inMempool: true, recipient: first },
+      unavailableReason: 'bitcoin_previous_send_unconfirmed',
+    });
+
+    await mine(1);
+    // Confirmed: the record is resolved and a deliberate new payment goes through.
+    await send(first, '0.001', recording().client);
+    expect(pendingRecords).toEqual([]);
+
+    await mine(1);
+    expect(await received(first)).toBe(700_000);
+  });
+
   it('sends exactly the quoted maximum, leaving nothing spendable', async () => {
     await mine(1);
 

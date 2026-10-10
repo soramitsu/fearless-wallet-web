@@ -378,6 +378,16 @@ export interface ResponseBitcoinTransferQuote {
   maxSendable: string;
   /** An earlier send's broadcast outcome is still unknown; its coins are reused. */
   pendingPreviousSend: boolean;
+  /**
+   * The latest earlier send whose outcome is not settled: waiting in the
+   * mempool (no new send until it confirms) or unknown (its coins are reused).
+   */
+  previousSend?: {
+    amount?: string;
+    inMempool: boolean;
+    recipient?: string;
+    txid: string;
+  };
   recipientType?: BitcoinRecipientType;
   spendable: string;
   unavailableReason?: string;

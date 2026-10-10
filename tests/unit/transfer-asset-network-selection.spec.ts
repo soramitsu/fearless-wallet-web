@@ -1,4 +1,5 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent } from 'vue';
@@ -55,6 +56,7 @@ vi.mock('@/util/BaseApi', () => ({
     isBitcoinNetwork: () => false,
     isEthereumNetwork: (name: string) => ['polygon', 'arbitrum one', 'op mainnet'].includes(name.toLowerCase()),
     isSameAddress: () => false,
+    isSolanaNetwork: () => false,
     validateAddress: () => false,
     validateAddressByNetwork: () => true,
   },
@@ -216,6 +218,7 @@ async function pickOption(name: string) {
 
 describe('TransferForm network-scoped asset selection', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     mocks.checkTransfer.mockReset();
     mocks.checkTransfer.mockResolvedValue({ estimateFee: '0.001', destEstimateFee: '0', errors: [] });

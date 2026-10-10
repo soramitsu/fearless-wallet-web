@@ -1,5 +1,6 @@
 import { computed, defineComponent, h, type PropType } from 'vue';
 import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { RELEASE_DEFAULT_ACTIONS } from '@extension-base/services/action-capability-service';
 import type { TokenGroup } from '@extension-base/background/types/types';
@@ -161,6 +162,7 @@ const mountRoot = (props: Record<string, string> = {}) => mount(CrossChainRoot, 
 
 describe('cross-chain entry without dead ends', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     mocks.push.mockReset();
     mocks.back.mockReset();
     mocks.accountsStore.balances = [dotGroup()];

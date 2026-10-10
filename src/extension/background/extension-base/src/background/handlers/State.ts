@@ -32,6 +32,7 @@ import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
+import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -216,43 +217,9 @@ export default class State {
       return;
     }
 
-    const allAccounts = this.keyringService.getAllMainAccounts();
+    const account = pickDefaultCurrentAccount(this.keyringService.getAllMainAccounts());
 
-    if (allAccounts.length) {
-      const [
-        {
-          address,
-          meta: {
-            name,
-            ethereumAddress,
-            isMobile,
-            bitcoinAddress,
-            bitcoinTestnetAddress,
-            solanaAddress,
-            irohaAddress,
-            irohaPublicKeyHex,
-            walletEcosystem,
-          },
-        },
-      ] = allAccounts;
-
-      this.setCurrentAccount({
-        address,
-        name: name!,
-        ethereumAddress: ethereumAddress!,
-        bitcoinAddress: bitcoinAddress as string | undefined,
-        bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
-        solanaAddress: solanaAddress as string | undefined,
-        irohaAddress: irohaAddress as string | undefined,
-        irohaPublicKeyHex: irohaPublicKeyHex as string | undefined,
-        isMobile: isMobile!,
-        walletEcosystem: walletEcosystem!,
-      });
-
-      return;
-    }
-
-    this.setCurrentAccount(null);
+    this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
   }
 
   async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {

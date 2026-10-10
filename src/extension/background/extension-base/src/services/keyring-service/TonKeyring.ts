@@ -32,10 +32,16 @@ export class TonKeyringService {
   readonly accountSubject: BehaviorSubject<SubjectInfo & TonAccount> = new BehaviorSubject({});
 
   constructor(private keyringService: KeyringService) {
+    // Background start-up awaits this read through `tonStore.loaded`.
+    void this.loadAll().catch(console.error);
+  }
+
+  // Reads every stored TON account again; start-up calls this after a failed read.
+  loadAll(): Promise<void> {
     const saveAccounts = async (address: string, { name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) =>
       this.setAccounts({ address, name, cipherSeed, meta, publicKeyHex });
 
-    tonStore.all(saveAccounts);
+    return tonStore.all(saveAccounts);
   }
 
   setAccounts({ address, name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) {

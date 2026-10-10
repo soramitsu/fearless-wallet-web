@@ -92,16 +92,15 @@ export class KeyringService {
   }
 
   constructor(eventService: EventService) {
-    this.currentAccountReady = eventService.waitCryptoReady
-      .then(() => {
-        return new Promise<void>((resolve) => {
-          this.currentAccountStore.get('CurrentAccountInfo', (rs) => {
-            if (rs) this.currentAccountSubject.next(rs);
-            resolve();
-          });
-        });
-      });
+    this.currentAccountReady = eventService.waitCryptoReady.then(() => this.restoreCurrentAccount());
     void this.currentAccountReady.catch(console.error);
+  }
+
+  // A failed read rejects instead of leaving start-up waiting; start-up calls this again.
+  async restoreCurrentAccount(): Promise<void> {
+    const currentAccount = await this.currentAccountStore.getAndWait('CurrentAccountInfo');
+
+    if (currentAccount) this.currentAccountSubject.next(currentAccount);
   }
 
   get addressSubject() {

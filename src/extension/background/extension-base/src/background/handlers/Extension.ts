@@ -66,6 +66,7 @@ import {
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
+import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
@@ -276,14 +277,17 @@ export default class Extension extends FWExtensionBase {
 
     const isWasCurrentAccount = address === this.state.currentAccount?.address;
 
+    // Never leave the removed account selected: updateCurrentAccount refuses EVM addresses,
+    // so a remaining standalone EVM account is stored directly, and no account means none.
     if (isWasCurrentAccount) {
-      const allAccounts = this.state.keyringService.getAllMainAccounts();
-      const firstAccount = allAccounts?.[0];
+      const nextAccount = pickDefaultCurrentAccount(this.state.keyringService.getAllMainAccounts());
 
-      if (allAccounts.length)
+      if (!nextAccount) this.state.setCurrentAccount(null);
+      else if (isEthereumAddress(nextAccount.address)) this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
+      else
         this.state.updateCurrentAccount({
-          address: firstAccount?.address ?? '',
-          walletEcosystem: firstAccount.meta.walletEcosystem,
+          address: nextAccount.address,
+          walletEcosystem: nextAccount.meta.walletEcosystem,
         });
     }
 

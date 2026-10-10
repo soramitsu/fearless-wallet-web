@@ -1,5 +1,9 @@
 import type { MessageTypes, Port, TransportRequestMessage } from '@extension-base/background/types/types';
 
+// The error a request receives while the wallet's stored records cannot be read. The
+// popup shows its storage message for it, and its retry sends the request that reads again.
+export const WALLET_STORAGE_UNAVAILABLE = 'Wallet storage could not be read.';
+
 export interface BackgroundRuntime {
   handleMessage(data: TransportRequestMessage<MessageTypes>, port: Port): Promise<void>;
   onInstalled(details: chrome.runtime.InstalledDetails): Promise<void>;

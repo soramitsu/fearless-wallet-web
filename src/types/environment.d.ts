@@ -31,6 +31,7 @@ declare global {
       VUE_APP_ENABLE_BITCOIN_TRANSFERS: string;
       VUE_APP_ENABLE_IROHA_CONNECT: string;
       VUE_APP_ENABLE_IROHA_TRANSFERS: string;
+      VUE_APP_ENABLE_SOLANA_TRANSFERS: string;
       FL_WEB_TON_API_KEY: string;
       FL_WEB_DWELLIR_API_KEY: string;
       FL_DWELLIR_API_KEY?: string;

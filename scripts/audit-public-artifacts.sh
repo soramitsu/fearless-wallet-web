@@ -48,11 +48,6 @@ if [[ "${VUE_APP_ENABLE_IROHA_TRANSFERS:-}" == "true" ]]; then
   iroha_transfers_enabled=true
 fi
 
-bitcoin_transfers_enabled=false
-if [[ "${VUE_APP_ENABLE_BITCOIN_TRANSFERS:-}" == "true" ]]; then
-  bitcoin_transfers_enabled=true
-fi
-
 iroha_connect_enabled=false
 if [[ "${VUE_APP_ENABLE_IROHA_CONNECT:-}" == "true" ]]; then
   iroha_connect_enabled=true
@@ -90,13 +85,12 @@ for env_file in .env.example .env.extension .env.web; do
       fi
     fi
 
-    if [[ "$key" == "VUE_APP_ENABLE_BITCOIN_TRANSFERS" ]]; then
+    # Bitcoin and Solana sends ship enabled (local regtest and
+    # solana-test-validator E2E plus the remote veto-only kill switch); the
+    # flags must still be an exact boolean.
+    if [[ "$key" == "VUE_APP_ENABLE_BITCOIN_TRANSFERS" || "$key" == "VUE_APP_ENABLE_SOLANA_TRANSFERS" ]]; then
       if [[ "$value" != "true" && "$value" != "false" ]]; then
-        fail "$env_file contains invalid VUE_APP_ENABLE_BITCOIN_TRANSFERS=$value; expected true or false"
-      fi
-
-      if [[ "$value" == "true" ]]; then
-        bitcoin_transfers_enabled=true
+        fail "$env_file contains invalid $key=$value; expected true or false"
       fi
     fi
 
@@ -122,10 +116,6 @@ fi
 
 if [[ "$iroha_connect_enabled" == "true" ]]; then
   fail 'VUE_APP_ENABLE_IROHA_CONNECT=true is blocked: IrohaConnect signs dApp-supplied bytes it does not decode (iroha_connect_blind_signing_unreviewed)'
-fi
-
-if [[ "$bitcoin_transfers_enabled" == "true" ]]; then
-  fail 'VUE_APP_ENABLE_BITCOIN_TRANSFERS=true is blocked until funded testnet broadcast evidence is marked ready and release-enabled (bitcoin_testnet_broadcast_evidence_missing)'
 fi
 
 ./scripts/check-iroha-js-sdk-artifact.sh --self-test

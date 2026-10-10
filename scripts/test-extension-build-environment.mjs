@@ -17,9 +17,10 @@ import { commonViteConfig } from '../vite.config.shared.mjs';
 
 const productionEnvironment = {
   UNRELATED_VALUE: 'preserved',
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
   VUE_APP_ENABLE_IROHA_CONNECT: 'true',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'true',
+  VUE_APP_ENABLE_SOLANA_TRANSFERS: 'false',
   VUE_APP_EXTENSION_SMOKE: 'true',
   VUE_APP_TEST_ONLY: 'true',
 };
@@ -34,8 +35,11 @@ const developmentEnvironment = { VUE_APP_TEST_ONLY: 'true' };
 enforceProductionReleaseEnvironment(developmentEnvironment, 'development');
 assert.equal(developmentEnvironment.VUE_APP_TEST_ONLY, 'true');
 
-// IrohaConnect stays compiled off in production builds.
+// Bitcoin and Solana sends ship enabled; IrohaConnect stays compiled off.
+assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_BITCOIN_TRANSFERS, 'true');
+assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_SOLANA_TRANSFERS, 'true');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_CONNECT, 'false');
+assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_TRANSFERS, 'false');
 
 const withEnvironment = (overrides, run) => {
   const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));
@@ -54,6 +58,20 @@ withEnvironment({ VUE_APP_ENABLE_IROHA_CONNECT: 'true', VUE_APP_ENABLE_IROHA_TRA
   assert.throws(() => commonViteConfig(viteOptions('production')), /iroha_connect_blind_signing_unreviewed/u);
   assert.doesNotThrow(() => commonViteConfig(viteOptions('development')));
 });
+withEnvironment(
+  {
+    VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+    VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+    VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+    VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
+  },
+  () => {
+    const config = commonViteConfig(viteOptions('production'));
+    assert.equal(config.define['process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS'], JSON.stringify('true'));
+    assert.equal(config.define['process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS'], JSON.stringify('true'));
+    assert.equal(config.define['process.env.VUE_APP_ENABLE_IROHA_CONNECT'], JSON.stringify('false'));
+  }
+);
 
 const commit = '0123456789abcdef0123456789abcdef01234567';
 const clean = { sourceCommit: commit, sourceDirty: false };
@@ -150,4 +168,4 @@ try {
   await fs.rm(sourceArchiveDirectory, { recursive: true, force: true });
 }
 
-console.log('Extension production environment self-test passed (21 checks)');
+console.log('Extension production environment self-test passed (27 checks)');

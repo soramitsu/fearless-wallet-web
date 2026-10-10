@@ -1,4 +1,4 @@
-import { decodeAddress, encodeAddress, hdValidatePath, isEthereumAddress } from '@polkadot/util-crypto';
+import { base58Decode, decodeAddress, encodeAddress, hdValidatePath, isEthereumAddress } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { KeyringPairs$Json } from '@subwallet/ui-keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
@@ -11,7 +11,7 @@ import { IS_PRODUCTION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSameString } from '@/helpers';
-import { isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
+import { isBitcoinRecipientAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
 import {
   encodeIrohaI105Address,
   isIrohaI105Address,
@@ -171,11 +171,18 @@ export default class BaseApi {
   }
 
   public static isSolanaAddress(address: string): boolean {
-    return BASE58_PUBLIC_KEY.test(address);
+    if (!BASE58_PUBLIC_KEY.test(address)) return false;
+
+    try {
+      return base58Decode(address).length === 32;
+    } catch {
+      return false;
+    }
   }
 
+  /** Any Bitcoin address the wallet can pay: P2PKH, P2SH, P2WPKH, P2WSH or Taproot. */
   public static isBitcoinAddress(address: string, network?: BitcoinNetworkKind): boolean {
-    return isBitcoinAddress(address, network);
+    return isBitcoinRecipientAddress(address, network);
   }
 
   public static isSameAddress(wallet: Wallet, address: string, network: string): boolean {

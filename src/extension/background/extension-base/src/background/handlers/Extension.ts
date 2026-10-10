@@ -6,10 +6,9 @@ import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
-  estimateBitcoinTransferFee,
-  getBitcoinNetworkKind,
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
+  quoteBitcoinTransfer,
 } from '@extension-base/api/bitcoin/transfer';
 import {
   estimateIrohaTransferFee,
@@ -18,9 +17,9 @@ import {
 } from '@extension-base/api/iroha/transfer';
 import { requireProductionIrohaTransferCodec } from '@extension-base/api/iroha/productionTransferCodec';
 import {
-  estimateSolanaTransferFee,
   isSolanaTransferNetwork,
   makeSolanaTransfer,
+  quoteSolanaTransfer,
 } from '@extension-base/api/solana/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
@@ -65,6 +64,7 @@ import {
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
@@ -712,6 +712,10 @@ export default class Extension extends FWExtensionBase {
           password: this.state.keyringService.getPassword(),
           walletEcosystem: walletEcosystem as WalletEcosystem,
         });
+      // A dApp's sign-and-send moves funds too, so the Solana send kill switch
+      // covers it; sign-only requests are unaffected.
+      if (request.method === 'signAndSendTransaction') await assertSendCapability(this.state, 'solanaSend');
+
       const response =
         request.method === 'signAndSendTransaction'
           ? await resolveSolanaSignAndSendTransaction({
@@ -1260,11 +1264,27 @@ export default class Extension extends FWExtensionBase {
 
     if (isBitcoinTransferNetwork(network)) {
       try {
-        fee = await estimateBitcoinTransferFee({ network: getBitcoinNetworkKind(network) });
+        const bitcoin = await quoteBitcoinTransfer({
+          amount: amount ?? '0',
+          bitcoinFeeRateSatPerVbyte: request.bitcoinFeeRateSatPerVbyte,
+          bitcoinFeeTargetBlocks: request.bitcoinFeeTargetBlocks,
+          bitcoinIncludeUnconfirmed: request.bitcoinIncludeUnconfirmed,
+          bitcoinMaxInputs: request.bitcoinMaxInputs,
+          from,
+          networkKey,
+          state: this.state,
+          to,
+        });
+
+        if (bitcoin.unavailableReason) {
+          errors.push({ message: bitcoin.unavailableReason, code: TransferErrorCode.TRANSFER_ERROR });
+        }
+
+        return { destEstimateFee: '0', estimateFee: bitcoin.fee, errors, bitcoin };
       } catch (e) {
         console.info(e);
         errors.push({
-          message: 'common.estimateFeeError',
+          message: (e as Error).message,
           code: TransferErrorCode.TRANSFER_ERROR,
         });
       }
@@ -1303,7 +1323,7 @@ export default class Extension extends FWExtensionBase {
 
     if (isSolanaTransferNetwork(network)) {
       try {
-        fee = await estimateSolanaTransferFee({
+        const { fee: quotedFee, ...solana } = await quoteSolanaTransfer({
           amount: amount ?? '0',
           assetId,
           from,
@@ -1311,6 +1331,12 @@ export default class Extension extends FWExtensionBase {
           state: this.state,
           to,
         });
+
+        if (solana.unavailableReason) {
+          errors.push({ message: solana.unavailableReason, code: TransferErrorCode.TRANSFER_ERROR });
+        }
+
+        return { destEstimateFee: '0', estimateFee: quotedFee, errors, solana };
       } catch (e) {
         console.info(e);
         errors.push({
@@ -1435,6 +1461,7 @@ export default class Extension extends FWExtensionBase {
         callback,
         from,
         networkKey,
+        solanaComputeUnitPriceMicroLamports: request.solanaComputeUnitPriceMicroLamports,
         state: this.state,
         to,
       });

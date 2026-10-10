@@ -105,6 +105,20 @@ const createState = ({
     },
   }) as unknown as State;
 
+const memoryPendingStore = () => {
+  let records: Array<{ txid: string }> = [];
+
+  return {
+    list: vi.fn(async () => records as never[]),
+    remove: vi.fn(async (txids: string[]) => {
+      records = records.filter(({ txid }) => !txids.includes(txid));
+    }),
+    save: vi.fn(async (record: { txid: string }) => {
+      records = [...records, record];
+    }),
+  };
+};
+
 describe('background Bitcoin transfer adapter', () => {
   beforeEach(() => {
     process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
@@ -236,12 +250,13 @@ describe('background Bitcoin transfer adapter', () => {
         to: recipient,
       },
       client,
-      { gapLimit: 2, maxLookahead: 20 }
+      { gapLimit: 2, maxLookahead: 20 },
+      memoryPendingStore()
     );
 
     expect(prepared.txid).toBe(bitcoin.Transaction.fromHex(prepared.txHex).getId());
     expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
-    expect(client.broadcastTransaction).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/u));
+    expect(client.broadcastTransaction).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/u), prepared.txid);
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);

@@ -14,9 +14,24 @@ const UNIVERSAL_WALLET_INDEXERS = {
   solana: 'https://si.soramitsu.io',
 } as const;
 
+// Esplora-compatible indexers used with failover for Bitcoin balances, UTXOs,
+// fee estimates and broadcast. The first entry stays the canonical indexer.
+const UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS = {
+  mainnet: [UNIVERSAL_WALLET_INDEXERS.bitcoin.mainnet, 'https://mempool.space/api'],
+  testnet: [UNIVERSAL_WALLET_INDEXERS.bitcoin.testnet, 'https://mempool.space/testnet/api'],
+} as const;
+
 const UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS = {
   mainnet: 'https://api.mainnet-beta.solana.com',
   devnet: 'https://api.devnet.solana.com',
+} as const;
+
+// Public JSON-RPC nodes tried in order after the user's selected or custom
+// node. Balances, blockhashes, simulation and broadcast all come from these;
+// nothing on the send path depends on the si.soramitsu.io indexer.
+const UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS = {
+  mainnet: [UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS.mainnet, 'https://solana-rpc.publicnode.com', 'https://solana.drpc.org'],
+  devnet: [UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS.devnet],
 } as const;
 
 const UNIVERSAL_WALLET_DEFAULT_WORD_COUNT = 24;
@@ -314,9 +329,11 @@ const UNIVERSAL_WALLET_CHAIN_REGISTRY: UniversalWalletChainRegistry = {
 };
 
 export {
+  UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS,
   UNIVERSAL_WALLET_CHAIN_REGISTRY,
   UNIVERSAL_WALLET_INDEXERS,
   UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS,
+  UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS,
   UNIVERSAL_WALLET_DEFAULT_WORD_COUNT,
   UNIVERSAL_WALLET_DERIVATION_PATHS,
   UNIVERSAL_WALLET_BITCOIN_NETWORKS,

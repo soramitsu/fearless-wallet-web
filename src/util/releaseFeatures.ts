@@ -1,5 +1,11 @@
+import { isSendCapabilityVetoed, type SendCapabilityVetoes } from '@/util/sendKillSwitch';
+
 export function isBitcoinTransfersEnabled(): boolean {
   return process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true';
+}
+
+export function isSolanaTransfersEnabled(): boolean {
+  return process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS === 'true';
 }
 
 // IrohaConnect signs dApp-supplied bytes without decoding them, so release
@@ -10,8 +16,20 @@ export function isIrohaConnectEnabled(): boolean {
   return process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true';
 }
 
-export function isNetworkTransferEnabled(network: { ecosystem?: string } | null | undefined): boolean {
-  return network?.ecosystem !== 'bitcoin' || isBitcoinTransfersEnabled();
+// Bitcoin and Solana sends are compiled on for this release. The remote kill
+// switch can only veto a compiled-on send; it can never enable one.
+export function isNetworkTransferEnabled(
+  network: { ecosystem?: string } | null | undefined,
+  vetoes?: SendCapabilityVetoes
+): boolean {
+  if (network?.ecosystem === 'bitcoin') {
+    return isBitcoinTransfersEnabled() && !isSendCapabilityVetoed('bitcoinSend', vetoes);
+  }
+  if (network?.ecosystem === 'solana') {
+    return isSolanaTransfersEnabled() && !isSendCapabilityVetoed('solanaSend', vetoes);
+  }
+
+  return true;
 }
 
 export function isGoogleDriveBackupEnabled(): boolean {

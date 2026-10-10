@@ -163,11 +163,17 @@ describe('BitcoinEsploraClient', () => {
 
     await expect(malformedShape.getBalance(MAINNET_ADDRESS)).rejects.toThrow(BitcoinIndexerError);
 
+    // An endpoint that accepted the POST but answered garbage may still have
+    // relayed the transaction, so the outcome is ambiguous, never "failed".
     const badBroadcast = new BitcoinEsploraClient({
       fetchFn: vi.fn(async () => new Response('not-a-txid', { status: 200 })),
     });
 
-    await expect(badBroadcast.broadcastTransaction('00aa')).rejects.toThrow(BitcoinIndexerError);
+    await expect(badBroadcast.broadcastTransaction('00aa')).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'bitcoin_broadcast_ambiguous',
+      name: 'BitcoinBroadcastError',
+    });
   });
 
   it('rejects impossible balances and bounded-response bypass attempts', async () => {
@@ -207,8 +213,9 @@ describe('BitcoinEsploraClient', () => {
     });
 
     await expect(oversizedBroadcastBody.broadcastTransaction('00aa')).rejects.toMatchObject({
-      message: 'bitcoin_broadcast_response_too_large',
-      name: 'BitcoinIndexerError',
+      ambiguous: true,
+      message: 'bitcoin_broadcast_ambiguous',
+      name: 'BitcoinBroadcastError',
     });
   });
 });

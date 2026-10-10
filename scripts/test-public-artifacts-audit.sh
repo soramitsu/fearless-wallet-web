@@ -333,7 +333,7 @@ write_fixture_repo() {
   mkdir -p "$repo/scripts" "$repo/src"
   cp "$CHECK_IROHA_JS_SDK_SCRIPT" "$repo/scripts/check-iroha-js-sdk-artifact.sh"
   chmod +x "$repo/scripts/check-iroha-js-sdk-artifact.sh"
-  printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=false\nVUE_APP_ENABLE_IROHA_CONNECT=false\nVUE_APP_ENABLE_BITCOIN_TRANSFERS=false\n' > "$repo/.env.example"
+  printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=false\nVUE_APP_ENABLE_IROHA_CONNECT=false\nVUE_APP_ENABLE_BITCOIN_TRANSFERS=true\nVUE_APP_ENABLE_SOLANA_TRANSFERS=true\n' > "$repo/.env.example"
   printf 'export const clean = true;\n' > "$repo/src/index.ts"
 
   (
@@ -611,11 +611,9 @@ expect_failure \
   "browser_transaction_codec_unpublished_source_only" \
   env VUE_APP_ENABLE_IROHA_TRANSFERS=true
 
-expect_failure \
-  "Bitcoin transfer enablement without funded broadcast evidence" \
-  "$VALID_REPO" \
-  "bitcoin_testnet_broadcast_evidence_missing" \
-  env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true
+# Bitcoin and Solana sends ship enabled in 4.2.0; enabling them is not an
+# audit failure, while IrohaConnect stays blocked.
+run_audit "$VALID_REPO" env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true VUE_APP_ENABLE_SOLANA_TRANSFERS=true >/dev/null
 
 expect_failure \
   "IrohaConnect enablement while signing is unreviewed" \
@@ -662,6 +660,19 @@ expect_failure \
   "invalid VUE_APP_ENABLE_BITCOIN_TRANSFERS=yes" \
   env
 
+INVALID_SOLANA_VALUE_REPO="$TMP_DIR/invalid-solana-value"
+write_fixture_repo "$INVALID_SOLANA_VALUE_REPO"
+printf 'VUE_APP_ENABLE_SOLANA_TRANSFERS=1\n' > "$INVALID_SOLANA_VALUE_REPO/.env.example"
+(
+  cd "$INVALID_SOLANA_VALUE_REPO"
+  git add .env.example
+)
+expect_failure \
+  "invalid Solana transfer enablement value" \
+  "$INVALID_SOLANA_VALUE_REPO" \
+  "invalid VUE_APP_ENABLE_SOLANA_TRANSFERS=1" \
+  env
+
 ENABLED_REPO="$TMP_DIR/enabled-with-sdk"
 write_fixture_repo "$ENABLED_REPO"
 printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=true\n' > "$ENABLED_REPO/.env.example"
@@ -703,4 +714,4 @@ expect_failure \
   "IROHA_JS_SDK_RELEASE_REPO, IROHA_JS_SDK_RELEASE_TAG, IROHA_JS_SDK_RELEASE_ASSET, and IROHA_JS_SDK_RELEASE_SHA256 are required together" \
   env IROHA_JS_SDK_RELEASE_REPO="hyperledger-iroha/iroha"
 
-echo "[public-artifacts-audit-test] 21 modes passed (2 positive, 19 adversarial): clean-baseline,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,bitcoin-transfer-enablement-blocked,iroha-connect-enablement-blocked,iroha-connect-file-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"
+echo "[public-artifacts-audit-test] 22 modes passed (3 positive, 19 adversarial): clean-baseline,bitcoin-solana-send-enabled,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,iroha-connect-enablement-blocked,iroha-connect-file-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,invalid-solana-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"

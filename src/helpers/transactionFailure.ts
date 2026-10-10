@@ -1,4 +1,5 @@
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
+import { SEND_ERROR_LOCALE_KEYS } from '@/helpers/transferErrors';
 
 type TransactionFailurePresentation = {
   key: string;
@@ -19,6 +20,7 @@ type TransactionResponseLike = {
 type OwnDataProperty = { kind: 'invalid' } | { kind: 'missing' } | { kind: 'value'; value: unknown };
 
 const KNOWN_MESSAGE_KEYS = new Map<string, string>([
+  ...Object.entries(SEND_ERROR_LOCALE_KEYS),
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],

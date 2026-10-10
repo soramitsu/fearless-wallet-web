@@ -1,4 +1,11 @@
-import { UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/universalWallet';
+import {
+  EndpointFailover,
+  isRetryableHttpStatus,
+  parseRetryAfterMs,
+  withTimeout,
+  type EndpointFailoverOptions,
+} from '@/util/endpointFailover';
 
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -63,17 +70,52 @@ type SolanaBroadcastOptions = {
   skipPreflight?: boolean;
 };
 
+type SolanaSignatureStatus = {
+  confirmationStatus: SolanaRpcCommitment | null;
+  confirmations: number | null;
+  err: unknown | null;
+  slot: number;
+};
+
+type SolanaParsedAccount = {
+  data: unknown;
+  executable: boolean;
+  lamports: number;
+  owner: string;
+  space?: number;
+};
+
+type SolanaTokenAccountEntry = {
+  account: SolanaParsedAccount;
+  pubkey: string;
+};
+
+type SolanaPrioritizationFee = {
+  prioritizationFee: number;
+  slot: number;
+};
+
 type SolanaRpcClientOptions = {
+  failover?: EndpointFailoverOptions;
   fetchFn?: FetchLike;
   network?: SolanaRpcNetwork;
+  requestTimeoutMs?: number;
   rpcUrl?: string;
+  /** Equivalent RPC endpoints tried in order; `rpcUrl` alone means just that one. */
+  rpcUrls?: readonly string[];
 };
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
+// "Node is unhealthy / behind" answers mean try another node, not "your
+// transaction is wrong".
+const RETRYABLE_RPC_ERROR_CODES: ReadonlySet<number> = new Set([-32005, -32004, -32014, -32016]);
 
 class SolanaRpcError extends Error {
   constructor(
     message: string,
     readonly status?: number,
-    readonly body?: unknown
+    readonly body?: unknown,
+    readonly retryAfterMs?: number
   ) {
     super(message);
     this.name = 'SolanaRpcError';
@@ -82,16 +124,149 @@ class SolanaRpcError extends Error {
 
 class SolanaRpcClient {
   private nextId = 1;
+  private readonly endpoints: EndpointFailover;
   private readonly fetchFn: FetchLike;
-  private readonly rpcUrl: string;
+  private readonly requestTimeoutMs: number;
 
   constructor({
+    failover,
     fetchFn = globalThis.fetch.bind(globalThis),
     network = 'mainnet',
+    requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
     rpcUrl,
+    rpcUrls,
   }: SolanaRpcClientOptions = {}) {
     this.fetchFn = fetchFn;
-    this.rpcUrl = normalizeRpcUrl(rpcUrl ?? UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS[normalizeNetwork(network)]);
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.endpoints = new EndpointFailover(
+      (rpcUrls?.length ? rpcUrls : rpcUrl ? [rpcUrl] : UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS[normalizeNetwork(network)]).map(
+        normalizeRpcUrl
+      ),
+      failover
+    );
+  }
+
+  get rpcUrls(): readonly string[] {
+    return this.endpoints.endpoints;
+  }
+
+  getBalance(address: string, commitment: SolanaRpcCommitment = 'confirmed'): Promise<number> {
+    return this.request(
+      'getBalance',
+      [normalizePubkey(address, 'invalid_address'), { commitment: normalizeCommitment(commitment) }],
+      (value) => requireSafeInteger(isRecord(value) ? value.value : undefined, 'invalid_balance_response')
+    );
+  }
+
+  getBlockHeight(commitment: SolanaRpcCommitment = 'confirmed'): Promise<number> {
+    return this.request('getBlockHeight', [{ commitment: normalizeCommitment(commitment) }], (value) =>
+      requireSafeInteger(value, 'invalid_block_height_response')
+    );
+  }
+
+  /** `null` when the account does not exist. */
+  getAccountInfo(address: string, commitment: SolanaRpcCommitment = 'confirmed'): Promise<SolanaParsedAccount | null> {
+    return this.request(
+      'getAccountInfo',
+      [normalizePubkey(address, 'invalid_address'), { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' }],
+      (value) => {
+        if (!isRecord(value)) throw new SolanaRpcError('invalid_account_response');
+
+        return value.value === null ? null : normalizeParsedAccount(value.value);
+      }
+    );
+  }
+
+  getMultipleAccounts(
+    addresses: string[],
+    commitment: SolanaRpcCommitment = 'confirmed'
+  ): Promise<Array<SolanaParsedAccount | null>> {
+    if (!Array.isArray(addresses) || addresses.length === 0 || addresses.length > 100) {
+      throw new SolanaRpcError('invalid_addresses');
+    }
+
+    return this.request(
+      'getMultipleAccounts',
+      [
+        addresses.map((address) => normalizePubkey(address, 'invalid_address')),
+        { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' },
+      ],
+      (value) => {
+        if (!isRecord(value) || !Array.isArray(value.value) || value.value.length !== addresses.length) {
+          throw new SolanaRpcError('invalid_accounts_response');
+        }
+
+        return value.value.map((account) => (account === null ? null : normalizeParsedAccount(account)));
+      }
+    );
+  }
+
+  getTokenAccountsByOwner(
+    owner: string,
+    programId: string,
+    commitment: SolanaRpcCommitment = 'confirmed'
+  ): Promise<SolanaTokenAccountEntry[]> {
+    return this.request(
+      'getTokenAccountsByOwner',
+      [
+        normalizePubkey(owner, 'invalid_address'),
+        { programId: normalizePubkey(programId, 'invalid_program_id') },
+        { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' },
+      ],
+      (value) => {
+        if (!isRecord(value) || !Array.isArray(value.value)) throw new SolanaRpcError('invalid_token_accounts_response');
+
+        return value.value.map((entry) => {
+          if (!isRecord(entry)) throw new SolanaRpcError('invalid_token_accounts_response');
+
+          return {
+            account: normalizeParsedAccount(entry.account),
+            pubkey: normalizePubkey(entry.pubkey, 'invalid_token_accounts_response'),
+          };
+        });
+      }
+    );
+  }
+
+  getSignatureStatuses(signatures: string[]): Promise<Array<SolanaSignatureStatus | null>> {
+    if (!Array.isArray(signatures) || signatures.length === 0 || signatures.length > 256) {
+      throw new SolanaRpcError('invalid_signatures');
+    }
+
+    return this.request(
+      'getSignatureStatuses',
+      [signatures.map((signature) => normalizeSignature(signature)), { searchTransactionHistory: true }],
+      (value) => {
+        if (!isRecord(value) || !Array.isArray(value.value) || value.value.length !== signatures.length) {
+          throw new SolanaRpcError('invalid_signature_status_response');
+        }
+
+        return value.value.map((status) => (status === null ? null : normalizeSignatureStatus(status)));
+      }
+    );
+  }
+
+  getRecentPrioritizationFees(writableAccounts: string[] = []): Promise<SolanaPrioritizationFee[]> {
+    if (!Array.isArray(writableAccounts) || writableAccounts.length > 128) {
+      throw new SolanaRpcError('invalid_accounts');
+    }
+
+    return this.request(
+      'getRecentPrioritizationFees',
+      [writableAccounts.map((address) => normalizePubkey(address, 'invalid_address'))],
+      (value) => {
+        if (!Array.isArray(value)) throw new SolanaRpcError('invalid_prioritization_fees_response');
+
+        return value.map((entry) => {
+          if (!isRecord(entry)) throw new SolanaRpcError('invalid_prioritization_fees_response');
+
+          return {
+            prioritizationFee: requireSafeInteger(entry.prioritizationFee, 'invalid_prioritization_fees_response'),
+            slot: requireSafeInteger(entry.slot, 'invalid_prioritization_fees_response'),
+          };
+        });
+      }
+    );
   }
 
   getLatestBlockhash(commitment: SolanaRpcCommitment = 'confirmed'): Promise<SolanaLatestBlockhashResponse> {
@@ -189,29 +364,108 @@ class SolanaRpcClient {
     params: unknown[],
     normalizeResult: (value: unknown) => T
   ): Promise<T> {
-    const id = this.nextId++;
-    const response = await this.fetchFn(this.rpcUrl, {
-      body: JSON.stringify({
-        id,
-        jsonrpc: '2.0',
-        method,
-        params,
-      }),
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-      },
-      method: 'POST',
-    });
-    const body = await readJson(response);
+    return this.endpoints
+      .run((rpcUrl) => this.requestOnce(rpcUrl, method, params, normalizeResult), {
+        isRetryable: isRetryableRpcError,
+        retryAfterMs: (error) => (error instanceof SolanaRpcError ? error.retryAfterMs : undefined),
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'EndpointFailoverError') {
+          const lastError = (error as Error & { lastError?: unknown }).lastError;
 
-    if (!response.ok) throw new SolanaRpcError(`solana_rpc_http_${response.status}`, response.status, body);
+          throw lastError instanceof SolanaRpcError ? lastError : new SolanaRpcError('solana_rpc_unavailable');
+        }
+
+        throw error;
+      });
+  }
+
+  private async requestOnce<T>(
+    rpcUrl: string,
+    method: string,
+    params: unknown[],
+    normalizeResult: (value: unknown) => T
+  ): Promise<T> {
+    const id = this.nextId++;
+    const response = await withTimeout(
+      this.fetchFn(rpcUrl, {
+        body: JSON.stringify({
+          id,
+          jsonrpc: '2.0',
+          method,
+          params,
+        }),
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      }),
+      this.requestTimeoutMs,
+      () => new SolanaRpcError('solana_rpc_timeout')
+    );
+    if (!response.ok) {
+      throw new SolanaRpcError(
+        `solana_rpc_http_${response.status}`,
+        response.status,
+        await readJson(response).catch(() => undefined),
+        parseRetryAfterMs(response.headers.get('retry-after'))
+      );
+    }
+
+    const body = await readJson(response);
     if (!isRecord(body) || body.jsonrpc !== '2.0' || body.id !== id) throw new SolanaRpcError('invalid_rpc_response');
     if (body.error !== undefined) throw new SolanaRpcError('solana_rpc_error', response.status, normalizeRpcError(body.error));
     if (!('result' in body)) throw new SolanaRpcError('invalid_rpc_response');
 
     return normalizeResult(body.result);
   }
+}
+
+function isRetryableRpcError(error: unknown): boolean {
+  if (!(error instanceof SolanaRpcError)) return true;
+  if (error.message === 'solana_rpc_error') {
+    const code = (error.body as SolanaJsonRpcErrorPayload | undefined)?.code;
+
+    return code !== undefined && RETRYABLE_RPC_ERROR_CODES.has(code);
+  }
+  if (error.message === 'invalid_json' || error.message === 'solana_rpc_timeout') return true;
+
+  return error.message.startsWith('solana_rpc_http_') && isRetryableHttpStatus(error.status);
+}
+
+function normalizePubkey(value: unknown, errorCode: string): string {
+  if (typeof value !== 'string' || !BASE58_PUBKEY.test(value)) throw new SolanaRpcError(errorCode);
+
+  return value;
+}
+
+function normalizeParsedAccount(value: unknown): SolanaParsedAccount {
+  if (!isRecord(value) || typeof value.executable !== 'boolean') throw new SolanaRpcError('invalid_account_response');
+
+  return {
+    data: value.data,
+    executable: value.executable,
+    lamports: requireSafeInteger(value.lamports, 'invalid_account_response'),
+    owner: normalizePubkey(value.owner, 'invalid_account_response'),
+    space: optionalSafeInteger(value.space, 'invalid_account_response'),
+  };
+}
+
+function normalizeSignatureStatus(value: unknown): SolanaSignatureStatus {
+  if (!isRecord(value)) throw new SolanaRpcError('invalid_signature_status_response');
+
+  const confirmationStatus = value.confirmationStatus;
+
+  return {
+    confirmationStatus:
+      confirmationStatus === 'processed' || confirmationStatus === 'confirmed' || confirmationStatus === 'finalized'
+        ? confirmationStatus
+        : null,
+    confirmations: value.confirmations === null ? null : optionalSafeInteger(value.confirmations, 'invalid_signature_status_response') ?? null,
+    err: value.err ?? null,
+    slot: requireSafeInteger(value.slot, 'invalid_signature_status_response'),
+  };
 }
 
 function normalizeRpcUrl(rpcUrl: string): string {
@@ -289,7 +543,8 @@ function normalizeSimulationResponse(value: unknown): SolanaSimulationResponse {
       accounts: value.value.accounts,
       err: value.value.err ?? null,
       logs: normalizedLogs,
-      replacementBlockhash: value.value.replacementBlockhash === undefined
+      // Nodes send `null` when the blockhash was not replaced.
+      replacementBlockhash: value.value.replacementBlockhash == null
         ? undefined
         : normalizeLatestBlockhash(value.value.replacementBlockhash, 'invalid_simulation_response'),
       returnData: value.value.returnData,
@@ -383,6 +638,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const BASE58_PUBKEY = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const BASE58_32_TO_64 = /^[1-9A-HJ-NP-Za-km-z]{32,64}$/;
 const BASE58_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,128}$/;
 
@@ -394,10 +650,14 @@ export {
   type SolanaJsonRpcErrorPayload,
   type SolanaLatestBlockhash,
   type SolanaLatestBlockhashResponse,
+  type SolanaParsedAccount,
+  type SolanaPrioritizationFee,
   type SolanaRpcCommitment,
   type SolanaRpcContext,
   type SolanaRpcNetwork,
   type SolanaSimulationOptions,
   type SolanaSimulationResponse,
   type SolanaSimulationValue,
+  type SolanaSignatureStatus,
+  type SolanaTokenAccountEntry,
 };

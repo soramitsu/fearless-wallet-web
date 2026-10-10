@@ -62,8 +62,8 @@ import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { WalletEcosystem } from '@/interfaces';
-import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -94,6 +94,7 @@ export default defineComponent({ name: 'AssetActionButtons' ,
   ] as ControlButtons[],
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
     };
   },
   computed: {
@@ -109,7 +110,7 @@ export default defineComponent({ name: 'AssetActionButtons' ,
     showSendButton() {
       const network = this.networksStore.getNetwork(this.selectedNetwork);
 
-      return network?.ecosystem !== WalletEcosystem.Bitcoin || isBitcoinTransfersEnabled();
+      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
     },
     isNeedPopupButton() {
       return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;

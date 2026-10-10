@@ -31,6 +31,16 @@ export function pickDefaultCurrentAccount<T extends MainAccount>(accounts: T[]):
   );
 }
 
+/** The stored selection while its account still exists, else null. Earlier builds could keep a
+ * removed account selected (when the last wallet was deleted, or the selected one with only a
+ * standalone EVM account left), and such a selection counts as none. */
+export function existingCurrentAccount<T extends { address: string }>(
+  current: T | null | undefined,
+  accounts: MainAccount[]
+): T | null {
+  return current && accounts.some(({ address }) => address === current.address) ? current : null;
+}
+
 /** The current-account record `State.onInstall` stores for an entry of `getAllMainAccounts()`. */
 export function toCurrentAccountInfo({ address, meta }: MainAccount): CurrentAccountInfo {
   const {

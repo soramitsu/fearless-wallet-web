@@ -33,7 +33,11 @@ import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
-import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
+import {
+  existingCurrentAccount,
+  pickDefaultCurrentAccount,
+  toCurrentAccountInfo,
+} from '@extension-base/background/helpers/currentAccount';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -216,13 +220,30 @@ export default class State {
   }
 
   async onInstall() {
-    if (this.currentAccount) {
-      this.setCurrentAccount(this.currentAccount);
+    const accounts = this.keyringService.getAllMainAccounts();
+    const storedAccount = existingCurrentAccount(this.currentAccount, accounts);
+
+    if (storedAccount) {
+      this.setCurrentAccount(storedAccount);
 
       return;
     }
 
-    const account = pickDefaultCurrentAccount(this.keyringService.getAllMainAccounts());
+    const account = pickDefaultCurrentAccount(accounts);
+
+    this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
+  }
+
+  // Start-up calls this once the wallet storage has been read. Chrome sends onInstalled only
+  // on install or update, so a missing selection, or one whose account was removed, is
+  // replaced here as well. A valid selection is not written again.
+  ensureCurrentAccount() {
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    if (existingCurrentAccount(this.currentAccount, accounts)) return;
+    if (!this.currentAccount && !accounts.length) return;
+
+    const account = pickDefaultCurrentAccount(accounts);
 
     this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
   }

@@ -75,6 +75,12 @@ async function readWalletStorage(): Promise<void> {
   }
 }
 
+// Settles the first time the wallet storage has been read, however many tries that took.
+let markWalletStorageRead: () => void = () => {};
+const walletStorageRead = new Promise<void>((resolve) => {
+  markWalletStorageRead = resolve;
+});
+
 // Every request waits until the accounts, the master-password record, the TON accounts and
 // the selected account are in memory; before that the wallet would look unlocked and empty.
 // A failed read is tried a few times. After that, requests fail with WALLET_STORAGE_UNAVAILABLE
@@ -93,6 +99,14 @@ const loadWalletStorage = retryableInitialization(async () => {
   } catch (error) {
     console.error('Wallet migration failed', error);
   }
+
+  try {
+    state.ensureCurrentAccount();
+  } catch (error) {
+    console.error('Default account could not be selected', error);
+  }
+
+  markWalletStorageRead();
 });
 
 const walletStorageReady = () => withDeadline(loadWalletStorage(), STORAGE_WAIT_MS, WALLET_STORAGE_UNAVAILABLE);
@@ -116,12 +130,19 @@ function getActiveTabs() {
 async function onInstalled(details: chrome.runtime.InstalledDetails) {
   // onInstall chooses a default account only when none is stored, so it must see the stored
   // one. Nobody waits on this event, so it waits for the read itself rather than a deadline.
-  await loadWalletStorage();
+  // Chrome sends this event once, so when storage cannot be read now the install work is not
+  // dropped: it runs after the read a later request retries.
+  const readOnRetry = await loadWalletStorage().then(
+    () => false,
+    () => walletStorageRead.then(() => true)
+  );
 
   if (details.reason === 'update') {
     await state.onboardingService.updateStorage('regular', true);
 
-    if (details.previousVersion !== APP_VERSION) chrome.runtime.reload();
+    // This build is already running; reloading now would close the wallet window whose
+    // retry has just read storage.
+    if (!readOnRetry && details.previousVersion !== APP_VERSION) chrome.runtime.reload();
   }
 
   state.onboardingService.init();

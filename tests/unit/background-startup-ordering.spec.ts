@@ -150,6 +150,7 @@ async function startBackground() {
     keyringService,
     onboardingService: { updateStorage: vi.fn(() => Promise.resolve()), init: vi.fn() },
     onInstall: vi.fn(),
+    ensureCurrentAccount: vi.fn(),
     isReady: () => false,
   };
   mocks.state = state;
@@ -218,9 +219,14 @@ describe('background start-up ordering (W10)', () => {
       currentAccount: TON_ADDRESS,
     });
     expect(background.cryptoReadyEvents()).toBe(1);
+    // A missing or removed selection is repaired before the first request is handled.
+    const ensure = background.state.ensureCurrentAccount;
+    expect(ensure).toHaveBeenCalledOnce();
+    expect(ensure.mock.invocationCallOrder[0]).toBeLessThan((mocks.handlers as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]);
   });
 
   it('selects a default account on update only after the stored selection has been read', async () => {
+    const reload = vi.spyOn(mocks.chrome.runtime, 'reload');
     reply = (keys) => (keys?.[0] === 'fwcurrent_account:CurrentAccountInfo' ? 'hold' : 'answer');
     const background = await startBackground();
     const selectionSeen: unknown[] = [];
@@ -235,6 +241,8 @@ describe('background start-up ordering (W10)', () => {
     held.splice(0, 1)[0]();
     await vi.waitFor(() => expect(background.state.onInstall).toHaveBeenCalledOnce());
     expect(selectionSeen).toEqual([TON_ADDRESS]);
+    expect(background.state.onboardingService.updateStorage).toHaveBeenCalledExactlyOnceWith('regular', true);
+    expect(reload).toHaveBeenCalledOnce();
   });
 
   it('reports a TON-only wallet as having accounts on the very first request', async () => {
@@ -249,6 +257,7 @@ describe('background start-up ordering (W10)', () => {
 describe('background start-up when storage cannot be read (D-9)', () => {
   it('answers with a retryable storage error, changes nothing, and reads again on the next request', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    const reload = vi.spyOn(mocks.chrome.runtime, 'reload');
     reply = (keys) => (keys === null ? 'fail' : 'answer');
     const background = await startBackground();
     background.send('before-failure');
@@ -264,6 +273,7 @@ describe('background start-up when storage cannot be read (D-9)', () => {
     expect(mocks.chrome.storage.local.set).not.toHaveBeenCalled();
     expect(mocks.chrome.storage.local.remove).not.toHaveBeenCalled();
     expect(mocks.migrate).not.toHaveBeenCalled();
+    expect(background.state.ensureCurrentAccount).not.toHaveBeenCalled();
     expect(background.cryptoReadyEvents()).toBe(0);
 
     // The popup's "Try again" reopens it, and its first request reads storage again.
@@ -278,10 +288,18 @@ describe('background start-up when storage cannot be read (D-9)', () => {
       currentAccount: TON_ADDRESS,
     });
     expect(mocks.migrate).toHaveBeenCalledOnce();
+    expect(background.state.ensureCurrentAccount).toHaveBeenCalledOnce();
     expect(background.cryptoReadyEvents()).toBe(1);
     // ui-keyring itself was set up once; the retries read through the same store.
     expect(loadAllCalls()).toBe(1);
     expect(accountLoads()).toBe(1);
+    // The update notice Chrome sent once is handled after that read, keeping the stored
+    // selection, and the extension is not reloaded under the window that retried.
+    await vi.waitFor(() => expect(background.state.onInstall).toHaveBeenCalledOnce());
+    expect(background.state.keyringService.currentAccountSubject.value?.address).toBe(TON_ADDRESS);
+    expect(background.state.onboardingService.updateStorage).toHaveBeenCalledExactlyOnceWith('regular', true);
+    expect(background.state.onboardingService.init).toHaveBeenCalledOnce();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('retries a failed master-password read instead of treating it as no password', async () => {

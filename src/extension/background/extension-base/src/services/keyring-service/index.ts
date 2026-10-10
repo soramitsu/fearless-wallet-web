@@ -62,6 +62,7 @@ export class KeyringService {
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
   readonly currentAccountReady: Promise<void>;
 
+  private accountsStore?: AccountsStore;
   private password = '';
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
@@ -133,13 +134,19 @@ export class KeyringService {
     this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
   }
 
+  // ui-keyring's loadAll() works once per service worker: it ends by initialising its
+  // options, which throws on any later call (Keyring.js in @subwallet/ui-keyring 0.1.14).
+  // After a failed read, the stored accounts are read again through the same store.
   loadAll() {
+    if (this.accountsStore) return this.accountsStore.reloadAll();
+
     const store = new AccountsStore();
     keyring.loadAll({
       store,
       type: 'sr25519',
       password_store: IS_EXTENSION ? new KeyringStore() : new KeyringStoreWeb(),
     });
+    this.accountsStore = store;
     return store.allLoaded;
   }
 

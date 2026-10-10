@@ -60,17 +60,28 @@ const PROFILE: StoredRecords = {
 };
 
 // Mirrors @subwallet/ui-keyring 0.1.14 where start-up uses it: loadAll() starts a fresh
-// keyring and reads `store.all`; the master-password hash is applied with setupMasterPassword().
+// keyring, reads `store.all` and then initialises the keyring options, which throws on every
+// call after the first; the master-password hash is applied with setupMasterPassword().
 function uiKeyring() {
   const accounts = new Map<string, { address: string; meta: object }>();
   let passwordHash: string | undefined;
+  let optionsInitialised = false;
+  let loadAllCalls = 0;
+  let accountLoads = 0;
   return {
+    get loadAllCalls() { return loadAllCalls; },
+    get accountLoads() { return accountLoads; },
     loadAll(options: { store: { all: (update: (key: string, json: never) => void) => void } }) {
+      loadAllCalls += 1;
       accounts.clear();
       passwordHash = undefined;
       options.store.all((key, json: { address: string; meta: object }) => {
-        if (key.startsWith('account:')) accounts.set(key, json);
+        if (!key.startsWith('account:')) return;
+        accountLoads += 1;
+        accounts.set(key, json);
       });
+      if (optionsInitialised) throw new Error('Unable to initialise options more than once');
+      optionsInitialised = true;
     },
     getAccounts: () => [...accounts.values()],
     getAddresses: () => [],
@@ -111,6 +122,9 @@ function installStorage(records: StoredRecords) {
 }
 
 const passwordReads = () => reads.filter((keys) => keys?.[0] === 'fw:keyring').length;
+const loadAllCalls = () => (mocks.keyring as { loadAllCalls: number }).loadAllCalls;
+// How often a stored account record was handed to the keyring.
+const accountLoads = () => (mocks.keyring as { accountLoads: number }).accountLoads;
 const flush = async (turns = 12) => {
   for (let turn = 0; turn < turns; turn++) await new Promise((resolve) => setImmediate(resolve));
 };
@@ -265,6 +279,9 @@ describe('background start-up when storage cannot be read (D-9)', () => {
     });
     expect(mocks.migrate).toHaveBeenCalledOnce();
     expect(background.cryptoReadyEvents()).toBe(1);
+    // ui-keyring itself was set up once; the retries read through the same store.
+    expect(loadAllCalls()).toBe(1);
+    expect(accountLoads()).toBe(1);
   });
 
   it('retries a failed master-password read instead of treating it as no password', async () => {
@@ -273,9 +290,34 @@ describe('background start-up when storage cannot be read (D-9)', () => {
     const background = await startBackground();
     background.send('first');
     await vi.waitFor(() => expect(background.seen).toHaveLength(1));
-    expect(background.seen[0]).toMatchObject({ hasMasterPassword: true, keyringIsLocked: true });
+    expect(background.seen[0]).toMatchObject({ hasMasterPassword: true, keyringIsLocked: true, hasAccounts: true });
     expect(passwordReads()).toBe(2);
     expect(background.answered).toEqual([]);
+    // Only the password was read again; the accounts were loaded once.
+    expect(accountLoads()).toBe(1);
+    expect(loadAllCalls()).toBe(1);
+  });
+
+  it('retries only the failed TON read, keeping the accounts and password already read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    // The TON service's own read, made when it is created, fails once.
+    reply = (keys, call) => (call === 1 ? 'fail' : 'answer');
+    const background = await startBackground();
+    background.send('first');
+    await vi.waitFor(() => expect(background.seen).toHaveLength(1));
+    expect(background.seen[0]).toEqual({
+      id: 'first',
+      hasMasterPassword: true,
+      keyringIsLocked: true,
+      hasAccounts: true,
+      currentAccount: TON_ADDRESS,
+    });
+    expect(background.answered).toEqual([]);
+    // Only the TON accounts were read again.
+    expect(accountLoads()).toBe(1);
+    expect(passwordReads()).toBe(1);
+    expect(loadAllCalls()).toBe(1);
+    expect(background.cryptoReadyEvents()).toBe(1);
   });
 
   it('answers within the deadline when a read never answers, then serves requests once it does', async () => {

@@ -17,6 +17,8 @@ export default class AccountsStore
    * background answers no request before the accounts are in memory. */
   public allLoaded: Promise<void> = Promise.resolve();
 
+  private load?: (key: string, value: FWKeyringJson) => void;
+
   constructor() {
     super(EXTENSION_PREFIX);
   }
@@ -51,8 +53,15 @@ export default class AccountsStore
   }
 
   public all(update: (key: string, value: FWKeyringJson) => void): Promise<void> {
+    this.load = update;
     this.allLoaded = super.all(update);
 
     return this.allLoaded;
+  }
+
+  /** Reads every stored account again into the keyring, with the loader the keyring passed
+   * to its full read. Rejects when the keyring never started one. */
+  public reloadAll(): Promise<void> {
+    return this.load ? this.all(this.load) : Promise.reject(new Error('Accounts were never loaded'));
   }
 }

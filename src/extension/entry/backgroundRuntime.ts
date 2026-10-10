@@ -24,6 +24,9 @@ const STORAGE_WAIT_MS = 15000;
 axios.defaults.adapter = 'fetch';
 
 let initialRead = true;
+let accountsLoaded = false;
+let passwordRestored = false;
+let tonAccountsLoaded = false;
 let walletRecordsLoaded = false;
 let currentAccountLoaded = false;
 
@@ -37,18 +40,30 @@ async function restoreKeyringPassword(): Promise<void> {
 }
 
 // The first try waits for the reads the keyring services started when they were created;
-// a later try reads storage again. Finished steps are not repeated.
+// a later try reads storage again. Finished steps are not repeated, so a failed password or
+// TON read does not read the accounts again.
 async function readWalletStorage(): Promise<void> {
   const initial = initialRead;
   const { keyringService } = state;
 
   initialRead = false;
 
-  if (!walletRecordsLoaded) {
+  if (!accountsLoaded) {
     await keyringService.loadAll();
-    await restoreKeyringPassword();
-    await (initial ? tonStore.loaded : keyringService.tonKeyring.loadAll());
+    accountsLoaded = true;
+  }
 
+  if (!passwordRestored) {
+    await restoreKeyringPassword();
+    passwordRestored = true;
+  }
+
+  if (!tonAccountsLoaded) {
+    await (initial ? tonStore.loaded : keyringService.tonKeyring.loadAll());
+    tonAccountsLoaded = true;
+  }
+
+  if (!walletRecordsLoaded) {
     walletRecordsLoaded = true;
     state.eventService.emit('crypto.ready', true);
   }

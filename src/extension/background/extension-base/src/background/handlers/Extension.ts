@@ -2184,8 +2184,16 @@ export default class Extension extends FWExtensionBase {
       request.resolve({ id: request.request.topic, payload: signature as HexString });
     }
 
-    this.state.keyringService.unlockPair(substrateAddress);
-    this.state.keyringService.unlockPair(ethereumAddress);
+    // The dApp already has the hash or signature, so nothing after this point may report a failure:
+    // the user would retry and pay twice. Opening the linked keys again is only housekeeping, and a
+    // linked key that still needs its own password (Account access) is left as it is.
+    for (const linkedAddress of [substrateAddress, ethereumAddress]) {
+      try {
+        this.state.keyringService.unlockPair(linkedAddress);
+      } catch {
+        // Listed in Account access until the user unlocks it.
+      }
+    }
 
     return true;
   }

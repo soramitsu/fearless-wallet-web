@@ -72,7 +72,7 @@ $s-transition-default: all 0.125s ease-in-out;
 :root {
   --s-color-brand-day: #{$s-color-brand-day};
   --s-transition-default: #{$s-transition-default};
-  --s-font-family-default: 'Sora Variable', 'Noto Sans Egyptian Hieroglyphs', sans-serif;
+  --s-font-family-default: 'Sora Variable', 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
   --s-font-family-mono: 'JetBrains Mono', monospace;
   --s-font-feature-settings-common: #{$s-font-feature-settings-common};
   --s-font-feature-settings-heading: #{$s-font-feature-settings-heading};

@@ -31,7 +31,7 @@ defineProps<{ story: OnboardingStory }>();
   }
 
   &__title {
-    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', sans-serif;
+    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
     font-size: 1.5em;
     font-weight: 700;
   }

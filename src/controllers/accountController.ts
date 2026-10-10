@@ -2,7 +2,7 @@ import type { NftSettings } from '@extension-base/services/nft-service/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { HiddenAssets } from '@/stores/accounts/types';
 import type { AssetPreference } from '@/portfolio/assetIdentity';
-import { isLang, type Lang } from '@/locales/languages';
+import { resolveLang, type Lang } from '@/locales/languages';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 export type Legacy305Preferences = {
@@ -94,9 +94,14 @@ class AccountController {
   }
 
   public getLang(): Lang {
-    const lang = this.lsAccount.get<unknown>(this.langStorageName);
+    const { value } = this.lsAccount.get<unknown>(this.langStorageName);
+    const lang = resolveLang(value);
 
-    return isLang(lang.value) ? lang.value : 'en-EN';
+    if (!lang) return 'en-EN';
+    // Carry a choice saved under a retired tag forward instead of resetting it to English.
+    if (lang !== value) this.setLang(lang);
+
+    return lang;
   }
 
   public setLang(lang: Lang): void {

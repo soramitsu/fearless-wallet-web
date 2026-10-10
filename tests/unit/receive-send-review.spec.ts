@@ -1,5 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import akkadian from '@/locales/akk/translation.json';
+import egyptian from '@/locales/egy/translation.json';
+import english from '@/locales/en/translation.json';
+import russian from '@/locales/ru/translation.json';
 const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   wallet: { address: 'public-wallet', name: 'Test wallet' },
@@ -230,5 +236,45 @@ describe('network-explicit Send confirmation', () => {
 
     expect((wrapper.vm as unknown as { selectedAssetUpper: string }).selectedAssetUpper).toBe('USDT');
     wrapper.unmount();
+  });
+});
+
+describe('Send flow strings in every shipped locale', () => {
+  // Keys named in the Send screens and their result messages, read from the sources so a new
+  // key cannot silently fall back to English (common.network once did in Russian).
+  const sources = [
+    'src/screens/wallet&asset/SendForm.vue',
+    'src/screens/wallet&asset/TransferForm.vue',
+    'src/screens/wallet&asset/ConfirmationPasswordPopup.vue',
+    'src/helpers/transferErrors.ts',
+    'src/helpers/transactionFailure.ts',
+  ];
+  const keys = [
+    ...new Set(
+      sources.flatMap((path) => {
+        const source = readFileSync(resolve(__dirname, '../..', path), 'utf8');
+
+        return [
+          ...source.matchAll(/\$t\(\s*'([A-Za-z]+\.[\w.]+)'/gu),
+          ...source.matchAll(/(?:text|placeholder|header|headerText)="([A-Za-z]+\.[A-Za-z][\w.]*)"/gu),
+          ...source.matchAll(/'((?:assets|common|ux|crossChainPage|accounts)\.[A-Za-z][\w.]*)'/gu),
+        ].map(([, key]) => key);
+      })
+    ),
+  ].sort();
+  const lookup = (messages: Record<string, unknown>, key: string) =>
+    key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], messages);
+
+  it('finds the keys it checks', () => {
+    expect(keys).toEqual(expect.arrayContaining(['common.network', 'assets.transactionUnconfirmed', 'assets.bitcoinPreviousSendOnNetwork']));
+  });
+
+  it.each([
+    ['en', english],
+    ['ru', russian],
+    ['egy', egyptian],
+    ['akk', akkadian],
+  ])('translates every Send flow key in %s', (_, messages) => {
+    expect(keys.filter((key) => typeof lookup(messages, key) !== 'string')).toEqual([]);
   });
 });

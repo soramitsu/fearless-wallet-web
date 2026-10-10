@@ -738,6 +738,7 @@
     "transactionError": "Transaction Error",
     "transactionFailedDetails": "The transaction failed. Review the transaction details and try again.",
     "transactionPending": "Transaction is pending",
+    "transactionUnconfirmed": "Not confirmed yet",
     "saveQR": "Save QR-code",
     "copyQR": "Copy QR-code",
     "incorrectAddress": "Incorrect address",

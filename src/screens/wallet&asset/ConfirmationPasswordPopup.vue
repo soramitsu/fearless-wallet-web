@@ -10,6 +10,10 @@
           {{ transactionErrorText }}
         </p>
 
+        <p v-if="isUnconfirmed" class="transaction-unconfirmed-message" data-testid="transactionUnconfirmedMessage">
+          {{ transactionErrorText }}
+        </p>
+
         <template v-if="extrinsicType !== 'nft'">
           <div class="descriptions">
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
@@ -20,9 +24,26 @@
               <ExternalLogo :name="secondIconUrl" :width="30" class="asset-icon" />
             </template>
           </div>
-          <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
 
-          <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+          <template v-if="showsAmount">
+            <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
+
+            <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+          </template>
+
+          <FButton
+            v-if="isUnconfirmed && historyRoute"
+            text="assets.history"
+            iconName="arrow-link"
+            iconColor="pink"
+            width="100%"
+            size="small"
+            fontSize="small"
+            type="secondary"
+            data-testid="viewHistoryBtn"
+            :border="false"
+            @click="openHistory"
+          />
         </template>
 
         <template v-else>
@@ -91,6 +112,7 @@ import type { RequestStaking } from '@extension-base/services/staking-service/ty
 import type { NftTx } from '@extension-base/services/nft-service/types';
 import type {
   RequestCheckCrossChain,
+  RequestCheckTransfer,
   RequestTransfer,
   RequestCrossChain,
   RequestSwap,
@@ -108,7 +130,11 @@ import { sendNft } from '@/extension/messaging/nfts';
 import { isSameString, isSora, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { getTransactionFailurePresentation, transactionResponseSucceeded } from '@/helpers/transactionFailure';
+import { getTransactionFailurePresentation, getTransactionOutcome } from '@/helpers/transactionFailure';
+
+// Components.AssetHistory. The route table is not imported here: it imports screens that
+// embed this popup.
+const ASSET_HISTORY_ROUTE = 'AssetHistory';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
@@ -181,6 +207,24 @@ export default defineComponent({
     isFailed() {
       return this.transactionState === 'failed';
     },
+    // The transfer may already be on the network: it can still go through.
+    isUnconfirmed() {
+      return this.transactionState === 'unconfirmed';
+    },
+    // A failure with no fee to show would read "-0"; nothing left the wallet worth showing.
+    showsAmount() {
+      return this.isSuccess || this.isUnconfirmed || +this.fee > 0;
+    },
+    historyRoute() {
+      const { networkKey } = (this.tx ?? {}) as Partial<RequestCheckTransfer>;
+      const assetId = this.currency?.groupId;
+
+      if (this.extrinsicType !== 'transfer' || !networkKey || !assetId) return null;
+
+      const selectedNetwork = this.networksStore.getNetwork(networkKey)?.name ?? networkKey;
+
+      return { name: ASSET_HISTORY_ROUTE, params: { assetId, selectedNetwork } };
+    },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
 
@@ -198,19 +242,26 @@ export default defineComponent({
 
       if (this.isFailed) return 'assets.transactionError';
 
+      if (this.isUnconfirmed) return 'assets.transactionUnconfirmed';
+
       if (this.isTransactionPending) return 'assets.transactionPending';
 
       return '';
     },
     transferAmountString() {
+      const symbol = this.currency?.symbol.toUpperCase();
+
+      // Not known to have left the wallet yet, so no minus sign.
+      if (this.isUnconfirmed) return `${this.$n(+this.amount + +this.fee, 'decimal')} ${symbol}`;
+
       const sumValue = +this.amount + +this.fee;
       const value = this.isSuccess ? sumValue : +this.fee;
 
-      return `-${this.$n(value, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
+      return `-${this.$n(value, 'decimal')} ${symbol}`;
     },
     transferValueString() {
       const sumValue = +this.value + +this.feeValue;
-      const value = this.isSuccess ? sumValue : +this.feeValue;
+      const value = this.isSuccess || this.isUnconfirmed ? sumValue : +this.feeValue;
 
       return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
     },
@@ -221,7 +272,7 @@ export default defineComponent({
       return this.transactionState === 'pending';
     },
     isTransactionFinished() {
-      return this.isSuccess || this.isFailed;
+      return this.isSuccess || this.isFailed || this.isUnconfirmed;
     },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
@@ -290,6 +341,9 @@ export default defineComponent({
           params: this.request as RequestPool,
         });
     },
+    openHistory() {
+      if (this.historyRoute) this.$router.push(this.historyRoute);
+    },
     openExplorer() {
       const network = this.networksStore.getNetwork((this.tx as NftTx).network);
       const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
@@ -329,7 +383,7 @@ export default defineComponent({
     },
     applyTransactionResponse(response: BasicTxResponse | ResponseNftTransfer | undefined) {
       this.transactionResponse = response ?? null;
-      this.transactionState = transactionResponseSucceeded(response) ? 'success' : 'failed';
+      this.transactionState = getTransactionOutcome(response);
     },
   },
 });
@@ -345,7 +399,8 @@ export default defineComponent({
   padding: 0 25px;
   min-height: 175px;
 
-  .transaction-error-message {
+  .transaction-error-message,
+  .transaction-unconfirmed-message {
     color: $reject-color;
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -353,6 +408,10 @@ export default defineComponent({
     max-width: 280px;
     overflow-wrap: anywhere;
     text-align: center;
+  }
+
+  .transaction-unconfirmed-message {
+    color: $simple-orange-color;
   }
 
   .icon__lock-green {

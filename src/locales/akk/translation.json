@@ -738,6 +738,7 @@
     "transactionError": "𒄭𒋾𒀉 𒅁𒅆𒅎",
     "transactionFailedDetails": "𒅁𒋗𒌝 𒆷 𒅖𒇷𒅎. 𒋼𒅎 𒅁𒅆𒅎 𒀀𒈬𒌨𒈠 𒊭𒉌𒅖 𒂊𒁍𒍑.",
     "transactionPending": "𒅁𒋗𒌝 𒀀𒈾 𒋡𒋾 𒀀𒁲𒉌 𒆷 𒅅𒋗𒌓",
+    "transactionUnconfirmed": "𒀀𒁲𒄿𒉌 𒌌 𒌑𒆠𒄿𒉡𒌑.",
     "saveQR": "𒌅𒌒𒉺𒄠 QR 𒌑𒍪𒌨",
     "copyQR": "𒌅𒌒𒉺𒄠 QR 𒊭𒈾𒀀𒄠 𒂊𒁍𒍑",
     "incorrectAddress": "𒀸𒊒𒌝 𒆷 𒆠𒉡𒌝",

@@ -340,6 +340,7 @@
     "transactionError": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓃀𓇋𓈖",
     "transactionFailedDetails": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓃀𓇋𓈖 · 𓁹 𓐙 𓁹𓏏 𓈖 𓋴𓍿𓄿 𓐍𓏏 𓎟 𓎛𓈖𓂝 𓁹 𓋴𓊪 𓅱𓎛𓅓 ·",
     "transactionPending": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓁷 𓅱𓄿𓎛",
+    "transactionUnconfirmed": "𓈖 𓋴𓅓𓈖𓏏𓅱 ·",
     "saveQR": "𓋴𓄿𓅱 QR-code",
     "copyQR": "𓋴𓈙𓏛 𓅓 𓅓𓇋𓏏𓏏 QR-code",
     "incorrectAddress": "𓈖 𓐙 𓊨 𓈖 𓂋𓈖",

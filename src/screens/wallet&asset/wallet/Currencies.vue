@@ -38,11 +38,8 @@
 import { defineComponent } from 'vue';
 import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
 import type { NetworkJson } from '@extension-base/types';
-import {
-  buildAssetPreferenceSnapshot,
-  buildPortfolioSections,
-  type PortfolioNetworkSection as PortfolioSection,
-} from '@/portfolio/assetIdentity';
+import { buildPortfolioSections, type PortfolioNetworkSection as PortfolioSection } from '@/portfolio/assetIdentity';
+import { usePortfolioPreferences } from '@/portfolio/usePortfolioPreferences';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 import BaseApi from '@/util/BaseApi';
@@ -59,6 +56,11 @@ export default defineComponent({
     balances: Array,
     filterValue: String,
     showAssetsManagementForm: Boolean,
+  },
+  setup() {
+    const { effectivePreferences } = usePortfolioPreferences();
+
+    return { effectivePreferences };
   },
   data() {
     return {
@@ -78,7 +80,7 @@ export default defineComponent({
         groups: this.accountsStore.balances,
         networks: this.networksStore.allNetworks,
         prices: this.networksStore.assetsPrice.tokenPriceMap,
-        preferences: this.accountsStore.assetPreferences,
+        preferences: this.effectivePreferences,
         scanStates: this.accountsStore.networkScanStates,
         surfaceDiscoveredAssets:
           (this.extensionStore.features?.assetDiscoveryMode ??
@@ -123,31 +125,6 @@ export default defineComponent({
       if (!navigator.onLine) return this.$t('portfolioPage.offlineDescription');
       if (this.filterValue?.trim()) return this.$t('portfolioPage.searchDescription');
       return this.$t('portfolioPage.scanDescription');
-    },
-    preferenceMigrationAssets() {
-      return buildAssetPreferenceSnapshot(this.accountsStore.balances, this.networksStore.allNetworks).map(
-        ({ key, groupId }) => ({ key, groupId })
-      );
-    },
-    preferenceMigrationReady() {
-      return (
-        !this.accountsStore.isBalanceLoading &&
-        this.networksStore.allNetworks.length > 0 &&
-        this.accountsStore.balances.length > 0
-      );
-    },
-  },
-  watch: {
-    preferenceMigrationReady: {
-      handler(ready) {
-        if (ready) {
-          this.accountsStore.migrateLegacyAssetPreferences({
-            assets: this.preferenceMigrationAssets,
-            complete: true,
-          });
-        }
-      },
-      immediate: true,
     },
   },
   methods: {

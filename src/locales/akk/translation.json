@@ -243,7 +243,8 @@
     "language": "Lišānum",
     "languageDescription": "Lišānum ša epšim",
     "aboutFearless": "Eli Fearless",
-    "aboutFearlessDescription": "Šanûm, tillatum, u dīnum"
+    "aboutFearlessDescription": "Šanûm, tillatum, u dīnum",
+    "irohaConnectUnavailable": "IrohaConnect ina šanîm annîm ul ibašši. Mimma ul kanik."
   },
   "irohaConnectPage": {
     "backToSettings": "Ana šīmātim tūr",

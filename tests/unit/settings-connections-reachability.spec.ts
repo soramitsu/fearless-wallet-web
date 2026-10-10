@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   updateAuthorization: vi.fn(),
   route: {
     params: { type: 'substrate', id: 'example.com' } as Record<string, string>,
+    query: {} as Record<string, string>,
   },
   accountsStore: {
     accounts: [] as Array<Record<string, unknown>>,
@@ -61,6 +62,7 @@ vi.mock('@/locales/useI18n', () => ({
     t: (key: string) =>
       ({
         'settingsPage.irohaConnectDescription': 'SORA 3 wallet sessions for Uranai and Iroha dApps',
+        'settingsPage.irohaConnectUnavailable': 'IrohaConnect is not available in this version. Nothing was signed.',
         'settingsPage.tonConnectDescription': 'TonConnect sessions are not supported in this build yet.',
         'settingsPage.buildUnavailable': 'Build unavailable',
         'settingsPage.connectedDappsDescription': 'Substrate and EVM permissions',
@@ -106,10 +108,19 @@ const mountAuthDetails = () =>
     },
   });
 
+const originalIrohaConnectFlag = process.env.VUE_APP_ENABLE_IROHA_CONNECT;
+
 describe('settings connection reachability', () => {
+  afterEach(() => {
+    if (originalIrohaConnectFlag === undefined) delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
+    else process.env.VUE_APP_ENABLE_IROHA_CONNECT = originalIrohaConnectFlag;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
     mocks.route.params = { type: 'substrate', id: 'example.com' };
+    mocks.route.query = {};
     mocks.accountsStore.accounts = [];
     mocks.accountsStore.selectedWallet = { address: 'selected-address', isTon: false };
   });
@@ -122,7 +133,26 @@ describe('settings connection reachability', () => {
     expect(mocks.push).toHaveBeenCalledWith({ name: 'WalletConnectInitAuth', params: undefined });
   });
 
-  it('exposes IrohaConnect as a SORA 3 wallet connection', async () => {
+  it('hides IrohaConnect while the build compiles it off', () => {
+    const wrapper = mountSettings();
+
+    expect(wrapper.find('[data-testid="settings-iroha-connect"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="settings-wallet-connect"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="settings-connected-dapps"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="iroha-connect-unavailable"]').exists()).toBe(false);
+  });
+
+  it('explains a redirected IrohaConnect link without implying anything was signed', () => {
+    mocks.route.query = { notice: 'iroha-connect-unavailable' };
+    const wrapper = mountSettings();
+
+    expect(wrapper.get('[data-testid="iroha-connect-unavailable"]').text()).toBe(
+      'IrohaConnect is not available in this version. Nothing was signed.'
+    );
+  });
+
+  it('exposes IrohaConnect as a SORA 3 wallet connection when the reviewed flag enables it', async () => {
+    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'true';
     const wrapper = mountSettings();
     const irohaConnect = wrapper.get('[data-testid="settings-iroha-connect"]');
 

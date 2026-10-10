@@ -7,6 +7,9 @@
 
     <ContentForm :height="contentHeight">
       <Scroll>
+        <p v-if="showIrohaConnectUnavailable" class="settings-notice" role="status" data-testid="iroha-connect-unavailable">
+          {{ t('settingsPage.irohaConnectUnavailable') }}
+        </p>
         <section v-for="group in groups" :key="group.title" class="settings-group">
           <h2>{{ group.title }}</h2>
           <button
@@ -35,13 +38,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { Components } from '@/router/routes';
 import { lockExtension } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
+import { isIrohaConnectEnabled } from '@/util/releaseFeatures';
+import { IROHA_CONNECT_UNAVAILABLE_NOTICE } from '@/router/irohaConnectGate';
 
 type SettingsItem = {
   id: string;
@@ -60,6 +65,7 @@ type SettingsGroup = {
 
 const emit = defineEmits(['openFiatsPopup', 'openLanguagePopup', 'openAboutPopup']);
 const router = useRouter();
+const route = useRoute();
 const accountsStore = useAccountsStore();
 const { t } = useI18n();
 const contentHeight = CONTENT_FORM_HEIGHT;
@@ -68,6 +74,7 @@ const lock = () => {
   lockExtension(true);
   router.push({ name: Components.Unlock });
 };
+const showIrohaConnectUnavailable = computed(() => route.query?.notice === IROHA_CONNECT_UNAVAILABLE_NOTICE);
 const hasTonAccount = computed(() => {
   const account = accountsStore.accounts.find(({ address }) => address === accountsStore.selectedWallet.address);
 
@@ -106,13 +113,17 @@ const groups = computed<SettingsGroup[]>(() => [
   {
     title: t('settingsPage.groups.connections'),
     items: [
-      {
-        id: 'iroha-connect',
-        label: 'IrohaConnect',
-        description: t('settingsPage.irohaConnectDescription'),
-        icon: 'iroha-connect',
-        open: open(Components.IrohaConnect),
-      },
+      ...(isIrohaConnectEnabled()
+        ? [
+            {
+              id: 'iroha-connect',
+              label: 'IrohaConnect',
+              description: t('settingsPage.irohaConnectDescription'),
+              icon: 'iroha-connect',
+              open: open(Components.IrohaConnect),
+            },
+          ]
+        : []),
       {
         id: 'wallet-connect',
         label: 'WalletConnect',
@@ -220,6 +231,16 @@ const groups = computed<SettingsGroup[]>(() => [
     color: $gray-color;
     font-size: 0.72rem;
   }
+}
+
+.settings-notice {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border: $default-border;
+  border-radius: 8px;
+  color: $grayish-white;
+  font-size: 0.72rem;
+  text-align: left;
 }
 
 .settings-group {

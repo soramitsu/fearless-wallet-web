@@ -13,10 +13,12 @@ import {
   PRODUCTION_RELEASE_FLAGS,
   readSourceProvenance,
 } from './build-extension.mjs';
+import { commonViteConfig } from '../vite.config.shared.mjs';
 
 const productionEnvironment = {
   UNRELATED_VALUE: 'preserved',
   VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'true',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'true',
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'true',
   VUE_APP_TEST_ONLY: 'true',
@@ -31,6 +33,27 @@ assert.equal(productionEnvironment.UNRELATED_VALUE, 'preserved');
 const developmentEnvironment = { VUE_APP_TEST_ONLY: 'true' };
 enforceProductionReleaseEnvironment(developmentEnvironment, 'development');
 assert.equal(developmentEnvironment.VUE_APP_TEST_ONLY, 'true');
+
+// IrohaConnect stays compiled off in production builds.
+assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_CONNECT, 'false');
+
+const withEnvironment = (overrides, run) => {
+  const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));
+  Object.assign(process.env, overrides);
+  try {
+    return run();
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+};
+const viteOptions = (mode) => ({ mode, outDir: path.join(os.tmpdir(), 'fearless-vite-guard-test'), publicDir: false });
+withEnvironment({ VUE_APP_ENABLE_IROHA_CONNECT: 'true', VUE_APP_ENABLE_IROHA_TRANSFERS: 'false' }, () => {
+  assert.throws(() => commonViteConfig(viteOptions('production')), /iroha_connect_blind_signing_unreviewed/u);
+  assert.doesNotThrow(() => commonViteConfig(viteOptions('development')));
+});
 
 const commit = '0123456789abcdef0123456789abcdef01234567';
 const clean = { sourceCommit: commit, sourceDirty: false };
@@ -127,4 +150,4 @@ try {
   await fs.rm(sourceArchiveDirectory, { recursive: true, force: true });
 }
 
-console.log('Extension production environment self-test passed (18 checks)');
+console.log('Extension production environment self-test passed (21 checks)');

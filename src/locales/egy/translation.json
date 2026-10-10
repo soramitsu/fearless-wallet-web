@@ -226,7 +226,8 @@
     "language": "𓂋 𓈖 𓆎𓅓𓏏",
     "languageDescription": "𓉐 𓈖 𓂓𓏏 𓁹 𓂋 𓈖 𓆎𓅓𓏏",
     "aboutFearless": "𓂋𓐍 Fearless",
-    "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪"
+    "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪",
+    "irohaConnectUnavailable": "𓈖𓈖 IrohaConnect 𓅓 𓋴𓈙 𓊪𓈖 · 𓈖 𓐍𓏏𓅓𓏏𓅱 𓐍𓏏 ·"
   },
   "menu": {
     "wallet": "𓉒",

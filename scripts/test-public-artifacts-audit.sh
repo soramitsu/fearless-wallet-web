@@ -333,7 +333,7 @@ write_fixture_repo() {
   mkdir -p "$repo/scripts" "$repo/src"
   cp "$CHECK_IROHA_JS_SDK_SCRIPT" "$repo/scripts/check-iroha-js-sdk-artifact.sh"
   chmod +x "$repo/scripts/check-iroha-js-sdk-artifact.sh"
-  printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=false\nVUE_APP_ENABLE_BITCOIN_TRANSFERS=false\n' > "$repo/.env.example"
+  printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=false\nVUE_APP_ENABLE_IROHA_CONNECT=false\nVUE_APP_ENABLE_BITCOIN_TRANSFERS=false\n' > "$repo/.env.example"
   printf 'export const clean = true;\n' > "$repo/src/index.ts"
 
   (
@@ -617,6 +617,25 @@ expect_failure \
   "bitcoin_testnet_broadcast_evidence_missing" \
   env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true
 
+expect_failure \
+  "IrohaConnect enablement while signing is unreviewed" \
+  "$VALID_REPO" \
+  "iroha_connect_blind_signing_unreviewed" \
+  env VUE_APP_ENABLE_IROHA_CONNECT=true
+
+IROHA_CONNECT_FILE_REPO="$TMP_DIR/iroha-connect-file"
+write_fixture_repo "$IROHA_CONNECT_FILE_REPO"
+printf 'VUE_APP_ENABLE_IROHA_CONNECT=true\n' > "$IROHA_CONNECT_FILE_REPO/.env.example"
+(
+  cd "$IROHA_CONNECT_FILE_REPO"
+  git add .env.example
+)
+expect_failure \
+  "IrohaConnect enablement in a tracked env file" \
+  "$IROHA_CONNECT_FILE_REPO" \
+  "iroha_connect_blind_signing_unreviewed" \
+  env
+
 INVALID_VALUE_REPO="$TMP_DIR/invalid-value"
 write_fixture_repo "$INVALID_VALUE_REPO"
 printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=yes\n' > "$INVALID_VALUE_REPO/.env.example"
@@ -684,4 +703,4 @@ expect_failure \
   "IROHA_JS_SDK_RELEASE_REPO, IROHA_JS_SDK_RELEASE_TAG, IROHA_JS_SDK_RELEASE_ASSET, and IROHA_JS_SDK_RELEASE_SHA256 are required together" \
   env IROHA_JS_SDK_RELEASE_REPO="hyperledger-iroha/iroha"
 
-echo "[public-artifacts-audit-test] 19 modes passed (2 positive, 17 adversarial): clean-baseline,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,bitcoin-transfer-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"
+echo "[public-artifacts-audit-test] 21 modes passed (2 positive, 19 adversarial): clean-baseline,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,bitcoin-transfer-enablement-blocked,iroha-connect-enablement-blocked,iroha-connect-file-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"

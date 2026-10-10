@@ -68,6 +68,10 @@ import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
+import {
+  requireEnabledIrohaConnect,
+  subscribeIrohaConnectState,
+} from '@extension-base/services/iroha-connect-service/releaseGate';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
@@ -2202,13 +2206,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   private irohaConnectSubscribe(id: string, port?: Port): IrohaConnectSnapshot {
-    const cb = this.state.subscriptionService.createSubscription<'pri(irohaConnect.subscribe)'>(id, port);
-    const subscription = this.state.irohaConnectService.stateSubject.subscribe(cb);
+    return subscribeIrohaConnectState(this.state, id, port);
+  }
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
-
-    return this.state.irohaConnectService.snapshot;
+  private get enabledIrohaConnectService() {
+    return requireEnabledIrohaConnect(this.state.irohaConnectService);
   }
 
   changeMasterPassword(request: RequestChangePassword): boolean {
@@ -2597,28 +2599,28 @@ export default class Extension extends FWExtensionBase {
 
       // IrohaConnect wallet relay
       case 'pri(irohaConnect.connect)':
-        return this.state.irohaConnectService.connect((request as IrohaConnectStartRequest).uri);
+        return this.enabledIrohaConnectService.connect((request as IrohaConnectStartRequest).uri);
 
       case 'pri(irohaConnect.subscribe)':
         return this.irohaConnectSubscribe(id, port);
 
       case 'pri(irohaConnect.session.approve)':
-        return this.state.irohaConnectService.approveSession((request as IrohaConnectAccountRequest).accountId);
+        return this.enabledIrohaConnectService.approveSession((request as IrohaConnectAccountRequest).accountId);
 
       case 'pri(irohaConnect.session.reject)':
-        return this.state.irohaConnectService.rejectSession();
+        return this.enabledIrohaConnectService.rejectSession();
 
       case 'pri(irohaConnect.request.approve)':
-        return this.state.irohaConnectService.approveRequest((request as IrohaConnectPendingRequest).requestId);
+        return this.enabledIrohaConnectService.approveRequest((request as IrohaConnectPendingRequest).requestId);
 
       case 'pri(irohaConnect.request.reject)':
-        return this.state.irohaConnectService.rejectRequest((request as IrohaConnectPendingRequest).requestId);
+        return this.enabledIrohaConnectService.rejectRequest((request as IrohaConnectPendingRequest).requestId);
 
       case 'pri(irohaConnect.disconnect)':
-        return this.state.irohaConnectService.disconnect();
+        return this.enabledIrohaConnectService.disconnect();
 
       case 'pri(irohaConnect.error.clear)':
-        return this.state.irohaConnectService.clearError();
+        return this.enabledIrohaConnectService.clearError();
 
       // OnBoarding
       case 'pri(onboarding.getStories)':

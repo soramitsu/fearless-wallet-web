@@ -131,6 +131,7 @@ export async function importChromeReleaseConfig({
     IS_EXTENSION: 'true',
     NODE_ENV: 'production',
     VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
+    VUE_APP_ENABLE_IROHA_CONNECT: 'false',
     VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
     VUE_APP_EXTENSION_SMOKE: 'false',
     VUE_APP_TEST_ONLY: 'false',

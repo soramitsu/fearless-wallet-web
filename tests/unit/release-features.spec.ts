@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   isBitcoinTransfersEnabled,
   isGoogleDriveBackupEnabled,
+  isIrohaConnectEnabled,
   isNetworkTransferEnabled,
 } from '@/util/releaseFeatures';
 
 const originalBitcoinFlag = process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS;
+const originalIrohaConnectFlag = process.env.VUE_APP_ENABLE_IROHA_CONNECT;
 const originalOauthClientId = process.env.OAUTH_CLIENT_ID;
 
 afterEach(() => {
@@ -15,6 +17,9 @@ afterEach(() => {
 
   if (originalOauthClientId === undefined) delete process.env.OAUTH_CLIENT_ID;
   else process.env.OAUTH_CLIENT_ID = originalOauthClientId;
+
+  if (originalIrohaConnectFlag === undefined) delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
+  else process.env.VUE_APP_ENABLE_IROHA_CONNECT = originalIrohaConnectFlag;
 });
 
 describe('release feature gates', () => {
@@ -28,6 +33,18 @@ describe('release feature gates', () => {
 
     process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
     expect(isBitcoinTransfersEnabled()).toBe(true);
+  });
+
+  it('enables IrohaConnect only for the exact reviewed true flag', () => {
+    for (const value of [undefined, '', 'false', 'TRUE', '1']) {
+      if (value === undefined) delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
+      else process.env.VUE_APP_ENABLE_IROHA_CONNECT = value;
+
+      expect(isIrohaConnectEnabled()).toBe(false);
+    }
+
+    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'true';
+    expect(isIrohaConnectEnabled()).toBe(true);
   });
 
   it('removes Bitcoin networks from transfer selectors while keeping other ecosystems available', () => {

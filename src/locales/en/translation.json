@@ -243,7 +243,8 @@
     "language": "Language",
     "languageDescription": "App display language",
     "aboutFearless": "About Fearless",
-    "aboutFearlessDescription": "Version, support, and legal"
+    "aboutFearlessDescription": "Version, support, and legal",
+    "irohaConnectUnavailable": "IrohaConnect is not available in this version. Nothing was signed."
   },
   "irohaConnectPage": {
     "backToSettings": "Back to settings",

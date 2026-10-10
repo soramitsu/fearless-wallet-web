@@ -128,6 +128,7 @@ function baseFiles(manifest, metadataOverrides = {}) {
             mode: 'production',
             releaseFlags: {
               VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
+              VUE_APP_ENABLE_IROHA_CONNECT: 'false',
               VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
               VUE_APP_EXTENSION_SMOKE: 'false',
               VUE_APP_TEST_ONLY: 'false',

@@ -53,6 +53,11 @@ if [[ "${VUE_APP_ENABLE_BITCOIN_TRANSFERS:-}" == "true" ]]; then
   bitcoin_transfers_enabled=true
 fi
 
+iroha_connect_enabled=false
+if [[ "${VUE_APP_ENABLE_IROHA_CONNECT:-}" == "true" ]]; then
+  iroha_connect_enabled=true
+fi
+
 iroha_js_github_release_configured=false
 if [[ -n "${IROHA_JS_SDK_RELEASE_REPO:-}" || -n "${IROHA_JS_SDK_RELEASE_TAG:-}" || -n "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -n "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
   if [[ -z "${IROHA_JS_SDK_RELEASE_REPO:-}" || -z "${IROHA_JS_SDK_RELEASE_TAG:-}" || -z "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -z "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
@@ -95,6 +100,16 @@ for env_file in .env.example .env.extension .env.web; do
       fi
     fi
 
+    if [[ "$key" == "VUE_APP_ENABLE_IROHA_CONNECT" ]]; then
+      if [[ "$value" != "true" && "$value" != "false" ]]; then
+        fail "$env_file contains invalid VUE_APP_ENABLE_IROHA_CONNECT=$value; expected true or false"
+      fi
+
+      if [[ "$value" == "true" ]]; then
+        iroha_connect_enabled=true
+      fi
+    fi
+
     if [[ "$key" =~ (^|_)(API.*KEY|API_?KEY|SECRET|TOKEN|PRIVATE_?KEY|CLIENT_?SECRET|OAUTH_?CLIENT_?ID|EXTENSION_?PUBLIC_?KEY|MNEMONIC|SEED|PASSWORD)$ ]]; then
       fail "$env_file contains a non-empty sensitive value for $key"
     fi
@@ -103,6 +118,10 @@ done
 
 if [[ "$iroha_transfers_enabled" == "true" ]]; then
   fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true is blocked: browser codec source exists locally, but no reviewed immutable release artifact is published, pinned, and bundled (browser_transaction_codec_unpublished_source_only)'
+fi
+
+if [[ "$iroha_connect_enabled" == "true" ]]; then
+  fail 'VUE_APP_ENABLE_IROHA_CONNECT=true is blocked: IrohaConnect signs dApp-supplied bytes it does not decode (iroha_connect_blind_signing_unreviewed)'
 fi
 
 if [[ "$bitcoin_transfers_enabled" == "true" ]]; then

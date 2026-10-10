@@ -47,7 +47,11 @@
           <span>{{ t('polkamarktPage.fallback.dataError') }}</span>
         </div>
 
-        <div v-if="accountsStore.showPolkaswapAlert" class="risk-gate" data-testid="polkamarkt-disclaimer-gate">
+        <div
+          v-if="accountsStore.showPolkaswapAlert && !snapshot.actionsPaused"
+          class="risk-gate"
+          data-testid="polkamarkt-disclaimer-gate"
+        >
           <strong>{{ t('polkamarktPage.risk.title') }}</strong>
           <p>{{ t('polkamarktPage.risk.description') }}</p>
           <label>
@@ -436,7 +440,8 @@ function clearQuote() {
   quoteError.value = '';
 }
 async function acceptRisk() {
-  if (!riskAccepted.value) return;
+  // The disclaimer also covers live Polkaswap swaps, so never record it from a page with trading paused.
+  if (!riskAccepted.value || snapshot.value?.actionsPaused) return;
   await accountsStore.hidePolkaswapAlert();
 }
 function setMode(value: PolkamarktTradeMode) {

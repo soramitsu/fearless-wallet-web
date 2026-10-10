@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   snapshot: vi.fn(),
   quote: vi.fn(),
   mutatePolkamarkt: vi.fn(),
+  accounts: { showPolkaswapAlert: false, hidePolkaswapAlert: vi.fn() },
 }));
 const route = reactive({ query: {} as Record<string, string>, params: {} as Record<string, string> });
 
@@ -26,7 +27,7 @@ vi.mock('@/extension/messaging', () => ({
 }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key, tc: (key: string) => key }) }));
 vi.mock('@/stores/accounts', () => ({
-  useAccountsStore: () => ({ showPolkaswapAlert: false, hidePolkaswapAlert: vi.fn() }),
+  useAccountsStore: () => mocks.accounts,
 }));
 
 import FarmingPage from '@/screens/defi/FarmingPage.vue';
@@ -153,6 +154,7 @@ const mountPolkamarkt = async (response: PolkamarktSnapshot, marketId = '') => {
 describe('DeFi screens paused by the release policy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.accounts.showPolkaswapAlert = false;
     route.query = {};
     route.params = {};
   });
@@ -225,6 +227,35 @@ describe('DeFi screens paused by the release policy', () => {
       const claims = wrapper.get('.claim-card');
       expect(claims.get('.inline-reason').text()).toBe('polkamarktPage.actionReason.paused');
       expect(claims.findAll('button').every((button) => button.attributes('disabled') !== undefined)).toBe(true);
+      wrapper.unmount();
+    });
+
+    it('does not ask for the trading disclaimer while trading is paused', async () => {
+      mocks.accounts.showPolkaswapAlert = true;
+      const wrapper = await mountPolkamarkt(snapshot({ actionsPaused: true }), '7');
+
+      expect(wrapper.find('[data-testid="polkamarkt-paused"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="polkamarkt-disclaimer-gate"]').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain('polkamarktPage.risk.agreement');
+      // The paused reason wins over the disclaimer reason, and no consent is recorded from here.
+      expect(wrapper.get('.trade-ticket .inline-reason').text()).toBe('polkamarktPage.actionReason.paused');
+      expect(mocks.accounts.hidePolkaswapAlert).not.toHaveBeenCalled();
+      wrapper.unmount();
+    });
+
+    it('asks for the trading disclaimer once trading is live', async () => {
+      mocks.accounts.showPolkaswapAlert = true;
+      const wrapper = await mountPolkamarkt(
+        snapshot({
+          actionsPaused: false,
+          capabilities: { ...snapshot({}).capabilities, buy: true, sell: true, claimMarket: true },
+        })
+      );
+
+      const gate = wrapper.get('[data-testid="polkamarkt-disclaimer-gate"]');
+      await gate.get('input[type="checkbox"]').setValue(true);
+      await gate.get('button').trigger('click');
+      expect(mocks.accounts.hidePolkaswapAlert).toHaveBeenCalledTimes(1);
       wrapper.unmount();
     });
 

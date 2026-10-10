@@ -1,5 +1,9 @@
 import { storage } from '@extension-base/stores/Storage';
-import type { SolanaRpcClient, SolanaRpcNetwork } from '@extension-base/services/solana-rpc-service';
+import type {
+  SolanaRpcClient,
+  SolanaRpcNetwork,
+  SolanaSignatureStatus,
+} from '@extension-base/services/solana-rpc-service';
 
 /**
  * A signed Solana transaction recorded before it is broadcast and kept until
@@ -30,6 +34,19 @@ export type SolanaPendingSendClient = Pick<
   SolanaRpcClient,
   'getBlockHeight' | 'getSignatureStatuses' | 'sendRawTransaction'
 >;
+
+/**
+ * Only a supermajority-confirmed status is an outcome; a `processed` one can
+ * still be rolled back with its fork. Nodes report a rooted transaction with
+ * `confirmations: null`.
+ */
+export const isConfirmedSolanaStatus = ({
+  confirmationStatus,
+  confirmations,
+}: Pick<SolanaSignatureStatus, 'confirmationStatus' | 'confirmations'>): boolean =>
+  confirmationStatus === 'confirmed' ||
+  confirmationStatus === 'finalized' ||
+  (confirmationStatus === null && confirmations === null);
 
 const MAX_PENDING_SENDS = 50;
 
@@ -80,10 +97,14 @@ export const getDefaultSolanaPendingSendStore = (): SolanaPendingSendStore =>
   (defaultStore ??= createStorageSolanaPendingSendStore());
 
 /**
- * Splits pending sends into resolved (the signature has a status, or its
- * blockhash expired with no status) and still in flight. Lookup failures keep a
- * record in flight. In-flight transactions are rebroadcast unchanged, which is
- * idempotent and helps them land before they expire.
+ * Splits pending sends into resolved and still in flight. A record is resolved
+ * once its outcome can no longer change: the signature is confirmed
+ * (successfully or not), or the chain has passed its last valid block height,
+ * after which the bytes can never be included again. A signature seen only at
+ * `processed` before then may still be dropped with its fork and land later,
+ * so it stays in flight. Lookup failures keep a record in flight. In-flight
+ * transactions are rebroadcast unchanged, which is idempotent and helps them
+ * land before they expire.
  */
 export async function resolveSolanaPendingSends(
   records: SolanaPendingSend[],
@@ -100,7 +121,9 @@ export async function resolveSolanaPendingSends(
     const unresolved: SolanaPendingSend[] = [];
 
     records.forEach((record, index) => {
-      if (statuses[index] || blockHeight > record.lastValidBlockHeight) resolved.push(record);
+      const status = statuses[index];
+
+      if ((status && isConfirmedSolanaStatus(status)) || blockHeight > record.lastValidBlockHeight) resolved.push(record);
       else unresolved.push(record);
     });
 

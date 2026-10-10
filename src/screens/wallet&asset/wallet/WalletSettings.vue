@@ -16,15 +16,26 @@
         />
       </template>
 
-      <TabButton
-        v-else-if="notNftTabActive"
-        tooltipText="wallet.turnVisibilityAssets"
-        class="hide-zero"
-        target=".hide-zero"
-        placementTooltip="right"
-        :label="toggleButtonText"
-        @click="$emit('toggleCurrenciesVisible', allTokenGroupsHidden)"
-      />
+      <div v-else-if="notNftTabActive" class="manage-filters">
+        <button
+          type="button"
+          class="filter-chip"
+          data-testid="filterHidden"
+          :aria-pressed="manageHiddenOnly"
+          @click="$emit('update:manageHiddenOnly', !manageHiddenOnly)"
+        >
+          {{ $t('portfolioPage.filterHidden', { count: hiddenAssetCount }) }}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          data-testid="filterTestnets"
+          :aria-pressed="showTestnets"
+          @click="$emit('update:showTestnets', !showTestnets)"
+        >
+          {{ $t('portfolioPage.testnets') }}
+        </button>
+      </div>
     </div>
 
     <div class="settings-part">
@@ -48,6 +59,15 @@
         @click="toggleAssetsManagementVisible"
       />
     </div>
+
+    <div v-if="!syncedShowAssetsManagementForm && notNftTabActive" class="hide-zero" data-testid="hideZeroToggle">
+      <Switcher
+        :value="hideZero"
+        :activeText="$t('wallet.hideZero')"
+        :inactiveText="$t('wallet.hideZero')"
+        @change="$emit('update:hideZero', $event)"
+      />
+    </div>
   </div>
 </template>
 
@@ -68,7 +88,10 @@ interface TabsOptions {
 export default defineComponent({ name: 'ContentSettings' ,
   props: {
     tokenGroups: Array,
-    allAssetsHidden: Boolean,
+    hideZero: Boolean,
+    showTestnets: Boolean,
+    hiddenAssetCount: { type: Number, default: 0 },
+    manageHiddenOnly: Boolean,
     activeTabName: { type: String },
     filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
@@ -101,14 +124,8 @@ export default defineComponent({ name: 'ContentSettings' ,
     target() {
       return `.${this.iconName}`;
     },
-    allTokenGroupsHidden() {
-      return this.allAssetsHidden;
-    },
     searchInputWidth() {
       return '100%';
-    },
-    toggleButtonText() {
-      return this.allTokenGroupsHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
     },
     iconName() {
       return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
@@ -158,9 +175,49 @@ export default defineComponent({ name: 'ContentSettings' ,
 <style lang="scss" scoped>
 .content-settings {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   margin-bottom: 10px;
   margin-right: 16px;
+
+  .manage-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-chip {
+    min-height: 32px;
+    padding: 0 12px;
+    border: $default-border;
+    border-radius: 16px;
+    background: $secondary-background-color;
+    color: $grayish-white;
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      border-color: $pink-lavender-color;
+      background: $pink-purple-color;
+      color: $plain-white;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $pink-lavender-color;
+      outline-offset: 2px;
+    }
+  }
+
+  .hide-zero {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 8px;
+    color: $grayish-white;
+    font-size: 0.75rem;
+  }
 
   .settings-part {
     display: flex;

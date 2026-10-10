@@ -148,6 +148,7 @@ import type {
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
   RequestGetHistory,
+  RequestTotalBalances,
 } from '@extension-base/background/types/types';
 import type {
   PoolsParamsRequest,
@@ -2410,7 +2411,7 @@ export default class Extension extends FWExtensionBase {
         return this.accountsValidatePassword(request as RequestAccountValidate);
 
       case 'pri(accounts.totalBalances)':
-        return this.state.balanceService.getTotalBalances();
+        return this.state.balanceService.getTotalBalances(request as RequestTotalBalances | null);
 
       case 'pri(accounts.getHistory)':
         return this.state.historyService.fetchTonAssetsHistory(request as RequestGetHistory);

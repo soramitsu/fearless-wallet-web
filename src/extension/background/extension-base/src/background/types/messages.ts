@@ -123,6 +123,7 @@ import type {
   ResponseCheckSwap,
   ResponseMakeSwap,
   RequestUpdateMeta,
+  RequestTotalBalances,
   ResponseTotalBalances,
   RequestSigningSubscribe,
   FetchBalanceRequest,
@@ -209,7 +210,7 @@ export interface RequestSignatures {
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.update.current)': [RequestUpdateCurrentAccount, boolean];
   'pri(accounts.update.currentNetwork)': [string, boolean];
-  'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
+  'pri(accounts.totalBalances)': [RequestTotalBalances | null, ResponseTotalBalances[]];
   'pri(accounts.getHistory)': [RequestGetHistory, TonEventTokens];
 
   // App Management - networks

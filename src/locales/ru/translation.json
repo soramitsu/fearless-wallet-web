@@ -7,7 +7,26 @@
     },
     "coverage": {
       "catalogOnly": "Некоторые токены могут не отображаться"
-    }
+    },
+    "zeroNetworks": "1 сеть · без баланса | Без баланса · сетей: {count}",
+    "popularNoBalance": "Популярные сети · пока без баланса",
+    "hiddenNotIncluded": "1 скрытый актив не учтён · Управление | Скрытые активы не учтены: {count} · Управление",
+    "unpricedNotIncluded": "1 актив без цены не учтён | Активы без цены не учтены: {count}",
+    "poolStakesNotIncluded": "Стейкинг в пулах не учтён",
+    "hiddenFundsNotice": "На 1 скрытом активе есть средства | Скрытые активы со средствами: {count}",
+    "hiddenFundsDescription": "Скрытые активы не входят в общий баланс. Проверьте их или оставьте скрытыми.",
+    "review": "Проверить",
+    "keepHidden": "Оставить скрытыми",
+    "hiddenBadge": "Скрыт",
+    "hiddenPreviousVersion": "Скрыт в прошлой версии",
+    "filterHidden": "Скрытые ({count})",
+    "testnets": "Тестовые сети",
+    "testnetBadge": "Тестовая сеть",
+    "showingFiltered": "Показано: {network} · {value}",
+    "transferable": "Доступно {amount}",
+    "inclHidden": "вкл. скрытые",
+    "noHiddenAssets": "Нет скрытых активов",
+    "noHiddenAssetsDescription": "Скрытые вами активы появятся здесь, и их можно будет снова показать."
   },
   "welcome": {
     "importWallet": "У меня уже есть кошелек",

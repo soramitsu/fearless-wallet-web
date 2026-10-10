@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
     balances: [],
     isBalanceLoading: false,
     networkScanStates: {},
+    portfolioView: { hideZero: false, showHidden: false, showTestnets: false, zeroNetworksExpanded: false },
+    updatePortfolioView: vi.fn(),
     selectedNetwork: 'All networks',
     selectedWallet: {
       address: 'substrate-address',
@@ -33,20 +35,20 @@ vi.mock('@/stores/networks', () => ({ useNetworksStore: () => mocks.networksStor
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.extensionStore }));
 vi.mock('@/portfolio/assetIdentity', () => ({
   buildPortfolioSections: () => [],
+  filterSectionAssets: (sections: unknown[]) => sections,
+  filterSectionsBySearch: (sections: unknown[]) => sections,
+  splitZeroSections: () => ({ funded: [], zeroOnly: [] }),
 }));
-vi.mock('@/portfolio/usePortfolioPreferences', () => ({
-  usePortfolioPreferences: () => ({ effectivePreferences: {} }),
-}));
-vi.mock('@/consts/networks', () => ({
-  ALL_NETWORKS: 'All networks',
-  FAVORITE_NETWORKS: 'Favorite networks',
-  POPULAR_NETWORKS: 'Popular networks',
-}));
-vi.mock('@/helpers', () => ({ isSameString: (left: string, right: string) => left === right }));
-vi.mock('@/util/BaseApi', () => ({
-  default: {
-    formatAddress: (_wallet: unknown, network: string) => network,
-  },
+vi.mock('@/portfolio/usePortfolio', () => ({
+  usePortfolio: () => ({
+    effectivePreferences: {},
+    preferenceSource: () => 'auto',
+    addressForNetwork: () => '',
+    walletScope: () => true,
+    networkFilter: () => true,
+    zeroRule: () => false,
+    summary: { hiddenCount: 0, hiddenFundedKeys: [], unpricedCount: 0, poolStakesExcluded: false },
+  }),
 }));
 vi.mock('@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue', () => ({ default: {} }));
 
@@ -71,6 +73,9 @@ const mountPortfolio = () =>
         Icon: { template: '<span />' },
         Loader: { template: '<span />' },
         PortfolioNetworkSection: { template: '<section />' },
+        PortfolioExclusions: true,
+        PortfolioHiddenFundsNotice: true,
+        PortfolioZeroNetworks: true,
         Scroll: { template: '<main><slot /></main>' },
       },
     },

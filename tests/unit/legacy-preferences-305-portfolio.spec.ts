@@ -267,15 +267,31 @@ describe('portfolio preferences derived from 3.0.5', () => {
         },
       },
     });
+    // Funded networks render; Manage marks hidden rows instead of dropping them, so each hide can be undone.
     const rows = () =>
       wrapper
         .findAll('.network-section')
         .flatMap((section) =>
-          section.findAll('.asset-symbol').map((symbol) => `${section.attributes('data-network')}:${symbol.text()}`)
+          section
+            .findAll('.asset-row')
+            .map(
+              (row) =>
+                `${section.attributes('data-network')}:${row.get('.asset-symbol').text()}` +
+                (row.find('[data-testid="hiddenPreviousVersion"]').exists() ? ':hidden-305' : '') +
+                (row.find('[data-testid="hiddenBadge"]').exists() ? ':hidden' : '')
+            )
         );
 
     expect(rows()).toEqual(expect.arrayContaining(['Polkadot:DOT', 'Ethereum:ETH']));
-    expect(rows().filter((row) => row.endsWith(':KSM') || /^(Ethereum|Polygon):USDT$/.test(row))).toEqual([]);
+    expect(rows()).toEqual(
+      expect.arrayContaining(['Kusama:KSM:hidden-305:hidden', 'Ethereum:USDT:hidden-305:hidden', 'Polygon:USDT:hidden-305:hidden'])
+    );
+    expect(rows().filter((row) => (row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row)) && !row.endsWith(':hidden')))
+      .toEqual([]);
+
+    await wrapper.setProps({ showAssetsManagementForm: false });
+    expect(rows().filter((row) => row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row))).toEqual([]);
+    await wrapper.setProps({ showAssetsManagementForm: true });
 
     const switches = wrapper.findAll('.switcher-stub');
     expect(switches.length).toBeGreaterThanOrEqual(3);
@@ -286,7 +302,7 @@ describe('portfolio preferences derived from 3.0.5', () => {
     accountsStore.setIsBalanceLoading(false);
     await nextTick();
 
-    expect(rows()).toEqual(expect.arrayContaining(['Kusama:KSM', 'Ethereum:USDT']));
+    expect(rows()).toEqual(expect.arrayContaining(['Kusama:KSM', 'Ethereum:USDT', 'Polkadot:DOT:hidden-305:hidden']));
     expect(rows()).not.toContain('Polkadot:DOT');
 
     wrapper.unmount();

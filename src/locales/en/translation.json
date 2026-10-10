@@ -479,7 +479,26 @@
       "stale": "Stale",
       "syncedAge": "Synced {age}",
       "synced": "Synced"
-    }
+    },
+    "zeroNetworks": "1 network · no balance | {count} networks · no balance",
+    "popularNoBalance": "Popular networks · no balance yet",
+    "hiddenNotIncluded": "1 hidden asset not included · Manage | {count} hidden assets not included · Manage",
+    "unpricedNotIncluded": "1 asset without price not included | {count} assets without price not included",
+    "poolStakesNotIncluded": "Pool stakes not included",
+    "hiddenFundsNotice": "1 hidden asset holds funds | {count} hidden assets hold funds",
+    "hiddenFundsDescription": "Hidden assets are not included in your total. Review them, or keep them hidden.",
+    "review": "Review",
+    "keepHidden": "Keep hidden",
+    "hiddenBadge": "Hidden",
+    "hiddenPreviousVersion": "Hidden in previous version",
+    "filterHidden": "Hidden ({count})",
+    "testnets": "Testnets",
+    "testnetBadge": "Testnet",
+    "showingFiltered": "Showing {network} · {value}",
+    "transferable": "Transferable {amount}",
+    "inclHidden": "incl. hidden",
+    "noHiddenAssets": "No hidden assets",
+    "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again."
   },
   "polkamarktPage": {
     "backToMarkets": "Back to markets",

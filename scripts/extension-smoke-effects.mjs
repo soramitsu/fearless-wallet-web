@@ -357,7 +357,8 @@ export async function captureEffectsScreenshots({
       '(document.querySelector(\'[data-testid="visualEffectsSetting"]\').scrollIntoView({ block: "center" }), true)'
     );
     await capture('09-settings-appearance', 'Settings → Appearance → Visual effects, Automatic.');
-    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'ru-RU', true)`);
+    // As LanguagePopup does: the locale, and the document language that :lang() styles follow.
+    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'ru-RU', document.documentElement.lang = 'ru-RU', true)`);
     await cdp.send(
       'Emulation.setEmulatedMedia',
       { features: [{ name: 'prefers-contrast', value: 'more' }] },

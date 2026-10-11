@@ -140,6 +140,47 @@ const OVERFLOW = `(() => {
   return issues;
 })()`;
 
+/**
+ * The glyph check of design-system 7.1 in the real build: the fonts Chrome drew the screen's text with
+ * (`CSS.getPlatformFontsForNode`), summed per family. Every glyph must come from a face the extension bundles; a
+ * system font here means a bundled face lacks a character the screen prints.
+ */
+export async function fontsOnScreen(cdp, sessionId, evaluate) {
+  const marked = await evaluate(
+    cdp,
+    sessionId,
+    `(() => {
+      let count = 0;
+      for (const element of document.querySelectorAll('body *')) {
+        const text = [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+        const box = element.getBoundingClientRect();
+        if (text && box.width > 0 && box.height > 0) element.setAttribute('data-fw-glyph-probe', String(count++));
+      }
+      return count;
+    })()`
+  );
+  await cdp.send('DOM.enable', {}, sessionId);
+  await cdp.send('CSS.enable', {}, sessionId);
+  const { root } = await cdp.send('DOM.getDocument', { depth: 0 }, sessionId);
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: '[data-fw-glyph-probe]' }, sessionId);
+  const families = new Map();
+
+  for (const nodeId of nodeIds) {
+    const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId }, sessionId);
+    for (const { familyName, isCustomFont, glyphCount } of fonts) {
+      const key = `${familyName}${isCustomFont ? '' : ' (system)'}`;
+      families.set(key, (families.get(key) ?? 0) + glyphCount);
+    }
+  }
+  await evaluate(
+    cdp,
+    sessionId,
+    `(document.querySelectorAll('[data-fw-glyph-probe]').forEach((element) => element.removeAttribute('data-fw-glyph-probe')), true)`
+  );
+
+  return { elements: marked, families: Object.fromEntries([...families].sort((a, b) => b[1] - a[1])) };
+}
+
 export async function capturePortfolioScreenshots({
   cdp,
   extensionId,
@@ -204,6 +245,10 @@ export async function capturePortfolioScreenshots({
       await sleep(400);
       const overflow = await evaluate(cdp, sessionId, OVERFLOW);
       if (overflow.length) throw new Error(`${name}: content wider than the ${POPUP_WIDTH}px popup:\n${overflow.join('\n')}`);
+      const fonts = await fontsOnScreen(cdp, sessionId, evaluate);
+      const system = Object.keys(fonts.families).filter((family) => family.endsWith(' (system)'));
+      if (system.length) throw new Error(`${name}: text drawn with system fonts ${system.join(', ')}: ${JSON.stringify(fonts)}`);
+      description = `${description} Fonts drawn: ${Object.entries(fonts.families).map(([family, glyphs]) => `${family} ${glyphs}`).join(', ')}.`;
 
       const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
       const file = path.join(outputDir, `${name}.png`);
@@ -278,7 +323,8 @@ export async function capturePortfolioScreenshots({
     const switched = await evaluate(
       cdp,
       sessionId,
-      `(() => { const i18n = ${APP}.app.config.globalProperties.$i18n; i18n.locale = 'ru-RU'; return i18n.locale === 'ru-RU'; })()`
+      // As LanguagePopup does: the locale, and the document language that :lang() styles follow.
+      `(() => { const i18n = ${APP}.app.config.globalProperties.$i18n; i18n.locale = 'ru-RU'; document.documentElement.lang = 'ru-RU'; return i18n.locale === 'ru-RU'; })()`
     );
     if (!switched) throw new Error('Could not switch the popup to Russian');
     await scrollTo('[data-token="group:dot"]');
@@ -288,6 +334,21 @@ export async function capturePortfolioScreenshots({
     await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="groupNetworkPicker"]\'))', 'Russian Send picker');
     await capture('11-send-choose-network-russian', 'Russian Send picker: the network is chosen explicitly, with the warning.');
     await click('[data-testid="groupNetworkPickerClose"]');
+
+    // The ancient-script locales: their signs must come from the bundled Noto faces, the rest from Inter.
+    for (const [shot, locale, sign, description] of [
+      ['12-by-token-akkadian', 'akk-Xsux-x-old', '\\u{12000}-\\u{1254F}', 'Old Akkadian in cuneiform, drawn with the bundled Noto Sans Cuneiform.'],
+      ['13-by-token-egyptian', 'egy-Egyp', '\\u{13000}-\\u{1345F}', 'Egyptian in hieroglyphs, drawn with the bundled Noto Sans Egyptian Hieroglyphs.'],
+    ]) {
+      await evaluate(
+        cdp,
+        sessionId,
+        `(${APP}.app.config.globalProperties.$i18n.locale = '${locale}', document.documentElement.lang = '${locale}', true)`
+      );
+      await scrollTo('[data-token="group:dot"]');
+      await waitForExpression(cdp, sessionId, `/[${sign}]/u.test(document.body.innerText)`, `${locale} text`);
+      await capture(shot, description);
+    }
 
     await fs.writeFile(
       path.join(outputDir, 'README.md'),

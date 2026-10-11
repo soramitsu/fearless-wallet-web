@@ -23,6 +23,8 @@ export type State = {
   qr: string | null;
   showPolkaswapAlert: boolean;
   isBalanceLoading: boolean;
+  /** When the balances of the wallet on screen started loading: the popup opened or the wallet changed. */
+  balanceLoadStartedAt: number;
 };
 
 export const state = (): State => {
@@ -44,5 +46,6 @@ export const state = (): State => {
     hiddenWarningNetworks: accountController.getHiddenWarningNetworks(),
     qr: null,
     isBalanceLoading: false,
+    balanceLoadStartedAt: Date.now(),
   };
 };

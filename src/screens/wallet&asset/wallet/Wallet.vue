@@ -7,6 +7,8 @@
         :changeWalletBalance="changeWalletBalance"
         :caption="filteredCaption"
         :staticWidth="false"
+        :loading="balancesLoading"
+        :loadingLabel="$t('portfolioPage.loadingBalances')"
         @click="$emit('openFiatsPopup', true)"
       />
 
@@ -102,9 +104,9 @@ export default defineComponent({ name: 'Wallet',
     GoogleExportPopup,
   },
   setup() {
-    const { summary: portfolioSummary, filteredTotal } = usePortfolio();
+    const { summary: portfolioSummary, filteredTotal, loadStatus } = usePortfolio();
 
-    return { portfolioSummary, filteredTotal };
+    return { portfolioSummary, filteredTotal, loadStatus };
   },
   data() {
     return {
@@ -152,8 +154,12 @@ export default defineComponent({ name: 'Wallet',
     summaryTotalBalance() {
       return this.portfolioSummary.total;
     },
+    // Until something the wallet holds has arrived, the total is not known: no $0.00 after an update or a switch.
+    balancesLoading(): boolean {
+      return this.accountsStore.isBalanceLoading || this.loadStatus.state === 'loading';
+    },
     filteredCaption() {
-      if (this.filteredTotal === null) return '';
+      if (this.filteredTotal === null || this.balancesLoading) return '';
 
       const selected = this.accountsStore.selectedNetwork;
       const network =

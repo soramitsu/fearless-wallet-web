@@ -445,6 +445,8 @@
     },
     "syncing": "Syncing",
     "refresh": "Refresh",
+    "loadingBalances": "Loading your balances",
+    "checkingNetworks": "Checking 1 network… | Checking {count} networks…",
     "offline": "Portfolio is offline",
     "noMatchingAssets": "No matching assets",
     "noAssetsDetected": "No assets detected yet",

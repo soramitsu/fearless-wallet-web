@@ -445,6 +445,8 @@
     },
     "syncing": "𒉡𒌓𒁲𒅖…",
     "refresh": "𒌓𒁲𒌍",
+    "loadingBalances": "𒉌𒅅𒅗𒊍𒋛𒅗 𒉡𒇷𒅅𒆥",
+    "checkingNetworks": "1 𒊑𒅅𒊓𒄠 𒉌𒅎𒈠𒅈… | {count} 𒊑𒅅𒊓𒋾𒅎 𒉌𒅎𒈠𒅈…",
     "offline": "𒁍𒄷𒌨 𒈠𒀝𒆪𒊑 𒀀𒈾 𒊑𒅅𒋛𒅎 𒆷 𒅗𒍣𒅕",
     "noMatchingAssets": "𒈠𒀝𒆪𒊒 𒈪𒀉𒄩𒊒 𒈪𒅎𒈠 𒆷 𒁀𒋗𒌑",
     "noAssetsDetected": "𒈠𒀝𒆪𒊒𒌝 𒀀𒁲𒉌 𒆷 𒅔𒈾𒈪𒅕",

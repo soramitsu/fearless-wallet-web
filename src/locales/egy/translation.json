@@ -1064,6 +1064,8 @@
     },
     "syncing": "𓋴𓅓𓄿𓂝…",
     "refresh": "𓅱𓎛𓅓",
+    "loadingBalances": "𓉔𓄿𓃀 𓎛𓋴𓃀𓏥𓎡",
+    "checkingNetworks": "𓅓𓄿𓄿 1 𓄡𓈖𓅓𓏥… | 𓅓𓄿𓄿 {count} 𓄡𓈖𓅓𓏥…",
     "offline": "𓇋𓊪𓏥 𓈖 𓇋𓐍𓏏𓏥 𓈖𓈖 𓄡𓈖𓅓",
     "noMatchingAssets": "𓈖𓈖 𓇋𓐍𓏏 𓅓𓄿𓂝",
     "noAssetsDetected": "𓈖𓈖 𓇋𓐍𓏏 𓎼𓅓𓇋 𓅓𓇋𓈖",

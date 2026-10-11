@@ -48,6 +48,7 @@ vi.mock('@/portfolio/usePortfolio', () => ({
     networkFilter: () => true,
     zeroRule: () => false,
     summary: { hiddenCount: 0, hiddenFundedKeys: [], unpricedCount: 0, poolStakesExcluded: false },
+    loadStatus: { state: 'settled', pendingCount: 0 },
   }),
 }));
 vi.mock('@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue', () => ({ default: {} }));

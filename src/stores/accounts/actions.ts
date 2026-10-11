@@ -28,7 +28,10 @@ type Actions = {
 
 export const actions: Actions = {
   setSelectedWallet(account) {
-    if (account?.address !== this.selectedWallet.address) this.setIsBalanceLoading(true);
+    if (account?.address !== this.selectedWallet.address) {
+      this.setIsBalanceLoading(true);
+      this.balanceLoadStartedAt = Date.now();
+    }
 
     this.selectedWallet = {
       address: account?.address ?? '',

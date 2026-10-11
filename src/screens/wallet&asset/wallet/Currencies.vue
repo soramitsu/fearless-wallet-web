@@ -2,6 +2,10 @@
   <Scroll class="portfolio-scroll">
     <div class="portfolio-actions">
       <span v-if="refreshError" class="refresh-error" role="status">{{ refreshError }}</span>
+      <!-- What is listed may not be all yet: some networks of this wallet have not answered. -->
+      <span v-else-if="checkingNetworksText" class="refresh-error" data-testid="portfolioChecking" role="status">
+        {{ checkingNetworksText }}
+      </span>
       <button
         class="portfolio-refresh"
         data-testid="portfolioRefresh"
@@ -14,7 +18,11 @@
       </button>
     </div>
 
-    <Loader v-if="showLoader" class="asset-loader" />
+    <div v-if="showLoader" class="portfolio-loading" data-testid="portfolioLoading" role="status" aria-live="polite">
+      <Loader class="asset-loader" />
+      <strong>{{ $t('portfolioPage.loadingBalances') }}</strong>
+      <span v-if="loadStatus.pendingCount">{{ pendingNetworksText }}</span>
+    </div>
 
     <template v-else>
       <PortfolioHiddenFundsNotice
@@ -99,10 +107,27 @@ export default defineComponent({
   },
   emits: ['toggleAssetsManagementForm', 'update:manageHiddenOnly', 'toggleNetworkManagementVisible'],
   setup() {
-    const { effectivePreferences, preferenceSource, addressForNetwork, walletScope, networkFilter, zeroRule, summary } =
-      usePortfolio();
+    const {
+      effectivePreferences,
+      preferenceSource,
+      addressForNetwork,
+      walletScope,
+      networkFilter,
+      zeroRule,
+      summary,
+      loadStatus,
+    } = usePortfolio();
 
-    return { effectivePreferences, preferenceSource, addressForNetwork, walletScope, networkFilter, zeroRule, summary };
+    return {
+      effectivePreferences,
+      preferenceSource,
+      addressForNetwork,
+      walletScope,
+      networkFilter,
+      zeroRule,
+      summary,
+      loadStatus,
+    };
   },
   data() {
     return {
@@ -114,8 +139,20 @@ export default defineComponent({
     };
   },
   computed: {
+    // Until something the wallet holds has arrived, an empty list would be a guess (first open after an update, a
+    // wallet switch). Manage lists every asset whatever it holds, so it never waits.
     showLoader() {
-      return this.accountsStore.isBalanceLoading;
+      return (
+        this.accountsStore.isBalanceLoading || (this.loadStatus.state === 'loading' && !this.showAssetsManagementForm)
+      );
+    },
+    pendingNetworksText(): string {
+      const count = this.loadStatus.pendingCount;
+
+      return this.$t('portfolioPage.checkingNetworks', count, { count });
+    },
+    checkingNetworksText(): string {
+      return this.loadStatus.state === 'syncing' && !this.showAssetsManagementForm ? this.pendingNetworksText : '';
     },
     viewSettings(): PortfolioViewSettings {
       return this.accountsStore.portfolioView;
@@ -275,11 +312,31 @@ export default defineComponent({
 }
 
 .portfolio-empty,
-.asset-loader {
+.portfolio-loading {
   min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.portfolio-loading {
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 16px;
+  color: $gray-color;
+  text-align: center;
+
+  .asset-loader {
+    margin: 0 0 6px;
+  }
+
+  strong {
+    color: $plain-white;
+  }
+
+  span {
+    font-size: 0.78rem;
+  }
 }
 
 .portfolio-empty {

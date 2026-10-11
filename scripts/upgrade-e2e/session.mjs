@@ -76,10 +76,22 @@ export class Session {
     await this.launch();
   }
 
+  /** A popup whose port the background answers. Right after an update the port can reach a worker that is being
+   * replaced and never answers; such a popup is closed and opened again. */
   async popup(hash = '') {
-    const popup = await openPopup(this.port, this.extId, hash);
-    this.popups.push(popup);
-    return popup;
+    for (let attempt = 1; ; attempt++) {
+      const popup = await openPopup(this.port, this.extId, hash);
+      this.popups.push(popup);
+      const answered = await popup
+        .eval(
+          `Promise.race([window.__send('pri(accounts.subscribe)').then(() => true, () => true), new Promise((done) => setTimeout(() => done(false), 20000))])`
+        )
+        .catch(() => false);
+      if (answered || attempt === 3) return popup;
+      popup.close();
+      await popup.closeTarget();
+      await serviceWorker(this.port);
+    }
   }
 
   storage() {

@@ -514,6 +514,7 @@
     "noHiddenAssetsDescription": "𒈠𒀝𒆪𒊒 𒊭 𒋫𒅗𒀜𒋫𒈬 𒀭𒈾𒀀 𒅔𒈾𒄠𒈠𒊒, 𒀀𒈾 𒊭𒉌𒅖 𒌌𒇻𒈪𒋗𒉡.",
     "testnetsNotShown": "1 𒈠𒀝𒆪𒊒𒌝 𒊭 𒊑𒅅𒋛𒅎 𒊭 𒆷𒈠𒁲𒅎 𒆷 𒅔𒈾𒈪𒅕 · 𒊑𒅅𒊓𒋾𒅎 𒊭 𒆷𒈠𒁲𒅎 𒌌𒇷𒅎 | {count} 𒈠𒀝𒆪𒊒 𒊭 𒊑𒅅𒊓𒋾𒅎 𒊭 𒆷𒈠𒁲𒅎 𒆷 𒅔𒈾𒄠𒊒 · 𒊑𒅅𒊓𒋾𒅎 𒊭 𒆷𒈠𒁲𒅎 𒌌𒇷𒅎",
     "showAssetOnNetwork": "{symbol} 𒄿𒈾 𒊑𒅅𒋛𒅎 {network} 𒌌𒇷𒅎",
+    "showTokenOnNetworks": "{symbol} 𒄿𒈾 1 𒊑𒅅𒋛𒅎 𒌌𒇷𒅎 | {symbol} 𒄿𒈾 𒅗𒀠 {count} 𒊑𒅅𒊓𒋾𒅎 𒌌𒇷𒅎",
     "emptyWalletTitle": "𒀀𒁲𒉌 𒈠𒀝𒆪𒊒𒌝 𒆷 𒄿𒁀𒀸𒅆",
     "emptyWalletDescription": "𒀀𒈾 𒋗𒌨𒊑𒄿𒅎 𒈠𒀝𒆪𒊏𒄠 𒈠𒄩𒅈 𒌑 𒊭𒄠. 𒄿𒉡𒈠 𒅅𒋗𒁺, 𒉌𒅅𒅗𒊍𒋢 𒀭𒈾𒅗𒄠 𒅔𒈾𒄠𒈠𒊒.",
     "noBalanceInView": "𒄿𒈾 𒀀𒈠𒊑𒅎 𒀭𒉌𒄿𒅎 𒉌𒅅𒅗𒊍𒋢 𒆷 𒁀𒋗𒌑",

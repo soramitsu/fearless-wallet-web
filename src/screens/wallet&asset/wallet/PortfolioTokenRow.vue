@@ -7,11 +7,13 @@
     :data-network="isGroup ? undefined : single.asset.networkName"
   >
     <div class="token-line">
-      <button
+      <!-- In Manage a single row is not a button: its switch is the one control (as in a network section). -->
+      <component
+        :is="headerIsButton ? 'button' : 'div'"
         class="token-header"
-        type="button"
+        :type="headerIsButton ? 'button' : undefined"
         :aria-expanded="isGroup ? expanded : undefined"
-        :aria-label="accessibleLabel"
+        :aria-label="headerIsButton ? accessibleLabel : undefined"
         :data-testid="isGroup ? 'tokenGroupHeader' : 'tokenRowHeader'"
         @click="onHeaderClick"
       >
@@ -64,27 +66,29 @@
           height="20px"
           :hover="false"
         />
-      </button>
+      </component>
 
       <Switcher
         v-if="manage"
         class="row-switch"
         data-testid="tokenRowSwitch"
         :value="!row.hidden"
+        :ariaLabel="rowSwitchLabel"
         @change="setRowPreference($event ? 'shown' : 'hidden')"
       />
     </div>
 
     <div v-if="isGroup && expanded" class="token-networks" data-testid="tokenNetworks">
       <div v-for="child in visibleChildren" :key="child.asset.key" class="network-line">
-        <button
+        <component
+          :is="manage ? 'div' : 'button'"
           class="network-row"
           :class="{ 'network-row--hidden': child.asset.hidden }"
-          type="button"
+          :type="manage ? undefined : 'button'"
           :data-asset-key="child.asset.key"
           :data-network="child.asset.networkName"
           :data-symbol="child.asset.symbol"
-          :aria-label="childLabel(child)"
+          :aria-label="manage ? undefined : childLabel(child)"
           @click="openChild(child)"
         >
           <ExternalLogo :name="child.asset.networkIcon" :width="28" class="network-logo" />
@@ -113,12 +117,13 @@
           </span>
 
           <Icon v-if="!manage" icon="chevron-right" className="chevron" width="18px" height="18px" :hover="false" />
-        </button>
+        </component>
 
         <Switcher
           v-if="manage"
           class="row-switch"
           :value="!child.asset.hidden"
+          :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: child.asset.symbol, network: child.asset.networkName })"
           @change="setPreference(child.asset.key, $event ? 'shown' : 'hidden')"
         />
       </div>
@@ -185,6 +190,9 @@ const visibleChildren = computed(() =>
   showZeroChildren.value ? [...props.row.children, ...props.row.zeroChildren] : props.row.children
 );
 
+// Outside Manage every row opens something; in Manage only a group does (its networks).
+const headerIsButton = computed(() => !props.manage || isGroup.value);
+
 const showsTransferable = computed(
   () => props.row.hasBalance && formatAmount(props.row.transferableText) !== formatAmount(props.row.balanceText)
 );
@@ -244,6 +252,13 @@ function setPreference(key: string, preference: AssetPreference): void {
 function setRowPreference(preference: AssetPreference): void {
   accountsStore.setAssetPreferences({ entries: tokenRowKeys(props.row).map((key) => ({ key, preference })) });
 }
+
+// That switch is named for what it writes: every network of the token, or the one network of a single row.
+const rowSwitchLabel = computed(() =>
+  isGroup.value
+    ? tc('portfolioPage.showTokenOnNetworks', props.row.networkCount, { symbol: props.row.symbol, count: props.row.networkCount })
+    : t('portfolioPage.showAssetOnNetwork', { symbol: props.row.symbol, network: single.value.asset.networkName })
+);
 </script>
 
 <style lang="scss" scoped>

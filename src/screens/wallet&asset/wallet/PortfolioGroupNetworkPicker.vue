@@ -33,7 +33,8 @@
               <span class="option-label">{{ symbol }} · {{ option.networkName }}</span>
               <span v-if="roleLabel(option.role)" class="role-chip">{{ roleLabel(option.role) }}</span>
             </span>
-            <span v-if="option.amountText !== undefined" class="option-amount">{{ formatAmount(option.amountText) }} {{ symbol }}</span>
+            <span v-if="option.balanceUnavailable" class="option-amount">{{ t('portfolioPage.balanceStatus.failed') }}</span>
+            <span v-else-if="option.amountText !== undefined" class="option-amount">{{ formatAmount(option.amountText) }} {{ symbol }}</span>
           </button>
         </li>
       </ul>

@@ -202,6 +202,8 @@ export interface GroupNetworkOption {
   role?: CanonicalMemberRole;
   /** What can be sent (Send) or what the wallet holds there (Receive); absent when nothing is loaded. */
   amountText?: string;
+  /** No provider could load the balance on this network: the picker says so instead of showing a zero. */
+  balanceUnavailable?: boolean;
 }
 
 const optionOf = ({ asset, role }: PortfolioTokenChild, amountText: string): GroupNetworkOption => ({
@@ -210,7 +212,7 @@ const optionOf = ({ asset, role }: PortfolioTokenChild, amountText: string): Gro
   networkName: asset.networkName,
   networkIcon: asset.networkIcon,
   role,
-  amountText,
+  ...(asset.balanceUnavailable ? { balanceUnavailable: true } : { amountText }),
 });
 
 /**

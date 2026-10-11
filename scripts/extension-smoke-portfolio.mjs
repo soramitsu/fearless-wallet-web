@@ -271,6 +271,23 @@ export async function capturePortfolioScreenshots({
     await click('[data-testid="filterBtn"] button');
     await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="tokenRowSwitch"]\'))', 'Manage in By token');
     await capture('09-manage-by-token', 'Manage in By token: one switch per token, per-network switches inside.');
+    await click('[data-testid="filterBtn"] button');
+    await waitForExpression(cdp, sessionId, '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')', 'Manage closed');
+
+    // The longest locale of the popup: Russian text must fit the same width.
+    const switched = await evaluate(
+      cdp,
+      sessionId,
+      `(() => { const i18n = ${APP}.app.config.globalProperties.$i18n; i18n.locale = 'ru-RU'; return i18n.locale === 'ru-RU'; })()`
+    );
+    if (!switched) throw new Error('Could not switch the popup to Russian');
+    await scrollTo('[data-token="group:dot"]');
+    await waitForExpression(cdp, sessionId, 'document.body.innerText.includes("По токенам")', 'Russian By token list');
+    await capture('10-by-token-russian', 'Russian at the popup width: the DOT row with each network\'s role and note.');
+    await click('[data-token="group:dot"] [data-testid="groupSend"]');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="groupNetworkPicker"]\'))', 'Russian Send picker');
+    await capture('11-send-choose-network-russian', 'Russian Send picker: the network is chosen explicitly, with the warning.');
+    await click('[data-testid="groupNetworkPickerClose"]');
 
     await fs.writeFile(
       path.join(outputDir, 'README.md'),

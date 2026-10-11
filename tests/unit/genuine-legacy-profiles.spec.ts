@@ -76,18 +76,37 @@ const records = (snapshot: Snapshot) =>
 // After the 32-byte salt: N, p and r as little-endian u32 (@polkadot/util-crypto scrypt/toU8a).
 const scryptN = (json: KeyringPair$Json) => Buffer.from(json.encoded, 'base64').readUInt32LE(32);
 
-/** The password among the scenario's test passwords that opens the record, and the pair it opens to. */
-function open(json: KeyringPair$Json) {
-  for (const password of passwords) {
-    const pair = new Keyring({ type: json.encoding.content[1] as 'sr25519' }).addFromJson(json);
-    try {
-      pair.decodePkcs8(password);
-      return { password, pair };
-    } catch {
-      // not this one
-    }
+/** Each stored key opened with the scenario's test passwords (the profile's own first: scrypt makes each try slow),
+ * by storage key. Undefined where none opens it. */
+const openedCache = new Map<
+  Snapshot,
+  Map<string, { password: string; pair: ReturnType<Keyring['addFromJson']> } | undefined>
+>();
+function openedRecords(snapshot: Snapshot) {
+  if (!openedCache.has(snapshot)) {
+    const own = [
+      snapshot.profile.master,
+      ...[...snapshot.profile.wallets, ...snapshot.profile.standalone].flatMap((wallet) => [
+        (wallet as { password?: string }).password,
+        (wallet as { ethereumPassword?: string }).ethereumPassword,
+      ]),
+    ];
+    const candidates = [...new Set([...own, ...passwords].filter((password): password is string => !!password))];
+    const open = (json: KeyringPair$Json) => {
+      for (const password of candidates) {
+        const pair = new Keyring({ type: json.encoding.content[1] as 'sr25519' }).addFromJson(json);
+        try {
+          pair.decodePkcs8(password);
+          return { password, pair };
+        } catch {
+          // not this one
+        }
+      }
+      return undefined;
+    };
+    openedCache.set(snapshot, new Map(records(snapshot).map(([key, json]) => [key, open(json)])));
   }
-  return undefined;
+  return openedCache.get(snapshot)!;
 }
 
 const expectedSubstrate = (wallet: ProfileWallet) =>
@@ -110,6 +129,7 @@ describe('profiles written by released builds', () => {
     expect(snapshots.map(({ version, state }) => `${version}/${state}`).sort()).toEqual(
       expect.arrayContaining([
         '1.3.1/S7-per-account-passwords',
+        '2.0.1/S7b-per-account-passwords',
         '2.6.3/S1-per-account-passwords',
         '2.7.1/S5-master-password',
         '3.0.5/S2-from-2.6.3-partial-migration',
@@ -134,12 +154,12 @@ describe('profiles written by released builds', () => {
     });
 
     it('holds every wallet under the address its public secret derives, and each key opens with a recorded password', () => {
-      const opened = new Map(records(data).map(([, json]) => [json.address.toLowerCase(), open(json)]));
+      // The account store keys a Substrate record by its public key and an Ethereum record by its address.
+      const opened = openedRecords(data);
       for (const wallet of data.profile.wallets) {
         const substrate = expectedSubstrate(wallet);
         expect(substrate.address, wallet.name).toBe(wallet.address);
-        const record =
-          opened.get(u8aToHex(decodeAddress(wallet.address)).toLowerCase()) ?? opened.get(wallet.address.toLowerCase());
+        const record = opened.get(`fw:account:${u8aToHex(decodeAddress(wallet.address))}`);
         expect(record, `${wallet.name} opens`).toBeDefined();
         expect(u8aToHex(record!.pair.publicKey)).toBe(u8aToHex(substrate.publicKey));
       }
@@ -147,18 +167,20 @@ describe('profiles written by released builds', () => {
         ({ ethereumAddress }) => ethereumAddress
       )) {
         expect(wallet.ethereumAddress!.toLowerCase(), wallet.name).toBe(expectedEthereum(wallet).toLowerCase());
-        expect(opened.get(wallet.ethereumAddress!.toLowerCase()), `${wallet.name} Ethereum opens`).toBeDefined();
+        const record = opened.get(`fw:account:${wallet.ethereumAddress!.toLowerCase()}`);
+        expect(record, `${wallet.name} Ethereum opens`).toBeDefined();
+        expect(record!.pair.address.toLowerCase()).toBe(wallet.ethereumAddress!.toLowerCase());
       }
-    });
+    }, 300_000);
 
     it('asks for an old password (needsLegacyPasswordMigration) exactly for the keys the master password does not open', () => {
       const hasMaster = !!data.storage['fw:keyring'];
-      for (const [, json] of records(data)) {
-        const { password, pair } = open(json)!;
-        const underMaster = hasMaster && password === data.profile.master;
-        expect(needsLegacyPasswordMigration(pair as unknown as KeyringPair), json.address).toBe(!underMaster);
+      for (const [key, opened] of openedRecords(data)) {
+        expect(opened, key).toBeDefined();
+        const underMaster = hasMaster && opened!.password === data.profile.master;
+        expect(needsLegacyPasswordMigration(opened!.pair as unknown as KeyringPair), key).toBe(!underMaster);
       }
-    });
+    }, 300_000);
 
     it('keeps every TON phrase under a recorded master password, and 4.2.0 derives the stored key from it', async () => {
       for (const wallet of data.profile.ton) {
@@ -171,6 +193,34 @@ describe('profiles written by released builds', () => {
         const pair = await deriveCompatibleTonKeyPair(phrase!.split(' '), publicKey);
         expect(u8aToHex(pair.publicKey)).toBe(u8aToHex(publicKey));
       }
+    }, 120_000);
+  });
+
+  // The scenarios create wallets with the messages each build's own screens send (scripts/upgrade-e2e/drivers.mjs).
+  // Profiles made by clicking through the 2.6.3 and 3.0.5 screens (WK-9 lane, *.storage.json) show those messages
+  // store records of the same shape.
+  it.each([
+    ['2.6.3', 'S1-per-account-passwords', 'chrome-2.6.3-account-passwords.storage.json'],
+    ['3.0.5', 'S3-master-password', 'chrome-3.0.5-master-password.storage.json'],
+  ])('%s %s stores wallet records shaped like the ones its own screens stored', (version, state, uiFixture) => {
+    const ui = JSON.parse(readFileSync(path.join(fixtures, uiFixture), 'utf8')).storage as Snapshot['storage'];
+    const snapshot = snapshots.find((entry) => entry.version === version && entry.state === state)!.data;
+    const shape = (record: Snapshot['storage'][string]) => ({
+      fields: Object.keys(record).sort(),
+      meta: Object.keys(record.meta ?? {}).sort(),
+      type: record.encoding?.content?.[1],
     });
+    const uiShapes = Object.entries(ui)
+      .filter(([key]) => key.startsWith('fw:account:') || key.startsWith('fw:ton:'))
+      .map(([, record]) => shape(record));
+    const created = snapshot.profile.wallets.find(({ kind }) => kind === 'mnemonic')!;
+    // The account store keys a Substrate record by its public key and an Ethereum record by its address.
+    const ownRecords = [u8aToHex(decodeAddress(created.address)), created.ethereumAddress!.toLowerCase()].map(
+      (key) => snapshot.storage[`fw:account:${key}`]!
+    );
+    expect(ownRecords.every(Boolean)).toBe(true);
+    for (const record of ownRecords) expect(uiShapes).toContainEqual(shape(record));
+    for (const ton of snapshot.profile.ton)
+      expect(uiShapes).toContainEqual(shape(snapshot.storage[`fw:ton:${ton.address}`]!));
   });
 });

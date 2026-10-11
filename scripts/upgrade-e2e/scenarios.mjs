@@ -370,7 +370,7 @@ async function runPerAccount(ctx, r, version, title) {
   const before = await s.storage();
   writeSnapshot(ctx, {
     version,
-    state: `${version === '2.6.3' ? 'S1' : 'S7'}-per-account-passwords`,
+    state: `${{ '2.6.3': 'S1', '1.3.1': 'S7', '2.0.1': 'S7b' }[version]}-per-account-passwords`,
     scenario: title,
     storage: before,
     profile,

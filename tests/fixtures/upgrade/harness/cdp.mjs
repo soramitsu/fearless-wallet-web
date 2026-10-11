@@ -54,6 +54,33 @@ export function installBuild(buildDir, extDir, manifestKey) {
 
 export const targets = async (port) => (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
 
+/** Reloads the extension from chrome://extensions after its directory received a new build. Without it Chrome keeps
+ * running the cached service worker of the old build next to the new popup; with it the new worker starts and
+ * runtime.onInstalled fires with reason "update", as after a Web Store update. */
+export async function reloadExtension(port, extId) {
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?chrome://extensions/`, { method: 'PUT' })).json();
+  const page = cdp(target.webSocketDebuggerUrl);
+  await page.ready;
+  try {
+    await waitFor(() => page.eval('!!globalThis.chrome?.developerPrivate'), 20000, 'chrome://extensions');
+    // Calls a developerPrivate method whose last argument is its callback; answers 'ok' or the error.
+    const call = (method, args) =>
+      page.eval(
+        `new Promise((res) => chrome.developerPrivate.${method}(...${JSON.stringify(args)}, () => res(chrome.runtime.lastError ? String(chrome.runtime.lastError.message) : 'ok')))`
+      );
+    const devMode = await call('updateProfileConfiguration', [{ inDeveloperMode: true }]);
+    const reload = await call('reload', [extId, { failQuietly: false }]);
+    await sleep(3000);
+    const info = await page.eval(
+      `new Promise((res) => chrome.developerPrivate.getExtensionInfo(${JSON.stringify(extId)}, (i) => res({ state: i?.state, version: i?.version, runtimeErrors: (i?.runtimeErrors || []).map((e) => e.message).slice(0, 5) })))`
+    );
+    return { devMode, reload, ...info };
+  } finally {
+    page.close();
+    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);
+  }
+}
+
 export async function waitFor(fn, ms = 30000, label = 'condition') {
   const started = Date.now();
   let last;

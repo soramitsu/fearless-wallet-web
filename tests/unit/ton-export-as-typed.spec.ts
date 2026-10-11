@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({ exportMnemonic: vi.fn(), setClipboard: vi.fn()
 vi.mock('@/extension/messaging', () => ({ exportMnemonic: mocks.exportMnemonic, exportJSON: vi.fn(), exportRowSeed: vi.fn() }));
 vi.mock('@/helpers', () => ({ isSameString: (left: string, right: string) => left === right, setClipboard: mocks.setClipboard }));
 vi.mock('@/helpers/files', () => ({ downloadJsonAccount: vi.fn() }));
-vi.mock('@/router/routes', () => ({ Components: { AccountAccessRecovery: 'AccountAccessRecovery' } }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ selectedWallet: mocks.wallet }) }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ networks: [] }) }));
 vi.mock('@/util/BaseApi', () => ({ default: { isEthereumNetwork: () => false, formatAddress: () => '' } }));

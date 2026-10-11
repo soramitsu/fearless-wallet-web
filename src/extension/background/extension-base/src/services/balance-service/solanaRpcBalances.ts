@@ -124,15 +124,26 @@ const toTokenMetadata = (mint: string, account: SolanaParsedAccount | null, sync
  * never depend on the si.soramitsu.io indexer. Empty token accounts are left
  * out. Classic SPL tokens get their names from the registry; Token-2022 mints
  * may carry their own name and symbol.
+ *
+ * The SOL balance does not wait on the token accounts: some public nodes serve
+ * `getBalance` but refuse `getTokenAccountsByOwner`, and SOL is still worth
+ * showing. Unread token accounts are reported as such, never as "no tokens".
  */
 export function createSolanaRpcBalanceClient(rpc: SolanaRpcBalanceSource) {
   return {
     async getBalances(wallet: string): Promise<SolanaWalletBalancesResponse> {
-      const [lamports, splAccounts, token2022Accounts] = await Promise.all([
+      const [lamports, tokenAccounts] = await Promise.all([
         rpc.getBalance(wallet),
-        rpc.getTokenAccountsByOwner(wallet, SPL_TOKEN_PROGRAM_ADDRESS),
-        rpc.getTokenAccountsByOwner(wallet, TOKEN_2022_PROGRAM_ADDRESS),
+        Promise.all([
+          rpc.getTokenAccountsByOwner(wallet, SPL_TOKEN_PROGRAM_ADDRESS),
+          rpc.getTokenAccountsByOwner(wallet, TOKEN_2022_PROGRAM_ADDRESS),
+        ]).catch((error: unknown) => {
+          console.warn('Failed to read Solana token accounts', error);
+
+          return undefined;
+        }),
       ]);
+      const [splAccounts, token2022Accounts] = tokenAccounts ?? [[], []];
       const tokens = [
         ...splAccounts.map(({ account, pubkey }) => toTokenBalance(pubkey, account, SPL_TOKEN_PROGRAM_ADDRESS)),
         ...token2022Accounts.map(({ account, pubkey }) => toTokenBalance(pubkey, account, TOKEN_2022_PROGRAM_ADDRESS)),
@@ -150,6 +161,7 @@ export function createSolanaRpcBalanceClient(rpc: SolanaRpcBalanceSource) {
         tokens,
         total: tokens.length + 1,
         wallet,
+        ...(tokenAccounts ? {} : { tokensUnavailable: true }),
       };
     },
 

@@ -64,9 +64,22 @@ export default class SolanaBalanceService {
 
       await this.ensureServiceInfoVerified(client);
 
-      const { native, tokens } = await client.getBalances(wallet);
+      const { native, tokens, tokensUnavailable } = await client.getBalances(wallet);
       const aggregatedTokens = this.aggregateTokenBalances(tokens);
       const metadataByMint = await this.getTokenMetadataByMint(client, aggregatedTokens);
+      const nativeBalance = {
+        balance: native.uiAmountString,
+        network: network.name,
+        assetId: this.getNativeAsset(network).id,
+      };
+
+      if (tokensUnavailable) {
+        // SOL loaded but the token accounts were not read: the tokens shown last stay, marked as not updated. An
+        // unread list never zeroes a token, and the network is not a complete scan.
+        this.setNativeBalance(address, network, native, APIItemState.READY, 'limited');
+
+        return [nativeBalance, ...this.markCachedBalancesErrored(address, network, ({ isNative }) => !isNative)];
+      }
 
       this.setNativeBalance(address, network, native, APIItemState.READY);
       aggregatedTokens.forEach((token) => this.setTokenBalance(address, network, token, metadataByMint[token.mint]));
@@ -78,7 +91,7 @@ export default class SolanaBalanceService {
       });
 
       return [
-        { balance: native.uiAmountString, network: network.name, assetId: this.getNativeAsset(network).id },
+        nativeBalance,
         ...aggregatedTokens.map(({ mint, uiAmountString }) => ({
           balance: uiAmountString,
           network: network.name,
@@ -142,7 +155,8 @@ export default class SolanaBalanceService {
     address: string,
     network: NetworkJson,
     native: SolanaNativeBalance | undefined,
-    state: APIItemState
+    state: APIItemState,
+    scanCoverage: BalanceItem['scanCoverage'] = /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete'
   ): void {
     const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
     const balance = native?.uiAmountString ?? '0';
@@ -170,7 +184,7 @@ export default class SolanaBalanceService {
       assetMetadataTrust: 'verified',
       assetMetadataSource: 'registry',
       priceId,
-      scanCoverage: /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete',
+      scanCoverage,
     };
     const existingIndex = tokenGroup.balances.findIndex(({ name }) => isSameString(name, network.name));
 
@@ -181,14 +195,18 @@ export default class SolanaBalanceService {
     this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
   }
 
-  private markCachedBalancesErrored(address: string, network: NetworkJson): ResponseBalanceRequest[] {
+  private markCachedBalancesErrored(
+    address: string,
+    network: NetworkJson,
+    includes: (balance: BalanceItem) => boolean = () => true
+  ): ResponseBalanceRequest[] {
     const groups = this.state.balanceService.balanceMap[address] ?? [];
     const balances: ResponseBalanceRequest[] = [];
 
     groups.forEach((group) => {
       // A balance that loaded at least once; the registry placeholder of a network that never answered has none.
       const balanceIndex = group.balances.findIndex(
-        ({ name, timestamp }) => isSameString(name, network.name) && timestamp !== undefined
+        (balance) => isSameString(balance.name, network.name) && balance.timestamp !== undefined && includes(balance)
       );
 
       if (balanceIndex < 0) return;

@@ -143,6 +143,8 @@ import type {
   ResponseRecoverAccountWithPhrase,
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
+  RequestTonImportCandidates,
+  TonImportCandidateInfo,
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
   RequestGetHistory,
@@ -216,6 +218,7 @@ export interface RequestSignatures {
   'pri(keyring.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
   'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
+  'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.list)': [null, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];

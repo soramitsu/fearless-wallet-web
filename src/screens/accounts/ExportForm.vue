@@ -31,7 +31,16 @@
     <template v-else>
       <div class="export-content">
         <div v-if="isMnemonic">
-          <MnemonicBackupForm :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength"></MnemonicBackupForm>
+          <MnemonicBackupForm :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength">
+            <Hint
+              v-if="isPhraseAsTyped"
+              class="as-typed-hint"
+              iconName="warning"
+              text="ux.tonPhraseAsTyped"
+              role="note"
+              data-testid="tonPhraseAsTyped"
+            />
+          </MnemonicBackupForm>
         </div>
 
         <template v-else>
@@ -75,6 +84,7 @@ import { WalletEcosystem } from '@/interfaces';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { isTonPhraseIrregular } from '@/util/tonKeyring';
 
 enum ExportTypeTextKey {
   mnemonic = 'accounts.mnemonic',
@@ -112,6 +122,11 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     },
     isMnemonic() {
       return this.exportType === 'mnemonic';
+    },
+    // A TON phrase stored with its own spacing and capitals is shown and copied exactly as stored, and
+    // only opens the wallet when typed that way.
+    isPhraseAsTyped() {
+      return this.accountsStore.selectedWallet.walletEcosystem === WalletEcosystem.Ton && isTonPhraseIrregular(this.seed);
     },
     isRowSeed() {
       return this.exportType === 'rawSeed';
@@ -238,6 +253,12 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .as-typed-hint {
+    border-radius: $default-border-radius;
+    padding: 8px 16px;
+    background-color: rgba(255, 255, 255, 0.24);
   }
 }
 </style>

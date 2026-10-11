@@ -1,5 +1,4 @@
 import { type TokenRates } from '@ton-api/client';
-import { DEFAULT_PRICES } from '.';
 import type { BasePriceJson } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { TON_MAINNET } from '@/consts/networks';
@@ -23,25 +22,30 @@ export class TonPricingService {
   }
 
   // Цены токенов парсятся только для TON_MAINNET
+  // TI has no rates; then, and when the provider fails, TON keeps its CoinGecko price and other prices still load.
   async fetchTonAsstetsPrice(): Promise<BasePriceJson> {
+    const result: BasePriceJson = { tokenPriceMap: {}, tokenPriceChange: {} };
     const api = this.state.getTonApiMap[TON_MAINNET];
 
-    if (!api) return DEFAULT_PRICES;
+    if (!api) return result;
 
-    const res = await api.api?.rates.getRates({
-      tokens: ['ton'],
-      currencies: [this.state.pricesService.fiatSymbol],
-    });
+    try {
+      const rates = await api.api.getRates(['ton'], this.state.pricesService.fiatSymbol);
 
-    return Object.entries(res.rates).reduce((result, [key, value]) => {
-      const keyLower = key.toLowerCase();
+      return Object.entries(rates ?? {}).reduce((prices, [key, value]) => {
+        const keyLower = key.toLowerCase();
 
-      const { price, diff24 } = this.tonParseRates(value);
+        const { price, diff24 } = this.tonParseRates(value);
 
-      result.tokenPriceChange[keyLower] = diff24;
-      result.tokenPriceMap[keyLower] = price;
+        prices.tokenPriceChange[keyLower] = diff24;
+        prices.tokenPriceMap[keyLower] = price;
+
+        return prices;
+      }, result);
+    } catch (error) {
+      console.warn('[TON] TON rates unavailable', error);
 
       return result;
-    }, DEFAULT_PRICES);
+    }
   }
 }

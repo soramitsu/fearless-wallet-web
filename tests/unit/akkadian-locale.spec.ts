@@ -59,8 +59,10 @@ const allowedLatinMessages = {
 
 const allowedLatinTerms = new Set(
   [
+    'android',
     'bitcoin',
     'btc',
+    'chrome',
     'connect',
     'dapp',
     'dapps',

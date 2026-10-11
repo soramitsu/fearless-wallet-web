@@ -9,7 +9,13 @@ import type { FWKeyringMeta } from '../../types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { Address, WalletContractV4 } from '@ton/ton';
 import { WalletEcosystem } from '@/interfaces';
-import { createTonWalletContractV4R2, deriveCompatibleTonKeyPair } from '@/util/tonKeyring';
+import {
+  createTonWalletContractV4R2,
+  deriveCompatibleTonKeyPair,
+  deriveTonImportChoice,
+  type TonImportChoice,
+  type TonImportDerivation,
+} from '@/util/tonKeyring';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 type TonAccountInfo = Omit<TonStoreAccount, 'publicKeyHex'> & {
@@ -148,8 +154,13 @@ export class TonKeyringService {
     return wallet;
   }
 
-  async createAccount(suri: string, meta: FWKeyringMeta | string = '', password?: string) {
-    const suriArray = suri.split(' ');
+  // `choice` is the address the user picked on the import screen for the text in `suri`; the phrase that
+  // opens it is stored, tidied or exactly as typed. Without one, a BIP39 phrase gets the universal address
+  // and any other phrase the native one, as for a newly created wallet.
+  async createAccount(suri: string, meta: FWKeyringMeta | string = '', password?: string, choice?: TonImportChoice) {
+    const chosen = choice && (await deriveTonImportChoice(suri, choice));
+    const account = chosen || (await deriveCompatibleTonKeyPair(suri.split(' ')));
+    const suriArray = (chosen ? chosen.phrase : suri).split(' ');
     const initialMeta: FWKeyringMeta =
       typeof meta === 'string'
         ? {
@@ -160,10 +171,22 @@ export class TonKeyringService {
             ...meta,
             walletEcosystem: WalletEcosystem.Ton,
           };
-    const account = await deriveCompatibleTonKeyPair(suriArray);
+    const tonDerivation: TonImportDerivation = choice?.derivation ?? (validateBip39Mnemonic(suriArray) ? 'universal' : 'native');
     const wallet = this.createContractV4(account.publicKey);
     const address = this.getUserFriendlyAddress(wallet.address);
     const publicKeyHex = bytesToHex(account.publicKey);
+
+    // Already in the wallet: its record (name, settings, stored phrase) stays as it is. Only a stored
+    // phrase that no longer opens with the current password is replaced, by this one, which derives
+    // the same key.
+    if (password && this.accountSubject.value[address]) {
+      await this.vault
+        .decryptVerified(address, () => password)
+        .catch(() => this.vault.recoverWithPhrase(address, suriArray.join(' '), () => password));
+
+      return { wallet, address };
+    }
+
     const name = initialMeta.name ?? '';
     const universalMeta = withUniversalWalletKeyringMeta(
       address,
@@ -171,9 +194,21 @@ export class TonKeyringService {
         ...initialMeta,
         tonAddress: address,
         tonPublicKeyHex: publicKeyHex,
+        tonDerivation,
       },
       WalletEcosystem.Ton
     );
+
+    // Only the universal key comes from a derivation path, so no path is recorded for the others.
+    if (tonDerivation !== 'universal') {
+      universalMeta.universalWallet.publicAccounts = universalMeta.universalWallet.publicAccounts.map((publicAccount) => {
+        if (publicAccount.ecosystem !== WalletEcosystem.Ton || publicAccount.address !== address) return publicAccount;
+
+        const { derivationPath: _universalPath, ...withoutPath } = publicAccount;
+
+        return withoutPath;
+      });
+    }
 
     if (password) {
       const cipherSeed = this.encodeMnemonic(suriArray, password);

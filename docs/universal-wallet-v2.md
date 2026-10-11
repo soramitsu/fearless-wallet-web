@@ -195,6 +195,28 @@ Redux/Pinia state, logs, or test fixtures.
 Solana import compatibility may support common existing Solana paths, but new
 Universal Wallet V2 accounts must use `m/44'/501'/0'/0'`.
 
+TON import compatibility: importing a phrase as a TON wallet accepts BIP39 and
+native TON phrases and offers every address the text can open, so a wallet from
+an earlier Fearless version is restored where its TON is:
+
+- `universal`: the TON path above (BIP39 phrases only);
+- `native`: TON's own key derivation for phrases that pass TON's check;
+- `fearless-legacy`: that derivation over a BIP39 phrase, as Fearless 3.0.1-3.0.5
+  for Chrome and the Android app derived every TON account;
+- `as-typed`: that derivation over the text exactly as typed, spacing and capitals
+  included, offered when the text differs from the tidied phrase (the Android
+  app stored TON phrases verbatim). The text is stored and exported verbatim,
+  with a warning on export.
+
+When more than one address is offered, the import screen looks them up
+read-only, preselects the only one in use (otherwise the first) and says when it
+could not check. The pick is recorded as `meta.tonDerivation`; signing and export
+always follow the stored public key. An address that is already in the wallet is
+never overwritten; a stored phrase that no longer opens with the current
+password is repaired from the typed one. Fixtures:
+`tests/fixtures/ton/ton-{bip39,native}-3.0.5-vectors.json` (3.0.5 libraries) and
+`tests/fixtures/ton/ton-android-4.2.0-vectors.json` (shipped Android 4.2.0).
+
 Bitcoin restore and manual rescan behavior is defined in
 `docs/bitcoin-restore-discovery.md`. Clients must use the shared registry gap
 limit by default and treat confirmed or mempool transaction activity as address
@@ -221,7 +243,25 @@ parameters, or fragments. Public indexer endpoints are read-only. Broadcasts,
 transaction simulation, and other write operations must use RPC or Torii
 endpoints, never a public indexer endpoint.
 
-- TON indexer base URL: `https://ti.soramitsu.io`.
+- TON indexer base URL: `https://ti.soramitsu.io` (the TONSWAP indexer, "TI").
+  The extension talks to TI only through TI's own routes
+  (`/api/indexer/v1/service-info`, `accounts/{addr}/balance|state|txs`,
+  `runGetMethod`, and `/api/v2/jsonRPC` `sendBoc`), never through a TonAPI
+  client (`src/.../services/ton-provider`). TI is used for a TON network only
+  after its service-info reports `chainId == "ton:<network>"`, and every
+  balance, state and history response must again report that `network`;
+  any other answer is rejected and never shown. TI broadcasts only when its
+  service-info says `readOnly: false`. While TI is not verified (observed
+  2026-10-10: it reports `testnet` and has no service-info route), the
+  registry's TON node (`https://tonapi.io` in `chains/v13`) is used instead,
+  after its masterchain head shows global id `-239` (`-3` for testnet). The
+  fallback is logged every time it is chosen and is switched off with
+  `UNIVERSAL_WALLET_TON_PROVIDER.registryNodeFallback` once TI serves TON
+  mainnet. When neither provider is verified, TON balances show "Balance
+  update failed" (the last confirmed balance if there is one), never 0, and
+  transfers fail before signing anything. TI lists only the jettons it
+  indexes, so its jetton list never zeroes a jetton it does not mention.
+  Remote config never chooses a TON host.
 - Solana indexer base URL: `https://si.soramitsu.io`.
 - `si.soramitsu.io` is read-only. Transaction simulation and broadcast use the
   configured Solana RPC endpoint directly.

@@ -130,6 +130,16 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 - Bitcoin and Solana sends ship enabled; the remote kill switch is veto-only
   (see `docs/send-kill-switch.md`). Do not publish the emergency veto template
   as part of the release.
+- TON provider: with the candidate open on a funded TON wallet, the service
+  worker console shows either `[TON] TON Mainnet: using https://ti.soramitsu.io
+  (verified ton:mainnet)` or the explicit `using the registry node ... instead
+  of TI (...)` line, and the TON row shows the real balance (never 0, never
+  "Balance update failed" while either provider answers). Keep
+  `UNIVERSAL_WALLET_TON_PROVIDER.registryNodeFallback` on until
+  `https://ti.soramitsu.io/api/indexer/v1/service-info` reports
+  `"chainId": "ton:mainnet"` and its balance/state/txs routes answer
+  `"network": "mainnet"`; TON sends need TI `readOnly: false` or the fallback.
+  The `ton` key of the remote web config must stay absent.
 - Team task during the staged rollout: from a team-owned wallet holding a small
   amount, make one mainnet canary send per platform with the release candidate
   (BTC to a Taproot or SegWit address with change; SOL to a new account; one

@@ -147,6 +147,8 @@ import type {
   RequestRecoverAccountWithPhrase,
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
+  RequestTonImportCandidates,
+  TonImportCandidateInfo,
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
   RequestGetHistory,
@@ -213,6 +215,7 @@ import {
   validatePolkaswapExecution,
 } from '@/defi/polkaswapExecutionGuard';
 import { isSameString, isTonNetwork } from '@/helpers';
+import { deriveTonImportCandidates } from '@/util/tonKeyring';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
   return (value as SignerPayloadJSON).genesisHash !== undefined;
@@ -304,12 +307,13 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async accountsCreate({ suri, type, meta, walletEcosystem }: RequestAccountCreateSuri): Promise<string> {
+  async accountsCreate({ suri, type, meta, walletEcosystem, tonImport }: RequestAccountCreateSuri): Promise<string> {
     const address = await this.state.keyringService.addAccount(
       suri,
       { ...meta, isMobile: false },
       walletEcosystem,
-      type
+      type,
+      tonImport
     );
 
     if (!isEthereumAddress(address) && !IS_EXTENSION_SMOKE) {
@@ -317,6 +321,25 @@ export default class Extension extends FWExtensionBase {
     }
 
     return address;
+  }
+
+  // Every TON address the typed text can open. Addresses are only looked up on the network when
+  // there is a choice to make; a phrase with a single address shares nothing before it is imported.
+  async tonImportCandidates({ mnemonic }: RequestTonImportCandidates): Promise<TonImportCandidateInfo[]> {
+    const tonAccounts = this.state.keyringService.tonKeyring.accountSubject.value;
+    const candidates = (await deriveTonImportCandidates(mnemonic)).map(({ derivation, address }) => ({
+      derivation,
+      address,
+      ...(tonAccounts[address] ? { inWallet: true } : {}),
+    }));
+
+    if (candidates.length < 2) return candidates.map((candidate) => ({ ...candidate, activity: 'unknown' }));
+
+    const activity = await this.state.balanceService.tonBalanceService.fetchAddressActivity(
+      candidates.map(({ address }) => address)
+    );
+
+    return candidates.map((candidate) => ({ ...candidate, ...(activity[candidate.address] ?? { activity: 'unknown' }) }));
   }
 
   accountsValidatePassword({ password }: RequestAccountValidate): boolean {
@@ -1508,12 +1531,14 @@ export default class Extension extends FWExtensionBase {
       `
       );
 
-      callback({
-        status: false,
-        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
-      });
+      const errors = [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }];
+
+      callback({ status: false, errors });
 
       setTimeout(() => this.cancelSubscription(id), 500);
+
+      // A TON wallet's confirmation shows this answer, not the subscription, so a failure must not read as sent.
+      return { status: false, errors };
     }
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
@@ -2363,6 +2388,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(keyring.mnemonicValidate)':
         return this.state.keyringService.mnemonicValidate(request as RequestValidateMnemonic);
+
+      case 'pri(keyring.tonImportCandidates)':
+        return this.tonImportCandidates(request as RequestTonImportCandidates);
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);

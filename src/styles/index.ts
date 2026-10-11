@@ -1,5 +1,6 @@
-// Generated Neon Glass tokens first, then the effects tiers; the page entries load both before mount too.
+// Generated Neon Glass tokens and faces first, then the effects tiers; the page entries load them before mount too.
 import './fw-tokens.scss';
+import './fw-fonts.scss';
 import './_fw-effects.scss';
 import '@fontsource-variable/sora';
 import '@fontsource/jetbrains-mono';

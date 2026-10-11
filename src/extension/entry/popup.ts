@@ -2,6 +2,7 @@ import { chrome } from '@extension-base/utils/crossenv';
 import { extensionPreferenceStore, installVisualEffects } from '@/appearance/visualEffects';
 import { startWallet } from '@/bootstrap/startup';
 import '@/styles/fw-tokens.scss';
+import '@/styles/fw-fonts.scss';
 import '@/styles/_fw-effects.scss';
 import './popup.scss';
 

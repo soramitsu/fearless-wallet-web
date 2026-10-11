@@ -342,7 +342,9 @@ export default defineComponent({
     zeroTokensLabel(): string {
       const count = this.splitTokenRows.zeroOnly.length;
 
-      return this.walletIsEmpty ? this.$t('portfolioPage.popularNoBalance') : this.$t('portfolioPage.zeroTokens', count, { count });
+      return this.listsPopularNoBalance
+        ? this.$t('portfolioPage.popularNoBalance')
+        : this.$t('portfolioPage.zeroTokens', count, { count });
     },
     // Once per install, for a wallet that existed before this layout: what changed and how to switch back.
     showLayoutNote(): boolean {
@@ -361,14 +363,18 @@ export default defineComponent({
 
       return hiddenCount > 0 || unpricedCount > 0 || Number(total) > 0;
     },
-    zeroNetworksLabel(): string {
-      const count = this.splitSections.zeroOnly.length;
+    // "Popular networks" only while the zero block lists them for a wallet that holds nothing yet, in either lens.
+    listsPopularNoBalance(): boolean {
       const listsPopularNetworks = [ALL_NETWORKS, POPULAR_NETWORKS].some((group) =>
         isSameString(group, this.accountsStore.selectedNetwork)
       );
 
-      // "Popular networks" only while the block lists them for a wallet that holds nothing yet.
-      return this.walletIsEmpty && !this.walletHoldsAssets && listsPopularNetworks
+      return this.walletIsEmpty && !this.walletHoldsAssets && listsPopularNetworks;
+    },
+    zeroNetworksLabel(): string {
+      const count = this.splitSections.zeroOnly.length;
+
+      return this.listsPopularNoBalance
         ? this.$t('portfolioPage.popularNoBalance')
         : this.$t('portfolioPage.zeroNetworks', count, { count });
     },
@@ -410,6 +416,8 @@ export default defineComponent({
       if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssets');
       if (this.searching) return this.$t('portfolioPage.noMatchingAssets');
       if (this.showsFilteredEmpty) return this.$t('portfolioPage.noBalanceInView');
+      // Networks that have not answered yet may still hold something: after an update this is not an empty wallet.
+      if (this.loadStatus.pendingCount > 0) return this.$t('portfolioPage.noAssetsDetected');
       return this.$t('portfolioPage.emptyWalletTitle');
     },
     emptyDescription() {

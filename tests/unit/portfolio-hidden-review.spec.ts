@@ -13,6 +13,7 @@ import {
 } from '../fixtures/legacy-305/generate';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { PortfolioLens } from '@/portfolio/portfolioViewSettings';
 import { WalletEcosystem } from '@/interfaces';
 import { POPULAR_NETWORKS } from '@/consts/networks';
 import { usePortfolio } from '@/portfolio/usePortfolio';
@@ -81,6 +82,10 @@ function funded(...holdings: [network: string, symbol: string, amount: string][]
   return groups;
 }
 
+// Every case runs in both lenses: By token (the default after the upgrade) and By network.
+const LENSES: PortfolioLens[] = ['token', 'network'];
+let lens: PortfolioLens;
+
 function open(groups: TokenGroup[], selectedNetwork?: string) {
   const accountsStore = useAccountsStore();
   const networksStore = useNetworksStore();
@@ -95,6 +100,9 @@ function open(groups: TokenGroup[], selectedNetwork?: string) {
   accountsStore.setBalance({ details: groups });
   accountsStore.setIsBalanceLoading(false);
   if (selectedNetwork) accountsStore.setSelectedNetwork(selectedNetwork);
+  // By token needs no write: it is what a wallet without a stored choice gets.
+  if (lens !== 'token') accountsStore.updatePortfolioView({ lens });
+  expect(accountsStore.portfolioView.lens).toBe(lens);
   const scope = effectScope();
   const portfolio = scope.run(() => usePortfolio())!;
 
@@ -120,20 +128,30 @@ const mountCurrencies = (props: Record<string, unknown> = {}) =>
     },
   });
 
-const rows = (wrapper: VueWrapper) =>
-  wrapper
+const testnetMark = (...elements: { find: VueWrapper['find'] }[]) =>
+  elements.some((element) => element.find('[data-testid="testnetBadge"]').exists()) ? ':testnet' : '';
+
+// What the list shows, one "Network:SYMBOL" per asset, in either lens: the rows of each network section (By network),
+// or each token row's networks (By token; a group lists its networks while it is open).
+const rows = (wrapper: VueWrapper) => [
+  ...wrapper
     .findAll('.network-section')
     .flatMap((section) =>
       section
         .findAll('.asset-row')
-        .map(
-          (row) =>
-            `${section.attributes('data-network')}:${row.get('.asset-symbol').text()}` +
-            (row.find('[data-testid="testnetBadge"]').exists() || section.find('[data-testid="testnetBadge"]').exists()
-              ? ':testnet'
-              : '')
-        )
-    );
+        .map((row) => `${section.attributes('data-network')}:${row.get('.asset-symbol').text()}${testnetMark(row, section)}`)
+    ),
+  ...wrapper.findAll('.token-row').flatMap((row) => {
+    const networks = row.findAll('.network-row');
+    if (networks.length) {
+      return networks.map((network) => `${network.attributes('data-network')}:${network.attributes('data-symbol')}${testnetMark(network)}`);
+    }
+
+    return row.attributes('data-network')
+      ? [`${row.attributes('data-network')}:${row.attributes('data-symbol')}${testnetMark(row)}`]
+      : [`group:${row.attributes('data-symbol')}`];
+  }),
+];
 
 const text = (wrapper: VueWrapper, testId: string) => {
   const element = wrapper.find(`[data-testid="${testId}"]`);
@@ -149,8 +167,9 @@ async function review(wrapper: VueWrapper) {
   await wrapper.setProps({ showAssetsManagementForm: true, manageHiddenOnly: true });
 }
 
-describe('reviewing hidden funds after a 3.0.5 upgrade', () => {
+describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (currentLens) => {
   beforeEach(() => {
+    lens = currentLens;
     storage = createLocalStorageStub();
     vi.stubGlobal('localStorage', storage);
     setActivePinia(createPinia());
@@ -231,8 +250,9 @@ describe('reviewing hidden funds after a 3.0.5 upgrade', () => {
   });
 });
 
-describe('test networks in the portfolio', () => {
+describe.each(LENSES)('test networks in the portfolio (by %s)', (currentLens) => {
   beforeEach(() => {
+    lens = currentLens;
     storage = createLocalStorageStub();
     vi.stubGlobal('localStorage', storage);
     setActivePinia(createPinia());
@@ -283,8 +303,9 @@ describe('test networks in the portfolio', () => {
   });
 });
 
-describe('portfolio empty states', () => {
+describe.each(LENSES)('portfolio empty states (by %s)', (currentLens) => {
   beforeEach(() => {
+    lens = currentLens;
     storage = createLocalStorageStub();
     vi.stubGlobal('localStorage', storage);
     setActivePinia(createPinia());
@@ -316,8 +337,9 @@ describe('portfolio empty states', () => {
 
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.noBalanceInView');
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.scanDescription');
-    expect(wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header').text()).toBe(
-      'portfolioPage.zeroNetworks:1'
+    // The zero block names what it holds, never "Popular networks", in either lens.
+    expect(wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header').text()).toMatch(
+      lens === 'token' ? /^portfolioPage\.zeroTokens:\d+$/u : /^portfolioPage\.zeroNetworks:1$/u
     );
     wrapper.unmount();
     scope.stop();

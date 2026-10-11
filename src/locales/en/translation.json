@@ -514,6 +514,7 @@
     "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again.",
     "testnetsNotShown": "1 testnet asset not shown · Show testnets | {count} testnet assets not shown · Show testnets",
     "showAssetOnNetwork": "Show {symbol} on {network}",
+    "showTokenOnNetworks": "Show {symbol} on 1 network | Show {symbol} on all {count} networks",
     "emptyWalletTitle": "No assets yet",
     "emptyWalletDescription": "Receive or buy crypto to get started. Balances appear here as soon as they arrive.",
     "noBalanceInView": "No balance in this view",

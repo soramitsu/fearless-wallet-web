@@ -416,4 +416,20 @@ describe('network choice for Send and Receive from a token row', () => {
     const scoped = groupReceiveOptions({ row, group: index.groups.get('dot'), networks, inScope: (network) => network.name !== 'Hydration' });
     expect(scoped.map(({ networkName }) => networkName)).not.toContain('Hydration');
   });
+
+  it('never offers a network as holding 0 when its balance could not be loaded', () => {
+    const groups = substrateBalances();
+    fund(groups, 'Polkadot', 'dot', '10');
+    const [row] = rowsFor(groups);
+    // What the background keeps for Polkadot AssetHub when no provider answered: an error and no amount.
+    const [polkadot] = row.children;
+    const unavailable = { ...polkadot, asset: { ...polkadot.asset, key: keyOf('Polkadot AssetHub', 'dot'), networkName: 'Polkadot AssetHub', balanceText: '0', transferableText: '0', hasBalance: false, balanceUnavailable: true } };
+    const withFailure: PortfolioTokenRow = { ...row, zeroChildren: [unavailable] };
+
+    const receive = groupReceiveOptions({ row: withFailure, group: index.groups.get('dot'), networks, inScope: () => true });
+    expect(receive[0]).toMatchObject({ networkName: 'Polkadot', amountText: '10' });
+    expect(receive[1]).toMatchObject({ networkName: 'Polkadot AssetHub', balanceUnavailable: true });
+    expect(receive[1]).not.toHaveProperty('amountText');
+    expect(receive.slice(2).every(({ balanceUnavailable }) => balanceUnavailable === undefined)).toBe(true);
+  });
 });

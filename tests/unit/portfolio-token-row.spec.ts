@@ -18,6 +18,8 @@ vi.mock('@/locales/useI18n', () => ({
 vi.mock('@/extension/messaging', () => ({ getHistory: vi.fn(), toggleFavoriteNetwork: vi.fn(), sendMessage: vi.fn() }));
 vi.mock('@/extension/messaging/price', () => ({ getFiats: vi.fn() }));
 
+import Switcher from '@/components/Switcher.vue';
+import PortfolioGroupNetworkPicker from '@/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue';
 import PortfolioTokenRowView from '@/screens/wallet&asset/wallet/PortfolioTokenRow.vue';
 
 const createLocalStorageStub = () => {
@@ -80,6 +82,14 @@ const mountRow = (row: PortfolioTokenRow, props: Record<string, unknown> = {}) =
   mount(PortfolioTokenRowView, {
     props: { row, canSend: true, ...props },
     global: { stubs: { ExternalLogo: true, Icon: true, Switcher: true } },
+  });
+
+// Manage with the real switch, as a keyboard or screen-reader user meets it.
+const mountManaged = (row: PortfolioTokenRow) =>
+  mount(PortfolioTokenRowView, {
+    props: { row, manage: true, forceExpanded: true },
+    attachTo: document.body,
+    global: { components: { Switcher }, stubs: { ExternalLogo: true, Icon: true } },
   });
 
 describe('a By token row', () => {
@@ -234,6 +244,89 @@ describe('a By token row', () => {
   it('says when part of a group has no price instead of valuing it at another network’s price', () => {
     const wrapper = mountRow({ ...dotRow(), unpricedNetworkCount: 1 });
     expect(wrapper.get('[data-testid="tokenPartialPrice"]').text()).toContain('portfolioPage.priceUnavailableOn:1');
+    wrapper.unmount();
+  });
+
+  it('names every Manage switch, and the group switch says it covers every network of the token', () => {
+    const wrapper = mountManaged(dotRow());
+    const names = wrapper.findAll('input[role="switch"]').map((toggle) => toggle.attributes('aria-label'));
+
+    expect(names).toEqual([
+      'portfolioPage.showTokenOnNetworks:3 {"symbol":"DOT","count":3}',
+      'portfolioPage.showAssetOnNetwork {"symbol":"DOT","network":"Polkadot"}',
+      'portfolioPage.showAssetOnNetwork {"symbol":"DOT","network":"Polkadot AssetHub"}',
+      'portfolioPage.showAssetOnNetwork {"symbol":"DOT","network":"Hydration"}',
+    ]);
+    // In Manage the network lines are not buttons that do nothing: each switch is the one control.
+    wrapper.findAll('.network-row').forEach((line) => {
+      expect(line.element.tagName).toBe('DIV');
+      expect(line.element.closest('button')).toBeNull();
+    });
+    // The group header still opens and closes its networks.
+    expect(wrapper.get('[data-testid="tokenGroupHeader"]').element.tagName).toBe('BUTTON');
+    wrapper.unmount();
+  });
+
+  it('shows a single-network row in Manage as a line with one named switch, not an inert button', async () => {
+    const single: PortfolioTokenRow = {
+      ...dotRow(),
+      id: 'substrate:polygon:usdt',
+      groupId: undefined,
+      symbol: 'USDT',
+      children: [child(asset('Polygon', '0xc2132', '2', { symbol: 'USDT', hidden: true }))],
+      zeroChildren: [],
+      networkCount: 1,
+      hidden: true,
+    };
+    const wrapper = mountManaged(single);
+    const header = wrapper.get('[data-testid="tokenRowHeader"]');
+    const toggle = wrapper.get('input[role="switch"]');
+
+    expect(header.element.tagName).toBe('DIV');
+    expect(header.attributes('aria-label')).toBeUndefined();
+    expect(toggle.attributes('aria-label')).toBe('portfolioPage.showAssetOnNetwork {"symbol":"USDT","network":"Polygon"}');
+    expect((toggle.element as HTMLInputElement).checked).toBe(false);
+
+    const setPreferences = vi.spyOn(useAccountsStore(), 'setAssetPreferences');
+    (toggle.element as HTMLInputElement).focus();
+    expect(document.activeElement).toBe(toggle.element);
+    (toggle.element as HTMLInputElement).click();
+
+    expect(setPreferences).toHaveBeenCalledExactlyOnceWith({ entries: [{ key: 'substrate:polygon:0xc2132', preference: 'shown' }] });
+    expect(router.push).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+});
+
+describe('the network picker of a token row', () => {
+  it('lists each network as "SYMBOL · Network" with what it holds, and a failed balance as failed, never 0', () => {
+    const wrapper = mount(PortfolioGroupNetworkPicker, {
+      props: {
+        action: 'receive',
+        symbol: 'DOT',
+        options: [
+          { key: 'polkadot', assetId: 'relay-dot', networkName: 'Polkadot', networkIcon: '', role: 'native', amountText: '10' },
+          { key: 'hub', assetId: 'hub-dot', networkName: 'Polkadot AssetHub', networkIcon: '', role: 'system-parachain', balanceUnavailable: true },
+          { key: 'hydration', assetId: 'hydration-dot', networkName: 'Hydration', networkIcon: '', role: 'xcm-reserve' },
+        ],
+      },
+      attachTo: document.body,
+      global: { stubs: { ExternalLogo: true, Icon: true } },
+    });
+    const options = [...document.body.querySelectorAll('[data-testid="groupNetworkOption"]')].map((option) => ({
+      label: option.querySelector('.option-label')?.textContent?.trim(),
+      amount: option.querySelector('.option-amount')?.textContent?.trim() ?? null,
+    }));
+
+    expect(options).toEqual([
+      { label: 'DOT · Polkadot', amount: '10.0000 DOT' },
+      { label: 'DOT · Polkadot AssetHub', amount: 'portfolioPage.balanceStatus.failed' },
+      // A network the wallet holds nothing on yet: nothing is loaded, so nothing is claimed.
+      { label: 'DOT · Hydration', amount: null },
+    ]);
+    expect(document.body.querySelector('[data-testid="groupNetworkWarning"]')?.textContent).toContain(
+      'portfolioPage.groupPicker.receiveWarning'
+    );
     wrapper.unmount();
   });
 });

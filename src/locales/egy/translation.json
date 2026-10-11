@@ -1196,6 +1196,7 @@
     "noHiddenAssetsDescription": "𓇋𓐍𓏏𓏥 𓇋𓅓𓈖𓎡 𓅓𓄿𓄿 𓅓 𓋴𓏏 𓏏𓈖, 𓂋 𓅓𓄿𓄿 𓋴𓈖 𓅓 𓅱𓎛𓅓.",
     "testnetsNotShown": "1 𓇋𓐍𓏏 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 𓈖𓈖 𓅓𓄿𓄿 · 𓁹 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 | {count} 𓇋𓐍𓏏𓏥 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 𓈖𓈖 𓅓𓄿𓄿 · 𓁹 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪",
     "showAssetOnNetwork": "𓁹 𓅓𓄿𓄿 {symbol} 𓅓 𓄡𓈖𓅓𓏥 {network}",
+    "showTokenOnNetworks": "𓁹 𓅓𓄿𓄿 {symbol} 𓅓 1 𓄡𓈖𓅓𓏥 | 𓁹 𓅓𓄿𓄿 {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥 𓎟𓏥",
     "emptyWalletTitle": "𓈖𓈖 𓇋𓐍𓏏𓏥 𓅓 𓏏𓂋 𓊪𓈖",
     "emptyWalletDescription": "𓈙𓋴𓊪 𓂋𓊪𓅱 𓇋𓈖 𓐍𓏏𓏥 𓂋 𓈙𓄿𓂝. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓𓄿𓄿𓏏𓅱 𓅓 𓊨 𓏏𓈖 𓅓 𓐍𓏏 𓇋𓇋𓋴𓈖.",
     "noBalanceInView": "𓈖𓈖 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓 𓅓𓄿𓄿 𓊪𓈖",

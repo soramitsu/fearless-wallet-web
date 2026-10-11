@@ -13,6 +13,11 @@ const ENCODERS = [
 // A call that passes only the passphrase (`(0, x.scryptEncode)(…)` in CommonJS) uses the library's default cost.
 const DEFAULT_COST = /\bscryptEncode(\)?)\(passphrase\)/gu;
 const EXPLICIT_COST = `(passphrase, undefined, ${JSON.stringify(KEYSTORE_SCRYPT_PARAMS)})`;
+// The default cost itself, so that an encoder the call rewrite cannot see (an aliased import, another argument name)
+// still writes what 3.0.x reads. The encoders above pass the cost explicitly; this is the backstop behind them.
+// Decoding is unaffected: it reads the cost from each key and checks it against ALLOWED_PARAMS, which stays as is.
+const DEFAULTS = /\/node_modules\/(?:.+\/)?@polkadot\/util-crypto\/(?:cjs\/)?scrypt\/defaults\.js$/u;
+const DEFAULT_PARAMS = /(DEFAULT_PARAMS = \{\s*N: )1 << \d+(,\s*p: 1,\s*r: 8\s*\})/u;
 
 const normalize = (id) => id.split('?')[0].replaceAll('\\', '/');
 
@@ -21,6 +26,11 @@ export function keystoreScryptParamsPlugin() {
     name: 'fearless-keystore-scrypt-params',
     enforce: 'pre',
     transform(code, id) {
+      if (DEFAULTS.test(normalize(id))) {
+        // A util-crypto whose defaults look different fails the build rather than keep a cost nobody checked.
+        if (!DEFAULT_PARAMS.test(code)) throw new Error(`Unexpected scrypt defaults: ${id}`);
+        return { code: code.replace(DEFAULT_PARAMS, `$1${KEYSTORE_SCRYPT_PARAMS.N}$2`), map: null };
+      }
       const calls = code.match(DEFAULT_COST);
       if (!calls) return null;
       // Any other module encrypting at the default cost (a prebuilt bundle of a keyring, new code) fails the

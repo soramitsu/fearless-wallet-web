@@ -100,7 +100,9 @@ node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 2.6.3 <2.6.3 build> dist/e
    Vault with its own password, delete Spare.
 4. The browser restarts: the deleted wallet stays deleted and nothing of it is left in storage; the rename and the
    new password hold (the old password no longer unlocks); Vault is not asked for its 2.6.3 password again. The
-   live record opens with the master password and signs with the key the phrase derives.
+   live record opens with the master password and signs with the key the phrase derives. It is encrypted at
+   N = 2^15 and the 3.0.5 keyring (`keyring-305.mjs`) unlocks with the master password, opens it and signs with it,
+   so the key 4.2.0 re-encrypted (master password change, legacy password migration) survives a rollback.
 5. 3.0.6 only: Reset wallet, restart: no account record or archive is left and no account comes back.
 
 ## Rollback: keys 4.2.0 writes stay readable by 3.0.x (`keyring-3.0.5-packages.json`)
@@ -109,7 +111,9 @@ Fearless 2.x and 3.0.x open a stored key with `@polkadot/util-crypto` 12.x, whic
 p = 1, r = 8. 14.x encrypts at N = 2^17 by default, so every key 4.2.0 encrypted (a new or imported account, a
 master password change, a legacy password upgrade, recovery, a JSON export) was unreadable to a 3.0.x build. The
 build now gives every key encoder 3.0.x's parameters (`scripts/keystore-scrypt-params.mjs`) and fails if any other
-bundled code would encrypt at the library default.
+bundled code would encrypt at the library default. Behind that, it sets util-crypto's default cost to N = 2^15 as
+well, so an encoder the call rewrite cannot see (an aliased import, another argument name) still writes what 3.0.x
+reads; the build fails if util-crypto's defaults ever look different. Decoding is unchanged: N = 2^17 keys still open.
 
 The proof uses the keyring 3.0.x shipped with, not a re-implementation: `harness/keyring-305.mjs` installs
 `@subwallet/keyring` 0.1.7, `@polkadot/util-crypto` 12.6.2 and the rest of what 3.0.x loads to open a key from the

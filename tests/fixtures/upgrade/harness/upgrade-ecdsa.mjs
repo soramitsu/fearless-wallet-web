@@ -5,13 +5,14 @@
 //   2.6.3: create the master password, open Vault with its own password, delete Spare, restart.
 // Public test phrases only; every host name is unresolvable. Exits non-zero on the first failed check.
 // Usage: node upgrade-ecdsa.mjs <2.6.3|3.0.6> <old build dir> <4.2.0 build dir> <work dir> [port]
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Keyring } from '@polkadot/keyring';
 import { u8aToHex } from '@polkadot/util';
-import { cryptoWaitReady, decodeAddress } from '@polkadot/util-crypto';
+import { cryptoWaitReady, decodeAddress, signatureVerify } from '@polkadot/util-crypto';
 import { ECDSA_WALLETS, MASTER_306, captureEcdsa } from './capture-ecdsa.mjs';
 import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, stop } from './cdp.mjs';
+import { installKeyring305, isAt305Cost, loadKeyring305, openAs305, scryptParamsOf } from './keyring-305.mjs';
 
 const [, , version, oldBuild, newBuild, workDir, port = '9491'] = process.argv;
 const NEW_MASTER = 'Master password changed in 4.2.0';
@@ -30,6 +31,10 @@ function check(name, ok, details) {
 
 await cryptoWaitReady();
 const checker = new Keyring({ type: 'ecdsa' });
+// The keyring 3.0.x opens keys with, from the Yarn cache (keyring-305.mjs).
+mkdirSync(workDir, { recursive: true });
+const legacyDir = installKeyring305(join(workDir, 'keyring-3.0.5'));
+const legacy = await loadKeyring305(legacyDir);
 const legacyKey = (address) => `fw:account:${u8aToHex(decodeAddress(address))}`;
 const archiveKey = (address) => `fw:archivedAccount:${u8aToHex(decodeAddress(address))}`;
 const records = (storage) => Object.entries(storage).filter(([key]) => key.startsWith('fw:account:'));
@@ -61,7 +66,6 @@ async function start(extId) {
   return { chrome, popup };
 }
 
-mkdirSync(workDir, { recursive: true });
 let chrome;
 try {
   // 1. The released build writes the profile.
@@ -137,6 +141,18 @@ try {
   check(`${kept.name}: the live record opens with the master password and signs with the key the ${version} phrase derives`,
     signsAs(live[0]?.[1], master, kept.substrateSuri, kept.address));
   if (version === '3.0.6') check('…and not with the old master password', !opensWith(live[0]?.[1], MASTER_306));
+  // WK-10: the key 4.2.0 re-encrypted (master password change, legacy password migration) stays readable by 3.0.x.
+  check(`${kept.name}: the live record is encrypted at N = 2^15, p = 1, r = 8`, !!live[0] && isAt305Cost(live[0][1]), live[0] && scryptParamsOf(live[0][1]));
+  const in305 = (() => {
+    try {
+      return openAs305(legacy, [live[0][1]], master, storage['fw:keyring']?.passwordHash)[0];
+    } catch (error) {
+      return { error: String(error?.message ?? error) };
+    }
+  })();
+  check(`${kept.name}: the 3.0.5 keyring unlocks with the master password and the key signs for the account`,
+    typeof in305.sign === 'function' && in305.address === kept.address && signatureVerify(payload, in305.sign(payload), kept.address).isValid,
+    in305.error);
   check(`${kept.name}: the ${version} record is still in the archive, as written`,
     JSON.stringify(storage[archiveKey(kept.address)]?.records?.[0]?.record) === JSON.stringify(shipped[kept.address]));
   report.liveRecord = live[0]?.[1];
@@ -163,5 +179,6 @@ try {
   process.exitCode = 1;
 } finally {
   await stop(chrome);
+  rmSync(legacyDir, { recursive: true, force: true });
   writeFileSync(join(workDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
 }

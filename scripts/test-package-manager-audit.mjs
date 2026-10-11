@@ -116,6 +116,30 @@ try {
     (files) => (files['.nvmrc'] = '24.18.0\n'),
     /node-version "24\.19\.0" does not match \.nvmrc 24\.18\.0/u
   );
+  const upgradeE2E =
+    'jobs:\n  upgrade-e2e:\n    steps:\n      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4\n        with:\n          node-version: 20\n';
+  await expectPass(tempRoot, 'upgrade-e2e-pins-a-legacy-build-node', (files) => {
+    files['.github/workflows/upgrade-e2e.yml'] = upgradeE2E;
+    files['tests/upgrade/legacy-builds.json'] = JSON.stringify({ builds: [{ id: '3.0.5', node: '20' }] });
+  });
+  await expectFailure(
+    tempRoot,
+    'upgrade-e2e-pins-a-node-no-legacy-build-uses',
+    (files) => {
+      files['.github/workflows/upgrade-e2e.yml'] = upgradeE2E.replace('node-version: 20', 'node-version: 18');
+      files['tests/upgrade/legacy-builds.json'] = JSON.stringify({ builds: [{ id: '3.0.5', node: '20' }] });
+    },
+    /upgrade-e2e\.yml:6 node-version "18" does not match \.nvmrc 24\.19\.0/u
+  );
+  await expectFailure(
+    tempRoot,
+    'legacy-build-node-outside-the-upgrade-e2e',
+    (files) => {
+      files['.github/workflows/ci.yml'] = files['.github/workflows/ci.yml'].replace('24.19.0', '20');
+      files['tests/upgrade/legacy-builds.json'] = JSON.stringify({ builds: [{ id: '3.0.5', node: '20' }] });
+    },
+    /ci\.yml:6 node-version "20" does not match \.nvmrc 24\.19\.0/u
+  );
   await expectFailure(
     tempRoot,
     'nvmrc-outside-engines',

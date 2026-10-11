@@ -82,13 +82,18 @@ export function installBuild(buildDir, extDir, manifestKey) {
   return manifest.version;
 }
 
-export const targets = async (port) => (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+// A DevTools endpoint that accepted the connection but does not answer (a browser still starting on a loaded machine)
+// must not hang the run: every request to it gives up after a while and the caller retries.
+const DEVTOOLS_TIMEOUT_MS = 15000;
+export const devtools = (port, route, init) => fetch(`http://127.0.0.1:${port}${route}`, { ...init, signal: AbortSignal.timeout(DEVTOOLS_TIMEOUT_MS) });
+
+export const targets = async (port) => (await devtools(port, '/json/list')).json();
 
 /** Reloads the extension from chrome://extensions after its directory received a new build. Without it Chrome keeps
  * running the cached service worker of the old build next to the new popup; with it the new worker starts and
  * runtime.onInstalled fires with reason "update", as after a Web Store update. */
 export async function reloadExtension(port, extId) {
-  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?chrome://extensions/`, { method: 'PUT' })).json();
+  const target = await (await devtools(port, '/json/new?chrome://extensions/', { method: 'PUT' })).json();
   const page = cdp(target.webSocketDebuggerUrl);
   await page.ready;
   try {
@@ -107,7 +112,7 @@ export async function reloadExtension(port, extId) {
     return { devMode, reload, ...info };
   } finally {
     page.close();
-    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);
+    await devtools(port, `/json/close/${target.id}`).catch(() => undefined);
   }
 }
 
@@ -137,10 +142,18 @@ export function cdp(url) {
       pending.delete(message.id);
     }
   };
+  // An answer that never comes (a page that went away) fails the call instead of hanging the run.
   const send = (method, params = {}) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const next = ++id;
-      pending.set(next, resolve);
+      const timer = setTimeout(() => {
+        pending.delete(next);
+        reject(new Error(`no answer to ${method} within 180 s`));
+      }, 180000);
+      pending.set(next, (message) => {
+        clearTimeout(timer);
+        resolve(message);
+      });
       ws.send(JSON.stringify({ id: next, method, params }));
     });
   return {
@@ -161,7 +174,7 @@ export function cdp(url) {
 export async function serviceWorker(port) {
   return waitFor(
     async () => (await targets(port)).find((t) => t.type === 'service_worker' && t.url.endsWith('/background.js')),
-    30000,
+    60000,
     'service worker'
   );
 }
@@ -193,7 +206,7 @@ export async function inServiceWorker(port, expression) {
 // A popup page with a second port to the background, so messages can be sent next to the real UI.
 export async function openPopup(port, extId, hash = '') {
   const target = await (
-    await fetch(`http://127.0.0.1:${port}/json/new?chrome-extension://${extId}/popup.html${hash}`, { method: 'PUT' })
+    await devtools(port, `/json/new?chrome-extension://${extId}/popup.html${hash}`, { method: 'PUT' })
   ).json();
   const page = cdp(target.webSocketDebuggerUrl);
   await page.ready;
@@ -208,7 +221,7 @@ export async function openPopup(port, extId, hash = '') {
       `window.__send(${JSON.stringify(message)}, ${JSON.stringify(request ?? null)}).then((v) => ({ ok: v }), (e) => ({ err: String(e && e.message || e) }))`
     );
   page.targetId = target.id;
-  page.closeTarget = () => fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);
+  page.closeTarget = () => devtools(port, `/json/close/${target.id}`).catch(() => undefined);
   return page;
 }
 
@@ -220,8 +233,8 @@ export async function openPopup(port, extId, hash = '') {
 export async function coldStartProbe({ profileDir, extDir, port, extId, hostRules = [], args = [] }) {
   const chrome = launch({ profileDir, extDir, port, hostRules, args });
   try {
-    await waitFor(async () => (await fetch(`http://127.0.0.1:${port}/json/version`)).ok, 20000, 'DevTools');
-    const target = await (await fetch(`http://127.0.0.1:${port}/json/new?chrome-extension://${extId}/popup.html`, { method: 'PUT' })).json();
+    await waitFor(async () => (await devtools(port, '/json/version')).ok, 60000, 'DevTools');
+    const target = await (await devtools(port, `/json/new?chrome-extension://${extId}/popup.html`, { method: 'PUT' })).json();
     const page = cdp(target.webSocketDebuggerUrl);
     await page.ready;
     try {

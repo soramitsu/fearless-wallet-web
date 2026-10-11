@@ -21,6 +21,9 @@ import { legacyDriver, legacyJsonFile } from './drivers.mjs';
 import { compareKeyRecords, keyEntries, typeInto, ui, WALLET_ROUTE } from './head.mjs';
 import { PASSWORDS, PHRASES, RAW } from './secrets.mjs';
 import { Session } from './session.mjs';
+import { upgradeEcdsa } from './upgrade-ecdsa.mjs';
+import { isAt305Cost, openAs305 } from './keyring-305.mjs';
+import { signatureVerify } from '@polkadot/util-crypto';
 
 const fixture = (name) => JSON.parse(readFileSync(path.join(root, 'tests/fixtures/upgrade', name), 'utf8'));
 
@@ -304,6 +307,134 @@ async function runPerAccount(ctx, r, version, title) {
   await checkColdStarts(r, s, ctx.coldStarts, { hasMasterPassword: true, keyringIsLocked: true });
 }
 
+
+const ROLLBACK_PAYLOAD = new TextEncoder().encode('Fearless 4.2.0 -> 3.0.6 rollback check');
+const signsFor = (pair, address) => {
+  try {
+    return !!pair && signatureVerify(ROLLBACK_PAYLOAD, pair.sign(ROLLBACK_PAYLOAD), address).isValid;
+  } catch {
+    return false;
+  }
+};
+const opened305 = (legacy, records, password, passwordHash) => {
+  try {
+    return { pairs: openAs305(legacy, records, password, passwordHash) };
+  } catch (error) {
+    return { error: String(error?.message ?? error) };
+  }
+};
+
+/**
+ * R1 (critique T-8, WK-10): what 4.2.0 writes, a rollback to the clean 3.0.6 (hotfix/3.0.6, never a 3.0.5 build) still
+ * opens; and rolling forward again loses nothing. 4.2.0 writes in every way it encrypts a key: legacy TON recovery,
+ * new wallets, a JSON import, a master password change, and a deleted wallet set aside.
+ */
+async function runRollback(ctx, r) {
+  const s = session(ctx);
+  let legacy = legacyDriver(await s.startFresh(ctx.builds['3.0.5']), '3.0.5');
+  const profile = await write305Fresh(ctx, legacy);
+  profile.wallets.push({ ...(await legacy.addMnemonicWallet({ name: 'ECDSA signer', phrase: PHRASES.legalWinner12, type: 'ecdsa' })), phraseStored: true });
+  await legacy.changeMasterPassword(PASSWORDS.master, PASSWORDS.changedIn305);
+  const stale = [...profile.ton];
+  profile.ton.push(await legacy.addTonWallet({ name: 'TON after the change', phrase: PHRASES.letterAdvice12 }));
+  profile.master = PASSWORDS.changedIn305;
+  await sleep(2000);
+  const before = await s.storage();
+
+  // 4.2.0: everything that writes a key.
+  await s.replaceWith(ctx.head);
+  checkFirstStart(r, before, await s.storage());
+  let popup = await s.popup();
+  await unlockToWallet(r, popup, { master: profile.master, expectNotice: true });
+  await recoverTonWithPreviousPassword(r, s, popup, { stale, previous: PASSWORDS.master, master: profile.master });
+  const head = legacyDriver(popup, '4.2.0');
+  profile.wallets.push({ ...(await head.addMnemonicWallet({ name: 'Made in 4.2.0', phrase: PHRASES.letterAdvice12 })), phraseStored: true });
+  profile.wallets.push(
+    await head.restoreJsonWallet({
+      substrate: legacyJsonFile(ctx.legacy, { phrase: PHRASES.schemeSpot12, path: '//json', name: 'JSON import in 4.2.0', password: PASSWORDS.pwC1 }),
+      ethereum: undefined,
+    })
+  );
+  profile.wallets.at(-1).path = '//json';
+  const tonPhrase = await head.generateMnemonic('ton', 24);
+  profile.ton.push(await head.addTonWallet({ name: 'TON created in 4.2.0', phrase: tonPhrase }));
+  await changePasswordInHead(r, popup, profile, PASSWORDS.changedInHead);
+  // Delete a wallet after the change: its keys are set aside under fw:deletedWallet:, as stored.
+  const deleted = profile.wallets.find(({ name }) => name === 'Raw seed');
+  const forgot = (await popup.call('pri(accounts.forget)', { address: deleted.address, type: 'native' })).ok;
+  r.check('A11', '4.2.0 deletes the Raw seed wallet and sets its keys aside', forgot === true, forgot);
+  const kept = profile.wallets.filter((wallet) => wallet !== deleted);
+  await sleep(4000);
+  const written = await s.storage();
+  await s.stop();
+
+  // Outside the browser: the 3.0.5 keyring opens every key 4.2.0 stored, and every key it set aside.
+  const records = Object.entries(written).filter(([key, value]) => key.startsWith('fw:account:') && value?.encoded).map(([, value]) => value);
+  const legacyTypes = ['sr25519', 'ed25519', 'ecdsa', 'ethereum'];
+  r.check('A11', 'every key 4.2.0 stored is encrypted at N = 2^15, p = 1, r = 8', records.every(isAt305Cost));
+  const live = opened305(ctx.legacy, records.filter((json) => legacyTypes.includes(json.encoding.content[1])), PASSWORDS.changedInHead, written['fw:keyring']?.passwordHash);
+  r.check('A11', 'the 3.0.5 keyring unlocks with the 4.2.0 password (fw:keyring) and every stored key signs for its account',
+    !!live.pairs?.length && live.pairs.every((pair) => signsFor(pair, pair.address)), live.error);
+  const archives = Object.entries(written).filter(([key]) => key.startsWith('fw:deletedWallet:'));
+  const archived = archives.flatMap(([, value]) => Object.values(value.accounts ?? {}));
+  const archiveOpened = opened305(ctx.legacy, archived, PASSWORDS.changedInHead);
+  const deletedAddresses = [deleted.address, deleted.ethereumAddress].map((address) => address.toLowerCase());
+  r.check('A11', 'the deleted wallet is set aside once, and the 3.0.5 keyring opens its keys with the password they were stored under, at N = 2^15',
+    archives.length === 1 && archived.every(isAt305Cost) && archiveOpened.pairs?.length === 2 &&
+      archiveOpened.pairs.every((pair) => signsFor(pair, pair.address) && deletedAddresses.includes(pair.address.toLowerCase())), archiveOpened.error ?? archives.map(([key]) => key));
+
+  // The rollback: hotfix 3.0.6 replaces 4.2.0 under the same extension id.
+  await s.replaceWith(ctx.builds['3.0.6']);
+  popup = await s.popup();
+  legacy = legacyDriver(popup, '3.0.6');
+  r.check('A11', '3.0.6 unlocks with the master password set in 4.2.0', (await popup.call('pri(keyring.unlock)', { password: PASSWORDS.changedInHead })).ok === true);
+  const listed = (await popup.call('pri(accounts.subscribe)')).ok ?? [];
+  const isListed = (address) => listed.some((entry) => [entry.address, entry.ethereumAddress].some((known) => known?.toLowerCase() === address.toLowerCase()));
+  for (const wallet of kept) {
+    for (const address of [wallet.address, wallet.ethereumAddress].filter(Boolean)) {
+      const json = (await popup.call('pri(accounts.export.json)', { address, password: PASSWORDS.changedInHead })).ok?.json;
+      const pair = json && opened305(ctx.legacy, [json], PASSWORDS.changedInHead).pairs?.[0];
+      r.check('A11', `3.0.6 lists ${wallet.name} ${address} and exports its key, which signs for it`, isListed(address) && signsFor(pair, address));
+    }
+    if (wallet.phraseStored) {
+      const seed = (await popup.call('pri(keyring.export.mnemonic)', { address: wallet.address, password: PASSWORDS.changedInHead, walletEcosystem: 'substrate' })).ok?.seed;
+      r.check('A11', `3.0.6 exports the recovery phrase of ${wallet.name}`, seed === wallet.phrase, seed ? 'different phrase' : 'none');
+    }
+  }
+  for (const wallet of profile.ton) {
+    const seed = (await popup.call('pri(keyring.export.mnemonic)', { address: wallet.address, password: PASSWORDS.changedInHead, walletEcosystem: 'ton' })).ok?.seed;
+    r.check('A11', `3.0.6 lists ${wallet.name} and exports its TON phrase`, isListed(wallet.address) && seed === wallet.phrase);
+  }
+  r.check('A11', '3.0.6 does not list the deleted wallet', !isListed(deleted.address));
+  // The set-aside records are ordinary key files to 3.0.6: imported with their password, the wallet signs again.
+  const archive = archives[0][1];
+  const archivedRecord = (address) => Object.values(archive.accounts).find((json) => json.address.toLowerCase() === address.toLowerCase());
+  const restored = await legacy.restoreJsonWallet({
+    substrate: { json: { ...archivedRecord(deleted.address), meta: { name: deleted.name } }, password: PASSWORDS.changedInHead },
+    ethereum: { json: archivedRecord(deleted.ethereumAddress), password: PASSWORDS.changedInHead },
+  });
+  const restoredJson = (await popup.call('pri(accounts.export.json)', { address: deleted.address, password: PASSWORDS.changedInHead })).ok?.json;
+  r.check('A11', "3.0.6 imports the deleted wallet's set-aside keys as JSON files and the wallet signs",
+    restored.address === deleted.address && signsFor(restoredJson && opened305(ctx.legacy, [restoredJson], PASSWORDS.changedInHead).pairs?.[0], deleted.address));
+  await s.stop();
+
+  // Roll forward: 4.2.0 holds each wallet once and everything still opens.
+  await s.replaceWith(ctx.head);
+  popup = await s.popup();
+  r.check('A11', '4.2.0 again: unlocks with the master password', (await popup.call('pri(keyring.unlock)', { password: PASSWORDS.changedInHead })).ok === true);
+  const relisted = (await popup.call('pri(accounts.subscribe)')).ok ?? [];
+  const all = [...kept, deleted];
+  r.check('A11', '4.2.0 again: each wallet, the one 3.0.6 re-imported included, is listed once',
+    all.every(({ address }) => relisted.filter((entry) => entry.address === address).length === 1), relisted.map(({ address, name }) => ({ address, name })));
+  const deletedList = (await popup.call('pri(accounts.deleted.list)')).ok ?? [];
+  const entry = deletedList.find(({ address }) => address === deleted.address);
+  const restoreAgain = entry && (await popup.call('pri(accounts.deleted.restore)', { id: entry.id })).ok;
+  r.check('A11', '4.2.0 again: Account access still holds the set-aside copy and does not add the wallet twice',
+    !!entry && (restoreAgain?.ok === true || restoreAgain?.code === 'already_in_wallet'), { deletedList, restoreAgain });
+  const forward = { ...profile, wallets: all };
+  await checkSigningAndExports(ctx, r, s, popup, forward);
+}
+
 export const SCENARIOS = [
   {
     id: 'S1',
@@ -521,4 +652,25 @@ export const SCENARIOS = [
       await checkColdStarts(r, s, ctx.coldStarts, { hasMasterPassword: true, keyringIsLocked: true });
     },
   },
+  {
+    id: 'R1',
+    title: 'Rollback: 3.0.5 profile → 4.2.0 (TON recovery, new wallets, JSON import, password change, deletion) → hotfix 3.0.6 → 4.2.0',
+    builds: ['3.0.5', '3.0.6'],
+    run: runRollback,
+  },
+  ...['2.6.3', '3.0.6'].map((version) => ({
+    id: `ECDSA-${version}`,
+    title: `ECDSA Substrate accounts written by ${version} (two record keys, WK-8) → 4.2.0 and across restarts`,
+    builds: [version],
+    async run(ctx, r) {
+      await upgradeEcdsa({
+        version,
+        oldBuild: ctx.builds[version],
+        newBuild: ctx.head,
+        workDir: ctx.workDir,
+        port: ctx.port,
+        check: (name, ok, details) => r.check('WK-8', name, ok, details),
+      });
+    },
+  })),
 ];

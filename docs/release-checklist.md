@@ -158,6 +158,12 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
   extension build, Solana extension e2e smoke, and Bitcoin broadcast smoke.
 - Confirm Universal Wallet migrations, preserved legacy signing/export access, and supported
   network registry changes are documented in the PR.
+- Run `yarn test:upgrade:e2e` (Node 20 for the released builds, Chrome for Testing; see
+  `tests/upgrade/README.md`) on the release commit and confirm every scenario passes: S1-S8, the
+  ECDSA cohorts and the rollback rehearsal R1 to the clean `3.0.6` (never a `3.0.5` build).
+  `yarn prepare:chrome-release` runs it as a gate; `--skip-upgrade-e2e` is recorded in the
+  provenance and is refused with `--require-tag`. Attach `output/upgrade-e2e/<run>/report.json`
+  to the PR.
 - Confirm rollback owner, monitoring owner, and release communication channel.
 
 ## Release PR To `master`

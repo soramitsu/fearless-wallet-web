@@ -1,0 +1,72 @@
+name: Upgrade E2E
+
+# Every released extension build, built from its own commit and lockfile, writes a profile in Chrome for Testing and
+# this commit's production build replaces it in place (tests/upgrade/README.md). Nothing reaches a network from the
+# browser: every host name except localhost is unresolvable, and the registry and TON indexer are local stand-ins.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+  pull_request:
+    branches:
+      - develop
+      - master
+    paths:
+      - 'src/extension/background/**'
+      - 'src/util/tonKeyring.ts'
+      - 'src/router/**'
+      - 'src/screens/addWallet/keyringMigration/**'
+      - 'scripts/upgrade-e2e/**'
+      - 'tests/upgrade/**'
+      - 'yarn.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upgrade-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # The released builds are built from their own commits (tests/upgrade/legacy-builds.json): full history.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      # The released builds pin Node 20 and Yarn 3.4.1 through their own lockfiles.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Keep Node 20 for the released builds
+        run: echo "UPGRADE_E2E_NODE20_BIN=$(dirname "$(command -v node)")" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+
+      - name: Enable Corepack
+        run: |
+          npm install -g corepack@0.34.1
+          corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Set up Chrome for Testing
+        id: setup-chrome
+        run: bash ./scripts/upgrade-e2e/install-cft.sh
+
+      - name: Real legacy-build upgrade E2E (S1-S8, ECDSA, rollback R1 to 3.0.6)
+        run: yarn test:upgrade:e2e --out output/upgrade-e2e/ci
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+
+      - name: Report
+        if: always()
+        run: cat output/upgrade-e2e/ci/report.json || true

@@ -7,7 +7,8 @@
 // Every wallet is created Ethereum account first, then the Substrate account that names it, as the UI does.
 import { EVM_PATH } from './secrets.mjs';
 
-const familyOf = (version) => (version.startsWith('3.0') ? '3.0' : version === '2.7.1' ? '2.7' : 'per-account');
+// 4.2.0 takes the 3.0.x payloads; R1 uses the same driver to write wallets with it.
+const familyOf = (version) => (/^(3\.0|4\.)/.test(version) ? '3.0' : version === '2.7.1' ? '2.7' : 'per-account');
 
 export function legacyDriver(popup, version) {
   const family = familyOf(version);

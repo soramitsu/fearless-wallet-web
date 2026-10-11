@@ -87,8 +87,16 @@ function applyStub(src, name) {
 }
 
 export async function buildLegacy(entry, { force = false, keepSource = false } = {}) {
-  const sha = git(['rev-parse', `${entry.commit}^{commit}`], { encoding: 'utf8' }).trim();
-  if (sha !== entry.sha) throw new Error(`${entry.id}: ${entry.commit} is ${sha}, legacy-builds.json pins ${entry.sha}`);
+  // The pinned commit must be present; where its name resolves too (a clone may lack the hotfix branch), it must agree.
+  const sha = git(['rev-parse', '--verify', `${entry.sha}^{commit}`], { encoding: 'utf8' }).trim();
+  const named = (() => {
+    try {
+      return git(['rev-parse', '--verify', '--quiet', `${entry.commit}^{commit}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    } catch {
+      return undefined;
+    }
+  })();
+  if (sha !== entry.sha || (named && named !== sha)) throw new Error(`${entry.id}: ${entry.commit} is ${named}, legacy-builds.json pins ${entry.sha}`);
   const cached = cachedBuild(entry.id);
   if (cached && !force) return { ...cached, cached: true };
 

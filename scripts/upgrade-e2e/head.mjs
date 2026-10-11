@@ -6,7 +6,7 @@ import { cryptoWaitReady, decodeAddress, signatureVerify } from '@polkadot/util-
 import { Address, Cell, loadMessage } from '@ton/core';
 import { signVerify } from '@ton/crypto';
 import { HDNodeWallet, Wallet, verifyMessage } from 'ethers';
-import { cdp, sleep, waitFor } from './chrome.mjs';
+import { cdp, devtools, sleep, waitFor } from './chrome.mjs';
 import { scryptParamsOf } from './keyring-305.mjs';
 import { EVM_PATH } from './secrets.mjs';
 
@@ -161,7 +161,7 @@ export const publicKeyOf = (address) => u8aToHex(decodeAddress(address));
  * popup's own approval screens do (messages.ts pri(authorize.approve), pri(signing.approve)). Returns the signature.
  */
 export async function signThroughDapp({ port, popup, dappUrl, kind, address, message, authorizedAccounts }) {
-  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?${dappUrl}`, { method: 'PUT' })).json();
+  const target = await (await devtools(port, `/json/new?${dappUrl}`, { method: 'PUT' })).json();
   const page = cdp(target.webSocketDebuggerUrl);
   await page.ready;
   try {
@@ -185,7 +185,7 @@ export async function signThroughDapp({ port, popup, dappUrl, kind, address, mes
     return { err: 'timeout' };
   } finally {
     page.close();
-    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => undefined);
+    await devtools(port, `/json/close/${target.id}`).catch(() => undefined);
   }
 }
 

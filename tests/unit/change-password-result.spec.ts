@@ -135,6 +135,25 @@ describe('changing the master password', () => {
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
   });
 
+  // A second press after the change would check the old password again, fail and say nothing was changed.
+  it('keeps Confirm disabled after a successful change until the screen is left', async () => {
+    let answerStatus: (status: { issues: never[] }) => void = () => undefined;
+    mocks.extensionChangePassword.mockResolvedValue(true);
+    mocks.getAccessStatus.mockReturnValue(new Promise((resolve) => (answerStatus = resolve)));
+    const wrapper = await openWithPasswords();
+
+    await confirm(wrapper);
+
+    expect((wrapper.get('[data-testid="confirm"]').element as HTMLButtonElement).disabled).toBe(true);
+    await wrapper.get('[data-testid="confirm"]').trigger('click');
+    expect(mocks.extensionChangePassword).toHaveBeenCalledOnce();
+
+    answerStatus({ issues: [] });
+    await flushPromises();
+
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
+  });
+
   it('still returns to the wallet when the list of waiting accounts cannot be read', async () => {
     mocks.extensionChangePassword.mockResolvedValue(true);
     mocks.getAccessStatus.mockRejectedValue(new Error('Could not establish connection'));

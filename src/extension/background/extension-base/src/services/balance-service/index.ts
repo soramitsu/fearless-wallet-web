@@ -397,7 +397,8 @@ export default class BalanceService {
             visibleTotal: visible.total,
             hiddenValue: visible.hiddenValue,
             hiddenCount: visible.hiddenCount,
-            unavailableCount: visible.unavailableCount,
+            // Counted like `total`, hidden assets included: a hidden balance that failed is missing from it too.
+            unavailableCount: summary.unavailableCount,
           };
         });
 

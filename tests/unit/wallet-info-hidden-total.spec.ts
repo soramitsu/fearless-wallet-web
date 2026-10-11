@@ -89,16 +89,21 @@ describe('wallet list balance', () => {
     mocks.getTotalBalances.mockResolvedValue([
       { address: 'ton', total: '0', change: { amount: '0', percent: '0' }, hiddenValue: '0', hiddenCount: 0, unavailableCount: 1 },
       { address: 'both', total: '5', change: { amount: '0', percent: '0' }, hiddenValue: '2', hiddenCount: 1, unavailableCount: 2 },
+      // TON hidden and not loaded: the background counts it (ton-balance-unavailable.spec.ts), and $0.00 is labelled.
+      { address: 'hiddenTon', total: '0', change: { amount: '0', percent: '0' }, visibleTotal: '0', hiddenValue: '0', hiddenCount: 0, unavailableCount: 1 },
     ]);
 
     const ton = mountWalletInfo('ton');
     const both = mountWalletInfo('both');
+    const hiddenTon = mountWalletInfo('hiddenTon');
     await flushPromises();
 
     expect(ton.get('[data-testid="balanceCaption"]').text()).toBe('portfolioPage.balanceStatus.failed');
     expect(both.get('[data-testid="balanceCaption"]').text()).toBe('portfolioPage.inclHidden · portfolioPage.balanceStatus.failed');
+    expect(hiddenTon.get('[data-testid="balanceCaption"]').text()).toBe('portfolioPage.balanceStatus.failed');
     ton.unmount();
     both.unmount();
+    hiddenTon.unmount();
   });
 
   it('shows no label when nothing hidden holds value, and asks without hidden keys when there are none', async () => {

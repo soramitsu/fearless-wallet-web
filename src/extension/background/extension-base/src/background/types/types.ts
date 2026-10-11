@@ -940,7 +940,7 @@ export type ResponseTotalBalances = {
   visibleTotal?: string;
   hiddenValue?: string;
   hiddenCount?: number;
-  /** Visible assets whose balance no provider could load; neither total includes them. */
+  /** Assets, hidden ones included, whose balance no provider could load; neither total includes them. */
   unavailableCount?: number;
 };
 

@@ -144,6 +144,12 @@ describe('TON balance of a wallet updated from 3.0.5', () => {
     expect(buildPortfolioSummary(input)).toMatchObject({ total: '0', unavailableCount: 1 });
     expect(await service.getTotalBalances(null)).toEqual([expect.objectContaining({ total: '0', unavailableCount: 1 })]);
     expect(tonRow(buildPortfolioSections({ ...input, hideZero: true }))).toMatchObject({ balanceUnavailable: true });
+    // Hidden TON (by the user, or a 3.0.5 hide the migration kept because TON was funded) is still in the wallet
+    // list total, so that total still says it leaves the failed balance out.
+    const hiddenKeysByAddress = { [TON_ADDRESS]: [tonRow(sections)!.key] };
+    expect(await service.getTotalBalances({ hiddenKeysByAddress })).toEqual([
+      expect.objectContaining({ total: '0', visibleTotal: '0', unavailableCount: 1 }),
+    ]);
 
     // The By token lens says the same: a row that failed, with the funded rows, not "0 TON" under "no balance".
     const row = tonTokenRow(sections)!;

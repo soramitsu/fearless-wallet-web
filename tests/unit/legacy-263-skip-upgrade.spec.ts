@@ -142,6 +142,8 @@ import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { accountStorageKey } from '@extension-base/services/keyring-service/AccountMetadata';
 import { TonSeedVault } from '@extension-base/services/keyring-service/TonSeedVault';
+// chrome.storage.local as the 2.6.3 build left it, with the public test phrases and passwords it was given.
+import profile from '../fixtures/upgrade/s1-2.6.3-per-account-passwords.json';
 import type {
   RequestMigratePassword,
   RequestRecoverAccountWithPassword,
@@ -151,8 +153,6 @@ import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import BackupWalletsList from '@/screens/addWallet/BackupWalletsList.vue';
 import MigrationAccounts from '@/screens/addWallet/keyringMigration/MigrationAccounts.vue';
 import AccountAccessRecovery from '@/screens/settings/AccountAccessRecovery.vue';
-// chrome.storage.local as the 2.6.3 build left it, with the public test phrases and passwords it was given.
-import profile from '../fixtures/upgrade/s1-2.6.3-per-account-passwords.json';
 
 const [savings, forgotten, staking] = profile.wallets;
 const MASTER = 'Master password created during the upgrade';

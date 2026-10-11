@@ -1,13 +1,13 @@
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 vi.mock('@/extension/background/extension-base/src/background/handlers/utils', () => ({ isNativeEVMNetwork: () => false }));
 
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 // chrome.storage.local as the real Fearless Wallet 2.6.3 build wrote it (see tests/fixtures/upgrade/README.md).
 import profile from '../fixtures/upgrade/s1-2.6.3-per-account-passwords.json';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 const [savings, forgotten, staking] = profile.wallets;
 const extension = Object.create(FWExtensionBase.prototype) as FWExtensionBase;

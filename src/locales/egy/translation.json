@@ -353,6 +353,7 @@
     "copyQR": "𓋴𓈙𓏛 𓅓 𓅓𓇋𓏏𓏏 QR-code",
     "incorrectAddress": "𓈖 𓐙 𓊨 𓈖 𓂋𓈖",
     "insufficientBalance": "𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓈖𓈖 𓅓𓎛 {asset}",
+    "balanceNotLoaded": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥. 𓇋𓂋𓇋 𓎡𓇌 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏.",
     "insufficientBalanceGeneric": "𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓈖𓈖 𓅓𓎛",
     "insufficientLiquidity": "𓈗 𓈖 𓎛𓂧 𓈖𓆓𓋴",
     "isSameAddress": "𓋴𓍿𓄿𓏥 𓂋 𓈖 𓈖𓏏𓎡 𓅓𓂧𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓𓂧𓅱",
@@ -475,6 +476,16 @@
     "details": "𓉒 𓐍𓏏 𓎟",
     "exportToGoogle": "𓂞 𓉐𓂻 𓂋 Google",
     "deleteWallet": "𓋴𓎡 𓉒"
+  },
+  "deleteWallet": {
+    "title": "𓋴𓎡 {name}?",
+    "balance": "𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓈖 𓉒 𓊪𓈖",
+    "description": "𓇋𓅱 Fearless 𓁷 𓋴𓎡 𓉒 𓊪𓈖 𓅓 𓐍𓏏 𓈖 𓅓𓄿𓄿 𓅓𓆓𓄿𓏏𓏥 𓏏𓈖. 𓇋𓅱 𓐍𓏏𓏥𓆑 𓅓𓈖𓅱𓏥 𓅓 𓄡𓈖𓅓𓏥. 𓂋 𓁹 𓂓𓏏 𓇋𓅓𓋴𓈖 𓅓 𓐍𓏏 𓈖 𓂓𓏏 𓎡𓏏, 𓂧𓃀𓎛𓎡 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓆑 𓂋𓊪𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓆑.",
+    "archived": "𓇋𓅱 𓄋𓊪𓏥 𓐍𓏏𓅓𓅱𓏥 𓅓𓈖𓅱𓏥 𓅓 𓐍𓏏 𓈖 𓂓𓏏 𓏏𓈖. 𓐍𓂋 𓂋𓐍𓎡 𓅱𓎛𓅓 𓉒 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
+    "mobileDescription": "𓇋𓅱 Fearless 𓁷 𓋴𓎡 𓉒 𓊪𓈖 𓅓 𓋴𓈙𓏛 𓈖 𓂋𓈖𓏥 𓅓 𓐍𓏏 𓈖 𓅓𓄿𓄿 𓅓𓆓𓄿𓏏𓏥 𓏏𓈖. 𓇋𓅱 𓄋𓊪𓏥𓆑 𓅓𓈖𓅱𓏥 𓅓 𓉐 𓈖 𓂓𓏏 𓈖 Fearless 𓈖 𓐍𓏏 𓁷 𓂝.",
+    "exportFirst": "𓂞 𓉐𓂻 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓 𓎛𓄿𓏏",
+    "passwordHint": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛𓎡 𓂋 𓋴𓎡 𓉒 𓊪𓈖.",
+    "failed": "𓂜 𓋴𓎡𓏏𓅱 𓉒. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌."
   },
   "irohaConnectPage": {
     "backToSettings": "𓐍𓏏 𓂋 𓋴𓅓𓈖𓏥",
@@ -1462,6 +1473,12 @@
     "loadFailed": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓋴𓈙 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
     "evmAccountOf": "Ethereum 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 {name}",
     "derivationPathPlaceholder": "𓊪𓂋 𓅱𓄿𓏏 (𓅓 𓅓𓂋𓇋𓎡)",
-    "changePasswordPending": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓋴𓈖 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖."
+    "changePasswordPending": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓋴𓈖 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
+    "deletedTitle": "𓉒𓏥 𓋴𓎡𓅱𓏥",
+    "deletedHint": "𓋴𓎡𓏏𓅱𓆑 𓅓 {date}. 𓅓 𓅱𓎛𓅓, 𓇋𓅱 𓉒 𓅓 𓋴𓏏𓆑 𓅓𓇋 𓅱𓈖𓆑 𓈖 𓎛𓄿𓏏, 𓎛𓈖𓂝 𓄋𓊪𓏥𓆑 𓈖𓅱 𓎛𓄿𓏏.",
+    "restore": "𓅱𓎛𓅓",
+    "restored": "𓇋𓅱 {name} 𓅓 𓋴𓈙𓏛𓎡 𓈖 𓉒𓏥 𓅓 𓅱𓎛𓅓",
+    "restoreFailed": "𓂜 𓅱𓎛𓅓𓏏𓅱 𓉒. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "alreadyRestored": "𓇋𓅱 𓉒 𓊪𓈖 𓅓 𓋴𓈙𓏛𓎡 𓈖 𓉒𓏥 𓆓𓂋 𓎛𓄿𓏏."
   }
 }

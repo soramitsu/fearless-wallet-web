@@ -48,6 +48,16 @@
     "exportToGoogle": "Export to Google",
     "deleteWallet": "Delete Wallet"
   },
+  "deleteWallet": {
+    "title": "Delete {name}?",
+    "balance": "Balance of this wallet",
+    "description": "Fearless removes this wallet from this browser. Its funds stay on the networks. To use them on another device you need its recovery phrase or backup file.",
+    "archived": "The encrypted keys stay on this device, so you can bring the wallet back in Settings, under Account access.",
+    "mobileDescription": "Fearless removes this wallet from the list in this browser. Its keys stay in the Fearless mobile app.",
+    "exportFirst": "Export recovery phrase first",
+    "passwordHint": "Enter your password to delete this wallet.",
+    "failed": "The wallet was not deleted. Nothing was changed. Try again."
+  },
   "addWallet": {
     "createWallet": "Create a new wallet",
     "importTypes": {
@@ -825,6 +835,7 @@
     "copyQR": "Copy QR-code",
     "incorrectAddress": "Incorrect address",
     "insufficientBalance": "Insufficient balance {asset}",
+    "balanceNotLoaded": "Balance couldn't be loaded. Try again shortly",
     "insufficientBalanceGeneric": "Insufficient balance",
     "insufficientLiquidity": "Insufficient Liquidity",
     "isSameAddress": "Transfers to your own account are prohibited",
@@ -1462,6 +1473,12 @@
     "loadFailed": "The list of accounts could not be loaded. Nothing was changed.",
     "evmAccountOf": "Ethereum account of {name}",
     "derivationPathPlaceholder": "Derivation path (optional)",
-    "changePasswordPending": "1 account still waits for a password you used before. Unlock it in Settings, under Account access. | {count} accounts still wait for a password you used before. Unlock them in Settings, under Account access."
+    "changePasswordPending": "1 account still waits for a password you used before. Unlock it in Settings, under Account access. | {count} accounts still wait for a password you used before. Unlock them in Settings, under Account access.",
+    "deletedTitle": "Deleted wallets",
+    "deletedHint": "Deleted on {date}. Restoring brings the wallet back as it was, with the same keys.",
+    "restore": "Restore",
+    "restored": "{name} is back in your wallet list",
+    "restoreFailed": "The wallet could not be restored. Nothing was changed. Try again.",
+    "alreadyRestored": "This wallet is already in your wallet list."
   }
 }

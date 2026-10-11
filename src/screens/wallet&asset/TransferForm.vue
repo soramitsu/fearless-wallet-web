@@ -551,6 +551,9 @@ export default defineComponent({
 
       if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
 
+      // An unknown balance is not an insufficient one: the amount check below would read it as 0.
+      if (this.balanceUnavailable) return 'assets.balanceNotLoaded';
+
       if (!this.isValidSendAsset)
         return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
 
@@ -578,6 +581,8 @@ export default defineComponent({
       if (!navigator.onLine) return true;
 
       if (this.step === 2) return false;
+
+      if (this.balanceUnavailable) return true;
 
       return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedFee === '';
     },

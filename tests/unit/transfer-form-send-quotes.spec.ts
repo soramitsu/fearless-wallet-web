@@ -296,4 +296,38 @@ describe('Send screen balance that no provider could load', () => {
     expect(balanceUnavailable({ id: 'TON', name: 'ton mainnet', state: APIItemState.READY, transferable: '0' })).toBe(false);
     expect(balanceUnavailable(undefined)).toBe(false);
   });
+
+  it('says the balance could not be loaded instead of "Insufficient balance", and keeps Continue disabled', () => {
+    const computed = (TransferForm as unknown as { computed: Record<string, (this: unknown) => unknown> }).computed;
+    // The TON quote has no client-side failure (fee = MAX_TON_FEE), so the amount check is what the user would meet.
+    const form = {
+      currency: { symbol: 'ton' },
+      step: 1,
+      estimateFeeError: false,
+      isSameAddress: false,
+      isValidRecipientAddress: true,
+      syncedRecipient: 'UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI',
+      isBitcoinTransferDisabled: false,
+      isValidSendAsset: false,
+      isValidTransferByUtility: true,
+      sendAssetName: 'ton',
+      utilityAssetName: 'ton',
+      isDisableBtn: false,
+      isFetchingFees: false,
+      isAllFieldsCorrect: false,
+      syncedAmount: '1',
+      syncedFee: '0.02',
+      balanceUnavailable: true,
+    };
+
+    expect(computed.buttonText.call(form)).toBe('assets.balanceNotLoaded');
+    expect(computed.buttonDisabled.call(form)).toBe(true);
+    // A loaded balance that is too small still says so.
+    expect(computed.buttonText.call({ ...form, balanceUnavailable: false })).toEqual({
+      text: 'assets.insufficientBalance',
+      localeProps: { asset: 'TON' },
+    });
+    // Even with no amount typed yet, the button never reads as if the wallet were empty.
+    expect(computed.buttonDisabled.call({ ...form, syncedAmount: '', isValidSendAsset: true, isAllFieldsCorrect: true })).toBe(true);
+  });
 });

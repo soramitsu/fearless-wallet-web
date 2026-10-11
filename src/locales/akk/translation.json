@@ -48,6 +48,16 @@
     "exportToGoogle": "𒀀𒈾 Google 𒋗𒍣",
     "deleteWallet": "𒆠𒊓𒄠 𒄷𒌌𒇻𒊌"
   },
+  "deleteWallet": {
+    "title": "{name} 𒄷𒌌𒇻𒊌?",
+    "balance": "𒉌𒅅𒅗𒊍𒋢𒌝 𒊭 𒆠𒋛𒅎 𒀭𒉌𒄿𒅎",
+    "description": "Fearless 𒆠𒊓𒄠 𒀭𒈾𒀀𒄠 𒅖𒌅 𒅁𒅆𒅎 𒀭𒉌𒄿𒅎 𒊭 𒀀𒈠𒅈 𒌅𒌒𒉿 𒄿𒈾 𒊑𒅅𒋛𒅎 𒄿𒈾𒊍𒊓𒄴. 𒈠𒀝𒆪𒊒𒋗 𒄿𒈾 𒊑𒅅𒋛 𒄿𒁀𒀸𒋗𒌑. 𒀀𒈾 𒊭𒅗𒉌𒋗𒉡 𒄿𒈾 𒈠𒀸𒅗𒉌𒅎 𒊭𒉌𒄿𒅎 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒊭 𒆠𒋛𒅎 𒌑 𒇻 𒌅𒌒𒉺𒄠 𒊭𒈾𒀀𒄠 𒊭 𒋗𒀀𒋾 𒋫𒄩𒀸𒊭𒄴.",
+    "archived": "𒈾𒄠𒍝𒆪 𒅗𒊍𒊒 𒄿𒈾 𒈠𒀸𒅗𒉌𒅎 𒀭𒉌𒄿𒅎 𒄿𒁀𒀸𒋗𒌑; 𒀸𒋗𒌝 𒀭𒉌𒄿𒅎 𒆠𒊓𒄠 𒄿𒈾 𒅆𒈠𒋾𒅎, 𒄿𒈾 𒁉𒋼𒂊 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎, 𒌅𒌨𒊏𒄠 𒋼𒇷𒀪𒀪.",
+    "mobileDescription": "Fearless 𒆠𒊓𒄠 𒀭𒈾𒀀𒄠 𒅖𒌅 𒋛𒁲𒅕𒋾𒅎 𒊭 𒅁𒅆𒅎 𒀭𒉌𒄿𒅎 𒊭 𒀀𒈠𒅈 𒌅𒌒𒉿 𒄿𒈾 𒊑𒅅𒋛𒅎 𒄿𒈾𒊍𒊓𒄴. 𒈾𒄠𒍝𒆪𒋗 𒄿𒈾 𒅁𒅆𒅎 𒊭 𒋡𒋾𒅎 𒊭 Fearless 𒄿𒁀𒀸𒋗𒌑.",
+    "exportFirst": "𒈠𒄴𒊏𒄠 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒋗𒍣",
+    "passwordHint": "𒀀𒈾 𒈾𒊓𒄴 𒆠𒋛𒅎 𒀭𒉌𒄿𒅎 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅗 𒋗𒆪𒌦.",
+    "failed": "𒆠𒋢𒌝 𒌌 𒅔𒈾𒋛𒄴. 𒈪𒅎𒈠 𒌌 𒅖𒉌. 𒊭𒉌𒅖 𒂊𒁍𒍑."
+  },
   "addWallet": {
     "createWallet": "𒁉𒉌 𒆠𒊓𒄠 𒌍𒊭𒄠",
     "importTypes": {
@@ -825,6 +835,7 @@
     "copyQR": "𒌅𒌒𒉺𒄠 QR 𒊭𒈾𒀀𒄠 𒂊𒁍𒍑",
     "incorrectAddress": "𒀸𒊒𒌝 𒆷 𒆠𒉡𒌝",
     "insufficientBalance": "𒉌𒅅𒅗𒊍𒋢𒌝 {asset} 𒈠𒍣",
+    "balanceNotLoaded": "𒉌𒅅𒅗𒊍𒊓𒄠 𒇷𒋡𒀀𒄠 𒆷 𒉌𒇷𒀪𒀪. 𒉿𒅈𒆠 𒀀𒁕𒀭𒉌𒅎 𒍣𒄴𒊑𒅎 𒊭𒉌𒅖 𒂊𒁍𒍑",
     "insufficientBalanceGeneric": "𒉌𒅅𒅗𒊍𒋢𒌝 𒈠𒍣",
     "insufficientLiquidity": "𒈠𒀝𒆪𒊒𒌝 𒀀𒈾 𒋫𒄠𒄩𒊑𒅎 𒈠𒍣",
     "isSameAddress": "𒋗𒁍𒇻𒌝 𒀀𒈾 𒌅𒌒𒉿𒅗 𒊭 𒋗𒈪𒅎 𒆷 𒈾𒁲𒅔.",
@@ -1462,6 +1473,12 @@
     "loadFailed": "𒅆𒋾𒅕 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒇷𒋡𒀀𒄠 𒆷 𒉌𒇷𒀪𒀪. 𒈪𒅎𒈠 𒌌 𒅖𒉌.",
     "evmAccountOf": "𒌅𒌒𒁍𒌝 𒊭 𒋗𒈪𒅎 Ethereum 𒊭 {name}",
     "derivationPathPlaceholder": "𒄩𒅈𒊏𒉡𒌝 𒊭 𒉺𒆷𒄀𒅎 (𒀀𒈾 𒍣𒁍𒌑𒋾𒅗)",
-    "changePasswordPending": "1 𒌅𒌒𒁍𒌝 𒊭 𒋗𒈪𒅎 𒀀𒁲𒉌 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒊭 𒄿𒈾 𒉺𒉌𒋾𒅎 𒋫𒀸𒆪𒉡 𒄩𒊺𒄴. 𒄿𒈾 𒅆𒈠𒋾𒅎, 𒄿𒈾 𒁉𒋼𒂊 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎, 𒉿𒋼𒋗. | {count} 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒀀𒁲𒉌 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒊭 𒄿𒈾 𒉺𒉌𒋾𒅎 𒋫𒀸𒆪𒉡 𒄩𒀸𒄩. 𒄿𒈾 𒅆𒈠𒋾𒅎, 𒄿𒈾 𒁉𒋼𒂊 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎, 𒉿𒋼𒅆𒈾𒋾."
+    "changePasswordPending": "1 𒌅𒌒𒁍𒌝 𒊭 𒋗𒈪𒅎 𒀀𒁲𒉌 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒊭 𒄿𒈾 𒉺𒉌𒋾𒅎 𒋫𒀸𒆪𒉡 𒄩𒊺𒄴. 𒄿𒈾 𒅆𒈠𒋾𒅎, 𒄿𒈾 𒁉𒋼𒂊 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎, 𒉿𒋼𒋗. | {count} 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒀀𒁲𒉌 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒊭 𒄿𒈾 𒉺𒉌𒋾𒅎 𒋫𒀸𒆪𒉡 𒄩𒀸𒄩. 𒄿𒈾 𒅆𒈠𒋾𒅎, 𒄿𒈾 𒁉𒋼𒂊 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎, 𒉿𒋼𒅆𒈾𒋾.",
+    "deletedTitle": "𒆠𒊓𒌅𒌝 𒈾𒊍𒄩𒌅𒌝",
+    "deletedHint": "𒄿𒈾 {date} 𒅔𒈾𒋛𒄴. 𒄿𒈾 𒌅𒌨𒊑𒅎 𒆠𒋢𒌝 𒆠𒈠 𒄿𒈾 𒉺𒉌𒋾𒅎 𒄿𒁀𒀸𒋗𒌑 𒄿𒋫𒅈, 𒀉𒋾 𒈾𒄠𒍝𒆠𒋗 𒋗𒉡𒋾𒈠.",
+    "restore": "𒋼𒅕",
+    "restored": "{name} 𒄿𒈾 𒋛𒁲𒅕𒋾𒅎 𒊭 𒆠𒊓𒋾𒅗 𒄿𒌅𒌨",
+    "restoreFailed": "𒆠𒊓𒄠 𒌅𒌨𒊏𒄠 𒆷 𒉌𒇷𒀪𒀪. 𒈪𒅎𒈠 𒌌 𒅖𒉌. 𒊭𒉌𒅖 𒂊𒁍𒍑.",
+    "alreadyRestored": "𒆠𒋢𒌝 𒀭𒉡𒌑𒌝 𒄿𒈾 𒋛𒁲𒅕𒋾𒅎 𒊭 𒆠𒊓𒋾𒅗 𒅖𒌅 𒉺𒉌𒅎 𒄿𒁀𒀸𒅆."
   }
 }

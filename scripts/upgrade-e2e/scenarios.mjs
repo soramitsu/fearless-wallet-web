@@ -254,7 +254,7 @@ async function runPerAccount(ctx, r, version, title) {
     // Charlie's Ethereum file has its own password: the Substrate password opens Charlie only.
     ['Charlie', PASSWORDS.pwC1, [charlie.address]],
   ];
-  const page = await migratePerAccountProfile(ctx, r, s, popup, profile, { rows, wrongFirst: { label: 'Bravo' } });
+  let page = await migratePerAccountProfile(ctx, r, s, popup, profile, { rows, wrongFirst: { label: 'Bravo' } });
   const stillPending = await pendingAddresses(popup);
   r.check('A7', "Charlie's Ethereum account, under its own password, still waits", stillPending.includes(charlie.ethereumAddress), stillPending);
 
@@ -283,20 +283,35 @@ async function runPerAccount(ctx, r, version, title) {
   // A browser restart: Unlock leads to the wallet, not back to the prompt.
   await s.restart();
   popup = await s.popup();
+  page = ui(popup);
   await unlockToWallet(r, popup, { master: profile.master, expectNotice: false });
 
   // The rest opens from its own row (message) or with its recovery phrase in Account access.
   const status = await accessStatus(popup);
   r.check('A7', 'Account access lists what still waits, as legacy passwords', status.issues.length === stillPending.length && status.issues.every(({ kind }) => kind === 'legacy_account_password'), status.issues);
-  const ownRow = (await popup.call('pri(keyring.migrateMasterPassword)', { address: charlie.ethereumAddress, password: PASSWORDS.pwC2 })).ok;
-  r.check('A7', "Charlie's Ethereum account opens from its own row with its own password", ownRow === true, ownRow);
+  // Charlie's Ethereum account from its own password row, which stays reachable while keys wait.
+  await page.goto('#/migration-accounts');
+  await page.waitHash('migration-accounts', 'the password rows');
+  await waitFor(() => popup.eval('document.querySelectorAll("li.wallets__item").length > 0'), 30000, 'the password rows');
+  await migrateRowThroughUi(popup, 'Ethereum account of Charlie', PASSWORDS.pwC2);
+  const ownRow = await waitFor(async () => !(await pendingAddresses(popup)).includes(charlie.ethereumAddress), 120000, "Charlie's Ethereum row").catch(() => false);
+  r.check('A7', "Charlie's Ethereum account opens from its own row with its own password", ownRow);
   if (delta) {
     const opened = (await popup.call('pri(keyring.migrateMasterPassword)', { address: delta.address, password: PASSWORDS.pwD })).ok;
     r.check('A7', 'Delta (raw seed) and its Ethereum key open with their password', opened === true, opened);
+    // Echo, whose password is forgotten, comes back in Settings → Account access with its recovery phrase.
     const [echo] = profile.standalone;
-    const recovered = (await popup.call('pri(keyring.recoverAccountWithPhrase)', { address: echo.ethereumAddress, walletEcosystem: 'substrate', phrase: echo.ethereumPhrase })).ok;
-    const viaPassword = recovered?.ok === true ? recovered : (await popup.call('pri(keyring.migrateMasterPassword)', { address: echo.ethereumAddress, password: PASSWORDS.pwE })).ok;
-    r.check('A7', 'Echo (an Ethereum JSON file on its own) opens, with its phrase or its password', recovered?.ok === true || viaPassword === true, { recovered, viaPassword });
+    await page.goto('#/fearless/settings/account-access');
+    const row = `document.querySelector('[data-testid="accessRow"][data-address="${echo.ethereumAddress}"]')`;
+    const shown = await waitFor(() => popup.eval(`!!${row}`), 30000, 'the Account access row of Echo').catch(() => false);
+    if (shown) {
+      await popup.eval(`${row}.querySelector('[data-testid="accessMode"]').click(), true`);
+      await sleep(300);
+      await typeInto(popup, `${row}.querySelector('[data-testid="accessSecret"] textarea, [data-testid="accessSecret"] input')`, echo.ethereumPhrase);
+      await popup.eval(`(${row}.querySelector('[data-testid="accessUnlock"] button') ?? ${row}.querySelector('[data-testid="accessUnlock"]')).click(), true`);
+    }
+    const recovered = shown && (await waitFor(() => popup.eval(`!${row}`), 120000, 'the Echo row to go').catch(() => false));
+    r.check('A7', 'Echo (an Ethereum file whose password is forgotten) opens in Account access with its recovery phrase', recovered);
   }
   const left = (await accessStatus(popup)).issues;
   r.check('A7', 'nothing waits any more', left.length === 0, left);
@@ -359,6 +374,10 @@ async function runRollback(ctx, r) {
   const tonPhrase = await head.generateMnemonic('ton', 24);
   profile.ton.push(await head.addTonWallet({ name: 'TON created in 4.2.0', phrase: tonPhrase }));
   await changePasswordInHead(r, popup, profile, PASSWORDS.changedInHead);
+  // A JSON file 4.2.0 exports is a file 3.0.x can import (N = 2^15).
+  const exported = (await popup.call('pri(accounts.export.json)', { address: profile.wallets[0].address, password: PASSWORDS.changedInHead })).ok?.json;
+  const fromFile = exported && opened305(ctx.legacy, [exported], PASSWORDS.changedInHead).pairs?.[0];
+  r.check('A11', 'the 3.0.5 keyring opens a JSON file 4.2.0 exported, with its password, and it signs', !!exported && isAt305Cost(exported) && signsFor(fromFile, profile.wallets[0].address));
   // Delete a wallet after the change: its keys are set aside under fw:deletedWallet:, as stored.
   const deleted = profile.wallets.find(({ name }) => name === 'Raw seed');
   const forgot = (await popup.call('pri(accounts.forget)', { address: deleted.address, type: 'native' })).ok;

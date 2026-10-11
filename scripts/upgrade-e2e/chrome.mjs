@@ -179,16 +179,19 @@ export async function serviceWorker(port) {
   );
 }
 
-/** chrome.storage.local exactly as the background sees it. */
-export async function dumpStorage(port) {
-  const sw = await serviceWorker(port);
-  const client = cdp(sw.webSocketDebuggerUrl);
-  await client.ready;
-  try {
-    return await client.eval('chrome.storage.local.get(null)');
-  } finally {
-    client.close();
-  }
+/** chrome.storage.local exactly as the background sees it. A worker that is still starting (or being replaced) is asked
+ * again rather than read half-made. */
+export function dumpStorage(port) {
+  return waitFor(async () => {
+    const sw = await serviceWorker(port);
+    const client = cdp(sw.webSocketDebuggerUrl);
+    await client.ready;
+    try {
+      return await client.eval('globalThis.chrome?.storage?.local ? chrome.storage.local.get(null) : undefined');
+    } finally {
+      client.close();
+    }
+  }, 60000, 'chrome.storage.local in the service worker');
 }
 
 /** Runs an expression in the service worker (test-only storage edits, such as removing a key a scenario needs gone). */

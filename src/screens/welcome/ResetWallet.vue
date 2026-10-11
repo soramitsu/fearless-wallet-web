@@ -67,7 +67,7 @@
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import type { LegacyPasswordAccountSummary } from '@extension-base/background/types/types';
 import { useI18n } from '@/locales/useI18n';
 import FInput from '@/components/FInput.vue';
@@ -84,18 +84,24 @@ const passInput = ref<InstanceType<typeof FInput> | null>(null);
 // Accounts no master password has ever opened. Reset removes them like every other account, so the typed
 // confirmation waits until their encrypted backups were downloaded or the user says they have their own.
 const legacyAccounts = ref<LegacyPasswordAccountSummary[]>([]);
+// The confirmation is offered only once the list was read, so it can never come before the backup step.
+const isListRead = ref(false);
 const isDownloading = ref(false);
 const backupsDownloaded = ref(false);
 const backupFailed = ref(false);
 const hasOwnBackups = ref(false);
 
-const canConfirm = computed(() => !legacyAccounts.value.length || backupsDownloaded.value || hasOwnBackups.value);
+const canConfirm = computed(
+  () => isListRead.value && (!legacyAccounts.value.length || backupsDownloaded.value || hasOwnBackups.value)
+);
 const isDisabled = computed(() => !canConfirm.value || password.value !== phrase);
 
 onMounted(async () => {
   // Reset has to stay possible when the list cannot be read (for example with a forgotten master password).
   legacyAccounts.value = await getMigrationAccounts().catch(() => []);
+  isListRead.value = true;
 
+  await nextTick();
   passInput.value?.input?.focus();
 });
 

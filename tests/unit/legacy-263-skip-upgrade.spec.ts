@@ -376,13 +376,13 @@ describe('upgrading a 2.6.3 wallet with one forgotten account password', SCRYPT_
     expect(opensWith(shipped(forgotten.address), forgotten.password).address).toBe(forgotten.address);
     expect(opensWith(shipped(staking.address), staking.password).address).toBe(staking.address);
 
-    // They are listed, not hidden: sending from one says which password it waits for.
+    // They are listed, not hidden (in the migration list's order): sending from one says which password it waits for.
     const status = await mocks.service.getAccessStatus();
     expect(status).toMatchObject({ promptPending: false, deferred: true, mustCreateMasterPassword: false });
     expect(status.issues.map(({ address, kind }) => [address, kind])).toEqual([
+      [staking.address, 'legacy_account_password'],
       [forgotten.address, 'legacy_account_password'],
       [forgotten.ethereumAddress, 'legacy_account_password'],
-      [staking.address, 'legacy_account_password'],
     ]);
     expect(() => mocks.service.unlockPair(forgotten.address)).toThrow('legacy_password_required');
     expect(() => mocks.service.exportMnemonic({ address: staking.address })).toThrow('legacy_password_required');

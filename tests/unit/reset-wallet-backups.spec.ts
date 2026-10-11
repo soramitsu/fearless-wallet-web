@@ -156,6 +156,22 @@ describe('Reset wallet', () => {
     wrapper.unmount();
   });
 
+  it('never offers the typed confirmation before it knows whether a backup step comes first', async () => {
+    let answer: (accounts: typeof legacyAccounts) => void = () => undefined;
+    mocks.list.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const wrapper = await open();
+
+    expect(confirmStep(wrapper).exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('welcome.enterReset');
+
+    answer(legacyAccounts);
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="resetBackupStep"]').exists()).toBe(true);
+    expect(confirmStep(wrapper).exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   // Reset is the way out of a forgotten master password; it cannot depend on the account list.
   it('stays possible when the account list cannot be read', async () => {
     mocks.list.mockRejectedValue(new Error('Storage not ready'));

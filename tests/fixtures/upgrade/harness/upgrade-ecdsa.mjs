@@ -135,7 +135,11 @@ try {
   check('the master password unlocks', (await popup.call('pri(keyring.unlock)', { password: master })).ok === true);
 
   storage = await dumpStorage(port);
-  check(`nothing of ${deleted.name} is left in storage`, copiesOf(storage, publicKey[deleted.address]).length === 0, copiesOf(storage, publicKey[deleted.address]).map(([key]) => key));
+  // Deleting keeps the wallet's keys only where Account access restores them from (DeletedWallets.ts), never where a
+  // keyring loads them.
+  const deletedCopies = copiesOf(storage, publicKey[deleted.address]).map(([key]) => key);
+  check(`nothing of ${deleted.name} is left where a keyring loads it, and its keys are kept for Account access`,
+    deletedCopies.length === 1 && deletedCopies[0].startsWith('fw:deletedWallet:'), deletedCopies);
   const live = records(storage).filter(([, json]) => json.address?.toLowerCase() === publicKey[kept.address]);
   check(`${kept.name}: one live record, under the public key`, live.length === 1 && live[0][0] === `fw:account:${publicKey[kept.address]}`, live.map(([key]) => key));
   check(`${kept.name}: the live record opens with the master password and signs with the key the ${version} phrase derives`,

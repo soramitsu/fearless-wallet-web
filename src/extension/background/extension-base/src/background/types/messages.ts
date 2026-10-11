@@ -141,6 +141,9 @@ import type {
   ResponseRecoverAccountWithPassword,
   RequestRecoverAccountWithPhrase,
   ResponseRecoverAccountWithPhrase,
+  DeletedWalletSummary,
+  RequestRestoreDeletedWallet,
+  ResponseRestoreDeletedWallet,
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
   RequestTonImportCandidates,
@@ -220,6 +223,8 @@ export interface RequestSignatures {
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
+  'pri(accounts.deleted.list)': [null, DeletedWalletSummary[]];
+  'pri(accounts.deleted.restore)': [RequestRestoreDeletedWallet, ResponseRestoreDeletedWallet];
   'pri(accounts.list)': [null, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [null, AccountJson[], AccountJson[]];

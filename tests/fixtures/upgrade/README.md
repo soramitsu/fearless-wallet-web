@@ -98,7 +98,8 @@ node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 2.6.3 <2.6.3 build> dist/e
    wrote it, and keeps the old record unchanged under `fw:archivedAccount:<account id>`, which no keyring loads.
 3. 3.0.6: unlock, rename Signer, change the master password, delete Spare. 2.6.3: create the master password, open
    Vault with its own password, delete Spare.
-4. The browser restarts: the deleted wallet stays deleted and nothing of it is left in storage; the rename and the
+4. The browser restarts: the deleted wallet stays deleted and nothing of it is left where a keyring loads it (its
+   records are kept under `fw:deletedWallet:`, which Settings → Account access restores from); the rename and the
    new password hold (the old password no longer unlocks); Vault is not asked for its 2.6.3 password again. The
    live record opens with the master password and signs with the key the phrase derives. It is encrypted at
    N = 2^15 and the 3.0.5 keyring (`keyring-305.mjs`) unlocks with the master password, opens it and signs with it,

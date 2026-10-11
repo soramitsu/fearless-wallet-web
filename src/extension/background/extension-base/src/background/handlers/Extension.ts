@@ -118,6 +118,8 @@ import type {
   RequestAccountCreateSuri,
   RequestAccountExport,
   RequestAccountForget,
+  RequestRestoreDeletedWallet,
+  ResponseRestoreDeletedWallet,
   RequestAccountName,
   RequestAccountValidate,
   RequestActiveTabsUrlUpdate,
@@ -247,6 +249,18 @@ export default class Extension extends FWExtensionBase {
   }
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
+    // A wallet with keys here is removed only once they are kept where Account access can restore them; if they
+    // could not be stored, nothing changes.
+    if (type === 'native') {
+      try {
+        await this.state.keyringService.archiveWallet(address);
+      } catch (error) {
+        console.error(error);
+
+        return false;
+      }
+    }
+
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
     const pair = this.state.keyringService.getPair(address);
     const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
@@ -305,6 +319,21 @@ export default class Extension extends FWExtensionBase {
     this.state.cleanupDeletedAccount(address);
 
     return true;
+  }
+
+  // Back in the wallet list and selected, as after an import of the same wallet.
+  async restoreDeletedWallet({ id }: RequestRestoreDeletedWallet): Promise<ResponseRestoreDeletedWallet> {
+    const result = await this.state.keyringService.restoreDeletedWallet(id);
+
+    if (result.ok && result.address && !isEthereumAddress(result.address)) {
+      const walletEcosystem = result.walletEcosystem ?? WalletEcosystem.Substrate;
+
+      if (walletEcosystem !== WalletEcosystem.Ton) this.state.updateNetworkForNewWallet(result.address);
+
+      this.state.updateCurrentAccount({ address: result.address, walletEcosystem });
+    }
+
+    return result;
   }
 
   async accountsCreate({ suri, type, meta, walletEcosystem, tonImport }: RequestAccountCreateSuri): Promise<string> {
@@ -2447,6 +2476,12 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.forget)':
         return this.accountsForget(request as RequestAccountForget);
+
+      case 'pri(accounts.deleted.list)':
+        return this.state.keyringService.getDeletedWallets();
+
+      case 'pri(accounts.deleted.restore)':
+        return this.restoreDeletedWallet(request as RequestRestoreDeletedWallet);
 
       case 'pri(accounts.subscribe)':
         return this.accountsSubscribe(id, port);

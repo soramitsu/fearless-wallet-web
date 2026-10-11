@@ -632,6 +632,27 @@ export interface ResponseRecoverAccountWithPhrase {
   code?: 'phrase_mismatch' | 'locked' | 'not_found' | 'storage_failed';
 }
 
+/** A wallet the user deleted whose keys are kept on the device (DeletedWallets.ts); not in the wallet list. */
+export interface DeletedWalletSummary {
+  id: string;
+  address: string;
+  name: string;
+  walletEcosystem: WalletEcosystem;
+  deletedAt: number;
+}
+
+export interface RequestRestoreDeletedWallet {
+  id: string;
+}
+
+export interface ResponseRestoreDeletedWallet {
+  ok: boolean;
+  code?: 'not_found' | 'already_in_wallet' | 'storage_failed';
+  address?: string;
+  name?: string;
+  walletEcosystem?: WalletEcosystem;
+}
+
 export interface RequestExportSeed {
   address: string;
   password?: string;

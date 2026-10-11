@@ -15,6 +15,7 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { ecdsaPairKeys } from '@extension-base/stores/EcdsaAccountRecords';
+import { tonStore } from '@extension-base/stores/TonStore';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
@@ -32,11 +33,21 @@ import {
   summarizeLegacyPasswordAccounts,
 } from './AccountAccess';
 import { LEGACY_PASSWORD_REQUIRED, PREVIOUS_PASSWORD_REQUIRED } from './AccountAccessErrors';
+import {
+  deletedWalletId,
+  deletedWalletKey,
+  loadableAccountRecords,
+  readDeletedWallet,
+  summarizeDeletedWallets,
+  walletRecordKeys,
+  type DeletedWallet,
+} from './DeletedWallets';
 import type { StagedTonSeed } from './TonSeedVault';
 import type { EventService } from '@extension-base/services';
 import type {
   AccountAccessStatus,
   DecryptForCosignerData,
+  DeletedWalletSummary,
   EncryptByCosignerData,
   FinalEncryptedStructure,
   LegacyPasswordAccountSummary,
@@ -52,6 +63,7 @@ import type {
   ResponseExportSeed,
   ResponseRecoverAccountWithPassword,
   ResponseRecoverAccountWithPhrase,
+  ResponseRestoreDeletedWallet,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@subwallet/keyring/types';
@@ -368,6 +380,108 @@ export class KeyringService {
 
   forgetAddress(address: string) {
     return keyring.forgetAddress(address);
+  }
+
+  /**
+   * Keeps every stored record that holds this wallet's keys (its account, its linked Ethereum account, the records an
+   * ECDSA account had before, its TON phrase) exactly as stored, in one entry Account access can restore
+   * (DeletedWallets.ts). Settles once that entry is written and rejects if it is not, so a wallet is deleted only
+   * when its keys are kept.
+   */
+  async archiveWallet(address: string): Promise<void> {
+    const store = this.accountsStore ?? new AccountsStore();
+    const ton = this.tonKeyring.accountSubject.value[address] ? await tonStore.getAndWait(address) : undefined;
+    const pair = ton ? null : this.getPair(address);
+    const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
+    const ethereumPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
+    const keys = walletRecordKeys([pair, ethereumPair].filter((candidate): candidate is KeyringPair => !!candidate));
+    const records = await Promise.all(keys.map(async (key) => [key, await store.getAndWait(key)] as const));
+    const accounts = Object.fromEntries(records.filter(([, record]) => record !== undefined));
+
+    if (!ton && !Object.keys(accounts).length) return;
+
+    const meta = (pair?.meta ?? {}) as FWKeyringMeta;
+    const deletedAt = Date.now();
+    const wallet: DeletedWallet = {
+      address,
+      name: ton?.name ?? (typeof meta.name === 'string' ? meta.name : ''),
+      walletEcosystem: ton ? WalletEcosystem.Ton : (meta.walletEcosystem as WalletEcosystem | undefined) ?? WalletEcosystem.Substrate,
+      deletedAt,
+      accounts,
+      ...(ton ? { ton } : {}),
+    };
+
+    await store.replaceAndWait({ [deletedWalletKey(deletedWalletId(address, deletedAt))]: wallet }, []);
+  }
+
+  private isInWallet(address: string): boolean {
+    return !!this.tonKeyring.accountSubject.value[address] || !!this.getPair(address);
+  }
+
+  async getDeletedWallets(): Promise<DeletedWalletSummary[]> {
+    const store = this.accountsStore ?? new AccountsStore();
+    let stored: Record<string, unknown> = {};
+
+    await store.allMap((map) => (stored = map));
+
+    return summarizeDeletedWallets(stored, (address) => this.isInWallet(address));
+  }
+
+  /**
+   * Puts a deleted wallet's records back where they were and loads them, as a start would. A record that is stored
+   * now (the same account imported again) is never written over; the kept copy is removed only once every record
+   * of it is back.
+   */
+  async restoreDeletedWallet(id: string): Promise<ResponseRestoreDeletedWallet> {
+    let restored: Awaited<ReturnType<KeyringService['writeBackDeletedWallet']>>;
+
+    try {
+      restored = await this.writeBackDeletedWallet(id);
+    } catch (e) {
+      console.error(e);
+
+      return { ok: false, code: 'storage_failed' };
+    }
+
+    if ('code' in restored) return { ok: false, code: restored.code };
+
+    const { wallet, accounts, tonWritten } = restored;
+
+    if (wallet.ton && tonWritten) {
+      this.tonKeyring.setAccounts({ ...wallet.ton, address: wallet.address });
+      // A phrase kept under an earlier password is listed in Account access, as after an unlock.
+      if (this.password) this.access.scheduleScan(this.password);
+    }
+
+    // What keyring.loadAll does with each stored record at a start (Keyring.loadAccount, private in its typings).
+    const loader = keyring as unknown as { loadAccount: (json: KeyringPair$Json, key: string) => void };
+
+    loadableAccountRecords(accounts).forEach(([key, record]) => loader.loadAccount(record as KeyringPair$Json, key));
+
+    return { ok: true, address: wallet.address, name: wallet.name, walletEcosystem: wallet.walletEcosystem };
+  }
+
+  private async writeBackDeletedWallet(
+    id: string
+  ): Promise<{ code: 'not_found' | 'already_in_wallet' } | { wallet: DeletedWallet; accounts: Record<string, unknown>; tonWritten: boolean }> {
+    const store = this.accountsStore ?? new AccountsStore();
+    const key = deletedWalletKey(id);
+    const wallet = readDeletedWallet(await store.getAndWait(key));
+
+    if (!wallet) return { code: 'not_found' };
+    if (this.isInWallet(wallet.address)) return { code: 'already_in_wallet' };
+
+    const records = Object.entries(wallet.accounts);
+    const current = await Promise.all(records.map(([recordKey]) => store.getAndWait(recordKey)));
+    const accounts = Object.fromEntries(records.filter((_record, index) => current[index] === undefined));
+    const { ton } = wallet;
+    // Written only where nothing is stored, in one queued read and write.
+    const tonWritten = !!ton && (await tonStore.updateAndWait(wallet.address, (stored) => (stored ? undefined : ton))) !== undefined;
+    const everyRecordIsBack = (!ton || tonWritten) && Object.keys(accounts).length === records.length;
+
+    await store.replaceAndWait(accounts, everyRecordIsBack ? [key] : []);
+
+    return { wallet, accounts, tonWritten };
   }
 
   restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {

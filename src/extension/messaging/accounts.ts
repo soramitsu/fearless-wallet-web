@@ -4,6 +4,8 @@ import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   ValidateJsonResult,
   AccountJson,
+  DeletedWalletSummary,
+  ResponseRestoreDeletedWallet,
   RequestTotalBalances,
   ResponseTotalBalances,
   ResponseAccountExport,
@@ -76,6 +78,14 @@ export function accountUpdateName(address: string, name: string, walletEcosystem
 
 export function forgetAccount(address: string, type: 'native' | 'mobile'): Promise<boolean> {
   return sendMessage('pri(accounts.forget)', { address, type });
+}
+
+export function getDeletedWallets(): Promise<DeletedWalletSummary[]> {
+  return sendMessage('pri(accounts.deleted.list)', null);
+}
+
+export function restoreDeletedWallet(id: string): Promise<ResponseRestoreDeletedWallet> {
+  return sendMessage('pri(accounts.deleted.restore)', { id });
 }
 
 export function validatePassword(password: string): Promise<boolean> {

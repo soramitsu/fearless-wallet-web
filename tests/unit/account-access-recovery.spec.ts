@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   recoverAccountWithPassword: vi.fn(),
   recoverAccountWithPhrase: vi.fn(),
   migrateExportJSON: vi.fn(),
+  getDeletedWallets: vi.fn(),
+  restoreDeletedWallet: vi.fn(),
   download: vi.fn(),
   notify: vi.fn(),
   push: vi.fn(),
@@ -18,6 +20,8 @@ vi.mock('@/extension/messaging', () => ({
   recoverAccountWithPassword: mocks.recoverAccountWithPassword,
   recoverAccountWithPhrase: mocks.recoverAccountWithPhrase,
   migrateExportJSON: mocks.migrateExportJSON,
+  getDeletedWallets: mocks.getDeletedWallets,
+  restoreDeletedWallet: mocks.restoreDeletedWallet,
 }));
 vi.mock('@/helpers/files', () => ({ downloadJsonAccount: mocks.download }));
 vi.mock('@/plugins/soramitsuUI', () => ({ useNotify: () => mocks.notify }));
@@ -111,6 +115,7 @@ describe('Account access screen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getAccessStatus.mockResolvedValue(status([legacyParent, legacyChild, tonIssue]));
+    mocks.getDeletedWallets.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -322,5 +327,72 @@ describe('Account access screen', () => {
 
     expect(wrapper.find('[data-testid="accessLoadFailed"]').exists()).toBe(false);
     expect(accessRows(wrapper)).toHaveLength(3);
+  });
+});
+
+describe('Deleted wallets in Account access', () => {
+  const deleted = [
+    { id: `1760000000000:${TON}`, address: TON, name: 'TON savings', walletEcosystem: WalletEcosystem.Ton, deletedAt: 1760000000000 },
+    { id: `1750000000000:${PARENT}`, address: PARENT, name: 'Polkadot savings', walletEcosystem: WalletEcosystem.Substrate, deletedAt: 1750000000000 },
+  ];
+  const deletedRow = (wrapper: VueWrapper, address: string) =>
+    wrapper.get(`[data-testid="deletedWallet"][data-address="${address}"]`);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getAccessStatus.mockResolvedValue(status([]));
+    mocks.getDeletedWallets.mockResolvedValue(deleted);
+  });
+
+  it('lists every deleted wallet with when it was deleted, under the accounts to unlock', async () => {
+    const wrapper = await open();
+
+    expect(wrapper.get('[data-testid="deletedWalletsTitle"]').text()).toBe('accountAccess.deletedTitle');
+    expect(wrapper.findAll('[data-testid="deletedWallet"]').map((row) => row.attributes('data-address'))).toEqual([TON, PARENT]);
+    expect(deletedRow(wrapper, TON).text()).toContain('TON savings');
+    expect(deletedRow(wrapper, TON).text()).toContain('accountAccess.deletedHint');
+    expect(deletedRow(wrapper, TON).text()).toContain('2025');
+  });
+
+  it('restores a wallet, says so and takes it off the list', async () => {
+    mocks.restoreDeletedWallet.mockResolvedValue({ ok: true, address: TON, name: 'TON savings', walletEcosystem: WalletEcosystem.Ton });
+    const wrapper = await open();
+
+    await deletedRow(wrapper, TON).get('[data-testid="deletedWalletRestore"]').trigger('click');
+    await flushPromises();
+
+    expect(mocks.restoreDeletedWallet).toHaveBeenCalledExactlyOnceWith(deleted[0].id);
+    expect(mocks.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'accountAccess.restored:{"name":"TON savings"}', type: 'success' })
+    );
+    expect(wrapper.findAll('[data-testid="deletedWallet"]').map((row) => row.attributes('data-address'))).toEqual([PARENT]);
+  });
+
+  it('keeps the wallet listed with an inline error when it could not be restored', async () => {
+    mocks.restoreDeletedWallet.mockResolvedValueOnce({ ok: false, code: 'storage_failed' });
+    mocks.restoreDeletedWallet.mockResolvedValueOnce({ ok: false, code: 'already_in_wallet' });
+    const wrapper = await open();
+
+    await deletedRow(wrapper, TON).get('[data-testid="deletedWalletRestore"]').trigger('click');
+    await flushPromises();
+    expect(deletedRow(wrapper, TON).get('[data-testid="deletedWalletError"]').text()).toBe('accountAccess.restoreFailed');
+
+    await deletedRow(wrapper, PARENT).get('[data-testid="deletedWalletRestore"]').trigger('click');
+    await flushPromises();
+    expect(deletedRow(wrapper, PARENT).get('[data-testid="deletedWalletError"]').text()).toBe('accountAccess.alreadyRestored');
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it('is not shown when the screen was opened for one account, and never holds up unlocking', async () => {
+    mocks.getAccessStatus.mockResolvedValue(status([legacyParent]));
+    const scoped = await open(PARENT);
+    expect(scoped.find('[data-testid="deletedWallet"]').exists()).toBe(false);
+    expect(mocks.getDeletedWallets).not.toHaveBeenCalled();
+
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.getDeletedWallets.mockRejectedValueOnce(new Error('Could not establish connection'));
+    const unscoped = await open();
+    expect(accessRows(unscoped)).toHaveLength(1);
+    expect(unscoped.find('[data-testid="accessLoadFailed"]').exists()).toBe(false);
   });
 });

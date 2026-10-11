@@ -109,6 +109,7 @@ vi.mock('@/extension/messaging', () => ({
   recoverAccountWithPassword: (request: RequestRecoverAccountWithPassword) => mocks.service.recoverAccountWithPassword(request),
   recoverAccountWithPhrase: (request: RequestRecoverAccountWithPhrase) => mocks.service.recoverAccountWithPhrase(request),
   migrateExportJSON: (address: string) => FWExtensionBase.prototype.migrateExportJSON.call({}, address),
+  getDeletedWallets: async () => [],
   getUniversalWalletMigrationSnapshot: vi.fn(),
   isJsonValid: vi.fn(),
   jsonRestore: vi.fn(),

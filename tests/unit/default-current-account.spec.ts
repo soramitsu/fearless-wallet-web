@@ -124,6 +124,7 @@ describe('removing the current account', () => {
     const state = {
       currentAccount: toCurrentAccountInfo(current),
       keyringService: {
+        archiveWallet: vi.fn(async () => undefined),
         getPair: () => ({ meta: removed.meta }),
         forgetAccount: vi.fn(),
         getAllMainAccounts: () => remaining,
@@ -137,6 +138,46 @@ describe('removing the current account', () => {
     const extension = { state } as unknown as Extension;
     return Extension.prototype.accountsForget.call(extension, { address: removed.address, type: 'native' }).then(() => state);
   }
+
+  it('keeps the keys where Account access restores them before removing anything', async () => {
+    const state = await forget(SUBSTRATE, [TON]);
+    const [archived] = state.keyringService.archiveWallet.mock.invocationCallOrder;
+    const [forgotten] = state.keyringService.forgetAccount.mock.invocationCallOrder;
+
+    expect(state.keyringService.archiveWallet).toHaveBeenCalledExactlyOnceWith(SUBSTRATE.address);
+    expect(archived).toBeLessThan(forgotten);
+  });
+
+  it('removes nothing and says the delete failed when the keys could not be kept', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const state = {
+      currentAccount: toCurrentAccountInfo(SUBSTRATE),
+      keyringService: {
+        archiveWallet: vi.fn(async () => {
+          throw new Error('QUOTA_BYTES quota exceeded');
+        }),
+        getPair: () => ({ meta: SUBSTRATE.meta }),
+        forgetAccount: vi.fn(),
+        forgetAddress: vi.fn(),
+        getAllMainAccounts: () => [TON],
+      },
+      requestService: { getAuthorize: vi.fn(), updateAuthorizedAccounts: vi.fn() },
+      walletConnectService: { removeSessions: vi.fn() },
+      setCurrentAccount: vi.fn(),
+      updateCurrentAccount: vi.fn(),
+      cleanupDeletedAccount: vi.fn(),
+    };
+
+    const result = await Extension.prototype.accountsForget.call({ state } as unknown as Extension, { address: SUBSTRATE.address, type: 'native' });
+
+    expect(result).toBe(false);
+    expect(state.keyringService.forgetAccount).not.toHaveBeenCalled();
+    expect(state.requestService.updateAuthorizedAccounts).not.toHaveBeenCalled();
+    expect(state.walletConnectService.removeSessions).not.toHaveBeenCalled();
+    expect(state.setCurrentAccount).not.toHaveBeenCalled();
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
+  });
 
   it('switches to the next non-EVM account, not a standalone EVM account listed first', async () => {
     const state = await forget(SUBSTRATE, [EVM, TON]);

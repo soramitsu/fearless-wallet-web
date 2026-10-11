@@ -1,5 +1,14 @@
 <template>
+  <DeleteWalletPopup
+    v-if="confirmDelete"
+    :address="selectedWalletAddress"
+    @cancel="close"
+    @deleted="onDeleted"
+    @exported="$emit('closeSelectWalletPopup')"
+  />
+
   <Popup
+    v-else
     sizeWidth="mini"
     :showBorder="true"
     :showHeader="false"
@@ -28,14 +37,16 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
+import DeleteWalletPopup from './DeleteWalletPopup.vue';
 import { Components } from '@/router/routes';
-import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
+import { initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 
 export default defineComponent({ name: 'WalletDetailsPopup' ,
+  components: { DeleteWalletPopup },
   props: {
     buttonTopClick: Number,
     selectedWalletAddress: String,
@@ -44,6 +55,7 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
     return {
       isExtension: IS_EXTENSION,
       accountsStore: useAccountsStore(),
+      confirmDelete: false,
     };
   },
   computed: {
@@ -66,11 +78,15 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
     close() {
       this.$emit('close');
     },
-    async deleteWallet() {
-      await forgetAccount(this.selectedWalletAddress, this.selectedAccount?.isMobile ? 'mobile' : 'native');
+    // One click never deletes: the confirmation shows the balance, offers the export and asks for the password.
+    deleteWallet() {
+      this.confirmDelete = true;
+    },
+    onDeleted() {
+      const remaining = this.accountsStore.accounts.filter(({ address }) => address !== this.selectedWalletAddress);
 
-          if (this.accountsStore.accounts.length === 0) this.$router.push({ name: Components.Welcome });
-          else this.close();
+      if (remaining.length === 0) this.$router.push({ name: Components.Welcome });
+      else this.close();
     },
     exportToGoogleDrive() {
       initGoogleAuth('export', this.selectedWalletAddress);

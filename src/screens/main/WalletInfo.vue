@@ -18,13 +18,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { FPNumber } from '@sora-substrate/util';
 import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
-import { getTotalBalances } from '@/extension/messaging';
-import { hiddenKeysForWallet } from '@/portfolio/usePortfolioPreferences';
-import { useAccountsStore } from '@/stores/accounts';
-import { useNetworksStore } from '@/stores/networks';
+import { fetchWalletTotals, walletBalanceCaption } from '@/screens/main/walletTotals';
 
 export default defineComponent({ name: 'WalletInfo',
   components: { WalletBalance },
@@ -41,8 +37,6 @@ export default defineComponent({ name: 'WalletInfo',
       showWalletMenu: false,
       totalBalances: [] as ResponseTotalBalances[],
       interval: undefined as ReturnType<typeof setInterval> | undefined,
-      accountsStore: useAccountsStore(),
-      networksStore: useNetworksStore(),
     };
   },
   computed: {
@@ -55,16 +49,8 @@ export default defineComponent({ name: 'WalletInfo',
     changeWalletBalance() {
       return this.totalBalance?.change ?? { percent: 0, amount: 0 };
     },
-    // The wallet list shows the full balance; when part of it is hidden in the portfolio, or could not be loaded at
-    // all (and so is not in it), it says so.
     balanceCaption(): string {
-      const hiddenValue = this.totalBalance?.hiddenValue;
-      const captions = [
-        hiddenValue && new FPNumber(hiddenValue).isGtZero() ? this.$t('portfolioPage.inclHidden') : '',
-        this.totalBalance?.unavailableCount ? this.$t('portfolioPage.balanceStatus.failed') : '',
-      ];
-
-      return captions.filter(Boolean).join(' · ');
+      return walletBalanceCaption(this.totalBalance, (key) => this.$t(key));
     },
     contentClasses() {
       return [
@@ -85,19 +71,7 @@ export default defineComponent({ name: 'WalletInfo',
   },
   methods: {
     fetchTotalBalances(): Promise<ResponseTotalBalances[]> {
-      let hiddenKeys: string[] = [];
-
-      try {
-        hiddenKeys = hiddenKeysForWallet(
-          this.address,
-          this.accountsStore.assetPreferencesForAllAccounts[this.address] ?? {},
-          this.networksStore.allNetworks
-        );
-      } catch {
-        // Without hidden keys the full total still shows; only the "incl. hidden" label is missing.
-      }
-
-      return getTotalBalances(hiddenKeys.length ? { hiddenKeysByAddress: { [this.address]: hiddenKeys } } : null);
+      return fetchWalletTotals(this.address);
     },
     showWalletDetails() {
       const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLButtonElement).getBoundingClientRect().top;

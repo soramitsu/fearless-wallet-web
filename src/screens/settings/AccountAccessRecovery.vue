@@ -76,6 +76,37 @@
               {{ t('migration.downloadBackup') }}
             </button>
           </section>
+
+          <!-- Deleting a wallet keeps its keys on this device; it comes back here exactly as it was. -->
+          <template v-if="!isLoading && deletedWallets.length">
+            <h2 class="account-access__subtitle" data-testid="deletedWalletsTitle">{{ t('accountAccess.deletedTitle') }}</h2>
+
+            <section
+              v-for="wallet in deletedWallets"
+              :key="wallet.id"
+              class="access-row"
+              data-testid="deletedWallet"
+              :data-address="wallet.address"
+            >
+              <strong class="access-row__name">{{ wallet.name || wallet.address }}</strong>
+              <span class="access-row__address">{{ wallet.address }}</span>
+              <span class="access-row__hint">{{ t('accountAccess.deletedHint', { date: formatDate(wallet.deletedAt) }) }}</span>
+              <span v-if="restoreErrors[wallet.id]" class="access-row__error" role="alert" data-testid="deletedWalletError">
+                {{ t(restoreErrors[wallet.id]) }}
+              </span>
+
+              <div class="access-row__actions">
+                <FButton
+                  text="accountAccess.restore"
+                  size="small"
+                  fontSize="small"
+                  :disabled="!!restoring"
+                  data-testid="deletedWalletRestore"
+                  @click="restore(wallet)"
+                />
+              </div>
+            </section>
+          </template>
         </div>
 
         <FButton
@@ -95,13 +126,15 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type { AccountAccessIssue } from '@extension-base/background/types/types';
+import type { AccountAccessIssue, DeletedWalletSummary } from '@extension-base/background/types/types';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import {
   getAccessStatus,
+  getDeletedWallets,
   migrateExportJSON,
   recoverAccountWithPassword,
   recoverAccountWithPhrase,
+  restoreDeletedWallet,
 } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { downloadJsonAccount } from '@/helpers/files';
@@ -133,12 +166,15 @@ const RESULT_ERROR_KEYS: Record<string, string> = {
 
 const router = useRouter();
 const notify = useNotify();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const accountsStore = useAccountsStore();
 
 const rows = ref<AccessRow[]>([]);
 const isLoading = ref(true);
 const loadFailed = ref(false);
+const deletedWallets = ref<DeletedWalletSummary[]>([]);
+const restoring = ref('');
+const restoreErrors = ref<Record<string, string>>({});
 
 const matchesScope = (issue: AccountAccessIssue): boolean =>
   !!props.address &&
@@ -170,6 +206,19 @@ async function load(): Promise<void> {
     loadFailed.value = true;
   } finally {
     isLoading.value = false;
+  }
+
+  await loadDeletedWallets();
+}
+
+// Opened from a failed send or export, the screen is about that account only. The list never holds up unlocking.
+async function loadDeletedWallets(): Promise<void> {
+  if (props.address) return;
+
+  try {
+    deletedWallets.value = await getDeletedWallets();
+  } catch (error) {
+    console.error(error);
   }
 }
 
@@ -251,6 +300,42 @@ async function downloadBackup(row: AccessRow): Promise<void> {
   }
 }
 
+function formatDate(timestamp: number): string {
+  try {
+    return new Intl.DateTimeFormat(String(locale?.value ?? 'en'), { dateStyle: 'medium' }).format(timestamp);
+  } catch {
+    return new Date(timestamp).toISOString().slice(0, 10);
+  }
+}
+
+// The wallet's records go back where they were; a record stored there since is never written over.
+async function restore(wallet: DeletedWalletSummary): Promise<void> {
+  if (restoring.value) return;
+
+  restoring.value = wallet.id;
+  restoreErrors.value = { ...restoreErrors.value, [wallet.id]: '' };
+
+  try {
+    const result = await restoreDeletedWallet(wallet.id);
+
+    if (!result.ok) {
+      restoreErrors.value = {
+        ...restoreErrors.value,
+        [wallet.id]: result.code === 'already_in_wallet' ? 'accountAccess.alreadyRestored' : 'accountAccess.restoreFailed',
+      };
+
+      return;
+    }
+
+    notify({ title: t('accountAccess.restored', { name: wallet.name || wallet.address }), message: '', type: 'success' });
+    deletedWallets.value = deletedWallets.value.filter(({ id }) => id !== wallet.id);
+  } catch {
+    restoreErrors.value = { ...restoreErrors.value, [wallet.id]: 'accountAccess.restoreFailed' };
+  } finally {
+    restoring.value = '';
+  }
+}
+
 // Back to the send, export or password prompt that sent the user here; Settings when opened on its own.
 function close(): void {
   if (window.history.state?.back) router.go(-1);
@@ -317,6 +402,18 @@ function close(): void {
   color: $grayish-white;
   font-size: 0.75rem;
   line-height: 1.35;
+}
+
+.access-row__error {
+  color: $reject-color;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.account-access__subtitle {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .access-row__actions {

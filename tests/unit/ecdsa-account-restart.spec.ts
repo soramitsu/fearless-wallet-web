@@ -142,6 +142,12 @@ hoisted.createUiKeyring = () => {
         }
       });
     },
+    // Keyring.loadAccount, which loadAll calls for each stored record.
+    loadAccount: (json: KeyringPair$Json, key: string) => {
+      if (!/^account:0x[0-9a-f]*/.test(key) || json.meta.isTesting || !json.encoded) return;
+      const pair = backend.addFromJson(json, true);
+      accounts.add(store, pair.address, pair.publicKey, json, pair.type);
+    },
     getPair: (address: string) => backend.getPair(address),
     getAccounts: () => Object.entries(accounts.subject.value).map(([address, { json }]) => ({ address, meta: json.meta })),
     getAddresses: () => [],
@@ -185,6 +191,7 @@ hoisted.createUiKeyring = () => {
 
 const ACCOUNT = 'fw:account:';
 const ARCHIVE = 'fw:archivedAccount:';
+const DELETED = 'fw:deletedWallet:';
 const NEW_MASTER = 'Master password changed in 4.2.0';
 const payload = new TextEncoder().encode('Fearless ECDSA upgrade check');
 // Every key opens with real scrypt; 4.2.0 re-encrypts with N = 2^17.
@@ -268,7 +275,9 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
     expect(first.service.unlockKeyring({ password: MASTER })).toBe(true);
     expect(await first.service.saveAccountMeta(signer.address, { name: 'Signer, renamed in 4.2.0' })).toBe(true);
     expect(await first.service.changeMasterPassword({ oldPassword: MASTER, newPassword: NEW_MASTER })).toBe(true);
-    // Settings → Delete wallet: the Ethereum account first, then the account (Extension.accountsForget).
+    // Settings → Delete wallet: the keys are kept first, then the Ethereum account and the account are removed
+    // (Extension.accountsForget).
+    await first.service.archiveWallet(spare.address);
     first.service.forgetAccount(spare.ethereumAddress);
     first.service.forgetAccount(spare.address);
     await first.settle();
@@ -285,9 +294,10 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
     expect(second.service.unlockKeyring({ password: NEW_MASTER })).toBe(true);
     expect(second.service.unlockPair(signer.address)).toBe(true);
 
-    // The deleted wallet left nothing behind: no record under either key, no archive.
+    // The deleted wallet is out of the keyring: no record under either key and no set-aside record any keyring
+    // loads. Its keys are kept only in the deleted-wallet entry Account access restores from.
     const spareRecord = shippedRecordOf(profile306, spare.address);
-    expect(copiesOf(publicKeyOf(spareRecord))).toEqual([]);
+    expect(copiesOf(publicKeyOf(spareRecord)).map(([key]) => key)).toEqual([expect.stringMatching(new RegExp(`^${DELETED}`))]);
     expect(liveRecordOf(spare.ethereumAddress)).toBeUndefined();
 
     // Exactly one live record for the renamed account: it opens with the new password only, and holds the key
@@ -313,6 +323,76 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
 
     // The sr25519 wallet kept its key and moved to the new password with the others.
     expect(opensWith(liveRecordOf(daily.address)!, NEW_MASTER)?.address).toBe(daily.address);
+    // The writes this worker queued at its start land here, not in the storage of the next test.
+    await second.settle();
+  });
+
+  it('keeps a deleted wallet where Account access restores it, exactly as it was, across restarts', SCRYPT_SUITE, async () => {
+    const first = await startWorker();
+    const spareRecord = shippedRecordOf(profile306, spare.address);
+
+    expect(first.service.unlockKeyring({ password: MASTER })).toBe(true);
+    await first.settle();
+    const before = structuredClone(stored());
+    await first.service.archiveWallet(spare.address);
+    first.service.forgetAccount(spare.ethereumAddress);
+    first.service.forgetAccount(spare.address);
+    await first.settle();
+
+    // Every record that held the wallet's keys, byte for byte, in one entry no keyring loads.
+    const [[entryKey, entry]] = Object.entries(stored()).filter(([key]) => key.startsWith(DELETED)) as unknown as [string, {
+      address: string; name: string; accounts: Record<string, unknown>;
+    }][];
+    expect(entry).toMatchObject({ address: spare.address, name: spareRecord.meta.name });
+    // The account under its public key, the 3.0.6 record set aside at the first start, and the Ethereum account.
+    expect(Object.keys(entry.accounts).sort()).toEqual(
+      [
+        `account:${publicKeyOf(spareRecord)}`,
+        `archivedAccount:${u8aToHex(decodeAddress(spare.address))}`,
+        `account:${spare.ethereumAddress.toLowerCase()}`,
+      ].sort()
+    );
+    Object.entries(entry.accounts).forEach(([key, value]) => expect(value).toEqual(before[`fw:${key}`]));
+
+    const second = await startWorker();
+    expect(second.service.getAccounts().map(({ address }) => address)).not.toContain(spare.address);
+    const deleted = await second.service.getDeletedWallets();
+    expect(deleted).toEqual([
+      { id: entryKey.slice(DELETED.length), address: spare.address, name: spareRecord.meta.name, walletEcosystem: 'substrate', deletedAt: expect.any(Number) },
+    ]);
+
+    expect(await second.service.restoreDeletedWallet(deleted[0].id)).toMatchObject({ ok: true, address: spare.address });
+    await second.settle();
+    expect(second.service.getAccounts().map(({ address }) => address)).toEqual(expect.arrayContaining([spare.address, spare.ethereumAddress]));
+    expect(await second.service.getDeletedWallets()).toEqual([]);
+    expect(Object.keys(stored()).filter((key) => key.startsWith(DELETED))).toEqual([]);
+    // Restoring twice finds nothing to restore, and never writes over what is back.
+    expect(await second.service.restoreDeletedWallet(deleted[0].id)).toEqual({ ok: false, code: 'not_found' });
+
+    // At the next start the wallet is listed once, opens with the master password and signs with the key the
+    // 3.0.6 phrase derives.
+    const third = await startWorker();
+    expect(third.service.getAccounts().filter(({ address }) => address === spare.address)).toHaveLength(1);
+    expect(third.service.unlockKeyring({ password: MASTER })).toBe(true);
+    expect(third.service.unlockPair(spare.address)).toBe(true);
+    const live = accountRecords().filter(([, json]) => publicKeyOf(json) === publicKeyOf(spareRecord));
+    expect(live).toHaveLength(1);
+    const pair = opensWith(live[0][1], MASTER)!;
+    const derived = checker.addFromUri(spare.mnemonic, {}, 'ecdsa');
+    expect(pair.address).toBe(spare.address);
+    expect(derived.verify(payload, pair.sign(payload), derived.publicKey)).toBe(true);
+  });
+
+  it('deletes nothing when the keys could not be kept', SCRYPT_SUITE, async () => {
+    const first = await startWorker();
+    await first.settle();
+    const before = structuredClone(stored());
+    const { default: AccountsStore } = await import('@extension-base/stores/Accounts');
+    vi.spyOn(AccountsStore.prototype, 'replaceAndWait').mockRejectedValueOnce(new Error('QUOTA_BYTES quota exceeded'));
+
+    await expect(first.service.archiveWallet(spare.address)).rejects.toThrow('QUOTA_BYTES');
+    await first.settle();
+    expect(stored()).toEqual(before);
   });
 
   it('leaves no ECDSA record behind after Reset wallet, at the next start either', SCRYPT_SUITE, async () => {
@@ -344,6 +424,7 @@ describe('ECDSA accounts from 2.x (a password per account) across service worker
     );
     expect(await first.service.changeMasterPassword({ newPassword: MASTER })).toBe(true);
     expect(await first.service.keyringMigrateMasterPassword({ address: vault.address, password: vault.password })).toBe(true);
+    await first.service.archiveWallet(spare.address);
     first.service.forgetAccount(spare.ethereumAddress);
     first.service.forgetAccount(spare.address);
     await first.settle();
@@ -370,6 +451,10 @@ describe('ECDSA accounts from 2.x (a password per account) across service worker
     expect(archived.records.map(({ record }) => record)).toEqual([shipped]);
     expect(opensWith(shipped, vault.password)?.address).toBe(vault.address);
 
-    expect(copiesOf(publicKeyOf(shippedRecordOf(profile263, spare.address)))).toEqual([]);
+    // The deleted wallet is kept, still under its 2.6.3 password, only where Account access restores it from.
+    const spareShipped = shippedRecordOf(profile263, spare.address);
+    const spareCopies = copiesOf(publicKeyOf(spareShipped));
+    expect(spareCopies.map(([key]) => key)).toEqual([expect.stringMatching(new RegExp(`^${DELETED}`))]);
+    expect(Object.values((spareCopies[0][1] as unknown as { accounts: Record<string, KeyringPair$Json> }).accounts)).toContainEqual(spareShipped);
   });
 });

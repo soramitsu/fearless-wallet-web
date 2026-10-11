@@ -152,9 +152,9 @@ const changePassword = async () => {
     () => false
   );
 
-  isWait.value = false;
-
   if (!changed) {
+    isWait.value = false;
+
     const failure = alreadyHasMasterPassword.value ? 'changePasswordFailed' : 'createPasswordFailed';
 
     notify({ title: t(`welcome.${failure}`), message: '', type: 'error' });
@@ -178,7 +178,10 @@ const changePassword = async () => {
     notify({ title: tc('accountAccess.changePasswordPending', waiting, { count: waiting }), message: '', type: 'info' });
   }
 
+  // Confirm stays disabled until the screen is left: a second press would check the old password again and fail.
   close(false);
+
+  isWait.value = false;
 };
 </script>
 

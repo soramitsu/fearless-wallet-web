@@ -105,6 +105,7 @@ import { isSameString, setClipboard } from '@/helpers';
 import { findTransferAssetGroup } from '@/helpers/currencies';
 import { IS_EXTENSION } from '@/consts/global';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { canonicalGroupIndexFor, canonicalGroupOf } from '@/portfolio/tokenGroups';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -120,12 +121,14 @@ export default defineComponent({ name: 'ReceiveForm' ,
       accountsStore: useAccountsStore(),
       filterValue: '',
       selectedNetwork: 'polkadot',
+      /** The registry id of the token group member picked in the network list, when it differs from the route's. */
+      selectedMemberAssetId: '',
       showSelectNetworkPopup: false,
     };
   },
   computed: {
     selectedAssetId() {
-      return this.$route.params.assetId ?? '';
+      return this.selectedMemberAssetId || (this.$route.params.assetId ?? '');
     },
     popupLeft() {
       return IS_EXTENSION ? -160 : 0;
@@ -168,16 +171,33 @@ export default defineComponent({ name: 'ReceiveForm' ,
 
       return !isNetworkTransferEnabled(network);
     },
+    // The approved token group of the asset (portfolio contract §7): its other networks, by (chainId, assetId).
+    groupNetworkAssets() {
+      const members = new Map<string, string>();
+      const index = canonicalGroupIndexFor(this.networksStore.allNetworks ?? []);
+      const group = canonicalGroupOf(index, this.selectedNetworkJson, this.receiveBalance?.id ?? this.selectedAssetId)?.group;
+
+      group?.members.forEach(({ networkName, assetId }) => {
+        if (!members.has(networkName)) members.set(networkName, assetId);
+      });
+
+      return members;
+    },
     assetNetworks() {
-      // Every network that holds the same registry asset, e.g. KSM on Kusama and Kusama AssetHub.
+      // Every network that holds the same registry asset, e.g. KSM on Kusama and Kusama AssetHub, and every network
+      // of the asset's token group, e.g. DOT on the parachains that hold reserve-backed DOT.
       const assetId = this.receiveBalance?.id ?? this.selectedAssetId;
       const filter = this.filterValue.toLowerCase();
       const networkNames = new Set<string>();
+      const isMember = (id: string, name: string) =>
+        [...this.groupNetworkAssets].some(
+          ([networkName, memberId]) => isSameString(name, networkName) && isSameString(id, memberId)
+        );
 
       return this.accountsStore.balances
         .flatMap(({ balances }) => balances)
         .flatMap(({ id, name, icon }) => {
-          const network = isSameString(id, assetId) ? this.networksStore.getNetwork(name) : undefined;
+          const network = isSameString(id, assetId) || isMember(id, name) ? this.networksStore.getNetwork(name) : undefined;
 
           if (!network?.name || networkNames.has(network.name)) return [];
 
@@ -223,6 +243,12 @@ export default defineComponent({ name: 'ReceiveForm' ,
       this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
     },
     toggleSelectedNetwork(value: string) {
+      // A group member can have its own registry id on that network; the symbol and warning follow it.
+      const memberAssetId = this.groupNetworkAssets.get(this.networksStore.getNetwork(value)?.name ?? value);
+      if (memberAssetId && !isSameString(memberAssetId, this.receiveBalance?.id ?? this.selectedAssetId)) {
+        this.selectedMemberAssetId = memberAssetId;
+      }
+
       this.selectedNetwork = value;
 
           this.toggleSelectNetworkPopupVisible();

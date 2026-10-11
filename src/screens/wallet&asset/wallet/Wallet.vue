@@ -24,6 +24,9 @@
           :tokenGroups="filteredTokenGroups"
           :hideZero="accountsStore.portfolioView.hideZero"
           :showTestnets="accountsStore.portfolioView.showTestnets"
+          :lens="accountsStore.portfolioView.lens"
+          :sort="portfolioSort"
+          :showSortControl="legacyOrderIndex.size > 0"
           :hiddenAssetCount="portfolioSummary.hiddenAssetCount"
           :manageHiddenOnly="manageHiddenOnly"
           @update:filterValue="updateFilterValue"
@@ -32,6 +35,8 @@
           @update:hideZero="setHideZero"
           @update:showTestnets="setShowTestnets"
           @update:manageHiddenOnly="setManageHiddenOnly"
+          @update:lens="setLens"
+          @update:sort="setSort"
         />
 
         <router-view
@@ -84,6 +89,7 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
 import { usePortfolio } from '@/portfolio/usePortfolio';
+import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
@@ -104,9 +110,9 @@ export default defineComponent({ name: 'Wallet',
     GoogleExportPopup,
   },
   setup() {
-    const { summary: portfolioSummary, filteredTotal, loadStatus } = usePortfolio();
+    const { summary: portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex } = usePortfolio();
 
-    return { portfolioSummary, filteredTotal, loadStatus };
+    return { portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex };
   },
   data() {
     return {
@@ -149,6 +155,9 @@ export default defineComponent({ name: 'Wallet',
     },
     networksWithWarning() {
       return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
+    },
+    portfolioSort(): PortfolioSort {
+      return resolvePortfolioSort(this.accountsStore.portfolioView, this.legacyOrderIndex.size > 0);
     },
     // Wallet-wide under every filter: hidden, unpriced and testnet assets are excluded and labelled in the list.
     summaryTotalBalance() {
@@ -308,6 +317,12 @@ export default defineComponent({ name: 'Wallet',
     },
     setShowTestnets(value: boolean) {
       this.accountsStore.updatePortfolioView({ showTestnets: value });
+    },
+    setLens(lens: PortfolioLens) {
+      this.accountsStore.updatePortfolioView({ lens });
+    },
+    setSort(sort: PortfolioSort) {
+      this.accountsStore.updatePortfolioView({ sort });
     },
     setManageHiddenOnly(value: boolean) {
       this.manageHiddenOnly = value;

@@ -3,6 +3,7 @@ import type { AccountJson, TokenGroup } from '@extension-base/background/types/t
 import type { NetworkScanState } from '@extension-base/api/evm/types';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode, HiddenAssets, AssetPreferences } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
+import type { PortfolioLayoutRecord } from '@/portfolio/layoutNotice';
 import { accountController } from '@/controllers';
 
 export type State = {
@@ -17,6 +18,8 @@ export type State = {
   hiddenAssetsForAllAccounts: HiddenAssets;
   assetPreferencesForAllAccounts: AssetPreferences;
   portfolioViewForAllAccounts: Record<WalletAddress, Record<string, unknown>>;
+  /** Install-wide: when the By token layout first ran, and whether its one-time note was closed. */
+  portfolioLayout: PortfolioLayoutRecord;
   autoSelectNode: AutoSelectNode;
   isCustomSorted: Record<string, boolean>;
   hiddenWarningNetworks: NetworkName[];
@@ -39,6 +42,7 @@ export const state = (): State => {
     hiddenAssetsForAllAccounts: accountController.getHiddenAssets(),
     assetPreferencesForAllAccounts: accountController.getAssetPreferences(),
     portfolioViewForAllAccounts: accountController.getPortfolioViewSettings(),
+    portfolioLayout: accountController.getPortfolioLayout(),
     accounts: [],
     isCustomSorted: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),

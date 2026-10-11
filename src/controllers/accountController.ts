@@ -2,6 +2,7 @@ import type { NftSettings } from '@extension-base/services/nft-service/types';
 import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { HiddenAssets } from '@/stores/accounts/types';
 import type { AssetPreference } from '@/portfolio/assetIdentity';
+import { parsePortfolioLayoutRecord, type PortfolioLayoutRecord } from '@/portfolio/layoutNotice';
 import { resolveLang, type Lang } from '@/locales/languages';
 import { LocalStorage } from '@/controllers/localStorageController';
 
@@ -49,6 +50,7 @@ class AccountController {
   private readonly hiddenAssets = 'hidden-assets';
   private readonly assetPreferences = 'asset-preferences-v1';
   private readonly portfolioView = 'portfolio-view-v1';
+  private readonly portfolioLayout = 'portfolio-layout-v1';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hidingPoolsBanner = 'hiding-pools-banner';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
@@ -151,6 +153,37 @@ class AccountController {
 
   public setPortfolioViewSettings(settings: Record<WalletAddress, Record<string, unknown>>): void {
     this.lsAccount.set(this.portfolioView, settings);
+  }
+
+  /**
+   * The install-wide By token layout record (`portfolio/layoutNotice.ts`). Read-only: until the app records its
+   * first run, `firstRunAt` reads as now.
+   */
+  public getPortfolioLayout(now: number = Date.now()): PortfolioLayoutRecord {
+    return this.safeGet(this.portfolioLayout, parsePortfolioLayoutRecord, undefined) ?? { firstRunAt: now };
+  }
+
+  /**
+   * Writes `firstRunAt` on the first start of a build with the By token layout; a stored record is never changed.
+   * Storage that cannot be written leaves the record for this session only, which can only show the note to fewer
+   * wallets, never to a wallet created after this start.
+   */
+  public recordPortfolioLayoutFirstRun(now: number = Date.now()): PortfolioLayoutRecord {
+    const stored = this.safeGet(this.portfolioLayout, parsePortfolioLayoutRecord, undefined);
+    if (stored) return stored;
+
+    const record = { firstRunAt: now };
+    try {
+      this.lsAccount.set(this.portfolioLayout, record);
+    } catch {
+      // A convenience preference: the in-memory record still applies to this session.
+    }
+
+    return record;
+  }
+
+  public setPortfolioLayout(record: PortfolioLayoutRecord): void {
+    this.lsAccount.set(this.portfolioLayout, record);
   }
 
   /** Everything 3.0.5 stored about one wallet's asset list, for the read-only rebuild in `legacyPreferences305`. */

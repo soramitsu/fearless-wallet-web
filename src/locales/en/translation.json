@@ -504,7 +504,45 @@
     "transferable": "Transferable {amount}",
     "inclHidden": "incl. hidden",
     "noHiddenAssets": "No hidden assets",
-    "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again."
+    "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again.",
+    "networkCount": "1 network | {count} networks",
+    "priceUnavailableOn": "Price unavailable on 1 network | Price unavailable on {count} networks",
+    "moreZeroNetworks": "+1 network · no balance | +{count} networks · no balance",
+    "zeroTokens": "1 token · no balance | {count} tokens · no balance",
+    "tokenGroupLabel": "{symbol} on 1 network: {amount}, {value} | {symbol} on {count} networks: {amount}, {value}",
+    "tokenSingleLabel": "{symbol} on {network}: {amount}, {value}",
+    "role": {
+      "native": "Native",
+      "systemParachain": "System parachain",
+      "xcmReserve": "XCM reserve",
+      "rollup": "Rollup",
+      "issuerNative": "Issuer native"
+    },
+    "lens": {
+      "label": "View",
+      "tokens": "By token",
+      "networks": "By network"
+    },
+    "sort": {
+      "label": "Sort",
+      "value": "Value",
+      "custom": "Your order"
+    },
+    "layoutNote": {
+      "title": "Your assets, now by token",
+      "description": "Each token shows once, with its total across networks. Tap it to see every network.",
+      "networks": "Bridged and wrapped versions keep their own rows, labelled with their network, and you always choose the network when you send or receive.",
+      "customOrderKept": "Your order from the previous version is kept. Switch to Value anytime.",
+      "gotIt": "Got it",
+      "byNetwork": "View by network"
+    },
+    "groupPicker": {
+      "sendTitle": "Send {symbol}: choose a network",
+      "receiveTitle": "Receive {symbol}: choose a network",
+      "sendWarning": "{symbol} is on several networks. Send it on the network the recipient uses: tokens sent on another network may be lost.",
+      "receiveWarning": "Choose the network the sender will use. Only send {symbol} on that network to this wallet: tokens sent from other networks may be lost.",
+      "noSendNetwork": "No network can send {symbol} right now."
+    }
   },
   "polkamarktPage": {
     "backToMarkets": "Back to markets",
@@ -825,7 +863,8 @@
     "solanaTransactionExpired": "The network did not confirm this transfer in time, so nothing was sent. You can try again.",
     "solanaTransactionFailed": "The network processed this transfer, but it failed, so the amount was not sent. Only the network fee was charged.",
     "solanaBroadcastUnconfirmed": "This transfer is not confirmed yet. Check your history before sending again. The wallet will not start another Solana transfer until this one is settled.",
-    "viewSolanaHistoryOnExplorer": "See your full Solana history on Solscan"
+    "viewSolanaHistoryOnExplorer": "See your full Solana history on Solscan",
+    "sendGroupNetworkWarning": "{symbol} is on several networks. This send uses {network}: check that the recipient accepts {symbol} on {network}."
   },
   "accounts": {
     "invalidAccountAddress": "Invalid account address",

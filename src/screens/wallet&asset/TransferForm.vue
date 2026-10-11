@@ -128,6 +128,10 @@
                 />
               </div>
 
+              <p v-if="showGroupNetworkWarning" class="send-note" data-testid="sendGroupNetworkWarning">
+                {{ $t('assets.sendGroupNetworkWarning', { symbol: sendAssetName?.toUpperCase(), network: originNet?.name ?? syncedNetwork }) }}
+              </p>
+
               <p v-if="bitcoinRecipientHint" class="send-note" data-testid="bitcoinRecipientTypes">
                 {{ $t('assets.bitcoinSupportedAddresses', { prefixes: bitcoinRecipientHint }) }}
               </p>
@@ -313,6 +317,7 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { canonicalGroupIndexFor, canonicalGroupOf } from '@/portfolio/tokenGroups';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 
 const VALID_BITCOIN_ADDRESS = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4';
@@ -741,31 +746,60 @@ export default defineComponent({
         isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
       });
     },
+    // The approved token group of the asset being sent (portfolio contract §7), matched by (chainId, assetId).
+    canonicalGroup() {
+      const index = canonicalGroupIndexFor(this.networksStore.allNetworks ?? []);
+
+      return canonicalGroupOf(index, this.originNet, this.currencyBalance?.id ?? this.syncedAssetId);
+    },
+    // Each network of the group as `network name → registry id there`, for the networks this wallet can send on.
+    groupNetworkAssets() {
+      const members = new Map<string, string>();
+      const group = this.canonicalGroup?.group;
+      if (!group) return members;
+
+      group.members.forEach(({ networkName, assetId }) => {
+        const holds = this.accountsStore.balances.some(({ balances }) =>
+          balances.some((balance) => isSameString(balance.name, networkName) && isSameString(balance.id, assetId))
+        );
+
+        if (holds && !members.has(networkName)) members.set(networkName, assetId);
+      });
+
+      return members;
+    },
     optionsNetworks() {
       // used only for transfer
-      // Every network that holds the same registry asset (DOT on Polkadot and Polkadot AssetHub).
-      const assetId = this.currencyBalance?.id ?? this.currency?.balances[0]?.id ?? this.syncedAssetId;
+      // The asset's own network, plus the other networks of its approved token group: DOT on Polkadot, Polkadot
+      // AssetHub and the parachains that hold reserve-backed DOT. Never by symbol, and never a bridged look-alike.
+      const currentId = this.currencyBalance?.id ?? this.currency?.balances[0]?.id ?? this.syncedAssetId;
+      const candidates = [
+        ...this.accountsStore.balances.flatMap(({ balances }) =>
+          balances.filter(({ id, name }) => isSameString(id, currentId) && isSameString(name, this.syncedNetwork))
+        ),
+        ...this.accountsStore.balances.flatMap(({ balances }) =>
+          balances.filter(({ id, name }) =>
+            [...this.groupNetworkAssets].some(
+              ([networkName, assetId]) => isSameString(name, networkName) && isSameString(id, assetId)
+            )
+          )
+        ),
+      ];
       const networkNames = new Set<string>();
 
-      return this.accountsStore.balances.flatMap(({ balances }) =>
-        balances.flatMap(({ id, name, icon }) => {
-          if (!isSameString(id, assetId)) return [];
+      return candidates.flatMap(({ name, icon }) => {
+        const network = this.networksStore.getNetwork(name);
 
-          const network = this.networksStore.getNetwork(name);
+        if (!network?.active || !this.isTransferEnabled(network) || networkNames.has(network.name)) return [];
 
-          if (!network?.active || !this.isTransferEnabled(network) || networkNames.has(network.name)) return [];
+        networkNames.add(network.name);
 
-          networkNames.add(network.name);
-
-          return [
-            {
-              name: network.name,
-              value: network.name,
-              icon,
-            },
-          ];
-        })
-      );
+        return [{ name: network.name, value: network.name, icon }];
+      });
+    },
+    // Several networks carry this token: say which one this send uses, before the recipient is checked.
+    showGroupNetworkWarning() {
+      return this.isTransfer && this.groupNetworkAssets.size > 1 && this.syncedNetwork !== '';
     },
     originNet() {
       return this.networksStore.getNetwork(this.syncedNetwork);
@@ -1065,7 +1099,12 @@ export default defineComponent({
 
         this.toggleValue('showSelectedAssetPopup');
       } else if (this.showSelectNetworkPopup) {
+        // A group member on another network can have its own registry id: switch the network and that id
+        // together, so the asset is never replaced silently (the asset watcher then clears the amount).
+        const assetId = this.groupNetworkAssets.get(this.networksStore.getNetwork(value)?.name ?? value);
+
         this.syncedNetwork = value;
+        if (assetId && !isSameString(assetId, this.transferAssetId)) this.syncedAssetId = assetId;
 
         this.toggleValue('showSelectNetworkPopup');
       } else {

@@ -24,6 +24,32 @@ export interface UntrustedAssetEntry {
   assetId: string;
 }
 
+/**
+ * Why an asset is a member of its group: `native` (the relay chain or L1 coin), `system-parachain`,
+ * `xcm-reserve` (a reserve-backed copy on a parachain), `canonical-rollup`, `issuer-native` (deployed by the
+ * issuer itself) or `app-owned-native`. The portfolio shows it next to the network, so a parachain copy is never
+ * read as the relay-chain asset.
+ */
+export type CanonicalMemberRole = string;
+
+/** One member of an approved group, exactly as the shared file lists it. */
+export interface CanonicalGroupMemberEntry {
+  chainId: string;
+  assetId: string;
+  symbol: string;
+  precision: number;
+  role: CanonicalMemberRole;
+  network: string;
+}
+
+/** One approved group of the shared file (portfolio contract §1, §6). */
+export interface CanonicalGroupEntry {
+  id: string;
+  symbol: string;
+  name: string;
+  members: CanonicalGroupMemberEntry[];
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -73,9 +99,57 @@ export function parseUntrustedAssets(document: unknown): UntrustedAssetEntry[] {
     .map(({ chainId, assetId }) => ({ chainId: chainId as string, assetId: assetId as string }));
 }
 
+const GROUP_ID = /^[a-z0-9][a-z0-9-]{0,31}$/u;
+
+function parseGroupMember(value: unknown): CanonicalGroupMemberEntry | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const { chainId, assetId, symbol, precision, role, network } = value;
+  if (![chainId, assetId, symbol, role].every(isIdentifier)) return undefined;
+  if (!Number.isInteger(precision) || (precision as number) < 0) return undefined;
+
+  return {
+    chainId: chainId as string,
+    assetId: assetId as string,
+    symbol: symbol as string,
+    precision: precision as number,
+    role: role as string,
+    network: typeof network === 'string' ? network : '',
+  };
+}
+
+/**
+ * The approved groups of the shared file. Proposed groups never render (portfolio contract §6). A document of
+ * another format or version gives no groups, so every asset stays its own row and nothing can merge wrongly; a group
+ * with a malformed member is left out whole rather than rendered without it.
+ */
+export function parseApprovedGroups(document: unknown): CanonicalGroupEntry[] {
+  if (!isRecord(document) || document.format !== 'fearless.canonical-asset-groups' || document.version !== 1) return [];
+  if (!Array.isArray(document.groups)) return [];
+
+  return document.groups.flatMap((group) => {
+    if (!isRecord(group) || group.status !== 'approved' || !Array.isArray(group.members)) return [];
+    if (typeof group.id !== 'string' || !GROUP_ID.test(group.id) || !isIdentifier(group.symbol)) return [];
+
+    const members = group.members.map(parseGroupMember);
+    if (members.length === 0 || members.some((member) => !member)) return [];
+
+    return [
+      {
+        id: group.id,
+        symbol: group.symbol as string,
+        name: isIdentifier(group.name) ? (group.name as string) : (group.symbol as string),
+        members: members as CanonicalGroupMemberEntry[],
+      },
+    ];
+  });
+}
+
 export const TESTNET_CHAIN_IDS: ReadonlySet<string> = parseTestnetChainIds(testnetChainIdsDocument);
 
 export const DEFAULT_VISIBLE_AT_ZERO: readonly ZeroDefaultEntry[] | undefined =
   parseDefaultVisibleAtZero(defaultVisibleAtZeroDocument);
 
 export const UNTRUSTED_ASSETS: readonly UntrustedAssetEntry[] = parseUntrustedAssets(canonicalAssetGroupsDocument);
+
+export const APPROVED_GROUPS: readonly CanonicalGroupEntry[] = parseApprovedGroups(canonicalAssetGroupsDocument);

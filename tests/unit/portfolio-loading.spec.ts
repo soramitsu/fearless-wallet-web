@@ -194,6 +194,8 @@ describe('first open after upgrading from 3.0.5', () => {
     // The background answers the first balance request at once.
     accountsStore.setBalance({ details: groups });
     accountsStore.setIsBalanceLoading(false);
+    // Rows are read per network section; the loading state is the same in both lenses.
+    accountsStore.updatePortfolioView({ lens: 'network' });
 
     const scope = effectScope();
     const portfolio = scope.run(() => usePortfolio())!;

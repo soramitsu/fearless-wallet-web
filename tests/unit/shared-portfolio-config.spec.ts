@@ -19,6 +19,9 @@ import {
   parseUntrustedAssets,
 } from '@/portfolio/canonicalGroups';
 import { createUntrustedAssetCheck } from '@/portfolio/untrustedAssets';
+import { buildCanonicalGroupIndex } from '@/portfolio/tokenGroups';
+import { buildTokenRows } from '@/portfolio/tokenLens';
+import { createAssetKey } from '@/portfolio/assetKey';
 import { createZeroDefaultRule, isTestnetNetwork, registryAssetKey } from '@/portfolio/zeroRule';
 import { mergeUniversalWalletRegistryNetworks } from '@/util/universalWalletRegistryNetworks';
 
@@ -238,4 +241,96 @@ describe('untrusted registry prices', () => {
       expect(rowOf(buildPortfolioSections({ ...unlisted, preferences: {} }))).toMatchObject({ fiatValue: '50000', priceTrust: 'canonicalAsset' });
     }
   );
+});
+
+// Portfolio contract §2 and §6: the approved groups of the shared file, replayed through the extension's own loader,
+// key mapping and By token rows. Android and iOS replay the same file in their consumer tests.
+describe('portfolio parity cases (approved token groups)', () => {
+  const networkMap = networkMap305(readSnapshot());
+  mergeUniversalWalletRegistryNetworks(networkMap, undefined);
+  const networks = Object.values(networkMap).map((network) => ({ ...network, favorite: [] })) as NetworkJson[];
+  const document = JSON.parse(repositoryFile('src/portfolio/data/canonical-asset-groups.v1.json').toString('utf8')) as {
+    groups: Array<{
+      id: string;
+      symbol: string;
+      status: string;
+      priceId: string;
+      members: Array<{ chainId: string; assetId: string; symbol: string; precision: number; role: string }>;
+    }>;
+  };
+  const approved = document.groups.filter(({ status }) => status === 'approved');
+  const proposed = document.groups.filter(({ status }) => status !== 'approved');
+  const index = buildCanonicalGroupIndex({ networks });
+  const networkOf = (chainId: string) => networks.find((network) => network.chainId === chainId)!;
+
+  /** Every registry asset funded with one unit, on every network a universal wallet holds an account for. */
+  function fundedEverywhere(): ReturnType<typeof getMockAssets> {
+    const groups = [WalletEcosystem.Substrate, WalletEcosystem.Bitcoin].flatMap((ecosystem) => getMockAssets(networkMap, ecosystem));
+    groups.forEach(({ balances }) =>
+      balances.forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: '1', transferable: '1' }))
+    );
+    return groups;
+  }
+
+  it('resolves exactly the approved members against the reviewed registry, each to one extension key', () => {
+    expect(approved.map(({ id }) => id).sort()).toEqual([...index.groups.keys()].sort());
+    expect(index.diagnostics).toEqual([]);
+
+    approved.forEach((group) =>
+      group.members.forEach((member) => {
+        const network = networkOf(member.chainId);
+        const key = createAssetKey({ ecosystem: String(network.ecosystem), chainId: member.chainId, assetId: member.assetId });
+
+        expect(index.memberOfKey.get(key), `${group.id} ${member.chainId}`).toMatchObject({ groupId: group.id, role: member.role });
+      })
+    );
+    expect(index.memberOfKey.size).toBe(approved.reduce((count, { members }) => count + members.length, 0));
+  });
+
+  it.each(approved.map((group) => [group.id, group] as const))('renders the %s group as one row over all its members', (_id, group) => {
+    const sections = buildPortfolioSections({
+      groups: fundedEverywhere(),
+      networks,
+      prices: { [group.priceId]: 2 },
+      preferences: {},
+      addressForNetwork: () => 'wallet',
+    });
+    const rows = buildTokenRows({ sections, index }).filter((row) =>
+      [...row.children, ...row.zeroChildren].some(({ asset }) => index.memberOfKey.get(asset.key)?.groupId === group.id)
+    );
+
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row).toMatchObject({
+      symbol: group.symbol,
+      networkCount: group.members.length,
+      balanceText: String(group.members.length),
+      fiatValue: String(group.members.length * 2),
+    });
+    // A one-member group is a plain row, labelled with its network.
+    expect(row.groupId).toBe(group.members.length > 1 ? group.id : undefined);
+  });
+
+  it('never renders a proposed group: each of its members stays a row of its own', () => {
+    const sections = buildPortfolioSections({
+      groups: fundedEverywhere(),
+      networks,
+      prices: {},
+      preferences: {},
+      addressForNetwork: () => 'wallet',
+    });
+    const rows = buildTokenRows({ sections, index });
+    const proposedKeys = new Set(
+      proposed.flatMap(({ members }) =>
+        members.map(({ chainId, assetId }) =>
+          createAssetKey({ ecosystem: String(networkOf(chainId).ecosystem), chainId, assetId })
+        )
+      )
+    );
+
+    expect(proposedKeys.size).toBeGreaterThan(0);
+    rows
+      .filter((row) => [...row.children, ...row.zeroChildren].some(({ asset }) => proposedKeys.has(asset.key)))
+      .forEach((row) => expect(row.networkCount, row.id).toBe(1));
+  });
 });

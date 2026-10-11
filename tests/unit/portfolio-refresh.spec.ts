@@ -52,6 +52,7 @@ vi.mock('@/portfolio/usePortfolio', () => ({
   }),
 }));
 vi.mock('@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue', () => ({ default: {} }));
+vi.mock('@/router/routes', () => ({ Components: { SendForm: 'SendForm', ReceiveForm: 'ReceiveForm' } }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 

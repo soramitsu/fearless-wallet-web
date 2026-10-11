@@ -504,7 +504,45 @@
     "transferable": "𒊭 𒋗𒁍𒇷𒅎 {amount}",
     "inclHidden": "𒀉𒋾 𒊭 𒅗𒀜𒈬",
     "noHiddenAssets": "𒈠𒀝𒆪𒊒 𒊭 𒅗𒀜𒈬 𒆷 𒁀𒋗𒌑",
-    "noHiddenAssetsDescription": "𒈠𒀝𒆪𒊒 𒊭 𒋫𒅗𒀜𒋫𒈬 𒀭𒈾𒀀 𒅔𒈾𒄠𒈠𒊒, 𒀀𒈾 𒊭𒉌𒅖 𒌌𒇻𒈪𒋗𒉡."
+    "noHiddenAssetsDescription": "𒈠𒀝𒆪𒊒 𒊭 𒋫𒅗𒀜𒋫𒈬 𒀭𒈾𒀀 𒅔𒈾𒄠𒈠𒊒, 𒀀𒈾 𒊭𒉌𒅖 𒌌𒇻𒈪𒋗𒉡.",
+    "networkCount": "1 𒊑𒅅𒋢𒌝 | {count} 𒊑𒅅𒊓𒌅𒌝",
+    "priceUnavailableOn": "𒅆𒈬𒌝 𒄿𒈾 1 𒊑𒅅𒋛𒅎 𒆷 𒁀𒋗𒌑 | 𒅆𒈬𒌝 𒄿𒈾 {count} 𒊑𒅅𒊓𒋾𒅎 𒆷 𒁀𒋗𒌑",
+    "moreZeroNetworks": "+1 𒊑𒅅𒋢𒌝 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆 | +{count} 𒊑𒅅𒊓𒌅𒌝 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆",
+    "zeroTokens": "1 𒆪𒉡𒊌𒆪𒌝 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆 | {count} 𒆪𒉡𒊌𒆪 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆",
+    "tokenGroupLabel": "{symbol} 𒄿𒈾 1 𒊑𒅅𒋛𒅎: {amount}, {value} | {symbol} 𒄿𒈾 {count} 𒊑𒅅𒊓𒋾𒅎: {amount}, {value}",
+    "tokenSingleLabel": "{symbol} 𒄿𒈾 {network}: {amount}, {value}",
+    "role": {
+      "native": "𒊭 𒊑𒅆𒅎",
+      "systemParachain": "𒊑𒅅𒋢𒌝 𒊏𒀝𒋢𒌝 𒊭 𒆪𒌌𒆷𒋾𒅎",
+      "xcmReserve": "𒈠𒀝𒆪𒊒𒌝 𒈾𒊍𒊒𒌝 𒊭 XCM",
+      "rollup": "𒁍𒄷𒌨 𒅆𒅁𒊑",
+      "issuerNative": "𒊭 𒋡𒀜 𒈾𒁲𒉌𒅎"
+    },
+    "lens": {
+      "label": "𒀀𒈠𒊒𒌝",
+      "tokens": "𒆠𒈠 𒆪𒉡𒊌𒆠𒅎",
+      "networks": "𒆠𒈠 𒊑𒅅𒋛𒅎"
+    },
+    "sort": {
+      "label": "𒋢𒌓𒁲𒅕",
+      "value": "𒅆𒈬𒌝",
+      "custom": "𒋛𒁲𒅕𒌅𒅗"
+    },
+    "layoutNote": {
+      "title": "𒈠𒀝𒆪𒊒𒅗, 𒄿𒈾𒀭𒈾 𒆠𒈠 𒆪𒉡𒊌𒆠𒅎",
+      "description": "𒆪𒉡𒊌𒆪𒌝 𒅖𒋾𒅖𒋗 𒅔𒈾𒄠𒈠𒅈, 𒀉𒋾 𒆪𒌌𒆷𒋾𒋗 𒊭 𒊑𒅅𒊓𒋾𒅎. 𒇻𒁍𒊻𒋢𒈠 𒊑𒅅𒊓𒋾𒅎 𒅗𒇷𒄿𒅆𒈾 𒀀𒈬𒌨.",
+      "networks": "𒆪𒉡𒊌𒆪 𒊭 𒋾𒌅𒌨𒊑𒅎 𒌑 𒆷𒀊𒋗 𒄿𒈾 𒋛𒀉𒊑𒋗𒉡 𒊭𒉡𒌑𒋾𒅎 𒁀𒋗𒌑, 𒀉𒋾 𒋗𒈪 𒊑𒅅𒊓𒋾𒋗𒉡; 𒌑 𒄿𒉡𒈠 𒌅𒊭𒀊𒁀𒇻 𒌑 𒇻 𒋫𒈠𒄴𒄩𒊒 𒊑𒅅𒊓𒄠 𒋫𒁀𒅈𒊑.",
+      "customOrderKept": "𒋛𒁲𒅕𒌅𒅗 𒊭 𒊭𒉌𒄿𒅎 𒆷𒁉𒊑𒅎 𒈾𒊍𒊏𒀜. 𒄿𒈾 𒌑𒈪𒅎 𒈪𒅎𒈠 «𒅆𒈬𒌝» 𒇷𒆥.",
+      "gotIt": "𒄿𒁲𒆪",
+      "byNetwork": "𒆠𒈠 𒊑𒅅𒋛𒅎 𒀀𒈬𒌨"
+    },
+    "groupPicker": {
+      "sendTitle": "{symbol} 𒋗𒁉𒅋: 𒊑𒅅𒊓𒄠 𒇷𒆥",
+      "receiveTitle": "{symbol} 𒈬𒄷𒌨: 𒊑𒅅𒊓𒄠 𒇷𒆥",
+      "sendWarning": "{symbol} 𒄿𒈾 𒊑𒅅𒊓𒋾𒅎 𒈠𒁕𒋾𒅎 𒄿𒁀𒀸𒅆. 𒄿𒈾 𒊑𒅅𒋛𒅎 𒊭 𒈠𒄭𒊑𒅎 𒋗𒁉𒅋𒋗: 𒉿𒋡𒀜 𒆪𒉡𒊌𒆪 𒊭 𒄿𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎 𒋗𒁍𒇻 𒄿𒄩𒀠𒇷𒆪.",
+      "receiveWarning": "𒊑𒅅𒊓𒄠 𒊭 𒈬𒊭𒁉𒇻𒌝 𒄿𒈾 𒇷𒅁𒁉𒋗 𒌑𒊭𒀊𒁀𒇻 𒇷𒆥. 𒀀𒈾 𒆠𒋛𒅎 𒀭𒉌𒄿𒅎 {symbol} 𒄿𒈾 𒊑𒅅𒋛𒅎 𒋗𒀀𒋾𒈠 𒋗𒁉𒅋: 𒉿𒋡𒀜 𒆪𒉡𒊌𒆪 𒊭 𒄿𒈾 𒊑𒅅𒊓𒋾𒅎 𒊭𒉡𒌑𒋾𒅎 𒋗𒁍𒇻 𒄿𒄩𒀠𒇷𒆪.",
+      "noSendNetwork": "𒊑𒅅𒋢𒌝 𒈪𒅎𒈠 𒄿𒈾𒀭𒈾 {symbol} 𒋗𒁍𒆷𒄠 𒆷 𒄿𒇷𒀪𒀪."
+    }
   },
   "polkamarktPage": {
     "backToMarkets": "𒀀𒈾 𒈠𒄭𒊑 𒌅𒌨",
@@ -825,7 +863,8 @@
     "solanaTransactionExpired": "𒊑𒅅𒋢𒌝 𒋗𒁍𒆷𒄠 𒀭𒈾𒀀𒄠 𒄿𒈾 𒋛𒈠𒉌𒋗 𒌌 𒌑𒆠𒅔; 𒀸𒋗𒌝 𒀭𒉌𒄿𒅎 𒈪𒅎𒈠 𒌌 𒋗𒁍𒌌. 𒊭𒉌𒅖 𒂊𒁉𒊭𒄠 𒋼𒇷𒀪𒀪.",
     "solanaTransactionFailed": "𒊑𒅅𒋢𒌝 𒋗𒁍𒆷𒄠 𒀭𒈾𒀀𒄠 𒄿𒁍𒍑, 𒌌 𒅖𒇷𒅎; 𒀸𒋗𒌝 𒀭𒉌𒄿𒅎 𒅗𒊍𒁍𒌝 𒌌 𒋗𒁍𒌌. 𒈪𒅅𒋢 𒊭 𒊑𒅅𒋛𒅎 𒉿𒁺𒌝 𒇷𒆠.",
     "solanaBroadcastUnconfirmed": "𒋗𒁍𒆷𒄠 𒀭𒈾𒀀𒄠 𒀀𒁲𒉌 𒌌 𒌑𒆠𒉡. 𒆷𒄠 𒊭𒉌𒅖 𒋗𒁍𒇷𒅎, 𒌅𒌒𒉺𒀜 𒌑𒈪𒅗 𒉺𒉡𒋾𒅎 𒀀𒈬𒌨. 𒆠𒋢𒌝 𒋗𒁍𒆷𒄠 𒊭𒉌𒀀𒄠 𒊭 Solana 𒌌 𒄿𒁉𒀉𒋾 𒀀𒁲 𒋼𒈬𒌝 𒊭 𒋗𒁍𒇷𒅎 𒀭𒉌𒄿𒅎 𒅔𒈾𒄠𒈠𒊒.",
-    "viewSolanaHistoryOnExplorer": "𒆪𒌌𒆷𒀜 𒌅𒌒𒉺𒀜 𒌑𒈪𒅗 𒉺𒉡𒋾𒅎 𒊭 Solana 𒄿𒈾 𒁀𒊑𒄿 𒌅𒌒𒉿 𒊭 Solana 𒀀𒈬𒌨"
+    "viewSolanaHistoryOnExplorer": "𒆪𒌌𒆷𒀜 𒌅𒌒𒉺𒀜 𒌑𒈪𒅗 𒉺𒉡𒋾𒅎 𒊭 Solana 𒄿𒈾 𒁀𒊑𒄿 𒌅𒌒𒉿 𒊭 Solana 𒀀𒈬𒌨",
+    "sendGroupNetworkWarning": "{symbol} 𒄿𒈾 𒊑𒅅𒊓𒋾𒅎 𒈠𒁕𒋾𒅎 𒄿𒁀𒀸𒅆. 𒋗𒁍𒇻𒌝 𒀭𒉡𒌑𒌝 𒄿𒈾 {network}: 𒆠𒈠 𒈠𒄭𒊒𒌝 {symbol} 𒄿𒈾 {network} 𒄿𒈠𒄴𒄩𒊒 𒀀𒈬𒌨."
   },
   "accounts": {
     "invalidAccountAddress": "𒀀𒊭𒅈 𒌅𒌒𒉿𒅎 𒊭 𒋗𒈪𒅎 𒆷 𒆠𒉡𒌝",

@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   wallet: { address: 'public-wallet', name: 'Test wallet' },
   balances: [] as unknown[],
-  networks: [] as { name: string; assets: { symbol: string }[]; ecosystem?: string }[],
+  networks: [] as { name: string; assets: { symbol: string; id?: string; precision?: number }[]; ecosystem?: string; chainId?: string }[],
 }));
 vi.mock('@/helpers', async (importOriginal) => ({ ...(await importOriginal<object>()), setClipboard: mocks.copy }));
 vi.mock('@/helpers/numbers', async (importOriginal) => ({ ...(await importOriginal<object>()), addNumbers: () => '1.1' }));
@@ -35,6 +35,9 @@ vi.mock('@/stores/networks', () => ({
   useNetworksStore: () => ({
     getNetwork: (name: string) =>
       mocks.networks.find((network) => network.name.toLowerCase() === name.toLowerCase()) ?? { assets: [] },
+    get allNetworks() {
+      return mocks.networks;
+    },
     getAssetPrice: () => ({ price: 0 }),
   }),
 }));
@@ -233,6 +236,51 @@ describe('network-explicit Receive', () => {
 
     expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"DOT"');
     expect(wrapper.find('[data-testid="receiveEvmSameAddress"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+});
+
+describe('Receive within an approved token group', () => {
+  // Registry chain ids and assets as the reviewed snapshot (and the bundled DOT group) has them.
+  const PEOPLE_DOT = 'bb56f037-6f96-45e6-9b3c-c9059bf0f731';
+  const HYDRATION_DOT = '4697396b-37c4-426f-a36a-fda1935f365a';
+
+  beforeEach(() => {
+    mocks.networks = [
+      { name: 'Polkadot', chainId: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3', ecosystem: 'substrate', assets: [{ id: DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Polkadot AssetHub', chainId: '68d56f15f85d3136970ec16946040bc1752654e906147f7e43e9d539d7c3de2f', ecosystem: 'substrate', assets: [{ id: DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Polkadot People', chainId: '67fa177a097bfa18f77ea95ab56e9bcdfeb0e5b8a40e46298bb93e16b6fc5008', ecosystem: 'substrate', assets: [{ id: PEOPLE_DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Hydration', chainId: 'afdc188f45c71dacbaa0b62e16a91f726c7b8699a9748cdf715459de6b7f366d', ecosystem: 'substrate', assets: [{ id: 'hdx', symbol: 'hdx', precision: 12 }, { id: HYDRATION_DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Bifrost', chainId: '9f28c6a68e0fc9646eff64935684f6eeeece527e37bbe1f213d22caa1d9d6bed', ecosystem: 'substrate', assets: [{ id: 'vdot', symbol: 'vdot', precision: 10 }] },
+    ];
+    mocks.balances = [
+      group(DOT, 'Polkadot', 'dot'),
+      group(DOT, 'Polkadot AssetHub', 'dot'),
+      group(PEOPLE_DOT, 'Polkadot People', 'dot'),
+      group(HYDRATION_DOT, 'Hydration', 'dot'),
+      group('vdot', 'Bifrost', 'vdot'),
+    ];
+  });
+
+  it('lists every DOT network of the group, never a derivative, and moves to that network’s DOT', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: DOT, network: 'Polkadot' }) });
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      assetNetworks: { name: string }[];
+      selectedAssetId: string;
+      toggleSelectedNetwork: (value: string) => void;
+    };
+    expect(vm.assetNetworks.map(({ name }) => name)).toEqual(['Polkadot', 'Polkadot AssetHub', 'Polkadot People', 'Hydration']);
+
+    vm.toggleSelectedNetwork('Hydration');
+    await flushPromises();
+
+    expect(vm.selectedAssetId).toBe(HYDRATION_DOT);
+    const warning = wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text();
+    expect(warning).toContain('"symbol":"DOT"');
+    expect(warning).toContain('"network":"Hydration"');
+    expect(wrapper.get('[data-qr]').attributes('data-payload')).toBe('Hydration-complete-public-address-0123456789abcdef');
     wrapper.unmount();
   });
 });

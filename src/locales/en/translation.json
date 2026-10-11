@@ -524,6 +524,8 @@
     "zeroTokens": "1 token · no balance | {count} tokens · no balance",
     "tokenGroupLabel": "{symbol} on 1 network: {amount}, {value} | {symbol} on {count} networks: {amount}, {value}",
     "tokenSingleLabel": "{symbol} on {network}: {amount}, {value}",
+    "tokenGroupFailedLabel": "{symbol} on 1 network: {status} | {symbol} on {count} networks: {status}",
+    "tokenSingleFailedLabel": "{symbol} on {network}: {status}",
     "role": {
       "native": "Native",
       "systemParachain": "System parachain",

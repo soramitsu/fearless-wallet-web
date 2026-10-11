@@ -44,7 +44,10 @@ export interface PortfolioTokenRow {
    * what the row holds, and they keep the row out of the "no balance" block: an unknown balance is not a zero.
    */
   unavailableNetworkCount?: number;
-  /** No counted member's balance could be loaded: the row says so instead of an amount. */
+  /**
+   * A counted member's balance could not be loaded and no counted member is known to hold anything: the row says so
+   * instead of an amount, which would read as a confirmed 0 when the only member that may hold funds is unknown.
+   */
   balanceUnavailable?: boolean;
   /** A counted member's last update failed; its amount, if any, is the last one confirmed. */
   balanceFailed?: boolean;
@@ -118,7 +121,7 @@ function toRow(id: string, members: PortfolioTokenChild[], group?: { id: string;
     fiatValue: priced.length ? sum(priced.map(({ asset }) => asset.fiatValue)) : null,
     unpricedNetworkCount,
     unavailableNetworkCount,
-    balanceUnavailable: unavailableNetworkCount === summed.length,
+    balanceUnavailable: unavailableNetworkCount > 0 && !summed.some(({ asset }) => asset.hasBalance),
     balanceFailed: summed.some(({ asset }) => asset.balanceFailed),
     hidden,
     isTestnet: members.every(({ asset }) => asset.isTestnet),

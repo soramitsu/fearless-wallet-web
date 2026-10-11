@@ -352,6 +352,31 @@ describe('By token rows', () => {
     expect(splitZeroTokenRows(rows).zeroOnly.map(({ symbol }) => symbol)).toEqual(['KSM']);
   });
 
+  it('never states 0 for a group whose only member that may hold funds failed and the others hold a known 0', () => {
+    // The first start after the update from 3.0.5: no balance cache, the Polkadot subscription fails before it
+    // answers once, and Asset Hub, shown at zero, answers 0.
+    const groups = substrateBalances();
+    groups
+      .flatMap(({ balances }) => balances)
+      .filter((balance) => balance.name === 'polkadot' && balance.symbol === 'dot')
+      .forEach((balance) => Object.assign(balance, { state: APIItemState.ERROR, total: undefined, transferable: undefined }));
+    const sections = buildPortfolioSections({
+      groups,
+      networks,
+      prices: PRICES,
+      preferences: { [keyOf('Polkadot AssetHub', 'dot')]: 'shown' },
+      addressForNetwork: () => 'wallet',
+      isDefaultVisibleAtZero: () => false,
+    });
+
+    const { funded, zeroOnly } = splitZeroTokenRows(buildTokenRows({ sections, index }));
+    const dot = funded.find(({ symbol }) => symbol === 'DOT')!;
+
+    expect(describeRow(dot).networks).toEqual(['Polkadot:native', 'Polkadot AssetHub:system-parachain']);
+    expect(dot).toMatchObject({ hasBalance: false, balanceUnavailable: true, balanceFailed: true, unavailableNetworkCount: 1, fiatValue: null });
+    expect(zeroOnly.map(({ symbol }) => symbol)).not.toContain('DOT');
+  });
+
   it('searches within groups: a token name keeps the whole group, a network name only that network', () => {
     const groups = substrateBalances();
     fund(groups, 'Ethereum', 'usdt', '40');

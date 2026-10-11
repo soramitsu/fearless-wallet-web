@@ -79,6 +79,8 @@
     "zeroTokens": "1 токен · без баланса | Без баланса · токенов: {count}",
     "tokenGroupLabel": "{symbol} в 1 сети: {amount}, {value} | {symbol} в нескольких сетях ({count}): {amount}, {value}",
     "tokenSingleLabel": "{symbol} в сети {network}: {amount}, {value}",
+    "tokenGroupFailedLabel": "{symbol} в 1 сети: {status} | {symbol} в нескольких сетях ({count}): {status}",
+    "tokenSingleFailedLabel": "{symbol} в сети {network}: {status}",
     "role": {
       "native": "Нативный",
       "systemParachain": "Системный парачейн",

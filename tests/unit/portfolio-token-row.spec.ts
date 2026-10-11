@@ -205,7 +205,10 @@ describe('a By token row', () => {
     expect(wrapper.get('[data-testid="tokenBalanceUnavailable"]').text()).toBe('portfolioPage.balanceStatus.failed');
     expect(wrapper.find('[data-testid="tokenAmount"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('0.0000 TON');
-    expect(wrapper.get('[data-testid="tokenRowHeader"]').attributes('aria-label')).toContain('"amount":"portfolioPage.balanceStatus.failed"');
+    // The label says the same, with no amount and no value: neither "$0.00" nor "Price unavailable".
+    expect(wrapper.get('[data-testid="tokenRowHeader"]').attributes('aria-label')).toBe(
+      'portfolioPage.tokenSingleFailedLabel {"symbol":"TON","status":"portfolioPage.balanceStatus.failed","network":"TON Mainnet"}'
+    );
     wrapper.unmount();
 
     // In a group, the failed network says so and the others keep their amounts; the row says part of it failed.
@@ -226,8 +229,50 @@ describe('a By token row', () => {
     expect(group.findAll('[data-testid="networkBalanceUnavailable"]').map((cell) => cell.text())).toEqual([
       'portfolioPage.balanceStatus.failed',
     ]);
-    expect(group.findAll('.network-row')[2].attributes('aria-label')).toContain('"amount":"portfolioPage.balanceStatus.failed"');
+    // The header label keeps the known amount and says part of it failed; the failed network has no amount or value.
+    const headerLabel = group.get('[data-testid="tokenGroupHeader"]').attributes('aria-label');
+    expect(headerLabel).toContain('"amount":"12.0000 DOT"');
+    expect(headerLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
+    const failedLabel = group.findAll('.network-row')[2].attributes('aria-label');
+    expect(failedLabel).toContain('portfolioPage.tokenSingleFailedLabel');
+    expect(failedLabel).toContain('"status":"portfolioPage.balanceStatus.failed"');
+    expect(failedLabel).not.toContain('"value"');
+    expect(failedLabel).not.toContain('"amount"');
     group.unmount();
+  });
+
+  it('says a group failed, never "0.0000 DOT · Price unavailable", when its only member that may hold funds failed', () => {
+    // As buildTokenRows makes it (token-lens.spec.ts): Polkadot not loaded, Asset Hub shown at a known 0.
+    const relay = asset('Polkadot', 'relay-dot', '0', { balanceUnavailable: true, balanceFailed: true });
+    const hub = asset('Polkadot AssetHub', 'hub-dot', '0');
+    const wrapper = mountRow(
+      {
+        ...dotRow(),
+        children: [child(relay, 'native'), child(hub, 'system-parachain')],
+        zeroChildren: [],
+        networkCount: 2,
+        balanceText: '0',
+        transferableText: '0',
+        hasBalance: false,
+        fiatValue: null,
+        unavailableNetworkCount: 1,
+        balanceUnavailable: true,
+        balanceFailed: true,
+      },
+      { forceExpanded: true }
+    );
+    const header = wrapper.get('[data-testid="tokenGroupHeader"]');
+
+    expect(wrapper.get('[data-testid="tokenBalanceUnavailable"]').text()).toBe('portfolioPage.balanceStatus.failed');
+    expect(header.text()).not.toContain('0.0000 DOT');
+    expect(header.text()).not.toContain('portfolioPage.priceUnavailable');
+    expect(header.attributes('aria-label')).toBe(
+      'portfolioPage.tokenGroupFailedLabel:2 {"symbol":"DOT","status":"portfolioPage.balanceStatus.failed","count":2}'
+    );
+    // The network lines still say which one failed and which one holds a known 0.
+    expect(wrapper.findAll('[data-testid="networkBalanceUnavailable"]')).toHaveLength(1);
+    expect(wrapper.findAll('.network-row')[1].text()).toContain('0.0000 DOT');
+    wrapper.unmount();
   });
 
   it('keeps the last confirmed amount of a failed update and marks it as out of date', () => {
@@ -238,6 +283,14 @@ describe('a By token row', () => {
     expect(wrapper.find('[data-testid="tokenBalanceUnavailable"]').exists()).toBe(false);
     expect(wrapper.findAll('[data-testid="networkBalanceFailed"]')).toHaveLength(1);
     expect(wrapper.findAll('.network-row')[0].text()).toContain('10.0000 DOT');
+    // Assistive technology hears the amounts and that they may be out of date, where the row shows it.
+    const headerLabel = wrapper.get('[data-testid="tokenGroupHeader"]').attributes('aria-label');
+    expect(headerLabel).toContain('"amount":"12.0000 DOT"');
+    expect(headerLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
+    const [staleLabel, freshLabel] = wrapper.findAll('.network-row').map((row) => row.attributes('aria-label'));
+    expect(staleLabel).toContain('"amount":"10.0000 DOT"');
+    expect(staleLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
+    expect(freshLabel).not.toContain('portfolioPage.balanceStatus.failed');
     wrapper.unmount();
   });
 

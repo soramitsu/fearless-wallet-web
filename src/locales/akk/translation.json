@@ -524,6 +524,8 @@
     "zeroTokens": "1 𒆪𒉡𒊌𒆪𒌝 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆 | {count} 𒆪𒉡𒊌𒆪 · 𒉌𒅅𒅗𒊍𒋢𒌝 𒆷 𒄿𒁀𒀸𒅆",
     "tokenGroupLabel": "{symbol} 𒄿𒈾 1 𒊑𒅅𒋛𒅎: {amount}, {value} | {symbol} 𒄿𒈾 {count} 𒊑𒅅𒊓𒋾𒅎: {amount}, {value}",
     "tokenSingleLabel": "{symbol} 𒄿𒈾 {network}: {amount}, {value}",
+    "tokenGroupFailedLabel": "{symbol} 𒄿𒈾 1 𒊑𒅅𒋛𒅎: {status} | {symbol} 𒄿𒈾 {count} 𒊑𒅅𒊓𒋾𒅎: {status}",
+    "tokenSingleFailedLabel": "{symbol} 𒄿𒈾 {network}: {status}",
     "role": {
       "native": "𒊭 𒊑𒅆𒅎",
       "systemParachain": "𒊑𒅅𒋢𒌝 𒊏𒀝𒋢𒌝 𒊭 𒆪𒌌𒆷𒋾𒅎",

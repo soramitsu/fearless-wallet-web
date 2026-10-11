@@ -214,29 +214,53 @@ function childShowsTransferable({ asset }: PortfolioTokenChild): boolean {
   return asset.hasBalance && formatAmount(asset.transferableText) !== formatAmount(asset.balanceText);
 }
 
-const accessibleLabel = computed(() => {
-  const values = {
-    symbol: props.row.symbol,
-    amount: props.row.balanceUnavailable
-      ? t('portfolioPage.balanceStatus.failed')
-      : `${formatAmount(props.row.balanceText)} ${props.row.symbol}`,
-    value: formatFiat(props.row.fiatValue),
-  };
+// The label replaces what a row shows for assistive technology, so it says what the row says: a balance nobody could
+// load has neither an amount nor a value (not "0", not "$0.00", not "Price unavailable"), and a kept amount whose
+// update failed is marked as such.
+const withFailure = (label: string, failed?: boolean): string =>
+  failed ? `${label} · ${t('portfolioPage.balanceStatus.failed')}` : label;
 
-  return isGroup.value
-    ? tc('portfolioPage.tokenGroupLabel', props.row.networkCount, { ...values, count: props.row.networkCount })
+const accessibleLabel = computed(() => {
+  const { row } = props;
+
+  if (row.balanceUnavailable) {
+    const values = { symbol: row.symbol, status: t('portfolioPage.balanceStatus.failed') };
+
+    return isGroup.value
+      ? tc('portfolioPage.tokenGroupFailedLabel', row.networkCount, { ...values, count: row.networkCount })
+      : t('portfolioPage.tokenSingleFailedLabel', { ...values, network: single.value.asset.networkName });
+  }
+
+  const values = {
+    symbol: row.symbol,
+    amount: `${formatAmount(row.balanceText)} ${row.symbol}`,
+    value: formatFiat(row.fiatValue),
+  };
+  const label = isGroup.value
+    ? tc('portfolioPage.tokenGroupLabel', row.networkCount, { ...values, count: row.networkCount })
     : t('portfolioPage.tokenSingleLabel', { ...values, network: single.value.asset.networkName });
+
+  return withFailure(label, row.balanceFailed);
 });
 
 function childLabel({ asset, role }: PortfolioTokenChild): string {
   const network = roleLabel(role) ? `${asset.networkName} (${roleLabel(role)})` : asset.networkName;
 
-  return t('portfolioPage.tokenSingleLabel', {
+  if (asset.balanceUnavailable)
+    return t('portfolioPage.tokenSingleFailedLabel', {
+      symbol: asset.symbol,
+      network,
+      status: t('portfolioPage.balanceStatus.failed'),
+    });
+
+  const label = t('portfolioPage.tokenSingleLabel', {
     symbol: asset.symbol,
     network,
-    amount: asset.balanceUnavailable ? t('portfolioPage.balanceStatus.failed') : `${formatAmount(asset.balanceText)} ${asset.symbol}`,
+    amount: `${formatAmount(asset.balanceText)} ${asset.symbol}`,
     value: formatFiat(asset.fiatValue),
   });
+
+  return withFailure(label, asset.balanceFailed);
 }
 
 function onHeaderClick(): void {

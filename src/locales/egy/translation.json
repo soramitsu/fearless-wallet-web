@@ -1206,6 +1206,8 @@
     "zeroTokens": "1 𓇋𓐍𓏏 · 𓈖𓈖 𓎛𓋴𓃀𓏥 | {count} 𓇋𓐍𓏏𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥",
     "tokenGroupLabel": "{symbol} 𓅓 1 𓄡𓈖𓅓𓏥: {amount}, {value} | {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥: {amount}, {value}",
     "tokenSingleLabel": "{symbol} 𓅓 {network}: {amount}, {value}",
+    "tokenGroupFailedLabel": "{symbol} 𓅓 1 𓄡𓈖𓅓𓏥: {status} | {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥: {status}",
+    "tokenSingleFailedLabel": "{symbol} 𓅓 {network}: {status}",
     "role": {
       "native": "𓈖 𓐍𓈖𓅱",
       "systemParachain": "𓈙𓈖𓏥 𓄡𓈖𓅓 𓈖 𓋴𓐍𓂋",

@@ -96,7 +96,7 @@ function registryKeys(symbol: string, networkNames: string[]): string[] {
           createAssetKey({
             ecosystem: String(network.ecosystem),
             chainId: network.chainId,
-            assetId: String(asset.currencyId ?? asset.id),
+            assetId: String(asset.id),
           })
         )
     );
@@ -110,7 +110,7 @@ function legacyGroupKeys(symbol: string, relayChain: string): string[] {
     return createAssetKey({
       ecosystem: String(network.ecosystem),
       chainId: network.chainId,
-      assetId: String(balance.currencyId ?? balance.id),
+      assetId: String(balance.id),
     });
   };
 
@@ -126,7 +126,7 @@ function developV1MigratedKeys(legacyHiddenIds: string[]): string[] {
         createAssetKey({
           ecosystem: String(network.ecosystem),
           chainId: network.chainId,
-          assetId: String(asset.currencyId ?? asset.id),
+          assetId: String(asset.id),
         })
       )
   );

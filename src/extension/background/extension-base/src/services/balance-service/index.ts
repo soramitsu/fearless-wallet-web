@@ -22,7 +22,7 @@ import type {
 import { getMockAssets } from '@/extension/background/extension-base/src/background/helpers/assets';
 import { isSameString, isTonNetwork } from '@/helpers';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
-import { buildPortfolioSummary, createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { buildPortfolioSummary, createAssetKey, getPortfolioAssetId } from '@/portfolio/assetIdentity';
 
 const MAX_HIDDEN_KEYS_PER_WALLET = 5000;
 
@@ -70,10 +70,11 @@ export default class BalanceService {
       if (!cached) return;
       if (!this.balanceMap[address]) this.balanceMap[address] = [];
 
-      Object.entries(cached).forEach(([storedKey, item]) => {
-        if (!item?.id || !item.chain || item.state !== APIItemState.READY) return;
-        if (storedKey !== this.getStorageAssetKey(item.chain, item)) return;
+      Object.entries(cached).forEach(([storedKey, cachedItem]) => {
+        if (!cachedItem?.id || !cachedItem.chain || cachedItem.state !== APIItemState.READY) return;
+        if (storedKey !== this.getStorageAssetKey(cachedItem.chain, cachedItem)) return;
 
+        const item = this.withRegistryPriceId(cachedItem);
         const group = this.balanceMap[address].find(({ balances }) =>
           balances.some(
             (balance) =>
@@ -89,7 +90,7 @@ export default class BalanceService {
 
         if (group && existing >= 0) {
           group.balances[existing] = { ...group.balances[existing], ...item };
-          if (item.priceId) group.priceId = item.priceId;
+          if ('priceId' in item) group.priceId = item.priceId;
           return;
         }
 
@@ -207,6 +208,10 @@ export default class BalanceService {
     await storage.set({ assetBalances: copyAssetBalances, networkScanStates: copyScanStates });
   }
 
+  /**
+   * The cache key of one balance: its network and registry asset id. Two assets of one network may share a
+   * `currencyId` (Bifrost vKSM and vsKSM), so that id would let one asset's cached amount overwrite the other's.
+   */
   private getStorageAssetKey(
     chain: string,
     item: Pick<BalanceItem, 'id'> & Partial<BalanceItem>
@@ -214,9 +219,20 @@ export default class BalanceService {
     const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, chain));
     const ecosystem = String(network?.ecosystem ?? item.relayChain ?? 'unknown');
     const chainId = String(network?.chainId ?? chain);
-    const assetId = getCanonicalAssetId(item as BalanceItem);
+    const assetId = getPortfolioAssetId(item);
 
     return createAssetKey({ ecosystem, chainId, assetId });
+  }
+
+  /**
+   * A cached balance of a registry asset takes the registry's price id of today, not the one it was cached with:
+   * the registry may have corrected it since, and an asset on the untrusted list has none.
+   */
+  private withRegistryPriceId<T extends BalanceItem & { chain: string }>(item: T): T {
+    const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, item.chain));
+    const registryAsset = network?.assets?.find(({ id }) => id === item.id);
+
+    return registryAsset ? { ...item, priceId: registryAsset.priceId || undefined } : item;
   }
 
   public async updateUtilityED(networkName: NetworkName): Promise<void> {

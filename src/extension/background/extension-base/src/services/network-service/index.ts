@@ -20,6 +20,7 @@ import {
   createAuthoritativeDiscoveryRegistryNetworks,
   mergeUniversalWalletRegistryNetworks,
 } from '@/util/universalWalletRegistryNetworks';
+import { withoutUntrustedPrices } from '@/portfolio/untrustedAssets';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
@@ -117,7 +118,9 @@ export class NetworkService {
   public async initNetworkMap() {
     this.logger.log('Init Network Map');
 
-    const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
+    const { data: registry } = await axios.get<NetworkJson[]>(URLS.CHAINS);
+    // The untrusted list overrides the registry price where the registry is read, for every consumer at once.
+    const networks = registry.map((network) => withoutUntrustedPrices(network));
 
     const networksFromStorage = await this.getStoredNetworks();
 

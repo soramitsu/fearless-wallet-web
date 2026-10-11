@@ -1,3 +1,4 @@
+import canonicalAssetGroupsDocument from '@/portfolio/data/canonical-asset-groups.v1.json';
 import testnetChainIdsDocument from '@/portfolio/data/testnet-chain-ids.v1.json';
 import defaultVisibleAtZeroDocument from '@/portfolio/data/default-visible-at-zero.v1.json';
 
@@ -7,12 +8,18 @@ import defaultVisibleAtZeroDocument from '@/portfolio/data/default-visible-at-ze
  * `scripts/sync-canonical-asset-groups.mjs` in the root repository copies the files and rewrites these pins:
  * never edit a copy or a pin by hand. `tests/unit/shared-portfolio-config.spec.ts` hashes the bundled bytes.
  */
-export const CANONICAL_ASSET_GROUPS_SHA256 = '3d82b68cc6b8162154aaf95b4393cc47b49200c04c3d25baf6da3580a66f1908';
+export const CANONICAL_ASSET_GROUPS_SHA256 = 'c8875a2e1b8e3a1a0fb4e90962004ce219033a9d5c5dbd49067b5a7ebcfa454e';
 export const TESTNET_CHAIN_IDS_SHA256 = 'a3a5433f496e5575c770fdc253277be80fbcf3c97eaa7b37a6b199a2b6e44629';
 export const DEFAULT_VISIBLE_AT_ZERO_SHA256 = 'a331788fbcd263ccaf4bcc7d3c83c7430d7c25ac7f9b4e2513606f67b68f20b6';
 
 /** One listed zero default: the registry `chainId` and `assets[].id`, exactly as in `chains/v13`. */
 export interface ZeroDefaultEntry {
+  chainId: string;
+  assetId: string;
+}
+
+/** One registry asset whose registry price is not trusted: the registry `chainId` and `assets[].id`. */
+export interface UntrustedAssetEntry {
   chainId: string;
   assetId: string;
 }
@@ -51,7 +58,24 @@ export function parseDefaultVisibleAtZero(document: unknown): ZeroDefaultEntry[]
   return entries.length ? entries : undefined;
 }
 
+/**
+ * The `untrustedAssets` of the groups file (portfolio contract §3): registry assets that get no price whatever
+ * `priceId` the registry gives them. A document of another format or version, or one without the list, gives an
+ * empty list, which leaves the registry price in force as it was before the list existed.
+ */
+export function parseUntrustedAssets(document: unknown): UntrustedAssetEntry[] {
+  if (!isRecord(document) || document.format !== 'fearless.canonical-asset-groups' || document.version !== 1) return [];
+  if (!Array.isArray(document.untrustedAssets)) return [];
+
+  return document.untrustedAssets
+    .filter(isRecord)
+    .filter((entry) => isIdentifier(entry.chainId) && isIdentifier(entry.assetId))
+    .map(({ chainId, assetId }) => ({ chainId: chainId as string, assetId: assetId as string }));
+}
+
 export const TESTNET_CHAIN_IDS: ReadonlySet<string> = parseTestnetChainIds(testnetChainIdsDocument);
 
 export const DEFAULT_VISIBLE_AT_ZERO: readonly ZeroDefaultEntry[] | undefined =
   parseDefaultVisibleAtZero(defaultVisibleAtZeroDocument);
+
+export const UNTRUSTED_ASSETS: readonly UntrustedAssetEntry[] = parseUntrustedAssets(canonicalAssetGroupsDocument);

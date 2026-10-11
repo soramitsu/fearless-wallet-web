@@ -6,6 +6,7 @@ import type { AccountJson, TokenGroup } from '@extension-base/background/types/t
 import type { AssetPreferenceSource } from '@/portfolio/legacyPreferences305';
 import { createAssetKey, type AssetKeyParts } from '@/portfolio/assetKey';
 import { createZeroDefaultRule, isTestnetNetwork } from '@/portfolio/zeroRule';
+import { isUntrustedAsset, type UntrustedAssetCheck } from '@/portfolio/untrustedAssets';
 import { WalletEcosystem } from '@/interfaces';
 
 export { createAssetKey, type AssetKeyParts };
@@ -93,9 +94,25 @@ export interface PortfolioSectionsInput {
   /** A strict network filter (the Popular, Favourites or single-network selection). */
   networkFilter?: (network: NetworkJson) => boolean;
   isTestnet?: (network: NetworkJson) => boolean;
+  /** Registry assets whose registry price is not trusted. Defaults to the shared `untrustedAssets` list. */
+  isUntrusted?: UntrustedAssetCheck;
   preferenceSource?: (key: string) => AssetPreferenceSource;
 }
 
+/**
+ * The id of a balance row within its network: the registry `assets[].id`, or the mint or jetton master of a
+ * detected token. Rows, preferences, routes and the balance cache are keyed by it. A Substrate `currencyId` is not
+ * an identity: it is unique only together with the asset type (Acala tDOT and GLMR, Karura RMRK and taiKSM, and
+ * Bifrost vKSM and vsKSM share one).
+ */
+export function getPortfolioAssetId(balance: Pick<BalanceItem, 'id' | 'solanaTokenMint'>): string {
+  return balance.solanaTokenMint ?? balance.id;
+}
+
+/**
+ * The on-chain id (`currencyId` when the registry has one). The reviewed cross-chain routes are keyed by it, and
+ * links written before rows were keyed by the registry id may still carry it. It can name two assets of one network.
+ */
 export function getCanonicalAssetId(balance: BalanceItem): string {
   return (
     balance.solanaTokenMint ??
@@ -110,17 +127,22 @@ function findRegistryAsset(network: NetworkJson, balance: BalanceItem): NetworkJ
     const id = String(value ?? '').trim();
     return ecosystem === 'evm' || ecosystem === 'ethereum' || ecosystem.includes('ethereum') ? id.toLowerCase() : id;
   };
+  const rowId = normalizeId(getPortfolioAssetId(balance));
+  const exact = network.assets.find((asset) => normalizeId(asset.id) === rowId);
+  if (exact) return exact;
+
+  // A token that only carries its on-chain id (an SPL mint, an Iroha asset) names its registry asset by it. Only an
+  // unambiguous match counts, so a shared `currencyId` never resolves to the other asset.
   const ids = [balance.solanaTokenMint, balance.currencyId, balance.id]
     .filter((item): item is string => Boolean(item))
     .map(normalizeId);
-
-  return network.assets.find((asset) => {
-    const candidates = [asset.id, asset.currencyId]
+  const candidates = network.assets.filter((asset) =>
+    [asset.id, asset.currencyId]
       .filter((item): item is string => Boolean(item))
-      .map(normalizeId);
+      .some((candidate) => ids.includes(normalizeId(candidate)))
+  );
 
-    return candidates.some((candidate) => ids.includes(candidate));
-  });
+  return candidates.length === 1 ? candidates[0] : undefined;
 }
 
 function metadataSource(ecosystem: string, verified: boolean): AssetMetadataSource {
@@ -193,6 +215,14 @@ function withSubtotal(section: PortfolioNetworkSection): PortfolioNetworkSection
   };
 }
 
+/** Whether `next` replaces `current` as the one row of their shared key: loaded first, then funded, then newer. */
+const supersedesRow = (next: PortfolioAsset, current: PortfolioAsset): boolean => {
+  if (next.isReady !== current.isReady) return next.isReady;
+  if (next.hasBalance !== current.hasBalance) return next.hasBalance;
+
+  return (next.timestamp ?? 0) > (current.timestamp ?? 0);
+};
+
 const compareAssets = (left: PortfolioAsset, right: PortfolioAsset): number => {
   if (left.hasBalance !== right.hasBalance) return left.hasBalance ? -1 : 1;
   if (left.fiatValue !== null || right.fiatValue !== null) {
@@ -220,10 +250,28 @@ export function buildPortfolioSections({
   walletScope = () => true,
   networkFilter = () => true,
   isTestnet = (network) => isTestnetNetwork(network),
+  isUntrusted = isUntrustedAsset,
   preferenceSource = (key) => (preferences[key] && preferences[key] !== 'auto' ? 'explicit' : 'auto'),
 }: PortfolioSectionsInput): PortfolioNetworkSection[] {
   const networkByName = new Map(networks.map((network) => [network.name.toLowerCase(), network]));
   const sections = new Map<string, PortfolioNetworkSection>();
+  const placedRows = new Map<string, { asset: PortfolioAsset; rows: PortfolioAsset[] }>();
+  // One row per key. The background keeps one balance per (network, asset); should a second one appear (a
+  // placeholder beside the loaded balance), the loaded, funded, newer one is the row, and nothing is counted twice.
+  const placeRow = (rows: PortfolioAsset[], asset: PortfolioAsset): void => {
+    const placed = placedRows.get(asset.key);
+
+    if (!placed) {
+      rows.push(asset);
+      placedRows.set(asset.key, { asset, rows });
+      return;
+    }
+    if (!supersedesRow(asset, placed.asset)) return;
+
+    placed.rows.splice(placed.rows.indexOf(placed.asset), 1);
+    rows.push(asset);
+    placedRows.set(asset.key, { asset, rows });
+  };
   let zeroRule: ((network: NetworkJson, asset: PortfolioAsset) => boolean) | undefined = isDefaultVisibleAtZero;
   const showsAtZero = (network: NetworkJson, asset: PortfolioAsset): boolean => {
     if (!zeroRule) {
@@ -248,7 +296,7 @@ export function buildPortfolioSections({
 
       const ecosystem = String(network.ecosystem ?? balance.relayChain ?? group.relayChain ?? 'unknown').toLowerCase();
       const chainId = String(network.chainId || network.name);
-      const assetId = getCanonicalAssetId(balance);
+      const assetId = getPortfolioAssetId(balance);
       const keyParts = { ecosystem, chainId, assetId };
       const key = createAssetKey(keyParts);
       const registryAsset = findRegistryAsset(network, balance);
@@ -264,8 +312,11 @@ export function buildPortfolioSections({
       const hidden = preference === 'hidden';
       // A price contributes to fiat totals only when it is bound to this exact
       // canonical asset. Legacy group/symbol price ids are intentionally ignored.
-      const hasRegistryPriceBinding = Boolean(registryAsset?.priceId);
+      // An asset on the shared untrusted list has no price, whatever the registry or an indexer says.
+      const untrusted = isUntrusted(network, registryAsset?.id ?? assetId);
+      const hasRegistryPriceBinding = !untrusted && Boolean(registryAsset?.priceId);
       const hasExplicitAssetKeyPriceBinding =
+        !untrusted &&
         balance.assetMetadataTrust === 'verified' &&
         Boolean(balance.priceId) &&
         balance.priceAssetKey === key;
@@ -336,15 +387,15 @@ export function buildPortfolioSections({
 
       if (mode === 'manage') {
         // Every verified asset, every holding, and every asset with an explicit choice, so any hide can be undone.
-        if (trust === 'verified' || hasBalance || preference !== 'auto') section.assets.push(asset);
+        if (trust === 'verified' || hasBalance || preference !== 'auto') placeRow(section.assets, asset);
       } else if (hidden) {
-        if (showHidden && (trust === 'verified' || hasBalance)) section.assets.push(asset);
+        if (showHidden && (trust === 'verified' || hasBalance)) placeRow(section.assets, asset);
       } else if (trust === 'verified') {
         const showsZero = preference === 'shown' || showsAtZero(network, asset);
-        if (hasBalance || (!hideZero && showsZero)) section.assets.push(asset);
+        if (hasBalance || (!hideZero && showsZero)) placeRow(section.assets, asset);
       } else if (hasBalance) {
-        if (preference === 'shown') section.assets.push(asset);
-        else if (surfaceDiscoveredAssets) section.detectedAssets.push(asset);
+        if (preference === 'shown') placeRow(section.assets, asset);
+        else if (surfaceDiscoveredAssets) placeRow(section.detectedAssets, asset);
       }
 
       sections.set(sectionKey, section);

@@ -48,7 +48,7 @@ function fund(groups: TokenGroup[], networkName: string, symbol: string, balance
 const keyOf = (networkName: string, symbol: string): string => {
   const { ecosystem, chainId, assets } = network(networkName);
   const asset = assets.find((candidate) => candidate.symbol === symbol)!;
-  return createAssetKey({ ecosystem: String(ecosystem), chainId, assetId: String(asset.currencyId ?? asset.id) });
+  return createAssetKey({ ecosystem: String(ecosystem), chainId, assetId: String(asset.id) });
 };
 
 const base = (groups: TokenGroup[], preferences: Record<string, AssetPreference> = {}) => ({

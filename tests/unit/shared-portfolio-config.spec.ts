@@ -6,16 +6,19 @@ import { getMockAssets } from '@extension-base/background/helpers/assets';
 import { networkMap305, readSnapshot } from '../fixtures/legacy-305/generate';
 import type { NetworkJson } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
-import { buildPortfolioSections, scopeNetworksToWallet } from '@/portfolio/assetIdentity';
+import { buildPortfolioSections, buildPortfolioSummary, scopeNetworksToWallet } from '@/portfolio/assetIdentity';
 import {
   CANONICAL_ASSET_GROUPS_SHA256,
   DEFAULT_VISIBLE_AT_ZERO,
   DEFAULT_VISIBLE_AT_ZERO_SHA256,
   TESTNET_CHAIN_IDS,
   TESTNET_CHAIN_IDS_SHA256,
+  UNTRUSTED_ASSETS,
   parseDefaultVisibleAtZero,
   parseTestnetChainIds,
+  parseUntrustedAssets,
 } from '@/portfolio/canonicalGroups';
+import { createUntrustedAssetCheck } from '@/portfolio/untrustedAssets';
 import { createZeroDefaultRule, isTestnetNetwork, registryAssetKey } from '@/portfolio/zeroRule';
 import { mergeUniversalWalletRegistryNetworks } from '@/util/universalWalletRegistryNetworks';
 
@@ -70,6 +73,37 @@ describe('shared portfolio configuration', () => {
         entries: [{ chainId: '1', assetId: 'eth' }, { chainId: ' padded', assetId: 'x' }, 'junk'],
       })
     ).toEqual([{ chainId: '1', assetId: 'eth' }]);
+  });
+
+  it('reads the untrusted list and fails safe on a document of another format or version', () => {
+    expect(UNTRUSTED_ASSETS).toEqual([
+      { chainId: '48239ef607d7928874027a43a67689209727dfb3d3dc5e5b03a39bdc2eda771a', assetId: '27768227-8a9a-4443-a57d-6013c24f85e9' },
+    ]);
+    expect(parseUntrustedAssets(null)).toEqual([]);
+    expect(parseUntrustedAssets({ format: 'fearless.canonical-asset-groups', version: 1 })).toEqual([]);
+    expect(
+      parseUntrustedAssets({ format: 'fearless.canonical-asset-groups', version: 2, untrustedAssets: [{ chainId: '1', assetId: 'a' }] })
+    ).toEqual([]);
+    expect(
+      parseUntrustedAssets({
+        format: 'fearless.canonical-asset-groups',
+        version: 1,
+        untrustedAssets: [{ chainId: '1', assetId: '0xAbC' }, { chainId: ' padded', assetId: 'x' }, { chainId: '1' }, 'junk'],
+      })
+    ).toEqual([{ chainId: '1', assetId: '0xAbC' }]);
+  });
+
+  it('matches untrusted registry ids exactly, and EVM contract ids without regard to case', () => {
+    const isUntrusted = createUntrustedAssetCheck([
+      { chainId: '1', assetId: '0xAbC' },
+      { chainId: 'kusama-asset-hub', assetId: 'Asset-Id' },
+    ]);
+
+    expect(isUntrusted({ chainId: '1', ecosystem: 'ethereum' }, '0xabc')).toBe(true);
+    expect(isUntrusted({ chainId: '1', ecosystem: 'ethereumBased' }, '0xABC')).toBe(true);
+    expect(isUntrusted({ chainId: '10', ecosystem: 'ethereum' }, '0xabc')).toBe(false);
+    expect(isUntrusted({ chainId: 'kusama-asset-hub', ecosystem: 'substrate' }, 'Asset-Id')).toBe(true);
+    expect(isUntrusted({ chainId: 'kusama-asset-hub', ecosystem: 'substrate' }, 'asset-id')).toBe(false);
   });
 
   it('treats the shared list and the registry option as testnets', () => {
@@ -140,4 +174,68 @@ describe('portfolio parity cases (zero defaults per wallet type)', () => {
 
     expect([...rows].sort()).toEqual([...testCase.expected].sort());
   });
+});
+
+// Portfolio contract §10: every `untrustedAssets` entry gets a balance and its registry price, adds 0 fiat to the
+// header and is counted as without price.
+describe('untrusted registry prices', () => {
+  // The registry exactly as published: the listed asset still carries its registry `priceId`.
+  const networks = Object.values(networkMap305(readSnapshot())).map((network) => ({ ...network, favorite: [] })) as NetworkJson[];
+  const document = JSON.parse(repositoryFile('src/portfolio/data/canonical-asset-groups.v1.json').toString('utf8')) as {
+    untrustedAssets: Array<{ chainId: string; assetId: string; symbol: string; precision: number; registryPriceId: string }>;
+    groups: Array<{ members: Array<{ chainId: string; assetId: string }> }>;
+  };
+
+  it('lists registry assets exactly as the reviewed snapshot has them, and in no group', () => {
+    expect(document.untrustedAssets.length).toBeGreaterThan(0);
+    expect(document.untrustedAssets.map(({ chainId, assetId }) => ({ chainId, assetId }))).toEqual(UNTRUSTED_ASSETS);
+
+    document.untrustedAssets.forEach((entry) => {
+      const asset = networks.find(({ chainId }) => chainId === entry.chainId)?.assets.find(({ id }) => id === entry.assetId);
+
+      expect(asset, entry.assetId).toMatchObject({ symbol: entry.symbol, precision: entry.precision, priceId: entry.registryPriceId });
+      expect(
+        document.groups.some(({ members }) => members.some((member) => member.chainId === entry.chainId && member.assetId === entry.assetId))
+      ).toBe(false);
+    });
+  });
+
+  it.each(document.untrustedAssets.map((entry) => [`${entry.symbol} ${entry.assetId}`, entry] as const))(
+    'gives %s no price: 0 fiat in the header, counted as without price',
+    (_label, entry) => {
+      const network = networks.find(({ chainId }) => chainId === entry.chainId)!;
+      const groups = getMockAssets({ [network.name]: network }, WalletEcosystem.Substrate);
+      groups.forEach(({ balances }) =>
+        balances.forEach((balance) =>
+          Object.assign(balance, {
+            state: APIItemState.READY,
+            total: balance.id === entry.assetId ? '50000' : '0',
+            transferable: balance.id === entry.assetId ? '50000' : '0',
+          })
+        )
+      );
+      // The registry price exists and is positive, so only the list keeps it out.
+      const input = { groups, networks, prices: { [entry.registryPriceId]: 1 }, addressForNetwork: () => 'wallet' };
+      const rowOf = (sections: ReturnType<typeof buildPortfolioSections>) =>
+        sections.flatMap(({ assets }) => assets).find(({ assetId }) => assetId === entry.assetId);
+
+      expect(buildPortfolioSummary(input)).toMatchObject({ total: '0', unpricedCount: 1, hiddenCount: 0 });
+      const [section] = buildPortfolioSections({ ...input, preferences: {} });
+      expect(rowOf([section])).toMatchObject({
+        balanceText: '50000',
+        hasBalance: true,
+        trust: 'verified',
+        fiatValue: null,
+        hasPrice: false,
+        unitPrice: null,
+        priceTrust: 'unavailable',
+      });
+      expect(section).toMatchObject({ subtotal: '0', hasPricedAssets: false });
+
+      // Without the list the registry price would count, as it did before the list existed.
+      const unlisted = { ...input, isUntrusted: () => false };
+      expect(buildPortfolioSummary(unlisted)).toMatchObject({ total: '50000', unpricedCount: 0 });
+      expect(rowOf(buildPortfolioSections({ ...unlisted, preferences: {} }))).toMatchObject({ fiatValue: '50000', priceTrust: 'canonicalAsset' });
+    }
+  );
 });

@@ -27,7 +27,7 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import { accountController } from '@/controllers/accountController';
 import { WalletEcosystem } from '@/interfaces';
-import { buildPortfolioSections, createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { buildPortfolioSections, createAssetKey, getPortfolioAssetId } from '@/portfolio/assetIdentity';
 import {
   buildLegacy305Groups,
   buildLegacy305JettonGroups,
@@ -71,7 +71,7 @@ function headKey(networks: NetworkJson[], balance: BalanceItem): string {
   return createAssetKey({
     ecosystem: String(network.ecosystem).toLowerCase(),
     chainId: String(network.chainId || network.name),
-    assetId: getCanonicalAssetId(balance),
+    assetId: getPortfolioAssetId(balance),
   });
 }
 

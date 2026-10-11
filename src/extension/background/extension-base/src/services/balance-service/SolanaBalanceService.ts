@@ -185,24 +185,25 @@ export default class SolanaBalanceService {
     const groups = this.state.balanceService.balanceMap[address] ?? [];
     const balances: ResponseBalanceRequest[] = [];
 
-    groups
-      .filter(({ relayChain }) => relayChain === 'solana')
-      .forEach((group) => {
-        const balanceIndex = group.balances.findIndex(({ name }) => isSameString(name, network.name));
+    groups.forEach((group) => {
+      // A balance that loaded at least once; the registry placeholder of a network that never answered has none.
+      const balanceIndex = group.balances.findIndex(
+        ({ name, timestamp }) => isSameString(name, network.name) && timestamp !== undefined
+      );
 
-        if (balanceIndex < 0) return;
+      if (balanceIndex < 0) return;
 
-        const existing = group.balances[balanceIndex];
-        const balanceItem = {
-          ...existing,
-          state: APIItemState.ERROR,
-          timestamp: existing.timestamp,
-        };
+      const existing = group.balances[balanceIndex];
+      const balanceItem = {
+        ...existing,
+        state: APIItemState.ERROR,
+        timestamp: existing.timestamp,
+      };
 
-        group.balances[balanceIndex] = balanceItem;
-        balances.push({ assetId: balanceItem.id, balance: balanceItem.total, network: network.name });
-        this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-      });
+      group.balances[balanceIndex] = balanceItem;
+      balances.push({ assetId: balanceItem.id, balance: balanceItem.total, network: network.name });
+      this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
+    });
 
     if (balances.length) {
       this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
@@ -385,11 +386,16 @@ export default class SolanaBalanceService {
   ): TokenGroup {
     if (!this.state.balanceService.balanceMap[address]) this.state.balanceService.balanceMap[address] = [];
 
+    // One group per asset and network: the registry placeholder (whose relay chain is the network name, "Solana")
+    // or the group restored from the balance cache is reused, never doubled. Mainnet and devnet both call their
+    // native asset SOL, so the network is part of the match.
     const existing = this.state.balanceService.balanceMap[address].find(
-      ({ groupId, relayChain }) => groupId === assetId && relayChain === 'solana'
+      ({ groupId, balances }) => groupId === assetId && balances.some(({ name }) => isSameString(name, network.name))
     );
 
     if (existing) {
+      existing.mainNetwork = network.name;
+      existing.relayChain = 'solana';
       if (priceId) existing.priceId = priceId;
       return existing;
     }

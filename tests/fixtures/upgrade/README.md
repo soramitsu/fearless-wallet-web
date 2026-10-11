@@ -59,3 +59,46 @@ node tests/fixtures/upgrade/harness/upgrade-263-skip.mjs <2.6.3 build> dist/exte
 
 The script prints one line per check and writes `report.json` into the scratch directory; it exits non-zero on
 the first failed check. It never reaches a network and uses public test phrases only.
+
+## ECDSA Substrate accounts: `s2-3.0.6-ecdsa.json` and `s3-2.6.3-ecdsa-per-account-passwords.json`
+
+2.x (`@polkadot/ui-keyring` 3.5.1) and 3.0.x (`@subwallet/ui-keyring` 0.1.7) store an account under the account id
+its address decodes to. For an ECDSA Substrate account that is the blake2 hash of the 33-byte public key; 4.2.0
+(`@subwallet/ui-keyring` 0.1.14) stores the same account under the public key itself
+(`src/extension/background/extension-base/src/stores/EcdsaAccountRecords.ts`). These two profiles hold such
+accounts, created the way `AddWallet.vue` (`saveKeypairFromSeed`) does with ECDSA chosen under Advanced: the
+Ethereum account first, then the ECDSA account that names it.
+
+| File | Build                                  | Wallet | Phrase                  | Path      | Password                       | Keys             |
+| ---- | -------------------------------------- | ------ | ----------------------- | --------- | ------------------------------ | ---------------- |
+| S2   | 3.0.6 (the 3.0.5 keyring code)         | Signer | `abandon … about`       |           | master `Master password set in 3.0.6` | ECDSA + Ethereum |
+|      |                                        | Spare  | `legal winner … yellow` |           | master                         | ECDSA + Ethereum |
+|      |                                        | Daily  | `legal winner … yellow` | `//daily` | master                         | sr25519          |
+| S3   | 2.6.3                                  | Vault  | `abandon … about`       |           | `legacy-ecdsa-A`               | ECDSA + Ethereum |
+|      |                                        | Spare  | `legal winner … yellow` |           | `legacy-ecdsa-B`               | ECDSA + Ethereum |
+
+S2 was written by the 3.0.6 hotfix build (`096485cc`: the published 3.0.5 source `129807f0` with the phrase upload
+removed, same `yarn.lock`, keyring code otherwise unchanged), never by the published 3.0.5 package. Both were
+captured with `harness/capture-ecdsa.mjs <2.6.3|3.0.6> <build> <scratch ext dir> <scratch profile dir> <out.json>`;
+the builds carry the same throwaway manifest key as the 2.6.3 build above. `wc@2:core:0.3//keychain` (the
+WalletConnect client seed the build generated) was left out of `storage`.
+
+Used by `tests/unit/ecdsa-account-records.spec.ts` and `tests/unit/ecdsa-account-restart.spec.ts`.
+
+### Real in-place upgrade of ECDSA accounts across browser restarts
+
+```sh
+corepack yarn build:extension          # this tree's 4.2.0 build in dist/extension/chrome
+node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 3.0.6 <3.0.6 build> dist/extension/chrome <scratch dir>
+node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 2.6.3 <2.6.3 build> dist/extension/chrome <scratch dir>
+```
+
+1. The old build writes the profile above; the 4.2.0 build replaces it under the same extension id.
+2. At its first start 4.2.0 holds each ECDSA account once, under its public key, byte for byte as the old build
+   wrote it, and keeps the old record unchanged under `fw:archivedAccount:<account id>`, which no keyring loads.
+3. 3.0.6: unlock, rename Signer, change the master password, delete Spare. 2.6.3: create the master password, open
+   Vault with its own password, delete Spare.
+4. The browser restarts: the deleted wallet stays deleted and nothing of it is left in storage; the rename and the
+   new password hold (the old password no longer unlocks); Vault is not asked for its 2.6.3 password again. The
+   live record opens with the master password and signs with the key the phrase derives.
+5. 3.0.6 only: Reset wallet, restart: no account record or archive is left and no account comes back.

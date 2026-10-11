@@ -7,6 +7,8 @@ vi.mock('@/extension/background/extension-base/src/background/handlers/utils', (
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 // chrome.storage.local as the real Fearless Wallet 2.6.3 build wrote it (see tests/fixtures/upgrade/README.md).
 import profile from '../fixtures/upgrade/s1-2.6.3-per-account-passwords.json';
+// ECDSA accounts, each with its own password, as the real 2.6.3 build wrote them.
+import ecdsaProfile from '../fixtures/upgrade/s3-2.6.3-ecdsa-per-account-passwords.json';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 const [savings, forgotten, staking] = profile.wallets;
@@ -66,6 +68,26 @@ describe('the encrypted backup of an account that still has its old password', (
     await expect(
       extension.migrateExportJSON('0x1111111111111111111111111111111111111111')
     ).rejects.toThrow('account_record_not_found');
+  });
+
+  // The record of an ECDSA account holds its public key; the address is the hash of it. 2.6.3 stored the record
+  // under that hash, 4.2.0 moves it under the public key at load.
+  it('is found for an ECDSA account, under either key, and opens with its own password', { timeout: 120_000 }, async () => {
+    const [vault, spare] = ecdsaProfile.wallets;
+    const shipped = ecdsaProfile.storage as unknown as Record<string, KeyringPair$Json>;
+    const keyring = new Keyring({ type: 'ecdsa' });
+    const legacyKey = 'fw:account:0x5450c161417116657e6968dc2c108227d25a0d9be367d84c8591d4687288ad62';
+
+    get.mockImplementation(async () => structuredClone(shipped));
+    expect((await extension.migrateExportJSON(vault.address)).json).toEqual(shipped[legacyKey]);
+    expect((await extension.migrateExportJSON(spare.address)).json.meta.name).toBe('Spare');
+
+    const { [legacyKey]: record, ...rest } = shipped;
+    get.mockImplementation(async () => structuredClone({ ...rest, [`fw:account:${record.address}`]: record }));
+    const { json } = await extension.migrateExportJSON(vault.address);
+    const pair = keyring.createFromJson(json);
+    pair.decodePkcs8(vault.password);
+    expect(pair.address).toBe(vault.address);
   });
 
   it('rejects when storage cannot be read', async () => {

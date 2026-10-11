@@ -134,6 +134,34 @@ export default abstract class BaseExtensionStore<T> {
     return this.enqueueWrite(() => this.read(key), false);
   }
 
+  // One queued operation: stores every entry (one set call, which Chrome writes together) and only then removes
+  // `keys`. A failed write removes nothing.
+  public replaceAndWait(entries: Record<string, unknown>, keys: string[], trackFailure = true): Promise<void> {
+    return this.enqueueWrite(async () => {
+      const items = Object.fromEntries(Object.entries(entries).map(([key, value]) => [`${this.prefix}${key}`, value]));
+
+      if (Object.keys(items).length) {
+        await new Promise<void>((resolve, reject) => {
+          chrome.storage.local.set(items, () => {
+            const error = chrome.runtime.lastError;
+            if (error) reject(new Error(error.message || 'Wallet account write failed.'));
+            else resolve();
+          });
+        });
+      }
+
+      if (keys.length) {
+        await new Promise<void>((resolve, reject) => {
+          chrome.storage.local.remove(keys.map((key) => `${this.prefix}${key}`), () => {
+            const error = chrome.runtime.lastError;
+            if (error) reject(new Error(error.message || 'Wallet account removal failed.'));
+            else resolve();
+          });
+        });
+      }
+    }, trackFailure);
+  }
+
   public setAndWait(key: string, value: T): Promise<void> {
     return this.enqueueWrite(() => this.write(key, value));
   }

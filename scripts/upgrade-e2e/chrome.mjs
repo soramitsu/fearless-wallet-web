@@ -217,8 +217,8 @@ export async function openPopup(port, extId, hash = '') {
  * the moment it can connect, as a content script or dApp request does after the worker woke up. Returns what those first
  * messages answered and what the same question answers 1.5 s later.
  */
-export async function coldStartProbe({ profileDir, extDir, port, extId }) {
-  const chrome = launch({ profileDir, extDir, port });
+export async function coldStartProbe({ profileDir, extDir, port, extId, hostRules = [], args = [] }) {
+  const chrome = launch({ profileDir, extDir, port, hostRules, args });
   try {
     await waitFor(async () => (await fetch(`http://127.0.0.1:${port}/json/version`)).ok, 20000, 'DevTools');
     const target = await (await fetch(`http://127.0.0.1:${port}/json/new?chrome-extension://${extId}/popup.html`, { method: 'PUT' })).json();

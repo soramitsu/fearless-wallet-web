@@ -68,6 +68,12 @@ function filesOf(dir, base = dir) {
     });
 }
 
+const lockEntries = (text) => new Set(text.split('\n').filter((line) => line.startsWith('"') && line.endsWith(':')));
+function lockEntryDelta(before, after) {
+  const [was, now] = [lockEntries(before), lockEntries(after)];
+  return { removed: [...was].filter((line) => !now.has(line)), added: [...now].filter((line) => !was.has(line)) };
+}
+
 // Replaces a package that can no longer be installed with the stub in scripts/upgrade-e2e/stubs (legacy-builds.json).
 function applyStub(src, name) {
   const stubDir = path.join(root, 'scripts/upgrade-e2e/stubs', name.replace(/^@soramitsu\//, ''));
@@ -94,7 +100,8 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
   log.path = path.join(dir, 'build.log');
   try {
     execFileSync('tar', ['-x', '-C', src], { input: git(['archive', '--format=tar', sha]), maxBuffer: 1 << 30 });
-    const yarnLockSha256 = sha256(readFileSync(path.join(src, 'yarn.lock')));
+    const yarnLock = readFileSync(path.join(src, 'yarn.lock'), 'utf8');
+    const yarnLockSha256 = sha256(yarnLock);
     const deviations = entry.stub ? [applyStub(src, entry.stub)] : [];
     const node = nodeBinDir(entry.node);
     const env = {
@@ -113,6 +120,8 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
     await run(yarn[0], [yarn[1], 'install', ...(entry.stub ? [] : ['--immutable'])], { cwd: src, env, log });
     await run(yarn[0], [yarn[1], 'build:extension'], { cwd: src, env: { ...env, EXTENSION_TYPE: 'chrome', OUTPUT_DIR: 'chrome' }, log });
 
+    // A stub changes the lockfile: record exactly which entries it touched (only the stubbed package's own tree).
+    const lockfileDelta = entry.stub ? lockEntryDelta(yarnLock, readFileSync(path.join(src, 'yarn.lock'), 'utf8')) : undefined;
     const output = path.join(src, 'dist/extension/chrome');
     if (!existsSync(path.join(output, 'manifest.json'))) throw new Error(`${entry.id}: no dist/extension/chrome/manifest.json after the build`);
     const buildDir = path.join(dir, 'build');
@@ -128,6 +137,7 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
       yarn: entry.yarn,
       install: entry.stub ? 'corepack yarn install (lockfile changed by the stub only)' : 'corepack yarn install --immutable',
       deviations,
+      ...(lockfileDelta ? { lockfileDelta } : {}),
       backgroundOnly: !!entry.backgroundOnly,
       extensionKeySha256: sha256(testExtensionKey()),
       builtAt: new Date().toISOString(),

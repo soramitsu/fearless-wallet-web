@@ -22,6 +22,50 @@ function git(rootDir, args) {
   }
 }
 
+// Wording that waits for the owner's approval carries this key (empty, never shown) in every
+// locale file. A release is built only after the owner has signed the wording off and the key is gone.
+export const DRAFT_COPY_MARKER = 'draftAwaitingOwnerSignOff';
+
+function draftCopyPaths(messages, prefix = '') {
+  if (!messages || typeof messages !== 'object' || Array.isArray(messages)) return [];
+
+  return Object.entries(messages).flatMap(([key, value]) => {
+    const keyPath = prefix ? `${prefix}.${key}` : key;
+
+    return key === DRAFT_COPY_MARKER ? [keyPath] : draftCopyPaths(value, keyPath);
+  });
+}
+
+async function findDraftCopy(rootDir) {
+  const localesDir = path.join(rootDir, 'src/locales');
+  let locales;
+
+  try {
+    locales = await fs.readdir(localesDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    fail(`cannot read ${localesDir}: ${error.message}`);
+  }
+
+  const drafts = [];
+
+  for (const locale of locales.filter((entry) => entry.isDirectory()).map(({ name }) => name).sort()) {
+    const file = path.join(localesDir, locale, 'translation.json');
+    let messages;
+
+    try {
+      messages = JSON.parse(await fs.readFile(file, 'utf8'));
+    } catch (error) {
+      if (error.code === 'ENOENT') continue;
+      fail(`cannot read ${path.relative(rootDir, file)}: ${error.message}`);
+    }
+
+    for (const keyPath of draftCopyPaths(messages)) drafts.push(`src/locales/${locale}/translation.json ${keyPath}`);
+  }
+
+  return drafts;
+}
+
 function summarizeDirtyStatus(status) {
   const entries = status.split('\n').filter(Boolean);
   const preview = entries.slice(0, 12).join('\n');
@@ -56,6 +100,14 @@ export async function auditReleaseSource({ requireTag = false, rootDir }) {
     fail(`release commit is not tagged ${packageJson.version} or v${packageJson.version}`);
   }
 
+  const drafts = await findDraftCopy(rootDir);
+  if (drafts.length) {
+    fail(
+      `user-facing wording still awaits the owner's sign-off (${drafts.join('; ')}); ` +
+        `once the owner has approved it, remove the ${DRAFT_COPY_MARKER} key from every locale file`
+    );
+  }
+
   return {
     branch,
     commit,
@@ -65,7 +117,8 @@ export async function auditReleaseSource({ requireTag = false, rootDir }) {
 }
 
 function usage() {
-  return `Usage: node scripts/audit-release-source.mjs [--root DIR] [--require-tag]\n\nRefuses release provenance from a dirty Git checkout and reports the exact source commit.`;
+  return `Usage: node scripts/audit-release-source.mjs [--root DIR] [--require-tag]\n\nRefuses release provenance from a dirty Git checkout, or from one whose locale files still mark wording as a
+draft awaiting the owner's sign-off, and reports the exact source commit.`;
 }
 
 function parseArguments(argv) {

@@ -51,8 +51,27 @@ try {
   const tagged = runAudit('--require-tag');
   assert.equal(tagged.status, 0, tagged.stderr);
   assert.match(tagged.stdout, /tag 3\.0\.6/u);
+
+  // Wording marked as a draft for the owner's sign-off blocks the release until the marker is removed.
+  await fs.mkdir(path.join(tempRoot, 'src/locales/en'), { recursive: true });
+  await fs.mkdir(path.join(tempRoot, 'src/locales/akk'), { recursive: true });
+  await fs.writeFile(
+    path.join(tempRoot, 'src/locales/en/translation.json'),
+    '{"exposureNotice":{"draftAwaitingOwnerSignOff":"","title":"Security notice"}}\n'
+  );
+  await fs.writeFile(path.join(tempRoot, 'src/locales/akk/translation.json'), '{"exposureNotice":{"title":"x"}}\n');
+  git('add', 'src');
+  git('commit', '--quiet', '-m', 'draft wording');
+  const draft = runAudit();
+  assert.notEqual(draft.status, 0);
+  assert.match(draft.stderr, /awaits the owner's sign-off \(src\/locales\/en\/translation\.json exposureNotice\.draftAwaitingOwnerSignOff\)/u);
+
+  await fs.writeFile(path.join(tempRoot, 'src/locales/en/translation.json'), '{"exposureNotice":{"title":"Security notice"}}\n');
+  git('commit', '--quiet', '-am', 'owner signed the wording off');
+  const signedOff = runAudit();
+  assert.equal(signedOff.status, 0, signedOff.stderr);
 } finally {
   await fs.rm(tempRoot, { force: true, recursive: true });
 }
 
-console.log('Release source audit self-test passed (5 checks)');
+console.log('Release source audit self-test passed (7 checks)');

@@ -104,6 +104,7 @@ jobs:
           yarn test:import-chrome-release-config
           yarn test:prepare-chrome-release
           yarn test:release-source-audit
+          yarn test:bundle-host-audit
 
       - name: Build Chrome extension
         run: yarn build:extension:zip

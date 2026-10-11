@@ -35,7 +35,7 @@ const { t } = useI18n();
   gap: 6px;
   margin: 0 16px 10px 0;
   padding: 12px;
-  border: 1px solid rgba(187, 119, 255, 0.45);
+  border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-accent-edge));
   border-radius: $default-border-radius;
   background: $pink-purple-color;
   text-align: left;
@@ -77,7 +77,7 @@ const { t } = useI18n();
   }
 
   &:focus-visible {
-    outline: 2px solid $plain-white;
+    outline: 2px solid palette($plain-white, var(--fw-focus));
     outline-offset: 2px;
   }
 }

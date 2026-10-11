@@ -336,7 +336,7 @@ export default defineComponent({ name: 'CrossChainForm',
 
 .summary {
   background-color: $secondary-background-color !important;
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-divider)) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   margin-bottom: 15px;

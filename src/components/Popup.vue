@@ -201,7 +201,7 @@ const backgroundClick = (event: CustomEvent) => {
     min-width: 230px;
     max-height: 410px;
     max-width: 480px;
-    background-color: #111111;
+    background-color: palette(#111111, var(--fw-raised));
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
     padding: 15px 0 13px;

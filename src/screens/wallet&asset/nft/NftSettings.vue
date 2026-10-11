@@ -85,7 +85,7 @@ const toggleNftSettingsAirdrop = () => {
     padding: 0px 0 10px;
 
     &:nth-child(odd) {
-      border-bottom-color: $default-background-color;
+      border-bottom-color: palette($default-background-color, var(--fw-divider));
     }
   }
 }

@@ -62,7 +62,7 @@ const select = (value: string) => {
   .el-button {
     clip-path: $medium-clip-path-left-top-and-right-bottom !important;
     background: none !important;
-    border: 1px solid $default-background-color !important;
+    border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
     color: white !important;
   }
 
@@ -84,8 +84,8 @@ const select = (value: string) => {
   min-width: 160px;
   padding: 6px 0;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
-  background-color: #111111 !important;
-  border: 1px solid #111111 !important;
+  background-color: palette(#111111, var(--fw-raised)) !important;
+  border: 1px solid palette(#111111, var(--fw-raised)) !important;
   margin-top: 5px !important;
 }
 

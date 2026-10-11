@@ -186,10 +186,11 @@ const buttonClasses = computed(() => {
 
 <style lang="scss" scoped>
 .primary {
-  // Keep the brand hue while giving normal-size white labels 4.5:1 contrast.
-  background: mix(black, $pink-color, 4%);
-  color: white;
-  border-color: mix(black, $pink-color, 4%);
+  // White labels need 4.5:1: the legacy look darkens the brand pink by 4% (mix(black, #ee0077, 4%)), Neon Glass
+  // fills with accent.fill (5.04:1 at its lightest stop).
+  background: palette(rgb(228.48, 0, 114.24), var(--fw-fill));
+  color: palette(white, var(--fw-on-accent));
+  border-color: palette(rgb(228.48, 0, 114.24), var(--fw-fill-top));
 }
 .button:focus-visible {
   outline: 2px solid white;
@@ -258,7 +259,8 @@ const buttonClasses = computed(() => {
   .el-button {
     background-color: $simple-orange-color;
     border: none;
-    color: $plain-white;
+    // On amber only the base colour reads (12.27:1).
+    color: palette($plain-white, var(--fw-bg-base));
   }
 }
 
@@ -283,9 +285,15 @@ const buttonClasses = computed(() => {
 }
 
 .is-disabled {
-  opacity: 0.7;
-  background-color: #f8087b !important;
-  border-color: #f8087b !important;
+  opacity: palette(0.7, 1);
+  background-color: palette(#f8087b, var(--fw-raised-2)) !important;
+  border-color: palette(#f8087b, var(--fw-raised-2)) !important;
+
+  // A disabled button is flat raised-2 with a tertiary label (5.75:1), never the fill at reduced opacity.
+  @include v1-palette {
+    background-image: none !important;
+    color: var(--fw-text-3) !important;
+  }
 }
 
 .button--content-wrap > .el-button span {
@@ -346,7 +354,7 @@ const buttonClasses = computed(() => {
 }
 
 .secondary-border {
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
 }
 
 .secondary-border-none {

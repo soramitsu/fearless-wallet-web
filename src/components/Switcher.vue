@@ -73,8 +73,8 @@ const disabled = computed(() => props.disabled);
   height: 20px;
   border-radius: 20px;
   position: relative;
-  background-color: #422539 !important;
-  border: 1px solid $default-background-color !important;
+  background-color: palette(#422539, var(--fw-sunken)) !important;
+  border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
 
   &::after {
     content: '';
@@ -90,13 +90,14 @@ const disabled = computed(() => props.disabled);
 }
 
 .switch__input:focus-visible + .switch__core {
-  outline: 2px solid $pink-lavender-color;
+  outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
   outline-offset: 2px;
 }
 
 .switch__input:checked + .switch__core {
-  background-color: #7700ee !important;
-  border: 1px solid $default-background-color !important;
+  background-color: palette(#7700ee, var(--fw-fill-top)) !important;
+  // The edge lifts the on track to 3:1 over glass (design-system 3.4).
+  border: 1px solid palette($default-background-color, var(--fw-accent-edge)) !important;
 
   &::after {
     transform: translateX(20px);

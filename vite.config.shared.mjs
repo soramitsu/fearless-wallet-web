@@ -123,12 +123,27 @@ export default sprite;
   };
 }
 
+export const FW_PALETTES = Object.freeze(['v1', 'legacy']);
+
+// Build-time look (design-system 14.0 item 5): `v1` is Neon Glass, `legacy` the look this release replaced, kept so a
+// hotfix can revert paint without touching data. It is not remote configuration.
+export function resolveFwPalette(env = process.env) {
+  const palette = env.VITE_FW_PALETTE || 'v1';
+
+  if (!FW_PALETTES.includes(palette)) {
+    throw new Error(`VITE_FW_PALETTE must be one of ${FW_PALETTES.join(', ')}; received ${JSON.stringify(palette)}`);
+  }
+
+  return palette;
+}
+
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
   const nodeEnv = mode === 'production' ? 'production' : 'development';
   const define = {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
+    'process.env.VITE_FW_PALETTE': JSON.stringify(resolveFwPalette(env)),
   };
 
   for (const key of ENV_KEYS) {
@@ -192,7 +207,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
           additionalData: `
             @use "@/styles/_layout.scss" as *;
             @use "@/styles/_mixins.scss" as *;
-            @use "@/styles/common.scss" as *;
+            @use "@/styles/common.scss" as * with ($fw-palette: "${resolveFwPalette()}");
           `,
         },
       },

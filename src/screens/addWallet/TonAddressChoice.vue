@@ -124,11 +124,11 @@ export default defineComponent({
 
   &:hover,
   &.selected {
-    border-color: $pink-lavender-color;
+    border-color: palette($pink-lavender-color, var(--fw-select-edge));
   }
 
   &.selected {
-    box-shadow: inset 0 0 0 1px $pink-lavender-color;
+    box-shadow: inset 0 0 0 1px palette($pink-lavender-color, var(--fw-select-edge));
   }
 }
 </style>

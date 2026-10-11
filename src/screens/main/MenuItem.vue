@@ -43,7 +43,7 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
   padding: 4px 2px;
 
   &:focus-visible {
-    outline: 2px solid $pink-color;
+    outline: 2px solid palette($pink-color, var(--fw-focus));
     outline-offset: -2px;
     border-radius: 6px;
   }
@@ -100,12 +100,12 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
     width: 48px;
     height: 48px;
     margin-top: -22px;
-    background: $pink-lavender-color;
-    box-shadow: 0 0 0 5px #111;
+    background: palette($pink-lavender-color, var(--fw-fill));
+    box-shadow: 0 0 0 5px palette(#111, var(--fw-bg-base));
   }
 
   .menu-icon {
-    color: #111;
+    color: palette(#111, var(--fw-on-accent));
   }
 }
 
@@ -117,7 +117,7 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
   }
 
   &.emphasized .menu-icon {
-    color: #111;
+    color: palette(#111, var(--fw-on-accent));
   }
 }
 </style>

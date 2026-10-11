@@ -258,13 +258,13 @@ export default defineComponent({ name: 'ContentSettings' ,
     cursor: pointer;
 
     &[aria-pressed='true'] {
-      border-color: $pink-lavender-color;
+      border-color: palette($pink-lavender-color, var(--fw-select-edge));
       background: $pink-purple-color;
       color: $plain-white;
     }
 
     &:focus-visible {
-      outline: 2px solid $pink-lavender-color;
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
       outline-offset: 2px;
     }
   }
@@ -305,7 +305,7 @@ export default defineComponent({ name: 'ContentSettings' ,
     }
 
     &:focus-visible {
-      outline: 2px solid $pink-lavender-color;
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
       outline-offset: 1px;
     }
   }

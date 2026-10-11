@@ -428,7 +428,7 @@ onMounted(loadPools);
   border-top: $default-border;
 }
 .pool-card:focus {
-  outline: 2px solid $pink-color;
+  outline: 2px solid palette($pink-color, var(--fw-focus));
   outline-offset: 4px;
 }
 .pool-card.removed {

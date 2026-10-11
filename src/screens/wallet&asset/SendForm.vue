@@ -199,7 +199,7 @@ export default defineComponent({
 .summary {
   padding: 16px;
   background-color: $secondary-background-color !important;
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-divider)) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
 

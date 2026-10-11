@@ -11,6 +11,8 @@ export async function startWallet(
   timeoutMs = 20000
 ): Promise<void> {
   const copy = (navigator.language.startsWith('ru') ? ru : en).ux;
+  // The build-time palette (VITE_FW_PALETTE); the page entry has loaded the tokens before this runs.
+  const neonGlass = process.env.VITE_FW_PALETTE !== 'legacy';
   const surface = document.createElement('section');
   surface.dataset.testid = 'walletStartup';
   surface.setAttribute('role', 'status');
@@ -27,8 +29,8 @@ export async function startWallet(
     padding: '24px',
     // The page entry loads the tokens first; the fallback is the colour this surface had before them.
     background: 'var(--fw-bg-base, #191919)',
-    color: '#fff',
-    fontFamily: 'Sora, system-ui, sans-serif',
+    color: neonGlass ? 'var(--fw-text-1)' : '#fff',
+    fontFamily: neonGlass ? 'var(--fw-font-body)' : 'Sora, system-ui, sans-serif',
     textAlign: 'center',
   });
   const title = document.createElement('h1');
@@ -42,9 +44,10 @@ export async function startWallet(
   Object.assign(retry.style, {
     minHeight: '48px',
     padding: '12px 24px',
-    border: '2px solid #fff',
+    border: neonGlass ? '1px solid var(--fw-accent-edge)' : '2px solid #fff',
     borderRadius: '8px',
-    background: '#e6007a',
+    // White on accent.fill is 5.04:1 or more.
+    background: neonGlass ? 'var(--fw-fill)' : '#e6007a',
     color: '#fff',
     font: 'inherit',
     cursor: 'pointer',

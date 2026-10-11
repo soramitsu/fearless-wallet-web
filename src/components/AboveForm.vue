@@ -135,7 +135,8 @@ const aboveFormClasses = computed(() => {
     width: $extension-width;
     min-height: $extension-height - 80px;
     height: calc(100% - 80px);
-    background-color: #111111;
+    // Sheets are opaque raised paint, and Calm screens open in them (design-system 2.1, 3.2).
+    background-color: palette(#111111, var(--fw-raised));
     clip-path: $big-clip-path-left-top;
 
     @keyframes transform {
@@ -297,7 +298,7 @@ const aboveFormClasses = computed(() => {
   color: inherit;
 }
 .form-background .form button.icon:focus-visible {
-  outline: 2px solid $pink-color;
+  outline: 2px solid palette($pink-color, var(--fw-focus));
 }
 </style>
 

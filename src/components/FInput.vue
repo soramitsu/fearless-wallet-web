@@ -147,7 +147,7 @@ defineExpose({ input });
   .el-input__inner {
     width: 100%;
     min-height: 48px;
-    border: 1px solid $default-background-color !important;
+    border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
     padding-left: 25px !important;
     padding-right: 16px !important;
     outline: none;

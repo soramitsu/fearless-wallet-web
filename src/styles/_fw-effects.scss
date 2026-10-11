@@ -9,6 +9,19 @@ html {
   background: var(--fw-bg-base);
 }
 
+// The card colour the legacy names paint under the Neon Glass palette (common.scss): glass at Full and Lite,
+// opaque surface.raised at Reduced and on Calm screens (design-system 2.1).
+@include v1-palette {
+  :root {
+    --fw-card-surface: var(--fw-glass);
+  }
+
+  [data-fw-effects='reduced'],
+  .fw-calm {
+    --fw-card-surface: var(--fw-raised);
+  }
+}
+
 // e0: a fixed layer under the app, so scrolling never repaints it. Geometry and alpha are the aurora tokens.
 .fw-backdrop {
   position: fixed;

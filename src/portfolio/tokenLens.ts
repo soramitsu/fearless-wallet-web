@@ -39,6 +39,15 @@ export interface PortfolioTokenRow {
   fiatValue: string | null;
   /** Funded members without a trusted price, which add nothing to `fiatValue`. */
   unpricedNetworkCount: number;
+  /**
+   * Counted members whose balance no provider could load. They add nothing to the amount, which is then a part of
+   * what the row holds, and they keep the row out of the "no balance" block: an unknown balance is not a zero.
+   */
+  unavailableNetworkCount?: number;
+  /** No counted member's balance could be loaded: the row says so instead of an amount. */
+  balanceUnavailable?: boolean;
+  /** A counted member's last update failed; its amount, if any, is the last one confirmed. */
+  balanceFailed?: boolean;
   /** Every member is hidden. */
   hidden: boolean;
   isTestnet: boolean;
@@ -74,9 +83,12 @@ const compareChildren = (left: PortfolioTokenChild, right: PortfolioTokenChild):
   return left.networkRank - right.networkRank || left.asset.networkName.localeCompare(right.asset.networkName);
 };
 
+/** A row with a balance, or with a balance nobody could load, which may be one: it never goes under "no balance". */
+const isFundedRow = (row: PortfolioTokenRow): boolean => row.hasBalance || Boolean(row.unavailableNetworkCount);
+
 function toRow(id: string, members: PortfolioTokenChild[], group?: { id: string; symbol: string; name: string }): PortfolioTokenRow {
   const sorted = [...members].sort(compareChildren);
-  const children = sorted.filter(({ asset }) => asset.hasBalance || members.length === 1);
+  const children = sorted.filter(({ asset }) => asset.hasBalance || asset.balanceUnavailable || members.length === 1);
   const zeroChildren = sorted.filter((child) => !children.includes(child));
   const hidden = members.every(({ asset }) => asset.hidden);
   // A partly hidden group adds up what is not hidden, as the header does; a fully hidden one (listed in Manage or
@@ -86,6 +98,7 @@ function toRow(id: string, members: PortfolioTokenChild[], group?: { id: string;
   const unpricedNetworkCount = summed.filter(
     ({ asset }) => asset.hasBalance && asset.trust === 'verified' && asset.fiatValue === null
   ).length;
+  const unavailableNetworkCount = summed.filter(({ asset }) => asset.balanceUnavailable).length;
   const [lead] = sorted;
 
   return {
@@ -104,13 +117,16 @@ function toRow(id: string, members: PortfolioTokenChild[], group?: { id: string;
     hasBalance: members.some(({ asset }) => asset.hasBalance),
     fiatValue: priced.length ? sum(priced.map(({ asset }) => asset.fiatValue)) : null,
     unpricedNetworkCount,
+    unavailableNetworkCount,
+    balanceUnavailable: unavailableNetworkCount === summed.length,
+    balanceFailed: summed.some(({ asset }) => asset.balanceFailed),
     hidden,
     isTestnet: members.every(({ asset }) => asset.isTestnet),
   };
 }
 
 const compareByValue = (left: PortfolioTokenRow, right: PortfolioTokenRow): number => {
-  if (left.hasBalance !== right.hasBalance) return left.hasBalance ? -1 : 1;
+  if (isFundedRow(left) !== isFundedRow(right)) return isFundedRow(left) ? -1 : 1;
 
   const leftPriced = left.fiatValue !== null;
   const rightPriced = right.fiatValue !== null;
@@ -173,18 +189,21 @@ export function buildTokenRows({
   return byValue
     .map((row, valueOrder) => ({ row, valueOrder, position: position(row) }))
     .sort((left, right) => {
-      if (left.row.hasBalance !== right.row.hasBalance) return left.row.hasBalance ? -1 : 1;
+      if (isFundedRow(left.row) !== isFundedRow(right.row)) return isFundedRow(left.row) ? -1 : 1;
       if (left.position !== right.position) return left.position - right.position;
       return left.valueOrder - right.valueOrder;
     })
     .map(({ row }) => row);
 }
 
-/** Rows with a balance first; rows that only hold zero go into the collapsed "N tokens · no balance" block. */
+/**
+ * Rows with a balance first; rows that only hold zero go into the collapsed "N tokens · no balance" block. A row
+ * whose balance could not be loaded stays with the funded ones, saying so, as its network does in the By network lens.
+ */
 export function splitZeroTokenRows(rows: PortfolioTokenRow[]): { funded: PortfolioTokenRow[]; zeroOnly: PortfolioTokenRow[] } {
   return {
-    funded: rows.filter((row) => row.hasBalance),
-    zeroOnly: rows.filter((row) => !row.hasBalance),
+    funded: rows.filter(isFundedRow),
+    zeroOnly: rows.filter((row) => !isFundedRow(row)),
   };
 }
 

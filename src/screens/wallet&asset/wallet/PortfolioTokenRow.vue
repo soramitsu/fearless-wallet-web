@@ -38,7 +38,11 @@
           </span>
         </span>
 
-        <span class="token-balance">
+        <!-- A balance no provider could load is unknown, not zero: the row says so instead of an amount. -->
+        <span v-if="row.balanceUnavailable" class="token-balance" data-testid="tokenBalanceUnavailable">
+          <span class="token-failed">{{ t('portfolioPage.balanceStatus.failed') }}</span>
+        </span>
+        <span v-else class="token-balance">
           <span data-testid="tokenAmount">{{ formatAmount(row.balanceText) }} {{ row.symbol }}</span>
           <span class="token-fiat" data-testid="tokenFiat">{{ formatFiat(row.fiatValue) }}</span>
           <span v-if="row.fiatValue !== null && row.unpricedNetworkCount" class="token-note" data-testid="tokenPartialPrice">
@@ -46,6 +50,9 @@
           </span>
           <span v-if="showsTransferable" class="token-note" data-testid="transferable">
             {{ t('portfolioPage.transferable', { amount: `${formatAmount(row.transferableText)} ${row.symbol}` }) }}
+          </span>
+          <span v-if="row.balanceFailed" class="token-note token-failed" data-testid="tokenBalanceFailed">
+            {{ t('portfolioPage.balanceStatus.failed') }}
           </span>
         </span>
 
@@ -96,11 +103,17 @@
             </span>
           </span>
 
-          <span class="network-balance">
+          <span v-if="child.asset.balanceUnavailable" class="network-balance" data-testid="networkBalanceUnavailable">
+            <span class="token-failed">{{ t('portfolioPage.balanceStatus.failed') }}</span>
+          </span>
+          <span v-else class="network-balance">
             <span>{{ formatAmount(child.asset.balanceText) }} {{ child.asset.symbol }}</span>
             <span class="token-fiat">{{ formatFiat(child.asset.fiatValue) }}</span>
             <span v-if="childShowsTransferable(child)" class="token-note">
               {{ t('portfolioPage.transferable', { amount: `${formatAmount(child.asset.transferableText)} ${child.asset.symbol}` }) }}
+            </span>
+            <span v-if="child.asset.balanceFailed" class="token-note token-failed" data-testid="networkBalanceFailed">
+              {{ t('portfolioPage.balanceStatus.failed') }}
             </span>
           </span>
 
@@ -188,7 +201,9 @@ function childShowsTransferable({ asset }: PortfolioTokenChild): boolean {
 const accessibleLabel = computed(() => {
   const values = {
     symbol: props.row.symbol,
-    amount: `${formatAmount(props.row.balanceText)} ${props.row.symbol}`,
+    amount: props.row.balanceUnavailable
+      ? t('portfolioPage.balanceStatus.failed')
+      : `${formatAmount(props.row.balanceText)} ${props.row.symbol}`,
     value: formatFiat(props.row.fiatValue),
   };
 
@@ -203,7 +218,7 @@ function childLabel({ asset, role }: PortfolioTokenChild): string {
   return t('portfolioPage.tokenSingleLabel', {
     symbol: asset.symbol,
     network,
-    amount: `${formatAmount(asset.balanceText)} ${asset.symbol}`,
+    amount: asset.balanceUnavailable ? t('portfolioPage.balanceStatus.failed') : `${formatAmount(asset.balanceText)} ${asset.symbol}`,
     value: formatFiat(asset.fiatValue),
   });
 }
@@ -336,6 +351,11 @@ function setRowPreference(preference: AssetPreference): void {
   margin-top: 2px;
   color: $gray-color;
   font-size: 0.66rem;
+}
+
+// An unknown or out-of-date balance reads as a warning, never as an amount.
+.token-failed {
+  color: $simple-orange-color;
 }
 
 .token-balance,

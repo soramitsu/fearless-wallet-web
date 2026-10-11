@@ -55,10 +55,16 @@ export default defineComponent({ name: 'WalletInfo',
     changeWalletBalance() {
       return this.totalBalance?.change ?? { percent: 0, amount: 0 };
     },
-    // The wallet list shows the full balance; when part of it is hidden in the portfolio, it says so.
+    // The wallet list shows the full balance; when part of it is hidden in the portfolio, or could not be loaded at
+    // all (and so is not in it), it says so.
     balanceCaption(): string {
       const hiddenValue = this.totalBalance?.hiddenValue;
-      return hiddenValue && new FPNumber(hiddenValue).isGtZero() ? this.$t('portfolioPage.inclHidden') : '';
+      const captions = [
+        hiddenValue && new FPNumber(hiddenValue).isGtZero() ? this.$t('portfolioPage.inclHidden') : '',
+        this.totalBalance?.unavailableCount ? this.$t('portfolioPage.balanceStatus.failed') : '',
+      ];
+
+      return captions.filter(Boolean).join(' · ');
     },
     contentClasses() {
       return [

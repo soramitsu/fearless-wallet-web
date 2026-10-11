@@ -152,6 +152,26 @@ describe('Hide zero balances and the filtered header caption', () => {
     wrapper.unmount();
   });
 
+  it('says the total leaves out a balance nobody could load, instead of passing it off as the whole', async () => {
+    const accountsStore = useAccountsStore();
+    const groups = balances();
+    // Kusama's first update failed: the background keeps the item without an amount.
+    groups
+      .flatMap((group) => group.balances)
+      .filter((balance) => balance.name === 'kusama' && balance.symbol === 'ksm')
+      .forEach((balance) => Object.assign(balance, { state: APIItemState.ERROR }));
+    accountsStore.setBalance({ details: groups });
+    const wrapper = mountWallet();
+
+    expect(wrapper.get('[data-testid="fiatBalance"]').text()).toBe('2,010.00');
+    expect(wrapper.get('[data-testid="balanceCaption"]').text()).toBe('portfolioPage.balanceStatus.failed');
+
+    accountsStore.setSelectedNetwork('Polkadot');
+    await nextTick();
+    expect(wrapper.get('[data-testid="balanceCaption"]').text()).toBe('Showing Polkadot · 10.00 · portfolioPage.balanceStatus.failed');
+    wrapper.unmount();
+  });
+
   it('offers the Hidden filter and the Testnets switch in Manage, persisting Testnets per wallet', async () => {
     const accountsStore = useAccountsStore();
     const wrapper = mountWallet();

@@ -208,7 +208,8 @@ interface TonEvent {
   userWallet?: string;
   timestamp?: number;
   method: string;
-  networkFee: string;
+  /** In nanotons; absent when the provider does not report it (TI). */
+  networkFee?: string;
   symbol: string;
   symbolIn?: string;
   isOutEvent: boolean;

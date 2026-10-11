@@ -36,7 +36,12 @@
           </button>
         </FCorners>
 
-        <div v-if="showBalance" class="balance" data-testid="balance">
+        <!-- A balance no provider could load is unknown, not 0, and offers no Max. -->
+        <div v-if="showBalance && balanceUnavailable" class="balance balance--failed" data-testid="balanceUnavailable">
+          {{ $t('assets.balance') }}&nbsp;{{ $t('portfolioPage.balanceStatus.failed') }}
+        </div>
+
+        <div v-else-if="showBalance" class="balance" data-testid="balance">
           {{ $t('assets.balance') }}
 
           <button type="button" :class="balanceValueClasses" data-testid="balanceValue" :disabled="readonly" :aria-label="`${$t('common.max')}: ${$n(+totalAmount, 'decimal')} ${asset}`" @click="setMax">
@@ -61,6 +66,8 @@ export default defineComponent({ name: 'SelectInput' ,
     assetId: { default: '' },
     value: { default: '' },
     totalAmount: { default: 0 },
+    /** No provider could load the balance: `totalAmount` is not known and is not shown. */
+    balanceUnavailable: { type: Boolean, default: false },
     showBalance: { default: true },
     readonly: { default: false },
     disableSelection: { type: Boolean, default: false },
@@ -340,6 +347,10 @@ export default defineComponent({ name: 'SelectInput' ,
 
       .balance-value-readonly {
         cursor: default;
+      }
+
+      &.balance--failed {
+        color: $simple-orange-color;
       }
     }
   }

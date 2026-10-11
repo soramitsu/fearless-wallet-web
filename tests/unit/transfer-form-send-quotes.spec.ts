@@ -69,6 +69,7 @@ vi.mock('@/util/BaseApi', () => ({
   },
 }));
 
+import { APIItemState } from '@extension-base/api/types/networks';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 
 const bitcoinQuote = {
@@ -277,5 +278,22 @@ describe('Send screen Solana quote', () => {
     expect((wrapper.vm as unknown as { tx: Record<string, unknown> }).tx).toMatchObject({
       solanaComputeUnitPriceMicroLamports: 50_000,
     });
+  });
+});
+
+describe('Send screen balance that no provider could load', () => {
+  const balanceUnavailable = (currencyBalance: Record<string, unknown> | undefined): boolean =>
+    (TransferForm as unknown as { computed: { balanceUnavailable: (this: unknown) => boolean } }).computed.balanceUnavailable.call({
+      currencyBalance,
+    });
+
+  it('is unknown, not 0, only when the last update failed and nothing was confirmed before', () => {
+    // As TonBalance leaves the TON item when neither TI nor the registry node proves TON mainnet.
+    expect(balanceUnavailable({ id: 'TON', name: 'ton mainnet', state: APIItemState.ERROR })).toBe(true);
+    // The last confirmed amount is still what can be sent.
+    expect(balanceUnavailable({ id: 'TON', name: 'ton mainnet', state: APIItemState.ERROR, transferable: '3.5', total: '3.5' })).toBe(false);
+    expect(balanceUnavailable({ id: 'TON', name: 'ton mainnet', state: APIItemState.PENDING })).toBe(false);
+    expect(balanceUnavailable({ id: 'TON', name: 'ton mainnet', state: APIItemState.READY, transferable: '0' })).toBe(false);
+    expect(balanceUnavailable(undefined)).toBe(false);
   });
 });

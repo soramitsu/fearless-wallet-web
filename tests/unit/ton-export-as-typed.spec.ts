@@ -9,6 +9,8 @@ vi.mock('@/router/routes', () => ({ Components: { AccountAccessRecovery: 'Accoun
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ selectedWallet: mocks.wallet }) }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ networks: [] }) }));
 vi.mock('@/util/BaseApi', () => ({ default: { isEthereumNetwork: () => false, formatAddress: () => '' } }));
+// ExportForm links a failed export to Account access (WK-3); the route table would pull in the whole router.
+vi.mock('@/router/routes', () => ({ Components: { AccountAccessRecovery: 'AccountAccessRecovery' } }));
 
 import androidVectors from '../fixtures/ton/ton-android-4.2.0-vectors.json';
 import bip39Vectors from '../fixtures/ton/ton-bip39-3.0.5-vectors.json';

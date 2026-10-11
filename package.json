@@ -41,6 +41,7 @@
     "test:smoke:chrome:production": "node scripts/solana-extension-smoke.mjs --production-popup",
     "test:smoke:chrome:legacy-exposure": "node scripts/legacy-exposure-extension-smoke.mjs",
     "audit:bundle-hosts": "node scripts/audit-bundle-hosts.mjs",
+    "test:smoke:portfolio-screenshots": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs --portfolio-screenshots",
     "audit:chrome-release": "node scripts/audit-chrome-release.mjs",
     "audit:chrome-release:artifact": "node scripts/audit-chrome-release.mjs --release",
     "audit:chrome-release:source": "node scripts/audit-release-source.mjs",

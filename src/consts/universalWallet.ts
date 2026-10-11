@@ -159,6 +159,16 @@ const UNIVERSAL_WALLET_SOLANA_NETWORKS = {
   },
 } as const;
 
+// The price id (the CoinGecko coin id the price service asks for) of each app-owned native asset, by chain id.
+// A network without an entry has no price: its balance says "Price unavailable" and is never counted. Test
+// networks have none on purpose. Keep in step with config/portfolio/app-owned-chains.v1.json in the workspace root.
+const UNIVERSAL_WALLET_NATIVE_PRICE_IDS: Readonly<Record<string, string>> = {
+  [UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.chainId]: 'bitcoin',
+  [UNIVERSAL_WALLET_SOLANA_NETWORKS.mainnet.chainId]: 'solana',
+  // Only used while the remote registry, which lists Toncoin itself, is not loaded.
+  'ton:mainnet': 'the-open-network',
+};
+
 const UNIVERSAL_WALLET_BITCOIN_MAINNET_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry = {
   id: UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.id,
   ecosystem: WalletEcosystem.Bitcoin,
@@ -348,5 +358,6 @@ export {
   UNIVERSAL_WALLET_DERIVATION_PATHS,
   UNIVERSAL_WALLET_BITCOIN_NETWORKS,
   UNIVERSAL_WALLET_IROHA_NETWORKS,
+  UNIVERSAL_WALLET_NATIVE_PRICE_IDS,
   UNIVERSAL_WALLET_SOLANA_NETWORKS,
 };

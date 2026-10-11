@@ -5,10 +5,22 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const productionPopupOnly = process.argv.includes('--production-popup');
+// `--portfolio-screenshots [dir]`: seed the test wallet, then capture the portfolio at the popup size, offline.
+const portfolioScreenshotsArg = process.argv.indexOf('--portfolio-screenshots');
+const portfolioScreenshotsDir =
+  portfolioScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[portfolioScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[portfolioScreenshotsArg + 1]
+          : 'output/portfolio-screenshots'
+      );
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -212,7 +224,7 @@ async function main() {
 
   const universalWalletFixture = productionPopupOnly ? undefined : await loadUniversalWalletFixture();
   const transactionBase64 = productionPopupOnly ? undefined : validTransactionBase64();
-  const [solanaServer, irohaServer] = productionPopupOnly
+  const [solanaServer, irohaServer] = productionPopupOnly || portfolioScreenshotsDir
     ? [undefined, undefined]
     : await Promise.all([startDappServer(), startDappServer()]);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-solana-extension-smoke-'));
@@ -274,6 +286,23 @@ async function main() {
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
+
+    if (portfolioScreenshotsDir) {
+      const shots = await capturePortfolioScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: portfolioScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots }, null, 2));
+
+      return;
+    }
     const dappSession = await openDappPage(cdp, solanaServer.url);
 
     await waitForExpression(
@@ -1237,6 +1266,11 @@ function launchChrome(userDataDir) {
     'about:blank',
   ];
 
+  // Screenshots render fixture data. The background still needs the public registry to start, so only that host
+  // resolves: no node, indexer or price service is reached, and nothing can be broadcast.
+  if (portfolioScreenshotsDir) {
+    args.unshift('--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE localhost , EXCLUDE raw.githubusercontent.com');
+  }
   if (usePipeTransport) args.unshift('--enable-unsafe-extension-debugging', '--remote-debugging-pipe');
   else
     args.unshift(

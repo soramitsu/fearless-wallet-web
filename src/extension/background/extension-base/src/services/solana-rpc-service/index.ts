@@ -408,7 +408,8 @@ class SolanaRpcClient {
           ambiguous = true;
           continue;
         }
-        // A node that is behind refuses before relaying; another may take it.
+        // A node that is behind, or an endpoint that refuses this client,
+        // refuses before relaying; another may take it.
         if (isRetryableRpcError(error)) continue;
 
         break;
@@ -517,6 +518,15 @@ function firstSignatureOf(transactionBase64: string): string | undefined {
   }
 }
 
+// A JSON-RPC node answers a call, errors included, in a 200 body. A 4xx is the
+// endpoint refusing this client before the call reaches a node: a key, a paid
+// plan or an allowed origin is required. The public mainnet node answers 403 to
+// every request that carries an Origin header, as an extension's requests do,
+// and free plans answer 400 or 401. Another endpoint may serve the call.
+function isEndpointRefusal(status: number | undefined): boolean {
+  return status !== undefined && status >= 400 && status < 500;
+}
+
 function isRetryableRpcError(error: unknown): boolean {
   if (!(error instanceof SolanaRpcError)) return true;
   if (error.message === 'solana_rpc_error') {
@@ -526,7 +536,10 @@ function isRetryableRpcError(error: unknown): boolean {
   }
   if (error.message === 'invalid_json' || error.message === 'solana_rpc_timeout') return true;
 
-  return error.message.startsWith('solana_rpc_http_') && isRetryableHttpStatus(error.status);
+  return (
+    error.message.startsWith('solana_rpc_http_') &&
+    (isRetryableHttpStatus(error.status) || isEndpointRefusal(error.status))
+  );
 }
 
 function normalizePubkey(value: unknown, errorCode: string): string {

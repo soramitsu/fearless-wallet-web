@@ -230,6 +230,23 @@ function findTransferAssetGroup(groups: TokenGroup[] = [], assetId: string, netw
   return networkGroup ?? groups.find(({ balances }) => balances.some(({ id }) => isSameString(id, assetId)));
 }
 
+// The asset page's lookup: the group a route's asset id names, on the route's network when it carries one.
+// A balance's registry id wins. A group id or an on-chain id (links from before rows were keyed by the registry
+// id) only matches when no registry id does, because an on-chain id can name two assets of one network.
+function findAssetGroup(groups: TokenGroup[] = [], assetId: string, network = '') {
+  if (!assetId) return undefined;
+
+  const find = (matches: (group: TokenGroup, balance: BalanceItem) => boolean) =>
+    groups.find((group) =>
+      group.balances.some((balance) => (!network || isSameString(balance.name, network)) && matches(group, balance))
+    );
+
+  return (
+    find((_, balance) => balance.id === assetId) ??
+    find((group, balance) => group.groupId === assetId || getCanonicalAssetId(balance) === assetId)
+  );
+}
+
 function getUtilityAsset(balances: TokenGroup[], _network: NetworkName) {
   return balances.find(({ balances }) =>
     balances.some(({ name, isUtility }) => isSameString(name, _network) && isUtility)
@@ -351,6 +368,7 @@ export {
   getTransferAssetOptionValue,
   parseTransferAssetOptionValue,
   findTransferAssetGroup,
+  findAssetGroup,
   getProviderUrl,
   defaultSortingCurrencies,
   getUtilityAsset,

@@ -6,16 +6,22 @@ import { getMockAssets } from '@extension-base/background/helpers/assets';
 import { networkMap305, readSnapshot } from '../fixtures/legacy-305/generate';
 import type { NetworkJson } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
-import { buildPortfolioSections, scopeNetworksToWallet } from '@/portfolio/assetIdentity';
+import { buildPortfolioSections, buildPortfolioSummary, scopeNetworksToWallet } from '@/portfolio/assetIdentity';
 import {
   CANONICAL_ASSET_GROUPS_SHA256,
   DEFAULT_VISIBLE_AT_ZERO,
   DEFAULT_VISIBLE_AT_ZERO_SHA256,
   TESTNET_CHAIN_IDS,
   TESTNET_CHAIN_IDS_SHA256,
+  UNTRUSTED_ASSETS,
   parseDefaultVisibleAtZero,
   parseTestnetChainIds,
+  parseUntrustedAssets,
 } from '@/portfolio/canonicalGroups';
+import { createUntrustedAssetCheck } from '@/portfolio/untrustedAssets';
+import { buildCanonicalGroupIndex } from '@/portfolio/tokenGroups';
+import { buildTokenRows } from '@/portfolio/tokenLens';
+import { createAssetKey } from '@/portfolio/assetKey';
 import { createZeroDefaultRule, isTestnetNetwork, registryAssetKey } from '@/portfolio/zeroRule';
 import { mergeUniversalWalletRegistryNetworks } from '@/util/universalWalletRegistryNetworks';
 
@@ -70,6 +76,37 @@ describe('shared portfolio configuration', () => {
         entries: [{ chainId: '1', assetId: 'eth' }, { chainId: ' padded', assetId: 'x' }, 'junk'],
       })
     ).toEqual([{ chainId: '1', assetId: 'eth' }]);
+  });
+
+  it('reads the untrusted list and fails safe on a document of another format or version', () => {
+    expect(UNTRUSTED_ASSETS).toEqual([
+      { chainId: '48239ef607d7928874027a43a67689209727dfb3d3dc5e5b03a39bdc2eda771a', assetId: '27768227-8a9a-4443-a57d-6013c24f85e9' },
+    ]);
+    expect(parseUntrustedAssets(null)).toEqual([]);
+    expect(parseUntrustedAssets({ format: 'fearless.canonical-asset-groups', version: 1 })).toEqual([]);
+    expect(
+      parseUntrustedAssets({ format: 'fearless.canonical-asset-groups', version: 2, untrustedAssets: [{ chainId: '1', assetId: 'a' }] })
+    ).toEqual([]);
+    expect(
+      parseUntrustedAssets({
+        format: 'fearless.canonical-asset-groups',
+        version: 1,
+        untrustedAssets: [{ chainId: '1', assetId: '0xAbC' }, { chainId: ' padded', assetId: 'x' }, { chainId: '1' }, 'junk'],
+      })
+    ).toEqual([{ chainId: '1', assetId: '0xAbC' }]);
+  });
+
+  it('matches untrusted registry ids exactly, and EVM contract ids without regard to case', () => {
+    const isUntrusted = createUntrustedAssetCheck([
+      { chainId: '1', assetId: '0xAbC' },
+      { chainId: 'kusama-asset-hub', assetId: 'Asset-Id' },
+    ]);
+
+    expect(isUntrusted({ chainId: '1', ecosystem: 'ethereum' }, '0xabc')).toBe(true);
+    expect(isUntrusted({ chainId: '1', ecosystem: 'ethereumBased' }, '0xABC')).toBe(true);
+    expect(isUntrusted({ chainId: '10', ecosystem: 'ethereum' }, '0xabc')).toBe(false);
+    expect(isUntrusted({ chainId: 'kusama-asset-hub', ecosystem: 'substrate' }, 'Asset-Id')).toBe(true);
+    expect(isUntrusted({ chainId: 'kusama-asset-hub', ecosystem: 'substrate' }, 'asset-id')).toBe(false);
   });
 
   it('treats the shared list and the registry option as testnets', () => {
@@ -139,5 +176,161 @@ describe('portfolio parity cases (zero defaults per wallet type)', () => {
     }).flatMap(({ assets }) => assets.map(({ key }) => labels.get(key) ?? key));
 
     expect([...rows].sort()).toEqual([...testCase.expected].sort());
+  });
+});
+
+// Portfolio contract §10: every `untrustedAssets` entry gets a balance and its registry price, adds 0 fiat to the
+// header and is counted as without price.
+describe('untrusted registry prices', () => {
+  // The registry exactly as published: the listed asset still carries its registry `priceId`.
+  const networks = Object.values(networkMap305(readSnapshot())).map((network) => ({ ...network, favorite: [] })) as NetworkJson[];
+  const document = JSON.parse(repositoryFile('src/portfolio/data/canonical-asset-groups.v1.json').toString('utf8')) as {
+    untrustedAssets: Array<{ chainId: string; assetId: string; symbol: string; precision: number; registryPriceId: string }>;
+    groups: Array<{ members: Array<{ chainId: string; assetId: string }> }>;
+  };
+
+  it('lists registry assets exactly as the reviewed snapshot has them, and in no group', () => {
+    expect(document.untrustedAssets.length).toBeGreaterThan(0);
+    expect(document.untrustedAssets.map(({ chainId, assetId }) => ({ chainId, assetId }))).toEqual(UNTRUSTED_ASSETS);
+
+    document.untrustedAssets.forEach((entry) => {
+      const asset = networks.find(({ chainId }) => chainId === entry.chainId)?.assets.find(({ id }) => id === entry.assetId);
+
+      expect(asset, entry.assetId).toMatchObject({ symbol: entry.symbol, precision: entry.precision, priceId: entry.registryPriceId });
+      expect(
+        document.groups.some(({ members }) => members.some((member) => member.chainId === entry.chainId && member.assetId === entry.assetId))
+      ).toBe(false);
+    });
+  });
+
+  it.each(document.untrustedAssets.map((entry) => [`${entry.symbol} ${entry.assetId}`, entry] as const))(
+    'gives %s no price: 0 fiat in the header, counted as without price',
+    (_label, entry) => {
+      const network = networks.find(({ chainId }) => chainId === entry.chainId)!;
+      const groups = getMockAssets({ [network.name]: network }, WalletEcosystem.Substrate);
+      groups.forEach(({ balances }) =>
+        balances.forEach((balance) =>
+          Object.assign(balance, {
+            state: APIItemState.READY,
+            total: balance.id === entry.assetId ? '50000' : '0',
+            transferable: balance.id === entry.assetId ? '50000' : '0',
+          })
+        )
+      );
+      // The registry price exists and is positive, so only the list keeps it out.
+      const input = { groups, networks, prices: { [entry.registryPriceId]: 1 }, addressForNetwork: () => 'wallet' };
+      const rowOf = (sections: ReturnType<typeof buildPortfolioSections>) =>
+        sections.flatMap(({ assets }) => assets).find(({ assetId }) => assetId === entry.assetId);
+
+      expect(buildPortfolioSummary(input)).toMatchObject({ total: '0', unpricedCount: 1, hiddenCount: 0 });
+      const [section] = buildPortfolioSections({ ...input, preferences: {} });
+      expect(rowOf([section])).toMatchObject({
+        balanceText: '50000',
+        hasBalance: true,
+        trust: 'verified',
+        fiatValue: null,
+        hasPrice: false,
+        unitPrice: null,
+        priceTrust: 'unavailable',
+      });
+      expect(section).toMatchObject({ subtotal: '0', hasPricedAssets: false });
+
+      // Without the list the registry price would count, as it did before the list existed.
+      const unlisted = { ...input, isUntrusted: () => false };
+      expect(buildPortfolioSummary(unlisted)).toMatchObject({ total: '50000', unpricedCount: 0 });
+      expect(rowOf(buildPortfolioSections({ ...unlisted, preferences: {} }))).toMatchObject({ fiatValue: '50000', priceTrust: 'canonicalAsset' });
+    }
+  );
+});
+
+// Portfolio contract §2 and §6: the approved groups of the shared file, replayed through the extension's own loader,
+// key mapping and By token rows. Android and iOS replay the same file in their consumer tests.
+describe('portfolio parity cases (approved token groups)', () => {
+  const networkMap = networkMap305(readSnapshot());
+  mergeUniversalWalletRegistryNetworks(networkMap, undefined);
+  const networks = Object.values(networkMap).map((network) => ({ ...network, favorite: [] })) as NetworkJson[];
+  const document = JSON.parse(repositoryFile('src/portfolio/data/canonical-asset-groups.v1.json').toString('utf8')) as {
+    groups: Array<{
+      id: string;
+      symbol: string;
+      status: string;
+      priceId: string;
+      members: Array<{ chainId: string; assetId: string; symbol: string; precision: number; role: string }>;
+    }>;
+  };
+  const approved = document.groups.filter(({ status }) => status === 'approved');
+  const proposed = document.groups.filter(({ status }) => status !== 'approved');
+  const index = buildCanonicalGroupIndex({ networks });
+  const networkOf = (chainId: string) => networks.find((network) => network.chainId === chainId)!;
+
+  /** Every registry asset funded with one unit, on every network a universal wallet holds an account for. */
+  function fundedEverywhere(): ReturnType<typeof getMockAssets> {
+    const groups = [WalletEcosystem.Substrate, WalletEcosystem.Bitcoin].flatMap((ecosystem) => getMockAssets(networkMap, ecosystem));
+    groups.forEach(({ balances }) =>
+      balances.forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: '1', transferable: '1' }))
+    );
+    return groups;
+  }
+
+  it('resolves exactly the approved members against the reviewed registry, each to one extension key', () => {
+    expect(approved.map(({ id }) => id).sort()).toEqual([...index.groups.keys()].sort());
+    expect(index.diagnostics).toEqual([]);
+
+    approved.forEach((group) =>
+      group.members.forEach((member) => {
+        const network = networkOf(member.chainId);
+        const key = createAssetKey({ ecosystem: String(network.ecosystem), chainId: member.chainId, assetId: member.assetId });
+
+        expect(index.memberOfKey.get(key), `${group.id} ${member.chainId}`).toMatchObject({ groupId: group.id, role: member.role });
+      })
+    );
+    expect(index.memberOfKey.size).toBe(approved.reduce((count, { members }) => count + members.length, 0));
+  });
+
+  it.each(approved.map((group) => [group.id, group] as const))('renders the %s group as one row over all its members', (_id, group) => {
+    const sections = buildPortfolioSections({
+      groups: fundedEverywhere(),
+      networks,
+      prices: { [group.priceId]: 2 },
+      preferences: {},
+      addressForNetwork: () => 'wallet',
+    });
+    const rows = buildTokenRows({ sections, index }).filter((row) =>
+      [...row.children, ...row.zeroChildren].some(({ asset }) => index.memberOfKey.get(asset.key)?.groupId === group.id)
+    );
+
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row).toMatchObject({
+      symbol: group.symbol,
+      networkCount: group.members.length,
+      balanceText: String(group.members.length),
+      fiatValue: String(group.members.length * 2),
+    });
+    // A one-member group is a plain row, labelled with its network.
+    expect(row.groupId).toBe(group.members.length > 1 ? group.id : undefined);
+  });
+
+  it('never renders a proposed group: each of its members stays a row of its own', () => {
+    const sections = buildPortfolioSections({
+      groups: fundedEverywhere(),
+      networks,
+      prices: {},
+      preferences: {},
+      addressForNetwork: () => 'wallet',
+    });
+    const rows = buildTokenRows({ sections, index });
+    const proposedKeys = new Set(
+      proposed.flatMap(({ members }) =>
+        members.map(({ chainId, assetId }) =>
+          createAssetKey({ ecosystem: String(networkOf(chainId).ecosystem), chainId, assetId })
+        )
+      )
+    );
+
+    expect(proposedKeys.size).toBeGreaterThan(0);
+    rows
+      .filter((row) => [...row.children, ...row.zeroChildren].some(({ asset }) => proposedKeys.has(asset.key)))
+      .forEach((row) => expect(row.networkCount, row.id).toBe(1));
   });
 });

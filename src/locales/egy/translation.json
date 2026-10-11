@@ -415,7 +415,8 @@
     "solanaTransactionExpired": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓂝𓏏𓆑 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓂋𓐍𓎡 𓁹𓏏 𓋴𓊪 𓅱𓎛𓅓 ·",
     "solanaTransactionFailed": "𓁹𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 · 𓈖 𓅓𓈖𓐍𓆑 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓂝𓈙𓄿 · 𓈙𓋴𓊪𓏏𓅱 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓅱𓂝𓆑 ·",
     "solanaBroadcastUnconfirmed": "𓈖 𓋴𓅓𓈖𓏏𓅱 𓋴𓍿𓄿 𓊪𓈖 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓈖𓈖 𓈙𓄿𓂝 𓉒 𓋴𓍿𓄿 𓎡𓇋 𓈖 Solana 𓂋 𓊪𓎛𓅱𓇋 𓈖 𓊪𓈖 ·",
-    "viewSolanaHistoryOnExplorer": "𓅓𓄿𓄿 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓎟𓅱 𓈖 Solana 𓅓 𓅓𓄿𓄿 𓋴𓈙𓅱 𓈖 Solana"
+    "viewSolanaHistoryOnExplorer": "𓅓𓄿𓄿 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓎟𓅱 𓈖 Solana 𓅓 𓅓𓄿𓄿 𓋴𓈙𓅱 𓈖 Solana",
+    "sendGroupNetworkWarning": "𓇋𓅱 {symbol} 𓅓 𓄡𓈖𓅓𓏥 𓂝𓈙𓄿. 𓇋𓅱 𓉔𓄿𓃀 𓊪𓈖 𓅓 {network}: 𓅓𓄿𓄿 𓈖𓏏𓏏 𓈙𓋴𓊪 𓋴 𓈙𓋴𓊪 {symbol} 𓅓 {network}."
   },
   "accounts": {
     "invalidAccountAddress": "𓈖 𓐙 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊨 𓈖 𓂋𓈖",
@@ -1133,6 +1134,8 @@
     },
     "syncing": "𓋴𓅓𓄿𓂝…",
     "refresh": "𓅱𓎛𓅓",
+    "loadingBalances": "𓉔𓄿𓃀 𓎛𓋴𓃀𓏥𓎡",
+    "checkingNetworks": "𓅓𓄿𓄿 1 𓄡𓈖𓅓𓏥… | 𓅓𓄿𓄿 {count} 𓄡𓈖𓅓𓏥…",
     "offline": "𓇋𓊪𓏥 𓈖 𓇋𓐍𓏏𓏥 𓈖𓈖 𓄡𓈖𓅓",
     "noMatchingAssets": "𓈖𓈖 𓇋𓐍𓏏 𓅓𓄿𓂝",
     "noAssetsDetected": "𓈖𓈖 𓇋𓐍𓏏 𓎼𓅓𓇋 𓅓𓇋𓈖",
@@ -1195,7 +1198,45 @@
     "showAssetOnNetwork": "𓁹 𓅓𓄿𓄿 {symbol} 𓅓 𓄡𓈖𓅓𓏥 {network}",
     "emptyWalletTitle": "𓈖𓈖 𓇋𓐍𓏏𓏥 𓅓 𓏏𓂋 𓊪𓈖",
     "emptyWalletDescription": "𓈙𓋴𓊪 𓂋𓊪𓅱 𓇋𓈖 𓐍𓏏𓏥 𓂋 𓈙𓄿𓂝. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓𓄿𓄿𓏏𓅱 𓅓 𓊨 𓏏𓈖 𓅓 𓐍𓏏 𓇋𓇋𓋴𓈖.",
-    "noBalanceInView": "𓈖𓈖 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓 𓅓𓄿𓄿 𓊪𓈖"
+    "noBalanceInView": "𓈖𓈖 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓 𓅓𓄿𓄿 𓊪𓈖",
+    "networkCount": "1 𓄡𓈖𓅓𓏥 | {count} 𓄡𓈖𓅓𓏥",
+    "priceUnavailableOn": "𓇋𓋴𓅱 𓈖𓈖 𓅱𓈖 𓅓 1 𓄡𓈖𓅓𓏥 | 𓇋𓋴𓅱 𓈖𓈖 𓅱𓈖 𓅓 {count} 𓄡𓈖𓅓𓏥",
+    "moreZeroNetworks": "+1 𓄡𓈖𓅓𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥 | +{count} 𓄡𓈖𓅓𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥",
+    "zeroTokens": "1 𓇋𓐍𓏏 · 𓈖𓈖 𓎛𓋴𓃀𓏥 | {count} 𓇋𓐍𓏏𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥",
+    "tokenGroupLabel": "{symbol} 𓅓 1 𓄡𓈖𓅓𓏥: {amount}, {value} | {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥: {amount}, {value}",
+    "tokenSingleLabel": "{symbol} 𓅓 {network}: {amount}, {value}",
+    "role": {
+      "native": "𓈖 𓐍𓈖𓅱",
+      "systemParachain": "𓈙𓈖𓏥 𓄡𓈖𓅓 𓈖 𓋴𓐍𓂋",
+      "xcmReserve": "𓋴𓄿𓅱 𓅓 𓋴𓏏 𓈖 XCM",
+      "rollup": "𓂧𓅓𓆓 𓈖 𓅓𓆓𓄿𓏏𓏥",
+      "issuerNative": "𓈖 𓐍𓈖𓅱 𓈖 𓇋𓂋𓇋"
+    },
+    "lens": {
+      "label": "𓅓𓄿𓄿",
+      "tokens": "𓅓 𓇋𓐍𓏏",
+      "networks": "𓅓 𓄡𓈖𓅓𓏥"
+    },
+    "sort": {
+      "label": "𓋴𓐍𓂋",
+      "value": "𓇋𓋴𓅱",
+      "custom": "𓋴𓐍𓂋𓎡"
+    },
+    "layoutNote": {
+      "title": "𓇋𓐍𓏏𓏥𓎡, 𓅓𓇋𓈖 𓅓 𓇋𓐍𓏏",
+      "description": "𓅓𓄿𓄿𓏏𓅱 𓇋𓐍𓏏 𓎟𓏏 𓋴𓊪 𓅱𓂝, 𓎛𓈖𓂝 𓂧𓅓𓆓𓋴 𓅓 𓄡𓈖𓅓𓏥. 𓂧𓅓𓇋 𓋴𓇋 𓂋 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓎟𓅱.",
+      "networks": "𓇋𓅱 𓇋𓂋𓅱𓏥 𓋴𓍿𓄿𓅱 𓅓 𓅱𓄿𓏏 𓅓 𓇋𓂧𓃀𓅱𓇌 𓎛𓈖𓂝 𓇋𓂋𓅱𓏥 𓅱𓏏𓅱 𓅓𓈖𓅱 𓅓 𓋴𓏏𓏥𓋴𓈖 𓅓 𓋴𓈙 𓅓 𓅱𓂝, 𓋴𓈙𓅱 𓅓 𓂋𓈖 𓈖 𓄡𓈖𓅓𓏥𓋴𓈖, 𓎛𓈖𓂝 𓋴𓏏𓊪𓎡 𓄡𓈖𓅓𓏥 𓅓 𓋴𓊪 𓎟 𓈖 𓉔𓄿𓃀 𓂋 𓊪𓅱 𓈙𓋴𓊪.",
+      "customOrderKept": "𓇋𓅱 𓋴𓐍𓂋𓎡 𓈖 𓐍𓏏 𓈖 𓎛𓄿𓏏 𓋴𓄿𓅱. 𓋴𓏏𓊪 «𓇋𓋴𓅱» 𓅓 𓏏𓂋 𓎟.",
+      "gotIt": "𓂋𓐍",
+      "byNetwork": "𓅓𓄿𓄿 𓅓 𓄡𓈖𓅓𓏥"
+    },
+    "groupPicker": {
+      "sendTitle": "𓉔𓄿𓃀 {symbol}: 𓋴𓏏𓊪 𓄡𓈖𓅓𓏥",
+      "receiveTitle": "𓈙𓋴𓊪 {symbol}: 𓋴𓏏𓊪 𓄡𓈖𓅓𓏥",
+      "sendWarning": "𓇋𓅱 {symbol} 𓅓 𓄡𓈖𓅓𓏥 𓂝𓈙𓄿. 𓉔𓄿𓃀 𓋴𓇋 𓅓 𓄡𓈖𓅓𓏥 𓈖 𓋴 𓈙𓋴𓊪: 𓋴𓅓𓅱𓈖 𓋴𓎡 𓇋𓐍𓏏𓏥 𓉔𓄿𓃀𓅱𓏏 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌.",
+      "receiveWarning": "𓋴𓏏𓊪 𓄡𓈖𓅓𓏥 𓈖𓏏𓅱 𓋴 𓉔𓄿𓃀 𓂋 𓉔𓄿𓃀 𓇋𓅓. 𓅓 𓉔𓄿𓃀 {symbol} 𓂋 𓉒 𓊪𓈖 𓄋𓊪𓅱𓁷 𓅓 𓄡𓈖𓅓𓏥 𓋴𓏏𓊪𓅱: 𓋴𓅓𓅱𓈖 𓋴𓎡 𓇋𓐍𓏏𓏥 𓉔𓄿𓃀𓅱𓏏 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌𓏥.",
+      "noSendNetwork": "𓈖𓈖 𓄡𓈖𓅓𓏥 𓂋𓐍 𓉔𓄿𓃀 {symbol} 𓅓𓇋𓈖."
+    }
   },
   "polkamarktPage": {
     "backToMarkets": "𓂋 𓋴𓅱𓏏𓏥",

@@ -2,6 +2,10 @@
   <Scroll class="portfolio-scroll">
     <div class="portfolio-actions">
       <span v-if="refreshError" class="refresh-error" role="status">{{ refreshError }}</span>
+      <!-- What is listed may not be all yet: some networks of this wallet have not answered. -->
+      <span v-else-if="checkingNetworksText" class="refresh-error" data-testid="portfolioChecking" role="status">
+        {{ checkingNetworksText }}
+      </span>
       <button
         class="portfolio-refresh"
         data-testid="portfolioRefresh"
@@ -14,9 +18,20 @@
       </button>
     </div>
 
-    <Loader v-if="showLoader" class="asset-loader" />
+    <div v-if="showLoader" class="portfolio-loading" data-testid="portfolioLoading" role="status" aria-live="polite">
+      <Loader class="asset-loader" />
+      <strong>{{ $t('portfolioPage.loadingBalances') }}</strong>
+      <span v-if="loadStatus.pendingCount">{{ pendingNetworksText }}</span>
+    </div>
 
     <template v-else>
+      <PortfolioLayoutNote
+        v-if="showLayoutNote"
+        :customOrderKept="tokenSort === 'custom'"
+        @dismiss="dismissLayoutNote"
+        @useNetworks="showByNetwork"
+      />
+
       <PortfolioHiddenFundsNotice
         v-if="showHiddenFundsNotice"
         :count="summary.hiddenCount"
@@ -30,7 +45,51 @@
         <span>{{ emptyDescription }}</span>
       </div>
 
-      <div v-if="visibleSections.length" class="network-list" data-testid="portfolioNetworkList">
+      <template v-if="tokenLens">
+        <div v-if="tokenRows.length" class="token-list" data-testid="portfolioTokenList">
+          <PortfolioTokenRow
+            v-for="row in splitTokenRows.funded"
+            :key="row.id"
+            :row="row"
+            :manage="showAssetsManagementForm"
+            :forceExpanded="searching || hiddenOnly"
+            :canSend="canSendFrom(row)"
+            @send="openGroupPicker($event, 'send')"
+            @receive="openGroupPicker($event, 'receive')"
+          />
+
+          <PortfolioZeroNetworks
+            v-if="splitTokenRows.zeroOnly.length"
+            :label="zeroTokensLabel"
+            :expanded="zeroNetworksExpanded"
+            @toggle="setZeroNetworksExpanded"
+          >
+            <PortfolioTokenRow
+              v-for="row in splitTokenRows.zeroOnly"
+              :key="row.id"
+              :row="row"
+              :manage="showAssetsManagementForm"
+              :forceExpanded="searching || hiddenOnly"
+              :canSend="canSendFrom(row)"
+              @send="openGroupPicker($event, 'send')"
+              @receive="openGroupPicker($event, 'receive')"
+            />
+          </PortfolioZeroNetworks>
+        </div>
+
+        <!-- Detected tokens are never grouped: they stay with the network they were found on. -->
+        <div v-if="detectedSections.length" class="network-list" data-testid="portfolioDetectedList">
+          <PortfolioNetworkSection
+            v-for="section in detectedSections"
+            :key="section.key"
+            :section="section"
+            :manage="showAssetsManagementForm"
+            :forceExpanded="searching || hiddenOnly"
+          />
+        </div>
+      </template>
+
+      <div v-else-if="visibleSections.length" class="network-list" data-testid="portfolioNetworkList">
         <PortfolioNetworkSection
           v-for="section in splitSections.funded"
           :key="section.key"
@@ -65,6 +124,16 @@
         @showTestnets="showTestnets"
       />
     </template>
+
+    <!-- Teleported to the body, so the list's scroll box cannot clip it. -->
+    <PortfolioGroupNetworkPicker
+      v-if="groupPicker"
+      :action="groupPicker.action"
+      :symbol="groupPicker.symbol"
+      :options="groupPicker.options"
+      @pick="pickGroupNetwork"
+      @close="groupPicker = null"
+    />
   </Scroll>
 </template>
 
@@ -74,6 +143,9 @@ import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
 import PortfolioZeroNetworks from './PortfolioZeroNetworks.vue';
 import PortfolioExclusions from './PortfolioExclusions.vue';
 import PortfolioHiddenFundsNotice from './PortfolioHiddenFundsNotice.vue';
+import PortfolioLayoutNote from './PortfolioLayoutNote.vue';
+import PortfolioTokenRow from './PortfolioTokenRow.vue';
+import PortfolioGroupNetworkPicker from './PortfolioGroupNetworkPicker.vue';
 import {
   buildPortfolioSections,
   filterSectionAssets,
@@ -81,20 +153,46 @@ import {
   splitZeroSections,
   type PortfolioNetworkSection as PortfolioSection,
 } from '@/portfolio/assetIdentity';
-import { hiddenFundsSignature, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
+import {
+  hiddenFundsSignature,
+  resolvePortfolioSort,
+  type PortfolioSort,
+  type PortfolioViewSettings,
+} from '@/portfolio/portfolioViewSettings';
+import { shouldShowLayoutNote } from '@/portfolio/layoutNotice';
+import { canonicalGroupIndexFor, type CanonicalGroupIndex } from '@/portfolio/tokenGroups';
+import {
+  buildTokenRows,
+  groupReceiveOptions,
+  groupSendOptions,
+  splitZeroTokenRows,
+  type GroupNetworkOption,
+  type PortfolioTokenRow as TokenRow,
+} from '@/portfolio/tokenLens';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { isTestnetNetwork } from '@/portfolio/zeroRule';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
+import { Components } from '@/router/routes';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 import { forceAssetDiscoverySweep } from '@/extension/messaging/asset-discovery';
 import { ALL_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchNfts } from '@/extension/messaging/nfts';
 
 export default defineComponent({
   name: 'Currencies',
-  components: { PortfolioNetworkSection, PortfolioZeroNetworks, PortfolioExclusions, PortfolioHiddenFundsNotice },
+  components: {
+    PortfolioNetworkSection,
+    PortfolioZeroNetworks,
+    PortfolioExclusions,
+    PortfolioHiddenFundsNotice,
+    PortfolioLayoutNote,
+    PortfolioTokenRow,
+    PortfolioGroupNetworkPicker,
+  },
   props: {
     balances: Array,
     filterValue: String,
@@ -107,6 +205,7 @@ export default defineComponent({
     const {
       effectivePreferences,
       preferenceSource,
+      legacyOrderIndex,
       addressForNetwork,
       walletScope,
       networkFilter,
@@ -114,11 +213,13 @@ export default defineComponent({
       zeroRule,
       summary,
       filteredSummary,
+      loadStatus,
     } = usePortfolio();
 
     return {
       effectivePreferences,
       preferenceSource,
+      legacyOrderIndex,
       addressForNetwork,
       walletScope,
       networkFilter,
@@ -126,6 +227,7 @@ export default defineComponent({
       zeroRule,
       summary,
       filteredSummary,
+      loadStatus,
     };
   },
   data() {
@@ -135,11 +237,24 @@ export default defineComponent({
       extensionStore: useExtensionStore(),
       refreshing: false,
       refreshError: '',
+      groupPicker: null as null | { action: 'send' | 'receive'; symbol: string; options: GroupNetworkOption[] },
     };
   },
   computed: {
+    // Until something the wallet holds has arrived, an empty list would be a guess (first open after an update, a
+    // wallet switch). Manage lists every asset whatever it holds, so it never waits.
     showLoader() {
-      return this.accountsStore.isBalanceLoading;
+      return (
+        this.accountsStore.isBalanceLoading || (this.loadStatus.state === 'loading' && !this.showAssetsManagementForm)
+      );
+    },
+    pendingNetworksText(): string {
+      const count = this.loadStatus.pendingCount;
+
+      return this.$t('portfolioPage.checkingNetworks', count, { count });
+    },
+    checkingNetworksText(): string {
+      return this.loadStatus.state === 'syncing' && !this.showAssetsManagementForm ? this.pendingNetworksText : '';
     },
     viewSettings(): PortfolioViewSettings {
       return this.accountsStore.portfolioView;
@@ -191,6 +306,51 @@ export default defineComponent({
     },
     splitSections(): { funded: PortfolioSection[]; zeroOnly: PortfolioSection[] } {
       return splitZeroSections(this.visibleSections);
+    },
+    /** "By token" is the default lens (portfolio contract §6); the choice is stored per wallet. */
+    tokenLens(): boolean {
+      return this.viewSettings.lens === 'token';
+    },
+    groupIndex(): CanonicalGroupIndex {
+      return canonicalGroupIndexFor(this.networksStore.allNetworks);
+    },
+    // The 3.0.5 custom order is kept for wallets that had one (D7) until the user picks Value.
+    tokenSort(): PortfolioSort {
+      return resolvePortfolioSort(this.viewSettings, this.legacyOrderIndex.size > 0);
+    },
+    tokenRows(): TokenRow[] {
+      const ranks = new Map<string, number>(
+        this.networksStore.allNetworks.map(({ name, rank }) => [name, Number.isFinite(rank) ? Number(rank) : Number.POSITIVE_INFINITY])
+      );
+
+      return buildTokenRows({
+        sections: this.visibleSections,
+        index: this.groupIndex,
+        networkRank: (name) => ranks.get(name) ?? Number.POSITIVE_INFINITY,
+        sort: this.tokenSort,
+        legacyOrderIndex: this.legacyOrderIndex,
+      });
+    },
+    splitTokenRows(): { funded: TokenRow[]; zeroOnly: TokenRow[] } {
+      return splitZeroTokenRows(this.tokenRows);
+    },
+    detectedSections(): PortfolioSection[] {
+      return this.visibleSections
+        .filter((section) => section.detectedAssets.length > 0)
+        .map((section) => ({ ...section, assets: [] }));
+    },
+    zeroTokensLabel(): string {
+      const count = this.splitTokenRows.zeroOnly.length;
+
+      return this.walletIsEmpty ? this.$t('portfolioPage.popularNoBalance') : this.$t('portfolioPage.zeroTokens', count, { count });
+    },
+    // Once per install, for a wallet that existed before this layout: what changed and how to switch back.
+    showLayoutNote(): boolean {
+      if (!this.tokenLens || this.showAssetsManagementForm) return false;
+
+      const account = this.accountsStore.accounts.find(({ address }) => address === this.accountsStore.selectedWallet.address);
+
+      return shouldShowLayoutNote(account, this.accountsStore.portfolioLayout);
     },
     walletIsEmpty(): boolean {
       return this.splitSections.funded.length === 0 && !this.searching && !this.showAssetsManagementForm;
@@ -260,6 +420,10 @@ export default defineComponent({
       return this.$t('portfolioPage.emptyWalletDescription');
     },
   },
+  // The picker lives in the body: a kept-alive list must not leave it open over another screen.
+  deactivated() {
+    this.groupPicker = null;
+  },
   methods: {
     async refreshPortfolio() {
       if (this.refreshing) return;
@@ -293,6 +457,45 @@ export default defineComponent({
     showTestnets() {
       this.accountsStore.updatePortfolioView({ showTestnets: true });
     },
+    dismissLayoutNote() {
+      this.accountsStore.dismissPortfolioLayoutNote();
+    },
+    showByNetwork() {
+      this.accountsStore.updatePortfolioView({ lens: 'network' });
+      this.accountsStore.dismissPortfolioLayoutNote();
+    },
+    canSendOn(networkName: string): boolean {
+      const network = this.networksStore.allNetworks.find(({ name }) => name === networkName);
+
+      return Boolean(network) && network!.active !== false && isNetworkTransferEnabled(network, useSendKillSwitchStore().vetoes);
+    },
+    canSendFrom(row: TokenRow): boolean {
+      return groupSendOptions(row, this.canSendOn).length > 0;
+    },
+    // Send and Receive from a token always ask for the network first, with the wrong-network warning.
+    openGroupPicker(row: TokenRow, action: 'send' | 'receive') {
+      const options =
+        action === 'send'
+          ? groupSendOptions(row, this.canSendOn)
+          : groupReceiveOptions({
+              row,
+              group: row.groupId ? this.groupIndex.groups.get(row.groupId) : undefined,
+              networks: this.networksStore.allNetworks,
+              inScope: this.walletScope,
+            });
+
+      this.groupPicker = { action, symbol: row.symbol, options };
+    },
+    pickGroupNetwork(option: GroupNetworkOption) {
+      const action = this.groupPicker?.action;
+      this.groupPicker = null;
+      if (!action) return;
+
+      this.$router.push({
+        name: action === 'send' ? Components.SendForm : Components.ReceiveForm,
+        params: { assetId: option.assetId, network: option.networkName },
+      });
+    },
   },
 });
 </script>
@@ -302,7 +505,8 @@ export default defineComponent({
   margin-right: -16px;
 }
 
-.network-list {
+.network-list,
+.token-list {
   min-height: 0;
 }
 
@@ -338,11 +542,31 @@ export default defineComponent({
 }
 
 .portfolio-empty,
-.asset-loader {
+.portfolio-loading {
   min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.portfolio-loading {
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 16px;
+  color: $gray-color;
+  text-align: center;
+
+  .asset-loader {
+    margin: 0 0 6px;
+  }
+
+  strong {
+    color: $plain-white;
+  }
+
+  span {
+    font-size: 0.78rem;
+  }
 }
 
 .portfolio-empty {

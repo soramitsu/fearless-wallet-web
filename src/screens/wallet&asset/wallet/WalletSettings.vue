@@ -60,13 +60,50 @@
       />
     </div>
 
-    <div v-if="!syncedShowAssetsManagementForm && notNftTabActive" class="hide-zero" data-testid="hideZeroToggle">
-      <Switcher
-        :value="hideZero"
-        :activeText="$t('wallet.hideZero')"
-        :inactiveText="$t('wallet.hideZero')"
-        @change="$emit('update:hideZero', $event)"
-      />
+    <div v-if="notNftTabActive" class="view-controls">
+      <div class="segmented" role="group" :aria-label="$t('portfolioPage.lens.label')" data-testid="portfolioLens">
+        <button
+          v-for="option in lensOptions"
+          :key="option.value"
+          type="button"
+          class="segment"
+          :aria-pressed="lens === option.value"
+          :data-testid="`portfolioLens-${option.value}`"
+          @click="$emit('update:lens', option.value)"
+        >
+          {{ $t(option.label) }}
+        </button>
+      </div>
+
+      <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
+      <div
+        v-if="lens === 'token' && showSortControl"
+        class="segmented"
+        role="group"
+        :aria-label="$t('portfolioPage.sort.label')"
+        data-testid="portfolioSort"
+      >
+        <button
+          v-for="option in sortOptions"
+          :key="option.value"
+          type="button"
+          class="segment"
+          :aria-pressed="sort === option.value"
+          :data-testid="`portfolioSort-${option.value}`"
+          @click="$emit('update:sort', option.value)"
+        >
+          {{ $t(option.label) }}
+        </button>
+      </div>
+
+      <div v-if="!syncedShowAssetsManagementForm" class="hide-zero" data-testid="hideZeroToggle">
+        <Switcher
+          :value="hideZero"
+          :activeText="$t('wallet.hideZero')"
+          :inactiveText="$t('wallet.hideZero')"
+          @change="$emit('update:hideZero', $event)"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -90,14 +127,37 @@ export default defineComponent({ name: 'ContentSettings' ,
     tokenGroups: Array,
     hideZero: Boolean,
     showTestnets: Boolean,
+    lens: { type: String, default: 'token' },
+    sort: { type: String, default: 'value' },
+    /** The wallet has a 3.0.5 custom order to keep. */
+    showSortControl: Boolean,
     hiddenAssetCount: { type: Number, default: 0 },
     manageHiddenOnly: Boolean,
     activeTabName: { type: String },
     filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
   },
+  emits: [
+    'update:activeTabName',
+    'update:filterValue',
+    'update:showAssetsManagementForm',
+    'update:hideZero',
+    'update:showTestnets',
+    'update:manageHiddenOnly',
+    'update:lens',
+    'update:sort',
+  ],
   data() {
-    return {};
+    return {
+      lensOptions: [
+        { value: 'token', label: 'portfolioPage.lens.tokens' },
+        { value: 'network', label: 'portfolioPage.lens.networks' },
+      ],
+      sortOptions: [
+        { value: 'value', label: 'portfolioPage.sort.value' },
+        { value: 'custom', label: 'portfolioPage.sort.custom' },
+      ],
+    };
   },
   computed: {
     tabsOptions() {
@@ -209,12 +269,52 @@ export default defineComponent({ name: 'ContentSettings' ,
     }
   }
 
-  .hide-zero {
+  .view-controls {
     flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .segmented {
+    display: inline-flex;
+    padding: 2px;
+    border: $default-border;
+    border-radius: 16px;
+    background: $secondary-background-color;
+  }
+
+  .segment {
+    min-height: 28px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: $grayish-white;
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &[aria-pressed='true'] {
+      background: $pink-purple-color;
+      color: $plain-white;
+      font-weight: 700;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $pink-lavender-color;
+      outline-offset: 1px;
+    }
+  }
+
+  .hide-zero {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: 8px;
+    margin-left: auto;
     color: $grayish-white;
     font-size: 0.75rem;
   }

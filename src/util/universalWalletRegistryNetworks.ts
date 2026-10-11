@@ -1,7 +1,7 @@
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { NetworkJson, Asset, NetworkEcosystem } from '@extension-base/types';
 import { TON_MAINNET } from '@/consts/networks';
-import { UNIVERSAL_WALLET_CHAIN_REGISTRY } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_CHAIN_REGISTRY, UNIVERSAL_WALLET_NATIVE_PRICE_IDS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import {
@@ -166,7 +166,7 @@ function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryN
   })?.[0];
 }
 
-function createNativeAsset({ ecosystem, nativeAsset }: UniversalWalletChainRegistryEntry): Asset {
+function createNativeAsset({ chainId, ecosystem, nativeAsset }: UniversalWalletChainRegistryEntry): Asset {
   const symbol = nativeAsset?.symbol ?? 'UNKNOWN';
 
   return {
@@ -176,7 +176,8 @@ function createNativeAsset({ ecosystem, nativeAsset }: UniversalWalletChainRegis
     symbol,
     currencyId: nativeAsset?.id ?? symbol,
     precision: nativeAsset?.decimals ?? 0,
-    priceId: symbol.toLowerCase(),
+    // A lowercased symbol ("btc", "sol") is not a price id: the price service knows coins by their own ids.
+    priceId: UNIVERSAL_WALLET_NATIVE_PRICE_IDS[chainId] ?? '',
     icon: symbol.toLowerCase(),
     color: '',
     staking: '',

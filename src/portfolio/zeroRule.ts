@@ -18,12 +18,12 @@ export function isTestnetNetwork(network: Pick<NetworkJson, 'chainId' | 'options
   );
 }
 
-/** The key `buildPortfolioSections` gives a registry asset of this network. */
+/** The key `buildPortfolioSections` gives a registry asset of this network: the registry id, unique per network. */
 export function registryAssetKey(network: NetworkJson, asset: RegistryAsset): string {
   return createAssetKey({
     ecosystem: ecosystemOf(network),
     chainId: String(network.chainId || network.name),
-    assetId: String(asset.currencyId ?? asset.id),
+    assetId: String(asset.id),
   });
 }
 

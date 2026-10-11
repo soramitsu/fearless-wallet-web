@@ -72,16 +72,33 @@ vi.mock('@/screens/wallet&asset/WarningAddressPopup.vue', () => ({ default: { te
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { parseTransferAssetOptionValue } from '@/helpers/currencies';
 
-const network = (name: string, rank: number, utilityId: string, ecosystem = 'substrate', active = true): NetworkJson =>
+const network = (
+  name: string,
+  rank: number,
+  utilityId: string,
+  ecosystem = 'substrate',
+  active = true,
+  registry?: { chainId: string; assets: { id: string; symbol: string; precision: number }[] }
+): NetworkJson =>
   ({
     name,
-    chainId: `${name.toLowerCase()}-chain`,
+    chainId: registry?.chainId ?? `${name.toLowerCase()}-chain`,
     active,
     ecosystem,
     rank,
-    assets: [{ id: utilityId }],
+    assets: registry?.assets ?? [{ id: utilityId }],
     favorite: [],
   }) as unknown as NetworkJson;
+
+// Registry chain ids and assets exactly as the reviewed snapshot (and so the bundled token groups) has them.
+const POLKADOT = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
+const POLKADOT_ASSET_HUB = '68d56f15f85d3136970ec16946040bc1752654e906147f7e43e9d539d7c3de2f';
+const POLKADOT_PEOPLE = '67fa177a097bfa18f77ea95ab56e9bcdfeb0e5b8a40e46298bb93e16b6fc5008';
+const PEOPLE_DOT = 'bb56f037-6f96-45e6-9b3c-c9059bf0f731';
+const ETHEREUM_USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7';
+const AVALANCHE_USDT = '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7';
+const POLYGON_USDT = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
+const dot = (id = DOT) => ({ id, symbol: 'dot', precision: 10 });
 
 const group = ({
   id,
@@ -227,8 +244,11 @@ describe('TransferForm network-scoped asset selection', () => {
       network('Polygon', 5, 'pol', 'ethereumBased'),
       network('Arbitrum One', 7, 'eth-arbitrum', 'ethereumBased'),
       network('OP Mainnet', 8, 'eth-op', 'ethereumBased'),
-      network('Polkadot', 2, DOT),
-      network('Polkadot AssetHub', 3, DOT),
+      network('Polkadot', 2, DOT, 'substrate', true, { chainId: POLKADOT, assets: [dot()] }),
+      network('Polkadot AssetHub', 3, DOT, 'substrate', true, {
+        chainId: POLKADOT_ASSET_HUB,
+        assets: [dot(), { id: ASSET_HUB_USDT, symbol: 'usdt', precision: 6 }],
+      }),
       network('Kusama', 4, 'ksm', 'substrate', false),
     ];
     mocks.balances = [
@@ -288,7 +308,7 @@ describe('TransferForm network-scoped asset selection', () => {
     expect(mocks.checkTransfer).toHaveBeenCalledWith(expect.objectContaining({ networkKey: 'OP Mainnet', assetId: DAI }));
   });
 
-  it('offers every network that holds the same registry asset and switches within it', async () => {
+  it('offers the networks of the approved DOT group and switches within it', async () => {
     const { host, vm } = await mountTransfer(DOT, 'Polkadot');
 
     expect(vm.optionsNetworks.map(({ name }) => name)).toEqual(['Polkadot', 'Polkadot AssetHub']);
@@ -359,5 +379,89 @@ describe('TransferForm network-scoped asset selection', () => {
     const opDai = options.find(({ name }) => name === 'DAI · OP Mainnet')!;
 
     expect(parseTransferAssetOptionValue(opDai.value)).toEqual({ assetId: DAI, network: 'OP Mainnet' });
+  });
+  describe('within an approved token group', () => {
+    beforeEach(() => {
+      mocks.networks.push(
+        network('Polkadot People', 30, PEOPLE_DOT, 'substrate', true, { chainId: POLKADOT_PEOPLE, assets: [dot(PEOPLE_DOT)] }),
+        network('Ethereum', 1, 'eth', 'ethereum', true, {
+          chainId: '1',
+          assets: [
+            { id: 'eth', symbol: 'eth', precision: 18 },
+            { id: ETHEREUM_USDT, symbol: 'usdt', precision: 6 },
+          ],
+        }),
+        network('Avalanche C-Chain', 6, 'avax', 'ethereum', true, {
+          chainId: '43114',
+          assets: [
+            { id: 'avax', symbol: 'avax', precision: 18 },
+            { id: AVALANCHE_USDT, symbol: 'usdt', precision: 6 },
+          ],
+        })
+      );
+      // Polygon's USDT is bridged: the registry prices it as Tether, but it is not in the USDT group.
+      const polygon = mocks.networks.find(({ name }) => name === 'Polygon') as unknown as { chainId: string; assets: unknown[] };
+      Object.assign(polygon, { chainId: '137', assets: [{ id: 'pol', symbol: 'pol', precision: 18 }, { id: POLYGON_USDT, symbol: 'usdt', precision: 6 }] });
+      mocks.balances = (mocks.balances as TokenGroup[]).map((item) =>
+        item.groupId === 'usdt-polygon'
+          ? group({ id: POLYGON_USDT, networkName: 'Polygon', symbol: 'usdt', total: '300', relayChain: 'ethereum' })
+          : item
+      );
+      mocks.balances.push(
+        group({ id: PEOPLE_DOT, networkName: 'Polkadot People', symbol: 'dot', total: '4', isUtility: true, relayChain: 'polkadot' }),
+        group({ id: 'eth', networkName: 'Ethereum', symbol: 'eth', total: '1', isUtility: true, relayChain: 'ethereum' }),
+        group({ id: ETHEREUM_USDT, networkName: 'Ethereum', symbol: 'usdt', total: '50', relayChain: 'ethereum' }),
+        group({ id: 'avax', networkName: 'Avalanche C-Chain', symbol: 'avax', total: '2', isUtility: true, relayChain: 'ethereum' }),
+        group({ id: AVALANCHE_USDT, networkName: 'Avalanche C-Chain', symbol: 'usdt', total: '6', relayChain: 'ethereum' })
+      );
+    });
+
+    it('lists the issuer-native USDT networks and never the bridged look-alike on Polygon', async () => {
+      const { vm } = await mountTransfer(ETHEREUM_USDT, 'Ethereum');
+
+      expect(vm.optionsNetworks.map(({ name }) => name)).toEqual(['Ethereum', 'Polkadot AssetHub', 'Avalanche C-Chain']);
+      expect(wrapper!.get('[data-testid="sendGroupNetworkWarning"]').text()).toContain('assets.sendGroupNetworkWarning');
+    });
+
+    it('switches the network and that network’s USDT together, and clears the typed amount', async () => {
+      const { host, vm } = await mountTransfer(ETHEREUM_USDT, 'Ethereum');
+      (host.vm.$data as { amount: string }).amount = '40';
+      await flushPromises();
+
+      await wrapper!.get('[data-testid="transferNetwork"]').trigger('click');
+      await pickOption('Polkadot AssetHub');
+
+      expect(host.vm.$data).toMatchObject({ assetId: ASSET_HUB_USDT, selectedNetwork: 'Polkadot AssetHub', amount: '' });
+      expect(vm.currencyBalance?.name).toBe('polkadot assethub');
+      expect(vm.transferAssetId).toBe(ASSET_HUB_USDT);
+      expect(vm.transferableAmount).toBe(7);
+
+      mocks.checkTransfer.mockClear();
+      (host.vm.$data as { amount: string }).amount = '1';
+      await vi.advanceTimersByTimeAsync(2000);
+      await flushPromises();
+      expect(mocks.checkTransfer).toHaveBeenLastCalledWith(
+        expect.objectContaining({ networkKey: 'Polkadot AssetHub', assetId: ASSET_HUB_USDT })
+      );
+    });
+
+    it('moves to a group member with its own registry id (DOT on Polkadot People)', async () => {
+      const { host, vm } = await mountTransfer(DOT, 'Polkadot');
+
+      expect(vm.optionsNetworks.map(({ name }) => name)).toEqual(['Polkadot', 'Polkadot AssetHub', 'Polkadot People']);
+
+      await wrapper!.get('[data-testid="transferNetwork"]').trigger('click');
+      await pickOption('Polkadot People');
+
+      expect(host.vm.$data).toMatchObject({ assetId: PEOPLE_DOT, selectedNetwork: 'Polkadot People' });
+      expect(vm.transferableAmount).toBe(4);
+    });
+
+    it('offers no other network for an asset outside every group, even one with the same address elsewhere', async () => {
+      const { vm } = await mountTransfer(DAI, 'OP Mainnet');
+
+      expect(vm.optionsNetworks.map(({ name }) => name)).toEqual(['OP Mainnet']);
+      expect(wrapper!.find('[data-testid="sendGroupNetworkWarning"]').exists()).toBe(false);
+    });
   });
 });

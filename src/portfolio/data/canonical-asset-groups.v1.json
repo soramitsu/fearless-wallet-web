@@ -62,6 +62,18 @@
       ]
     }
   },
+  "untrustedAssets": [
+    {
+      "chainId": "48239ef607d7928874027a43a67689209727dfb3d3dc5e5b03a39bdc2eda771a",
+      "assetId": "27768227-8a9a-4443-a57d-6013c24f85e9",
+      "symbol": "usdt",
+      "precision": 4,
+      "network": "Kusama AssetHub",
+      "registryPriceId": "tether",
+      "reviewedAt": "2026-10-10",
+      "reason": "Kusama AssetHub Assets id 11 is a third-party token that names itself USDT (metadata USDT/USDT, 4 decimals; owner, issuer and admin H4DU1hKQeLkR5bhMeMidarF9bVvrH3k6ybLz84YLs7eRQMu; supply 69,000,000,000; one holder; not sufficient), read on 2026-10-10. It is not Tether's: Tether's deprecated Kusama asset is id 1984 (\"Tether USD\", USDt, 6 decimals). The registry calls id 11 \"tether usd\" with priceId tether, which would value anyone's airdrop of it at $1 per token."
+    }
+  ],
   "groups": [
     {
       "id": "dot",
@@ -366,7 +378,7 @@
       "policy": "issuer-native",
       "priceId": "tether",
       "issuerSource": "tether",
-      "review": "Only deployments on Tether's published supported-protocols list that are present in the registry. Separate rows: bridged USDT on Polygon, Arbitrum One, OP Mainnet, Polygon zkEVM and X Layer; XCM-reserve USDT on parachains; SORA-bridged USDT; Kusama AssetHub USDT (Tether no longer issues or redeems on Kusama, and the registry lists it at precision 4).",
+      "review": "Only deployments on Tether's published supported-protocols list that are present in the registry. Separate rows: bridged USDT on Polygon, Arbitrum One, OP Mainnet, Polygon zkEVM and X Layer; XCM-reserve USDT on parachains; SORA-bridged USDT. The registry's Kusama AssetHub \"usdt\" is not Tether's: it is Assets id 11, a third-party 4-decimal token, and is listed in untrustedAssets. Tether's own (deprecated) Kusama AssetHub asset is id 1984, \"Tether USD\" (USDt, 6 decimals), which the registry does not list.",
       "members": [
         {
           "chainId": "1",
@@ -1533,14 +1545,6 @@
       "priceId": "tether",
       "review": "Generated from the 3.0.5 partition. Not reviewed: bridged, pegged and reserve-backed variants are not distinguished. Never renders until a reviewer approves it.",
       "members": [
-        {
-          "chainId": "48239ef607d7928874027a43a67689209727dfb3d3dc5e5b03a39bdc2eda771a",
-          "assetId": "27768227-8a9a-4443-a57d-6013c24f85e9",
-          "symbol": "usdt",
-          "precision": 4,
-          "role": "legacy-partition",
-          "network": "Kusama AssetHub"
-        },
         {
           "chainId": "baf5aabe40646d11f0ee8abbdc64f4a4b7674925cba08e4a05ff9ebed6e2126b",
           "assetId": "5fd5f3ce-4a2c-4647-923e-6c29cc95a4f7",

@@ -188,8 +188,9 @@ function openPortfolio(address: string, ecosystem: WalletEcosystem, balances: To
   if (ecosystem === WalletEcosystem.Evm) accountsStore.selectedWallet.ethereumAddress = address;
   accountsStore.setBalance({ details: balances });
   accountsStore.setIsBalanceLoading(false);
-  // Show every network, zero-only ones included, so an absent row really is absent.
-  accountsStore.updatePortfolioView({ zeroNetworksExpanded: true });
+  // Show every network, zero-only ones included, so an absent row really is absent. These cases read the By network
+  // lens row by row; portfolio-token-lens-upgrade.spec.ts replays the same fixtures in the default By token lens.
+  accountsStore.updatePortfolioView({ lens: 'network', zeroNetworksExpanded: true });
 
   const scope = effectScope();
   const portfolio = scope.run(() => usePortfolio())!;

@@ -8,7 +8,7 @@ import {
   buildPortfolioSections,
   buildPortfolioSummary,
   createAssetKey,
-  getCanonicalAssetId,
+  getPortfolioAssetId,
 } from '@/portfolio/assetIdentity';
 
 const network = {
@@ -57,8 +57,8 @@ describe('portfolio canonical asset identity', () => {
     const firstOwner = jetton({ id: 'EQ_Master', total: '1', walletAddress: 'EQ_OwnerWallet_A' });
     const secondOwner = jetton({ id: 'EQ_Master', total: '1', walletAddress: 'EQ_OwnerWallet_B' });
 
-    expect(getCanonicalAssetId(firstOwner)).toBe('EQ_Master');
-    expect(getCanonicalAssetId(secondOwner)).toBe('EQ_Master');
+    expect(getPortfolioAssetId(firstOwner)).toBe('EQ_Master');
+    expect(getPortfolioAssetId(secondOwner)).toBe('EQ_Master');
   });
 
   it('keeps two same-symbol masters separate and prices only by the asset-bound price id', () => {
@@ -216,19 +216,19 @@ describe('portfolio canonical asset identity', () => {
   it('uses the exact registry asset price and never inherits a same-symbol contract price', () => {
     const evmNetwork = {
       active: true,
+      // The registry lists an ERC-20 under its contract address.
       assets: [
-        { currencyId: '0xAaAa', id: 'asset-a', priceId: 'price-a', symbol: 'USD' },
-        { currencyId: '0xBbBb', id: 'asset-b', symbol: 'USD' },
+        { id: '0xAaAa', priceId: 'price-a', symbol: 'USD' },
+        { id: '0xBbBb', symbol: 'USD' },
       ],
       chainId: '1',
       ecosystem: 'ethereumBased',
       icon: 'ethereum',
       name: 'Ethereum',
     } as unknown as NetworkJson;
-    const balance = (currencyId: string, id: string): BalanceItem => ({
+    const balance = (id: string): BalanceItem => ({
       assetMetadataSource: 'registry',
       assetMetadataTrust: 'verified',
-      currencyId,
       icon: 'usd',
       id,
       name: evmNetwork.name,
@@ -240,7 +240,7 @@ describe('portfolio canonical asset identity', () => {
       transferable: '2',
     } as BalanceItem);
     const groups = [{
-      balances: [balance('0xAaAa', 'asset-a'), balance('0xBbBb', 'asset-b')],
+      balances: [balance('0xAaAa'), balance('0xBbBb')],
       groupId: 'legacy-usd',
       icon: 'usd',
       mainNetwork: evmNetwork.name,

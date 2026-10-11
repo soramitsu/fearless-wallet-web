@@ -1,8 +1,13 @@
 <template>
   <div :class="containerClasses">
-    <div class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ formattedBalance }}</div>
+    <!-- While nothing has loaded, a $0.00 would be a guess: the amount waits for the balances. -->
+    <div v-if="loading" class="fiat-balance" data-testid="fiatBalanceLoading" role="status" :aria-label="loadingLabel">
+      <Shimmer class="balance-shimmer" height="20px" width="112px" />
+    </div>
 
-    <div v-if="changeWalletBalance" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
+    <div v-else class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ formattedBalance }}</div>
+
+    <div v-if="changeWalletBalance && !loading" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
 
     <div v-if="caption" class="balance-caption" data-testid="balanceCaption">{{ caption }}</div>
   </div>
@@ -21,6 +26,9 @@ export default defineComponent({ name: 'WalletBalance' ,
     /** A line under the amount, such as the filtered part of the total or "incl. hidden". */
     caption: { type: String, default: '' },
     staticWidth: { default: true },
+    /** The balances have not loaded yet: show a placeholder instead of an amount. */
+    loading: { type: Boolean, default: false },
+    loadingLabel: { type: String, default: '' },
   },
   data() {
     return {
@@ -120,6 +128,11 @@ export default defineComponent({ name: 'WalletBalance' ,
     overflow-wrap: anywhere;
     min-height: 23px;
     line-height: 1.2;
+  }
+
+  .balance-shimmer {
+    margin-top: 2px;
+    border-radius: 6px;
   }
 }
 </style>

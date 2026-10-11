@@ -22,6 +22,13 @@ listed there are not release sources.
   `yarn.lock` is the only lockfile, Node `24.19.0` / Yarn `4.17.0` pins agree,
   and every workflow action is a SHA-pinned GitHub-owned action or allowlisted
   under the repository Actions policy.
+- From the workspace root, run
+  `node scripts/sync-canonical-asset-groups.mjs --check --require-pins --apps web --target web=<this checkout>`
+  and confirm it prints "app copies match the root files". The shared portfolio
+  files in `src/portfolio/data` (token groups with `untrustedAssets`, testnet
+  ids, zero defaults) must be byte-identical to the root copies; the pin test
+  in `tests/unit/shared-portfolio-config.spec.ts` only hashes the bundled
+  bytes, so it cannot see a copy that is behind the root.
 - Confirm no private extension keys, OAuth client IDs, analytics tokens, store
   credentials, or local environment files are committed.
 - Run `bash ./scripts/test-branch-flow-audit.sh && bash ./scripts/audit-branch-flow.sh`

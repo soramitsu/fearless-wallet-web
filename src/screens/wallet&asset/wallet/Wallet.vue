@@ -7,6 +7,8 @@
         :changeWalletBalance="changeWalletBalance"
         :caption="filteredCaption"
         :staticWidth="false"
+        :loading="balancesLoading"
+        :loadingLabel="$t('portfolioPage.loadingBalances')"
         @click="$emit('openFiatsPopup', true)"
       />
 
@@ -22,6 +24,9 @@
           :tokenGroups="filteredTokenGroups"
           :hideZero="accountsStore.portfolioView.hideZero"
           :showTestnets="accountsStore.portfolioView.showTestnets"
+          :lens="accountsStore.portfolioView.lens"
+          :sort="portfolioSort"
+          :showSortControl="legacyOrderIndex.size > 0"
           :hiddenAssetCount="hiddenAssetCount"
           :manageHiddenOnly="manageHiddenOnly"
           @update:filterValue="updateFilterValue"
@@ -30,6 +35,8 @@
           @update:hideZero="setHideZero"
           @update:showTestnets="setShowTestnets"
           @update:manageHiddenOnly="setManageHiddenOnly"
+          @update:lens="setLens"
+          @update:sort="setSort"
         />
 
         <router-view
@@ -82,6 +89,7 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
 import { usePortfolio } from '@/portfolio/usePortfolio';
+import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
@@ -102,9 +110,9 @@ export default defineComponent({ name: 'Wallet',
     GoogleExportPopup,
   },
   setup() {
-    const { summary: portfolioSummary, filteredTotal } = usePortfolio();
+    const { summary: portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex } = usePortfolio();
 
-    return { portfolioSummary, filteredTotal };
+    return { portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex };
   },
   data() {
     return {
@@ -154,12 +162,19 @@ export default defineComponent({ name: 'Wallet',
 
       return hiddenAssetCount + (this.accountsStore.portfolioView.showTestnets ? hiddenTestnetAssetCount : 0);
     },
+    portfolioSort(): PortfolioSort {
+      return resolvePortfolioSort(this.accountsStore.portfolioView, this.legacyOrderIndex.size > 0);
+    },
     // Wallet-wide under every filter: hidden, unpriced and testnet assets are excluded and labelled in the list.
     summaryTotalBalance() {
       return this.portfolioSummary.total;
     },
+    // Until something the wallet holds has arrived, the total is not known: no $0.00 after an update or a switch.
+    balancesLoading(): boolean {
+      return this.accountsStore.isBalanceLoading || this.loadStatus.state === 'loading';
+    },
     filteredCaption() {
-      if (this.filteredTotal === null) return '';
+      if (this.filteredTotal === null || this.balancesLoading) return '';
 
       const selected = this.accountsStore.selectedNetwork;
       const network =
@@ -308,6 +323,12 @@ export default defineComponent({ name: 'Wallet',
     },
     setShowTestnets(value: boolean) {
       this.accountsStore.updatePortfolioView({ showTestnets: value });
+    },
+    setLens(lens: PortfolioLens) {
+      this.accountsStore.updatePortfolioView({ lens });
+    },
+    setSort(sort: PortfolioSort) {
+      this.accountsStore.updatePortfolioView({ sort });
     },
     setManageHiddenOnly(value: boolean) {
       this.manageHiddenOnly = value;

@@ -96,7 +96,7 @@ function registryKeys(symbol: string, networkNames: string[]): string[] {
           createAssetKey({
             ecosystem: String(network.ecosystem),
             chainId: network.chainId,
-            assetId: String(asset.currencyId ?? asset.id),
+            assetId: String(asset.id),
           })
         )
     );
@@ -110,7 +110,7 @@ function legacyGroupKeys(symbol: string, relayChain: string): string[] {
     return createAssetKey({
       ecosystem: String(network.ecosystem),
       chainId: network.chainId,
-      assetId: String(balance.currencyId ?? balance.id),
+      assetId: String(balance.id),
     });
   };
 
@@ -126,7 +126,7 @@ function developV1MigratedKeys(legacyHiddenIds: string[]): string[] {
         createAssetKey({
           ecosystem: String(network.ecosystem),
           chainId: network.chainId,
-          assetId: String(asset.currencyId ?? asset.id),
+          assetId: String(asset.id),
         })
       )
   );
@@ -389,6 +389,8 @@ describe('portfolio preferences derived from 3.0.5', () => {
     accountsStore.setSelectedWallet(wallet(SUBSTRATE_ADDRESS));
     accountsStore.setBalance({ details: fundedSubstrateBalances() });
     accountsStore.setIsBalanceLoading(false);
+    // The By network lens: one row per (network, asset). By token is covered in portfolio-token-lens-upgrade.spec.ts.
+    accountsStore.updatePortfolioView({ lens: 'network' });
 
     const wrapper = mount(Currencies, {
       props: { balances: [], filterValue: '', showAssetsManagementForm: true },
@@ -440,6 +442,7 @@ describe('portfolio preferences derived from 3.0.5', () => {
 
     accountsStore.setSelectedWallet(wallet(SECOND_SUBSTRATE_ADDRESS));
     accountsStore.setIsBalanceLoading(false);
+    accountsStore.updatePortfolioView({ lens: 'network' });
     await nextTick();
 
     expect(rows()).toEqual(expect.arrayContaining(['Kusama:KSM', 'Ethereum:USDT', 'Polkadot:DOT:hidden-305:hidden']));

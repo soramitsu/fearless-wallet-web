@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import {
@@ -8,6 +8,7 @@ import {
   type PortfolioSummaryInput,
 } from '@/portfolio/assetIdentity';
 import { usePortfolioPreferences } from '@/portfolio/usePortfolioPreferences';
+import { getPortfolioLoadStatus, PORTFOLIO_FIRST_LOAD_TIMEOUT_MS, type PortfolioLoadStatus } from '@/portfolio/portfolioLoading';
 import { createZeroDefaultRule } from '@/portfolio/zeroRule';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
@@ -93,6 +94,33 @@ export function usePortfolio() {
   /** The filtered part of the total, shown as "Showing {network} · {value}" while a network filter is active. */
   const filteredTotal = computed<string | null>(() => (isFiltered.value ? filteredSummary.value.total : null));
 
+  // The first-load wait restarts when the popup opens and when the wallet changes.
+  const firstLoadTimedOut = ref(false);
+  let firstLoadTimer: ReturnType<typeof setTimeout> | undefined;
+
+  watch(
+    () => accountsStore.balanceLoadStartedAt,
+    (startedAt) => {
+      clearTimeout(firstLoadTimer);
+      const remaining = startedAt + PORTFOLIO_FIRST_LOAD_TIMEOUT_MS - Date.now();
+
+      firstLoadTimedOut.value = remaining <= 0;
+      if (remaining > 0) firstLoadTimer = setTimeout(() => (firstLoadTimedOut.value = true), remaining);
+    },
+    { immediate: true }
+  );
+  onScopeDispose(() => clearTimeout(firstLoadTimer));
+
+  /** Whether the header and the list may show the wallet as it is, or must still say it is loading. */
+  const loadStatus = computed<PortfolioLoadStatus>(() =>
+    getPortfolioLoadStatus({
+      groups: accountsStore.balances as unknown as TokenGroup[],
+      networks: networksStore.allNetworks,
+      walletScope: walletScope.value,
+      timedOut: firstLoadTimedOut.value,
+    })
+  );
+
   return {
     effectivePreferences,
     preferenceSource,
@@ -106,5 +134,6 @@ export function usePortfolio() {
     summary,
     filteredSummary,
     filteredTotal,
+    loadStatus,
   };
 }

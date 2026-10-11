@@ -18,6 +18,8 @@ type Actions = {
   setAssetPreference(this: AccountStore, props: SetAssetPreference): void;
   setAssetPreferences(this: AccountStore, props: SetAssetPreferences): void;
   updatePortfolioView(this: AccountStore, patch: Partial<PortfolioViewSettings>): void;
+  recordPortfolioLayoutFirstRun(this: AccountStore): void;
+  dismissPortfolioLayoutNote(this: AccountStore): void;
   setSelectedNetwork(this: AccountStore, network: string): void;
   hidePolkaswapAlert(this: AccountStore): Promise<boolean>;
   syncSoraDisclaimerStatus(this: AccountStore): Promise<boolean>;
@@ -28,7 +30,10 @@ type Actions = {
 
 export const actions: Actions = {
   setSelectedWallet(account) {
-    if (account?.address !== this.selectedWallet.address) this.setIsBalanceLoading(true);
+    if (account?.address !== this.selectedWallet.address) {
+      this.setIsBalanceLoading(true);
+      this.balanceLoadStartedAt = Date.now();
+    }
 
     this.selectedWallet = {
       address: account?.address ?? '',
@@ -107,6 +112,22 @@ export const actions: Actions = {
 
     try {
       accountController.setPortfolioViewSettings(this.portfolioViewForAllAccounts);
+    } catch {
+      // A convenience preference: the in-memory value still applies until the popup closes.
+    }
+  },
+
+  // The app calls this as it starts, before onboarding, so a wallet made on a fresh install is always younger.
+  recordPortfolioLayoutFirstRun() {
+    this.portfolioLayout = accountController.recordPortfolioLayoutFirstRun();
+  },
+
+  // Install-wide: the note explains a layout change once, whichever wallet it was read on.
+  dismissPortfolioLayoutNote() {
+    this.portfolioLayout = { ...this.portfolioLayout, noteDismissed: true };
+
+    try {
+      accountController.setPortfolioLayout(this.portfolioLayout);
     } catch {
       // A convenience preference: the in-memory value still applies until the popup closes.
     }

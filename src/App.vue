@@ -57,6 +57,8 @@ export default defineComponent({
   },
   async created() {
     lockExtension();
+    // Before onboarding can create a wallet: the By token layout note is only for wallets older than this.
+    this.accountsStore.recordPortfolioLayoutFirstRun();
 
     this.setupWallet();
 

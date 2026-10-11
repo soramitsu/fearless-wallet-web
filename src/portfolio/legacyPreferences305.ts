@@ -1,6 +1,7 @@
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
-import { createAssetKey, getCanonicalAssetId, type AssetPreference } from '@/portfolio/assetIdentity';
+import { createAssetKey, getPortfolioAssetId, type AssetPreference } from '@/portfolio/assetIdentity';
+import { registryAssetKey } from '@/portfolio/zeroRule';
 
 /**
  * Read-only reconstruction of the Chrome Web Store 3.0.5 asset preferences.
@@ -63,14 +64,6 @@ export function relay305(network: NetworkJson, networks: NetworkJson[]): string 
         );
 
   return parent?.name ?? network.name;
-}
-
-function registryAssetKey(network: NetworkJson, asset: NetworkJson['assets'][number]): string {
-  return createAssetKey({
-    ecosystem: ecosystemOf(network),
-    chainId: String(network.chainId || network.name),
-    assetId: String(asset.currencyId ?? asset.id),
-  });
 }
 
 /**
@@ -162,7 +155,7 @@ export function buildLegacy305JettonGroups(groups: TokenGroup[], networks: Netwo
         createAssetKey({
           ecosystem: ecosystemOf(network),
           chainId: String(network.chainId || network.name),
-          assetId: getCanonicalAssetId(balance),
+          assetId: getPortfolioAssetId(balance),
         })
       );
       jettonGroups.set(groupKey, jettonGroup);

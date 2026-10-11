@@ -38,7 +38,7 @@ const networks = Object.values(networkMap305(readSnapshot())).map((network) => (
 const keyOf = (networkName: string, symbol: string) => {
   const network = networks.find(({ name }) => name === networkName)!;
   const asset = network.assets.find((candidate) => candidate.symbol === symbol)!;
-  return createAssetKey({ ecosystem: String(network.ecosystem), chainId: network.chainId, assetId: String(asset.currencyId ?? asset.id) });
+  return createAssetKey({ ecosystem: String(network.ecosystem), chainId: network.chainId, assetId: String(asset.id) });
 };
 
 const mountWalletInfo = (address: string) =>

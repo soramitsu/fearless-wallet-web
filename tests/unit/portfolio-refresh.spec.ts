@@ -60,10 +60,12 @@ vi.mock('@/portfolio/usePortfolio', () => {
       zeroRule: () => false,
       summary,
       filteredSummary: summary,
+      loadStatus: { state: 'settled', pendingCount: 0 },
     }),
   };
 });
 vi.mock('@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue', () => ({ default: {} }));
+vi.mock('@/router/routes', () => ({ Components: { SendForm: 'SendForm', ReceiveForm: 'ReceiveForm' } }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 

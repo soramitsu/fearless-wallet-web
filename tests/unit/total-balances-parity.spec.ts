@@ -15,7 +15,8 @@ import {
 vi.mock('@extension-base/stores/Storage', () => ({ storage: { get: vi.fn(), set: vi.fn() } }));
 
 const ADDRESS = 'universal-wallet';
-const PRICES = { polkadot: 5, ethereum: 2000, btc: 60000, enjincoin: 0.1 };
+// Keyed by CoinGecko coin id, as the price service answers: BTC is priced as `bitcoin`, never by its ticker.
+const PRICES = { polkadot: 5, ethereum: 2000, bitcoin: 60000, enjincoin: 0.1 };
 
 const snapshot = readSnapshot();
 // What the popup renders with: the production registry plus the bundled Bitcoin, Solana and Iroha networks.

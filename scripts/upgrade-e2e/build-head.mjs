@@ -10,7 +10,8 @@ import path from 'node:path';
 import { TEST_OAUTH_CLIENT_ID, root, testExtensionKey } from './config.mjs';
 
 export const HEAD_OUTPUT_DIR = 'chrome-upgrade-e2e';
-export const headBuildDir = () => process.env.UPGRADE_E2E_HEAD_BUILD || path.join(root, 'dist/extension', HEAD_OUTPUT_DIR);
+export const headBuildDir = () =>
+  process.env.UPGRADE_E2E_HEAD_BUILD || path.join(root, 'dist/extension', HEAD_OUTPUT_DIR);
 
 export function buildHead() {
   const env = {
@@ -43,7 +44,10 @@ export function buildHead() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  if (!existsSync(path.join(root, 'node_modules/.bin/env-cmd'))) throw new Error('install dependencies first (corepack yarn install --immutable)');
+  if (!existsSync(path.join(root, 'node_modules/.bin/env-cmd')))
+    throw new Error('install dependencies first (corepack yarn install --immutable)');
   const { dir, provenance } = buildHead();
-  console.log(`built ${provenance.manifestVersion} from ${provenance.commit.slice(0, 8)}${provenance.dirty ? ' (with uncommitted changes)' : ''} in ${dir}`);
+  console.log(
+    `built ${provenance.manifestVersion} from ${provenance.commit.slice(0, 8)}${provenance.dirty ? ' (with uncommitted changes)' : ''} in ${dir}`
+  );
 }

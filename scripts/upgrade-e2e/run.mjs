@@ -31,7 +31,8 @@ const outDir = path.resolve(option('--out') ?? path.join(root, 'output/upgrade-e
 const selected = ids.length
   ? ids.map((id) => {
       const scenario = SCENARIOS.find((candidate) => candidate.id === id);
-      if (!scenario) throw new Error(`unknown scenario ${id}; known: ${SCENARIOS.map((candidate) => candidate.id).join(' ')}`);
+      if (!scenario)
+        throw new Error(`unknown scenario ${id}; known: ${SCENARIOS.map((candidate) => candidate.id).join(' ')}`);
       return scenario;
     })
   : SCENARIOS;
@@ -53,7 +54,12 @@ const summary = {
   startedAt: new Date().toISOString(),
   chrome: chromeVersion,
   head: headBuildDir(),
-  builds: Object.fromEntries(Object.entries(builds).map(([id, { provenance }]) => [id, { commit: provenance.commit, yarnLockSha256: provenance.yarnLockSha256, node: provenance.node }])),
+  builds: Object.fromEntries(
+    Object.entries(builds).map(([id, { provenance }]) => [
+      id,
+      { commit: provenance.commit, yarnLockSha256: provenance.yarnLockSha256, node: provenance.node },
+    ])
+  ),
   scenarios: [],
 };
 let port = Number(process.env.UPGRADE_E2E_PORT ?? 9611);
@@ -87,17 +93,38 @@ try {
       await ctx.session?.stop().catch(() => undefined);
     }
     report.seconds = Math.round((Date.now() - started) / 1000);
-    writeFileSync(path.join(outDir, `${scenario.id}.json`), `${JSON.stringify({ ...report.toJSON(), seconds: report.seconds }, null, 2)}\n`);
-    summary.scenarios.push({ id: scenario.id, title: scenario.title, ok: report.ok, ...report.toJSON(), checks: undefined, seconds: report.seconds });
-    console.log(`=== ${scenario.id}: ${report.ok ? 'PASS' : 'FAIL'} (${report.checks.filter(({ ok }) => ok).length}/${report.checks.length} checks, ${report.seconds} s)`);
+    writeFileSync(
+      path.join(outDir, `${scenario.id}.json`),
+      `${JSON.stringify({ ...report.toJSON(), seconds: report.seconds }, null, 2)}\n`
+    );
+    summary.scenarios.push({
+      id: scenario.id,
+      title: scenario.title,
+      ok: report.ok,
+      ...report.toJSON(),
+      checks: undefined,
+      seconds: report.seconds,
+    });
+    console.log(
+      `=== ${scenario.id}: ${report.ok ? 'PASS' : 'FAIL'} (${report.checks.filter(({ ok }) => ok).length}/${report.checks.length} checks, ${report.seconds} s)`
+    );
   }
 } finally {
   await dapp.close();
   await mocks.close();
 }
-summary.mockRequests = [...new Set(mocks.requests.map(({ method, host, path: requestPath }) => `${method} ${host}${requestPath.replace(/accounts\/[^/]+/, 'accounts/<address>')}`))];
+summary.mockRequests = [
+  ...new Set(
+    mocks.requests.map(
+      ({ method, host, path: requestPath }) =>
+        `${method} ${host}${requestPath.replace(/accounts\/[^/]+/, 'accounts/<address>')}`
+    )
+  ),
+];
 summary.ok = summary.scenarios.every(({ ok }) => ok);
 summary.finishedAt = new Date().toISOString();
 writeFileSync(path.join(outDir, 'report.json'), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`\n${summary.scenarios.map(({ id, ok, passed, failed }) => `${id} ${ok ? 'PASS' : 'FAIL'} ${passed}/${passed + failed}`).join('\n')}\nreport: ${path.join(outDir, 'report.json')}`);
+console.log(
+  `\n${summary.scenarios.map(({ id, ok, passed, failed }) => `${id} ${ok ? 'PASS' : 'FAIL'} ${passed}/${passed + failed}`).join('\n')}\nreport: ${path.join(outDir, 'report.json')}`
+);
 if (!summary.ok) process.exitCode = 1;

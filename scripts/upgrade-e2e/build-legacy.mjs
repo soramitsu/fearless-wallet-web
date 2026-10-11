@@ -11,7 +11,17 @@
 // Usage: node scripts/upgrade-e2e/build-legacy.mjs [--force] [--keep-src] [id ...]
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, createWriteStream } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+  createWriteStream,
+} from 'node:fs';
 import path from 'node:path';
 import { TEST_OAUTH_CLIENT_ID, cacheRoot, legacyBuilds, root, testExtensionKey } from './config.mjs';
 
@@ -55,7 +65,9 @@ function run(command, args, { cwd, env, log }) {
     child.stdout.pipe(log, { end: false });
     child.stderr.pipe(log, { end: false });
     child.once('error', reject);
-    child.once('exit', (code) => (code === 0 ? resolve() : reject(new Error(`${command} ${args.join(' ')} exited with ${code}; see ${log.path}`))));
+    child.once('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error(`${command} ${args.join(' ')} exited with ${code}; see ${log.path}`))
+    );
   });
 }
 
@@ -64,7 +76,9 @@ function filesOf(dir, base = dir) {
     .sort()
     .flatMap((name) => {
       const file = path.join(dir, name);
-      return statSync(file).isDirectory() ? filesOf(file, base) : [{ path: path.relative(base, file), sha256: sha256(readFileSync(file)) }];
+      return statSync(file).isDirectory()
+        ? filesOf(file, base)
+        : [{ path: path.relative(base, file), sha256: sha256(readFileSync(file)) }];
     });
 }
 
@@ -91,12 +105,16 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
   const sha = git(['rev-parse', '--verify', `${entry.sha}^{commit}`], { encoding: 'utf8' }).trim();
   const named = (() => {
     try {
-      return git(['rev-parse', '--verify', '--quiet', `${entry.commit}^{commit}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      return git(['rev-parse', '--verify', '--quiet', `${entry.commit}^{commit}`], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
     } catch {
       return undefined;
     }
   })();
-  if (sha !== entry.sha || (named && named !== sha)) throw new Error(`${entry.id}: ${entry.commit} is ${named}, legacy-builds.json pins ${entry.sha}`);
+  if (sha !== entry.sha || (named && named !== sha))
+    throw new Error(`${entry.id}: ${entry.commit} is ${named}, legacy-builds.json pins ${entry.sha}`);
   const cached = cachedBuild(entry.id);
   if (cached && !force) return { ...cached, cached: true };
 
@@ -126,12 +144,19 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
     delete env.NODE_ENV;
     const yarn = [path.join(node.dir, 'corepack'), `yarn@${entry.yarn}`];
     await run(yarn[0], [yarn[1], 'install', ...(entry.stub ? [] : ['--immutable'])], { cwd: src, env, log });
-    await run(yarn[0], [yarn[1], 'build:extension'], { cwd: src, env: { ...env, EXTENSION_TYPE: 'chrome', OUTPUT_DIR: 'chrome' }, log });
+    await run(yarn[0], [yarn[1], 'build:extension'], {
+      cwd: src,
+      env: { ...env, EXTENSION_TYPE: 'chrome', OUTPUT_DIR: 'chrome' },
+      log,
+    });
 
     // A stub changes the lockfile: record exactly which entries it touched (only the stubbed package's own tree).
-    const lockfileDelta = entry.stub ? lockEntryDelta(yarnLock, readFileSync(path.join(src, 'yarn.lock'), 'utf8')) : undefined;
+    const lockfileDelta = entry.stub
+      ? lockEntryDelta(yarnLock, readFileSync(path.join(src, 'yarn.lock'), 'utf8'))
+      : undefined;
     const output = path.join(src, 'dist/extension/chrome');
-    if (!existsSync(path.join(output, 'manifest.json'))) throw new Error(`${entry.id}: no dist/extension/chrome/manifest.json after the build`);
+    if (!existsSync(path.join(output, 'manifest.json')))
+      throw new Error(`${entry.id}: no dist/extension/chrome/manifest.json after the build`);
     const buildDir = path.join(dir, 'build');
     cpSync(output, buildDir, { recursive: true });
     const manifest = JSON.parse(readFileSync(path.join(buildDir, 'manifest.json'), 'utf8'));
@@ -143,7 +168,9 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
       manifestVersion: manifest.version,
       node: node.version,
       yarn: entry.yarn,
-      install: entry.stub ? 'corepack yarn install (lockfile changed by the stub only)' : 'corepack yarn install --immutable',
+      install: entry.stub
+        ? 'corepack yarn install (lockfile changed by the stub only)'
+        : 'corepack yarn install --immutable',
       deviations,
       ...(lockfileDelta ? { lockfileDelta } : {}),
       backgroundOnly: !!entry.backgroundOnly,
@@ -171,7 +198,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const started = Date.now();
     try {
       const { dir, provenance, cached } = await buildLegacy(entry, { force, keepSource });
-      console.log(`${entry.id}: ${cached ? 'cached' : 'built'} ${provenance.manifestVersion} from ${provenance.commit.slice(0, 8)} in ${dir} (${Math.round((Date.now() - started) / 1000)} s)`);
+      console.log(
+        `${entry.id}: ${cached ? 'cached' : 'built'} ${provenance.manifestVersion} from ${provenance.commit.slice(0, 8)} in ${dir} (${Math.round((Date.now() - started) / 1000)} s)`
+      );
     } catch (error) {
       failed += 1;
       console.error(`${entry.id}: FAILED ${error.message}`);

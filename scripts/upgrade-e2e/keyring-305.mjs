@@ -13,7 +13,10 @@ import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PINNED = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json');
+const PINNED = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json'
+);
 // Yarn 3.4.1's cache key; the 3.0.5 checksums are those of these archives.
 const CACHE_KEY = 8;
 
@@ -68,7 +71,8 @@ export async function loadKeyring305(dir = installKeyring305()) {
   const { Keyring } = legacyRequire('@subwallet/keyring/keyring');
   const bcrypt = legacyRequire('bcryptjs');
   await utilCrypto.cryptoWaitReady();
-  const versionOf = (name) => JSON.parse(readFileSync(path.join(dir, 'node_modules', name, 'package.json'), 'utf8')).version;
+  const versionOf = (name) =>
+    JSON.parse(readFileSync(path.join(dir, 'node_modules', name, 'package.json'), 'utf8')).version;
 
   return {
     dir,
@@ -77,7 +81,9 @@ export async function loadKeyring305(dir = installKeyring305()) {
     require: legacyRequire,
     util,
     utilCrypto,
-    versions: Object.fromEntries(['@subwallet/keyring', '@polkadot/util-crypto', 'bcryptjs'].map((name) => [name, versionOf(name)])),
+    versions: Object.fromEntries(
+      ['@subwallet/keyring', '@polkadot/util-crypto', 'bcryptjs'].map((name) => [name, versionOf(name)])
+    ),
   };
 }
 

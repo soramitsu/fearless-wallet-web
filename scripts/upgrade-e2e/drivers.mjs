@@ -22,7 +22,8 @@ export function legacyDriver(popup, version) {
     if (result !== true) throw new Error(`${version} ${message} answered ${JSON.stringify(result)}`);
     return true;
   };
-  const metaOf = (name) => (family === '3.0' ? { name, ethereumAddress: '', walletEcosystem: 'substrate' } : { name, ethereumAddress: '' });
+  const metaOf = (name) =>
+    family === '3.0' ? { name, ethereumAddress: '', walletEcosystem: 'substrate' } : { name, ethereumAddress: '' };
   const create = (suri, type, meta, password) =>
     call(
       'pri(accounts.create)',
@@ -38,13 +39,15 @@ export function legacyDriver(popup, version) {
     family,
     call,
     createMasterPassword: (newPassword) => expectTrue('pri(keyring.changePassword)', { newPassword }),
-    changeMasterPassword: (oldPassword, newPassword) => expectTrue('pri(keyring.changePassword)', { oldPassword, newPassword }),
+    changeMasterPassword: (oldPassword, newPassword) =>
+      expectTrue('pri(keyring.changePassword)', { oldPassword, newPassword }),
     unlock: (password) => expectTrue('pri(keyring.unlock)', { password }),
     /** 3.0.x migrates the account and then its linked Ethereum account with the same password; a different Ethereum
      * password leaves the Ethereum account behind and answers false (600a64d5 keyring-service/index.ts:512-527). */
     migrate: (address, password) => call('pri(keyring.migrateMasterPassword)', { address, password }),
     /** A new random phrase, as "Create wallet" shows it (3.0.x). */
-    generateMnemonic: (walletEcosystem = 'substrate', wordCount = 12) => call('pri(keyring.generateMnemonic)', { walletEcosystem, wordCount }),
+    generateMnemonic: (walletEcosystem = 'substrate', wordCount = 12) =>
+      call('pri(keyring.generateMnemonic)', { walletEcosystem, wordCount }),
 
     async addMnemonicWallet({ name, phrase, password, type = 'sr25519', path = '', withEthereum = true }) {
       const meta = metaOf(name);
@@ -57,17 +60,35 @@ export function legacyDriver(popup, version) {
       const meta = metaOf(name);
       if (evmPrivateKey) meta.ethereumAddress = await create(evmPrivateKey, 'ethereum', { ...meta }, password);
       const address = await create(seed, 'sr25519', meta, password);
-      return { name, kind: 'raw', type: 'sr25519', address, ethereumAddress: meta.ethereumAddress, seed, evmPrivateKey, password };
+      return {
+        name,
+        kind: 'raw',
+        type: 'sr25519',
+        address,
+        ethereumAddress: meta.ethereumAddress,
+        seed,
+        evmPrivateKey,
+        password,
+      };
     },
 
     /** A polkadot-js JSON file, with its own password; 3.0.x renames it after the selected wallet when it has no name. */
     async restoreJsonWallet({ substrate, ethereum }) {
       let ethereumAddress = '';
-      if (ethereum) ethereumAddress = await call('pri(accounts.json.restore)', { file: structuredClone(ethereum.json), password: ethereum.password });
+      if (ethereum)
+        ethereumAddress = await call('pri(accounts.json.restore)', {
+          file: structuredClone(ethereum.json),
+          password: ethereum.password,
+        });
       const file = structuredClone(substrate.json);
       file.meta =
         family === '3.0'
-          ? { name: file.meta?.name, whenCreated: file.meta?.whenCreated ?? Date.now(), walletEcosystem: 'substrate', ethereumAddress }
+          ? {
+              name: file.meta?.name,
+              whenCreated: file.meta?.whenCreated ?? Date.now(),
+              walletEcosystem: 'substrate',
+              ethereumAddress,
+            }
           : { ...file.meta, ethereumAddress };
       const address = await call('pri(accounts.json.restore)', { file, password: substrate.password });
       return {
@@ -86,12 +107,26 @@ export function legacyDriver(popup, version) {
     /** An Ethereum JSON file restored on its own: an Ethereum account no Substrate account names. */
     async restoreStandaloneEthereum({ json, password, phrase, name }) {
       const address = await call('pri(accounts.json.restore)', { file: structuredClone(json), password });
-      return { name, kind: 'json-ethereum', type: 'ethereum', address: '', ethereumAddress: address, ethereumPassword: password, ethereumPhrase: phrase, standalone: true };
+      return {
+        name,
+        kind: 'json-ethereum',
+        type: 'ethereum',
+        address: '',
+        ethereumAddress: address,
+        ethereumPassword: password,
+        ethereumPhrase: phrase,
+        standalone: true,
+      };
     },
 
     /** "Add Ethereum account" to the selected wallet (AddWallet.vue isOnlyEthereumAccount). */
     async addEthereumToWallet(wallet, phrase) {
-      const ethereumAddress = await create(`${phrase}${EVM_PATH}`, 'ethereum', { ...metaOf(wallet.name) }, wallet.password);
+      const ethereumAddress = await create(
+        `${phrase}${EVM_PATH}`,
+        'ethereum',
+        { ...metaOf(wallet.name) },
+        wallet.password
+      );
       await call('pri(accounts.update.meta)', { address: wallet.address, meta: { ethereumAddress } });
       return { ...wallet, ethereumAddress, ethereumPhrase: phrase };
     },

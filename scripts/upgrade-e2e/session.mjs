@@ -2,7 +2,17 @@
 // the same extension id (as a Web Store update does), and the browser restarts between steps.
 import { mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { coldStartProbe, dumpStorage, inServiceWorker, installBuild, launch, openPopup, reloadExtension, serviceWorker, stop } from './chrome.mjs';
+import {
+  coldStartProbe,
+  dumpStorage,
+  inServiceWorker,
+  installBuild,
+  launch,
+  openPopup,
+  reloadExtension,
+  serviceWorker,
+  stop,
+} from './chrome.mjs';
 
 export class Session {
   constructor({ workDir, port, manifestKey, hostRules = [], args = [] }) {
@@ -20,7 +30,13 @@ export class Session {
   }
 
   async launch() {
-    this.chrome = launch({ profileDir: this.profileDir, extDir: this.extDir, port: this.port, hostRules: this.hostRules, args: this.args });
+    this.chrome = launch({
+      profileDir: this.profileDir,
+      extDir: this.extDir,
+      port: this.port,
+      hostRules: this.hostRules,
+      args: this.args,
+    });
     const sw = await serviceWorker(this.port);
     const extId = new URL(sw.url).host;
     if (this.extId && extId !== this.extId) throw new Error(`the extension id changed from ${this.extId} to ${extId}`);
@@ -45,7 +61,8 @@ export class Session {
     const version = installBuild(buildDir, this.extDir, this.manifestKey);
     await this.launch();
     const reload = await reloadExtension(this.port, this.extId);
-    if (reload.reload !== 'ok' || reload.version !== version) throw new Error(`Chrome did not switch to ${version}: ${JSON.stringify(reload)}`);
+    if (reload.reload !== 'ok' || reload.version !== version)
+      throw new Error(`Chrome did not switch to ${version}: ${JSON.stringify(reload)}`);
     this.version = version;
     // The new build reloads itself once after an update (backgroundRuntime.ts onInstalled); let that settle.
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -78,7 +95,16 @@ export class Session {
     await this.stop();
     const runs = [];
     for (let i = 0; i < count; i++) {
-      runs.push(await coldStartProbe({ profileDir: this.profileDir, extDir: this.extDir, port: this.port, extId: this.extId, hostRules: this.hostRules, args: this.args }).catch((error) => ({ error: String(error?.message ?? error) })));
+      runs.push(
+        await coldStartProbe({
+          profileDir: this.profileDir,
+          extDir: this.extDir,
+          port: this.port,
+          extId: this.extId,
+          hostRules: this.hostRules,
+          args: this.args,
+        }).catch((error) => ({ error: String(error?.message ?? error) }))
+      );
     }
     return runs;
   }

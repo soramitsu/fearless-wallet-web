@@ -164,6 +164,11 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
   `yarn prepare:chrome-release` runs it as a gate; `--skip-upgrade-e2e` is recorded in the
   provenance and is refused with `--require-tag`. Attach `output/upgrade-e2e/<run>/report.json`
   to the PR.
+- Firefox (no automated in-place upgrade): in a new Firefox profile, install the AMO 3.0.x listing
+  with the phrase-collection host blocked (a published 3.0.x may contain the unlock-time upload),
+  create wallets with public test phrases only (never a funded wallet), update to the signed 4.2.0
+  XPI and confirm unlock, phrase/JSON export and a dApp signature; or attach the owner's written
+  risk acceptance for skipping it.
 - Confirm rollback owner, monitoring owner, and release communication channel.
 
 ## Release PR To `master`

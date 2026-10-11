@@ -5,12 +5,12 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { cryptoWaitReady, decodeAddress } from '@polkadot/util-crypto';
 import { Wallet } from 'ethers';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { KeyringPair } from '@subwallet/keyring/types';
 import { decryptTonSeed } from '@extension-base/services/keyring-service/TonSeedVault';
 import { needsLegacyPasswordMigration } from '@extension-base/services/keyring-service/AccountAccess';
-import { deriveCompatibleTonKeyPair } from '@/util/tonKeyring';
 // Public test secrets the profiles were written with (scripts/upgrade-e2e/secrets.mjs).
 import { EVM_PATH, PASSWORDS } from '../../scripts/upgrade-e2e/secrets.mjs';
+import type { KeyringPair } from '@subwallet/keyring/types';
+import { deriveCompatibleTonKeyPair } from '@/util/tonKeyring';
 
 // Profiles that released builds wrote themselves (web-keys.md §6.5): `scripts/upgrade-e2e/run.mjs --snapshot` lets each
 // build, built from its own commit and lockfile, create the wallets of a scenario in Chrome for Testing and stores
@@ -31,12 +31,29 @@ type ProfileWallet = {
 };
 type Snapshot = {
   provenance: { commit: string; yarnLockSha256: string; syntheticSecretsOnly: boolean; scenario: string };
-  profile: { master: string; wallets: ProfileWallet[]; standalone: ProfileWallet[]; ton: { name: string; address: string; phrase: string }[] };
-  storage: Record<string, { address?: string; encoded?: string; encoding?: { content: string[] }; meta?: Record<string, unknown>; cipherSeed?: string; publicKeyHex?: string }>;
+  profile: {
+    master: string;
+    wallets: ProfileWallet[];
+    standalone: ProfileWallet[];
+    ton: { name: string; address: string; phrase: string }[];
+  };
+  storage: Record<
+    string,
+    {
+      address?: string;
+      encoded?: string;
+      encoding?: { content: string[] };
+      meta?: Record<string, unknown>;
+      cipherSeed?: string;
+      publicKeyHex?: string;
+    }
+  >;
 };
 
 const fixtures = path.resolve(__dirname, '../fixtures/upgrade');
-const builds: { id: string; sha: string }[] = JSON.parse(readFileSync(path.resolve(__dirname, '../upgrade/legacy-builds.json'), 'utf8')).builds;
+const builds: { id: string; sha: string }[] = JSON.parse(
+  readFileSync(path.resolve(__dirname, '../upgrade/legacy-builds.json'), 'utf8')
+).builds;
 const snapshots = readdirSync(fixtures, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && builds.some(({ id }) => id === entry.name))
   .flatMap((dir) =>
@@ -52,7 +69,9 @@ type KeyringPair$Json = Parameters<Keyring['addFromJson']>[0];
 
 const passwords = [...new Set(Object.values(PASSWORDS) as string[])];
 const records = (snapshot: Snapshot) =>
-  Object.entries(snapshot.storage).filter(([key, value]) => key.startsWith('fw:account:') && value?.encoded) as unknown as [string, KeyringPair$Json][];
+  Object.entries(snapshot.storage).filter(
+    ([key, value]) => key.startsWith('fw:account:') && value?.encoded
+  ) as unknown as [string, KeyringPair$Json][];
 
 // After the 32-byte salt: N, p and r as little-endian u32 (@polkadot/util-crypto scrypt/toU8a).
 const scryptN = (json: KeyringPair$Json) => Buffer.from(json.encoded, 'base64').readUInt32LE(32);
@@ -72,7 +91,11 @@ function open(json: KeyringPair$Json) {
 }
 
 const expectedSubstrate = (wallet: ProfileWallet) =>
-  new Keyring({ type: wallet.type ?? 'sr25519' }).addFromUri(wallet.kind === 'raw' ? wallet.seed! : `${wallet.phrase}${wallet.path ?? ''}`, {}, wallet.type ?? 'sr25519');
+  new Keyring({ type: wallet.type ?? 'sr25519' }).addFromUri(
+    wallet.kind === 'raw' ? wallet.seed! : `${wallet.phrase}${wallet.path ?? ''}`,
+    {},
+    wallet.type ?? 'sr25519'
+  );
 const expectedEthereum = (wallet: ProfileWallet) =>
   wallet.evmPrivateKey
     ? new Wallet(wallet.evmPrivateKey).address
@@ -115,11 +138,14 @@ describe('profiles written by released builds', () => {
       for (const wallet of data.profile.wallets) {
         const substrate = expectedSubstrate(wallet);
         expect(substrate.address, wallet.name).toBe(wallet.address);
-        const record = opened.get(u8aToHex(decodeAddress(wallet.address)).toLowerCase()) ?? opened.get(wallet.address.toLowerCase());
+        const record =
+          opened.get(u8aToHex(decodeAddress(wallet.address)).toLowerCase()) ?? opened.get(wallet.address.toLowerCase());
         expect(record, `${wallet.name} opens`).toBeDefined();
         expect(u8aToHex(record!.pair.publicKey)).toBe(u8aToHex(substrate.publicKey));
       }
-      for (const wallet of [...data.profile.wallets, ...data.profile.standalone].filter(({ ethereumAddress }) => ethereumAddress)) {
+      for (const wallet of [...data.profile.wallets, ...data.profile.standalone].filter(
+        ({ ethereumAddress }) => ethereumAddress
+      )) {
         expect(wallet.ethereumAddress!.toLowerCase(), wallet.name).toBe(expectedEthereum(wallet).toLowerCase());
         expect(opened.get(wallet.ethereumAddress!.toLowerCase()), `${wallet.name} Ethereum opens`).toBeDefined();
       }

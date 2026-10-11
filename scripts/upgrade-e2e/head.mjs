@@ -20,7 +20,9 @@ export class Report {
 
   check(code, name, ok, details) {
     this.checks.push({ code, name, ok: !!ok, ...(details === undefined ? {} : { details }) });
-    console.log(`[${this.id}] ${ok ? 'ok  ' : 'FAIL'} ${code} ${name}${details === undefined || ok ? '' : ` ${JSON.stringify(details)}`}`);
+    console.log(
+      `[${this.id}] ${ok ? 'ok  ' : 'FAIL'} ${code} ${name}${details === undefined || ok ? '' : ` ${JSON.stringify(details)}`}`
+    );
     return !!ok;
   }
 
@@ -35,21 +37,33 @@ export class Report {
 
   toJSON() {
     const failed = this.checks.filter(({ ok }) => !ok);
-    return { id: this.id, title: this.title, ok: this.ok, passed: this.checks.length - failed.length, failed: failed.length, error: this.error, notes: this.notes, checks: this.checks };
+    return {
+      id: this.id,
+      title: this.title,
+      ok: this.ok,
+      passed: this.checks.length - failed.length,
+      failed: failed.length,
+      error: this.error,
+      notes: this.notes,
+      checks: this.checks,
+    };
   }
 }
 
 // ---- Popup screens --------------------------------------------------------------------------------------------------
 
 export async function typeInto(page, elementExpression, value) {
-  await page.eval(`(() => { const el = ${elementExpression}; if (!el) throw new Error('nothing to type into'); el.focus(); el.select?.(); return true; })()`);
+  await page.eval(
+    `(() => { const el = ${elementExpression}; if (!el) throw new Error('nothing to type into'); el.focus(); el.select?.(); return true; })()`
+  );
   await page.send('Input.insertText', { text: value });
   await sleep(300);
 }
 
 export const ui = (page) => ({
   hash: () => page.eval('location.hash'),
-  waitHash: (pattern, label, ms = 30000) => waitFor(async () => new RegExp(pattern).test(await page.eval('location.hash')), ms, label ?? pattern),
+  waitHash: (pattern, label, ms = 30000) =>
+    waitFor(async () => new RegExp(pattern).test(await page.eval('location.hash')), ms, label ?? pattern),
   exists: (selector) => page.eval(`!!document.querySelector(${JSON.stringify(selector)})`),
   text: (selector) => page.eval(`document.querySelector(${JSON.stringify(selector)})?.textContent.trim() ?? null`),
   // FButton puts data-testid on its wrapper; the handler sits on the button inside.
@@ -57,7 +71,9 @@ export const ui = (page) => ({
     page.eval(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) throw new Error('no ' + ${JSON.stringify(selector)});
       (el.matches('button, a, input') ? el : el.querySelector('button') ?? el).click(); return true; })()`),
   clickButton: (label) =>
-    page.eval(`(() => { const el = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === ${JSON.stringify(label)} && !b.disabled); if (!el) throw new Error('no enabled button ' + ${JSON.stringify(label)}); el.click(); return true; })()`),
+    page.eval(
+      `(() => { const el = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === ${JSON.stringify(label)} && !b.disabled); if (!el) throw new Error('no enabled button ' + ${JSON.stringify(label)}); el.click(); return true; })()`
+    ),
   type: (selector, value) => typeInto(page, `document.querySelector(${JSON.stringify(selector)})`, value),
   goto: (hash) => page.eval(`location.hash = ${JSON.stringify(hash)}, true`),
 });
@@ -86,11 +102,22 @@ export async function passSecurityNotice(popup) {
 // ---- Stored records -------------------------------------------------------------------------------------------------
 
 const KEY_PREFIXES = ['fw:account:', 'fw:ton:', 'fw:keyring'];
-const STATE_PREFIXES = [...KEY_PREFIXES, 'fw:archivedAccount:', 'fw:deletedWallet:', 'legacyExposure', 'fwcurrent_account:'];
+const STATE_PREFIXES = [
+  ...KEY_PREFIXES,
+  'fw:archivedAccount:',
+  'fw:deletedWallet:',
+  'legacyExposure',
+  'fwcurrent_account:',
+];
 
-export const keyEntries = (storage) => Object.fromEntries(Object.entries(storage).filter(([key]) => KEY_PREFIXES.some((prefix) => key.startsWith(prefix))));
+export const keyEntries = (storage) =>
+  Object.fromEntries(Object.entries(storage).filter(([key]) => KEY_PREFIXES.some((prefix) => key.startsWith(prefix))));
 export const stateEntries = (storage) =>
-  Object.fromEntries(Object.entries(storage).filter(([key]) => STATE_PREFIXES.some((prefix) => key.startsWith(prefix))).sort(([a], [b]) => a.localeCompare(b)));
+  Object.fromEntries(
+    Object.entries(storage)
+      .filter(([key]) => STATE_PREFIXES.some((prefix) => key.startsWith(prefix)))
+      .sort(([a], [b]) => a.localeCompare(b))
+  );
 
 /** A0: every key record the old build wrote is still there with byte-identical secrets. Metadata may grow. */
 export function compareKeyRecords(before, after) {
@@ -102,9 +129,11 @@ export function compareKeyRecords(before, after) {
       continue;
     }
     for (const field of ['encoded', 'cipherSeed', 'passwordHash', 'address', 'publicKeyHex']) {
-      if (value?.[field] !== undefined && JSON.stringify(value[field]) !== JSON.stringify(now?.[field])) problems.push({ key, problem: `${field} changed` });
+      if (value?.[field] !== undefined && JSON.stringify(value[field]) !== JSON.stringify(now?.[field]))
+        problems.push({ key, problem: `${field} changed` });
     }
-    if (value?.encoding && JSON.stringify(value.encoding) !== JSON.stringify(now?.encoding)) problems.push({ key, problem: 'encoding changed' });
+    if (value?.encoding && JSON.stringify(value.encoding) !== JSON.stringify(now?.encoding))
+      problems.push({ key, problem: 'encoding changed' });
   }
   return problems;
 }
@@ -165,9 +194,15 @@ export async function signThroughDapp({ port, popup, dappUrl, kind, address, mes
   const page = cdp(target.webSocketDebuggerUrl);
   await page.ready;
   try {
-    await waitFor(() => page.eval(`!!window.e2e && !!window.injectedWeb3?.['fearless-wallet']`), 20000, 'the injected wallet on the dApp page');
+    await waitFor(
+      () => page.eval(`!!window.e2e && !!window.injectedWeb3?.['fearless-wallet']`),
+      20000,
+      'the injected wallet on the dApp page'
+    );
     const id = `${kind}-${Date.now()}`;
-    await page.eval(`window.e2e.${kind}(${JSON.stringify(id)}, ${JSON.stringify(address)}, ${JSON.stringify(message)}), true`);
+    await page.eval(
+      `window.e2e.${kind}(${JSON.stringify(id)}, ${JSON.stringify(address)}, ${JSON.stringify(message)}), true`
+    );
     const started = Date.now();
     while (Date.now() - started < 60000) {
       const result = await page.eval(`window.e2eResults[${JSON.stringify(id)}]`);

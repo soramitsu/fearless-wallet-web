@@ -19,14 +19,34 @@ function certificate(dir) {
   mkdirSync(dir, { recursive: true });
   const key = path.join(dir, 'key.pem');
   const cert = path.join(dir, 'cert.pem');
-  execFileSync('openssl', [
-    'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', key, '-out', cert, '-days', '2',
-    '-subj', '/CN=fearless-upgrade-e2e', '-addext', `subjectAltName=DNS:${REGISTRY_HOST},DNS:${TI_HOST}`,
-  ], { stdio: 'ignore' });
+  execFileSync(
+    'openssl',
+    [
+      'req',
+      '-x509',
+      '-newkey',
+      'rsa:2048',
+      '-nodes',
+      '-keyout',
+      key,
+      '-out',
+      cert,
+      '-days',
+      '2',
+      '-subj',
+      '/CN=fearless-upgrade-e2e',
+      '-addext',
+      `subjectAltName=DNS:${REGISTRY_HOST},DNS:${TI_HOST}`,
+    ],
+    { stdio: 'ignore' }
+  );
   return { key: readFileSync(key), cert: readFileSync(cert) };
 }
 
-const json = (response, status, body) => response.writeHead(status, { 'content-type': 'application/json', 'access-control-allow-origin': '*' }).end(JSON.stringify(body));
+const json = (response, status, body) =>
+  response
+    .writeHead(status, { 'content-type': 'application/json', 'access-control-allow-origin': '*' })
+    .end(JSON.stringify(body));
 
 /**
  * Starts the server. `tonBalance` (nanotons, string) is what TI reports for every TON account; `sent` collects every
@@ -44,7 +64,13 @@ export async function startMockServices({ dir, tonBalance = '5000000000' }) {
     request.on('end', () => {
       requests.push({ method: request.method, host, path: url.pathname });
       if (request.method === 'OPTIONS') {
-        response.writeHead(204, { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET, POST' }).end();
+        response
+          .writeHead(204, {
+            'access-control-allow-origin': '*',
+            'access-control-allow-headers': '*',
+            'access-control-allow-methods': 'GET, POST',
+          })
+          .end();
         return;
       }
       if (host === REGISTRY_HOST) {
@@ -68,11 +94,22 @@ export async function startMockServices({ dir, tonBalance = '5000000000' }) {
       const account = url.pathname.match(/^\/api\/indexer\/v1\/accounts\/([^/]+)\/(balance|state|txs)$/);
       if (account) {
         const [, address, route] = account;
-        if (route === 'balance') return json(response, 200, { ton: { balance: tonBalance, last_tx_lt: '1' }, jettons: [], network: 'mainnet' });
-        if (route === 'state') return json(response, 200, { address: decodeURIComponent(address), account_state: 'active', network: 'mainnet' });
+        if (route === 'balance')
+          return json(response, 200, {
+            ton: { balance: tonBalance, last_tx_lt: '1' },
+            jettons: [],
+            network: 'mainnet',
+          });
+        if (route === 'state')
+          return json(response, 200, {
+            address: decodeURIComponent(address),
+            account_state: 'active',
+            network: 'mainnet',
+          });
         return json(response, 200, { page_size: 20, txs: [], network: 'mainnet' });
       }
-      if (url.pathname === '/api/indexer/v1/runGetMethod') return json(response, 200, { exit_code: 0, stack: [['num', '0x7']] });
+      if (url.pathname === '/api/indexer/v1/runGetMethod')
+        return json(response, 200, { exit_code: 0, stack: [['num', '0x7']] });
       if (url.pathname === '/api/v2/jsonRPC') {
         const call = JSON.parse(body || '{}');
         if (call.method === 'sendBoc') {

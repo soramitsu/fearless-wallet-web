@@ -67,6 +67,9 @@ const output = {
   packages: [...packages.values()].sort((a, b) => a.path.localeCompare(b.path)),
 };
 
-const out = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json');
+const out = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json'
+);
 writeFileSync(out, `${JSON.stringify(output, null, 2)}\n`);
 console.log(`pinned ${output.packages.length} packages in ${path.relative(process.cwd(), out)}`);

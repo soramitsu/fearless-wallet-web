@@ -26,7 +26,8 @@ export function resolveChrome(env = process.env) {
       )
   );
   binaries.sort((a, b) => b.build - a.build);
-  if (!binaries.length) throw new Error('No Chrome for Testing found: set CHROME_BIN (scripts/upgrade-e2e/install-cft.sh)');
+  if (!binaries.length)
+    throw new Error('No Chrome for Testing found: set CHROME_BIN (scripts/upgrade-e2e/install-cft.sh)');
   return binaries[0].bin;
 }
 
@@ -77,7 +78,10 @@ export function installBuild(buildDir, extDir, manifestKey) {
   cpSync(buildDir, extDir, { recursive: true });
   const manifestPath = join(extDir, 'manifest.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  const oauth2 = manifest.oauth2 && !manifest.oauth2.client_id ? { oauth2: { ...manifest.oauth2, client_id: TEST_OAUTH_CLIENT_ID } } : {};
+  const oauth2 =
+    manifest.oauth2 && !manifest.oauth2.client_id
+      ? { oauth2: { ...manifest.oauth2, client_id: TEST_OAUTH_CLIENT_ID } }
+      : {};
   writeFileSync(manifestPath, `${JSON.stringify({ ...manifest, ...oauth2, key: manifestKey }, null, 2)}\n`);
   return manifest.version;
 }
@@ -85,7 +89,8 @@ export function installBuild(buildDir, extDir, manifestKey) {
 // A DevTools endpoint that accepted the connection but does not answer (a browser still starting on a loaded machine)
 // must not hang the run: every request to it gives up after a while and the caller retries.
 const DEVTOOLS_TIMEOUT_MS = 15000;
-export const devtools = (port, route, init) => fetch(`http://127.0.0.1:${port}${route}`, { ...init, signal: AbortSignal.timeout(DEVTOOLS_TIMEOUT_MS) });
+export const devtools = (port, route, init) =>
+  fetch(`http://127.0.0.1:${port}${route}`, { ...init, signal: AbortSignal.timeout(DEVTOOLS_TIMEOUT_MS) });
 
 export const targets = async (port) => (await devtools(port, '/json/list')).json();
 
@@ -182,16 +187,20 @@ export async function serviceWorker(port) {
 /** chrome.storage.local exactly as the background sees it. A worker that is still starting (or being replaced) is asked
  * again rather than read half-made. */
 export function dumpStorage(port) {
-  return waitFor(async () => {
-    const sw = await serviceWorker(port);
-    const client = cdp(sw.webSocketDebuggerUrl);
-    await client.ready;
-    try {
-      return await client.eval('globalThis.chrome?.storage?.local ? chrome.storage.local.get(null) : undefined');
-    } finally {
-      client.close();
-    }
-  }, 60000, 'chrome.storage.local in the service worker');
+  return waitFor(
+    async () => {
+      const sw = await serviceWorker(port);
+      const client = cdp(sw.webSocketDebuggerUrl);
+      await client.ready;
+      try {
+        return await client.eval('globalThis.chrome?.storage?.local ? chrome.storage.local.get(null) : undefined');
+      } finally {
+        client.close();
+      }
+    },
+    60000,
+    'chrome.storage.local in the service worker'
+  );
 }
 
 /** Runs an expression in the service worker (test-only storage edits, such as removing a key a scenario needs gone). */
@@ -237,7 +246,9 @@ export async function coldStartProbe({ profileDir, extDir, port, extId, hostRule
   const chrome = launch({ profileDir, extDir, port, hostRules, args });
   try {
     await waitFor(async () => (await devtools(port, '/json/version')).ok, 60000, 'DevTools');
-    const target = await (await devtools(port, `/json/new?chrome-extension://${extId}/popup.html`, { method: 'PUT' })).json();
+    const target = await (
+      await devtools(port, `/json/new?chrome-extension://${extId}/popup.html`, { method: 'PUT' })
+    ).json();
     const page = cdp(target.webSocketDebuggerUrl);
     await page.ready;
     try {

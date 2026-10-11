@@ -2,7 +2,6 @@
 src/extension/background/extension-base/src/api/evm/types.ts	// TODO: unify specialOption, assetId, assetIndex
 src/extension/background/extension-base/src/api/evm/types.ts	name: string; // is Network Name, TODO name -> networkName
 src/extension/background/extension-base/src/api/substrate/index.ts	// TODO AUSD
-src/extension/background/extension-base/src/api/ton/transfer.ts	// TODO ton add init options for new accounts
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This now could happen with re-subscriptions. The issue is that with a re-sub
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider has subscriptions
 src/extension/background/extension-base/src/services/balance-service/EquilibriumBalanceService.ts	// TODO

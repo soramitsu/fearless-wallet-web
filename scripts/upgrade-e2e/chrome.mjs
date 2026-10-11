@@ -268,7 +268,9 @@ export async function coldStartProbe({ profileDir, extDir, port, extId, hostRule
         () =>
           page.eval(`(async () => { if (!globalThis.chrome?.runtime?.connect) return undefined;
             const p = chrome.runtime.connect({ name: 'fw-fearless-extension' });
-            const ask = (message, id) => new Promise((res) => { const h = (d) => { if (d.id === id && !d.subscription) { p.onMessage.removeListener(h); res(d.error ? { error: d.error } : d.response); } }; p.onMessage.addListener(h); p.postMessage({ id, message, request: null }); });
+            // An answer that does not come within a minute, or a port the worker drops, is reported, not waited on.
+            let dropped = null; p.onDisconnect.addListener(() => { dropped = chrome.runtime.lastError?.message ?? 'disconnected'; });
+            const ask = (message, id) => new Promise((res) => { const h = (d) => { if (d.id === id && !d.subscription) { p.onMessage.removeListener(h); res(d.error ? { error: d.error } : d.response); } }; p.onMessage.addListener(h); try { p.postMessage({ id, message, request: null }); } catch (e) { res({ unanswered: message, dropped: String(e.message) }); } setTimeout(() => res({ unanswered: message, dropped }), 60000); });
             const [hasMasterPassword, hasAccounts, keyringIsLocked] = await Promise.all([ask('pri(keyring.hasMasterPassword)', 'c1'), ask('pri(keyring.hasAccounts)', 'c2'), ask('pri(keyring.keyringIsLocked)', 'c3')]);
             await new Promise((r) => setTimeout(r, 1500));
             const [hasMasterPasswordLater, keyringIsLockedLater] = await Promise.all([ask('pri(keyring.hasMasterPassword)', 'c4'), ask('pri(keyring.keyringIsLocked)', 'c5')]);

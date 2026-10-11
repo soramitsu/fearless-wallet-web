@@ -8,7 +8,6 @@ import {
   isAt3xCost,
   openJson,
   passSecurityNotice,
-  publicKeyOf,
   signThroughDapp,
   stateEntries,
   substratePair,
@@ -191,7 +190,8 @@ export async function checkExports(r, popup, profile) {
     r.check(
       'A5',
       `${wallet.name}: the JSON export opens with the master password to the original public key, at N = 2^15`,
-      !!opened?.publicKey && opened.publicKey === publicKeyOf(wallet.address) && isAt3xCost(json),
+      // The address names the key for every type (an ECDSA address is the hash of the public key).
+      !!opened?.address && opened.address === wallet.address && isAt3xCost(json),
       exported.err ?? opened?.error
     );
   }

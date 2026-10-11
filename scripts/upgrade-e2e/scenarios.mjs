@@ -38,8 +38,9 @@ function session(ctx) {
   return ctx.session;
 }
 
-// The WalletConnect client seed a build generates is a random secret of its own, not a wallet key; fixtures leave it out.
-const OMITTED_KEYS = ['wc@2:core:0.3//keychain'];
+// Fixtures leave out the WalletConnect client seed a build generates (a random secret of its own, not a wallet key) and
+// the network registry cache (rebuilt from the registry on every start, about 200 KB per 3.0.5 profile).
+const OMITTED_KEYS = ['wc@2:core:0.3//keychain', 'fwnetworkMap:NetworkMap'];
 
 /** 6.5: the profile a released build wrote, as a fixture for fast unit tests (tests/fixtures/upgrade/<version>/<state>.json). */
 function writeSnapshot(ctx, { version, state, scenario, storage, profile }) {
@@ -440,11 +441,10 @@ async function runPerAccount(ctx, r, version, title) {
     'A7',
     'every waiting record is byte for byte what the released build wrote',
     stillPending.every((address) => {
-      const find = (storage) =>
-        Object.entries(storage).find(
-          ([key, value]) => key.startsWith('fw:account:') && value?.address?.toLowerCase() === address.toLowerCase()
-        )?.[1];
+      // The account store keys a Substrate record by its public key and an Ethereum record by its address.
+      const find = (storage) => storage[`fw:account:${publicKeyOf(address).toLowerCase()}`];
       return (
+        !!find(before) &&
         JSON.stringify(find(afterSkip)) === JSON.stringify(find(before)) &&
         JSON.stringify(find(beforeSkip)) === JSON.stringify(find(before))
       );
@@ -457,7 +457,7 @@ async function runPerAccount(ctx, r, version, title) {
   page = ui(popup);
   await unlockToWallet(r, popup, { master: profile.master, expectNotice: false });
 
-  // The rest opens from its own row (message) or with its recovery phrase in Account access.
+  // The rest opens from its own password row, with its password, or with its recovery phrase in Account access.
   const status = await accessStatus(popup);
   r.check(
     'A7',
@@ -741,14 +741,16 @@ async function runRollback(ctx, r) {
     all.every(({ address }) => relisted.filter((entry) => entry.address === address).length === 1),
     relisted.map(({ address, name }) => ({ address, name }))
   );
+  // 3.0.6 put the wallet back, so Account access does not offer it again; the set-aside copy stays stored.
   const deletedList = (await popup.call('pri(accounts.deleted.list)')).ok ?? [];
-  const entry = deletedList.find(({ address }) => address === deleted.address);
-  const restoreAgain = entry && (await popup.call('pri(accounts.deleted.restore)', { id: entry.id })).ok;
+  const kept4 = Object.entries(await s.storage()).filter(
+    ([key, value]) => key.startsWith('fw:deletedWallet:') && value?.address === deleted.address
+  );
   r.check(
     'A11',
-    '4.2.0 again: Account access still holds the set-aside copy and does not add the wallet twice',
-    !!entry && (restoreAgain?.ok === true || restoreAgain?.code === 'already_in_wallet'),
-    { deletedList, restoreAgain }
+    '4.2.0 again: the set-aside copy of the re-imported wallet stays stored and is not offered as a second wallet',
+    kept4.length === 1 && !deletedList.some(({ address }) => address === deleted.address),
+    { deletedList, kept: kept4.map(([key]) => key) }
   );
   const forward = { ...profile, wallets: all };
   await checkSigningAndExports(ctx, r, s, popup, forward);

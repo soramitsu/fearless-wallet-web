@@ -40,6 +40,18 @@
               @pressEnter="unlock(row)"
             />
 
+            <!-- An account derived with a path needs it next to the phrase to give the same address. -->
+            <ValidatedInput
+              v-if="row.usePhrase && acceptsDerivationPath(row)"
+              :value="row.derivationPath"
+              type="text"
+              :maxlength="200"
+              placeholder="accountAccess.derivationPathPlaceholder"
+              data-testid="accessDerivationPath"
+              @change="setDerivationPath(row, $event)"
+              @pressEnter="unlock(row)"
+            />
+
             <div class="access-row__actions">
               <FButton
                 text="accountAccess.unlock"
@@ -53,6 +65,16 @@
                 {{ t(row.usePhrase ? 'accountAccess.usePassword' : 'accountAccess.usePhrase') }}
               </button>
             </div>
+
+            <button
+              v-if="row.canDownloadEncryptedBackup"
+              type="button"
+              class="access-row__switch"
+              data-testid="accessDownloadBackup"
+              @click="downloadBackup(row)"
+            >
+              {{ t('migration.downloadBackup') }}
+            </button>
           </section>
         </div>
 
@@ -75,8 +97,15 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { AccountAccessIssue } from '@extension-base/background/types/types';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { getAccessStatus, recoverAccountWithPassword, recoverAccountWithPhrase } from '@/extension/messaging';
+import {
+  getAccessStatus,
+  migrateExportJSON,
+  recoverAccountWithPassword,
+  recoverAccountWithPhrase,
+} from '@/extension/messaging';
 import { isSameString } from '@/helpers';
+import { downloadJsonAccount } from '@/helpers/files';
+import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
 import { useNotify } from '@/plugins/soramitsuUI';
 import { Components } from '@/router/routes';
@@ -85,6 +114,7 @@ import { useAccountsStore } from '@/stores/accounts';
 type AccessRow = AccountAccessIssue & {
   usePhrase: boolean;
   secret: string;
+  derivationPath: string;
   isBusy: boolean;
   errorKey: string;
 };
@@ -92,6 +122,8 @@ type AccessRow = AccountAccessIssue & {
 const props = defineProps<{
   /** Opened from a failed send or export: that account's rows come first and alone. */
   address?: string;
+  /** 'phrase' when opened from "Forgot this password? Use the recovery phrase". */
+  mode?: string;
 }>();
 
 const RESULT_ERROR_KEYS: Record<string, string> = {
@@ -120,8 +152,9 @@ function showIssues(issues: AccountAccessIssue[]): void {
     (issue) =>
       rows.value.find(({ address }) => address === issue.address) ?? {
         ...issue,
-        usePhrase: false,
+        usePhrase: props.mode === 'phrase' && matchesScope(issue),
         secret: '',
+        derivationPath: '',
         isBusy: false,
         errorKey: '',
       }
@@ -153,8 +186,16 @@ function rowName(row: AccessRow): string {
 const hintKey = (row: AccessRow): string =>
   row.kind === 'legacy_account_password' ? 'accountAccess.legacyPasswordHint' : 'accountAccess.previousPasswordHint';
 
+// A TON phrase is checked against the stored public key as it is; only keyring accounts take a path.
+const acceptsDerivationPath = (row: AccessRow): boolean => row.walletEcosystem !== WalletEcosystem.Ton;
+
 function setSecret(row: AccessRow, value: string): void {
   row.secret = value;
+  row.errorKey = '';
+}
+
+function setDerivationPath(row: AccessRow, value: string): void {
+  row.derivationPath = value;
   row.errorKey = '';
 }
 
@@ -173,8 +214,14 @@ async function unlock(row: AccessRow): Promise<void> {
 
   try {
     const { address, walletEcosystem } = row;
+    const derivationPath = acceptsDerivationPath(row) ? row.derivationPath.trim() : '';
     const result = row.usePhrase
-      ? await recoverAccountWithPhrase({ address, walletEcosystem, phrase: row.secret })
+      ? await recoverAccountWithPhrase({
+          address,
+          walletEcosystem,
+          phrase: row.secret,
+          ...(derivationPath ? { derivationPath } : {}),
+        })
       : await recoverAccountWithPassword({ address, walletEcosystem, password: row.secret });
 
     if (!result.ok) {
@@ -193,7 +240,18 @@ async function unlock(row: AccessRow): Promise<void> {
   }
 }
 
-// Back to the send or export that sent the user here; Settings when opened on its own.
+// The stored record as it is: it still opens only with the account's old password, so nothing changes.
+async function downloadBackup(row: AccessRow): Promise<void> {
+  try {
+    const { json } = await migrateExportJSON(row.address);
+
+    downloadJsonAccount(row.address, json);
+  } catch {
+    notify({ title: t('migration.downloadBackupFailed'), message: '', type: 'error' });
+  }
+}
+
+// Back to the send, export or password prompt that sent the user here; Settings when opened on its own.
 function close(): void {
   if (window.history.state?.back) router.go(-1);
   else router.push({ name: Components.Settings });

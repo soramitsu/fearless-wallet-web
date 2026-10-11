@@ -46,6 +46,7 @@ import {
   initGoogleAuth,
   hasAccounts,
   isNeedMigration,
+  getAccessStatus,
 } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { useNotify } from '@/plugins/soramitsuUI';
@@ -53,7 +54,7 @@ import { useNotify } from '@/plugins/soramitsuUI';
 const router = useRouter();
 const route = useRoute();
 const notify = useNotify();
-const { t } = useI18n();
+const { t, tc } = useI18n();
 
 const oldPassword = ref('');
 const walletPassword = ref('');
@@ -154,7 +155,9 @@ const changePassword = async () => {
   isWait.value = false;
 
   if (!changed) {
-    notify({ title: t('welcome.changePasswordFailed'), message: '', type: 'error' });
+    const failure = alreadyHasMasterPassword.value ? 'changePasswordFailed' : 'createPasswordFailed';
+
+    notify({ title: t(`welcome.${failure}`), message: '', type: 'error' });
 
     return;
   }
@@ -164,6 +167,16 @@ const changePassword = async () => {
   ).toString();
 
   notify({ title, message: '', type: 'success' });
+
+  // A key or TON phrase that did not open with the old password was left exactly as it is. Say so, and that
+  // Account access unlocks it (the wallet shows the same reminder).
+  const waiting = await getAccessStatus()
+    .then(({ issues }) => issues.filter(({ kind }) => kind === 'previous_master_password').length)
+    .catch(() => 0);
+
+  if (waiting) {
+    notify({ title: tc('accountAccess.changePasswordPending', waiting, { count: waiting }), message: '', type: 'info' });
+  }
 
   close(false);
 };

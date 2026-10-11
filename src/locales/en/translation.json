@@ -23,7 +23,13 @@
     "enterReset": "To proceed, enter '{phrase}'",
     "resetWarning": "Resetting the wallet will delete your current data and assets. We cannot recover your password as it is stored only on your device. Try other passwords. If you want to reset the wallet, import your original recovery phrase. Proceed only if you have the recovery phrase.",
     "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers.",
-    "changePasswordFailed": "Your password was not changed. Check your current password and try again."
+    "changePasswordFailed": "Your password was not changed. Check your current password and try again.",
+    "createPasswordFailed": "Your password could not be saved. Nothing was changed. Try again.",
+    "resetBackupTitle": "Download backups first",
+    "resetBackupDescription": "1 account still opens only with the password it had in an earlier version of Fearless. Reset removes it too. Its encrypted backup file opens with that same password. | {count} accounts still open only with the passwords they had in an earlier version of Fearless. Reset removes them too. Each encrypted backup file opens with the password its account had.",
+    "resetDownloadBackups": "Download encrypted backups",
+    "resetBackupsDownloaded": "The backup files were sent to your downloads. Check that they are there before you continue.",
+    "resetHaveBackups": "I have the recovery phrase or a backup for each of these accounts"
   },
   "onboarding": {
     "titleFirst": "The DeFi Wallet for the",
@@ -1148,9 +1154,8 @@
     "actionRequired": "Upgrade Key Storage: Action Required",
     "upgradingSecure": "We are upgrading to a more secure key storage method. Please follow these steps:",
     "createMasterPass": "Create a master password. This master password will be used for all your wallets.",
-    "enterPass": "Enter the passwords for your current wallets. If you don’t remember a wallet password, it will be reset. You can re-import the wallet later.",
-    "accessLost": "Access to this wallet will be lost. You can re-import the wallet later. You will need a mnemonic phrase or a JSON backup.",
-    "skipWarning": "If you skip a wallet password step, wallet will be reset. You can re-import the wallet later with Mnemonic passphrase",
+    "enterPass": "Enter the password each account had before. If you don’t remember one, skip it: the account stays in Fearless, and you can unlock it later with its password or recovery phrase.",
+    "skipWarning": "Accounts you skip stay in Fearless. Their balances and receiving keep working; sending and export wait until you unlock them in Settings, under Account access.",
     "universalWalletRequired": "Universal Wallet Required",
     "universalWalletActionRequired": "Create or import a Universal Wallet",
     "universalWalletLegacyText": "Normal wallet access is locked until a Universal Wallet is available. Existing legacy wallets remain export-only for recovery.",
@@ -1159,7 +1164,18 @@
     "exportLegacyVaultUnavailable": "This legacy wallet is not available for export on this device.",
     "createUniversalWallet": "Create Universal Wallet",
     "importUniversalWallet": "Import Universal Wallet",
-    "legacyPasswordRequired": "This account still uses the password it had in an earlier version of Fearless. Unlock it to send or export."
+    "legacyPasswordRequired": "This account still uses the password it had in an earlier version of Fearless. Unlock it to send or export.",
+    "skipForNow": "Skip for now",
+    "skipConfirmTitle": "Skip these accounts for now?",
+    "skipFailed": "Your choice could not be saved, so nothing was changed. Try again.",
+    "later": "Later",
+    "enterPassRow": "Select an account and enter the password it had before the master password.",
+    "downloadBackup": "Download encrypted backup",
+    "downloadBackupFailed": "The backup could not be downloaded. Nothing was changed. Try again.",
+    "usePhrase": "Forgot this password? Use the recovery phrase",
+    "loadFailed": "Your accounts could not be loaded. Nothing was changed.",
+    "moreOptions": "More options",
+    "resetHint": "Reset wallet removes every account from Fearless on this device. Skip for now keeps them all."
   },
   "common": {
     "lockApp": "Lock extension",
@@ -1316,7 +1332,7 @@
     "title": "Account access",
     "description": "These accounts stay in Fearless and nothing is deleted. Balances and receiving keep working; sending and export are paused for an account until you unlock it.",
     "settingsDescription": "1 account needs a password to unlock | {count} accounts need a password to unlock",
-    "previousPasswordRequired": "This account is locked with a password you used before. Unlock it to send or export.",
+    "previousPasswordRequired": "This account still opens only with a password you used before. Unlock it to send or export.",
     "unlockAccount": "Unlock this account",
     "legacyPasswordHint": "Enter the password this account had in an earlier version of Fearless, before the master password.",
     "previousPasswordHint": "Enter a password you used before, for example before you changed your password.",
@@ -1332,7 +1348,9 @@
     "unlocked": "{name} is unlocked",
     "allUnlocked": "Every account opens with your password. Nothing needs to be unlocked.",
     "keepLocked": "Keep locked for now",
-    "loadFailed": "The list of locked accounts could not be loaded.",
-    "evmAccountOf": "Ethereum account of {name}"
+    "loadFailed": "The list of accounts could not be loaded. Nothing was changed.",
+    "evmAccountOf": "Ethereum account of {name}",
+    "derivationPathPlaceholder": "Derivation path (optional)",
+    "changePasswordPending": "1 account still waits for a password you used before. Unlock it in Settings, under Account access. | {count} accounts still wait for a password you used before. Unlock them in Settings, under Account access."
   }
 }

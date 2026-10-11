@@ -21,23 +21,25 @@ type StoredAccount = { address?: string } & Record<string, unknown>;
 export default class FWExtensionBase {
   constructor(protected state: State) {}
 
-  migrateExportJSON(address: string): Promise<ResponseAccountExport> {
-    return new Promise((resolve) => {
-      (chrome.storage.local.get(null) as unknown as Promise<Record<string, StoredAccount>>).then((values) => {
-        const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+  // The account's record exactly as stored, still encrypted with whatever password it has. Read-only.
+  async migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+    const values = (await chrome.storage.local.get(null)) as unknown as Record<string, StoredAccount>;
+    const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
 
-        const [, json] = accounts.find(([key, value]) => {
-          if (!isEthereumAddress(address)) return isSameString(value.address, address);
+    const stored = accounts.find(([key, value]) => {
+      if (!isEthereumAddress(address)) return isSameString(value.address, address);
 
-          const keySplit = key.split(':');
-          const addressKey = keySplit[keySplit.length - 1];
+      const keySplit = key.split(':');
+      const addressKey = keySplit[keySplit.length - 1];
 
-          return isSameString(addressKey, address);
-        })!;
-
-        resolve({ json: json as unknown as KeyringPair$Json });
-      });
+      return isSameString(addressKey, address);
     });
+
+    // Answer the popup instead of leaving it waiting: it then offers a retry and never counts the
+    // account as backed up.
+    if (!stored) throw new Error('account_record_not_found');
+
+    return { json: stored[1] as unknown as KeyringPair$Json };
   }
 
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {

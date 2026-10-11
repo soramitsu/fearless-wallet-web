@@ -70,8 +70,18 @@ router.beforeEach(async (to, from, next) => {
     if (needMigration) {
       const isFromMigrationDescriptionToChangePass =
         from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
+      // The prompt's own ways out: "More options" leads to Reset wallet, and "Use the recovery phrase" unlocks
+      // one account in Account access, which needs the master password the prompt creates first.
+      const isPromptEscapeRoute =
+        to.name === Components.ResetWallet ||
+        (to.name === Components.AccountAccessRecovery && (await hasMasterPassword()));
 
-      if (isFromMigrationDescriptionToChangePass || isKeyringMigrationRoute || to.name === Components.Onboarding) {
+      if (
+        isFromMigrationDescriptionToChangePass ||
+        isKeyringMigrationRoute ||
+        isPromptEscapeRoute ||
+        to.name === Components.Onboarding
+      ) {
         next();
 
         return;

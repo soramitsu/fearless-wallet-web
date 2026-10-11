@@ -579,7 +579,10 @@ const routes: Array<RouteRecordRaw> = [
         path: 'settings/account-access',
         name: Components.AccountAccessRecovery,
         component: AccountAccessRecovery,
-        props: (route) => ({ address: firstQueryValue(route.query.address) }),
+        props: (route) => ({
+          address: firstQueryValue(route.query.address),
+          mode: firstQueryValue(route.query.mode),
+        }),
         meta: { title: 'settings', primaryNavigation: 'settings' },
       },
       {

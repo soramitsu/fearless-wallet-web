@@ -3,13 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   extensionChangePassword: vi.fn(),
+  hasMasterPassword: vi.fn(),
+  getAccessStatus: vi.fn(),
   notify: vi.fn(),
   push: vi.fn(),
   back: vi.fn(),
 }));
 vi.mock('@/extension/messaging', () => ({
   extensionChangePassword: mocks.extensionChangePassword,
-  hasMasterPassword: async () => true,
+  hasMasterPassword: mocks.hasMasterPassword,
+  getAccessStatus: mocks.getAccessStatus,
   hasAccounts: async () => true,
   isNeedMigration: async () => false,
   unlockExtension: async () => true,
@@ -21,7 +24,9 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {} }),
 }));
 vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet', MigrationAccounts: 'MigrationAccounts' } }));
-vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+vi.mock('@/locales/useI18n', () => ({
+  useI18n: () => ({ t: (key: string) => key, tc: (key: string, count: number) => `${key}:${count}` }),
+}));
 
 import ChangePassword from '@/screens/welcome/ChangePassword.vue';
 
@@ -50,7 +55,10 @@ async function openWithPasswords(): Promise<VueWrapper> {
     },
   });
   await flushPromises();
-  await wrapper.get('[data-testid="oldPassword"]').setValue('current password');
+  // A wallet without a master password is asked for the new one only.
+  if (wrapper.find('[data-testid="oldPassword"]').exists()) {
+    await wrapper.get('[data-testid="oldPassword"]').setValue('current password');
+  }
   await wrapper.get('[data-testid="newPassword"]').setValue('new password');
   await flushPromises();
   return wrapper;
@@ -62,7 +70,11 @@ const confirm = async (wrapper: VueWrapper) => {
 };
 
 describe('changing the master password', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.hasMasterPassword.mockResolvedValue(true);
+    mocks.getAccessStatus.mockResolvedValue({ issues: [] });
+  });
 
   it.each([
     ['answers false', () => mocks.extensionChangePassword.mockResolvedValue(false)],
@@ -100,5 +112,53 @@ describe('changing the master password', () => {
       type: 'success',
     });
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
+  });
+
+  // 3.0.5 left TON phrases under the old password on every change. Such an account stays as it is and is listed.
+  it('says how many accounts still wait for an earlier password after a successful change', async () => {
+    mocks.extensionChangePassword.mockResolvedValue(true);
+    mocks.getAccessStatus.mockResolvedValue({
+      issues: [
+        { address: 'UQ-ton', kind: 'previous_master_password' },
+        { address: '5Grw', kind: 'previous_master_password' },
+        { address: '0x1', kind: 'legacy_account_password' },
+      ],
+    });
+    const wrapper = await openWithPasswords();
+
+    await confirm(wrapper);
+
+    expect(mocks.notify.mock.calls).toEqual([
+      [{ title: 'welcome.successfulChangePassword', message: '', type: 'success' }],
+      [{ title: 'accountAccess.changePasswordPending:2', message: '', type: 'info' }],
+    ]);
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
+  });
+
+  it('still returns to the wallet when the list of waiting accounts cannot be read', async () => {
+    mocks.extensionChangePassword.mockResolvedValue(true);
+    mocks.getAccessStatus.mockRejectedValue(new Error('Could not establish connection'));
+    const wrapper = await openWithPasswords();
+
+    await confirm(wrapper);
+
+    expect(mocks.notify).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'success' }));
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
+  });
+
+  it('does not mention a current password when the first master password could not be saved', async () => {
+    mocks.hasMasterPassword.mockResolvedValue(false);
+    mocks.extensionChangePassword.mockResolvedValue(false);
+    const wrapper = await openWithPasswords();
+
+    await confirm(wrapper);
+
+    expect(mocks.extensionChangePassword).toHaveBeenCalledExactlyOnceWith({ oldPassword: '', newPassword: 'new password' });
+    expect(mocks.notify).toHaveBeenCalledExactlyOnceWith({
+      title: 'welcome.createPasswordFailed',
+      message: '',
+      type: 'error',
+    });
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 });

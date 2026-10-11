@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
 import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
+import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -33,7 +34,18 @@ const effectsScreenshotsDir =
           ? process.argv[effectsScreenshotsArg + 1]
           : 'output/effects-screenshots'
       );
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir);
+// `--primitives-screenshots [dir]`: the same offline wallet, on the screens that draw the shared primitives.
+const primitivesScreenshotsArg = process.argv.indexOf('--primitives-screenshots');
+const primitivesScreenshotsDir =
+  primitivesScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[primitivesScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[primitivesScreenshotsArg + 1]
+          : 'output/primitives-screenshots'
+      );
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -306,6 +318,23 @@ async function main() {
         extensionId,
         controlSession: extensionSession,
         outputDir: effectsScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (primitivesScreenshotsDir) {
+      const { shots, results } = await capturePrimitivesScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: primitivesScreenshotsDir,
         root,
         password: TEST_PASSWORD,
         walletAddress: substrateAddress,

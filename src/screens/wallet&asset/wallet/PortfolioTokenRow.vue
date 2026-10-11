@@ -1,5 +1,11 @@
 <template>
-  <section class="token-row" :class="{ 'token-row--hidden': row.hidden }" :data-token="row.id">
+  <section
+    class="token-row"
+    :class="{ 'token-row--hidden': row.hidden }"
+    :data-token="row.id"
+    :data-symbol="row.symbol"
+    :data-network="isGroup ? undefined : single.asset.networkName"
+  >
     <div class="token-line">
       <button
         class="token-header"
@@ -76,6 +82,8 @@
           :class="{ 'network-row--hidden': child.asset.hidden }"
           type="button"
           :data-asset-key="child.asset.key"
+          :data-network="child.asset.networkName"
+          :data-symbol="child.asset.symbol"
           :aria-label="childLabel(child)"
           @click="openChild(child)"
         >

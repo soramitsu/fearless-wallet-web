@@ -15,7 +15,7 @@
     "omittedKeys": [
       "wc@2:core:0.3//keychain"
     ],
-    "capture": "node tests/fixtures/upgrade/harness/capture-ecdsa.mjs 3.0.6 <build> <ext dir> <profile dir> <out>",
+    "capture": "node scripts/upgrade-e2e/capture-ecdsa.mjs 3.0.6 <build> <ext dir> <profile dir> <out>",
     "masterPassword": "Master password set in 3.0.6"
   },
   "wallets": [

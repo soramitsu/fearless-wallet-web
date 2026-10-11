@@ -13,7 +13,7 @@ import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PINNED = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../keyring-3.0.5-packages.json');
+const PINNED = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json');
 // Yarn 3.4.1's cache key; the 3.0.5 checksums are those of these archives.
 const CACHE_KEY = 8;
 

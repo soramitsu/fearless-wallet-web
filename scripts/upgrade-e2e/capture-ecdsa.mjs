@@ -6,7 +6,7 @@
 // Usage: node capture-ecdsa.mjs <2.6.3|3.0.6> <build dir> <ext dir> <profile dir> <out json> [port]
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { dumpStorage, installBuild, launch, openPopup, serviceWorker, stop } from './cdp.mjs';
+import { dumpStorage, installBuild, launch, openPopup, serviceWorker, stop } from './chrome.mjs';
 import { M1, M2 } from './capture-263.mjs';
 
 const EVM_PATH = "/m/44'/60'/0'/0/0";

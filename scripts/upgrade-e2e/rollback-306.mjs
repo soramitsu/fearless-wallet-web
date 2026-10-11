@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady, signatureVerify } from '@polkadot/util-crypto';
 import { ECDSA_WALLETS, MASTER_306, captureEcdsa } from './capture-ecdsa.mjs';
-import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, sleep, stop } from './cdp.mjs';
+import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, sleep, stop } from './chrome.mjs';
 import { M2 } from './capture-263.mjs';
 import { installKeyring305, isAt305Cost, loadKeyring305, openAs305, scryptParamsOf } from './keyring-305.mjs';
 
@@ -26,7 +26,7 @@ const extDir = join(workDir, 'extension');
 const profileDir = join(workDir, 'profile');
 const report = { checks: [] };
 const payload = new TextEncoder().encode('Fearless 4.2.0 -> 3.0.6 rollback check');
-const staking = JSON.parse(readFileSync(fileURLToPath(new URL('../s1-2.6.3-per-account-passwords.json', import.meta.url)), 'utf8'));
+const staking = JSON.parse(readFileSync(fileURLToPath(new URL('../../tests/fixtures/upgrade/s1-2.6.3-per-account-passwords.json', import.meta.url)), 'utf8'));
 
 // KEEP_GOING=1 records a failed check and goes on, to see everything a build gets wrong.
 function check(name, ok, details) {

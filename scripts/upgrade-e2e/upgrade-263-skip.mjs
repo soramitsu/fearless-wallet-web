@@ -14,7 +14,7 @@ import { Keyring } from '@polkadot/keyring';
 import { u8aToHex } from '@polkadot/util';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { M2, WALLETS, capture263 } from './capture-263.mjs';
-import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, sleep, stop, waitFor } from './cdp.mjs';
+import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, sleep, stop, waitFor } from './chrome.mjs';
 
 const [, , oldBuild, newBuild, workDir, port = '9471'] = process.argv;
 const MASTER = 'Master password created during the upgrade';

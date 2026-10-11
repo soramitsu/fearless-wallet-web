@@ -11,7 +11,7 @@ import { Keyring } from '@polkadot/keyring';
 import { u8aToHex } from '@polkadot/util';
 import { cryptoWaitReady, decodeAddress, signatureVerify } from '@polkadot/util-crypto';
 import { ECDSA_WALLETS, MASTER_306, captureEcdsa } from './capture-ecdsa.mjs';
-import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, stop } from './cdp.mjs';
+import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, stop } from './chrome.mjs';
 import { installKeyring305, isAt305Cost, loadKeyring305, openAs305, scryptParamsOf } from './keyring-305.mjs';
 
 const [, , version, oldBuild, newBuild, workDir, port = '9491'] = process.argv;

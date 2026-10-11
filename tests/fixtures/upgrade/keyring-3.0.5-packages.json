@@ -11,7 +11,7 @@
       "@polkadot/util-crypto",
       "@polkadot/util"
     ],
-    "generator": "tests/fixtures/upgrade/harness/pin-keyring-305.mjs"
+    "generator": "scripts/upgrade-e2e/pin-keyring-305.mjs"
   },
   "packages": [
     {

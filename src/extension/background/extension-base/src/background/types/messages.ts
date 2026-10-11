@@ -167,6 +167,10 @@ import type {
   PolkamarktQuoteRequest,
   PolkamarktSnapshot,
 } from '@/defi/polkamarkt/types';
+import type {
+  LegacyExposureStatus,
+  RequestUpdateLegacyExposure,
+} from '@extension-base/services/legacy-exposure-service';
 import type { SoraDisclaimerStatus } from '@/defi/soraDisclaimer';
 import type {
   DerivationPath,
@@ -272,6 +276,10 @@ export interface RequestSignatures {
 
   'pri(policy.soraDisclaimer.status)': [null, SoraDisclaimerStatus];
   'pri(policy.soraDisclaimer.accept)': [{ version: number }, SoraDisclaimerStatus];
+
+  'pri(security.legacyExposure.status)': [null, LegacyExposureStatus];
+  'pri(security.legacyExposure.acknowledge)': [null, LegacyExposureStatus];
+  'pri(security.legacyExposure.update)': [RequestUpdateLegacyExposure, LegacyExposureStatus];
 
   'pri(accounts.soraFees.subscribe)': [null, SoraFees, SoraFees];
   'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];

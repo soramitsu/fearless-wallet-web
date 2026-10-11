@@ -94,6 +94,14 @@ const loadWalletStorage = retryableInitialization(async () => {
     throw new Error(WALLET_STORAGE_UNAVAILABLE, { cause: error });
   }
 
+  // Before anything can add an account: what is stored now is what earlier builds wrote. The
+  // security notice must never keep the wallet from starting.
+  try {
+    await state.legacyExposureService.init();
+  } catch (error) {
+    console.error('Security notice state could not be prepared', error);
+  }
+
   try {
     MigrationService.start();
   } catch (error) {

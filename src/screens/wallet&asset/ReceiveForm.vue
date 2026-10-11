@@ -30,6 +30,10 @@
             </div>
           </div>
 
+          <Alert v-if="isExposedWallet" class="network-warning" data-testid="receiveExposedWallet">
+            {{ $t('exposureNotice.receiveWarning') }}
+          </Alert>
+
           <Alert v-if="showSendUnavailable" class="network-warning send-unavailable" data-testid="receiveSendUnavailable">
             {{ $t('assets.receiveSendUnavailable', { symbol: receiveSymbol, network: networkName }) }}
           </Alert>
@@ -100,11 +104,14 @@ import { defineComponent } from 'vue';
 
 import { saveAs } from 'file-saver';
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
+import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
 import BaseApi from '@/util/BaseApi';
 import { isSameString, setClipboard } from '@/helpers';
 import { findTransferAssetGroup } from '@/helpers/currencies';
 import { IS_EXTENSION } from '@/consts/global';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { getLegacyExposureStatus } from '@/extension/messaging/legacy-exposure';
+import { isLegacyExposedAddress } from '@/util/legacyExposure';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -121,6 +128,7 @@ export default defineComponent({ name: 'ReceiveForm' ,
       filterValue: '',
       selectedNetwork: 'polkadot',
       showSelectNetworkPopup: false,
+      legacyExposure: undefined as LegacyExposureStatus | undefined,
     };
   },
   computed: {
@@ -211,11 +219,24 @@ export default defineComponent({ name: 'ReceiveForm' ,
     showCopyBtn() {
       return !window.navigator.userAgent.toLowerCase().includes('firefox');
     },
+    isExposedWallet() {
+      // A wallet from before the update from 3.0.x: its phrase may be known to someone else.
+      return isLegacyExposedAddress(this.legacyExposure, this.accountsStore.selectedWallet.address);
+    },
   },
   mounted() {
     this.selectedNetwork = this.$route.params.network ?? '';
+
+    void this.loadLegacyExposure();
   },
   methods: {
+    async loadLegacyExposure() {
+      try {
+        this.legacyExposure = await getLegacyExposureStatus();
+      } catch {
+        // Without an answer the address is shown as before, without the warning.
+      }
+    },
     closeForm() {
       this.$router.back();
     },

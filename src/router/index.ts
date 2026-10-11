@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { updateTitle } from './helpers';
 import routes, { Components } from '@/router/routes';
 import { resolveUniversalWalletMigrationRedirect } from '@/router/universalWalletMigrationGuard';
+import { readLegacyExposureState, resolveLegacyExposureRedirect } from '@/router/legacyExposureGuard';
 import {
   keyringIsLocked,
   hasMasterPassword,
@@ -63,6 +64,21 @@ router.beforeEach(async (to, from, next) => {
   // If the extension is locked, skip the migration step.
   // This can happen if the user set a password during migration and then locked the extension.
   if (!isLock && !isRequiredOnboarding) {
+    // The security notice comes first after unlock: before the per-account password prompt and
+    // before any wallet screen or dApp request.
+    const exposureRedirect = resolveLegacyExposureRedirect({
+      state: await readLegacyExposureState(),
+      routeName: to.name,
+      fullPath: to.fullPath,
+    });
+
+    if (exposureRedirect) {
+      if (exposureRedirect === 'allow') next();
+      else next(exposureRedirect);
+
+      return;
+    }
+
     const isKeyringMigrationRoute =
       to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts;
 

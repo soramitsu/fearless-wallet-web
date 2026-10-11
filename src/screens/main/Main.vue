@@ -27,6 +27,8 @@
 
     <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
+    <LegacyExposureBanner />
+
     <main class="main-content">
       <router-view v-slot="{ Component, route }">
         <keep-alive :max="20">
@@ -58,10 +60,12 @@ import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
+import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'Main',
   components: {
+    LegacyExposureBanner,
     Menu,
     Header,
     FiatsPopup,

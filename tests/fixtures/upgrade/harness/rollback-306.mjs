@@ -9,11 +9,11 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Keyring } from '@polkadot/keyring';
-import { base64Decode, cryptoWaitReady, signatureVerify } from '@polkadot/util-crypto';
+import { cryptoWaitReady, signatureVerify } from '@polkadot/util-crypto';
 import { ECDSA_WALLETS, MASTER_306, captureEcdsa } from './capture-ecdsa.mjs';
 import { dumpStorage, installBuild, launch, openPopup, reloadExtension, serviceWorker, sleep, stop } from './cdp.mjs';
 import { M2 } from './capture-263.mjs';
-import { installKeyring305, loadKeyring305, openAs305 } from './keyring-305.mjs';
+import { installKeyring305, isAt305Cost, loadKeyring305, openAs305, scryptParamsOf } from './keyring-305.mjs';
 
 const [, , oldBuild, newBuild, workDir, port = '9501'] = process.argv;
 const NEW_MASTER = 'Master password changed in 4.2.0';
@@ -46,12 +46,6 @@ function attempt(fn) {
 const signsFor = (pair, account) => !!pair && signatureVerify(payload, pair.sign(payload), account).isValid;
 
 const keyRecords = (storage) => Object.entries(storage).filter(([key, value]) => key.startsWith('fw:account:') && value?.encoded);
-function scryptParamsOf(json) {
-  const header = base64Decode(json.encoded).subarray(32, 44);
-  const read = (offset) => new DataView(header.buffer, header.byteOffset + offset, 4).getUint32(0, true);
-  return { N: read(0), p: read(4), r: read(8) };
-}
-const at305Cost = (json) => JSON.stringify(scryptParamsOf(json)) === JSON.stringify({ N: 32768, p: 1, r: 8 });
 const accountsOf = async (popup) =>
   ((await popup.call('pri(accounts.subscribe)')).ok ?? []).map(({ address, ethereumAddress, name }) => ({ address, ethereumAddress, name }));
 
@@ -81,7 +75,7 @@ try {
   const manifestKey = JSON.parse(readFileSync(join(oldBuild, 'manifest.json'), 'utf8')).key;
   const wallets = before.wallets.map((wallet) => ({ ...ECDSA_WALLETS['3.0.6'].find(({ name }) => name === wallet.name), ...wallet }));
   report.from = { version: before.manifestVersion, wallets };
-  check('3.0.6 wrote every key at N = 2^15', keyRecords(before.storage).every(([, json]) => at305Cost(json)));
+  check('3.0.6 wrote every key at N = 2^15', keyRecords(before.storage).every(([, json]) => isAt305Cost(json)));
 
   // TON phrases are not keyring keys: 3.0.x keeps them AES-encrypted with the master password in fw:ton:<address>.
   // 3.0.6 imports one, so that 4.2.0's master password change re-encrypts a phrase 3.0.6 wrote.
@@ -120,7 +114,7 @@ try {
 
   const daily = wallets.find(({ name }) => name === 'Daily');
   const exported = (await popup.call('pri(accounts.export.json)', { address: daily.address, password: MASTER_306 })).ok?.json;
-  check('4.2.0 exports Daily as JSON at N = 2^15', !!exported && at305Cost(exported), exported && scryptParamsOf(exported));
+  check('4.2.0 exports Daily as JSON at N = 2^15', !!exported && isAt305Cost(exported), exported && scryptParamsOf(exported));
   const fromFile = attempt(() => openAs305(legacy, [exported], MASTER_306)[0]);
   check('3.0.5 keyring opens the 4.2.0 JSON export with its password and signs as Daily',
     fromFile.value?.address === daily.address && signsFor(fromFile.value, daily.address), fromFile.error);
@@ -135,7 +129,7 @@ try {
   // 3. Outside the browser: every key 4.2.0 stored, at 3.0.x's cost and open in the 3.0.5 keyring.
   const records = keyRecords(storage);
   report.records = records.map(([key, json]) => ({ key, type: json.encoding?.content?.[1], scrypt: scryptParamsOf(json) }));
-  check('every key 4.2.0 stored is encrypted at N = 2^15, p = 1, r = 8', records.every(([, json]) => at305Cost(json)), report.records);
+  check('every key 4.2.0 stored is encrypted at N = 2^15, p = 1, r = 8', records.every(([, json]) => isAt305Cost(json)), report.records);
   const legacyRecords = records.filter(([, json]) => LEGACY_TYPES.includes(json.encoding.content[1])).map(([, json]) => json);
   const opened = legacyRecords.map((json) => ({
     json,

@@ -17,6 +17,8 @@ import {
 } from '@polkadot/util-crypto';
 import { encodePair as polkadotEncodePair } from '@polkadot/keyring/pair/encode';
 import { jsonEncrypt } from '@polkadot/util-crypto/json/encrypt';
+import { ALLOWED_PARAMS, DEFAULT_PARAMS } from '@polkadot/util-crypto/scrypt/defaults';
+import { scryptEncode as encodeAtDefaultCost } from '@polkadot/util-crypto/scrypt/encode';
 import { decodePair } from '@subwallet/keyring/pair/decode';
 import { PKCS8_DIVIDER, PKCS8_HEADER } from '@subwallet/keyring/pair/defaults';
 import { encodePair } from '@subwallet/keyring/pair/encode';
@@ -150,6 +152,36 @@ describe('the build gives every key encoder the scrypt cost 3.0.x reads', () => 
 
     expect(scryptParamsOf(json)).toEqual({ N: 32768, p: 1, r: 8 });
     expect(KEYSTORE_SCRYPT_PARAMS).toEqual({ N: 1 << 15, p: 1, r: 8 });
+  });
+});
+
+describe("util-crypto's default cost is 3.0.x's too, behind the rewritten encoders", () => {
+  const plugin = keystoreScryptParamsPlugin();
+  const defaults = ['@polkadot/util-crypto/scrypt/defaults.js', '@polkadot/util-crypto/cjs/scrypt/defaults.js'];
+
+  it.each(defaults)('rewrites the default in %s and nothing else', (module) => {
+    const file = path.join(nodeModules, module);
+    const code = plugin.transform(readFileSync(file, 'utf8'), file)!.code;
+    // Both module forms, evaluated: the ES module as CommonJS by swapping its two exports.
+    const exports: { DEFAULT_PARAMS?: unknown; ALLOWED_PARAMS?: unknown } = {};
+    new Function('exports', code.replaceAll('export const ', 'exports.'))(exports);
+
+    expect(exports.DEFAULT_PARAMS).toEqual({ N: 32768, p: 1, r: 8 });
+    // Every cost 14.x reads stays readable, N = 2^17 included (keys an earlier 4.2.0 candidate wrote).
+    expect(exports.ALLOWED_PARAMS).toEqual(ALLOWED_PARAMS);
+    expect(ALLOWED_PARAMS).toContainEqual({ N: 1 << 17, p: 1, r: 8 });
+  });
+
+  it('fails the build for scrypt defaults it does not recognise', () => {
+    const file = path.join(nodeModules, defaults[0]);
+
+    expect(() => plugin.transform('export const DEFAULT_PARAMS = { N: 1 << 17, p: 2, r: 8 };', file)).toThrow(/Unexpected scrypt defaults/);
+    expect(() => plugin.transform('export const DEFAULT_PARAMS = Object.freeze(PRESETS[0]);', file)).toThrow(/Unexpected scrypt defaults/);
+  });
+
+  it('an encoder the call rewrite cannot see (an aliased import, another argument name) writes N = 2^15', () => {
+    expect(DEFAULT_PARAMS).toEqual(KEYSTORE_SCRYPT_PARAMS);
+    expect(encodeAtDefaultCost('password').params).toEqual({ N: 32768, p: 1, r: 8 });
   });
 });
 

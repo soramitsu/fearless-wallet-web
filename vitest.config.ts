@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
           inline: [
             /\/node_modules\/@(?:subwallet|polkadot)\/keyring\/pair\/encode\.js$/,
             /\/node_modules\/@polkadot\/util-crypto\/json\/encrypt\.js$/,
+            /\/node_modules\/@polkadot\/util-crypto\/scrypt\/(?:defaults|encode)\.js$/,
           ],
         },
       },

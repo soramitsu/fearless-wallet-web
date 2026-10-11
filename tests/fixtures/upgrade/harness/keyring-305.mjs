@@ -81,6 +81,15 @@ export async function loadKeyring305(dir = installKeyring305()) {
   };
 }
 
+/** The scrypt cost a stored key is encrypted at: after the 32-byte salt, N, p and r as little-endian u32. */
+export function scryptParamsOf(json) {
+  const header = Buffer.from(json.encoded, 'base64').subarray(32, 44);
+  return { N: header.readUInt32LE(0), p: header.readUInt32LE(4), r: header.readUInt32LE(8) };
+}
+
+/** The only cost @polkadot/util-crypto 12.x, and so 3.0.x, opens a key at. */
+export const isAt305Cost = (json) => JSON.stringify(scryptParamsOf(json)) === JSON.stringify({ N: 32768, p: 1, r: 8 });
+
 /**
  * Opens account records the way 3.0.x does: ui-keyring 0.1.7 loads each stored account with keyring.addFromJson,
  * unlockKeyring checks the master password against the stored bcrypt hash (fw:keyring), unlockPair decodes the key

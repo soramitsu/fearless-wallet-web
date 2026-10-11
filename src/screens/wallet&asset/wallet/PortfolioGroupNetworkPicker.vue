@@ -85,6 +85,7 @@ onBeforeUnmount(() => opener?.focus());
   padding: 16px;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
+  @include fw-scrim-tiers;
 }
 
 .picker {

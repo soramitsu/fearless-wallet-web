@@ -241,6 +241,7 @@ const aboveFormClasses = computed(() => {
 .background-blur {
   background: rgba(51, 51, 51, 0.5);
   backdrop-filter: blur(5px);
+  @include fw-scrim-tiers(#333);
 }
 
 .form-animation {

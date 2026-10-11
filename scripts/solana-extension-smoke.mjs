@@ -5,6 +5,7 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
 import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,18 @@ const portfolioScreenshotsDir =
           ? process.argv[portfolioScreenshotsArg + 1]
           : 'output/portfolio-screenshots'
       );
+// `--effects-screenshots [dir]`: the same offline wallet, once per effects tier and system setting (design-system 2).
+const effectsScreenshotsArg = process.argv.indexOf('--effects-screenshots');
+const effectsScreenshotsDir =
+  effectsScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[effectsScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[effectsScreenshotsArg + 1]
+          : 'output/effects-screenshots'
+      );
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -224,7 +237,7 @@ async function main() {
 
   const universalWalletFixture = productionPopupOnly ? undefined : await loadUniversalWalletFixture();
   const transactionBase64 = productionPopupOnly ? undefined : validTransactionBase64();
-  const [solanaServer, irohaServer] = productionPopupOnly || portfolioScreenshotsDir
+  const [solanaServer, irohaServer] = productionPopupOnly || offlineScreenshots
     ? [undefined, undefined]
     : await Promise.all([startDappServer(), startDappServer()]);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-solana-extension-smoke-'));
@@ -286,6 +299,23 @@ async function main() {
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
+
+    if (effectsScreenshotsDir) {
+      const { shots, results } = await captureEffectsScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: effectsScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
 
     if (portfolioScreenshotsDir) {
       const shots = await capturePortfolioScreenshots({
@@ -1268,7 +1298,7 @@ function launchChrome(userDataDir) {
 
   // Screenshots render fixture data. The background still needs the public registry to start, so only that host
   // resolves: no node, indexer or price service is reached, and nothing can be broadcast.
-  if (portfolioScreenshotsDir) {
+  if (offlineScreenshots) {
     args.unshift('--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE localhost , EXCLUDE raw.githubusercontent.com');
   }
   if (usePipeTransport) args.unshift('--enable-unsafe-extension-debugging', '--remote-debugging-pipe');

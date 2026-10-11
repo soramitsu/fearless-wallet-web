@@ -320,6 +320,7 @@ const backgroundClick = (event: CustomEvent) => {
 .popup-background-blur {
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
+  @include fw-scrim-tiers;
 }
 
 .popup-background-animation {

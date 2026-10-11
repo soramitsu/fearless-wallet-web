@@ -25,7 +25,8 @@ export async function startWallet(
     justifyContent: 'center',
     gap: '16px',
     padding: '24px',
-    background: '#191919',
+    // The page entry loads the tokens first; the fallback is the colour this surface had before them.
+    background: 'var(--fw-bg-base, #191919)',
     color: '#fff',
     fontFamily: 'Sora, system-ui, sans-serif',
     textAlign: 'center',

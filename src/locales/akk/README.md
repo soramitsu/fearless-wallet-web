@@ -105,6 +105,9 @@ inside the font's published `unicode-range`.
 | download (imperative) | 𒋗𒊑𒀉 | `šūrid` | `šu-ri-id` | bring down |
 | Account access | 𒁉𒌅𒌑 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 | `petû ṭuppāt šumim` | `pé-tu-ú ṭu-up-pa-at šu-mi-im` | opening of the tablets of names |
 | Skip for now | 𒄿𒈾𒀭𒈾 𒂊𒋾𒅅 | `inanna eṭiq` | `i-na-an-na e-ṭi-iq` | pass by now |
+| visual effects | 𒅁𒊭𒀜 𒀀𒈠𒊑𒅎 | `epšāt amārim` | `ep-ša-at a-ma-ri-im` | deeds of seeing |
+| blur | 𒅎𒁀𒊑𒅎 | `imbarim` | `im-ba-ri-im` | fog |
+| contrast | 𒉺𒊏𒊍 𒉡𒊑𒅎 𒌑 𒅅𒇷𒋾𒅎 | `paras nūrim u ekletim` | `pa-ra-as nu-ri-im ú ek-le-ti-im` | separation of light and darkness |
 
 This is a functional literary localization, not a cuneiform transcription of
 an attested ancient text. Concepts such as apps, URLs, metadata, NFTs,

@@ -352,6 +352,7 @@
       "connections": "Подключения",
       "security": "Безопасность",
       "preferences": "Предпочтения",
+      "appearance": "Оформление",
       "about": "О приложении"
     },
     "walletDetails": "Сведения о кошельке и резервная копия",
@@ -372,6 +373,18 @@
     "fiatCurrencyDescription": "Валюта отображения портфеля",
     "language": "Язык",
     "languageDescription": "Язык интерфейса приложения",
+    "visualEffects": {
+      "title": "Визуальные эффекты",
+      "auto": "Авто",
+      "autoDescription": "Следует настройкам прозрачности, контраста и производительности вашего устройства.",
+      "lite": "Облегчённые",
+      "liteDescription": "Без размытия. Легче для старых компьютеров.",
+      "reduced": "Минимальные",
+      "reducedDescription": "Сплошные плоские поверхности без свечения, стекла и размытия.",
+      "full": "Полные",
+      "inUse": "Сейчас: {mode}",
+      "contrastNote": "Системные настройки контраста оставляют эффекты минимальными."
+    },
     "aboutFearless": "О Fearless",
     "aboutFearlessDescription": "Версия, поддержка и правовая информация",
     "irohaConnectUnavailable": "IrohaConnect недоступен в этой версии. Ничего не подписано."

@@ -93,7 +93,7 @@ function placeholderSvg(url) {
 }
 
 /** Answers the popup's web requests offline: generated logos for images, a refusal for anything else. */
-async function servePopupOffline(cdp, sessionId) {
+export async function servePopupOffline(cdp, sessionId) {
   const stop = cdp.onEvent((message) => {
     if (message.sessionId !== sessionId || message.method !== 'Fetch.requestPaused') return;
 
@@ -121,7 +121,7 @@ async function servePopupOffline(cdp, sessionId) {
 }
 
 /** The popup's Vue app, router and Pinia stores, from the page. */
-const APP = `(() => {
+export const APP = `(() => {
   const app = document.querySelector('#app')?.__vue_app__;
   const pinia = app?.config.globalProperties.$pinia;
   return app && pinia ? { app, router: app.config.globalProperties.$router, pinia } : undefined;

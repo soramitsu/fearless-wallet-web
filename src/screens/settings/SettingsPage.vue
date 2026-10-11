@@ -10,27 +10,30 @@
         <p v-if="showIrohaConnectUnavailable" class="settings-notice" role="status" data-testid="iroha-connect-unavailable">
           {{ t('settingsPage.irohaConnectUnavailable') }}
         </p>
-        <section v-for="group in groups" :key="group.title" class="settings-group">
-          <h2>{{ group.title }}</h2>
-          <button
-            v-for="item in group.items"
-            :key="item.id"
-            class="settings-row"
-            :class="{ unavailable: item.disabled }"
-            :data-testid="`settings-${item.id}`"
-            type="button"
-            :disabled="item.disabled"
-            @click="item.open"
-          >
-            <Icon :icon="item.icon" className="settings-icon" :hover="false" />
-            <span class="settings-row__copy">
-              <strong>{{ item.label }}</strong>
-              <small>{{ item.description }}</small>
-            </span>
-            <span v-if="item.status" class="settings-status">{{ item.status }}</span>
-            <Icon v-else icon="chevron-right" className="settings-chevron" :hover="false" />
-          </button>
-        </section>
+        <template v-for="group in groups" :key="group.title">
+          <section class="settings-group">
+            <h2>{{ group.title }}</h2>
+            <button
+              v-for="item in group.items"
+              :key="item.id"
+              class="settings-row"
+              :class="{ unavailable: item.disabled }"
+              :data-testid="`settings-${item.id}`"
+              type="button"
+              :disabled="item.disabled"
+              @click="item.open"
+            >
+              <Icon :icon="item.icon" className="settings-icon" :hover="false" />
+              <span class="settings-row__copy">
+                <strong>{{ item.label }}</strong>
+                <small>{{ item.description }}</small>
+              </span>
+              <span v-if="item.status" class="settings-status">{{ item.status }}</span>
+              <Icon v-else icon="chevron-right" className="settings-chevron" :hover="false" />
+            </button>
+          </section>
+          <VisualEffectsSetting v-if="group.id === 'preferences'" />
+        </template>
       </Scroll>
     </ContentForm>
   </div>
@@ -39,6 +42,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import VisualEffectsSetting from './VisualEffectsSetting.vue';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { Components } from '@/router/routes';
 import { getAccessStatus, lockExtension } from '@/extension/messaging';
@@ -59,6 +63,7 @@ type SettingsItem = {
 };
 
 type SettingsGroup = {
+  id?: string;
   title: string;
   items: SettingsItem[];
 };
@@ -179,7 +184,9 @@ const groups = computed<SettingsGroup[]>(() => [
             {
               id: 'account-access',
               label: t('accountAccess.title'),
-              description: tc('accountAccess.settingsDescription', accessIssueCount.value, { count: accessIssueCount.value }),
+              description: tc('accountAccess.settingsDescription', accessIssueCount.value, {
+                count: accessIssueCount.value,
+              }),
               icon: 'lock',
               open: open(Components.AccountAccessRecovery),
             },
@@ -202,6 +209,7 @@ const groups = computed<SettingsGroup[]>(() => [
     ],
   },
   {
+    id: 'preferences',
     title: t('settingsPage.groups.preferences'),
     items: [
       {

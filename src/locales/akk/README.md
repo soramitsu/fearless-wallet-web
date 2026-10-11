@@ -100,6 +100,11 @@ inside the font's published `unicode-range`.
 | Max (send everything) | 𒂊𒇷𒌅𒌝 | `elītum` | `e-li-tu-um` | the uppermost |
 | SOL | 𒅗𒊍𒁍𒌝 𒊭 Solana | `kaspum ša Solana` | `ka-as-pú-um ša Solana` | silver of Solana |
 | hidden | 𒅗𒀜𒈬𒌝 | `katmum` | `ka-at-mu-um` | covered |
+| master password | 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒊏𒁉𒌅𒌝 | `awāt pirištim rabītum` | `a-wa-at pi-ri-iš-ti-im ra-bi-tu-um` | the great word of secrecy |
+| encrypted backup | 𒌅𒌒𒁍𒌝 𒊭𒉡𒌑𒌝 𒅗𒊍𒊒𒌝 | `ṭuppum šanûm kaṣrum` | `ṭu-up-pú-um ša-nu-ú-um ka-aṣ-ru-um` | bound second tablet |
+| download (imperative) | 𒋗𒊑𒀉 | `šūrid` | `šu-ri-id` | bring down |
+| Account access | 𒁉𒌅𒌑 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 | `petû ṭuppāt šumim` | `pé-tu-ú ṭu-up-pa-at šu-mi-im` | opening of the tablets of names |
+| Skip for now | 𒄿𒈾𒀭𒈾 𒂊𒋾𒅅 | `inanna eṭiq` | `i-na-an-na e-ṭi-iq` | pass by now |
 
 This is a functional literary localization, not a cuneiform transcription of
 an attested ancient text. Concepts such as apps, URLs, metadata, NFTs,

@@ -44,7 +44,10 @@
           </span>
         </span>
 
-        <span class="asset-balance">
+        <span v-if="asset.balanceUnavailable" class="asset-balance" data-testid="balanceUnavailable">
+          <span>{{ t('portfolioPage.balanceStatus.failed') }}</span>
+        </span>
+        <span v-else class="asset-balance">
           <span>{{ formatAmount(asset.balanceText) }} {{ asset.symbol }}</span>
           <span class="asset-fiat">{{ formatFiat(asset.fiatValue) }}</span>
           <span v-if="showsTransferable(asset)" class="asset-transferable" data-testid="transferable">

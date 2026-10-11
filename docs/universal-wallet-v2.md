@@ -243,7 +243,25 @@ parameters, or fragments. Public indexer endpoints are read-only. Broadcasts,
 transaction simulation, and other write operations must use RPC or Torii
 endpoints, never a public indexer endpoint.
 
-- TON indexer base URL: `https://ti.soramitsu.io`.
+- TON indexer base URL: `https://ti.soramitsu.io` (the TONSWAP indexer, "TI").
+  The extension talks to TI only through TI's own routes
+  (`/api/indexer/v1/service-info`, `accounts/{addr}/balance|state|txs`,
+  `runGetMethod`, and `/api/v2/jsonRPC` `sendBoc`), never through a TonAPI
+  client (`src/.../services/ton-provider`). TI is used for a TON network only
+  after its service-info reports `chainId == "ton:<network>"`, and every
+  balance, state and history response must again report that `network`;
+  any other answer is rejected and never shown. TI broadcasts only when its
+  service-info says `readOnly: false`. While TI is not verified (observed
+  2026-10-10: it reports `testnet` and has no service-info route), the
+  registry's TON node (`https://tonapi.io` in `chains/v13`) is used instead,
+  after its masterchain head shows global id `-239` (`-3` for testnet). The
+  fallback is logged every time it is chosen and is switched off with
+  `UNIVERSAL_WALLET_TON_PROVIDER.registryNodeFallback` once TI serves TON
+  mainnet. When neither provider is verified, TON balances show "Balance
+  update failed" (the last confirmed balance if there is one), never 0, and
+  transfers fail before signing anything. TI lists only the jettons it
+  indexes, so its jetton list never zeroes a jetton it does not mention.
+  Remote config never chooses a TON host.
 - Solana indexer base URL: `https://si.soramitsu.io`.
 - `si.soramitsu.io` is read-only. Transaction simulation and broadcast use the
   configured Solana RPC endpoint directly.

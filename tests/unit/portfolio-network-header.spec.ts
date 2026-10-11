@@ -140,6 +140,23 @@ describe('Portfolio network header', () => {
     expect(rows[1].find('[data-testid="transferable"]').exists()).toBe(false);
     wrapper.unmount();
   });
+
+  it('says a balance nobody could load failed instead of showing 0', () => {
+    const ton: PortfolioAsset = {
+      ...asset, key: 'ton:-239:ton', networkName: 'TON Mainnet', assetId: 'ton', name: 'Toncoin', symbol: 'TON',
+      balanceText: '0', transferableText: '0', hasBalance: false, fiatValue: '0', isReady: false, balanceUnavailable: true,
+    };
+    const wrapper = render(section({
+      key: 'ton:-239', name: 'TON Mainnet', ecosystem: 'ton', chainId: '-239', subtotal: '0', hasPricedAssets: false,
+      latestTimestamp: undefined, stale: true, error: 'balance_scan_failed', assets: [ton],
+    }));
+
+    expect(wrapper.get('.sync-state').text()).toBe('Balance update failed');
+    expect(wrapper.get('[data-testid="balanceUnavailable"]').text()).toBe('Balance update failed');
+    expect(wrapper.get('.asset-row').text()).not.toContain('0.0000');
+    expect(wrapper.find('.asset-fiat').exists()).toBe(false);
+    wrapper.unmount();
+  });
 });
 
 async function runNavigationAndReview(wrapper: ReturnType<typeof render>) {

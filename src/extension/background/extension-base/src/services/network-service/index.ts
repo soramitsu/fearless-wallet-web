@@ -319,7 +319,8 @@ export class NetworkService {
     });
 
     this.activeNetworkByEcosystem.ton.forEach((network) => {
-      if (!this.tonApiHandler.api[network.name]) this.tonApiHandler.initApi(network);
+      // Kept across calls: a provider proves its network once, not on every refresh.
+      if (!this.tonApiHandler.api[network.name.toLowerCase()]) this.tonApiHandler.initApi(network);
     });
 
     this.activeNetworkByEcosystem.substrate.forEach((network) => {

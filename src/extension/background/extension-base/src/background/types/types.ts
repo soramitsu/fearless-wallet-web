@@ -1,5 +1,5 @@
 import { type FinalEncryptedStructure as SoraFinalEncryptedStructure } from '@sora-substrate/sdk';
-import { type TonApiClient } from '@ton-api/client';
+import { type TonProviderRouter } from '@extension-base/services/ton-provider';
 import { type WordCount } from '../../services';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
@@ -338,7 +338,7 @@ export interface EvmApiProps {
 }
 
 export interface TonApiProps {
-  api: TonApiClient;
+  api: TonProviderRouter;
   nodeIndex?: number;
   apiStatus: NETWORK_STATUS;
 }

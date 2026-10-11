@@ -515,7 +515,7 @@ export default class State {
           networks: [network.name],
         });
       } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
-        if (!this.getTonApiMap[network.name]) await this.networkService.tonApiHandler.initApi(network);
+        if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
         await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
       } else if (ecosystem === 'ethereum' && evmAddress) {
         const wasActive = network.active;

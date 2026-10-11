@@ -46,6 +46,8 @@ export interface PortfolioAsset {
   isUtility: boolean;
   isTestnet: boolean;
   isReady: boolean;
+  /** No provider answered and no balance was ever loaded: the row says so and is never shown or counted as zero. */
+  balanceUnavailable?: boolean;
   timestamp?: number;
 }
 
@@ -150,6 +152,14 @@ function decimalAmount(value: unknown): string {
   } catch {
     return '0';
   }
+}
+
+/** A failed balance with nothing loaded before it. Its amount is unknown, which `holdingBalance` would turn into 0. */
+function isBalanceUnavailable(balance: BalanceItem): boolean {
+  return (
+    balance.state === APIItemState.ERROR &&
+    [balance.total, balance.free, balance.transferable].every((value) => value === undefined || value === null)
+  );
 }
 
 /**
@@ -305,6 +315,7 @@ export function buildPortfolioSections({
         isUtility: Boolean(balance.isUtility),
         isTestnet: testnet,
         isReady: balance.state === APIItemState.READY,
+        balanceUnavailable: isBalanceUnavailable(balance),
         timestamp: balance.timestamp,
       };
       const sectionKey = `${ecosystem}:${chainId}`;
@@ -341,7 +352,7 @@ export function buildPortfolioSections({
         if (showHidden && (trust === 'verified' || hasBalance)) section.assets.push(asset);
       } else if (trust === 'verified') {
         const showsZero = preference === 'shown' || showsAtZero(network, asset);
-        if (hasBalance || (!hideZero && showsZero)) section.assets.push(asset);
+        if (hasBalance || asset.balanceUnavailable || (!hideZero && showsZero)) section.assets.push(asset);
       } else if (hasBalance) {
         if (preference === 'shown') section.assets.push(asset);
         else if (surfaceDiscoveredAssets) section.detectedAssets.push(asset);
@@ -400,8 +411,9 @@ export function filterSectionsBySearch(sections: PortfolioNetworkSection[], quer
   );
 }
 
+// A balance nobody could load is not a zero balance: its network stays with the funded ones, saying it failed.
 const sectionHasBalance = (section: PortfolioNetworkSection): boolean =>
-  [...section.assets, ...section.detectedAssets].some(({ hasBalance }) => hasBalance);
+  [...section.assets, ...section.detectedAssets].some(({ hasBalance, balanceUnavailable }) => hasBalance || balanceUnavailable);
 
 /** Funded networks first; networks that only hold zero rows go into the collapsed "N networks · no balance" block. */
 export function splitZeroSections(sections: PortfolioNetworkSection[]): {

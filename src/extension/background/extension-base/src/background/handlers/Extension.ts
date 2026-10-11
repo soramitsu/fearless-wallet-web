@@ -1530,12 +1530,14 @@ export default class Extension extends FWExtensionBase {
       `
       );
 
-      callback({
-        status: false,
-        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
-      });
+      const errors = [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }];
+
+      callback({ status: false, errors });
 
       setTimeout(() => this.cancelSubscription(id), 500);
+
+      // A TON wallet's confirmation shows this answer, not the subscription, so a failure must not read as sent.
+      return { status: false, errors };
     }
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));

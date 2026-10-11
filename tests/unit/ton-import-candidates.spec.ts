@@ -71,8 +71,11 @@ import { makeTonTransfer } from '@extension-base/api/ton/transfer';
 import Extension from '@extension-base/background/handlers/Extension';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonBalance } from '@extension-base/services/ton-balance/TonBalance';
+import { TonProviderRouter } from '@extension-base/services/ton-provider';
 import { tonStore } from '@extension-base/stores/TonStore';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
+import registrySnapshot from '../fixtures/legacy-305/chains-v13.snapshot.json';
+import tiResponses from '../fixtures/ton/ti-responses-20261011.json';
 import androidVectors from '../fixtures/ton/ton-android-4.2.0-vectors.json';
 import bip39Vectors from '../fixtures/ton/ton-bip39-3.0.5-vectors.json';
 import nativeVectors from '../fixtures/ton/ton-native-3.0.5-vectors.json';
@@ -283,7 +286,14 @@ describe('TON import candidates for phrases from the Android app', PBKDF2_SUITE,
 });
 
 const NETWORK_NAME = 'TON Mainnet';
-const tonNetwork = { name: NETWORK_NAME, assets: [{ precision: 9 }] } as unknown as NetworkJson;
+// TON Mainnet as the shipped chains/v13 registry lists it (one TonAPI node, tonapi.io).
+const tonNetwork = (registrySnapshot as unknown as NetworkJson[]).find(({ name }) => name === NETWORK_NAME)!;
+// TI as it answers today (no service-info), so lookups and transfers go through the verified registry node.
+const deployedTi = async () => new Response(JSON.stringify(tiResponses.deployed.serviceInfo.body), { status: 404 });
+const friendly = (address: Address | string) =>
+  (typeof address === 'string' ? Address.parse(address) : address).toString({ bounceable: false, urlSafe: true });
+// Wallets a test has sent from; the registry node reports them as deployed.
+const deployedWallets = new Set<string>();
 
 // A background with an unlocked, empty wallet, as after a fresh install of this release.
 async function background(lookup: (address: string) => unknown = () => { throw new Error('offline'); }) {
@@ -293,14 +303,27 @@ async function background(lookup: (address: string) => unknown = () => { throw n
   await keyringService.tonKeyring.loadAll();
   expect(keyringService.unlockKeyring({ password: MASTER_PASSWORD })).toBe(true);
 
-  const getAccount = vi.fn(async (address: Address) => lookup(address.toString({ bounceable: false, urlSafe: true })));
+  const getAccount = vi.fn(async (address: Address) => lookup(friendly(address)));
   const getAccountSeqno = vi.fn().mockResolvedValue({ seqno: 3 });
   const sendBlockchainMessage = vi.fn();
   const setBalanceItem = vi.fn();
   const tonApi: State['getTonApiMap'] = {};
-  const client = { accounts: { getAccount }, wallet: { getAccountSeqno }, blockchain: { sendBlockchainMessage } };
+  const client = {
+    accounts: {
+      getAccount: async (address: Address) =>
+        deployedWallets.has(friendly(address)) ? { balance: 1_000_000_000n, status: 'active' } : getAccount(address),
+    },
+    wallet: { getAccountSeqno },
+    blockchain: { getBlockchainMasterchainHead: async () => ({ globalId: -239 }), sendBlockchainMessage },
+  };
   const initApi = vi.fn(async (network: NetworkJson) => {
-    tonApi[network.name.toLowerCase()] = { api: client } as never;
+    tonApi[network.name.toLowerCase()] = {
+      api: new TonProviderRouter(network, {
+        fetchFn: deployedTi,
+        createTonApiClient: () => client as never,
+        logger: { info: () => undefined, warn: () => undefined },
+      }),
+    } as never;
 
     return true;
   });
@@ -333,6 +356,7 @@ const tonPublicAccount = (record: TonStoreAccount) =>
   record.meta!.universalWallet!.publicAccounts.find(({ ecosystem }) => ecosystem === WalletEcosystem.Ton)!;
 
 async function signedBy(state: State, sendBlockchainMessage: ReturnType<typeof vi.fn>, from: string, publicKeyHex: string) {
+  deployedWallets.add(friendly(from));
   await makeTonTransfer(
     {
       balance: { walletAddress: undefined } as unknown as BalanceItem,
@@ -355,6 +379,7 @@ async function signedBy(state: State, sendBlockchainMessage: ReturnType<typeof v
 }
 
 beforeEach(() => {
+  deployedWallets.clear();
   mocks.records.clear();
   vi.mocked(tonStore.set).mockClear();
   vi.mocked(tonStore.updateAndWait).mockClear();

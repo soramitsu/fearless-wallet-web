@@ -22,6 +22,13 @@ const initialize = retryableInitialization(async () => {
   state.eventService.emit('crypto.ready', true);
   await state.keyringService.currentAccountReady.catch(() => state.keyringService.restoreCurrentAccount());
   await keyring.restoreKeyringPassword();
+  // Before anything can add an account: what is stored now is what earlier builds wrote. The
+  // security notice must never keep the wallet from starting.
+  try {
+    await state.legacyExposureService.init();
+  } catch (error) {
+    console.error('Security notice state could not be prepared', error);
+  }
   await MigrationService.start();
   // The web wallet has no install event, so start-up is where a missing selection is repaired.
   // A failure here must not keep the wallet from starting.

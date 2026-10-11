@@ -112,6 +112,7 @@ export * from '@/extension/messaging/networks';
 export * from '@/extension/messaging/balance';
 export * from '@/extension/messaging/asset-discovery';
 export * from '@/extension/messaging/sora-policy';
+export * from '@/extension/messaging/legacy-exposure';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
 export * from '@/extension/messaging/iroha-connect-requests';

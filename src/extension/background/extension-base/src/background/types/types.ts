@@ -39,6 +39,7 @@ import type { SendKillSwitchState } from '@/util/sendKillSwitch';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
 import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
 import type { BitcoinRecipientType } from '@/util/bitcoin';
+import type { LegacyExposureRecord } from '@extension-base/services/legacy-exposure-service';
 import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
 
 type KeysWithDefinedValues<T> = {
@@ -852,6 +853,9 @@ export type IState = {
   bitcoinPendingSends: BitcoinPendingSend[];
   solanaPendingSends: SolanaPendingSend[];
   soraDisclaimerAcceptance: SoraDisclaimerAcceptance;
+  legacyExposure: LegacyExposureRecord;
+  /** Written by 3.0.3-3.0.5 only. Read once for the security notice and never written. */
+  myAddresses: string[];
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;

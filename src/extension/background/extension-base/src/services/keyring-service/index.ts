@@ -90,6 +90,7 @@ export class KeyringService {
   private password = '';
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
+  private enrollmentGate: (address: string) => boolean = () => true;
 
   private get access(): AccountAccessService {
     return (this.accountAccess ??= new AccountAccessService(this));
@@ -106,6 +107,17 @@ export class KeyringService {
     return this.enrollmentWork ?? Promise.resolve();
   }
 
+  // Accounts the gate refuses keep exactly the networks they have (LegacyExposureService holds back
+  // accounts that may be exposed until the security notice is acknowledged).
+  setLegacyNetworkEnrollmentGate(gate: (address: string) => boolean): void {
+    this.enrollmentGate = gate;
+  }
+
+  // For the gate's owner, once it allows more accounts. Does nothing while the wallet is locked.
+  resumeLegacyNetworkEnrollment(): void {
+    this.scheduleLegacyNetworkEnrollment();
+  }
+
   private scheduleLegacyNetworkEnrollment(): void {
     if (!this.password) return;
     const password = this.password;
@@ -118,6 +130,8 @@ export class KeyringService {
       if (!isCurrent()) return;
       for (const account of this.getAccounts()) {
         if (!isCurrent()) return;
+        // Asked per account at the time of use: an acknowledgement may arrive while this runs.
+        if (this.enrollmentGate && !this.enrollmentGate(account.address)) continue;
         const pair = this.getPair(account.address);
         if (!pair) continue;
         try { await enrollLegacyAccountNetworks(pair, password, isCurrent); } catch { /* Retry on a later unlock. */ }
@@ -505,31 +519,6 @@ export class KeyringService {
     if (!account) throw new Error('Couldnt find account');
 
     return !!account.meta.isMobile;
-  }
-
-  getDataAccounts({ address, walletEcosystem }: RequestExportSeed) {
-    if (walletEcosystem === WalletEcosystem.Ton) {
-      return { value: address };
-    }
-
-    try {
-      const pair = keyring.getPair(address);
-
-      return { value: pair.address };
-    } catch {
-      console.info();
-    }
-
-    try {
-      const value1 = this.backupAccount(address, this.password);
-
-      return {
-        value: JSON.stringify(value1),
-        value2: value1?.address ?? '',
-      };
-    } catch {
-      return { value: '' };
-    }
   }
 
   // TON phrases are encrypted outside ui-keyring, so they are re-encrypted here: a verified copy under

@@ -176,6 +176,7 @@ import type {
   AvailableNftPayload,
   NftTx,
 } from '@extension-base/services/nft-service/types';
+import type { RequestUpdateLegacyExposure } from '@extension-base/services/legacy-exposure-service';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
@@ -2464,6 +2465,15 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(policy.soraDisclaimer.accept)':
         return this.state.soraDisclaimerService.accept((request as { version: number }).version);
+
+      case 'pri(security.legacyExposure.status)':
+        return this.state.legacyExposureService.getStatus();
+
+      case 'pri(security.legacyExposure.acknowledge)':
+        return this.state.legacyExposureService.acknowledge();
+
+      case 'pri(security.legacyExposure.update)':
+        return this.state.legacyExposureService.update(request as RequestUpdateLegacyExposure);
 
       case 'pri(accounts.soraFees.subscribe)':
         return this.soraFeesSubscribe(id, port);

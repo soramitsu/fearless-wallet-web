@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Port } from '@extension-base/background/types/types';
+import type { LegacyExposureRecord } from '@extension-base/services/legacy-exposure-service';
 
 type Reply = 'answer' | 'fail' | 'hold';
 type StoredRecords = Record<string, unknown>;
@@ -145,9 +146,18 @@ async function startBackground() {
   const eventService = new EventService();
   const emit = vi.spyOn(eventService, 'emit');
   const keyringService = new KeyringService(eventService);
+  const { LegacyExposureService } = await import('@extension-base/services/legacy-exposure-service');
+  const exposureWrites: { record: LegacyExposureRecord; order: number }[] = [];
+  let order = 0;
+  const legacyExposureService = new LegacyExposureService(keyringService, {
+    read: async () => undefined,
+    write: async (record) => void exposureWrites.push({ record, order: ++order }),
+    readSentMarker: async () => undefined,
+  });
   const state = {
     eventService,
     keyringService,
+    legacyExposureService,
     onboardingService: { updateStorage: vi.fn(() => Promise.resolve()), init: vi.fn() },
     onInstall: vi.fn(),
     ensureCurrentAccount: vi.fn(),
@@ -156,7 +166,11 @@ async function startBackground() {
   mocks.state = state;
   const answered: Record<string, unknown>[] = [];
   const seen: Record<string, unknown>[] = [];
+  let migratedAt: number | undefined;
+  let answeredAt: number | undefined;
+  (mocks.migrate as ReturnType<typeof vi.fn>).mockImplementation(() => void (migratedAt = ++order));
   (mocks.handlers as ReturnType<typeof vi.fn>).mockImplementation(({ id }: { id: string }) => {
+    answeredAt ??= ++order;
     seen.push({
       id,
       hasMasterPassword: keyringService.hasMasterPassword,
@@ -181,7 +195,8 @@ async function startBackground() {
     port.onMessage.emit({ id, message, request: null });
   };
   const cryptoReadyEvents = () => emit.mock.calls.filter(([type]) => type === 'crypto.ready').length;
-  return { api, state, send, seen, answered, cryptoReadyEvents, WALLET_STORAGE_UNAVAILABLE };
+  const exposure = () => ({ writes: exposureWrites, migratedAt, answeredAt });
+  return { api, state, send, seen, answered, cryptoReadyEvents, exposure, WALLET_STORAGE_UNAVAILABLE };
 }
 
 // Transform the keyring service once; each test then re-evaluates it from the cache.
@@ -243,6 +258,25 @@ describe('background start-up ordering (W10)', () => {
     expect(selectionSeen).toEqual([TON_ADDRESS]);
     expect(background.state.onboardingService.updateStorage).toHaveBeenCalledExactlyOnceWith('regular', true);
     expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('records the wallets 3.0.5 left before migration runs and before any request is answered', async () => {
+    const background = await startBackground();
+    background.send('first');
+    await vi.waitFor(() => expect(background.seen).toHaveLength(1));
+
+    const { writes, migratedAt, answeredAt } = background.exposure();
+    expect(writes).toHaveLength(1);
+    expect(writes[0].record).toMatchObject({
+      version: 1,
+      evidence: ['masterPassword', 'tonAccount'],
+      accounts: [
+        { address: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', walletEcosystem: 'substrate', name: 'Polkadot' },
+        { address: TON_ADDRESS, walletEcosystem: 'ton', name: 'TON wallet' },
+      ],
+    });
+    expect(writes[0].order).toBeLessThan(migratedAt!);
+    expect(writes[0].order).toBeLessThan(answeredAt!);
   });
 
   it('reports a TON-only wallet as having accounts on the very first request', async () => {

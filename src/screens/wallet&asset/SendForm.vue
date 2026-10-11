@@ -61,6 +61,7 @@ import { defineComponent } from 'vue';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { addNumbers } from '@/helpers/numbers';
 import { findTransferAssetGroup, getUtilityAsset } from '@/helpers/currencies';
+import { getOwnWalletRecipient } from '@/helpers/transfers';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -152,6 +153,11 @@ export default defineComponent({
   created() {
     this.assetId = this.$route.params.assetId;
     this.selectedNetwork = this.$route.params.network;
+
+    // The security notice guide opens Send with the user's new wallet as the recipient.
+    const to = this.$route.query?.to;
+
+    if (typeof to === 'string') this.recipient = getOwnWalletRecipient(this.accountsStore.accounts, to, this.selectedNetwork);
   },
   methods: {
     closeForm() {

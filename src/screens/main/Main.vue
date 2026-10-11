@@ -27,6 +27,7 @@
 
     <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
+    <LegacyExposureBanner />
     <AccountAccessBanner />
 
     <main class="main-content">
@@ -61,11 +62,13 @@ import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import AccountAccessBanner from '@/components/AccountAccessBanner.vue';
+import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'Main',
   components: {
     AccountAccessBanner,
+    LegacyExposureBanner,
     Menu,
     Header,
     FiatsPopup,

@@ -9,6 +9,8 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync, inflateSync } from 'node:zlib';
 
+import { auditBundleHosts, DEFAULT_ALLOWLIST_PATH, readHostAllowlist } from './audit-bundle-hosts.mjs';
+
 export const CURRENT_PUBLISHED_VERSION = '3.0.5';
 export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
 export const MINIMUM_SUPPORTED_CHROME_VERSION = '116';
@@ -993,6 +995,7 @@ export async function auditChromeRelease({
   releaseEnvironment = process.env,
   expectedOAuthClientIdSha256 = EXPECTED_OAUTH_CLIENT_ID_SHA256,
   expectedSourceCommit,
+  hostAllowlistPath = DEFAULT_ALLOWLIST_PATH,
   rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   distDir = path.join(rootDir, 'dist/extension/chrome'),
   zipPath = path.join(distDir, DEFAULT_ARCHIVE_NAME),
@@ -1039,6 +1042,10 @@ export async function auditChromeRelease({
 
   validateNoProductionDebugOutput(directoryFiles, 'Chrome directory artifact');
   validateNoProductionDebugOutput(zipFiles, 'Chrome ZIP artifact');
+  // The reviewed host list ships with this script, not with the tree being audited.
+  const allowedHosts = await readHostAllowlist(hostAllowlistPath);
+  auditBundleHosts(directoryFiles, allowedHosts, 'Chrome directory artifact');
+  auditBundleHosts(zipFiles, allowedHosts, 'Chrome ZIP artifact');
   const directoryExtensionId = validateManifest(
     directoryManifest,
     packageJson,
@@ -1080,6 +1087,8 @@ function usage() {
   return `Usage: node scripts/audit-chrome-release.mjs [--release] [--root DIR] [--dist DIR] [--zip FILE]
 
 Audits dist/extension/chrome and fearless-wallet-extension-chrome.zip as a Chrome Web Store release package.
+Every build fails when the package contains the 3.0.x phrase-upload strings or names a network host that
+scripts/release-network-hosts.json does not list.
 --release additionally requires the production manifest key and OAuth client ID, verifies the stable extension ID,
 and requires the build metadata to name the checked-out HEAD commit, a clean source tree, and the current yarn.lock.`;
 }

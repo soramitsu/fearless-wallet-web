@@ -21,4 +21,5 @@ export * from '@extension-base/services/asset-discovery-service';
 export * from '@extension-base/services/action-capability-service';
 export * from '@extension-base/services/send-kill-switch-service';
 export * from '@extension-base/services/sora-disclaimer-service';
+export * from '@extension-base/services/legacy-exposure-service';
 export * from '@extension-base/services/iroha-connect-service';

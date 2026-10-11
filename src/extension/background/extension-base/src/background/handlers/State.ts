@@ -26,6 +26,7 @@ import {
   ActionCapabilityService,
   SendKillSwitchService,
   SoraDisclaimerService,
+  LegacyExposureService,
   IrohaConnectService,
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
@@ -132,6 +133,11 @@ export default class State {
   soraDisclaimerService = new SoraDisclaimerService({
     read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
     write: async (soraDisclaimerAcceptance) => storage.set({ soraDisclaimerAcceptance }),
+  });
+  legacyExposureService = new LegacyExposureService(this.keyringService, {
+    read: async () => (await storage.get(['legacyExposure'])).legacyExposure,
+    write: async (legacyExposure) => storage.set({ legacyExposure }),
+    readSentMarker: async () => (await storage.get(['myAddresses'])).myAddresses,
   });
   pricesService = new PricesService(this);
   nftService = new NftService(this);

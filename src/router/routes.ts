@@ -86,10 +86,15 @@ const MigrationAccounts = (/* webpackChunkName: "migration */) =>
 const UniversalWalletMigration = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/universalWalletMigration/UniversalWalletMigration.vue');
 
+const SecurityNotice = () => import('@/screens/securityNotice/SecurityNotice.vue');
+const SecurityNoticeGuide = () => import('@/screens/securityNotice/SecurityNoticeGuide.vue');
+
 export enum Components {
   MigrationDescription = 'MigrationDescription',
   MigrationAccounts = 'MigrationAccounts',
   UniversalWalletMigration = 'UniversalWalletMigration',
+  SecurityNotice = 'SecurityNotice',
+  SecurityNoticeGuide = 'SecurityNoticeGuide',
   Unlock = 'Unlock',
   ResetWallet = 'ResetWallet',
   ChangePassword = 'ChangePassword',
@@ -172,6 +177,22 @@ const routes: Array<RouteRecordRaw> = [
     component: UniversalWalletMigration,
     meta: {
       title: 'migration',
+    },
+  },
+  {
+    path: '/security-notice',
+    name: Components.SecurityNotice,
+    component: SecurityNotice,
+    meta: {
+      title: 'securityNotice',
+    },
+  },
+  {
+    path: '/security-notice/guide',
+    name: Components.SecurityNoticeGuide,
+    component: SecurityNoticeGuide,
+    meta: {
+      title: 'securityNotice',
     },
   },
 

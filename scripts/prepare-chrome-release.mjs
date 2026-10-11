@@ -196,6 +196,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
     'test:import-chrome-release-config',
     'test:prepare-chrome-release',
     'test:release-source-audit',
+    'test:bundle-host-audit',
     'test:vendored-iroha-sdk-audit',
     'test:chrome-release-audit',
   ]) {

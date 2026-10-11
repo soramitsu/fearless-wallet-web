@@ -46,6 +46,53 @@ before submission; do not reuse the `3.0.6` copy.
   same-network send alternative; IrohaConnect is off in release builds.
 - Reliability and fail-closed handling across network, signing, and transfer
   flows.
+- A security notice for profiles that ran 3.0.x (WK-9, below).
+
+## Security notice for profiles from 3.0.x (WK-9)
+
+Published 3.0.1 and 3.0.3-3.0.5 sent each account's recovery phrase (for JSON
+and raw-seed accounts the encrypted key with the master password) to an outside
+server on unlock. The Chrome Web Store 3.0.5 package was built from `129807f0`
+(`origin/master`), which has that code; `600a64d5` does not. Whether a given
+phrase was delivered cannot be told from a profile: the `myAddresses` list
+3.0.3-3.0.5 kept was written before each request and 3.0.1 wrote none.
+
+What 4.2.0 does on its first start, before it can add an account:
+
+- It records every account with a locally stored key (`legacyExposure` in
+  `chrome.storage.local`) when the profile holds anything only 3.0.x could have
+  written: the master-password record, a TON account, or `myAddresses`. A
+  profile with none of these (a fresh install, or a 2.x profile nobody unlocked
+  in 3.0.x) records nothing and sees nothing.
+- After unlock it shows a blocking, calm notice that says what is known, lists
+  those wallets, and states that a password change does not protect an exposed
+  phrase. The user confirms to continue; nothing is deleted or changed.
+- No Bitcoin, Solana, TON or Iroha address is attached to those accounts until
+  the user has confirmed.
+- A guide then walks through creating a new wallet, confirming its backup, and
+  moving each old wallet's balances network by network with the normal Send
+  screen (the new wallet is filled in as the recipient). The wallet keeps a
+  reminder while old wallets are not marked as moved, and Receive warns on an
+  old wallet.
+
+`yarn test:smoke:chrome:legacy-exposure` checks this in real Chrome on the
+production build: it loads the storage a real 3.0.5 build wrote
+(`tests/fixtures/upgrade/`), restarts Chrome with name resolution blocked,
+unlocks with the fixture's synthetic password, and asserts the notice, the
+held-back networks, unchanged keys, the guide and the reminder; a 2.6.3 profile
+sees nothing. It needs `CHROME_BIN` set to Chrome for Testing or Chromium
+(branded Chrome ignores `--load-extension`); run it before submitting.
+
+The wording lives in `exposureNotice` in every locale file and is a draft for
+the owner's sign-off: the empty `exposureNotice.draftAwaitingOwnerSignOff` key
+makes `yarn audit:chrome-release:source` (and so release preparation) fail
+until it is removed from all four files after the owner has approved the text.
+
+Every `build:extension:zip` (and the Firefox ZIP build) also fails when the
+package contains `whitelist?address` or `tonscanner`, or names a network host
+not listed with a reason in `scripts/release-network-hosts.json`. A host built
+at run time from remote configuration cannot be listed or caught by a host
+check, which is why the strings of the 3.0.x request are checked on their own.
 
 ## Permission justifications
 

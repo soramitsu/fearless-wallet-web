@@ -74,6 +74,7 @@
                 class="row"
                 text="assets.amount"
                 :totalAmount="transferableAmount"
+                :balanceUnavailable="balanceUnavailable"
                 :value="syncedValue"
                 :asset="sendAssetName"
                 :assetId="transferAssetId"
@@ -269,6 +270,7 @@
 import { defineComponent } from 'vue';
 
 import { FPNumber } from '@sora-substrate/util';
+import { APIItemState } from '@extension-base/api/types/networks';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { Reasons } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
@@ -649,6 +651,15 @@ export default defineComponent({
       if (this.isTransfer && this.bitcoinQuote) return +this.bitcoinQuote.spendable;
 
       return +(this.currencyBalance?.transferable ?? 0);
+    },
+    // The last update failed with no amount confirmed before: what can be sent is unknown, not 0.
+    balanceUnavailable(): boolean {
+      const balance = this.currencyBalance;
+
+      return (
+        balance?.state === APIItemState.ERROR &&
+        [balance.transferable, balance.total, balance.free].every((value) => value === undefined || value === null)
+      );
     },
     isQuotedTransferNetwork() {
       return this.isTransfer && (BaseApi.isBitcoinNetwork(this.syncedNetwork) || BaseApi.isSolanaNetwork(this.syncedNetwork));

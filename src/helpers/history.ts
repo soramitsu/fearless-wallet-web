@@ -121,6 +121,9 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
     const element = historyElement as unknown as TonEvent;
     const { networkFee } = element;
 
+    // A fee the provider did not report is unknown, not zero.
+    if (networkFee === undefined || networkFee === null) return null;
+
     return getHumanFeeValue(networkFee, networkName);
   }
 

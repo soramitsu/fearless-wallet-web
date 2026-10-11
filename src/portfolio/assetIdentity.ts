@@ -49,6 +49,8 @@ export interface PortfolioAsset {
   isReady: boolean;
   /** No provider answered and no balance was ever loaded: the row says so and is never shown or counted as zero. */
   balanceUnavailable?: boolean;
+  /** The last update failed; any amount shown is the last one a provider confirmed. */
+  balanceFailed?: boolean;
   timestamp?: number;
 }
 
@@ -367,6 +369,7 @@ export function buildPortfolioSections({
         isTestnet: testnet,
         isReady: balance.state === APIItemState.READY,
         balanceUnavailable: isBalanceUnavailable(balance),
+        balanceFailed: balance.state === APIItemState.ERROR,
         timestamp: balance.timestamp,
       };
       const sectionKey = `${ecosystem}:${chainId}`;
@@ -543,6 +546,11 @@ export interface PortfolioSummary {
   testnetFundedCount: number;
   /** Visible funded assets without a trusted price. */
   unpricedCount: number;
+  /**
+   * Visible, non-testnet assets whose balance no provider could load. `total` cannot include them, so it is then a
+   * part of what the wallet holds, and the header says so instead of passing it off as the whole.
+   */
+  unavailableCount: number;
   /** A counted native holding sits on a network with nomination pools, whose stakes are outside free + reserved. */
   poolStakesExcluded: boolean;
 }
@@ -571,6 +579,7 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
   let hiddenValue = FPNumber.ZERO;
   const hiddenFundedKeys: string[] = [];
   let unpricedCount = 0;
+  let unavailableCount = 0;
   let hiddenAssetCount = 0;
   let hiddenTestnetAssetCount = 0;
   let testnetFundedCount = 0;
@@ -584,6 +593,7 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
         return;
       }
       if (asset.hidden) hiddenAssetCount += 1;
+      else if (asset.balanceUnavailable) unavailableCount += 1;
       if (asset.trust !== 'verified' || !asset.hasBalance) return;
 
       if (asset.hidden) {
@@ -623,6 +633,7 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
     hiddenTestnetAssetCount,
     testnetFundedCount,
     unpricedCount,
+    unavailableCount,
     poolStakesExcluded,
   };
 }

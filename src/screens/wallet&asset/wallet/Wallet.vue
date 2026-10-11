@@ -174,7 +174,12 @@ export default defineComponent({ name: 'Wallet',
       return this.accountsStore.isBalanceLoading || this.loadStatus.state === 'loading';
     },
     filteredCaption() {
-      if (this.filteredTotal === null || this.balancesLoading) return '';
+      if (this.balancesLoading) return '';
+
+      // A balance nobody could load is not in the total, so the total is only a part and says so.
+      const failed = this.portfolioSummary.unavailableCount ? this.$t('portfolioPage.balanceStatus.failed') : '';
+
+      if (this.filteredTotal === null) return failed;
 
       const selected = this.accountsStore.selectedNetwork;
       const network =
@@ -188,7 +193,9 @@ export default defineComponent({ name: 'Wallet',
         maximumFractionDigits: 2,
       })}`;
 
-      return this.$t('portfolioPage.showingFiltered', { network, value });
+      const filtered = this.$t('portfolioPage.showingFiltered', { network, value });
+
+      return failed ? `${filtered} · ${failed}` : filtered;
     },
     changeWalletBalance() {
       return {

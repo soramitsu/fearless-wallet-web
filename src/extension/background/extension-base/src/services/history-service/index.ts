@@ -33,7 +33,8 @@ export class HistoryService {
 
       const events = history.reduce<TonEventTokens>(
         (result, { actions, eventId, timestamp, fee }) => {
-          const networkFee = fee ?? '0';
+          // TI's transactions carry no fee: it stays unknown and is not shown, rather than shown as 0.
+          const networkFee = fee;
 
           actions.forEach((item) => {
             if (item.type === 'ton-transfer') {

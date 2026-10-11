@@ -172,6 +172,65 @@ describe('a By token row', () => {
     wrapper.unmount();
   });
 
+  it('says a balance nobody could load failed, never "0", in the row, its networks and its label', async () => {
+    const unavailable = asset('TON Mainnet', 'ton', '0', { symbol: 'TON', balanceUnavailable: true, balanceFailed: true });
+    const ton: PortfolioTokenRow = {
+      ...dotRow(),
+      id: 'ton:-239:ton',
+      groupId: undefined,
+      symbol: 'TON',
+      children: [child(unavailable)],
+      zeroChildren: [],
+      networkCount: 1,
+      balanceText: '0',
+      transferableText: '0',
+      hasBalance: false,
+      fiatValue: null,
+      unavailableNetworkCount: 1,
+      balanceUnavailable: true,
+      balanceFailed: true,
+    };
+    const wrapper = mountRow(ton);
+
+    expect(wrapper.get('[data-testid="tokenBalanceUnavailable"]').text()).toBe('portfolioPage.balanceStatus.failed');
+    expect(wrapper.find('[data-testid="tokenAmount"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('0.0000 TON');
+    expect(wrapper.get('[data-testid="tokenRowHeader"]').attributes('aria-label')).toContain('"amount":"portfolioPage.balanceStatus.failed"');
+    wrapper.unmount();
+
+    // In a group, the failed network says so and the others keep their amounts; the row says part of it failed.
+    const group = mountRow(
+      {
+        ...dotRow(),
+        children: [...dotRow().children, child({ ...unavailable, networkName: 'Hydration', symbol: 'DOT' }, 'xcm-reserve')],
+        zeroChildren: [],
+        unavailableNetworkCount: 1,
+        balanceUnavailable: false,
+        balanceFailed: true,
+      },
+      { forceExpanded: true }
+    );
+
+    expect(group.get('[data-testid="tokenAmount"]').text()).toBe('12.0000 DOT');
+    expect(group.get('[data-testid="tokenBalanceFailed"]').text()).toBe('portfolioPage.balanceStatus.failed');
+    expect(group.findAll('[data-testid="networkBalanceUnavailable"]').map((cell) => cell.text())).toEqual([
+      'portfolioPage.balanceStatus.failed',
+    ]);
+    expect(group.findAll('.network-row')[2].attributes('aria-label')).toContain('"amount":"portfolioPage.balanceStatus.failed"');
+    group.unmount();
+  });
+
+  it('keeps the last confirmed amount of a failed update and marks it as out of date', () => {
+    const stale = asset('Polkadot', 'relay-dot', '10', { balanceFailed: true });
+    const wrapper = mountRow({ ...dotRow(), children: [child(stale, 'native'), dotRow().children[1]], balanceFailed: true }, { forceExpanded: true });
+
+    expect(wrapper.get('[data-testid="tokenAmount"]').text()).toBe('12.0000 DOT');
+    expect(wrapper.find('[data-testid="tokenBalanceUnavailable"]').exists()).toBe(false);
+    expect(wrapper.findAll('[data-testid="networkBalanceFailed"]')).toHaveLength(1);
+    expect(wrapper.findAll('.network-row')[0].text()).toContain('10.0000 DOT');
+    wrapper.unmount();
+  });
+
   it('says when part of a group has no price instead of valuing it at another network’s price', () => {
     const wrapper = mountRow({ ...dotRow(), unpricedNetworkCount: 1 });
     expect(wrapper.get('[data-testid="tokenPartialPrice"]').text()).toContain('portfolioPage.priceUnavailableOn:1');

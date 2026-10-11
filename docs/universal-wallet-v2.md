@@ -258,9 +258,11 @@ endpoints, never a public indexer endpoint.
   fallback is logged every time it is chosen and is switched off with
   `UNIVERSAL_WALLET_TON_PROVIDER.registryNodeFallback` once TI serves TON
   mainnet. When neither provider is verified, TON balances show "Balance
-  update failed" (the last confirmed balance if there is one), never 0, and
+  update failed" (the last confirmed balance if there is one, marked as out
+  of date), never 0, in both portfolio lenses and on the asset page, and
   transfers fail before signing anything. TI lists only the jettons it
-  indexes, so its jetton list never zeroes a jetton it does not mention.
+  indexes, so its jetton list never zeroes a jetton it does not mention, and
+  its transactions carry no fee, so TI history shows no fee rather than 0.
   Remote config never chooses a TON host.
 - Solana indexer base URL: `https://si.soramitsu.io`.
 - `si.soramitsu.io` is read-only. Transaction simulation and broadcast use the

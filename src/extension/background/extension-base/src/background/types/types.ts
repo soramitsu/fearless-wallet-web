@@ -940,6 +940,8 @@ export type ResponseTotalBalances = {
   visibleTotal?: string;
   hiddenValue?: string;
   hiddenCount?: number;
+  /** Visible assets whose balance no provider could load; neither total includes them. */
+  unavailableCount?: number;
 };
 
 export interface TokenGroup {

@@ -397,6 +397,7 @@ export default class BalanceService {
             visibleTotal: visible.total,
             hiddenValue: visible.hiddenValue,
             hiddenCount: visible.hiddenCount,
+            unavailableCount: visible.unavailableCount,
           };
         });
 

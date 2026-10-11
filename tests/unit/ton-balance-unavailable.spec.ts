@@ -10,6 +10,8 @@ import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
 import { buildPortfolioSections, buildPortfolioSummary, splitZeroSections } from '@/portfolio/assetIdentity';
+import { buildTokenRows, splitZeroTokenRows } from '@/portfolio/tokenLens';
+import { buildCanonicalGroupIndex } from '@/portfolio/tokenGroups';
 
 const storageMock = vi.hoisted(() => ({ get: vi.fn(), set: vi.fn() }));
 
@@ -52,8 +54,14 @@ async function upgradedFrom305(node: Node) {
       getSubstrateAddress: (address: string) => address,
       tonKeyring: { accountSubject: { value: { [TON_ADDRESS]: { walletContract: { address: Address.parse(TON_ADDRESS) } } } } },
     },
-    networkService: { networkMap, networkValues: networks, networksGithub: networks, tonApiHandler },
-    pricesService: { fiatSymbol: 'usd', setPriceValue: vi.fn(), tonPricingService: { tonParseRates: vi.fn() } },
+    networkService: { networkMap, networkValues: networks, networksGithub: networks, authoritativeDiscoveryNetworks: networks, tonApiHandler },
+    pricesService: {
+      fiatSymbol: 'usd',
+      setPriceValue: vi.fn(),
+      tonPricingService: { tonParseRates: vi.fn() },
+      getPrice: (reply: (prices: { tokenPriceMap: Record<string, number>; tokenPriceChange: Record<string, number> }) => void) =>
+        reply({ tokenPriceMap: TON_PRICE, tokenPriceChange: {} }),
+    },
     timeoutService: { lazyNext: vi.fn() },
     get getTonApiMap() {
       return tonApiHandler.api;
@@ -84,11 +92,16 @@ async function upgradedFrom305(node: Node) {
     return { input, sections: buildPortfolioSections(input) };
   };
 
-  return { client, refresh };
+  return { client, refresh, service };
 }
 
 const tonRow = (sections: ReturnType<typeof buildPortfolioSections>) =>
   sections.find(({ name }) => name === 'TON Mainnet')?.assets.find(({ symbol }) => symbol === 'TON');
+
+// The By token lens, which 4.2.0 opens by default, over the same sections.
+const groupIndex = buildCanonicalGroupIndex({ networks });
+const tonTokenRow = (sections: ReturnType<typeof buildPortfolioSections>) =>
+  buildTokenRows({ sections, index: groupIndex }).find(({ symbol }) => symbol === 'TON');
 
 describe('TON balance of a wallet updated from 3.0.5', () => {
   beforeEach(() => {
@@ -108,12 +121,16 @@ describe('TON balance of a wallet updated from 3.0.5', () => {
 
     expect(tonRow(sections)).toMatchObject({ balanceText: '3.5', hasBalance: true, isReady: true, fiatValue: '17.5' });
     expect(tonRow(sections)?.balanceUnavailable).toBe(false);
-    expect(buildPortfolioSummary(input).total).toBe('17.5');
+    expect(buildPortfolioSummary(input)).toMatchObject({ total: '17.5', unavailableCount: 0 });
+    expect(tonTokenRow(sections)).toMatchObject({ balanceText: '3.5', fiatValue: '17.5', balanceUnavailable: false, balanceFailed: false });
   });
 
   it('says the balance failed, never 0, when no provider proves TON mainnet', async () => {
     // The registry node serves TON testnet, and TI has no service-info: nothing is read from either.
-    const { client, refresh } = await upgradedFrom305({ globalId: -3, getAccount: async () => ({ balance: 0n, status: 'nonexist' }) });
+    const { client, refresh, service } = await upgradedFrom305({
+      globalId: -3,
+      getAccount: async () => ({ balance: 0n, status: 'nonexist' }),
+    });
 
     const { input, sections } = await refresh();
     const section = sections.find(({ name }) => name === 'TON Mainnet')!;
@@ -123,8 +140,15 @@ describe('TON balance of a wallet updated from 3.0.5', () => {
     expect(section.error).toBe('balance_scan_failed');
     // Not folded into "No balance · N networks", not counted, and not dropped by the hide-zero filter.
     expect(splitZeroSections(sections).funded.map(({ name }) => name)).toEqual(['TON Mainnet']);
-    expect(buildPortfolioSummary(input).total).toBe('0');
+    // The header and the wallet list know their total leaves the TON balance out, and say so.
+    expect(buildPortfolioSummary(input)).toMatchObject({ total: '0', unavailableCount: 1 });
+    expect(await service.getTotalBalances(null)).toEqual([expect.objectContaining({ total: '0', unavailableCount: 1 })]);
     expect(tonRow(buildPortfolioSections({ ...input, hideZero: true }))).toMatchObject({ balanceUnavailable: true });
+
+    // The By token lens says the same: a row that failed, with the funded rows, not "0 TON" under "no balance".
+    const row = tonTokenRow(sections)!;
+    expect(row).toMatchObject({ balanceUnavailable: true, unavailableNetworkCount: 1, hasBalance: false, fiatValue: null });
+    expect(splitZeroTokenRows([row]).funded).toEqual([row]);
   });
 
   it('keeps the last confirmed balance, marked as failed, when the provider stops answering', async () => {
@@ -139,6 +163,8 @@ describe('TON balance of a wallet updated from 3.0.5', () => {
 
     expect(tonRow(sections)).toMatchObject({ balanceText: '3.5', hasBalance: true, isReady: false, balanceUnavailable: false });
     expect(sections.find(({ name }) => name === 'TON Mainnet')).toMatchObject({ stale: true, error: 'balance_scan_failed' });
+    // By token has no network header to say so; the row itself is marked as out of date.
+    expect(tonTokenRow(sections)).toMatchObject({ balanceText: '3.5', balanceUnavailable: false, balanceFailed: true });
   });
 
   it('marks the balance item as failed without an amount in the background', async () => {

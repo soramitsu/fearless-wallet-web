@@ -301,6 +301,57 @@ describe('By token rows', () => {
     expect(tokenRowKeys(funded[0]).sort()).toEqual([keyOf('Polkadot', 'dot'), keyOf('Polkadot AssetHub', 'dot')].sort());
   });
 
+  it('never shows a balance nobody could load as zero: the row says so and stays with the funded rows', () => {
+    const groups = substrateBalances();
+    fund(groups, 'Polkadot AssetHub', 'dot', '2');
+    fund(groups, 'Kusama', 'ksm', '3');
+    // What the background keeps after a failed update: the amount a provider last confirmed, or none at all.
+    const failed = (target: TokenGroup[], networkName: string, symbol: string, lastConfirmed?: string) =>
+      target
+        .flatMap(({ balances }) => balances)
+        .filter((balance) => balance.name === networkName.toLowerCase() && balance.symbol === symbol)
+        .forEach((balance) => Object.assign(balance, { state: APIItemState.ERROR, total: lastConfirmed, transferable: lastConfirmed }));
+    failed(groups, 'Polkadot', 'dot');
+    failed(groups, 'Kusama', 'ksm', '3');
+
+    const { funded, zeroOnly } = splitZeroTokenRows(rowsFor(groups));
+    const [dot, ksm] = ['DOT', 'KSM'].map((symbol) => funded.find((row) => row.symbol === symbol)!);
+
+    // Polkadot is listed with the funded networks, adds nothing, and the row's amount is what is known.
+    expect(describeRow(dot)).toEqual({
+      symbol: 'DOT',
+      networks: ['Polkadot AssetHub:system-parachain', 'Polkadot:native'],
+      amount: '2',
+      fiat: '10',
+    });
+    expect(dot.children.map(({ asset }) => [asset.networkName, asset.balanceUnavailable])).toEqual([
+      ['Polkadot AssetHub', false],
+      ['Polkadot', true],
+    ]);
+    expect(dot).toMatchObject({ unavailableNetworkCount: 1, balanceUnavailable: false, balanceFailed: true, zeroChildren: [] });
+    // The last confirmed amount stays, marked as out of date.
+    expect(ksm).toMatchObject({ balanceText: '3', fiatValue: '60', unavailableNetworkCount: 0, balanceUnavailable: false, balanceFailed: true });
+    expect(zeroOnly).toEqual([]);
+
+    // Alone on screen, the failed network is a row that says so, ahead of the zero rows and not folded under them.
+    const alone = substrateBalances();
+    failed(alone, 'Polkadot', 'dot');
+    const shown = buildPortfolioSections({
+      groups: alone,
+      networks,
+      prices: PRICES,
+      preferences: { [keyOf('Kusama', 'ksm')]: 'shown' },
+      addressForNetwork: () => 'wallet',
+      isDefaultVisibleAtZero: () => false,
+    });
+    const rows = buildTokenRows({ sections: shown, index });
+
+    expect(rows.map(({ id }) => id)).toEqual([keyOf('Polkadot', 'dot'), keyOf('Kusama', 'ksm')]);
+    expect(rows[0]).toMatchObject({ hasBalance: false, balanceUnavailable: true, unavailableNetworkCount: 1, fiatValue: null });
+    expect(splitZeroTokenRows(rows).funded).toEqual([rows[0]]);
+    expect(splitZeroTokenRows(rows).zeroOnly.map(({ symbol }) => symbol)).toEqual(['KSM']);
+  });
+
   it('searches within groups: a token name keeps the whole group, a network name only that network', () => {
     const groups = substrateBalances();
     fund(groups, 'Ethereum', 'usdt', '40');

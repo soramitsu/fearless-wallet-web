@@ -85,6 +85,22 @@ describe('wallet list balance', () => {
     wrapper.unmount();
   });
 
+  it('says when the total leaves out a balance nobody could load', async () => {
+    mocks.getTotalBalances.mockResolvedValue([
+      { address: 'ton', total: '0', change: { amount: '0', percent: '0' }, hiddenValue: '0', hiddenCount: 0, unavailableCount: 1 },
+      { address: 'both', total: '5', change: { amount: '0', percent: '0' }, hiddenValue: '2', hiddenCount: 1, unavailableCount: 2 },
+    ]);
+
+    const ton = mountWalletInfo('ton');
+    const both = mountWalletInfo('both');
+    await flushPromises();
+
+    expect(ton.get('[data-testid="balanceCaption"]').text()).toBe('portfolioPage.balanceStatus.failed');
+    expect(both.get('[data-testid="balanceCaption"]').text()).toBe('portfolioPage.inclHidden · portfolioPage.balanceStatus.failed');
+    ton.unmount();
+    both.unmount();
+  });
+
   it('shows no label when nothing hidden holds value, and asks without hidden keys when there are none', async () => {
     mocks.getTotalBalances.mockResolvedValue([
       { address: 'fresh', total: '5', change: { amount: '0', percent: '0' }, hiddenValue: '0', hiddenCount: 0 },

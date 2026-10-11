@@ -1,6 +1,7 @@
 // Raw Chrome DevTools Protocol helpers for driving an unpacked extension in Chrome for Testing. No dependencies:
 // Node 22+ has fetch and WebSocket built in.
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -32,6 +33,17 @@ export function resolveChrome(env = process.env) {
 }
 
 export const CHROME = resolveChrome();
+
+/** A port nothing listens on now, for the browser's DevTools (a fixed port may belong to another program). */
+export const freePort = () =>
+  new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+  });
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

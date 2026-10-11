@@ -18,7 +18,7 @@ import {
   unlockToWallet,
 } from './checks.mjs';
 import { legacyDriver, legacyJsonFile } from './drivers.mjs';
-import { compareKeyRecords, keyEntries, typeInto, ui, WALLET_ROUTE } from './head.mjs';
+import { compareKeyRecords, keyEntries, publicKeyOf, typeInto, ui, WALLET_ROUTE } from './head.mjs';
 import { PASSWORDS, PHRASES, RAW } from './secrets.mjs';
 import { Session } from './session.mjs';
 import { upgradeEcdsa } from './upgrade-ecdsa.mjs';
@@ -519,7 +519,11 @@ async function runPerAccount(ctx, r, version, title) {
   const migrated = migratedTo(profile, profile.master);
   await checkSigningAndExports(ctx, r, s, popup, migrated);
   await checkStable(r, s, migrated.master);
-  await checkColdStarts(r, s, ctx.coldStarts, { hasMasterPassword: true, keyringIsLocked: true });
+  // A9 runs the full count in S1, S3 and S8 and five cold starts elsewhere, to keep a run near an hour.
+  await checkColdStarts(r, s, version === '2.6.3' ? ctx.coldStarts : Math.min(ctx.coldStarts, 5), {
+    hasMasterPassword: true,
+    keyringIsLocked: true,
+  });
 }
 
 const ROLLBACK_PAYLOAD = new TextEncoder().encode('Fearless 4.2.0 -> 3.0.6 rollback check');
@@ -698,8 +702,8 @@ async function runRollback(ctx, r) {
   r.check('A11', '3.0.6 does not list the deleted wallet', !isListed(deleted.address));
   // The set-aside records are ordinary key files to 3.0.6: imported with their password, the wallet signs again.
   const archive = archives[0][1];
-  const archivedRecord = (address) =>
-    Object.values(archive.accounts).find((json) => json.address.toLowerCase() === address.toLowerCase());
+  // Stored as the account store keeps it: `account:<public key>` (Substrate) or `account:<address>` (Ethereum).
+  const archivedRecord = (address) => archive.accounts[`account:${publicKeyOf(address).toLowerCase()}`];
   const restored = await legacy.restoreJsonWallet({
     substrate: {
       json: { ...archivedRecord(deleted.address), meta: { name: deleted.name } },

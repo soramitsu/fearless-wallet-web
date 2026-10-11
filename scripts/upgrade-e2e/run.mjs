@@ -11,7 +11,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { CHROME } from './chrome.mjs';
+import { CHROME, freePort } from './chrome.mjs';
 import { cachedBuild } from './build-legacy.mjs';
 import { headBuildDir } from './build-head.mjs';
 import { root, testExtensionKey } from './config.mjs';
@@ -62,7 +62,6 @@ const summary = {
   ),
   scenarios: [],
 };
-let port = Number(process.env.UPGRADE_E2E_PORT ?? 9611);
 try {
   for (const scenario of selected) {
     const report = new Report(scenario.id, scenario.title);
@@ -71,7 +70,7 @@ try {
       provenance: Object.fromEntries(Object.entries(builds).map(([id, { provenance }]) => [id, provenance])),
       head: headBuildDir(),
       workDir: path.join(outDir, scenario.id),
-      port: port++,
+      port: await freePort(),
       manifestKey: testExtensionKey(),
       dappUrl: dapp.url,
       mocks,

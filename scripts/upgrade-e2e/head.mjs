@@ -119,21 +119,30 @@ export const stateEntries = (storage) =>
       .sort(([a], [b]) => a.localeCompare(b))
   );
 
-/** A0: every key record the old build wrote is still there with byte-identical secrets. Metadata may grow. */
+/** A0: every key record the old build wrote is still there with byte-identical secrets. Metadata may grow. An ECDSA
+ * record 4.2.0 moved from the account-id key to the public-key key (WK-8) counts when the moved copy is byte for byte
+ * the old record and the old one is kept in its archive. */
 export function compareKeyRecords(before, after) {
   const problems = [];
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const archived = Object.entries(after)
+    .filter(([key]) => key.startsWith('fw:archivedAccount:'))
+    .flatMap(([, value]) => (value?.records ?? []).map(({ record }) => record));
   for (const [key, value] of Object.entries(keyEntries(before))) {
     const now = after[key];
     if (now === undefined) {
-      problems.push({ key, problem: 'missing' });
+      const moved =
+        key.startsWith('fw:account:') &&
+        Object.entries(after).some(([other, record]) => other.startsWith('fw:account:') && same(record, value)) &&
+        archived.some((record) => same(record, value));
+      if (!moved) problems.push({ key, problem: 'missing' });
       continue;
     }
     for (const field of ['encoded', 'cipherSeed', 'passwordHash', 'address', 'publicKeyHex']) {
-      if (value?.[field] !== undefined && JSON.stringify(value[field]) !== JSON.stringify(now?.[field]))
+      if (value?.[field] !== undefined && !same(value[field], now?.[field]))
         problems.push({ key, problem: `${field} changed` });
     }
-    if (value?.encoding && JSON.stringify(value.encoding) !== JSON.stringify(now?.encoding))
-      problems.push({ key, problem: 'encoding changed' });
+    if (value?.encoding && !same(value.encoding, now?.encoding)) problems.push({ key, problem: 'encoding changed' });
   }
   return problems;
 }

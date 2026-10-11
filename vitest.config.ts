@@ -14,6 +14,16 @@ export default defineConfig(({ mode }) => {
     test: {
       globals: true,
       environment: 'happy-dom',
+      // A test that imports a key encoder module directly gets it with the build's scrypt rewrite
+      // (scripts/keystore-scrypt-params.mjs); Node would load the package file unchanged.
+      server: {
+        deps: {
+          inline: [
+            /\/node_modules\/@(?:subwallet|polkadot)\/keyring\/pair\/encode\.js$/,
+            /\/node_modules\/@polkadot\/util-crypto\/json\/encrypt\.js$/,
+          ],
+        },
+      },
       coverage: {
         provider: 'v8',
         reporter: ['lcov'],

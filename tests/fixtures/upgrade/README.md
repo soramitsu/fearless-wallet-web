@@ -102,3 +102,40 @@ node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 2.6.3 <2.6.3 build> dist/e
    new password hold (the old password no longer unlocks); Vault is not asked for its 2.6.3 password again. The
    live record opens with the master password and signs with the key the phrase derives.
 5. 3.0.6 only: Reset wallet, restart: no account record or archive is left and no account comes back.
+
+## Rollback: keys 4.2.0 writes stay readable by 3.0.x (`keyring-3.0.5-packages.json`)
+
+Fearless 2.x and 3.0.x open a stored key with `@polkadot/util-crypto` 12.x, which accepts only scrypt N = 2^15,
+p = 1, r = 8. 14.x encrypts at N = 2^17 by default, so every key 4.2.0 encrypted (a new or imported account, a
+master password change, a legacy password upgrade, recovery, a JSON export) was unreadable to a 3.0.x build. The
+build now gives every key encoder 3.0.x's parameters (`scripts/keystore-scrypt-params.mjs`) and fails if any other
+bundled code would encrypt at the library default.
+
+The proof uses the keyring 3.0.x shipped with, not a re-implementation: `harness/keyring-305.mjs` installs
+`@subwallet/keyring` 0.1.7, `@polkadot/util-crypto` 12.6.2 and the rest of what 3.0.x loads to open a key from the
+Yarn cache archives the 3.0.5 `yarn.lock` pins. `keyring-3.0.5-packages.json` lists them with that lockfile's
+checksums (regenerate with `node tests/fixtures/upgrade/harness/pin-keyring-305.mjs <3.0.5 or 3.0.6 checkout>`).
+Nothing is downloaded; if the archives are missing, install a 3.0.5 checkout once with
+`corepack yarn@3.4.1 install --immutable`.
+
+`tests/unit/keystore-scrypt-rollback.spec.ts` re-encrypts the keys of S1 and S2 the way 4.2.0 does and opens them
+in that keyring (master password from a 4.2.0 bcrypt hash, per-account password, JSON export, batch export). It
+fails without the rewrite. On CI without the archives this part is skipped; everywhere else it runs.
+
+### Real rollback rehearsal: 3.0.6 → 4.2.0 → 3.0.6 → 4.2.0
+
+```sh
+corepack yarn build:extension          # this tree's 4.2.0 build in dist/extension/chrome
+node tests/fixtures/upgrade/harness/rollback-306.mjs <3.0.6 build> dist/extension/chrome <scratch dir>
+```
+
+1. 3.0.6 writes the S2 wallets and imports a TON wallet.
+2. 4.2.0 replaces it: unlock, create a wallet and a TON wallet, import the 2.6.3 Staking JSON file, export Daily as
+   JSON, change the master password.
+3. Outside the browser, every stored key is at N = 2^15 and opens in the 3.0.5 keyring with the new master password.
+4. 3.0.6 replaces 4.2.0 under the same extension id: it unlocks with the password set in 4.2.0, lists every wallet,
+   exports every key (each signs for its account) and every stored phrase, TON included.
+5. 4.2.0 comes back and holds each wallet once.
+
+The 3.0.6 build is the one the S2 capture uses (`096485cc`, never the published 3.0.5 package). With the build
+before this change (`eb484759`) 16 of the checks fail: 3.0.6 still unlocks but cannot open any key.

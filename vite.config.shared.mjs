@@ -7,6 +7,7 @@ import fg from 'fast-glob';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { keystoreScryptParamsPlugin } from './scripts/keystore-scrypt-params.mjs';
 import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
 import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
 
@@ -155,6 +156,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
     plugins: [
       vue(),
       subwalletPackageCompatPlugin(),
+      keystoreScryptParamsPlugin(),
       ...(asyncWasm ? [wasm(), ...(nativeAsyncModules ? [] : [topLevelAwait()])] : []),
       nodePolyfills({
         include: ['buffer', 'crypto', 'events', 'http', 'https', 'os', 'stream', 'url', 'util', 'zlib'],

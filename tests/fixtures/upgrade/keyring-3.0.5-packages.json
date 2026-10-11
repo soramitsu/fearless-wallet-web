@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "description": "The packages Fearless 3.0.x loads to open a stored key, as installed from the 3.0.5 yarn.lock. Each checksum is the sha512 of the Yarn 3 cache archive (cacheKey 8) that yarn.lock pins.",
+  "source": {
+    "commit": "129807f0",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "packageManager": "yarn@3.4.1",
+    "entries": [
+      "@subwallet/keyring/keyring",
+      "@subwallet/keyring/pair",
+      "@polkadot/util-crypto",
+      "@polkadot/util"
+    ],
+    "generator": "tests/fixtures/upgrade/harness/pin-keyring-305.mjs"
+  },
+  "packages": [
+    {
+      "name": "@babel/runtime",
+      "version": "7.22.10",
+      "path": "node_modules/@babel/runtime",
+      "checksum": "524d41517e68953dbc73a4f3616b8475e5813f64e28ba89ff5fca2c044d535c2ea1a3f310df1e5bb06162e1f0b401b5c4af73fe6e2519ca2450d9d8c44cf268d"
+    },
+    {
+      "name": "@ethereumjs/util",
+      "version": "8.1.0",
+      "path": "node_modules/@ethereumjs/util",
+      "checksum": "9ae5dee8f12b0faf81cd83f06a41560e79b0ba96a48262771d897a510ecae605eb6d84f687da001ab8ccffd50f612ae50f988ef76e6312c752897f462f3ac08d"
+    },
+    {
+      "name": "@ethereumjs/rlp",
+      "version": "4.0.1",
+      "path": "node_modules/@ethereumjs/util/node_modules/@ethereumjs/rlp",
+      "checksum": "30db19c78faa2b6ff27275ab767646929207bb207f903f09eb3e4c273ce2738b45f3c82169ddacd67468b4f063d8d96035f2bf36f02b6b7e4d928eefe2e3ecbc"
+    },
+    {
+      "name": "@metamask/abi-utils",
+      "version": "2.0.4",
+      "path": "node_modules/@metamask/abi-utils",
+      "checksum": "85b15419248ddec1ab59ec5f3e41276f7509dadd9ced871658fa3cc04805ad35ace96986416aaecd24e3630e92b0ed078328966c92383ffa9b1cc3f0f357ad6c"
+    },
+    {
+      "name": "@metamask/eth-sig-util",
+      "version": "7.0.3",
+      "path": "node_modules/@metamask/eth-sig-util",
+      "checksum": "fd4d0710857525815b241ddecce64988dd12303a9638577429baf180c62cf9cef9403aed01bc046b4860b332d455604c84e4b2a9b5997db16f444125b4b39398"
+    },
+    {
+      "name": "@scure/base",
+      "version": "1.1.9",
+      "path": "node_modules/@metamask/eth-sig-util/node_modules/@scure/base",
+      "checksum": "120820a37dfe9dfe4cab2b7b7460552d08e67dee8057ed5354eb68d8e3440890ae983ce3bee957d2b45684950b454a2b6d71d5ee77c1fd3fddc022e2a510337f"
+    },
+    {
+      "name": "@metamask/eth-simple-keyring",
+      "version": "6.0.5",
+      "path": "node_modules/@metamask/eth-simple-keyring",
+      "checksum": "b7aba83cf8f6a8861d6c4bb7c34672f80798514b11480064a457dc84de4306e1f65c2adfe1051ae62f696267bcada1262e2059d92364e88901df1df43a7bcc18"
+    },
+    {
+      "name": "@metamask/superstruct",
+      "version": "3.1.0",
+      "path": "node_modules/@metamask/superstruct",
+      "checksum": "00e4d0c0aae8b25ccc1885c1db0bb4ed1590010570140c255e4deee3bf8a10c859c8fce5e475b4ae09c8a56316207af87585b91f7f5a5c028d668ccd111f19e3"
+    },
+    {
+      "name": "@metamask/utils",
+      "version": "9.2.1",
+      "path": "node_modules/@metamask/utils",
+      "checksum": "1a0c842d6fe490bb068c74c6c0684a3e5fabdadcf653b1c83bc69832e9e515fbae5809be20ddfc5c31715cd3d90cf18b73088d9c81f99028ff7b2c7160358c4e"
+    },
+    {
+      "name": "@scure/base",
+      "version": "1.1.9",
+      "path": "node_modules/@metamask/utils/node_modules/@scure/base",
+      "checksum": "120820a37dfe9dfe4cab2b7b7460552d08e67dee8057ed5354eb68d8e3440890ae983ce3bee957d2b45684950b454a2b6d71d5ee77c1fd3fddc022e2a510337f"
+    },
+    {
+      "name": "@noble/curves",
+      "version": "1.4.0",
+      "path": "node_modules/@noble/curves",
+      "checksum": "0014ff561d16e98da4a57e2310a4015e4bdab3b1e1eafcd18d3f9b955c29c3501452ca5d702fddf8ca92d570bbeadfbe53fe16ebbd81a319c414f739154bb26b"
+    },
+    {
+      "name": "@noble/hashes",
+      "version": "1.4.0",
+      "path": "node_modules/@noble/hashes",
+      "checksum": "8ba816ae26c90764b8c42493eea383716396096c5f7ba6bea559993194f49d80a73c081f315f4c367e51bd2d5891700bcdfa816b421d24ab45b41cb03e4f3342"
+    },
+    {
+      "name": "@polkadot/networks",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/networks",
+      "checksum": "7f3dbdd02d8429f82c36ce284ca279af663d45c1a40ce4ce1e38ec2a06fc9d6d27c66d374f32b91ae3058257f33d60701481c9e95ceab19bd2eb70d83465b026"
+    },
+    {
+      "name": "@polkadot/util",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/util",
+      "checksum": "a42a226f3c299026458d82e48516abf59c1cd8638167edaa3fc1a17aec0ebab203e0ad68a096a4a4fa188afd55093535a98e5083d682a79242a3c5ad79342599"
+    },
+    {
+      "name": "@polkadot/util-crypto",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/util-crypto",
+      "checksum": "63d4bd9bdc3a7089a0a68555cd6a510b8da3cfab142a8f96ba4b43d5d1db2a543433079bc88c2daf15a329d19ba2cc60f6cca6dbebaefd25e96169cb6343794b"
+    },
+    {
+      "name": "bn.js",
+      "version": "5.2.1",
+      "path": "node_modules/@polkadot/util/node_modules/bn.js",
+      "checksum": "3dd8c8d38055fedfa95c1d5fc3c99f8dd547b36287b37768db0abab3c239711f88ff58d18d155dd8ad902b0b0cee973747b7ae20ea12a09473272b0201c9edd3"
+    },
+    {
+      "name": "@polkadot/wasm-bridge",
+      "version": "7.3.2",
+      "path": "node_modules/@polkadot/wasm-bridge",
+      "checksum": "8c68b78cbd62347ebdf3fa66f2ffd1f7e883df71d770f5099ff652b083a79f1d7e9e7826a6acd8e986e9da0b07c0170a3f77b6a35726c6b24d856e3f8d08d201"
+    },
+    {
+      "name": "@polkadot/wasm-crypto",
+      "version": "7.3.2",
+      "path": "node_modules/@polkadot/wasm-crypto",
+      "checksum": "574006cdcc3e76af28cc79102726a79fdcd765ca5b45cbc4807d70917d82131b59f50b5cc07bd165b2863ed131b8764fef74b00c68ba5ec30a21c04c72061f8f"
+    },
+    {
+      "name": "@polkadot/wasm-crypto-asmjs",
+      "version": "7.3.2",
+      "path": "node_modules/@polkadot/wasm-crypto-asmjs",
+      "checksum": "669ea001565301f9b1a8feecb0e301c854fc318e5605316b57be7e83d717e7ee8ac460001cd44b18075a3d028c32c4a605c0e0e2e95ae00865282321b009ed26"
+    },
+    {
+      "name": "@polkadot/wasm-crypto-init",
+      "version": "7.3.2",
+      "path": "node_modules/@polkadot/wasm-crypto-init",
+      "checksum": "af7bc62bba16f1fbbfd76601ecf18ed8f4dfc685807e2e89ef8e8d02f824d1a1ed1635e9c2448c6c12a9a183192b18943f9ce077d6b7781c4d43cdb5c45c9161"
+    },
+    {
+      "name": "@polkadot/wasm-crypto-wasm",
+      "version": "7.3.2",
+      "path": "node_modules/@polkadot/wasm-crypto-wasm",
+      "checksum": "e112ea3d4f8858a95fdaad47341b422db3db3256b7e7d709d1c3e0bc4c4bbdf81028eaa556b688078b32ff15be33af093b903c680f54eb1552072afede621a6a"
+    },
+    {
+      "name": "@polkadot/wasm-util",
+      "version": "7.3.2",
+      "path": "node_modules/@polkadot/wasm-util",
+      "checksum": "44bd445043714aac6d184ce02d62fbdb97a117fd4d8bdbf3f2c1d14f6911a7d87ed6bb4682035eb757524ade995f7f4f8aaa07c8a194f761884ded25a6b383a9"
+    },
+    {
+      "name": "@polkadot/x-bigint",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/x-bigint",
+      "checksum": "12b2d5c3a7b994f5bd4f7aeda9e268384b04bd080892400c65b88fb5aa4951df6c4abe3baf9820f3adf3da92e2add710858dd35dcd597d2527bbfd1cd0efe534"
+    },
+    {
+      "name": "@polkadot/x-global",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/x-global",
+      "checksum": "eb17e039cb1668743c84f5eafbf518cf6248e93090e4877f81f338b418b3e6b0173f2414c62bd9cbe7bf8911ec566527ca7c49c4354ba90d57e62e90195329d0"
+    },
+    {
+      "name": "@polkadot/x-randomvalues",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/x-randomvalues",
+      "checksum": "7faccf2dbcf0c7383b5ecfd7beb098c8c8ad5cf4c8f5bafd601657f8271af8f00b66741531ecf8b2f7c59911d96f77e358184a7c5034c70bf387a8e929a4c210"
+    },
+    {
+      "name": "@polkadot/x-textdecoder",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/x-textdecoder",
+      "checksum": "c7e4b7f7ff943095a96bef3e3e56216d33d6ff38c965931356a06d01594b2c523ccbeada697a31b5457b134e578618f35425e0883f45187adffa98df99a45f27"
+    },
+    {
+      "name": "@polkadot/x-textencoder",
+      "version": "12.6.2",
+      "path": "node_modules/@polkadot/x-textencoder",
+      "checksum": "d3eacdc0eb2e1ef8b8132d52a1f1033be62bc64360753a117f2e6517ccf7c9cde628558bbd016a73836eacd91cb1e2ac382dce0ce9c8d32c2f7db3fcc8863911"
+    },
+    {
+      "name": "@scure/base",
+      "version": "1.1.6",
+      "path": "node_modules/@scure/base",
+      "checksum": "d6deaae91deba99e87939af9e55d80edba302674983f32bba57f942e22b1726a83c62dc50d8f4370a5d5d35a212dda167fb169f4b0d0c297488d8604608fc3d3"
+    },
+    {
+      "name": "@substrate/ss58-registry",
+      "version": "1.48.0",
+      "path": "node_modules/@substrate/ss58-registry",
+      "checksum": "f121284daae34f2976e3a5e0a7125373ac51f52e3d6b9bdd401b99b01bba49b3e1aa0379e500fd8b0701942d73c47dea896ef765228485a3d1637f988253fcf9"
+    },
+    {
+      "name": "@subwallet/keyring",
+      "version": "0.1.7",
+      "path": "node_modules/@subwallet/keyring",
+      "checksum": "74f615b5837b9abaec00547b36ba989414f3db5706cb23163cd9745cded1138a3c241fbc042c3114343912a062d0200ba4655b390b59dc1163c740ddc616f927"
+    },
+    {
+      "name": "bcryptjs",
+      "version": "2.4.3",
+      "path": "node_modules/bcryptjs",
+      "checksum": "0e80ed852a41f5dfb1853f53ee14a7390b0ef263ce05dba6e2ef3cd919dfad025a7c21ebcfe5bc7fa04b100990edf90c7a877ff7fe623d3e479753253131b629"
+    },
+    {
+      "name": "debug",
+      "version": "4.3.4",
+      "path": "node_modules/debug",
+      "checksum": "3dbad3f94ea64f34431a9cbf0bafb61853eda57bff2880036153438f50fb5a84f27683ba0d8e5426bf41a8c6ff03879488120cf5b3a761e77953169c0600a708"
+    },
+    {
+      "name": "ms",
+      "version": "2.1.2",
+      "path": "node_modules/debug/node_modules/ms",
+      "checksum": "673cdb2c3133eb050c745908d8ce632ed2c02d85640e2edb3ace856a2266a813b30c613569bf3354fdf4ea7d1a1494add3bfa95e2713baa27d0c2c71fc44f58f"
+    },
+    {
+      "name": "ethereum-cryptography",
+      "version": "2.2.1",
+      "path": "node_modules/ethereum-cryptography",
+      "checksum": "1466e4c417b315a6ac67f95088b769fafac8902b495aada3c6375d827e5a7882f9e0eea5f5451600d2250283d9198b8a3d4d996e374e07a80a324e29136f25c6"
+    },
+    {
+      "name": "@noble/curves",
+      "version": "1.4.2",
+      "path": "node_modules/ethereum-cryptography/node_modules/@noble/curves",
+      "checksum": "c475a83c4263e2c970eaba728895b9b5d67e0ca880651e9c6e3efdc5f6a4f07ceb5b043bf71c399fc80fada0b8706e69d0772bffdd7b9de2483b988973a34cba"
+    },
+    {
+      "name": "has-flag",
+      "version": "4.0.0",
+      "path": "node_modules/has-flag",
+      "checksum": "261a1357037ead75e338156b1f9452c016a37dcd3283a972a30d9e4a87441ba372c8b81f818cd0fbcd9c0354b4ae7e18b9e1afa1971164aef6d18c2b6095a8ad"
+    },
+    {
+      "name": "micro-ftch",
+      "version": "0.3.1",
+      "path": "node_modules/micro-ftch",
+      "checksum": "0e496547253a36e98a83fb00c628c53c3fb540fa5aaeaf718438873785afd193244988c09d219bb1802984ff227d04938d9571ef90fe82b48bd282262586aaff"
+    },
+    {
+      "name": "pony-cause",
+      "version": "2.1.11",
+      "path": "node_modules/pony-cause",
+      "checksum": "4aaa9ddab8f8225b5cbb32f7329a71b73679074579fa91f9e9d6853d398f3c2872de979519e1525c0c91d53afc82c32fddb76e379d19157e69ef1f7064523dfa"
+    },
+    {
+      "name": "randombytes",
+      "version": "2.1.0",
+      "path": "node_modules/randombytes",
+      "checksum": "d779499376bd4cbb435ef3ab9a957006c8682f343f14089ed5f27764e4645114196e75b7f6abf1cbd84fd247c0cb0651698444df8c9bf30e62120fbbc52269d6"
+    },
+    {
+      "name": "semver",
+      "version": "7.5.4",
+      "path": "node_modules/semver",
+      "checksum": "12d8ad952fa353b0995bf180cdac205a4068b759a140e5d3c608317098b3575ac2f1e09182206bf2eb26120e1c0ed8fb92c48c592f6099680de56bb071423ca3"
+    },
+    {
+      "name": "lru-cache",
+      "version": "6.0.0",
+      "path": "node_modules/semver/node_modules/lru-cache",
+      "checksum": "f97f499f898f23e4585742138a22f22526254fdba6d75d41a1c2526b3b6cc5747ef59c5612ba7375f42aca4f8461950e925ba08c991ead0651b4918b7c978297"
+    },
+    {
+      "name": "supports-color",
+      "version": "7.2.0",
+      "path": "node_modules/supports-color",
+      "checksum": "3dda818de06ebbe5b9653e07842d9479f3555ebc77e9a0280caf5a14fb877ffee9ed57007c3b78f5a6324b8dbeec648d9e97a24e2ed9fdb81ddc69ea07100f4a"
+    },
+    {
+      "name": "tslib",
+      "version": "2.6.3",
+      "path": "node_modules/tslib",
+      "checksum": "74fce0e100f1ebd95b8995fbbd0e6c91bdd8f4c35c00d4da62e285a3363aaa534de40a80db30ecfd388ed7c313c42d930ee0eaf108e8114214b180eec3dbe6f5"
+    },
+    {
+      "name": "tweetnacl",
+      "version": "1.0.3",
+      "path": "node_modules/tweetnacl",
+      "checksum": "e4a57cac188f0c53f24c7a33279e223618a2bfb5fea426231991652a13247bea06b081fd745d71291fcae0f4428d29beba1b984b1f1ce6f66b06a6d1ab90645c"
+    },
+    {
+      "name": "yallist",
+      "version": "4.0.0",
+      "path": "node_modules/yallist",
+      "checksum": "343617202af32df2a15a3be36a5a8c0c8545208f3d3dfbc6bb7c3e3b7e8c6f8e7485432e4f3b88da3031a6e20afa7c711eded32ddfb122896ac5d914e75848d5"
+    }
+  ]
+}

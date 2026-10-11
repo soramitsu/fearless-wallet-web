@@ -8,9 +8,11 @@ import type {
   ResponseTotalBalances,
   ResponseAccountExport,
   ResponseExportSeed,
+  TonImportCandidateInfo,
 } from '@extension-base/background/types/types';
 import type { DerivationPath, NetworkName, TonEventTokens } from '@/interfaces';
 import type { WordCount } from '@extension-base/services';
+import type { TonImportChoice } from '@/util/tonKeyring';
 import { WalletEcosystem } from '@/interfaces';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { sendMessage } from '@/extension/messaging/index';
@@ -19,9 +21,10 @@ export function addAccount(
   suri: string,
   type: KeypairType,
   meta: FWKeyringMeta,
-  walletEcosystem = WalletEcosystem.Substrate
+  walletEcosystem = WalletEcosystem.Substrate,
+  tonImport?: TonImportChoice
 ): Promise<string> {
-  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem });
+  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem, tonImport });
 }
 
 export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {
@@ -61,6 +64,10 @@ export function generateMnemonic(
 
 export function mnemonicValidate(walletEcosystem = WalletEcosystem.Substrate, seed: string): Promise<boolean> {
   return sendMessage('pri(keyring.mnemonicValidate)', { walletEcosystem, seed });
+}
+
+export function tonImportCandidates(mnemonic: string): Promise<TonImportCandidateInfo[]> {
+  return sendMessage('pri(keyring.tonImportCandidates)', { mnemonic });
 }
 
 export function accountUpdateName(address: string, name: string, walletEcosystem: WalletEcosystem): Promise<boolean> {

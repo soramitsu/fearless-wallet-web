@@ -61,7 +61,7 @@ import { isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
-import { TonKeyringError } from '@/util/tonKeyring';
+import { TonKeyringError, type TonImportChoice } from '@/util/tonKeyring';
 import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWalletKeyringMigration';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
@@ -243,9 +243,15 @@ export class KeyringService {
     accountsObservable.subject.next(accountsObservable.subject.getValue());
   }
 
-  async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
+  async addAccount(
+    suri: string,
+    meta: FWKeyringMeta,
+    walletEcosystem: WalletEcosystem,
+    type?: KeypairType,
+    tonImport?: TonImportChoice
+  ) {
     if (walletEcosystem === 'ton') {
-      const account = await this.tonKeyring.createAccount(suri, meta, this.password);
+      const account = await this.tonKeyring.createAccount(suri, meta, this.password, tonImport);
 
       return account.address.toString();
     }

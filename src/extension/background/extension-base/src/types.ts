@@ -2,6 +2,7 @@ import type { CustomTokenType } from '@extension-base/api/evm/types';
 import type { NETWORK_STATUS } from './api/types/networks';
 import type { KeyringPair$Meta } from '@subwallet/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion, ExternalApi, WalletEcosystem } from '@/interfaces';
+import type { TonImportDerivation } from '@/util/tonKeyring';
 import type { UniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 export interface Message extends MessageEvent {
@@ -153,6 +154,9 @@ export interface FWKeyringMeta extends KeyringPair$Meta {
   solanaAddress?: string;
   tonAddress?: string;
   tonPublicKeyHex?: string;
+  /** How a TON keyring account's key was derived from its phrase when it was added. Informational:
+   * signing and export always follow the stored public key. */
+  tonDerivation?: TonImportDerivation;
   irohaAddress?: string;
   irohaPublicKeyHex?: string;
   universalWallet?: UniversalWalletKeyringMeta;

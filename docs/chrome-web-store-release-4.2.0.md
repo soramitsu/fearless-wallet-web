@@ -40,6 +40,9 @@ before submission; do not reuse the `3.0.6` copy.
   affected account.
 - Universal Wallet v2 account derivation and migration, with legacy wallets
   retaining their original keys, normal functionality and export access.
+- Restoring a TON wallet from its phrase finds the address earlier Fearless
+  versions used (3.0.x for Chrome, the Android app), including native TON
+  phrases, which the release candidate had refused.
 - Solana and Bitcoin accounts, balances, history, and sending, on by default
   (remote kill switch is veto-only; see `docs/send-kill-switch.md`).
 - Cross-chain transfers are paused with an in-app explanation and a

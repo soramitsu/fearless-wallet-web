@@ -1,13 +1,20 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
+import { Address } from '@ton/core';
 import { reconcileSuccessfulDynamicScan } from '@extension-base/services/balance-service/reconcileSuccessfulScan';
 import { DEFAULT_PRICES } from '../prices-service';
-import { type ResponseBalanceRequest } from '../../background/types/types';
+import { type ResponseBalanceRequest, type TonImportCandidateInfo } from '../../background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
-import { isSameString } from '@/helpers';
+import { TON_MAINNET } from '@/consts/networks';
+import { isSameString, isTonMainnet } from '@/helpers';
 import { createAssetKey } from '@/portfolio/assetIdentity';
+
+// How long the import screen waits for an address lookup before it shows the balance as unavailable.
+const ADDRESS_ACTIVITY_TIMEOUT_MS = 6_000;
+
+type TonAddressActivityResult = Pick<TonImportCandidateInfo, 'activity' | 'balance'>;
 
 type TonBalanceResult = {
   balance: string;
@@ -141,6 +148,56 @@ export class TonBalance {
     });
 
     return (await Promise.all(promises)).flat();
+  }
+
+  /** What TON mainnet reports for addresses that are not in the wallet yet (the import chooser).
+   * Read-only and best effort: a failed, slow or unavailable lookup is `unknown`, never a guess,
+   * and nothing is written to the balance cache. */
+  async fetchAddressActivity(addresses: string[]): Promise<Record<string, TonAddressActivityResult>> {
+    const unknown = (): Record<string, TonAddressActivityResult> =>
+      Object.fromEntries(addresses.map((address) => [address, { activity: 'unknown' }]));
+    const network = this.state.networkService.networksGithub.find(({ name }) => isTonMainnet(name));
+
+    if (!network) return unknown();
+
+    // A wallet without a TON account has no TON client yet; one made for this lookup is removed again.
+    const hadApi = !!this.state.getTonApiMap[TON_MAINNET];
+
+    try {
+      if (!hadApi) await this.state.networkService.tonApiHandler.initApi(network);
+
+      const api = this.state.getTonApiMap[TON_MAINNET]?.api;
+
+      if (!api) return unknown();
+
+      const precision = network.assets[0].precision;
+      const lookups = addresses.map(async (address): Promise<[string, TonAddressActivityResult]> => {
+        try {
+          const { balance, status } = await withTimeout(
+            api.accounts.getAccount(Address.parse(address)),
+            ADDRESS_ACTIVITY_TIMEOUT_MS
+          );
+          const isUsed = BigInt(balance) > 0n || String(status) !== 'nonexist';
+
+          return [
+            address,
+            { activity: isUsed ? 'active' : 'empty', balance: FPNumber.fromCodecValue(balance, precision).toString() },
+          ];
+        } catch (error) {
+          console.warn('[TON][fetchAddressActivity] Lookup failed', error);
+
+          return [address, { activity: 'unknown' }];
+        }
+      });
+
+      return Object.fromEntries(await Promise.all(lookups));
+    } catch (error) {
+      console.warn('[TON][fetchAddressActivity] Lookup failed', error);
+
+      return unknown();
+    } finally {
+      if (!hadApi) this.state.networkService.tonApiHandler.destroyApi(network.name);
+    }
   }
 
   async fetchUtilityAsset(
@@ -313,4 +370,13 @@ export class TonBalance {
       Uint8Array.from(Buffer.from(publicKeyHex, 'hex'))
     );
   }
+}
+
+function withTimeout<T>(request: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('ton_address_lookup_timeout')), timeoutMs);
+  });
+
+  return Promise.race([request, timeout]).finally(() => clearTimeout(timer));
 }

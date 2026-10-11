@@ -36,6 +36,7 @@ import type { AssetDiscoverySweepState } from '@extension-base/services/asset-di
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import type { SendKillSwitchState } from '@/util/sendKillSwitch';
+import type { TonImportChoice } from '@/util/tonKeyring';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
 import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
 import type { BitcoinRecipientType } from '@/util/bitcoin';
@@ -236,6 +237,23 @@ export interface RequestAccountCreateSuri {
   type?: SubwalletKeypairType;
   meta: FWKeyringMeta;
   walletEcosystem: WalletEcosystem;
+  /** TON imports: the address picked on the import screen and the derivation that opens it. */
+  tonImport?: TonImportChoice;
+}
+
+export interface RequestTonImportCandidates {
+  mnemonic: string;
+}
+
+/** What the network says about a TON address; `unknown` when it could not be checked. */
+export type TonAddressActivity = 'active' | 'empty' | 'unknown';
+
+/** One TON address a typed phrase can open. `balance` is in TON and present only after a successful lookup;
+ * `inWallet` marks an address that is already one of the wallet's TON accounts. */
+export interface TonImportCandidateInfo extends TonImportChoice {
+  activity: TonAddressActivity;
+  balance?: string;
+  inWallet?: boolean;
 }
 
 export interface BalanceJson {

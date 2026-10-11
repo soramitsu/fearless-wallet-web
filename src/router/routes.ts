@@ -69,6 +69,7 @@ const DeFi = () => import('@/screens/defi/DeFiHub.vue');
 const CrossChain = () => import('@/screens/cross-chain/CrossChainRoot.vue');
 const Settings = () => import('@/screens/settings/SettingsPage.vue');
 const NetworksAssetsSettings = () => import('@/screens/settings/NetworksAssetsSettings.vue');
+const AccountAccessRecovery = () => import('@/screens/settings/AccountAccessRecovery.vue');
 const IrohaConnect = () => import('@/screens/irohaConnect/IrohaConnectPage.vue');
 const Farming = () => import('@/screens/defi/FarmingPage.vue');
 const Polkamarkt = () => import('@/screens/defi/polkamarkt/PolkamarktPage.vue');
@@ -127,6 +128,7 @@ export enum Components {
   Settings = 'Settings',
   SettingsNetworksAssets = 'SettingsNetworksAssets',
   SettingsChangePassword = 'SettingsChangePassword',
+  AccountAccessRecovery = 'AccountAccessRecovery',
   IrohaConnect = 'IrohaConnect',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
@@ -572,6 +574,16 @@ const routes: Array<RouteRecordRaw> = [
         name: Components.SettingsChangePassword,
         component: ChangePassword,
         meta: { title: 'changePassword', primaryNavigation: 'settings' },
+      },
+      {
+        path: 'settings/account-access',
+        name: Components.AccountAccessRecovery,
+        component: AccountAccessRecovery,
+        props: (route) => ({
+          address: firstQueryValue(route.query.address),
+          mode: firstQueryValue(route.query.mode),
+        }),
+        meta: { title: 'settings', primaryNavigation: 'settings' },
       },
       {
         path: 'settings/iroha-connect',

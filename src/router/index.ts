@@ -8,6 +8,7 @@ import {
   hasAccounts,
   isNeedMigration,
   isOnboardingRequired,
+  getAccessStatus,
 } from '@/extension/messaging';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { resolvePrimaryBackTarget, type PrimaryDestination } from '@/router/primaryNavigation';
@@ -69,8 +70,18 @@ router.beforeEach(async (to, from, next) => {
     if (needMigration) {
       const isFromMigrationDescriptionToChangePass =
         from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
+      // The prompt's own ways out: "More options" leads to Reset wallet, and "Use the recovery phrase" unlocks
+      // one account in Account access, which needs the master password the prompt creates first.
+      const isPromptEscapeRoute =
+        to.name === Components.ResetWallet ||
+        (to.name === Components.AccountAccessRecovery && (await hasMasterPassword()));
 
-      if (isFromMigrationDescriptionToChangePass || isKeyringMigrationRoute || to.name === Components.Onboarding) {
+      if (
+        isFromMigrationDescriptionToChangePass ||
+        isKeyringMigrationRoute ||
+        isPromptEscapeRoute ||
+        to.name === Components.Onboarding
+      ) {
         next();
 
         return;
@@ -81,8 +92,15 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
 
+    // Accounts that still wait for their legacy password are not prompted when only linked EVM accounts
+    // are left (or after "Skip for now"), but their password rows stay reachable until none is left.
     if (isKeyringMigrationRoute) {
-      next({ name: Components.Welcome });
+      const hasLegacyAccounts = await getAccessStatus()
+        .then(({ issues }) => issues.some(({ kind }) => kind === 'legacy_account_password'))
+        .catch(() => true);
+
+      if (hasLegacyAccounts) next();
+      else next({ name: Components.Welcome });
 
       return;
     }

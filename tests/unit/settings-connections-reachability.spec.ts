@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 
 const mocks = vi.hoisted(() => ({
+  getAccessStatus: vi.fn(),
   lockExtension: vi.fn(),
   push: vi.fn(),
   updateAuthorization: vi.fn(),
@@ -40,11 +41,13 @@ vi.mock('@/consts/global', async (importOriginal) => ({
   IS_EXTENSION: true,
 }));
 vi.mock('@/extension/messaging', () => ({
+  getAccessStatus: mocks.getAccessStatus,
   lockExtension: mocks.lockExtension,
   updateAuthorization: mocks.updateAuthorization,
 }));
 vi.mock('@/router/routes', () => ({
   Components: {
+    AccountAccessRecovery: 'AccountAccessRecovery',
     AccountSetting: 'AccountSetting',
     DAppDetails: 'DAppDetails',
     DAppsAuths: 'DAppsAuths',
@@ -69,6 +72,7 @@ vi.mock('@/locales/useI18n', () => ({
         'authorize.unsupportedConnectionManagement':
           'Connection management for this protocol is unavailable in this build.',
       } as Record<string, string>)[key] ?? key,
+    tc: (key: string, count: number) => `${key}:${count}`,
   }),
 }));
 
@@ -123,6 +127,30 @@ describe('settings connection reachability', () => {
     mocks.route.query = {};
     mocks.accountsStore.accounts = [];
     mocks.accountsStore.selectedWallet = { address: 'selected-address', isTon: false };
+    mocks.getAccessStatus.mockResolvedValue({ issues: [] });
+  });
+
+  it('lists Account access while accounts wait for a password, so they stay reachable after Skip for now', async () => {
+    mocks.getAccessStatus.mockResolvedValue({ issues: [{ address: '0x1' }, { address: 'UQ' }] });
+    const wrapper = mountSettings();
+    await flushPromises();
+    const accountAccess = wrapper.get('[data-testid="settings-account-access"]');
+
+    expect(accountAccess.text()).toContain('accountAccess.settingsDescription:2');
+    await accountAccess.trigger('click');
+    expect(mocks.push).toHaveBeenCalledWith({ name: 'AccountAccessRecovery', params: undefined });
+  });
+
+  it.each([
+    ['no account waits', () => mocks.getAccessStatus.mockResolvedValue({ issues: [] })],
+    ['the status cannot be read', () => mocks.getAccessStatus.mockRejectedValue(new Error('Could not establish connection'))],
+  ])('leaves Account access out when %s', async (_, arrange) => {
+    arrange();
+    const wrapper = mountSettings();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="settings-account-access"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="settings-change-password"]').exists()).toBe(true);
   });
 
   it('keeps WalletConnect independently actionable', async () => {

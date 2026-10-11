@@ -1,5 +1,5 @@
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
-import { SEND_ERROR_LOCALE_KEYS } from '@/helpers/transferErrors';
+import { ACCOUNT_ACCESS_ERROR_LOCALE_KEYS, SEND_ERROR_LOCALE_KEYS } from '@/helpers/transferErrors';
 
 type TransactionFailurePresentation = {
   key: string;
@@ -23,6 +23,7 @@ type TransactionOutcome = 'failed' | 'success' | 'unconfirmed';
 
 const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ...Object.entries(SEND_ERROR_LOCALE_KEYS),
+  ...Object.entries(ACCOUNT_ACCESS_ERROR_LOCALE_KEYS),
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
@@ -177,5 +178,20 @@ function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown
   return { key: 'assets.transactionFailedDetails' };
 }
 
-export { getTransactionFailurePresentation, getTransactionOutcome, transactionResponseSucceeded };
+/** The send stopped before signing because the account's key waits for a password (Account access). */
+function isAccountAccessFailure(value: unknown): boolean {
+  const errors = errorsFrom(asResponse(value));
+
+  return (
+    getTransactionOutcome(value) === 'failed' &&
+    !!errors?.some(({ message }) => typeof message === 'string' && message in ACCOUNT_ACCESS_ERROR_LOCALE_KEYS)
+  );
+}
+
+export {
+  getTransactionFailurePresentation,
+  getTransactionOutcome,
+  isAccountAccessFailure,
+  transactionResponseSucceeded,
+};
 export type { TransactionFailurePresentation, TransactionOutcome };

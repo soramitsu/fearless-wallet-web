@@ -1,5 +1,7 @@
-import { isEthereumAddress } from '@polkadot/util-crypto';
+import { u8aToHex } from '@polkadot/util';
+import { decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
+import { ecdsaRecordKeys } from '@extension-base/stores/EcdsaAccountRecords';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   RequestAccountExport,
@@ -18,26 +20,42 @@ import { isSameString } from '@/helpers';
 const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 type StoredAccount = { address?: string } & Record<string, unknown>;
 
+// The storage key 2.x and 3.0.x used for the account at a Substrate address.
+function legacyAccountKey(address: string): string | undefined {
+  if (isEthereumAddress(address)) return undefined;
+
+  try {
+    return `account:${u8aToHex(decodeAddress(address))}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export default class FWExtensionBase {
   constructor(protected state: State) {}
 
-  migrateExportJSON(address: string): Promise<ResponseAccountExport> {
-    return new Promise((resolve) => {
-      (chrome.storage.local.get(null) as unknown as Promise<Record<string, StoredAccount>>).then((values) => {
-        const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+  // The account's record exactly as stored, still encrypted with whatever password it has. Read-only.
+  async migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+    const values = (await chrome.storage.local.get(null)) as unknown as Record<string, StoredAccount>;
+    const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+    const legacyKey = legacyAccountKey(address);
 
-        const [, json] = accounts.find(([key, value]) => {
-          if (!isEthereumAddress(address)) return isSameString(value.address, address);
+    const stored = accounts.find(([key, value]) => {
+      // An ECDSA record holds the public key; the address is its hash.
+      if (!isEthereumAddress(address))
+        return isSameString(value.address, address) || (!!legacyKey && ecdsaRecordKeys(value)?.legacy === legacyKey);
 
-          const keySplit = key.split(':');
-          const addressKey = keySplit[keySplit.length - 1];
+      const keySplit = key.split(':');
+      const addressKey = keySplit[keySplit.length - 1];
 
-          return isSameString(addressKey, address);
-        })!;
-
-        resolve({ json: json as unknown as KeyringPair$Json });
-      });
+      return isSameString(addressKey, address);
     });
+
+    // Answer the popup instead of leaving it waiting: it then offers a retry and never counts the
+    // account as backed up.
+    if (!stored) throw new Error('account_record_not_found');
+
+    return { json: stored[1] as unknown as KeyringPair$Json };
   }
 
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {

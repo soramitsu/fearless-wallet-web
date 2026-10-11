@@ -1,6 +1,7 @@
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
+import { reconcileEcdsaAccountRecords, type AccountRecordsReconciliation } from '@extension-base/stores/EcdsaAccountRecords';
 import type { FWKeyringMeta } from '../types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { KeyringStore } from '@subwallet/ui-keyring/types';
@@ -48,13 +49,35 @@ export default class AccountsStore
     super.get(key, update);
   }
 
+  public allMap(update: (value: Record<string, FWKeyringJson>) => void): Promise<void> {
+    return super.allMap(update);
+  }
+
+  public replaceAndWait(entries: Record<string, unknown>, keys: string[], trackFailure = true): Promise<void> {
+    return super.replaceAndWait(entries, keys, trackFailure);
+  }
+
   public remove(key: string, update?: () => void): void {
     super.remove(key, update);
   }
 
+  // An ECDSA account that 2.x or 3.0.x stored under its account id reaches the keyring once, under its public key;
+  // the old record is set aside (EcdsaAccountRecords.ts). A write that fails is retried at the next load and does
+  // not fail this one: the keyring already has the right record. Nothing here may keep the wallet from loading.
   public all(update: (key: string, value: FWKeyringJson) => void): Promise<void> {
     this.load = update;
-    this.allLoaded = super.all(update);
+    this.allLoaded = this.allMap((stored) => {
+      let reconciled: AccountRecordsReconciliation<FWKeyringJson> = { records: stored, writes: [] };
+
+      try {
+        reconciled = reconcileEcdsaAccountRecords(stored);
+      } catch (error) {
+        console.error(error);
+      }
+
+      reconciled.writes.forEach(({ set, remove }) => void this.replaceAndWait(set, remove, false).catch(console.error));
+      Object.entries(reconciled.records).forEach(([key, value]) => update(key, value));
+    });
 
     return this.allLoaded;
   }

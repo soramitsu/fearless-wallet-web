@@ -60,7 +60,9 @@
         :hiddenCount="summary.hiddenCount"
         :unpricedCount="summary.unpricedCount"
         :poolStakesExcluded="summary.poolStakesExcluded"
+        :testnetCount="testnetsNotShownCount"
         @manageHidden="reviewHidden"
+        @showTestnets="showTestnets"
       />
     </template>
   </Scroll>
@@ -81,10 +83,13 @@ import {
 } from '@/portfolio/assetIdentity';
 import { hiddenFundsSignature, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { usePortfolio } from '@/portfolio/usePortfolio';
+import { isTestnetNetwork } from '@/portfolio/zeroRule';
+import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { forceAssetDiscoverySweep } from '@/extension/messaging/asset-discovery';
+import { ALL_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchNfts } from '@/extension/messaging/nfts';
 
 export default defineComponent({
@@ -99,10 +104,29 @@ export default defineComponent({
   },
   emits: ['toggleAssetsManagementForm', 'update:manageHiddenOnly', 'toggleNetworkManagementVisible'],
   setup() {
-    const { effectivePreferences, preferenceSource, addressForNetwork, walletScope, networkFilter, zeroRule, summary } =
-      usePortfolio();
+    const {
+      effectivePreferences,
+      preferenceSource,
+      addressForNetwork,
+      walletScope,
+      networkFilter,
+      isFiltered,
+      zeroRule,
+      summary,
+      filteredSummary,
+    } = usePortfolio();
 
-    return { effectivePreferences, preferenceSource, addressForNetwork, walletScope, networkFilter, zeroRule, summary };
+    return {
+      effectivePreferences,
+      preferenceSource,
+      addressForNetwork,
+      walletScope,
+      networkFilter,
+      isFiltered,
+      zeroRule,
+      summary,
+      filteredSummary,
+    };
   },
   data() {
     return {
@@ -120,8 +144,20 @@ export default defineComponent({
     viewSettings(): PortfolioViewSettings {
       return this.accountsStore.portfolioView;
     },
+    // Manage has no search field, so a search typed before never narrows it (Review must list every hidden asset).
     searching(): boolean {
-      return Boolean(this.filterValue?.trim());
+      return !this.showAssetsManagementForm && Boolean(this.filterValue?.trim());
+    },
+    /** A test network chosen as the only network is shown even with the Testnets switch off. */
+    selectedTestnet(): boolean {
+      const selected = this.networksStore.allNetworks.find(({ name }) =>
+        isSameString(name, this.accountsStore.selectedNetwork)
+      );
+
+      return Boolean(selected && isTestnetNetwork(selected));
+    },
+    showsTestnets(): boolean {
+      return this.viewSettings.showTestnets || (!this.hiddenOnly && this.selectedTestnet);
     },
     portfolioSections(): PortfolioSection[] {
       return buildPortfolioSections({
@@ -139,10 +175,11 @@ export default defineComponent({
         mode: this.showAssetsManagementForm ? 'manage' : 'view',
         hideZero: this.viewSettings.hideZero,
         showHidden: this.viewSettings.showHidden,
-        showTestnets: this.viewSettings.showTestnets,
+        showTestnets: this.showsTestnets,
         isDefaultVisibleAtZero: (network, asset) => this.zeroRule(network, asset.key),
         walletScope: this.walletScope,
-        networkFilter: this.networkFilter,
+        // The Hidden list is wallet-wide, like the notice, the footer and the "Hidden (N)" count that open it.
+        networkFilter: this.hiddenOnly ? undefined : this.networkFilter,
       });
     },
     visibleSections(): PortfolioSection[] {
@@ -150,7 +187,7 @@ export default defineComponent({
         ? filterSectionAssets(this.portfolioSections, (asset) => asset.hidden)
         : this.portfolioSections;
 
-      return filterSectionsBySearch(sections, this.filterValue);
+      return this.searching ? filterSectionsBySearch(sections, this.filterValue) : sections;
     },
     splitSections(): { funded: PortfolioSection[]; zeroOnly: PortfolioSection[] } {
       return splitZeroSections(this.visibleSections);
@@ -158,10 +195,20 @@ export default defineComponent({
     walletIsEmpty(): boolean {
       return this.splitSections.funded.length === 0 && !this.searching && !this.showAssetsManagementForm;
     },
+    /** Anything funded anywhere in the wallet, hidden or outside the display filter included. */
+    walletHoldsAssets(): boolean {
+      const { total, hiddenCount, unpricedCount } = this.summary;
+
+      return hiddenCount > 0 || unpricedCount > 0 || Number(total) > 0;
+    },
     zeroNetworksLabel(): string {
       const count = this.splitSections.zeroOnly.length;
+      const listsPopularNetworks = [ALL_NETWORKS, POPULAR_NETWORKS].some((group) =>
+        isSameString(group, this.accountsStore.selectedNetwork)
+      );
 
-      return this.walletIsEmpty
+      // "Popular networks" only while the block lists them for a wallet that holds nothing yet.
+      return this.walletIsEmpty && !this.walletHoldsAssets && listsPopularNetworks
         ? this.$t('portfolioPage.popularNoBalance')
         : this.$t('portfolioPage.zeroNetworks', count, { count });
     },
@@ -172,9 +219,16 @@ export default defineComponent({
     hiddenOnly(): boolean {
       return this.showAssetsManagementForm && this.manageHiddenOnly;
     },
-    // Nothing to list, or a wallet that holds nothing yet (its popular networks stay below, collapsed).
+    // Nothing to list, or no funded row in view (zero-balance networks stay below, collapsed). Funds the user
+    // hid in this view are explained by the hidden-funds notice and the "hidden not included · Manage" footer.
     showEmptyState(): boolean {
-      return this.visibleSections.length === 0 || this.walletIsEmpty;
+      if (!this.walletIsEmpty) return this.visibleSections.length === 0;
+
+      return this.filteredSummary.hiddenCount === 0 || !navigator.onLine;
+    },
+    /** Funded test-network assets the Testnets switch keeps out of this view; the footer offers to show them. */
+    testnetsNotShownCount(): number {
+      return this.showsTestnets ? 0 : this.filteredSummary.testnetFundedCount;
     },
     hiddenFundsSignature(): string {
       return hiddenFundsSignature(this.summary.hiddenFundedKeys);
@@ -187,17 +241,23 @@ export default defineComponent({
         this.viewSettings.hiddenFundsNoticeAck !== this.hiddenFundsSignature
       );
     },
+    // The header total covers the whole wallet, so a filtered view without a balance says so instead of "empty".
+    showsFilteredEmpty(): boolean {
+      return this.isFiltered && this.walletHoldsAssets;
+    },
     emptyTitle() {
       if (!navigator.onLine) return this.$t('portfolioPage.offline');
       if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssets');
       if (this.searching) return this.$t('portfolioPage.noMatchingAssets');
-      return this.$t('portfolioPage.noAssetsDetected');
+      if (this.showsFilteredEmpty) return this.$t('portfolioPage.noBalanceInView');
+      return this.$t('portfolioPage.emptyWalletTitle');
     },
     emptyDescription() {
       if (!navigator.onLine) return this.$t('portfolioPage.offlineDescription');
       if (this.hiddenOnly) return this.$t('portfolioPage.noHiddenAssetsDescription');
       if (this.searching) return this.$t('portfolioPage.searchDescription');
-      return this.$t('portfolioPage.scanDescription');
+      if (this.showsFilteredEmpty) return this.$t('portfolioPage.scanDescription');
+      return this.$t('portfolioPage.emptyWalletDescription');
     },
   },
   methods: {
@@ -229,6 +289,9 @@ export default defineComponent({
     },
     keepHidden() {
       this.accountsStore.updatePortfolioView({ hiddenFundsNoticeAck: this.hiddenFundsSignature });
+    },
+    showTestnets() {
+      this.accountsStore.updatePortfolioView({ showTestnets: true });
     },
   },
 });

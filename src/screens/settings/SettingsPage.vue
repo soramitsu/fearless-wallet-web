@@ -37,11 +37,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { Components } from '@/router/routes';
-import { lockExtension } from '@/extension/messaging';
+import { getAccessStatus, lockExtension } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
@@ -67,8 +67,22 @@ const emit = defineEmits(['openFiatsPopup', 'openLanguagePopup', 'openAboutPopup
 const router = useRouter();
 const route = useRoute();
 const accountsStore = useAccountsStore();
-const { t } = useI18n();
+const { t, tc } = useI18n();
 const contentHeight = CONTENT_FORM_HEIGHT;
+// Accounts whose key waits for a password; listed here so they stay reachable after "Skip for now".
+const accessIssueCount = ref(0);
+
+const refreshAccessIssues = async () => {
+  try {
+    accessIssueCount.value = (await getAccessStatus()).issues.length;
+  } catch {
+    // Unknown: the entry stays as it was.
+  }
+};
+
+onMounted(refreshAccessIssues);
+// Settings is kept alive, so coming back from Account access has to count again.
+onActivated(refreshAccessIssues);
 const open = (name: Components, params?: Record<string, string>) => () => router.push({ name, params });
 const lock = () => {
   lockExtension(true);
@@ -160,6 +174,17 @@ const groups = computed<SettingsGroup[]>(() => [
   {
     title: t('settingsPage.groups.security'),
     items: [
+      ...(accessIssueCount.value
+        ? [
+            {
+              id: 'account-access',
+              label: t('accountAccess.title'),
+              description: tc('accountAccess.settingsDescription', accessIssueCount.value, { count: accessIssueCount.value }),
+              icon: 'lock',
+              open: open(Components.AccountAccessRecovery),
+            },
+          ]
+        : []),
       {
         id: 'change-password',
         label: t('settingsPage.changePassword'),

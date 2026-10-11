@@ -22,7 +22,14 @@
     "walletWillBeDeleted": "𓈖 𓈖𓏏𓎡 𓅓𓇋𓈖 𓉒 · 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 · 𓎛𓈖𓂝 𓐍𓏏𓏥 𓂋 𓋴𓎡 𓅓 Fearless Wallet · 𓈖𓏏𓎡 𓂋 𓂧𓃀𓎛 𓂋 𓅓𓂧𓅱 𓈖 𓈖𓏏𓎡 𓄂 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁹 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓂋𓊪𓅱 𓄋𓊪 𓈙𓇾𓍔𓄿𓏴𓏛 ·",
     "enterReset": "𓂋 𓈙𓅓𓂻 · 𓂝𓎡 ' {phrase} '",
     "resetWarning": "𓅓𓂧𓅱 𓉒 𓂋 𓋴𓎡 𓈖 𓈖𓏏𓎡 𓅓𓇋𓈖 𓅓𓆓𓄿𓏏 𓎛𓈖𓂝 𓐍𓏏𓏥 · 𓇋𓈖𓈖 𓅓𓂧𓅱 𓈖 𓈖𓏏𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓊪𓅱 𓋴𓄿𓅱 𓏤 𓁷 𓈖 𓈖𓏏𓎡 𓐍𓏏 𓈖 𓂓𓏏 · 𓁹 𓋴𓊪 𓎡𓇌 𓅓𓂧𓅱 · 𓇋𓂋 𓈖𓏏𓎡 𓅓𓂋𓇋 𓂋 𓅱𓎛𓅓 𓄂 𓉒 · 𓇋𓈖 𓈖 𓈖𓏏𓎡 𓄂 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 · 𓈙𓅓𓂻 𓏤 𓇋𓂋 𓈖𓏏𓎡 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 ·",
-    "passwordWarning": "𓈖 𓈖𓏏𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹 𓂋 𓃹𓈖 𓐍𓏏𓅓 𓉒 𓎛𓈖𓂝 𓅓𓂧𓅱 𓋴𓄿𓅱 𓁷 𓈖 𓈖𓏏𓎡 𓐍𓏏 𓈖 𓂓𓏏 · 𓇋𓈖𓈖 𓅓𓂧𓅱 𓁹 12 𓅓𓂧𓅱 · 𓅓𓂧𓅱 𓎛𓈖𓂝 𓅓𓂧𓅱 · 𓋴𓈙𓏥 · 𓎛𓈖𓂝 𓅓𓂧𓅱 ·"
+    "passwordWarning": "𓈖 𓈖𓏏𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹 𓂋 𓃹𓈖 𓐍𓏏𓅓 𓉒 𓎛𓈖𓂝 𓅓𓂧𓅱 𓋴𓄿𓅱 𓁷 𓈖 𓈖𓏏𓎡 𓐍𓏏 𓈖 𓂓𓏏 · 𓇋𓈖𓈖 𓅓𓂧𓅱 𓁹 12 𓅓𓂧𓅱 · 𓅓𓂧𓅱 𓎛𓈖𓂝 𓅓𓂧𓅱 · 𓋴𓈙𓏥 · 𓎛𓈖𓂝 𓅓𓂧𓅱 ·",
+    "changePasswordFailed": "𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡. 𓅓𓄿𓄿 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡 𓈖 𓏏𓂋 𓊪𓈖 𓎛𓈖𓂝 𓇋𓂋𓇋 𓎡𓇌.",
+    "createPasswordFailed": "𓂜 𓋴𓄿𓅱𓏏𓅱 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "resetBackupTitle": "𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓏥 𓂋 𓐍𓈖𓅱 𓅓 𓎛𓄿𓏏",
+    "resetBackupDescription": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓆑 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless 𓅓𓂋𓂝. 𓅱𓎛𓅓 𓄂 𓉒 𓋴𓎡 𓋴𓏏 𓎛𓈖𓂝. 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓆑 𓐍𓏏𓅓 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖 𓇋𓅱𓆑. | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓋴𓈖 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless 𓅓𓂋𓂝. 𓅱𓎛𓅓 𓄂 𓉒 𓋴𓎡 𓋴𓈖 𓎛𓈖𓂝. 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓎟 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖𓏏𓆑.",
+    "resetDownloadBackups": "𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓏥 𓐍𓏏𓅓 𓂋 𓐍𓈖𓅱",
+    "resetBackupsDownloaded": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓏥 𓉔𓄿𓃀𓏏𓅱 𓂋 𓐍𓈖𓅱 𓈖 𓈖𓏏𓎡. 𓅓𓄿𓄿 𓇋𓅓 𓋴𓈖 𓇋𓅓 𓈖 𓎛𓄿𓏏 𓈙𓅓𓎡.",
+    "resetHaveBackups": "𓇋𓅓 𓈖𓇋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓂋𓊪𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓎟"
   },
   "addWallet": {
     "createWallet": "𓁹 𓅓𓄿𓅱 𓉒",
@@ -448,7 +455,8 @@
     "rawSeed": "𓊪𓂋𓏏 𓄂",
     "json": "JSON",
     "backupKeyPair": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓄋𓊪 𓄡𓈖𓅓",
-    "addEthereumAccounts": "𓅱𓄿𓎛 Moonbeam 𓎛𓈖𓂝 Moonriver 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 ·"
+    "addEthereumAccounts": "𓅱𓄿𓎛 Moonbeam 𓎛𓈖𓂝 Moonriver 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 ·",
+    "exportFailed": "𓂜 𓊪𓎛𓏏𓅱 𓂞 𓉐𓂻. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓈙𓅓 𓂋 𓐍𓏏 𓎛𓈖𓂝 𓇋𓂋𓇋 𓎡𓇌."
   },
   "onboarding": {
     "titleFirst": "DeFi 𓉒 𓈖",
@@ -867,9 +875,8 @@
     "actionRequired": "𓋴𓐍𓂋 𓋴𓏏 𓈖 𓅱𓈖: 𓇋𓂋𓏏 𓂧𓃀𓎛",
     "upgradingSecure": "𓈖𓏏𓈖 𓋴𓐍𓂋 𓋴𓏏 𓈖 𓅱𓈖 𓂋 𓋴𓄿𓅱 𓂝𓄿. 𓈙𓅓 𓅓 𓅓𓏏𓈖𓏥 𓊪𓈖:",
     "createMasterPass": "𓇋𓂋𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂝𓄿. 𓂋𓈖 𓊪𓈖 𓂋𓐍 𓇋𓂋𓇋 𓈖 𓉒𓏥𓎡 𓈖𓃀",
-    "enterPass": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓉒𓏥𓎡 𓈖 𓏏𓂋 𓊪𓈖. 𓇋𓂋 𓈖𓈖 𓋴𓐍𓄿𓎡 𓂋𓈖 𓈖 𓉒, 𓋴𓐍𓂋𓋴𓅱. 𓂋𓐍 𓇋𓈖𓇋𓎡 𓉒 𓅓 𓏏𓂋 𓎡𓇌",
-    "accessLost": "𓂋𓐍 𓇋𓏏𓏏 𓅱𓈖 𓈖 𓉒 𓊪𓈖. 𓂋𓐍 𓇋𓈖𓇋𓎡𓋴𓅱 𓅓 𓏏𓂋 𓎡𓇌. 𓂧𓃀𓎛 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓇋𓅱𓏏𓇌 JSON 𓈖 𓋴𓄿𓅱",
-    "skipWarning": "𓇋𓂋 𓂧𓄿𓇋𓎡 𓅓𓏏𓈖 𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛, 𓉒 𓂋𓐍 𓋴𓐍𓂋. 𓂋𓐍 𓇋𓈖𓇋𓎡𓋴𓅱 𓅓 𓏏𓂋 𓎡𓇌 𓅓 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "enterPass": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟 𓈖 𓎛𓄿𓏏. 𓇋𓂋 𓈖 𓋴𓐍𓄿𓎡 𓅱𓂝, 𓂧𓄿𓇋 𓋴𓏏: 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓𓈖 𓅓 Fearless, 𓇋𓅱 𓋴𓐍𓅓𓎡 𓅓 𓃹𓈖 𓐍𓏏𓅓𓆑 𓅓 𓐍𓏏 𓅓 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛𓆑 𓂋𓊪𓅱 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿.",
+    "skipWarning": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓂧𓄿𓇋𓎡 𓅓𓈖 𓅓 Fearless. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥𓋴𓈖 𓎛𓈖𓂝 𓈙𓋴𓊪 𓁷 𓃹𓈖; 𓉔𓄿𓃀 𓎛𓈖𓂝 𓂞 𓉐𓂻 𓁷 𓅱𓄿𓎛 𓂋 𓃹𓈖𓎡 𓐍𓏏𓅓𓋴𓈖 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
     "universalWalletRequired": "𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀 𓂧𓃀𓎛",
     "universalWalletActionRequired": "𓇋𓂋𓇋 𓇋𓅱𓏏𓇌 𓇋𓈖𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀",
     "universalWalletLegacyText": "𓅱𓈖 𓈖 𓉒 𓈖𓈖 𓅱𓈖 𓅓 𓉔𓄿𓏏 𓅱𓈖 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀. 𓉒𓏥 𓇋𓋴𓆓𓏏 𓅱𓈖 𓈖 𓊪𓂋𓏏 𓈖 𓋴𓐍𓄿 𓅱𓂝",
@@ -877,7 +884,19 @@
     "exportLegacyVault": "𓊪𓂋𓏏 𓉒 𓇋𓋴𓆓𓏏",
     "exportLegacyVaultUnavailable": "𓉒 𓇋𓋴𓆓𓏏 𓊪𓈖 𓈖𓈖 𓅱𓈖 𓈖 𓊪𓂋𓏏 𓉔𓂋 𓎡𓄿𓏏 𓊪𓈖",
     "createUniversalWallet": "𓇋𓂋𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀",
-    "importUniversalWallet": "𓇋𓈖𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀"
+    "importUniversalWallet": "𓇋𓈖𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀",
+    "legacyPasswordRequired": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓁷 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓆑 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless 𓅓𓇋𓈖. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓂋 𓂞 𓉔𓄿𓃀 𓂋𓊪𓅱 𓂞 𓉐𓂻.",
+    "skipForNow": "𓂧𓄿𓇋 𓅓 𓏏𓂋 𓊪𓈖",
+    "skipConfirmTitle": "𓇋𓈖 𓂧𓄿𓇋𓎡 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓅓 𓏏𓂋 𓊪𓈖 ·",
+    "skipFailed": "𓂜 𓋴𓄿𓅱𓏏𓅱 𓋴𓏏𓊪𓎡, 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "later": "𓅓 𓐍𓏏",
+    "enterPassRow": "𓋴𓏏𓊪 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎛𓈖𓂝 𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓆑 𓈖 𓎛𓄿𓏏 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂝𓄿.",
+    "downloadBackup": "𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓂋 𓐍𓈖𓅱",
+    "downloadBackupFailed": "𓂜 𓇋𓈖𓏏𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓂋 𓐍𓈖𓅱. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "usePhrase": "𓇋𓈖 𓋴𓅓𓐍𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖 · 𓁹 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "loadFailed": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈖𓏏𓎡. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "moreOptions": "𓋴𓏏𓊪𓏥 𓂝𓈙𓄿",
+    "resetHint": "𓅱𓎛𓅓 𓄂 𓉒 𓋴𓎡 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟 𓅓 Fearless 𓉔𓂋 𓎡𓄿𓏏 𓊪𓈖. 𓂧𓄿𓇋 𓅓 𓏏𓂋 𓊪𓈖 𓋴𓄿𓅱 𓋴𓈖 𓈖𓃀."
   },
   "common": {
     "lockApp": "𓐍𓏏𓅓 𓎡𓄿𓏏",
@@ -1121,7 +1140,12 @@
     "transferable": "𓂋𓐍 𓉔𓄿𓃀 {amount}",
     "inclHidden": "𓎛𓈖𓂝 𓇋𓐍𓏏𓏥 𓇋𓅓𓈖",
     "noHiddenAssets": "𓈖𓈖 𓇋𓐍𓏏𓏥 𓇋𓅓𓈖",
-    "noHiddenAssetsDescription": "𓇋𓐍𓏏𓏥 𓇋𓅓𓈖𓎡 𓅓𓄿𓄿 𓅓 𓋴𓏏 𓏏𓈖, 𓂋 𓅓𓄿𓄿 𓋴𓈖 𓅓 𓅱𓎛𓅓."
+    "noHiddenAssetsDescription": "𓇋𓐍𓏏𓏥 𓇋𓅓𓈖𓎡 𓅓𓄿𓄿 𓅓 𓋴𓏏 𓏏𓈖, 𓂋 𓅓𓄿𓄿 𓋴𓈖 𓅓 𓅱𓎛𓅓.",
+    "testnetsNotShown": "1 𓇋𓐍𓏏 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 𓈖𓈖 𓅓𓄿𓄿 · 𓁹 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 | {count} 𓇋𓐍𓏏𓏥 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 𓈖𓈖 𓅓𓄿𓄿 · 𓁹 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪",
+    "showAssetOnNetwork": "𓁹 𓅓𓄿𓄿 {symbol} 𓅓 𓄡𓈖𓅓𓏥 {network}",
+    "emptyWalletTitle": "𓈖𓈖 𓇋𓐍𓏏𓏥 𓅓 𓏏𓂋 𓊪𓈖",
+    "emptyWalletDescription": "𓈙𓋴𓊪 𓂋𓊪𓅱 𓇋𓈖 𓐍𓏏𓏥 𓂋 𓈙𓄿𓂝. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓𓄿𓄿𓏏𓅱 𓅓 𓊨 𓏏𓈖 𓅓 𓐍𓏏 𓇋𓇋𓋴𓈖.",
+    "noBalanceInView": "𓈖𓈖 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓 𓅓𓄿𓄿 𓊪𓈖"
   },
   "polkamarktPage": {
     "backToMarkets": "𓂋 𓋴𓅱𓏏𓏥",
@@ -1303,5 +1327,30 @@
     "storageUnavailable": "𓂜 𓄞𓂧𓀁𓏏𓅱 𓏞𓏛 𓈖 𓉒𓎡. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
     "settingUpWallet": "𓁹 𓉒𓎡…",
     "accountSetupFailed": "𓉒𓎡 𓈖𓈖 𓁹. 𓅓𓂧𓅱𓏥𓎡 𓅓 𓋴𓏏 𓊪𓈖. 𓇋𓂋𓇋 𓎡𓇌 𓂋𓊪𓅱 𓂋 𓐍𓏏 𓂋 𓅓𓄿𓄿."
+  },
+  "accountAccess": {
+    "title": "𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖",
+    "description": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓅓𓈖 𓅓 Fearless, 𓂜 𓋴𓎡𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓎛𓈖𓂝 𓈙𓋴𓊪 𓁷 𓃹𓈖; 𓉔𓄿𓃀 𓎛𓈖𓂝 𓂞 𓉐𓂻 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓐍𓏏𓅓 𓂋 𓃹𓈖𓎡 𓐍𓏏𓅓𓆑.",
+    "settingsDescription": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂋 𓃹𓈖 | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂋 𓃹𓈖",
+    "previousPasswordRequired": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏 𓅓𓂋𓂝. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓂋 𓂞 𓉔𓄿𓃀 𓂋𓊪𓅱 𓂞 𓉐𓂻.",
+    "unlockAccount": "𓃹𓈖 𓐍𓏏𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖",
+    "legacyPasswordHint": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless, 𓈖 𓎛𓄿𓏏 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂝𓄿.",
+    "previousPasswordHint": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏, 𓅓𓇋 𓈖 𓎛𓄿𓏏 𓎘𓃀𓄲𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛.",
+    "phraseHint": "𓂋𓂧𓇋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖. 𓋴𓇋𓊪𓏏𓅱 𓋴𓈖 𓎛𓈖𓂝 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓎛𓄿𓏏 𓋴𓄿𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "passwordPlaceholder": "𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏",
+    "phrasePlaceholder": "𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "unlock": "𓃹𓈖 𓐍𓏏𓅓",
+    "usePhrase": "𓁹 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓 𓋴𓏏",
+    "usePassword": "𓁹 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓋴𓏏",
+    "wrongPassword": "𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖 𓈖 𓃹𓈖𓆑 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "phraseMismatch": "𓅓𓂧𓅱𓏥 𓊪𓈖 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎡𓇌. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "unlockFailed": "𓂜 𓃹𓈖𓏏𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "unlocked": "{name} 𓃹𓈖𓏏𓅱",
+    "allUnlocked": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡. 𓈖𓈖 𓐍𓏏 𓁷 𓅱𓄿𓎛 𓃹𓈖.",
+    "keepLocked": "𓋴𓅓𓈖 𓐍𓏏𓅓 𓅓 𓏏𓂋 𓊪𓈖",
+    "loadFailed": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓋴𓈙 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "evmAccountOf": "Ethereum 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 {name}",
+    "derivationPathPlaceholder": "𓊪𓂋 𓅱𓄿𓏏 (𓅓 𓅓𓂋𓇋𓎡)",
+    "changePasswordPending": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓋴𓈖 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖."
   }
 }

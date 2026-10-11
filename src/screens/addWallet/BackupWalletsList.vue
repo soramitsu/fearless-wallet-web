@@ -1,10 +1,10 @@
 <template>
   <div class="wallets-container">
-    <span class="wallets__description">{{ $t('addWallet.google.importExplanation') }}</span>
+    <span class="wallets__description">{{ $t(descriptionKey) }}</span>
 
     <Scroll>
       <ul class="wallets__list">
-        <FCorners v-for="(file, index) in items" size="big" v-bind:key="file.id">
+        <FCorners v-for="(file, index) in items" size="big" v-bind:key="file.id ?? file.address">
           <li class="wallets__item">
             <div class="json__info" @click.self="onSelect(!file.active, index)">
               <Checkbox
@@ -45,6 +45,9 @@
                 />
               </div>
             </transition>
+
+            <!-- What the row offers besides its password (the upgrade's backup download and recovery phrase). -->
+            <slot v-if="file.active" name="rowActions" :file="file" :index="index"></slot>
           </li>
         </FCorners>
       </ul>
@@ -64,6 +67,8 @@ export default defineComponent({ name: 'BackupWalletsList' ,
   props: {
     items: Array,
     isGoogle: { default: false },
+    /** What the listed accounts are and which password each row asks for. */
+    descriptionKey: { type: String, default: 'addWallet.google.importExplanation' },
   },
   data() {
     return {

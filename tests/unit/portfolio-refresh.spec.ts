@@ -39,17 +39,30 @@ vi.mock('@/portfolio/assetIdentity', () => ({
   filterSectionsBySearch: (sections: unknown[]) => sections,
   splitZeroSections: () => ({ funded: [], zeroOnly: [] }),
 }));
-vi.mock('@/portfolio/usePortfolio', () => ({
-  usePortfolio: () => ({
-    effectivePreferences: {},
-    preferenceSource: () => 'auto',
-    addressForNetwork: () => '',
-    walletScope: () => true,
-    networkFilter: () => true,
-    zeroRule: () => false,
-    summary: { hiddenCount: 0, hiddenFundedKeys: [], unpricedCount: 0, poolStakesExcluded: false },
-  }),
-}));
+vi.mock('@/portfolio/usePortfolio', () => {
+  const summary = {
+    total: '0',
+    hiddenCount: 0,
+    hiddenFundedKeys: [],
+    unpricedCount: 0,
+    poolStakesExcluded: false,
+    testnetFundedCount: 0,
+  };
+
+  return {
+    usePortfolio: () => ({
+      effectivePreferences: {},
+      preferenceSource: () => 'auto',
+      addressForNetwork: () => '',
+      walletScope: () => true,
+      networkFilter: () => true,
+      isFiltered: false,
+      zeroRule: () => false,
+      summary,
+      filteredSummary: summary,
+    }),
+  };
+});
 vi.mock('@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue', () => ({ default: {} }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';

@@ -223,3 +223,53 @@ describe('BaseWebStore atomic metadata updates', () => {
     expect(publish).not.toHaveBeenCalled();
   });
 });
+
+// The ECDSA record a 2.x or 3.0.x build left under its old key is removed only together with the writes that keep
+// it (EcdsaAccountRecords.ts): one transaction, so an abort leaves the old key in place.
+describe('BaseWebStore replaceAndWait', () => {
+  function harness() {
+    const put = vi.fn();
+    const remove = vi.fn();
+    const transaction = {
+      error: null as Error | null, oncomplete: null as (() => void) | null,
+      onabort: null as (() => void) | null, onerror: null as (() => void) | null,
+      objectStore: vi.fn(() => ({ put, delete: remove })),
+    };
+    const database = { transaction: vi.fn(() => transaction) } as unknown as IDBDatabase;
+    return { database, transaction, put, remove };
+  }
+
+  it('stores the entries and removes the keys in one transaction', async () => {
+    const store = new TestWebStore('fw');
+    const { database, transaction, put, remove } = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(database);
+    const settled = vi.fn();
+    const pending = store.replaceAndWait(
+      { 'account:0xnew': { encoded: 'kept' }, 'archivedAccount:0xold': { records: [] } },
+      ['account:0xold'],
+      false
+    ).then(settled);
+    await vi.waitFor(() => expect(database.transaction).toHaveBeenCalledExactlyOnceWith('fw-wallet', 'readwrite'));
+    expect(put.mock.calls).toEqual([
+      [{ encoded: 'kept' }, 'fw:account:0xnew'],
+      [{ records: [] }, 'fw:archivedAccount:0xold'],
+    ]);
+    expect(remove).toHaveBeenCalledExactlyOnceWith('fw:account:0xold');
+    expect(settled).not.toHaveBeenCalled();
+    transaction.oncomplete?.();
+    await pending;
+    expect(settled).toHaveBeenCalledOnce();
+  });
+
+  it('rejects when the transaction aborts, without poisoning the next flush', async () => {
+    const store = new TestWebStore('fw');
+    const { database, transaction } = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(database);
+    const pending = store.replaceAndWait({ 'account:0xnew': {} }, ['account:0xold'], false);
+    await vi.waitFor(() => expect(database.transaction).toHaveBeenCalled());
+    transaction.error = new Error('QuotaExceededError');
+    transaction.onabort?.();
+    await expect(pending).rejects.toThrow('QuotaExceededError');
+    await expect(BaseWebStore.flush()).resolves.toBeUndefined();
+  });
+});

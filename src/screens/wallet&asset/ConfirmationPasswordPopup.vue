@@ -10,6 +10,16 @@
           {{ transactionErrorText }}
         </p>
 
+        <FButton
+          v-if="showsUnlockAccount"
+          text="accountAccess.unlockAccount"
+          width="100%"
+          size="small"
+          fontSize="small"
+          data-testid="unlockAccountBtn"
+          @click="openAccountAccess"
+        />
+
         <p v-if="isUnconfirmed" class="transaction-unconfirmed-message" data-testid="transactionUnconfirmedMessage">
           {{ transactionErrorText }}
         </p>
@@ -130,11 +140,17 @@ import { sendNft } from '@/extension/messaging/nfts';
 import { isSameString, isSora, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { getTransactionFailurePresentation, getTransactionOutcome } from '@/helpers/transactionFailure';
+import {
+  getTransactionFailurePresentation,
+  getTransactionOutcome,
+  isAccountAccessFailure,
+} from '@/helpers/transactionFailure';
+import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
 
-// Components.AssetHistory. The route table is not imported here: it imports screens that
-// embed this popup.
+// Components.AssetHistory and Components.AccountAccessRecovery. The route table is not imported
+// here: it imports screens that embed this popup.
 const ASSET_HISTORY_ROUTE = 'AssetHistory';
+const ACCOUNT_ACCESS_ROUTE = 'AccountAccessRecovery';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
@@ -224,6 +240,10 @@ export default defineComponent({
       const selectedNetwork = this.networksStore.getNetwork(networkKey)?.name ?? networkKey;
 
       return { name: ASSET_HISTORY_ROUTE, params: { assetId, selectedNetwork } };
+    },
+    // The account's key waits for a password: nothing was signed, and the next step is to unlock it.
+    showsUnlockAccount() {
+      return this.isFailed && isAccountAccessFailure(this.transactionResponse);
     },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
@@ -344,6 +364,13 @@ export default defineComponent({
     openHistory() {
       if (this.historyRoute) this.$router.push(this.historyRoute);
     },
+    openAccountAccess() {
+      const from = (this.tx as { from?: unknown } | undefined)?.from;
+      const address = typeof from === 'string' && from ? from : this.transactionAddress;
+
+      // Leaving the screen closes the popup; its own close would also close the form and navigate.
+      this.$router.push({ name: ACCOUNT_ACCESS_ROUTE, query: { address } });
+    },
     openExplorer() {
       const network = this.networksStore.getNetwork((this.tx as NftTx).network);
       const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
@@ -377,8 +404,13 @@ export default defineComponent({
           (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
         )
           this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);
-      } catch {
-        this.applyTransactionResponse(undefined);
+      } catch (error) {
+        // A key that waits for its password fails before anything is signed; say so instead of "failed".
+        this.applyTransactionResponse(
+          getAccountAccessErrorLocaleKey(error)
+            ? { status: false, errors: [{ message: (error as Error).message }] }
+            : undefined
+        );
       }
     },
     applyTransactionResponse(response: BasicTxResponse | ResponseNftTransfer | undefined) {

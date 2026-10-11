@@ -474,6 +474,10 @@ export interface PortfolioSummary {
   hiddenFundedKeys: string[];
   /** Every hidden asset Manage lists for this wallet, funded or not (the "Hidden (N)" filter). */
   hiddenAssetCount: number;
+  /** Hidden test-network assets, listed under "Hidden (N)" only while testnets are shown. */
+  hiddenTestnetAssetCount: number;
+  /** Funded verified test-network assets the user did not hide; never counted, labelled while testnets are off. */
+  testnetFundedCount: number;
   /** Visible funded assets without a trusted price. */
   unpricedCount: number;
   /** A counted native holding sits on a network with nomination pools, whose stakes are outside free + reserved. */
@@ -487,7 +491,8 @@ export type PortfolioSummaryInput = Omit<
 
 /**
  * The wallet-wide value: every verified holding with a balance, independent of the zero rule, Hide zero and the
- * display filters. Hidden assets go to `hiddenValue`, unpriced ones to `unpricedCount`, and testnets are never counted.
+ * display filters. Hidden assets go to `hiddenValue`, unpriced ones to `unpricedCount`, and testnets are never counted
+ * (only how many hold funds, so the list can say they are not shown).
  */
 export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSummary {
   const networksByChainId = new Map(input.networks.map((network) => [String(network.chainId || network.name), network]));
@@ -495,7 +500,7 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
     ...input,
     preferences: input.preferences ?? {},
     mode: 'manage',
-    showTestnets: false,
+    showTestnets: true,
     surfaceDiscoveredAssets: false,
   });
   let total = FPNumber.ZERO;
@@ -504,12 +509,19 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
   const hiddenFundedKeys: string[] = [];
   let unpricedCount = 0;
   let hiddenAssetCount = 0;
+  let hiddenTestnetAssetCount = 0;
+  let testnetFundedCount = 0;
   let poolStakesExcluded = false;
 
   sections.forEach((section) => {
     section.assets.forEach((asset) => {
+      if (asset.isTestnet) {
+        if (asset.hidden) hiddenTestnetAssetCount += 1;
+        else if (asset.trust === 'verified' && asset.hasBalance) testnetFundedCount += 1;
+        return;
+      }
       if (asset.hidden) hiddenAssetCount += 1;
-      if (asset.trust !== 'verified' || !asset.hasBalance || asset.isTestnet) return;
+      if (asset.trust !== 'verified' || !asset.hasBalance) return;
 
       if (asset.hidden) {
         hiddenFundedKeys.push(asset.key);
@@ -545,6 +557,8 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
     hiddenValue: hiddenValue.toString(),
     hiddenFundedKeys: hiddenFundedKeys.sort(),
     hiddenAssetCount,
+    hiddenTestnetAssetCount,
+    testnetFundedCount,
     unpricedCount,
     poolStakesExcluded,
   };

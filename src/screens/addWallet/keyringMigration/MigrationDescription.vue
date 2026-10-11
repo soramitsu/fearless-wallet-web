@@ -19,7 +19,21 @@
         </div>
       </div>
 
-      <FButton text="common.start" size="big" @click="start" />
+      <div class="controls">
+        <FButton text="common.start" size="big" width="100%" data-testid="migrationStart" @click="start" />
+
+        <!-- With a master password the wallet already opens, so the remaining passwords can wait. -->
+        <FButton
+          v-if="alreadyHasMasterPassword"
+          text="migration.later"
+          type="secondary"
+          size="big"
+          width="100%"
+          :disabled="isDeferring"
+          data-testid="migrationLater"
+          @click="later"
+        />
+      </div>
     </div>
   </AboveForm>
 </template>
@@ -29,12 +43,15 @@ import { useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue';
 import { useI18n } from '@/locales/useI18n';
 import { Components } from '@/router/routes';
-import { hasMasterPassword } from '@/extension/messaging';
+import { deferLegacyPasswordMigration, hasMasterPassword } from '@/extension/messaging';
+import { useNotify } from '@/plugins/soramitsuUI';
 
 const router = useRouter();
+const notify = useNotify();
 const { t } = useI18n();
 
 const alreadyHasMasterPassword = ref(false);
+const isDeferring = ref(false);
 
 onMounted(async () => (alreadyHasMasterPassword.value = await hasMasterPassword()));
 
@@ -42,6 +59,20 @@ const start = () => {
   const name = alreadyHasMasterPassword.value ? Components.MigrationAccounts : Components.ChangePassword;
 
   router.push({ name });
+};
+
+// "Later" only postpones the prompt: every account stays in the wallet and is listed in Account access.
+const later = async () => {
+  if (isDeferring.value) return;
+
+  isDeferring.value = true;
+
+  const deferred = await deferLegacyPasswordMigration().catch(() => false);
+
+  isDeferring.value = false;
+
+  if (deferred) router.push({ name: Components.Wallet });
+  else notify({ title: t('migration.skipFailed'), message: '', type: 'error' });
 };
 </script>
 
@@ -83,6 +114,12 @@ const start = () => {
   .text {
     color: $default-white;
     text-align: left;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 </style>

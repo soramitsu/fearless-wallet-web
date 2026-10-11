@@ -2,6 +2,7 @@ import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/
 import {
   getTransactionFailurePresentation,
   getTransactionOutcome,
+  isAccountAccessFailure,
   transactionResponseSucceeded,
 } from '@/helpers/transactionFailure';
 
@@ -167,5 +168,21 @@ describe('Bitcoin and Solana send outcomes', () => {
     ).toBe('failed');
     expect(getTransactionOutcome({ status: false, errors: 'bitcoin_broadcast_ambiguous' })).toBe('failed');
     expect(getTransactionOutcome(undefined)).toBe('failed');
+  });
+
+  it('explains a send stopped by a key that waits for a password, and marks it for the unlock action', () => {
+    const legacy = {
+      status: false,
+      errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'legacy_password_required' }],
+    };
+    const ton = { status: false, errors: [{ message: 'ton_seed_needs_previous_password' }] };
+
+    expect(getTransactionFailurePresentation(legacy)).toEqual({ key: 'migration.legacyPasswordRequired' });
+    expect(getTransactionFailurePresentation(ton)).toEqual({ key: 'accountAccess.previousPasswordRequired' });
+    expect(isAccountAccessFailure(legacy)).toBe(true);
+    expect(isAccountAccessFailure(ton)).toBe(true);
+    expect(isAccountAccessFailure({ status: false, errors: [{ message: 'bitcoin_broadcast_rejected' }] })).toBe(false);
+    expect(isAccountAccessFailure({ status: true })).toBe(false);
+    expect(isAccountAccessFailure(undefined)).toBe(false);
   });
 });

@@ -1,0 +1,200 @@
+{
+  "provenance": {
+    "scenario": "S2: Fearless Wallet 3.0.x with ECDSA Substrate accounts under the master password",
+    "writtenBy": "the Fearless Wallet 3.0.6 Chrome extension (the 3.0.5 keyring code without the phrase upload), built from source and driven in a real browser",
+    "commit": "096485ccd2931ee3365a11d084562fdb00418264",
+    "keyringSourceSameAs": "129807f0 (3.0.5): same yarn.lock, keyring code changed only by removing the upload path",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "build": "yarn install --immutable && vue-cli-service build (EXTENSION_TYPE=chrome, production) on Node 20.20.2",
+    "keyringLibraries": "@subwallet/ui-keyring 0.1.7, @subwallet/keyring 0.1.7, @polkadot/util-crypto 12.6.2",
+    "chrome": "Google Chrome for Testing 147.0.7727.15 (headless, every host name unresolvable)",
+    "extensionId": "plnlnnlkcnkiokjgpefakfhgngpbnaec",
+    "harness": "tests/fixtures/upgrade/README.md",
+    "capturedAt": "2026-10-11",
+    "syntheticSecretsOnly": true,
+    "omittedKeys": [
+      "wc@2:core:0.3//keychain"
+    ],
+    "capture": "node tests/fixtures/upgrade/harness/capture-ecdsa.mjs 3.0.6 <build> <ext dir> <profile dir> <out>",
+    "masterPassword": "Master password set in 3.0.6"
+  },
+  "wallets": [
+    {
+      "name": "Signer",
+      "type": "ecdsa",
+      "address": "5DyFsM2F6kLfdKM5XuGS5r8784cziF5w9nhdPPHks1JYWu2N",
+      "ethereumAddress": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+      "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      "derivationPath": "",
+      "ethereumDerivationPath": "/m/44'/60'/0'/0/0"
+    },
+    {
+      "name": "Spare",
+      "type": "ecdsa",
+      "address": "5HMEcggbsk6ViNdeCgEPg5W4GitPNxkwVMLPmJFmZBmnaQn3",
+      "ethereumAddress": "0x58A57ed9d8d624cBD12e2C467D34787555bB1b25",
+      "mnemonic": "legal winner thank year wave sausage worth useful legal winner thank yellow",
+      "derivationPath": "",
+      "ethereumDerivationPath": "/m/44'/60'/0'/0/0"
+    },
+    {
+      "name": "Daily",
+      "type": "sr25519",
+      "address": "5GeQoGDPGrndSo7jYwMEsCesBS7vbjezc8eKqmJhthVT3UKn",
+      "ethereumAddress": "",
+      "mnemonic": "legal winner thank year wave sausage worth useful legal winner thank yellow",
+      "derivationPath": "//daily",
+      "ethereumDerivationPath": ""
+    }
+  ],
+  "storage": {
+    "accountSubs": {},
+    "addressBook": {},
+    "addresses": {},
+    "authUrls": {},
+    "defaultAuthAccountSelection": [],
+    "fw:account:0x5450c161417116657e6968dc2c108227d25a0d9be367d84c8591d4687288ad62": {
+      "address": "0x035c080d535720870caab8d33acdbc59f4cede44fe599980289a1c01fcec2a4112",
+      "encoded": "gyHesGf+6dCy42l5jIxLVOh6RonK7oScAH/qL5tjw5QAgAAAAQAAAAgAAABVgojUrAkK/wf1fMHlQV5QnQWEWQxrRFnnWaG4BZjc/QGRoUDfuCIMaJB99ItCtQ43Lrb0fpMYcCv2Mld8qraGDXjGurKhdZxX6G+sS46saIXjOwb6VUWZ/0NND3pF66h1EjRPKJHmeRyTNBhQaB2DrNV1IR/+C1s0oLuCT4XkG92vbscLoEO7fOT7hWZM7K2rQ1I=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ecdsa"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Signer",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791682600911
+      }
+    },
+    "fw:account:0x58a57ed9d8d624cbd12e2c467d34787555bb1b25": {
+      "address": "0x03a70d1ef368ad99e90d509496e9888ee7404e4f4d360376bf521d769cf0c4de46",
+      "encoded": "9EArlGnvNw968UWPs4tRCN09WYoM9/eZinPxbCzRfbgAgAAAAQAAAAgAAADm2bK4BBebLOS/PPQVv6iAoHK7zmrkRkdMu+l9bqEOx2zdKCXq5JUauqyxK577YG26pQIA16AGPpLOz0Z/MEqMcQ3pBtyo2CW4Doqq+r2o9lzCS7MKKYEsRS7Vu7vC9P8uCip7gDdwdaAomUnwwDFx4yzlHNBYv8XujJ79ZXX+/tRSwjyzF4GI/k4Mx9cH8P7dkCA=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Spare",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791682601046
+      }
+    },
+    "fw:account:0x9858effd232b4033e47d90003d41ec34ecaeda94": {
+      "address": "0x0237b0bb7a8288d38ed49a524b5dc98cff3eb5ca824c9f9dc0dfdb3d9cd600f299",
+      "encoded": "sU6WuP5GNoDnv/yTBsuZeLctsjN5mq0KP8sDvZNqMnIAgAAAAQAAAAgAAABFfXq6UKcqwmegMoFXD3OLBQTirExzcuyVCGTCGeAnxsCnl8Wb+Vx9qDNpIn6cnE0pFUdpVX8tZky2YECXkyxv+WJE2tplCyBPAzyKnxeDKNxKmLuAumi/8RmC4I2ZfrCQpzCLyfmZsAeN/5r0DzHShoVJXHIJpuZhDxxPegVjM19+ntYm7seR2u+8r+gSBICmr84=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Signer",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791682600758
+      }
+    },
+    "fw:account:0xcaa5da50ea49e71e025a447f3f7c46ede875d59fa14926212d8b8e6ebb163c19": {
+      "address": "5GeQoGDPGrndSo7jYwMEsCesBS7vbjezc8eKqmJhthVT3UKn",
+      "encoded": "fboFdc59Di5ZeSsC9ZV8Wfne7p1lEdo0xKisWNBuVmUAgAAAAQAAAAgAAABeFItEfaBRX5zoBtSYQ4z8Z67OHh4ZY91/63S/bYy/rkIUHLiCe3WI46DKEh9fBgofvsVBM3qk5UOQJo/AOPef0xo79jLIvXgzijoDsIBRi5iZhJnzlb2IjKW6fZcojJd3lcs9qJvkWtk9TwZbogCgjme0zy72FXhuriyANFtoPpO/ZryxiRVskyA0Xi57C/gwjU3Q1DdXxfFudrNVW6IlvlScg5rmrHB836Xq+b+xDUNv",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "sr25519"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Daily",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791682601307
+      }
+    },
+    "fw:account:0xe9c8a32e49389e94853ef77bfcae6abbf47b2849870df2f62006efdd304c9c4e": {
+      "address": "0x029880b9309f4eb50e731d563c26a5b8faf3e787d48b33648c544b512267b18069",
+      "encoded": "W3REMqXqusC22pTZbl1LhYiDZwODy9GOOXVnfbHvyk8AgAAAAQAAAAgAAACcVtIvPLtLII9WowDR1kJTHu0GH+VRP7td9MgKZcWZzAHXk/exSuXaDT2mlQKIJL6ZmCpoJAgUkkq4VaZs5WxpYZI5Q1/nf3puWN38MUq2eY71eLmHCoqX+AN0vu+dsUKS2W7UC5PGyp4WpI8uV7PaL9GxRgVmwwRL2PBEvFd8SjLO63fs/G/66L9qriausm+2zuY=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ecdsa"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0x58A57ed9d8d624cBD12e2C467D34787555bB1b25",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Spare",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791682601175
+      }
+    },
+    "fw:keyring": {
+      "passwordHash": "$2a$06$o/6tHrRZNSUjm5SJHlh90.1YZ0JAdd3ZKY804kFA7dlQrrAMHgADK"
+    },
+    "fwauthorize:authUrls": {},
+    "fwcurrent_account:CurrentAccountInfo": {
+      "address": "5GeQoGDPGrndSo7jYwMEsCesBS7vbjezc8eKqmJhthVT3UKn",
+      "ethereumAddress": "",
+      "isMobile": false,
+      "name": "Daily",
+      "walletEcosystem": "substrate"
+    },
+    "fwnetworkMap:NetworkMap": {},
+    "providers": {},
+    "selectedNetworks": {
+      "5DyFsM2F6kLfdKM5XuGS5r8784cziF5w9nhdPPHks1JYWu2N": "popular",
+      "5GeQoGDPGrndSo7jYwMEsCesBS7vbjezc8eKqmJhthVT3UKn": "popular",
+      "5HMEcggbsk6ViNdeCgEPg5W4GitPNxkwVMLPmJFmZBmnaQn3": "popular"
+    }
+  }
+}

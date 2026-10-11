@@ -14,6 +14,7 @@ import { decodePair } from '@polkadot/keyring/pair/decode';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
+import { ecdsaPairKeys } from '@extension-base/stores/EcdsaAccountRecords';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
@@ -319,8 +320,30 @@ export class KeyringService {
   }
 
   forgetAccount(address: string) {
-    if (this.tonKeyring.accountSubject.value[address]) this.tonKeyring.forgetAccount(address);
-    else keyring.forgetAccount(address);
+    if (this.tonKeyring.accountSubject.value[address]) {
+      this.tonKeyring.forgetAccount(address);
+
+      return;
+    }
+
+    const pair = this.getPair(address);
+
+    keyring.forgetAccount(address);
+    if (pair) this.forgetEarlierRecords(pair);
+  }
+
+  // ui-keyring deletes an account's record under its current key only. An ECDSA account kept from 2.x or 3.0.x
+  // also has the record those versions wrote under its account id, set aside at load (EcdsaAccountRecords.ts).
+  // They go with the account, so it does not come back at the next start.
+  private forgetEarlierRecords(pair: KeyringPair): void {
+    const keys = ecdsaPairKeys(pair);
+
+    if (!keys) return;
+
+    const store = this.accountsStore ?? new AccountsStore();
+
+    store.remove(keys.legacy);
+    store.remove(keys.archive);
   }
 
   forgetAddress(address: string) {
@@ -767,7 +790,12 @@ export class KeyringService {
 
   resetWallet(): boolean {
     try {
+      const pairs = Object.keys(this.accountSubject.value)
+        .map((address) => this.getPair(address))
+        .filter((pair): pair is KeyringPair => !!pair);
+
       keyring.resetWallet(true);
+      pairs.forEach((pair) => this.forgetEarlierRecords(pair));
       this.password = '';
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
       // TON records are not part of the reset (as in 3.0.5); they are listed for recovery after the

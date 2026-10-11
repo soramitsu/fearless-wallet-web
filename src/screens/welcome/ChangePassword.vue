@@ -46,6 +46,7 @@ import {
   initGoogleAuth,
   hasAccounts,
   isNeedMigration,
+  getAccessStatus,
 } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { useNotify } from '@/plugins/soramitsuUI';
@@ -53,7 +54,7 @@ import { useNotify } from '@/plugins/soramitsuUI';
 const router = useRouter();
 const route = useRoute();
 const notify = useNotify();
-const { t } = useI18n();
+const { t, tc } = useI18n();
 
 const oldPassword = ref('');
 const walletPassword = ref('');
@@ -145,7 +146,21 @@ const close = (isClose = true) => {
 const changePassword = async () => {
   isWait.value = true;
 
-  await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value });
+  // The background answers false (or fails) when the old password does not check out or a TON phrase could not be
+  // stored under the new one. Nothing was changed then, so the user stays here and can try again.
+  const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value }).catch(
+    () => false
+  );
+
+  if (!changed) {
+    isWait.value = false;
+
+    const failure = alreadyHasMasterPassword.value ? 'changePasswordFailed' : 'createPasswordFailed';
+
+    notify({ title: t(`welcome.${failure}`), message: '', type: 'error' });
+
+    return;
+  }
 
   const title = t(
     `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
@@ -153,6 +168,17 @@ const changePassword = async () => {
 
   notify({ title, message: '', type: 'success' });
 
+  // A key or TON phrase that did not open with the old password was left exactly as it is. Say so, and that
+  // Account access unlocks it (the wallet shows the same reminder).
+  const waiting = await getAccessStatus()
+    .then(({ issues }) => issues.filter(({ kind }) => kind === 'previous_master_password').length)
+    .catch(() => 0);
+
+  if (waiting) {
+    notify({ title: tc('accountAccess.changePasswordPending', waiting, { count: waiting }), message: '', type: 'info' });
+  }
+
+  // Confirm stays disabled until the screen is left: a second press would check the old password again and fail.
   close(false);
 
   isWait.value = false;

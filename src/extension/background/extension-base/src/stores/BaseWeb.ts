@@ -186,4 +186,20 @@ export default abstract class BaseWebStore<T> {
   public setAndWait(key: string, value: T): Promise<void> {
     return this.writeToDB(`${this.#prefix}${key}`, value);
   }
+
+  // Stores every entry and removes `keys` in one transaction: all of it lands, or none of it.
+  public replaceAndWait(entries: Record<string, unknown>, keys: string[], trackFailure = true): Promise<void> {
+    return this.enqueueWrite(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet account write failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account write was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        Object.entries(entries).forEach(([key, value]) => store.put(value, `${this.#prefix}${key}`));
+        keys.forEach((key) => store.delete(`${this.#prefix}${key}`));
+      });
+    }, trackFailure);
+  }
 }

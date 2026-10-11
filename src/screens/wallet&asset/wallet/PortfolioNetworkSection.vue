@@ -19,12 +19,14 @@
     </button>
 
     <div v-if="expanded" class="network-assets">
-      <button
+      <!-- In Manage the row only holds the switch: a button around it would hide the switch from keyboards. -->
+      <component
+        :is="manage ? 'div' : 'button'"
         v-for="asset in section.assets"
         :key="asset.key"
         class="asset-row"
-        :class="{ 'asset-row--hidden': asset.hidden }"
-        type="button"
+        :class="{ 'asset-row--hidden': asset.hidden, 'asset-row--manage': manage }"
+        :type="manage ? undefined : 'button'"
         :data-asset-key="asset.key"
         @click="openAsset(asset)"
       >
@@ -55,11 +57,12 @@
         <Switcher
           v-if="manage"
           :value="!asset.hidden"
+          :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: asset.symbol, network: section.name })"
           @click.stop
           @change="setPreference(asset, $event ? 'shown' : 'hidden')"
         />
         <Icon v-else icon="chevron-right" className="asset-chevron" :hover="false" />
-      </button>
+      </component>
 
       <div v-if="section.detectedAssets.length && !manage" class="detected-assets">
         <button class="detected-header" type="button" @click="showDetected = !showDetected">
@@ -260,6 +263,10 @@ function openAsset(asset: PortfolioAsset): void {
   padding: 10px 0 10px 8px;
   border-top: $default-border;
   text-align: left;
+}
+
+.asset-row--manage {
+  cursor: default;
 }
 
 .asset-icon,

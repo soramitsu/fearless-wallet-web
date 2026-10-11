@@ -125,6 +125,13 @@
       ]
     },
     {
+      "reason": "Issuer deployment lists (Tether's supported protocols, Circle's USDC contract addresses) that the shared canonical asset groups file cites in issuerSources as the source of its USDT and USDC members. The file is bundled byte for byte under a sha256 pin; the wallet never requests or opens these pages.",
+      "hosts": [
+        "tether.to",
+        "developers.circle.com"
+      ]
+    },
+    {
       "reason": "Loopback names: the app accepts them only as local test endpoints (regtest, test validator, local Torii) and as the web build's development OAuth redirect.",
       "hosts": [
         "localhost",

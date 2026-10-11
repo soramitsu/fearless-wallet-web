@@ -180,13 +180,9 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     }
   },
   methods: {
+    // Account access lists that account's rows first (an address is unique across ecosystems).
     openAccountAccess() {
-      const { address, walletEcosystem } = this.exportedAccount;
-
-      this.$router.push({
-        name: Components.AccountAccessRecovery,
-        query: { address, ...(walletEcosystem ? { ecosystem: walletEcosystem } : {}) },
-      });
+      this.$router.push({ name: Components.AccountAccessRecovery, query: { address: this.exportedAccount.address } });
     },
     proceed() {
       if (this.isMnemonic || this.isRowSeed) setClipboard(this.seed);

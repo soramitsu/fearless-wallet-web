@@ -86,7 +86,7 @@ describe('export of a key that waits for a password', () => {
       await wrapper.get('[data-testid="unlockAccountBtn"]').trigger('click');
       expect(mocks.push).toHaveBeenCalledExactlyOnceWith({
         name: 'AccountAccessRecovery',
-        query: { address, ecosystem: walletEcosystem },
+        query: { address },
       });
 
       await wrapper.get('[data-testid="exportBackBtn"]').trigger('click');
@@ -105,7 +105,7 @@ describe('export of a key that waits for a password', () => {
     await wrapper.get('[data-testid="unlockAccountBtn"]').trigger('click');
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({
       name: 'AccountAccessRecovery',
-      query: { address: ETHEREUM, ecosystem: WalletEcosystem.Evm },
+      query: { address: ETHEREUM },
     });
   });
 

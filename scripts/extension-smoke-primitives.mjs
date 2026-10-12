@@ -10,6 +10,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { APP, POPUP_HEIGHT, POPUP_WIDTH, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
+import { captureAuthorizationScreenshots } from './extension-smoke-authorization.mjs';
 
 /** Paint, size and accessible semantics of the primitives on screen; one sample per kind. */
 const PRIMITIVES = `(() => {
@@ -150,6 +151,11 @@ export async function capturePrimitivesScreenshots({
           window.__legacyMigrationRequests = (window.__legacyMigrationRequests || 0) + 1;
           window.__finishLegacyMigration = (response) => {
             for (const listener of listeners) listener({ id: message.id, response });
+          };
+        } else if (window.__authorizationFixture && ['pri(authorize.approve)', 'pri(authorize.delete.request)'].includes(message.message)) {
+          window.__authorizationFixture.requests.push({ message: message.message, request: message.request });
+          window.__finishAuthorization = (reply) => {
+            for (const listener of listeners) listener({ id: message.id, ...reply });
           };
         } else if (window.__googleBackupFixture && message.message.startsWith('pri(google.')) {
           const send = (reply) => queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, ...reply }); });
@@ -704,6 +710,8 @@ export async function capturePrimitivesScreenshots({
     await keyboardFocus('.button__confirm button');
     await capture('52-google-backup-files-ready', 'Public fixture files loaded; import becomes available. No restore or account mutation is submitted.');
     await route('Currencies');
+
+    await captureAuthorizationScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
 
     await cdp.send(
       'Emulation.setDeviceMetricsOverride',

@@ -122,6 +122,25 @@ export async function capturePrimitivesScreenshots({
     { width: POPUP_WIDTH, height: POPUP_HEIGHT, deviceScaleFactor: 2, mobile: false },
     sessionId
   );
+  // This tab alone can substitute the migration inventory response with a public UI fixture.
+  // Every other message uses the real isolated test worker unchanged.
+  await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
+    const originalConnect = chrome.runtime.connect.bind(chrome.runtime);
+    chrome.runtime.connect = (...args) => {
+      const port = originalConnect(...args);
+      const post = port.postMessage.bind(port);
+      const add = port.onMessage.addListener.bind(port.onMessage);
+      const listeners = new Set();
+      port.onMessage.addListener = (listener) => { listeners.add(listener); add(listener); };
+      port.postMessage = (message) => {
+        if (message.message === 'pri(keyring.getUniversalWalletMigrationSnapshot)' && window.__migrationFixtureReply) {
+          const reply = { id: message.id, ...window.__migrationFixtureReply };
+          queueMicrotask(() => { for (const listener of listeners) listener(reply); });
+        } else post(message);
+      };
+      return port;
+    };
+  })()` }, sessionId);
   const stopServing = await servePopupOffline(cdp, sessionId);
 
   const route = (name) =>
@@ -467,19 +486,12 @@ export async function capturePrimitivesScreenshots({
       router.addRoute({ path: '/design-migration-fixture', name: 'DesignMigrationFixture', component: original.components.default });
       return true;
     })()`);
-    await route('DesignMigrationFixture');
-    await waitFor('.universal-migration__title', 'Migration snapshot loaded');
-    const migrationState = `(() => {
-      let component = document.querySelector('.universal-migration').__vueParentComponent;
-      while (component && !component.setupState.snapshot) component = component.parent;
-      if (!component) throw new Error('Migration component state missing');
-      return component.setupState;
-    })()`;
     await evaluate(cdp, sessionId, `(() => {
-      const state = ${migrationState};
-      state.snapshot = { ...state.snapshot, legacyVaults: [{ vaultId: 'public-unavailable-fixture', displayName: 'Retained wallet', address: 'public-fixture-address', ecosystem: 'substrate', mode: 'export-only', canExportSecrets: false, canSignTransactions: false }] };
+      window.__migrationFixtureReply = { response: { schemaVersion: 1, platform: 'web', hasUniversalWallet: false, cutoffAtMillis: 1710000000000, evaluatedAtMillis: Date.now(), legacyVaults: [{ vaultId: 'public-unavailable-fixture', displayName: 'Retained wallet', address: 'public-fixture-address', ecosystem: 'substrate', mode: 'export-only', canExportSecrets: false, canSignTransactions: false }] } };
       return true;
     })()`);
+    await route('DesignMigrationFixture');
+    await waitFor('.universal-migration__vault-export button', 'Public migration inventory rendered');
     const migrationVariants = [
       { name: '30-migration-unavailable-export', width: POPUP_WIDTH, height: POPUP_HEIGHT, locale: 'en-US' },
       { name: '31-migration-russian', width: 320, height: 600, locale: 'ru-RU' },
@@ -505,7 +517,10 @@ export async function capturePrimitivesScreenshots({
       Object.assign(results.at(-1), { migrationExport: semantics });
     }
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 600, deviceScaleFactor: 2, mobile: false }, sessionId);
-    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'en-US', document.documentElement.lang = 'en-US', ${migrationState}.loadError = true, true)`);
+    await route('Currencies');
+    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'en-US', document.documentElement.lang = 'en-US', window.__migrationFixtureReply = { error: 'public fixture inventory failure' }, true)`);
+    await route('DesignMigrationFixture');
+    await waitFor('[data-testid="migrationLoadFailed"] button', 'Migration failure feedback');
     await keyboardFocus('[data-testid="migrationLoadFailed"] button');
     await capture('35-migration-load-failure', 'Migration snapshot failure offers a retry without presenting an empty wallet.');
     await route('Currencies');

@@ -36,6 +36,7 @@
             text="common.reject"
             type="secondary"
             size="big"
+            fontSize="big"
             :disabled="!!pending"
             :loading="pending === 'reject'"
             @click="onReject"

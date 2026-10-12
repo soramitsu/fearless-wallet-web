@@ -97,9 +97,13 @@ Passwords include a non-ASCII master password (`Pässwörd-日本語-🔐`).
 
 ## Results
 
+The integrated production-mode test artifact at clean `3ec8623ba271be5f2ba7475f815cf650c4827277` passed all 12 scenarios and 482 assertions on 12 October 2026 with harness `dfb43b85`, Node 24.19.0 and Chrome for Testing 147.0.7727.15. The run completed at 05:05:35 UTC. Report: `build/safe-upgrade/evidence/codex-20261012/wk5-integrated-document-probe/report.json` in the parent workspace; SHA-256 `25c3fa6dae6c6c43282e60005bd765b6021cc0f9700516e70128313b920fc566`. It includes every first-response cold-start assertion, historical key/sign/export checks and R1 clean rollback. This qualifies that cached test artifact; final distribution artifacts, Linux CI and signed Firefox upgrades retain their separate gates.
+
+### Earlier failed integrated run
+
 The integrated production-mode test artifact at clean `3ec8623ba271be5f2ba7475f815cf650c4827277` completed 11/12 scenarios on 12 October 2026 (`wk5-integrated-2/report.json` in the parent evidence directory). S1 passed 48/49 checks: cold start 7/20 received no CDP evaluation result, including no result from its in-page 60-second timer, before the 180-second driver timeout. The other 19 starts and all key/sign/export checks passed. This run is **not** a passing upgrade gate.
 
-The cold-start harness now installs its probe before navigating the extension document and polls plain progress snapshots instead of holding an asynchronous evaluation across page creation/navigation. The three first requests are issued immediately in the document and are never retried or replaced by the later comparison responses. Disconnects and unanswered messages still fail the assertion. Eight driver tests cover those properties and CDP failure handling. A new real-browser run is required; no application startup fix or proven root cause is claimed from this harness change.
+The cold-start harness now installs its probe before navigating the extension document and polls plain progress snapshots instead of holding an asynchronous evaluation across page creation/navigation. The three first requests are issued immediately in the document and are never retried or replaced by the later comparison responses. Disconnects and unanswered messages still fail the assertion. Eight driver tests cover those properties and CDP failure handling. The targeted S1 rerun passed 49/49 checks and 20/20 cold starts, followed by the full passing matrix above. No application startup fix or proven root cause is claimed from this harness change.
 
 ### Earlier lane result
 

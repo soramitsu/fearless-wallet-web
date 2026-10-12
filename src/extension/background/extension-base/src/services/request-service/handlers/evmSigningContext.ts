@@ -81,6 +81,7 @@ export async function captureEvmSigningContext(
       name: network.name,
       chainId: networkChainId,
       genesisHash: network.genesisHash,
+      provider: network.currentProvider,
       ...(native ? { symbol: native.symbol, decimals: native.precision } : {}),
     },
   };

@@ -22,7 +22,7 @@ export type EvmRequestParams = unknown;
 
 export type EvmSigningContext = {
   account: { address: string; name?: string; isMobile: boolean };
-  network: { name: string; chainId: string; genesisHash: string; symbol?: string; decimals?: number };
+  network: { name: string; chainId: string; genesisHash: string; provider?: string; symbol?: string; decimals?: number };
 };
 
 export type EvmRequestPayload = EvmSigningContext & {

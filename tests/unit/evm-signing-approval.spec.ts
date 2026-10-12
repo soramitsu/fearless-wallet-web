@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Wallet, getBytes, verifyMessage, verifyTypedData } from 'ethers';
+import { Wallet, Transaction, getBytes, verifyMessage, verifyTypedData } from 'ethers';
 import { captureWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
@@ -32,6 +32,7 @@ let network: {
   isEthereum: boolean;
   ecosystem: string;
   disabled: boolean;
+  currentProvider?: string;
   assets: unknown[];
 };
 let mobile = false;
@@ -106,6 +107,125 @@ async function queue(method = 'personal_sign', params: unknown[] = data) {
 }
 
 afterEach(() => vi.restoreAllMocks());
+
+const providerFixture = () => ({
+  getNetwork: vi.fn(async () => ({ chainId: 1n })),
+  getTransactionCount: vi.fn(async () => 0),
+  estimateGas: vi.fn(async () => 21000n),
+  getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
+  broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0x1234' })),
+});
+
+describe('EVM approval revalidates after transaction preparation and signing', () => {
+  it('refuses an RPC configuration changed after the request was reviewed', async () => {
+    network.currentProvider = 'https://first.public.invalid';
+    await queue();
+    network.currentProvider = 'https://other.public.invalid';
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+  });
+  it.each(['revocation', 'account change', 'network change', 'provider replacement'])(
+    'refuses %s during fee population before key export',
+    async (change) => {
+      const { request } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+      const provider = providerFixture();
+      vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+      let done!: (fees: Awaited<ReturnType<typeof provider.getFeeData>>) => void;
+      provider.getFeeData.mockReturnValueOnce(
+        new Promise((resolve) => {
+          done = resolve;
+        })
+      );
+      const approving = extension.signEvmApprove({ id: 'first' });
+      await vi.waitFor(() => expect(provider.getFeeData).toHaveBeenCalledOnce());
+      if (change === 'revocation') auth.isAllowed = false;
+      if (change === 'account change') auth.evmAuthorizedAccount = '0x2222222222222222222222222222222222222222';
+      if (change === 'network change') auth.currentEvmNetworkKey = 'Unknown';
+      if (change === 'provider replacement')
+        vi.mocked(state.getEvmApi).mockReturnValue({ api: providerFixture() } as never);
+      done({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null });
+      await expect(approving).rejects.toThrow();
+      expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+      expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+      expect(handler.getEvmSignRequest('first')).toBe(request);
+    }
+  );
+  it('refuses a replaced provider after the initial chain query', async () => {
+    await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    provider.getNetwork.mockImplementationOnce(async () => {
+      vi.mocked(state.getEvmApi).mockReturnValue({ api: providerFixture() } as never);
+      return { chainId: 1n };
+    });
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+  });
+  it.each(['revocation', 'provider replacement'])('refuses %s during local transaction signing', async (change) => {
+    await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    let done!: (signed: string) => void;
+    const sign = vi.spyOn(Wallet.prototype, 'signTransaction').mockReturnValueOnce(
+      new Promise((resolve) => {
+        done = resolve;
+      })
+    );
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(sign).toHaveBeenCalledOnce());
+    if (change === 'revocation') auth.isAllowed = false;
+    else vi.mocked(state.getEvmApi).mockReturnValue({ api: providerFixture() } as never);
+    done('0xpublic');
+    await expect(approving).rejects.toThrow();
+    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+  });
+  it.each(['personal_sign', 'eth_signTypedData_v4'])('does not release revoked local %s signatures', async (method) => {
+    const typed = {
+      domain: { chainId: 1 },
+      primaryType: 'Message',
+      types: { Message: [{ name: 'text', type: 'string' }] },
+      message: { text: 'public' },
+    };
+    const { request } = await queue(method, method === 'personal_sign' ? data : [address, typed]);
+    const resolve = vi.spyOn(request, 'resolve');
+    let done!: (signed: string) => void;
+    const sign = vi
+      .spyOn(Wallet.prototype, method === 'personal_sign' ? 'signMessage' : 'signTypedData')
+      .mockReturnValueOnce(
+        new Promise((finish) => {
+          done = finish;
+        })
+      );
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(sign).toHaveBeenCalledOnce());
+    auth.isAllowed = false;
+    done('0xpublic');
+    await expect(approving).rejects.toThrow();
+    expect(resolve).not.toHaveBeenCalled();
+  });
+  it('does not release a mobile signature returned after origin revocation', async () => {
+    mobile = true;
+    const { result } = await queue();
+    const outcome = result.then(
+      (value) => ({ value }),
+      (error: unknown) => ({ error })
+    );
+    let done!: (signed: { id: string; payload: `0x${string}` }) => void;
+    vi.mocked(state.walletConnectDappService.onEvmRequest).mockReturnValueOnce(
+      new Promise((resolve) => {
+        done = resolve;
+      })
+    );
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(state.walletConnectDappService.onEvmRequest).toHaveBeenCalledOnce());
+    auth.isAllowed = false;
+    done({ id: 'first', payload: '0x1234' });
+    await expect(approving).resolves.toBe(false);
+    expect(await outcome).toEqual({ error: expect.any(Error) });
+    expect(handler.getEvmSignRequest('first')).toBeUndefined();
+  });
+});
 
 describe('EVM approval uses the reviewed request context', () => {
   it('produces a real signature with the reviewed account', async () => {
@@ -320,27 +440,31 @@ describe('EVM approval uses the reviewed request context', () => {
   it('broadcasts once with the reviewed chain forced into the transaction', async () => {
     const tx = { from: address, to: address, value: '0x1' };
     const { result } = await queue('eth_sendTransaction', [tx]);
-    vi.mocked(state.getEvmApi).mockReturnValue({ api: { getNetwork: vi.fn(async () => ({ chainId: 1n })) } } as never);
-    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockResolvedValue({ hash: '0x1234' } as never);
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     await extension.signEvmApprove({ id: 'first' });
     await expect(result).resolves.toEqual({ id: 'first', payload: '0x1234' });
-    expect(send).toHaveBeenCalledExactlyOnceWith({ ...tx, chainId: 1n });
+    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
+    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    expect(signed.chainId).toBe(1n);
+    expect(signed.from).toBe(address);
+    expect(signed.value).toBe(1n);
   });
   it('passes the exact reviewed JSON-RPC gas limit to ethers', async () => {
     const tx = { from: address, to: address, value: '0x1', gas: '0x5208', gasPrice: '0x3b9aca00' };
     const { result } = await queue('eth_sendTransaction', [tx]);
-    vi.mocked(state.getEvmApi).mockReturnValue({ api: { getNetwork: vi.fn(async () => ({ chainId: 1n })) } } as never);
-    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockResolvedValue({ hash: '0x1234' } as never);
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     await extension.signEvmApprove({ id: 'first' });
     await result;
-    expect(send).toHaveBeenCalledExactlyOnceWith({
-      from: address,
-      to: address,
-      value: '0x1',
-      gasLimit: '0x5208',
-      gasPrice: '0x3b9aca00',
-      chainId: 1n,
-    });
+    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
+    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    expect(signed.gasLimit).toBe(21000n);
+    expect(signed.gasPrice).toBe(1000000000n);
+    expect(signed.from).toBe(address);
+    expect(signed.to).toBe(address);
+    expect(signed.value).toBe(1n);
+    expect(provider.estimateGas).not.toHaveBeenCalled();
     expect(tx.gas).toBe('0x5208');
   });
   it('rejects conflicting gas limits before key export', async () => {
@@ -355,10 +479,9 @@ describe('EVM approval uses the reviewed request context', () => {
   it('does not replay a broadcast after an ambiguous transport failure', async () => {
     const { result } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
     const rejected = expect(result).rejects.toThrow('response lost after submission');
-    vi.mocked(state.getEvmApi).mockReturnValue({ api: { getNetwork: vi.fn(async () => ({ chainId: 1n })) } } as never);
-    const send = vi
-      .spyOn(Wallet.prototype, 'sendTransaction')
-      .mockRejectedValue(new Error('response lost after submission'));
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    const send = provider.broadcastTransaction.mockRejectedValue(new Error('response lost after submission'));
     await expect(extension.signEvmApprove({ id: 'first' })).resolves.toBe(false);
     await rejected;
     await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();

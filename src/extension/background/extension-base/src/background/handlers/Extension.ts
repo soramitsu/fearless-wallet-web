@@ -714,7 +714,11 @@ export default class Extension extends FWExtensionBase {
             request.network,
             assertCurrent
           );
-          if (result) request.resolve(result);
+          if (result) {
+            await validateEvmSigningContext(this.state, request);
+            assertCurrent();
+            request.resolve(result);
+          }
         } catch (error) {
           request.reject(error instanceof Error ? error : new Error('Unable to sign on the mobile wallet'));
           return false;
@@ -723,25 +727,40 @@ export default class Extension extends FWExtensionBase {
       }
 
       const provider = this.state.getEvmApi(request.network.name)?.api;
+      const assertProviderCurrent = () => {
+        assertCurrent();
+        if (this.state.getEvmApi(request.network.name)?.api !== provider)
+          throw new Error('EVM provider changed before approval');
+      };
+      const params = request.data as unknown[];
+      const typed = request.method.startsWith('eth_signTypedData') ? evmTypedData(request.method, params) : undefined;
+      const txData = request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
+      let populated: ethers.TransactionRequest | undefined;
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         if (!provider || (await provider.getNetwork()).chainId !== BigInt(request.network.chainId)) {
           throw new Error('EVM provider does not match the reviewed network');
         }
-        // The provider lookup awaited remote state; repeat local authorization
-        // before exporting a key or initiating a broadcast.
         await validateEvmSigningContext(this.state, request);
-        assertCurrent();
+        assertProviderCurrent();
+        // Complete every nonce/gas/fee await without a private key. A revoked
+        // grant or replaced provider cannot be carried through population.
+        populated = await new VoidSigner(address, provider).populateTransaction({
+          ...txData,
+          chainId: BigInt(request.network.chainId),
+        });
+        await validateEvmSigningContext(this.state, request);
+        assertProviderCurrent();
       }
-      const params = request.data as unknown[];
-      const typed = request.method.startsWith('eth_signTypedData') ? evmTypedData(request.method, params) : undefined;
-      const txData = request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address });
-      const signer = new Wallet(privateKey, provider);
+      const signer = new Wallet(privateKey);
       if (signer.address.toLowerCase() !== address.toLowerCase())
         throw new Error('Exported key does not match the reviewed account');
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+        const signed = await signer.signTransaction(populated!);
+        await validateEvmSigningContext(this.state, request);
+        assertProviderCurrent();
         try {
-          const { hash } = await signer.sendTransaction({ ...txData, chainId: BigInt(request.network.chainId) });
+          const { hash } = await provider!.broadcastTransaction(signed);
           request.resolve({ id: request.id, payload: hash as HexString });
         } catch (error) {
           // A transport failure can occur after broadcast. Settle this intent;
@@ -753,6 +772,8 @@ export default class Extension extends FWExtensionBase {
         const signature = await (typed
           ? signer.signTypedData(typed.domain, typed.types, typed.message)
           : signer.signMessage(evmMessageBytes(request.method, params)));
+        await validateEvmSigningContext(this.state, request);
+        assertCurrent();
         request.resolve({ id: request.id, payload: signature as HexString });
       }
       return true;

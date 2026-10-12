@@ -1,5 +1,6 @@
 <template>
   <div class="search-input-wrapper" data-testid="searchInput" @keydown="searchKeydown">
+    <SearchResultStatus :count="resultCount" :label="placeholder || 'common.search'" />
     <div class="search-field" :style="inputStyle">
       <FInput
         ref="field"
@@ -25,17 +26,20 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, ref } from 'vue';
+import SearchResultStatus from './SearchResultStatus.vue';
 
 interface Props {
   value: string;
   placeholder: string;
   width: string;
+  resultCount?: number | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   value: '',
   placeholder: '',
   width: '',
+  resultCount: null,
 });
 
 const emit = defineEmits(['change']);

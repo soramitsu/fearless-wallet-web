@@ -16,6 +16,7 @@
             v-if="showSearch"
             :value="filterValue"
             :placeholder="placeholder"
+            :resultCount="searchResultCount"
             width="235px"
             @change="changeFilterValue"
           />
@@ -78,6 +79,7 @@ type Props = {
   showBackground?: boolean;
   closeByBackground?: boolean;
   showSearch?: boolean;
+  searchResultCount?: number | null;
   showBorder?: boolean;
   sizeWidth?: Size;
   showCloseButton?: boolean;

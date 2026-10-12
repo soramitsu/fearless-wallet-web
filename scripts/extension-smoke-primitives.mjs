@@ -53,6 +53,7 @@ const PRIMITIVES = `(() => {
         iconCenterOffset: iconBox ? Math.round(Math.abs(iconBox.top + iconBox.height / 2 - fieldBox.top - fieldBox.height / 2)) : 0,
         fieldBox: fieldBox.toJSON(),
         clearBox: clearBox?.toJSON() ?? null,
+        resultStatus: wrapper.querySelector('[data-testid="searchResultStatus"]')?.textContent.trim() ?? null,
         clearName: clear?.getAttribute('aria-label') ?? null,
         clearWithinField: !clearBox || clearBox.left >= fieldBox.left && clearBox.right <= fieldBox.right && clearBox.top >= fieldBox.top && clearBox.bottom <= fieldBox.bottom,
         clearTargetSize: !clearBox || clearBox.width >= 48 && clearBox.height >= 48,
@@ -327,6 +328,12 @@ export async function capturePrimitivesScreenshots({
     await setSearch('Dollar');
     await keyboardFocus('[data-testid="clearSearch"]');
     await capture('12b-currency-search-clear', 'Currency search: a named clear control; Escape first clears the query.');
+    const currencyCountAnnounced = await evaluate(cdp, sessionId, `(() => {
+      const dialog = document.querySelector('.select-popup');
+      return dialog.querySelector('[data-testid="searchResultStatus"]').textContent.trim().endsWith(': ' + dialog.querySelectorAll('.row').length);
+    })()`);
+    if (!currencyCountAnnounced) throw new Error('Currency result count does not match the filtered rows');
+    results.at(-1).currencyCountAnnounced = true;
     await keyboardFocus('.search-input-wrapper input');
     await escape();
     await assertSearchCleared();

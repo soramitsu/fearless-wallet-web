@@ -3,6 +3,7 @@
     <div class="management">
       <SearchInput
         :value="filterValue"
+        :resultCount="filteredOptionsNetworks.length"
         placeholder="common.searchNetwork"
         class="search-input"
         width="100%"

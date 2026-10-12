@@ -5,6 +5,7 @@
     :headerText="headerText"
     :placeholder="placeholder"
     :showSearch="showSearch"
+    :searchResultCount="sortedOptions.length"
     :showBorder="showBorder"
     :height="height"
     :maxHeight="maxHeight"

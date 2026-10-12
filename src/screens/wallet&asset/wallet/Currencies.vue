@@ -1,5 +1,10 @@
 <template>
   <Scroll class="portfolio-scroll">
+    <SearchResultStatus
+      label="common.searchAmongAssets"
+      :count="searchResultCount"
+      :active="searching && !showLoader"
+    />
     <div class="portfolio-actions">
       <span v-if="refreshError" class="refresh-error" role="status">{{ refreshError }}</span>
       <!-- What is listed may not be all yet: some networks of this wallet have not answered. -->
@@ -146,6 +151,7 @@ import PortfolioHiddenFundsNotice from './PortfolioHiddenFundsNotice.vue';
 import PortfolioLayoutNote from './PortfolioLayoutNote.vue';
 import PortfolioTokenRow from './PortfolioTokenRow.vue';
 import PortfolioGroupNetworkPicker from './PortfolioGroupNetworkPicker.vue';
+import SearchResultStatus from '@/components/SearchResultStatus.vue';
 import {
   buildPortfolioSections,
   filterSectionAssets,
@@ -185,6 +191,7 @@ import { fetchNfts } from '@/extension/messaging/nfts';
 export default defineComponent({
   name: 'Currencies',
   components: {
+    SearchResultStatus,
     PortfolioNetworkSection,
     PortfolioZeroNetworks,
     PortfolioExclusions,
@@ -303,6 +310,9 @@ export default defineComponent({
         : this.portfolioSections;
 
       return this.searching ? filterSectionsBySearch(sections, this.filterValue) : sections;
+    },
+    searchResultCount(): number {
+      return this.visibleSections.reduce((count, section) => count + section.assets.length + section.detectedAssets.length, 0);
     },
     splitSections(): { funded: PortfolioSection[]; zeroOnly: PortfolioSection[] } {
       return splitZeroSections(this.visibleSections);

@@ -94,6 +94,7 @@ it('keeps the real dialog search controlled and clears it before dismissal', asy
 
 
 it('filters real currency rows from the typed query and restores them when cleared', async () => {
+  vi.useFakeTimers();
   const wrapper = mount(FiatsPopup, {
     attachTo: document.body,
     global: {
@@ -104,11 +105,17 @@ it('filters real currency rows from the typed query and restores them when clear
   });
   try {
     expect(wrapper.findAll('button.row')).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wrapper.get('[data-testid="searchResultStatus"]').text()).toBe('common.searchCurrency: 2');
     await wrapper.get('input').setValue('Dollar');
     expect(wrapper.findAll('button.row')).toHaveLength(1);
     expect(wrapper.get('button.row').text()).toBe('US Dollar');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wrapper.get('[data-testid="searchResultStatus"]').text()).toBe('common.searchCurrency: 1');
     await wrapper.get('[data-testid="clearSearch"]').trigger('click');
     expect(wrapper.findAll('button.row')).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(wrapper.get('[data-testid="searchResultStatus"]').text()).toBe('common.searchCurrency: 2');
     expect(document.activeElement).toBe(wrapper.get('input').element);
-  } finally { wrapper.unmount(); }
+  } finally { wrapper.unmount(); vi.useRealTimers(); }
 });

@@ -181,6 +181,26 @@ describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (c
     vi.unstubAllGlobals();
   });
 
+  it('announces matching visible assets in either lens and clears the status in Manage', async () => {
+    vi.useFakeTimers();
+    const { scope } = open(funded(['Polkadot', 'dot', '12.5']), 'Polkadot');
+    const wrapper = mountCurrencies({ filterValue: 'DOT' });
+    try {
+      await nextTick();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(text(wrapper, 'searchResultStatus')).toBe('common.searchAmongAssets: 1');
+      await wrapper.setProps({ filterValue: 'no-such-fixture-asset' });
+      await vi.advanceTimersByTimeAsync(200);
+      expect(text(wrapper, 'searchResultStatus')).toBe('common.searchAmongAssets: 0');
+      await wrapper.setProps({ showAssetsManagementForm: true });
+      expect(text(wrapper, 'searchResultStatus')).toBe('');
+    } finally {
+      wrapper.unmount();
+      scope.stop();
+      vi.useRealTimers();
+    }
+  });
+
   it('lists a funded hidden asset outside the Popular filter that new accounts start with', async () => {
     seed('hide-zero');
     // Polkadot AssetHub has no rank, so Popular leaves it out; USDT there was hidden at zero and funded later.

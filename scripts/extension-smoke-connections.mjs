@@ -56,12 +56,14 @@ export async function captureConnectionManagement({
   const inspect = async () =>
     run(`(() => {
     const controls = [...document.querySelectorAll('.auth-content button, .update-accounts .connect-button button, [data-testid="retryConnectionRead"] button')];
-    return { origin: document.querySelector('.auth-item-name, .connection-origin')?.textContent.trim(), calm: !!document.querySelector('.fw-calm'), requests: window.__connectionFixture.requests, controls: controls.map(e => { const b=e.getBoundingClientRect(); return { width:b.width, height:b.height, disabled:e.disabled, label:(e.getAttribute('aria-label') || e.textContent).trim() }; }), noOverflow: document.documentElement.scrollWidth <= innerWidth };
+    const tabs = [...document.querySelectorAll('.connection-tabs [role="tab"]')].map(e => { const b=e.getBoundingClientRect(); return { selected:e.getAttribute('aria-selected') === 'true', focusable:e.tabIndex === 0, withinWidth:b.left >= 0 && b.right <= innerWidth, labelFits:e.scrollWidth <= e.clientWidth + 1 }; });
+    return { origin: document.querySelector('.auth-item-name, .connection-origin')?.textContent.trim(), tabs, calm: !!document.querySelector('.fw-calm'), requests: window.__connectionFixture.requests, controls: controls.map(e => { const b=e.getBoundingClientRect(); return { width:b.width, height:b.height, disabled:e.disabled, label:(e.getAttribute('aria-label') || e.textContent).trim() }; }), noOverflow: document.documentElement.scrollWidth <= innerWidth };
   })()`);
   const shot = async (name, description) => {
     const state = await inspect();
     if (!state.calm || !state.noOverflow || state.controls.some((c) => c.height < 44 || !c.label))
       throw new Error('Connection control geometry: ' + JSON.stringify(state));
+    if (state.tabs.length && (state.tabs.filter(t => t.selected && t.focusable).length !== 1 || state.tabs.some(t => !t.withinWidth || !t.labelFits))) throw new Error('Connection tabs lose selection, keyboard entry or visible labels: ' + JSON.stringify(state));
     await capture(name, description);
     Object.assign(results.at(-1), { connectionManagement: state });
   };

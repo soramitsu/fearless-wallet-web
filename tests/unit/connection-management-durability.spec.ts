@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   back: vi.fn(),
   push: vi.fn(),
   updateAuthorization: vi.fn(),
-  route: null as unknown as { params: Record<string, string> },
+  route: null as unknown as { params: Record<string, string>; name?: string; path?: string },
   extension: null as unknown as {
     authList: Record<string, ReturnType<typeof entry>>;
     getAuthList: ReturnType<typeof vi.fn>;
@@ -14,16 +14,22 @@ const mocks = vi.hoisted(() => ({
   accounts: null as unknown as { accounts: Array<{ name: string; address: string; ethereumAddress?: string }> },
 }));
 vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => mocks }));
+vi.mock('@/router', () => ({ default: mocks }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.extension }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accounts }));
 vi.mock('@/extension/messaging', () => ({ updateAuthorization: mocks.updateAuthorization }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key, tc: (key: string) => key }) }));
-vi.mock('@/router/routes', () => ({ Components: { DAppDetails: 'DAppDetails' } }));
+vi.mock('@/router/routes', () => ({
+  Components: { DAppDetails: 'DAppDetails', DAppsAuths: 'DAppsAuths', WcAuths: 'WcAuths' },
+}));
 
 import DAppsAuths from '@/screens/extension-ui/DAppsAuths.vue';
 import DAppDetails from '@/screens/extension-ui/DAppDetails.vue';
 import AuthItem from '@/screens/extension-ui/AuthItem.vue';
 import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
+import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
+import Tabs from '@/components/Tabs.vue';
+import TabButton from '@/components/TabButton.vue';
 
 const origin = 'https://public.example.invalid';
 const entry = () => ({
@@ -291,4 +297,34 @@ describe('connection management durable acknowledgement', () => {
     expect(mocks.updateAuthorization).toHaveBeenCalledTimes(1);
     expect(mocks.extension.getAuthList).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['substrate', 'evm', 'wc'])(
+    'keeps the %s tab selected and keyboard reachable on nested Settings routes',
+    async (type) => {
+      mocks.route.name = type === 'wc' ? 'WcAuths' : 'DAppsAuths';
+      mocks.route.params.type = type;
+      mocks.route.path = `/fearless/settings/connections/${type === 'wc' ? 'wallet-connect' : 'dapps/' + type}`;
+      const wrapper = mount(ManageAuths, {
+        global: {
+          ...global,
+          components: { Tabs, TabButton },
+          stubs: {
+            ...global.stubs,
+            Scroll: { template: '<div><slot /></div>' },
+            FCorners: { template: '<div><slot /></div>' },
+            RouterView: true,
+          },
+        },
+      });
+      const selected = wrapper.findAll('[role="tab"][aria-selected="true"]');
+      expect(selected).toHaveLength(1);
+      expect(selected[0].attributes('tabindex')).toBe('0');
+      expect(selected[0].text()).toContain(type === 'wc' ? 'wc' : type === 'evm' ? 'evmDApps' : 'substrateDApps');
+      await selected[0].trigger('click');
+      expect(mocks.push).not.toHaveBeenCalled();
+      await selected[0].trigger('keydown', { key: 'Home' });
+      if (type === 'substrate') expect(mocks.push).not.toHaveBeenCalled();
+      else expect(mocks.push).toHaveBeenCalledWith({ name: 'DAppsAuths', params: { type: 'substrate' } });
+    }
+  );
 });

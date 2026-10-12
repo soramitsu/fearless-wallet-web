@@ -643,6 +643,17 @@ export async function capturePrimitivesScreenshots({
     if (pendingPaint.color !== 'rgb(255, 255, 255)' || !pendingPaint.background.includes('rgb(214, 0, 127)') || pendingPaint.mask !== 'none' || pendingPaint.ringSize < 20 || pendingPaint.ringColor !== pendingPaint.color || pendingPaint.ringHidden !== 'true' || pendingPaint.live !== 'polite' || pendingPaint.duplicateStatus) throw new Error('Pending action lost readable fill, progress ring or concise live status: ' + JSON.stringify(pendingPaint));
     await capture('46-migration-account-pending', 'Public fixture request held at popup boundary; named pending state and competing navigation disabled.');
     Object.assign(results.at(-1), { pendingRow, pendingPaint });
+    await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }, sessionId);
+    await waitForExpression(cdp, sessionId, `document.documentElement.dataset.fwEffects === 'reduced'`, 'Reduced motion pending state');
+    const reducedPending = await evaluate(cdp, sessionId, `(() => {
+      const button = document.querySelector('.button__confirm button');
+      const ringStyle = getComputedStyle(button.querySelector('.button-progress'));
+      return { shadow: getComputedStyle(button).boxShadow, iterations: ringStyle.animationIterationCount, duration: ringStyle.animationDuration };
+    })()`);
+    if (reducedPending.shadow !== 'none' || reducedPending.iterations !== '1' || parseFloat(reducedPending.duration) > 0.01) throw new Error('Reduced motion pending state still glows or loops');
+    await capture('46b-migration-account-reduced-motion', 'Public fixture pending state remains readable without glow or looping motion.');
+    Object.assign(results.at(-1), { reducedPending });
+    await cdp.send('Emulation.setEmulatedMedia', { features: [] }, sessionId);
     await evaluate(cdp, sessionId, `(window.__finishLegacyMigration(false), true)`);
     await waitForExpression(cdp, sessionId, `document.querySelector('.error-descriptions')?.textContent.trim().length > 0`, 'Migration password error');
     await capture('47-migration-account-password-retry', 'Incorrect fixture password retains input and releases the request for retry.');

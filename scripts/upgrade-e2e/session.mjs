@@ -107,15 +107,18 @@ export class Session {
     await this.stop();
     const runs = [];
     for (let i = 0; i < count; i++) {
-      runs.push(
-        await coldStartProbe({
-          profileDir: this.profileDir,
-          extDir: this.extDir,
-          port: this.port,
-          extId: this.extId,
-          hostRules: this.hostRules,
-          args: this.args,
-        }).catch((error) => ({ error: String(error?.message ?? error) }))
+      const started = Date.now();
+      const result = await coldStartProbe({
+        profileDir: this.profileDir,
+        extDir: this.extDir,
+        port: this.port,
+        extId: this.extId,
+        hostRules: this.hostRules,
+        args: this.args,
+      }).catch((error) => ({ error: String(error?.stack ?? error) }));
+      runs.push(result);
+      console.log(
+        `[cold-start ${i + 1}/${count}] ${Date.now() - started} ms${result.error ? `: ${result.error}` : ''}`
       );
     }
     return runs;

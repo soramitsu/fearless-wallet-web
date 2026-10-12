@@ -1,3 +1,4 @@
+import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, Transaction, getBytes, verifyMessage, verifyTypedData } from 'ethers';
 import { checkIfDenied } from '@polkadot/phishing';
@@ -91,11 +92,24 @@ beforeEach(() => {
         },
       }),
     },
-    walletConnectDappService: { onEvmRequest: vi.fn(async () => ({ id: 'first', payload: '0x1234' })) },
+    walletConnectDappService: {
+      getSessionRevision: () => 0,
+      getSession: (topic: string) => mobileSession(topic),
+      onEvmRequest: vi.fn(async () => ({ id: 'first', payload: await wallet.signMessage('hello') })),
+    },
     requestService: { evmRequestHandler: handler, getSignRequest: (id: string) => handler.getEvmSignRequest(id) },
   } as unknown as State;
   extension = new Extension(state);
 });
+function mobileSession(topic: string, accounts = [`eip155:1:${address}`]) {
+  return {
+    topic,
+    acknowledged: true,
+    expiry: 2000000000,
+    peer: { publicKey: 'public-mobile-peer', metadata: { url } },
+    namespaces: { eip155: { accounts, methods: ['personal_sign', 'eth_sendTransaction'], events: [] } },
+  };
+}
 function stampWcContext(request: { request: { topic: string } }) {
   const context = captureWalletConnectSigningContext(state, {
     topic: request.request.topic,
@@ -498,7 +512,8 @@ describe('EVM approval uses the reviewed request context', () => {
     Object.assign(mobileService, {
       state,
       app: { client: { request: send } },
-      getSession: () => ({ namespaces: { eip155: { accounts: [`eip155:1:${address}`] } } }),
+      getSession: (topic: string) => mobileSession(topic),
+      getSessionRevision: () => 0,
     });
     Object.assign(state, { walletConnectDappService: mobileService });
     const { result } = await queue();
@@ -619,11 +634,9 @@ describe('EVM approval uses the reviewed request context', () => {
     await result;
     expect(state.walletConnectDappService.onEvmRequest).toHaveBeenCalledExactlyOnceWith(
       'first',
-      url,
       'personal_sign',
       data,
-      'public-fixture-topic',
-      request.network,
+      request.mobileSession,
       expect.any(Function)
     );
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
@@ -637,7 +650,8 @@ describe('mobile EVM request network binding', () => {
     Object.assign(service, {
       state,
       app: { client: { request: send } },
-      getSession: () => ({ namespaces: { eip155: { accounts } } }),
+      getSession: (topic: string) => mobileSession(topic, accounts),
+      getSessionRevision: () => 0,
     });
     return { service, send };
   }
@@ -645,7 +659,18 @@ describe('mobile EVM request network binding', () => {
     const context = await captureEvmSigningContext(state, url, 'personal_sign', data);
     auth.currentEvmNetworkKey = 'Different';
     const { service: mobileService, send } = service([`eip155:1:${address}`]);
-    await mobileService.onEvmRequest('first', url, 'personal_sign', data, 'fixture', context.network, vi.fn());
+    await mobileService.onEvmRequest(
+      'first',
+      'personal_sign',
+      data,
+      captureMobileSigningContext(mobileService, {
+        topic: 'fixture',
+        method: 'personal_sign',
+        address,
+        chainId: `eip155:${context.network.chainId}`,
+      }),
+      vi.fn()
+    );
     expect(send).toHaveBeenCalledExactlyOnceWith({
       chainId: 'eip155:1',
       topic: 'fixture',
@@ -659,7 +684,18 @@ describe('mobile EVM request network binding', () => {
     const payload = `0x${'ab'.repeat(method === 'personal_sign' ? 65 : 32)}`;
     send.mockResolvedValueOnce(payload);
     await expect(
-      mobileService.onEvmRequest('first', url, method, params, 'fixture', context.network, vi.fn())
+      mobileService.onEvmRequest(
+        'first',
+        method,
+        params,
+        captureMobileSigningContext(mobileService, {
+          topic: 'fixture',
+          method,
+          address,
+          chainId: `eip155:${context.network.chainId}`,
+        }),
+        vi.fn()
+      )
     ).resolves.toEqual({ id: 'first', payload });
   });
   it.each([undefined, { payload: '0x1234' }, '0x', '0x123', 'not-hex'])(
@@ -669,7 +705,18 @@ describe('mobile EVM request network binding', () => {
       const { service: mobileService, send } = service([`eip155:1:${address}`]);
       send.mockResolvedValueOnce(response as never);
       await expect(
-        mobileService.onEvmRequest('first', url, 'personal_sign', data, 'fixture', context.network, vi.fn())
+        mobileService.onEvmRequest(
+          'first',
+          'personal_sign',
+          data,
+          captureMobileSigningContext(mobileService, {
+            topic: 'fixture',
+            method: 'personal_sign',
+            address,
+            chainId: `eip155:${context.network.chainId}`,
+          }),
+          vi.fn()
+        )
       ).rejects.toThrow();
     }
   );
@@ -679,15 +726,29 @@ describe('mobile EVM request network binding', () => {
     const { service: mobileService, send } = service([`eip155:1:${address}`]);
     send.mockResolvedValueOnce('0x1234');
     await expect(
-      mobileService.onEvmRequest('first', url, 'eth_sendTransaction', params, 'fixture', context.network, vi.fn())
+      mobileService.onEvmRequest(
+        'first',
+        'eth_sendTransaction',
+        params,
+        captureMobileSigningContext(mobileService, {
+          topic: 'fixture',
+          method: 'eth_sendTransaction',
+          address,
+          chainId: `eip155:${context.network.chainId}`,
+        }),
+        vi.fn()
+      )
     ).rejects.toThrow();
   });
   it('does not reuse account permission from a different session chain', async () => {
-    const context = await captureEvmSigningContext(state, url, 'personal_sign', data);
     const { service: mobileService, send } = service([`eip155:137:${address}`]);
-    await expect(
-      mobileService.onEvmRequest('first', url, 'personal_sign', data, 'fixture', context.network, vi.fn())
-    ).rejects.toThrow();
+    const admitted = captureMobileSigningContext(state.walletConnectDappService, {
+      topic: 'fixture',
+      method: 'personal_sign',
+      address,
+      chainId: 'eip155:1',
+    });
+    await expect(mobileService.onEvmRequest('first', 'personal_sign', data, admitted, vi.fn())).rejects.toThrow();
     expect(send).not.toHaveBeenCalled();
   });
 });

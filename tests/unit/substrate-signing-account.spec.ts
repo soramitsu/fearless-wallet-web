@@ -50,6 +50,20 @@ beforeEach(() => {
     networkService: { networkMap: {} },
     keyringService: { getAllAccounts: () => records, getPair: vi.fn(() => selected), unlockPair: vi.fn() },
     walletConnectDappService: {
+      getSessionRevision: () => 0,
+      getSession: (topic: string) => ({
+        topic,
+        acknowledged: true,
+        expiry: 2000000000,
+        peer: { publicKey: 'public-peer' },
+        namespaces: {
+          polkadot: {
+            accounts: [`polkadot:${'11'.repeat(16)}:${alice.address}`],
+            methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
+            events: [],
+          },
+        },
+      }),
       onRequest: vi.fn(async () => ({ signature: u8aToHex(alice.sign(wrapBytes('0x1234'))) })),
     },
   } as unknown as State;
@@ -354,7 +368,11 @@ describe('Substrate reviewed account and actual signing key', () => {
       vi.mocked(state.walletConnectDappService.onRequest).mockResolvedValueOnce({ signature });
       const resolve = vi.spyOn(queued, 'resolve');
       expect(await extension.signingApprove({ id: 'public' })).toBe(change === 'valid');
-      expect(state.walletConnectDappService.onRequest).toHaveBeenCalledWith(payload);
+      expect(state.walletConnectDappService.onRequest).toHaveBeenCalledWith(
+        payload,
+        queued.signingAccount!.mobileSession,
+        expect.any(Function)
+      );
       if (change === 'valid') expect((await result).payload).toBe(signature);
       else expect(resolve).not.toHaveBeenCalled();
     }
@@ -379,6 +397,7 @@ describe('Substrate reviewed account and actual signing key', () => {
     const { queued } = await admitExtrinsic(true);
     const resolve = vi.spyOn(queued, 'resolve');
     vi.mocked(state.walletConnectDappService.onRequest).mockImplementationOnce(async (payload) => {
+      if (!('genesisHash' in payload)) throw new Error('Expected extrinsic fixture');
       payload.nonce = '0x03';
       const registry = new TypeRegistry();
       registry.setSignedExtensions(payload.signedExtensions);

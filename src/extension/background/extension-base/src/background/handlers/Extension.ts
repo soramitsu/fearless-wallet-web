@@ -175,7 +175,6 @@ import type {
   DefaultParams as DefaultPoolParams,
   DemeterMutationRequest,
 } from '@extension-base/services/pools-service/types';
-import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
   StakingParamsRequest,
@@ -719,23 +718,20 @@ export default class Extension extends FWExtensionBase {
       await this.assertSigningSiteAllowed(request);
       assertCurrent();
       const address = request.account.address;
-      const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-
       if (request.account.isMobile) {
-        const account = this.state.keyringService.getAddress(substrateAddress);
-        if (!account?.meta.wcTopic) throw new Error('Mobile signing account is unavailable');
+        if (!request.mobileSession) throw new Error('Mobile signing context is unavailable');
         try {
           const result = await this.state.walletConnectDappService.onEvmRequest(
             id,
-            request.url,
             request.method,
-            request.data,
-            account.meta.wcTopic as string,
-            request.network,
+            structuredClone(request.data),
+            request.mobileSession,
             assertCurrent
           );
           if (result) {
             assertCurrent();
+            if (request.method !== EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION)
+              assertEvmExternalSignature(request, result.payload);
             request.resolve(result);
           }
         } catch (error) {
@@ -753,7 +749,8 @@ export default class Extension extends FWExtensionBase {
       };
       const params = request.data as unknown[];
       const typed = request.method.startsWith('eth_signTypedData') ? evmTypedData(request.method, params) : undefined;
-      const txData = request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
+      const txData =
+        request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
       let populated: ethers.TransactionRequest | undefined;
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         if (!provider || (await provider.getNetwork()).chainId !== BigInt(request.network.chainId)) {
@@ -869,7 +866,9 @@ export default class Extension extends FWExtensionBase {
 
       if (queued.signingAccount?.kind === 'mobile') {
         const res = await this.state.walletConnectDappService.onRequest(
-          structuredClone(queued.request.payload) as SignerPayloadJSON
+          structuredClone(queued.request.payload),
+          queued.signingAccount.mobileSession!,
+          () => this.assertNonEvmSigningAuthorization(queued)
         );
         this.assertNonEvmSigningAuthorization(queued);
         assertSubstrateExternalSignature(queued, res.signature);

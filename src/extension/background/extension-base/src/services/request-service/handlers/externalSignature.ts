@@ -51,7 +51,10 @@ function verifyExact(message: Uint8Array, signature: Uint8Array, publicKey: Uint
   });
 }
 
-export function assertSubstrateExternalSignature(request: SignRequest, signature: string): void {
+export function assertSubstrateExternalSignature(
+  request: Pick<SignRequest, 'request' | 'account' | 'signingContext'>,
+  signature: string
+): void {
   const bytes = signatureBytes(signature);
   const payload = request.request.payload;
   const publicKey = decodeAddress(request.account.address);

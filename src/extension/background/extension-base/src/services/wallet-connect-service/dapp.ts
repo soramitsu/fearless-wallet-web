@@ -1,3 +1,5 @@
+import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
+import { u8aToHex } from '@polkadot/util';
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
@@ -9,16 +11,15 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
-import registry from '@extension-base/api/substrate/typeRegistry';
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
-import type { EvmSigningContext } from '@extension-base/services/request-service/types';
+import { validateMobileSigningContext } from './mobileSigningContext';
 import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { EvmRequestParams } from '@extension-base/services/request-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
+import type { MobileSigningContext } from './mobileSigningContext';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes } from '@walletconnect/types';
 import type { Port, ResponseSigning } from '@extension-base/background/types/types';
@@ -26,6 +27,18 @@ import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/ba
 
 export class WalletConnectDAppService {
   private app?: Provider;
+  private initialization?: Promise<void>;
+  private readonly sessionRevisions = new Map<string, number>();
+  private readonly retiredTopics = new Set<string>();
+  private readonly listenerClients = new WeakSet<object>();
+
+  getSessionRevision(topic: string): number {
+    return this.sessionRevisions.get(topic) ?? 0;
+  }
+
+  private sessionChanged(topic: string): void {
+    this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
+  }
 
   public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly pairingSubject: BehaviorSubject<Record<string, AppSessionInitResponse>> = new BehaviorSubject<
@@ -36,15 +49,24 @@ export class WalletConnectDAppService {
     this.initApp().catch(console.error);
   }
 
-  private async initApp() {
-    this.app = await Provider.init({
-      projectId: PROJECT_ID_EXTENSION,
-      metadata: WALLET_CONNECT_METADATA,
-      logger: undefined,
-      storage: new WalletConnectStorage(),
-    });
-
-    this.setListeners();
+  private initApp(): Promise<void> {
+    if (this.app) return Promise.resolve();
+    if (!this.initialization) {
+      this.initialization = Provider.init({
+        projectId: PROJECT_ID_EXTENSION,
+        metadata: WALLET_CONNECT_METADATA,
+        logger: undefined,
+        storage: new WalletConnectStorage(),
+      })
+        .then((app) => {
+          this.app = app;
+          this.setListeners();
+        })
+        .finally(() => {
+          this.initialization = undefined;
+        });
+    }
+    return this.initialization;
   }
 
   public get sessions(): SessionTypes.Struct[] {
@@ -52,10 +74,13 @@ export class WalletConnectDAppService {
   }
 
   private setListeners() {
-    this.app?.client.pairing.core.on('pairing_expire', (data: { id: number; topic: string }) =>
-      this.onSessionDelete(data)
-    );
-    this.app?.client.on('session_delete', (data: { id: number; topic: string }) => this.onSessionDelete(data));
+    const client = this.app?.client;
+    if (!client || this.listenerClients.has(client)) return;
+    this.listenerClients.add(client);
+    client.on('session_update', ({ topic }) => this.sessionChanged(topic));
+    client.on('session_extend', ({ topic }) => this.sessionChanged(topic));
+    client.on('session_expire', ({ topic }) => this.onSessionDelete({ topic }));
+    client.on('session_delete', ({ topic }) => this.onSessionDelete({ topic }));
   }
 
   checkClient() {
@@ -71,7 +96,7 @@ export class WalletConnectDAppService {
   public getSession(topic: string): SessionTypes.Struct {
     const session = this.sessions.find((el) => el.topic === topic);
 
-    if (!session) {
+    if (!session || this.retiredTopics.has(topic)) {
       throw new Error(getInternalError('MISMATCHED_TOPIC').message);
     } else {
       return session;
@@ -136,8 +161,6 @@ export class WalletConnectDAppService {
         },
       },
     });
-
-    this.setListeners();
 
     if (!pairing?.uri) throw new Error('uri error');
     this.updatePairing(pairing.uri, pairing);
@@ -232,7 +255,9 @@ export class WalletConnectDAppService {
   }
 
   disconnect(topic: string) {
-    this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') });
+    this.retiredTopics.add(topic);
+    this.sessionChanged(topic);
+    this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
   }
 
   availableNetworks(address: string) {
@@ -250,7 +275,9 @@ export class WalletConnectDAppService {
     this.app?.abortPairingAttempt();
   }
 
-  async onSessionDelete({ topic }: { id: number; topic: string }) {
+  async onSessionDelete({ topic }: { topic: string }) {
+    this.retiredTopics.add(topic);
+    this.sessionChanged(topic);
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
@@ -267,85 +294,68 @@ export class WalletConnectDAppService {
     }
   }
 
-  async onRequest(payload: SignerPayloadJSON) {
-    const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
-    const account = this.state.keyringService.getAddress(encodedAddress);
-
-    const chainId = payload.genesisHash.slice(2);
-    const halfChainId = chainId.slice(0, Math.ceil(chainId.length / 2));
-
-    const request = {
-      chainId: `polkadot:${halfChainId}`,
-      topic: account?.meta.wcTopic as string,
-      request: {
-        method: 'polkadot_signTransaction',
-        params: {
-          address: payload.address,
-          transactionPayload: payload,
-        },
-      },
+  async onRequest(
+    payload: SignerPayloadJSON | SignerPayloadRaw,
+    context: MobileSigningContext,
+    assertCurrent: () => void
+  ): Promise<{ signature: HexString }> {
+    const snapshot = structuredClone(payload);
+    const extrinsic = 'genesisHash' in snapshot;
+    const intent = {
+      topic: context?.topic,
+      address: snapshot.address,
+      method: extrinsic ? 'polkadot_signTransaction' : 'polkadot_signMessage',
+      ...(extrinsic ? { chainId: `polkadot:${snapshot.genesisHash.slice(2, 34).toLowerCase()}` } : {}),
     };
-
-    const result = await this.app?.client
-      .request<{ signature: HexString }>(request)
-
-      .catch(() => {
-        return { signature: '0x' as HexString };
-      });
-
-    return result as unknown as { signature: HexString };
-  }
-
-  async onRequestRaw(payload: SignerPayloadRaw) {
-    const encodedAddress = this.state.keyringService.encodeAddress(payload.address);
-    const account = this.state.keyringService.getAddress(encodedAddress);
-    const payloadJson = registry.createType('Extrinsic', payload.data) as unknown as SignerPayloadJSON;
-
-    const result = await this.app?.client.request<{ signature: HexString }>({
-      chainId: `polkadot:${generateHalfGenesisHash(payloadJson.genesisHash)}`,
-      topic: account?.meta.wcTopic as string,
+    const validate = () => {
+      assertCurrent();
+      validateMobileSigningContext(this, context, intent);
+    };
+    validate();
+    if (!this.app) throw new Error('Wallet Connect is not init!');
+    const result = await this.app.client.request<{ signature: HexString }>({
+      chainId: context.chainId,
+      topic: context.topic,
       request: {
-        method: 'polkadot_signTransaction',
-        params: {
-          address: payload.address,
-          transactionPayload: payload.data,
-        },
+        method: intent.method,
+        params: extrinsic
+          ? { address: snapshot.address, transactionPayload: snapshot }
+          : { address: snapshot.address, message: u8aToHex(wrapBytes(snapshot.data)) },
       },
     });
-
-    return result ?? { signature: '0x' as HexString };
+    validate();
+    if (!result || typeof result.signature !== 'string') throw new Error('Invalid mobile Substrate response');
+    return result;
   }
 
   public async onEvmRequest(
     id: string,
-    _url: string,
     method: string,
     params: EvmRequestParams,
-    topic: string,
-    network: EvmSigningContext['network'],
+    context: MobileSigningContext,
     assertCurrent: () => void
   ): Promise<ResponseSigning> {
-    const requestSession = this.getSession(topic);
-
-    const chainId = `${WALLET_CONNECT_EIP155_NAMESPACE}:${network.chainId}`;
-    const sessionAccounts = requestSession.namespaces.eip155.accounts
-      .filter((account) => account.startsWith(`${chainId}:`))
-      .map((account) => account.split(':')[2]);
-    const address = evmSigningAddress(method, params);
-    this.checkAccount(address, sessionAccounts);
-    assertCurrent();
-
+    const snapshot = structuredClone(params);
+    const intent = {
+      topic: context?.topic,
+      chainId: context?.chainId,
+      method,
+      address: evmSigningAddress(method, snapshot),
+    };
+    const validate = () => {
+      assertCurrent();
+      validateMobileSigningContext(this, context, intent);
+    };
+    validate();
     const requestEvent: EngineTypes.RequestParams = {
-      chainId,
-      request: {
-        method,
-        params,
-      },
-      topic,
+      chainId: context.chainId,
+      topic: context.topic,
+      request: { method, params: snapshot },
     };
 
     if (!this.app) throw new Error('Wallet Connect is not init!');
     const result = await this.app.client.request<unknown>(requestEvent);
+    validate();
     // EIP-155 WalletConnect responses are the raw signature / transaction hash,
     // not an object with a payload field.
     if (

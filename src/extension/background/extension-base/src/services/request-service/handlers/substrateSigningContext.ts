@@ -69,7 +69,10 @@ export function captureSubstrateSigningContext(
   return context;
 }
 
-export function validateSubstrateSigningContext(state: State, request: SignRequest): void {
+export function validateSubstrateSigningContext(
+  state: State,
+  request: Pick<SignRequest, 'request' | 'signingContext'>
+): void {
   const current = captureSubstrateSigningContext(state, state.requestService, request.request.payload);
   if (!request.signingContext || JSON.stringify(current) !== JSON.stringify(request.signingContext))
     throw new Error('Substrate signing context changed; request approval again');

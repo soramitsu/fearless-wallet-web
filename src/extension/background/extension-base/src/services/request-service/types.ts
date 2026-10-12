@@ -1,3 +1,4 @@
+import type { MobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { Resolver, ResponseSigning } from '@extension-base/background/types/types';
 import type {
@@ -23,6 +24,7 @@ export type EvmRequestParams = unknown;
 export type EvmSigningContext = {
   // Legacy/unqualified queue data may display, but cannot pass approval validation.
   authorizationRevision?: number;
+  mobileSession?: MobileSigningContext;
   account: { address: string; name?: string; isMobile: boolean };
   network: { name: string; chainId: string; genesisHash: string; provider?: string; symbol?: string; decimals?: number };
 };

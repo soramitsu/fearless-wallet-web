@@ -1,5 +1,7 @@
 import { u8aEq, u8aToHex } from '@polkadot/util';
 import { blake2AsU8a, decodeAddress, ethereumEncode } from '@polkadot/util-crypto';
+import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
+import type { MobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import type State from '@extension-base/background/handlers/State';
 import type { AccountJson, RequestSign, SignRequest } from '@extension-base/background/types/types';
 import type { KeyringPair } from '@subwallet/keyring/types';
@@ -16,6 +18,7 @@ export type SubstrateSigningAccount = {
   genesisHash: string | null;
   ecosystem: string | null;
   key: SigningKey | null;
+  mobileSession: MobileSigningContext | null;
 };
 
 function identity(address: string): Uint8Array {
@@ -91,11 +94,25 @@ export function captureSubstrateSigningAccount(
     wcTopic: typeof meta.wcTopic === 'string' ? meta.wcTopic : null,
     genesisHash: typeof meta.genesisHash === 'string' ? meta.genesisHash : null,
     ecosystem: meta.walletEcosystem ?? null,
+    mobileSession:
+      kind === 'mobile'
+        ? captureMobileSigningContext(state.walletConnectDappService, {
+            topic: meta.wcTopic as string,
+            address: request.payload.address,
+            method: 'genesisHash' in request.payload ? 'polkadot_signTransaction' : 'polkadot_signMessage',
+            ...('genesisHash' in request.payload
+              ? { chainId: `polkadot:${request.payload.genesisHash.slice(2, 34).toLowerCase()}` }
+              : {}),
+          })
+        : null,
     key: kind === 'local' ? signingKey(state.keyringService.getPair(record.address), expected) : null,
   };
 }
 
-export function validateSubstrateSigningAccount(state: State, request: SignRequest): void {
+export function validateSubstrateSigningAccount(
+  state: State,
+  request: Pick<SignRequest, 'request' | 'account' | 'signingAccount'>
+): void {
   const current = captureSubstrateSigningAccount(state, request.request, request.account);
   if (!request.signingAccount || JSON.stringify(current) !== JSON.stringify(request.signingAccount))
     throw new Error('Substrate signing account changed; request approval again');

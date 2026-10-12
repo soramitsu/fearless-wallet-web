@@ -356,40 +356,22 @@ export default class Tabs {
   }
 
   async bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
-    const address = request.address;
-
-    await this.state.requestService.ensureAccountAuthorized(url, address);
-
-    const pair = this.state.keyringService.getPair(address)!;
-    const signer = new RequestBytesSign(request);
-
-    return this.state.requestService.substrateRequestHandler.sign(url, signer, {
-      address: pair.address,
-      ethereumAddress: pair.meta.ethereumAddress as string,
-      name: (pair.meta.name as string) ?? '',
-      ...pair.meta,
+    const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
+    return this.state.requestService.substrateRequestHandler.sign(url, new RequestBytesSign(request), {
+      ...meta,
+      address: request.address,
+      name: (meta?.name as string) ?? '',
+      ethereumAddress: (meta?.ethereumAddress as string) ?? '',
     });
   }
 
   async extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = this.state.keyringService.encodeAddress(request.address);
-
-    await this.state.requestService.ensureAccountAuthorized(url, address);
-    const isMobile = !!this.state.keyringService.getAddress(address, 'address')?.meta.isMobile;
-    const pair = this.state.keyringService.getPair(address);
-
-    let meta;
-
-    if (pair) meta = pair.meta;
-    else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
-
-    const signer = new RequestExtrinsicSign(request);
-
-    return this.state.requestService.substrateRequestHandler.sign(url, signer, {
-      address: address,
-      ethereumAddress: meta?.ethereumAddress as string,
-      name: (meta?.name as string) ?? '',
+    const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
+    return this.state.requestService.substrateRequestHandler.sign(url, new RequestExtrinsicSign(request), {
       ...meta,
+      address: request.address,
+      name: (meta?.name as string) ?? '',
+      ethereumAddress: (meta?.ethereumAddress as string) ?? '',
     });
   }
 

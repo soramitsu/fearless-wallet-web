@@ -1,3 +1,4 @@
+import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmRequestPayload, EvmSigningContext } from '@extension-base/services/request-service/types';
@@ -87,6 +88,16 @@ function captureCurrentEvmSigningContext(
   const native = network.assets.find((asset) => asset.isNative);
   return {
     authorizationRevision: revision,
+    ...(keyring.isMobileAccount(root)
+      ? {
+          mobileSession: captureMobileSigningContext(state.walletConnectDappService, {
+            topic: keyring.getAddress(root)?.meta.wcTopic as string,
+            method,
+            address,
+            chainId: `eip155:${networkChainId}`,
+          }),
+        }
+      : {}),
     account: { address, name: account.meta.name, isMobile: keyring.isMobileAccount(root) },
     network: {
       name: network.name,
@@ -104,6 +115,7 @@ export function validateEvmSigningContext(state: State, request: EvmRequestPaylo
     JSON.stringify(current) !==
     JSON.stringify({
       authorizationRevision: request.authorizationRevision,
+      ...(request.mobileSession ? { mobileSession: request.mobileSession } : {}),
       account: request.account,
       network: request.network,
     })

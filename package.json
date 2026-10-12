@@ -68,7 +68,7 @@
     "test:smoke:firefox": "yarn test:firefox-smoke-policy && node scripts/firefox-extension-smoke.mjs",
     "test:smoke:bitcoin": "vitest run tests/smoke/bitcoin-testnet-broadcast.spec.ts",
     "test:e2e:local-chains": "node scripts/test-local-chain-sends.mjs",
-    "test:local-chain-processes": "node --test scripts/local-chains/process-lifecycle.test.mjs",
+    "test:local-chain-processes": "node --test scripts/local-chains/test-process-lifecycle.mjs",
     "generate:bitcoin-broadcast-evidence-template": "bash scripts/generate-bitcoin-broadcast-evidence-template.sh",
     "audit:bitcoin-broadcast-evidence": "bash scripts/audit-bitcoin-broadcast-evidence.sh",
     "test:bitcoin-broadcast-evidence-audit": "bash scripts/test-bitcoin-broadcast-evidence-audit.sh",

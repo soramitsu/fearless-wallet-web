@@ -1,4 +1,5 @@
 import { formatUnits, getBytes, isAddress, toUtf8String } from 'ethers';
+import { toRaw } from 'vue';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { EvmRequestPayload, SolanaRequestPayload } from '@extension-base/services/request-service/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -113,7 +114,9 @@ function evmReview(request: EvmRequestPayload, result: SigningReview): void {
     return;
   }
   if (request.method.startsWith('eth_signTypedData')) {
-    const typed = evmTypedData(request.method, params);
+    // Port payloads acquire Vue proxies in the UI store. Unwrap that view before
+    // the shared validator copies the original RPC data without changing it.
+    const typed = evmTypedData(request.method, toRaw(params));
     result.actions = [
       {
         kind: 'typedData',

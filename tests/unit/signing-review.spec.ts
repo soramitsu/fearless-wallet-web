@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { base58Decode } from '@polkadot/util-crypto';
+import { reactive } from 'vue';
 import type { EvmRequestPayload, SolanaRequestPayload } from '@extension-base/services/request-service/types';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import { reviewJson, signingReview } from '@/screens/extension-ui/signing/review';
@@ -142,6 +143,27 @@ describe('signing summaries describe the exact payload', () => {
       signingReview(evm('eth_signTypedData_v4', [address, { ...typed, message: { approved: false } }]))
     ).toMatchObject({ blocked: false, blind: false });
   });
+  it.each(['object', 'json'])(
+    'reviews %s payloads held in reactive UI state without changing valid false',
+    (format) => {
+      const typed = {
+        primaryType: 'Permission',
+        domain: { chainId: 1 },
+        types: { Permission: [{ name: 'approved', type: 'bool' }] },
+        message: { approved: false },
+      };
+      const data = [address, format === 'json' ? JSON.stringify(typed) : typed];
+      const before = structuredClone(data);
+      const request = reactive(evm('eth_signTypedData_v4', data));
+      const result = signingReview(request);
+      expect(result).toMatchObject({ blocked: false, blind: false, actions: [{ kind: 'typedData' }] });
+      expect(JSON.parse(result.actions[0].text!).message.approved).toBe(false);
+      expect(JSON.parse(result.raw)).toEqual(before);
+      expect(data).toEqual(before);
+      (request.data as unknown[])[1] = { ...typed, message: { approved: 'false' } };
+      expect(signingReview(request)).toMatchObject({ blocked: true, blind: true });
+    }
+  );
   it('does not claim V3 arrays have been decoded with V3 semantics', () => {
     const typed = {
       primaryType: 'List',

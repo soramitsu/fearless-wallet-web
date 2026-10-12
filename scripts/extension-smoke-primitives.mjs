@@ -507,7 +507,7 @@ export async function capturePrimitivesScreenshots({
     await evaluate(cdp, sessionId, `(() => {
       const router = ${APP}.router;
       const original = router.getRoutes().find((record) => record.name === 'UniversalWalletMigration');
-      router.addRoute({ path: '/design-migration-fixture', name: 'DesignMigrationFixture', component: original.components.default });
+      router.addRoute({ path: '/design-migration-fixture', name: 'DesignMigrationFixture', component: original.components.default, meta: original.meta });
       return true;
     })()`);
     await evaluate(cdp, sessionId, `(() => {
@@ -563,7 +563,7 @@ export async function capturePrimitivesScreenshots({
     await evaluate(cdp, sessionId, `(() => {
       const router = ${APP}.router;
       const original = router.getRoutes().find((record) => record.name === 'MigrationDescription');
-      router.addRoute({ path: '/design-password-migration-fixture', name: 'DesignPasswordMigrationFixture', component: original.components.default });
+      router.addRoute({ path: '/design-password-migration-fixture', name: 'DesignPasswordMigrationFixture', component: original.components.default, meta: original.meta });
       return true;
     })()`);
     await route('DesignPasswordMigrationFixture');
@@ -593,7 +593,7 @@ export async function capturePrimitivesScreenshots({
     await evaluate(cdp, sessionId, `(() => {
       const router = ${APP}.router;
       const original = router.getRoutes().find((record) => record.name === 'MigrationAccounts');
-      router.addRoute({ path: '/design-migration-rows-fixture', name: 'DesignMigrationRowsFixture', component: original.components.default });
+      router.addRoute({ path: '/design-migration-rows-fixture', name: 'DesignMigrationRowsFixture', component: original.components.default, meta: original.meta });
       window.__legacyRowsFixtureReply = { response: [{ address: '5EPCUjPxiHAcNooYipQFWr9NmmXJKpNG5RhcntXwbtUySrgH', name: 'Public legacy savings account', type: 'sr25519', walletEcosystem: 'substrate', isEthereum: false }] };
       return true;
     })()`);
@@ -638,20 +638,20 @@ export async function capturePrimitivesScreenshots({
       const style = getComputedStyle(button);
       const ring = button.querySelector('.button-progress');
       const ringStyle = ring && getComputedStyle(ring);
-      return { color: style.color, background: style.backgroundImage, mask: getComputedStyle(button, '::before').display, ringSize: ring?.getBoundingClientRect().width, ringColor: ringStyle?.borderTopColor, ringHidden: ring?.getAttribute('aria-hidden'), live: button.parentElement.getAttribute('aria-live'), duplicateStatus: document.querySelector('.wallets__item .row-status') !== null };
+      return { color: style.color, background: style.backgroundImage, mask: getComputedStyle(button, '::before').display, ringSize: ring?.getBoundingClientRect().width, ringColor: ringStyle?.borderTopColor, ringHidden: ring?.getAttribute('aria-hidden'), live: button.parentElement.getAttribute('aria-live'), calm: !!button.closest('.fw-calm'), shadow: style.boxShadow, duplicateStatus: document.querySelector('.wallets__item .row-status') !== null };
     })()`);
-    if (pendingPaint.color !== 'rgb(255, 255, 255)' || !pendingPaint.background.includes('rgb(214, 0, 127)') || pendingPaint.mask !== 'none' || pendingPaint.ringSize < 20 || pendingPaint.ringColor !== pendingPaint.color || pendingPaint.ringHidden !== 'true' || pendingPaint.live !== 'polite' || pendingPaint.duplicateStatus) throw new Error('Pending action lost readable fill, progress ring or concise live status: ' + JSON.stringify(pendingPaint));
+    if (pendingPaint.color !== 'rgb(255, 255, 255)' || !pendingPaint.background.includes('rgb(214, 0, 127)') || pendingPaint.mask !== 'none' || pendingPaint.ringSize < 20 || pendingPaint.ringColor !== pendingPaint.color || pendingPaint.ringHidden !== 'true' || pendingPaint.live !== 'polite' || !pendingPaint.calm || pendingPaint.shadow !== 'none' || pendingPaint.duplicateStatus) throw new Error('Pending action lost readable fill, progress ring or concise live status: ' + JSON.stringify(pendingPaint));
     await capture('46-migration-account-pending', 'Public fixture request held at popup boundary; named pending state and competing navigation disabled.');
     Object.assign(results.at(-1), { pendingRow, pendingPaint });
-    await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }, sessionId);
-    await waitForExpression(cdp, sessionId, `document.documentElement.dataset.fwEffects === 'reduced'`, 'Reduced motion pending state');
+    await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }, { name: 'prefers-reduced-transparency', value: 'reduce' }] }, sessionId);
+    await waitForExpression(cdp, sessionId, `document.documentElement.dataset.fwEffects === 'reduced'`, 'Reduced transparency pending state');
     const reducedPending = await evaluate(cdp, sessionId, `(() => {
       const button = document.querySelector('.button__confirm button');
       const ringStyle = getComputedStyle(button.querySelector('.button-progress'));
       return { shadow: getComputedStyle(button).boxShadow, iterations: ringStyle.animationIterationCount, duration: ringStyle.animationDuration };
     })()`);
     if (reducedPending.shadow !== 'none' || reducedPending.iterations !== '1' || parseFloat(reducedPending.duration) > 0.01) throw new Error('Reduced motion pending state still glows or loops');
-    await capture('46b-migration-account-reduced-motion', 'Public fixture pending state remains readable without glow or looping motion.');
+    await capture('46b-migration-account-reduced-motion', 'Public fixture with reduced transparency and motion: pending state remains readable without glow or looping motion.');
     Object.assign(results.at(-1), { reducedPending });
     await cdp.send('Emulation.setEmulatedMedia', { features: [] }, sessionId);
     await evaluate(cdp, sessionId, `(window.__finishLegacyMigration(false), true)`);
@@ -672,7 +672,7 @@ export async function capturePrimitivesScreenshots({
     await evaluate(cdp, sessionId, `(() => {
       const router = ${APP}.router;
       const original = router.getRoutes().find((record) => record.name === 'AddFromGoogle');
-      router.addRoute({ path: '/design-google-backup-fixture/:access_token', name: 'DesignGoogleBackupFixture', component: original.components.default });
+      router.addRoute({ path: '/design-google-backup-fixture/:access_token', name: 'DesignGoogleBackupFixture', component: original.components.default, meta: original.meta });
       window.__googleBackupFixture = { requests: [] };
       return true;
     })()`);

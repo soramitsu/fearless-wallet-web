@@ -67,7 +67,7 @@
     <NotificationPopup
       v-if="showNotificationPopup"
       sizeWidth="big"
-      rejectButtonText="Cancel"
+      rejectButtonText="common.cancel"
       acceptButtonText="common.delete"
       :showAcceptButton="true"
       :showRejectButton="true"

@@ -70,12 +70,19 @@ const PRIMITIVES = `(() => {
     },
     sheet: pick(first('.form-background:not(.form-contained) .form'), paint),
     sheetRole: document.querySelector('.form-background:not(.form-contained)')?.getAttribute('role') ?? null,
-    sheetControlsUnobscured: [...document.querySelectorAll('.form-background:not(.form-contained) .header-content button')]
+    sheetControlsUnobscured: dialog ? undefined : [...document.querySelectorAll('.form-background:not(.form-contained) .header-content button')]
       .filter(visible).every((button) => {
         const box = button.getBoundingClientRect();
         return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
       }),
     dialog: dialog && { ...pick(dialog, paint), role: dialog.closest('[role]')?.getAttribute('role') ?? null },
+    dialogControlsUnobscured: dialog && [...dialog.querySelectorAll('button')].filter(visible).every((button) => {
+      const box = button.getBoundingClientRect();
+      const clip = dialog.getBoundingClientRect();
+      const x = box.x + box.width / 2, y = box.y + box.height / 2;
+      if (y < clip.top || y > clip.bottom || y < 0 || y > innerHeight) return true;
+      return button.contains(document.elementFromPoint(x, y));
+    }),
     card: pick(first('.content-form'), paint),
     switch: pick(first('.switch__core'), ['background-color', 'background-image', 'border-top', 'border-radius']),
     checkbox: pick(first('.fw-checkbox__box'), ['background-color', 'background-image', 'border-top', 'border-radius']),
@@ -662,6 +669,7 @@ export async function capturePrimitivesScreenshots({
       result.pageWidth > result.viewportWidth ||
       result.dialogWithinViewport === false ||
       result.sheetControlsUnobscured === false ||
+      result.dialogControlsUnobscured === false ||
       result.searchFields?.some((field) => !field.iconWithinField || field.iconCenterOffset > 2 || field.labelOverlapsButton || !field.clearWithinField || !field.clearTargetSize || !field.textAvoidsClear)
     );
     if (layoutFailures.length) {

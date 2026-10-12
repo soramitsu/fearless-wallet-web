@@ -51,6 +51,18 @@
               </div>
             </transition>
 
+            <div v-if="isGoogle && file.active && missingBackup(file)" class="backup-loading">
+              <p :role="file.fileLoadError ? 'alert' : 'status'">
+                {{ $t(file.fileLoadError ? 'addWallet.google.somethingWrong' : 'addWallet.google.fetchInfo') }}
+              </p>
+              <FButton
+                text="ux.retry"
+                type="secondary"
+                :disabled="disabled || file.isFileLoading"
+                @click="requestFiles(index)"
+              />
+            </div>
+
             <p v-if="file.isLoading || file.isComplete" class="row-status" role="status" aria-live="polite">
               {{ $t(file.isComplete ? 'migration.completed' : 'migration.pending') }}
             </p>
@@ -166,6 +178,8 @@ export default defineComponent({
     },
     disabledReason(file: FilesState) {
       if (this.disabled) return '';
+      if (this.isGoogle && this.missingBackup(file))
+        return file.fileLoadError ? 'addWallet.google.somethingWrong' : 'addWallet.google.fetchInfo';
       return file.isComplete
         ? 'migration.completed'
         : file.isLoading
@@ -175,7 +189,32 @@ export default defineComponent({
             : '';
     },
     isDisabled(file: FilesState) {
-      return this.disabled || !file.password || file.isLoading || file.isComplete || this.pendingRows.has(rowKey(file));
+      return (
+        this.disabled ||
+        (this.isGoogle && this.missingBackup(file)) ||
+        !file.password ||
+        file.isLoading ||
+        file.isComplete ||
+        this.pendingRows.has(rowKey(file))
+      );
+    },
+    missingBackup(file: FilesState) {
+      return !file.json || (!!file.ethWalletID && !file.ethJson);
+    },
+    requestFiles(index: number) {
+      const file = this.items[index];
+      if (
+        !this.isActive ||
+        this.disabled ||
+        !this.isGoogle ||
+        !file ||
+        file.isLoading ||
+        file.isFileLoading ||
+        file.isComplete
+      )
+        return;
+      if (!file.json) this.$emit('getFile', file.id, index);
+      if (!file.ethJson && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
     },
     changePassword(index: number, password: string) {
       const file = this.items[index];
@@ -203,10 +242,7 @@ export default defineComponent({
         return;
       if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
       this.setItemValue(index, { active: value });
-      if (this.isGoogle) {
-        if (file.json === undefined) this.$emit('getFile', file.id, index);
-        if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
-      }
+      if (this.isGoogle && value) this.requestFiles(index);
     },
     cutAddress(address?: string) {
       return address ? cut(address) : '';

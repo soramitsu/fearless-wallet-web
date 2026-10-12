@@ -42,7 +42,6 @@ import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messagin
 import { Components } from '@/router/routes';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
-import { ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 
 export default defineComponent({ name: 'AddFromGoogle',
   components: {
@@ -57,6 +56,8 @@ export default defineComponent({ name: 'AddFromGoogle',
       isLoading: true,
       step: 1,
       tokenValidation: 'pending',
+      isActive: true,
+      fileRequests: new Map<string, string>(),
     };
   },
   computed: {
@@ -101,12 +102,17 @@ export default defineComponent({ name: 'AddFromGoogle',
           return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
     },
   },
+  beforeUnmount() {
+    this.isActive = false;
+    this.fileRequests.clear();
+  },
   async mounted() {
     const isValidToken = await this.isTokenValid();
 
-        if (!isValidToken) return;
+        if (!isValidToken || !this.isActive) return;
 
         const { files } = await getGoogleFiles(this.token);
+        if (!this.isActive) return;
 
         const jsonsWithoutEth = files.filter((el) => el.description === '' || el.description === 'undefined');
         const regex = /\w+\/\w+/;
@@ -161,10 +167,30 @@ export default defineComponent({ name: 'AddFromGoogle',
           this.step -= 1;
     },
     async getFile(id: string, key: number) {
-      const file = await getGoogleFile(id, this.token);
-
-          if (file.address.startsWith(ETHEREUM_ADDRESS_PREFIX)) this.setItemValue(key, { ethJson: file });
-          else this.setItemValue(key, { json: file });
+      const row = this.files[key];
+      if (!this.isActive || !row || !id || (id !== row.id && id !== row.ethWalletID)) return;
+      const requestKey = JSON.stringify([row.id, id]);
+      if (this.fileRequests.has(requestKey)) return;
+      this.fileRequests.set(requestKey, row.id);
+      const currentIndex = () => this.isActive ? this.files.findIndex((file) =>
+        file.id === row.id && file.address === row.address && file.ethWalletID === row.ethWalletID) : -1;
+      this.setItemValue(key, { isFileLoading: true, fileLoadError: false });
+      try {
+        const file = await getGoogleFile(id, this.token);
+        const index = currentIndex();
+        if (index < 0) return;
+        // The requested file ID determines its role, including an EVM-only primary backup.
+        this.setItemValue(index, id === row.id ? { json: file } : { ethJson: file });
+      } catch {
+        const index = currentIndex();
+        if (index >= 0) this.setItemValue(index, { fileLoadError: true });
+      } finally {
+        this.fileRequests.delete(requestKey);
+        const index = currentIndex();
+        if (index >= 0) this.setItemValue(index, {
+          isFileLoading: [...this.fileRequests.values()].some((owner) => owner === row.id),
+        });
+      }
     },
     proceed() {
       if (this.isFinishForm || this.isAccessDenied) {

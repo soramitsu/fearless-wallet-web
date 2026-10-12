@@ -178,6 +178,24 @@ describe('per-account request ownership', () => {
     expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false }]);
     wrapper.unmount();
   });
+
+  it('waits for a declared linked Google backup and retries that file without importing only the parent', async () => {
+    const file = { id: 'root-file', address: PARENT, password: 'fixture', json: { address: PARENT } as never, ethWalletID: 'linked-file', active: true, fileLoadError: true };
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [file] }, global });
+    expect(wrapper.vm.isDisabled(file)).toBe(true);
+    await wrapper.vm.importFromGoogle(0);
+    expect(mocks.restoreJson).not.toHaveBeenCalled();
+    expect(wrapper.emitted('setItemValue')).toBeUndefined();
+    wrapper.vm.requestFiles(0);
+    expect(wrapper.emitted('getFile')).toEqual([['linked-file', 0]]);
+    const linked = { address: CHILD } as never;
+    await wrapper.setProps({ items: [{ ...file, ethJson: linked, fileLoadError: false }] });
+    await wrapper.vm.importFromGoogle(0);
+    expect(mocks.restoreJson).toHaveBeenNthCalledWith(1, linked, 'fixture');
+    expect(mocks.restoreJson).toHaveBeenNthCalledWith(2, file.json, 'fixture');
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: false, isComplete: true }]);
+    wrapper.unmount();
+  });
 });
 
 describe('legacy account upgrade recovery', () => {

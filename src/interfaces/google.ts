@@ -9,6 +9,8 @@ interface FileData {
   isError: boolean;
   isLoading: boolean;
   isComplete: boolean;
+  isFileLoading: boolean;
+  fileLoadError: boolean;
   ethWalletID: string;
   description: string;
   json: KeyringPair$Json;

@@ -15,7 +15,7 @@
     :showBackground="showBackground"
     :top="top"
     :left="left"
-    @handlerFilter="$emit('handlerFilter', ...arguments)"
+    @handlerFilter="$emit('handlerFilter', $event)"
     @handlerClose="$emit('handlerClose')"
   >
     <button

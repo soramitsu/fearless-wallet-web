@@ -44,11 +44,19 @@ const PRIMITIVES = `(() => {
       const icon = wrapper.querySelector('.search-icon');
       const fieldBox = field.getBoundingClientRect();
       const labelBox = label.getBoundingClientRect();
-      const iconBox = icon.getBoundingClientRect();
+      const iconBox = icon?.getBoundingClientRect();
+      const clear = wrapper.querySelector('[data-testid="clearSearch"]');
+      const clearBox = clear?.getBoundingClientRect();
       const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
       return {
-        iconWithinField: iconBox.left >= fieldBox.left && iconBox.right <= fieldBox.right && iconBox.top >= fieldBox.top && iconBox.bottom <= fieldBox.bottom,
-        iconCenterOffset: Math.round(Math.abs(iconBox.top + iconBox.height / 2 - fieldBox.top - fieldBox.height / 2)),
+        iconWithinField: !iconBox || iconBox.left >= fieldBox.left && iconBox.right <= fieldBox.right && iconBox.top >= fieldBox.top && iconBox.bottom <= fieldBox.bottom,
+        iconCenterOffset: iconBox ? Math.round(Math.abs(iconBox.top + iconBox.height / 2 - fieldBox.top - fieldBox.height / 2)) : 0,
+        fieldBox: fieldBox.toJSON(),
+        clearBox: clearBox?.toJSON() ?? null,
+        clearName: clear?.getAttribute('aria-label') ?? null,
+        clearWithinField: !clearBox || clearBox.left >= fieldBox.left && clearBox.right <= fieldBox.right && clearBox.top >= fieldBox.top && clearBox.bottom <= fieldBox.bottom,
+        clearTargetSize: !clearBox || clearBox.width >= 48 && clearBox.height >= 48,
+        textAvoidsClear: !clearBox || parseFloat(getComputedStyle(field).paddingRight) >= fieldBox.right - clearBox.left,
         labelOverlapsButton: [...(wrapper.closest('[role="dialog"]') ?? document).querySelectorAll('button')].filter(visible).some((button) => overlaps(labelBox, button.getBoundingClientRect())),
       };
     }),
@@ -124,13 +132,35 @@ export async function capturePrimitivesScreenshots({
       cdp,
       sessionId,
       `(() => {
-        const element = document.querySelector(${JSON.stringify(selector)});
+        const element = [...document.querySelectorAll(${JSON.stringify(selector)})].find((candidate) => { const box = candidate.getBoundingClientRect(); return box.width > 0 && box.height > 0; });
         if (!element) throw new Error('Not on screen: ' + ${JSON.stringify(selector)});
         element.scrollIntoView({ block: 'center' });
         element.click();
         return true;
       })()`
     );
+  const escape = async () => {
+    for (const type of ['keyDown', 'keyUp']) {
+      await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, sessionId);
+    }
+  };
+  const setSearch = async (query) => {
+    await evaluate(cdp, sessionId, `(() => {
+      const input = [...document.querySelectorAll('.search-input-wrapper input')].find((candidate) => { const box = candidate.getBoundingClientRect(); return box.width > 0 && box.height > 0; });
+      if (!input) throw new Error('Search field is missing');
+      input.focus();
+      input.select();
+      return true;
+    })()`);
+    await cdp.send('Input.insertText', { text: query }, sessionId);
+    await waitFor('[data-testid="clearSearch"]', 'Search clear control');
+  };
+  const assertSearchCleared = async () => {
+    await waitForExpression(cdp, sessionId, `(() => {
+      const input = [...document.querySelectorAll('.search-input-wrapper input')].find((candidate) => { const box = candidate.getBoundingClientRect(); return box.width > 0 && box.height > 0; });
+      return input && input.value === '' && document.activeElement === input && !input.closest('.search-input-wrapper').querySelector('[data-testid="clearSearch"]');
+    })()`, 'Cleared search retains focus');
+  };
   // A real key press first, so the focus that follows is keyboard focus (:focus-visible), as a Tab user gets it.
   const keyboardFocus = async (selector) => {
     for (const type of ['keyDown', 'keyUp']) {
@@ -144,7 +174,7 @@ export async function capturePrimitivesScreenshots({
       cdp,
       sessionId,
       `(() => {
-        const element = document.querySelector(${JSON.stringify(selector)});
+        const element = [...document.querySelectorAll(${JSON.stringify(selector)})].find((candidate) => { const box = candidate.getBoundingClientRect(); return box.width > 0 && box.height > 0; });
         if (!element) throw new Error('Not on screen: ' + ${JSON.stringify(selector)});
         element.scrollIntoView({ block: 'center' });
         element.focus();
@@ -263,6 +293,12 @@ export async function capturePrimitivesScreenshots({
     await route('SettingsNetworksAssets');
     await waitFor('[data-testid="tabButton"]', 'Network management');
     await capture('09-network-tabs', 'Networks: the tab list, the search field and the network switches.');
+    await setSearch('Polkadot');
+    await keyboardFocus('[data-testid="clearSearch"]');
+    await capture('09b-network-search-clear', 'Networks: a named clear control with visible keyboard focus.');
+    await click('[data-testid="clearSearch"]');
+    await assertSearchCleared();
+    results.at(-1).clearRestoresInputFocus = true;
 
     await route('SettingsChangePassword');
     await waitFor('.input .el-input__inner', 'Change password');
@@ -288,6 +324,16 @@ export async function capturePrimitivesScreenshots({
       '12-currency-dialog',
       'A dialog over its scrim: the currency list with its search field and the selected row.'
     );
+    await setSearch('Dollar');
+    await keyboardFocus('[data-testid="clearSearch"]');
+    await capture('12b-currency-search-clear', 'Currency search: a named clear control; Escape first clears the query.');
+    await keyboardFocus('.search-input-wrapper input');
+    await escape();
+    await assertSearchCleared();
+    if (!(await evaluate(cdp, sessionId, "Boolean(document.querySelector('.select-popup .row'))"))) {
+      throw new Error('Escape closed the currency dialog before clearing its search');
+    }
+    results.at(-1).escapeClearsBeforeDismissal = true;
     const dialogOpen = "Boolean(document.querySelector('.select-popup .row'))";
     const closes = async (close) => {
       await close();
@@ -299,15 +345,7 @@ export async function capturePrimitivesScreenshots({
     if (dialog.closesWithItsButton) {
       await click('[data-testid="settings-fiat"]');
       await waitFor('.select-popup .row', 'Currency list again');
-      dialog.closesWithEscape = await closes(async () => {
-        for (const type of ['keyDown', 'keyUp']) {
-          await cdp.send(
-            'Input.dispatchKeyEvent',
-            { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 },
-            sessionId
-          );
-        }
-      });
+      dialog.closesWithEscape = await closes(escape);
     }
 
     if (!dialog.closesWithItsButton || !dialog.closesWithEscape) throw new Error('Currency dialog dismissal regressed');
@@ -321,6 +359,9 @@ export async function capturePrimitivesScreenshots({
       { name: '17-dialog-forced-colors', media: [{ name: 'forced-colors', value: 'active' }] },
       { name: '18-dialog-narrow', width: 320, height: 600 },
       { name: '19-dialog-200-percent', width: 281, height: 300 },
+      { name: '20-dialog-russian-search', width: 320, height: 600, locale: 'ru-RU' },
+      { name: '21-dialog-akkadian-search', width: 320, height: 600, locale: 'akk-Xsux-x-old' },
+      { name: '22-dialog-egyptian-search', width: 320, height: 600, locale: 'egy-Egyp' },
     ];
     for (const variant of variants) {
       await cdp.send('Emulation.setEmulatedMedia', { features: variant.media ?? [] }, sessionId);
@@ -334,11 +375,16 @@ export async function capturePrimitivesScreenshots({
         },
         sessionId
       );
+      if (variant.locale) {
+        await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = ${JSON.stringify(variant.locale)}, document.documentElement.lang = ${JSON.stringify(variant.locale)}, true)`);
+      }
       await route('Settings');
       await waitFor('[data-testid="visualEffects-auto"] input', 'Visual effects choice');
       await click(`[data-testid="visualEffects-${variant.preference ?? 'auto'}"] input`);
       await click('[data-testid="settings-fiat"]');
       await waitFor('.select-popup .row', 'Currency dialog variant');
+      await setSearch('Dollar');
+      await keyboardFocus('[data-testid="clearSearch"]');
       await capture(variant.name, 'Currency dialog: ' + variant.name.replace('dialog-', '').replaceAll('-', ' '));
       results.at(-1).dialogWithinViewport = await evaluate(
         cdp,
@@ -348,6 +394,9 @@ export async function capturePrimitivesScreenshots({
         return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
       })()`
       );
+      await click('[data-testid="clearSearch"]');
+      await assertSearchCleared();
+      results.at(-1).clearRestoresInputFocus = true;
       await click('.select-popup [data-testid="basicCloseBtn"]');
       await waitForExpression(cdp, sessionId, '!' + dialogOpen, 'Currency dialog closed');
     }
@@ -380,7 +429,7 @@ export async function capturePrimitivesScreenshots({
       result.pageWidth > result.viewportWidth ||
       result.dialogWithinViewport === false ||
       result.sheetControlsUnobscured === false ||
-      result.searchFields?.some((field) => !field.iconWithinField || field.iconCenterOffset > 2 || field.labelOverlapsButton)
+      result.searchFields?.some((field) => !field.iconWithinField || field.iconCenterOffset > 2 || field.labelOverlapsButton || !field.clearWithinField || !field.clearTargetSize || !field.textAvoidsClear)
     );
     if (layoutFailures.length) {
       throw new Error('Primitive layout checks failed: ' + layoutFailures.map(({ name }) => name).join(', '));
@@ -391,12 +440,13 @@ export async function capturePrimitivesScreenshots({
     const where = await evaluate(
       cdp,
       sessionId,
-      '({ route: location.hash, text: document.body?.innerText.slice(0, 600) ?? "" })'
+      '({ route: location.hash, text: document.body?.innerText.slice(0, 600) ?? "", search: [...document.querySelectorAll(".search-input-wrapper input")].map((input) => ({value: input.value, label: input.labels?.[0]?.textContent, display: getComputedStyle(input).display, width: input.getBoundingClientRect().width, html: input.closest(".search-input-wrapper").outerHTML.slice(0, 3000)})) })'
     ).catch(() => ({}));
     const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId).catch(() => ({}));
 
     await fs.mkdir(outputDir, { recursive: true });
     if (data) await fs.writeFile(path.join(outputDir, 'failure.png'), Buffer.from(data, 'base64'));
+    await fs.writeFile(path.join(outputDir, 'failure-context.json'), JSON.stringify(where, null, 2));
     error.message = `${error.message}\nPopup at ${where.route}: ${JSON.stringify(where.text)}`;
     throw error;
   } finally {

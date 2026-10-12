@@ -44,6 +44,7 @@ export function useModalFocus(element: Ref<HTMLElement | null>, enabled: () => b
   onBeforeUnmount(deactivate);
 
   return (event: KeyboardEvent) => {
+    if (event.isComposing) return;
     // A nested dialog owns its own keys, including when it has no dismiss action.
     if ((event.target as HTMLElement).closest('[role="dialog"]') !== element.value) return;
     if (event.key === 'Escape' && dismiss()) {

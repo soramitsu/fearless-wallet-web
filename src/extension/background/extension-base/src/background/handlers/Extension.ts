@@ -36,7 +36,6 @@ import {
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
   convertHexToUtf8,
-  getEip155MessageAddress,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
@@ -63,6 +62,7 @@ import {
   resolveSolanaSignAndSendTransaction,
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
+import { validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
@@ -198,7 +198,7 @@ import {
   isLocallySignableSelectedSoraPair,
 } from '@/defi/soraAccountBinding';
 import { WalletEcosystem } from '@/interfaces';
-import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import { getTabAuthorizationTarget, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import {
   isNativeEVMNetwork,
   uniqueStringArray,
@@ -666,97 +666,71 @@ export default class Extension extends FWExtensionBase {
   }
 
   async signEvmApprove({ id }: RequestSigningApprove): Promise<boolean> {
-    const request = this.state.requestService.getSignRequest(id) as EvmRequestsSubjectPayload | undefined;
+    const handler = this.state.requestService.evmRequestHandler;
+    const request = handler.claimEvmSignRequest(id);
+    const assertCurrent = () => {
+      if (handler.getEvmSignRequest(id) !== request) throw new Error('EVM signing request was cancelled');
+    };
+    try {
+      await validateEvmSigningContext(this.state, request);
+      assertCurrent();
+      const address = request.account.address;
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
 
-    assert(request, 'Unable to find request');
-
-    const { data } = request;
-
-    const address = getEip155MessageAddress(request.method, data);
-
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
-    const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);
-
-    if (isMobile) {
-      try {
+      if (request.account.isMobile) {
         const account = this.state.keyringService.getAddress(substrateAddress);
-
-        if (!account || account.meta.wcTopic) throw new Error('Couldnt find account');
-
-        const res = await this.state.walletConnectDappService.onEvmRequest(
-          id,
-          request.url,
-          request.method,
-          request.data,
-          account.meta.wcTopic as string
-        );
-        if (res) request.resolve(res);
-      } catch {
-        request.reject(new Error('USER_REJECTED'));
-
-        return false;
+        if (!account?.meta.wcTopic) throw new Error('Mobile signing account is unavailable');
+        try {
+          const result = await this.state.walletConnectDappService.onEvmRequest(
+            id,
+            request.url,
+            request.method,
+            request.data,
+            account.meta.wcTopic as string,
+            request.network,
+            assertCurrent
+          );
+          if (result) request.resolve(result);
+        } catch (error) {
+          request.reject(error instanceof Error ? error : new Error('Unable to sign on the mobile wallet'));
+          return false;
+        }
+        return true;
       }
 
+      const provider = this.state.getEvmApi(request.network.name)?.api;
+      if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+        if (!provider || (await provider.getNetwork()).chainId !== BigInt(request.network.chainId)) {
+          throw new Error('EVM provider does not match the reviewed network');
+        }
+        // The provider lookup awaited remote state; repeat local authorization
+        // before exporting a key or initiating a broadcast.
+        await validateEvmSigningContext(this.state, request);
+        assertCurrent();
+      }
+      const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address });
+      const signer = new Wallet(privateKey, provider);
+      const params = request.data as unknown[];
+      if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+        const txData = params[0] as ethers.TransactionRequest;
+        const { hash } = await signer.sendTransaction({ ...txData, chainId: BigInt(request.network.chainId) });
+        request.resolve({ id: request.id, payload: hash as HexString });
+      } else {
+        const method = request.method;
+        const payload = method === 'personal_sign' ? params[0] : params[1];
+        if (typeof payload !== 'string') throw new Error('Invalid EVM signing payload');
+        const isMessage = method === 'eth_sign' || method === 'personal_sign';
+        const message = isMessage ? convertHexToUtf8(payload) : JSON.parse(payload);
+        if (!isMessage) delete message.types['EIP712Domain'];
+        const signature = await (isMessage
+          ? signer.signMessage(message)
+          : signer.signTypedData(message.domain, message.types, message.message));
+        request.resolve({ id: request.id, payload: signature as HexString });
+      }
       return true;
+    } finally {
+      handler.releaseEvmSignRequest(request);
     }
-
-    const method = request.method;
-    const { list: authList } = await this.getAuthList();
-    const auth = authList[stripUrl(request.url)];
-
-    const network = Object.values(this.state.networkService.networkMap).find(
-      (el) =>
-        isSameString(el.genesisHash, auth.currentEvmNetworkKey) || isSameString(el.name, auth.currentEvmNetworkKey)
-    );
-
-    if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
-
-    const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
-
-    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
-
-    if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const txData = request.data[0] as { to: string; value: string };
-
-      const { hash } = await signer.sendTransaction(txData);
-
-      request.resolve({ id: request.id, payload: hash as HexString });
-    } else {
-      const params = request.data;
-
-      if (
-        [
-          'eth_sign',
-          'personal_sign',
-          'eth_signTypedData',
-          'eth_signTypedData_v1',
-          'eth_signTypedData_v3',
-          'eth_signTypedData_v4',
-        ].indexOf(method) < 0
-      )
-        throw new Error('Not found sign method');
-
-      let payload;
-
-      if (typeof params[0] === 'string' && isEthereumAddress(params[0])) payload = params[1];
-      else if (typeof params[1] === 'string' && isEthereumAddress(params[1])) payload = params[0];
-
-      if (address === '' || !payload) throw new Error('Not found address or payload to sign');
-
-      const message =
-        ['eth_sign', 'personal_sign'].indexOf(method) > -1 ? convertHexToUtf8(payload) : JSON.parse(payload);
-
-      if (!(['eth_sign', 'personal_sign'].indexOf(method) > -1)) delete message.types['EIP712Domain'];
-
-      const signature = await (['eth_sign', 'personal_sign'].indexOf(method) > -1
-        ? signer.signMessage(message)
-        : signer.signTypedData(message.domain, message.types, message.message));
-
-      request.resolve({ id: request.id, payload: signature as HexString });
-    }
-
-    return true;
   }
 
   async signSolanaApprove({ id }: RequestSigningApprove): Promise<boolean> {

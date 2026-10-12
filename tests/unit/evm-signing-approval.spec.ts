@@ -1,0 +1,245 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Wallet, verifyMessage, verifyTypedData } from 'ethers';
+import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
+import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
+
+vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@extension-base/services', () => ({}));
+vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
+vi.mock('@extension-base/utils/crossenv', () => ({
+  chrome: { runtime: { getURL: (path: string) => `chrome-extension://fixture/${path}` } },
+}));
+import Extension from '@extension-base/background/handlers/Extension';
+import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
+import type { RequestService } from '@extension-base/services/request-service';
+import type State from '@extension-base/background/handlers/State';
+
+// Public, unfunded test key. All network and mobile transport calls are stubs.
+const wallet = new Wallet(`0x${'11'.repeat(32)}`);
+const address = wallet.address;
+const url = 'https://public.example';
+const data = ['0x68656c6c6f', address];
+let auth: { isAllowed: boolean; evmAuthorizedAccount: string; currentEvmNetworkKey: string };
+let state: State;
+let handler: EvmRequestHandler;
+let extension: Extension;
+let network: {
+  name: string;
+  chainId: string;
+  genesisHash: string;
+  isEthereum: boolean;
+  disabled: boolean;
+  assets: unknown[];
+};
+let mobile = false;
+
+beforeEach(() => {
+  mobile = false;
+  auth = { isAllowed: true, evmAuthorizedAccount: address, currentEvmNetworkKey: 'Ethereum' };
+  network = {
+    name: 'Ethereum',
+    chainId: '1',
+    genesisHash: '0x1234',
+    isEthereum: true,
+    disabled: false,
+    assets: [{ symbol: 'ETH', precision: 18, isNative: true }],
+  };
+  handler = new EvmRequestHandler({ popupOpen: vi.fn(), updateIcon: vi.fn() } as unknown as RequestService);
+  state = {
+    getAuthInfo: vi.fn(async () => auth),
+    getEvmApi: vi.fn(() => undefined),
+    networkService: { networkMap: { Ethereum: network } },
+    keyringService: {
+      getSubstrateAddress: vi.fn(() => 'substrate-root'),
+      getEthereumAddress: vi.fn(() => address),
+      isMobileAccount: vi.fn(() => mobile),
+      getAllAccounts: vi.fn(() => [
+        { address: 'substrate-root', meta: { name: 'Public fixture', ethereumAddress: address } },
+      ]),
+      getAddresses: vi.fn(() => []),
+      getAddress: vi.fn(() => ({ address: 'substrate-root', meta: { wcTopic: 'public-fixture-topic' } })),
+      accountExportPrivateKey: vi.fn(() => ({ privateKey: wallet.privateKey })),
+    },
+    walletConnectDappService: { onEvmRequest: vi.fn(async () => ({ id: 'first', payload: '0x1234' })) },
+    requestService: { evmRequestHandler: handler, getSignRequest: (id: string) => handler.getEvmSignRequest(id) },
+  } as unknown as State;
+  extension = new Extension(state);
+});
+async function queue(method = 'personal_sign', params: unknown[] = data) {
+  const context = await captureEvmSigningContext(state, url, method, params);
+  const result = handler.confirmSign('first', url, method, params, context);
+  return { result, request: handler.getEvmSignRequest('first') };
+}
+
+afterEach(() => vi.restoreAllMocks());
+
+describe('EVM approval uses the reviewed request context', () => {
+  it('produces a real signature with the reviewed account', async () => {
+    const { result } = await queue();
+    await expect(extension.signEvmApprove({ id: 'first' })).resolves.toBe(true);
+    const signature = await result;
+    expect(verifyMessage('hello', signature.payload)).toBe(address);
+    expect(state.keyringService.accountExportPrivateKey).toHaveBeenCalledExactlyOnceWith({ address });
+    expect(handler.signEvmSubject.value).toEqual({});
+  });
+  it('produces a real typed-data signature for the reviewed domain and account', async () => {
+    const typed = {
+      domain: { name: 'Public fixture', chainId: 1 },
+      types: { Message: [{ name: 'contents', type: 'string' }] },
+      message: { contents: 'hello' },
+    };
+    const { result } = await queue('eth_signTypedData_v4', [address, JSON.stringify(typed)]);
+    await extension.signEvmApprove({ id: 'first' });
+    expect(verifyTypedData(typed.domain, typed.types, typed.message, (await result).payload)).toBe(address);
+  });
+  it('broadcasts once with the reviewed chain forced into the transaction', async () => {
+    const tx = { from: address, to: address, value: '0x1' };
+    const { result } = await queue('eth_sendTransaction', [tx]);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: { getNetwork: vi.fn(async () => ({ chainId: 1n })) } } as never);
+    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockResolvedValue({ hash: '0x1234' } as never);
+    await extension.signEvmApprove({ id: 'first' });
+    await expect(result).resolves.toEqual({ id: 'first', payload: '0x1234' });
+    expect(send).toHaveBeenCalledExactlyOnceWith({ ...tx, chainId: 1n });
+  });
+  it.each(['network', 'account', 'revocation', 'network identity', 'signer kind'])(
+    'blocks a changed %s before key export',
+    async (change) => {
+      const { result, request } = await queue();
+      if (change === 'network') auth.currentEvmNetworkKey = 'Unknown';
+      if (change === 'account') auth.evmAuthorizedAccount = '0x2222222222222222222222222222222222222222';
+      if (change === 'revocation') auth.isAllowed = false;
+      if (change === 'network identity') network.chainId = '137';
+      if (change === 'signer kind') mobile = true;
+      await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
+      expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+      expect(state.walletConnectDappService.onEvmRequest).not.toHaveBeenCalled();
+      request.resolve({ id: 'first', payload: '0x1234' });
+      await result;
+    }
+  );
+  it('blocks a second approval while the first authorization read is pending', async () => {
+    const { result } = await queue();
+    let resume!: (value: typeof auth) => void;
+    vi.mocked(state.getAuthInfo).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resume = resolve as typeof resume;
+        })
+    );
+    const first = extension.signEvmApprove({ id: 'first' });
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('already pending');
+    resume(auth);
+    await first;
+    await result;
+    expect(state.keyringService.accountExportPrivateKey).toHaveBeenCalledTimes(1);
+  });
+  it('does not sign when cancellation completes during the authorization read', async () => {
+    const { result } = await queue();
+    const rejected = expect(result).rejects.toThrow('Cancelled');
+    let resume!: (value: typeof auth) => void;
+    vi.mocked(state.getAuthInfo).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resume = resolve as typeof resume;
+        })
+    );
+    const pending = extension.signEvmApprove({ id: 'first' });
+    extension.signingCancel({ id: 'first' });
+    resume(auth);
+    await expect(pending).rejects.toThrow('cancelled');
+    await rejected;
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+  });
+  it('allows retry after an authorization transport error without leaving the request locked', async () => {
+    const { result } = await queue();
+    vi.mocked(state.getAuthInfo).mockRejectedValueOnce(new Error('storage unavailable'));
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('storage unavailable');
+    await extension.signEvmApprove({ id: 'first' });
+    await result;
+  });
+  it('checks the RPC chain before exporting a transaction key', async () => {
+    const { result, request } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    vi.mocked(state.getEvmApi).mockReturnValue({
+      api: { getNetwork: vi.fn(async () => ({ chainId: 137n })) },
+    } as never);
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('reviewed network');
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    request.resolve({ id: 'first', payload: '0x1234' });
+    await result;
+  });
+  it('revalidates after the RPC chain lookup before any broadcast', async () => {
+    const { result, request } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    vi.mocked(state.getEvmApi).mockReturnValue({
+      api: {
+        getNetwork: vi.fn(async () => {
+          auth.isAllowed = false;
+          return { chainId: 1n };
+        }),
+      },
+    } as never);
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    request.resolve({ id: 'first', payload: '0x1234' });
+    await result;
+  });
+  it('settles the dApp request when the mobile wallet rejects instead of allowing a silent retry', async () => {
+    mobile = true;
+    const { result } = await queue();
+    const rejected = expect(result).rejects.toThrow('User rejected on mobile');
+    vi.mocked(state.walletConnectDappService.onEvmRequest).mockRejectedValueOnce(new Error('User rejected on mobile'));
+    await expect(extension.signEvmApprove({ id: 'first' })).resolves.toBe(false);
+    await rejected;
+    expect(handler.signEvmSubject.value).toEqual({});
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
+    expect(state.walletConnectDappService.onEvmRequest).toHaveBeenCalledTimes(1);
+  });
+  it('forwards an explicitly approved mobile request once using its captured network', async () => {
+    mobile = true;
+    const { result, request } = await queue();
+    expect(state.walletConnectDappService.onEvmRequest).not.toHaveBeenCalled();
+    await extension.signEvmApprove({ id: 'first' });
+    await result;
+    expect(state.walletConnectDappService.onEvmRequest).toHaveBeenCalledExactlyOnceWith(
+      'first',
+      url,
+      'personal_sign',
+      data,
+      'public-fixture-topic',
+      request.network,
+      expect.any(Function)
+    );
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+  });
+});
+
+describe('mobile EVM request network binding', () => {
+  function service(accounts: string[]) {
+    const send = vi.fn(async () => ({ payload: '0x1234' }));
+    const service = Object.create(WalletConnectDAppService.prototype) as WalletConnectDAppService;
+    Object.assign(service, {
+      state,
+      app: { client: { request: send } },
+      getSession: () => ({ namespaces: { eip155: { accounts } } }),
+    });
+    return { service, send };
+  }
+  it('forwards the captured chain instead of rereading the site network', async () => {
+    const context = await captureEvmSigningContext(state, url, 'personal_sign', data);
+    auth.currentEvmNetworkKey = 'Different';
+    const { service: mobileService, send } = service([`eip155:1:${address}`]);
+    await mobileService.onEvmRequest('first', url, 'personal_sign', data, 'fixture', context.network, vi.fn());
+    expect(send).toHaveBeenCalledExactlyOnceWith({
+      chainId: 'eip155:1',
+      topic: 'fixture',
+      request: { method: 'personal_sign', params: data },
+    });
+  });
+  it('does not reuse account permission from a different session chain', async () => {
+    const context = await captureEvmSigningContext(state, url, 'personal_sign', data);
+    const { service: mobileService, send } = service([`eip155:137:${address}`]);
+    await expect(
+      mobileService.onEvmRequest('first', url, 'personal_sign', data, 'fixture', context.network, vi.fn())
+    ).rejects.toThrow();
+    expect(send).not.toHaveBeenCalled();
+  });
+});

@@ -4,6 +4,8 @@ import type {
   EvmRequestParams,
   EvmRequests,
   EvmRequestsSubject,
+  EvmRequestsSubjectPayload,
+  EvmSigningContext,
   WCSignRequest,
 } from '@extension-base/services/request-service/types';
 import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
@@ -13,6 +15,7 @@ export default class EvmRequestHandler {
   private readonly requestService: RequestService;
   private wcRequests: Record<string, WCSignRequest> = {};
   private evmRequests: EvmRequestsSubject = {};
+  private readonly pendingApprovals = new WeakSet<EvmRequestsSubjectPayload>();
   public readonly signWcSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
   public readonly signEvmSubject = new BehaviorSubject<EvmRequests>({});
 
@@ -32,6 +35,28 @@ export default class EvmRequestHandler {
     return this.evmRequests[id];
   }
 
+  claimEvmSignRequest(id: string): EvmRequestsSubjectPayload {
+    const request = this.evmRequests[id];
+    if (!request || this.pendingApprovals.has(request)) throw new Error('EVM request unavailable or already pending');
+    this.pendingApprovals.add(request);
+    return request;
+  }
+
+  releaseEvmSignRequest(request: EvmRequestsSubjectPayload): void {
+    this.pendingApprovals.delete(request);
+  }
+
+  private publishEvmRequests(): void {
+    this.signEvmSubject.next(
+      Object.fromEntries(
+        Object.entries(this.evmRequests).map(([id, request]) => {
+          const { data, method, url, account, network } = request;
+          return [id, structuredClone({ id, data, method, url, account, network })];
+        })
+      )
+    );
+  }
+
   get allWcSignRequests(): WalletConnectTransactionRequest[] {
     return Object.values(this.wcRequests).map(({ request }): WalletConnectTransactionRequest => ({ ...request }));
   }
@@ -42,17 +67,37 @@ export default class EvmRequestHandler {
     this.requestService.updateIcon(true);
 
     if (type === 'wcRequests') this.signWcSubject.next([...this.allWcSignRequests]);
-    else if (type === 'evmRequests') this.signEvmSubject.next(this.evmRequests);
+    else if (type === 'evmRequests') this.publishEvmRequests();
   }
 
-  confirmSign(id: string, url: string, method: string, params: EvmRequestParams): Promise<ResponseSigning> {
-    const complete = () => this.onComplete(id, 'evmRequests');
-    const values = this.signEvmSubject.getValue();
-
+  confirmSign(
+    id: string,
+    url: string,
+    method: string,
+    params: EvmRequestParams,
+    context: EvmSigningContext
+  ): Promise<ResponseSigning> {
     return new Promise<ResponseSigning>((resolve, reject): void => {
-      this.signEvmSubject.next({ ...values, [id]: { url, data: params, id } });
-
-      this.evmRequests[id] = { ...this.signComplete(complete, resolve, reject), url, method, data: params, id };
+      if (this.evmRequests[id]) throw new Error('Duplicate EVM request ID');
+      const snapshot = structuredClone({ url, method, data: params, id, ...context });
+      let settled = false;
+      const complete = () => {
+        if (settled || this.evmRequests[id] !== request) return false;
+        settled = true;
+        this.onComplete(id, 'evmRequests');
+        return true;
+      };
+      const request: EvmRequestsSubjectPayload = {
+        ...snapshot,
+        resolve: (result) => {
+          if (complete()) resolve(result);
+        },
+        reject: (error) => {
+          if (complete()) reject(error);
+        },
+      };
+      this.evmRequests[id] = request;
+      this.publishEvmRequests();
 
       this.requestService.updateIcon();
       this.requestService.popupOpen();

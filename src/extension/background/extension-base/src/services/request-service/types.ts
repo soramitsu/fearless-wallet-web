@@ -20,28 +20,25 @@ export type DAppChainInfoPayload = {
 
 export type EvmRequestParams = unknown;
 
-export type EvmRequestPayload = {
+export type EvmSigningContext = {
+  account: { address: string; name?: string; isMobile: boolean };
+  network: { name: string; chainId: string; genesisHash: string; symbol?: string; decimals?: number };
+};
+
+export type EvmRequestPayload = EvmSigningContext & {
   id: string;
   data: EvmRequestParams;
+  method: string;
   url: string;
 };
 
 export type EvmRequests = Record<string, EvmRequestPayload>;
 
-export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning> {
-  id: string;
-  data: EvmRequestParams;
-  method: string;
-  url: string;
-}
+export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning>, EvmRequestPayload {}
 
 export type EvmRequestsSubject = Record<string, EvmRequestsSubjectPayload>;
 
-export type SolanaSigningMethod =
-  | 'signAllTransactions'
-  | 'signAndSendTransaction'
-  | 'signMessage'
-  | 'signTransaction';
+export type SolanaSigningMethod = 'signAllTransactions' | 'signAndSendTransaction' | 'signMessage' | 'signTransaction';
 
 export type SolanaTransactionPreview = {
   accountCount?: number;

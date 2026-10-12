@@ -1,3 +1,4 @@
+import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import {
@@ -8,15 +9,12 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import {
-  generateHalfGenesisHash,
-  getEip155MessageAddress,
-  parseRequestParams,
-} from '@extension-base/services/wallet-connect-service/utils';
+import { generateHalfGenesisHash, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
+import type { EvmSigningContext } from '@extension-base/services/request-service/types';
 import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { EvmRequestParams } from '@extension-base/services/request-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -320,24 +318,25 @@ export class WalletConnectDAppService {
 
   public async onEvmRequest(
     id: string,
-    url: string,
+    _url: string,
     method: string,
     params: EvmRequestParams,
-    topic: string
+    topic: string,
+    network: EvmSigningContext['network'],
+    assertCurrent: () => void
   ): Promise<ResponseSigning> {
     const requestSession = this.getSession(topic);
 
-    const sessionAccounts = requestSession.namespaces.eip155.accounts.map((account) => account.split(':')[2]);
-
-    const authInfo = await this.state.getAuthInfo(url);
-
-    if (!authInfo || !authInfo?.currentEvmNetworkKey) throw new Error(getSdkError('UNSUPPORTED_CHAINS').message);
-
-    const networkKey = authInfo.currentEvmNetworkKey;
-    const chainState = this.state.networkService.networkMap[networkKey];
+    const chainId = `${WALLET_CONNECT_EIP155_NAMESPACE}:${network.chainId}`;
+    const sessionAccounts = requestSession.namespaces.eip155.accounts
+      .filter((account) => account.startsWith(`${chainId}:`))
+      .map((account) => account.split(':')[2]);
+    const address = evmSigningAddress(method, params);
+    this.checkAccount(address, sessionAccounts);
+    assertCurrent();
 
     const requestEvent: EngineTypes.RequestParams = {
-      chainId: `${WALLET_CONNECT_EIP155_NAMESPACE}:${chainState.chainId}`,
+      chainId,
       request: {
         method,
         params,
@@ -356,10 +355,6 @@ export class WalletConnectDAppService {
     if (!this.app) throw new Error('Wallet Connect is not init!');
 
     if (signMethods.includes(method)) {
-      const address = getEip155MessageAddress(method, params);
-
-      this.checkAccount(address, sessionAccounts);
-
       const res = await this.app.client.request<{ payload: HexString }>(requestEvent);
 
       return { id, payload: res.payload };
@@ -367,17 +362,16 @@ export class WalletConnectDAppService {
 
     const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
 
-    const address = tx.from;
+    const transactionAddress = tx.from;
 
-    this.state.walletConnectService.eip155RequestHandler.checkAccount(address, sessionAccounts);
+    this.state.walletConnectService.eip155RequestHandler.checkAccount(transactionAddress, sessionAccounts);
 
     const createRequest = () => {
       if (!this.app) throw new Error('Wallet Connect is not init!');
+      assertCurrent();
 
       return this.app.client.request<{ payload: HexString }>(requestEvent);
     };
-
-    if (!chainState.active) await this.state.setActiveNetworks(networkKey);
 
     const res = await createRequest();
 

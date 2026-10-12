@@ -285,6 +285,10 @@ const aboveFormClasses = computed(() => {
   box-sizing: border-box;
 }
 .form-background .form .header-content {
+  // Keep scroll-layer painting below the opaque header.
+  position: relative;
+  z-index: 1;
+  background-color: inherit;
   flex-shrink: 0;
   height: auto;
   min-height: 80px;

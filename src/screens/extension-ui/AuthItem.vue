@@ -94,7 +94,7 @@ button {
     opacity: 0.6;
   }
   &:focus-visible {
-    outline: 2px solid currentColor;
+    outline: 2px solid palette(white, var(--fw-focus));
     outline-offset: 2px;
   }
 }

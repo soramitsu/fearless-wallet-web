@@ -652,7 +652,7 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'dapps/:type',
                 name: Components.DAppsAuths,
                 component: DAppsAuths,
-                meta: { primaryNavigation: 'settings' },
+                meta: { primaryNavigation: 'settings', calm: true },
               },
               {
                 path: 'wallet-connect',
@@ -666,7 +666,7 @@ const routes: Array<RouteRecordRaw> = [
             path: 'dapp/:type/:id',
             name: Components.DAppDetails,
             component: DAppDetails,
-            meta: { primaryNavigation: 'settings' },
+            meta: { primaryNavigation: 'settings', calm: true },
           },
           {
             path: 'wallet-connect/:topic',

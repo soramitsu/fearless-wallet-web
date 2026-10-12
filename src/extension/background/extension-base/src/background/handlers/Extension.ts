@@ -37,7 +37,6 @@ import {
   isSupportWalletConnectNamespace,
   isSupportWalletConnectChain,
 } from '@extension-base/services/wallet-connect-service/utils';
-import registry from '@extension-base/api/substrate/typeRegistry';
 import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
@@ -66,6 +65,10 @@ import {
 import { validateWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import { validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import {
+  createSubstrateSigningRegistry,
+  validateSubstrateSigningContext,
+} from '@extension-base/services/request-service/handlers/substrateSigningContext';
+import {
   assertEvmExternalSignature,
   assertSubstrateExternalSignature,
 } from '@extension-base/services/request-service/handlers/externalSignature';
@@ -88,7 +91,6 @@ import type {
   IrohaConnectSnapshot,
   IrohaConnectStartRequest,
 } from '@extension-base/services/iroha-connect-service/types';
-import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type {
   EvmRequests,
   EvmRequestsSubjectPayload,
@@ -169,7 +171,7 @@ import type {
   DefaultParams as DefaultPoolParams,
   DemeterMutationRequest,
 } from '@extension-base/services/pools-service/types';
-import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
+import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type {
   StakingNetworkRequest,
   StakingParamsRequest,
@@ -228,10 +230,6 @@ import {
 import { isSameString, isTonNetwork } from '@/helpers';
 import { deriveTonImportCandidates } from '@/util/tonKeyring';
 
-function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
-  return (value as SignerPayloadJSON).genesisHash !== undefined;
-}
-
 function isEvmSignRequest(
   value: SignRequest | EvmRequestsSubjectPayload | SolanaRequestsSubjectPayload
 ): value is EvmRequestsSubjectPayload {
@@ -265,6 +263,7 @@ export default class Extension extends FWExtensionBase {
       request.account.address,
       request.authorizationRevision
     );
+    if (!isSolanaSignRequest(request)) validateSubstrateSigningContext(this.state, request);
   }
 
   private async assertSigningSiteAllowed(request: { id: string; url: string; reject(error: Error): void }): Promise<void> {
@@ -884,21 +883,7 @@ export default class Extension extends FWExtensionBase {
       // if the keyring pair is locked, the password is needed
       if (pair.isLocked) this.state.keyringService.unlockPair(pair);
 
-      const { payload } = request;
-
-      if (isJsonPayload(payload)) {
-        // Get the metadata for the genesisHash
-        const currentMetadata = this.state.requestService.knownMetadata.find(
-          (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
-        );
-
-        // set the registry before calling the sign function
-        registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
-
-        if (currentMetadata) registry.register(currentMetadata?.types);
-      }
-
-      const result = await request.sign(registry, pair);
+      const result = await request.sign(createSubstrateSigningRegistry(queued.signingContext, request.payload), pair);
       this.assertNonEvmSigningAuthorization(queued);
       resolve({ id, payload: result.signature });
 
@@ -937,7 +922,7 @@ export default class Extension extends FWExtensionBase {
         assertEvmExternalSignature(queued, signature);
       } else {
         this.assertNonEvmSigningAuthorization(queued);
-        assertSubstrateExternalSignature(queued, signature, this.state.requestService.knownMetadata);
+        assertSubstrateExternalSignature(queued, signature);
       }
       queued.resolve({ id, payload: signature });
       return true;

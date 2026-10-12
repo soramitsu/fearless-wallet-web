@@ -209,7 +209,7 @@ function solanaReview(request: SolanaRequestPayload, result: SigningReview): voi
   result.blind = result.actions.some((action) => action.kind === 'unknown');
 }
 
-export function signingReview(request: ReviewRequest, networks: NetworkJson[] = []): SigningReview {
+export function signingReview(request: ReviewRequest, _networks: NetworkJson[] = []): SigningReview {
   const protocol = 'ecosystem' in request ? 'Solana' : 'data' in request ? 'Ethereum' : 'Substrate';
   const result: SigningReview = {
     protocol,
@@ -235,9 +235,9 @@ export function signingReview(request: ReviewRequest, networks: NetworkJson[] = 
         result.blind = text === undefined;
       } else {
         result.networkIdentity = payload.genesisHash;
-        result.network = networks.find(
-          (entry) => entry.genesisHash.toLowerCase() === payload.genesisHash.toLowerCase()
-        )?.name;
+        if (!request.network || request.network.genesisHash.toLowerCase() !== payload.genesisHash.toLowerCase())
+          throw new Error('Substrate signing network context is missing');
+        result.network = request.network.name;
         result.actions = [{ kind: 'unknown', text: reviewJson(payload) }];
       }
     }

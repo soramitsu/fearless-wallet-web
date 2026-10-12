@@ -39,6 +39,10 @@ import type { SendKillSwitchState } from '@/util/sendKillSwitch';
 import type { TonImportChoice } from '@/util/tonKeyring';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
 import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
+import type {
+  SubstrateNetworkSnapshot,
+  SubstrateSigningContext,
+} from '@extension-base/services/request-service/handlers/substrateSigningContext';
 import type { BitcoinRecipientType } from '@/util/bitcoin';
 import type { LegacyExposureRecord } from '@extension-base/services/legacy-exposure-service';
 import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
@@ -108,6 +112,7 @@ export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' 
 
 export interface SigningRequest {
   account: AccountJson;
+  network?: SubstrateNetworkSnapshot;
   id: string;
   request: Pick<RequestSign, 'payload'>;
   url: string;
@@ -851,6 +856,7 @@ export type Providers = Record<
 
 export interface SignRequest extends Resolver<ResponseSigning> {
   authorizationRevision?: number;
+  signingContext?: SubstrateSigningContext;
   account: AccountJson;
   id: string;
   request: RequestSign;

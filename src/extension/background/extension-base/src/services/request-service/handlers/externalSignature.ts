@@ -1,10 +1,9 @@
 import { verifyMessage, verifyTypedData } from 'ethers';
-import { TypeRegistry } from '@polkadot/types';
 import { Enum } from '@polkadot/types-codec';
 import { hexToU8a, u8aEq } from '@polkadot/util';
 import { blake2AsU8a, decodeAddress, ed25519Verify, secp256k1Verify, sr25519Verify } from '@polkadot/util-crypto';
 import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
-import type { MetadataDef } from '@polkadot/extension-inject/types';
+import { createSubstrateSigningRegistry } from './substrateSigningContext';
 import type { SignRequest } from '@extension-base/background/types/types';
 import type { EvmRequestPayload } from '@extension-base/services/request-service/types';
 import { evmTypedData } from '@/util/evmTypedData';
@@ -52,11 +51,7 @@ function verifyExact(message: Uint8Array, signature: Uint8Array, publicKey: Uint
   });
 }
 
-export function assertSubstrateExternalSignature(
-  request: SignRequest,
-  signature: string,
-  knownMetadata: MetadataDef[]
-): void {
+export function assertSubstrateExternalSignature(request: SignRequest, signature: string): void {
   const bytes = signatureBytes(signature);
   const payload = request.request.payload;
   const publicKey = decodeAddress(request.account.address);
@@ -65,12 +60,7 @@ export function assertSubstrateExternalSignature(
   let withType = false;
   if ('genesisHash' in payload) {
     if (payload.version !== 4) throw new Error('External extrinsic version is not supported');
-    const metadata = knownMetadata.find((entry) => entry.genesisHash === payload.genesisHash);
-    // This verifier never inherits another network's registrations. Admission-
-    // time metadata binding remains a separate signing-context responsibility.
-    const registry = new TypeRegistry();
-    registry.setSignedExtensions(payload.signedExtensions, metadata?.userExtensions);
-    if (metadata) registry.register(metadata.types);
+    const registry = createSubstrateSigningRegistry(request.signingContext, payload);
     message = registry.createType('ExtrinsicPayload', payload, { version: payload.version }).toU8a(true);
     if (message.length > 256) message = blake2AsU8a(message);
     withType = registry.createType('ExtrinsicSignature') instanceof Enum;

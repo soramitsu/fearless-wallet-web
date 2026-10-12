@@ -1,6 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
 import { getId } from '@extension-base/utils';
+import { captureSubstrateSigningContext } from './substrateSigningContext';
 import type { Logger } from '@polkadot/util/types';
 import type {
   SignRequest,
@@ -29,8 +30,14 @@ export class SubstrateRequestHandler {
   }
 
   public get allSubstrateRequests(): SigningRequest[] {
-    return Object.values(this.substrateRequests).map(({ account, id, request, url }) =>
-      structuredClone({ account, id, request: { payload: request.payload }, url })
+    return Object.values(this.substrateRequests).map(({ account, id, request, url, signingContext }) =>
+      structuredClone({
+        account,
+        id,
+        request: { payload: request.payload },
+        url,
+        ...(signingContext?.kind === 'extrinsic' ? { network: signingContext.network } : {}),
+      })
     );
   }
 
@@ -53,6 +60,7 @@ export class SubstrateRequestHandler {
       'substrate',
       snapshot.account.address
     );
+    const signingContext = captureSubstrateSigningContext(this.state, this.requestService, signer.payload);
     const id = _id || getId();
 
     return new Promise((resolve, reject): void => {
@@ -67,6 +75,7 @@ export class SubstrateRequestHandler {
       };
       const queued: SignRequest = {
         authorizationRevision,
+        signingContext,
         account: snapshot.account,
         id,
         request: signer,

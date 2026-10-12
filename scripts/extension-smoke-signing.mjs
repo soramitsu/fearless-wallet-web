@@ -221,8 +221,62 @@ export async function captureSigningScreenshots({
       },
     });
   }
+  for (const lang of locales) {
+    await locale(lang);
+    await resize(lang === 'en-EN' ? POPUP_WIDTH : 320, POPUP_HEIGHT);
+    await run(`(() => {
+      const genesisHash='0x'+'11'.repeat(32), address='5GrwvaEF5zXb26Fz9rcQpDWS64m3TtCHkb1ik3pMkLx4JTHu';
+      window.__publicSubstrate={id:'public-substrate-'+${JSON.stringify(lang)}, url:'https://substrate.public-fixture.example.invalid',
+        account:{address,name:'Public Substrate account'}, network:{genesisHash,name:'Captured public Substrate chain'},
+        request:{payload:{address,genesisHash,blockHash:genesisHash,blockNumber:'0x00',era:'0x00',method:'0x1234',
+          nonce:'0x02',specVersion:'0x01',transactionVersion:'0x01',tip:'0x00',signedExtensions:['CheckNonce'],version:4}}};
+      const store=${APP}.pinia._s.get('extension');
+      store.signEvmRequests={}; store.signRequests=[window.__publicSubstrate]; return true;
+    })()`);
+    await wait(
+      `document.querySelector('.signing-network')?.textContent.includes('Captured public Substrate chain') &&
+      document.querySelector(${JSON.stringify(approve)})?.getAttribute('aria-disabled')==='true'`,
+      'Captured Substrate network and initial consent'
+    );
+    await run(`(document.querySelector('.signing-context').scrollIntoView({block:'start'}),true)`);
+    const context = await run(`(() => ({
+      network:document.querySelector('.signing-network').textContent.trim(),
+      genesis:document.querySelector('.signing-identifier').textContent,
+      address:document.querySelector('.signing-wallet__address').textContent,
+      noOverflow:document.documentElement.scrollWidth<=innerWidth,
+      metadataPrivate:!Object.hasOwn(window.__publicSubstrate,'signingContext')
+    }))()`);
+    if (
+      context.genesis !== '0x' + '11'.repeat(32) ||
+      context.address !== '5GrwvaEF5zXb26Fz9rcQpDWS64m3TtCHkb1ik3pMkLx4JTHu' ||
+      !context.noOverflow ||
+      !context.metadataPrivate
+    )
+      throw new Error('Substrate context review failed: ' + JSON.stringify(context));
+    await capture('87-substrate-context-' + lang, 'Captured Substrate network, complete genesis and account; ' + lang);
+    Object.assign(results.at(-1), { substrateContext: context });
+    await click('.signing-raw summary');
+    await click('.fw-checkbox');
+    await wait(
+      `document.querySelector(${JSON.stringify(approve)}).getAttribute('aria-disabled')!=='true'`,
+      'Substrate explicit blind consent'
+    );
+    await keyboardFocus(reject);
+    await capture(
+      '88-substrate-consent-' + lang,
+      'Substrate raw payload and explicit blind-signature controls; ' + lang
+    );
+  }
   await locale('en-EN');
   await resize(POPUP_WIDTH, POPUP_HEIGHT);
+  await run(`(() => {const next=structuredClone(window.__publicSubstrate); next.id='public-substrate-legacy'; delete next.network;
+    ${APP}.pinia._s.get('extension').signRequests=[next]; return true;})()`);
+  await wait(
+    `!!document.querySelector('.signing-warning') && !document.querySelector(${JSON.stringify(approve)})`,
+    'Legacy Substrate context cannot approve'
+  );
+  await keyboardFocus(reject);
+  await capture('89-substrate-missing-context', 'Legacy Substrate request without captured network is blocked');
   const requests = await run(`window.__signingFixture.requests`);
   if (
     requests.length !== 1 ||

@@ -33,6 +33,7 @@ function deferred<T>() {
 let service: RequestService;
 beforeEach(() => {
   service = {
+    knownMetadata: [],
     authRequestHandler: { getSigningAuthorizationRevision: vi.fn(() => 0) },
     ensureAccountAuthorized: vi.fn(async () => true),
     popupOpen: vi.fn(),
@@ -40,7 +41,7 @@ beforeEach(() => {
   } as unknown as RequestService;
 });
 function substrate() {
-  const handler = new SubstrateRequestHandler(service, {} as State);
+  const handler = new SubstrateRequestHandler(service, { networkService: { networkMap: {} } } as State);
   const payload: SignerPayloadRaw = { address: substrateAddress, data: '0x1234', type: 'bytes' };
   const account = { address: substrateAddress, name: 'Public signer', isMobile: false } as AccountJson;
   const request = new RequestBytesSign(payload);
@@ -84,6 +85,14 @@ describe('Substrate queue identity and detached review payloads', () => {
     const payload = {
       address: substrateAddress,
       method: '0x1234',
+      genesisHash: `0x${'00'.repeat(32)}`,
+      blockHash: `0x${'00'.repeat(32)}`,
+      blockNumber: '0x00',
+      era: '0x00',
+      nonce: '0x00',
+      specVersion: '0x01',
+      transactionVersion: '0x01',
+      tip: '0x00',
       signedExtensions: ['CheckNonce'],
       version: 4,
     } as SignerPayloadJSON;

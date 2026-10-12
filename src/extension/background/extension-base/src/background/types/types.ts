@@ -857,6 +857,7 @@ export type Providers = Record<
 export interface SignRequest extends Resolver<ResponseSigning> {
   authorizationRevision?: number;
   signingContext?: SubstrateSigningContext;
+  signingAccount?: import('@extension-base/services/request-service/handlers/substrateSigningAccount').SubstrateSigningAccount;
   account: AccountJson;
   id: string;
   request: RequestSign;

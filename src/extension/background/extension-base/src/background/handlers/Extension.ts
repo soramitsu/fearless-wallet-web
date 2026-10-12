@@ -3,6 +3,10 @@ import { chrome } from '@extension-base/utils/crossenv';
 import { checkIfDenied } from '@polkadot/phishing';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
+import {
+  assertSubstrateSigningPair,
+  validateSubstrateSigningAccount,
+} from '@extension-base/services/request-service/handlers/substrateSigningAccount';
 import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, VoidSigner, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
@@ -263,7 +267,10 @@ export default class Extension extends FWExtensionBase {
       request.account.address,
       request.authorizationRevision
     );
-    if (!isSolanaSignRequest(request)) validateSubstrateSigningContext(this.state, request);
+    if (!isSolanaSignRequest(request)) {
+      validateSubstrateSigningContext(this.state, request);
+      validateSubstrateSigningAccount(this.state, request);
+    }
   }
 
   private async assertSigningSiteAllowed(request: { id: string; url: string; reject(error: Error): void }): Promise<void> {
@@ -858,33 +865,32 @@ export default class Extension extends FWExtensionBase {
     try {
       await this.assertSigningSiteAllowed(queued);
       this.assertNonEvmSigningAuthorization(queued);
-      const account = this.state.keyringService
-        .getAllAccounts()
-        .find(({ address }) => isSameString(address, queued.account.address));
+      const { request, resolve } = queued;
 
-      const { reject, request, resolve } = queued;
-
-      if (account && account?.meta.isMobile) {
-        const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+      if (queued.signingAccount?.kind === 'mobile') {
+        const res = await this.state.walletConnectDappService.onRequest(
+          structuredClone(queued.request.payload) as SignerPayloadJSON
+        );
         this.assertNonEvmSigningAuthorization(queued);
+        assertSubstrateExternalSignature(queued, res.signature);
         resolve({ payload: res.signature, id });
 
         return true;
       }
 
-      const pair = this.state.keyringService.getPair(queued.account.address);
-
-      if (!pair) {
-        reject(new Error('Unable to find pair'));
-
-        return false;
-      }
+      if (queued.signingAccount?.kind !== 'local') throw new Error('Substrate account requires an external signer');
+      const pair = this.state.keyringService.getPair(queued.signingAccount.address);
+      assertSubstrateSigningPair(queued, pair);
 
       // if the keyring pair is locked, the password is needed
       if (pair.isLocked) this.state.keyringService.unlockPair(pair);
+      this.assertNonEvmSigningAuthorization(queued);
+      assertSubstrateSigningPair(queued, pair);
 
       const result = await request.sign(createSubstrateSigningRegistry(queued.signingContext, request.payload), pair);
       this.assertNonEvmSigningAuthorization(queued);
+      assertSubstrateSigningPair(queued, pair);
+      assertSubstrateExternalSignature(queued, result.signature);
       resolve({ id, payload: result.signature });
 
       return true;

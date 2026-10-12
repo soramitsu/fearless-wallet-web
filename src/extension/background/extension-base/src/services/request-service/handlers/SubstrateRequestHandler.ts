@@ -2,6 +2,7 @@ import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
 import { getId } from '@extension-base/utils';
 import { captureSubstrateSigningContext } from './substrateSigningContext';
+import { captureSubstrateSigningAccount } from './substrateSigningAccount';
 import type { Logger } from '@polkadot/util/types';
 import type {
   SignRequest,
@@ -61,6 +62,10 @@ export class SubstrateRequestHandler {
       snapshot.account.address
     );
     const signingContext = captureSubstrateSigningContext(this.state, this.requestService, signer.payload);
+    const signingAccount = captureSubstrateSigningAccount(this.state, signer, snapshot.account);
+    snapshot.account.address = signingAccount.address;
+    snapshot.account.name = signingAccount.name;
+    snapshot.account.isMobile = signingAccount.kind === 'mobile';
     const id = _id || getId();
 
     return new Promise((resolve, reject): void => {
@@ -76,6 +81,7 @@ export class SubstrateRequestHandler {
       const queued: SignRequest = {
         authorizationRevision,
         signingContext,
+        signingAccount,
         account: snapshot.account,
         id,
         request: signer,

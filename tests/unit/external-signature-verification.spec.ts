@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, getBytes } from 'ethers';
 import { Keyring } from '@polkadot/keyring';
 import { TypeRegistry } from '@polkadot/types';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { cryptoWaitReady, decodeAddress } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
 import Extension from '@extension-base/background/handlers/Extension';
@@ -94,6 +94,11 @@ async function admitEvm(method: string, params: unknown[]) {
   return { result, queued: evm.getEvmSignRequest('public')! };
 }
 async function admitSubstrate(signer: RequestSign, address: string) {
+  Object.assign(state.keyringService, {
+    getAllAccounts: () => [
+      { address, publicKey: decodeAddress(address), meta: { isExternal: true, name: 'Public fixture' } },
+    ],
+  });
   const result = substrate.sign(url, signer, { address, name: 'Public fixture' } as AccountJson, 'public');
   void result.catch(() => undefined);
   await vi.waitFor(() => expect(substrate.getSignRequest('public')).toBeDefined());
@@ -173,32 +178,39 @@ describe('external Substrate signatures', () => {
     expect(await approve(signature)).toBe(true);
     expect((await result).payload).toBe(signature);
   });
-  it.each(['wrong key', 'wrong bytes', 'unwrapped', 'malformed', 'wrong payload account'])(
-    'rejects raw %s',
-    async (change) => {
-      const pair = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
-      const other = new Keyring({ type: 'sr25519' }).addFromUri('//Bob');
-      const { queued } = await admitSubstrate(
-        new RequestBytesSign({
-          address: change === 'wrong payload account' ? other.address : pair.address,
-          data: '0xff0080',
-          type: 'bytes',
-        }),
-        pair.address
-      );
-      const signature =
-        change === 'malformed'
-          ? '0x1234'
-          : u8aToHex(
-              (change === 'wrong key' ? other : pair).sign(
-                change === 'unwrapped'
-                  ? hexToU8a('0xff0080')
-                  : wrapBytes(change === 'wrong bytes' ? '0xff0081' : '0xff0080')
-              )
-            );
-      await rejectsSignature(signature, queued);
-    }
-  );
+  it.each(['wrong key', 'wrong bytes', 'unwrapped', 'malformed'])('rejects raw %s', async (change) => {
+    const pair = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
+    const other = new Keyring({ type: 'sr25519' }).addFromUri('//Bob');
+    const { queued } = await admitSubstrate(
+      new RequestBytesSign({
+        address: pair.address,
+        data: '0xff0080',
+        type: 'bytes',
+      }),
+      pair.address
+    );
+    const signature =
+      change === 'malformed'
+        ? '0x1234'
+        : u8aToHex(
+            (change === 'wrong key' ? other : pair).sign(
+              change === 'unwrapped'
+                ? hexToU8a('0xff0080')
+                : wrapBytes(change === 'wrong bytes' ? '0xff0081' : '0xff0080')
+            )
+          );
+    await rejectsSignature(signature, queued);
+  });
+  it('rejects a mismatched raw payload account at admission', async () => {
+    const pair = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
+    const other = new Keyring({ type: 'sr25519' }).addFromUri('//Bob');
+    await expect(
+      substrate.sign(url, new RequestBytesSign({ address: other.address, data: '0xff0080', type: 'bytes' }), {
+        address: pair.address,
+      } as AccountJson)
+    ).rejects.toThrow('payload account');
+    expect(substrate.numSubstrateRequests).toBe(0);
+  });
   for (const type of ['sr25519', 'ed25519', 'ecdsa'] as const) {
     it.each([2, 255, 256, 300])(`accepts exact ${type} extrinsic payload (%i method bytes)`, async (length) => {
       const pair = new Keyring({ type }).addFromUri('//Alice');

@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthRequestHandler } from '@extension-base/services/request-service/handlers/AuthRequestHandler';
 import { SubstrateRequestHandler } from '@extension-base/services/request-service/handlers/SubstrateRequestHandler';
 import SolanaRequestHandler from '@extension-base/services/request-service/handlers/SolanaRequestHandler';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import Extension from '@extension-base/background/handlers/Extension';
 import Tabs from '@extension-base/background/handlers/Tabs';
-import { base58Decode } from '@polkadot/util-crypto';
+import { Keyring } from '@polkadot/keyring';
+import { base58Decode, cryptoWaitReady } from '@polkadot/util-crypto';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
@@ -43,7 +44,13 @@ vi.mock('@extension-base/utils/crossenv', () => ({
 }));
 
 const url = 'https://public.example';
-const substrateAddress = 'public-substrate-account';
+let substrateAddress: string;
+let pair: ReturnType<Keyring['addFromUri']>;
+beforeAll(async () => {
+  await cryptoWaitReady();
+  pair = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
+  substrateAddress = pair.address;
+});
 const solanaAddress = vectors.vectors[0].expected.solana.address;
 const grant = () =>
   ({
@@ -64,13 +71,11 @@ let state: State,
   substrate: SubstrateRequestHandler,
   solana: SolanaRequestHandler,
   extension: Extension;
-const pair = { isLocked: false, sign: vi.fn(() => new Uint8Array(64)) };
 beforeEach(() => {
   mocks.data = grant();
   mocks.denied.mockReset().mockResolvedValue(false);
   mocks.capability.mockReset().mockResolvedValue(undefined);
   mocks.broadcast.mockReset().mockResolvedValue('public-signature');
-  pair.sign.mockClear();
   const service = {
     popupOpen: vi.fn(),
     updateIcon: vi.fn(),
@@ -84,7 +89,11 @@ beforeEach(() => {
     keyringService: {
       encodeAddress: (address: string) => address,
       getAllAccounts: vi.fn(() => [
-        { address: substrateAddress, meta: { name: 'Public fixture', solanaAddress, walletEcosystem: 'substrate' } },
+        {
+          address: substrateAddress,
+          publicKey: pair.addressRaw,
+          meta: { name: 'Public fixture', solanaAddress, walletEcosystem: 'substrate' },
+        },
       ]),
       getPair: vi.fn(() => pair),
       getPassword: () => '',
@@ -119,6 +128,7 @@ async function admit(protocol: 'substrate' | 'solana') {
         );
   void result.catch(() => undefined);
   await vi.waitFor(() => expect(state.requestService.getSignRequest('public')).toBeDefined());
+  vi.mocked(state.keyringService.getPair).mockClear();
   const request = state.requestService.getSignRequest('public')!;
   const resolve = vi.spyOn(request, 'resolve'),
     reject = vi.spyOn(request, 'reject');

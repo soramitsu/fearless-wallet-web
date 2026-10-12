@@ -68,7 +68,10 @@ beforeEach(() => {
     networkService: {
       networkMap: { public: { name: 'Public chain', genesisHash, ecosystem: 'substrate', disabled: false } },
     },
-    keyringService: { getAllAccounts: () => [{ address: pair.address, meta: {} }], getPair: vi.fn(() => pair) },
+    keyringService: {
+      getAllAccounts: () => [{ address: pair.address, publicKey: pair.addressRaw, meta: {} }],
+      getPair: vi.fn(() => pair),
+    },
   } as unknown as State;
   handler = new SubstrateRequestHandler(service, state);
   Object.assign(service, { getSignRequest: (id: string) => handler.getSignRequest(id) });
@@ -83,6 +86,7 @@ async function admit(value = payload(), id = 'public') {
   );
   void result.catch(() => undefined);
   await vi.waitFor(() => expect(handler.getSignRequest(id)).toBeDefined());
+  vi.mocked(state.keyringService.getPair).mockClear();
   return { result, queued: handler.getSignRequest(id)! };
 }
 function replaceMetadata(value: MetadataDef[]) {

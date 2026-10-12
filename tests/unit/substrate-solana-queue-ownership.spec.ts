@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { base58Decode, cryptoWaitReady, signatureVerify } from '@polkadot/util-crypto';
 import { Keyring } from '@polkadot/keyring';
 import { TypeRegistry } from '@polkadot/types';
@@ -19,7 +19,13 @@ import type {
 
 vi.mock('@extension-base/background/handlers', () => ({ state: {} }));
 const url = 'https://public.example';
-const substrateAddress = '5GrwvaEF5zXb26Fz9rcQpDWS64m3TtCHkb1ik3pMkLx4JTHu';
+let publicPair: ReturnType<Keyring['addFromUri']>;
+let substrateAddress: string;
+beforeAll(async () => {
+  await cryptoWaitReady();
+  publicPair = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
+  substrateAddress = publicPair.address;
+});
 const solanaAddress = 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk';
 const substrateResult: ResponseSigning = { id: 'public', payload: '0x1234' };
 const solanaResult = { publicKey: solanaAddress, signatureBase58: 'public', signatureBase64: 'AQIDBA==' };
@@ -41,7 +47,15 @@ beforeEach(() => {
   } as unknown as RequestService;
 });
 function substrate() {
-  const handler = new SubstrateRequestHandler(service, { networkService: { networkMap: {} } } as State);
+  const handler = new SubstrateRequestHandler(service, {
+    networkService: { networkMap: {} },
+    keyringService: {
+      getAllAccounts: () => [
+        { address: publicPair.address, publicKey: publicPair.addressRaw, meta: { name: 'Public signer' } },
+      ],
+      getPair: () => publicPair,
+    },
+  } as unknown as State);
   const payload: SignerPayloadRaw = { address: substrateAddress, data: '0x1234', type: 'bytes' };
   const account = { address: substrateAddress, name: 'Public signer', isMobile: false } as AccountJson;
   const request = new RequestBytesSign(payload);

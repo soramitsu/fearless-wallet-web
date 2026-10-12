@@ -59,7 +59,7 @@ jobs:
         run: yarn install --immutable
 
       - name: Test the upgrade driver
-        run: node --test scripts/upgrade-e2e/*.test.mjs
+        run: node --test scripts/upgrade-e2e/test-*.mjs
 
       - name: Set up Chrome for Testing
         id: setup-chrome

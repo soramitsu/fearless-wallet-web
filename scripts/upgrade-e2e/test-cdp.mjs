@@ -29,7 +29,7 @@ test('a disconnected target rejects the request immediately and keeps the caller
   socket.close();
   await assert.rejects(request, (error) => {
     assert.match(error.message, /connection closed.*Runtime.evaluate/);
-    assert.match(error.stack, /cdp.test.mjs/);
+    assert.match(error.stack, /test-cdp.mjs/);
     assert.doesNotMatch(error.message, /public test secret/);
     return true;
   });

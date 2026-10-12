@@ -459,6 +459,57 @@ export async function capturePrimitivesScreenshots({
     await waitForExpression(cdp, sessionId, `${APP}.router.currentRoute.value.name !== 'Unlock'`, 'Successful password retry leaves unlock');
     results.at(-1).successfulFixtureRetry = true;
 
+    // Render the production migration component with a public, unavailable legacy descriptor.
+    // A separate fixture route avoids changing the returning wallet's real migration/account state.
+    await evaluate(cdp, sessionId, `(() => {
+      const router = ${APP}.router;
+      const original = router.getRoutes().find((record) => record.name === 'UniversalWalletMigration');
+      router.addRoute({ path: '/design-migration-fixture', name: 'DesignMigrationFixture', component: original.components.default });
+      return true;
+    })()`);
+    await route('DesignMigrationFixture');
+    await waitFor('.universal-migration__title', 'Migration snapshot loaded');
+    const migrationState = `(() => {
+      let component = document.querySelector('.universal-migration').__vueParentComponent;
+      while (component && !component.setupState.snapshot) component = component.parent;
+      if (!component) throw new Error('Migration component state missing');
+      return component.setupState;
+    })()`;
+    await evaluate(cdp, sessionId, `(() => {
+      const state = ${migrationState};
+      state.snapshot = { ...state.snapshot, legacyVaults: [{ vaultId: 'public-unavailable-fixture', displayName: 'Retained wallet', address: 'public-fixture-address', ecosystem: 'substrate', mode: 'export-only', canExportSecrets: false, canSignTransactions: false }] };
+      return true;
+    })()`);
+    const migrationVariants = [
+      { name: '30-migration-unavailable-export', width: POPUP_WIDTH, height: POPUP_HEIGHT, locale: 'en-US' },
+      { name: '31-migration-russian', width: 320, height: 600, locale: 'ru-RU' },
+      { name: '32-migration-akkadian', width: 320, height: 600, locale: 'akk-Xsux-x-old' },
+      { name: '33-migration-egyptian', width: 320, height: 600, locale: 'egy-Egyp' },
+      { name: '34-migration-compact', width: 281, height: 300, locale: 'en-US' },
+    ];
+    for (const variant of migrationVariants) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: variant.width, height: variant.height, deviceScaleFactor: 2, mobile: false }, sessionId);
+      await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = ${JSON.stringify(variant.locale)}, document.documentElement.lang = ${JSON.stringify(variant.locale)}, true)`);
+      await keyboardFocus('.universal-migration__vault-export button');
+      const semantics = await evaluate(cdp, sessionId, `(() => {
+        const button = document.querySelector('.universal-migration__vault-export button');
+        const reason = document.getElementById(button.getAttribute('aria-describedby'));
+        return { focused: document.activeElement === button, disabled: button.disabled, ariaDisabled: button.getAttribute('aria-disabled'), reason: reason?.textContent.trim(), height: button.getBoundingClientRect().height };
+      })()`);
+      if (!semantics.focused || semantics.disabled || semantics.ariaDisabled !== 'true' || !semantics.reason || semantics.height < 44) throw new Error('Unavailable export lost its keyboard explanation');
+      for (const type of ['keyDown', 'keyUp']) {
+        await cdp.send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+      }
+      if (await evaluate(cdp, sessionId, `${APP}.router.currentRoute.value.name !== 'DesignMigrationFixture'`)) throw new Error('Unavailable export navigated');
+      await capture(variant.name, 'Migration public fixture: unavailable export is focusable, explained and guarded, ' + variant.locale);
+      Object.assign(results.at(-1), { migrationExport: semantics });
+    }
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 600, deviceScaleFactor: 2, mobile: false }, sessionId);
+    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'en-US', document.documentElement.lang = 'en-US', ${migrationState}.loadError = true, true)`);
+    await keyboardFocus('[data-testid="migrationLoadFailed"] button');
+    await capture('35-migration-load-failure', 'Migration snapshot failure offers a retry without presenting an empty wallet.');
+    await route('Currencies');
+
     await cdp.send(
       'Emulation.setDeviceMetricsOverride',
       {

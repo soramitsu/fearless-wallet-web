@@ -2,11 +2,13 @@
   <div :class="containerButtonClasses" :style="containerButtonStyle">
     <button
       type="button"
-      :disabled="disabled || loading"
+      :disabled="!focusableWhenDisabled && (disabled || loading)"
+      :aria-disabled="disabled || loading || undefined"
+      :aria-describedby="showDisabledReason ? reasonId : undefined"
       :aria-busy="loading"
       :class="['el-button', buttonClasses, { 'is-disabled': disabled, 'is-loading': loading }]"
       :style="buttonStyle"
-      @click="$emit('click')"
+      @click="onClick"
     >
       <Icon
         aria-hidden="true"
@@ -18,11 +20,12 @@
 
       <span>{{ tText }}</span>
     </button>
+    <p v-if="showDisabledReason" :id="reasonId" class="button-disabled-reason">{{ t(disabledReason) }}</p>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 import type { ComponentText } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
 
@@ -43,6 +46,9 @@ type FButtonProps = {
   borderRadius?: Size;
   typeText?: TypeText;
   disabled?: boolean;
+  /** Opt in only where the unavailable action has a visible explanation. */
+  focusableWhenDisabled?: boolean;
+  disabledReason?: string;
   loading?: boolean;
   hover?: boolean;
   border?: boolean;
@@ -60,12 +66,20 @@ const props = withDefaults(defineProps<FButtonProps>(), {
   borderRadius: 'medium',
   typeText: 'none',
   disabled: false,
+  focusableWhenDisabled: false,
+  disabledReason: '',
   loading: false,
   hover: true,
   border: true,
 });
 
-defineEmits(['click']);
+const emit = defineEmits(['click']);
+const reasonId = useId();
+const showDisabledReason = computed(() => !!props.disabledReason && (props.disabled || props.loading));
+const onClick = () => {
+  if (props.disabled || props.loading) return;
+  emit('click');
+};
 const { t, tc } = useI18n();
 
 const tText = computed(() => {
@@ -185,6 +199,15 @@ const buttonClasses = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+.button-disabled-reason {
+  margin: 8px 0 0;
+  color: palette($grayish-white, var(--fw-text-2));
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
 .primary {
   // White labels need 4.5:1: the legacy look darkens the brand pink by 4% (mix(black, #ee0077, 4%)), Neon Glass
   // fills with accent.fill (5.04:1 at its lightest stop).
@@ -409,7 +432,7 @@ const buttonClasses = computed(() => {
       outline: 2px solid var(--fw-focus);
       outline-offset: -4px;
     }
-    &:active:not(:disabled) {
+    &:active:not(:disabled):not([aria-disabled='true']) {
       transform: scale(0.98);
     }
   }
@@ -417,7 +440,7 @@ const buttonClasses = computed(() => {
     min-height: 48px;
     border-color: var(--fw-accent-edge);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
-    &:active:not(:disabled) {
+    &:active:not(:disabled):not([aria-disabled='true']) {
       background: var(--fw-fill-bottom);
     }
   }
@@ -428,8 +451,8 @@ const buttonClasses = computed(() => {
   .secondary-hover:hover {
     border-color: var(--fw-stroke-control) !important;
   }
-  .secondary:active:not(:disabled),
-  .thirdly:active:not(:disabled) {
+  .secondary:active:not(:disabled):not([aria-disabled='true']),
+  .thirdly:active:not(:disabled):not([aria-disabled='true']) {
     background: var(--fw-pressed) !important;
   }
   .link {

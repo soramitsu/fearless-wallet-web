@@ -108,3 +108,45 @@ describe('wallet UX interactions', () => {
     wrapper.unmount();
   });
 });
+
+describe('focusable unavailable actions', () => {
+  it('keeps its reason linked while preventing DOM, keyboard-generated and parent actions', async () => {
+    const action = vi.fn();
+    const wrapper = mount(FButton, {
+      attachTo: document.body,
+      props: {
+        text: 'Export',
+        disabled: true,
+        focusableWhenDisabled: true,
+        disabledReason: 'migration.exportLegacyVaultUnavailable',
+        onClick: action,
+      },
+    });
+    const button = wrapper.get('button');
+    button.element.focus();
+    expect(document.activeElement).toBe(button.element);
+    expect(button.attributes('disabled')).toBeUndefined();
+    expect(button.attributes('aria-disabled')).toBe('true');
+    expect(button.attributes('aria-describedby')).toBe(wrapper.get('.button-disabled-reason').attributes('id'));
+    await button.trigger('keydown', { key: 'Enter' });
+    await button.trigger('keyup', { key: ' ' });
+    button.element.click();
+    button.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(action).not.toHaveBeenCalled();
+    await wrapper.setProps({ disabled: false, loading: true });
+    button.element.click();
+    expect(action).not.toHaveBeenCalled();
+    expect(button.attributes('aria-busy')).toBe('true');
+    await wrapper.setProps({ loading: false });
+    expect(button.attributes('aria-describedby')).toBeUndefined();
+    button.element.click();
+    expect(action).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
+  it('retains native disabled behavior unless explicitly opted in', () => {
+    const wrapper = mount(FButton, { props: { text: 'Continue', disabled: true } });
+    expect(wrapper.get('button').attributes('disabled')).toBeDefined();
+    wrapper.unmount();
+  });
+});

@@ -11,6 +11,7 @@ import russian from '@/locales/ru/translation.json';
 // safety, so none of them may fall back to English in a shipped locale.
 const SCREENS = [
   'src/screens/addWallet/keyringMigration/MigrationDescription.vue',
+  'src/screens/addWallet/universalWalletMigration/UniversalWalletMigration.vue',
   'src/screens/addWallet/keyringMigration/MigrationAccounts.vue',
   'src/screens/addWallet/BackupWalletsList.vue',
   'src/screens/settings/AccountAccessRecovery.vue',

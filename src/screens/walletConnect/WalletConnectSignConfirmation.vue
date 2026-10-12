@@ -19,6 +19,7 @@
           <FButton
             data-testid="rejectWalletConnectSigning"
             text="common.cancel"
+            size="big"
             type="secondary"
             :disabled="!!pending"
             :border="false"
@@ -29,6 +30,7 @@
           <FButton
             data-testid="approveWalletConnectSigning"
             text="common.sign"
+            size="big"
             :loading="pending === 'approve'"
             :disabled="!!pending || !address"
             width="100%"

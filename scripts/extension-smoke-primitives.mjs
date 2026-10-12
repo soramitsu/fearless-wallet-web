@@ -512,9 +512,17 @@ export async function capturePrimitivesScreenshots({
         return { focused: document.activeElement === button, disabled: button.disabled, ariaDisabled: button.getAttribute('aria-disabled'), reason: reason?.textContent.trim(), height: button.getBoundingClientRect().height, labelFits: label.scrollWidth <= label.clientWidth + 1 && label.getBoundingClientRect().width <= button.clientWidth, disabledColorMatches };
       })()`);
       if (!semantics.focused || semantics.disabled || semantics.ariaDisabled !== 'true' || !semantics.reason || semantics.height < 44 || !semantics.labelFits || !semantics.disabledColorMatches) throw new Error('Unavailable export lost its keyboard explanation');
-      for (const type of ['keyDown', 'keyUp']) {
-        await cdp.send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
-      }
+      await evaluate(cdp, sessionId, `(() => {
+        const button = document.querySelector('.universal-migration__vault-export button');
+        button.dataset.keyboardClicks = '0';
+        button.addEventListener('click', () => { button.dataset.keyboardClicks = '1'; }, { once: true });
+        return true;
+      })()`);
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r', unmodifiedText: '\r' }, sessionId);
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+      const activated = await evaluate(cdp, sessionId, `document.querySelector('.universal-migration__vault-export button').dataset.keyboardClicks === '1'`);
+      if (!activated) throw new Error('Keyboard did not activate the guarded export control');
+      semantics.keyboardActivationGuarded = true;
       if (await evaluate(cdp, sessionId, `${APP}.router.currentRoute.value.name !== 'DesignMigrationFixture'`)) throw new Error('Unavailable export navigated');
       await capture(variant.name, 'Migration public fixture: unavailable export is focusable, explained and guarded, ' + variant.locale);
       Object.assign(results.at(-1), { migrationExport: semantics });

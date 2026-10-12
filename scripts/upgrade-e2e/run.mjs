@@ -5,11 +5,13 @@
 // unresolvable; secrets are public test vectors (secrets.mjs).
 //
 // Usage: node scripts/upgrade-e2e/run.mjs [--snapshot] [--out <dir>] [scenario ...]
-//   scenario ids: S1 S2 S3 S4 S5 S6 S7 S8 R1 ECDSA-2.6.3 ECDSA-3.0.6 (default: all)
+//   scenario ids: S1 S2 S3 S4 S5 S6 S7 S7b S8 R1 ECDSA-2.6.3 ECDSA-3.0.6 (default: all)
+// The 3.0.5 keyring (keyring-305.mjs) loads @polkadot 12.x next to this tree's 14.x on purpose, so @polkadot warns
+// about multiple versions once.
 //   --snapshot   also write tests/fixtures/upgrade/<version>/<state>.json from each released build's profile
 //   UPGRADE_E2E_COLD_STARTS  cold starts per A9 check (default 20)
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { CHROME, freePort } from './chrome.mjs';
 import { cachedBuild } from './build-legacy.mjs';
@@ -21,8 +23,6 @@ import { cryptoReady, Report } from './head.mjs';
 import { installKeyring305, loadKeyring305 } from './keyring-305.mjs';
 import { SCENARIOS } from './scenarios.mjs';
 
-// The 3.0.5 keyring (keyring-305.mjs) loads @polkadot 12.x next to this tree's 14.x on purpose.
-process.env.POLKADOTJS_DISABLE_ESM_CJS_WARNING = '1';
 const args = process.argv.slice(2);
 const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
 const ids = args.filter((arg, index) => !arg.startsWith('--') && !(index > 0 && args[index - 1] === '--out'));
@@ -54,6 +54,9 @@ const summary = {
   startedAt: new Date().toISOString(),
   chrome: chromeVersion,
   head: headBuildDir(),
+  headProvenance: existsSync(path.join(headBuildDir(), 'upgrade-e2e-provenance.json'))
+    ? JSON.parse(readFileSync(path.join(headBuildDir(), 'upgrade-e2e-provenance.json'), 'utf8'))
+    : undefined,
   builds: Object.fromEntries(
     Object.entries(builds).map(([id, { provenance }]) => [
       id,

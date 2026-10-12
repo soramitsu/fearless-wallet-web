@@ -70,7 +70,10 @@ export async function captureAuthorizationScreenshots({
       const reason = document.getElementById(button.getAttribute('aria-describedby'));
       const expected = ${APP}.pinia._s.get('accounts').accounts.filter((account) => account.ethereumAddress).map((account) => account.ethereumAddress);
       const addresses = [...document.querySelectorAll('.account__address')].map((element) => element.textContent.trim());
-      return { requests: window.__authorizationFixture.requests.length, unavailable: button.getAttribute('aria-disabled') === 'true', focusable: !button.disabled, reason: reason?.textContent.trim(), height: button.getBoundingClientRect().height, labelFits: label.scrollWidth <= label.clientWidth + 1, fullAddresses: JSON.stringify(expected) === JSON.stringify(addresses), noOverflow: document.documentElement.scrollWidth <= innerWidth, calm: !!document.querySelector('.fw-calm') };
+      const bounds = button.getBoundingClientRect();
+      const rejectBounds = document.querySelector(${JSON.stringify(reject)}).getBoundingClientRect();
+      const heading = document.querySelector('.form-background [data-testid="header"]')?.textContent.trim();
+      return { requests: window.__authorizationFixture.requests.length, unavailable: button.getAttribute('aria-disabled') === 'true', focusable: !button.disabled, reason: reason?.textContent.trim(), height: bounds.height, equalActions: Math.abs(bounds.width - rejectBounds.width) < 1 && Math.abs(bounds.height - rejectBounds.height) < 1, translatedHeading: !!heading && !heading.includes('.'), labelFits: label.scrollWidth <= label.clientWidth + 1, fullAddresses: JSON.stringify(expected) === JSON.stringify(addresses), noOverflow: document.documentElement.scrollWidth <= innerWidth, calm: !!document.querySelector('.fw-calm') };
     })()`);
     if (
       state.requests ||
@@ -78,6 +81,8 @@ export async function captureAuthorizationScreenshots({
       !state.focusable ||
       !state.reason ||
       state.height < 48 ||
+      !state.equalActions ||
+      !state.translatedHeading ||
       !state.labelFits ||
       !state.fullAddresses ||
       !state.noOverflow ||

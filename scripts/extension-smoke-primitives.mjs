@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { APP, POPUP_HEIGHT, POPUP_WIDTH, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
 import { captureAuthorizationScreenshots } from './extension-smoke-authorization.mjs';
+import { captureMetadataScreenshots } from './extension-smoke-metadata.mjs';
 
 /** Paint, size and accessible semantics of the primitives on screen; one sample per kind. */
 const PRIMITIVES = `(() => {
@@ -155,6 +156,11 @@ export async function capturePrimitivesScreenshots({
         } else if (window.__authorizationFixture && ['pri(authorize.approve)', 'pri(authorize.delete.request)'].includes(message.message)) {
           window.__authorizationFixture.requests.push({ message: message.message, request: message.request });
           window.__finishAuthorization = (reply) => {
+            for (const listener of listeners) listener({ id: message.id, ...reply });
+          };
+        } else if (window.__metadataFixture && ['pri(metadata.approve)', 'pri(metadata.reject)'].includes(message.message)) {
+          window.__metadataFixture.requests.push({ message: message.message, request: message.request });
+          window.__finishMetadata = (reply) => {
             for (const listener of listeners) listener({ id: message.id, ...reply });
           };
         } else if (window.__googleBackupFixture && message.message.startsWith('pri(google.')) {
@@ -712,6 +718,7 @@ export async function capturePrimitivesScreenshots({
     await route('Currencies');
 
     await captureAuthorizationScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+    await captureMetadataScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
 
     await cdp.send(
       'Emulation.setDeviceMetricsOverride',

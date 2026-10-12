@@ -159,7 +159,10 @@ export async function captureAuthorizationScreenshots({
   );
   if (replaced.selected || !replaced.unavailable || replaced.origin !== 'https://next.public-fixture.example.invalid')
     throw new Error('Selection leaked to the next requesting origin');
-  await keyboardFocus(reject);
+  await wait(
+    `document.activeElement === document.querySelector(${JSON.stringify(reject)})`,
+    'Replacement authorization defaults to Reject after the old pending response'
+  );
   await capture(
     '61-authorization-next-origin',
     'A new origin has no inherited selection or stale error from the previous request.'

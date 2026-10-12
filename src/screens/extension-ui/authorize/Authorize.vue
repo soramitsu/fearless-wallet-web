@@ -232,7 +232,10 @@ const actOnRequest = async (action: 'approve' | 'reject') => {
   } catch {
     if (active && requestKey.value === key) actionError.value = true;
   } finally {
-    if (active) pending.value = null;
+    if (active) {
+      pending.value = null;
+      if (requestKey.value !== key) void focusReject();
+    }
   }
 };
 const onApprove = () => actOnRequest('approve');

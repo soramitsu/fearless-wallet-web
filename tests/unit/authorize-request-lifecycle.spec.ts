@@ -3,6 +3,7 @@ import { reactive } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountJson, AuthorizeRequest } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
+import FButton from '@/components/FButton.vue';
 import Authorize from '@/screens/extension-ui/authorize/Authorize.vue';
 import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
 import Checkbox from '@/components/Checkbox.vue';
@@ -43,8 +44,9 @@ const Button = {
   emits: ['click'],
   template: '<button type="button" :aria-disabled="disabled" @click="$emit(\'click\')">{{ text }}</button>',
 };
-const open = () =>
+const open = (realControls = false) =>
   mount(Authorize, {
+    attachTo: realControls ? document.body : undefined,
     global: {
       mocks: { $t: (key: string) => key },
       stubs: {
@@ -55,7 +57,8 @@ const open = () =>
           template: '<main><slot /></main>',
         },
         Alert: { template: '<div><slot /></div>' },
-        FButton: Button,
+        FButton: realControls ? FButton : Button,
+        Icon: true,
         SelectAuthAccountForm: true,
       },
     },
@@ -199,6 +202,32 @@ describe('authorization screen request ownership', () => {
     await flushPromises();
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     expect(mocks.push).not.toHaveBeenCalled();
+    expect(selected(wrapper)).toEqual([]);
+    wrapper.unmount();
+  });
+
+  it('focuses Reject for the replacement request after an older pending response releases controls', async () => {
+    let reject!: (reason: Error) => void;
+    mocks.approve.mockReturnValueOnce(
+      new Promise((_, fail) => {
+        reject = fail;
+      })
+    );
+    const wrapper = open(true);
+    await flushPromises();
+    const rejectButton = wrapper.get('[data-testid="rejectAuthorization"] button');
+    expect(document.activeElement).toBe(rejectButton.element);
+    form(wrapper).vm.$emit('onSelect', true, 'alice');
+    await flushPromises();
+    const approveButton = wrapper.get('[data-testid="approveAuthorization"] button');
+    (approveButton.element as HTMLButtonElement).focus();
+    await approveButton.trigger('click');
+    mocks.extension.authRequests = [request('second')];
+    await flushPromises();
+    expect((rejectButton.element as HTMLButtonElement).disabled).toBe(true);
+    reject(new Error('old request expired'));
+    await flushPromises();
+    expect(document.activeElement).toBe(rejectButton.element);
     expect(selected(wrapper)).toEqual([]);
     wrapper.unmount();
   });

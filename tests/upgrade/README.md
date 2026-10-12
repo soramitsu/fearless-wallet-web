@@ -97,6 +97,12 @@ Passwords include a non-ASCII master password (`Pässwörd-日本語-🔐`).
 
 ## Results
 
+The integrated production-mode test artifact at clean `3ec8623ba271be5f2ba7475f815cf650c4827277` completed 11/12 scenarios on 12 October 2026 (`wk5-integrated-2/report.json` in the parent evidence directory). S1 passed 48/49 checks: cold start 7/20 received no CDP evaluation result, including no result from its in-page 60-second timer, before the 180-second driver timeout. The other 19 starts and all key/sign/export checks passed. This run is **not** a passing upgrade gate.
+
+The cold-start harness now installs its probe before navigating the extension document and polls plain progress snapshots instead of holding an asynchronous evaluation across page creation/navigation. The three first requests are issued immediately in the document and are never retried or replaced by the later comparison responses. Disconnects and unanswered messages still fail the assertion. Eight driver tests cover those properties and CDP failure handling. A new real-browser run is required; no application startup fix or proven root cause is claimed from this harness change.
+
+### Earlier lane result
+
 On 12 October 2026, all 12 scenarios passed on macOS with Chrome for Testing 147.0.7727.15. No assertions failed. The report is in the parent workspace at `build/safe-upgrade/evidence/codex-20261012/wk5-full/report.json`.
 
 The tested cached artifact was built from clean source `45917e8f797bd3bc1d29d29342b982a1051ae9d0`, version 4.2.0, Node 24.19.0. Harness source was `b4e759c3`. Application source had not changed between that build and the harness run. This does not qualify subsequent design-lane or integration changes: rebuild and rerun on the final source before release.

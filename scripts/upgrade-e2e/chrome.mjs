@@ -7,6 +7,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { TEST_OAUTH_CLIENT_ID } from './config.mjs';
 import { cdp } from './cdp.mjs';
+import { coldProbeSource } from './cold-probe.mjs';
 export { cdp } from './cdp.mjs';
 
 /** CHROME_BIN, else the newest Chrome for Testing in Playwright's cache. Branded Chrome ignores --load-extension. */
@@ -226,26 +227,26 @@ export async function coldStartProbe({ profileDir, extDir, port, extId, hostRule
   const chrome = launch({ profileDir, extDir, port, hostRules, args });
   try {
     await waitFor(async () => (await devtools(port, '/json/version')).ok, 60000, 'DevTools');
-    const target = await (
-      await devtools(port, `/json/new?chrome-extension://${extId}/popup.html`, { method: 'PUT' })
-    ).json();
-    const page = cdp(target.webSocketDebuggerUrl);
+    const target = await (await devtools(port, '/json/new?about:blank', { method: 'PUT' })).json();
+    const page = cdp(target.webSocketDebuggerUrl, { timeoutMs: 10000 });
     await page.ready;
+    let lastProgress;
     try {
-      return await waitFor(
-        () =>
-          page.eval(`(async () => { if (!globalThis.chrome?.runtime?.connect) return undefined;
-            const p = chrome.runtime.connect({ name: 'fw-fearless-extension' });
-            // An answer that does not come within a minute, or a port the worker drops, is reported, not waited on.
-            let dropped = null; p.onDisconnect.addListener(() => { dropped = chrome.runtime.lastError?.message ?? 'disconnected'; });
-            const ask = (message, id) => new Promise((res) => { const h = (d) => { if (d.id === id && !d.subscription) { p.onMessage.removeListener(h); res(d.error ? { error: d.error } : d.response); } }; p.onMessage.addListener(h); try { p.postMessage({ id, message, request: null }); } catch (e) { res({ unanswered: message, dropped: String(e.message) }); } setTimeout(() => res({ unanswered: message, dropped }), 60000); });
-            const [hasMasterPassword, hasAccounts, keyringIsLocked] = await Promise.all([ask('pri(keyring.hasMasterPassword)', 'c1'), ask('pri(keyring.hasAccounts)', 'c2'), ask('pri(keyring.keyringIsLocked)', 'c3')]);
-            await new Promise((r) => setTimeout(r, 1500));
-            const [hasMasterPasswordLater, keyringIsLockedLater] = await Promise.all([ask('pri(keyring.hasMasterPassword)', 'c4'), ask('pri(keyring.keyringIsLocked)', 'c5')]);
-            return { hasMasterPassword, hasAccounts, keyringIsLocked, hasMasterPasswordLater, keyringIsLockedLater }; })()`),
-        20000,
-        'the first answers after a cold start'
-      );
+      await page.send('Runtime.enable');
+      await page.send('Page.enable');
+      await page.send('Page.addScriptToEvaluateOnNewDocument', { source: coldProbeSource });
+      const navigation = await page.send('Page.navigate', { url: `chrome-extension://${extId}/popup.html` });
+      if (navigation.result?.errorText) throw new Error(`Cold-start page navigation failed: ${navigation.result.errorText}`);
+      try {
+        return await waitFor(async () => {
+          lastProgress = await page.eval('globalThis.__fwColdStartProbe');
+          return lastProgress?.phase === 'complete' ? lastProgress : undefined;
+        }, 135000, 'the first answers after a cold start');
+      } catch (error) {
+        // Only booleans and public state-machine progress are read; never key records or passwords.
+        error.message += `; probe phase=${lastProgress?.phase ?? 'not installed'}`;
+        throw error;
+      }
     } finally {
       page.close();
     }

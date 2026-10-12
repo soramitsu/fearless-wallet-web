@@ -10,6 +10,7 @@ export function createBitcoindRpc({ url, user, password }) {
       body: JSON.stringify({ id: nextId++, jsonrpc: '1.0', method, params }),
       headers: { authorization, 'content-type': 'application/json' },
       method: 'POST',
+      signal: AbortSignal.timeout(10_000),
     });
     const text = await response.text();
     let body;
@@ -33,11 +34,12 @@ export function createBitcoindRpc({ url, user, password }) {
   return { call };
 }
 
-export async function waitForBitcoind(rpc, { timeoutMs = 30_000 } = {}) {
+export async function waitForBitcoind(rpc, { timeoutMs = 30_000, checkRunning = () => {} } = {}) {
   const deadline = Date.now() + timeoutMs;
   let lastError;
 
   while (Date.now() < deadline) {
+    checkRunning();
     try {
       return await rpc.call('getblockchaininfo');
     } catch (error) {

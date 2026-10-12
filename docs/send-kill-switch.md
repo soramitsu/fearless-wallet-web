@@ -47,3 +47,9 @@ Merge the block into the existing `web_config.json` rather than replacing the
 file, and veto only the affected chain. To lift the veto later, publish an
 explicit `true` for that key; removing the key leaves the veto in place on
 every device that saw it.
+
+## Local runner lifecycle — 2026-10-12
+
+The local-chain runner now owns daemon processes from the moment they are spawned, before waiting for readiness. A missing binary or early exit fails promptly; startup failures and SIGINT/SIGTERM shut down owned processes before removing their run directory. Startup RPC waits are bounded, and a process that ignores TERM is killed and reaped. This changes the test harness only.
+
+Four process-lifecycle tests pass (`yarn test:local-chain-processes`), an actual runner interruption during daemon startup returns 143 with no surviving owned process or run directory, and all 17 private Bitcoin-regtest/Solana-validator send tests pass without skips or failures. Source and evidence hashes are in `docs/release/local-chain-runner-validation.json`. Packaged extension and distribution qualification remain separate gates.

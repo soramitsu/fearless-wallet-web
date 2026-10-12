@@ -11,7 +11,6 @@
 //   FEARLESS_SOLANA_TEST_VALIDATOR solana-test-validator binary (default: on PATH)
 //   FEARLESS_LOCAL_CHAINS_DIR     data directory (default: a fresh temp dir)
 
-import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import net from 'node:net';
@@ -22,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { createBitcoindRpc, waitForBitcoind } from './local-chains/bitcoind-rpc.mjs';
 import { startEsploraShim } from './local-chains/esplora-regtest-shim.mjs';
 import { writeSolanaGenesisAccounts } from './local-chains/solana-genesis-accounts.mjs';
+import { spawnLocalProcess } from './local-chains/process-lifecycle.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
@@ -73,7 +73,7 @@ async function startBitcoind(dataDir) {
   const p2pPort = await freePort();
   const user = 'fearless';
   const password = randomBytes(16).toString('hex');
-  const child = spawn(
+  const owned = spawnOwned(
     process.env.FEARLESS_BITCOIND || 'bitcoind',
     [
       '-regtest',
@@ -91,22 +91,16 @@ async function startBitcoind(dataDir) {
       '-fallbackfee=0.0002',
       '-printtoconsole=0',
     ],
-    { stdio: ['ignore', 'ignore', 'pipe'] }
+    { stdio: ['ignore', 'ignore', 'pipe'] },
+    cleanup
   );
-  let stderr = '';
-
-  child.stderr.on('data', (chunk) => {
-    stderr += chunk;
-  });
 
   const rpcUrl = `http://127.0.0.1:${rpcPort}`;
   const rpc = createBitcoindRpc({ password, url: rpcUrl, user });
 
-  await waitForBitcoind(rpc).catch((error) => {
-    throw new Error(`${error.message}${stderr ? `: ${stderr.slice(-2000)}` : ''}`);
-  });
+  await waitForBitcoind(rpc, { checkRunning: owned.assertRunning });
 
-  return { child, password, rpc, rpcUrl, user };
+  return { password, rpc, rpcUrl, user };
 }
 
 async function startSolanaValidator(dataDir) {
@@ -120,7 +114,7 @@ async function startSolanaValidator(dataDir) {
     wallet: walletSolanaAddress,
     walletLamports: 20_000_000_000,
   });
-  const child = spawn(
+  const owned = spawnOwned(
     process.env.FEARLESS_SOLANA_TEST_VALIDATOR || 'solana-test-validator',
     [
       '--ledger',
@@ -139,53 +133,33 @@ async function startSolanaValidator(dataDir) {
       `${dynamicStart}-${dynamicStart + 29}`,
       ...genesis.args,
     ],
-    { stdio: ['ignore', 'ignore', 'pipe'] }
+    { stdio: ['ignore', 'ignore', 'pipe'] },
+    cleanup
   );
-  let stderr = '';
-
-  child.stderr.on('data', (chunk) => {
-    stderr += chunk;
-  });
 
   const rpcUrl = `http://127.0.0.1:${rpcPort}`;
   const deadline = Date.now() + 90_000;
 
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) throw new Error(`solana-test-validator exited: ${stderr.slice(-2000)}`);
+    owned.assertRunning();
 
     try {
       const response = await fetch(rpcUrl, {
         body: JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'getBalance', params: [walletSolanaAddress] }),
         headers: { 'content-type': 'application/json' },
         method: 'POST',
+        signal: AbortSignal.timeout(2000),
       });
       const body = await response.json();
 
-      if (body.result?.value > 0) return { child, mint: genesis.mint, rpcUrl, walletTokenAccount: genesis.walletTokenAccount };
+      if (body.result?.value > 0) return { mint: genesis.mint, rpcUrl, walletTokenAccount: genesis.walletTokenAccount };
     } catch {
       // still starting
     }
     await wait(500);
   }
 
-  throw new Error(`solana-test-validator did not become ready: ${stderr.slice(-2000)}`);
-}
-
-function stop(child, signal = 'SIGTERM') {
-  if (!child || child.exitCode !== null) return Promise.resolve();
-
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      resolve();
-    }, 15_000);
-
-    child.once('exit', () => {
-      clearTimeout(timer);
-      resolve();
-    });
-    child.kill(signal);
-  });
+  throw new Error(`solana-test-validator did not become ready: ${owned.diagnostic()}`);
 }
 
 const baseDir = process.env.FEARLESS_LOCAL_CHAINS_DIR
@@ -194,6 +168,22 @@ const baseDir = process.env.FEARLESS_LOCAL_CHAINS_DIR
 const runDir = path.join(baseDir, `run-${Date.now()}-${process.pid}`);
 const cleanup = [];
 let exitCode = 1;
+let cleanupPromise;
+let shuttingDown = false;
+function spawnOwned(command, args, options, owners) {
+  if (shuttingDown) throw new Error('Local-chain test runner is shutting down');
+  return spawnLocalProcess(command, args, options, owners);
+}
+const cleanUp = () => cleanupPromise ??= (async () => {
+  shuttingDown = true;
+  for (const step of cleanup.reverse()) {
+    await step().catch((error) => console.error('cleanup failed', error));
+  }
+  await fs.rm(runDir, { force: true, recursive: true }).catch(() => undefined);
+})();
+for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+  process.once(signal, () => { void cleanUp().then(() => process.exit(code)); });
+}
 
 try {
   await fs.mkdir(runDir, { recursive: true });
@@ -206,7 +196,6 @@ try {
 
     cleanup.push(async () => {
       await bitcoin.rpc.call('stop').catch(() => undefined);
-      await stop(bitcoin.child);
     });
 
     const shim = await startEsploraShim({ rpc: bitcoin.rpc });
@@ -225,7 +214,6 @@ try {
   if (runSolana) {
     const solana = await startSolanaValidator(path.join(runDir, 'solana'));
 
-    cleanup.push(() => stop(solana.child));
     Object.assign(env, {
       FEARLESS_E2E_SOLANA_MINT: solana.mint,
       FEARLESS_E2E_SOLANA_RPC_URL: solana.rpcUrl,
@@ -235,21 +223,22 @@ try {
     console.info(`solana-test-validator ready at ${solana.rpcUrl}`);
   }
 
-  const vitest = spawn(
+  const vitest = spawnOwned(
     process.execPath,
     [path.join(rootDir, 'node_modules/.bin/vitest'), 'run', ...specs, '--testTimeout=240000', '--hookTimeout=240000'],
-    { cwd: rootDir, env, stdio: 'inherit' }
-  );
+    { cwd: rootDir, env, stdio: 'inherit' },
+    cleanup
+  ).child;
 
-  exitCode = await new Promise((resolve) => vitest.once('exit', (code) => resolve(code ?? 1)));
+  exitCode = await new Promise((resolve) => {
+    vitest.once('error', (error) => { console.error(error); resolve(1); });
+    vitest.once('exit', (code) => resolve(code ?? 1));
+  });
 } catch (error) {
   console.error(error);
   exitCode = 1;
 } finally {
-  for (const step of cleanup.reverse()) {
-    await step().catch((error) => console.error('cleanup failed', error));
-  }
-  await fs.rm(runDir, { force: true, recursive: true }).catch(() => undefined);
+  await cleanUp();
 }
 
 process.exit(exitCode);

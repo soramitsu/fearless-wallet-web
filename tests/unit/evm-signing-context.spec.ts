@@ -33,6 +33,7 @@ beforeEach(() => {
   queue = vi.fn().mockResolvedValue({ id: 'first', payload: '0x1234' });
   state = {
     getAuthInfo: vi.fn(async () => auth),
+    getEvmAuthorizationSnapshot: () => ({ authorization: auth, revision: 0 }),
     networkService: { networkMap: { Ethereum: network } },
     keyringService: {
       getSubstrateAddress: vi.fn(() => 'substrate-root'),
@@ -53,6 +54,7 @@ describe('EVM signing admission', () => {
   it('queues the exact authorized account and network alongside the method and payload', async () => {
     await expect(sign()).resolves.toBe('0x1234');
     expect(queue).toHaveBeenCalledExactlyOnceWith('first', url, 'personal_sign', ['0x1234', address], {
+      authorizationRevision: 0,
       account: { address, name: 'Public fixture', isMobile: false },
       network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },
     });

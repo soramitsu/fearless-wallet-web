@@ -21,6 +21,8 @@ export type DAppChainInfoPayload = {
 export type EvmRequestParams = unknown;
 
 export type EvmSigningContext = {
+  // Legacy/unqualified queue data may display, but cannot pass approval validation.
+  authorizationRevision?: number;
   account: { address: string; name?: string; isMobile: boolean };
   network: { name: string; chainId: string; genesisHash: string; provider?: string; symbol?: string; decimals?: number };
 };

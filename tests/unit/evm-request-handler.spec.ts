@@ -3,6 +3,7 @@ import EvmRequestHandler from '@extension-base/services/request-service/handlers
 import type { RequestService } from '@extension-base/services/request-service';
 
 const context = {
+  authorizationRevision: 0,
   account: { address: '0x1111111111111111111111111111111111111111', name: 'Public fixture', isMobile: false },
   network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },
 };
@@ -51,6 +52,7 @@ describe('EVM request snapshot ownership', () => {
     await first;
     expect(Object.keys(handler.signEvmSubject.value.second).sort()).toEqual([
       'account',
+      'authorizationRevision',
       'data',
       'id',
       'method',

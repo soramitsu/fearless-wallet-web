@@ -693,10 +693,10 @@ export default class Extension extends FWExtensionBase {
     const request = handler.claimEvmSignRequest(id);
     const assertCurrent = () => {
       if (handler.getEvmSignRequest(id) !== request) throw new Error('EVM signing request was cancelled');
+      validateEvmSigningContext(this.state, request);
     };
     try {
       await this.assertSigningSiteAllowed(request);
-      await validateEvmSigningContext(this.state, request);
       assertCurrent();
       const address = request.account.address;
       const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
@@ -715,7 +715,6 @@ export default class Extension extends FWExtensionBase {
             assertCurrent
           );
           if (result) {
-            await validateEvmSigningContext(this.state, request);
             assertCurrent();
             request.resolve(result);
           }
@@ -740,7 +739,6 @@ export default class Extension extends FWExtensionBase {
         if (!provider || (await provider.getNetwork()).chainId !== BigInt(request.network.chainId)) {
           throw new Error('EVM provider does not match the reviewed network');
         }
-        await validateEvmSigningContext(this.state, request);
         assertProviderCurrent();
         // Complete every nonce/gas/fee await without a private key. A revoked
         // grant or replaced provider cannot be carried through population.
@@ -748,7 +746,6 @@ export default class Extension extends FWExtensionBase {
           ...txData,
           chainId: BigInt(request.network.chainId),
         });
-        await validateEvmSigningContext(this.state, request);
         assertProviderCurrent();
       }
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address });
@@ -757,7 +754,6 @@ export default class Extension extends FWExtensionBase {
         throw new Error('Exported key does not match the reviewed account');
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         const signed = await signer.signTransaction(populated!);
-        await validateEvmSigningContext(this.state, request);
         assertProviderCurrent();
         try {
           const { hash } = await provider!.broadcastTransaction(signed);
@@ -772,7 +768,6 @@ export default class Extension extends FWExtensionBase {
         const signature = await (typed
           ? signer.signTypedData(typed.domain, typed.types, typed.message)
           : signer.signMessage(evmMessageBytes(request.method, params)));
-        await validateEvmSigningContext(this.state, request);
         assertCurrent();
         request.resolve({ id: request.id, payload: signature as HexString });
       }
@@ -978,13 +973,10 @@ export default class Extension extends FWExtensionBase {
   }
 
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
-    const auths = await this.state.requestService.getAuthList();
-
-    delete auths[url];
-
-    this.state.requestService.setAuthorize(auths);
-
-    return { list: auths };
+    const list = await this.state.requestService.mutateAuthorizations((entries) => {
+      delete entries[url];
+    });
+    return { list };
   }
 
   deleteAuthRequest(requestId: string): void {

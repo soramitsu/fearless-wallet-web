@@ -136,18 +136,9 @@ export default class Tabs {
 
   async solanaDisconnect(url: string): Promise<SolanaConnectResponse> {
     const idStr = stripUrl(url);
-    const authList = await this.state.requestService.getAuthList();
-    const authInfo = authList[idStr];
-
-    if (authInfo) {
-      this.state.requestService.setAuthorize({
-        ...authList,
-        [idStr]: {
-          ...authInfo,
-          solanaAuthorizedAccount: '',
-        },
-      });
-    }
+    await this.state.requestService.mutateAuthorizations((entries) => {
+      if (entries[idStr]) entries[idStr].solanaAuthorizedAccount = '';
+    });
 
     return { accounts: [] };
   }
@@ -214,18 +205,9 @@ export default class Tabs {
 
   async irohaDisconnect(url: string): Promise<IrohaConnectResponse> {
     const idStr = stripUrl(url);
-    const authList = await this.state.requestService.getAuthList();
-    const authInfo = authList[idStr];
-
-    if (authInfo) {
-      this.state.requestService.setAuthorize({
-        ...authList,
-        [idStr]: {
-          ...authInfo,
-          irohaAuthorizedAccount: '',
-        },
-      });
-    }
+    await this.state.requestService.mutateAuthorizations((entries) => {
+      if (entries[idStr]) entries[idStr].irohaAuthorizedAccount = '';
+    });
 
     return { accounts: [] };
   }

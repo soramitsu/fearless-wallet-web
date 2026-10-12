@@ -262,6 +262,10 @@ export default class State {
     return authList[shortenUrl];
   }
 
+  getEvmAuthorizationSnapshot(url: string) {
+    return this.requestService.authRequestHandler.getEvmAuthorizationSnapshot(url);
+  }
+
   disableNetworkMap(networkKey: string) {
     this.networkService.disableNetworkMap(networkKey);
 
@@ -758,17 +762,16 @@ export default class State {
   }
 
   async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
-    const authUrls = await this.requestService.getAuthList();
+    await this.requestService.getAuthList();
+    const initial = this.getEvmAuthorizationSnapshot(shortenUrl);
+    if (!initial.authorization?.isAllowed || !initial.authorization.evmAuthorizedAccount)
+      throw new Error('EVM account is not authorized for this site');
     const network = this.networkService.getNetworkJson(networkKey);
-
-    if (authUrls[shortenUrl]) {
-      if (!network.active) await this.setActiveNetworks(networkKey);
-
-      authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
-
-      this.requestService.setAuthorize(authUrls);
-    } else {
-      throw new Error(`Not found ${shortenUrl} in auth list`);
-    }
+    if (!network.active) await this.setActiveNetworks(networkKey);
+    await this.requestService.mutateAuthorizations((entries) => {
+      if (this.getEvmAuthorizationSnapshot(shortenUrl).revision !== initial.revision || !entries[shortenUrl])
+        throw new Error('Site authorization changed during network activation');
+      entries[shortenUrl].currentEvmNetworkKey = networkKey;
+    });
   }
 }

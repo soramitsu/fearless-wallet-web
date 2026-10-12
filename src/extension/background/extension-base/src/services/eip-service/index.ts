@@ -246,16 +246,9 @@ export class EipService {
   }
 
   private async revokeEvmPermission(url: string) {
-    const authList = await this.state.requestService.getAuthList();
-
     const idStr = stripUrl(url);
-
-    this.state.requestService.setAuthorize({
-      ...authList,
-      [idStr]: {
-        ...authList[idStr],
-        evmAuthorizedAccount: '',
-      },
+    await this.state.requestService.mutateAuthorizations((entries) => {
+      if (entries[idStr]) entries[idStr].evmAuthorizedAccount = '';
     });
   }
 

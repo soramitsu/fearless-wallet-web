@@ -79,8 +79,8 @@ export default class EvmRequestHandler {
     this.signEvmSubject.next(
       Object.fromEntries(
         Object.entries(this.evmRequests).map(([id, request]) => {
-          const { data, method, url, account, network } = request;
-          return [id, structuredClone({ id, data, method, url, account, network })];
+          const { data, method, url, account, network, authorizationRevision } = request;
+          return [id, structuredClone({ id, data, method, url, account, network, authorizationRevision })];
         })
       )
     );

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, Transaction, getBytes, verifyMessage, verifyTypedData } from 'ethers';
+import { checkIfDenied } from '@polkadot/phishing';
 import { captureWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
@@ -38,6 +39,7 @@ let network: {
 let mobile = false;
 
 beforeEach(() => {
+  vi.mocked(checkIfDenied).mockResolvedValue(false);
   mobile = false;
   auth = { isAllowed: true, evmAuthorizedAccount: address, currentEvmNetworkKey: 'Ethereum' };
   network = {
@@ -52,6 +54,7 @@ beforeEach(() => {
   handler = new EvmRequestHandler({ popupOpen: vi.fn(), updateIcon: vi.fn() } as unknown as RequestService);
   state = {
     getAuthInfo: vi.fn(async () => auth),
+    getEvmAuthorizationSnapshot: () => ({ authorization: auth, revision: 0 }),
     getEvmApi: vi.fn(() => undefined),
     networkService: { networkMap: { Ethereum: network } },
     keyringService: {
@@ -531,10 +534,10 @@ describe('EVM approval uses the reviewed request context', () => {
       await result;
     }
   );
-  it('blocks a second approval while the first authorization read is pending', async () => {
+  it('blocks a second approval while the first phishing check is pending', async () => {
     const { result } = await queue();
-    let resume!: (value: typeof auth) => void;
-    vi.mocked(state.getAuthInfo).mockImplementationOnce(
+    let resume!: (value: boolean) => void;
+    vi.mocked(checkIfDenied).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resume = resolve as typeof resume;
@@ -542,16 +545,16 @@ describe('EVM approval uses the reviewed request context', () => {
     );
     const first = extension.signEvmApprove({ id: 'first' });
     await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('already pending');
-    resume(auth);
+    resume(false);
     await first;
     await result;
     expect(state.keyringService.accountExportPrivateKey).toHaveBeenCalledTimes(1);
   });
-  it('does not sign when cancellation completes during the authorization read', async () => {
+  it('does not sign when cancellation completes during the phishing check', async () => {
     const { result } = await queue();
     const rejected = expect(result).rejects.toThrow('Cancelled');
-    let resume!: (value: typeof auth) => void;
-    vi.mocked(state.getAuthInfo).mockImplementationOnce(
+    let resume!: (value: boolean) => void;
+    vi.mocked(checkIfDenied).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resume = resolve as typeof resume;
@@ -560,15 +563,15 @@ describe('EVM approval uses the reviewed request context', () => {
     const pending = extension.signEvmApprove({ id: 'first' });
     await vi.waitFor(() => expect(resume).toBeTypeOf('function'));
     extension.signingCancel({ id: 'first' });
-    resume(auth);
+    resume(false);
     await expect(pending).rejects.toThrow('cancelled');
     await rejected;
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
   });
-  it('allows retry after an authorization transport error without leaving the request locked', async () => {
+  it('allows retry after a phishing transport error without leaving the request locked', async () => {
     const { result } = await queue();
-    vi.mocked(state.getAuthInfo).mockRejectedValueOnce(new Error('storage unavailable'));
-    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('storage unavailable');
+    vi.mocked(checkIfDenied).mockRejectedValueOnce(new Error('phishing check unavailable'));
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('phishing check unavailable');
     await extension.signEvmApprove({ id: 'first' });
     await result;
   });

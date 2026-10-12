@@ -128,6 +128,10 @@ export class RequestService {
     return this.authRequestHandler.getAuthList();
   }
 
+  public mutateAuthorizations(update: (entries: AuthUrls) => void): Promise<AuthUrls> {
+    return this.authRequestHandler.mutateAuthorizations(update);
+  }
+
   public authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
     return this.authRequestHandler.authorizeUrl(url, request);
   }
@@ -272,16 +276,16 @@ export class RequestService {
   }
 
   async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
-    const entries = await this.getAuthList();
-
-    authorizedAccountDiff.forEach(([url, authorizedAccounts, authType]) => {
-      if (authType === 'substrate') entries[url].authorizedAccounts = authorizedAccounts;
-      else if (authType === 'evm') entries[url].evmAuthorizedAccount = authorizedAccounts[0] ?? '';
-      else if (authType === 'solana') entries[url].solanaAuthorizedAccount = authorizedAccounts[0] ?? '';
-      else if (authType === 'iroha') entries[url].irohaAuthorizedAccount = authorizedAccounts[0] ?? '';
+    await this.mutateAuthorizations((entries) => {
+      authorizedAccountDiff.forEach(([url, authorizedAccounts, authType]) => {
+        const entry = entries[url];
+        if (!entry) return;
+        if (authType === 'substrate') entry.authorizedAccounts = authorizedAccounts;
+        else if (authType === 'evm') entry.evmAuthorizedAccount = authorizedAccounts[0] ?? '';
+        else if (authType === 'solana') entry.solanaAuthorizedAccount = authorizedAccounts[0] ?? '';
+        else if (authType === 'iroha') entry.irohaAuthorizedAccount = authorizedAccounts[0] ?? '';
+      });
     });
-
-    return this.setAuthorize(entries);
   }
 
   authorizeCancel({ id }: RequestAuthorizeCancel): boolean {

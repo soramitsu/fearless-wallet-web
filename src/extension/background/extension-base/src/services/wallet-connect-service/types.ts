@@ -21,7 +21,7 @@ export type WalletConnectSessions = SessionTypes.Struct[];
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];
 }
-export type WalletConnectSigningContext = Omit<EvmSigningContext, 'network'> & {
+export type WalletConnectSigningContext = Omit<EvmSigningContext, 'network' | 'authorizationRevision'> & {
   session: { topic: string; peerPublicKey: string; origin: string; revision: number };
   network: EvmSigningContext['network'] & { provider?: string };
 };

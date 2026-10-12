@@ -44,10 +44,20 @@ export async function captureEvmSigningContext(
   method: string,
   params: unknown
 ): Promise<EvmSigningContext> {
+  await state.getAuthInfo(url); // Wait for the initial store load; do not trust a stale async result.
+  return captureCurrentEvmSigningContext(state, url, method, params);
+}
+
+function captureCurrentEvmSigningContext(
+  state: State,
+  url: string,
+  method: string,
+  params: unknown
+): EvmSigningContext {
   const address = evmSigningAddress(method, params);
   if (method === 'personal_sign' || method === 'eth_sign') evmMessageBytes(method, params);
   const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
-  const auth = await state.getAuthInfo(url);
+  const { authorization: auth, revision } = state.getEvmAuthorizationSnapshot(url);
   if (
     !auth?.isAllowed ||
     !isEthereumAddress(auth.evmAuthorizedAccount || '') ||
@@ -76,6 +86,7 @@ export async function captureEvmSigningContext(
   if (!account) throw new Error('EVM signing account is unavailable');
   const native = network.assets.find((asset) => asset.isNative);
   return {
+    authorizationRevision: revision,
     account: { address, name: account.meta.name, isMobile: keyring.isMobileAccount(root) },
     network: {
       name: network.name,
@@ -87,9 +98,16 @@ export async function captureEvmSigningContext(
   };
 }
 
-export async function validateEvmSigningContext(state: State, request: EvmRequestPayload): Promise<void> {
-  const current = await captureEvmSigningContext(state, request.url, request.method, request.data);
-  if (JSON.stringify(current) !== JSON.stringify({ account: request.account, network: request.network })) {
+export function validateEvmSigningContext(state: State, request: EvmRequestPayload): void {
+  const current = captureCurrentEvmSigningContext(state, request.url, request.method, request.data);
+  if (
+    JSON.stringify(current) !==
+    JSON.stringify({
+      authorizationRevision: request.authorizationRevision,
+      account: request.account,
+      network: request.network,
+    })
+  ) {
     throw new Error('EVM signing context changed; request approval again');
   }
 }

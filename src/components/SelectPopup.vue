@@ -18,10 +18,12 @@
     @handlerFilter="$emit('handlerFilter', ...arguments)"
     @handlerClose="$emit('handlerClose')"
   >
-    <div
+    <button
+      type="button"
       v-for="{ name, value, icon, iconType, subName } in sortedOptions"
       :key="value"
       :class="rowClasses(value)"
+      :aria-pressed="value === $props.value"
       @click="toggle(value)"
     >
       <div class="description" data-testid="description">
@@ -45,8 +47,8 @@
         </span>
       </div>
 
-      <Icon icon="check" v-show="getIconVisible(value)" />
-    </div>
+      <Icon icon="check" v-show="getIconVisible(value)" aria-hidden="true" />
+    </button>
 
     <div v-if="showWarning" class="warning" data-testid="warning">{{ $t('common.nothingFound') }}</div>
   </Popup>
@@ -66,7 +68,9 @@ interface Options {
   isAll?: true;
 }
 
-export default defineComponent({ name: 'SelectPopup',
+export default defineComponent({
+  name: 'SelectPopup',
+  emits: ['handlerFilter', 'handlerClose', 'toggleValue'],
   components: { Popup },
   props: {
     value: String,
@@ -117,12 +121,12 @@ export default defineComponent({ name: 'SelectPopup',
     },
     rowClasses(value: string) {
       return [
-            'row',
-            {
-              'row-active': this.value === value,
-            },
-            `padding-${this.space}`,
-          ];
+        'row',
+        {
+          'row-active': this.value === value,
+        },
+        `padding-${this.space}`,
+      ];
     },
     toggle(value: string) {
       this.$emit('toggleValue', value);
@@ -140,10 +144,15 @@ export default defineComponent({ name: 'SelectPopup',
 <style lang="scss" scoped>
 .select-popup {
   .row {
+    box-sizing: border-box;
+    border: 0;
+    background: transparent;
+    font: inherit;
     color: $default-white;
     text-align: left;
     width: 100%;
-    height: 24px;
+    min-height: 48px;
+    height: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -158,6 +167,11 @@ export default defineComponent({ name: 'SelectPopup',
     &:first-child {
       margin-top: 0;
     }
+
+    &:focus-visible {
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+      outline-offset: -3px;
+    }
   }
 
   .padding-small {
@@ -171,8 +185,8 @@ export default defineComponent({ name: 'SelectPopup',
   }
 
   .padding-big {
-    padding-top: 24px;
-    padding-bottom: 24px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 
   .description {

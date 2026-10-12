@@ -5,10 +5,11 @@
       class="switch__input"
       type="checkbox"
       role="switch"
+      :aria-checked="vModel"
       :aria-label="ariaLabel || undefined"
       :disabled="disabled"
     />
-    <span class="switch__core"></span>
+    <span class="switch__core" aria-hidden="true"></span>
     <span v-if="activeText || inactiveText" class="switch__text">{{ vModel ? activeText : inactiveText }}</span>
   </label>
 </template>
@@ -51,6 +52,8 @@ const disabled = computed(() => props.disabled);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 48px;
+  cursor: pointer;
 }
 
 // Hidden visually only: the checkbox stays focusable and is what keyboards and screen readers operate.
@@ -101,6 +104,38 @@ const disabled = computed(() => props.disabled);
 
   &::after {
     transform: translateX(20px);
+  }
+}
+@include v1-palette {
+  .switch__core {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    width: 52px;
+    height: 32px;
+    &::after {
+      content: '−';
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      top: 3px;
+      left: 3px;
+      background: var(--fw-thumb-off);
+      color: var(--fw-sunken);
+      font: 700 16px/1 var(--fw-font-body);
+    }
+  }
+  .switch__input:checked + .switch__core::after {
+    content: '✓';
+    transform: translateX(20px);
+    background: white;
+    color: var(--fw-fill-bottom);
+  }
+  .switch:has(:disabled) {
+    cursor: default;
+  }
+  .switch__input:disabled + .switch__core {
+    opacity: 0.65;
   }
 }
 </style>

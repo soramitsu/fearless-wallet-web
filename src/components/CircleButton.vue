@@ -223,4 +223,18 @@ const click = (event: Event) => {
 .background-light-black {
   background-color: $default-background-color;
 }
+@include v1-palette {
+  .circle-button {
+    min-width: 44px;
+    min-height: 44px;
+    &.background-black,
+    &.background-light-black {
+      background: var(--fw-card-surface);
+      border: 1px solid var(--fw-stroke-control);
+    }
+    &:active:not(:disabled) {
+      background: var(--fw-pressed);
+    }
+  }
+}
 </style>

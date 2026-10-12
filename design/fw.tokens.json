@@ -1296,7 +1296,7 @@
             "semantic": "toggle.thumbOff",
             "raw": "ink.thumb",
             "ios": "fwThumbOff",
-            "css": null
+            "css": "--fw-thumb-off"
           }
         }
       },
@@ -1317,7 +1317,7 @@
             "semantic": "qr.module",
             "raw": "navy.900",
             "ios": "fwQrModule",
-            "css": null
+            "css": "--fw-qr-module"
           }
         }
       },
@@ -1338,7 +1338,7 @@
             "semantic": "qr.field",
             "raw": "white.base",
             "ios": "fwQrField",
-            "css": null
+            "css": "--fw-qr-field"
           }
         }
       }

@@ -21,6 +21,7 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'FiatsPopup' ,
+  emits: ['handlerClose'],
   props: {
     showAnimation: Boolean,
   },

@@ -362,4 +362,14 @@ export default defineComponent({ name: 'ContentSettings' ,
     }
   }
 }
+
+@include v1-palette {
+  .content-settings {
+    gap: 12px;
+    .settings-part {
+      height: auto;
+      min-height: 44px;
+    }
+  }
+}
 </style>

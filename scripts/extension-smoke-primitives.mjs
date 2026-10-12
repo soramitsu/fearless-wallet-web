@@ -38,6 +38,20 @@ const PRIMITIVES = `(() => {
     effects: document.documentElement.dataset.fwEffects,
     button: button && { ...pick(button, paint), wrapper: pick(button.parentElement, ['filter']), text: button.textContent.trim() },
     input: input && { ...pick(input, paint), label: input.labels?.[0]?.textContent.trim() ?? null },
+    searchFields: [...document.querySelectorAll('.search-input-wrapper')].filter(visible).map((wrapper) => {
+      const field = wrapper.querySelector('input');
+      const label = field?.labels?.[0];
+      const icon = wrapper.querySelector('.search-icon');
+      const fieldBox = field.getBoundingClientRect();
+      const labelBox = label.getBoundingClientRect();
+      const iconBox = icon.getBoundingClientRect();
+      const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      return {
+        iconWithinField: iconBox.left >= fieldBox.left && iconBox.right <= fieldBox.right && iconBox.top >= fieldBox.top && iconBox.bottom <= fieldBox.bottom,
+        iconCenterOffset: Math.round(Math.abs(iconBox.top + iconBox.height / 2 - fieldBox.top - fieldBox.height / 2)),
+        labelOverlapsButton: [...(wrapper.closest('[role="dialog"]') ?? document).querySelectorAll('button')].filter(visible).some((button) => overlaps(labelBox, button.getBoundingClientRect())),
+      };
+    }),
     focused: focused && {
       tag: focused.tagName.toLowerCase(),
       testid: focused.closest('[data-testid]')?.dataset.testid ?? null,
@@ -47,6 +61,11 @@ const PRIMITIVES = `(() => {
     },
     sheet: pick(first('.form-background:not(.form-contained) .form'), paint),
     sheetRole: document.querySelector('.form-background:not(.form-contained)')?.getAttribute('role') ?? null,
+    sheetControlsUnobscured: [...document.querySelectorAll('.form-background:not(.form-contained) .header-content button')]
+      .filter(visible).every((button) => {
+        const box = button.getBoundingClientRect();
+        return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      }),
     dialog: dialog && { ...pick(dialog, paint), role: dialog.closest('[role]')?.getAttribute('role') ?? null },
     card: pick(first('.content-form'), paint),
     switch: pick(first('.switch__core'), ['background-color', 'background-image', 'border-top', 'border-radius']),
@@ -96,7 +115,8 @@ export async function capturePrimitivesScreenshots({
   );
   const stopServing = await servePopupOffline(cdp, sessionId);
 
-  const route = (name) => evaluate(cdp, sessionId, `${APP}.router.replace({ name: ${JSON.stringify(name)} }).then(() => true)`);
+  const route = (name) =>
+    evaluate(cdp, sessionId, `${APP}.router.replace({ name: ${JSON.stringify(name)} }).then(() => true)`);
   const waitFor = (selector, label) =>
     waitForExpression(cdp, sessionId, `Boolean(document.querySelector(${JSON.stringify(selector)}))`, label);
   const click = (selector) =>
@@ -114,7 +134,11 @@ export async function capturePrimitivesScreenshots({
   // A real key press first, so the focus that follows is keyboard focus (:focus-visible), as a Tab user gets it.
   const keyboardFocus = async (selector) => {
     for (const type of ['keyDown', 'keyUp']) {
-      await cdp.send('Input.dispatchKeyEvent', { type, key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16 }, sessionId);
+      await cdp.send(
+        'Input.dispatchKeyEvent',
+        { type, key: 'Shift', code: 'ShiftLeft', windowsVirtualKeyCode: 16 },
+        sessionId
+      );
     }
     await evaluate(
       cdp,
@@ -141,8 +165,10 @@ export async function capturePrimitivesScreenshots({
     await sleep(450);
     // Recorded rather than fatal, so a build that overflows can still be compared with one that does not.
     const pageWidth = await evaluate(cdp, sessionId, 'document.documentElement.scrollWidth');
-    const primitives = { ...(await evaluate(cdp, sessionId, PRIMITIVES)), pageWidth };
-    if (pageWidth > POPUP_WIDTH) console.info(`[extension-smoke] ${name}: the page is ${pageWidth}px wide in the ${POPUP_WIDTH}px popup`);
+    const viewportWidth = await evaluate(cdp, sessionId, 'window.innerWidth');
+    const primitives = { ...(await evaluate(cdp, sessionId, PRIMITIVES)), pageWidth, viewportWidth };
+    if (pageWidth > viewportWidth)
+      console.info(`[extension-smoke] ${name}: the page is ${pageWidth}px wide in the ${viewportWidth}px popup`);
     const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
     const file = path.join(outputDir, `${name}.png`);
 
@@ -192,18 +218,29 @@ export async function capturePrimitivesScreenshots({
     if (await evaluate(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="layoutNoteDismiss"]\'))')) {
       await click('[data-testid="layoutNoteDismiss"]');
     }
-    await capture('01-portfolio-controls', 'Portfolio: tab buttons, search field, icon button, lens segments and the Hide zero switch.');
+    await capture(
+      '01-portfolio-controls',
+      'Portfolio: tab buttons, search field, icon button, lens segments and the Hide zero switch.'
+    );
 
     await click('[data-testid="filterBtn"] button');
     await waitFor('[data-testid="tokenRowSwitch"]', 'Manage in By token');
     await capture('02-manage-switches', 'Manage: one switch per token and per network, the filter chips.');
     await click('[data-testid="filterBtn"] button');
-    await waitForExpression(cdp, sessionId, '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')', 'Manage closed');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')',
+      'Manage closed'
+    );
 
     await openGroupAction('usdt', 'groupSend');
     await click('[data-testid="groupNetworkOption"][data-network="Ethereum"]');
     await waitFor('[data-testid="amountInternal"]', 'Send on Ethereum');
-    await capture('03-send-form', 'Send (a sheet): the amount input, the recipient field, the banner and the disabled primary button.');
+    await capture(
+      '03-send-form',
+      'Send (a sheet): the amount input, the recipient field, the banner and the disabled primary button.'
+    );
 
     await keyboardFocus('[data-testid="amountInternal"]');
     await capture('04-send-amount-keyboard-focus', 'Send: the amount input focused from the keyboard.');
@@ -230,19 +267,28 @@ export async function capturePrimitivesScreenshots({
     await route('SettingsChangePassword');
     await waitFor('.input .el-input__inner', 'Change password');
     await keyboardFocus('.input .el-input__inner');
-    await capture('10-calm-change-password', 'Change password (Calm): labelled fields, the first focused from the keyboard.');
+    await capture(
+      '10-calm-change-password',
+      'Change password (Calm): labelled fields, the first focused from the keyboard.'
+    );
 
     await route('ResetWallet');
     await waitFor('.fw-calm', 'Reset wallet');
-    await capture('11-calm-reset-wallet', 'Reset wallet (Calm): the explanation and the confirmation field; nothing is reset.');
+    await capture(
+      '11-calm-reset-wallet',
+      'Reset wallet (Calm): the explanation and the confirmation field; nothing is reset.'
+    );
 
     // Last, because a dialog that does not close stays over every later screen.
     await route('Settings');
     await waitFor('[data-testid="settings-fiat"]', 'Settings again');
     await click('[data-testid="settings-fiat"]');
     await waitFor('.select-popup .row', 'Currency list');
-    await capture('12-currency-dialog', 'A dialog over its scrim: the currency list with its search field and the selected row.');
-    const dialogOpen = 'Boolean(document.querySelector(\'.select-popup .row\'))';
+    await capture(
+      '12-currency-dialog',
+      'A dialog over its scrim: the currency list with its search field and the selected row.'
+    );
+    const dialogOpen = "Boolean(document.querySelector('.select-popup .row'))";
     const closes = async (close) => {
       await close();
       await sleep(600);
@@ -255,10 +301,70 @@ export async function capturePrimitivesScreenshots({
       await waitFor('.select-popup .row', 'Currency list again');
       dialog.closesWithEscape = await closes(async () => {
         for (const type of ['keyDown', 'keyUp']) {
-          await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }, sessionId);
+          await cdp.send(
+            'Input.dispatchKeyEvent',
+            { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 },
+            sessionId
+          );
         }
       });
     }
+
+    if (!dialog.closesWithItsButton || !dialog.closesWithEscape) throw new Error('Currency dialog dismissal regressed');
+    // Exercise the real appearance setting and OS media hooks. A 281 x 300 CSS viewport represents the 561 x 600
+    // popup at 200% page zoom, and catches controls that only fit the normal popup dimensions.
+    const variants = [
+      { name: '13-dialog-lite', preference: 'lite' },
+      { name: '14-dialog-reduced', preference: 'reduced' },
+      { name: '15-dialog-high-contrast', media: [{ name: 'prefers-contrast', value: 'more' }] },
+      { name: '16-dialog-reduced-motion', media: [{ name: 'prefers-reduced-motion', value: 'reduce' }] },
+      { name: '17-dialog-forced-colors', media: [{ name: 'forced-colors', value: 'active' }] },
+      { name: '18-dialog-narrow', width: 320, height: 600 },
+      { name: '19-dialog-200-percent', width: 281, height: 300 },
+    ];
+    for (const variant of variants) {
+      await cdp.send('Emulation.setEmulatedMedia', { features: variant.media ?? [] }, sessionId);
+      await cdp.send(
+        'Emulation.setDeviceMetricsOverride',
+        {
+          width: variant.width ?? POPUP_WIDTH,
+          height: variant.height ?? POPUP_HEIGHT,
+          deviceScaleFactor: 2,
+          mobile: false,
+        },
+        sessionId
+      );
+      await route('Settings');
+      await waitFor('[data-testid="visualEffects-auto"] input', 'Visual effects choice');
+      await click(`[data-testid="visualEffects-${variant.preference ?? 'auto'}"] input`);
+      await click('[data-testid="settings-fiat"]');
+      await waitFor('.select-popup .row', 'Currency dialog variant');
+      await capture(variant.name, 'Currency dialog: ' + variant.name.replace('dialog-', '').replaceAll('-', ' '));
+      results.at(-1).dialogWithinViewport = await evaluate(
+        cdp,
+        sessionId,
+        `(() => {
+        const box = document.querySelector('.popup-container').getBoundingClientRect();
+        return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
+      })()`
+      );
+      await click('.select-popup [data-testid="basicCloseBtn"]');
+      await waitForExpression(cdp, sessionId, '!' + dialogOpen, 'Currency dialog closed');
+    }
+
+    await cdp.send(
+      'Emulation.setDeviceMetricsOverride',
+      {
+        width: 32,
+        height: 32,
+        deviceScaleFactor: 1,
+        mobile: false,
+      },
+      sessionId
+    );
+    const bootstrapWidth = await evaluate(cdp, sessionId, 'getComputedStyle(document.documentElement).minWidth');
+    if (bootstrapWidth !== '561px') throw new Error('Toolbar popup lost its initial intrinsic width');
+    results.push({ name: 'toolbar-bootstrap', minWidth: bootstrapWidth });
 
     await fs.writeFile(
       path.join(outputDir, 'README.md'),
@@ -269,6 +375,16 @@ export async function capturePrimitivesScreenshots({
         '\n'
     );
     await fs.writeFile(path.join(outputDir, 'results.json'), `${JSON.stringify(results, null, 2)}\n`);
+
+    const layoutFailures = results.filter((result) =>
+      result.pageWidth > result.viewportWidth ||
+      result.dialogWithinViewport === false ||
+      result.sheetControlsUnobscured === false ||
+      result.searchFields?.some((field) => !field.iconWithinField || field.iconCenterOffset > 2 || field.labelOverlapsButton)
+    );
+    if (layoutFailures.length) {
+      throw new Error('Primitive layout checks failed: ' + layoutFailures.map(({ name }) => name).join(', '));
+    }
 
     return { shots, results };
   } catch (error) {

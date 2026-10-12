@@ -396,6 +396,52 @@ const buttonClasses = computed(() => {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
+@include v1-palette {
+  .button-size-big .button,
+  .button-size-medium .button,
+  .button-size-small .button {
+    border-radius: 14px;
+    clip-path: none;
+    transition:
+      transform var(--fw-dur-fast) var(--fw-ease),
+      background-color var(--fw-dur-fast) var(--fw-ease);
+    &:focus-visible {
+      outline: 2px solid var(--fw-focus);
+      outline-offset: -4px;
+    }
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+  }
+  .primary {
+    min-height: 48px;
+    border-color: var(--fw-accent-edge);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+    &:active:not(:disabled) {
+      background: var(--fw-fill-bottom);
+    }
+  }
+  .button-size-small .button {
+    min-height: 44px;
+    height: auto;
+  }
+  .secondary-hover:hover {
+    border-color: var(--fw-stroke-control) !important;
+  }
+  .secondary:active:not(:disabled),
+  .thirdly:active:not(:disabled) {
+    background: var(--fw-pressed) !important;
+  }
+  .link {
+    color: var(--fw-link) !important;
+    min-height: 44px;
+  }
+  .is-disabled,
+  .is-loading {
+    box-shadow: none;
+  }
+}
+
 .icon--loading {
   animation: spin 2s linear infinite;
 }

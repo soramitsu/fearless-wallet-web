@@ -1,5 +1,13 @@
 <template>
-  <div :class="backgroundClasses">
+  <div
+    ref="sheet"
+    :class="backgroundClasses"
+    :role="contained ? undefined : 'dialog'"
+    :aria-modal="contained ? undefined : true"
+    :aria-label="contained ? undefined : tHeader || t('common.select')"
+    tabindex="-1"
+    @keydown="sheetKeydown"
+  >
     <div :class="aboveFormClasses">
       <slot v-if="$slots.header" name="header"></slot>
 
@@ -54,7 +62,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { useModalFocus } from './useModalFocus';
 import type { ComponentText } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
 
@@ -83,6 +92,17 @@ const props = withDefaults(defineProps<Props>(), {
   showCloseIcon: true,
   showAnimation: true,
 });
+
+const sheet = ref<HTMLElement | null>(null);
+const sheetKeydown = useModalFocus(
+  sheet,
+  () => !props.contained,
+  () => {
+    if (props.contained || !props.showCloseIcon) return false;
+    emit('closeHandler');
+    return true;
+  }
+);
 
 const tHeader = computed(() => {
   if (typeof props.header === 'string') return t(props.header);
@@ -299,6 +319,17 @@ const aboveFormClasses = computed(() => {
 }
 .form-background .form button.icon:focus-visible {
   outline: 2px solid palette($pink-color, var(--fw-focus));
+}
+@include v1-palette {
+  .form-background .form {
+    border-radius: 24px 24px 0 0;
+    clip-path: none;
+    border-top: 1px solid var(--fw-stroke-strong);
+  }
+  .form-background .fullscreen {
+    border-radius: 0;
+    border: 0;
+  }
 }
 </style>
 

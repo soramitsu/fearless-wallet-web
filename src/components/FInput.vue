@@ -1,24 +1,27 @@
 <template>
   <FCorners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
-      <label class="s-placeholder">{{ $t(placeholder) }}</label>
+      <label :for="inputId" class="s-placeholder">{{ $t(placeholder) }}</label>
       <textarea
         v-if="type === 'textarea'"
         v-model="vModel"
         ref="input"
+        :id="inputId"
+        :aria-invalid="isError || undefined"
         :class="['el-input__inner', inputClasses]"
         :maxlength="maxlength"
         :readonly="readonly"
         :disabled="disabled"
         :style="inputStyle"
         @blur="$emit('blur', $event)"
-        @input="$emit('change', vModel)"
         @keydown="keydownPress"
       />
       <input
         v-else
         v-model="vModel"
         ref="input"
+        :id="inputId"
+        :aria-invalid="isError || undefined"
         :class="['el-input__inner', inputClasses]"
         :type="showPassword ? 'password' : type === 'text-file' ? 'file' : type"
         :accept="accept"
@@ -27,7 +30,6 @@
         :disabled="disabled"
         :style="inputStyle"
         @blur="$emit('blur', $event)"
-        @input="$emit('change', vModel)"
         @keydown="keydownPress"
       />
     </div>
@@ -35,7 +37,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, useId } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -84,13 +86,14 @@ const wrapperClasses = computed(() => {
 });
 
 const emit = defineEmits(['blur', 'change', 'pressEnter']);
+const inputId = useId();
 
 const vModel = computed({
   get: () => props.value,
   set: (value: string | number) => emit('change', value),
 });
 
-const input = ref<HTMLInputElement | null>(null);
+const input = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
 const containerInputClasses = computed(() => {
   // for "small" and "mini" sizes also medium
@@ -207,6 +210,47 @@ defineExpose({ input });
 .input-size-medium {
   .el-input__inner {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
+  }
+}
+
+@include v1-palette {
+  .input {
+    .s-placeholder {
+      position: static;
+      text-align: left;
+      font-size: 0.8125rem;
+      line-height: 1.4;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--fw-text-2) !important;
+    }
+    .el-input__inner {
+      box-sizing: border-box;
+      color: var(--fw-text-1) !important;
+      background: var(--fw-sunken) !important;
+      border-radius: 12px;
+      clip-path: none;
+      padding: 12px 16px !important;
+      line-height: 1.4;
+      box-shadow:
+        inset 2px 2px 6px rgb(0 0 0 / 0.55),
+        inset -1px -1px 2px rgb(255 255 255 / 0.05);
+      &:focus-visible {
+        border-color: var(--fw-focus) !important;
+        outline: 2px solid var(--fw-focus);
+        outline-offset: -2px;
+      }
+      &[aria-invalid='true'] {
+        border: 2px solid var(--fw-danger) !important;
+        &:focus-visible {
+          outline-offset: 2px;
+        }
+      }
+    }
+  }
+  .fw-calm .input .el-input__inner,
+  html[data-fw-effects='reduced'] .input .el-input__inner {
+    box-shadow: none;
   }
 }
 </style>

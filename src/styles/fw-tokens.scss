@@ -1,5 +1,5 @@
 // fw-tokens.scss: GENERATED from config/design/fw.tokens.json; do not edit.
-// sha256 fff80a613efc3d6a9c508af7e6e24fe761bc4e3fba76f373024cbf0b28dbe165
+// sha256 18180aa767b87b8ac0bb767622e172328d95145817a1475a840905eec55b4315
 // Regenerate: node scripts/design/gen-fw-tokens.mjs --web <checkout>
 // Token values only; effect recipes live in the hand-written _fw-effects.scss.
 :root {
@@ -43,6 +43,9 @@
   --fw-stroke-control: rgb(255 255 255/.40);
   --fw-hud-tick: rgb(46 230 255/.60);
   --fw-hud-trace: rgb(46 230 255/.40);
+  --fw-thumb-off: #C9CEE8;
+  --fw-qr-module: #0A0C1B;
+  --fw-qr-field: #FFFFFF;
   --fw-hairline: linear-gradient(135deg,rgb(255 255 255/.22) 0%,rgb(255 255 255/.06) 42%,rgb(255 0 154/.28) 100%);
   --fw-accent-rim: linear-gradient(135deg,rgb(255 0 154/.75) 0%,rgb(139 92 255/.55) 50%,rgb(46 230 255/.65) 100%);
   --fw-fill: linear-gradient(180deg,#D6007F 0%,#A3006A 100%);

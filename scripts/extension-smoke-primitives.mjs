@@ -151,6 +151,15 @@ export async function capturePrimitivesScreenshots({
           window.__finishLegacyMigration = (response) => {
             for (const listener of listeners) listener({ id: message.id, response });
           };
+        } else if (window.__googleBackupFixture && message.message.startsWith('pri(google.')) {
+          const send = (reply) => queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, ...reply }); });
+          if (message.message === 'pri(google.verify.token)') send({ response: { expires_in: '3600' } });
+          else if (message.message === 'pri(google.get.files)') send({ response: { files: [{ id: 'root-file', name: 'Public backup fixture.json', description: 'publicParent/linked-file' }] } });
+          else if (message.message === 'pri(google.get.file)') {
+            window.__googleBackupFixture.requests.push(message.request.id);
+            if (message.request.id === 'root-file') send({ response: { address: 'publicParent' } });
+            else window.__finishGoogleLinkedFile = send;
+          } else send({ error: 'Unsupported public fixture action' });
         } else post(message);
       };
       return port;
@@ -639,6 +648,42 @@ export async function capturePrimitivesScreenshots({
     await waitForExpression(cdp, sessionId, `document.querySelector('[data-testid="migrationContinue"] button')?.getAttribute('aria-disabled') !== 'true'`, 'Completed fixture row');
     await keyboardFocus('[data-testid="migrationContinue"] button');
     await capture('49-migration-account-completed', 'Public fixture completion releases Continue only after account state succeeds.');
+    await route('Currencies');
+
+    await evaluate(cdp, sessionId, `(() => {
+      const router = ${APP}.router;
+      const original = router.getRoutes().find((record) => record.name === 'AddFromGoogle');
+      router.addRoute({ path: '/design-google-backup-fixture/:access_token', name: 'DesignGoogleBackupFixture', component: original.components.default });
+      window.__googleBackupFixture = { requests: [] };
+      return true;
+    })()`);
+    await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'DesignGoogleBackupFixture', params: { access_token: 'public-fixture-only' } }).then(() => true)`);
+    await waitFor('.wallet__checkbox input', 'Public paired Google backup fixture');
+    await keyboardFocus('.wallet__checkbox input');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', text: ' ' }, sessionId);
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space' }, sessionId);
+    await waitForExpression(cdp, sessionId, `window.__googleBackupFixture.requests.length === 2`, 'Both declared backup downloads');
+    await keyboardFocus('.input__validate-pass input');
+    await cdp.send('Input.insertText', { text: 'public-fixture-password' }, sessionId);
+    const missingBackup = await evaluate(cdp, sessionId, `(() => {
+      const button = document.querySelector('.button__confirm button');
+      return { requests: window.__googleBackupFixture.requests, unavailable: button.getAttribute('aria-disabled'), reason: document.getElementById(button.getAttribute('aria-describedby'))?.textContent.trim(), retryDisabled: document.querySelector('.backup-loading button').disabled };
+    })()`);
+    if (missingBackup.unavailable !== 'true' || !missingBackup.reason || !missingBackup.retryDisabled) throw new Error('Google import enabled before its declared linked file arrived');
+    await capture('50-google-backup-linked-pending', 'Public fixture: linked backup held at popup boundary; parent alone cannot enable import.');
+    Object.assign(results.at(-1), { missingBackup });
+    await evaluate(cdp, sessionId, `(window.__finishGoogleLinkedFile({ error: 'public fixture download failure' }), true)`);
+    await waitForExpression(cdp, sessionId, `document.querySelector('.backup-loading [role="alert"]') && !document.querySelector('.backup-loading button').disabled`, 'Retryable linked backup failure');
+    await keyboardFocus('.backup-loading button');
+    await capture('51-google-backup-linked-retry', 'Public fixture: linked download failure retains the loaded parent and offers retry.');
+    await click('.backup-loading button');
+    await waitForExpression(cdp, sessionId, `window.__googleBackupFixture.requests.length === 3`, 'Linked-only backup retry');
+    const requestedFiles = await evaluate(cdp, sessionId, `window.__googleBackupFixture.requests`);
+    if (requestedFiles.join(',') !== 'root-file,linked-file,linked-file') throw new Error('Retry downloaded unrelated backup files');
+    await evaluate(cdp, sessionId, `(window.__finishGoogleLinkedFile({ response: { address: '0xPublicLinkedFixture' } }), true)`);
+    await waitForExpression(cdp, sessionId, `document.querySelector('.button__confirm button')?.getAttribute('aria-disabled') !== 'true'`, 'Both public backup files available');
+    await keyboardFocus('.button__confirm button');
+    await capture('52-google-backup-files-ready', 'Public fixture files loaded; import becomes available. No restore or account mutation is submitted.');
     await route('Currencies');
 
     await cdp.send(

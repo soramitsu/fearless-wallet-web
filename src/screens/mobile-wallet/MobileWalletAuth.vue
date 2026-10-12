@@ -140,5 +140,29 @@ const onContinue = () => router.push({ name: Components.Wallet });
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 24px;
+
+  > * {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  :deep(.finish .row) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    align-items: stretch;
+  }
+
+  :deep(.finish .button-size-medium) {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  :deep(.finish .logo .text),
+  :deep(.finish .logo .subtext) {
+    overflow-wrap: anywhere;
+  }
 }
 </style>

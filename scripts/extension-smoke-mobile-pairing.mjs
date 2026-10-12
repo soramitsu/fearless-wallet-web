@@ -32,6 +32,8 @@ export async function captureMobilePairingScreenshots({ cdp, sessionId, evaluate
   await run(`(${APP}.app.config.globalProperties.$i18n.locale = 'en-EN', document.documentElement.lang = 'en-EN', document.documentElement.style.fontSize = '32px', true)`);
   await fixture(); await waitFor('.qr-wrapper img', 'Compact QR');
   await capture('93-mobile-pairing-compact', 'Mobile pairing at281×300 and200% root text');
+  await run("(document.querySelector('.qr-wrapper').scrollIntoView({ block: 'center' }), true)");
+  await capture('93b-mobile-pairing-compact-qr', 'Compact QR remains reachable by scrolling');
   await run('(window.__finishMobilePairing({ status: true }), true)');
   await waitFor('[data-testid="continueBtn"] button', 'Compact Continue');
   await keyboardFocus('[data-testid="continueBtn"] button');
@@ -42,9 +44,10 @@ export async function captureMobilePairingScreenshots({ cdp, sessionId, evaluate
   await waitFor('.loader', 'Pairing initialization loading');
   await capture('95-mobile-pairing-initializing', 'Pending pairing initialization retains Close');
   await route('Wallet');
+  await run(`(window.__pairingCancelledRoute = ${APP}.router.currentRoute.value.fullPath, true)`);
   await wait("window.__mobilePairingFixture.requests.some(x => x.message === 'pri(walletConnect.app.cancelPairing)')", 'Cancelled on unmount');
   await run('(window.__finishMobileInit({ response: "wc:public-late-fixture" }), true)');
-  const afterClose = await run(`({ stayedOnWallet: ${APP}.router.currentRoute.value.name === 'Wallet', subscribed: window.__mobilePairingFixture.requests.some(x => x.message === 'pri(walletConnect.app.subscribePairing)') })`);
+  const afterClose = await run(`({ stayedOnWallet: ${APP}.router.currentRoute.value.fullPath === window.__pairingCancelledRoute, subscribed: window.__mobilePairingFixture.requests.some(x => x.message === 'pri(walletConnect.app.subscribePairing)') })`);
   if (!afterClose.stayedOnWallet || afterClose.subscribed) throw new Error('Late pairing escaped cancellation: ' + JSON.stringify(afterClose));
   Object.assign(results.at(-1), { lateInitialization: afterClose });
   const failures = results.filter((r) => r.pageWidth > r.viewportWidth || r.sheetControlsUnobscured === false || r.dialogControlsUnobscured === false || r.dialogWithinViewport === false);

@@ -70,6 +70,7 @@ beforeEach(() => {
       accountExportPrivateKey: vi.fn(() => ({ privateKey: wallet.privateKey })),
     },
     walletConnectService: {
+      isRequestExpired: () => false,
       getSessionRevision: () => 0,
       getSession: (topic: string) => ({
         topic,

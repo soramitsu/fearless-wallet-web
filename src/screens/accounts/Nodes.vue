@@ -59,7 +59,7 @@
               :isActive="getActiveStatus(name, url)"
               :isRemoveBorderBottom="getRemoveBorderBottomValue(index, true)"
               @changeNode="changeNode(url)"
-              @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
+              @openNodeSettingsPopup="(buttonTop, isActive) => openNodeSettingsPopup(name, url, buttonTop, isActive)"
             />
           </div>
         </div>

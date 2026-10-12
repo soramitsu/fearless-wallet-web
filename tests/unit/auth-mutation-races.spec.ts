@@ -17,6 +17,12 @@ const storage = vi.hoisted(() => ({
 }));
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class {
+    getAndWait(key: string): Promise<AuthUrls> {
+      return new Promise((resolve) => this.get(key, resolve));
+    }
+    setAndWait(key: string, value: AuthUrls): Promise<void> {
+      return new Promise((resolve) => this.set(key, value, resolve));
+    }
     get(_key: string, callback: (value: AuthUrls) => void) {
       if (storage.delayReads) storage.reads.push(callback);
       else callback(structuredClone(storage.data));
@@ -103,19 +109,52 @@ function initialize() {
   tabs = new Tabs(state);
   eip = new EipService(state);
 }
-beforeEach(() => {
+beforeEach(async () => {
   storage.data = grants();
   storage.delayReads = false;
   storage.delayWrites = false;
   storage.reads = [];
   storage.writes = [];
   initialize();
+  await auth.getAuthList();
 });
 const revoke = (url: string) =>
   eip.handleEvmRequest('public-revoke', url, { method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] });
 const admit = () => captureEvmSigningContext(state, first, 'personal_sign', ['0x1234', address]);
 
 describe('authorization mutation races through production callers', () => {
+  it('persists an empty reset while an obsolete startup read is outstanding', async () => {
+    storage.delayReads = true; storage.delayWrites = true; initialize();
+    const read = auth.getAuthList();
+    const reset = auth.resetWallet();
+    storage.reads[0](grants());
+    expect(await read).toEqual({});
+    await vi.waitFor(() => expect(storage.writes).toHaveLength(1));
+    storage.writes[0](); await reset;
+    storage.delayReads = false; initialize();
+    expect(await auth.getAuthList()).toEqual({});
+  });
+  it('does not acknowledge popup approval until the authorization write completes', async () => {
+    storage.delayWrites = true;
+    const dapp = auth.authorizeUrl(first, { origin:first, accountAuthType:'solana', reConfirm:true });
+    await vi.waitFor(() => expect(auth.numAuthRequests).toBe(1));
+    const request = Object.values(auth.authRequests)[0];
+    let done = false;
+    const action = extension.authorizeApprove({id:request.id, authorizedAccounts:[solana]}).then(() => {done = true;});
+    await vi.waitFor(() => expect(storage.writes).toHaveLength(1));
+    expect(done).toBe(false);
+    storage.writes[0](); await action; await expect(dapp).resolves.toBe(true);
+  });
+
+  it('projects account display keys without persisting a read-only authorization list', async () => {
+    const list = await extension.authList();
+    expect(Object.keys(list[first].allowedAccountsMap)).toEqual(['public-root']);
+    expect(storage.writes).toHaveLength(0);
+    list[first].isAllowed = false;
+    expect((await auth.getAuthList())[first].isAllowed).toBe(true);
+    await auth.setAuthorize({});
+    expect(await extension.authList()).toEqual({});
+  });
   it('preserves both concurrent EVM origin revocations', async () => {
     await Promise.all([revoke(first), revoke(second)]);
     const current = await auth.getAuthList();
@@ -209,10 +248,19 @@ describe('authorization mutation races through production callers', () => {
     storage.delayReads = true;
     storage.delayWrites = true;
     initialize();
-    auth.getAuthorize(() => auth.setAuthorize({ ...grants(), [first]: { ...grants()[first], isAllowed: false } }));
-    auth.setAuthorize(grants());
-    for (const finish of storage.writes) finish();
+    let newer!: Promise<void>;
+    const reader = auth.getAuthorize(() => {
+      newer = auth.setAuthorize({ ...grants(), [first]: { ...grants()[first], isAllowed: false } });
+    });
+    const initial = auth.setAuthorize(grants());
     storage.reads[0](grants());
+    await reader;
+    expect((await auth.getAuthList())[first]?.isAllowed).not.toBe(true);
+    await vi.waitFor(() => expect(storage.writes).toHaveLength(1));
+    storage.writes[0](); await initial;
+    expect((await auth.getAuthList())[first]?.isAllowed).not.toBe(true);
+    await vi.waitFor(() => expect(storage.writes).toHaveLength(2));
+    storage.writes[1](); await newer;
     expect((await auth.getAuthList())[first].isAllowed).toBe(false);
     expect(storage.data[first].isAllowed).toBe(false);
   });
@@ -231,7 +279,7 @@ describe('authorization mutation races through production callers', () => {
   });
 
   it('does not revive other denied protocol scopes when explicitly reauthorizing Solana', async () => {
-    auth.setAuthorize({ ...grants(), [first]: { ...grants()[first], isAllowed: false } });
+    await auth.setAuthorize({ ...grants(), [first]: { ...grants()[first], isAllowed: false } });
     const pending = auth.authorizeUrl(first, { origin: first, accountAuthType: 'solana', reConfirm: true });
     await vi.waitFor(() => expect(auth.numAuthRequests).toBe(1));
     Object.values(auth.authRequests)[0].resolve({ authorizedAccounts: [solana] });
@@ -259,7 +307,7 @@ describe('authorization mutation races through production callers', () => {
         ...grants(),
         [first]: { ...grants()[first], ...(change === 'replacement' ? { id: 'replacement' } : { isAllowed: false }) },
       });
-      request.resolve({ authorizedAccounts: [solana] });
+      await expect(request.resolve({ authorizedAccounts: [solana] })).rejects.toThrow('authorization changed');
       expect(await outcome).toBe('rejected');
       expect(auth.numAuthRequests).toBe(0);
       const current = await auth.getAuthList();

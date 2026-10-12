@@ -123,7 +123,6 @@ import type {
   ResponseMakeSwap,
   AccountJson,
   SignRequest,
-  AuthorizedAccountsDiff,
   AuthorizeRequest,
   GoogleFileId,
   MessageTypes,
@@ -300,31 +299,21 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
     const pair = this.state.keyringService.getPair(address);
     const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
     const solanaAddress = pair?.meta.solanaAddress as string | undefined;
     const irohaAddress = pair?.meta.irohaAddress as string | undefined;
 
-    // cycle through authUrls and prepare the array of diff
-    this.state.requestService.getAuthorize((authUrls) => {
-      Object.entries(authUrls).forEach(([url, urlInfo]) => {
-        if (urlInfo.authorizedAccounts.includes(address))
-          authorizedAccountsDiff.push([
-            url,
-            urlInfo.authorizedAccounts.filter((previousAddress) => previousAddress !== address),
-            'substrate',
-          ]);
-
-        if (urlInfo.evmAuthorizedAccount === ethereumAddress) authorizedAccountsDiff.push([url, [''], 'evm']);
-        if (urlInfo.solanaAuthorizedAccount === solanaAddress || urlInfo.solanaAuthorizedAccount === address)
-          authorizedAccountsDiff.push([url, [''], 'solana']);
-        if (urlInfo.irohaAuthorizedAccount === irohaAddress || urlInfo.irohaAuthorizedAccount === address)
-          authorizedAccountsDiff.push([url, [''], 'iroha']);
-      });
+    await this.state.requestService.mutateAuthorizations((authUrls) => {
+      for (const auth of Object.values(authUrls)) {
+        auth.authorizedAccounts = auth.authorizedAccounts.filter((candidate) => candidate !== address);
+        if (ethereumAddress && auth.evmAuthorizedAccount === ethereumAddress) auth.evmAuthorizedAccount = '';
+        if (auth.solanaAuthorizedAccount === address || (solanaAddress && auth.solanaAuthorizedAccount === solanaAddress))
+          auth.solanaAuthorizedAccount = '';
+        if (auth.irohaAuthorizedAccount === address || (irohaAddress && auth.irohaAuthorizedAccount === irohaAddress))
+          auth.irohaAuthorizedAccount = '';
+      }
     });
-
-    this.state.requestService.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     if (type === 'native') {
       this.state.walletConnectService.removeSessions(address, ethereumAddress);
@@ -497,12 +486,12 @@ export default class Extension extends FWExtensionBase {
     return [...substrateTransformedAddresses, ...substrateTransformedAccounts, ...tonTransformedAccounts];
   }
 
-  authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
+  async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
     const authRequest = this.state.requestService.getAuthRequest(id);
 
     assert(authRequest, 'Unable to find request');
 
-    authRequest.resolve({ authorizedAccounts });
+    await authRequest.resolve({ authorizedAccounts });
 
     return true;
   }
@@ -511,32 +500,15 @@ export default class Extension extends FWExtensionBase {
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 
-  authList() {
-    return new Promise<AuthUrls>((resolve) => {
-      this.state.requestService.getAuthorize((authUrls: AuthUrls) => {
-        const addressList = Object.keys(this.state.keyringService.getAllAccounts());
-        const urlList = Object.keys(authUrls);
-
-        if (Object.keys(authUrls[urlList[0]]?.allowedAccountsMap).toString() !== addressList.toString()) {
-          urlList.forEach((url) => {
-            const authUrl = authUrls[url];
-            const keys = Object.keys(authUrl?.allowedAccountsMap);
-
-            addressList.forEach((address) => {
-              if (!keys.includes(address)) authUrl.allowedAccountsMap[address] = false;
-            });
-
-            keys.forEach((address) => {
-              if (!addressList.includes(address)) delete authUrl?.allowedAccountsMap[address];
-            });
-          });
-
-          this.state.requestService.setAuthorize(authUrls);
-        }
-
-        resolve(authUrls);
-      });
-    });
+  async authList(): Promise<AuthUrls> {
+    const authUrls = await this.state.requestService.getAuthList();
+    const addresses = this.state.keyringService.getAllAccounts().map(({ address }) => address);
+    // This is a display projection. Listing permissions must never persist a
+    // whole map captured before a concurrent revoke/approval.
+    for (const auth of Object.values(authUrls)) {
+      auth.allowedAccountsMap = Object.fromEntries(addresses.map((address) => [address, auth.allowedAccountsMap?.[address] === true]));
+    }
+    return authUrls;
   }
 
   async getAuthList(): Promise<ResponseAuthorizeList> {
@@ -559,18 +531,14 @@ export default class Extension extends FWExtensionBase {
 
     const { hostname: tabHostName, key: tabAuthKey } = target;
 
-    return new Promise((resolve) => {
-      this.state.requestService.getAuthorize((authUrls) => {
-        const auth = authUrls[tabAuthKey];
-        const isAuthorize = auth?.isAllowed === true;
-
-        resolve({
-          isAuthorize,
-          authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
-          dAppName: tabHostName,
-        });
-      });
-    });
+    const authUrls = await this.state.requestService.getAuthList();
+    const auth = authUrls[tabAuthKey];
+    const isAuthorize = auth?.isAllowed === true;
+    return {
+      isAuthorize,
+      authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
+      dAppName: tabHostName,
+    };
   }
 
   authorizeSubscribe(id: string, port?: Port): AuthorizeRequest[] {

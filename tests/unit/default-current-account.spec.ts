@@ -120,6 +120,25 @@ describe('repairing the selection at every start-up', () => {
 });
 
 describe('removing the current account', () => {
+  it('does not forget accounts after site permission storage rejects', async () => {
+    const state = {
+      keyringService: {
+        archiveWallet: vi.fn(async () => undefined),
+        getPair: () => ({meta:SUBSTRATE.meta}),
+        forgetAccount: vi.fn(), forgetAddress:vi.fn(),
+      },
+      requestService: { mutateAuthorizations:vi.fn(async () => { throw new Error('Public permission write failure'); }) },
+      walletConnectService: { removeSessions:vi.fn() },
+      setCurrentAccount:vi.fn(), cleanupDeletedAccount:vi.fn(),
+    };
+    await expect(Extension.prototype.accountsForget.call({state} as unknown as Extension,
+      {address:SUBSTRATE.address,type:'native'})).rejects.toThrow('Public permission write failure');
+    expect(state.keyringService.forgetAccount).not.toHaveBeenCalled();
+    expect(state.keyringService.forgetAddress).not.toHaveBeenCalled();
+    expect(state.walletConnectService.removeSessions).not.toHaveBeenCalled();
+    expect(state.setCurrentAccount).not.toHaveBeenCalled();
+    expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
+  });
   function forget(removed: MainAccount, remaining: MainAccount[], current = removed) {
     const state = {
       currentAccount: toCurrentAccountInfo(current),
@@ -129,7 +148,7 @@ describe('removing the current account', () => {
         forgetAccount: vi.fn(),
         getAllMainAccounts: () => remaining,
       },
-      requestService: { getAuthorize: (callback: (urls: object) => void) => callback({}), updateAuthorizedAccounts: vi.fn() },
+      requestService: { mutateAuthorizations: vi.fn(async (update: (urls: object) => void) => { update({}); return {}; }) },
       walletConnectService: { removeSessions: vi.fn() },
       setCurrentAccount: vi.fn(),
       updateCurrentAccount: vi.fn(() => true),
@@ -161,7 +180,7 @@ describe('removing the current account', () => {
         forgetAddress: vi.fn(),
         getAllMainAccounts: () => [TON],
       },
-      requestService: { getAuthorize: vi.fn(), updateAuthorizedAccounts: vi.fn() },
+      requestService: { mutateAuthorizations: vi.fn() },
       walletConnectService: { removeSessions: vi.fn() },
       setCurrentAccount: vi.fn(),
       updateCurrentAccount: vi.fn(),
@@ -172,7 +191,7 @@ describe('removing the current account', () => {
 
     expect(result).toBe(false);
     expect(state.keyringService.forgetAccount).not.toHaveBeenCalled();
-    expect(state.requestService.updateAuthorizedAccounts).not.toHaveBeenCalled();
+    expect(state.requestService.mutateAuthorizations).not.toHaveBeenCalled();
     expect(state.walletConnectService.removeSessions).not.toHaveBeenCalled();
     expect(state.setCurrentAccount).not.toHaveBeenCalled();
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();

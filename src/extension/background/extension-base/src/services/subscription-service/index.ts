@@ -68,7 +68,7 @@ export class SubscriptionService {
   constructor(private state: State) {
     this.logger = createLogger('Subscription');
 
-    this.init();
+    void this.init().catch(() => this.logger.error('Unable to persist authorization account display state'));
   }
 
   // Clear a previous subscriber
@@ -267,21 +267,11 @@ export class SubscriptionService {
       });
   }
 
-  init() {
-    this.state.requestService.getAuthorize((authUrls) => {
-      const previousAuth = authUrls;
-
-      if (previousAuth && Object.keys(previousAuth).length) {
-        Object.keys(previousAuth).forEach((url) => {
-          previousAuth[url].allowedAccountsMap = previousAuth[url].isAllowed
-            ? this.state.getAddressList(true)
-            : this.state.getAddressList();
-        });
+  async init(): Promise<void> {
+    await this.state.requestService.mutateAuthorizations((authUrls) => {
+      for (const auth of Object.values(authUrls)) {
+        auth.allowedAccountsMap = auth.isAllowed ? this.state.getAddressList(true) : this.state.getAddressList();
       }
-
-      const migrateValue = { ...previousAuth, ...authUrls };
-
-      this.state.requestService.setAuthorize(migrateValue);
     });
   }
 

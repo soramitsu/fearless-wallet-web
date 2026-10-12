@@ -26,6 +26,12 @@ vi.mock('@extension-base/services/solana-rpc-service', async (importOriginal) =>
 }));
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class {
+    getAndWait(key: string): Promise<AuthUrls> {
+      return new Promise((resolve) => this.get(key, resolve));
+    }
+    setAndWait(key: string, value: AuthUrls): Promise<void> {
+      return new Promise((resolve) => this.set(key, value, resolve));
+    }
     get(_key: string, update: (data: AuthUrls) => void) {
       update(mocks.data);
     }
@@ -71,7 +77,7 @@ let state: State,
   substrate: SubstrateRequestHandler,
   solana: SolanaRequestHandler,
   extension: Extension;
-beforeEach(() => {
+beforeEach(async () => {
   mocks.data = grant();
   mocks.denied.mockReset().mockResolvedValue(false);
   mocks.capability.mockReset().mockResolvedValue(undefined);
@@ -110,6 +116,7 @@ beforeEach(() => {
     getSignRequest: (id: string) => substrate.getSignRequest(id) ?? solana.getSolanaSignRequest(id),
   });
   extension = new Extension(state);
+  await auth.getAuthList();
 });
 async function admit(protocol: 'substrate' | 'solana') {
   const result =

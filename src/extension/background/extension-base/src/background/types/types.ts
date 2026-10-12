@@ -790,6 +790,7 @@ export interface Resolver<T> {
 }
 
 export interface AuthRequest extends Resolver<AuthResponse> {
+  resolve: (result: AuthResponse) => Promise<void>;
   id: string;
   idStr: string;
   request: RequestAuthorizeTab;

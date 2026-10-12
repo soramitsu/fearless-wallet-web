@@ -30,6 +30,10 @@ export default abstract class SubscribableStore<T> extends (IS_EXTENSION ? BaseE
     super.get(_key, update);
   }
 
+  public setAndWait(key: string, value: T): Promise<void> {
+    return super.setAndWait(key, value);
+  }
+
   public getAndWait(_key: string): Promise<T | undefined> {
     return super.getAndWait(_key);
   }

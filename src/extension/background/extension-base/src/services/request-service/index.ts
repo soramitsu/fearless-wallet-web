@@ -116,12 +116,12 @@ export class RequestService {
     return this.authRequestHandler.numAuthRequests;
   }
 
-  public setAuthorize(data: AuthUrls, callback?: () => void): void {
-    this.authRequestHandler.setAuthorize(data, callback);
+  public setAuthorize(data: AuthUrls, callback?: () => void): Promise<void> {
+    return this.authRequestHandler.setAuthorize(data, callback);
   }
 
-  public getAuthorize(update: (value: AuthUrls) => void): void {
-    this.authRequestHandler.getAuthorize(update);
+  public getAuthorize(update: (value: AuthUrls) => void): Promise<void> {
+    return this.authRequestHandler.getAuthorize(update);
   }
 
   public getAuthList(): Promise<AuthUrls> {

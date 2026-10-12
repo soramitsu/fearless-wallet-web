@@ -4,9 +4,9 @@ import AuthorizeStore from '@extension-base/stores/Authorize';
 import { getId } from '@extension-base/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
 import { type NetworkJson } from '@extension-base/types';
+import { AuthorizationWrites } from './authorizationWrites';
 import type State from '@extension-base/background/handlers/State';
 import type {
-  Resolver,
   AuthorizeRequest,
   AuthRequest,
   AuthResponse,
@@ -60,16 +60,14 @@ export class AuthRequestHandler {
     solana: { revisions: new Map<string, number>(), fingerprints: new Map<string, string>() },
   };
   private authorizeLoaded = false;
-  private authorizeLoading = false;
-  private authorizeWaiters: Array<(value: AuthUrls) => void> = [];
+  private authorizeLoading?: Promise<void>;
+  private authorizeWrites?: AuthorizationWrites;
   private readonly authorizeStore = new AuthorizeStore();
   private readonly evmChainSubject = new BehaviorSubject<AuthUrls>({});
   private readonly authorizeUrlSubject = new BehaviorSubject<AuthUrls>({});
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
 
   constructor(requestService: RequestService, state: State) {
-    this.getAuthorize((auths) => (this.authorizeCached = auths ?? {}));
-
     this.requestService = requestService;
     this.networkService = state.networkService;
     this.keyringService = state.keyringService;
@@ -107,23 +105,30 @@ export class AuthRequestHandler {
     this.requestService.updateIcon(shouldClose);
   }
 
-  public setAuthorize(data: AuthUrls, callback?: () => void): void {
-    // The underlying stores already serialize writes. Copy their input now so
-    // later in-place edits cannot rewrite a queued grant or revocation.
-    const snapshot = structuredClone(data);
-    this.trackEvmAuthorization(snapshot);
-    this.trackSigningAuthorization(snapshot);
-    this.authorizeCached = snapshot;
+  private initializeAuthorizations(data: AuthUrls): void {
+    this.authorizeCached = structuredClone(data);
+    this.trackEvmAuthorization(this.authorizeCached, true);
+    this.trackSigningAuthorization(this.authorizeCached, true);
+    this.authorizeWrites = new AuthorizationWrites(
+      data,
+      (entries) => this.authorizeStore.setAndWait(AUTH_URLS_KEY, entries),
+      (entries) => {
+        this.trackEvmAuthorization(entries);
+        this.trackSigningAuthorization(entries);
+        this.authorizeCached = entries;
+        this.authorizeUrlSubject.next(structuredClone(entries));
+      }
+    );
     this.authorizeLoaded = true;
-    this.authorizeStore.set(AUTH_URLS_KEY, structuredClone(snapshot), () => {
-      // A newer intent may already be cached while this older write completes.
-      // Its callback must never restore the older permissions.
+    if (Object.keys(this.authorizeCached).length)
       this.authorizeUrlSubject.next(structuredClone(this.authorizeCached));
-      callback?.();
-    });
-    // A waiter may publish a newer authorization intent. Enqueue this write
-    // first so the store's serialized order remains the same as the cache's.
-    this.flushAuthorizeWaiters();
+  }
+
+  public setAuthorize(data: AuthUrls, callback?: () => void): Promise<void> {
+    // Explicit replacement (including reset) supersedes an outstanding startup
+    // read. Its new grants still remain unavailable until the write commits.
+    if (!this.authorizeWrites) this.initializeAuthorizations({});
+    return this.authorizeWrites!.replace(structuredClone(data), true).then(() => { callback?.(); });
   }
 
   private trackEvmAuthorization(data: AuthUrls, initial = false): void {
@@ -219,48 +224,25 @@ export class AuthRequestHandler {
       throw new Error('Signing authorization changed; request approval again');
   }
 
-  public getAuthorize(update: (value: AuthUrls) => void): void {
-    if (this.authorizeLoaded) {
-      update(structuredClone(this.authorizeCached));
+  public async getAuthorize(update: (value: AuthUrls) => void): Promise<void> {
+    update(await this.getAuthList());
+  }
 
-      return;
-    }
-
-    this.authorizeWaiters.push(update);
-    if (this.authorizeLoading) return;
-
-    this.authorizeLoading = true;
-    this.authorizeStore.get(AUTH_URLS_KEY, (data) => {
-      this.authorizeLoading = false;
-      if (!this.authorizeLoaded) {
-        this.authorizeCached = structuredClone(data || {});
-        this.trackEvmAuthorization(this.authorizeCached, true);
-        this.trackSigningAuthorization(this.authorizeCached, true);
-        this.authorizeLoaded = true;
-        this.authorizeUrlSubject.next(structuredClone(this.authorizeCached));
+  public async getAuthList(): Promise<AuthUrls> {
+    if (!this.authorizeLoaded) {
+      if (!this.authorizeLoading) {
+        this.authorizeLoading = this.authorizeStore.getAndWait(AUTH_URLS_KEY).then((data) => {
+          if (!this.authorizeLoaded) this.initializeAuthorizations(data ?? {});
+        }).finally(() => { this.authorizeLoading = undefined; });
       }
-
-      this.flushAuthorizeWaiters();
-    });
-  }
-
-  private flushAuthorizeWaiters(): void {
-    const waiters = this.authorizeWaiters.splice(0);
-
-    waiters.forEach((update) => update(structuredClone(this.authorizeCached)));
-  }
-
-  public getAuthList(): Promise<AuthUrls> {
-    return new Promise<AuthUrls>((resolve) => this.getAuthorize((rs: AuthUrls) => resolve(rs ?? {})));
+      await this.authorizeLoading;
+    }
+    return structuredClone(this.authorizeCached);
   }
 
   public async mutateAuthorizations(update: (entries: AuthUrls) => void): Promise<AuthUrls> {
     await this.getAuthList();
-    // Read after the load barrier, then transform and publish without yielding.
-    // Callers must not write a whole map captured before an asynchronous step.
-    const next = structuredClone(this.authorizeCached);
-    update(next);
-    this.setAuthorize(next);
+    await this.authorizeWrites!.mutate(update);
     return structuredClone(this.authorizeCached);
   }
 
@@ -269,88 +251,80 @@ export class AuthRequestHandler {
     existedAuth: AuthUrlInfo,
     resolve: (resValue: boolean) => void,
     reject: (error: Error) => void
-  ): Resolver<AuthResponse> => {
-    const expected = existedAuth ? { id: existedAuth.id, isAllowed: existedAuth.isAllowed } : undefined;
-    const complete = (_authorizedAccounts: string[] = [], isAllowed = true) => {
-      const {
-        id: idStr,
-        request: { accountAuthType: requestedAccountAuthType, origin },
-        accountAuthType,
-        url,
-        currentEvmNetworkKey,
-      } = this.authRequests[id];
-
-      if (!isAllowed) {
-        delete this.authRequests[id];
-
-        this.updateIconAuth(true);
-
-        return;
-      }
-
-      const stripedUrl = stripUrl(url);
-      const current = this.authorizeCached[stripedUrl];
-      if (
-        expected
-          ? !current || current.id !== expected.id || current.isAllowed !== expected.isAllowed
-          : current !== undefined
-      ) {
-        throw new Error('Site authorization changed; request approval again');
-      }
-
-      const substrateAccount = this.keyringService.getAccount(_authorizedAccounts[0]);
-      const ethereumAddress = substrateAccount?.meta.ethereumAddress as string;
-      const requestType = requestedAccountAuthType ?? accountAuthType;
-      // Explicit reauthorization of one protocol must not revive other scopes
-      // retained in a globally denied record.
-      const preserved = current?.isAllowed ? current : undefined;
-
-      const evmAuthorizedAccount =
-        requestType === 'evm' ? ethereumAddress : preserved?.evmAuthorizedAccount ?? '';
-
-      const authorizedAccounts =
-        requestType === 'substrate' ? _authorizedAccounts : preserved?.authorizedAccounts ?? [];
-
-      const solanaAuthorizedAccount =
-        requestType === 'solana' ? _authorizedAccounts[0] ?? '' : preserved?.solanaAuthorizedAccount ?? '';
-      const irohaAuthorizedAccount =
-        requestType === 'iroha' ? _authorizedAccounts[0] ?? '' : preserved?.irohaAuthorizedAccount ?? '';
-
-      this.authorizeCached[stripedUrl] = {
-        authorizedAccounts,
-        evmAuthorizedAccount,
-        solanaAuthorizedAccount,
-        irohaAuthorizedAccount,
-        count: 0,
-        isAllowed: true,
-        accountAuthType: mergeAuthType(preserved?.accountAuthType, requestType),
-        allowedAccountsMap: {},
-        id: idStr,
-        origin,
-        url,
-        currentEvmNetworkKey: current?.currentEvmNetworkKey ?? currentEvmNetworkKey,
-      };
-
-      this.setAuthorize(this.authorizeCached);
-
+  ): Pick<AuthRequest, 'resolve' | 'reject'> => {
+    let expected = existedAuth ? { id: existedAuth.id, isAllowed: existedAuth.isAllowed } : undefined;
+    let approving = false;
+    const discard = (error?: Error) => {
       delete this.authRequests[id];
-
       this.updateIconAuth(true);
+      if (error) reject(error);
     };
-
     return {
-      resolve: ({ authorizedAccounts }: AuthResponse): void => {
+      resolve: async ({ authorizedAccounts }: AuthResponse): Promise<void> => {
+        if (approving) throw new Error('Site authorization is already being saved');
+        const request = this.authRequests[id];
+        if (!request) throw new Error('Unable to find authorization request');
+        const originKey = stripUrl(request.url);
+        const current = this.authorizeCached[originKey];
+        if (expected
+          ? !current || current.id !== expected.id || current.isAllowed !== expected.isAllowed
+          : current !== undefined) {
+          const error = new Error('Site authorization changed; request approval again');
+          discard(error);
+          throw error;
+        }
+        const version = this.authorizeWrites!.version(originKey);
+        approving = true;
         try {
-          complete(authorizedAccounts);
+          const substrateAccount = this.keyringService.getAccount(authorizedAccounts[0]);
+          const ethereumAddress = substrateAccount?.meta.ethereumAddress as string;
+          const requestType = request.request.accountAuthType ?? request.accountAuthType;
+          const preserved = current?.isAllowed ? current : undefined;
+          // Build from the effective grant, never from uncommitted new scopes.
+          await this.authorizeWrites!.mutate((entries) => {
+            entries[originKey] = {
+              authorizedAccounts: requestType === 'substrate' ? authorizedAccounts : preserved?.authorizedAccounts ?? [],
+              evmAuthorizedAccount: requestType === 'evm' ? ethereumAddress : preserved?.evmAuthorizedAccount ?? '',
+              solanaAuthorizedAccount: requestType === 'solana' ? authorizedAccounts[0] ?? '' : preserved?.solanaAuthorizedAccount ?? '',
+              irohaAuthorizedAccount: requestType === 'iroha' ? authorizedAccounts[0] ?? '' : preserved?.irohaAuthorizedAccount ?? '',
+              count: 0,
+              isAllowed: true,
+              accountAuthType: mergeAuthType(preserved?.accountAuthType, requestType!),
+              allowedAccountsMap: {},
+              id: request.id,
+              origin: request.request.origin,
+              url: request.url,
+              currentEvmNetworkKey: current?.currentEvmNetworkKey ?? request.currentEvmNetworkKey,
+            };
+          });
+          if (this.authRequests[id] !== request || this.authorizeWrites!.version(originKey) !== version + 1)
+            throw new Error('Site authorization changed while saving; request approval again');
+          discard();
           resolve(true);
-        } catch (error) {
-          complete([], false);
-          reject(error instanceof Error ? error : new Error('Unable to authorize site'));
+        } catch (cause) {
+          const error = cause instanceof Error ? cause : new Error('Unable to save site authorization');
+          if (this.authRequests[id] === request) {
+            if (this.authorizeWrites!.version(originKey) === version + 1) {
+              // A failed physical write keeps the popup and dapp pending for an
+              // explicit retry. Accept only our own resulting fail-closed state.
+              const latest = this.authorizeCached[originKey];
+              expected = latest ? { id: latest.id, isAllowed: latest.isAllowed } : undefined;
+            } else discard(error);
+          }
+          throw error;
+        } finally {
+          approving = false;
         }
       },
       reject: (error: Error): void => {
-        complete([], false);
-        reject(error);
+        const request = this.authRequests[id];
+        if (approving && request) {
+          // Cancellation cannot retract an in-flight physical write. Queue its
+          // revocation and veto it synchronously before removing the request.
+          void this.authorizeWrites!.mutate((entries) => { delete entries[stripUrl(request.url)]; })
+            .catch(() => console.error('Unable to persist cancelled site authorization'));
+        }
+        discard(error);
       },
     };
   };
@@ -455,6 +429,6 @@ export class AuthRequestHandler {
     for (const request of this.authValues) request.reject(new Error('Reset wallet'));
 
     this.authSubject.next([]);
-    this.setAuthorize({});
+    return this.setAuthorize({});
   }
 }

@@ -13,6 +13,12 @@ const storeState = vi.hoisted(() => ({
 
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class MockAuthorizeStore {
+    getAndWait(key: string): Promise<AuthUrls> {
+      return new Promise((resolve) => this.get(key, resolve));
+    }
+    setAndWait(key: string, value: AuthUrls): Promise<void> {
+      return new Promise((resolve) => this.set(key, value, resolve));
+    }
     get(_key: string, update: (value: AuthUrls) => void): void {
       storeState.getCalls += 1;
       update(storeState.authUrls);

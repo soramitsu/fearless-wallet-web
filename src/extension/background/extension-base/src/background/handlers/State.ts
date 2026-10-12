@@ -211,7 +211,7 @@ export default class State {
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
     const tabAuthKey = isSelf ? null : stripUrl(tab.url);
 
-    const cb = () => (authUrls: AuthUrls) => {
+    const cb = (authUrls: AuthUrls) => {
       const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
       const isAuthorize = auth?.isAllowed === true;
 
@@ -222,7 +222,7 @@ export default class State {
       };
     };
 
-    this.requestService.getAuthorize(cb);
+    void this.requestService.getAuthorize(cb).catch(() => cb({}));
   }
 
   async onInstall() {
@@ -271,7 +271,6 @@ export default class State {
 
     this.updateServiceInfo();
 
-    this.requestService.getAuthorize((data) => this.requestService.setAuthorize(data));
   }
 
   updateServiceInfo() {

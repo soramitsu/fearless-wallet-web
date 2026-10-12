@@ -17,6 +17,12 @@ const storage = vi.hoisted(() => ({
 }));
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class {
+    getAndWait(key: string): Promise<AuthUrls> {
+      return new Promise((resolve) => this.get(key, resolve));
+    }
+    setAndWait(key: string, value: AuthUrls): Promise<void> {
+      return new Promise((resolve) => this.set(key, value, resolve));
+    }
     get(_key: string, callback: (value: AuthUrls) => void) {
       if (storage.delayReads) storage.reads.push(callback);
       else callback(storage.data);
@@ -58,7 +64,7 @@ const grant = (isAllowed = true) =>
     },
   }) as AuthUrls;
 let state: State, auth: AuthRequestHandler, queue: EvmRequestHandler, extension: Extension;
-beforeEach(() => {
+beforeEach(async () => {
   storage.data = grant();
   storage.delayed = false;
   storage.delayReads = false;
@@ -95,6 +101,7 @@ beforeEach(() => {
   } as unknown as State;
   auth = new AuthRequestHandler(requests, state);
   extension = new Extension(state);
+  await auth.getAuthList();
 });
 afterEach(() => vi.restoreAllMocks());
 async function admit() {
@@ -175,8 +182,9 @@ describe('EVM site-grant revision and asynchronous storage boundaries', () => {
   });
   it('never lets an older write callback restore an obsolete cached grant', async () => {
     storage.delayed = true;
-    auth.setAuthorize(grant());
+    auth.setAuthorize({ ...grant(), [url]: { ...grant()[url], id: 'new-grant' } });
     auth.setAuthorize(grant(false));
+    await vi.waitFor(() => expect(storage.writes.length).toBeGreaterThan(0));
     storage.writes[0].finish();
     await expect(admit()).rejects.toThrow();
   });
@@ -185,6 +193,7 @@ describe('EVM site-grant revision and asynchronous storage boundaries', () => {
     const value = grant(false);
     auth.setAuthorize(value);
     value[url].isAllowed = true;
+    await vi.waitFor(() => expect(storage.writes.length).toBeGreaterThan(0));
     storage.writes[0].finish();
     expect(storage.data[url].isAllowed).toBe(false);
     await expect(admit()).rejects.toThrow();
@@ -203,6 +212,7 @@ describe('EVM site-grant revision and asynchronous storage boundaries', () => {
     auth.setAuthorize(grant(false));
     const value = await auth.getAuthList();
     value[url].isAllowed = true;
+    await vi.waitFor(() => expect(storage.writes.length).toBeGreaterThan(0));
     storage.writes[0].finish();
     expect(storage.data[url].isAllowed).toBe(false);
   });

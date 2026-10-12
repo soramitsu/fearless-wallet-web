@@ -6,6 +6,8 @@ import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } 
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { TEST_OAUTH_CLIENT_ID } from './config.mjs';
+import { cdp } from './cdp.mjs';
+export { cdp } from './cdp.mjs';
 
 /** CHROME_BIN, else the newest Chrome for Testing in Playwright's cache. Branded Chrome ignores --load-extension. */
 export function resolveChrome(env = process.env) {
@@ -148,46 +150,6 @@ export async function waitFor(fn, ms = 30000, label = 'condition') {
   throw new Error(`timeout waiting for ${label}${last ? `: ${last.message}` : ''}`);
 }
 
-export function cdp(url) {
-  const ws = new WebSocket(url);
-  let id = 0;
-  const pending = new Map();
-  ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    if (message.id && pending.has(message.id)) {
-      pending.get(message.id)(message);
-      pending.delete(message.id);
-    }
-  };
-  // An answer that never comes (a page that went away) fails the call instead of hanging the run.
-  const send = (method, params = {}) =>
-    new Promise((resolve, reject) => {
-      const next = ++id;
-      const timer = setTimeout(() => {
-        pending.delete(next);
-        reject(new Error(`no answer to ${method} within 180 s`));
-      }, 180000);
-      pending.set(next, (message) => {
-        clearTimeout(timer);
-        resolve(message);
-      });
-      ws.send(JSON.stringify({ id: next, method, params }));
-    });
-  return {
-    ready: new Promise((resolve) => {
-      ws.onopen = resolve;
-    }),
-    send,
-    close: () => ws.close(),
-    eval: async (expression) => {
-      const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
-      if (result.result?.exceptionDetails)
-        throw new Error(result.result.exceptionDetails.exception?.description || result.result.exceptionDetails.text);
-      return result.result?.result?.value;
-    },
-  };
-}
-
 export async function serviceWorker(port) {
   return waitFor(
     async () => (await targets(port)).find((t) => t.type === 'service_worker' && t.url.endsWith('/background.js')),
@@ -241,9 +203,15 @@ export async function openPopup(port, extId, hash = '') {
     window.__p.onMessage.addListener((d) => { const h = window.__h[d.id]; if (!h || d.subscription) return; delete window.__h[d.id]; d.error ? h.rej(d.error) : h.res(d.response); });
     window.__send = (message, request) => new Promise((res, rej) => { const id = 'h.' + (++window.__n); window.__h[id] = { res, rej }; window.__p.postMessage({ id, message, request: request ?? null }); setTimeout(() => rej('timeout ' + message), 90000); }); return true; })()`);
   page.call = (message, request) =>
-    page.eval(
-      `window.__send(${JSON.stringify(message)}, ${JSON.stringify(request ?? null)}).then((v) => ({ ok: v }), (e) => ({ err: String(e && e.message || e) }))`
-    );
+    page
+      .eval(
+        `window.__send(${JSON.stringify(message)}, ${JSON.stringify(request ?? null)}).then((v) => ({ ok: v }), (e) => ({ err: String(e && e.message || e) }))`
+      )
+      .catch((error) => {
+        // The message type identifies the stalled operation without logging passwords or key material.
+        error.message = `${message}: ${error.message}`;
+        throw error;
+      });
   page.targetId = target.id;
   page.closeTarget = () => devtools(port, `/json/close/${target.id}`).catch(() => undefined);
   return page;

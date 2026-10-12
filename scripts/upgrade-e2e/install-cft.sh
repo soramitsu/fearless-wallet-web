@@ -11,7 +11,8 @@ set -euo pipefail
 
 CFT_VERSION="147.0.7727.15"
 # Record with: curl -fsSLO "$CFT_URL" && sha256sum chrome-linux64.zip
-CFT_LINUX64_SHA256=""
+# Downloaded from the pinned Google URL and SHA-256 verified on 2026-10-12.
+CFT_LINUX64_SHA256="04883e331b31448d6255fa058f0e1c7e8657c004da1f8a1c04eb28855a37ec6c"
 CFT_URL="https://storage.googleapis.com/chrome-for-testing-public/${CFT_VERSION}/linux64/chrome-linux64.zip"
 
 fail() {

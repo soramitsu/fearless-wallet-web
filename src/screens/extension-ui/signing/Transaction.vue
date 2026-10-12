@@ -6,7 +6,7 @@
     @closeHandler="onReject"
   >
     <div class="signing-review" :aria-busy="!!pending">
-      <p v-if="actionError" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
+      <p v-if="actionError && !request" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
       <p v-if="!request" role="status">{{ t('irohaConnectPage.waitingForRequest') }}</p>
       <template v-else-if="review">
         <section class="signing-requester">
@@ -131,6 +131,7 @@
             {{ t(isMobile ? 'mobileConnector.signMobile' : 'irohaConnectPage.signing') }}
           </p>
         </template>
+        <p v-if="actionError" ref="actionErrorElement" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
         <div ref="controls" class="signing-controls">
           <FButton
             :data-testid="rejectTestId"
@@ -225,6 +226,7 @@ const isMobile = computed(() => request.value && 'isMobile' in request.value.acc
 const pending = ref<'approve' | 'reject' | null>(null);
 const siteStatus = ref<'checking' | 'flagged' | 'unverified'>('checking');
 const actionError = ref(false);
+const actionErrorElement = ref<HTMLElement | null>(null);
 const rawExpanded = ref(false);
 const acknowledged = ref(false);
 const rawDetails = ref<HTMLDetailsElement | null>(null);
@@ -308,7 +310,11 @@ const act = async (action: 'approve' | 'reject') => {
       else notify({ title: t('addWallet.google.somethingWrong'), message: '', type: 'error' });
     }
   } catch {
-    if (active && key === requestKey.value) actionError.value = true;
+    if (active && key === requestKey.value) {
+      actionError.value = true;
+      await nextTick();
+      if (active && key === requestKey.value) actionErrorElement.value?.scrollIntoView?.({ block: 'nearest' });
+    }
   } finally {
     if (active) {
       pending.value = null;

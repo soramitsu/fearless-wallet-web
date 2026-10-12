@@ -224,7 +224,12 @@ export async function captureWalletConnectOwnership({
   await wait(`window.__wcOwnershipFixture.requests.length===2`, 'First rejection captured');
   await run(`(window.__finishWcOwnership({error:'Public rejection failure'}), true)`);
   await wait(`!!document.querySelector('[role="alert"]:not(.signing-warning)')`, 'Retryable rejection error visible');
+  const errorVisible = await run(
+    `(() => { const e=document.querySelector('[role="alert"]:not(.signing-warning)').getBoundingClientRect(); const h=document.querySelector('.header-content').getBoundingClientRect(); return e.top>=Math.max(0,h.bottom) && e.bottom<=innerHeight; })()`
+  );
+  if (!errorVisible) throw new Error('WalletConnect retry feedback is outside the viewport');
   await capture('wc-ownership-retry', 'Failed rejection leaves the displayed request available to retry');
+  Object.assign(results.at(-1), { retryFeedbackVisible: errorVisible });
   await click(reject);
   await wait(`window.__wcOwnershipFixture.requests.length===3`, 'Retry rejection captured');
   const submitted = await run(`window.__wcOwnershipFixture.requests`);

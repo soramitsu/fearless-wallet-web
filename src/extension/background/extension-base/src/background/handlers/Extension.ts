@@ -195,6 +195,7 @@ import type {
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTransaction } from '@/util/evmTransaction';
+import { evmTypedData } from '@/util/evmTypedData';
 import {
   isCapturedSoraPairStillSelected,
   isLocallySignableSelectedSoraPair,
@@ -730,6 +731,7 @@ export default class Extension extends FWExtensionBase {
         assertCurrent();
       }
       const params = request.data as unknown[];
+      const typed = request.method.startsWith('eth_signTypedData') ? evmTypedData(request.method, params) : undefined;
       const txData = request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address });
       const signer = new Wallet(privateKey, provider);
@@ -746,15 +748,9 @@ export default class Extension extends FWExtensionBase {
           return false;
         }
       } else {
-        const method = request.method;
-        const payload = method === 'personal_sign' ? params[0] : params[1];
-        if (typeof payload !== 'string') throw new Error('Invalid EVM signing payload');
-        const isMessage = method === 'eth_sign' || method === 'personal_sign';
-        const message = isMessage ? evmMessageBytes(method, params) : JSON.parse(payload);
-        if (!isMessage) delete message.types['EIP712Domain'];
-        const signature = await (isMessage
-          ? signer.signMessage(message)
-          : signer.signTypedData(message.domain, message.types, message.message));
+        const signature = await (typed
+          ? signer.signTypedData(typed.domain, typed.types, typed.message)
+          : signer.signMessage(evmMessageBytes(request.method, params)));
         request.resolve({ id: request.id, payload: signature as HexString });
       }
       return true;
@@ -2215,7 +2211,10 @@ export default class Extension extends FWExtensionBase {
       throw new Error('WalletConnect request does not match the selected signer');
     const messageBytes =
       method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
+    const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
     const [, chainId] = request.request.params.chainId.split(':');
+    if (typed?.domain.chainId !== undefined && BigInt(typed.domain.chainId) !== BigInt(chainId))
+      throw new Error('WalletConnect typed data does not match the requested chain');
     const network = Object.values(this.state.networkService.networkMap).find((el) => el.chainId === chainId);
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
@@ -2231,13 +2230,9 @@ export default class Extension extends FWExtensionBase {
       const { hash } = await signer.sendTransaction(txData!);
       request.resolve({ id: request.request.topic, payload: hash as HexString });
     } else {
-      const payload = params[1];
-      if (!messageBytes && typeof payload !== 'string') throw new Error('Invalid EVM typed-data payload');
-      const message = messageBytes ?? JSON.parse(payload as string);
-      if (!messageBytes) delete message.types['EIP712Domain'];
-      const signature = await (messageBytes
-        ? signer.signMessage(messageBytes)
-        : signer.signTypedData(message.domain, message.types, message.message));
+      const signature = await (typed
+        ? signer.signTypedData(typed.domain, typed.types, typed.message)
+        : signer.signMessage(messageBytes!));
 
       request.resolve({ id: request.request.topic, payload: signature as HexString });
     }

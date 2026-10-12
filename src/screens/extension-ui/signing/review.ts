@@ -1,10 +1,10 @@
-import { formatUnits, getBytes, isAddress, toUtf8String, TypedDataEncoder } from 'ethers';
-import type { TypedDataDomain, TypedDataField } from 'ethers';
+import { formatUnits, getBytes, isAddress, toUtf8String } from 'ethers';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { EvmRequestPayload, SolanaRequestPayload } from '@extension-base/services/request-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTransaction } from '@/util/evmTransaction';
+import { evmTypedData } from '@/util/evmTypedData';
 import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
 export type ReviewRequest = SigningRequest | EvmRequestPayload | SolanaRequestPayload;
@@ -51,20 +51,6 @@ export const reviewJson = (value: unknown): string =>
     /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
     (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
   );
-
-// A field absent from the schema is not signed. Do not describe such a request
-// as fully decoded, even if ethers would silently omit the extra field.
-function sameShape(input: unknown, encoded: unknown): boolean {
-  if (Array.isArray(encoded))
-    return Array.isArray(input) && input.length === encoded.length && encoded.every((v, i) => sameShape(input[i], v));
-  if (record(encoded))
-    return (
-      record(input) &&
-      Object.keys(input).length === Object.keys(encoded).length &&
-      Object.keys(encoded).every((key) => Object.hasOwn(input, key) && sameShape(input[key], encoded[key]))
-    );
-  return true;
-}
 
 function evmReview(request: EvmRequestPayload, result: SigningReview): void {
   result.network = request.network?.name;
@@ -126,30 +112,15 @@ function evmReview(request: EvmRequestPayload, result: SigningReview): void {
     }
     return;
   }
-  if (['eth_signTypedData', 'eth_signTypedData_v3', 'eth_signTypedData_v4'].includes(request.method)) {
-    const typed = typeof params[1] === 'string' ? JSON.parse(params[1]) : params[1];
-    if (!record(typed) || !record(typed.types) || !record(typed.domain) || !record(typed.message)) return;
-    const types = { ...typed.types } as Record<string, TypedDataField[]>;
-    delete types.EIP712Domain;
-    const encoder = TypedDataEncoder.from(types);
-    const payload = TypedDataEncoder.getPayload(typed.domain as TypedDataDomain, types, typed.message);
-    const complete = typed.primaryType === encoder.primaryType && sameShape(typed.message, payload.message);
-    const domainType = typed.types.EIP712Domain;
-    const exactDomain =
-      domainType === undefined || JSON.stringify(domainType) === JSON.stringify(payload.types.EIP712Domain);
-    const supportedVersion =
-      request.method !== 'eth_signTypedData_v3' ||
-      !Object.values(types)
-        .flat()
-        .some((f) => f.type.includes('['));
+  if (request.method.startsWith('eth_signTypedData')) {
+    const typed = evmTypedData(request.method, params);
     result.actions = [
       {
         kind: 'typedData',
         text: reviewJson({ domain: typed.domain, primaryType: typed.primaryType, message: typed.message }),
       },
     ];
-    result.blind = !complete || !exactDomain || !supportedVersion;
-    return;
+    result.blind = false;
   }
 }
 

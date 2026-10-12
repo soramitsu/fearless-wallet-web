@@ -2,6 +2,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmRequestPayload, EvmSigningContext } from '@extension-base/services/request-service/types';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
+import { evmTypedData } from '@/util/evmTypedData';
 
 // RPC methods define parameter positions. An address-shaped message must never
 // decide which key signs it (personal_sign is [message, address]).
@@ -45,6 +46,7 @@ export async function captureEvmSigningContext(
 ): Promise<EvmSigningContext> {
   const address = evmSigningAddress(method, params);
   if (method === 'personal_sign' || method === 'eth_sign') evmMessageBytes(method, params);
+  const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
   const auth = await state.getAuthInfo(url);
   if (
     !auth?.isAllowed ||
@@ -62,8 +64,7 @@ export async function captureEvmSigningContext(
   let claimedChainId: unknown;
   if (method === 'eth_sendTransaction') claimedChainId = (data[0] as { chainId?: unknown }).chainId;
   else if (method.startsWith('eth_signTypedData')) {
-    const typed = typeof data[1] === 'string' ? JSON.parse(data[1]) : data[1];
-    claimedChainId = typed?.domain?.chainId;
+    claimedChainId = typed?.domain.chainId;
   }
   if (claimedChainId !== undefined && chainId(claimedChainId) !== networkChainId)
     throw new Error('EVM request chain does not match the selected network');

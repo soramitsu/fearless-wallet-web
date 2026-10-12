@@ -126,8 +126,152 @@ describe('EVM approval uses the reviewed request context', () => {
     await expect(queue('personal_sign', ['0xffg0', address])).rejects.toThrow();
     expect(state.walletConnectDappService.onEvmRequest).not.toHaveBeenCalled();
   });
+  it.each([
+    ['string false', 'eth_signTypedData_v4', { message: { approved: 'false' } }],
+    ['numeric boolean', 'eth_signTypedData_v4', { message: { approved: 0 } }],
+    ['wrong primary type', 'eth_signTypedData_v4', { primaryType: 'Different' }],
+    ['unsigned message field', 'eth_signTypedData_v4', { message: { approved: false, hidden: 'not signed' } }],
+    [
+      'changed domain schema',
+      'eth_signTypedData_v4',
+      { types: { EIP712Domain: [], Permission: [{ name: 'approved', type: 'bool' }] } },
+    ],
+    [
+      'v3 array',
+      'eth_signTypedData_v3',
+      { types: { Permission: [{ name: 'approved', type: 'bool[]' }] }, message: { approved: [false] } },
+    ],
+    ['legacy v1 interpreted as v4', 'eth_signTypedData_v1', {}],
+  ])('rejects typed-data %s before queueing or key access', async (_name, method, change) => {
+    const typed = {
+      primaryType: 'Permission',
+      domain: { name: 'Public fixture', chainId: 1 },
+      types: {
+        EIP712Domain: [
+          { name: 'name', type: 'string' },
+          { name: 'chainId', type: 'uint256' },
+        ],
+        Permission: [{ name: 'approved', type: 'bool' }],
+      },
+      message: { approved: false },
+      ...(change as object),
+    };
+    await expect(queue(method as string, [address, JSON.stringify(typed)])).rejects.toThrow();
+    expect(handler.signEvmSubject.value).toEqual({});
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(state.walletConnectDappService.onEvmRequest).not.toHaveBeenCalled();
+  });
+  it('also rejects ambiguous WalletConnect typed data before exporting a key', async () => {
+    const request = {
+      request: {
+        topic: 'public-topic',
+        params: {
+          chainId: 'eip155:1',
+          request: {
+            method: 'eth_signTypedData_v4',
+            params: [
+              address,
+              {
+                primaryType: 'Permission',
+                domain: { chainId: 1 },
+                types: { Permission: [{ name: 'approved', type: 'bool' }] },
+                message: { approved: 'false' },
+              },
+            ],
+          },
+        },
+      },
+      resolve: vi.fn(),
+    };
+    state.requestService.signWcRequest = vi.fn(() => request as never);
+    await expect(extension.wcRequestApprove({ address, topic: 'public-topic' })).rejects.toThrow();
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(request.resolve).not.toHaveBeenCalled();
+  });
+  it.each([false, true])('never forwards an ambiguous typed Boolean for mobile=%s', async (isMobile) => {
+    mobile = isMobile;
+    await expect(
+      queue('eth_signTypedData_v4', [
+        address,
+        {
+          primaryType: 'Permission',
+          domain: { chainId: 1 },
+          types: { Permission: [{ name: 'approved', type: 'bool' }] },
+          message: { approved: 'false' },
+        },
+      ])
+    ).rejects.toThrow();
+    expect(state.walletConnectDappService.onEvmRequest).not.toHaveBeenCalled();
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(handler.signEvmSubject.value).toEqual({});
+  });
+  it.each(['object', 'json'])('WalletConnect signs a real false Boolean from %s typed data', async (format) => {
+    const typed = {
+      primaryType: 'Permission',
+      domain: { chainId: 1 },
+      types: { Permission: [{ name: 'approved', type: 'bool' }] },
+      message: { approved: false },
+    };
+    const request = {
+      request: {
+        topic: 'public-topic',
+        params: {
+          chainId: 'eip155:1',
+          request: {
+            method: 'eth_signTypedData_v4',
+            params: [address, format === 'json' ? JSON.stringify(typed) : typed],
+          },
+        },
+      },
+      resolve: vi.fn(),
+    };
+    state.requestService.signWcRequest = vi.fn(() => request as never);
+    await extension.wcRequestApprove({ address, topic: 'public-topic' });
+    expect(request.resolve).toHaveBeenCalledTimes(1);
+    const { payload } = request.resolve.mock.calls[0][0];
+    expect(verifyTypedData(typed.domain, typed.types, typed.message, payload)).toBe(address);
+    expect(verifyTypedData(typed.domain, typed.types, { approved: true }, payload)).not.toBe(address);
+  });
+  it('checks WalletConnect typed-data domain chain before key access', async () => {
+    const request = {
+      request: {
+        topic: 'public-topic',
+        params: {
+          chainId: 'eip155:1',
+          request: {
+            method: 'eth_signTypedData_v4',
+            params: [
+              address,
+              {
+                primaryType: 'Permission',
+                domain: { chainId: 2 },
+                types: { Permission: [{ name: 'approved', type: 'bool' }] },
+                message: { approved: false },
+              },
+            ],
+          },
+        },
+      },
+      resolve: vi.fn(),
+    };
+    state.requestService.signWcRequest = vi.fn(() => request as never);
+    await expect(extension.wcRequestApprove({ address, topic: 'public-topic' })).rejects.toThrow('chain');
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+  });
+  it('accepts an object payload and signs the exact false boolean', async () => {
+    const typed = {
+      primaryType: 'Permission',
+      domain: { chainId: 1 },
+      types: { Permission: [{ name: 'approved', type: 'bool' }] },
+      message: { approved: false },
+    };
+    const { result } = await queue('eth_signTypedData_v4', [address, typed]);
+    await extension.signEvmApprove({ id: 'first' });
+    expect(verifyTypedData(typed.domain, typed.types, typed.message, (await result).payload)).toBe(address);
+  });
   it('produces a real typed-data signature for the reviewed domain and account', async () => {
     const typed = {
+      primaryType: 'Message',
       domain: { name: 'Public fixture', chainId: 1 },
       types: { Message: [{ name: 'contents', type: 'string' }] },
       message: { contents: 'hello' },

@@ -107,7 +107,7 @@ describe('signing summaries describe the exact payload', () => {
       actions: [{ amount: '1 wei' }, { kind: 'unknown' }],
     });
   });
-  it('shows typed domain and message and identifies schema omissions as blind', () => {
+  it('shows typed domain and message but blocks schema omissions and a different primary type', () => {
     const typed = {
       primaryType: 'Permit',
       domain: { name: 'Public fixture', chainId: 1 },
@@ -124,11 +124,23 @@ describe('signing summaries describe the exact payload', () => {
           address,
           JSON.stringify({ ...typed, message: { ...typed.message, unsigned: 'safe' } }),
         ])
-      ).blind
-    ).toBe(true);
+      )
+    ).toMatchObject({ blocked: true, blind: true });
     expect(
-      signingReview(evm('eth_signTypedData_v4', [address, JSON.stringify({ ...typed, primaryType: 'Other' })])).blind
-    ).toBe(true);
+      signingReview(evm('eth_signTypedData_v4', [address, JSON.stringify({ ...typed, primaryType: 'Other' })]))
+    ).toMatchObject({ blocked: true, blind: true });
+  });
+  it('blocks an ambiguous typed Boolean instead of offering blind approval', () => {
+    const typed = {
+      primaryType: 'Permission',
+      domain: {},
+      types: { Permission: [{ name: 'approved', type: 'bool' }] },
+      message: { approved: 'false' },
+    };
+    expect(signingReview(evm('eth_signTypedData_v4', [address, typed]))).toMatchObject({ blocked: true, blind: true });
+    expect(
+      signingReview(evm('eth_signTypedData_v4', [address, { ...typed, message: { approved: false } }]))
+    ).toMatchObject({ blocked: false, blind: false });
   });
   it('does not claim V3 arrays have been decoded with V3 semantics', () => {
     const typed = {
@@ -137,8 +149,14 @@ describe('signing summaries describe the exact payload', () => {
       types: { List: [{ name: 'values', type: 'uint256[]' }] },
       message: { values: ['1'] },
     };
-    expect(signingReview(evm('eth_signTypedData_v3', [address, JSON.stringify(typed)])).blind).toBe(true);
-    expect(signingReview(evm('eth_signTypedData_v4', [address, JSON.stringify(typed)])).blind).toBe(false);
+    expect(signingReview(evm('eth_signTypedData_v3', [address, JSON.stringify(typed)]))).toMatchObject({
+      blocked: true,
+      blind: true,
+    });
+    expect(signingReview(evm('eth_signTypedData_v4', [address, JSON.stringify(typed)]))).toMatchObject({
+      blocked: false,
+      blind: false,
+    });
   });
   it('decodes each SOL transfer and retains separate batch transaction numbers', () => {
     const result = signingReview(solana('signAllTransactions', { transactionsBase64: [transaction(), transaction()] }));

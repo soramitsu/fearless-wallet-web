@@ -89,9 +89,16 @@ export async function captureSigningScreenshots({
   }
   await locale('en-EN');
   await resize(281, 300);
-  await run(`(document.documentElement.style.fontSize='32px', document.querySelector('.form-background .form').scrollTop=0, true)`);
-  await capture('79-signing-compact-large-text-top', 'Scrollable signing heading at 281 × 300 with 200% root text size');
-  const compactHeader = await run(`(() => { const el=document.querySelector('.form-background .header'); const box=el.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, height: innerHeight }; })()`);
+  await run(
+    `(document.documentElement.style.fontSize='32px', document.querySelector('.form-background .form').scrollTop=0, true)`
+  );
+  await capture(
+    '79-signing-compact-large-text-top',
+    'Scrollable signing heading at 281 × 300 with 200% root text size'
+  );
+  const compactHeader = await run(
+    `(() => { const el=document.querySelector('.form-background .header'); const box=el.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, height: innerHeight }; })()`
+  );
   if (compactHeader.top < 0 || compactHeader.bottom > compactHeader.height)
     throw new Error('Compact signing header cannot be read: ' + JSON.stringify(compactHeader));
   await keyboardFocus(reject);
@@ -153,6 +160,69 @@ export async function captureSigningScreenshots({
     '84-signing-readable',
     'Readable message with secondary Reject and primary Approve; no automatic signing'
   );
+  const permission = {
+    primaryType: 'Permission',
+    domain: { name: 'Public fixture', chainId: 1 },
+    types: { Permission: [{ name: 'approved', type: 'bool' }] },
+    message: { approved: false },
+  };
+  const typedRequest = (id, method, value) =>
+    run(`(() => { const next=structuredClone(window.__publicSigning); next.id=${JSON.stringify(id)};
+      next.method=${JSON.stringify(method)}; next.data=[next.account.address, ${JSON.stringify(value)}];
+      ${APP}.pinia._s.get('extension').signEvmRequests={ [next.id]: next }; return true; })()`);
+  for (const lang of locales) {
+    await locale(lang);
+    await resize(lang === 'en-EN' ? POPUP_WIDTH : 320, POPUP_HEIGHT);
+    for (const [name, method, value] of [
+      ['boolean-string', 'eth_signTypedData_v4', { ...permission, message: { approved: 'false' } }],
+      ['wrong-primary', 'eth_signTypedData_v4', { ...permission, primaryType: 'Other' }],
+      [
+        'v3-array',
+        'eth_signTypedData_v3',
+        {
+          ...permission,
+          types: { Permission: [{ name: 'approved', type: 'bool[]' }] },
+          message: { approved: [false] },
+        },
+      ],
+      ['legacy-v1', 'eth_signTypedData_v1', permission],
+    ]) {
+      await typedRequest('public-typed-' + lang + '-' + name, method, value);
+      await wait(
+        `!!document.querySelector('.signing-warning') && !document.querySelector(${JSON.stringify(approve)}) && !document.querySelector('.fw-checkbox')`,
+        'Invalid typed data cannot be approved: ' + name
+      );
+      await keyboardFocus(reject);
+      if (name === 'boolean-string') {
+        await capture(
+          '85-signing-typed-blocked-' + lang,
+          'Invalid string Boolean has Reject only, without blind override; ' + lang
+        );
+        Object.assign(results.at(-1), {
+          typedData: { coercionBlocked: true, approvalAbsent: true, acknowledgmentAbsent: true },
+        });
+      }
+    }
+    await typedRequest('public-typed-false-' + lang, 'eth_signTypedData_v4', permission);
+    await wait(
+      `!!document.querySelector(${JSON.stringify(approve)}) && document.querySelector(${JSON.stringify(approve)}).getAttribute('aria-disabled') !== 'true' && document.querySelector('.signing-message')?.textContent.includes('"approved": false') && !document.querySelector('.signing-warning') && !document.querySelector('.fw-checkbox')`,
+      'A real false Boolean is fully decoded and signable'
+    );
+    await run(`(document.querySelector('.signing-message').scrollIntoView({ block: 'center' }), true)`);
+    await capture(
+      '86-signing-typed-false-' + lang,
+      'Exact Boolean false is visible in the typed-data summary; ' + lang
+    );
+    Object.assign(results.at(-1), {
+      typedData: {
+        exactFalse: true,
+        approvalAvailable: true,
+        invalidCasesBlocked: ['boolean-string', 'wrong-primary', 'v3-array', 'legacy-v1'],
+      },
+    });
+  }
+  await locale('en-EN');
+  await resize(POPUP_WIDTH, POPUP_HEIGHT);
   const requests = await run(`window.__signingFixture.requests`);
   if (
     requests.length !== 1 ||

@@ -147,6 +147,10 @@ export async function captureMetadataScreenshots({
   Object.assign(results.at(-1), { metadataPending: pending });
   await run(`(window.__finishMetadata({error:'Public fixture worker unavailable'}),true)`);
   await wait(`!!document.querySelector('.meta-content [role="alert"]')`, 'Metadata failure is retryable');
+  const feedbackVisible = await run(
+    `(() => { const box=document.querySelector('.meta-content [role="alert"]').getBoundingClientRect(); const header=document.querySelector('.form-background .header-content').getBoundingClientRect(); return box.top>=header.bottom && box.bottom<=innerHeight; })()`
+  );
+  if (!feedbackVisible) throw new Error('Metadata retry feedback is outside the visible review');
   await capture(
     '69-metadata-retry',
     'Public fixture response failure exposes a retryable error without leaving the request.'

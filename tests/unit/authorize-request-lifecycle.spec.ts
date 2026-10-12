@@ -126,6 +126,27 @@ describe('authorization screen request ownership', () => {
     wrapper.unmount();
   });
 
+  it.each(['added', 'replaced'])(
+    'does not authorize a newly %s Substrate account before its row renders',
+    async (change) => {
+      mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+      const wrapper = open();
+      await flushPromises();
+      const oldApprove = approve(wrapper);
+      mocks.accounts.accounts =
+        change === 'added' ? [...mocks.accounts.accounts, account('carol')] : [account('carol')];
+      oldApprove.vm.$emit('click');
+      expect(mocks.approve).not.toHaveBeenCalled();
+      await flushPromises();
+      await approve(wrapper).trigger('click');
+      expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({
+        id: 'first',
+        accounts: change === 'added' ? ['alice', 'bob', 'carol'] : ['carol'],
+      });
+      wrapper.unmount();
+    }
+  );
+
   it('removes accounts that disappear or lose the requested ecosystem before approval', async () => {
     const wrapper = open();
     form(wrapper).vm.$emit('onSelect', true, 'alice');

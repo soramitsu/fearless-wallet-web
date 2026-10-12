@@ -1,7 +1,7 @@
 <template>
   <AboveForm :fullScreen="true" header="metadata.text" :showCloseIcon="!pending" @closeHandler="onReject">
     <div class="meta-content" :aria-busy="!!pending">
-      <p v-if="actionError" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
+      <p v-if="actionError && !request" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
       <p v-if="!request" role="status">{{ t('irohaConnectPage.waitingForRequest') }}</p>
       <template v-else>
         <div class="metadata-review">
@@ -23,6 +23,7 @@
             <pre v-if="rawExpanded">{{ rawPayload }}</pre>
           </details>
         </div>
+        <p v-if="actionError" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
         <div ref="controls" class="metadata-controls">
           <FButton
             text="common.reject"

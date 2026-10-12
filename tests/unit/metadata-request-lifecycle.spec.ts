@@ -87,6 +87,16 @@ describe('metadata approval request ownership', () => {
     wrapper.unmount();
   });
 
+  it('keeps a navigation failure visible even when no metadata remains', async () => {
+    mocks.store.metaRequests = [];
+    mocks.push.mockRejectedValueOnce(new Error('navigation unavailable'));
+    const wrapper = open();
+    await flushPromises();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(approve(wrapper)).toBeUndefined();
+    wrapper.unmount();
+  });
+
   it('guards duplicate approval and rejection while the captured metadata is pending', async () => {
     let resolve!: () => void;
     mocks.approve.mockReturnValueOnce(

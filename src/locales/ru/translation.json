@@ -1,4 +1,7 @@
 {
+  "historyDetails": {
+    "blockHash": "Хеш блока"
+  },
   "portfolioPage": {
     "balanceStatus": {
       "failed": "Не удалось обновить балансы",

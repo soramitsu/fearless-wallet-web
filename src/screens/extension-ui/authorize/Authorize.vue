@@ -94,6 +94,7 @@ const controls = ref<HTMLElement | null>(null);
 let active = true;
 let mounted = false;
 let renderedRequestKey = '';
+let renderedAccountsKey = '';
 let selectionKey = '';
 onBeforeUnmount(() => {
   active = false;
@@ -123,6 +124,8 @@ const accounts = computed<AccountJson[]>(() => {
     return true;
   });
 });
+
+const accountsKey = computed(() => JSON.stringify(accounts.value));
 
 const showSelectAll = computed(
   () => accountAuthType.value !== 'evm' && accountAuthType.value !== 'solana' && accountAuthType.value !== 'iroha'
@@ -223,6 +226,7 @@ const actOnRequest = async (action: 'approve' | 'reject') => {
     pending.value ||
     !request.value ||
     renderedRequestKey !== requestKey.value ||
+    renderedAccountsKey !== accountsKey.value ||
     selectionKey !== requestKey.value
   )
     return;
@@ -297,17 +301,19 @@ watch(
   },
   { immediate: true, deep: true, flush: 'sync' }
 );
-// Old controls cannot respond to a replacement until its DOM update has finished.
+// Old controls cannot respond to a new request or account inventory before its DOM update.
 watch(
-  requestKey,
-  (key) => {
+  [requestKey, accountsKey],
+  ([key, inventory]) => {
     renderedRequestKey = key;
+    renderedAccountsKey = inventory;
   },
   { flush: 'post' }
 );
 onMounted(() => {
   mounted = true;
   renderedRequestKey = requestKey.value;
+  renderedAccountsKey = accountsKey.value;
   leaveEmptyRequest();
   void focusReject();
 });

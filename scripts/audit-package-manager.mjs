@@ -111,8 +111,22 @@ async function workflowFiles(rootDir) {
     .sort();
 }
 
+// The upgrade E2E builds released versions from their own lockfiles, which need the Node major those releases were
+// built with (tests/upgrade/legacy-builds.json). Only that workflow may pin those, and only those.
+const UPGRADE_E2E_WORKFLOW = '.github/workflows/upgrade-e2e.yml';
+
+async function legacyBuildNodeVersions(rootDir) {
+  try {
+    const { builds } = JSON.parse(await readText(rootDir, 'tests/upgrade/legacy-builds.json'));
+    return new Set(builds.map(({ node }) => String(node)));
+  } catch {
+    return new Set();
+  }
+}
+
 async function auditNodeVersionPins(rootDir, nodeVersion) {
   let ciPins = 0;
+  const legacyNodeVersions = await legacyBuildNodeVersions(rootDir);
   for (const workflow of await workflowFiles(rootDir)) {
     const lines = (await readText(rootDir, workflow)).split(/\r?\n/u);
     for (const [index, line] of lines.entries()) {
@@ -122,7 +136,7 @@ async function auditNodeVersionPins(rootDir, nodeVersion) {
       const location = `${workflow}:${index + 1}`;
       if (pin[1]) {
         if (value !== '.nvmrc') fail(`${location} node-version-file must be .nvmrc, received ${JSON.stringify(value)}`);
-      } else if (value !== nodeVersion) {
+      } else if (value !== nodeVersion && !(workflow === UPGRADE_E2E_WORKFLOW && legacyNodeVersions.has(value))) {
         fail(`${location} node-version ${JSON.stringify(value)} does not match .nvmrc ${nodeVersion}`);
       }
       if (workflow === '.github/workflows/ci.yml') ciPins += 1;

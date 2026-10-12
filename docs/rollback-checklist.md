@@ -31,10 +31,13 @@ Prefer a forward fix (Hotfix Path below). If users must run 3.0.x code again:
 - What users keep: 4.2.0 encrypts keys with the scrypt parameters 3.0.x reads
   (N = 2^15, `scripts/keystore-scrypt-params.mjs`), so every key and TON phrase
   4.2.0 stored opens in 3.0.6 with the master password set in 4.2.0, and the
-  wallets come back once each when 4.2.x returns.
+  wallets come back once each when 4.2.x returns. A wallet deleted in 4.2.x is
+  not listed by 3.0.6; its keys stay set aside under `fw:deletedWallet:` and
+  4.2.x restores them from Settings → Account access (3.0.6 can also import
+  them as JSON files with the master password).
 - Rehearse with the exact builds before publishing:
-  `node tests/fixtures/upgrade/harness/rollback-306.mjs <3.0.6 build> <current build> <scratch dir>`
-  (`tests/fixtures/upgrade/README.md`).
+  `node scripts/upgrade-e2e/build-legacy.mjs 3.0.5 3.0.6 && node scripts/upgrade-e2e/build-head.mjs && node scripts/upgrade-e2e/run.mjs R1`
+  (scenario R1 in `tests/upgrade/README.md`).
 
 ## Hotfix Path
 

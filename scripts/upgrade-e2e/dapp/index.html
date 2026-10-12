@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fearless upgrade E2E dApp</title>
+  </head>
+  <body>
+    <p>A local test page for the upgrade E2E (scripts/upgrade-e2e). It asks the extension to sign, as a dApp does.</p>
+    <script>
+      // Each call starts a request and leaves its outcome in window.e2eResults[id]; the harness approves the request
+      // in the extension and then reads the outcome.
+      window.e2eResults = {};
+      const settle = (id, promise) => {
+        window.e2eResults[id] = { pending: true };
+        promise.then(
+          (value) => (window.e2eResults[id] = { ok: value }),
+          (error) => (window.e2eResults[id] = { err: String((error && error.message) || error) })
+        );
+        return id;
+      };
+      window.e2e = {
+        // Substrate: polkadot-js injected signer, signRaw over bytes (wrapped in <Bytes> by the signer).
+        substrate: (id, address, data) =>
+          settle(
+            id,
+            (async () => {
+              const injected = await window.injectedWeb3['fearless-wallet'].enable('Fearless upgrade E2E');
+              const accounts = (await injected.accounts.get()).map((account) => account.address);
+              const { signature } = await injected.signer.signRaw({ address, data, type: 'bytes' });
+              return { accounts, signature };
+            })()
+          ),
+        // EVM: the injected provider, eth_requestAccounts then personal_sign of the UTF-8 message as hex, as dApps send it.
+        evm: (id, address, message) =>
+          settle(
+            id,
+            (async () => {
+              const hex = '0x' + [...new TextEncoder().encode(message)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+              const accounts = await window.fearlessWallet.request({ method: 'eth_requestAccounts', params: [] });
+              const signature = await window.fearlessWallet.request({ method: 'personal_sign', params: [hex, address] });
+              return { accounts, signature };
+            })()
+          ),
+      };
+    </script>
+  </body>
+</html>

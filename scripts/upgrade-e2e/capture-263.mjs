@@ -3,7 +3,7 @@
 // Usage: node capture-263.mjs <2.6.3 build dir> <ext dir> <profile dir> <out json> [port]
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { dumpStorage, installBuild, launch, openPopup, serviceWorker, stop } from './cdp.mjs';
+import { dumpStorage, installBuild, launch, openPopup, serviceWorker, stop } from './chrome.mjs';
 
 export const M1 = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 export const M2 = 'legal winner thank year wave sausage worth useful legal winner thank yellow';

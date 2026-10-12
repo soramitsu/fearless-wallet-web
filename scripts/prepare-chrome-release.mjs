@@ -106,23 +106,27 @@ function verifyReleaseEnvironment() {
   }
 }
 
-function parseArguments(argv) {
+export function parseArguments(argv) {
   let requireTag = false;
   let runAutomatedGates = true;
+  let runUpgradeE2E = true;
 
   for (const argument of argv) {
     if (argument === '--help' || argument === '-h') return { help: true };
     if (argument === '--require-tag') requireTag = true;
     else if (argument === '--skip-automated-gates') runAutomatedGates = false;
+    else if (argument === '--skip-upgrade-e2e') runUpgradeE2E = false;
     else fail(`unknown argument ${argument}`);
   }
 
   if (requireTag && !runAutomatedGates) fail('--require-tag cannot be combined with --skip-automated-gates');
-  return { requireTag, runAutomatedGates };
+  // The tagged artifact is the one users upgrade to: its upgrade from every released build is never skipped.
+  if (requireTag && !runUpgradeE2E) fail('--require-tag cannot be combined with --skip-upgrade-e2e');
+  return { requireTag, runAutomatedGates, runUpgradeE2E };
 }
 
 function usage() {
-  return `Usage: yarn prepare:chrome-release [--require-tag] [--skip-automated-gates]\n\nFrom a clean checkout, runs the automated release gates, builds the credentialed Chrome artifact twice, requires identical hashes, performs the real Chrome smoke and artifact audit, rechecks source cleanliness, and writes non-secret candidate provenance. Use --require-tag for the final tagged-commit verification. A skipped-gate diagnostic run never writes provenance.`;
+  return `Usage: yarn prepare:chrome-release [--require-tag] [--skip-automated-gates] [--skip-upgrade-e2e]\n\nFrom a clean checkout, runs the automated release gates, builds the credentialed Chrome artifact twice, requires identical hashes, performs the real Chrome smoke and artifact audit, runs the upgrade from every released build (yarn test:upgrade:e2e, tests/upgrade/README.md), rechecks source cleanliness, and writes non-secret candidate provenance. Use --require-tag for the final tagged-commit verification. A skipped-gate diagnostic run never writes provenance; --skip-upgrade-e2e is recorded in it and cannot be combined with --require-tag.`;
 }
 
 function runAutomatedReleaseGates(yarnPath) {
@@ -182,7 +186,7 @@ async function invalidateReleaseProvenance() {
   await fs.rm(provenanceTemporaryPath, { force: true });
 }
 
-async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
+async function prepareChromeRelease({ requireTag, runAutomatedGates, runUpgradeE2E }) {
   await invalidateReleaseProvenance();
   const yarnPath = resolveYarnPath();
   const yarnVersion = verifyToolchain(yarnPath);
@@ -217,6 +221,8 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
   }
 
   runYarn(yarnPath, 'test:smoke:chrome:production');
+  // Every released build writes its profile and this source replaces it in place (tests/upgrade/README.md).
+  if (runAutomatedGates && runUpgradeE2E) runYarn(yarnPath, 'test:upgrade:e2e');
   const sourceAfter = await auditReleaseSource({ requireTag, rootDir });
   if (sourceBefore.commit !== sourceAfter.commit) fail('source commit changed during release preparation');
 
@@ -259,6 +265,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
       tagRequired: requireTag,
       tagVerified: sourceAfter.tag !== null,
       testEnvironmentIsolated: true,
+      upgradeE2E: runUpgradeE2E ? 'passed' : 'skipped by --skip-upgrade-e2e',
       vendoredIrohaSdkAudit: true,
     },
   };

@@ -3,7 +3,7 @@
 // it is installed and the checksum the 3.0.5 yarn.lock (129807f0) pins for it. keyring-305.mjs installs exactly these
 // from the Yarn cache.
 //
-//   node tests/fixtures/upgrade/harness/pin-keyring-305.mjs <3.0.5 or 3.0.6 checkout after `yarn install --immutable`>
+//   node scripts/upgrade-e2e/pin-keyring-305.mjs <3.0.5 or 3.0.6 checkout after `yarn install --immutable`>
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -62,11 +62,14 @@ const output = {
     yarnLockSha256: YARN_LOCK_305,
     packageManager: 'yarn@3.4.1',
     entries: ENTRIES,
-    generator: 'tests/fixtures/upgrade/harness/pin-keyring-305.mjs',
+    generator: 'scripts/upgrade-e2e/pin-keyring-305.mjs',
   },
   packages: [...packages.values()].sort((a, b) => a.path.localeCompare(b.path)),
 };
 
-const out = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../keyring-3.0.5-packages.json');
+const out = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json'
+);
 writeFileSync(out, `${JSON.stringify(output, null, 2)}\n`);
 console.log(`pinned ${output.packages.length} packages in ${path.relative(process.cwd(), out)}`);

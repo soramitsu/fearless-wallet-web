@@ -28,37 +28,19 @@ Used by `tests/unit/legacy-263-skip-upgrade.spec.ts` and `tests/unit/migrate-exp
 3. Give the built `dist/extension/chrome/manifest.json` a `"key"` from a throwaway RSA key, so the extension id
    stays the same when a newer build replaces it (the Web Store keeps the id the same way). The fixture was
    captured as `plnlnnlkcnkiokjgpefakfhgngpbnaec`.
-4. `node tests/fixtures/upgrade/harness/capture-263.mjs <2.6.3 build> <scratch ext dir> <scratch profile dir> <out.json>`
+4. `node scripts/upgrade-e2e/capture-263.mjs <2.6.3 build> <scratch ext dir> <scratch profile dir> <out.json>`
 
 The harness starts Chrome for Testing headless with every host name unresolvable (`CHROME_BIN` overrides the
 default Playwright path), drives the background through the popup's own port, and dumps storage from the
 service worker.
 
-## Real in-place upgrade: 2.6.3 → 4.2.0 with one forgotten password
+## Real in-place upgrades
 
-`harness/upgrade-263-skip.mjs` replays the whole upgrade in the browser with the real builds, as a user who
-remembers one wallet's password and not the other two:
-
-```sh
-corepack yarn build:extension          # this tree's 4.2.0 build in dist/extension/chrome
-node tests/fixtures/upgrade/harness/upgrade-263-skip.mjs <2.6.3 build> dist/extension/chrome <scratch dir>
-```
-
-1. The 2.6.3 build writes the profile above.
-2. The 4.2.0 build replaces it under the same extension id and is reloaded from `chrome://extensions`, which
-   starts the new service worker and fires `runtime.onInstalled` with reason `update`, as a store update does.
-3. In the popup: the prompt opens; "Later" is not offered before a master password exists; Start → create the
-   master password → the password rows → select Savings, type `legacy-pw-A`, Confirm → Skip for now → confirm.
-4. The wallet opens with the Account access reminder. The prompt is deferred; the three skipped keys are listed
-   in Account access; their records are byte for byte what 2.6.3 wrote.
-5. The browser restarts: Unlock leads to the wallet, not back to the prompt; the password rows stay reachable.
-6. Account access unlocks Forgotten and its Ethereum account with the recovery phrase; Staking, which needs its
-   derivation path, keeps waiting and its record stays untouched.
-7. Outside the browser, every record 4.2.0 rewrote opens with the master password and signs with the key the
-   2.6.3 phrase derives.
-
-The script prints one line per check and writes `report.json` into the scratch directory; it exits non-zero on
-the first failed check. It never reaches a network and uses public test phrases only.
+The browser runs that replace a released build with 4.2.0 in place are in `scripts/upgrade-e2e/` and documented,
+with their results, in `tests/upgrade/README.md` (scenarios S1-S8, the ECDSA cohorts and the rollback rehearsal R1).
+The 2.6.3 "forgotten password" walk-through that used to live here is scenario S1; the 3.0.6 rollback rehearsal is R1.
+Profiles those runs capture (`node scripts/upgrade-e2e/run.mjs --snapshot`) are stored as
+`tests/fixtures/upgrade/<version>/<state>.json` and checked by `tests/unit/genuine-legacy-profiles.spec.ts`.
 
 ## ECDSA Substrate accounts: `s2-3.0.6-ecdsa.json` and `s3-2.6.3-ecdsa-per-account-passwords.json`
 
@@ -79,7 +61,7 @@ Ethereum account first, then the ECDSA account that names it.
 
 S2 was written by the 3.0.6 hotfix build (`096485cc`: the published 3.0.5 source `129807f0` with the phrase upload
 removed, same `yarn.lock`, keyring code otherwise unchanged), never by the published 3.0.5 package. Both were
-captured with `harness/capture-ecdsa.mjs <2.6.3|3.0.6> <build> <scratch ext dir> <scratch profile dir> <out.json>`;
+captured with `scripts/upgrade-e2e/capture-ecdsa.mjs <2.6.3|3.0.6> <build> <scratch ext dir> <scratch profile dir> <out.json>`;
 the builds carry the same throwaway manifest key as the 2.6.3 build above. `wc@2:core:0.3//keychain` (the
 WalletConnect client seed the build generated) was left out of `storage`.
 
@@ -87,11 +69,7 @@ Used by `tests/unit/ecdsa-account-records.spec.ts` and `tests/unit/ecdsa-account
 
 ### Real in-place upgrade of ECDSA accounts across browser restarts
 
-```sh
-corepack yarn build:extension          # this tree's 4.2.0 build in dist/extension/chrome
-node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 3.0.6 <3.0.6 build> dist/extension/chrome <scratch dir>
-node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 2.6.3 <2.6.3 build> dist/extension/chrome <scratch dir>
-```
+Scenarios ECDSA-3.0.6 and ECDSA-2.6.3 (`scripts/upgrade-e2e/upgrade-ecdsa.mjs`, run by `node scripts/upgrade-e2e/run.mjs`):
 
 1. The old build writes the profile above; the 4.2.0 build replaces it under the same extension id.
 2. At its first start 4.2.0 holds each ECDSA account once, under its public key, byte for byte as the old build
@@ -102,8 +80,9 @@ node tests/fixtures/upgrade/harness/upgrade-ecdsa.mjs 2.6.3 <2.6.3 build> dist/e
    records are kept under `fw:deletedWallet:`, which Settings → Account access restores from); the rename and the
    new password hold (the old password no longer unlocks); Vault is not asked for its 2.6.3 password again. The
    live record opens with the master password and signs with the key the phrase derives. It is encrypted at
-   N = 2^15 and the 3.0.5 keyring (`keyring-305.mjs`) unlocks with the master password, opens it and signs with it,
-   so the key 4.2.0 re-encrypted (master password change, legacy password migration) survives a rollback.
+   N = 2^15 and the 3.0.5 keyring (`scripts/upgrade-e2e/keyring-305.mjs`) unlocks with the master password, opens it
+   and signs with it, so the key 4.2.0 re-encrypted (master password change, legacy password migration) survives a
+   rollback.
 5. 3.0.6 only: Reset wallet, restart: no account record or archive is left and no account comes back.
 
 ## Rollback: keys 4.2.0 writes stay readable by 3.0.x (`keyring-3.0.5-packages.json`)
@@ -116,10 +95,10 @@ bundled code would encrypt at the library default. Behind that, it sets util-cry
 well, so an encoder the call rewrite cannot see (an aliased import, another argument name) still writes what 3.0.x
 reads; the build fails if util-crypto's defaults ever look different. Decoding is unchanged: N = 2^17 keys still open.
 
-The proof uses the keyring 3.0.x shipped with, not a re-implementation: `harness/keyring-305.mjs` installs
+The proof uses the keyring 3.0.x shipped with, not a re-implementation: `scripts/upgrade-e2e/keyring-305.mjs` installs
 `@subwallet/keyring` 0.1.7, `@polkadot/util-crypto` 12.6.2 and the rest of what 3.0.x loads to open a key from the
 Yarn cache archives the 3.0.5 `yarn.lock` pins. `keyring-3.0.5-packages.json` lists them with that lockfile's
-checksums (regenerate with `node tests/fixtures/upgrade/harness/pin-keyring-305.mjs <3.0.5 or 3.0.6 checkout>`).
+checksums (regenerate with `node scripts/upgrade-e2e/pin-keyring-305.mjs <3.0.5 or 3.0.6 checkout>`).
 Nothing is downloaded; if the archives are missing, install a 3.0.5 checkout once with
 `corepack yarn@3.4.1 install --immutable`.
 
@@ -127,23 +106,10 @@ Nothing is downloaded; if the archives are missing, install a 3.0.5 checkout onc
 in that keyring (master password from a 4.2.0 bcrypt hash, per-account password, JSON export, batch export). It
 fails without the rewrite. On CI without the archives this part is skipped; everywhere else it runs.
 
-### Real rollback rehearsal: 3.0.6 → 4.2.0 → 3.0.6 → 4.2.0
+### Real rollback rehearsal
 
-```sh
-corepack yarn build:extension          # this tree's 4.2.0 build in dist/extension/chrome
-node tests/fixtures/upgrade/harness/rollback-306.mjs <3.0.6 build> dist/extension/chrome <scratch dir>
-```
-
-1. 3.0.6 writes the S2 wallets and imports a TON wallet.
-2. 4.2.0 replaces it: unlock, create a wallet and a TON wallet, import the 2.6.3 Staking JSON file, export Daily as
-   JSON, change the master password.
-3. Outside the browser, every stored key is at N = 2^15 and opens in the 3.0.5 keyring with the new master password.
-4. 3.0.6 replaces 4.2.0 under the same extension id: it unlocks with the password set in 4.2.0, lists every wallet,
-   exports every key (each signs for its account) and every stored phrase, TON included.
-5. 4.2.0 comes back and holds each wallet once.
-
-The 3.0.6 build is the one the S2 capture uses (`096485cc`, never the published 3.0.5 package). With the build
-before this change (`eb484759`) 16 of the checks fail: 3.0.6 still unlocks but cannot open any key.
+Scenario R1 in `tests/upgrade/README.md`: a 3.0.5 profile goes to 4.2.0, which re-encrypts keys in every way it
+does, then back to the clean 3.0.6 (`hotfix/3.0.6`) and forward again.
 
 ## `chrome.storage.local` dumps: `*.storage.json`
 

@@ -25,7 +25,7 @@ import { encodePair } from '@subwallet/keyring/pair/encode';
 import { pairToJson } from '@subwallet/keyring/pair/toJson';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { KEYSTORE_SCRYPT_PARAMS, keystoreScryptParamsPlugin } from '../../scripts/keystore-scrypt-params.mjs';
-import { findKeyring305Archives, installKeyring305, loadKeyring305, openAs305 } from '../fixtures/upgrade/harness/keyring-305.mjs';
+import { findKeyring305Archives, installKeyring305, loadKeyring305, openAs305 } from '../../scripts/upgrade-e2e/keyring-305.mjs';
 // chrome.storage.local as the real Fearless Wallet 3.0.6 (3.0.5 keyring code) and 2.6.3 builds wrote it
 // (tests/fixtures/upgrade/README.md).
 import profile306 from '../fixtures/upgrade/s2-3.0.6-ecdsa.json';

@@ -6,7 +6,7 @@
 // Usage: node capture-ecdsa.mjs <2.6.3|3.0.6> <build dir> <ext dir> <profile dir> <out json> [port]
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { dumpStorage, installBuild, launch, openPopup, serviceWorker, stop } from './cdp.mjs';
+import { dumpStorage, installBuild, launch, openPopup, serviceWorker, stop } from './chrome.mjs';
 import { M1, M2 } from './capture-263.mjs';
 
 const EVM_PATH = "/m/44'/60'/0'/0/0";
@@ -43,7 +43,8 @@ export async function captureEcdsa({ version, oldBuild, extDir, profileDir, port
     const popup = await openPopup(port, extId);
     result.extId = extId;
     result.manifestVersion = await popup.eval('chrome.runtime.getManifest().version');
-    if (result.manifestVersion !== version) throw new Error(`expected ${version}, the build is ${result.manifestVersion}`);
+    if (result.manifestVersion !== version)
+      throw new Error(`expected ${version}, the build is ${result.manifestVersion}`);
     if (version === '3.0.6') {
       const created = await popup.call('pri(keyring.changePassword)', { newPassword: MASTER_306 });
       if (created.ok !== true) throw new Error(`master password: ${JSON.stringify(created)}`);
@@ -54,7 +55,10 @@ export async function captureEcdsa({ version, oldBuild, extDir, profileDir, port
         version === '2.6.3'
           ? { password, suri, type: keypairType, meta }
           : { suri, type: keypairType, meta, walletEcosystem: 'substrate' };
-      const meta = version === '2.6.3' ? { name, ethereumAddress: '' } : { name, ethereumAddress: '', walletEcosystem: 'substrate' };
+      const meta =
+        version === '2.6.3'
+          ? { name, ethereumAddress: '' }
+          : { name, ethereumAddress: '', walletEcosystem: 'substrate' };
       if (ethereumSuri) {
         const evm = await popup.call('pri(accounts.create)', request(ethereumSuri, 'ethereum', meta));
         if (!evm.ok) throw new Error(`create EVM ${name}: ${JSON.stringify(evm)}`);

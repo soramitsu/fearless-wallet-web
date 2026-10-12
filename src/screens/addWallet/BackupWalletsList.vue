@@ -4,15 +4,16 @@
 
     <Scroll>
       <ul class="wallets__list">
-        <FCorners v-for="(file, index) in items" size="big" v-bind:key="file.id ?? file.address">
-          <li class="wallets__item">
+        <li v-for="(file, index) in items" :key="file.id ?? file.address" :aria-busy="file.isLoading">
+          <FCorners size="big" class="wallets__item">
             <div class="json__info" @click.self="onSelect(!file.active, index)">
               <Checkbox
                 class="wallet__checkbox"
                 size="big"
                 :label="file.name"
                 :value="file.active"
-                @change.self="() => onSelect(!file.active, index)"
+                :disabled="disabled || file.isLoading || file.isComplete"
+                @change="onSelect($event, index)"
               />
 
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
@@ -27,9 +28,10 @@
                   placeholder="addWallet.enterPassword"
                   errorDescriptions="common.invalidPassword"
                   :showPassword="true"
-                  :readonly="file.isComplete || file.isLoading"
+                  :readonly="disabled || file.isComplete || file.isLoading"
                   :isError="file.isError"
                   @change="changePassword(index, $event)"
+                  @pressEnter="onConfirm(index)"
                 />
 
                 <FButton
@@ -40,116 +42,174 @@
                   :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
                   :iconType="file.isLoading ? 'loading' : ''"
                   :disabled="isDisabled(file)"
+                  :loading="file.isLoading"
+                  :focusableWhenDisabled="!disabled"
+                  :disabledReason="disabledReason(file)"
                   :text="buttonText(file)"
                   @click="onConfirm(index)"
                 />
               </div>
             </transition>
 
+            <p v-if="file.isLoading || file.isComplete" class="row-status" role="status" aria-live="polite">
+              {{ $t(file.isComplete ? 'migration.completed' : 'migration.pending') }}
+            </p>
+
             <!-- What the row offers besides its password (the upgrade's backup download and recovery phrase). -->
             <slot v-if="file.active" name="rowActions" :file="file" :index="index"></slot>
-          </li>
-        </FCorners>
+          </FCorners>
+        </li>
       </ul>
     </Scroll>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-
+import { defineComponent, type PropType } from 'vue';
 import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
 import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
-import { useAccountsStore } from '@/stores/accounts';
 
-export default defineComponent({ name: 'BackupWalletsList' ,
+type RowOperation = { file: FilesState; key: string; token: symbol };
+const rowKey = (file: FilesState) => (file.id ? `id:${file.id}` : `address:${file.address}`);
+
+export default defineComponent({
+  name: 'BackupWalletsList',
   props: {
-    items: Array,
-    isGoogle: { default: false },
-    /** What the listed accounts are and which password each row asks for. */
+    items: { type: Array as PropType<FilesState[]>, default: () => [] },
+    isGoogle: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
     descriptionKey: { type: String, default: 'addWallet.google.importExplanation' },
   },
   data() {
     return {
-      accountsStore: useAccountsStore(),
+      isActive: true,
+      pendingRows: new Map<string, symbol>(),
     };
+  },
+  beforeUnmount() {
+    this.isActive = false;
+    this.pendingRows.clear();
   },
   methods: {
     setItemValue(index: number, data: Record<string, string | boolean>) {
-      this.$emit('setItemValue', index, data);
+      if (this.isActive && this.items[index]) this.$emit('setItemValue', index, data);
     },
     onConfirm(index: number) {
-      if (this.isGoogle) this.importFromGoogle(index);
-          else this.migrateAccounts(index);
+      return this.isGoogle ? this.importFromGoogle(index) : this.migrateAccounts(index);
+    },
+    beginOperation(index: number): RowOperation | undefined {
+      const source = this.items[index];
+      if (!this.isActive || !source || this.isDisabled(source)) return;
+      const file = { ...source };
+      const key = rowKey(file);
+      const token = Symbol(key);
+      this.pendingRows.set(key, token);
+      this.setItemValue(index, { isLoading: true, isError: false });
+      return { file, key, token };
+    },
+    operationIndex(operation: RowOperation): number {
+      if (!this.isActive || this.pendingRows.get(operation.key) !== operation.token) return -1;
+      return this.items.findIndex(
+        (file) =>
+          rowKey(file) === operation.key &&
+          file.address === operation.file.address &&
+          file.password === operation.file.password
+      );
+    },
+    finishOperation(operation: RowOperation, success: boolean) {
+      const index = this.operationIndex(operation);
+      if (index >= 0) {
+        const complete = success || !!this.items[index].isComplete;
+        this.setItemValue(index, { isError: !complete, isComplete: complete, isLoading: false });
+      }
+      if (this.pendingRows.get(operation.key) === operation.token) this.pendingRows.delete(operation.key);
     },
     async migrateAccounts(index: number) {
-      this.setItemValue(index, { isLoading: true, isError: false });
-      const { address, password } = this.items[index];
-      let isSuccess = false;
+      const operation = this.beginOperation(index);
+      if (!operation) return;
+      let success = false;
       try {
-        isSuccess = await migrateMasterPassword({ address: address!, password: password! });
+        success = await migrateMasterPassword({ address: operation.file.address, password: operation.file.password! });
       } catch {
-        // A worker/storage interruption leaves the row and password available
-        // for retry. It must not strand the upgrade behind a loading spinner.
+        // Preserve the password and row so an interrupted worker/storage operation can be retried.
       } finally {
-        this.setItemValue(index, { isError: !isSuccess, isComplete: isSuccess, isLoading: false });
+        this.finishOperation(operation, success);
       }
     },
     async importFromGoogle(index: number) {
-      this.setItemValue(index, { isLoading: true });
-
-          const { json, ethJson, password } = this.items[index];
-
-          if (!json || !password) return;
-
-          const { value: isValid } = await isJsonValid(json, password);
-
-          const fields = {
-            isError: !isValid,
-            isComplete: isValid,
-            isLoading: false,
-          };
-
-          this.setItemValue(index, fields);
-
-          if (isValid) {
-            if (ethJson) await jsonRestore(ethJson, password);
-
-            const address = await jsonRestore(json, password);
-
-            await updateCurrentAccount(address || this.accountsStore.selectedWallet.address);
-
-            this.setItemValue(index, { isComplete: true, isLoading: false });
-          }
+      const operation = this.beginOperation(index);
+      if (!operation) return;
+      const { json, ethJson, password } = operation.file;
+      let success = false;
+      try {
+        if (!json || !password) return;
+        const { value: valid } = await isJsonValid(json, password);
+        if (!valid || this.operationIndex(operation) < 0) return;
+        if (ethJson) {
+          await jsonRestore(ethJson, password);
+          if (this.operationIndex(operation) < 0) return;
+        }
+        const address = await jsonRestore(json, password);
+        if (this.operationIndex(operation) < 0) return;
+        if (!address) throw new Error('Import returned no account');
+        await updateCurrentAccount(address);
+        success = true;
+      } catch {
+        // A failed import never appears complete, and always releases the loading state.
+      } finally {
+        this.finishOperation(operation, success);
+      }
     },
     buttonText(file: FilesState) {
-      return file.isLoading || file.isComplete ? '' : 'common.confirm';
+      return file.isComplete ? 'migration.completed' : file.isLoading ? 'migration.pending' : 'common.confirm';
+    },
+    disabledReason(file: FilesState) {
+      if (this.disabled) return '';
+      return file.isComplete
+        ? 'migration.completed'
+        : file.isLoading
+          ? 'migration.pending'
+          : !file.password
+            ? 'addWallet.enterPassword'
+            : '';
     },
     isDisabled(file: FilesState) {
-      return !file.password || !file.password.length || file.isLoading || file.isComplete;
+      return this.disabled || !file.password || file.isLoading || file.isComplete || this.pendingRows.has(rowKey(file));
     },
     changePassword(index: number, password: string) {
+      const file = this.items[index];
+      if (
+        !this.isActive ||
+        this.disabled ||
+        !file ||
+        file.isLoading ||
+        file.isComplete ||
+        this.pendingRows.has(rowKey(file))
+      )
+        return;
       this.$emit('setItemPassword', index, password);
     },
     onSelect(value: boolean, index: number) {
       const file = this.items[index];
-
-          if (file.isComplete) return;
-          else if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
-
-          this.setItemValue(index, { active: value });
-
-          if (this.isGoogle) {
-            if (file.json === undefined) this.$emit('getFile', file.id, index);
-
-            if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
-          }
+      if (
+        !this.isActive ||
+        this.disabled ||
+        !file ||
+        file.isLoading ||
+        file.isComplete ||
+        this.pendingRows.has(rowKey(file))
+      )
+        return;
+      if (file.isComplete === undefined) this.setItemValue(index, { isLoading: false, isComplete: false });
+      this.setItemValue(index, { active: value });
+      if (this.isGoogle) {
+        if (file.json === undefined) this.$emit('getFile', file.id, index);
+        if (file.ethJson === undefined && file.ethWalletID) this.$emit('getFile', file.ethWalletID, index);
+      }
     },
     cutAddress(address?: string) {
-      if (!address) return '';
-
-          return cut(address);
+      return address ? cut(address) : '';
     },
   },
 });
@@ -163,12 +223,14 @@ export default defineComponent({ name: 'BackupWalletsList' ,
     width: 100%;
     align-items: center;
     overflow-y: hidden;
-    min-height: 300px;
-    max-height: 450px;
+    min-width: 0;
   }
 
   &__list {
     padding: 5px;
+    margin: 0;
+    list-style: none;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
     display: flex;
@@ -193,6 +255,9 @@ export default defineComponent({ name: 'BackupWalletsList' ,
       cursor: pointer;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      overflow-wrap: anywhere;
       width: 100%;
     }
   }
@@ -220,16 +285,24 @@ export default defineComponent({ name: 'BackupWalletsList' ,
 .json__controls {
   width: 100%;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 
   .button__confirm {
-    width: 182px;
-    height: 100%;
+    flex: 1 1 150px;
+    min-width: 0;
+    height: auto;
   }
 
   .input__validate-pass {
-    flex-grow: 1;
-    height: 100%;
+    flex: 1 1 180px;
+    min-width: 0;
+    height: auto;
   }
+}
+.row-status {
+  margin: 8px 0;
+  color: var(--fw-text-2);
+  overflow-wrap: anywhere;
 }
 </style>

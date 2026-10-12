@@ -1028,6 +1028,8 @@
     "txSuccessMessage": "Ваш NFT трансфер прошел успешно"
   },
   "migration": {
+    "pending": "Ожидание",
+    "completed": "Завершено",
     "upgradeKeyStorage": "Обновление хранилища ключей",
     "selectWallets": "Выберите кошельки",
     "actionRequired": "Обновление хранилища ключей: требуется действие",

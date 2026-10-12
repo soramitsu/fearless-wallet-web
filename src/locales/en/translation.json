@@ -1267,6 +1267,8 @@
     "txSuccessMessage": "Your NFT transfer has been successfully completed"
   },
   "migration": {
+    "pending": "Pending",
+    "completed": "Completed",
     "upgradeKeyStorage": "Upgrade Key Storage",
     "selectWallets": "Select wallets",
     "actionRequired": "Upgrade Key Storage: Action Required",

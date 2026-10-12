@@ -136,6 +136,14 @@ export async function capturePrimitivesScreenshots({
         if (message.message === 'pri(keyring.getUniversalWalletMigrationSnapshot)' && window.__migrationFixtureReply) {
           const reply = { id: message.id, ...window.__migrationFixtureReply };
           queueMicrotask(() => { for (const listener of listeners) listener(reply); });
+        } else if (message.message === 'pri(keyring.getMigrationAccounts)' && window.__legacyRowsFixtureReply) {
+          const reply = { id: message.id, ...window.__legacyRowsFixtureReply };
+          queueMicrotask(() => { for (const listener of listeners) listener(reply); });
+        } else if (message.message === 'pri(keyring.migrateMasterPassword)' && window.__legacyRowsFixtureReply) {
+          window.__legacyMigrationRequests = (window.__legacyMigrationRequests || 0) + 1;
+          window.__finishLegacyMigration = (response) => {
+            for (const listener of listeners) listener({ id: message.id, response });
+          };
         } else post(message);
       };
       return port;
@@ -564,6 +572,66 @@ export async function capturePrimitivesScreenshots({
       await capture(variant.name, 'Known-master-password public fixture: migration Start and Later remain readable and keyboard reachable, ' + variant.locale);
       Object.assign(results.at(-1), { passwordMigrationControls: controls });
     }
+    await route('Currencies');
+
+    await evaluate(cdp, sessionId, `(() => {
+      const router = ${APP}.router;
+      const original = router.getRoutes().find((record) => record.name === 'MigrationAccounts');
+      router.addRoute({ path: '/design-migration-rows-fixture', name: 'DesignMigrationRowsFixture', component: original.components.default });
+      window.__legacyRowsFixtureReply = { response: [{ address: '5EPCUjPxiHAcNooYipQFWr9NmmXJKpNG5RhcntXwbtUySrgH', name: 'Public legacy savings account', type: 'sr25519', walletEcosystem: 'substrate', isEthereum: false }] };
+      return true;
+    })()`);
+    await route('DesignMigrationRowsFixture');
+    await waitFor('.wallet__checkbox input', 'Public legacy password row');
+    await keyboardFocus('.wallet__checkbox input');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', text: ' ' }, sessionId);
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space' }, sessionId);
+    await waitForExpression(cdp, sessionId, `document.querySelector('.json__controls')?.offsetHeight > 0`, 'Keyboard-expanded password row');
+    const rowVariants = [
+      { name: '41-migration-account-row', width: POPUP_WIDTH, height: POPUP_HEIGHT, locale: 'en-US' },
+      { name: '42-migration-account-russian', width: 320, height: 600, locale: 'ru-RU' },
+      { name: '43-migration-account-akkadian', width: 320, height: 600, locale: 'akk-Xsux-x-old' },
+      { name: '44-migration-account-egyptian', width: 320, height: 600, locale: 'egy-Egyp' },
+      { name: '45-migration-account-compact', width: 281, height: 300, locale: 'en-US' },
+    ];
+    for (const variant of rowVariants) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: variant.width, height: variant.height, deviceScaleFactor: 2, mobile: false }, sessionId);
+      await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = ${JSON.stringify(variant.locale)}, document.documentElement.lang = ${JSON.stringify(variant.locale)}, true)`);
+      await keyboardFocus('.button__confirm button');
+      const controls = await evaluate(cdp, sessionId, `(() => {
+        const button = document.querySelector('.button__confirm button');
+        const label = button.querySelector('span');
+        const reason = document.getElementById(button.getAttribute('aria-describedby'));
+        return { focusable: !button.disabled, unavailable: button.getAttribute('aria-disabled') === 'true', reason: reason?.textContent.trim(), height: button.getBoundingClientRect().height, labelFits: label.scrollWidth <= label.clientWidth + 1, checkboxSelected: document.querySelector('.wallet__checkbox input').checked };
+      })()`);
+      if (!controls.focusable || !controls.unavailable || !controls.reason || controls.height < 48 || !controls.labelFits || !controls.checkboxSelected) throw new Error('Migration row lost keyboard state, disabled explanation or action geometry');
+      await capture(variant.name, 'Public legacy account: native keyboard expansion and password-required explanation, ' + variant.locale);
+      Object.assign(results.at(-1), { migrationRow: controls });
+    }
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: POPUP_WIDTH, height: POPUP_HEIGHT, deviceScaleFactor: 2, mobile: false }, sessionId);
+    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'en-US', document.documentElement.lang = 'en-US', true)`);
+    await keyboardFocus('.input__validate-pass input');
+    await cdp.send('Input.insertText', { text: 'public-fixture-password' }, sessionId);
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r' }, sessionId);
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' }, sessionId);
+    await waitForExpression(cdp, sessionId, `document.querySelector('.button__confirm button')?.getAttribute('aria-busy') === 'true'`, 'Migration pending state');
+    const pendingRow = await evaluate(cdp, sessionId, `({ requests: window.__legacyMigrationRequests, name: document.querySelector('.button__confirm button').textContent.trim(), continueUnavailable: document.querySelector('[data-testid="migrationContinue"] button').getAttribute('aria-disabled'), skipUnavailable: document.querySelector('[data-testid="migrationSkip"] button').disabled, recoveryUnavailable: document.querySelector('[data-testid="usePhrase"]').disabled })`);
+    if (pendingRow.requests !== 1 || !pendingRow.name || pendingRow.continueUnavailable !== 'true' || !pendingRow.skipUnavailable || !pendingRow.recoveryUnavailable) throw new Error('Migration pending state permits competing navigation');
+    await capture('46-migration-account-pending', 'Public fixture request held at popup boundary; named pending state and competing navigation disabled.');
+    Object.assign(results.at(-1), { pendingRow });
+    await evaluate(cdp, sessionId, `(window.__finishLegacyMigration(false), true)`);
+    await waitForExpression(cdp, sessionId, `document.querySelector('.error-descriptions')?.textContent.trim().length > 0`, 'Migration password error');
+    await capture('47-migration-account-password-retry', 'Incorrect fixture password retains input and releases the request for retry.');
+    await click('[data-testid="migrationSkip"] button');
+    await waitFor('[data-testid="notificationText"]', 'Migration skip confirmation');
+    await capture('48-migration-skip-confirmation', 'Skip confirmation keeps accounts and separates the Cancel action.');
+    await click('[data-testid="closeBtn"] button');
+    await click('.button__confirm button');
+    await waitForExpression(cdp, sessionId, `window.__legacyMigrationRequests === 2`, 'Second fixture migration request');
+    await evaluate(cdp, sessionId, `(window.__legacyRowsFixtureReply = { response: [] }, window.__finishLegacyMigration(true), true)`);
+    await waitForExpression(cdp, sessionId, `document.querySelector('[data-testid="migrationContinue"] button')?.getAttribute('aria-disabled') !== 'true'`, 'Completed fixture row');
+    await keyboardFocus('[data-testid="migrationContinue"] button');
+    await capture('49-migration-account-completed', 'Public fixture completion releases Continue only after account state succeeds.');
     await route('Currencies');
 
     await cdp.send(

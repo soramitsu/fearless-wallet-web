@@ -1,13 +1,14 @@
 <template>
   <AboveForm
     :fullScreen="true"
-    :showBackIcon="true"
+    :showBackIcon="!isBusy"
     header="migration.upgradeKeyStorage"
     @handlerBack="back"
     :showCloseIcon="false"
   >
     <Scroll>
-      <div class="accounts-migration">
+      <div class="accounts-migration" :aria-busy="isLoading || isBusy">
+        <p v-if="isLoading || isBusy" role="status" aria-live="polite">{{ t('migration.pending') }}</p>
         <div>
           <div v-if="loadError" class="accounts-migration__notice" role="alert" data-testid="migrationLoadFailed">
             <span>{{ t('migration.loadFailed') }}</span>
@@ -16,16 +17,29 @@
 
           <BackupWalletsList
             :items="files"
+            :disabled="isLoading || loadError || isSkipping || isNavigating"
             descriptionKey="migration.enterPassRow"
             @setItemValue="setItemValue"
             @setItemPassword="setItemPassword"
           >
             <template #rowActions="{ file }">
               <div v-if="!file.isComplete" class="row-actions">
-                <button type="button" class="text-link" data-testid="downloadBackup" @click="downloadBackup(file)">
+                <button
+                  type="button"
+                  class="text-link"
+                  :disabled="isBusy || isLoading"
+                  data-testid="downloadBackup"
+                  @click="downloadBackup(file)"
+                >
                   {{ t('migration.downloadBackup') }}
                 </button>
-                <button type="button" class="text-link" data-testid="usePhrase" @click="usePhrase(file)">
+                <button
+                  type="button"
+                  class="text-link"
+                  :disabled="isBusy || isLoading"
+                  data-testid="usePhrase"
+                  @click="usePhrase(file)"
+                >
                   {{ t('migration.usePhrase') }}
                 </button>
               </div>
@@ -41,9 +55,10 @@
               type="secondary"
               width="100%"
               size="big"
-              :disabled="isMigrationInProgress"
+              :disabled="isBusy"
+              :loading="isSkipping"
               data-testid="migrationSkip"
-              @click="showSkipPopup = true"
+              @click="openSkip"
             />
 
             <FButton
@@ -51,6 +66,8 @@
               width="100%"
               size="big"
               :disabled="isDisabledContinue"
+              :focusableWhenDisabled="true"
+              :disabledReason="continueReason"
               data-testid="migrationContinue"
               @click="proceed"
             />
@@ -70,7 +87,13 @@
 
             <div v-if="showMoreOptions" class="more-options__content" data-testid="moreOptionsContent">
               <p class="more-options__hint">{{ t('migration.resetHint') }}</p>
-              <button type="button" class="text-link" data-testid="resetWalletLink" @click="openReset">
+              <button
+                type="button"
+                class="text-link"
+                data-testid="resetWalletLink"
+                :disabled="isBusy || isLoading"
+                @click="openReset"
+              >
                 {{ t('welcome.resetWallet') }}
               </button>
             </div>
@@ -83,21 +106,40 @@
         acceptButtonText="migration.skipForNow"
         rejectButtonText="common.cancel"
         sizeWidth="big"
-        :showAcceptButton="true"
-        :showRejectButton="true"
+        :showAcceptButton="false"
+        :showRejectButton="false"
         :showWarningIcon="false"
+        :showHeader="!isSkipping"
         :closeByBackground="false"
         :headers="skipHeaders"
-        @handlerClose="showSkipPopup = false"
+        @handlerClose="closeSkip"
         @handlerAccept="skip"
-      />
+      >
+        <p v-if="isSkipping" role="status" aria-live="polite">{{ t('migration.pending') }}</p>
+        <div class="controls">
+          <FButton
+            text="migration.skipForNow"
+            :disabled="isSkipping"
+            :loading="isSkipping"
+            data-testid="acceptBtn"
+            @click="skip"
+          />
+          <FButton
+            text="common.cancel"
+            type="secondary"
+            :disabled="isSkipping"
+            data-testid="closeBtn"
+            @click="closeSkip"
+          />
+        </div>
+      </NotificationPopup>
     </Scroll>
   </AboveForm>
 </template>
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import type { LegacyPasswordAccountSummary } from '@extension-base/background/types/types';
 import type { FilesState } from '@/interfaces';
 import { Components } from '@/router/routes';
@@ -124,9 +166,32 @@ const hasMasterPass = ref(false);
 const showSkipPopup = ref(false);
 const showMoreOptions = ref(false);
 const isSkipping = ref(false);
+const isNavigating = ref(false);
+const downloading = ref(new Set<string>());
+let active = true;
+let loadPending = false;
+let inventoryRevision = 0;
+let reconciliationRequest = 0;
+onBeforeUnmount(() => {
+  active = false;
+  inventoryRevision += 1;
+  reconciliationRequest += 1;
+});
 const isAllAccountComplete = computed(() => files.value.every(({ isComplete }) => isComplete));
 const isMigrationInProgress = computed(() => files.value.some((file) => file.isLoading));
-const isDisabledContinue = computed(() => isLoading.value || loadError.value || !isAllAccountComplete.value);
+const isBusy = computed(
+  () => isMigrationInProgress.value || isSkipping.value || isNavigating.value || downloading.value.size > 0
+);
+const isDisabledContinue = computed(
+  () => isLoading.value || loadError.value || isBusy.value || !isAllAccountComplete.value
+);
+const continueReason = computed(() =>
+  isLoading.value || isBusy.value
+    ? 'migration.pending'
+    : loadError.value
+      ? 'migration.loadFailed'
+      : 'migration.enterPassRow'
+);
 // One forgotten password must not keep the other accounts closed. Skipping needs the master password that
 // opens the wallet; the accounts left behind stay in the wallet and are listed in Account access.
 const showSkip = computed(
@@ -138,10 +203,21 @@ const rowName = ({ name, linkedParentAddress, linkedParentName }: LegacyPassword
   linkedParentAddress ? t('accountAccess.evmAccountOf', { name: linkedParentName || linkedParentAddress }) : name;
 
 const loadAccounts = async () => {
+  if (!active || loadPending || isBusy.value) return;
+  loadPending = true;
   isLoading.value = true;
   loadError.value = false;
   try {
+    const hasPassword = await hasMasterPassword();
+    if (!active) return;
+    hasMasterPass.value = hasPassword;
+    if (!hasPassword) {
+      await router.replace({ name: Components.MigrationDescription });
+      return;
+    }
     const accounts = await getMigrationAccounts();
+    if (!active) return;
+    inventoryRevision += 1;
     files.value = accounts.map((account) => ({
       name: rowName(account),
       address: account.address,
@@ -152,33 +228,23 @@ const loadAccounts = async () => {
       active: false,
     }));
   } catch {
-    loadError.value = true;
+    if (active) loadError.value = true;
   } finally {
-    isLoading.value = false;
+    loadPending = false;
+    if (active) isLoading.value = false;
   }
 };
 
-onMounted(async () => {
-  const hasPassword = await hasMasterPassword().catch(() => undefined);
-
-  // Nothing here can be stored before the master password exists; the description screen leads to creating it.
-  if (hasPassword === false) {
-    router.replace({ name: Components.MigrationDescription });
-
-    return;
-  }
-
-  hasMasterPass.value = hasPassword === true;
-
-  await loadAccounts();
-});
+onMounted(loadAccounts);
 
 // One password can open more than one key (an account and its Ethereum account), so rows that no longer
 // wait are done as well. A linked account with a different password keeps its own row.
 const markMigratedRows = async () => {
+  const revision = inventoryRevision;
+  const request = ++reconciliationRequest;
   const pending = await getMigrationAccounts().catch(() => undefined);
 
-  if (!pending) return;
+  if (!active || !pending || revision !== inventoryRevision || request !== reconciliationRequest) return;
 
   files.value = files.value.map((file) =>
     file.isComplete || pending.some(({ address }) => address === file.address)
@@ -188,48 +254,93 @@ const markMigratedRows = async () => {
 };
 
 const setItemValue = (index: number, data: Record<string, unknown>) => {
+  if (!active || !files.value[index]) return;
   files.value.splice(index, 1, { ...files.value[index], ...data });
 
   if (data.isComplete) void markMigratedRows();
 };
 
 const setItemPassword = (index: number, password: string) => {
+  if (
+    !active ||
+    isLoading.value ||
+    isSkipping.value ||
+    isNavigating.value ||
+    !files.value[index] ||
+    files.value[index].isLoading ||
+    files.value[index].isComplete
+  )
+    return;
   files.value.splice(index, 1, { ...files.value[index], password });
 };
 
 // The record exactly as it is stored: it still opens only with the account's old password, so
 // downloading it changes nothing in the wallet.
 const downloadBackup = async ({ address }: FilesState) => {
+  if (
+    !active ||
+    isBusy.value ||
+    isLoading.value ||
+    !files.value.some((file) => file.address === address && !file.isComplete)
+  )
+    return;
+  downloading.value.add(address);
   try {
     const { json } = await migrateExportJSON(address);
-
-    downloadJsonAccount(address, json);
+    if (active && files.value.some((file) => file.address === address)) downloadJsonAccount(address, json);
   } catch {
-    notify({ title: t('migration.downloadBackupFailed'), message: '', type: 'error' });
+    if (active) notify({ title: t('migration.downloadBackupFailed'), message: '', type: 'error' });
+  } finally {
+    downloading.value.delete(address);
   }
 };
 
-const usePhrase = ({ address }: FilesState) =>
-  router.push({ name: Components.AccountAccessRecovery, query: { address, mode: 'phrase' } });
-
+const navigate = async (destination: Parameters<typeof router.push>[0]) => {
+  if (!active || isBusy.value || isLoading.value) return;
+  isNavigating.value = true;
+  try {
+    await router.push(destination);
+  } catch {
+    if (active) notify({ title: t('ux.startupUnavailable'), message: '', type: 'error' });
+  } finally {
+    if (active) isNavigating.value = false;
+  }
+};
+const usePhrase = ({ address }: FilesState) => {
+  if (!files.value.some((file) => file.address === address && !file.isComplete)) return;
+  return navigate({ name: Components.AccountAccessRecovery, query: { address, mode: 'phrase' } });
+};
+const openSkip = () => {
+  if (active && showSkip.value && !isBusy.value) showSkipPopup.value = true;
+};
+const closeSkip = () => {
+  if (!isSkipping.value) showSkipPopup.value = false;
+};
 // Skipping only postpones the prompt. No account is removed and no key is touched.
 const skip = async () => {
-  if (isSkipping.value) return;
-
+  if (!active || !showSkipPopup.value || !showSkip.value || isBusy.value) return;
   isSkipping.value = true;
-
-  const deferred = await deferLegacyPasswordMigration().catch(() => false);
-
-  isSkipping.value = false;
-  showSkipPopup.value = false;
-
-  if (deferred) router.push({ name: Components.Wallet });
-  else notify({ title: t('migration.skipFailed'), message: '', type: 'error' });
+  try {
+    const deferred = await deferLegacyPasswordMigration();
+    if (!active) return;
+    if (!deferred) throw new Error('Deferral not saved');
+    await router.push({ name: Components.Wallet });
+  } catch {
+    if (active) notify({ title: t('migration.skipFailed'), message: '', type: 'error' });
+  } finally {
+    if (active) {
+      isSkipping.value = false;
+      showSkipPopup.value = false;
+    }
+  }
 };
-
-const back = () => router.back();
-const proceed = () => router.push({ name: Components.Wallet });
-const openReset = () => router.push({ name: Components.ResetWallet });
+const back = () => {
+  if (active && !isBusy.value) router.back();
+};
+const proceed = () => {
+  if (!isDisabledContinue.value) return navigate({ name: Components.Wallet });
+};
+const openReset = () => navigate({ name: Components.ResetWallet });
 </script>
 
 <style lang="scss" scoped>
@@ -238,7 +349,7 @@ const openReset = () => router.push({ name: Components.ResetWallet });
   flex-direction: column;
   justify-content: space-between;
   gap: 16px;
-  height: 100%;
+  min-height: 100%;
 }
 
 .accounts-migration__notice {
@@ -264,7 +375,7 @@ const openReset = () => router.push({ name: Components.ResetWallet });
 
 .controls {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -280,7 +391,9 @@ const openReset = () => router.push({ name: Components.ResetWallet });
 }
 
 .text-link {
-  padding: 4px 0;
+  padding: 8px 0;
+  min-height: 44px;
+  overflow-wrap: anywhere;
   border: 0;
   background: transparent;
   color: $pink-lavender-color;
@@ -288,6 +401,11 @@ const openReset = () => router.push({ name: Components.ResetWallet });
   font-size: 0.75rem;
   text-align: left;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
 
   &:focus-visible {
     outline: 2px solid palette($pink-lavender-color, var(--fw-focus));

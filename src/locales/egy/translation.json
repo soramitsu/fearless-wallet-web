@@ -945,6 +945,8 @@
     "txSuccessMessage": "𓇋𓂋𓏏 𓈖 𓉔𓄿𓃀 NFT𓎡 𓊪𓎛𓅱𓇌 𓄤"
   },
   "migration": {
+    "pending": "𓁷 𓅱𓄿𓎛",
+    "completed": "𓅓𓎛",
     "upgradeKeyStorage": "𓋴𓐍𓂋 𓋴𓏏 𓈖 𓅱𓈖 𓈙𓇾𓍔𓄿𓏴𓏛",
     "selectWallets": "𓋴𓏏𓊪 𓉒𓏥",
     "actionRequired": "𓋴𓐍𓂋 𓋴𓏏 𓈖 𓅱𓈖: 𓇋𓂋𓏏 𓂧𓃀𓎛",

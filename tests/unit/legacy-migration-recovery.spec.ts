@@ -1,5 +1,6 @@
 import { flushPromises, mount, shallowMount, type VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { FilesState } from '@/interfaces';
 import english from '@/locales/en/translation.json';
 
 const mocks = vi.hoisted(() => ({
@@ -14,11 +15,14 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   back: vi.fn(),
+  validateJson: vi.fn(),
+  restoreJson: vi.fn(),
+  selectAccount: vi.fn(),
 }));
 vi.mock('@/extension/messaging', () => ({
   migrateMasterPassword: mocks.migrate, getMigrationAccounts: mocks.list, forgetAccount: mocks.forget,
   hasMasterPassword: mocks.hasMasterPassword, deferLegacyPasswordMigration: mocks.defer, migrateExportJSON: mocks.exportJson,
-  isJsonValid: vi.fn(), jsonRestore: vi.fn(), updateCurrentAccount: vi.fn(),
+  isJsonValid: mocks.validateJson, jsonRestore: mocks.restoreJson, updateCurrentAccount: mocks.selectAccount,
 }));
 vi.mock('@/helpers/files', () => ({ downloadJsonAccount: mocks.download }));
 vi.mock('@/plugins/soramitsuUI', () => ({ useNotify: () => mocks.notify }));
@@ -80,7 +84,7 @@ async function openAccounts(): Promise<VueWrapper> {
 }
 
 const rows = (wrapper: VueWrapper) => wrapper.findComponent(BackupWalletsList);
-const items = (wrapper: VueWrapper) => rows(wrapper).props('items') as Array<Record<string, unknown>>;
+const items = (wrapper: VueWrapper) => rows(wrapper).props('items') as FilesState[];
 
 // Ticking a row shows its password field and what else the row offers.
 async function openRow(wrapper: VueWrapper, index: number) {
@@ -97,9 +101,109 @@ beforeEach(() => {
   mocks.hasMasterPassword.mockResolvedValue(true);
   mocks.defer.mockResolvedValue(true);
   mocks.list.mockResolvedValue([{ address: 'legacy-fixture', name: 'Legacy wallet', type: 'sr25519', walletEcosystem: 'substrate', isEthereum: false }]);
+  mocks.validateJson.mockResolvedValue({ value: true });
+  mocks.restoreJson.mockResolvedValue('restored-fixture');
+  mocks.selectAccount.mockResolvedValue(undefined);
+});
+
+describe('per-account request ownership', () => {
+  it('prevents duplicate requests before parent props update and follows the same account after rows reorder', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.migrate.mockReturnValue(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const first = { address: PARENT, password: 'public-fixture-password', active: true };
+    const second = { address: CHILD, password: 'different-fixture-password', active: true };
+    const wrapper = shallowMount(BackupWalletsList, { props: { items: [first, second] }, global });
+    const request = wrapper.vm.migrateAccounts(0);
+    await wrapper.vm.migrateAccounts(0);
+    expect(mocks.migrate).toHaveBeenCalledOnce();
+    await wrapper.setProps({ items: [second, first] });
+    finish(true);
+    await request;
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([1, { isLoading: false, isError: false, isComplete: true }]);
+    wrapper.unmount();
+  });
+
+  it('never marks a replacement row complete and emits no late updates after unmount', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.migrate.mockReturnValue(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const updates = vi.fn();
+    const wrapper = shallowMount(BackupWalletsList, { props: { items: [{ address: PARENT, password: 'fixture' }] }, attrs: { onSetItemValue: updates }, global });
+    const request = wrapper.vm.migrateAccounts(0);
+    await wrapper.setProps({ items: [{ address: CHILD, password: 'fixture' }] });
+    finish(true);
+    await request;
+    expect(wrapper.emitted('setItemValue')).toHaveLength(1);
+    const later = wrapper.vm.migrateAccounts(0);
+    wrapper.unmount();
+    finish(true);
+    await later;
+    expect(updates).toHaveBeenCalledTimes(2);
+  });
+
+  it('releases an interrupted Google import and marks completion only after restore and selection', async () => {
+    const json = { address: PARENT } as never;
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: PARENT, password: 'fixture', json }] }, global });
+    mocks.validateJson.mockRejectedValueOnce(new Error('worker unavailable'));
+    await wrapper.vm.importFromGoogle(0);
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false }]);
+    let restore!: (value: string) => void;
+    mocks.restoreJson.mockReturnValueOnce(new Promise<string>((resolve) => { restore = resolve; }));
+    const request = wrapper.vm.importFromGoogle(0);
+    await flushPromises();
+    expect(wrapper.emitted('setItemValue')?.some(([, fields]) => (fields as { isComplete?: boolean }).isComplete)).toBe(false);
+    restore(PARENT);
+    await request;
+    expect(mocks.selectAccount).toHaveBeenCalledExactlyOnceWith(PARENT);
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: false, isComplete: true }]);
+    wrapper.unmount();
+  });
+
+  it('does not restore keys after leaving while Google validation is pending', async () => {
+    let validate!: (value: { value: boolean }) => void;
+    mocks.validateJson.mockReturnValueOnce(new Promise<{ value: boolean }>((resolve) => { validate = resolve; }));
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: PARENT, password: 'fixture', json: {} as never }] }, global });
+    const request = wrapper.vm.importFromGoogle(0);
+    wrapper.unmount();
+    validate({ value: true });
+    await request;
+    expect(mocks.restoreJson).not.toHaveBeenCalled();
+    expect(mocks.selectAccount).not.toHaveBeenCalled();
+  });
+
+  it('does not mark an import complete or switch accounts when restore returns no account', async () => {
+    mocks.restoreJson.mockResolvedValueOnce('');
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: PARENT, password: 'fixture', json: {} as never }] }, global });
+    await wrapper.vm.importFromGoogle(0);
+    expect(mocks.selectAccount).not.toHaveBeenCalled();
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false }]);
+    wrapper.unmount();
+  });
 });
 
 describe('legacy account upgrade recovery', () => {
+  it('does not load or enable account operations until the password-state request succeeds', async () => {
+    mocks.hasMasterPassword.mockRejectedValueOnce(new Error('worker unavailable'));
+    const wrapper = await openAccounts();
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-testid="migrationSkip"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="migrationContinue"]').attributes('disabled')).toBeDefined();
+    await wrapper.get('[data-testid="migrationLoadFailed"] button').trigger('click');
+    await flushPromises();
+    expect(mocks.hasMasterPassword).toHaveBeenCalledTimes(2);
+    expect(mocks.list).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
+  it('ignores late password state after leaving the account migration screen', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.hasMasterPassword.mockReturnValueOnce(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const wrapper = mount(MigrationAccounts, { global });
+    wrapper.unmount();
+    finish(false);
+    await flushPromises();
+    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(mocks.list).not.toHaveBeenCalled();
+  });
   it('retains entered credentials and allows retry after a worker/storage failure', async () => {
     mocks.migrate.mockRejectedValueOnce(new Error('Worker interrupted'));
     const items = [{ address: 'legacy-fixture', password: 'fixture-password', active: true, isComplete: false }];
@@ -170,6 +274,25 @@ describe('legacy account upgrade recovery', () => {
 describe('Skip for now on the per-account password screen', () => {
   beforeEach(() => {
     mocks.list.mockResolvedValue([parent, child, forgotten]);
+  });
+
+  it('prevents competing actions while Skip saves and ignores completion after leaving', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.defer.mockReturnValueOnce(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const wrapper = await openAccounts();
+    await openRow(wrapper, 0);
+    await wrapper.get('[data-testid="migrationSkip"]').trigger('click');
+    await wrapper.get('[data-testid="acceptBtn"]').trigger('click');
+    await wrapper.get('[data-testid="acceptBtn"]').trigger('click');
+    expect(mocks.defer).toHaveBeenCalledOnce();
+    expect(rows(wrapper).props('disabled')).toBe(true);
+    expect(wrapper.get('[data-testid="usePhrase"]').attributes('disabled')).toBeDefined();
+    await wrapper.get('[data-testid="closeBtn"]').trigger('click');
+    expect(wrapper.find('[data-testid="skipPopup"]').exists()).toBe(true);
+    wrapper.unmount();
+    finish(true);
+    await flushPromises();
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it('asks first, then only postpones the prompt and opens the wallet; no account is removed', async () => {

@@ -17,7 +17,7 @@
 
           <BackupWalletsList
             :items="files"
-            :disabled="isLoading || loadError || isSkipping || isNavigating"
+            :disabled="isLoading || loadError || isSkipping || isNavigating || downloading.size > 0"
             descriptionKey="migration.enterPassRow"
             @setItemValue="setItemValue"
             @setItemPassword="setItemPassword"
@@ -320,13 +320,14 @@ const closeSkip = () => {
 const skip = async () => {
   if (!active || !showSkipPopup.value || !showSkip.value || isBusy.value) return;
   isSkipping.value = true;
+  let deferred = false;
   try {
-    const deferred = await deferLegacyPasswordMigration();
+    deferred = await deferLegacyPasswordMigration();
     if (!active) return;
     if (!deferred) throw new Error('Deferral not saved');
     await router.push({ name: Components.Wallet });
   } catch {
-    if (active) notify({ title: t('migration.skipFailed'), message: '', type: 'error' });
+    if (active) notify({ title: t(deferred ? 'ux.startupUnavailable' : 'migration.skipFailed'), message: '', type: 'error' });
   } finally {
     if (active) {
       isSkipping.value = false;

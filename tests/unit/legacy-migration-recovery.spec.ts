@@ -327,6 +327,18 @@ describe('Skip for now on the per-account password screen', () => {
     wrapper.unmount();
   });
 
+  it('does not claim a saved deferral failed when only navigation fails', async () => {
+    mocks.push.mockRejectedValueOnce(new Error('navigation failed'));
+    const wrapper = await openAccounts();
+    await wrapper.get('[data-testid="migrationSkip"]').trigger('click');
+    await wrapper.get('[data-testid="acceptBtn"]').trigger('click');
+    await flushPromises();
+    expect(mocks.defer).toHaveBeenCalledOnce();
+    expect(mocks.notify).toHaveBeenCalledExactlyOnceWith({ title: 'ux.startupUnavailable', message: '', type: 'error' });
+    expect(wrapper.get('[data-testid="migrationSkip"]').attributes('disabled')).toBeUndefined();
+    wrapper.unmount();
+  });
+
   it.each([
     ['answers false', () => mocks.defer.mockResolvedValue(false)],
     ['fails', () => mocks.defer.mockRejectedValue(new Error('IO error: LOCK file in use'))],

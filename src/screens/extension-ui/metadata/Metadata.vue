@@ -8,7 +8,7 @@
           <dl class="metadata-fields">
             <dt>{{ t('common.network') }}</dt>
             <dd>{{ request.request.chain || t('portfolioPage.unknownNetwork') }}</dd>
-            <dt>genesisHash</dt>
+            <dt>{{ t('historyDetails.blockHash') }} · 0</dt>
             <dd class="metadata-identifier">{{ request.request.genesisHash }}</dd>
             <dt>{{ t('irohaConnectPage.app') }}</dt>
             <dd class="metadata-identifier">{{ request.url }}</dd>
@@ -70,6 +70,7 @@ const actionError = ref(false);
 const controls = ref<HTMLElement | null>(null);
 let active = true;
 let mounted = false;
+let renderedRequestKey = '';
 onBeforeUnmount(() => {
   active = false;
 });
@@ -78,7 +79,9 @@ const focusReject = async () => {
   const key = requestKey.value;
   await nextTick();
   if (active && key === requestKey.value)
-    controls.value?.querySelector<HTMLButtonElement>('[data-testid="rejectMetadata"] button')?.focus();
+    controls.value
+      ?.querySelector<HTMLButtonElement>('[data-testid="rejectMetadata"] button')
+      ?.focus({ preventScroll: true });
 };
 const leaveEmptyRequest = () => {
   if (!active || request.value || router.currentRoute.value.name !== Components.MetaRequest) return;
@@ -87,7 +90,7 @@ const leaveEmptyRequest = () => {
   });
 };
 const actOnRequest = async (action: 'approve' | 'reject') => {
-  if (!active || pending.value || !request.value) return;
+  if (!active || pending.value || !request.value || renderedRequestKey !== requestKey.value) return;
   const captured = request.value;
   const key = requestKey.value;
   pending.value = action;
@@ -118,8 +121,17 @@ watch(
   },
   { flush: 'sync' }
 );
+// Old controls cannot respond to a replacement until its DOM update has finished.
+watch(
+  requestKey,
+  (key) => {
+    renderedRequestKey = key;
+  },
+  { flush: 'post' }
+);
 onMounted(() => {
   mounted = true;
+  renderedRequestKey = requestKey.value;
   leaveEmptyRequest();
   void focusReject();
 });

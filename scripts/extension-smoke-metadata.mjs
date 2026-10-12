@@ -65,6 +65,11 @@ export async function captureMetadataScreenshots({
   for (const variant of variants) {
     await resize(variant.width, variant.height);
     await locale(variant.locale);
+    await run(`(document.querySelector('.metadata-fields').scrollIntoView({ block: 'start' }),true)`);
+    await capture(
+      variant.name + '-top',
+      'Public metadata network and requester at the top of the scrolling review; ' + variant.locale
+    );
     await keyboardFocus(reject);
     const geometry = await run(`(() => {
       const approve = document.querySelector(${JSON.stringify(approve)}), reject = document.querySelector(${JSON.stringify(reject)});
@@ -124,7 +129,7 @@ export async function captureMetadataScreenshots({
   await wait(`window.__metadataFixture.requests.length===1`, 'Metadata approval held at isolated popup port');
   await enter();
   const pending = await run(
-    `({ requests: window.__metadataFixture.requests, rejectDisabled: document.querySelector(${JSON.stringify(reject)}).disabled, approveDisabled: document.querySelector(${JSON.stringify(approve)}).getAttribute('aria-disabled')==='true', closeAbsent: !document.querySelector('.form-background .align-right button') })`
+    `({ requests: window.__metadataFixture.requests, rejectDisabled: document.querySelector(${JSON.stringify(reject)}).disabled, approveDisabled: document.querySelector(${JSON.stringify(approve)}).getAttribute('aria-disabled')==='true', closeAbsent: ![...document.querySelectorAll('.form-background .align-right button')].some(button => button.getBoundingClientRect().width > 0) })`
   );
   if (
     pending.requests.length !== 1 ||

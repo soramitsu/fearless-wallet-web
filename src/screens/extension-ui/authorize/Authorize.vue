@@ -93,6 +93,7 @@ const actionError = ref(false);
 const controls = ref<HTMLElement | null>(null);
 let active = true;
 let mounted = false;
+let renderedRequestKey = '';
 let selectionKey = '';
 onBeforeUnmount(() => {
   active = false;
@@ -217,7 +218,14 @@ const getMessagePartText = (part: AuthorizeMessagePart) => {
 };
 
 const actOnRequest = async (action: 'approve' | 'reject') => {
-  if (!active || pending.value || !request.value || selectionKey !== requestKey.value) return;
+  if (
+    !active ||
+    pending.value ||
+    !request.value ||
+    renderedRequestKey !== requestKey.value ||
+    selectionKey !== requestKey.value
+  )
+    return;
   if (action === 'approve' && isDisabledApproveBtn.value) return;
   const { id } = request.value;
   const key = requestKey.value;
@@ -289,8 +297,17 @@ watch(
   },
   { immediate: true, deep: true, flush: 'sync' }
 );
+// Old controls cannot respond to a replacement until its DOM update has finished.
+watch(
+  requestKey,
+  (key) => {
+    renderedRequestKey = key;
+  },
+  { flush: 'post' }
+);
 onMounted(() => {
   mounted = true;
+  renderedRequestKey = requestKey.value;
   leaveEmptyRequest();
   void focusReject();
 });

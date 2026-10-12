@@ -109,6 +109,23 @@ describe('authorization screen request ownership', () => {
     wrapper.unmount();
   });
 
+  it('does not authorize a replacement Substrate origin from the old rendered control', async () => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    const wrapper = open();
+    await flushPromises();
+    const oldApprove = approve(wrapper);
+    const replacement = request('second');
+    replacement.request.accountAuthType = 'substrate';
+    mocks.extension.authRequests = [replacement];
+    expect(wrapper.text()).toContain('https://first.example');
+    oldApprove.vm.$emit('click');
+    expect(mocks.approve).not.toHaveBeenCalled();
+    await flushPromises();
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'second', accounts: ['alice', 'bob'] });
+    wrapper.unmount();
+  });
+
   it('removes accounts that disappear or lose the requested ecosystem before approval', async () => {
     const wrapper = open();
     form(wrapper).vm.$emit('onSelect', true, 'alice');

@@ -106,6 +106,27 @@ describe('metadata approval request ownership', () => {
     wrapper.unmount();
   });
 
+  it.each(['new ID', 'same ID with changed payload'])(
+    'does not approve replacement metadata from the old rendered control: %s',
+    async (change) => {
+      const wrapper = open();
+      await flushPromises();
+      const oldApprove = approve(wrapper);
+      mocks.store.metaRequests = [
+        change === 'new ID'
+          ? request('second')
+          : { ...request('first'), request: { ...request('first').request, metaCalls: '0x9999' } },
+      ];
+      expect(wrapper.text()).toContain('Public first');
+      oldApprove.vm.$emit('click');
+      expect(mocks.approve).not.toHaveBeenCalled();
+      await flushPromises();
+      await approve(wrapper).trigger('click');
+      expect(mocks.approve).toHaveBeenCalledExactlyOnceWith(mocks.store.metaRequests[0]);
+      wrapper.unmount();
+    }
+  );
+
   it('shows a retryable failure only for the same metadata request', async () => {
     mocks.approve.mockRejectedValueOnce(new Error('worker unavailable'));
     const wrapper = open();

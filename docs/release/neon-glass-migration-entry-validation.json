@@ -105,5 +105,10 @@
     "Legacy password migration screens and signing approvals still require their own pending/error/accessibility review.",
     "Development artifacts do not replace final production, signed distribution, historical upgrade or release qualification.",
     "Existing locale strings are reused; no linguistic retranslation is claimed."
-  ]
+  ],
+  "frozen_build_archive": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/wa6-migration-chrome-test.zip",
+    "sha256": "70ead727daa7cafeaf7101484c4b0ae43e56c4efde0e4209bcceb3501a2ae332",
+    "files": 495
+  }
 }

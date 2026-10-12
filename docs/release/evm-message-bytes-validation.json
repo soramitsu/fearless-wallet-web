@@ -1,0 +1,145 @@
+{
+  "recordedAt": "2026-10-12T13:38:38.448867+00:00",
+  "status": "Scoped EVM message-byte correctness checkpoint passed; signing-screen and release gates remain open.",
+  "baseCommit": "fd4b130c93f337f835d658a82fac510471b6fd8e",
+  "sourceCommit": "a8d85b42c47c32ec04fd207022842d025db8e0f4",
+  "sourceSha256": {
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts": "8ed241180443dcd39c414c7c02fd064df0014d0c8af8fc17b44a02d5ff538d9e",
+    "src/extension/background/extension-base/src/services/eip-service/index.ts": "53a4c74358eb58ec049326f2a8977a4f9e2473ca4da9be631ce588441d572638",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts": "bb46fdd7fdcba98df4d4b8171d869d6f631ad350a07ee16a590d0422c86d7c38",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts": "e9fc102f6e961f3192cb008ce92957a6ce2ca2855e271141e561f3e9a6e8c871",
+    "src/extension/background/extension-base/src/services/request-service/index.ts": "1c1ef4bdd31f8ccaa5703d59e168a7d3f9b47fa97a21d23c83d68c4631d77d1b",
+    "src/extension/background/extension-base/src/services/request-service/types.ts": "57572080643b0d7fd9146dac8fb239235973726ce9b95dc80171d97eba0e143f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts": "e909e9ab2cd64aa5fe9042c1606ce66dbce131cc4af484e1224055c837e75e0f",
+    "tests/unit/evm-request-handler.spec.ts": "488350eee2d2be4ed7f434d1aee344b8662bf9485d21e32e6c2aa47079c1562a",
+    "tests/unit/evm-signing-approval.spec.ts": "bf6533fdbbaa421e7f66c273f69150b604bbc316c3c92e6f1f71bb54b2e862e9",
+    "tests/unit/evm-signing-context.spec.ts": "81ad2b67f01e5ba60bc1672fb6e3521a97ff4bab1cb28bceabde4ba4cf0862a4",
+    "tests/unit/request-popup-route.spec.ts": "e04726db0bcfca679c89bf7da4cb22f9e3ffb09136e9e01c3762f7419a777578",
+    "package.json": "959c4e035d4c6eb7f6dd5394e8ff0094d786ef5668ddcf8ad54c59d2a485c83f",
+    "yarn.lock": "4a651a49dce462cf86a6016e7159334887ff941f6df815baff0ccb579883e0f7",
+    "tests/fixtures/legacy-305/chains-v13.snapshot.json": "fa6f0e23cd87dfb3e5536980591dd22ae30e49bf59d04dc2a0b31fc53237ea66",
+    "scripts/build-extension.mjs": "97a0f3084ccd47fae3d478b6ca3324ba8d51980c430df0cac8e0debe86bb682d",
+    "vite.config.shared.mjs": "6a0d033243e0f4351db390a9dd71665ef436dfe4d27cb36698563cb64afee6c2",
+    "src/util/evmMessageBytes.ts": "48f09485a2a98a2ab42414aa4ce0c0b61ec2de4dc4bae95ec9fa593fbde9e770",
+    "tests/unit/wallet-connect-approve.spec.ts": "681327efb5c47a9cb9eaa26de330088fe5b2077696e055446b22a4658c9c1926"
+  },
+  "changes": [
+    "personal_sign and eth_sign decode JSON-RPC hexadecimal DATA directly to bytes. Non-UTF8 input is never replaced, coerced into text, or signed as literal hex; empty DATA remains an empty message.",
+    "Malformed/odd-length/non-hex message DATA and unsupported argument counts fail before injected request admission, key export or mobile forwarding. This intentionally requires the two-parameter hexadecimal RPC contract; plain-text payloads must be encoded by the caller.",
+    "WalletConnect approval uses method-defined account/message positions and verifies both the requested account and the exported signer. An address-shaped personal_sign message no longer changes which parameter is signed.",
+    "Both existing message methods retain EIP-191 prefixed signing; no unprefixed raw-digest signing was introduced."
+  ],
+  "validation": {
+    "finalFullSuite": {
+      "sourceCommit": "a8d85b42c47c32ec04fd207022842d025db8e0f4",
+      "log": "evm-message-bytes-full-v1.log",
+      "passed": 1986,
+      "skipped": 18,
+      "failed": 0,
+      "filesPassed": 237,
+      "filesSkipped": 2,
+      "durationSeconds": 150.1
+    },
+    "focused": {
+      "log": "evm-message-bytes-focused-v1.log",
+      "passed": 55,
+      "skipped": 0,
+      "failed": 0,
+      "filesPassed": 3,
+      "note": "Initial byte fix before six additional all-byte/arity/mobile/wrong-exported-key regressions; all final regressions are included in the full suite."
+    },
+    "checks": [
+      {
+        "log": "evm-message-bytes-typecheck-v1.log",
+        "exitCode": 0,
+        "note": "Before import-order-only lint correction."
+      },
+      {
+        "log": "evm-message-bytes-lint-v2.log",
+        "exitCode": 0
+      },
+      {
+        "log": "evm-message-bytes-build-v1.log",
+        "exitCode": 0
+      }
+    ],
+    "buildMetadata": {
+      "browser": "chrome",
+      "mode": "development",
+      "releaseFlags": {
+        "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+        "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+        "VUE_APP_ENABLE_IROHA_TRANSFERS": "",
+        "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+        "VUE_APP_EXTENSION_SMOKE": "true",
+        "VUE_APP_TEST_ONLY": "true"
+      },
+      "schemaVersion": 2,
+      "sourceCommit": "a8d85b42c47c32ec04fd207022842d025db8e0f4",
+      "sourceDirty": false,
+      "yarnLockSha256": "4a651a49dce462cf86a6016e7159334887ff941f6df815baff0ccb579883e0f7"
+    },
+    "buildFiles": {
+      "path": "evm-message-bytes-build-files.json",
+      "count": 489
+    },
+    "archive": {
+      "path": "evm-message-bytes-chrome-test.zip",
+      "sha256": "48e99bbdbb7103c92c153bae25a2f52dad4db2ffc50375cce0d467f3c287f5c4"
+    },
+    "commands": "evm-message-bytes-commands.json",
+    "realCrypto": "Public unfunded keys produce real signatures verified against non-UTF8, empty and all 256 possible byte values. WalletConnect message tests exercise the actual approval method; existing real legacy-parent key migration/signing tests also pass. All transports are stubs; no network signing or broadcasting."
+  },
+  "independentReview": {
+    "reviewer": "audit_inventory",
+    "result": "No scoped correctness/security blocker in final production diff. Verified byte preservation, strict admission, fixed method positions, empty-byte truthiness and exported signer guard."
+  },
+  "preservedRuns": [
+    {
+      "log": "evm-message-bytes-before.log",
+      "applicationSource": "fd4b130c",
+      "passed": 30,
+      "failed": 12,
+      "note": "Initial new regressions reproduce altered binary signatures, malformed-message admission, address-shaped-message guessing and wrong requested signer acceptance."
+    },
+    {
+      "log": "evm-message-bytes-lint-v1.log",
+      "exitCode": 1,
+      "note": "Two import-order findings corrected by scoped eslint; no behavioral change."
+    }
+  ],
+  "protocolReferences": [
+    {
+      "url": "https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_sign",
+      "relevance": "eth_sign takes account then DATA and uses the Ethereum signed-message prefix."
+    },
+    {
+      "url": "https://docs.ethers.org/v6/api/providers/#Signer-signMessage",
+      "relevance": "String input is UTF-8; Uint8Array preserves the intended bytes."
+    },
+    {
+      "url": "https://docs.metamask.io/metamask-connect/evm/guides/sign-data/",
+      "relevance": "personal_sign uses hexadecimal message then account; eth_sign deprecation is acknowledged and no new raw-digest capability added."
+    }
+  ],
+  "limitations": [
+    "Transaction.vue still uses the legacy mobile auto-forward, truncated details and incomplete approval lifecycle. No signing-screen or browser qualification is claimed.",
+    "Typed-data schema, primary-type/domain handling, legacy v1 compatibility and complete WalletConnect context/queue lifecycle remain separate gates. This change does not validate a typed-data request merely because another method is now byte-exact.",
+    "Substrate/Solana signing review, readable summaries, blind-signing acknowledgement, phishing blocking, all-locale/browser accessibility and live mobile behavior remain open.",
+    "The archive is a development test artifact. Existing 18 skips remain skips; this checkpoint does not replace final upgrades, private-chain reruns, production bundles or publication gates."
+  ],
+  "evidenceRoot": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "evidenceSha256": {
+    "evm-message-bytes-before.log": "025abaad10c30d37ae7520b8717a982cade13ba943c80c99af68af27c128e2ad",
+    "evm-message-bytes-focused-v1.log": "33367206f0d5f2f40304eeb942ade504e4c90b244b5a2263602b2afe917afa9b",
+    "evm-message-bytes-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-message-bytes-lint-v1.log": "6b117e02f8d14e0efc54836915e5aee3bb9648d819be6859b714515ac4661add",
+    "evm-message-bytes-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-message-bytes-full-v1.log": "3167901387fb9a16680ebdf08810c66f9aa70ae48feb539ce68347634a56ea12",
+    "evm-message-bytes-build-v1.log": "6ff755b856382e8c6a3b1fe8558c1afba101681429295b3fc2a37769a0fd470c",
+    "evm-message-bytes-package-v1.log": "07288c2e4434b862c97d27e0c34fdc522ab2e734ab1e52bb6282aa9d77859e7e",
+    "evm-message-bytes-build-files.json": "4cdaa58fea20425c3b956d83afb1976b76f12d9e0061299d3d6e7dbc7c1fcab7",
+    "evm-message-bytes-chrome-test.zip": "48e99bbdbb7103c92c153bae25a2f52dad4db2ffc50375cce0d467f3c287f5c4",
+    "evm-message-bytes-commands.json": "6ab672e77e0f919c12f397386a99d777898635560fa50891b539586d2ddf20a0"
+  }
+}

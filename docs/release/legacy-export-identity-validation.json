@@ -1,7 +1,7 @@
 {
   "date": "2026-10-12",
   "source_commit": "16f7cee06e64930e52bfe9c6b4697943cdc158b8",
-  "status": "Full local source and development build qualification pass; independent review and final release qualification remain open.",
+  "status": "Independent review and local source/development build qualification pass; remaining migration/signing screens and final release qualification remain open.",
   "source_sha256": {
     "src/util/universalWalletLegacyExport.ts": "4aa3ab1574381b548f813cf6ff2351a82a3eb5e6f54072b093c19e6b536bf64a",
     "src/util/bitcoin.ts": "a4de865d4678b3530ab24109d3e4efbd500ab824b9704a6f512c85c00a7eaa3f",
@@ -96,5 +96,9 @@
     "Browser inventory remains public UI fixture data. Historical migration and actual secret export are not claimed by these screenshots.",
     "This development artifact does not qualify production distribution, signed upgrades or real assistive technology.",
     "Other migration steps and signing approvals remain active work."
-  ]
+  ],
+  "independent_review": {
+    "reviewer": "audit_inventory",
+    "result": "No blocker found. Six independent frozen-Git function/decoder cases pass: Solana collision, uppercase SegWit, mixed-case rejection, EVM casing, invalid checksum rejection and exact invalid legacy text. Routing unchanged. Password-entry source/evidence/archive also independently verified."
+  }
 }

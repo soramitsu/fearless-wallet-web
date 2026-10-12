@@ -300,6 +300,9 @@ const aboveFormClasses = computed(() => {
   width: 48px;
   flex-shrink: 0;
 }
+.form-background .form .activity > .icon {
+  margin: 0;
+}
 .form-background .form .content {
   flex: 1;
   min-height: 0;

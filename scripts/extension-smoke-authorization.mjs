@@ -72,8 +72,12 @@ export async function captureAuthorizationScreenshots({
       const addresses = [...document.querySelectorAll('.account__address')].map((element) => element.textContent.trim());
       const bounds = button.getBoundingClientRect();
       const rejectBounds = document.querySelector(${JSON.stringify(reject)}).getBoundingClientRect();
-      const heading = document.querySelector('.form-background [data-testid="header"]')?.textContent.trim();
-      return { requests: window.__authorizationFixture.requests.length, unavailable: button.getAttribute('aria-disabled') === 'true', focusable: !button.disabled, reason: reason?.textContent.trim(), height: bounds.height, equalActions: Math.abs(bounds.width - rejectBounds.width) < 1 && Math.abs(bounds.height - rejectBounds.height) < 1, translatedHeading: !!heading && !heading.includes('.'), labelFits: label.scrollWidth <= label.clientWidth + 1, fullAddresses: JSON.stringify(expected) === JSON.stringify(addresses), noOverflow: document.documentElement.scrollWidth <= innerWidth, calm: !!document.querySelector('.fw-calm') };
+      const header = document.querySelector('.form-background [data-testid="header"]');
+      const heading = header?.textContent.trim();
+      const headerBounds = header.getBoundingClientRect();
+      const logoBounds = document.querySelector('.form-background .align-left .logo').getBoundingClientRect();
+      const closeBounds = document.querySelector('.form-background .align-right button').getBoundingClientRect();
+      return { requests: window.__authorizationFixture.requests.length, unavailable: button.getAttribute('aria-disabled') === 'true', focusable: !button.disabled, reason: reason?.textContent.trim(), height: bounds.height, equalActions: Math.abs(bounds.width - rejectBounds.width) < 1 && Math.abs(bounds.height - rejectBounds.height) < 1, translatedHeading: !!heading && !heading.includes('.'), headerAvoidsIcons: headerBounds.left >= logoBounds.right + 4 && headerBounds.right <= closeBounds.left - 4, labelFits: label.scrollWidth <= label.clientWidth + 1, fullAddresses: JSON.stringify(expected) === JSON.stringify(addresses), noOverflow: document.documentElement.scrollWidth <= innerWidth, calm: !!document.querySelector('.fw-calm') };
     })()`);
     if (
       state.requests ||
@@ -83,6 +87,7 @@ export async function captureAuthorizationScreenshots({
       state.height < 48 ||
       !state.equalActions ||
       !state.translatedHeading ||
+      !state.headerAvoidsIcons ||
       !state.labelFits ||
       !state.fullAddresses ||
       !state.noOverflow ||

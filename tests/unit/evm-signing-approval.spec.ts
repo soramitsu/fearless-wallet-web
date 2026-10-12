@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Wallet, verifyMessage, verifyTypedData } from 'ethers';
+import { Wallet, getBytes, verifyMessage, verifyTypedData } from 'ethers';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 
@@ -83,6 +83,47 @@ describe('EVM approval uses the reviewed request context', () => {
     expect(verifyMessage('hello', signature.payload)).toBe(address);
     expect(state.keyringService.accountExportPrivateKey).toHaveBeenCalledExactlyOnceWith({ address });
     expect(handler.signEvmSubject.value).toEqual({});
+  });
+  it.each(['personal_sign', 'eth_sign'])('signs exact non-UTF8 bytes for %s', async (method) => {
+    const bytes = '0xff00c080deadbeef';
+    const params = method === 'personal_sign' ? [bytes, address] : [address, bytes];
+    const { result } = await queue(method, params);
+    await extension.signEvmApprove({ id: 'first' });
+    expect(verifyMessage(getBytes(bytes), (await result).payload)).toBe(address);
+  });
+  it.each(['personal_sign', 'eth_sign'])('signs the empty byte message for %s', async (method) => {
+    const params = method === 'personal_sign' ? ['0x', address] : [address, '0x'];
+    const { result } = await queue(method, params);
+    await extension.signEvmApprove({ id: 'first' });
+    expect(verifyMessage(new Uint8Array(), (await result).payload)).toBe(address);
+  });
+  it.each(['0x1', '0xgg', 'hello', 12, null])(
+    'rejects malformed message %j before queueing or key export',
+    async (message) => {
+      await expect(queue('personal_sign', [message, address])).rejects.toThrow();
+      expect(handler.signEvmSubject.value).toEqual({});
+      expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    }
+  );
+  it('preserves every byte value without a text round trip', async () => {
+    const message = Uint8Array.from({ length: 256 }, (_, index) => index);
+    const hex = `0x${Buffer.from(message).toString('hex')}`;
+    const { result } = await queue('personal_sign', [hex, address]);
+    await extension.signEvmApprove({ id: 'first' });
+    expect(verifyMessage(message, (await result).payload)).toBe(address);
+  });
+  it.each([[[]], [['0x1234']], [['0x1234', address, 'ignored']]])(
+    'rejects invalid message arity %j',
+    async (params) => {
+      await expect(queue('personal_sign', params)).rejects.toThrow();
+      expect(handler.signEvmSubject.value).toEqual({});
+      expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    }
+  );
+  it('does not forward malformed message bytes to a mobile wallet', async () => {
+    mobile = true;
+    await expect(queue('personal_sign', ['0xffg0', address])).rejects.toThrow();
+    expect(state.walletConnectDappService.onEvmRequest).not.toHaveBeenCalled();
   });
   it('produces a real typed-data signature for the reviewed domain and account', async () => {
     const typed = {
@@ -313,5 +354,48 @@ describe('mobile EVM request network binding', () => {
       mobileService.onEvmRequest('first', url, 'personal_sign', data, 'fixture', context.network, vi.fn())
     ).rejects.toThrow();
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('WalletConnect EVM message bytes', () => {
+  function queued(method: string, params: unknown[]) {
+    const request = {
+      request: { topic: 'fixture', params: { chainId: 'eip155:1', request: { method, params } } },
+      resolve: vi.fn(),
+      reject: vi.fn(),
+    };
+    Object.assign(state.requestService, { signWcRequest: () => request });
+    return request;
+  }
+  it.each(['personal_sign', 'eth_sign'])('preserves binary %s input on the wallet side', async (method) => {
+    const bytes = '0xff00c080deadbeef';
+    const request = queued(method, method === 'personal_sign' ? [bytes, address] : [address, bytes]);
+    await extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' });
+    expect(verifyMessage(getBytes(bytes), request.resolve.mock.calls[0][0].payload)).toBe(address);
+  });
+  it('uses the personal_sign position even when the message looks like an address', async () => {
+    const message = '0x2222222222222222222222222222222222222222';
+    const request = queued('personal_sign', [message, address]);
+    await extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' });
+    expect(verifyMessage(getBytes(message), request.resolve.mock.calls[0][0].payload)).toBe(address);
+  });
+  it('refuses a mismatched exported WalletConnect signing key', async () => {
+    const request = queued('personal_sign', ['0x1234', address]);
+    vi.mocked(state.keyringService.accountExportPrivateKey).mockReturnValue({
+      privateKey: `0x${'22'.repeat(32)}`,
+    } as never);
+    await expect(extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' })).rejects.toThrow(
+      'Exported key'
+    );
+    expect(request.resolve).not.toHaveBeenCalled();
+  });
+  it.each(['malformed', 'wrong signer'])('rejects %s before exporting a WalletConnect key', async (reason) => {
+    const request = queued('personal_sign', [
+      reason === 'malformed' ? '0xg1' : '0x1234',
+      reason === 'wrong signer' ? '0x2222222222222222222222222222222222222222' : address,
+    ]);
+    await expect(extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' })).rejects.toThrow();
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(request.resolve).not.toHaveBeenCalled();
   });
 });

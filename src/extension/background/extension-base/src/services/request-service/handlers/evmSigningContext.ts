@@ -1,6 +1,7 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmRequestPayload, EvmSigningContext } from '@extension-base/services/request-service/types';
+import { evmMessageBytes } from '@/util/evmMessageBytes';
 
 // RPC methods define parameter positions. An address-shaped message must never
 // decide which key signs it (personal_sign is [message, address]).
@@ -43,6 +44,7 @@ export async function captureEvmSigningContext(
   params: unknown
 ): Promise<EvmSigningContext> {
   const address = evmSigningAddress(method, params);
+  if (method === 'personal_sign' || method === 'eth_sign') evmMessageBytes(method, params);
   const auth = await state.getAuthInfo(url);
   if (
     !auth?.isAllowed ||

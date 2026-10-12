@@ -8,7 +8,10 @@ import type {
   EvmSigningContext,
   WCSignRequest,
 } from '@extension-base/services/request-service/types';
-import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
+import type {
+  WalletConnectTransactionRequest,
+  WalletConnectSigningContext,
+} from '@extension-base/services/wallet-connect-service/types';
 import type { ResponseSigning } from '@extension-base/background/types/types';
 import type { SignClientTypes } from '@walletconnect/types';
 
@@ -131,14 +134,21 @@ export default class EvmRequestHandler {
     });
   }
 
-  onWCSign(event: SignClientTypes.EventArguments['session_request']): Promise<ResponseSigning> {
+  onWCSign(
+    event: SignClientTypes.EventArguments['session_request'],
+    context?: WalletConnectSigningContext
+  ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
       if (typeof event.topic !== 'string' || !event.topic || !Number.isSafeInteger(event.id) || event.id < 0)
         throw new Error('Invalid WalletConnect request identity');
       if ([...this.wcRequests.values()].some(({ request }) => request.topic === event.topic && request.id === event.id))
         throw new Error('Duplicate WalletConnect request ID');
       const approvalId = crypto.randomUUID();
-      const snapshot = { ...structuredClone(event), approvalId };
+      const snapshot = {
+        ...structuredClone(event),
+        approvalId,
+        ...(context ? { context: structuredClone(context) } : {}),
+      };
       let settled = false;
       const complete = () => {
         if (settled || this.wcRequests.get(approvalId) !== request) return false;

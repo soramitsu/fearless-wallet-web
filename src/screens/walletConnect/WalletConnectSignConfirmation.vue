@@ -70,7 +70,9 @@ const request = computed<WalletConnectTransactionRequest | undefined>(() => exte
 const requestKey = computed(() => (request.value ? JSON.stringify(request.value) : ''));
 const method = computed(() => request.value?.params.request.method as EIP155_SIGNING_METHODS);
 const isSignatureRequest = computed(() => SIGNATURE_METHODS.includes(method.value));
-const origin = computed(() => request.value?.verifyContext?.verified?.origin ?? '');
+const origin = computed(
+  () => request.value?.context?.session.origin ?? request.value?.verifyContext?.verified?.origin ?? ''
+);
 const title = computed(() =>
   isSignatureRequest.value
     ? t('walletConnect.signRequestTitle')

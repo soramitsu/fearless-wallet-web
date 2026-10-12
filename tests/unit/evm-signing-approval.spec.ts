@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, getBytes, verifyMessage, verifyTypedData } from 'ethers';
+import { captureWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 
@@ -63,11 +64,41 @@ beforeEach(() => {
       getAddress: vi.fn(() => ({ address: 'substrate-root', meta: { wcTopic: 'public-fixture-topic' } })),
       accountExportPrivateKey: vi.fn(() => ({ privateKey: wallet.privateKey })),
     },
+    walletConnectService: {
+      getSessionRevision: () => 0,
+      getSession: (topic: string) => ({
+        topic,
+        acknowledged: true,
+        expiry: Math.floor(Date.now() / 1000) + 600,
+        peer: { publicKey: 'public-peer', metadata: { url } },
+        namespaces: {
+          eip155: {
+            accounts: [`eip155:1:${address}`],
+            methods: [
+              'personal_sign',
+              'eth_sign',
+              'eth_signTypedData',
+              'eth_signTypedData_v3',
+              'eth_signTypedData_v4',
+              'eth_sendTransaction',
+            ],
+            events: [],
+          },
+        },
+      }),
+    },
     walletConnectDappService: { onEvmRequest: vi.fn(async () => ({ id: 'first', payload: '0x1234' })) },
     requestService: { evmRequestHandler: handler, getSignRequest: (id: string) => handler.getEvmSignRequest(id) },
   } as unknown as State;
   extension = new Extension(state);
 });
+function stampWcContext(request: { request: { topic: string } }) {
+  const context = captureWalletConnectSigningContext(state, {
+    topic: request.request.topic,
+    params: { chainId: 'eip155:1', request: { method: 'personal_sign', params: data } },
+  } as never);
+  Object.assign(request.request, { context });
+}
 async function queue(method = 'personal_sign', params: unknown[] = data) {
   const context = await captureEvmSigningContext(state, url, method, params);
   const result = handler.confirmSign('first', url, method, params, context);
@@ -183,6 +214,7 @@ describe('EVM approval uses the reviewed request context', () => {
       },
       resolve: vi.fn(),
     };
+    stampWcContext(request);
     vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
     vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
     await expect(extension.wcRequestApprove({ address, approvalId: 'public-approval' })).rejects.toThrow();
@@ -226,6 +258,7 @@ describe('EVM approval uses the reviewed request context', () => {
       },
       resolve: vi.fn(),
     };
+    stampWcContext(request);
     vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
     vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
     await extension.wcRequestApprove({ address, approvalId: 'public-approval' });
@@ -256,6 +289,7 @@ describe('EVM approval uses the reviewed request context', () => {
       },
       resolve: vi.fn(),
     };
+    stampWcContext(request);
     vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
     vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
     await expect(extension.wcRequestApprove({ address, approvalId: 'public-approval' })).rejects.toThrow('chain');
@@ -539,6 +573,7 @@ describe('WalletConnect EVM message bytes', () => {
       resolve: vi.fn(),
       reject: vi.fn(),
     };
+    stampWcContext(request);
     vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
     vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
     return request;
@@ -580,11 +615,8 @@ describe('WalletConnect EVM message bytes', () => {
 
 describe('WalletConnect approval claims the actual queued intent', () => {
   function queued(id: number, method = 'personal_sign', params: unknown[] = data) {
-    const result = handler.onWCSign({
-      id,
-      topic: 'public-topic',
-      params: { chainId: 'eip155:1', request: { method, params } },
-    } as never);
+    const event = { id, topic: 'public-topic', params: { chainId: 'eip155:1', request: { method, params } } } as never;
+    const result = handler.onWCSign(event, captureWalletConnectSigningContext(state, event));
     const approvalId = handler.signWcSubject.value.find((request) => request.id === id)!.approvalId;
     return { result, approvalId };
   }
@@ -608,10 +640,18 @@ describe('WalletConnect approval claims the actual queued intent', () => {
     expect(sign).toHaveBeenCalledTimes(1);
   });
   it('consumes an ambiguous broadcast failure without deleting the next same-session request', async () => {
+    const send = vi.fn().mockRejectedValue(new Error('response lost'));
+    const provider = {
+      getNetwork: vi.fn(async () => ({ chainId: 1n })),
+      getTransactionCount: vi.fn(async () => 0),
+      estimateGas: vi.fn(async () => 21000n),
+      getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
+      broadcastTransaction: send,
+    };
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     const first = queued(1, 'eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
     const rejected = expect(first.result).rejects.toThrow('response lost');
     const next = queued(2);
-    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockRejectedValue(new Error('response lost'));
     await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).resolves.toBe(false);
     await rejected;
     await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).rejects.toThrow('unavailable');

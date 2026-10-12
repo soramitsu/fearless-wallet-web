@@ -1,7 +1,7 @@
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { stringToHex } from '@polkadot/util';
-import { Wallet, verifyMessage } from 'ethers';
+import { Transaction, verifyMessage } from 'ethers';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The account cryptography is real (@polkadot/keyring pairs, as in keyring-recovery.spec.ts); only the
@@ -76,6 +76,7 @@ vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({ TonKeyri
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({
   enrollLegacyAccountNetworks: vi.fn(),
 }));
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 // Extension is exercised through its prototype; its services are never built.
 vi.mock('@extension-base/services', () => ({}));
@@ -87,7 +88,9 @@ vi.mock('@extension-base/utils/crossenv', () => ({
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { accountStorageKey } from '@extension-base/services/keyring-service/AccountMetadata';
 import { TonSeedVault } from '@extension-base/services/keyring-service/TonSeedVault';
+import { captureWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import Extension from '@extension-base/background/handlers/Extension';
+import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 
 // Public test phrase only; never fund it.
@@ -162,6 +165,48 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function qualifyWcRequest(
+  extension: Extension,
+  request: { request: { topic: string; params: { request: { method: string } } } },
+  address: string
+) {
+  const state = (extension as unknown as { state: State }).state;
+  const session = {
+    topic: TOPIC,
+    acknowledged: true,
+    expiry: Math.floor(Date.now() / 1000) + 600,
+    peer: { publicKey: 'public-peer', metadata: { url: 'https://public.example' } },
+    namespaces: {
+      eip155: { accounts: [`eip155:1:${address}`], methods: [request.request.params.request.method], events: [] },
+    },
+  };
+  const provider = {
+    getNetwork: vi.fn(async () => ({ chainId: 1n })),
+    getTransactionCount: vi.fn(async () => 0),
+    estimateGas: vi.fn(async () => 21000n),
+    getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
+    broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0xfeed' })),
+  };
+  Object.assign(state, {
+    walletConnectService: { getSession: () => session, getSessionRevision: () => 0 },
+    getEvmApi: () => ({ api: provider }),
+    networkService: {
+      networkMap: {
+        Ethereum: {
+          name: 'Ethereum',
+          chainId: '1',
+          genesisHash: '0x1234',
+          ecosystem: 'ethereum',
+          disabled: false,
+          assets: [],
+        },
+      },
+    },
+  });
+  Object.assign(request.request, { context: captureWalletConnectSigningContext(state, request.request as never) });
+  return provider;
+}
+
 describe('WalletConnect approval with a parent that still needs its legacy password', SCRYPT_SUITE, () => {
   it('reports a personal_sign that the dApp received as approved, once', async () => {
     const { child, parent, keyringService } = await parentPendingChildMigrated();
@@ -192,6 +237,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
       },
     } as unknown as Extension;
 
+    qualifyWcRequest(extension, request, child.address);
     await expect(
       Extension.prototype.wcRequestApprove.call(extension, { address: parent.address, approvalId: 'public-approval' })
     ).resolves.toBe(true);
@@ -206,7 +252,6 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
 
   it('reports a sent transaction as approved, once, instead of inviting a second payment', async () => {
     const { child, parent, keyringService } = await parentPendingChildMigrated();
-    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockResolvedValue({ hash: '0xfeed' } as never);
     const request = {
       request: {
         topic: TOPIC,
@@ -236,11 +281,13 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
       },
     } as unknown as Extension;
 
+    const provider = qualifyWcRequest(extension, request, child.address);
     await expect(
       Extension.prototype.wcRequestApprove.call(extension, { address: child.address, approvalId: 'public-approval' })
     ).resolves.toBe(true);
 
-    expect(send).toHaveBeenCalledOnce();
+    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
+    expect(Transaction.from(provider.broadcastTransaction.mock.calls[0][0]).from?.toLowerCase()).toBe(child.address.toLowerCase());
     expect(request.resolve).toHaveBeenCalledExactlyOnceWith({ id: TOPIC, payload: '0xfeed' });
     expect(request.reject).not.toHaveBeenCalled();
     expect(() => keyringService.unlockPair(parent.address)).toThrow('legacy_password_required');

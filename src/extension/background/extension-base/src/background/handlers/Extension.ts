@@ -4,7 +4,7 @@ import { checkIfDenied } from '@polkadot/phishing';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
-import { ethers, formatUnits, Wallet } from 'ethers';
+import { ethers, formatUnits, VoidSigner, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
   isBitcoinTransferNetwork,
@@ -63,7 +63,8 @@ import {
   resolveSolanaSignAndSendTransaction,
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
-import { evmSigningAddress, validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
+import { validateWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
+import { validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
@@ -2204,34 +2205,57 @@ export default class Extension extends FWExtensionBase {
     const handler = this.state.requestService.evmRequestHandler;
     const request = handler.claimWCSignRequest(approvalId);
     try {
+      const context = validateWalletConnectSigningContext(this.state, request.request);
+      const assertCurrent = () => {
+        if (handler.getSignWCRequest(approvalId) !== request) throw new Error('WalletConnect request was cancelled');
+        validateWalletConnectSigningContext(this.state, request.request);
+      };
       const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
       const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
-
+      if (ethereumAddress.toLowerCase() !== context.account.address.toLowerCase())
+        throw new Error('WalletConnect request does not match the selected signer');
+      if (context.account.isMobile) throw new Error('WalletConnect mobile signing is unavailable');
+      if (await checkIfDenied(context.session.origin)) {
+        assertCurrent();
+        request.reject(new Error('WalletConnect requester is blocked'));
+        throw new Error('WalletConnect requester is blocked');
+      }
+      assertCurrent();
       const method = request.request.params.request.method;
       const params = request.request.params.request.params;
-      if (evmSigningAddress(method, params).toLowerCase() !== ethereumAddress.toLowerCase())
-        throw new Error('WalletConnect request does not match the selected signer');
-      const messageBytes =
-        method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
+      const messageBytes = method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
       const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
-      const [, chainId] = request.request.params.chainId.split(':');
-      if (typed?.domain.chainId !== undefined && BigInt(typed.domain.chainId) !== BigInt(chainId))
-        throw new Error('WalletConnect typed data does not match the requested chain');
-      const network = Object.values(this.state.networkService.networkMap).find((el) => el.chainId === chainId);
-
-      if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
-
       const txData = method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
-      if (handler.getSignWCRequest(approvalId) !== request) throw new Error('WalletConnect request was cancelled');
+      const provider = this.state.getEvmApi(context.network.name)?.api;
+      const assertProviderCurrent = () => {
+        assertCurrent();
+        if (this.state.getEvmApi(context.network.name)?.api !== provider)
+          throw new Error('WalletConnect provider changed before approval');
+      };
+      let populated: ethers.TransactionRequest | undefined;
+      if (txData) {
+        if (!provider || (await provider.getNetwork()).chainId !== BigInt(context.network.chainId))
+          throw new Error('WalletConnect provider does not match the reviewed network');
+        assertProviderCurrent();
+        // Population awaits nonce, gas and fee RPCs. Keep those awaits before
+        // private-key access, then revalidate the grant and provider again.
+        populated = await new VoidSigner(ethereumAddress, provider).populateTransaction({
+          ...txData,
+          chainId: BigInt(context.network.chainId),
+        });
+        assertProviderCurrent();
+      }
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
 
-      const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
+      const signer = new Wallet(privateKey);
       if (signer.address.toLowerCase() !== ethereumAddress.toLowerCase())
         throw new Error('Exported key does not match the WalletConnect account');
 
       if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+        const signed = await signer.signTransaction(populated!);
+        assertProviderCurrent();
         try {
-          const { hash } = await signer.sendTransaction(txData!);
+          const { hash } = await provider!.broadcastTransaction(signed);
           request.resolve({ id: request.request.topic, payload: hash as HexString });
         } catch (error) {
           // A transport failure may follow a successful broadcast. Consume this
@@ -2243,7 +2267,7 @@ export default class Extension extends FWExtensionBase {
         const signature = await (typed
           ? signer.signTypedData(typed.domain, typed.types, typed.message)
           : signer.signMessage(messageBytes!));
-
+        assertCurrent();
         request.resolve({ id: request.request.topic, payload: signature as HexString });
       }
 

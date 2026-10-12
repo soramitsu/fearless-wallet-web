@@ -116,6 +116,16 @@ describe('WalletConnect screen owns the displayed approval identity', () => {
     expect(mocks.approve).toHaveBeenCalledExactlyOnceWith(next.params.request.params[1], 'next');
     wrapper.unmount();
   });
+  it('uses the captured session origin instead of an unverified event origin', async () => {
+    const value = request();
+    value.context = { session: { origin: 'https://canonical.example' } } as never;
+    mocks.store.wcRequests = [value];
+    const wrapper = open();
+    await flushPromises();
+    expect(wrapper.get('header').text()).toContain('https://canonical.example');
+    expect(wrapper.get('header').text()).not.toContain('first.example');
+    wrapper.unmount();
+  });
   it('refuses an old DOM click before the replacement request renders', async () => {
     const wrapper = open();
     await flushPromises();

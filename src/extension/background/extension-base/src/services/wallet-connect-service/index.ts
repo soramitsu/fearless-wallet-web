@@ -29,6 +29,16 @@ const namespaceAccounts = (namespace: SessionTypes.Namespace | unknown[]): strin
 
 export class WalletConnectService {
   private client?: WalletConnect;
+  private readonly sessionRevisions = new Map<string, number>();
+
+  getSessionRevision(topic: string): number {
+    return this.sessionRevisions.get(topic) ?? 0;
+  }
+
+  private sessionChanged(topic: string): void {
+    this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
+    this.updateSessions();
+  }
 
   readonly eip155RequestHandler: Eip155RequestHandler;
   readonly polkadotRequestHandler: PolkadotHandler;
@@ -138,6 +148,7 @@ export class WalletConnectService {
   }
 
   async disconnect(topic: string) {
+    this.sessionChanged(topic);
     await this.client?.disconnect({
       topic: topic,
       reason: getSdkError('USER_DISCONNECTED'),
@@ -181,6 +192,12 @@ export class WalletConnectService {
     const method = request.method as WalletConnectSigningMethod;
 
     try {
+      if (chainId.startsWith('eip155:')) {
+        this.eip155RequestHandler.handleRequest(requestEvent);
+        this.updateExpiry(topic);
+        return;
+      }
+
       const { requiredNamespaces, optionalNamespaces } = this.getSession(topic);
 
       const namespaces = Object.keys({ ...requiredNamespaces, ...optionalNamespaces });
@@ -247,10 +264,11 @@ export class WalletConnectService {
   private createListener() {
     this.client?.on('session_proposal', (event) => this.onSessionProposal(event));
     this.client?.on('session_request', (event) => this.onSessionRequest(event));
-    this.client?.on('session_delete', () => this.updateSessions());
+    this.client?.on('session_delete', ({ topic }) => this.sessionChanged(topic));
+    this.client?.on('session_expire', ({ topic }) => this.sessionChanged(topic));
     this.client?.on('session_ping', (data: unknown) => console.info('ping', data));
     this.client?.on('session_event', (data: unknown) => console.info('event', data));
-    this.client?.on('session_update', (data: unknown) => console.info('update', data));
+    this.client?.on('session_update', ({ topic }) => this.sessionChanged(topic));
   }
 
   // Remove old listener

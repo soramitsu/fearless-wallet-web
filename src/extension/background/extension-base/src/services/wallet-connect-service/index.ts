@@ -78,9 +78,7 @@ export class WalletConnectService {
     return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
   }
 
-  addConnection(uri: string) {
-    console.info(uri);
-  }
+
 
   private updateSessions() {
     this.sessionSubject.next(this.sessions);

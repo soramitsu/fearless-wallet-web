@@ -2,20 +2,14 @@ import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
 import { u8aToHex } from '@polkadot/util';
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
-import { BehaviorSubject } from 'rxjs';
-import {
-  PROJECT_ID_EXTENSION,
-  SUBSTRATE_EVM_HALF_CHAIN_IDS,
-  WALLET_CONNECT_EIP155_NAMESPACE,
-  WALLET_CONNECT_METADATA,
-  WALLET_CONNECT_POLKADOT_NAMESPACE,
-} from '@extension-base/services/wallet-connect-service/consts';
+import { PROJECT_ID_EXTENSION, WALLET_CONNECT_METADATA } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
 import { validateMobileSigningContext } from './mobileSigningContext';
-import type { AppSessionInitResponse, PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
+import { captureMobilePairingAccount, mobilePairingProposal, sameMobileIdentity } from './pairingContext';
+import type { PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
 import type { EvmRequestParams } from '@extension-base/services/request-service/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
@@ -23,7 +17,18 @@ import type { MobileSigningContext } from './mobileSigningContext';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes } from '@walletconnect/types';
 import type { Port, ResponseSigning } from '@extension-base/background/types/types';
-import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+
+type PairingAttempt = {
+  id: string;
+  port?: Port;
+  active: boolean;
+  uri?: string;
+  session?: SessionTypes.Struct;
+  priorTopics: Set<string>;
+  currentAddress?: string;
+  subscriber?: { id: string; callback: (data: PairingSubjectType) => void };
+  disconnectListener: () => void;
+};
 
 export class WalletConnectDAppService {
   private app?: Provider;
@@ -40,10 +45,8 @@ export class WalletConnectDAppService {
     this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
   }
 
-  public readonly uriSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
-  public readonly pairingSubject: BehaviorSubject<Record<string, AppSessionInitResponse>> = new BehaviorSubject<
-    Record<string, AppSessionInitResponse>
-  >({});
+  private readonly pairingAttempts = new Map<string, PairingAttempt>();
+  private readonly usedPairingIds = new Set<string>();
 
   constructor(private state: State) {
     this.initApp().catch(console.error);
@@ -89,10 +92,6 @@ export class WalletConnectDAppService {
     }
   }
 
-  private updatePairing(key: string, data: AppSessionInitResponse) {
-    this.pairingSubject.next({ ...this.pairingSubject.value, [key]: data });
-  }
-
   public getSession(topic: string): SessionTypes.Struct {
     const session = this.sessions.find((el) => el.topic === topic);
 
@@ -103,155 +102,132 @@ export class WalletConnectDAppService {
     }
   }
 
-  async initPairing() {
-    if (!this.app) await this.initApp();
-
-    const optionalChains = this.state.networkService.networksGithub.flatMap((network) => {
-      if (isNativeEVMNetwork(network.name) || !network.chainId) return [];
-
-      const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
-
-      return [`polkadot:${halfChainId}`];
-    });
-
-    const optionalEvmChains = this.state.networkService.networksGithub.flatMap((network) => {
-      if (!isNativeEVMNetwork(network.name) || !network.chainId) return [];
-
-      const halfChainId = network.chainId.slice(0, Math.ceil(network.chainId.length / 2));
-
-      return [`eip155:${halfChainId}`];
-    });
-
-    const pairing = await this.app?.client.connect({
-      requiredNamespaces: {
-        polkadot: {
-          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
-          chains: [
-            'polkadot:91b171bb158e2d3848fa23a9f1c25182', //dot
-            'polkadot:7e4e32d0feafd4f9c9414b0be86373f9', //sora mainnet
-          ],
-          events: [],
-        },
-        eip155: {
-          chains: ['eip155:1'],
-          methods: ['personal_sign', 'eth_sendTransaction'],
-          events: [],
-        },
-      },
-      optionalNamespaces: {
-        polkadot: {
-          methods: ['polkadot_signTransaction', 'polkadot_signMessage'],
-          chains: optionalChains,
-          events: [],
-        },
-        eip155: {
-          chains: optionalEvmChains,
-          methods: [
-            'eth_sendTransaction',
-            'personal_sign',
-            'eth_sign',
-            'eth_signTransaction',
-            'eth_signTypedData',
-            'eth_signTypedData_v1',
-            'eth_signTypedData_v3',
-            'eth_signTypedData_v4',
-            'eth_sendRawTransaction',
-          ],
-          events: ['accountsChanged', 'chainChanged'],
-        },
-      },
-    });
-
-    if (!pairing?.uri) throw new Error('uri error');
-    this.updatePairing(pairing.uri, pairing);
-
-    return pairing?.uri;
+  async initPairing(id: string, port?: Port): Promise<string> {
+    if (typeof id !== 'string' || !id || id.length > 128 || this.usedPairingIds.has(id))
+      throw new Error('Invalid or reused mobile pairing attempt');
+    this.usedPairingIds.add(id);
+    const attempt: PairingAttempt = {
+      id,
+      port,
+      active: true,
+      priorTopics: new Set(),
+      currentAddress: this.state.currentAccount?.address,
+      disconnectListener: () => this.abortPairingAttempt(id, port),
+    };
+    this.pairingAttempts.set(id, attempt);
+    port?.onDisconnect.addListener(attempt.disconnectListener);
+    try {
+      await this.initApp();
+      if (!attempt.active) throw new Error('Mobile pairing was cancelled');
+      attempt.priorTopics = new Set(this.sessions.map((session) => session.topic));
+      const pairing = await this.app!.client.connect(mobilePairingProposal(this.state.networkService.networkValues));
+      // Observe exactly once, including a late approval after cancellation.
+      pairing
+        .approval()
+        .then((session) => {
+          attempt.session = structuredClone(session);
+          if (!attempt.active) this.discardPairingSession(attempt);
+          else this.completePairing(attempt);
+        })
+        .catch(() => this.finishPairing(attempt, { status: false, message: 'rejected' }));
+      if (!attempt.active) throw new Error('Mobile pairing was cancelled');
+      if (
+        !pairing.uri ||
+        [...this.pairingAttempts.values()].some((other) => other !== attempt && other.uri === pairing.uri)
+      )
+        throw new Error('Mobile pairing URI is unavailable');
+      attempt.uri = pairing.uri;
+      return pairing.uri;
+    } catch (error) {
+      this.finishPairing(attempt);
+      throw error;
+    }
   }
 
-  public async subscribePairing(uri: string, id: string, port?: Port) {
-    const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.app.subscribePairing)'>(id, port);
-
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {});
-
-    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
-
-    const activePairing = this.pairingSubject.value[uri];
-
-    if (!activePairing) {
-      cb({
-        status: false,
-        message: 'ERROR',
-      });
-
-      return;
-    }
-
-    activePairing
-      ?.approval()
-      .then((data) => this.onAuthApproval(data, cb))
-      .catch(() => cb({ status: false, message: 'rejected' }));
-
-    return this.pairingSubject.value?.uri;
-  }
-
-  onAuthApproval(data: SessionTypes.Struct, cb: (data: PairingSubjectType) => void) {
-    const accounts = data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].accounts;
-    const substrateAddress = accounts.find((el) => {
-      const [, chainId] = el.split(':');
-
-      return !SUBSTRATE_EVM_HALF_CHAIN_IDS.includes(chainId);
-    });
-
-    if (!substrateAddress) throw new Error("couldn't find substrate address");
-
-    const [, , address] = substrateAddress.split(':');
-    const encodedAddress = this.state.keyringService.encodeAddress(address);
-    const ethAddress = accounts.find((el) => {
-      const [, chainId] = el.split(':');
-
-      return SUBSTRATE_EVM_HALF_CHAIN_IDS.includes(chainId);
-    });
-
-    let ethereumAddressWC;
-
-    if (ethAddress) {
-      const [, , ethereumAddress] = ethAddress.split(':');
-
-      ethereumAddressWC = ethereumAddress;
-    }
-
-    const availableSubstrateNetworks =
-      data.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
-
-    const availableEvmNetworks =
-      data.namespaces[WALLET_CONNECT_EIP155_NAMESPACE].chains?.map((el) => el.split(':')[1]) ?? [];
-
-    const isDuplicate = this.state.keyringService.getAllAccounts().some(({ address }) => address === encodedAddress);
-
-    if (isDuplicate) {
-      this.disconnect(data.topic);
-      cb({
-        status: false,
-        message: 'duplicate',
-      });
-
-      return;
-    }
-
-    this.state.keyringService.saveAddress(
-      encodedAddress,
-      {
-        name: data.peer.metadata.name,
-        isMobile: true,
-        wcTopic: data.topic,
-        ethereumAddress: ethereumAddressWC,
-        chains: [...availableSubstrateNetworks, ...availableEvmNetworks],
-      },
-      'address'
+  public async subscribePairing(uri: string, id: string, port?: Port): Promise<PairingSubjectType> {
+    const callback = this.state.subscriptionService.createSubscription<'pri(walletConnect.app.subscribePairing)'>(
+      id,
+      port
     );
-    this.state.updateCurrentAccount({ address: encodedAddress });
+    const attempt = [...this.pairingAttempts.values()].find(
+      (entry) => entry.active && entry.uri === uri && entry.port === port
+    );
+    if (!attempt || attempt.subscriber) {
+      const result = { status: false, message: 'unavailable' };
+      callback(result);
+      this.state.subscriptionService.cancelSubscription(id);
+      return result;
+    }
+    attempt.subscriber = { id, callback };
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => this.abortPairingAttempt(attempt.id, port));
+    this.completePairing(attempt);
+    return { uri };
+  }
 
-    cb({ status: true });
+  private discardPairingSession(attempt: PairingAttempt): void {
+    const topic = attempt.session?.topic;
+    // A rejected attempt cannot disconnect an already imported/previous session.
+    if (
+      !topic ||
+      attempt.priorTopics.has(topic) ||
+      this.state.keyringService.getAllAccounts().some((account) => account.meta.wcTopic === topic)
+    )
+      return;
+    this.disconnect(topic);
+  }
+
+  private finishPairing(attempt: PairingAttempt, result?: PairingSubjectType): void {
+    if (!attempt.active) return;
+    attempt.active = false;
+    this.pairingAttempts.delete(attempt.id);
+    attempt.port?.onDisconnect.removeListener(attempt.disconnectListener);
+    if (!result?.status) this.discardPairingSession(attempt);
+    if (attempt.subscriber) {
+      if (result) attempt.subscriber.callback(result);
+      this.state.subscriptionService.cancelSubscription(attempt.subscriber.id);
+    }
+  }
+
+  private completePairing(attempt: PairingAttempt): void {
+    if (!attempt.active || !attempt.session || !attempt.subscriber) return;
+    try {
+      if (
+        this.state.currentAccount?.address !== attempt.currentAddress ||
+        attempt.priorTopics.has(attempt.session.topic)
+      )
+        throw new Error('Mobile pairing context changed');
+      const account = captureMobilePairingAccount(this, attempt.session);
+      const encodedAddress = this.state.keyringService.encodeAddress(account.address);
+      const duplicate = this.state.keyringService
+        .getAllAccounts()
+        .some(
+          (existing) =>
+            sameMobileIdentity(existing.address, encodedAddress) ||
+            (account.ethereumAddress &&
+              [existing.address, existing.meta.ethereumAddress].some(
+                (address) => typeof address === 'string' && sameMobileIdentity(address, account.ethereumAddress)
+              ))
+        );
+      if (duplicate) {
+        this.finishPairing(attempt, { status: false, message: 'duplicate' });
+        return;
+      }
+      this.state.keyringService.saveAddress(
+        encodedAddress,
+        {
+          name: account.name,
+          isMobile: true,
+          wcTopic: attempt.session.topic,
+          ethereumAddress: account.ethereumAddress,
+          chains: account.chains,
+        },
+        'address'
+      );
+      this.state.updateCurrentAccount({ address: encodedAddress });
+      this.finishPairing(attempt, { status: true });
+    } catch {
+      this.finishPairing(attempt, { status: false, message: 'unavailable' });
+    }
   }
 
   disconnect(topic: string) {
@@ -262,17 +238,25 @@ export class WalletConnectDAppService {
 
   availableNetworks(address: string) {
     const pairing = this.state.keyringService.getAddress(address);
-    if (!pairing) return [];
-
-    const session = this.sessions.find((session) => session.topic === pairing.meta.wcTopic);
-
-    if (session) return session.namespaces['polkadot'].chains?.map((chain) => chain.split(':')[1]) ?? [];
-
-    return [];
+    if (!pairing || typeof pairing.meta.wcTopic !== 'string') return [];
+    try {
+      const account = captureMobilePairingAccount(this, this.getSession(pairing.meta.wcTopic));
+      if (
+        !sameMobileIdentity(address, account.address) ||
+        account.ethereumAddress !==
+          (typeof pairing.meta.ethereumAddress === 'string' ? pairing.meta.ethereumAddress.toLowerCase() : undefined)
+      )
+        return [];
+      return account.chains;
+    } catch {
+      return [];
+    }
   }
 
-  abortPairingAttempt() {
-    this.app?.abortPairingAttempt();
+  abortPairingAttempt(id: string, port?: Port): boolean {
+    const attempt = this.pairingAttempts.get(id);
+    if (attempt?.port === port && attempt) this.finishPairing(attempt);
+    return true;
   }
 
   async onSessionDelete({ topic }: { topic: string }) {

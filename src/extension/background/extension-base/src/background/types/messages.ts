@@ -403,7 +403,8 @@ export interface RequestSignatures {
   'pri(walletConnect.app.connect)': [null, string];
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
-  'pri(walletConnect.app.pairing)': [null, string];
+  'pri(walletConnect.app.pairing)': [string, string];
+  'pri(walletConnect.app.cancelPairing)': [string, boolean];
 
   // IrohaConnect wallet relay (Uranai-compatible v1)
   'pri(irohaConnect.connect)': [IrohaConnectStartRequest, IrohaConnectSnapshot];

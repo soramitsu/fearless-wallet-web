@@ -2419,8 +2419,8 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.subscribePairing(uri, id, port);
   }
 
-  private async walletConnectDappPairing() {
-    return this.state.walletConnectDappService.initPairing();
+  private async walletConnectDappPairing(attemptId: string, port?: Port) {
+    return this.state.walletConnectDappService.initPairing(attemptId, port);
   }
 
   private irohaConnectSubscribe(id: string, port?: Port): IrohaConnectSnapshot {
@@ -2843,7 +2843,10 @@ export default class Extension extends FWExtensionBase {
         return this.walletConnectDappSubscribePairing(request as string, id, port);
 
       case 'pri(walletConnect.app.pairing)':
-        return this.walletConnectDappPairing();
+        return this.walletConnectDappPairing(request as string, port);
+
+      case 'pri(walletConnect.app.cancelPairing)':
+        return this.state.walletConnectDappService.abortPairingAttempt(request as string, port);
 
       // IrohaConnect wallet relay
       case 'pri(irohaConnect.connect)':

@@ -11,6 +11,7 @@ import process from 'node:process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { APP, POPUP_HEIGHT, POPUP_WIDTH, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
+import { captureMobilePairingScreenshots } from './extension-smoke-mobile-pairing.mjs';
 import { captureAuthorizationScreenshots } from './extension-smoke-authorization.mjs';
 import { captureMetadataScreenshots } from './extension-smoke-metadata.mjs';
 import { captureSigningScreenshots } from './extension-smoke-signing.mjs';
@@ -150,7 +151,18 @@ export async function capturePrimitivesScreenshots({
       const listeners = new Set();
       port.onMessage.addListener = (listener) => { listeners.add(listener); add(listener); };
       port.postMessage = (message) => {
-        if (wcOwnershipOnly && message.message === 'pri(walletConnect.signing.requests.subscribe)') {
+        if (window.__mobilePairingFixture && ['pri(walletConnect.app.pairing)', 'pri(walletConnect.app.subscribePairing)', 'pri(walletConnect.app.cancelPairing)'].includes(message.message)) {
+          const fixture = window.__mobilePairingFixture;
+          fixture.requests.push({ message: message.message, request: message.request });
+          const send = (reply) => queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, ...reply }); });
+          if (message.message === 'pri(walletConnect.app.pairing)') {
+            window.__finishMobileInit = send;
+            if (fixture.mode !== 'pending') send({ response: 'wc:public-display-fixture' });
+          } else if (message.message === 'pri(walletConnect.app.subscribePairing)') {
+            window.__finishMobilePairing = (subscription) => send({ subscription });
+            send({ response: { uri: 'wc:public-display-fixture' } });
+          } else send({ response: true });
+        } else if (wcOwnershipOnly && message.message === 'pri(walletConnect.signing.requests.subscribe)') {
           // This fixture owns its queue. A late worker bootstrap snapshot must not
           // erase the public requests after the harness places them on screen.
           queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, response: [] }); });
@@ -330,6 +342,11 @@ export async function capturePrimitivesScreenshots({
     if (process.env.WC_OWNERSHIP_ONLY === 'true') {
       await captureWalletConnectOwnership({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
       await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'WalletConnect full signing review and request ownership', results }, null, 2) + '\n');
+      return { shots, results };
+    }
+    if (process.env.MOBILE_PAIRING_ONLY === 'true') {
+      await captureMobilePairingScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+      await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'mobile pairing display fixtures only', results }, null, 2) + '\n');
       return { shots, results };
     }
     if (process.env.SIGNING_REVIEW_ONLY === 'true') {

@@ -21,11 +21,7 @@ import {
   makeIrohaTransfer,
 } from '@extension-base/api/iroha/transfer';
 import { requireProductionIrohaTransferCodec } from '@extension-base/api/iroha/productionTransferCodec';
-import {
-  isSolanaTransferNetwork,
-  makeSolanaTransfer,
-  quoteSolanaTransfer,
-} from '@extension-base/api/solana/transfer';
+import { isSolanaTransferNetwork, makeSolanaTransfer, quoteSolanaTransfer } from '@extension-base/api/solana/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
@@ -68,6 +64,10 @@ import {
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { validateWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import { validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
+import {
+  assertMobileTransactionResult,
+  captureMobileTransactionIntent,
+} from '@extension-base/services/wallet-connect-service/mobileTransaction';
 import {
   createSubstrateSigningRegistry,
   validateSubstrateSigningContext,
@@ -199,18 +199,12 @@ import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
-import type {
-  PolkamarktMutationRequest,
-  PolkamarktQuoteRequest,
-} from '@/defi/polkamarkt/types';
+import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTransaction } from '@/util/evmTransaction';
 import { evmTypedData } from '@/util/evmTypedData';
-import {
-  isCapturedSoraPairStillSelected,
-  isLocallySignableSelectedSoraPair,
-} from '@/defi/soraAccountBinding';
+import { isCapturedSoraPairStillSelected, isLocallySignableSelectedSoraPair } from '@/defi/soraAccountBinding';
 import { WalletEcosystem } from '@/interfaces';
 import { getTabAuthorizationTarget, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import {
@@ -222,14 +216,8 @@ import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { IS_EXTENSION_SMOKE } from '@/consts/global';
 import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
-import {
-  validateReviewedCrossChainRequest,
-  type ValidatedCrossChainRoute,
-} from '@/cross-chain/requestValidation';
-import {
-  validateAuthoritativePolkaswapExecution,
-  validatePolkaswapExecution,
-} from '@/defi/polkaswapExecutionGuard';
+import { validateReviewedCrossChainRequest, type ValidatedCrossChainRoute } from '@/cross-chain/requestValidation';
+import { validateAuthoritativePolkaswapExecution, validatePolkaswapExecution } from '@/defi/polkaswapExecutionGuard';
 import { isSameString, isTonNetwork } from '@/helpers';
 import { deriveTonImportCandidates } from '@/util/tonKeyring';
 
@@ -272,7 +260,11 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private async assertSigningSiteAllowed(request: { id: string; url: string; reject(error: Error): void }): Promise<void> {
+  private async assertSigningSiteAllowed(request: {
+    id: string;
+    url: string;
+    reject(error: Error): void;
+  }): Promise<void> {
     const denied = await checkIfDenied(request.url);
     this.assertSigningRequestCurrent(request);
     if (denied) {
@@ -410,7 +402,10 @@ export default class Extension extends FWExtensionBase {
       candidates.map(({ address }) => address)
     );
 
-    return candidates.map((candidate) => ({ ...candidate, ...(activity[candidate.address] ?? { activity: 'unknown' }) }));
+    return candidates.map((candidate) => ({
+      ...candidate,
+      ...(activity[candidate.address] ?? { activity: 'unknown' }),
+    }));
   }
 
   accountsValidatePassword({ password }: RequestAccountValidate): boolean {
@@ -721,17 +716,36 @@ export default class Extension extends FWExtensionBase {
       if (request.account.isMobile) {
         if (!request.mobileSession) throw new Error('Mobile signing context is unavailable');
         try {
+          const transaction =
+            request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION
+              ? captureMobileTransactionIntent(request.data, address, request.network.chainId)
+              : undefined;
+          const provider = transaction ? this.state.getEvmApi(request.network.name)?.api : undefined;
+          const assertProviderCurrent = () => {
+            assertCurrent();
+            if (transaction && this.state.getEvmApi(request.network.name)?.api !== provider)
+              throw new Error('EVM provider changed before mobile completion');
+          };
+          if (transaction) {
+            if (!provider || (await provider.getNetwork()).chainId !== transaction.chainId)
+              throw new Error('EVM provider does not match the reviewed network');
+            assertProviderCurrent();
+          }
           const result = await this.state.walletConnectDappService.onEvmRequest(
             id,
             request.method,
             structuredClone(request.data),
             request.mobileSession,
-            assertCurrent
+            assertProviderCurrent
           );
           if (result) {
-            assertCurrent();
-            if (request.method !== EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION)
-              assertEvmExternalSignature(request, result.payload);
+            assertProviderCurrent();
+            if (transaction) {
+              // Never resubmit if lookup fails: the mobile wallet may have broadcast.
+              const submitted = await provider!.getTransaction(result.payload);
+              assertProviderCurrent();
+              assertMobileTransactionResult(transaction, result.payload, submitted);
+            } else assertEvmExternalSignature(request, result.payload);
             request.resolve(result);
           }
         } catch (error) {
@@ -1140,13 +1154,15 @@ export default class Extension extends FWExtensionBase {
       };
     }
 
-    const soraNetwork = this.state.networkService.networkValues.find(({ name }) =>
-      name.toLowerCase() === SORA_NETWORK_NAME
+    const soraNetwork = this.state.networkService.networkValues.find(
+      ({ name }) => name.toLowerCase() === SORA_NETWORK_NAME
     );
     const apiProps = this.state.getSubstrateApiMap[SORA_NETWORK_NAME];
     let runtimeReady: boolean;
     try {
-      runtimeReady = Boolean(soraNetwork?.active && !soraNetwork.disabled && (await apiProps?.api?.isReady) && apiSora.connected);
+      runtimeReady = Boolean(
+        soraNetwork?.active && !soraNetwork.disabled && (await apiProps?.api?.isReady) && apiSora.connected
+      );
     } catch {
       runtimeReady = false;
     }
@@ -1203,17 +1219,17 @@ export default class Extension extends FWExtensionBase {
     }
     if (authoritativeError) return { status: false, errors: [authoritativeError] };
 
-    const finalSoraNetwork = this.state.networkService.networkValues.find(({ name }) =>
-      name.toLowerCase() === SORA_NETWORK_NAME
+    const finalSoraNetwork = this.state.networkService.networkValues.find(
+      ({ name }) => name.toLowerCase() === SORA_NETWORK_NAME
     );
     const finalApiProps = this.state.getSubstrateApiMap[SORA_NETWORK_NAME];
     let finalRuntimeReady: boolean;
     try {
       finalRuntimeReady = Boolean(
         finalSoraNetwork?.active &&
-          !finalSoraNetwork.disabled &&
-          (await finalApiProps?.api?.isReady) &&
-          apiSora.connected
+        !finalSoraNetwork.disabled &&
+        (await finalApiProps?.api?.isReady) &&
+        apiSora.connected
       );
     } catch {
       finalRuntimeReady = false;
@@ -1234,7 +1250,12 @@ export default class Extension extends FWExtensionBase {
     ) {
       return {
         status: false,
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'The SORA account, policy, or runtime changed. Review the swap again.' }],
+        errors: [
+          {
+            code: TransferErrorCode.UNSUPPORTED,
+            message: 'The SORA account, policy, or runtime changed. Review the swap again.',
+          },
+        ],
       };
     }
 
@@ -1246,7 +1267,12 @@ export default class Extension extends FWExtensionBase {
     ) {
       return {
         status: false,
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Unlock the selected SORA account and review the swap again.' }],
+        errors: [
+          {
+            code: TransferErrorCode.UNSUPPORTED,
+            message: 'Unlock the selected SORA account and review the swap again.',
+          },
+        ],
       };
     }
 
@@ -1291,10 +1317,10 @@ export default class Extension extends FWExtensionBase {
     const capturedSubmitExtrinsic = soraRoot.submitExtrinsic;
     const capturedNetwork = network
       ? {
-        key: network.key,
-        genesisHash: network.genesisHash,
-        currentProvider: network.currentProvider,
-      }
+          key: network.key,
+          genesisHash: network.genesisHash,
+          currentProvider: network.currentProvider,
+        }
       : undefined;
     const isRuntimeReady = async () => {
       const currentNetwork = Object.values(this.state.networkService.networkMap).find(
@@ -1337,9 +1363,8 @@ export default class Extension extends FWExtensionBase {
         getCurrentPair: () => soraRoot.account?.pair,
         getCurrentRuntime: () => soraRoot.api,
         getSelectedAddress,
-        isSubmitAvailable: () => Boolean(
-          capturedSubmitExtrinsic && soraRoot.submitExtrinsic === capturedSubmitExtrinsic
-        ),
+        isSubmitAvailable: () =>
+          Boolean(capturedSubmitExtrinsic && soraRoot.submitExtrinsic === capturedSubmitExtrinsic),
         unlockPair: (address) => this.state.keyringService.unlockPair(address),
         formatAddress: formatSoraAddress,
         onAuthorized: () => {
@@ -1643,7 +1668,8 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkCrossChain(request: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const { from, originNet, destinationNet, to, assetId, assetKey, routeId, routeProviderId, relayChain, amount } = request;
+    const { from, originNet, destinationNet, to, assetId, assetKey, routeId, routeProviderId, relayChain, amount } =
+      request;
 
     try {
       await refreshCrossChainOriginBalance({ from, originNet }, this.state);
@@ -1665,21 +1691,24 @@ export default class Extension extends FWExtensionBase {
       }
       if (!amount?.trim()) return { estimateFee: '0', destEstimateFee: '0' };
 
-      const quote = await estimateCrossChainQuote({
-        assetId,
-        assetKey,
-        routeId: validation.routeId,
-        routeProviderId: validation.providerId,
-        xcmAssetId: validation.xcmAssetId,
-        execution: validation.execution,
-        reviewedMinimum: validation.minimum,
-        originNet,
-        destinationNet,
-        amount,
-        from,
-        to,
-        tokenBalance,
-      }, this.state);
+      const quote = await estimateCrossChainQuote(
+        {
+          assetId,
+          assetKey,
+          routeId: validation.routeId,
+          routeProviderId: validation.providerId,
+          xcmAssetId: validation.xcmAssetId,
+          execution: validation.execution,
+          reviewedMinimum: validation.minimum,
+          originNet,
+          destinationNet,
+          amount,
+          from,
+          to,
+          tokenBalance,
+        },
+        this.state
+      );
 
       return {
         estimateFee: quote.originFee.toString(),
@@ -1893,7 +1922,9 @@ export default class Extension extends FWExtensionBase {
     if (!this.state.actionCapabilityService.isActionEnabled('polkaswap')) {
       return {
         status: false,
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Polkaswap liquidity actions are temporarily unavailable.' }],
+        errors: [
+          { code: TransferErrorCode.UNSUPPORTED, message: 'Polkaswap liquidity actions are temporarily unavailable.' },
+        ],
       };
     }
     if (!this.state.soraDisclaimerService.isAccepted()) {
@@ -1907,7 +1938,9 @@ export default class Extension extends FWExtensionBase {
     if (!signing.available) {
       return {
         status: false,
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: signing.reason ?? 'A signable SORA account is required.' }],
+        errors: [
+          { code: TransferErrorCode.UNSUPPORTED, message: signing.reason ?? 'A signable SORA account is required.' },
+        ],
       };
     }
 
@@ -1926,7 +1959,9 @@ export default class Extension extends FWExtensionBase {
     if (!signing.available) {
       return {
         status: false,
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: signing.reason ?? 'A signable SORA account is required.' }],
+        errors: [
+          { code: TransferErrorCode.UNSUPPORTED, message: signing.reason ?? 'A signable SORA account is required.' },
+        ],
       };
     }
 
@@ -1949,9 +1984,9 @@ export default class Extension extends FWExtensionBase {
     irohaAddress,
     walletEcosystem,
   }: FetchBalanceRequest): Promise<ResponseBalanceRequest[]> {
-    const account = this.state.keyringService.getAllMainAccounts().find(({ address: accountAddress }) =>
-      isSameString(accountAddress, address)
-    );
+    const account = this.state.keyringService
+      .getAllMainAccounts()
+      .find(({ address: accountAddress }) => isSameString(accountAddress, address));
     const publicAccounts = account?.meta.universalWallet?.publicAccounts ?? [];
     const isUniversal = new Set(publicAccounts.map(({ ecosystem }) => ecosystem)).size > 1;
 
@@ -1959,8 +1994,7 @@ export default class Extension extends FWExtensionBase {
       return this.state.balanceService.fetchBalance({
         address,
         bitcoinAddress: bitcoinAddress ?? (account?.meta.bitcoinAddress as string | undefined),
-        bitcoinTestnetAddress:
-          bitcoinTestnetAddress ?? (account?.meta.bitcoinTestnetAddress as string | undefined),
+        bitcoinTestnetAddress: bitcoinTestnetAddress ?? (account?.meta.bitcoinTestnetAddress as string | undefined),
         bitcoinNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['bitcoin']),
         ethereumAddress: ethereumAddress ?? account?.meta.ethereumAddress ?? '',
         evmNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['ethereum']),
@@ -2273,7 +2307,8 @@ export default class Extension extends FWExtensionBase {
       assertCurrent();
       const method = request.request.params.request.method;
       const params = request.request.params.request.params;
-      const messageBytes = method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
+      const messageBytes =
+        method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
       const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
       const txData = method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
       const provider = this.state.getEvmApi(context.network.name)?.api;

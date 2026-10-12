@@ -1,7 +1,7 @@
 import Provider from '@walletconnect/universal-provider';
 import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Wallet } from 'ethers';
+import { Wallet, Transaction } from 'ethers';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady, decodeAddress, encodeAddress } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
@@ -478,5 +478,244 @@ describe('mobile raw-byte encoding', () => {
     expect(await extension.signingApprove({ id })).toBe(true);
     await result;
     expect(send.mock.calls[0][0].request.params.message).toBe(u8aToHex(wrapBytes('0x1234')));
+  });
+});
+
+describe('mobile EVM transaction result proof', () => {
+  const recipient = '0x2222222222222222222222222222222222222222';
+  const intent = () => ({ from: wallet.address, to: recipient, value: '0x7', data: '0x1234' });
+  const signed = async (changes: Record<string, unknown> = {}, signer = wallet) =>
+    Transaction.from(
+      await signer.signTransaction({
+        chainId: 1,
+        nonce: 2,
+        gasLimit: 30000,
+        gasPrice: 3,
+        type: 0,
+        to: recipient,
+        value: 7,
+        data: '0x1234',
+        ...changes,
+      })
+    );
+  const rpcTransaction = (tx: Transaction) => ({
+    type: tx.type,
+    to: tx.to,
+    data: tx.data,
+    nonce: tx.nonce,
+    gasLimit: tx.gasLimit,
+    gasPrice: tx.gasPrice,
+    maxFeePerGas: tx.maxFeePerGas,
+    maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+    value: tx.value,
+    chainId: tx.chainId,
+    signature: tx.signature,
+    accessList: tx.accessList,
+    hash: tx.hash,
+    from: tx.from,
+  });
+  async function setup(data: Record<string, unknown> = intent(), transaction?: Transaction) {
+    const tx = transaction ?? (await signed());
+    const provider = { getNetwork: vi.fn(async () => ({ chainId: 1n })), getTransaction: vi.fn(async () => tx) };
+    Object.assign(state, { getEvmApi: vi.fn(() => ({ api: provider })) });
+    send.mockResolvedValue(tx.hash);
+    const context = await captureEvmSigningContext(state, url, 'eth_sendTransaction', [data]);
+    const result = evm.confirmSign('public', url, 'eth_sendTransaction', [data], context);
+    void result.catch(() => undefined);
+    return { provider, result, tx };
+  }
+  it('releases only a reconstructed signed transaction matching the request', async () => {
+    const { result, tx, provider } = await setup();
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(true);
+    await expect(result).resolves.toEqual({ id: 'public', payload: tx.hash });
+    expect(provider.getNetwork).toHaveBeenCalledOnce();
+    expect(provider.getTransaction).toHaveBeenCalledWith(tx.hash);
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+  });
+  it('does not trust an unsigned RPC gasPrice property on a dynamic-fee transaction', async () => {
+    const tx = await signed({ type: 2, gasPrice: undefined, maxFeePerGas: 100, maxPriorityFeePerGas: 9 });
+    const { result, provider } = await setup({ ...intent(), gasPrice: '0x3' }, tx);
+    provider.getTransaction.mockResolvedValue({ ...rpcTransaction(tx), gasPrice: '3' } as never);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+  });
+  it.each([1, 2])('accepts a matching type %i with exact access-list and fee fields', async (type) => {
+    const accessList = [{ address: recipient, storageKeys: [`0x${'ab'.repeat(32)}`] }];
+    const fees = type === 1 ? { gasPrice: '0x3' } : { maxFeePerGas: '0x9', maxPriorityFeePerGas: '0x2' };
+    const tx = await signed({ type, accessList, gasPrice: undefined, ...fees });
+    const { result, provider } = await setup({ ...intent(), type, accessList, ...fees }, tx);
+    // Ethers RPC responses can carry effective gasPrice for type2. It is not signed.
+    if (type === 2) provider.getTransaction.mockResolvedValue({ ...rpcTransaction(tx), gasPrice: '5' } as never);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(true);
+    await expect(result).resolves.toEqual({ id: 'public', payload: tx.hash });
+  });
+  it.each(['maxFeePerGas', 'maxPriorityFeePerGas'] as const)('rejects changed signed %s', async (field) => {
+    const tx = await signed({ type: 2, gasPrice: undefined, maxFeePerGas: 10, maxPriorityFeePerGas: 3 });
+    const { result } = await setup({ ...intent(), [field]: field === 'maxFeePerGas' ? '0x9' : '0x2' }, tx);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+  });
+  it.each(['unrequested', 'changed slot', 'changed address'])('rejects an %s access list', async (kind) => {
+    const accessList = [{ address: recipient, storageKeys: [`0x${'ab'.repeat(32)}`] }];
+    const requested =
+      kind === 'unrequested'
+        ? undefined
+        : [
+            {
+              address: kind === 'changed address' ? wallet.address : recipient,
+              storageKeys: [`0x${(kind === 'changed slot' ? 'cd' : 'ab').repeat(32)}`],
+            },
+          ];
+    const tx = await signed({ type: 1, accessList });
+    const { result } = await setup({ ...intent(), ...(requested ? { accessList: requested } : {}) }, tx);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+  });
+  it.each([3, 4])('rejects an unrequested signed type %i envelope', async (type) => {
+    const tx = await signed({
+      type,
+      gasPrice: undefined,
+      maxFeePerGas: 10,
+      maxPriorityFeePerGas: 1,
+      ...(type === 3
+        ? { maxFeePerBlobGas: 1, blobVersionedHashes: [`0x01${'11'.repeat(31)}`] }
+        : { authorizationList: [] }),
+    });
+    const { result } = await setup(intent(), tx);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+  });
+  it('accepts omitted value/data only when the signed fields are zero/empty', async () => {
+    const tx = await signed({ value: 0, data: '0x' });
+    const { result } = await setup({ from: wallet.address, to: recipient }, tx);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(true);
+    await expect(result).resolves.toEqual({ id: 'public', payload: tx.hash });
+  });
+  it.each(['value', 'data'])('does not let mobile add omitted %s', async (field) => {
+    const data: Record<string, unknown> = intent();
+    delete data[field];
+    const { result } = await setup(data);
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+  });
+  it('accepts exact contract creation when no recipient was requested', async () => {
+    const data: Record<string, unknown> = intent();
+    delete data.to;
+    const { result, tx } = await setup(data, await signed({ to: null }));
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(true);
+    await expect(result).resolves.toEqual({ id: 'public', payload: tx.hash });
+  });
+  it('consumes a lookup transport failure without resubmitting', async () => {
+    const { result, provider } = await setup();
+    provider.getTransaction.mockRejectedValue(new Error('offline fixture'));
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow('offline fixture');
+    expect(evm.getEvmSignRequest('public')).toBeUndefined();
+    expect(send).toHaveBeenCalledOnce();
+  });
+  it.each([
+    ['recipient', { to: wallet.address }],
+    ['value', { value: 8 }],
+    ['data', { data: '0xdead' }],
+    ['chain', { chainId: 2 }],
+    ['nonce', { nonce: 3 }],
+    ['gas limit', { gasLimit: 30001 }],
+    ['gas price', { gasPrice: 4 }],
+    ['type', { type: 1, accessList: [] }],
+  ] as const)('rejects a valid signature over a different %s', async (_name, changes) => {
+    const { result } = await setup(
+      { ...intent(), nonce: '0x2', gas: '0x7530', gasPrice: '0x3', type: '0x0' },
+      await signed(changes)
+    );
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+    expect(send).toHaveBeenCalledOnce();
+    expect(evm.getEvmSignRequest('public')).toBeUndefined();
+  });
+  it('rejects a transaction from another actual signer', async () => {
+    const { result } = await setup(intent(), await signed({}, new Wallet(`0x${'22'.repeat(32)}`)));
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+  });
+  it.each(['missing', 'unsigned', 'forged hash', 'forged from', 'different returned hash'])(
+    'rejects %s RPC evidence without retrying mobile submission',
+    async (kind) => {
+      const { result, provider, tx } = await setup();
+      if (kind === 'missing') provider.getTransaction.mockResolvedValue(null as never);
+      if (kind === 'unsigned')
+        provider.getTransaction.mockResolvedValue({ to: tx.to, from: wallet.address, chainId: 1n } as never);
+      if (kind === 'forged hash')
+        provider.getTransaction.mockResolvedValue({ ...rpcTransaction(tx), hash: tx.hash, value: '8' } as never);
+      if (kind === 'forged from')
+        provider.getTransaction.mockResolvedValue({ ...rpcTransaction(tx), hash: tx.hash, from: recipient } as never);
+      if (kind === 'different returned hash') send.mockResolvedValue(`0x${'ab'.repeat(32)}`);
+      expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+      await expect(result).rejects.toThrow();
+      expect(send).toHaveBeenCalledOnce();
+      await expect(extension.signEvmApprove({ id: 'public' })).rejects.toThrow();
+      expect(send).toHaveBeenCalledOnce();
+    }
+  );
+  it.each(['unavailable', 'wrong chain', 'replaced after chain lookup', 'revoked after chain lookup'])(
+    'rejects a provider that is %s before mobile transport',
+    async (kind) => {
+      const { result, provider } = await setup();
+      if (kind === 'unavailable') Object.assign(state, { getEvmApi: () => undefined });
+      if (kind === 'wrong chain') provider.getNetwork.mockResolvedValue({ chainId: 2n });
+      if (kind === 'replaced after chain lookup')
+        provider.getNetwork.mockImplementation(async () => {
+          Object.assign(state, { getEvmApi: () => ({ api: {} }) });
+          return { chainId: 1n };
+        });
+      if (kind === 'revoked after chain lookup')
+        provider.getNetwork.mockImplementation(async () => {
+          listeners.session_delete({ topic });
+          return { chainId: 1n };
+        });
+      expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+      await expect(result).rejects.toThrow();
+      expect(send).not.toHaveBeenCalled();
+    }
+  );
+  it.each(['session retired', 'provider replaced', 'account topic changed'])(
+    'rejects %s while waiting for transaction evidence',
+    async (kind) => {
+      const { result, provider, tx } = await setup();
+      let finish!: (value: Transaction) => void;
+      provider.getTransaction.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+      );
+      const approval = extension.signEvmApprove({ id: 'public' });
+      await vi.waitFor(() => expect(provider.getTransaction).toHaveBeenCalledOnce());
+      if (kind === 'session retired') listeners.session_expire({ topic });
+      if (kind === 'provider replaced') Object.assign(state, { getEvmApi: () => ({ api: {} }) });
+      if (kind === 'account topic changed') record.meta.wcTopic = 'changed';
+      finish(tx);
+      expect(await approval).toBe(false);
+      await expect(result).rejects.toThrow();
+      expect(send).toHaveBeenCalledOnce();
+    }
+  );
+  it.each([
+    { type: '0x3' },
+    { type: '0x4' },
+    { authorizationList: [] },
+    { blobVersionedHashes: [] },
+    { customData: {} },
+    { input: '0x1234' },
+    { gas: '-1' },
+    { value: '-1' },
+    { data: '0x1' },
+    { gasPrice: '1', maxFeePerGas: '2' },
+    { maxFeePerGas: '1', maxPriorityFeePerGas: '2' },
+    { to: 'public.eth' },
+    { nonce: Number.MAX_SAFE_INTEGER + 1 },
+  ])('rejects unprovable or malformed intent before transport: %j', async (changes) => {
+    const { result } = await setup({ ...intent(), ...changes });
+    expect(await extension.signEvmApprove({ id: 'public' })).toBe(false);
+    await expect(result).rejects.toThrow();
+    expect(send).not.toHaveBeenCalled();
   });
 });

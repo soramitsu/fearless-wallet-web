@@ -9,10 +9,17 @@ const MAX_COMPACT_U16_BYTES = 3;
 
 export type SolanaTransactionVersion = 'legacy' | 0;
 
+export type SolanaCompiledInstruction = {
+  programIdIndex: number;
+  accountIndexes: number[];
+  data: Uint8Array;
+};
+
 export type ParsedSolanaTransaction = {
   accountKeys: string[];
   addressTableLookupCount: number;
   instructionCount: number;
+  instructions: SolanaCompiledInstruction[];
   messageBytes: Uint8Array;
   messageOffset: number;
   readonlySignedAccounts: number;
@@ -64,6 +71,7 @@ export function parseSolanaSerializedTransaction(transaction: string | Uint8Arra
   const messageBytes = bytes.slice(messageOffset);
   const message = parseSolanaMessage(messageBytes);
 
+  if (signatureCount.value > message.requiredSignatures) throw new SolanaTransactionError('extra_signature_slots');
   if (signatureCount.value < message.requiredSignatures) {
     throw new SolanaTransactionError('missing_required_signature_slots');
   }
@@ -115,11 +123,14 @@ export function signSolanaSerializedTransaction({
   };
 }
 
-function parseSolanaMessage(message: Uint8Array): Pick<
+function parseSolanaMessage(
+  message: Uint8Array
+): Pick<
   ParsedSolanaTransaction,
   | 'accountKeys'
   | 'addressTableLookupCount'
   | 'instructionCount'
+  | 'instructions'
   | 'readonlySignedAccounts'
   | 'readonlyUnsignedAccounts'
   | 'recentBlockhash'
@@ -150,8 +161,10 @@ function parseSolanaMessage(message: Uint8Array): Pick<
 
   offset = accountCount.offset;
 
-  if (accountCount.value < requiredSignatures) throw new SolanaTransactionError('invalid_required_signature_count');
-  if (readonlySignedAccounts > requiredSignatures) {
+  if (accountCount.value > 256) throw new SolanaTransactionError('invalid_account_keys');
+  if (requiredSignatures < 1 || accountCount.value < requiredSignatures)
+    throw new SolanaTransactionError('invalid_required_signature_count');
+  if (readonlySignedAccounts >= requiredSignatures) {
     throw new SolanaTransactionError('invalid_required_signature_count');
   }
   if (readonlyUnsignedAccounts > accountCount.value - requiredSignatures) {
@@ -172,8 +185,9 @@ function parseSolanaMessage(message: Uint8Array): Pick<
 
   offset += PUBLIC_KEY_BYTES;
 
-  const instructions = skipCompiledInstructions(message, offset);
+  const instructions = readCompiledInstructions(message, offset);
   let addressTableLookupCount = 0;
+  let loadedAccountCount = 0;
 
   offset = instructions.offset;
 
@@ -181,7 +195,21 @@ function parseSolanaMessage(message: Uint8Array): Pick<
     const addressTableLookups = skipAddressTableLookups(message, offset);
 
     addressTableLookupCount = addressTableLookups.count;
+    loadedAccountCount = addressTableLookups.accounts;
     offset = addressTableLookups.offset;
+  }
+
+  const totalAccounts = accountKeys.length + loadedAccountCount;
+  if (totalAccounts > 256) throw new SolanaTransactionError('invalid_account_keys');
+  for (const instruction of instructions.values) {
+    // Programs must be static keys; instruction accounts may also use V0 lookups.
+    if (
+      instruction.programIdIndex === 0 ||
+      instruction.programIdIndex >= accountKeys.length ||
+      instruction.accountIndexes.some((index) => index >= totalAccounts)
+    ) {
+      throw new SolanaTransactionError('invalid_instruction_index');
+    }
   }
 
   if (offset !== message.length) throw new SolanaTransactionError('trailing_message_bytes');
@@ -189,7 +217,8 @@ function parseSolanaMessage(message: Uint8Array): Pick<
   return {
     accountKeys,
     addressTableLookupCount,
-    instructionCount: instructions.count,
+    instructionCount: instructions.values.length,
+    instructions: instructions.values,
     readonlySignedAccounts,
     readonlyUnsignedAccounts,
     recentBlockhash,
@@ -198,35 +227,46 @@ function parseSolanaMessage(message: Uint8Array): Pick<
   };
 }
 
-function skipCompiledInstructions(message: Uint8Array, offset: number): { count: number; offset: number } {
+function readCompiledInstructions(
+  message: Uint8Array,
+  offset: number
+): { values: SolanaCompiledInstruction[]; offset: number } {
+  const values: SolanaCompiledInstruction[] = [];
   const instructionCount = readCompactU16(message, offset, 'invalid_instruction_count');
 
   offset = instructionCount.offset;
 
   for (let index = 0; index < instructionCount.value; index += 1) {
     ensureAvailable(message, offset, 1, 'truncated_instruction_program');
+    const programIdIndex = message[offset];
     offset += 1;
 
     const accountIndexCount = readCompactU16(message, offset, 'invalid_instruction_accounts');
 
     offset = accountIndexCount.offset;
     ensureAvailable(message, offset, accountIndexCount.value, 'truncated_instruction_accounts');
+    const accountIndexes = Array.from(message.slice(offset, offset + accountIndexCount.value));
     offset += accountIndexCount.value;
 
     const dataLength = readCompactU16(message, offset, 'invalid_instruction_data');
 
     offset = dataLength.offset;
     ensureAvailable(message, offset, dataLength.value, 'truncated_instruction_data');
+    values.push({ programIdIndex, accountIndexes, data: message.slice(offset, offset + dataLength.value) });
     offset += dataLength.value;
   }
 
   return {
-    count: instructionCount.value,
+    values,
     offset,
   };
 }
 
-function skipAddressTableLookups(message: Uint8Array, offset: number): { count: number; offset: number } {
+function skipAddressTableLookups(
+  message: Uint8Array,
+  offset: number
+): { count: number; accounts: number; offset: number } {
+  let accounts = 0;
   const lookupCount = readCompactU16(message, offset, 'invalid_address_table_lookups');
 
   offset = lookupCount.offset;
@@ -246,10 +286,12 @@ function skipAddressTableLookups(message: Uint8Array, offset: number): { count: 
     offset = readonlyCount.offset;
     ensureAvailable(message, offset, readonlyCount.value, 'truncated_address_table_readonly_indexes');
     offset += readonlyCount.value;
+    accounts += writableCount.value + readonlyCount.value;
   }
 
   return {
     count: lookupCount.value,
+    accounts,
     offset,
   };
 }
@@ -266,6 +308,7 @@ function readCompactU16(bytes: Uint8Array, offset: number, code: string): { offs
     offset += 1;
     value |= (byte & 0x7f) << shift;
 
+    if (value > 0xffff || (index > 0 && byte === 0)) throw new SolanaTransactionError(code);
     if ((byte & 0x80) === 0) return { offset, value };
 
     shift += 7;

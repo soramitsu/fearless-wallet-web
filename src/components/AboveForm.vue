@@ -355,3 +355,27 @@ const aboveFormClasses = computed(() => {
   height: 100%;
 }
 </style>
+
+<style lang="scss" scoped>
+// At narrow widths the decorative logo must not force a large accessibility
+// heading into single-syllable lines and consume the entire review viewport.
+@media (max-width: 360px) {
+  .form-background .form .align-left:has(.logo) {
+    display: none;
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+// A short landscape/zoomed viewport must be able to scroll past the header.
+// Keeping an arbitrarily tall translated title pinned can hide the review.
+@media (max-height: 400px) {
+  .form-background .form {
+    overflow-y: auto;
+  }
+  .form-background .form .content {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
+</style>

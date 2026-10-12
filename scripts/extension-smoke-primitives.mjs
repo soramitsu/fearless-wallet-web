@@ -12,6 +12,7 @@ import path from 'node:path';
 import { APP, POPUP_HEIGHT, POPUP_WIDTH, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
 import { captureAuthorizationScreenshots } from './extension-smoke-authorization.mjs';
 import { captureMetadataScreenshots } from './extension-smoke-metadata.mjs';
+import { captureSigningScreenshots } from './extension-smoke-signing.mjs';
 
 /** Paint, size and accessible semantics of the primitives on screen; one sample per kind. */
 const PRIMITIVES = `(() => {
@@ -163,6 +164,11 @@ export async function capturePrimitivesScreenshots({
           window.__finishMetadata = (reply) => {
             for (const listener of listeners) listener({ id: message.id, ...reply });
           };
+        } else if (window.__signingFixture && ['pri(signing.approve)', 'pri(signing.cancel)'].includes(message.message)) {
+          window.__signingFixture.requests.push({ message: message.message, request: message.request });
+          window.__finishSigning = (reply) => {
+            for (const listener of listeners) listener({ id: message.id, ...reply });
+          };
         } else if (window.__googleBackupFixture && message.message.startsWith('pri(google.')) {
           const send = (reply) => queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, ...reply }); });
           if (message.message === 'pri(google.verify.token)') send({ response: { expires_in: '3600' } });
@@ -177,7 +183,7 @@ export async function capturePrimitivesScreenshots({
       return port;
     };
   })()` }, sessionId);
-  const stopServing = await servePopupOffline(cdp, sessionId);
+  const stopServing = await servePopupOffline(cdp, sessionId, { phishingDenyList: ['flagged.example.invalid'] });
 
   const route = (name) =>
     evaluate(cdp, sessionId, `${APP}.router.replace({ name: ${JSON.stringify(name)} }).then(() => true)`);
@@ -298,6 +304,12 @@ export async function capturePrimitivesScreenshots({
         return true;
       })()`
     );
+
+    if (process.env.SIGNING_REVIEW_ONLY === 'true') {
+      await captureSigningScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+      await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'signing review only', results }, null, 2) + '\n');
+      return { shots, results };
+    }
 
     await route('Currencies');
     await waitFor('[data-testid="portfolioTokenList"]', 'By token list');
@@ -719,6 +731,7 @@ export async function capturePrimitivesScreenshots({
 
     await captureAuthorizationScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
     await captureMetadataScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+    await captureSigningScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
 
     await cdp.send(
       'Emulation.setDeviceMetricsOverride',

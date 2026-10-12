@@ -3,6 +3,7 @@ import { Wallet, getBytes, verifyMessage, verifyTypedData } from 'ethers';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
@@ -144,6 +145,32 @@ describe('EVM approval uses the reviewed request context', () => {
     await expect(result).resolves.toEqual({ id: 'first', payload: '0x1234' });
     expect(send).toHaveBeenCalledExactlyOnceWith({ ...tx, chainId: 1n });
   });
+  it('passes the exact reviewed JSON-RPC gas limit to ethers', async () => {
+    const tx = { from: address, to: address, value: '0x1', gas: '0x5208', gasPrice: '0x3b9aca00' };
+    const { result } = await queue('eth_sendTransaction', [tx]);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: { getNetwork: vi.fn(async () => ({ chainId: 1n })) } } as never);
+    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockResolvedValue({ hash: '0x1234' } as never);
+    await extension.signEvmApprove({ id: 'first' });
+    await result;
+    expect(send).toHaveBeenCalledExactlyOnceWith({
+      from: address,
+      to: address,
+      value: '0x1',
+      gasLimit: '0x5208',
+      gasPrice: '0x3b9aca00',
+      chainId: 1n,
+    });
+    expect(tx.gas).toBe('0x5208');
+  });
+  it('rejects conflicting gas limits before key export', async () => {
+    const { request } = await queue('eth_sendTransaction', [
+      { from: address, to: address, gas: '0x5208', gasLimit: '30000' },
+    ]);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: { getNetwork: vi.fn(async () => ({ chainId: 1n })) } } as never);
+    await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow('Conflicting EVM gas limits');
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(handler.getEvmSignRequest('first')).toBe(request);
+  });
   it('does not replay a broadcast after an ambiguous transport failure', async () => {
     const { result } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
     const rejected = expect(result).rejects.toThrow('response lost after submission');
@@ -227,6 +254,7 @@ describe('EVM approval uses the reviewed request context', () => {
         })
     );
     const pending = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(resume).toBeTypeOf('function'));
     extension.signingCancel({ id: 'first' });
     resume(auth);
     await expect(pending).rejects.toThrow('cancelled');

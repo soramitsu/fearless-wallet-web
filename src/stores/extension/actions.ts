@@ -139,7 +139,7 @@ type Actions = {
   subscribeEvmSignRequests(this: ExtensionStore): Promise<EvmRequests>;
   subscribeSolanaSignRequests(this: ExtensionStore): Promise<SolanaRequests>;
   signCancel(this: ExtensionStore, id: string): Promise<void>;
-  approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
+  approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<boolean>;
   subscribeExtensionRequests(this: ExtensionStore): Promise<boolean>;
   fetchTabStatus(this: ExtensionStore): Promise<void>;
   signSignature(this: ExtensionStore, params: { id: string; payload: { signature: HexString } }): Promise<void>;
@@ -303,12 +303,13 @@ export const actions: Actions = {
 
   async approveSign({ id }) {
     const queue = signingQueueFor(this, id);
-    await approveSign(id);
+    const signed = await approveSign(id);
 
     removeSigningRequest(this, queue, id);
     routeSigningRequests(this);
 
     this.fetchTabStatus();
+    return signed;
   },
 
   async signSignature({ payload, id }) {

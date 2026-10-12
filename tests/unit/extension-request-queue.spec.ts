@@ -185,3 +185,13 @@ describe('signing subscriptions share one combined queue', () => {
     }
   );
 });
+
+describe('signing result feedback', () => {
+  it.each([true, false])('preserves backend result %s for the approval screen', async (result) => {
+    const store = setup();
+    store.signEvmRequests = { first: evm('first') };
+    mocks.approveSign.mockResolvedValueOnce(result);
+    await expect(store.approveSign({ id: 'first' })).resolves.toBe(result);
+    expect(store.signEvmRequests).toEqual({});
+  });
+});

@@ -1495,5 +1495,23 @@
     "restored": "{name} is back in your wallet list",
     "restoreFailed": "The wallet could not be restored. Nothing was changed. Try again.",
     "alreadyRestored": "This wallet is already in your wallet list."
+  },
+  "signingReview": {
+    "blindWarning": "Fearless can’t read this request. Signing it could authorize transfers from this account. Only continue if you started this on {origin} and trust it.",
+    "signAnyway": "Sign anyway",
+    "acknowledge": "I understand this may move funds.",
+    "reviewFirst": "Expand the raw data and acknowledge the risk before signing.",
+    "rawData": "Show raw data",
+    "feeUnavailable": "Fee unavailable",
+    "signOnlyFee": "No network submission for this signature. It may authorize later transfers.",
+    "maximumFee": "Requested execution fee limit",
+    "estimateFee": "Estimated fee",
+    "invalidRequest": "This request cannot be signed. Reject it and ask the app to try again.",
+    "unknownAction": "Unreadable instruction",
+    "typedData": "Structured message",
+    "flagged": "Flagged as phishing",
+    "checking": "Checking requester…",
+    "signed": "Signed for {origin}",
+    "submitted": "Submitted for {origin}"
   }
 }

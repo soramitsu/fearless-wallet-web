@@ -1495,5 +1495,23 @@
     "restored": "𓇋𓅱 {name} 𓅓 𓋴𓈙𓏛𓎡 𓈖 𓉒𓏥 𓅓 𓅱𓎛𓅓",
     "restoreFailed": "𓂜 𓅱𓎛𓅓𓏏𓅱 𓉒. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
     "alreadyRestored": "𓇋𓅱 𓉒 𓊪𓈖 𓅓 𓋴𓈙𓏛𓎡 𓈖 𓉒𓏥 𓆓𓂋 𓎛𓄿𓏏."
+  },
+  "signingReview": {
+    "blindWarning": "𓈖 𓂋𓐍 Fearless 𓈙𓂧 𓂧𓃀𓎛 𓊪𓈖. 𓋴𓅓𓅱𓈖 𓅱𓆓 𓐍𓏏𓅓𓆑 𓋴𓍿𓄿𓏥 𓈖 𓇋𓐍𓏏𓏥 𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖. 𓅓 𓈙𓅓 𓄋𓊪𓅱𓁷 𓇋𓂋 𓈙𓄿𓂝𓈖𓎡 𓋴𓅱 𓆓𓋴𓎡 𓅓 {origin} 𓎛𓈖𓂝 𓅓𓎛 𓇋𓃀𓎡 𓅓 𓃀𓅱 𓊪𓆑.",
+    "signAnyway": "𓂞 𓋴𓈙 𓈖 𓂋𓈖 𓇋𓋴𓏏 𓅱𓈖 𓋴𓈖𓆓",
+    "acknowledge": "𓇋𓅱𓇋 𓂋𓐍: 𓋴𓅓𓅱𓈖 𓋴𓍿𓄿 𓊪𓈖 𓇋𓐍𓏏𓏥.",
+    "reviewFirst": "𓃹𓈖 𓅓𓆓𓄿𓏏 𓅓 𓇋𓂋𓅱𓋴 𓈖 𓎛𓄿𓏏 𓎛𓈖𓂝 𓆓𓂧 𓂋𓐍𓎡 𓋴𓈖𓆓 𓈖 𓎛𓄿𓏏 𓂞 𓋴𓈙 𓈖 𓂋𓈖.",
+    "rawData": "𓋴𓅓𓄿𓄿 𓅓𓆓𓄿𓏏 𓅓 𓇋𓂋𓅱𓋴 𓈖 𓎛𓄿𓏏",
+    "feeUnavailable": "𓅓𓂧𓅱𓏥 𓈖 𓇋𓋴𓅱 𓈖𓈖 𓅱𓈖",
+    "signOnlyFee": "𓈖𓈖 𓉔𓄿𓃀 𓂋 𓄡𓈖𓅓𓏥 𓈖 𓐍𓏏𓅓 𓊪𓈖. 𓋴𓅓𓅱𓈖 𓅱𓆓𓆑 𓋴𓍿𓄿𓏥 𓅓𓐍𓏏.",
+    "maximumFee": "𓇋𓋴𓅱 𓈖 𓁹 𓂝𓄿 𓂋 𓎟 𓂧𓃀𓎛𓅱",
+    "estimateFee": "𓎛𓋴𓃀 𓈖 𓇋𓋴𓅱",
+    "invalidRequest": "𓈖 𓂋𓐍𓏏𓅱 𓐍𓏏𓅓 𓂧𓃀𓎛 𓊪𓈖. 𓐍𓋴𓆑 𓋴𓅱 𓎛𓈖𓂝 𓂧𓃀𓎛 𓉐 𓈖 𓂓𓏏 𓂋 𓁹 𓋴𓊪 𓅱𓎛𓅓.",
+    "unknownAction": "𓅱𓆓 𓈖 𓂋𓐍𓏏𓅱 𓈙𓂧𓆑",
+    "typedData": "𓅓𓂧𓅱 𓋴𓐍𓂋𓅱",
+    "flagged": "𓋴𓈙𓅱 𓅓 𓈖𓅱 𓅓 𓎼𓂋𓎼",
+    "checking": "𓋴𓇋𓊪 𓋴 𓂧𓃀𓎛…",
+    "signed": "𓐍𓏏𓅓𓏏𓅱 𓈖 {origin}",
+    "submitted": "𓉔𓄿𓃀𓏏𓅱 𓈖 {origin}"
   }
 }

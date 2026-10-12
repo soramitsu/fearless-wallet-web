@@ -93,13 +93,16 @@ function placeholderSvg(url) {
 }
 
 /** Answers the popup's web requests offline: generated logos for images, a refusal for anything else. */
-export async function servePopupOffline(cdp, sessionId) {
+export async function servePopupOffline(cdp, sessionId, { phishingDenyList } = {}) {
   const stop = cdp.onEvent((message) => {
     if (message.sessionId !== sessionId || message.method !== 'Fetch.requestPaused') return;
 
     const { requestId, request, resourceType } = message.params;
     const isImage = resourceType === 'Image' || /\.(svg|png|jpe?g|webp)(\?|$)/i.test(request.url);
-    const reply = isImage
+    const phishingFixture = phishingDenyList && /^https:\/\/polkadot\.js\.org\/phishing\/all\/[^/]+\/all\.json$/.test(request.url);
+    const reply = phishingFixture
+      ? cdp.send('Fetch.fulfillRequest', { requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: Buffer.from(JSON.stringify(phishingDenyList)).toString('base64') }, sessionId)
+      : isImage
       ? cdp.send(
           'Fetch.fulfillRequest',
           {

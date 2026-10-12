@@ -1,5 +1,6 @@
 import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
+import { checkIfDenied } from '@polkadot/phishing';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
@@ -193,6 +194,7 @@ import type {
 } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
+import { evmTransaction } from '@/util/evmTransaction';
 import {
   isCapturedSoraPairStillSelected,
   isLocallySignableSelectedSoraPair,
@@ -240,6 +242,24 @@ function formatSoraAddress(address: string): string {
 }
 
 export default class Extension extends FWExtensionBase {
+  private readonly pendingSiteApprovals = new WeakSet<object>();
+
+  private assertSigningRequestCurrent(request: { id: string }): void {
+    if (this.state.requestService.getSignRequest(request.id) !== request) {
+      throw new Error('Signing request was cancelled or replaced');
+    }
+  }
+
+  private async assertSigningSiteAllowed(request: { id: string; url: string; reject(error: Error): void }): Promise<void> {
+    const denied = await checkIfDenied(request.url);
+    this.assertSigningRequestCurrent(request);
+    if (denied) {
+      const error = new Error('Signing requester is flagged as phishing');
+      request.reject(error);
+      throw error;
+    }
+  }
+
   constructor(state: State) {
     super(state);
   }
@@ -672,6 +692,7 @@ export default class Extension extends FWExtensionBase {
       if (handler.getEvmSignRequest(id) !== request) throw new Error('EVM signing request was cancelled');
     };
     try {
+      await this.assertSigningSiteAllowed(request);
       await validateEvmSigningContext(this.state, request);
       assertCurrent();
       const address = request.account.address;
@@ -708,13 +729,13 @@ export default class Extension extends FWExtensionBase {
         await validateEvmSigningContext(this.state, request);
         assertCurrent();
       }
+      const params = request.data as unknown[];
+      const txData = request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address });
       const signer = new Wallet(privateKey, provider);
       if (signer.address.toLowerCase() !== address.toLowerCase())
         throw new Error('Exported key does not match the reviewed account');
-      const params = request.data as unknown[];
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-        const txData = params[0] as ethers.TransactionRequest;
         try {
           const { hash } = await signer.sendTransaction({ ...txData, chainId: BigInt(request.network.chainId) });
           request.resolve({ id: request.id, payload: hash as HexString });
@@ -746,8 +767,11 @@ export default class Extension extends FWExtensionBase {
     const request = this.state.requestService.getSignRequest(id) as SolanaRequestsSubjectPayload | undefined;
 
     assert(request, 'Unable to find request');
+    if (this.pendingSiteApprovals.has(request)) throw new Error('Signing approval already pending');
+    this.pendingSiteApprovals.add(request);
 
     try {
+      await this.assertSigningSiteAllowed(request);
       const accounts = this.state.keyringService.getAllAccounts();
       const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) =>
         this.state.keyringService.exportMnemonic({
@@ -758,6 +782,7 @@ export default class Extension extends FWExtensionBase {
       // A dApp's sign-and-send moves funds too, so the Solana send kill switch
       // covers it; sign-only requests are unaffected.
       if (request.method === 'signAndSendTransaction') await assertSendCapability(this.state, 'solanaSend');
+      this.assertSigningRequestCurrent(request);
 
       const response =
         request.method === 'signAndSendTransaction'
@@ -778,9 +803,12 @@ export default class Extension extends FWExtensionBase {
 
       return true;
     } catch (error) {
-      request.reject(error instanceof Error ? error : new Error('Unable to sign Solana request'));
+      if (this.state.requestService.getSignRequest(id) === request)
+        request.reject(error instanceof Error ? error : new Error('Unable to sign Solana request'));
 
       return false;
+    } finally {
+      this.pendingSiteApprovals.delete(request);
     }
   }
 
@@ -792,53 +820,60 @@ export default class Extension extends FWExtensionBase {
     if (isSolanaSignRequest(queued)) return this.signSolanaApprove({ id });
     if (isEvmSignRequest(queued)) return this.signEvmApprove({ id }); // sign evm requests
 
-    const account = this.state.keyringService
-      .getAllAccounts()
-      .find(({ address }) => isSameString(address, queued.account.address));
+    if (this.pendingSiteApprovals.has(queued)) throw new Error('Signing approval already pending');
+    this.pendingSiteApprovals.add(queued);
+    try {
+      await this.assertSigningSiteAllowed(queued);
+      const account = this.state.keyringService
+        .getAllAccounts()
+        .find(({ address }) => isSameString(address, queued.account.address));
 
-    const { reject, request, resolve } = queued;
+      const { reject, request, resolve } = queued;
 
-    if (account && account?.meta.isMobile) {
-      const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
+      if (account && account?.meta.isMobile) {
+        const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
 
-      resolve({ payload: res.signature, id });
+        resolve({ payload: res.signature, id });
+
+        return true;
+      }
+
+      const pair = this.state.keyringService.getPair(queued.account.address);
+
+      if (!pair) {
+        reject(new Error('Unable to find pair'));
+
+        return false;
+      }
+
+      // if the keyring pair is locked, the password is needed
+      if (pair.isLocked) this.state.keyringService.unlockPair(pair);
+
+      const { payload } = request;
+
+      if (isJsonPayload(payload)) {
+        // Get the metadata for the genesisHash
+        const currentMetadata = this.state.requestService.knownMetadata.find(
+          (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+        );
+
+        // set the registry before calling the sign function
+        registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
+
+        if (currentMetadata) registry.register(currentMetadata?.types);
+      }
+
+      const result = await request.sign(registry, pair);
+
+      resolve({ id, payload: result.signature });
 
       return true;
+    } finally {
+      this.pendingSiteApprovals.delete(queued);
     }
-
-    const pair = this.state.keyringService.getPair(queued.account.address);
-
-    if (!pair) {
-      reject(new Error('Unable to find pair'));
-
-      return false;
-    }
-
-    // if the keyring pair is locked, the password is needed
-    if (pair.isLocked) this.state.keyringService.unlockPair(pair);
-
-    const { payload } = request;
-
-    if (isJsonPayload(payload)) {
-      // Get the metadata for the genesisHash
-      const currentMetadata = this.state.requestService.knownMetadata.find(
-        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
-      );
-
-      // set the registry before calling the sign function
-      registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
-
-      if (currentMetadata) registry.register(currentMetadata?.types);
-    }
-
-    const result = await request.sign(registry, pair);
-
-    resolve({ id, payload: result.signature });
-
-    return true;
   }
 
-  signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
+  async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
@@ -849,6 +884,7 @@ export default class Extension extends FWExtensionBase {
       return false;
     }
 
+    await this.assertSigningSiteAllowed(queued);
     queued.resolve({ id, payload: signature });
 
     return true;
@@ -2184,6 +2220,7 @@ export default class Extension extends FWExtensionBase {
 
     if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
+    const txData = method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
     const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
 
     const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
@@ -2191,9 +2228,7 @@ export default class Extension extends FWExtensionBase {
       throw new Error('Exported key does not match the WalletConnect account');
 
     if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const txData = request.request.params.request.params[0] as { to: string; value: string };
-
-      const { hash } = await signer.sendTransaction(txData);
+      const { hash } = await signer.sendTransaction(txData!);
       request.resolve({ id: request.request.topic, payload: hash as HexString });
     } else {
       const payload = params[1];

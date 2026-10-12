@@ -1,5 +1,7 @@
 {
   "historyDetails": {
+    "from": "Отправитель",
+    "to": "Получатель",
     "blockHash": "Хеш блока"
   },
   "portfolioPage": {

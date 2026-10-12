@@ -324,7 +324,7 @@ export async function capturePrimitivesScreenshots({
 
     if (process.env.WC_OWNERSHIP_ONLY === 'true') {
       await captureWalletConnectOwnership({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
-      await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'WalletConnect request ownership only', results }, null, 2) + '\n');
+      await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'WalletConnect full signing review and request ownership', results }, null, 2) + '\n');
       return { shots, results };
     }
     if (process.env.SIGNING_REVIEW_ONLY === 'true') {

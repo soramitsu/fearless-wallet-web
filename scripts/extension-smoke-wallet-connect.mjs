@@ -75,7 +75,11 @@ export async function captureWalletConnectOwnership({
       state.minTargetHeight < 48
     )
       throw new Error('WalletConnect ownership screen failed: ' + JSON.stringify(state));
-    await run(`(document.querySelector('.form-background .form').scrollTop=0, true)`);
+    await run(`(document.querySelector('.signing-requester').scrollIntoView({block:'start'}), true)`);
+    const requesterVisible = await run(
+      `(() => { const r=document.querySelector('.signing-requester').getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; })()`
+    );
+    if (!requesterVisible) throw new Error('WalletConnect requester is outside the top capture');
     await capture('wc-review-' + lang + '-top', 'Complete captured requester/account/network; ' + lang);
     await keyboardFocus(reject);
     await capture('wc-ownership-' + lang, 'Method-defined signer for address-shaped public message; ' + lang);
@@ -103,6 +107,8 @@ export async function captureWalletConnectOwnership({
     await run(`(document.querySelector('.signing-action').scrollIntoView({block:'start'}), true)`);
     await capture('wc-review-transaction-' + lang, 'Full native amount/destination and honest maximum fee; ' + lang);
     Object.assign(results.at(-1), { walletConnectReview: tx });
+    await run(`(document.querySelector('.signing-context').scrollIntoView({block:'start'}), true)`);
+    await capture('wc-review-context-' + lang, 'Captured account/network and maximum fee; ' + lang);
     await keyboardFocus(reject);
     await capture('wc-review-consent-' + lang, 'Raw-review and consent required; ' + lang);
   }

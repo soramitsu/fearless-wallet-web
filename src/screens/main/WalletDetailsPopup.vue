@@ -136,7 +136,7 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
     }
 
     .delete {
-      color: $orange-color;
+      color: palette($orange-color, var(--fw-danger));
       opacity: 0.8;
     }
   }

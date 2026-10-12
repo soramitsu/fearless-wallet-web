@@ -123,12 +123,49 @@ export default sprite;
   };
 }
 
+// The SIL Open Font License asks for its text beside the fonts, so every build that bundles font files ships these.
+export const FONT_LICENSES = Object.freeze({
+  'licenses/fonts/Inter-OFL.txt': 'src/assets/fonts/inter/OFL.txt',
+  'licenses/fonts/JetBrainsMono-OFL.txt': 'node_modules/@fontsource/jetbrains-mono/LICENSE',
+  'licenses/fonts/NotoSansCuneiform-OFL.txt': 'node_modules/@fontsource/noto-sans-cuneiform/LICENSE',
+  'licenses/fonts/NotoSansEgyptianHieroglyphs-OFL.txt': 'node_modules/@fontsource/noto-sans-egyptian-hieroglyphs/LICENSE',
+  'licenses/fonts/Sora-OFL.txt': 'node_modules/@fontsource-variable/sora/LICENSE',
+});
+
+export function fontLicensesPlugin() {
+  return {
+    name: 'fearless-font-licenses',
+    async generateBundle(_options, bundle) {
+      if (!Object.keys(bundle).some((file) => /\.(?:woff2?|ttf|otf)$/u.test(file))) return;
+
+      for (const [fileName, source] of Object.entries(FONT_LICENSES)) {
+        this.emitFile({ type: 'asset', fileName, source: await fs.readFile(path.resolve(__dirname, source)) });
+      }
+    },
+  };
+}
+
+export const FW_PALETTES = Object.freeze(['v1', 'legacy']);
+
+// Build-time look (design-system 14.0 item 5): `v1` is Neon Glass, `legacy` the look this release replaced, kept so a
+// hotfix can revert paint without touching data. It is not remote configuration.
+export function resolveFwPalette(env = process.env) {
+  const palette = env.VITE_FW_PALETTE || 'v1';
+
+  if (!FW_PALETTES.includes(palette)) {
+    throw new Error(`VITE_FW_PALETTE must be one of ${FW_PALETTES.join(', ')}; received ${JSON.stringify(palette)}`);
+  }
+
+  return palette;
+}
+
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
   const nodeEnv = mode === 'production' ? 'production' : 'development';
   const define = {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
+    'process.env.VITE_FW_PALETTE': JSON.stringify(resolveFwPalette(env)),
   };
 
   for (const key of ENV_KEYS) {
@@ -170,6 +207,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         iconDirs: [path.resolve(__dirname, 'src/assets/icons'), path.resolve(__dirname, 'src/assets/services')],
         symbolId: 'icon-[name]',
       }),
+      fontLicensesPlugin(),
     ],
     optimizeDeps: { exclude: ['@subwallet/keyring', '@subwallet/ui-keyring'] },
     resolve: {
@@ -192,7 +230,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
           additionalData: `
             @use "@/styles/_layout.scss" as *;
             @use "@/styles/_mixins.scss" as *;
-            @use "@/styles/common.scss" as *;
+            @use "@/styles/common.scss" as * with ($fw-palette: "${resolveFwPalette()}");
           `,
         },
       },

@@ -239,6 +239,7 @@
       "connections": "Connections",
       "security": "Security",
       "preferences": "Preferences",
+      "appearance": "Appearance",
       "about": "About"
     },
     "walletDetails": "Wallet details & backup",
@@ -259,6 +260,18 @@
     "fiatCurrencyDescription": "Portfolio display currency",
     "language": "Language",
     "languageDescription": "App display language",
+    "visualEffects": {
+      "title": "Visual effects",
+      "auto": "Automatic",
+      "autoDescription": "Follows your device's transparency, contrast and performance settings.",
+      "lite": "Lite",
+      "liteDescription": "No blur. Easier on older computers.",
+      "reduced": "Reduced",
+      "reducedDescription": "Solid, flat surfaces with no glow, glass or blur.",
+      "full": "Full",
+      "inUse": "In use: {mode}",
+      "contrastNote": "Your system's contrast settings keep effects reduced."
+    },
     "aboutFearless": "About Fearless",
     "aboutFearlessDescription": "Version, support, and legal",
     "irohaConnectUnavailable": "IrohaConnect is not available in this version. Nothing was signed."

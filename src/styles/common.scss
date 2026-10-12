@@ -1,5 +1,31 @@
 @use "sass:math";
 
+// Build-time palette (design-system 14.0 item 5), set from VITE_FW_PALETTE by vite.config.shared.mjs. `v1` paints
+// the legacy names below with the Neon Glass tokens of fw-tokens.scss; `legacy` keeps every value this file shipped
+// with, so a hotfix can revert the look without touching data. Nothing else depends on it.
+$fw-palette: 'v1' !default;
+
+@if $fw-palette != 'v1' and $fw-palette != 'legacy' {
+  @error "VITE_FW_PALETTE must be v1 or legacy, not #{$fw-palette}";
+}
+
+// The shipped value and its Neon Glass token. A style that uses a legacy name in another role than the name's own
+// (a fill, a focus ring, a selection edge) names that role's token in place: `palette($pink-color, var(--fw-focus))`.
+@function palette($legacy, $v1) {
+  @if $fw-palette == 'v1' {
+    @return $v1;
+  }
+
+  @return $legacy;
+}
+
+// Declarations only the Neon Glass palette has, such as a gradient a state must clear.
+@mixin v1-palette {
+  @if $fw-palette == 'v1' {
+    @content;
+  }
+}
+
 $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;
@@ -13,26 +39,27 @@ $header-height: toRem(48);
 $default-padding: toRem(16);
 $default-border-radius: toRem(8);
 
-$pink-lavender-color: #bb77ff;
-$purple-color: rgba(119, 0, 238, 1);
-$pink-purple-color: rgba(119, 0, 238, 0.25);
-$plain-white: rgba(255, 255, 255, 1);
-$default-white: rgba(255, 255, 255, 0.75); // #ffffffbf
-$grayish-white: rgba(255, 255, 255, 0.65);
-$grayish-white-2: #ffffff80;
-$gray-color: rgba(255, 255, 255, 0.5);
-$gray-2-color: rgba(255, 255, 255, 0.3);
-$pink-color: #ee0077;
-$orange-color: #fc3317;
-$simple-orange-color: #ee7700;
-$success-color: #00ee77;
-$reject-color: #ed0e0e;
-$default-background-color: rgba(255, 255, 255, 0.1);
-$secondary-background-color: hsla(0, 0%, 100%, 0.05);
-$secondary-btn-color: hsl(0, 0%, 16%);
+// Each name keeps the role it has in most of the styles that use it (design-system 3.2).
+$pink-lavender-color: palette(#bb77ff, var(--fw-link)); // actions and links
+$purple-color: palette(rgba(119, 0, 238, 1), var(--fw-fill-top)); // checked boxes
+$pink-purple-color: palette(rgba(119, 0, 238, 0.25), var(--fw-select-fill)); // selected rows and chips
+$plain-white: palette(rgba(255, 255, 255, 1), var(--fw-text-1));
+$default-white: palette(rgba(255, 255, 255, 0.75), var(--fw-text-1)); // #ffffffbf
+$grayish-white: palette(rgba(255, 255, 255, 0.65), var(--fw-text-2));
+$grayish-white-2: palette(#ffffff80, var(--fw-text-2));
+$gray-color: palette(rgba(255, 255, 255, 0.5), var(--fw-text-2));
+$gray-2-color: palette(rgba(255, 255, 255, 0.3), var(--fw-text-3));
+$pink-color: palette(#ee0077, var(--fw-brand-text)); // brand emphasis; fills use var(--fw-fill)
+$orange-color: palette(#fc3317, var(--fw-warning)); // unavailable and paused states
+$simple-orange-color: palette(#ee7700, var(--fw-warning));
+$success-color: palette(#00ee77, var(--fw-success));
+$reject-color: palette(#ed0e0e, var(--fw-danger));
+$default-background-color: palette(rgba(255, 255, 255, 0.1), var(--fw-raised-2)); // controls; edges use a stroke
+$secondary-background-color: palette(hsla(0, 0%, 100%, 0.05), var(--fw-card-surface)); // cards (_fw-effects.scss)
+$secondary-btn-color: palette(hsl(0, 0%, 16%), var(--fw-raised-2));
 
-$default-border: 1px solid $default-background-color;
-$secondary-border: 1px solid $secondary-background-color;
+$default-border: palette(1px solid $default-background-color, 1px solid var(--fw-divider));
+$secondary-border: palette(1px solid $secondary-background-color, 1px solid var(--fw-divider));
 
 $big-clip-path-left-top-and-right-bottom: polygon(
   20px 0,

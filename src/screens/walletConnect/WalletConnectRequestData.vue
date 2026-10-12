@@ -127,7 +127,7 @@ const txWallet = computed(() => {
 
 .tx-details__row {
   border: 1px solid transparent;
-  border-bottom-color: $default-background-color;
+  border-bottom-color: palette($default-background-color, var(--fw-divider));
   display: flex;
   margin: 0;
 }

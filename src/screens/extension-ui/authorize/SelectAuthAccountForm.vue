@@ -81,7 +81,7 @@ const cutAddress = (account: WalletInfo) => {
   justify-content: space-between;
   align-items: center;
   border: 1px solid transparent;
-  border-bottom-color: $default-background-color;
+  border-bottom-color: palette($default-background-color, var(--fw-divider));
 }
 
 .account__checkbox {

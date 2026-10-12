@@ -212,6 +212,7 @@
       "connections": "𓄡𓈖𓅓𓏥",
       "security": "𓋴𓄿𓅱 𓂝𓄿",
       "preferences": "𓅓𓂋𓇌𓏥",
+      "appearance": "𓇋𓂋𓅱",
       "about": "𓂋𓐍"
     },
     "walletDetails": "𓉒 𓐍𓏏 𓎟 & 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏",
@@ -232,6 +233,18 @@
     "fiatCurrencyDescription": "𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓁹 𓎛𓆓",
     "language": "𓂋 𓈖 𓆎𓅓𓏏",
     "languageDescription": "𓉐 𓈖 𓂓𓏏 𓁹 𓂋 𓈖 𓆎𓅓𓏏",
+    "visualEffects": {
+      "title": "𓄡𓎡𓂋𓅱𓏥 𓈖 𓅓𓄿𓄿",
+      "auto": "𓆓𓋴𓆑",
+      "autoDescription": "𓈙𓅓𓋴𓆑 𓋴𓅓𓈖𓏥 𓈖 𓐍𓏏𓎡 𓈖 𓂓𓏏: 𓅱𓂝𓃀 𓈖 𓅓𓄿𓄿, 𓄋𓊪 𓎛𓆓 𓎛𓈖𓂝 𓎡𓎡𓅱, 𓄿𓐍 𓈖 𓂓𓏏.",
+      "lite": "𓇋𓋴",
+      "liteDescription": "𓈖𓈖 𓇋𓄿𓂧𓏏𓇲 𓁷 𓅓𓄿𓄿. 𓇋𓋴 𓁷 𓐍𓏏 𓈖 𓎛𓋴𓃀 𓈖 𓇋𓋴𓆓𓏏.",
+      "reduced": "𓈖𓆓𓋴",
+      "reducedDescription": "𓁷𓅱𓏥 𓅓𓈖𓅱 𓈖𓂝𓂝𓅱; 𓈖𓈖 𓊪𓋴𓆓 𓈖 𓎛𓆓, 𓇋𓈖𓂋 𓅱𓂝𓃀, 𓇋𓄿𓂧𓏏𓇲.",
+      "full": "𓅓𓎛",
+      "inUse": "𓅓 𓂓𓏏: {mode}",
+      "contrastNote": "𓋴𓄿𓅱 𓋴𓅓𓈖𓏥 𓈖 𓋴𓐍𓂋𓎡 𓈖 𓄋𓊪 𓎛𓆓 𓎛𓈖𓂝 𓎡𓎡𓅱 𓄡𓎡𓂋𓅱𓏥 𓅓 «𓈖𓆓𓋴»."
+    },
     "aboutFearless": "𓂋𓐍 Fearless",
     "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪",
     "irohaConnectUnavailable": "𓈖𓈖 IrohaConnect 𓅓 𓋴𓈙 𓊪𓈖 · 𓈖 𓐍𓏏𓅓𓏏𓅱 𓐍𓏏 ·"

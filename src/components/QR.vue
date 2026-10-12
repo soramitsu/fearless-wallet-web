@@ -22,7 +22,7 @@ const qr = ref('');
 const props = withDefaults(defineProps<Props>(), {
   margin: 5,
   width: 300,
-  foreground: '#111111',
+  foreground: '#0A0C1B',
   background: '#FFFFFF',
   showLogo: false,
 });
@@ -72,6 +72,8 @@ watch(
   user-select: none;
 
   .qr-code {
+    max-width: 100%;
+    height: auto;
     border-radius: 24px;
   }
 

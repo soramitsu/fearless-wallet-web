@@ -85,6 +85,7 @@ onBeforeUnmount(() => opener?.focus());
   padding: 16px;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
+  @include fw-scrim-tiers;
 }
 
 .picker {
@@ -95,9 +96,10 @@ onBeforeUnmount(() => opener?.focus());
   gap: 10px;
   overflow: auto;
   padding: 16px;
-  border: 1px solid rgba(187, 119, 255, 0.45);
+  border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-strong));
   border-radius: $default-border-radius;
-  background: #111111;
+  // A sheet over the page is opaque raised paint (design-system 3.2).
+  background: palette(#111111, var(--fw-raised));
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   // Teleported out of the app: set what the app would otherwise pass down.
   color: $plain-white;
@@ -132,7 +134,7 @@ onBeforeUnmount(() => opener?.focus());
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid $pink-lavender-color;
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
     outline-offset: 2px;
   }
 }
@@ -171,11 +173,11 @@ onBeforeUnmount(() => opener?.focus());
   cursor: pointer;
 
   &:hover {
-    background: rgba(187, 119, 255, 0.08);
+    background: palette(rgba(187, 119, 255, 0.08), var(--fw-row-selected));
   }
 
   &:focus-visible {
-    outline: 2px solid $pink-lavender-color;
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
     outline-offset: 2px;
   }
 }
@@ -199,7 +201,8 @@ onBeforeUnmount(() => opener?.focus());
 
 .role-chip {
   padding: 1px 6px;
-  border: 1px solid rgba(187, 119, 255, 0.45);
+  // A tag in the HUD style: cyan text on a cyan trace.
+  border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-hud-trace));
   border-radius: 8px;
   color: $pink-lavender-color;
   font-size: 0.6rem;

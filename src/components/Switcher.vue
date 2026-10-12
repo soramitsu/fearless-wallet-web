@@ -5,10 +5,11 @@
       class="switch__input"
       type="checkbox"
       role="switch"
+      :aria-checked="vModel"
       :aria-label="ariaLabel || undefined"
       :disabled="disabled"
     />
-    <span class="switch__core"></span>
+    <span class="switch__core" aria-hidden="true"></span>
     <span v-if="activeText || inactiveText" class="switch__text">{{ vModel ? activeText : inactiveText }}</span>
   </label>
 </template>
@@ -51,6 +52,8 @@ const disabled = computed(() => props.disabled);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 48px;
+  cursor: pointer;
 }
 
 // Hidden visually only: the checkbox stays focusable and is what keyboards and screen readers operate.
@@ -73,8 +76,8 @@ const disabled = computed(() => props.disabled);
   height: 20px;
   border-radius: 20px;
   position: relative;
-  background-color: #422539 !important;
-  border: 1px solid $default-background-color !important;
+  background-color: palette(#422539, var(--fw-sunken)) !important;
+  border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
 
   &::after {
     content: '';
@@ -90,16 +93,49 @@ const disabled = computed(() => props.disabled);
 }
 
 .switch__input:focus-visible + .switch__core {
-  outline: 2px solid $pink-lavender-color;
+  outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
   outline-offset: 2px;
 }
 
 .switch__input:checked + .switch__core {
-  background-color: #7700ee !important;
-  border: 1px solid $default-background-color !important;
+  background-color: palette(#7700ee, var(--fw-fill-top)) !important;
+  // The edge lifts the on track to 3:1 over glass (design-system 3.4).
+  border: 1px solid palette($default-background-color, var(--fw-accent-edge)) !important;
 
   &::after {
     transform: translateX(20px);
+  }
+}
+@include v1-palette {
+  .switch__core {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    width: 52px;
+    height: 32px;
+    &::after {
+      content: '−';
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      top: 3px;
+      left: 3px;
+      background: var(--fw-thumb-off);
+      color: var(--fw-sunken);
+      font: 700 16px/1 var(--fw-font-body);
+    }
+  }
+  .switch__input:checked + .switch__core::after {
+    content: '✓';
+    transform: translateX(20px);
+    background: white;
+    color: var(--fw-fill-bottom);
+  }
+  .switch:has(:disabled) {
+    cursor: default;
+  }
+  .switch__input:disabled + .switch__core {
+    opacity: 0.65;
   }
 }
 </style>

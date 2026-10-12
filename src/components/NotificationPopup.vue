@@ -5,6 +5,7 @@
     :showBorder="true"
     :closeByBackground="closeByBackground"
     :zIndex="zIndex"
+    :ariaLabel="$t(text)"
     @handlerClose="emit('handlerClose')"
   >
     <div class="notification-popup-content">
@@ -104,6 +105,8 @@ const classesSubtext = computed(() => ['subtext', `subtext-${props.sizeWidth}`])
 }
 
 .subtext {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: $gray-color;
   line-height: 150%;
 }

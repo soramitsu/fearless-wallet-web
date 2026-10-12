@@ -62,7 +62,7 @@ const containerSelectClasses = computed(() => {
     width: 100%;
     min-height: 48px;
     background-color: $secondary-background-color !important;
-    border: 1px solid $default-background-color !important;
+    border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
     padding-top: 25px !important;
     padding-left: 25px !important;
     color: $pink-lavender-color !important;
@@ -79,8 +79,8 @@ const containerSelectClasses = computed(() => {
 }
 
 .el-select-dropdown {
-  background-color: #111111 !important;
-  border: 1px solid $default-background-color !important;
+  background-color: palette(#111111, var(--fw-raised)) !important;
+  border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
   margin-top: 5px !important;
   min-width: 370px !important;
   max-width: 370px !important;
@@ -95,7 +95,7 @@ const containerSelectClasses = computed(() => {
 }
 
 .popper__arrow {
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
 }
 
 .selected {

@@ -326,7 +326,7 @@ const rowSwitchLabel = computed(() =>
   text-align: left;
 
   &:focus-visible {
-    outline: 2px solid $pink-lavender-color;
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
     outline-offset: 2px;
   }
 }
@@ -433,7 +433,8 @@ const rowSwitchLabel = computed(() =>
 }
 
 .role-chip {
-  border-color: rgba(187, 119, 255, 0.45);
+  // A tag in the HUD style: cyan text on a cyan trace.
+  border-color: palette(rgba(187, 119, 255, 0.45), var(--fw-hud-trace));
   color: $pink-lavender-color;
 }
 
@@ -463,7 +464,8 @@ const rowSwitchLabel = computed(() =>
 .token-networks {
   margin: 0 0 10px 18px;
   padding-left: 12px;
-  border-left: 2px solid rgba(187, 119, 255, 0.35);
+  // The circuit trace that joins a token's networks (design-system 5.5).
+  border-left: 2px solid palette(rgba(187, 119, 255, 0.35), var(--fw-hud-trace));
 }
 
 .network-row {
@@ -515,7 +517,7 @@ const rowSwitchLabel = computed(() =>
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid rgba(187, 119, 255, 0.45);
+  border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-control));
   border-radius: 17px;
   background: $pink-purple-color;
   color: $plain-white;
@@ -530,7 +532,7 @@ const rowSwitchLabel = computed(() =>
   }
 
   &:focus-visible {
-    outline: 2px solid $plain-white;
+    outline: 2px solid palette($plain-white, var(--fw-focus));
     outline-offset: 2px;
   }
 

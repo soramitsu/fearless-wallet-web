@@ -231,7 +231,7 @@ async function acknowledge(): Promise<void> {
 
   &__error {
     margin: 0;
-    color: $pink-color;
+    color: palette($pink-color, var(--fw-danger));
     font-size: 0.8125rem;
   }
 

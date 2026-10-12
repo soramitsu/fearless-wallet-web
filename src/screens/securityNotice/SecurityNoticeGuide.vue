@@ -499,7 +499,7 @@ const leave = () => router.replace(redirect.value ?? { name: Components.Wallet }
 
   &__destination {
     padding: 4px 10px;
-    border: 1px solid $default-background-color;
+    border: 1px solid palette($default-background-color, var(--fw-stroke-control));
     border-radius: 999px;
     background: transparent;
     color: $grayish-white;
@@ -513,7 +513,7 @@ const leave = () => router.replace(redirect.value ?? { name: Components.Wallet }
     }
 
     &:focus-visible {
-      outline: 2px solid $pink-lavender-color;
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
       outline-offset: 2px;
     }
   }
@@ -585,7 +585,7 @@ const leave = () => router.replace(redirect.value ?? { name: Components.Wallet }
 
   &__error {
     margin: 0;
-    color: $pink-color;
+    color: palette($pink-color, var(--fw-danger));
     font-size: 0.8125rem;
   }
 

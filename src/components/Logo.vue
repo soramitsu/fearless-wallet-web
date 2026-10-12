@@ -98,7 +98,7 @@ const sizeIconLogo = computed(() => iconSizes[props.size] ?? iconSizes.medium);
   }
 
   .circle-primary {
-    background-color: $pink-color;
+    background-color: palette($pink-color, var(--fw-brand));
   }
 
   .circle-secondary {

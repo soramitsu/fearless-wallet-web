@@ -161,6 +161,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MigrationDescription,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -169,6 +170,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MigrationAccounts,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -177,6 +179,7 @@ const routes: Array<RouteRecordRaw> = [
     component: UniversalWalletMigration,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -185,6 +188,7 @@ const routes: Array<RouteRecordRaw> = [
     component: SecurityNotice,
     meta: {
       title: 'securityNotice',
+      calm: true,
     },
   },
   {
@@ -193,6 +197,7 @@ const routes: Array<RouteRecordRaw> = [
     component: SecurityNoticeGuide,
     meta: {
       title: 'securityNotice',
+      calm: true,
     },
   },
 
@@ -202,6 +207,7 @@ const routes: Array<RouteRecordRaw> = [
     component: ChangePassword,
     meta: {
       title: 'changePassword',
+      calm: true,
     },
   },
   {
@@ -210,6 +216,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Unlock,
     meta: {
       title: 'unlock',
+      calm: true,
     },
   },
   {
@@ -218,6 +225,7 @@ const routes: Array<RouteRecordRaw> = [
     component: ResetWallet,
     meta: {
       title: 'reset',
+      calm: true,
     },
   },
   {
@@ -255,6 +263,7 @@ const routes: Array<RouteRecordRaw> = [
     component: AddWallet,
     meta: {
       title: 'addWallet',
+      calm: true,
     },
   },
   {
@@ -271,17 +280,24 @@ const routes: Array<RouteRecordRaw> = [
     component: Authorize,
     meta: {
       title: 'authorize',
+      calm: true,
     },
   },
   {
     path: '/wc-authorize',
     name: Components.WalletConnectAuthConfirmation,
     component: WalletConnectAuthConfirmation,
+    meta: {
+      calm: true,
+    },
   },
   {
     path: '/wc-transaction',
     name: Components.WalletConnectSignConfirmation,
     component: WalletConnectSignConfirmation,
+    meta: {
+      calm: true,
+    },
   },
   {
     path: '/wc-not-supported',
@@ -315,6 +331,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MetaRequest,
     meta: {
       title: 'meta',
+      calm: true,
     },
   },
   {
@@ -323,6 +340,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Transaction,
     meta: {
       title: 'transaction',
+      calm: true,
     },
     beforeEnter: (to, from, next) => {
       const extensionStore = useExtensionStore();
@@ -594,7 +612,7 @@ const routes: Array<RouteRecordRaw> = [
         path: 'settings/change-password',
         name: Components.SettingsChangePassword,
         component: ChangePassword,
-        meta: { title: 'changePassword', primaryNavigation: 'settings' },
+        meta: { title: 'changePassword', primaryNavigation: 'settings', calm: true },
       },
       {
         path: 'settings/account-access',
@@ -604,7 +622,7 @@ const routes: Array<RouteRecordRaw> = [
           address: firstQueryValue(route.query.address),
           mode: firstQueryValue(route.query.mode),
         }),
-        meta: { title: 'settings', primaryNavigation: 'settings' },
+        meta: { title: 'settings', primaryNavigation: 'settings', calm: true },
       },
       {
         path: 'settings/iroha-connect',
@@ -685,7 +703,7 @@ const routes: Array<RouteRecordRaw> = [
             path: 'network/:network/export',
             name: Components.Export,
             component: Export,
-            meta: { title: 'export', primaryNavigation: 'settings' },
+            meta: { title: 'export', primaryNavigation: 'settings', calm: true },
           },
         ],
       },

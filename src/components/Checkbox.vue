@@ -1,7 +1,12 @@
 <template>
   <label class="fw-checkbox" data-testid="checkbox">
-    <input v-model.lazy="vmodel" type="checkbox" :class="`fw-checkbox__input fw-checkbox__input--${size}`" />
-    <span class="fw-checkbox__box"></span>
+    <input
+      v-model.lazy="vmodel"
+      type="checkbox"
+      :disabled="disabled"
+      :class="`fw-checkbox__input fw-checkbox__input--${size}`"
+    />
+    <span class="fw-checkbox__box" aria-hidden="true"></span>
     <span class="fw-checkbox__label">{{ label }}</span>
   </label>
 </template>
@@ -13,6 +18,7 @@ type Props = {
   label: string;
   value: boolean;
   size?: 'medium' | 'big';
+  disabled?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), { size: 'medium' });
@@ -26,6 +32,8 @@ const vmodel = computed({
 
 <style lang="scss">
 .fw-checkbox {
+  position: relative;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -59,5 +67,36 @@ const vmodel = computed({
 
 .fw-checkbox__label {
   color: $default-white !important;
+}
+
+@include v1-palette {
+  .fw-checkbox__box {
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--fw-sunken);
+    border: 1px solid var(--fw-stroke-control);
+  }
+  .fw-checkbox__input:checked + .fw-checkbox__box {
+    background: var(--fw-fill);
+    border-color: var(--fw-accent-edge);
+    &::after {
+      content: '✓';
+      color: white;
+      font-weight: 700;
+    }
+  }
+  .fw-checkbox__input:focus-visible + .fw-checkbox__box {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: 2px;
+  }
+  .fw-checkbox:has(:disabled) {
+    cursor: default;
+    opacity: 0.65;
+  }
 }
 </style>

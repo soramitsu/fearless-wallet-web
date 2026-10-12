@@ -5,3 +5,13 @@ body {
   min-width: $extension-width;
   min-height: $extension-height;
 }
+
+// Preserve the 32px toolbar-popup bootstrap above. Once Chrome has sized the
+// popup, a zoomed/constrained viewport must be able to reflow below 561px.
+@media (min-width: 128px) and (max-width: 560px) {
+  html,
+  body {
+    min-width: 0;
+    min-height: 0;
+  }
+}

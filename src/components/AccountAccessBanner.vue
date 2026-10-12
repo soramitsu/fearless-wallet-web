@@ -103,7 +103,7 @@ const open = () => router.push({ name: Components.AccountAccessRecovery });
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid $pink-lavender-color;
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
     outline-offset: 2px;
   }
 }

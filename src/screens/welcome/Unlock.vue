@@ -150,7 +150,7 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     }
 
     .pink {
-      color: $pink-color;
+      color: palette($pink-color, var(--fw-link));
       cursor: pointer;
     }
   }

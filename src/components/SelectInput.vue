@@ -218,7 +218,7 @@ export default defineComponent({ name: 'SelectInput' ,
 
 <style lang="scss" scoped>
 .select-focused {
-  border: 1px solid #7700ee !important;
+  border: 1px solid palette(#7700ee, var(--fw-focus)) !important;
 }
 
 .select {
@@ -386,5 +386,30 @@ export default defineComponent({ name: 'SelectInput' ,
   .select .column { max-width: none; }
   .select .right-column { flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
   .select .right-column .balance { margin-top: 0; }
+}
+@include v1-palette {
+  .select {
+    background: var(--fw-sunken);
+    border-color: var(--fw-stroke-control);
+    border-radius: 12px;
+  }
+  .select-focused {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
+  }
+  .select .left-column input {
+    font-variant-numeric: tabular-nums;
+    color: var(--fw-text-1);
+  }
+  .select .right-column .select-button {
+    clip-path: none;
+    border-radius: 12px;
+    border-color: var(--fw-stroke-control);
+  }
+  .select .right-column .select-button:focus-visible,
+  .select .right-column .balance-value:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
+  }
 }
 </style>

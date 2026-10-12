@@ -109,7 +109,7 @@ export default defineComponent({ name: 'WalletInfo',
     border: 0;
     padding: 0;
     cursor: pointer;
-    &:focus-visible { outline: 2px solid $pink-lavender-color; outline-offset: 2px; }
+    &:focus-visible { outline: 2px solid palette($pink-lavender-color, var(--fw-focus)); outline-offset: 2px; }
   }
 
   .content {

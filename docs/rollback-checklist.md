@@ -43,6 +43,9 @@ Prefer a forward fix (Hotfix Path below). If users must run 3.0.x code again:
 
 - Create `hotfix/<version-or-slug>` from `master`.
 - Apply the smallest safe fix or revert.
+- A problem with the 4.2.0 look alone (colours, fonts) needs no code revert: build
+  with `VITE_FW_PALETTE=legacy` to ship the previous paint and Sora body text.
+  It changes styles only; wallet data, keys and storage are untouched.
 - Run typecheck, lint, unit tests, extension build, and Solana e2e smoke for the
   changed surface.
 - Open a PR to `master`, tag after merge, then merge or cherry-pick back to

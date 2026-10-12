@@ -108,11 +108,24 @@ export default defineComponent({ name: 'WalletBalance' ,
   }
 
   .up-percent {
-    color: $success-color;
+    color: palette($success-color, var(--fw-up));
   }
 
   .down-percent {
-    color: $orange-color;
+    color: palette($orange-color, var(--fw-down));
+  }
+
+  // Aqua and orange never carry the direction alone (design-system 3.5); the triangle is decoration.
+  @include v1-palette {
+    .up-percent::before {
+      content: '\25B2\00A0';
+      content: '\25B2\00A0' / '';
+    }
+
+    .down-percent::before {
+      content: '\25BC\00A0';
+      content: '\25BC\00A0' / '';
+    }
   }
 
   .balance-caption {

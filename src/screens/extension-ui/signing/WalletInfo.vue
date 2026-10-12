@@ -39,7 +39,7 @@ function saveToClipboard() {
   position: relative;
   background: $secondary-background-color;
   padding: 9px;
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-divider)) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   width: 100%;

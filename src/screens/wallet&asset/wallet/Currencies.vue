@@ -531,7 +531,7 @@ export default defineComponent({
   padding: 4px 0;
   border: 0;
   background: transparent;
-  color: $pink-color;
+  color: palette($pink-color, var(--fw-link));
   cursor: pointer;
   font: inherit;
   font-size: 0.72rem;

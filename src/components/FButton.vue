@@ -186,10 +186,11 @@ const buttonClasses = computed(() => {
 
 <style lang="scss" scoped>
 .primary {
-  // Keep the brand hue while giving normal-size white labels 4.5:1 contrast.
-  background: mix(black, $pink-color, 4%);
-  color: white;
-  border-color: mix(black, $pink-color, 4%);
+  // White labels need 4.5:1: the legacy look darkens the brand pink by 4% (mix(black, #ee0077, 4%)), Neon Glass
+  // fills with accent.fill (5.04:1 at its lightest stop).
+  background: palette(rgb(228.48, 0, 114.24), var(--fw-fill));
+  color: palette(white, var(--fw-on-accent));
+  border-color: palette(rgb(228.48, 0, 114.24), var(--fw-fill-top));
 }
 .button:focus-visible {
   outline: 2px solid white;
@@ -258,7 +259,8 @@ const buttonClasses = computed(() => {
   .el-button {
     background-color: $simple-orange-color;
     border: none;
-    color: $plain-white;
+    // On amber only the base colour reads (12.27:1).
+    color: palette($plain-white, var(--fw-bg-base));
   }
 }
 
@@ -283,9 +285,15 @@ const buttonClasses = computed(() => {
 }
 
 .is-disabled {
-  opacity: 0.7;
-  background-color: #f8087b !important;
-  border-color: #f8087b !important;
+  opacity: palette(0.7, 1);
+  background-color: palette(#f8087b, var(--fw-raised-2)) !important;
+  border-color: palette(#f8087b, var(--fw-raised-2)) !important;
+
+  // A disabled button is flat raised-2 with a tertiary label (5.75:1), never the fill at reduced opacity.
+  @include v1-palette {
+    background-image: none !important;
+    color: var(--fw-text-3) !important;
+  }
 }
 
 .button--content-wrap > .el-button span {
@@ -346,7 +354,7 @@ const buttonClasses = computed(() => {
 }
 
 .secondary-border {
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
 }
 
 .secondary-border-none {
@@ -386,6 +394,52 @@ const buttonClasses = computed(() => {
 
 .google-border-hover:hover {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+@include v1-palette {
+  .button-size-big .button,
+  .button-size-medium .button,
+  .button-size-small .button {
+    border-radius: 14px;
+    clip-path: none;
+    transition:
+      transform var(--fw-dur-fast) var(--fw-ease),
+      background-color var(--fw-dur-fast) var(--fw-ease);
+    &:focus-visible {
+      outline: 2px solid var(--fw-focus);
+      outline-offset: -4px;
+    }
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+  }
+  .primary {
+    min-height: 48px;
+    border-color: var(--fw-accent-edge);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+    &:active:not(:disabled) {
+      background: var(--fw-fill-bottom);
+    }
+  }
+  .button-size-small .button {
+    min-height: 44px;
+    height: auto;
+  }
+  .secondary-hover:hover {
+    border-color: var(--fw-stroke-control) !important;
+  }
+  .secondary:active:not(:disabled),
+  .thirdly:active:not(:disabled) {
+    background: var(--fw-pressed) !important;
+  }
+  .link {
+    color: var(--fw-link) !important;
+    min-height: 44px;
+  }
+  .is-disabled,
+  .is-loading {
+    box-shadow: none;
+  }
 }
 
 .icon--loading {

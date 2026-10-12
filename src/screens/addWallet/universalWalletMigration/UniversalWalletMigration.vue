@@ -196,7 +196,7 @@ const exportLegacyVault = (vault: UniversalWalletLegacyVaultDescriptor) => {
   }
 
   &__vault-error {
-    color: $pink-color;
+    color: palette($pink-color, var(--fw-danger));
     font-size: 12px;
     margin-top: 8px;
   }

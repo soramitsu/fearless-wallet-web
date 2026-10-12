@@ -51,6 +51,9 @@ ancient words and imagery, for example:
 | unlock            | `𓃹𓈖 𓐍𓏏𓅓` (`wn ḫtm`)               | open the seal                            |
 | encrypted backup  | `𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓` (`sꜣw mḏꜣt ḫtm`)  | sealed, guarded scroll                   |
 | Account access    | `𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖` (`wn jp.w n rn`)   | opening of the reckonings of a name      |
+| visual effects    | `𓄡𓎡𓂋𓅱𓏥 𓈖 𓅓𓄿𓄿` (`ḫkr.w n mꜣꜣ`)    | ornaments for sight                      |
+| contrast          | `𓄋𓊪 𓎛𓆓 𓎛𓈖𓂝 𓎡𓎡𓅱` (`wpj ḥḏ ḥnꜥ kkw`) | separating light and darkness            |
+| blur              | `𓇋𓄿𓂧𓏏𓇲` (`jꜣdt`)                 | dew over sight                           |
 
 These compounds are literary localization choices. They must not be cited as
 evidence that an Egyptian text used an ancient word with a modern computing,

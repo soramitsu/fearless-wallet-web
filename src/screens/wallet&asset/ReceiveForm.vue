@@ -345,7 +345,7 @@ export default defineComponent({ name: 'ReceiveForm' ,
     padding: 16px 16px;
     width: 100%;
     color: rgba(255, 255, 255, 0.75);
-    border-bottom: 0.5px solid $default-background-color;
+    border-bottom: 0.5px solid palette($default-background-color, var(--fw-divider));
 
     .address {
       display: flex;
@@ -407,7 +407,7 @@ export default defineComponent({ name: 'ReceiveForm' ,
   padding: 2px 10px;
   color: $default-white;
   font-size: 0.875rem;
-  border: 1px solid $default-background-color;
+  border: 1px solid palette($default-background-color, var(--fw-divider));
   border-radius: 999px;
   overflow-wrap: anywhere;
 }

@@ -3,6 +3,7 @@ import { reactive } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
 import FButton from '@/components/FButton.vue';
+import Checkbox from '@/components/Checkbox.vue';
 import Confirmation from '@/screens/walletConnect/WalletConnectSignConfirmation.vue';
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
   push: vi.fn(),
 }));
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
+vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ allNetworks: [] }) }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.store }));
 vi.mock('@/extension/messaging', () => ({
   walletConnectRequestApprove: mocks.approve,
@@ -25,25 +28,23 @@ vi.mock('@/router/routes', () => ({
   Components: { Wallet: 'Wallet', WalletConnectSignConfirmation: 'WalletConnectSignConfirmation' },
 }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
-vi.mock('@/screens/walletConnect/WalletConnectRequestData.vue', () => ({
-  default: {
-    props: ['request'],
-    setup(props) {
-      return { initial: JSON.stringify(props.request.params.request.params) };
-    },
-    template: '<pre>{{ initial }}</pre>',
-  },
-}));
-vi.mock('@/screens/walletConnect/WalletConnectHeader.vue', () => ({
-  default: { props: ['title', 'url'], template: '<header>{{ title }} {{ url }}</header>' },
-}));
 const address = '0x1111111111111111111111111111111111111111';
-const request = (approvalId = 'first', value = '0x1234') =>
+const request = (approvalId = 'first', value = '0x68656c6c6f') =>
   ({
     id: 7,
     topic: 'public-topic',
     approvalId,
     params: { chainId: 'eip155:1', request: { method: 'personal_sign', params: [value, address] } },
+    context: {
+      session: {
+        topic: 'public-topic',
+        origin: 'https://' + approvalId + '.example',
+        peerPublicKey: 'public-peer',
+        revision: 0,
+      },
+      account: { address, name: 'Captured signer', isMobile: false },
+      network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },
+    },
     verifyContext: { verified: { origin: 'https://' + approvalId + '.example', validation: 'UNKNOWN', verifyUrl: '' } },
   }) as WalletConnectTransactionRequest;
 const open = () =>
@@ -58,6 +59,8 @@ const open = () =>
           template: '<main><slot /></main>',
         },
         FButton,
+        Checkbox,
+        Icon: true,
         Scroll: { template: '<div><slot /></div>' },
         Hint: true,
       },
@@ -105,12 +108,13 @@ describe('WalletConnect screen owns the displayed approval identity', () => {
   it('updates request details and signer after the next request replaces the first', async () => {
     const wrapper = open();
     await flushPromises();
-    const next = request('next', '0xabcd');
+    const next = request('next', '0x6e657874');
     next.params.request.params[1] = '0x2222222222222222222222222222222222222222';
+    next.context!.account.address = next.params.request.params[1];
     mocks.store.wcRequests = [next];
     await flushPromises();
-    expect(wrapper.get('pre').text()).toContain('0xabcd');
-    expect(wrapper.get('header').text()).toContain('next.example');
+    expect(wrapper.get('.signing-message').text()).toContain('next');
+    expect(wrapper.get('.signing-origin').text()).toContain('next.example');
     await button(wrapper, 'approve').trigger('click');
     await flushPromises();
     expect(mocks.approve).toHaveBeenCalledExactlyOnceWith(next.params.request.params[1], 'next');
@@ -118,12 +122,12 @@ describe('WalletConnect screen owns the displayed approval identity', () => {
   });
   it('uses the captured session origin instead of an unverified event origin', async () => {
     const value = request();
-    value.context = { session: { origin: 'https://canonical.example' } } as never;
+    value.context!.session.origin = 'https://canonical.example';
     mocks.store.wcRequests = [value];
     const wrapper = open();
     await flushPromises();
-    expect(wrapper.get('header').text()).toContain('https://canonical.example');
-    expect(wrapper.get('header').text()).not.toContain('first.example');
+    expect(wrapper.get('.signing-origin').text()).toContain('https://canonical.example');
+    expect(wrapper.get('.signing-origin').text()).not.toContain('first.example');
     wrapper.unmount();
   });
   it('refuses an old DOM click before the replacement request renders', async () => {

@@ -39,7 +39,9 @@
                 )
               }}
             </p>
-            <p class="signing-method">{{ review.protocol }} · {{ review.method }}</p>
+            <p class="signing-method">
+              <template v-if="walletConnect">WalletConnect · </template>{{ review.protocol }} · {{ review.method }}
+            </p>
           </div>
         </section>
         <template v-if="siteStatus !== 'flagged'">
@@ -131,7 +133,7 @@
         </template>
         <div ref="controls" class="signing-controls">
           <FButton
-            data-testid="rejectSigning"
+            :data-testid="rejectTestId"
             :text="siteStatus === 'flagged' ? 'common.close' : 'common.reject'"
             :type="review.blind || siteStatus === 'flagged' ? 'primary' : 'secondary'"
             size="big"
@@ -142,7 +144,7 @@
           />
           <FButton
             v-if="siteStatus !== 'flagged' && !review.blocked"
-            data-testid="approveSigning"
+            :data-testid="approveTestId"
             :text="review.blind ? 'signingReview.signAnyway' : 'common.approve'"
             :type="review.blind ? 'secondary' : 'primary'"
             size="big"
@@ -171,6 +173,7 @@ import { useRouter } from 'vue-router';
 import { checkIfDenied } from '@polkadot/phishing';
 import { signingRequester } from './requester';
 import { signingReview, type ReviewRequest } from './review';
+import { walletConnectReview } from './walletConnectReview';
 import WalletInfo from './WalletInfo.vue';
 import { useI18n } from '@/locales/useI18n';
 import { useNotify } from '@/plugins/soramitsuUI';
@@ -178,17 +181,35 @@ import { Components } from '@/router/routes';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
 
+const props = defineProps<{
+  walletConnect?: boolean;
+  approveWalletConnect?: (address: string, approvalId: string) => Promise<boolean>;
+  rejectWalletConnect?: (approvalId: string) => Promise<boolean>;
+}>();
 const extensionStore = useExtensionStore();
 const networksStore = useNetworksStore();
 const router = useRouter();
 const notify = useNotify();
 const { t } = useI18n();
+const wcRequest = computed(() => (props.walletConnect ? extensionStore.wcRequests[0] : undefined));
+const wcReview = computed(() => (wcRequest.value ? walletConnectReview(wcRequest.value) : undefined));
+const rejectTestId = computed(() => (props.walletConnect ? 'rejectWalletConnectSigning' : 'rejectSigning'));
+const approveTestId = computed(() => (props.walletConnect ? 'approveWalletConnectSigning' : 'approveSigning'));
 const request = computed<ReviewRequest | undefined>(() => {
+  if (props.walletConnect) return wcReview.value?.request;
   const queues = extensionStore.signAllRequests;
   return queues.substrate[0] ?? Object.values(queues.evm)[0] ?? Object.values(queues.solana)[0];
 });
-const review = computed(() => (request.value ? signingReview(request.value, networksStore.allNetworks) : undefined));
-const requestKey = computed(() => (request.value ? JSON.stringify([request.value, review.value]) : ''));
+const review = computed(() =>
+  props.walletConnect
+    ? wcReview.value?.review
+    : request.value
+      ? signingReview(request.value, networksStore.allNetworks)
+      : undefined
+);
+const requestKey = computed(() =>
+  request.value ? JSON.stringify([wcRequest.value, request.value, review.value]) : ''
+);
 const requester = computed(() => signingRequester(request.value?.url ?? ''));
 const origin = computed(() => requester.value.origin);
 const faviconUrl = computed(() => {
@@ -231,11 +252,12 @@ const focusReject = async () => {
   await nextTick();
   if (active && key === requestKey.value)
     controls.value
-      ?.querySelector<HTMLButtonElement>('[data-testid="rejectSigning"] button')
+      ?.querySelector<HTMLButtonElement>(`[data-testid="${rejectTestId.value}"] button`)
       ?.focus({ preventScroll: true });
 };
 const leaveEmpty = () => {
-  if (active && !request.value && router.currentRoute.value.name === Components.Transaction)
+  const route = props.walletConnect ? Components.WalletConnectSignConfirmation : Components.Transaction;
+  if (active && !request.value && router.currentRoute.value.name === route)
     void router.push({ name: Components.Wallet }).catch(() => {
       if (active) actionError.value = true;
     });
@@ -245,6 +267,11 @@ const checkSite = async () => {
   const captured = request.value;
   siteStatus.value = 'checking';
   if (!captured) return;
+  const verification = wcRequest.value?.verifyContext?.verified;
+  if (verification?.isScam || verification?.validation === 'INVALID') {
+    siteStatus.value = 'flagged';
+    return;
+  }
   let denied = false;
   try {
     denied = await checkIfDenied(captured.url);
@@ -256,15 +283,22 @@ const checkSite = async () => {
 const act = async (action: 'approve' | 'reject') => {
   if (!isRendered() || pending.value || !request.value || (action === 'approve' && cannotApprove.value)) return;
   const { id } = request.value;
+  const signer = request.value.account.address;
   const key = requestKey.value;
   const site = origin.value;
   const submits = review.value?.method === 'eth_sendTransaction' || review.value?.method === 'signAndSendTransaction';
   pending.value = action;
   actionError.value = false;
   try {
-    if (action === 'reject') await extensionStore.signCancel(id);
-    else {
-      const signed = await extensionStore.approveSign({ id });
+    if (action === 'reject') {
+      if (props.walletConnect) {
+        if (!(await props.rejectWalletConnect?.(id))) throw new Error('WalletConnect request was not rejected');
+      } else await extensionStore.signCancel(id);
+    } else {
+      const signed = props.walletConnect
+        ? await props.approveWalletConnect?.(signer, id)
+        : await extensionStore.approveSign({ id });
+      if (props.walletConnect && !signed) throw new Error('WalletConnect request was not approved');
       if (signed)
         notify({
           title: t(submits ? 'signingReview.submitted' : 'signingReview.signed', { origin: site }),

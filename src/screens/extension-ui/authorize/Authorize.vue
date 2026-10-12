@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="common.authorize" :fullScreen="true" :showCloseIcon="!pending" @closeHandler="onReject">
+  <AboveForm header="browserTabs.authorize" :fullScreen="true" :showCloseIcon="!pending" @closeHandler="onReject">
     <div class="authorize" :aria-busy="!!pending">
       <p v-if="actionError" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
       <p v-if="!request" role="status">{{ t('irohaConnectPage.waitingForRequest') }}</p>

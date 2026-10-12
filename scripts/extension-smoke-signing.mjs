@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { APP, POPUP_HEIGHT, POPUP_WIDTH } from './extension-smoke-portfolio.mjs';
 
 // Display-only public requests. The port interceptor consumes approvals/rejections
@@ -88,7 +89,11 @@ export async function captureSigningScreenshots({
   }
   await locale('en-EN');
   await resize(281, 300);
-  await run(`(document.documentElement.style.fontSize='32px', true)`);
+  await run(`(document.documentElement.style.fontSize='32px', document.querySelector('.form-background .form').scrollTop=0, true)`);
+  await capture('79-signing-compact-large-text-top', 'Scrollable signing heading at 281 × 300 with 200% root text size');
+  const compactHeader = await run(`(() => { const el=document.querySelector('.form-background .header'); const box=el.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, height: innerHeight }; })()`);
+  if (compactHeader.top < 0 || compactHeader.bottom > compactHeader.height)
+    throw new Error('Compact signing header cannot be read: ' + JSON.stringify(compactHeader));
   await keyboardFocus(reject);
   await capture('79-signing-compact-large-text', 'Blind-signing controls at 281 × 300 with 200% root text size');
   const large = await run(
@@ -124,9 +129,9 @@ export async function captureSigningScreenshots({
     `!document.querySelector('.signing-raw').open && !document.querySelector('.fw-checkbox input').checked && document.querySelector(${JSON.stringify(approve)}).getAttribute('aria-disabled')==='true'`,
     'New request clears the old consent'
   );
+  await wait(`!document.querySelector('.el-notification')`, 'Signing toast settles before reviewing the next request');
   await keyboardFocus(reject);
   await capture('82-signing-replacement', 'Second request cannot inherit the first request’s consent');
-  await wait(`!document.querySelector('.el-notification')`, 'Signing toast settles before reviewing a flagged request');
   await run(
     `(() => { const next=structuredClone(window.__publicSigning); next.id='public-flagged'; next.url='https://flagged.example.invalid'; ${APP}.pinia._s.get('extension').signEvmRequests={ [next.id]: next }; return true; })()`
   );

@@ -1,3 +1,4 @@
+import process from 'node:process';
 /* global Buffer, console */
 // Primitive screenshots for the DevTools-protocol extension smoke (`solana-extension-smoke.mjs --primitives-screenshots`).
 //
@@ -76,7 +77,11 @@ const PRIMITIVES = `(() => {
     sheetControlsUnobscured: dialog ? undefined : [...document.querySelectorAll('.form-background:not(.form-contained) .header-content button')]
       .filter(visible).every((button) => {
         const box = button.getBoundingClientRect();
-        return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+        // Short viewports scroll the complete sheet, including its header. Offscreen
+        // controls are checked when scrolled into view; visible controls must remain hit-testable.
+        if (box.bottom <= 0 || box.top >= innerHeight) return true;
+        const x = box.x + box.width / 2, y = Math.max(0, box.top) + (Math.min(innerHeight, box.bottom) - Math.max(0, box.top)) / 2;
+        return button.contains(document.elementFromPoint(x, y));
       }),
     dialog: dialog && { ...pick(dialog, paint), role: dialog.closest('[role]')?.getAttribute('role') ?? null },
     dialogControlsUnobscured: dialog && [...dialog.querySelectorAll('button')].filter(visible).every((button) => {
@@ -255,6 +260,7 @@ export async function capturePrimitivesScreenshots({
   };
   const capture = async (name, description) => {
     await sleep(450);
+    await evaluate(cdp, sessionId, 'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
     // Recorded rather than fatal, so a build that overflows can still be compared with one that does not.
     const pageWidth = await evaluate(cdp, sessionId, 'document.documentElement.scrollWidth');
     const viewportWidth = await evaluate(cdp, sessionId, 'window.innerWidth');

@@ -13,6 +13,7 @@ import path from 'node:path';
 import { APP, POPUP_HEIGHT, POPUP_WIDTH, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
 import { captureMobilePairingScreenshots } from './extension-smoke-mobile-pairing.mjs';
 import { captureAuthorizationScreenshots } from './extension-smoke-authorization.mjs';
+import { captureConnectionManagement } from './extension-smoke-connections.mjs';
 import { captureMetadataScreenshots } from './extension-smoke-metadata.mjs';
 import { captureSigningScreenshots } from './extension-smoke-signing.mjs';
 import { captureWalletConnectOwnership } from './extension-smoke-wallet-connect.mjs';
@@ -177,6 +178,13 @@ export async function capturePrimitivesScreenshots({
           window.__finishLegacyMigration = (response) => {
             for (const listener of listeners) listener({ id: message.id, response });
           };
+        } else if (window.__connectionFixture && ['pri(authorize.list)', 'pri(authorize.remove)', 'pri(authorize.update)'].includes(message.message)) {
+          const fixture = window.__connectionFixture;
+          fixture.requests.push({ message: message.message, request: message.request });
+          const send = (reply) => { for (const listener of listeners) listener({ id: message.id, ...reply }); };
+          if (message.message === 'pri(authorize.list)' && !fixture.holdRead) {
+            queueMicrotask(() => send(fixture.readError ? { error: 'Public fixture read failure' } : { response: { list: fixture.list } }));
+          } else window.__finishConnection = send;
         } else if (window.__authorizationFixture && ['pri(authorize.approve)', 'pri(authorize.delete.request)'].includes(message.message)) {
           window.__authorizationFixture.requests.push({ message: message.message, request: message.request });
           window.__finishAuthorization = (reply) => {
@@ -352,6 +360,12 @@ export async function capturePrimitivesScreenshots({
     if (process.env.SIGNING_REVIEW_ONLY === 'true') {
       await captureSigningScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
       await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'signing review only', results }, null, 2) + '\n');
+      return { shots, results };
+    }
+    if (process.env.AUTHORIZATION_ONLY === 'true') {
+      await captureAuthorizationScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+      await captureConnectionManagement({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+      await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'authorization and connection management; intercepted public fixtures', results }, null, 2) + '\n');
       return { shots, results };
     }
 

@@ -1,17 +1,25 @@
 <template>
   <div class="auth-content" width="100%">
     <div class="row">
-      <div class="row-content" @click="emits('openAuthDetails', stripedUrl)">
-        <div class="col">
+      <button type="button" class="row-content" :disabled="props.disabled" @click="onOpenDetails">
+        <span class="col">
           <ExternalLogo :name="faviconURl" :alt="t('common.favicon')" />
 
           <span class="auth-item-name">{{ stripedUrl }}</span>
-        </div>
+        </span>
 
         <span class="authorized-account__count">{{ authAccounts }}</span>
-      </div>
+      </button>
 
-      <Icon className="trash row-controls" icon="trash" @click="onRemoveAuth" />
+      <button
+        type="button"
+        class="remove-connection"
+        :disabled="props.disabled"
+        :aria-label="`${t('common.delete')} ${stripedUrl}`"
+        @click="onRemoveAuth"
+      >
+        <Icon className="trash row-controls" icon="trash" aria-hidden="true" />
+      </button>
     </div>
   </div>
 </template>
@@ -21,28 +29,34 @@ import { computed } from 'vue';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
 import { useI18n } from '@/locales/useI18n';
 
-const { authorizedAccounts, url } = defineProps<{
+const props = defineProps<{
   url: string;
   authorizedAccounts: string[];
+  disabled?: boolean;
 }>();
 const emits = defineEmits(['openAuthDetails', 'remove']);
 const { t, tc } = useI18n();
 
-const stripedUrl = computed(() => stripUrl(url));
+const stripedUrl = computed(() => stripUrl(props.url));
 
 const faviconURl = computed(() => {
-  const host = new URL(url).host;
+  const host = new URL(props.url).host;
 
   return `https://icons.duckduckgo.com/ip3/${host}.ico`;
 });
 
 const authAccounts = computed(() => {
-  const authListLength = authorizedAccounts.length;
+  const authListLength = props.authorizedAccounts.length;
 
   return tc('authorize.accountCount', authListLength, { count: authListLength });
 });
 
-const onRemoveAuth = () => emits('remove', stripedUrl.value);
+const onRemoveAuth = () => {
+  if (!props.disabled) emits('remove', stripedUrl.value);
+};
+const onOpenDetails = () => {
+  if (!props.disabled) emits('openAuthDetails', stripedUrl.value);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -58,14 +72,42 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
 
   &-content {
     width: 100%;
+    min-width: 0;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: left;
   }
+}
+
+button {
+  min-height: 44px;
+  border: 0;
+  padding: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+.remove-connection {
+  min-width: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
 }
 
 .auth-item-name {
   font-size: 1em;
+  overflow-wrap: anywhere;
 }
 
 .auth-content {
@@ -75,7 +117,7 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
 }
 
 .authorized-account__count {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   color: rgba(0, 238, 119, 1);
 }
 
@@ -92,5 +134,6 @@ const onRemoveAuth = () => emits('remove', stripedUrl.value);
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
 }
 </style>

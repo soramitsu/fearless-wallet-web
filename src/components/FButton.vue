@@ -10,9 +10,10 @@
       :style="buttonStyle"
       @click="onClick"
     >
+      <span v-if="loading" class="button-progress" aria-hidden="true"></span>
       <Icon
         aria-hidden="true"
-        v-if="shouldBeWithIcon"
+        v-else-if="shouldBeWithIcon"
         :icon="prepIconName"
         :className="prepIconClass"
         :iconColor="iconColor"
@@ -46,7 +47,7 @@ type FButtonProps = {
   borderRadius?: Size;
   typeText?: TypeText;
   disabled?: boolean;
-  /** Opt in only where the unavailable action has a visible explanation. */
+  /** Opt in only where the unavailable action has a visible state or explanation. */
   focusableWhenDisabled?: boolean;
   disabledReason?: string;
   loading?: boolean;
@@ -323,6 +324,24 @@ const buttonClasses = computed(() => {
   }
 }
 
+// Element Plus adds a pale mask above loading buttons, including their labels.
+// Our explicit busy state supplies its own indicator and preserves text contrast.
+.el-button.is-loading::before {
+  display: none;
+}
+
+.button-progress {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+}
+
 .button--content-wrap > .el-button span {
   font-size: 0.875rem;
   font-weight: 400;
@@ -472,6 +491,17 @@ const buttonClasses = computed(() => {
     background: var(--fw-raised-2) !important;
     border-color: var(--fw-raised-2) !important;
     color: var(--fw-text-3) !important;
+  }
+  .button.primary.is-loading {
+    background: var(--fw-fill) !important;
+    border-color: var(--fw-fill-top) !important;
+    color: var(--fw-on-accent) !important;
+    box-shadow: 0 0 16px rgb(255 0 154 / 0.4);
+
+    html[data-fw-effects='reduced'] &,
+    .fw-calm & {
+      box-shadow: none;
+    }
   }
 }
 

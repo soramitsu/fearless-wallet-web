@@ -8,7 +8,9 @@
   >
     <Scroll>
       <div class="accounts-migration" :aria-busy="isLoading || isBusy">
-        <p v-if="isLoading || isBusy" role="status" aria-live="polite">{{ t('migration.pending') }}</p>
+        <p v-if="isLoading || isSkipping || isNavigating || downloading.size > 0" role="status" aria-live="polite">
+          {{ t('migration.pending') }}
+        </p>
         <div>
           <div v-if="loadError" class="accounts-migration__notice" role="alert" data-testid="migrationLoadFailed">
             <span>{{ t('migration.loadFailed') }}</span>

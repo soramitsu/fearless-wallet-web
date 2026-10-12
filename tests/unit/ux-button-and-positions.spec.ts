@@ -137,7 +137,9 @@ describe('focusable unavailable actions', () => {
     button.element.click();
     expect(action).not.toHaveBeenCalled();
     expect(button.attributes('aria-busy')).toBe('true');
+    expect(button.get('.button-progress').attributes('aria-hidden')).toBe('true');
     await wrapper.setProps({ loading: false });
+    expect(button.find('.button-progress').exists()).toBe(false);
     expect(button.attributes('aria-describedby')).toBeUndefined();
     button.element.click();
     expect(action).toHaveBeenCalledOnce();

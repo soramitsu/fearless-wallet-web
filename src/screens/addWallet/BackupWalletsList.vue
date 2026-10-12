@@ -36,11 +36,12 @@
 
                 <FButton
                   class="button__confirm"
+                  aria-live="polite"
+                  aria-atomic="true"
                   type="primary"
                   size="big"
                   :border="false"
-                  :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
-                  :iconType="file.isLoading ? 'loading' : ''"
+                  :iconName="file.isComplete ? 'check' : ''"
                   :disabled="isDisabled(file)"
                   :loading="file.isLoading"
                   :focusableWhenDisabled="!disabled"
@@ -52,9 +53,6 @@
             </transition>
 
             <div v-if="isGoogle && file.active && missingBackup(file)" class="backup-loading">
-              <p :role="file.fileLoadError ? 'alert' : 'status'">
-                {{ $t(file.fileLoadError ? 'addWallet.google.somethingWrong' : 'addWallet.google.fetchInfo') }}
-              </p>
               <FButton
                 text="ux.retry"
                 type="secondary"
@@ -63,8 +61,8 @@
               />
             </div>
 
-            <p v-if="file.isLoading || file.isComplete" class="row-status" role="status" aria-live="polite">
-              {{ $t(file.isComplete ? 'migration.completed' : 'migration.pending') }}
+            <p v-if="file.isComplete && !file.active" class="row-status" role="status" aria-live="polite">
+              {{ $t('migration.completed') }}
             </p>
 
             <!-- What the row offers besides its password (the upgrade's backup download and recovery phrase). -->
@@ -177,16 +175,10 @@ export default defineComponent({
       return file.isComplete ? 'migration.completed' : file.isLoading ? 'migration.pending' : 'common.confirm';
     },
     disabledReason(file: FilesState) {
-      if (this.disabled) return '';
+      if (this.disabled || file.isComplete || file.isLoading) return '';
       if (this.isGoogle && this.missingBackup(file))
         return file.fileLoadError ? 'addWallet.google.somethingWrong' : 'addWallet.google.fetchInfo';
-      return file.isComplete
-        ? 'migration.completed'
-        : file.isLoading
-          ? 'migration.pending'
-          : !file.password
-            ? 'addWallet.enterPassword'
-            : '';
+      return !file.password ? 'addWallet.enterPassword' : '';
     },
     isDisabled(file: FilesState) {
       return (
@@ -340,5 +332,9 @@ export default defineComponent({
   margin: 8px 0;
   color: var(--fw-text-2);
   overflow-wrap: anywhere;
+}
+// Concurrent account requests keep a single pending halo in the list.
+.wallets__list > li:has(.is-loading) ~ li :deep(.is-loading) {
+  box-shadow: none;
 }
 </style>

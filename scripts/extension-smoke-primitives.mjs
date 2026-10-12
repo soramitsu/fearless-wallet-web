@@ -633,8 +633,16 @@ export async function capturePrimitivesScreenshots({
     await waitForExpression(cdp, sessionId, `document.querySelector('.button__confirm button')?.getAttribute('aria-busy') === 'true'`, 'Migration pending state');
     const pendingRow = await evaluate(cdp, sessionId, `({ requests: window.__legacyMigrationRequests, name: document.querySelector('.button__confirm button').textContent.trim(), continueUnavailable: document.querySelector('[data-testid="migrationContinue"] button').getAttribute('aria-disabled'), skipUnavailable: document.querySelector('[data-testid="migrationSkip"] button').disabled, recoveryUnavailable: document.querySelector('[data-testid="usePhrase"]').disabled })`);
     if (pendingRow.requests !== 1 || !pendingRow.name || pendingRow.continueUnavailable !== 'true' || !pendingRow.skipUnavailable || !pendingRow.recoveryUnavailable) throw new Error('Migration pending state permits competing navigation');
+    const pendingPaint = await evaluate(cdp, sessionId, `(() => {
+      const button = document.querySelector('.button__confirm button');
+      const style = getComputedStyle(button);
+      const ring = button.querySelector('.button-progress');
+      const ringStyle = ring && getComputedStyle(ring);
+      return { color: style.color, background: style.backgroundImage, mask: getComputedStyle(button, '::before').display, ringSize: ring?.getBoundingClientRect().width, ringColor: ringStyle?.borderTopColor, ringHidden: ring?.getAttribute('aria-hidden'), live: button.parentElement.getAttribute('aria-live'), duplicateStatus: document.querySelector('.wallets__item .row-status') !== null };
+    })()`);
+    if (pendingPaint.color !== 'rgb(255, 255, 255)' || !pendingPaint.background.includes('rgb(214, 0, 127)') || pendingPaint.mask !== 'none' || pendingPaint.ringSize < 20 || pendingPaint.ringColor !== pendingPaint.color || pendingPaint.ringHidden !== 'true' || pendingPaint.live !== 'polite' || pendingPaint.duplicateStatus) throw new Error('Pending action lost readable fill, progress ring or concise live status: ' + JSON.stringify(pendingPaint));
     await capture('46-migration-account-pending', 'Public fixture request held at popup boundary; named pending state and competing navigation disabled.');
-    Object.assign(results.at(-1), { pendingRow });
+    Object.assign(results.at(-1), { pendingRow, pendingPaint });
     await evaluate(cdp, sessionId, `(window.__finishLegacyMigration(false), true)`);
     await waitForExpression(cdp, sessionId, `document.querySelector('.error-descriptions')?.textContent.trim().length > 0`, 'Migration password error');
     await capture('47-migration-account-password-retry', 'Incorrect fixture password retains input and releases the request for retry.');
@@ -673,7 +681,7 @@ export async function capturePrimitivesScreenshots({
     await capture('50-google-backup-linked-pending', 'Public fixture: linked backup held at popup boundary; parent alone cannot enable import.');
     Object.assign(results.at(-1), { missingBackup });
     await evaluate(cdp, sessionId, `(window.__finishGoogleLinkedFile({ error: 'public fixture download failure' }), true)`);
-    await waitForExpression(cdp, sessionId, `document.querySelector('.backup-loading [role="alert"]') && !document.querySelector('.backup-loading button').disabled`, 'Retryable linked backup failure');
+    await waitForExpression(cdp, sessionId, `document.querySelector('.button__confirm .button-disabled-reason')?.textContent.trim() && !document.querySelector('.backup-loading button').disabled`, 'Retryable linked backup failure');
     await keyboardFocus('.backup-loading button');
     await capture('51-google-backup-linked-retry', 'Public fixture: linked download failure retains the loaded parent and offers retry.');
     await click('.backup-loading button');

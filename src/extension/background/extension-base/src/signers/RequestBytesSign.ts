@@ -8,7 +8,14 @@ import type { HexString } from '@polkadot/util/types';
 import type { RequestSign } from '@extension-base/background/types/types';
 
 export default class RequestBytesSign implements RequestSign {
-  constructor(public readonly payload: SignerPayloadRaw, private readonly isMobile = false) {}
+  constructor(
+    public readonly payload: SignerPayloadRaw,
+    private readonly isMobile = false
+  ) {}
+
+  snapshot(): RequestBytesSign {
+    return new RequestBytesSign(structuredClone(this.payload), this.isMobile);
+  }
 
   async sign(_registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }> {
     if (this.isMobile) return state.walletConnectDappService.onRequestRaw(this.payload);

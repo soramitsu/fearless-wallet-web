@@ -14,6 +14,10 @@ export default class RequestExtrinsicSign implements RequestSign {
     this.isMobile = isMobile;
   }
 
+  snapshot(): RequestExtrinsicSign {
+    return new RequestExtrinsicSign(structuredClone(this.payload), this.isMobile);
+  }
+
   async sign(registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }> {
     if (this.isMobile) return state.walletConnectDappService.onRequest(this.payload);
 

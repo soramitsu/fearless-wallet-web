@@ -3,7 +3,6 @@ import { logger as createLogger } from '@polkadot/util/logger';
 import { getId } from '@extension-base/utils';
 import type { Logger } from '@polkadot/util/types';
 import type {
-  Resolver,
   SignRequest,
   ResponseSigning,
   RequestSign,
@@ -18,7 +17,10 @@ export class SubstrateRequestHandler {
   private readonly substrateRequests: Record<string, SignRequest> = {};
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
 
-  constructor(private readonly requestService: RequestService, public readonly state: State) {
+  constructor(
+    private readonly requestService: RequestService,
+    public readonly state: State
+  ) {
     this.logger = createLogger('SubstrateRequestHandler');
   }
 
@@ -27,12 +29,9 @@ export class SubstrateRequestHandler {
   }
 
   public get allSubstrateRequests(): SigningRequest[] {
-    return Object.values(this.substrateRequests).map(({ account, id, request, url }) => ({
-      account,
-      id,
-      request,
-      url,
-    }));
+    return Object.values(this.substrateRequests).map(({ account, id, request, url }) =>
+      structuredClone({ account, id, request: { payload: request.payload }, url })
+    );
   }
 
   private updateIconSign(shouldClose?: boolean): void {
@@ -40,47 +39,43 @@ export class SubstrateRequestHandler {
     this.requestService.updateIcon(shouldClose);
   }
 
-  private signComplete = (
-    id: string,
-    resolve: (result: ResponseSigning) => void,
-    reject: (error: Error) => void
-  ): Resolver<ResponseSigning> => {
-    const complete = (): void => {
-      delete this.substrateRequests[id];
-
-      this.updateIconSign(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        this.logger.log(error);
-
-        complete();
-        reject(error);
-      },
-      resolve: (result: ResponseSigning): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  };
-
   public get numSubstrateRequests(): number {
     return Object.keys(this.substrateRequests).length;
   }
 
   public async sign(url: string, request: RequestSign, account: AccountJson, _id?: string): Promise<ResponseSigning> {
-    await this.requestService.ensureAccountAuthorized(url, account.address);
+    // Capture caller-owned data before the authorization load can yield.
+    const snapshot = structuredClone({ account, url });
+    const signer = request.snapshot();
+    await this.requestService.ensureAccountAuthorized(url, snapshot.account.address);
     const id = _id || getId();
 
     return new Promise((resolve, reject): void => {
-      this.substrateRequests[id] = {
-        ...this.signComplete(id, resolve, reject),
-        account,
-        id,
-        request,
-        url,
+      if (this.substrateRequests[id]) throw new Error('Duplicate Substrate request ID');
+      let settled = false;
+      const complete = () => {
+        if (settled || this.substrateRequests[id] !== queued) return false;
+        settled = true;
+        delete this.substrateRequests[id];
+        this.updateIconSign(true);
+        return true;
       };
+      const queued: SignRequest = {
+        account: snapshot.account,
+        id,
+        request: signer,
+        url: snapshot.url,
+        resolve: (result) => {
+          if (complete()) resolve(result);
+        },
+        reject: (error) => {
+          if (complete()) {
+            this.logger.log(error);
+            reject(error);
+          }
+        },
+      };
+      this.substrateRequests[id] = queued;
 
       this.updateIconSign();
       this.requestService.popupOpen();

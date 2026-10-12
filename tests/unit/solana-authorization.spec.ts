@@ -128,7 +128,7 @@ describe('Solana origin-scoped authorization', () => {
     const handler = new SubstrateRequestHandler(requestService, {} as State);
 
     await expect(
-      handler.sign(URL, {} as never, { address: 'another-account' } as never)
+      handler.sign(URL, { snapshot: () => ({}) } as never, { address: 'another-account' } as never)
     ).rejects.toThrow('account scope rejected');
     expect(handler.numSubstrateRequests).toBe(0);
     expect(requestService.popupOpen).not.toHaveBeenCalled();

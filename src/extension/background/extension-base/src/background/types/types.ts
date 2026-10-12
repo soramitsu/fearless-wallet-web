@@ -109,7 +109,7 @@ export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' 
 export interface SigningRequest {
   account: AccountJson;
   id: string;
-  request: RequestSign;
+  request: Pick<RequestSign, 'payload'>;
   url: string;
 }
 
@@ -760,6 +760,7 @@ export type MessageTypesWithNoSubscriptions = Exclude<MessageTypes, keyof Subscr
 
 export interface RequestSign {
   readonly payload: SignerPayloadJSON | SignerPayloadRaw;
+  snapshot(): RequestSign;
   sign(registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }>;
 }
 

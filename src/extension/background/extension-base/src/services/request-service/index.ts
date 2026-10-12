@@ -214,6 +214,10 @@ export class RequestService {
     return this.evmRequestHandler.numWcSignRequest;
   }
 
+  public get numEvmSignRequests(): number {
+    return this.evmRequestHandler.numEvmSignRequest;
+  }
+
   public get numSolanaSignRequests(): number {
     return this.solanaRequestHandler.numSolanaSignRequest;
   }
@@ -258,6 +262,7 @@ export class RequestService {
       this.numConnectWCRequests +
       this.numNotSupportWCRequests +
       this.numSignWCRequests +
+      this.numEvmSignRequests +
       this.numSolanaSignRequests
     );
   }

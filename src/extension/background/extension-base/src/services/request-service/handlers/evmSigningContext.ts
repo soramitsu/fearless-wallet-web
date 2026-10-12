@@ -54,7 +54,7 @@ export async function captureEvmSigningContext(
   const network = Object.values(state.networkService.networkMap).find(
     (entry) => selected && (entry.name.toLowerCase() === selected || entry.genesisHash.toLowerCase() === selected)
   );
-  if (!network || !network.isEthereum || network.disabled) throw new Error('EVM network is unavailable');
+  if (!network || network.ecosystem !== 'ethereum' || network.disabled) throw new Error('EVM network is unavailable');
   const networkChainId = chainId(network.chainId);
   const data = params as unknown[];
   let claimedChainId: unknown;

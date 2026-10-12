@@ -14,6 +14,7 @@ let network: {
   chainId: string;
   genesisHash: string;
   isEthereum: boolean;
+  ecosystem: string;
   disabled: boolean;
   assets: unknown[];
 };
@@ -25,6 +26,7 @@ beforeEach(() => {
     chainId: '1',
     genesisHash: '0x1234',
     isEthereum: true,
+    ecosystem: 'ethereum',
     disabled: false,
     assets: [{ symbol: 'ETH', precision: 18, isNative: true }],
   };
@@ -55,6 +57,11 @@ describe('EVM signing admission', () => {
       network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },
     });
   });
+  it('supports an admitted registry EVM network absent from the legacy name allowlist', async () => {
+    network.isEthereum = false;
+    await expect(sign()).resolves.toBe('0x1234');
+    expect(queue).toHaveBeenCalledOnce();
+  });
   it.each(['revoked', 'wrong account', 'unknown network', 'disabled network', 'non-EVM network'])(
     'does not queue a request with %s',
     async (reason) => {
@@ -62,7 +69,7 @@ describe('EVM signing admission', () => {
       if (reason === 'wrong account') auth.evmAuthorizedAccount = otherAddress;
       if (reason === 'unknown network') auth.currentEvmNetworkKey = 'Missing';
       if (reason === 'disabled network') network.disabled = true;
-      if (reason === 'non-EVM network') network.isEthereum = false;
+      if (reason === 'non-EVM network') network.ecosystem = 'substrate';
       await expect(sign()).rejects.toThrow();
       expect(queue).not.toHaveBeenCalled();
     }

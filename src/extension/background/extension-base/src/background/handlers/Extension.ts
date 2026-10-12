@@ -710,11 +710,20 @@ export default class Extension extends FWExtensionBase {
       }
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address });
       const signer = new Wallet(privateKey, provider);
+      if (signer.address.toLowerCase() !== address.toLowerCase())
+        throw new Error('Exported key does not match the reviewed account');
       const params = request.data as unknown[];
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         const txData = params[0] as ethers.TransactionRequest;
-        const { hash } = await signer.sendTransaction({ ...txData, chainId: BigInt(request.network.chainId) });
-        request.resolve({ id: request.id, payload: hash as HexString });
+        try {
+          const { hash } = await signer.sendTransaction({ ...txData, chainId: BigInt(request.network.chainId) });
+          request.resolve({ id: request.id, payload: hash as HexString });
+        } catch (error) {
+          // A transport failure can occur after broadcast. Settle this intent;
+          // retrying it with a fresh nonce could transfer the amount twice.
+          request.reject(error instanceof Error ? error : new Error('EVM submission outcome is unavailable'));
+          return false;
+        }
       } else {
         const method = request.method;
         const payload = method === 'personal_sign' ? params[0] : params[1];

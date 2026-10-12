@@ -9,7 +9,7 @@ import {
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import { generateHalfGenesisHash, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
+import { generateHalfGenesisHash } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
@@ -344,41 +344,18 @@ export class WalletConnectDAppService {
       topic,
     };
 
-    const signMethods: string[] = [
-      EIP155_SIGNING_METHODS.PERSONAL_SIGN,
-      EIP155_SIGNING_METHODS.ETH_SIGN,
-      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
-      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
-      EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
-    ];
-
     if (!this.app) throw new Error('Wallet Connect is not init!');
-
-    if (signMethods.includes(method)) {
-      const res = await this.app.client.request<{ payload: HexString }>(requestEvent);
-
-      return { id, payload: res.payload };
+    const result = await this.app.client.request<unknown>(requestEvent);
+    // EIP-155 WalletConnect responses are the raw signature / transaction hash,
+    // not an object with a payload field.
+    if (
+      typeof result !== 'string' ||
+      !/^0x(?:[0-9a-fA-F]{2})+$/.test(result) ||
+      (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION && result.length !== 66)
+    ) {
+      throw new Error('Invalid EVM response from the mobile wallet');
     }
-
-    const [tx] = parseRequestParams<EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION>(params);
-
-    const transactionAddress = tx.from;
-
-    this.state.walletConnectService.eip155RequestHandler.checkAccount(transactionAddress, sessionAccounts);
-
-    const createRequest = () => {
-      if (!this.app) throw new Error('Wallet Connect is not init!');
-      assertCurrent();
-
-      return this.app.client.request<{ payload: HexString }>(requestEvent);
-    };
-
-    const res = await createRequest();
-
-    return {
-      id,
-      payload: res.payload,
-    };
+    return { id, payload: result as HexString };
   }
 
   checkAccount(address: string, accounts: string[]) {

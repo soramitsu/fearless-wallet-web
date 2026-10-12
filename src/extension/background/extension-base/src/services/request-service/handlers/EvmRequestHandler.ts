@@ -27,6 +27,10 @@ export default class EvmRequestHandler {
     return Object.keys(this.wcRequests).length;
   }
 
+  get numEvmSignRequest(): number {
+    return Object.keys(this.evmRequests).length;
+  }
+
   getSignWCRequest(id: string): WCSignRequest {
     return this.wcRequests[id];
   }

@@ -97,7 +97,29 @@ Passwords include a non-ASCII master password (`Pässwörd-日本語-🔐`).
 
 ## Results
 
-RESULTS_PLACEHOLDER
+On 12 October 2026, all 12 scenarios passed on macOS with Chrome for Testing 147.0.7727.15. No assertions failed. The report is in the parent workspace at `build/safe-upgrade/evidence/codex-20261012/wk5-full/report.json`.
+
+The tested cached artifact was built from clean source `45917e8f797bd3bc1d29d29342b982a1051ae9d0`, version 4.2.0, Node 24.19.0. Harness source was `b4e759c3`. Application source had not changed between that build and the harness run. This does not qualify subsequent design-lane or integration changes: rebuild and rerun on the final source before release.
+
+| Scenario | Passed assertions |
+| --- | --- |
+| S1 | 49 |
+| S2 | 34 |
+| S3 | 37 |
+| S4 | 54 |
+| S5 | 24 |
+| S6 | 31 |
+| S7 | 40 |
+| S7b | 49 |
+| S8 | 18 |
+| R1 | 98 |
+| ECDSA-2.6.3 | 21 |
+| ECDSA-3.0.6 | 27 |
+
+Total: 482 passed assertions. Report SHA-256: `4b976c5cedef8ed558d59c99c5c2e0cd02e5c7da059cda5361a82074f91eddc5`.
+
+The preceding full run had S3/S6 CDP timeouts. Both passed a targeted rerun and this complete rerun; no application fix or proven timeout root cause is claimed. The driver now rejects disconnects promptly and logs caller stacks and cold-start timings. All five driver tests pass. Original failed logs are retained.
+
 
 ## Firefox (critique T-15)
 
@@ -112,5 +134,4 @@ listed in `docs/release-checklist.md` or record a written risk acceptance.
 
 - The published Web Store 3.0.5 package itself is never run (it uploads phrases on unlock). Its keyring and storage
   code is that of `600a64d5`, which is what the scenarios build; the hotfix lane diffed the two.
-- CI cannot run until `CFT_LINUX64_SHA256` in `scripts/upgrade-e2e/install-cft.sh` is recorded from a first download of
-  the pinned linux64 Chrome for Testing; until then the job fails closed. Locally the scenarios ran on macOS.
+- Linux CI has not been executed in this local run. Its pinned Chrome-for-Testing archive checksum was verified from the official download and is recorded in `scripts/upgrade-e2e/install-cft.sh`; macOS results do not stand in for a CI run.

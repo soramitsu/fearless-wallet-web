@@ -274,7 +274,11 @@ const buttonClasses = computed(() => {
   .button {
     width: 100%;
     padding: 10px 10px;
-    height: 32px;
+    min-height: 32px;
+    height: auto;
+    white-space: normal;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -462,6 +466,12 @@ const buttonClasses = computed(() => {
   .is-disabled,
   .is-loading {
     box-shadow: none;
+  }
+  // State must win over the later secondary/google variant and hover rules.
+  .button.is-disabled {
+    background: var(--fw-raised-2) !important;
+    border-color: var(--fw-raised-2) !important;
+    color: var(--fw-text-3) !important;
   }
 }
 

@@ -506,9 +506,12 @@ export async function capturePrimitivesScreenshots({
       const semantics = await evaluate(cdp, sessionId, `(() => {
         const button = document.querySelector('.universal-migration__vault-export button');
         const reason = document.getElementById(button.getAttribute('aria-describedby'));
-        return { focused: document.activeElement === button, disabled: button.disabled, ariaDisabled: button.getAttribute('aria-disabled'), reason: reason?.textContent.trim(), height: button.getBoundingClientRect().height };
+        const label = button.querySelector('span');
+        const expected = document.createElement('span'); expected.style.color = 'var(--fw-text-3)'; button.appendChild(expected);
+        const disabledColorMatches = getComputedStyle(expected).color === getComputedStyle(button).color; expected.remove();
+        return { focused: document.activeElement === button, disabled: button.disabled, ariaDisabled: button.getAttribute('aria-disabled'), reason: reason?.textContent.trim(), height: button.getBoundingClientRect().height, labelFits: label.scrollWidth <= label.clientWidth + 1 && label.getBoundingClientRect().width <= button.clientWidth, disabledColorMatches };
       })()`);
-      if (!semantics.focused || semantics.disabled || semantics.ariaDisabled !== 'true' || !semantics.reason || semantics.height < 44) throw new Error('Unavailable export lost its keyboard explanation');
+      if (!semantics.focused || semantics.disabled || semantics.ariaDisabled !== 'true' || !semantics.reason || semantics.height < 44 || !semantics.labelFits || !semantics.disabledColorMatches) throw new Error('Unavailable export lost its keyboard explanation');
       for (const type of ['keyDown', 'keyUp']) {
         await cdp.send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
       }

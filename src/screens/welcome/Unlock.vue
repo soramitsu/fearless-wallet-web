@@ -14,7 +14,9 @@
       </div>
 
       <div class="logo-container">
-        <img class="logo-animated" src="@/assets/fearless-logo-animated.gif" :alt="t('common.fearlessLogo')" />
+        <div class="logo-mark" role="img" :aria-label="t('common.fearlessLogo')">
+          <Icon icon="fw-logo" className="unlock-logo" aria-hidden="true" />
+        </div>
 
         <Logo
           class="description"
@@ -33,6 +35,7 @@
         errorDescriptions="common.invalidPassword"
         :isError="isError"
         :showPassword="true"
+        :readonly="isUnlocking"
         :value="password"
         @pressEnter="unlock"
         @change="changeSyncedPassword"
@@ -42,18 +45,24 @@
         class="unlock-btn"
         text="welcome.unlock"
         size="big"
-        :disabled="isDisabledBtn"
+        :loading="isUnlocking"
         :border="false"
         @click="unlock"
       />
 
+      <p class="unlock-error" role="alert" aria-live="polite" aria-atomic="true">{{ unlockFailed ? t('accountAccess.unlockFailed') : '' }}</p>
+
       <div class="bottom">
-        <span class="pink" @click="toggleResetPopup">{{ t('welcome.forgotYourPassword') }}</span>
+        <button type="button" class="pink" data-testid="forgotPassword" :disabled="isUnlocking" @click="toggleResetPopup">
+          {{ t('welcome.forgotYourPassword') }}
+        </button>
 
         <div class="fearless-support">
           <span>{{ t('welcome.needHelp') }}</span>
 
-          <span class="pink" @click="openSupport">&nbsp;{{ t('common.fearlessSupport') }}</span>
+          <a class="pink" data-testid="unlockSupport" :href="URLS.FEARLESS_HAPPINESS" target="_blank" rel="noopener noreferrer">
+            {{ t('common.fearlessSupport') }}
+          </a>
         </div>
       </div>
     </div>
@@ -63,7 +72,7 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, ref } from 'vue';
+import { watch, ref, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
@@ -78,35 +87,43 @@ const route = useRoute();
 const password = ref('');
 const isError = ref(false);
 const showResetPopup = ref(false);
-const isDisabledBtn = ref(false);
+const isUnlocking = ref(false);
+const unlockFailed = ref(false);
+let disposed = false;
 const isPopup = ref(IS_POPUP);
 const { t } = useI18n();
 
-watch(password, () => (isError.value = false));
+watch(password, () => { isError.value = false; unlockFailed.value = false; });
+onBeforeUnmount(() => { disposed = true; password.value = ''; });
 
 const changeSyncedPassword = (pass: string) => (password.value = pass);
 
 const unlock = async () => {
-  isDisabledBtn.value = true;
+  if (isUnlocking.value || disposed) return;
+  isUnlocking.value = true;
+  isError.value = false;
+  unlockFailed.value = false;
 
-  const isUnlock = await unlockExtension({ password: password.value });
-
-  if (isUnlock) {
-    router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
-
-    return;
+  try {
+    const isUnlock = await unlockExtension({ password: password.value });
+    if (disposed) return;
+    if (isUnlock) {
+      await router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
+    } else {
+      isError.value = true;
+    }
+  } catch {
+    // Transport errors do not establish that the password was incorrect.
+    if (!disposed) unlockFailed.value = true;
+  } finally {
+    isUnlocking.value = false;
   }
-
-  isDisabledBtn.value = false;
-  isError.value = true;
 };
 
 const openFullScreen = () => {
   windowOpen(resolveUnlockRedirect(route.query.redirect) ?? '/');
   window.close();
 };
-
-const openSupport = () => window.open(URLS.FEARLESS_HAPPINESS);
 
 const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
 </script>
@@ -116,7 +133,9 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  min-height: 100%;
+  gap: 24px;
+  padding-bottom: 8px;
 
   .header {
     display: flex;
@@ -128,11 +147,20 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     flex-direction: column;
   }
 
-  .logo-animated {
-    width: 70%;
-    height: 70%;
-    margin: auto;
+  .logo-mark {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 8px;
+
+    :deep(.unlock-logo) {
+      width: 160px;
+      height: 70px;
+      color: $plain-white;
+    }
   }
+
+  .description :deep(.text) { font-size: 1.75rem; }
+
 
   .pass-block {
     .unlock-btn {
@@ -140,16 +168,38 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     }
   }
 
+  .unlock-error {
+    margin: 0 0 8px;
+    color: var(--fw-text-1);
+    overflow-wrap: anywhere;
+    &:empty { display: none; }
+  }
+
   .bottom {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
 
     .fearless-support {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      column-gap: 0.25em;
       font-size: 12px;
       color: $gray-color;
     }
 
     .pink {
+      display: inline-flex;
+      align-items: center;
+      min-height: 48px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      text-align: start;
+      text-decoration: none;
       color: palette($pink-color, var(--fw-link));
       cursor: pointer;
     }

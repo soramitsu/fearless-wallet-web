@@ -408,6 +408,57 @@ export async function capturePrimitivesScreenshots({
       await waitForExpression(cdp, sessionId, '!' + dialogOpen, 'Currency dialog closed');
     }
 
+    // Exercise the actual password form with public fixture credentials. No chain transaction is submitted.
+    await extensionSend(cdp, controlSession, 'pri(keyring.lock)', true);
+    await route('Unlock');
+    await waitFor('.unlock input', 'Locked fixture password form');
+    await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = 'en-US', true)`);
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: POPUP_WIDTH, height: POPUP_HEIGHT, deviceScaleFactor: 2, mobile: false }, sessionId);
+    await keyboardFocus('.unlock input');
+    await cdp.send('Input.insertText', { text: 'public-fixture-wrong-password' }, sessionId);
+    for (const type of ['keyDown', 'keyUp']) {
+      await cdp.send('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+    }
+    await waitForExpression(cdp, sessionId, `document.querySelector('.unlock input')?.getAttribute('aria-invalid') === 'true' && !document.querySelector('.unlock-btn button')?.disabled`, 'Wrong password permits retry');
+    const unlockVariants = [
+      { name: '23-unlock-retry', width: POPUP_WIDTH, height: POPUP_HEIGHT, locale: 'en-US' },
+      { name: '24-unlock-russian', width: 320, height: 600, locale: 'ru-RU' },
+      { name: '25-unlock-akkadian', width: 320, height: 600, locale: 'akk-Xsux-x-old' },
+      { name: '26-unlock-egyptian', width: 320, height: 600, locale: 'egy-Egyp' },
+      { name: '27-unlock-200-percent', width: 281, height: 300, locale: 'en-US' },
+    ];
+    for (const variant of unlockVariants) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: variant.width, height: variant.height, deviceScaleFactor: 2, mobile: false }, sessionId);
+      await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = ${JSON.stringify(variant.locale)}, document.documentElement.lang = ${JSON.stringify(variant.locale)}, true)`);
+      await keyboardFocus('[data-testid="forgotPassword"]');
+      await capture(variant.name, 'Unlock: wrong-password retry and keyboard recovery controls, ' + variant.locale);
+      const controls = await evaluate(cdp, sessionId, `(() => {
+        const input = document.querySelector('.unlock input');
+        const error = document.getElementById(input.getAttribute('aria-describedby'));
+        return {
+          errorAssociated: Boolean(error?.textContent.trim()) && error.getAttribute('role') === 'alert',
+          recoveryControls: ['forgotPassword', 'unlockSupport'].map((id) => {
+            const el = document.querySelector('[data-testid="' + id + '"]'); const box = el.getBoundingClientRect();
+            return { tag: el.tagName, height: box.height, width: box.width, name: el.textContent.trim() };
+          }),
+        };
+      })()`);
+      if (!controls.errorAssociated || controls.recoveryControls.some((control) => control.height < 48 || !control.name) || controls.recoveryControls[0].tag !== 'BUTTON' || controls.recoveryControls[1].tag !== 'A') throw new Error('Unlock recovery semantics or targets regressed');
+      Object.assign(results.at(-1), controls);
+    }
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r', unmodifiedText: '\r' }, sessionId);
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }, sessionId);
+    await waitFor('[role="dialog"]', 'Keyboard-opened recovery dialog');
+    results.at(-1).keyboardOpensRecovery = true;
+    await escape();
+    await waitForExpression(cdp, sessionId, `!document.querySelector('[role="dialog"]')`, 'Recovery dialog dismissed');
+    await keyboardFocus('.unlock input');
+    await evaluate(cdp, sessionId, `(document.querySelector('.unlock input').select(), true)`);
+    await cdp.send('Input.insertText', { text: password }, sessionId);
+    await click('.unlock-btn button');
+    await waitForExpression(cdp, sessionId, `${APP}.router.currentRoute.value.name !== 'Unlock'`, 'Successful password retry leaves unlock');
+    results.at(-1).successfulFixtureRetry = true;
+
     await cdp.send(
       'Emulation.setDeviceMetricsOverride',
       {
@@ -426,7 +477,7 @@ export async function capturePrimitivesScreenshots({
       path.join(outputDir, 'README.md'),
       `# Primitives at the popup size (${POPUP_WIDTH} x ${POPUP_HEIGHT}, device scale 2)\n\n` +
         'Captured offline by `node scripts/solana-extension-smoke.mjs --primitives-screenshots <dir>` from the test build. ' +
-        'Nothing is submitted. `results.json` records, per screen, how the primitives on it are painted and named.\n\n' +
+        'Only public fixture unlock credentials are submitted; no chain transactions. `results.json` records, per screen, how the primitives on it are painted and named.\n\n' +
         shots.map(({ file, description }) => `- \`${path.basename(file)}\`: ${description}`).join('\n') +
         '\n'
     );

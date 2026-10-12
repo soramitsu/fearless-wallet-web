@@ -8,6 +8,7 @@
         ref="input"
         :id="inputId"
         :aria-invalid="isError || undefined"
+        :aria-describedby="describedBy || undefined"
         :class="['el-input__inner', inputClasses]"
         :maxlength="maxlength"
         :readonly="readonly"
@@ -22,6 +23,7 @@
         ref="input"
         :id="inputId"
         :aria-invalid="isError || undefined"
+        :aria-describedby="describedBy || undefined"
         :class="['el-input__inner', inputClasses]"
         :type="showPassword ? 'password' : type === 'text-file' ? 'file' : type"
         :accept="accept"
@@ -58,6 +60,7 @@ type FInputProps = {
   showPassword?: boolean;
   styleInput?: Style;
   isError?: boolean;
+  describedBy?: string;
   cursorPointer?: boolean;
 };
 
@@ -120,10 +123,8 @@ const inputClasses = computed(() => {
   ];
 });
 
-const keydownPress = (event: Event) => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  if (event.key === 'Enter') emit('pressEnter');
+const keydownPress = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) emit('pressEnter');
 };
 
 defineExpose({ input });

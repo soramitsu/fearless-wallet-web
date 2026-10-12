@@ -154,7 +154,7 @@ export async function capturePrimitivesScreenshots({
       port.postMessage = (message) => {
         if (window.__mobilePairingFixture && ['pri(walletConnect.app.pairing)', 'pri(walletConnect.app.subscribePairing)', 'pri(walletConnect.app.cancelPairing)'].includes(message.message)) {
           const fixture = window.__mobilePairingFixture;
-          fixture.requests.push({ id: message.id, message: message.message, request: message.request });
+          fixture.requests.push({ message: message.message, request: message.request });
           const send = (reply) => queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, ...reply }); });
           if (message.message === 'pri(walletConnect.app.pairing)') {
             window.__finishMobileInit = send;
@@ -180,7 +180,7 @@ export async function capturePrimitivesScreenshots({
           };
         } else if (window.__connectionFixture && ['pri(authorize.list)', 'pri(authorize.remove)', 'pri(authorize.update)'].includes(message.message)) {
           const fixture = window.__connectionFixture;
-          fixture.requests.push({ message: message.message, request: message.request });
+          fixture.requests.push({ id: message.id, message: message.message, request: message.request });
           const send = (reply) => { for (const listener of listeners) listener({ id: message.id, ...reply }); };
           if (message.message === 'pri(authorize.list)' && !fixture.holdRead) {
             queueMicrotask(() => send(fixture.readError ? { error: 'Public fixture read failure' } : { response: { list: fixture.list } }));

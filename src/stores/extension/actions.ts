@@ -88,6 +88,35 @@ export type ApprovePayload = {
   id: string;
 };
 
+type SigningQueue = 'signRequests' | 'signEvmRequests' | 'signSolanaRequests';
+
+const signingQueueFor = (store: ExtensionStore, id: string): SigningQueue | undefined => {
+  if (store.signRequests.some((request) => request.id === id)) return 'signRequests';
+  if (Object.values(store.signEvmRequests).some((request) => request.id === id)) return 'signEvmRequests';
+  if (Object.values(store.signSolanaRequests).some((request) => request.id === id)) return 'signSolanaRequests';
+};
+
+const removeSigningRequest = (store: ExtensionStore, queue: SigningQueue | undefined, id: string) => {
+  if (queue === 'signRequests') store.deleteRequest(queue, id);
+  else if (queue) {
+    for (const [key, request] of Object.entries(store[queue])) {
+      if (request.id === id) delete store[queue][key];
+    }
+  }
+};
+
+// Each ecosystem publishes independently. An empty update from one must not hide another's prompt.
+const routeSigningRequests = (store: ExtensionStore, incomingRequests = false) => {
+  const pending =
+    store.signRequests.length +
+    Object.keys(store.signEvmRequests).length +
+    Object.keys(store.signSolanaRequests).length;
+  const onSigningScreen = router.currentRoute.value.name === Components.Transaction;
+
+  if (!pending && onSigningScreen) void router.push({ name: Components.Wallet });
+  else if (incomingRequests && !onSigningScreen) void router.push({ name: Components.Transaction });
+};
+
 type Actions = {
   subscribeAuthRequests(this: ExtensionStore): Promise<AuthorizeRequest[]>;
   approveAuthRequests(this: ExtensionStore, props: ApproveAuthRequest): Promise<void>;
@@ -119,7 +148,8 @@ type Actions = {
 
   deleteRequest(
     this: ExtensionStore,
-    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests'
+    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests',
+    id: string
   ): void;
   setRequest(this: ExtensionStore, props: RequestsPayload): void;
   setTabStatus(this: ExtensionStore, props: ActiveTabAuthorizeStatus): void;
@@ -148,8 +178,9 @@ export const actions: Actions = {
     if (type === 'wcSessions') this.wcSessions = requests;
   },
 
-  deleteRequest(type) {
-    this[type].shift();
+  deleteRequest(type, id) {
+    const index = this[type].findIndex((request) => request.id === id);
+    if (index >= 0) this[type].splice(index, 1);
   },
 
   setTabStatus(payload) {
@@ -180,7 +211,7 @@ export const actions: Actions = {
   async approveAuthRequests({ id, accounts }) {
     await approveAuthRequest(id, accounts);
 
-    this.deleteRequest('authRequests');
+    this.deleteRequest('authRequests', id);
 
     this.fetchTabStatus();
   },
@@ -188,7 +219,7 @@ export const actions: Actions = {
   async rejectAuthRequests(payload) {
     await deleteAuthRequest(payload);
 
-    this.deleteRequest('authRequests');
+    this.deleteRequest('authRequests', payload);
 
     this.fetchTabStatus();
   },
@@ -224,17 +255,19 @@ export const actions: Actions = {
   },
 
   async approveMetaRequests(payload) {
-    await approveMetaRequest(payload.id);
+    const { id } = payload;
+    await approveMetaRequest(id);
 
-    this.deleteRequest('metaRequests');
+    this.deleteRequest('metaRequests', id);
 
     this.fetchTabStatus();
   },
 
   async rejectMetaRequests(payload) {
-    await rejectMetaRequest(payload.id);
+    const { id } = payload;
+    await rejectMetaRequest(id);
 
-    this.deleteRequest('metaRequests');
+    this.deleteRequest('metaRequests', id);
     this.fetchTabStatus();
   },
 
@@ -242,15 +275,7 @@ export const actions: Actions = {
     const callback = (requests: SigningRequest[]) => {
       this.setRequest({ type: 'signRequests', requests });
 
-      if (router.currentRoute.value.name === 'Transaction' && requests.length === 0)
-        router.push({
-          name: Components.Wallet,
-        });
-
-      if (requests.length)
-        router.push({
-          name: Components.Transaction,
-        });
+      routeSigningRequests(this, requests.length > 0);
     };
 
     return subscribeSigningRequests(callback);
@@ -260,10 +285,7 @@ export const actions: Actions = {
     const callback = (requests: EvmRequests) => {
       this.setRequest({ type: 'signEvmRequests', requests });
 
-      const isRequestsExists = Object.keys(requests).length !== 0;
-
-      if (router.currentRoute.value.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
-      else if (isRequestsExists) router.push({ name: Components.Transaction });
+      routeSigningRequests(this, Object.keys(requests).length > 0);
     };
 
     return subscribeEvmSigningRequests(callback);
@@ -273,41 +295,39 @@ export const actions: Actions = {
     const callback = (requests: SolanaRequests) => {
       this.setRequest({ type: 'signSolanaRequests', requests });
 
-      const isRequestsExists = Object.keys(requests).length !== 0;
-
-      if (router.currentRoute.value.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
-      else if (isRequestsExists) router.push({ name: Components.Transaction });
+      routeSigningRequests(this, Object.keys(requests).length > 0);
     };
 
     return subscribeSolanaSigningRequests(callback);
   },
 
   async approveSign({ id }) {
+    const queue = signingQueueFor(this, id);
     await approveSign(id);
 
-    this.deleteRequest('signRequests');
-
-    router.push({ name: Components.Wallet });
+    removeSigningRequest(this, queue, id);
+    routeSigningRequests(this);
 
     this.fetchTabStatus();
   },
 
   async signSignature({ payload, id }) {
+    const queue = signingQueueFor(this, id);
     await approveSignSignature(id, payload.signature);
 
-    this.deleteRequest('signRequests');
+    removeSigningRequest(this, queue, id);
 
     this.fetchTabStatus();
 
-    router.push({ name: Components.Wallet });
+    routeSigningRequests(this);
   },
 
   async signCancel(id) {
+    const queue = signingQueueFor(this, id);
     await cancelSignRequest(id);
 
-    this.deleteRequest('signRequests');
-
-    router.push({ name: Components.Wallet });
+    removeSigningRequest(this, queue, id);
+    routeSigningRequests(this);
   },
 
   async subscribeExtensionRequests() {

@@ -397,7 +397,7 @@ export interface RequestSignatures {
     WalletConnectTransactionRequest[]
   ];
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
-  'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
+  'pri(walletConnect.request.reject)': [{ approvalId: string }, boolean];
 
   // Wallet Connect dApp
   'pri(walletConnect.app.connect)': [null, string];

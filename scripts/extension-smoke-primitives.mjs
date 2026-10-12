@@ -14,6 +14,7 @@ import { APP, POPUP_HEIGHT, POPUP_WIDTH, portfolioFixture, servePopupOffline } f
 import { captureAuthorizationScreenshots } from './extension-smoke-authorization.mjs';
 import { captureMetadataScreenshots } from './extension-smoke-metadata.mjs';
 import { captureSigningScreenshots } from './extension-smoke-signing.mjs';
+import { captureWalletConnectOwnership } from './extension-smoke-wallet-connect.mjs';
 
 /** Paint, size and accessible semantics of the primitives on screen; one sample per kind. */
 const PRIMITIVES = `(() => {
@@ -174,6 +175,11 @@ export async function capturePrimitivesScreenshots({
           window.__finishSigning = (reply) => {
             for (const listener of listeners) listener({ id: message.id, ...reply });
           };
+        } else if (window.__wcOwnershipFixture && ['pri(walletConnect.request.approve)', 'pri(walletConnect.request.reject)'].includes(message.message)) {
+          window.__wcOwnershipFixture.requests.push({ message: message.message, request: message.request });
+          window.__finishWcOwnership = (reply) => {
+            for (const listener of listeners) listener({ id: message.id, ...reply });
+          };
         } else if (window.__googleBackupFixture && message.message.startsWith('pri(google.')) {
           const send = (reply) => queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, ...reply }); });
           if (message.message === 'pri(google.verify.token)') send({ response: { expires_in: '3600' } });
@@ -311,6 +317,11 @@ export async function capturePrimitivesScreenshots({
       })()`
     );
 
+    if (process.env.WC_OWNERSHIP_ONLY === 'true') {
+      await captureWalletConnectOwnership({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
+      await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'WalletConnect request ownership only', results }, null, 2) + '\n');
+      return { shots, results };
+    }
     if (process.env.SIGNING_REVIEW_ONLY === 'true') {
       await captureSigningScreenshots({ cdp, sessionId, evaluate, waitForExpression, route, waitFor, click, keyboardFocus, capture, results });
       await fs.writeFile(path.join(outputDir, 'results.json'), JSON.stringify({ scope: 'signing review only', results }, null, 2) + '\n');

@@ -183,8 +183,9 @@ describe('EVM approval uses the reviewed request context', () => {
       },
       resolve: vi.fn(),
     };
-    state.requestService.signWcRequest = vi.fn(() => request as never);
-    await expect(extension.wcRequestApprove({ address, topic: 'public-topic' })).rejects.toThrow();
+    vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
+    vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
+    await expect(extension.wcRequestApprove({ address, approvalId: 'public-approval' })).rejects.toThrow();
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
     expect(request.resolve).not.toHaveBeenCalled();
   });
@@ -225,8 +226,9 @@ describe('EVM approval uses the reviewed request context', () => {
       },
       resolve: vi.fn(),
     };
-    state.requestService.signWcRequest = vi.fn(() => request as never);
-    await extension.wcRequestApprove({ address, topic: 'public-topic' });
+    vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
+    vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
+    await extension.wcRequestApprove({ address, approvalId: 'public-approval' });
     expect(request.resolve).toHaveBeenCalledTimes(1);
     const { payload } = request.resolve.mock.calls[0][0];
     expect(verifyTypedData(typed.domain, typed.types, typed.message, payload)).toBe(address);
@@ -254,8 +256,9 @@ describe('EVM approval uses the reviewed request context', () => {
       },
       resolve: vi.fn(),
     };
-    state.requestService.signWcRequest = vi.fn(() => request as never);
-    await expect(extension.wcRequestApprove({ address, topic: 'public-topic' })).rejects.toThrow('chain');
+    vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
+    vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
+    await expect(extension.wcRequestApprove({ address, approvalId: 'public-approval' })).rejects.toThrow('chain');
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
   });
   it('accepts an object payload and signs the exact false boolean', async () => {
@@ -536,19 +539,20 @@ describe('WalletConnect EVM message bytes', () => {
       resolve: vi.fn(),
       reject: vi.fn(),
     };
-    Object.assign(state.requestService, { signWcRequest: () => request });
+    vi.spyOn(handler, 'claimWCSignRequest').mockReturnValue(request as never);
+    vi.spyOn(handler, 'getSignWCRequest').mockReturnValue(request as never);
     return request;
   }
   it.each(['personal_sign', 'eth_sign'])('preserves binary %s input on the wallet side', async (method) => {
     const bytes = '0xff00c080deadbeef';
     const request = queued(method, method === 'personal_sign' ? [bytes, address] : [address, bytes]);
-    await extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' });
+    await extension.wcRequestApprove({ address: 'substrate-root', approvalId: 'fixture-approval' });
     expect(verifyMessage(getBytes(bytes), request.resolve.mock.calls[0][0].payload)).toBe(address);
   });
   it('uses the personal_sign position even when the message looks like an address', async () => {
     const message = '0x2222222222222222222222222222222222222222';
     const request = queued('personal_sign', [message, address]);
-    await extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' });
+    await extension.wcRequestApprove({ address: 'substrate-root', approvalId: 'fixture-approval' });
     expect(verifyMessage(getBytes(message), request.resolve.mock.calls[0][0].payload)).toBe(address);
   });
   it('refuses a mismatched exported WalletConnect signing key', async () => {
@@ -556,9 +560,9 @@ describe('WalletConnect EVM message bytes', () => {
     vi.mocked(state.keyringService.accountExportPrivateKey).mockReturnValue({
       privateKey: `0x${'22'.repeat(32)}`,
     } as never);
-    await expect(extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' })).rejects.toThrow(
-      'Exported key'
-    );
+    await expect(
+      extension.wcRequestApprove({ address: 'substrate-root', approvalId: 'fixture-approval' })
+    ).rejects.toThrow('Exported key');
     expect(request.resolve).not.toHaveBeenCalled();
   });
   it.each(['malformed', 'wrong signer'])('rejects %s before exporting a WalletConnect key', async (reason) => {
@@ -566,8 +570,65 @@ describe('WalletConnect EVM message bytes', () => {
       reason === 'malformed' ? '0xg1' : '0x1234',
       reason === 'wrong signer' ? '0x2222222222222222222222222222222222222222' : address,
     ]);
-    await expect(extension.wcRequestApprove({ address: 'substrate-root', topic: 'fixture' })).rejects.toThrow();
+    await expect(
+      extension.wcRequestApprove({ address: 'substrate-root', approvalId: 'fixture-approval' })
+    ).rejects.toThrow();
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
     expect(request.resolve).not.toHaveBeenCalled();
+  });
+});
+
+describe('WalletConnect approval claims the actual queued intent', () => {
+  function queued(id: number, method = 'personal_sign', params: unknown[] = data) {
+    const result = handler.onWCSign({
+      id,
+      topic: 'public-topic',
+      params: { chainId: 'eip155:1', request: { method, params } },
+    } as never);
+    const approvalId = handler.signWcSubject.value.find((request) => request.id === id)!.approvalId;
+    return { result, approvalId };
+  }
+  it('does not sign or reject the same intent twice while signing is pending', async () => {
+    const payload = await wallet.signMessage('hello');
+    let finish!: (signature: string) => void;
+    const sign = vi.spyOn(Wallet.prototype, 'signMessage').mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    const { result, approvalId } = queued(1);
+    const approving = extension.wcRequestApprove({ address, approvalId });
+    await expect(extension.wcRequestApprove({ address, approvalId })).rejects.toThrow('pending');
+    expect(() => extension.wcRequestReject({ approvalId })).toThrow('pending');
+    expect(state.keyringService.accountExportPrivateKey).toHaveBeenCalledTimes(1);
+    finish(payload);
+    await expect(approving).resolves.toBe(true);
+    await expect(result).resolves.toEqual({ id: 'public-topic', payload });
+    await expect(extension.wcRequestApprove({ address, approvalId })).rejects.toThrow('unavailable');
+    expect(sign).toHaveBeenCalledTimes(1);
+  });
+  it('consumes an ambiguous broadcast failure without deleting the next same-session request', async () => {
+    const first = queued(1, 'eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const rejected = expect(first.result).rejects.toThrow('response lost');
+    const next = queued(2);
+    const send = vi.spyOn(Wallet.prototype, 'sendTransaction').mockRejectedValue(new Error('response lost'));
+    await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).resolves.toBe(false);
+    await rejected;
+    await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).rejects.toThrow('unavailable');
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(handler.signWcSubject.value.map(({ id }) => id)).toEqual([2]);
+    await extension.wcRequestApprove({ address, approvalId: next.approvalId });
+    expect(verifyMessage('hello', (await next.result).payload)).toBe(address);
+  });
+  it('rejects only the supplied approval identity', async () => {
+    const first = queued(1),
+      next = queued(2);
+    const rejected = expect(first.result).rejects.toThrow('USER_REJECTED');
+    expect(extension.wcRequestReject({ approvalId: first.approvalId })).toBe(true);
+    await rejected;
+    expect(extension.wcRequestReject({ approvalId: first.approvalId })).toBe(false);
+    expect(handler.signWcSubject.value.map(({ id }) => id)).toEqual([2]);
+    await extension.wcRequestApprove({ address, approvalId: next.approvalId });
+    await next.result;
   });
 });

@@ -180,14 +180,20 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
     const extension = {
       state: {
         keyringService,
-        requestService: { signWcRequest: () => request },
+        requestService: {
+          evmRequestHandler: {
+            claimWCSignRequest: () => request,
+            getSignWCRequest: () => request,
+            releaseWCSignRequest: vi.fn(),
+          },
+        },
         networkService: { networkMap: { ethereum: { name: 'Ethereum', chainId: '1' } } },
         getEvmApi: () => undefined,
       },
     } as unknown as Extension;
 
     await expect(
-      Extension.prototype.wcRequestApprove.call(extension, { address: parent.address, topic: TOPIC })
+      Extension.prototype.wcRequestApprove.call(extension, { address: parent.address, approvalId: 'public-approval' })
     ).resolves.toBe(true);
 
     expect(request.resolve).toHaveBeenCalledOnce();
@@ -218,14 +224,20 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
     const extension = {
       state: {
         keyringService,
-        requestService: { signWcRequest: () => request },
+        requestService: {
+          evmRequestHandler: {
+            claimWCSignRequest: () => request,
+            getSignWCRequest: () => request,
+            releaseWCSignRequest: vi.fn(),
+          },
+        },
         networkService: { networkMap: { ethereum: { name: 'Ethereum', chainId: '1' } } },
         getEvmApi: () => undefined,
       },
     } as unknown as Extension;
 
     await expect(
-      Extension.prototype.wcRequestApprove.call(extension, { address: child.address, topic: TOPIC })
+      Extension.prototype.wcRequestApprove.call(extension, { address: child.address, approvalId: 'public-approval' })
     ).resolves.toBe(true);
 
     expect(send).toHaveBeenCalledOnce();

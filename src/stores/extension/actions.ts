@@ -384,8 +384,6 @@ export const actions: Actions = {
     const callback = (requests: WalletConnectSessionRequest[]) => {
       this.setRequest({ type: 'wcConnectRequests', requests });
 
-      console.info(requests, 'WC requests');
-
       if (requests.length) router.push({ name: Components.WalletConnectAuthConfirmation });
     };
 
@@ -426,8 +424,6 @@ export const actions: Actions = {
   async subscribeWcRequests() {
     const callback = (requests: WalletConnectTransactionRequest[]) => {
       this.setRequest({ type: 'wcRequests', requests });
-
-      console.info(requests, 'WC requests');
 
       if (requests.length) router.push({ name: Components.WalletConnectSignConfirmation });
     };

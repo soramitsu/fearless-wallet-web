@@ -20,11 +20,18 @@ export type WalletConnectSessions = SessionTypes.Struct[];
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];
 }
-export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'];
+export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'] & {
+  // Internal approval identity; a dApp's topic/request ID may be reused later.
+  approvalId: string;
+};
 
 export interface RequestApproveWalletConnect {
   address: string;
-  topic: string;
+  approvalId: string;
+}
+
+export interface RequestRejectWalletConnect {
+  approvalId: string;
 }
 
 export interface RequestRejectConnectWalletSession {

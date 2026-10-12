@@ -48,6 +48,7 @@ import {
   type RequestDisconnectWalletConnectSession,
   type WalletConnectTransactionRequest,
   type RequestApproveWalletConnect,
+  type RequestRejectWalletConnect,
   type WalletConnectNotSupportRequest,
   // type RequestApproveWalletConnectNotSupport,
   type RequestRejectWalletConnectNotSupport,
@@ -2199,64 +2200,72 @@ export default class Extension extends FWExtensionBase {
     return this.state.requestService.signWcSubject.value;
   }
 
-  async wcRequestApprove({ address, topic }: RequestApproveWalletConnect) {
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+  async wcRequestApprove({ address, approvalId }: RequestApproveWalletConnect) {
+    const handler = this.state.requestService.evmRequestHandler;
+    const request = handler.claimWCSignRequest(approvalId);
+    try {
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
+      const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
 
-    const request = this.state.requestService.signWcRequest(topic);
+      const method = request.request.params.request.method;
+      const params = request.request.params.request.params;
+      if (evmSigningAddress(method, params).toLowerCase() !== ethereumAddress.toLowerCase())
+        throw new Error('WalletConnect request does not match the selected signer');
+      const messageBytes =
+        method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
+      const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
+      const [, chainId] = request.request.params.chainId.split(':');
+      if (typed?.domain.chainId !== undefined && BigInt(typed.domain.chainId) !== BigInt(chainId))
+        throw new Error('WalletConnect typed data does not match the requested chain');
+      const network = Object.values(this.state.networkService.networkMap).find((el) => el.chainId === chainId);
 
-    const method = request.request.params.request.method;
-    const params = request.request.params.request.params;
-    if (evmSigningAddress(method, params).toLowerCase() !== ethereumAddress.toLowerCase())
-      throw new Error('WalletConnect request does not match the selected signer');
-    const messageBytes =
-      method === 'personal_sign' || method === 'eth_sign' ? evmMessageBytes(method, params) : undefined;
-    const typed = method.startsWith('eth_signTypedData') ? evmTypedData(method, params) : undefined;
-    const [, chainId] = request.request.params.chainId.split(':');
-    if (typed?.domain.chainId !== undefined && BigInt(typed.domain.chainId) !== BigInt(chainId))
-      throw new Error('WalletConnect typed data does not match the requested chain');
-    const network = Object.values(this.state.networkService.networkMap).find((el) => el.chainId === chainId);
+      if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
 
-    if (!network) throw new Error(TransferErrorCode.UNSUPPORTED);
+      const txData = method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
+      if (handler.getSignWCRequest(approvalId) !== request) throw new Error('WalletConnect request was cancelled');
+      const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
 
-    const txData = method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ? evmTransaction(params[0]) : undefined;
-    const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: ethereumAddress });
+      const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
+      if (signer.address.toLowerCase() !== ethereumAddress.toLowerCase())
+        throw new Error('Exported key does not match the WalletConnect account');
 
-    const signer = new Wallet(privateKey, this.state.getEvmApi(network.name)?.api);
-    if (signer.address.toLowerCase() !== ethereumAddress.toLowerCase())
-      throw new Error('Exported key does not match the WalletConnect account');
+      if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+        try {
+          const { hash } = await signer.sendTransaction(txData!);
+          request.resolve({ id: request.request.topic, payload: hash as HexString });
+        } catch (error) {
+          // A transport failure may follow a successful broadcast. Consume this
+          // intent instead of retrying it with a fresh nonce from the same screen.
+          request.reject(error instanceof Error ? error : new Error('WalletConnect submission outcome is unavailable'));
+          return false;
+        }
+      } else {
+        const signature = await (typed
+          ? signer.signTypedData(typed.domain, typed.types, typed.message)
+          : signer.signMessage(messageBytes!));
 
-    if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-      const { hash } = await signer.sendTransaction(txData!);
-      request.resolve({ id: request.request.topic, payload: hash as HexString });
-    } else {
-      const signature = await (typed
-        ? signer.signTypedData(typed.domain, typed.types, typed.message)
-        : signer.signMessage(messageBytes!));
-
-      request.resolve({ id: request.request.topic, payload: signature as HexString });
-    }
-
-    // The dApp already has the hash or signature, so nothing after this point may report a failure:
-    // the user would retry and pay twice. Opening the linked keys again is only housekeeping, and a
-    // linked key that still needs its own password (Account access) is left as it is.
-    for (const linkedAddress of [substrateAddress, ethereumAddress]) {
-      try {
-        this.state.keyringService.unlockPair(linkedAddress);
-      } catch {
-        // Listed in Account access until the user unlocks it.
+        request.resolve({ id: request.request.topic, payload: signature as HexString });
       }
-    }
 
-    return true;
+      // The dApp already has the hash or signature, so nothing after this point may report a failure:
+      // the user would retry and pay twice. Opening the linked keys again is only housekeeping, and a
+      // linked key that still needs its own password (Account access) is left as it is.
+      for (const linkedAddress of [substrateAddress, ethereumAddress]) {
+        try {
+          this.state.keyringService.unlockPair(linkedAddress);
+        } catch {
+          // Listed in Account access until the user unlocks it.
+        }
+      }
+
+      return true;
+    } finally {
+      handler.releaseWCSignRequest(request);
+    }
   }
 
-  wcRequestReject({ topic }: RequestDisconnectWalletConnectSession) {
-    const request = this.state.requestService.signWcRequest(topic);
-
-    request?.reject(new Error('USER_REJECTED'));
-
-    return true;
+  wcRequestReject({ approvalId }: RequestRejectWalletConnect) {
+    return this.state.requestService.evmRequestHandler.rejectWCSignRequest(approvalId);
   }
 
   private WCNotSupportSubscribe(id: string, port?: chrome.runtime.Port): WalletConnectNotSupportRequest[] {
@@ -2703,7 +2712,7 @@ export default class Extension extends FWExtensionBase {
         return this.wcRequestApprove(request as RequestApproveWalletConnect);
 
       case 'pri(walletConnect.request.reject)':
-        return this.wcRequestReject(request as RequestDisconnectWalletConnectSession);
+        return this.wcRequestReject(request as RequestRejectWalletConnect);
 
       case 'pri(walletConnect.signing.requests.subscribe)':
         return this.wcSigningSubscribe(id, port);

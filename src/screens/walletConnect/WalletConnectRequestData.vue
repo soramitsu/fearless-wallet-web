@@ -25,34 +25,32 @@ import {
   type WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
 import { formatEther, formatUnits } from 'ethers';
-import { isEthereumAddress } from '@polkadot/util-crypto';
+import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { useAccountsStore } from '@/stores/accounts';
 import { cut, isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
+import { reviewJson } from '@/screens/extension-ui/signing/review';
 
 const accountsStore = useAccountsStore();
 const networksStore = useNetworksStore();
 
 const props = defineProps<{ request: WalletConnectTransactionRequest }>();
-const method = props.request.params.request.method;
-const params = props.request.params.request.params;
+const method = computed(() => props.request.params.request.method);
+const params = computed(() => props.request.params.request.params);
 const isEvmTxRequest = computed(
   () =>
-    method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION || method === EIP155_SIGNING_METHODS.ETH_SEND_RAW_TRANSACTION
+    method.value === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION ||
+    method.value === EIP155_SIGNING_METHODS.ETH_SEND_RAW_TRANSACTION
 );
 const isSignatureRequest = computed(() => !isEvmTxRequest.value);
 const cutAddress = (address: string) => cut(address, 5);
 
 const address = computed(() => {
-  if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
-    return (params[0].from as string).toLowerCase();
+  try {
+    return evmSigningAddress(method.value, params.value);
+  } catch {
+    return '';
   }
-
-  if (Array.isArray(params)) {
-    return isEthereumAddress(params[0]) ? params[0] : params[1];
-  }
-
-  return params[0].from as string;
 });
 
 const requestData = computed(() => {
@@ -60,9 +58,9 @@ const requestData = computed(() => {
   const baseKey = 'walletConnect.requestFields';
 
   if (isSignatureRequest.value) {
-    const message = isEthereumAddress(params[0]) ? params[1] : params[0];
-    data[`${baseKey}.method`] = method;
-    data[`${baseKey}.message`] = cut(message as unknown as string, 10);
+    const message = method.value === EIP155_SIGNING_METHODS.PERSONAL_SIGN ? params.value[0] : params.value[1];
+    data[`${baseKey}.method`] = method.value;
+    data[`${baseKey}.message`] = cut(typeof message === 'string' ? message : reviewJson(message), 10);
 
     return data;
   }
@@ -70,7 +68,7 @@ const requestData = computed(() => {
   if (isEvmTxRequest.value) {
     const [, chainId] = props.request.params.chainId.split(':');
     const network: string = networksStore.getNetwork(chainId)?.name ?? `${baseKey}.networkError`;
-    const { value, gas } = Array.isArray(params) ? params[0] : params;
+    const { value, gas } = Array.isArray(params.value) ? params.value[0] : params.value;
 
     data[`${baseKey}.network`] = network;
     data[`${baseKey}.amount`] = value ? formatEther(BigInt(value).toString()).toString() : '';

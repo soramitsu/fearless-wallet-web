@@ -185,8 +185,8 @@ export class RequestService {
     return this.solanaRequestHandler.signSolanaSubject;
   }
 
-  public signWcRequest(topic: string): WCSignRequest {
-    return this.evmRequestHandler.getSignWCRequest(topic);
+  public signWcRequest(approvalId: string): WCSignRequest | undefined {
+    return this.evmRequestHandler.getSignWCRequest(approvalId);
   }
 
   public getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {

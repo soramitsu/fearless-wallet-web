@@ -63,12 +63,12 @@ export function subscribeWalletConnectRequest(
   return sendMessage('pri(walletConnect.signing.requests.subscribe)', null, cb);
 }
 
-export function walletConnectRequestApprove(address: string, topic: string): Promise<boolean> {
-  return sendMessage('pri(walletConnect.request.approve)', { address, topic });
+export function walletConnectRequestApprove(address: string, approvalId: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.approve)', { address, approvalId });
 }
 
-export function walletConnectRequestReject(topic: string): Promise<boolean> {
-  return sendMessage('pri(walletConnect.request.reject)', { topic });
+export function walletConnectRequestReject(approvalId: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.reject)', { approvalId });
 }
 
 export function walletConnectDappSubscribeSession(

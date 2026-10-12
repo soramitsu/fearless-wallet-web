@@ -312,6 +312,19 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
     await expect(approving).rejects.toThrow();
     expect(state.walletConnectService.responseRequest).not.toHaveBeenCalled();
   });
+  it('does not release the result if a session changes in the queue completion microtask', async () => {
+    const approvalId = await admit();
+    const queued = queue.getSignWCRequest(approvalId)!;
+    const resolve = queued.resolve;
+    queued.resolve = (value) => {
+      resolve(value);
+      revision += 1;
+    };
+    await expect(extension.wcRequestApprove({ address, approvalId })).resolves.toBe(true);
+    await vi.waitFor(() => expect(state.walletConnectService.responseRequest).toHaveBeenCalledOnce());
+    const response = vi.mocked(state.walletConnectService.responseRequest).mock.calls[0][0];
+    expect((response.response as { error?: unknown }).error).toBeDefined();
+  });
   it('accepts a chain-keyed approved namespace and preserves exact message bytes', async () => {
     session.namespaces = { 'eip155:1': { ...session.namespaces.eip155, chains: undefined } };
     const approvalId = await admit();
@@ -428,6 +441,7 @@ describe('WalletConnect live session revisions', () => {
     const disconnect = vi.fn(async () => undefined);
     Object.assign(service, {
       sessionRevisions: new Map(),
+      retiredTopics: new Set(),
       sessionSubject: { next },
       client: {
         session: { values: [] },

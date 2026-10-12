@@ -161,8 +161,14 @@ export class RequestService {
     return this.substrateRequestHandler.signSubject;
   }
 
-  public sign(url: string, request: RequestSign, account: AccountJson, id?: string): Promise<ResponseSigning> {
-    return this.substrateRequestHandler.sign(url, request, account, id);
+  public sign(
+    url: string,
+    request: RequestSign,
+    account: AccountJson,
+    id?: string,
+    walletConnectContext?: import('@extension-base/services/wallet-connect-service/polkadotSigningContext').PolkadotSigningContext
+  ): Promise<ResponseSigning> {
+    return this.substrateRequestHandler.sign(url, request, account, id, walletConnectContext);
   }
 
   public get numSubstrateRequests(): number {

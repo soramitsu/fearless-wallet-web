@@ -855,6 +855,7 @@ export type Providers = Record<
 >;
 
 export interface SignRequest extends Resolver<ResponseSigning> {
+  walletConnectContext?: import('@extension-base/services/wallet-connect-service/polkadotSigningContext').PolkadotSigningContext;
   authorizationRevision?: number;
   signingContext?: SubstrateSigningContext;
   signingAccount?: import('@extension-base/services/request-service/handlers/substrateSigningAccount').SubstrateSigningAccount;

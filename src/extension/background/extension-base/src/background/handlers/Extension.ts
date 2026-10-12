@@ -1,3 +1,4 @@
+import { validatePolkadotSigningContext } from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
 import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { checkIfDenied } from '@polkadot/phishing';
@@ -248,12 +249,16 @@ export default class Extension extends FWExtensionBase {
 
   private assertNonEvmSigningAuthorization(request: SignRequest | SolanaRequestsSubjectPayload): void {
     this.assertSigningRequestCurrent(request);
-    this.state.requestService.authRequestHandler.assertSigningAuthorization(
-      request.url,
-      isSolanaSignRequest(request) ? 'solana' : 'substrate',
-      request.account.address,
-      request.authorizationRevision
-    );
+    if (!isSolanaSignRequest(request) && request.walletConnectContext) {
+      validatePolkadotSigningContext(this.state, request.walletConnectContext, request.request.payload, request.url);
+    } else {
+      this.state.requestService.authRequestHandler.assertSigningAuthorization(
+        request.url,
+        isSolanaSignRequest(request) ? 'solana' : 'substrate',
+        request.account.address,
+        request.authorizationRevision
+      );
+    }
     if (!isSolanaSignRequest(request)) {
       validateSubstrateSigningContext(this.state, request);
       validateSubstrateSigningAccount(this.state, request);

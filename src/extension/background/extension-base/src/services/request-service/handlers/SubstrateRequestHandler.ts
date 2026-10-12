@@ -1,3 +1,7 @@
+import {
+  validatePolkadotSigningContext,
+  type PolkadotSigningContext,
+} from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
 import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
 import { getId } from '@extension-base/utils';
@@ -51,16 +55,27 @@ export class SubstrateRequestHandler {
     return Object.keys(this.substrateRequests).length;
   }
 
-  public async sign(url: string, request: RequestSign, account: AccountJson, _id?: string): Promise<ResponseSigning> {
+  public async sign(
+    url: string,
+    request: RequestSign,
+    account: AccountJson,
+    _id?: string,
+    walletConnectContext?: PolkadotSigningContext
+  ): Promise<ResponseSigning> {
     // Capture caller-owned data before the authorization load can yield.
-    const snapshot = structuredClone({ account, url });
+    const snapshot = structuredClone({ account, url, walletConnectContext });
     const signer = request.snapshot();
-    await this.requestService.ensureAccountAuthorized(url, snapshot.account.address);
-    const authorizationRevision = this.requestService.authRequestHandler.getSigningAuthorizationRevision(
-      snapshot.url,
-      'substrate',
-      snapshot.account.address
-    );
+    let authorizationRevision: number | undefined;
+    if (snapshot.walletConnectContext) {
+      validatePolkadotSigningContext(this.state, snapshot.walletConnectContext, signer.payload, snapshot.url);
+    } else {
+      await this.requestService.ensureAccountAuthorized(url, snapshot.account.address);
+      authorizationRevision = this.requestService.authRequestHandler.getSigningAuthorizationRevision(
+        snapshot.url,
+        'substrate',
+        snapshot.account.address
+      );
+    }
     const signingContext = captureSubstrateSigningContext(this.state, this.requestService, signer.payload);
     const signingAccount = captureSubstrateSigningAccount(this.state, signer, snapshot.account);
     snapshot.account.address = signingAccount.address;
@@ -79,6 +94,7 @@ export class SubstrateRequestHandler {
         return true;
       };
       const queued: SignRequest = {
+        walletConnectContext: snapshot.walletConnectContext,
         authorizationRevision,
         signingContext,
         signingAccount,

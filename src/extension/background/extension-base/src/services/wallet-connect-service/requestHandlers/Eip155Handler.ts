@@ -36,9 +36,12 @@ export class Eip155RequestHandler {
         throw new Error('WalletConnect context changed before review');
       return this.state.requestService.evmRequestHandler
         .onWCSign(snapshot, context)
-        .then(({ payload }) =>
-          this.walletConnectService.responseRequest({ topic, response: formatJsonRpcResult(id, payload) })
-        )
+        .then(({ payload }) => {
+          const current = captureWalletConnectSigningContext(this.state, snapshot);
+          if (JSON.stringify(current) !== JSON.stringify(context))
+            throw new Error('WalletConnect context changed before response');
+          return this.walletConnectService.responseRequest({ topic, response: formatJsonRpcResult(id, payload) });
+        })
         .catch((error) => this.handleError(topic, id, error));
     };
     const network = this.state.networkService.networkMap[context.network.name];

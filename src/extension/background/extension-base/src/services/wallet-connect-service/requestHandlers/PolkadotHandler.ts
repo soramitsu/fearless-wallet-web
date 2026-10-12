@@ -1,102 +1,56 @@
 import { formatJsonRpcError, formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
-import { type SignClientTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
-import { isSameAddress } from '@extension-base/utils';
-import { POLKADOT_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
-import { getWCId, parseRequestParams } from '@extension-base/services/wallet-connect-service/utils';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import {
+  capturePolkadotSigningContext,
+  polkadotSigningPayload,
+  validatePolkadotSigningContext,
+} from '../polkadotSigningContext';
+import type { SignClientTypes } from '@walletconnect/types';
 import type State from '@extension-base/background/handlers/State';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 
 export class PolkadotHandler {
-  constructor(public state: State, public walletConnectService: WalletConnectService) {}
+  private readonly activeRequests = new Set<string>();
+  constructor(
+    public state: State,
+    public walletConnectService: WalletConnectService
+  ) {}
 
-  private checkAccount(address: string, accounts: string[]) {
-    if (!accounts.find((account) => isSameAddress(account, address))) {
-      throw new Error(getSdkError('UNSUPPORTED_ACCOUNTS').message + ' ' + address);
-    }
-  }
-
-  private handleError(topic: string, id: number, e: unknown) {
-    console.info(e);
-
-    let message = (e as Error).message;
-
+  private handleError(topic: string, id: number, error: unknown) {
+    let message = error instanceof Error ? error.message : 'Unable to sign WalletConnect request';
     if (message.includes('User Rejected Request')) message = getSdkError('USER_REJECTED').message;
-
     this.walletConnectService
-      .responseRequest({
-        topic,
-        response: formatJsonRpcError(id, message),
-      })
+      .responseRequest({ topic, response: formatJsonRpcError(id, message) })
       .catch(console.error);
   }
 
   public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
-    const { id, params, topic } = requestEvent;
-    const { request } = params;
-    const method = request.method as POLKADOT_SIGNING_METHODS;
-    const requestSession = this.walletConnectService.getSession(topic);
-    const url = requestSession.peer.metadata.url;
-    const sessionAccounts = requestSession.namespaces.polkadot.accounts.map((account) => account.split(':')[2]);
-
-    if (method === POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE) {
-      const param = parseRequestParams<POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE>(request.params);
-
-      this.checkAccount(param.address, sessionAccounts);
-
-      const pair = this.state.keyringService.getPair(param.address)!;
-      const address = pair.address;
-
-      this.state.requestService
-        .sign(
-          url,
-          new RequestBytesSign({ address, data: param.message, type: 'bytes' }),
-          {
-            address,
-            name: pair.meta.name as string,
-            ethereumAddress: pair.meta.ethereumAddress as string,
-          },
-          getWCId(id)
-        )
-        .then(async ({ payload }) => {
-          await this.walletConnectService.responseRequest({
-            topic,
-            response: formatJsonRpcResult(id, { signature: payload }),
-          });
-        })
-        .catch((e) => {
-          this.handleError(topic, id, e);
-        });
-    } else if (method === POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION) {
-      const param = parseRequestParams<POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION>(request.params);
-
-      this.checkAccount(param.address, sessionAccounts);
-
-      const pair = this.state.keyringService.getPair(param.address)!;
-      const address = pair.address;
-
-      this.state.requestService
-        .sign(
-          url,
-          new RequestExtrinsicSign(param.transactionPayload),
-          {
-            address,
-            name: pair.meta.name as string,
-            ethereumAddress: pair.meta.ethereumAddress as string,
-          },
-          getWCId(id)
-        )
-        .then(async ({ payload }) => {
-          await this.walletConnectService.responseRequest({
-            topic,
-            response: formatJsonRpcResult(id, { signature: payload }),
-          });
-        })
-        .catch((e) => this.handleError(topic, id, e));
-    } else {
-      throw Error(`${getSdkError('INVALID_METHOD').message} ${method as string}`);
+    const context = capturePolkadotSigningContext(this.state, requestEvent);
+    const { topic, id } = context.event;
+    const owner = JSON.stringify([topic, id]);
+    if (this.activeRequests.has(owner)) {
+      this.handleError(topic, id, new Error('Duplicate active WalletConnect request'));
+      return;
     }
+    const payload = polkadotSigningPayload(context.event);
+    const signer = 'data' in payload ? new RequestBytesSign(payload) : new RequestExtrinsicSign(payload);
+    this.activeRequests.add(owner);
+    this.state.requestService
+      .sign(
+        context.origin,
+        signer,
+        { address: payload.address, name: '', ethereumAddress: '' },
+        `wallet-connect.${crypto.randomUUID()}`,
+        context
+      )
+      .then(async ({ payload: signature }) => {
+        // Queue completion and remote response happen in different microtasks.
+        validatePolkadotSigningContext(this.state, context);
+        await this.walletConnectService.responseRequest({ topic, response: formatJsonRpcResult(id, { signature }) });
+      })
+      .catch((error) => this.handleError(topic, id, error))
+      .finally(() => this.activeRequests.delete(owner));
   }
 }

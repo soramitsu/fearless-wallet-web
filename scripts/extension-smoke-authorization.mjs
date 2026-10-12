@@ -26,7 +26,17 @@ export async function captureAuthorizationScreenshots({
     cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 2, mobile: false }, sessionId);
   const key = async (key, code, windowsVirtualKeyCode) => {
     for (const type of ['keyDown', 'keyUp'])
-      await cdp.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode }, sessionId);
+      await cdp.send(
+        'Input.dispatchKeyEvent',
+        {
+          type,
+          key,
+          code,
+          windowsVirtualKeyCode,
+          ...(type === 'keyDown' && key === 'Enter' ? { text: '\r', unmodifiedText: '\r' } : {}),
+        },
+        sessionId
+      );
   };
   await resize(POPUP_WIDTH, POPUP_HEIGHT);
   await setLocale('en-US');

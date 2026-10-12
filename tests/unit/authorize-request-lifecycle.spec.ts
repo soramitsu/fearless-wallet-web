@@ -66,7 +66,7 @@ const selected = (wrapper: ReturnType<typeof open>) =>
     .filter((entry) => entry.active)
     .map((entry) => entry.address);
 const approve = (wrapper: ReturnType<typeof open>) =>
-  wrapper.findAllComponents(Button).find((entry) => entry.props('text') === 'metadata.appAccess')!;
+  wrapper.findAllComponents(Button).find((entry) => entry.props('text') === 'common.approve')!;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -208,7 +208,7 @@ describe('authorization screen request ownership', () => {
     mocks.extension.authRequests = [];
     await flushPromises();
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
-    expect(wrapper.findAllComponents(Button).some((entry) => entry.props('text') === 'metadata.appAccess')).toBe(false);
+    expect(wrapper.findAllComponents(Button).some((entry) => entry.props('text') === 'common.approve')).toBe(false);
     wrapper.unmount();
   });
 

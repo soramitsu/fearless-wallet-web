@@ -42,7 +42,7 @@
           />
           <FButton
             width="100%"
-            text="metadata.appAccess"
+            text="common.approve"
             size="big"
             fontSize="big"
             :disabled="isDisabledApproveBtn"

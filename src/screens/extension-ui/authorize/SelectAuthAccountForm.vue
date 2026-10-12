@@ -115,6 +115,8 @@ const fullAddress = (account: WalletInfo) => {
 }
 
 .account__address {
+  text-align: left;
+  max-width: 100%;
   overflow-wrap: anywhere;
   white-space: normal;
   font-family: var(--fw-font-mono);

@@ -408,3 +408,55 @@ describe('the upgrade description', () => {
     wrapper.unmount();
   });
 });
+
+
+describe('password migration entry lifecycle', () => {
+  it('does not guess the password route while state is loading and retries a failed lookup', async () => {
+    let reject!: (reason: Error) => void;
+    mocks.hasMasterPassword.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+    const wrapper = mount(MigrationDescription, { global });
+    const start = wrapper.get('[data-testid="migrationStart"]');
+    start.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(mocks.push).not.toHaveBeenCalled();
+    reject(new Error('private storage detail')); await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain('migration.loadFailed');
+    expect(wrapper.text()).not.toContain('private storage detail');
+    start.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(mocks.push).not.toHaveBeenCalled();
+    mocks.hasMasterPassword.mockResolvedValue(true);
+    await wrapper.get('[role="alert"] button').trigger('click'); await flushPromises();
+    await start.trigger('click'); await flushPromises();
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'MigrationAccounts' });
+    wrapper.unmount();
+  });
+
+  it('cannot start a competing flow while Later is saving and ignores its completion after leaving', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.defer.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const wrapper = mount(MigrationDescription, { global }); await flushPromises();
+    await wrapper.get('[data-testid="migrationLater"]').trigger('click');
+    for (const id of ['migrationStart', 'migrationLater']) {
+      wrapper.get('[data-testid="' + id + '"]').element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }
+    expect(mocks.defer).toHaveBeenCalledOnce();
+    expect(mocks.push).not.toHaveBeenCalled();
+    wrapper.unmount(); finish(true); await flushPromises();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it('holds one navigation request and permits retry after navigation fails', async () => {
+    let reject!: (reason: Error) => void;
+    mocks.push.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+    const wrapper = mount(MigrationDescription, { global }); await flushPromises();
+    await wrapper.get('[data-testid="migrationStart"]').trigger('click');
+    wrapper.get('[data-testid="migrationStart"]').element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    wrapper.get('[data-testid="migrationLater"]').element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(mocks.push).toHaveBeenCalledOnce();
+    expect(mocks.defer).not.toHaveBeenCalled();
+    reject(new Error('navigation failed')); await flushPromises();
+    expect(mocks.notify).toHaveBeenCalledWith({ title: 'migration.loadFailed', message: '', type: 'error' });
+    await wrapper.get('[data-testid="migrationStart"]').trigger('click'); await flushPromises();
+    expect(mocks.push).toHaveBeenCalledTimes(2);
+    wrapper.unmount();
+  });
+});

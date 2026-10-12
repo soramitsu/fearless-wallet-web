@@ -1,6 +1,10 @@
 <template>
   <AboveForm :fullScreen="true" header="migration.upgradeKeyStorage" :showCloseIcon="false">
-    <div class="migration">
+    <div class="migration" :aria-busy="isLoading || isDeferring || isStarting">
+      <div v-if="loadError" role="alert" data-testid="migrationDescriptionLoadFailed">
+        <p>{{ t('migration.loadFailed') }}</p>
+        <FButton text="ux.retry" type="secondary" @click="loadPasswordState" />
+      </div>
       <div>
         <div class="upgrading-secure">{{ t('migration.actionRequired') }}</div>
 
@@ -20,7 +24,15 @@
       </div>
 
       <div class="controls">
-        <FButton text="common.start" size="big" width="100%" data-testid="migrationStart" @click="start" />
+        <FButton
+          text="common.start"
+          size="big"
+          width="100%"
+          data-testid="migrationStart"
+          :disabled="isLoading || loadError || isDeferring || isStarting"
+          :loading="isStarting"
+          @click="start"
+        />
 
         <!-- With a master password the wallet already opens, so the remaining passwords can wait. -->
         <FButton
@@ -29,7 +41,8 @@
           type="secondary"
           size="big"
           width="100%"
-          :disabled="isDeferring"
+          :disabled="isDeferring || isStarting || isLoading || loadError"
+          :loading="isDeferring"
           data-testid="migrationLater"
           @click="later"
         />
@@ -40,7 +53,7 @@
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from '@/locales/useI18n';
 import { Components } from '@/router/routes';
 import { deferLegacyPasswordMigration, hasMasterPassword } from '@/extension/messaging';
@@ -52,27 +65,67 @@ const { t } = useI18n();
 
 const alreadyHasMasterPassword = ref(false);
 const isDeferring = ref(false);
+const isStarting = ref(false);
+const isLoading = ref(true);
+const loadError = ref(false);
+let active = true;
+let passwordStatePending = false;
+onBeforeUnmount(() => {
+  active = false;
+});
 
-onMounted(async () => (alreadyHasMasterPassword.value = await hasMasterPassword()));
+const loadPasswordState = async () => {
+  if (!active || passwordStatePending) return;
+  passwordStatePending = true;
+  isLoading.value = true;
+  loadError.value = false;
+  try {
+    const hasPassword = await hasMasterPassword();
+    if (active) alreadyHasMasterPassword.value = hasPassword;
+  } catch {
+    if (active) loadError.value = true;
+  } finally {
+    passwordStatePending = false;
+    if (active) isLoading.value = false;
+  }
+};
+onMounted(loadPasswordState);
 
-const start = () => {
+const start = async () => {
+  if (!active || isLoading.value || loadError.value || isDeferring.value || isStarting.value) return;
+  isStarting.value = true;
   const name = alreadyHasMasterPassword.value ? Components.MigrationAccounts : Components.ChangePassword;
-
-  router.push({ name });
+  try {
+    await router.push({ name });
+  } catch {
+    if (active) notify({ title: t('migration.loadFailed'), message: '', type: 'error' });
+  } finally {
+    if (active) isStarting.value = false;
+  }
 };
 
 // "Later" only postpones the prompt: every account stays in the wallet and is listed in Account access.
 const later = async () => {
-  if (isDeferring.value) return;
-
+  if (
+    !active ||
+    !alreadyHasMasterPassword.value ||
+    isLoading.value ||
+    loadError.value ||
+    isDeferring.value ||
+    isStarting.value
+  )
+    return;
   isDeferring.value = true;
-
   const deferred = await deferLegacyPasswordMigration().catch(() => false);
-
-  isDeferring.value = false;
-
-  if (deferred) router.push({ name: Components.Wallet });
-  else notify({ title: t('migration.skipFailed'), message: '', type: 'error' });
+  if (!active) return;
+  try {
+    if (deferred) await router.push({ name: Components.Wallet });
+    else notify({ title: t('migration.skipFailed'), message: '', type: 'error' });
+  } catch {
+    if (active) notify({ title: t('migration.loadFailed'), message: '', type: 'error' });
+  } finally {
+    if (active) isDeferring.value = false;
+  }
 };
 </script>
 
@@ -81,7 +134,9 @@ const later = async () => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  height: auto;
+  min-height: 100%;
+  gap: 24px;
 
   .upgrading-secure {
     font-size: 20px;

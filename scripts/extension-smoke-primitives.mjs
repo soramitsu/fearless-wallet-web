@@ -536,6 +536,36 @@ export async function capturePrimitivesScreenshots({
     await capture('35-migration-load-failure', 'Migration snapshot failure offers a retry without presenting an empty wallet.');
     await route('Currencies');
 
+    await evaluate(cdp, sessionId, `(() => {
+      const router = ${APP}.router;
+      const original = router.getRoutes().find((record) => record.name === 'MigrationDescription');
+      router.addRoute({ path: '/design-password-migration-fixture', name: 'DesignPasswordMigrationFixture', component: original.components.default });
+      return true;
+    })()`);
+    await route('DesignPasswordMigrationFixture');
+    await waitFor('[data-testid="migrationLater"] button', 'Known-master-password migration prompt');
+    const passwordMigrationVariants = [
+      { name: '36-password-migration', width: POPUP_WIDTH, height: POPUP_HEIGHT, locale: 'en-US' },
+      { name: '37-password-migration-russian', width: 320, height: 600, locale: 'ru-RU' },
+      { name: '38-password-migration-akkadian', width: 320, height: 600, locale: 'akk-Xsux-x-old' },
+      { name: '39-password-migration-egyptian', width: 320, height: 600, locale: 'egy-Egyp' },
+      { name: '40-password-migration-compact', width: 281, height: 300, locale: 'en-US' },
+    ];
+    for (const variant of passwordMigrationVariants) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: variant.width, height: variant.height, deviceScaleFactor: 2, mobile: false }, sessionId);
+      await evaluate(cdp, sessionId, `(${APP}.app.config.globalProperties.$i18n.locale = ${JSON.stringify(variant.locale)}, document.documentElement.lang = ${JSON.stringify(variant.locale)}, true)`);
+      await keyboardFocus('[data-testid="migrationStart"] button');
+      const controls = await evaluate(cdp, sessionId, `['migrationStart', 'migrationLater'].map((id) => {
+        const button = document.querySelector('[data-testid="' + id + '"] button');
+        const label = button.querySelector('span');
+        return { id, enabled: !button.disabled, height: button.getBoundingClientRect().height, labelFits: label.scrollWidth <= label.clientWidth + 1 };
+      })`);
+      if (controls.some((button) => !button.enabled || button.height < 48 || !button.labelFits)) throw new Error('Password migration action is clipped or unavailable after loading');
+      await capture(variant.name, 'Known-master-password public fixture: migration Start and Later remain readable and keyboard reachable, ' + variant.locale);
+      Object.assign(results.at(-1), { passwordMigrationControls: controls });
+    }
+    await route('Currencies');
+
     await cdp.send(
       'Emulation.setDeviceMetricsOverride',
       {

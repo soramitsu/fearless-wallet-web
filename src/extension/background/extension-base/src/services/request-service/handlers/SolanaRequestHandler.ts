@@ -161,10 +161,12 @@ export default class SolanaRequestHandler {
 
   private get publicRequests(): SolanaRequests {
     return Object.fromEntries(
-      Object.entries(this.solanaRequests).map(([id, { reject: _reject, resolve: _resolve, ...request }]) => [
-        id,
-        structuredClone(request),
-      ])
+      Object.entries(this.solanaRequests).map(
+        ([id, { reject: _reject, resolve: _resolve, authorizationRevision: _authorizationRevision, ...request }]) => [
+          id,
+          structuredClone(request),
+        ]
+      )
     );
   }
 
@@ -185,6 +187,11 @@ export default class SolanaRequestHandler {
       };
       const queued: SolanaRequestsSubjectPayload = {
         ...structuredClone(payload),
+        authorizationRevision: this.requestService.authRequestHandler.getSigningAuthorizationRevision(
+          payload.url,
+          'solana',
+          payload.account.address
+        ),
         resolve: (result) => {
           if (complete()) resolve(result);
         },

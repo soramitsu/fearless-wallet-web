@@ -55,6 +55,10 @@ export class AuthRequestHandler {
   private authorizeCached: AuthUrls = {};
   private readonly evmAuthorizationRevisions = new Map<string, number>();
   private readonly evmAuthorizationFingerprints = new Map<string, string>();
+  private readonly signingAuthorizationState = {
+    substrate: { revisions: new Map<string, number>(), fingerprints: new Map<string, string>() },
+    solana: { revisions: new Map<string, number>(), fingerprints: new Map<string, string>() },
+  };
   private authorizeLoaded = false;
   private authorizeLoading = false;
   private authorizeWaiters: Array<(value: AuthUrls) => void> = [];
@@ -108,6 +112,7 @@ export class AuthRequestHandler {
     // later in-place edits cannot rewrite a queued grant or revocation.
     const snapshot = structuredClone(data);
     this.trackEvmAuthorization(snapshot);
+    this.trackSigningAuthorization(snapshot);
     this.authorizeCached = snapshot;
     this.authorizeLoaded = true;
     this.authorizeStore.set(AUTH_URLS_KEY, structuredClone(snapshot), () => {
@@ -151,6 +156,69 @@ export class AuthRequestHandler {
     };
   }
 
+  private trackSigningAuthorization(data: AuthUrls, initial = false): void {
+    for (const protocol of ['substrate', 'solana'] as const) {
+      const state = this.signingAuthorizationState[protocol];
+      for (const origin of new Set([...state.fingerprints.keys(), ...Object.keys(data)])) {
+        const auth = data[origin];
+        const accounts = protocol === 'substrate'
+          ? Array.isArray(auth?.authorizedAccounts) ? [...new Set(auth.authorizedAccounts)].sort() : undefined
+          : auth?.solanaAuthorizedAccount;
+        const fingerprint = auth ? JSON.stringify([auth.id, auth.isAllowed, accounts]) : undefined;
+        if (!initial && fingerprint !== state.fingerprints.get(origin))
+          state.revisions.set(origin, (state.revisions.get(origin) ?? 0) + 1);
+        if (fingerprint === undefined) state.fingerprints.delete(origin);
+        else state.fingerprints.set(origin, fingerprint);
+      }
+    }
+  }
+
+  public getSigningAuthorizationSnapshot(
+    url: string,
+    protocol: 'substrate' | 'solana'
+  ): { revision: number; authorization?: AuthUrlInfo } {
+    if (!this.authorizeLoaded) throw new Error('Site authorization is not loaded');
+    const origin = stripUrl(url);
+    return {
+      revision: this.signingAuthorizationState[protocol].revisions.get(origin) ?? 0,
+      authorization: structuredClone(this.authorizeCached[origin]),
+    };
+  }
+
+  public getSigningAuthorizationRevision(url: string, protocol: 'substrate' | 'solana', address: string): number {
+    const { authorization: entry, revision } = this.getSigningAuthorizationSnapshot(url, protocol);
+    if (!entry || entry.isAllowed !== true) throw new Error(`The source ${url} has not been enabled`);
+    let authorized: boolean;
+    if (protocol === 'solana') authorized = !!address && entry.solanaAuthorizedAccount === address;
+    else {
+      let requestedAddress: string;
+      try {
+        requestedAddress = this.keyringService.encodeAddress(address);
+      } catch {
+        throw new Error('The requested signing account is invalid');
+      }
+      authorized = Array.isArray(entry.authorizedAccounts) && entry.authorizedAccounts.some((candidate) => {
+        try {
+          return this.keyringService.encodeAddress(candidate) === requestedAddress;
+        } catch {
+          return false;
+        }
+      });
+    }
+    if (!authorized) throw new Error(`The source ${url} is not authorized for the requested signing account`);
+    return revision;
+  }
+
+  public assertSigningAuthorization(
+    url: string,
+    protocol: 'substrate' | 'solana',
+    address: string,
+    revision: number | undefined
+  ): void {
+    if (!Number.isSafeInteger(revision) || revision !== this.getSigningAuthorizationRevision(url, protocol, address))
+      throw new Error('Signing authorization changed; request approval again');
+  }
+
   public getAuthorize(update: (value: AuthUrls) => void): void {
     if (this.authorizeLoaded) {
       update(structuredClone(this.authorizeCached));
@@ -167,6 +235,7 @@ export class AuthRequestHandler {
       if (!this.authorizeLoaded) {
         this.authorizeCached = structuredClone(data || {});
         this.trackEvmAuthorization(this.authorizeCached, true);
+        this.trackSigningAuthorization(this.authorizeCached, true);
         this.authorizeLoaded = true;
         this.authorizeUrlSubject.next(structuredClone(this.authorizeCached));
       }
@@ -355,8 +424,8 @@ export class AuthRequestHandler {
 
   public async ensureUrlAuthorized(url: string): Promise<boolean> {
     const idStr = stripUrl(url);
-    const authUrls = await this.getAuthList();
-    const entry = authUrls[idStr];
+    await this.getAuthList();
+    const entry = this.authorizeCached[idStr];
 
     if (!entry || entry.isAllowed !== true) {
       throw new Error(`The source ${url} has not been enabled`);
@@ -366,27 +435,8 @@ export class AuthRequestHandler {
   }
 
   public async ensureAccountAuthorized(url: string, address: string): Promise<boolean> {
-    await this.ensureUrlAuthorized(url);
-    const authUrls = await this.getAuthList();
-    const entry = authUrls[stripUrl(url)];
-    let requestedAddress: string;
-
-    try {
-      requestedAddress = this.keyringService.encodeAddress(address);
-    } catch {
-      throw new Error('The requested signing account is invalid');
-    }
-
-    const authorized = Array.isArray(entry.authorizedAccounts) && entry.authorizedAccounts.some((candidate) => {
-      try {
-        return this.keyringService.encodeAddress(candidate) === requestedAddress;
-      } catch {
-        return false;
-      }
-    });
-
-    if (!authorized) throw new Error(`The source ${url} is not authorized for the requested signing account`);
-
+    await this.getAuthList();
+    this.getSigningAuthorizationRevision(url, 'substrate', address);
     return true;
   }
 

@@ -850,6 +850,7 @@ export type Providers = Record<
 >;
 
 export interface SignRequest extends Resolver<ResponseSigning> {
+  authorizationRevision?: number;
   account: AccountJson;
   id: string;
   request: RequestSign;

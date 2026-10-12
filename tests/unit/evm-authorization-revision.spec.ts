@@ -218,4 +218,23 @@ describe('EVM site-grant revision and asynchronous storage boundaries', () => {
     await expect(extension.signEvmApprove({ id: 'public-request' })).resolves.toBe(true);
     expect(verifyMessage(getBytes('0x1234'), (await result).payload)).toBe(address);
   });
+  it('does not let external completion bypass an EVM revocation', async () => {
+    const { result, request } = await admit();
+    void result.catch(() => undefined);
+    const resolve = vi.spyOn(request!, 'resolve');
+    auth.setAuthorize(grant(false));
+    await expect(extension.signingApproveSignature({ id: 'public-request', signature: '0x1234' })).rejects.toThrow(
+      'authorized'
+    );
+    expect(resolve).not.toHaveBeenCalled();
+  });
+  it('keeps external completion out of an already claimed EVM request', async () => {
+    const { request } = await admit();
+    queue.claimEvmSignRequest('public-request');
+    await expect(extension.signingApproveSignature({ id: 'public-request', signature: '0x1234' })).rejects.toThrow(
+      'pending'
+    );
+    expect(queue.getEvmSignRequest('public-request')).toBe(request);
+    queue.releaseEvmSignRequest(request!);
+  });
 });

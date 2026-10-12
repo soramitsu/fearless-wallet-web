@@ -23,6 +23,7 @@ const response: SolanaSignMessageResponse = {
 describe('SolanaRequestHandler', () => {
   const createHandler = () => {
     const requestService = {
+      authRequestHandler: { getSigningAuthorizationRevision: vi.fn(() => 0) },
       popupOpen: vi.fn(),
       updateIcon: vi.fn(),
     } as unknown as RequestService;

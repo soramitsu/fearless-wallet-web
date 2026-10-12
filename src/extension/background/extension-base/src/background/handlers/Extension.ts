@@ -253,6 +253,16 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  private assertNonEvmSigningAuthorization(request: SignRequest | SolanaRequestsSubjectPayload): void {
+    this.assertSigningRequestCurrent(request);
+    this.state.requestService.authRequestHandler.assertSigningAuthorization(
+      request.url,
+      isSolanaSignRequest(request) ? 'solana' : 'substrate',
+      request.account.address,
+      request.authorizationRevision
+    );
+  }
+
   private async assertSigningSiteAllowed(request: { id: string; url: string; reject(error: Error): void }): Promise<void> {
     const denied = await checkIfDenied(request.url);
     this.assertSigningRequestCurrent(request);
@@ -786,24 +796,29 @@ export default class Extension extends FWExtensionBase {
 
     try {
       await this.assertSigningSiteAllowed(request);
-      const accounts = this.state.keyringService.getAllAccounts();
-      const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) =>
-        this.state.keyringService.exportMnemonic({
+      this.assertNonEvmSigningAuthorization(request);
+      const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) => {
+        this.assertNonEvmSigningAuthorization(request);
+        return this.state.keyringService.exportMnemonic({
           address,
           password: this.state.keyringService.getPassword(),
           walletEcosystem: walletEcosystem as WalletEcosystem,
         });
+      };
       // A dApp's sign-and-send moves funds too, so the Solana send kill switch
       // covers it; sign-only requests are unaffected.
       if (request.method === 'signAndSendTransaction') await assertSendCapability(this.state, 'solanaSend');
-      this.assertSigningRequestCurrent(request);
+      this.assertNonEvmSigningAuthorization(request);
+      const accounts = this.state.keyringService.getAllAccounts();
 
       const response =
         request.method === 'signAndSendTransaction'
           ? await resolveSolanaSignAndSendTransaction({
               accounts,
-              broadcastTransaction: (transactionBase64, options) =>
-                new SolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options),
+              broadcastTransaction: (transactionBase64, options) => {
+                this.assertNonEvmSigningAuthorization(request);
+                return new SolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options);
+              },
               exportMnemonic,
               request,
             })
@@ -813,6 +828,7 @@ export default class Extension extends FWExtensionBase {
               request,
             });
 
+      this.assertNonEvmSigningAuthorization(request);
       request.resolve(response);
 
       return true;
@@ -838,6 +854,7 @@ export default class Extension extends FWExtensionBase {
     this.pendingSiteApprovals.add(queued);
     try {
       await this.assertSigningSiteAllowed(queued);
+      this.assertNonEvmSigningAuthorization(queued);
       const account = this.state.keyringService
         .getAllAccounts()
         .find(({ address }) => isSameString(address, queued.account.address));
@@ -846,7 +863,7 @@ export default class Extension extends FWExtensionBase {
 
       if (account && account?.meta.isMobile) {
         const res = await this.state.walletConnectDappService.onRequest(queued.request.payload as SignerPayloadJSON);
-
+        this.assertNonEvmSigningAuthorization(queued);
         resolve({ payload: res.signature, id });
 
         return true;
@@ -878,10 +895,14 @@ export default class Extension extends FWExtensionBase {
       }
 
       const result = await request.sign(registry, pair);
-
+      this.assertNonEvmSigningAuthorization(queued);
       resolve({ id, payload: result.signature });
 
       return true;
+    } catch (error) {
+      if (this.state.requestService.getSignRequest(id) === queued)
+        queued.reject(error instanceof Error ? error : new Error('Unable to sign Substrate request'));
+      return false;
     } finally {
       this.pendingSiteApprovals.delete(queued);
     }
@@ -898,10 +919,27 @@ export default class Extension extends FWExtensionBase {
       return false;
     }
 
-    await this.assertSigningSiteAllowed(queued);
-    queued.resolve({ id, payload: signature });
-
-    return true;
+    const evmHandler = this.state.requestService.evmRequestHandler;
+    if (isEvmSignRequest(queued)) {
+      assert(evmHandler.claimEvmSignRequest(id) === queued, 'Signing request was replaced');
+    } else {
+      if (this.pendingSiteApprovals.has(queued)) throw new Error('Signing approval already pending');
+      this.pendingSiteApprovals.add(queued);
+    }
+    try {
+      await this.assertSigningSiteAllowed(queued);
+      if (isEvmSignRequest(queued)) validateEvmSigningContext(this.state, queued);
+      else this.assertNonEvmSigningAuthorization(queued);
+      queued.resolve({ id, payload: signature });
+      return true;
+    } catch (error) {
+      if (this.state.requestService.getSignRequest(id) === queued)
+        queued.reject(error instanceof Error ? error : new Error('Unable to approve external signature'));
+      throw error;
+    } finally {
+      if (isEvmSignRequest(queued)) evmHandler.releaseEvmSignRequest(queued);
+      else this.pendingSiteApprovals.delete(queued);
+    }
   }
 
   signingCancel({ id }: RequestSigningCancel): boolean {

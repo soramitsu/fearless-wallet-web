@@ -33,6 +33,7 @@ function deferred<T>() {
 let service: RequestService;
 beforeEach(() => {
   service = {
+    authRequestHandler: { getSigningAuthorizationRevision: vi.fn(() => 0) },
     ensureAccountAuthorized: vi.fn(async () => true),
     popupOpen: vi.fn(),
     updateIcon: vi.fn(),

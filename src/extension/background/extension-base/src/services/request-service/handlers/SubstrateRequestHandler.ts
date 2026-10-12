@@ -48,6 +48,11 @@ export class SubstrateRequestHandler {
     const snapshot = structuredClone({ account, url });
     const signer = request.snapshot();
     await this.requestService.ensureAccountAuthorized(url, snapshot.account.address);
+    const authorizationRevision = this.requestService.authRequestHandler.getSigningAuthorizationRevision(
+      snapshot.url,
+      'substrate',
+      snapshot.account.address
+    );
     const id = _id || getId();
 
     return new Promise((resolve, reject): void => {
@@ -61,6 +66,7 @@ export class SubstrateRequestHandler {
         return true;
       };
       const queued: SignRequest = {
+        authorizationRevision,
         account: snapshot.account,
         id,
         request: signer,

@@ -97,7 +97,9 @@ export type SolanaRequestPayload = {
 
 export type SolanaRequests = Record<string, SolanaRequestPayload>;
 
-export interface SolanaRequestsSubjectPayload extends Resolver<SolanaSigningResponse>, SolanaRequestPayload {}
+export interface SolanaRequestsSubjectPayload extends Resolver<SolanaSigningResponse>, SolanaRequestPayload {
+  authorizationRevision?: number;
+}
 
 export type SolanaSerializedTransactionRequest =
   | SolanaSignAllTransactionsRequest

@@ -63,10 +63,11 @@ export default class Tabs {
   }
 
   async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
-    const stripedUrl = stripUrl(url);
-    const entries = await this.state.requestService.getAuthList();
-
-    const auth = entries[stripedUrl];
+    await this.state.requestService.getAuthList();
+    const { authorization: auth } = this.state.requestService.authRequestHandler.getSigningAuthorizationSnapshot(
+      url, 'substrate'
+    );
+    if (auth?.isAllowed !== true) return [];
 
     return accounts.filter((allAcc) =>
       auth.authorizedAccounts
@@ -115,7 +116,11 @@ export default class Tabs {
   }
 
   async solanaAccountsAuthorized(url: string): Promise<SolanaConnectResponse> {
-    const authInfo = await this.state.getAuthInfo(url);
+    await this.state.getAuthInfo(url);
+    const { authorization: authInfo } = this.state.requestService.authRequestHandler.getSigningAuthorizationSnapshot(
+      url, 'solana'
+    );
+    if (authInfo?.isAllowed !== true) return { accounts: [] };
     const authorizedAddress = authInfo?.solanaAuthorizedAccount;
     const accounts = this.getAllSolanaAccounts().filter(({ address }) => address === authorizedAddress);
 

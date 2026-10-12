@@ -1,12 +1,6 @@
 import { formatJsonRpcError, formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
 import { getSdkError } from '@walletconnect/utils';
-import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
-import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
-import {
-  capturePolkadotSigningContext,
-  polkadotSigningPayload,
-  validatePolkadotSigningContext,
-} from '../polkadotSigningContext';
+import { capturePolkadotSigningContext } from '../polkadotSigningContext';
 import type { SignClientTypes } from '@walletconnect/types';
 import type State from '@extension-base/background/handlers/State';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
@@ -34,20 +28,12 @@ export class PolkadotHandler {
       this.handleError(topic, id, new Error('Duplicate active WalletConnect request'));
       return;
     }
-    const payload = polkadotSigningPayload(context.event);
-    const signer = 'data' in payload ? new RequestBytesSign(payload) : new RequestExtrinsicSign(payload);
     this.activeRequests.add(owner);
-    this.state.requestService
-      .sign(
-        context.origin,
-        signer,
-        { address: payload.address, name: '', ethereumAddress: '' },
-        `wallet-connect.${crypto.randomUUID()}`,
-        context
-      )
+    const pending = this.state.requestService.signWalletConnect(context);
+    pending.result
       .then(async ({ payload: signature }) => {
         // Queue completion and remote response happen in different microtasks.
-        validatePolkadotSigningContext(this.state, context);
+        pending.validate();
         await this.walletConnectService.responseRequest({ topic, response: formatJsonRpcResult(id, { signature }) });
       })
       .catch((error) => this.handleError(topic, id, error))

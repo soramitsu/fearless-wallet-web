@@ -1,12 +1,15 @@
 import {
   validatePolkadotSigningContext,
+  polkadotSigningPayload,
   type PolkadotSigningContext,
 } from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
 import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
 import { getId } from '@extension-base/utils';
-import { captureSubstrateSigningContext } from './substrateSigningContext';
-import { captureSubstrateSigningAccount } from './substrateSigningAccount';
+import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
+import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import { captureSubstrateSigningContext, validateSubstrateSigningContext } from './substrateSigningContext';
+import { captureSubstrateSigningAccount, validateSubstrateSigningAccount } from './substrateSigningAccount';
 import type { Logger } from '@polkadot/util/types';
 import type {
   SignRequest,
@@ -53,6 +56,33 @@ export class SubstrateRequestHandler {
 
   public get numSubstrateRequests(): number {
     return Object.keys(this.substrateRequests).length;
+  }
+
+  public signWalletConnect(context: PolkadotSigningContext) {
+    const snapshot = structuredClone(context);
+    const payload = polkadotSigningPayload(snapshot.event);
+    const signer = 'data' in payload ? new RequestBytesSign(payload) : new RequestExtrinsicSign(payload);
+    const id = `wallet-connect.${crypto.randomUUID()}`;
+    // Session admission captures and queues synchronously; only ordinary site
+    // admission waits for its permission store. Retain the exact private record
+    // so every captured context can be checked at the eventual remote response.
+    const result = this.sign(
+      snapshot.origin,
+      signer,
+      { address: payload.address, name: '', ethereumAddress: '' },
+      id,
+      snapshot
+    );
+    const queued = this.substrateRequests[id];
+    return {
+      result,
+      validate: () => {
+        if (!queued?.walletConnectContext) throw new Error('WalletConnect signing context is unavailable');
+        validatePolkadotSigningContext(this.state, queued.walletConnectContext, queued.request.payload, queued.url);
+        validateSubstrateSigningContext(this.state, queued);
+        validateSubstrateSigningAccount(this.state, queued);
+      },
+    };
   }
 
   public async sign(

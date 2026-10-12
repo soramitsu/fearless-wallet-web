@@ -188,7 +188,7 @@ function qualifyWcRequest(
     broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0xfeed' })),
   };
   Object.assign(state, {
-    walletConnectService: { getSession: () => session, getSessionRevision: () => 0 },
+    walletConnectService: { getSession: () => session, getSessionRevision: () => 0, isRequestExpired: () => false },
     getEvmApi: () => ({ api: provider }),
     networkService: {
       networkMap: {
@@ -287,7 +287,9 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
     ).resolves.toBe(true);
 
     expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
-    expect(Transaction.from(provider.broadcastTransaction.mock.calls[0][0]).from?.toLowerCase()).toBe(child.address.toLowerCase());
+    expect(Transaction.from(provider.broadcastTransaction.mock.calls[0][0]).from?.toLowerCase()).toBe(
+      child.address.toLowerCase()
+    );
     expect(request.resolve).toHaveBeenCalledExactlyOnceWith({ id: TOPIC, payload: '0xfeed' });
     expect(request.reject).not.toHaveBeenCalled();
     expect(() => keyringService.unlockPair(parent.address)).toThrow('legacy_password_required');

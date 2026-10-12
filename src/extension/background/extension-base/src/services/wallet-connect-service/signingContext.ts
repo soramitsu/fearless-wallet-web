@@ -1,4 +1,5 @@
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
+import { assertWalletConnectRequestActive } from './requestValidity';
 import type State from '@extension-base/background/handlers/State';
 import type { SignClientTypes } from '@walletconnect/types';
 import type { WalletConnectSigningContext, WalletConnectTransactionRequest } from './types';
@@ -19,6 +20,7 @@ export function captureWalletConnectSigningContext(
   state: State,
   event: SignClientTypes.EventArguments['session_request']
 ): WalletConnectSigningContext {
+  assertWalletConnectRequestActive(state.walletConnectService, event);
   const {
     topic,
     params: { chainId, request },

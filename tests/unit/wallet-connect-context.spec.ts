@@ -78,6 +78,7 @@ beforeEach(() => {
   const wc = {
     getSession: vi.fn(() => session),
     getSessionRevision: vi.fn(() => revision),
+    isRequestExpired: () => false,
     responseRequest: vi.fn(async () => undefined),
   };
   state = {
@@ -117,6 +118,13 @@ const providerFixture = () => ({
 });
 
 describe('WalletConnect uses the approved session grant at admission', () => {
+  it('rejects a request whose explicit deadline has expired', () => {
+    const request = event();
+    request.params.request.expiryTimestamp = 1;
+    expect(() => incoming.handleRequest(request)).toThrow();
+    expect(queue.numWcSignRequest).toBe(0);
+  });
+
   it.each([
     [
       'method was only requested',
@@ -312,6 +320,12 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
     await expect(approving).rejects.toThrow();
     expect(state.walletConnectService.responseRequest).not.toHaveBeenCalled();
   });
+  it('honors SDK request expiry before private-key export', async () => {
+    const approvalId = await admit();
+    vi.spyOn(state.walletConnectService, 'isRequestExpired').mockReturnValue(true);
+    await expect(extension.wcRequestApprove({ address, approvalId })).rejects.toThrow(/expired/);
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+  });
   it('does not release the result if a session changes in the queue completion microtask', async () => {
     const approvalId = await admit();
     const queued = queue.getSignWCRequest(approvalId)!;
@@ -442,6 +456,7 @@ describe('WalletConnect live session revisions', () => {
     Object.assign(service, {
       sessionRevisions: new Map(),
       retiredTopics: new Set(),
+      expiredRequestIds: new Set(),
       sessionSubject: { next },
       client: {
         session: { values: [] },

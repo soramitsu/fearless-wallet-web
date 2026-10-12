@@ -66,6 +66,7 @@ beforeEach(() => {
   wc = {
     getSession: (key: string) => sessions[key],
     getSessionRevision: (key: string) => revisions[key] ?? 0,
+    isRequestExpired: () => false,
     responseRequest: respond,
   } as unknown as WalletConnectService;
   service = {
@@ -92,6 +93,7 @@ beforeEach(() => {
   Object.assign(service, {
     substrateRequestHandler: substrate,
     sign: substrate.sign.bind(substrate),
+    signWalletConnect: substrate.signWalletConnect.bind(substrate),
     getSignRequest: (id: string) => substrate.getSignRequest(id),
   });
   handler = new PolkadotHandler(state, wc);
@@ -439,6 +441,7 @@ describe('live incoming WalletConnect lifecycle', () => {
       requestService: service,
       sessionRevisions: new Map(),
       retiredTopics: new Set(),
+      expiredRequestIds: new Set(),
       sessionSubject: { next: vi.fn() },
       client,
       polkadotRequestHandler: handler,
@@ -477,6 +480,26 @@ describe('live incoming WalletConnect lifecycle', () => {
     await dispatch();
     listeners.session_extend({ topic });
     expect(await approveOnly()).toBe(false);
+  });
+  it.each(['review', 'completion'])('honors SDK request expiry at %s without an explicit deadline', async (phase) => {
+    const { listeners } = liveService();
+    await dispatch();
+    if (phase === 'review') listeners.session_request_expire({ id: 1 } as never);
+    else {
+      const queued = substrate.getSignRequest(pending()[0].id)!;
+      const resolve = queued.resolve;
+      queued.resolve = (value) => {
+        resolve(value);
+        listeners.session_request_expire({ id: 1 } as never);
+      };
+    }
+    expect(await approveOnly()).toBe(phase === 'completion');
+    await vi.waitFor(() => expect(respond).toHaveBeenCalledOnce());
+    expect(respond.mock.calls[0][0].response.error).toBeDefined();
+    await dispatch();
+    expect(pending()).toHaveLength(0);
+    await dispatch(event({ id: 2 }));
+    expect(pending()).toHaveLength(1);
   });
   it('dispatches approved chain-scoped grants without extending expiry on receipt', async () => {
     const { live, client } = liveService();
@@ -541,7 +564,7 @@ describe('incoming WalletConnect client ownership', () => {
 });
 
 describe('incoming Polkadot requests using a mobile signer', () => {
-  it.each(['success', 'incoming revocation', 'outgoing revocation'])(
+  it.each(['success', 'incoming revocation', 'outgoing revocation', 'completion revocation'])(
     'keeps both sessions bound through mobile completion: %s',
     async (outcome) => {
       const mobileTopic = 'public-mobile-signer';
@@ -568,12 +591,20 @@ describe('incoming Polkadot requests using a mobile signer', () => {
         onRequest,
       } as never;
       await dispatch();
+      if (outcome === 'completion revocation') {
+        const queued = substrate.getSignRequest(pending()[0].id)!;
+        const resolve = queued.resolve;
+        queued.resolve = (value) => {
+          resolve(value);
+          mobileRevision += 1;
+        };
+      }
       const approval = approveOnly();
       await vi.waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
       if (outcome === 'incoming revocation') revisions[topic] = 1;
       if (outcome === 'outgoing revocation') mobileRevision = 1;
       release();
-      expect(await approval).toBe(outcome === 'success');
+      expect(await approval).toBe(outcome === 'success' || outcome === 'completion revocation');
       await vi.waitFor(() => expect(respond).toHaveBeenCalledOnce());
       if (outcome === 'success')
         expect(
@@ -584,4 +615,57 @@ describe('incoming Polkadot requests using a mobile signer', () => {
       expect(state.keyringService.getPair).not.toHaveBeenCalled();
     }
   );
+});
+
+describe('completed Polkadot request continuity', () => {
+  it.each(['account', 'key', 'network', 'metadata'])(
+    'does not release a result when %s changes in the completion microtask',
+    async (kind) => {
+      await dispatch(event({ extrinsic: kind === 'network' || kind === 'metadata' }));
+      const id = pending()[0].id,
+        queued = substrate.getSignRequest(id)!;
+      const resolve = queued.resolve;
+      queued.resolve = (value) => {
+        resolve(value);
+        if (kind === 'account') state.keyringService.getAllAccounts = () => [];
+        if (kind === 'key')
+          vi.mocked(state.keyringService.getPair).mockReturnValue(
+            new Keyring({ type: 'sr25519' }).addFromUri('//Bob') as never
+          );
+        if (kind === 'network')
+          state.networkService.networkMap = {
+            New: { name: 'New', genesisHash: genesis, ecosystem: 'substrate' },
+          } as never;
+        if (kind === 'metadata')
+          Object.assign(service, {
+            knownMetadata: [{ genesisHash: genesis, chain: 'New metadata', specVersion: 1, types: {} }],
+          });
+      };
+      expect(await extension.signingApprove({ id })).toBe(true);
+      await vi.waitFor(() => expect(respond).toHaveBeenCalledOnce());
+      expect(respond.mock.calls[0][0].response.error).toBeDefined();
+    }
+  );
+  it.each([1, NaN, Infinity, 2000000000.5])(
+    'rejects invalid or expired request deadline %s before admission',
+    async (expiryTimestamp) => {
+      const request = event();
+      request.params.request.expiryTimestamp = expiryTimestamp;
+      await dispatch(request);
+      expect(pending()).toHaveLength(0);
+    }
+  );
+  it('checks the request deadline again before key access', async () => {
+    const request = event();
+    request.params.request.expiryTimestamp = Math.floor(Date.now() / 1000) + 60;
+    await dispatch(request);
+    vi.mocked(state.keyringService.getPair).mockClear();
+    const now = vi.spyOn(Date, 'now').mockReturnValue((request.params.request.expiryTimestamp + 1) * 1000);
+    try {
+      expect(await approveOnly()).toBe(false);
+      expect(state.keyringService.getPair).not.toHaveBeenCalled();
+    } finally {
+      now.mockRestore();
+    }
+  });
 });

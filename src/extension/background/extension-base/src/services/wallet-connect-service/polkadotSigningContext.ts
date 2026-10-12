@@ -1,5 +1,6 @@
 import { decodeAddress } from '@polkadot/util-crypto';
 import { u8aEq } from '@polkadot/util';
+import { assertWalletConnectRequestActive } from './requestValidity';
 import { captureSessionSigningContext } from './sessionSigningContext';
 import type { SessionSigningContext } from './sessionSigningContext';
 import type { SignClientTypes } from '@walletconnect/types';
@@ -42,6 +43,7 @@ export function polkadotSigningPayload(event: Event): SignerPayloadJSON | Signer
 export function capturePolkadotSigningContext(state: State, event: Event): PolkadotSigningContext {
   if (typeof event.topic !== 'string' || !event.topic || !Number.isSafeInteger(event.id) || event.id < 0)
     throw new Error('Invalid WalletConnect request identity');
+  assertWalletConnectRequestActive(state.walletConnectService, event);
   const snapshot = structuredClone(event);
   const payload = polkadotSigningPayload(snapshot);
   const session = captureSessionSigningContext(state.walletConnectService, {

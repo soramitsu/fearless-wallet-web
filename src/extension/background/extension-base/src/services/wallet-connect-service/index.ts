@@ -26,6 +26,11 @@ export class WalletConnectService {
   private initialization?: Promise<void>;
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
+  private readonly expiredRequestIds = new Set<number>();
+
+  isRequestExpired(id: number): boolean {
+    return this.expiredRequestIds.has(id);
+  }
 
   getSessionRevision(topic: string): number {
     return this.sessionRevisions.get(topic) ?? 0;
@@ -223,6 +228,7 @@ export class WalletConnectService {
   private createListener() {
     this.client?.on('session_proposal', (event) => this.onSessionProposal(event));
     this.client?.on('session_request', (event) => this.onSessionRequest(event));
+    this.client?.on('session_request_expire', ({ id }) => this.expiredRequestIds.add(id));
     this.client?.on('session_delete', ({ topic }) => this.sessionChanged(topic, true));
     this.client?.on('session_expire', ({ topic }) => this.sessionChanged(topic, true));
     this.client?.on('session_ping', (data: unknown) => console.info('ping', data));

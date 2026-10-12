@@ -28,6 +28,7 @@ const intentionalLiterals = new Set([
   'SHA-256',
   'SORA',
   'TVL',
+  'WalletConnect ·',
   'XOR',
   'iroha://connect?sid=…',
 ]);

@@ -31,8 +31,12 @@ const NETWORK_KEY = 'Solana Local';
 const EXPIRY_WAIT_MS = 600_000;
 
 describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
-  const rpc = new SolanaRpcClient({ rpcUrls: [RPC_URL!] });
-  const balances = createSolanaRpcBalanceClient(rpc);
+  let rpc: SolanaRpcClient;
+  let balances: ReturnType<typeof createSolanaRpcBalanceClient>;
+  beforeAll(() => {
+    rpc = new SolanaRpcClient({ rpcUrls: [RPC_URL!] });
+    balances = createSolanaRpcBalanceClient(rpc);
+  });
   const tokenBalanceItem = async () => {
     const { tokens } = await balances.getBalances(walletAddress);
     const token = tokens.find(({ mint }) => mint === MINT)!;

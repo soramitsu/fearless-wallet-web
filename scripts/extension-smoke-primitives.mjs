@@ -141,6 +141,7 @@ export async function capturePrimitivesScreenshots({
   // This tab alone can substitute the migration inventory response with a public UI fixture.
   // Every other message uses the real isolated test worker unchanged.
   await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
+    const wcOwnershipOnly = ${process.env.WC_OWNERSHIP_ONLY === 'true'};
     const originalConnect = chrome.runtime.connect.bind(chrome.runtime);
     chrome.runtime.connect = (...args) => {
       const port = originalConnect(...args);
@@ -149,7 +150,11 @@ export async function capturePrimitivesScreenshots({
       const listeners = new Set();
       port.onMessage.addListener = (listener) => { listeners.add(listener); add(listener); };
       port.postMessage = (message) => {
-        if (message.message === 'pri(keyring.getUniversalWalletMigrationSnapshot)' && window.__migrationFixtureReply) {
+        if (wcOwnershipOnly && message.message === 'pri(walletConnect.signing.requests.subscribe)') {
+          // This fixture owns its queue. A late worker bootstrap snapshot must not
+          // erase the public requests after the harness places them on screen.
+          queueMicrotask(() => { for (const listener of listeners) listener({ id: message.id, response: [] }); });
+        } else if (message.message === 'pri(keyring.getUniversalWalletMigrationSnapshot)' && window.__migrationFixtureReply) {
           const reply = { id: message.id, ...window.__migrationFixtureReply };
           queueMicrotask(() => { for (const listener of listeners) listener(reply); });
         } else if (message.message === 'pri(keyring.getMigrationAccounts)' && window.__legacyRowsFixtureReply) {

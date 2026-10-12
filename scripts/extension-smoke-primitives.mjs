@@ -270,12 +270,17 @@ export async function capturePrimitivesScreenshots({
     await click(selector);
   };
   const capture = async (name, description) => {
+    await cdp.send('Page.bringToFront', {}, sessionId);
     await sleep(450);
-    await evaluate(cdp, sessionId, 'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+    const renderState = await evaluate(cdp, sessionId, `new Promise((resolve, reject) => {
+      const state = () => ({ visibility: document.visibilityState, focused: document.hasFocus(), width: innerWidth, height: innerHeight });
+      const timeout = setTimeout(() => reject(new Error('Capture frame wait timed out: ' + JSON.stringify(state()))), 3000);
+      requestAnimationFrame(() => requestAnimationFrame(() => { clearTimeout(timeout); resolve({ ...state(), frames: 2 }); }));
+    })`);
     // Recorded rather than fatal, so a build that overflows can still be compared with one that does not.
     const pageWidth = await evaluate(cdp, sessionId, 'document.documentElement.scrollWidth');
     const viewportWidth = await evaluate(cdp, sessionId, 'window.innerWidth');
-    const primitives = { ...(await evaluate(cdp, sessionId, PRIMITIVES)), pageWidth, viewportWidth };
+    const primitives = { ...(await evaluate(cdp, sessionId, PRIMITIVES)), pageWidth, viewportWidth, renderState };
     if (pageWidth > viewportWidth)
       console.info(`[extension-smoke] ${name}: the page is ${pageWidth}px wide in the ${viewportWidth}px popup`);
     const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);

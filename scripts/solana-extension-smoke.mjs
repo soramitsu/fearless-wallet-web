@@ -1265,6 +1265,9 @@ async function waitForExpression(cdp, sessionId, expression, description) {
 }
 
 async function evaluate(cdp, sessionId, expression, options = {}) {
+  // Keep the call site when a delayed protocol timeout loses its async caller.
+  // Do not log the expression: other harness calls can contain signing inputs.
+  const callSite = new Error('Runtime.evaluate call site').stack;
   const result = await cdp.send(
     'Runtime.evaluate',
     {
@@ -1274,7 +1277,10 @@ async function evaluate(cdp, sessionId, expression, options = {}) {
       userGesture: true,
     },
     sessionId
-  );
+  ).catch((error) => {
+    error.stack += `\n${callSite}`;
+    throw error;
+  });
 
   if (result.exceptionDetails) {
     const exception = result.exceptionDetails.exception;
@@ -1339,6 +1345,8 @@ function launchChrome(userDataDir) {
     );
 
   if (headless) args.unshift('--headless=new');
+  if (process.env.SOLANA_EXTENSION_SMOKE_DISABLE_GPU === 'true')
+    args.unshift('--disable-gpu', '--disable-gpu-vsync', '--disable-frame-rate-limit');
 
   const child = spawn(chromeBinary, args, {
     env: {

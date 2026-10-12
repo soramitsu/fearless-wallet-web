@@ -65,6 +65,10 @@ import {
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { validateWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import { validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
+import {
+  assertEvmExternalSignature,
+  assertSubstrateExternalSignature,
+} from '@extension-base/services/request-service/handlers/externalSignature';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
@@ -928,8 +932,13 @@ export default class Extension extends FWExtensionBase {
     }
     try {
       await this.assertSigningSiteAllowed(queued);
-      if (isEvmSignRequest(queued)) validateEvmSigningContext(this.state, queued);
-      else this.assertNonEvmSigningAuthorization(queued);
+      if (isEvmSignRequest(queued)) {
+        validateEvmSigningContext(this.state, queued);
+        assertEvmExternalSignature(queued, signature);
+      } else {
+        this.assertNonEvmSigningAuthorization(queued);
+        assertSubstrateExternalSignature(queued, signature, this.state.requestService.knownMetadata);
+      }
       queued.resolve({ id, payload: signature });
       return true;
     } catch (error) {

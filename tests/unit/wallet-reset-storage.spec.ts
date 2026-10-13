@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { BehaviorSubject } from 'rxjs';
+import { api as apiSora } from '@sora-substrate/util';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, KeyringPairJson & { accounts: Record<string, KeyringPairJson>; ton: TonStoreAccount; cipherSeed: string; pendingCipherSeed?: string }>,
@@ -43,12 +44,14 @@ vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
     },
   } },
 } }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@sora-substrate/sdk', () => ({ api: { bridgeProxy: { sub: {} } } }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 
 import { KeyringService } from '@extension-base/services/keyring-service';
+import Extension from '@extension-base/background/handlers/Extension';
+import State from '@extension-base/background/handlers/State';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
 import { accountStoreKey, walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
 import { updateAccountMetadata } from '@extension-base/services/keyring-service/AccountMetadata';
@@ -117,6 +120,32 @@ afterEach(async () => {
 });
 
 describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000 }, () => {
+  it('clears the actual State signing contexts after durable selection and before archived-key removal', async () => {
+    const address = await native();
+    const state = Object.create(State.prototype) as State;
+    Object.assign(state, { keyringService: service, poolsService: { unsubscribePools: vi.fn() },
+      updateServiceInfo: vi.fn(), requestService: { resetWallet: vi.fn(async () => {}) },
+      walletConnectDappService: { resetWallet: vi.fn(async () => {}) },
+      walletConnectService: { resetWallet: vi.fn(async () => {}) } });
+    const selection = track(state.setCurrentAccount({ address, name: 'Public fixture', ethereumAddress: '',
+      isMobile: false, walletEcosystem: WalletEcosystem.Substrate }));
+    await drain();
+    expect(await selection).toHaveProperty('value');
+    const sora = apiSora as unknown as { account?: { pair: unknown }; bridgeProxy: { sub: { account?: unknown } } };
+    expect(sora.account?.pair).toBe(service.getPair(address));
+    vi.mocked(state.poolsService.unsubscribePools).mockClear();
+    const result = track(new Extension(state).handle('public-reset', 'pri(keyring.reset)', null));
+    await drain(false);
+    expect(service.currentAccountSubject.value).toBeNull();
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toBeNull();
+    expect(sora.account).toBeUndefined();
+    expect(sora.bridgeProxy.sub.account).toBeUndefined();
+    expect(state.poolsService.unsubscribePools).toHaveBeenCalledOnce();
+    expect(service.getPair(address)).not.toBeNull();
+    await drain();
+    expect(await result).toEqual({ value: true });
+  });
+
   it('waits for storage before reporting reset or clearing the master password and live pair', async () => {
     const address = await native();
     const pair = service.getPair(address)!;

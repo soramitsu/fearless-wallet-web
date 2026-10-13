@@ -433,6 +433,7 @@
     "sendGroupNetworkWarning": "𓇋𓅱 {symbol} 𓅓 𓄡𓈖𓅓𓏥 𓂝𓈙𓄿. 𓇋𓅱 𓉔𓄿𓃀 𓊪𓈖 𓅓 {network}: 𓅓𓄿𓄿 𓈖𓏏𓏏 𓈙𓋴𓊪 𓋴 𓈙𓋴𓊪 {symbol} 𓅓 {network}."
   },
   "accounts": {
+    "jsonBackupOnly": "𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿: 𓈖𓈖 𓋴𓅓𓈖 𓅓𓄿𓂝. 𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓂋 𓐍𓈖𓅱 (JSON).",
     "invalidAccountAddress": "𓈖 𓐙 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊨 𓈖 𓂋𓈖",
     "walletName": "𓉒 𓂋𓈖",
     "createNewAccount": "𓁹 𓅓𓄿𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖",

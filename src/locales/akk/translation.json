@@ -906,6 +906,7 @@
     "sendGroupNetworkWarning": "{symbol} 𒄿𒈾 𒊑𒅅𒊓𒋾𒅎 𒈠𒁕𒋾𒅎 𒄿𒁀𒀸𒅆. 𒋗𒁍𒇻𒌝 𒀭𒉡𒌑𒌝 𒄿𒈾 {network}: 𒆠𒈠 𒈠𒄭𒊒𒌝 {symbol} 𒄿𒈾 {network} 𒄿𒈠𒄴𒄩𒊒 𒀀𒈬𒌨."
   },
   "accounts": {
+    "jsonBackupOnly": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎: 𒆷 𒄠𒊒𒌝. 𒌅𒌒𒉺𒄠 𒊭𒈾𒀀𒄠 𒅗𒊍𒊏𒄠 𒋗𒊑𒀉 (JSON).",
     "invalidAccountAddress": "𒀀𒊭𒅈 𒌅𒌒𒉿𒅎 𒊭 𒋗𒈪𒅎 𒆷 𒆠𒉡𒌝",
     "walletName": "𒋗𒌝 𒆠𒋛𒅎",
     "createNewAccount": "𒁉𒉌 𒌅𒌒𒉺𒄠 𒊭 𒋗𒈪𒅎 𒌍𒊭𒄠",

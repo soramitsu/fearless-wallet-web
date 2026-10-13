@@ -906,7 +906,7 @@
     "sendGroupNetworkWarning": "{symbol} is on several networks. This send uses {network}: check that the recipient accepts {symbol} on {network}."
   },
   "accounts": {
-    "jsonBackupOnly": "Keep an encrypted JSON backup for this account. Its embedded recovery phrase could not be verified.",
+    "jsonBackupOnly": "Mnemonic: Unverified. Download encrypted backup (JSON).",
     "invalidAccountAddress": "Invalid account address",
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",

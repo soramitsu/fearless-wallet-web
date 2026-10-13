@@ -11,6 +11,7 @@ import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
 import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
 import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
 import { checkJsonImportStorage } from './extension-smoke-json-import.mjs';
+import { captureJsonRecoveryNotice } from './extension-smoke-json-notice.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -323,6 +324,10 @@ async function main() {
       const checkImport = jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
       const result = await checkImport({
         eventually,
+        inspectUI: ({ address, password }) => captureJsonRecoveryNotice({ cdp, extensionId,
+          send: (message, request) => extensionSend(cdp, controlSession, message, request),
+          address, password, outputDir: process.env.JSON_IMPORT_SCREENSHOTS_DIR || path.resolve(root, 'build/reports/json-import-notice'),
+          evaluate, waitForExpression }),
         fixture: universalWalletFixture,
         password: TEST_PASSWORD,
         assert,

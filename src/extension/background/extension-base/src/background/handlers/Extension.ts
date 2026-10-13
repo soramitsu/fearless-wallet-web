@@ -591,26 +591,22 @@ export default class Extension extends FWExtensionBase {
   }
 
   async jsonRestore({ file, password, linkedEthereumAddress }: RequestJsonRestore): Promise<string> {
-    try {
-      const stringFile = JSON.stringify(file);
-      if (ethers.isKeystoreJson(stringFile)) {
-        const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
-        return await this.state.keyringService.addAccount(
-          privateKey,
-          { name: (file.meta?.name ?? '') as string, isMobile: false },
-          WalletEcosystem.Substrate,
-          'ethereum'
-        );
-      }
-      const { address } = await this.state.keyringService.restoreAccount(file, password, linkedEthereumAddress);
-      if (!isEthereumAddress(address)) {
-        this.state.updateNetworkForNewWallet(address);
-        this.state.updateCurrentAccount({ address });
-      }
-      return address;
-    } catch (error) {
-      throw { error: (error as Error).message };
+    const stringFile = JSON.stringify(file);
+    if (ethers.isKeystoreJson(stringFile)) {
+      const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
+      return await this.state.keyringService.addAccount(
+        privateKey,
+        { name: (file.meta?.name ?? '') as string, isMobile: false },
+        WalletEcosystem.Substrate,
+        'ethereum'
+      );
     }
+    const { address } = await this.state.keyringService.restoreAccount(file, password, linkedEthereumAddress);
+    if (!isEthereumAddress(address)) {
+      this.state.updateNetworkForNewWallet(address);
+      this.state.updateCurrentAccount({ address });
+    }
+    return address;
   }
 
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {

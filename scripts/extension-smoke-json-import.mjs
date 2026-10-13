@@ -7,7 +7,7 @@ import { decodePair } from '@subwallet/keyring/pair/decode';
 
 // Only public unfunded fixtures in a disposable offline Chrome profile.
 const phrase = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk';
-export async function checkJsonImportStorage({ send, read, remove, restart, password, assert, eventually }) {
+export async function checkJsonImportStorage({ send, read, remove, restart, password, assert, eventually, inspectUI }) {
   await cryptoWaitReady();
   const backend = new Keyring();
   const rows = [];
@@ -83,6 +83,7 @@ export async function checkJsonImportStorage({ send, read, remove, restart, pass
       assert((await send('pri(keyring.export.mnemonic)', { address: row.address, password: nextPassword })).seed === phrase, 'Restart lost verified JSON phrase');
     }
   }
+  const notices = await inspectUI({ address: rows.find(({ path }) => path).address, password: nextPassword });
   assert(await send('pri(keyring.lock)', true), 'JSON wallet did not lock');
   for (const row of rows) {
     let rejected = false;
@@ -90,7 +91,7 @@ export async function checkJsonImportStorage({ send, read, remove, restart, pass
     assert(rejected, 'Locked JSON import succeeded');
     assert(JSON.stringify(await read(row.key)) === JSON.stringify(row.rotated), 'Locked JSON import changed recovery material');
   }
-  return { accounts: rows.map(({ type, path, address }) => ({ type, path, address })), durableRestore: true,
+  return { notices, accounts: rows.map(({ type, path, address }) => ({ type, path, address })), durableRestore: true,
     duplicatePreserved: true, forgedHeaderRejected: true, verifiedExport: true, primaryOnlyCustomPath: true,
     preservedEncryptedEntropy: true, passwordRotation: true, workerRestart: true, lockedRejected: true };
 }

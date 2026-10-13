@@ -164,7 +164,9 @@ describe('JSON backup import durability with real crypto and Chrome store', { ti
     fixture.failRead = true;
     const result = begin(backup());
     await drain();
-    expect(await result).toHaveProperty('error');
+    const outcome = await result;
+    expect(outcome).toHaveProperty('error');
+    if ('error' in outcome) expect(outcome.error).toBeInstanceOf(Error);
     expect(fixture.writes).toEqual([]);
     expect(fixture.data).toEqual({});
     expect(keyring.getAccounts()).toEqual([]);

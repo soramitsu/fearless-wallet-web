@@ -480,6 +480,18 @@ describe('standalone Ethereum account presentation', () => {
     expect(keyring.getAccount(pair.address)?.meta.ethereumAddress).toBeUndefined();
   });
 
+  it.each(['ethereum', 'sr25519'] as const)('does not let imported metadata replace the primary %s identity or key type', (type) => {
+    const other = keyring.createFromUri(PHRASE + '//other');
+    const pair = keyring.createFromUri(PHRASE, { name: 'Legacy identity', address: other.address, type: type === 'ethereum' ? 'sr25519' : 'ethereum' }, type);
+    const json = pair.toJson(PASSWORD);
+    const installed = keyring.keyring.addFromJson(json);
+    keyring.accounts.add({ all() {}, get() {}, remove() {}, set() {} }, installed.address, installed.publicKey, json, installed.type);
+    const { extension } = handler();
+    const rows = extension.convertAccounts(service.accountSubject.value);
+    expect(rows).toMatchObject([{ address: pair.address, type, ...(type === 'ethereum' ? { ethereumAddress: pair.address } : {}) }]);
+    expect(keyring.getAccount(pair.address)?.meta.address).toBe(other.address);
+  });
+
   it.each([false, true])('authorizes a visible public Ethereum identity (linked parent=%s)', async (linked) => {
     const ethereumAddress = keyring.createFromUri(PHRASE, {}, 'ethereum').address;
     const address = linked ? keyring.createFromUri(PHRASE).address : ethereumAddress;

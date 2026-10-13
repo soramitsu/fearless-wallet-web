@@ -425,15 +425,17 @@ export default class Extension extends FWExtensionBase {
       const haveEntropy = pair?.haveEntropy && !meta.isMnemonicUnverified;
 
       return {
-        address,
         ethereumAddress: meta.ethereumAddress as string,
         active: address === this.state.currentAccount?.address,
         name: meta.name ?? '',
-        type,
         haveEntropy,
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         walletEcosystem,
         ...meta,
+        // Backup metadata cannot replace the keyring identity used by selection
+        // and authorization. Keep its original fields only in the stored backup.
+        address,
+        type,
         // Linked keys appear on their parent; independently imported EVM keys
         // retain their own selectable identity without rewriting legacy metadata.
         ...(standaloneEvm ? { ethereumAddress: address, walletEcosystem: WalletEcosystem.Evm } : {}),

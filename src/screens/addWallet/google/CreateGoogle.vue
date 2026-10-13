@@ -136,7 +136,7 @@ export default defineComponent({ name: 'CreateGoogle',
       isFinished: false,
       createdAddress: '',
       createdEthereumAddress: '',
-      backup: null as { primary: KeyringPair$Json; child?: KeyringPair$Json; childId?: string; primaryId?: string } | null,
+      backup: null as { primary: KeyringPair$Json; child?: KeyringPair$Json; childAddress?: string; primaryAddress: string; childId?: string; primaryId?: string } | null,
     };
   },
   computed: {
@@ -331,11 +331,11 @@ export default defineComponent({ name: 'CreateGoogle',
         if (!ownsRequest()) return;
         const ethAddress = json.meta.ethereumAddress as string | undefined;
         let child: KeyringPair$Json | undefined;
-        if (ethAddress && ethAddress.toLowerCase() !== json.address.toLowerCase()) {
+        if (ethAddress && ethAddress.toLowerCase() !== address.toLowerCase()) {
           child = (await exportJSON(ethAddress, password)).json;
           if (!ownsRequest()) return;
         }
-        this.backup = { primary: json, child };
+        this.backup = { primary: json, primaryAddress: address, child, childAddress: ethAddress };
       }
       const backup = this.backup;
       const upload = async (json: KeyringPair$Json, description: string) => {
@@ -346,12 +346,12 @@ export default defineComponent({ name: 'CreateGoogle',
         return result.id;
       };
       if (backup.child && !backup.childId) {
-        const id = await upload(backup.child, backup.child.address);
+        const id = await upload(backup.child, backup.childAddress!);
         if (!ownsRequest()) return;
         backup.childId = id;
       }
       if (!backup.primaryId) {
-        const description = backup.childId ? `${backup.primary.address}/${backup.childId}` : backup.primary.address;
+        const description = backup.childId ? `${backup.primaryAddress}/${backup.childId}` : backup.primaryAddress;
         const id = await upload(backup.primary, description);
         if (!ownsRequest()) return;
         backup.primaryId = id;

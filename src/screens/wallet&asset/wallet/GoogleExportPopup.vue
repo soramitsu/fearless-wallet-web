@@ -63,6 +63,8 @@ import { createGoogleFile, exportJSON, validatePassword } from '@/extension/mess
 
 type PreparedBackup = {
   primary: KeyringPair$Json;
+  primaryAddress: string;
+  linkedAddress?: string;
   linked?: KeyringPair$Json;
   linkedFileId?: string;
 };
@@ -140,30 +142,30 @@ export default defineComponent({
           const { json: primary } = await exportJSON(address, password);
           if (!ownsRequest()) return;
           const linkedAddress = primary.meta.ethereumAddress as string | undefined;
-          const linked = linkedAddress && linkedAddress.toLowerCase() !== primary.address.toLowerCase()
+          const linked = primary.encoding?.content?.[1] !== 'ethereum' && linkedAddress && linkedAddress.toLowerCase() !== address.toLowerCase()
             ? (await exportJSON(linkedAddress, password)).json : undefined;
           if (!ownsRequest()) return;
-          prepared = { primary, linked };
+          prepared = { primary, primaryAddress: address, linked, linkedAddress };
           this.prepared = prepared;
         }
         this.status = 'upload';
         if (prepared.linked && !prepared.linkedFileId) {
-          const id = await this.createFile(JSON.stringify(prepared.linked), this.prepUploadMeta(prepared.linked), token);
+          const id = await this.createFile(JSON.stringify(prepared.linked), this.prepUploadMeta(prepared.linked, prepared.linkedAddress!), token);
           if (!ownsRequest()) return;
           // Keep acknowledged partial progress for an explicit retry. The child
           // remains an independently restorable encrypted file if the parent fails.
           prepared.linkedFileId = id;
         }
-        await this.createFile(JSON.stringify(prepared.primary), this.prepUploadMeta(prepared.primary, prepared.linkedFileId), token);
+        await this.createFile(JSON.stringify(prepared.primary), this.prepUploadMeta(prepared.primary, prepared.primaryAddress, prepared.linkedFileId), token);
         if (ownsRequest()) this.status = 'uploaded';
       } catch {
         if (ownsRequest()) { this.status = 'await'; this.uploadError = true; }
       }
     },
-    prepUploadMeta(json: KeyringPair$Json, linkedFileId?: string) {
+    prepUploadMeta(json: KeyringPair$Json, address: string, linkedFileId?: string) {
       return {
         name: typeof json.meta.name === 'string' ? json.meta.name : '',
-        address: linkedFileId ? `${json.address}/${linkedFileId}` : json.address,
+        address: linkedFileId ? `${address}/${linkedFileId}` : address,
       };
     },
     async createFile(json: string, options: ICreateFile['options'], token: string) {

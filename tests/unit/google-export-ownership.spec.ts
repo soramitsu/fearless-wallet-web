@@ -116,4 +116,30 @@ describe('Google encrypted backup request ownership', () => {
     expect(wrapper.find('[role=alert]').exists()).toBe(true);
     wrapper.unmount();
   });
+  it.each([child.address, '0x3333333333333333333333333333333333333333'])('exports standalone Ethereum once despite compressed headers and metadata link %s', async (metadataLink) => {
+    const address = child.address;
+    const json = { ...structuredClone(child), address: '0x038318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75',
+      encoding: { content: ['pkcs8', 'ethereum'], type: ['scrypt', 'xsalsa20-poly1305'], version: '3' }, meta: { name: 'Standalone', ethereumAddress: metadataLink } };
+    mocks.export.mockResolvedValue({ json });
+    mocks.create.mockResolvedValue({ id: 'standalone-file' });
+    const { wrapper, route } = await open();
+    route.query.wallet = address;
+    await flushPromises();
+    await wrapper.setData({ password: 'Public fixture password' });
+    await wrapper.vm.onConfirm();
+    expect(mocks.export).toHaveBeenCalledExactlyOnceWith(address, 'Public fixture password');
+    expect(mocks.create).toHaveBeenCalledExactlyOnceWith({ json: JSON.stringify(json), options: { name: 'Standalone', address }, token: 'public-test-token' });
+    wrapper.unmount();
+  });
+
+  it('labels a linked Ethereum file with the exported account address while preserving its compressed header', async () => {
+    const json = { ...structuredClone(child), address: '0x038318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75' };
+    mocks.export.mockResolvedValueOnce({ json: structuredClone(root) }).mockResolvedValueOnce({ json });
+    mocks.create.mockResolvedValue({ id: 'public-file' });
+    const { wrapper } = await open();
+    await wrapper.vm.onConfirm();
+    expect(mocks.create.mock.calls[0][0]).toMatchObject({ json: JSON.stringify(json), options: { address: child.address } });
+    wrapper.unmount();
+  });
+
 });

@@ -82,8 +82,15 @@ export class SubstrateApiHandler {
 
     const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
-    this.api[networkName].api = new ApiPromise({ provider, noInitWarn: true });
+    const api = new ApiPromise({ provider, noInitWarn: true });
+    this.api[networkName].api = api;
     this.api[networkName].provider = provider;
+    // ApiPromise rejects this even when no balance/signing caller is awaiting readiness yet.
+    void api.isReadyOrError.catch((error) => {
+      if (this.api[networkName]?.api !== api) return;
+      this.api[networkName].apiStatus = NETWORK_STATUS.DISCONNECTED;
+      console.warn('Substrate connection unavailable', networkName, error);
+    });
 
     eventListeners.forEach(([eventName, callback]) => this.api[networkName].api?.on(eventName, callback));
   }

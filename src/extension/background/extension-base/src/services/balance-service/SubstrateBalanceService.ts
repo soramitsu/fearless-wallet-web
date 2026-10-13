@@ -53,11 +53,14 @@ export default class SubstrateBalanceService {
     const promises = networks.map(async (networkKey) => {
       const api = this.state.getSubstrateApiMap[networkKey.toLowerCase()]?.api;
 
+      const network = Object.values(this.state.networkService.networkMap)
+        .find(({ name }) => isSameString(name, networkKey));
+      if (!network) return [];
       const {
         parentId,
         name: networkName,
         assets,
-      } = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, networkKey))!;
+      } = network;
 
       const assetsPromises = assets.map(async ({ precision, symbol, id, type }) => {
         const options = getAssetOptions(id, this.state.networkService.assetsMap);
@@ -124,11 +127,13 @@ export default class SubstrateBalanceService {
   }
 
   subscribeSubstrateAssetsBalances(address: string, networkKey: NetworkName, api: ApiPromise, state: State) {
+    const network = Object.values(state.networkService.networkMap).find(({ name }) => isSameString(name, networkKey));
+    if (!network) return mockUnsubFn;
     const {
       parentId,
       assets,
       name: networkName,
-    } = state.networkService.networksGithub.find(({ name }) => isSameString(name, networkKey))!;
+    } = network;
 
     const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 

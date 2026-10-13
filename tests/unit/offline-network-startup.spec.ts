@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkService } from '@extension-base/services/network-service';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { readSnapshot } from '../fixtures/legacy-305/generate';
 import type { NetworkJson } from '@extension-base/types';
 
@@ -84,6 +85,56 @@ describe('offline network startup', () => {
     expect(cache.write).not.toHaveBeenCalled();
   });
 
+  it('keeps subsequent connection-status writes fenced until the old settings can be read', async () => {
+    vi.useFakeTimers();
+    cache.read.mockRejectedValue(new Error('IO error'));
+    vi.mocked(axios.get).mockResolvedValue({ data: [historical()] });
+    const service = create();
+    vi.spyOn(service, 'initNetworkApis').mockImplementation(() => {});
+    await service.initNetworkMap();
+    service.updateNetworkStatus('Polkadot', NETWORK_STATUS.CONNECTED);
+    expect(cache.write).not.toHaveBeenCalled();
+    cache.read.mockResolvedValue({ Polkadot: { ...historical(), favorite: ['saved-owner'] } });
+    await vi.advanceTimersByTimeAsync(60000);
+    await service.retryRegistryIfNeeded();
+    expect(service.networkMap.Polkadot.favorite).toEqual(['saved-owner']);
+    expect(cache.write).toHaveBeenCalledOnce();
+  });
+
+  it('retains a favorite changed while a registry refresh is in flight', async () => {
+    cache.read.mockResolvedValue({ Polkadot: { ...historical(), favorite: ['saved-owner'] } });
+    const service = create();
+    await service.initNetworkMap();
+    let release!: (value: unknown) => void;
+    vi.mocked(axios.get).mockReturnValue(new Promise((resolve) => { release = resolve; }));
+    const pending = service.initNetworkMap();
+    service.networkMap.Polkadot.favorite.push('new-owner');
+    service.networkMap.Polkadot.currentProvider = 'wss://personal.invalid';
+    service.networkMap.Polkadot.isManual = true;
+    release({ data: [historical()] });
+    await pending;
+    expect(service.networkMap.Polkadot.favorite).toEqual(['saved-owner', 'new-owner']);
+    expect(service.networkMap.Polkadot.currentProvider).toBe('wss://personal.invalid');
+    expect(service.networkMap.Polkadot.isManual).toBe(true);
+  });
+
+  it('retains live favorites and custom providers when merging bundled networks after a retry', async () => {
+    const service = create();
+    await service.initNetworkMap();
+    cache.read.mockResolvedValue({ Bitcoin: structuredClone(service.networkMap.Bitcoin) });
+    let release!: (value: unknown) => void;
+    vi.mocked(axios.get).mockReturnValue(new Promise((resolve) => { release = resolve; }));
+    const pending = service.initNetworkMap();
+    await vi.waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
+    service.networkMap.Bitcoin.favorite.push('new-owner');
+    service.upsertNetworkMap({ ...service.networkMap.Bitcoin, isManual: true, currentProvider: 'https://personal.invalid',
+      customNodes: [{ name: 'Personal', url: 'https://personal.invalid' }] });
+    release({ data: [historical()] });
+    await pending;
+    expect(service.networkMap.Bitcoin).toMatchObject({ favorite: ['new-owner'], isManual: true,
+      currentProvider: 'https://personal.invalid', customNodes: [{ name: 'Personal', url: 'https://personal.invalid' }] });
+  });
+
   it('isolates malformed options without discarding a healthy registry row', async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: [
       { ...historical(), name: 'Bad options', options: {} }, historical(),
@@ -92,6 +143,28 @@ describe('offline network startup', () => {
     await service.initNetworkMap();
     expect(service.networkMap.Polkadot).toBeDefined();
     expect(service.networkMap['Bad options']).toBeUndefined();
+  });
+
+  it('restores bundled-network personal settings when the remote registry lacks that network', async () => {
+    const first = create();
+    await first.initNetworkMap();
+    const settings = { favorite: ['owner'], isManual: true, currentProvider: 'https://personal.invalid',
+      customNodes: [{ name: 'Personal', url: 'https://personal.invalid' }], customProviders: { Personal: 'https://personal.invalid' } };
+    cache.read.mockResolvedValue({ Bitcoin: { ...first.networkMap.Bitcoin, ...settings } });
+    vi.mocked(axios.get).mockResolvedValue({ data: [historical()] });
+    const restarted = create();
+    await restarted.initNetworkMap();
+    expect(restarted.networkMap.Bitcoin).toMatchObject(settings);
+  });
+
+  it('isolates cached Substrate rows without an RPC instead of starting an invalid connection', async () => {
+    cache.read.mockResolvedValue({ Polkadot: { ...historical(), nodes: [] } });
+    const service = create();
+    await service.initNetworkMap();
+    expect(service.networkMap.Polkadot).toBeUndefined();
+    expect(service.activeNetworkByEcosystem.substrate).toEqual([]);
+    expect(service.networkMap.Bitcoin).toBeDefined();
+    expect(cache.write).not.toHaveBeenCalled();
   });
 
   it('shares a single retry after the cooldown and stops retrying after success', async () => {

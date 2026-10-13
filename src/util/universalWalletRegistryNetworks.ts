@@ -40,6 +40,10 @@ function mergeUniversalWalletRegistryNetworks(
     if (!existingKey) {
       networkMap[registryNetwork.name] = {
         ...registryNetwork,
+        currentProvider: storedNetwork?.currentProvider || registryNetwork.currentProvider,
+        customNodes: storedNetwork?.customNodes ?? registryNetwork.customNodes,
+        customProviders: storedNetwork?.customProviders ?? registryNetwork.customProviders,
+        isManual: storedNetwork?.isManual,
         favorite: storedNetwork?.favorite ?? registryNetwork.favorite,
       };
 
@@ -128,6 +132,8 @@ function mergeRegistryNetworkDefaults(
     providers: Object.keys(existing.providers ?? {}).length ? existing.providers : registryNetwork.providers,
     currentProvider: existing.currentProvider || registryNetwork.currentProvider,
     customNodes: existing.customNodes ?? registryNetwork.customNodes,
+    customProviders: existing.customProviders ?? registryNetwork.customProviders,
+    isManual: existing.isManual,
     favorite: storedNetwork?.favorite ?? existing.favorite ?? registryNetwork.favorite,
   };
 }

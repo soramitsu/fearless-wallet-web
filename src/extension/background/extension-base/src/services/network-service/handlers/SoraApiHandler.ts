@@ -7,10 +7,12 @@ import { AUTO_CONNECT_MS } from '@/consts/networks';
 
 export class SoraApiHandler {
   static initApi(currentProvider: string, eventListeners: [ApiInterfaceEvents, ProviderInterfaceEmitCb][]) {
-    soraConnection.open(currentProvider, {
+    void soraConnection.open(currentProvider, {
       autoConnectMs: AUTO_CONNECT_MS,
       eventListeners,
-    });
+    }).catch((error) => console.warn('SORA connection unavailable', error));
+    // The SDK waits on isReady by default; its separate rejectable readiness promise still needs an owner.
+    void soraConnection.api?.isReadyOrError.catch((error) => console.warn('SORA connection not ready', error));
   }
 
   static getApiInstance() {

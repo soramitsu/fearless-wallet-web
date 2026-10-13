@@ -321,6 +321,10 @@ describe('selection races through actual mobile pairing', () => {
     fixture.holdWrite = true;
     approve(session);
     await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    // Acknowledge the new durable approval before holding the selection write.
+    fixture.writes.shift()!();
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    expect(fixture.data['fwWalletConnect:retiredTopics']).toMatchObject({ approvedTopics: [topic] });
     expect(service.saveAddress).toHaveBeenCalledOnce();
     expect(state.currentAccount).toEqual(first);
     expect(callback).not.toHaveBeenCalled();
@@ -421,10 +425,11 @@ describe('selection races through actual mobile pairing', () => {
     expect(fixture.data[key]).toBeNull();
   });
 
-  it('does not choose a retired mobile account as the startup fallback', async () => {
+  it.each(['retired', 'unapproved'])('does not choose a %s mobile account as the startup fallback', async kind => {
     const state = selectionState();
     const topic = 'public-retired-startup';
-    fixture.data['fwWalletConnect:retiredTopics'] = { version: 1, topics: [topic] };
+    fixture.data['fwWalletConnect:retiredTopics'] = kind === 'retired'
+      ? { version: 1, topics: [topic] } : { version: 1, topics: [], generation: 1, approvedTopics: [] };
     Object.assign(service, { getAllMainAccounts: () => [{ address: second.address, meta: { ...second, wcTopic: topic } }] });
     service.currentAccountSubject.next(null);
     fixture.data[key] = null;

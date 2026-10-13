@@ -9,7 +9,7 @@ import {
 import { accounts as accountsObservable } from '@subwallet/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@subwallet/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
-import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
+import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import CurrentAccountStore, { CurrentAccountContextChanged, type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
@@ -177,7 +177,7 @@ export class KeyringService {
     // A cancelled mobile selection whose compensation failed cannot regain
     // authority after worker restart, even if the SDK retains its old session.
     const retired = currentAccount?.isMobile && currentAccount.wcTopic &&
-      (await new WalletConnectRetiredSessions().readTopics()).includes(currentAccount.wcTopic);
+      !sessionIsApproved(await new WalletConnectRetiredSessions().readPolicy(), currentAccount.wcTopic);
     if (this.selectionRequestRevision !== request) return;
     if (retired) {
       if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {

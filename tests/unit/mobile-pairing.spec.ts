@@ -148,6 +148,18 @@ function noImport() {
 }
 
 describe('mobile pairing negotiation and approved identities', () => {
+  it('durably authorizes a newly validated mobile pairing after whole reset', async () => {
+    await service.resetWallet();
+    await begin();
+    await settle();
+    expect(records).toHaveLength(1);
+    expect(callbacks.first).toHaveBeenLastCalledWith({ status: true });
+    expect(service.getSession(session.topic).topic).toBe(session.topic);
+    expect(await new WalletConnectRetiredSessions().readPolicy()).toMatchObject({ generation: 1, approvedTopics: [session.topic] });
+    const restarted = new WalletConnectDAppService({ ...state } as State);
+    await (restarted as unknown as { initApp(): Promise<void> }).initApp();
+    expect(restarted.getSession(session.topic).topic).toBe(session.topic);
+  });
   it('retains complete decimal EVM chain IDs and advertises only implemented methods', async () => {
     await init('public-attempt', port);
     const proposal = client.connect.mock.calls[0][0];

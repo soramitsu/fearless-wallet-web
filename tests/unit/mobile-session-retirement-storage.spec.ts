@@ -45,7 +45,8 @@ const topic = 'public-revoked-mobile-session';
 let client: { connect: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; session: { values: SessionTypes.Struct[]; get(topic: string): SessionTypes.Struct | undefined } };
 let listeners: Record<string, (event: { topic: string }) => Promise<void>>;
 let pending: Promise<unknown>[];
-const state = { networkService: { networkValues: [{ name: 'Public Substrate', ecosystem: 'substrate', chainId: '11'.repeat(32) }] }, keyringService: { getAddresses: () => [], getAllAccounts: () => [] } } as unknown as State;
+const makeState = () => ({ networkService: { networkValues: [{ name: 'Public Substrate', ecosystem: 'substrate', chainId: '11'.repeat(32) }] }, keyringService: { getAddresses: () => [], getAllAccounts: () => [] } } as unknown as State);
+let state = makeState();
 const observe = (promise: Promise<unknown>) => {
   const outcome = promise.then(() => 'resolved', () => 'rejected');
   pending.push(outcome);
@@ -60,6 +61,7 @@ async function open() {
 }
 
 beforeEach(() => {
+  state = makeState();
   Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 0 });
   fixture.data = {};
   fixture.failRead = false;
@@ -90,6 +92,45 @@ describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %
     Object.assign(state, { walletConnectDappService: mobile, walletConnectService: incoming });
     return { mobile, incoming };
   }
+  it('acknowledges reset while SDK initialization is still pending', async () => {
+    let finish!: () => void;
+    const init = new Promise<void>(resolve => { finish = resolve; });
+    fixture.data['wc@2:client:0.3//session'] = [{ topic }];
+    Object.assign(state, { walletConnectService: { invalidateSession: vi.fn() } });
+    vi.mocked(Provider.init).mockImplementation(async () => { await init; return { client } as unknown as Provider; });
+    vi.mocked(WalletConnect.init).mockImplementation(async () => { await init; return client as unknown as WalletConnect; });
+    const service = role === 'mobile' ? new WalletConnectDAppService(state)
+      : new WalletConnectService(state, {} as RequestService);
+    const initialized = role === 'mobile' ? initialize(service as WalletConnectDAppService)
+      : (service as WalletConnectService).initClient(true);
+    await vi.waitFor(() => expect(role === 'mobile' ? Provider.init : WalletConnect.init).toHaveBeenCalled());
+    let done = false;
+    const reset = service.resetWallet().then(() => { done = true; });
+    try {
+      await vi.waitFor(() => expect(done).toBe(true), { timeout: 300 });
+      expect(fixture.data[key]).toBeDefined();
+    } finally {
+      // Release the public fixture even when the baseline proves the old wait.
+      finish();
+      await initialized;
+      await reset;
+    }
+    expect(() => service.getSession(topic)).toThrow();
+  });
+
+  it('vetoes unknown SDK records arriving after reset and before worker reconstruction', async () => {
+    const all = await services();
+    await all[role].resetWallet();
+    const lateTopic = 'public-sdk-write-without-observed-approval';
+    client.session.values.push({ topic: lateTopic } as SessionTypes.Struct);
+    expect(() => all.mobile.getSession(lateTopic)).toThrow();
+    expect(() => all.incoming.getSession(lateTopic)).toThrow();
+    state = makeState(); // A new worker has no shared in-memory authority object.
+    const restarted = await services();
+    expect(() => restarted.mobile.getSession(lateTopic)).toThrow();
+    expect(() => restarted.incoming.getSession(lateTopic)).toThrow();
+  });
+
   it('acknowledges durable retirement and keeps retained SDK sessions revoked after restart', async () => {
     const all = await services();
     fixture.holdWrite = true;
@@ -118,6 +159,91 @@ describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %
 });
 
 describe('incoming session approval across reset', () => {
+  it('requires a durable explicit approval for a new post-reset session and restores only that grant', async () => {
+    const mobile = await open();
+    const incoming = await openIncoming();
+    Object.assign(state, { walletConnectDappService: mobile, walletConnectService: incoming });
+    await incoming.resetWallet();
+    const approvedTopic = 'public-new-approved-session';
+    const unknownTopic = 'public-sdk-only-session';
+    Object.assign(client, { approve: vi.fn(async () => {
+      client.session.values.push(...[{ topic: approvedTopic }, { topic: unknownTopic }] as SessionTypes.Struct[]);
+      return { topic: approvedTopic };
+    }) });
+    fixture.holdWrite = true;
+    const approved = observe(incoming.approveSession({ id: 2, namespaces: {} }));
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    expect(() => incoming.getSession(approvedTopic)).toThrow();
+    expect(() => mobile.getSession(approvedTopic)).toThrow();
+    fixture.holdWrite = false;
+    fixture.writes.shift()!();
+    expect(await approved).toBe('resolved');
+    expect(incoming.getSession(approvedTopic).topic).toBe(approvedTopic);
+    expect(mobile.getSession(approvedTopic).topic).toBe(approvedTopic);
+    state = makeState();
+    const restarted = await openIncoming();
+    expect(restarted.getSession(approvedTopic).topic).toBe(approvedTopic);
+    expect(() => restarted.getSession(unknownTopic)).toThrow();
+  });
+
+  it('keeps a failed new approval revoked after reconstructing the worker', async () => {
+    const incoming = await openIncoming();
+    await incoming.resetWallet();
+    const approvedTopic = 'public-failed-new-approval';
+    Object.assign(client, { approve: vi.fn(async () => {
+      client.session.values.push({ topic: approvedTopic } as SessionTypes.Struct);
+      return { topic: approvedTopic };
+    }) });
+    fixture.failWrite = true;
+    expect(await observe(incoming.approveSession({ id: 2, namespaces: {} }))).toBe('rejected');
+    expect(() => incoming.getSession(approvedTopic)).toThrow();
+    fixture.failWrite = false;
+    state = makeState();
+    const restarted = await openIncoming();
+    expect(() => restarted.getSession(approvedTopic)).toThrow();
+  });
+
+  it('invalidates an approval already writing when reset starts', async () => {
+    const incoming = await openIncoming();
+    await incoming.resetWallet();
+    const approvedTopic = 'public-writing-approval';
+    Object.assign(client, { approve: vi.fn(async () => {
+      client.session.values.push({ topic: approvedTopic } as SessionTypes.Struct);
+      return { topic: approvedTopic };
+    }) });
+    fixture.holdWrite = true;
+    const approved = observe(incoming.approveSession({ id: 2, namespaces: {} }));
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    const reset = observe(incoming.resetWallet());
+    expect(() => incoming.getSession(approvedTopic)).toThrow();
+    fixture.holdWrite = false;
+    fixture.writes.shift()!();
+    expect(await approved).toBe('rejected');
+    expect(await reset).toBe('resolved');
+    state = makeState();
+    const restarted = await openIncoming();
+    expect(() => restarted.getSession(approvedTopic)).toThrow();
+    expect(fixture.data[key]).toMatchObject({ generation: 2, approvedTopics: [] });
+  });
+
+  it('rejects stale approval using the durable generation even without the original worker veto', async () => {
+    const incoming = await openIncoming();
+    let finish!: (result: { topic: string }) => void;
+    Object.assign(client, { approve: vi.fn(() => new Promise(resolve => { finish = resolve; })) });
+    const approved = observe(incoming.approveSession({ id: 2, namespaces: {} }));
+    // A distinct state models a second worker; no revision object is shared.
+    state = makeState();
+    const other = await openIncoming();
+    await other.resetWallet();
+    const approvedTopic = 'public-old-worker-approval';
+    client.session.values.push({ topic: approvedTopic } as SessionTypes.Struct);
+    finish({ topic: approvedTopic });
+    expect(await approved).toBe('rejected');
+    state = makeState();
+    const restarted = await openIncoming();
+    expect(() => restarted.getSession(approvedTopic)).toThrow();
+  });
+
   it('retires a saved mobile account topic even when the SDK currently has no session', async () => {
     const mobile = await open();
     const incoming = await openIncoming();
@@ -221,8 +347,13 @@ describe('durable mobile session retirement', () => {
     expect(service.getSession(topic).topic).toBe(topic);
   });
 
-  it('refuses malformed retirement state without overwriting it', async () => {
-    fixture.data[key] = { version: 1, topics: [null] };
+  it.each([
+    { version: 1, topics: [null] },
+    { version: 1, topics: [], generation: -1, approvedTopics: [] },
+    { version: 1, topics: [], generation: 1 },
+    { version: 1, topics: [], generation: 1, approvedTopics: [null] },
+  ])('refuses malformed retirement state without overwriting it: %j', async record => {
+    fixture.data[key] = record;
     const original = structuredClone(fixture.data);
     const service = new WalletConnectDAppService(state);
     expect(await observe(initialize(service))).toBe('rejected');
@@ -350,8 +481,13 @@ describe('durable incoming session retirement', () => {
     expect(service.getSession(topic).topic).toBe(topic);
   });
 
-  it('refuses malformed retirement state without overwriting it', async () => {
-    fixture.data[key] = { version: 1, topics: [null] };
+  it.each([
+    { version: 1, topics: [null] },
+    { version: 1, topics: [], generation: -1, approvedTopics: [] },
+    { version: 1, topics: [], generation: 1 },
+    { version: 1, topics: [], generation: 1, approvedTopics: [null] },
+  ])('refuses malformed retirement state without overwriting it: %j', async record => {
+    fixture.data[key] = record;
     const original = structuredClone(fixture.data);
     const service = new WalletConnectService(state, {} as RequestService);
     expect(await observe(service.initClient(true))).toBe('rejected');

@@ -9,6 +9,7 @@ import { walletAddressIdentity } from '@extension-base/services/keyring-service/
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
+import { sessionAuthority } from './sessionAuthority';
 import { validateMobileSigningContext } from './mobileSigningContext';
 import { captureMobilePairingAccount, mobilePairingProposal, sameMobileIdentity } from './pairingContext';
 import type { PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
@@ -33,6 +34,7 @@ type PairingAttempt = {
   priorTopics: Set<string>;
   currentAddress?: string;
   currentAccountRevision: number;
+  authorityRevision: number;
   subscriber?: { id: string; callback: (data: PairingSubjectType) => void };
   disconnectListener: () => void;
 };
@@ -44,12 +46,14 @@ export class WalletConnectDAppService {
   private readonly retiredTopics = new Set<string>();
   private readonly listenerClients = new WeakSet<object>();
 
+  private get authority() { return sessionAuthority(this.state); }
+
   getSessionRevision(topic: string): number {
-    return this.sessionRevisions.get(topic) ?? 0;
+    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision;
   }
 
   private sessionChanged(topic: string): void {
-    this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
+    this.sessionRevisions.set(topic, (this.sessionRevisions.get(topic) ?? 0) + 1);
   }
 
   invalidateSession(topic: string): void {
@@ -67,9 +71,8 @@ export class WalletConnectDAppService {
   private initApp(): Promise<void> {
     if (this.app) return Promise.resolve();
     if (!this.initialization) {
-      this.initialization = new WalletConnectRetiredSessions().readTopics()
-        .then((topics) => {
-          topics.forEach((topic) => this.retiredTopics.add(topic));
+      this.initialization = this.authority.load()
+        .then(() => {
           return Provider.init({
             projectId: PROJECT_ID_EXTENSION,
             metadata: WALLET_CONNECT_METADATA,
@@ -77,7 +80,8 @@ export class WalletConnectDAppService {
             storage: new WalletConnectStorage(),
           });
         })
-        .then((app) => {
+        .then(async (app) => {
+          await this.authority.load();
           this.app = app;
           this.setListeners();
         })
@@ -89,7 +93,7 @@ export class WalletConnectDAppService {
   }
 
   public get sessions(): SessionTypes.Struct[] {
-    return (this.app?.client.session.values || []).filter((session) => !this.retiredTopics.has(session.topic));
+    return (this.app?.client.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
 
   private setListeners() {
@@ -131,6 +135,7 @@ export class WalletConnectDAppService {
       priorTopics: new Set(),
       currentAddress: this.state.currentAccount?.address,
       currentAccountRevision: this.state.keyringService.currentAccountRevision,
+      authorityRevision: this.authority.revision,
       disconnectListener: () => { void this.abortPairingAttempt(id, port).catch(console.error); },
     };
     this.pairingAttempts.set(id, attempt);
@@ -138,7 +143,7 @@ export class WalletConnectDAppService {
     try {
       await this.initApp();
       if (!attempt.active) throw new Error('Mobile pairing was cancelled');
-      attempt.priorTopics = new Set(this.sessions.map((session) => session.topic));
+      attempt.priorTopics = new Set((this.app?.client.session.values ?? []).map((session) => session.topic));
       const pairing = await this.app!.client.connect(mobilePairingProposal(this.state.networkService.networkValues));
       // Observe exactly once, including a late approval after cancellation.
       pairing
@@ -232,10 +237,22 @@ export class WalletConnectDAppService {
     try {
       const session = attempt.session;
       const revision = this.getSessionRevision(session.topic);
+      // A fresh approved candidate is validated against its exact live SDK
+      // envelope without making it available to general signing callers.
+      const reader = {
+        getSessionRevision: (topic: string) => this.getSessionRevision(topic),
+        getSession: (topic: string): SessionTypes.Struct => {
+          const live = this.app?.client.session.values.find(value => value.topic === topic);
+          if (!live || topic !== session.topic || !attempt.active || this.retiredTopics.has(topic) ||
+            this.state.keyringService.isResetting || this.authority.revision !== attempt.authorityRevision)
+            throw new Error('Mobile pairing context changed');
+          return live;
+        },
+      };
       const assertSession = () => {
         if (!attempt.active || attempt.priorTopics.has(session.topic) || this.getSessionRevision(session.topic) !== revision)
           throw new Error('Mobile pairing context changed');
-        captureMobilePairingAccount(this, session);
+        captureMobilePairingAccount(reader, session);
       };
       const assertCurrent = () => {
         assertSession();
@@ -244,7 +261,7 @@ export class WalletConnectDAppService {
           throw new Error('Mobile pairing selection changed');
       };
       assertCurrent();
-      const account = captureMobilePairingAccount(this, session);
+      const account = captureMobilePairingAccount(reader, session);
       const encodedAddress = this.state.keyringService.encodeAddress(account.address);
       const isDuplicate = () => this.state.keyringService
         .getAllAccounts()
@@ -283,6 +300,8 @@ export class WalletConnectDAppService {
       // A submitted public record can outlive cancellation; retain it, retire its
       // session and refuse late selection/success instead of blindly deleting it.
       assertCurrent();
+      await this.authority.approve(session.topic, assertCurrent);
+      assertCurrent();
       attempt.selection = this.state.updateCurrentAccount({ address: encodedAddress }, true, {
         assertCurrent: assertSession,
         onCommitted: () => { void this.finishPairing(attempt, { status: true }).catch(console.error); },
@@ -307,8 +326,6 @@ export class WalletConnectDAppService {
     // finishPairing marks attempts inactive synchronously, including attempts
     // whose SDK approval is still pending. Their late sessions are retired by
     // the existing completion path and cannot publish an account or selection.
-    await Promise.all([...this.pairingAttempts.values()].map((attempt) => this.finishPairing(attempt)));
-    await this.initApp();
     const topics = [...new Set([
       ...(this.app?.client.session.values ?? []).map((session) => session.topic),
       ...this.state.keyringService.getAllAccounts().flatMap(({ meta }) =>
@@ -316,9 +333,10 @@ export class WalletConnectDAppService {
     ])];
     for (const topic of topics) {
       this.invalidateSession(topic);
-      this.state.walletConnectService.invalidateSession(topic);
+      this.state.walletConnectService?.invalidateSession(topic);
     }
-    await Promise.all(topics.map((topic) => new WalletConnectRetiredSessions().retire(topic)));
+    const retirement = this.authority.reset(topics);
+    await Promise.all([retirement, ...[...this.pairingAttempts.values()].map(attempt => this.finishPairing(attempt))]);
     // Durable local retirement is authoritative even while the relay is offline.
     for (const topic of topics)
       void this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);

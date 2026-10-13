@@ -525,7 +525,7 @@ describe('incoming WalletConnect client ownership', () => {
       on: vi.fn((event, callback) => callbacks.set(event, callback)),
       removeAllListeners: vi.fn(),
     };
-    Object.assign(live, { sessionSubject: { next: vi.fn() }, sessionRevisions: new Map(), retiredTopics: new Set() });
+    Object.assign(live, { state: {}, sessionSubject: { next: vi.fn() }, sessionRevisions: new Map(), retiredTopics: new Set() });
     let release!: (client: unknown) => void;
     const initialization = new Promise((resolve) => {
       release = resolve;
@@ -551,7 +551,7 @@ describe('incoming WalletConnect client ownership', () => {
   });
   it('can retry a failed initialization without retaining a broken promise', async () => {
     const live = Object.create(LiveWalletConnectService.prototype) as LiveWalletConnectService;
-    Object.assign(live, { sessionSubject: { next: vi.fn() }, retiredTopics: new Set() });
+    Object.assign(live, { state: {}, sessionSubject: { next: vi.fn() }, retiredTopics: new Set() });
     const client = { session: { values: [] }, on: vi.fn(), removeAllListeners: vi.fn() };
     const init = vi
       .spyOn(WalletConnect, 'init')

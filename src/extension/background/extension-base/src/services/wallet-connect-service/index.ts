@@ -11,6 +11,7 @@ import {
   DEFAULT_WALLET_CONNECT_OPTIONS,
 } from '@extension-base/services/wallet-connect-service/consts';
 import { isSameAddress } from '@extension-base/utils';
+import { sessionAuthority } from './sessionAuthority';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
@@ -32,13 +33,15 @@ export class WalletConnectService {
     return this.expiredRequestIds.has(id);
   }
 
+  private get authority() { return sessionAuthority(this.state); }
+
   getSessionRevision(topic: string): number {
-    return this.sessionRevisions.get(topic) ?? 0;
+    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision;
   }
 
   private sessionChanged(topic: string, retired = false): void {
     if (retired) this.retiredTopics.add(topic);
-    this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
+    this.sessionRevisions.set(topic, (this.sessionRevisions.get(topic) ?? 0) + 1);
     this.updateSessions();
   }
 
@@ -67,7 +70,7 @@ export class WalletConnectService {
   }
 
   get sessions() {
-    return (this.client?.session.values || []).filter((session) => !this.retiredTopics.has(session.topic));
+    return (this.client?.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
 
   private async haveData(): Promise<boolean> {
@@ -100,7 +103,7 @@ export class WalletConnectService {
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.client?.session.get(key);
 
-    if (!session || this.retiredTopics.has(key)) {
+    if (!session || this.retiredTopics.has(key) || !this.authority.allows(key)) {
       throw new Error(getInternalError('MISMATCHED_TOPIC').message);
     } else {
       return session;
@@ -113,15 +116,15 @@ export class WalletConnectService {
     // The storage read above may yield while another caller initializes.
     if (this.client) return;
     if (!this.initialization) {
-      this.initialization = new WalletConnectRetiredSessions().readTopics()
-        .then((topics) => {
-          topics.forEach((topic) => this.retiredTopics.add(topic));
+      this.initialization = this.authority.load()
+        .then(() => {
           return WalletConnect.init({
             ...DEFAULT_WALLET_CONNECT_OPTIONS,
             storage: new WalletConnectStorage(),
           });
         })
-        .then((client) => {
+        .then(async (client) => {
+          await this.authority.load();
           this.client = client;
           this.updateSessions();
           this.createListener();
@@ -159,11 +162,18 @@ export class WalletConnectService {
     const resetRevision = this.state.keyringService.walletResetRevision;
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     this.checkClient();
+    const authorityRevision = this.authority.revision;
+    const assertCurrent = () => {
+      if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision ||
+        this.authority.revision !== authorityRevision) throw new Error('Wallet changed during session approval');
+    };
     const approved = await this.client!.approve(result);
-    if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision) {
+    try {
+      await this.authority.approve(approved.topic, assertCurrent);
+    } catch (error) {
       await this.retireSession(approved.topic);
       void this.client!.disconnect({ topic: approved.topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
-      throw new Error('Wallet changed during session approval');
+      throw error;
     }
 
     this.updateSessions();
@@ -188,9 +198,13 @@ export class WalletConnectService {
   }
 
   async resetWallet(): Promise<void> {
-    await this.initClient();
     const topics = (this.client?.session.values ?? []).map((session) => session.topic);
-    await Promise.all(topics.map((topic) => this.retireSession(topic)));
+    const retirement = this.authority.reset(topics);
+    for (const topic of topics) {
+      this.invalidateSession(topic);
+      this.state?.walletConnectDappService?.invalidateSession(topic);
+    }
+    await retirement;
     for (const topic of topics)
       void this.client?.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
     this.updateSessions();

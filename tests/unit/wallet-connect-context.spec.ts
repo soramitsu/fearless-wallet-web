@@ -458,6 +458,7 @@ describe('WalletConnect live session revisions', () => {
     const next = vi.fn();
     const disconnect = vi.fn(async () => undefined);
     Object.assign(service, {
+      state: {},
       sessionRevisions: new Map(),
       retiredTopics: new Set(),
       expiredRequestIds: new Set(),

@@ -234,13 +234,15 @@ describe('web reset with one IndexedDB password/account commit', { timeout: 60_0
     expect(vi.mocked(enrollLegacyAccountNetworks).mock.calls.length).toBe(0);
   });
 
-  it('suppresses a retired saved selection in memory without rewriting it during recovery-only startup', async () => {
+  it.each(['retired', 'unapproved'])('suppresses a %s saved selection in memory without rewriting it during recovery-only startup', async kind => {
     KeyringStoreWeb.readOnly = true;
     const key = 'fwcurrent_account:CurrentAccountInfo';
     const selection = { address: 'public-retired-mobile', ethereumAddress: '', name: 'Retired mobile',
       isMobile: true, wcTopic: 'public-retired-topic', walletEcosystem: WalletEcosystem.Substrate };
     fixture.data[key] = structuredClone(selection);
-    vi.spyOn(WalletConnectRetiredSessions.prototype, 'readTopics').mockResolvedValue([selection.wcTopic]);
+    vi.spyOn(WalletConnectRetiredSessions.prototype, 'readPolicy').mockResolvedValue(kind === 'retired'
+      ? { version: 1, topics: [selection.wcTopic] }
+      : { version: 1, topics: [], generation: 1, approvedTopics: [] });
     const ready = track(service.restoreCurrentAccount());
     await drain();
     expect(await ready).toHaveProperty('value');

@@ -1,4 +1,4 @@
-import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
+import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -229,8 +229,9 @@ export default class State {
   private async selectableAccounts() {
     const accounts = this.keyringService.getAllMainAccounts();
     if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
-    const retired = new Set(await new WalletConnectRetiredSessions().readTopics());
-    return this.keyringService.getAllMainAccounts().filter((account) => !account.meta.isMobile || !retired.has(account.meta.wcTopic as string));
+    const policy = await new WalletConnectRetiredSessions().readPolicy();
+    return this.keyringService.getAllMainAccounts().filter((account) =>
+      !account.meta.isMobile || sessionIsApproved(policy, account.meta.wcTopic as string));
   }
 
   async onInstall() {

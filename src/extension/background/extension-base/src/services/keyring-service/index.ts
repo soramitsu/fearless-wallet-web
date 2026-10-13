@@ -164,8 +164,8 @@ export class KeyringService {
 
   // A failed read rejects instead of leaving start-up waiting; start-up calls this again.
   async restoreCurrentAccount(): Promise<void> {
-    const request = (this.selectionRequestRevision ?? 0) + 1;
-    this.selectionRequestRevision = request;
+    // Concurrent startup retries are reads, not competing user choices.
+    const request = this.selectionRequestRevision ?? 0;
     const currentAccount = await this.currentAccountStore.readSelection();
     // A cancelled mobile selection whose compensation failed cannot regain
     // authority after worker restart, even if the SDK retains its old session.

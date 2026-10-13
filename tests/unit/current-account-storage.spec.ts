@@ -57,7 +57,7 @@ const observe = (result: unknown) => {
 };
 function createService(current: CurrentAccountState = structuredClone(first)) {
   const service = Object.create(KeyringService.prototype) as KeyringService;
-  Object.assign(service, { currentAccountStore: new CurrentAccountStore(), currentAccountSubject: new BehaviorSubject(current), selectionRevision: 0 });
+  Object.assign(service, { currentAccountStore: new CurrentAccountStore(), currentAccountSubject: new BehaviorSubject(current), selectionRevision: 0, selectionRequestRevision: 0 });
   return service;
 }
 beforeEach(() => {

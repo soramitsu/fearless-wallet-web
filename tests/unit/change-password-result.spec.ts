@@ -9,20 +9,23 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   back: vi.fn(),
   unlock: vi.fn(),
+  hasAccounts: vi.fn(),
+  initGoogleAuth: vi.fn(),
+  params: {} as Record<string, string>,
 }));
 vi.mock('@/extension/messaging', () => ({
   extensionChangePassword: mocks.extensionChangePassword,
   hasMasterPassword: mocks.hasMasterPassword,
   getAccessStatus: mocks.getAccessStatus,
-  hasAccounts: async () => true,
+  hasAccounts: mocks.hasAccounts,
   isNeedMigration: async () => false,
   unlockExtension: mocks.unlock,
-  initGoogleAuth: vi.fn(),
+  initGoogleAuth: mocks.initGoogleAuth,
 }));
 vi.mock('@/plugins/soramitsuUI', () => ({ useNotify: () => mocks.notify }));
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mocks.push, back: mocks.back }),
-  useRoute: () => ({ params: {} }),
+  useRoute: () => ({ params: mocks.params }),
 }));
 vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet', MigrationAccounts: 'MigrationAccounts' } }));
 vi.mock('@/locales/useI18n', () => ({
@@ -74,6 +77,9 @@ describe('changing the master password', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasMasterPassword.mockResolvedValue(true);
+    mocks.hasAccounts.mockResolvedValue(true);
+    mocks.initGoogleAuth.mockResolvedValue(undefined);
+    mocks.params = {};
     mocks.unlock.mockResolvedValue(true);
     mocks.getAccessStatus.mockResolvedValue({ issues: [] });
   });
@@ -91,11 +97,8 @@ describe('changing the master password', () => {
       oldPassword: 'current password',
       newPassword: 'new password',
     });
-    expect(mocks.notify).toHaveBeenCalledExactlyOnceWith({
-      title: 'welcome.changePasswordFailed',
-      message: '',
-      type: 'error',
-    });
+    expect(wrapper.get('[data-testid="passwordChangeFailed"]').text()).toBe('welcome.changePasswordFailed');
+    expect(mocks.notify).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.back).not.toHaveBeenCalled();
     // The user can correct the old password and try again.
@@ -230,6 +233,43 @@ describe('changing the master password', () => {
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
+  it('retries Google continuation without creating the already-saved password again', async () => {
+    mocks.hasMasterPassword.mockResolvedValue(false);
+    mocks.hasAccounts.mockResolvedValue(false);
+    mocks.params = { name: 'GoogleAuth' };
+    mocks.extensionChangePassword.mockResolvedValue(true);
+    const wrapper = await openWithPasswords();
+    await confirm(wrapper);
+    expect(mocks.initGoogleAuth).toHaveBeenCalledOnce();
+    expect((wrapper.get('[data-testid="confirm"]').element as HTMLButtonElement).disabled).toBe(false);
+    await confirm(wrapper);
+    expect(mocks.initGoogleAuth).toHaveBeenCalledTimes(2);
+    expect(mocks.extensionChangePassword).toHaveBeenCalledOnce();
+  });
+
+  it('handles Google continuation failure without exposing its detail or repeating password setup', async () => {
+    mocks.hasMasterPassword.mockResolvedValue(false);
+    mocks.hasAccounts.mockResolvedValue(false);
+    mocks.params = { name: 'GoogleAuth' };
+    mocks.extensionChangePassword.mockResolvedValue(true);
+    mocks.initGoogleAuth.mockRejectedValueOnce(new Error('Public fixture private OAuth detail'));
+    const wrapper = await openWithPasswords();
+    await confirm(wrapper);
+    expect(wrapper.get('[data-testid="passwordContinuationFailed"]').text()).toBe('mobileConnector.connectionFailed');
+    expect(wrapper.text()).not.toContain('private OAuth');
+    expect((wrapper.get('[data-testid="confirm"]').element as HTMLButtonElement).disabled).toBe(false);
+    await confirm(wrapper);
+    expect(mocks.extensionChangePassword).toHaveBeenCalledOnce();
+  });
+
+  it('keeps password failure instructions available on the screen', async () => {
+    mocks.extensionChangePassword.mockResolvedValue(false);
+    const wrapper = await openWithPasswords();
+    await confirm(wrapper);
+    expect(wrapper.get('[data-testid="passwordChangeFailed"]').attributes('role')).toBe('alert');
+    expect(wrapper.get('[data-testid="passwordChangeFailed"]').text()).toBe('welcome.changePasswordFailed');
+  });
+
   it('does not mention a current password when the first master password could not be saved', async () => {
     mocks.hasMasterPassword.mockResolvedValue(false);
     mocks.extensionChangePassword.mockResolvedValue(false);
@@ -238,11 +278,8 @@ describe('changing the master password', () => {
     await confirm(wrapper);
 
     expect(mocks.extensionChangePassword).toHaveBeenCalledExactlyOnceWith({ oldPassword: '', newPassword: 'new password' });
-    expect(mocks.notify).toHaveBeenCalledExactlyOnceWith({
-      title: 'welcome.createPasswordFailed',
-      message: '',
-      type: 'error',
-    });
+    expect(wrapper.get('[data-testid="passwordChangeFailed"]').text()).toBe('welcome.createPasswordFailed');
+    expect(mocks.notify).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
   });
 });

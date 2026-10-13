@@ -6,7 +6,7 @@
           <p>{{ t('migration.loadFailed') }}</p>
           <FButton text="ux.retry" type="secondary" @click="loadStatus" />
         </div>
-        <div>
+        <div v-if="!passwordSaved">
           <div class="warning">{{ $t('welcome.passwordWarning') }}</div>
 
           <ValidatedInput
@@ -24,11 +24,19 @@
           <PasswordForm :focus="!alreadyHasMasterPassword" @setPassword="setPassword" />
         </div>
 
+        <p v-else role="status">{{ t('welcome.masterPasswordSetUp') }}</p>
+        <p v-if="changeFailed" role="alert" data-testid="passwordChangeFailed">
+          {{ t(`welcome.${alreadyHasMasterPassword ? 'changePasswordFailed' : 'createPasswordFailed'}`) }}
+        </p>
+        <p v-if="continuationFailed" role="alert" data-testid="passwordContinuationFailed">
+          {{ t('mobileConnector.connectionFailed') }}
+        </p>
+
         <FButton
           size="big"
           fontSize="big"
           width="100%"
-          text="common.confirm"
+          :text="passwordSaved ? 'ux.retry' : 'common.confirm'"
           :disabled="isDisabled"
           @click="changePassword"
         />
@@ -70,6 +78,9 @@ const alreadyHasMasterPassword = ref(false);
 const needMigration = ref(false);
 const hasAccount = ref(false);
 const isWait = ref(false);
+const passwordSaved = ref(false);
+const changeFailed = ref(false);
+const continuationFailed = ref(false);
 const isAuthFlowInit = ref(false);
 const isLoading = ref(true);
 const loadFailed = ref(false);
@@ -86,10 +97,10 @@ const isDisabled = computed(
     isValidatingPassword.value ||
     isWait.value ||
     isAuthFlowInit.value ||
-    isErrorOldPassword.value ||
+    (!passwordSaved.value && (isErrorOldPassword.value ||
     walletPassword.value === '' ||
     oldPassword.value === walletPassword.value ||
-    (oldPassword.value === '' && alreadyHasMasterPassword.value)
+    (oldPassword.value === '' && alreadyHasMasterPassword.value)))
 );
 
 const loadStatus = async () => {
@@ -163,7 +174,12 @@ const close = (isClose = true) => {
     if (!isAuthFlowInit.value) {
       isAuthFlowInit.value = true;
 
-      initGoogleAuth().finally(() => (isAuthFlowInit.value = false));
+      continuationFailed.value = false;
+      void initGoogleAuth().catch(() => {
+        if (!disposed) continuationFailed.value = true;
+      }).finally(() => {
+        if (!disposed) { isAuthFlowInit.value = false; isWait.value = false; }
+      });
     }
   } else if (componentName)
     router.push({ name: componentName, params: { type, walletEcosystem } });
@@ -177,6 +193,8 @@ const close = (isClose = true) => {
 const changePassword = async () => {
   if (disposed || isDisabled.value) return;
   isWait.value = true;
+  if (passwordSaved.value) { close(false); return; }
+  changeFailed.value = false;
 
   // A transport failure can hide an acknowledged commit. Failure copy must not promise that the old password remains.
   const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value }).catch(
@@ -187,13 +205,12 @@ const changePassword = async () => {
   if (!changed) {
     isWait.value = false;
 
-    const failure = alreadyHasMasterPassword.value ? 'changePasswordFailed' : 'createPasswordFailed';
-
-    notify({ title: t(`welcome.${failure}`), message: '', type: 'error' });
+    changeFailed.value = true;
 
     return;
   }
 
+  passwordSaved.value = true;
   const title = t(
     `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
   ).toString();

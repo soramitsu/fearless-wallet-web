@@ -796,9 +796,12 @@ export class KeyringService {
   }
 
   async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
+    if (this.resetWork || this.resetting) return false;
+    const resetRevision = this.resetRevision ?? 0;
     const revision = this.authenticationRevision ?? 0;
     const assertCurrent = () => {
-      if ((this.authenticationRevision ?? 0) !== revision) throw new Error('Wallet authentication changed during password change.');
+      if (this.resetting || (this.resetRevision ?? 0) !== resetRevision ||
+        (this.authenticationRevision ?? 0) !== revision) throw new Error('Wallet authentication changed during password change.');
     };
     return this.tonKeyring.vault.exclusive(async () => {
       if (!newPassword) return false;
@@ -1115,7 +1118,12 @@ export class KeyringService {
 
   // True once the requested account is encrypted with the master password.
   async keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): Promise<boolean> {
-    return (await this.migrateLegacyAccount(address, password)) === 'migrated';
+    if (this.resetWork || this.resetting) return false;
+    const resetRevision = this.resetRevision ?? 0;
+    return this.tonKeyring.vault.exclusive(async () => {
+      if (!this.password || this.resetting || (this.resetRevision ?? 0) !== resetRevision) return false;
+      return (await this.migrateLegacyAccount(address, password)) === 'migrated';
+    });
   }
 
   // Each pending key of the account that this password opens is migrated on its own. A linked EVM
@@ -1156,6 +1164,8 @@ export class KeyringService {
     password,
   }: RequestRecoverAccountWithPassword): Promise<ResponseRecoverAccountWithPassword> {
     if (!this.password) return { ok: false, code: 'locked' };
+    if (this.resetWork || this.resetting) return { ok: false, code: 'storage_failed' };
+    const resetRevision = this.resetRevision ?? 0;
 
     if (walletEcosystem === WalletEcosystem.Ton) {
       if (!this.tonKeyring.accountSubject.value[address]) return { ok: false, code: 'not_found' };
@@ -1171,32 +1181,39 @@ export class KeyringService {
       }
     }
 
-    const pair = this.getPair(address);
+    // Native recovery shares password/reset ordering with TON and imports. The
+    // current master password is read only after earlier changes have committed.
+    return this.tonKeyring.vault.exclusive(async () => {
+      if (!this.password || keyring.keyring.isLocked) return { ok: false, code: 'locked' };
+      if (this.resetting || (this.resetRevision ?? 0) !== resetRevision) return { ok: false, code: 'storage_failed' };
+      const pair = this.getPair(address);
 
-    if (!pair) return { ok: false, code: 'not_found' };
+      if (!pair) return { ok: false, code: 'not_found' };
 
-    if (needsLegacyPasswordMigration(pair)) {
-      const result = await this.migrateLegacyAccount(address, password);
+      if (needsLegacyPasswordMigration(pair)) {
+        const result = await this.migrateLegacyAccount(address, password);
 
-      return result === 'migrated' ? { ok: true } : { ok: false, code: result };
-    }
+        return result === 'migrated' ? { ok: true } : { ok: false, code: result };
+      }
 
-    if (!isMasterPasswordPair(pair)) return { ok: false, code: 'not_found' };
-    if (!decodesWithPassword(pair, password)) return { ok: false, code: 'wrong_password' };
+      if (!isMasterPasswordPair(pair)) return { ok: false, code: 'not_found' };
+      if (!decodesWithPassword(pair, password)) return { ok: false, code: 'wrong_password' };
 
-    try {
-      // The same verified copy-and-commit as the legacy upgrade; the record stays a master-password one.
-      await upgradeLegacyAccountPassword(pair, password);
-    } catch (e) {
-      console.error(e);
+      try {
+        // The same verified copy-and-commit as the legacy upgrade; the record stays a master-password one.
+        await upgradeLegacyAccountPassword(pair, password);
+      } catch (e) {
+        console.error(e);
 
-      return { ok: false, code: 'storage_failed' };
-    }
+        return { ok: false, code: 'storage_failed' };
+      }
 
-    this.access.clearPreviousMasterPair(address);
-    this.scheduleLegacyNetworkEnrollment();
+      if (!this.password || keyring.keyring.isLocked) return { ok: false, code: 'locked' };
+      this.access.clearPreviousMasterPair(address);
+      this.scheduleLegacyNetworkEnrollment();
 
-    return { ok: true };
+      return { ok: true };
+    });
   }
 
   // For an account in getAccessStatus().issues: the recovery phrase is accepted only if it reproduces
@@ -1208,6 +1225,8 @@ export class KeyringService {
     derivationPath,
   }: RequestRecoverAccountWithPhrase): Promise<ResponseRecoverAccountWithPhrase> {
     if (!this.password) return { ok: false, code: 'locked' };
+    if (this.resetWork || this.resetting) return { ok: false, code: 'storage_failed' };
+    const resetRevision = this.resetRevision ?? 0;
 
     if (walletEcosystem === WalletEcosystem.Ton) {
       if (!this.tonKeyring.accountSubject.value[address]) return { ok: false, code: 'not_found' };
@@ -1223,26 +1242,33 @@ export class KeyringService {
       }
     }
 
-    const pair = this.getPair(address);
+    // Native recovery shares password/reset ordering with TON and imports. The
+    // current master password is read only after earlier changes have committed.
+    return this.tonKeyring.vault.exclusive(async () => {
+      if (!this.password || keyring.keyring.isLocked) return { ok: false, code: 'locked' };
+      if (this.resetting || (this.resetRevision ?? 0) !== resetRevision) return { ok: false, code: 'storage_failed' };
+      const pair = this.getPair(address);
 
-    if (!needsLegacyPasswordMigration(pair) && !isMasterPasswordPair(pair)) return { ok: false, code: 'not_found' };
+      if (!needsLegacyPasswordMigration(pair) && !isMasterPasswordPair(pair)) return { ok: false, code: 'not_found' };
 
-    const copy = this.pairFromPhrase(pair, phrase, derivationPath);
+      const copy = this.pairFromPhrase(pair, phrase, derivationPath);
 
-    if (!copy) return { ok: false, code: 'phrase_mismatch' };
+      if (!copy) return { ok: false, code: 'phrase_mismatch' };
 
-    try {
-      await commitMasterEncryptedCopy(pair, copy);
-    } catch (e) {
-      console.error(e);
+      try {
+        await commitMasterEncryptedCopy(pair, copy);
+      } catch (e) {
+        console.error(e);
 
-      return { ok: false, code: 'storage_failed' };
-    }
+        return { ok: false, code: 'storage_failed' };
+      }
 
-    this.access.clearPreviousMasterPair(address);
-    this.scheduleLegacyNetworkEnrollment();
+      if (!this.password || keyring.keyring.isLocked) return { ok: false, code: 'locked' };
+      this.access.clearPreviousMasterPair(address);
+      this.scheduleLegacyNetworkEnrollment();
 
-    return { ok: true };
+      return { ok: true };
+    });
   }
 
   // EVM accounts default to the path Fearless creates them with (AddWallet.vue suriEthereum).

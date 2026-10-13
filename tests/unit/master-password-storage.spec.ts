@@ -105,7 +105,7 @@ beforeEach(async () => {
   Object.assign(service, { password: PASSWORD, tonKeyring: new TonKeyringService(service),
     currentAccountStore: new CurrentAccountStore(), currentAccountSubject: new BehaviorSubject(null),
     selectionRevision: 0, selectionRequestRevision: 0,
-    accountAccess: { scheduleScan: vi.fn(), flagPreviousMasterPair: vi.fn(), reset: vi.fn(), cancelScan: vi.fn() }, scheduleLegacyNetworkEnrollment: vi.fn() });
+    accountAccess: { scheduleScan: vi.fn(), flagPreviousMasterPair: vi.fn(), clearPreviousMasterPair: vi.fn(), reset: vi.fn(), cancelScan: vi.fn() }, scheduleLegacyNetworkEnrollment: vi.fn() });
 });
 afterEach(async () => {
   fixture.failRead = fixture.failWrite = fixture.failRemove = fixture.failSelection = false;
@@ -120,6 +120,53 @@ const NEW_PASSWORD = 'Public replacement master password';
 const change = () => track(service.changeMasterPassword({ oldPassword: PASSWORD, newPassword: NEW_PASSWORD }));
 
 describe('acknowledged master-password change', { timeout: 60_000 }, () => {
+  it.each([false, true])('rejects a password request admitted during reset (reset fails: %s)', async fails => {
+    await native();
+    let entered = false;
+    let release!: () => void;
+    const barrier = new Promise<void>(resolve => { release = resolve; });
+    const resetting = track(service.resetWallet(async () => {
+      entered = true;
+      await barrier;
+      if (fails) throw new Error('Public reset prerequisite failure');
+    }));
+    await vi.waitFor(() => expect(entered).toBe(true));
+    const changing = change();
+    release();
+    await drain();
+    expect(await resetting).toEqual({ value: !fails });
+    expect(await changing).toEqual({ value: false });
+    if (fails) expect(service.getPassword()).toBe(PASSWORD);
+    else {
+      expect(service.hasMasterPassword).toBe(false);
+      expect(fixture.data['fw:keyring']).toBeUndefined();
+      expect(service.getPassword()).toBe('');
+    }
+  });
+
+  it.each(['password', 'phrase', 'migration'])('orders retained-account %s recovery after a submitted password change', async kind => {
+    await native();
+    const phrase = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
+    const previous = 'Public previous account password';
+    const pair = keyring.createFromUri(phrase, { name: 'Retained account', isMasterPassword: kind !== 'migration' }, 'sr25519');
+    const json = pair.toJson(previous);
+    fixture.data['fw:' + accountStorageKey(pair)] = json as never;
+    keyring.keyring.addFromJson(json);
+    keyring.accounts.add(new AccountsStore(), pair.address, pair.publicKey, json, pair.type);
+    await drain();
+    const changing = change();
+    await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
+    const recovering = track<unknown>(kind === 'migration' ? service.keyringMigrateMasterPassword({ address: pair.address, password: previous }) : kind === 'password'
+      ? service.recoverAccountWithPassword({ address: pair.address, walletEcosystem: WalletEcosystem.Substrate, password: previous })
+      : service.recoverAccountWithPhrase({ address: pair.address, walletEcosystem: WalletEcosystem.Substrate, phrase }));
+    await drain();
+    expect(await changing).toEqual({ value: true });
+    expect(await recovering).toEqual({ value: kind === 'migration' ? true : { ok: true } });
+    const restored = keyring.createFromJson(fixture.data['fw:' + accountStorageKey(pair)]);
+    expect(() => restored.decodePkcs8(NEW_PASSWORD)).not.toThrow();
+    expect(service.exportMnemonic({ address: pair.address, password: NEW_PASSWORD, walletEcosystem: WalletEcosystem.Substrate }).seed).toBe(phrase);
+  });
+
   it('keeps the live password and pair unchanged until storage acknowledgement', async () => {
     const address = await native();
     const pair = service.getPair(address);

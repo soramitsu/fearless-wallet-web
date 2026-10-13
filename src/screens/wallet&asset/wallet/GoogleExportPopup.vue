@@ -5,9 +5,10 @@
     :headerText="statusMessagesHeader"
     :zIndex="399"
     :showBorder="true"
-    @handlerClose="$emit('closePopup')"
+    @handlerClose="close"
   >
-    <div class="popup-content">
+    <div class="popup-content" :aria-busy="isUploading">
+      <p v-if="uploadError" class="upload-error" role="alert">{{ $t('addWallet.google.somethingWrong') }}</p>
       <template v-if="isAwaiting">
         <Icon icon="lock-green" className="icon" iconColor="success" />
 
@@ -56,119 +57,119 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { ICreateFile } from '@/interfaces';
 import { createGoogleFile, exportJSON, validatePassword } from '@/extension/messaging';
 
-export default defineComponent({ name: 'GoogleExportPopup' ,
+type PreparedBackup = {
+  primary: KeyringPair$Json;
+  linked?: KeyringPair$Json;
+  linkedFileId?: string;
+};
+
+export default defineComponent({
+  name: 'GoogleExportPopup',
   data() {
     return {
       password: '',
       isErrorPassword: false,
+      uploadError: false,
       status: 'await',
+      active: true,
+      revision: 0,
+      prepared: null as PreparedBackup | null,
     };
   },
   computed: {
-    selectedWalletAddress() {
-      return this.$route.query.wallet as string;
-    },
-    isAwaiting() {
-      return this.status === 'await';
-    },
-    isUploading() {
-      return this.status === 'prepare' || this.status === 'upload';
-    },
-    isFinishedUpload() {
-      return this.status === 'uploaded';
-    },
-    disabledButton() {
-      if (this.isFinishedUpload) return false;
-
-          return this.password === '' || this.isErrorPassword;
-    },
-    hintGoogleDriveText() {
-      return this.$t('addWallet.google.dataWillStoreOnGDrive');
-    },
-    popupMessage() {
-      if (this.status === 'await') return this.$t('accounts.validatePass');
-
-          return this.$t('addWallet.google.saved');
-    },
+    selectedWalletAddress() { return this.$route.query.wallet as string; },
+    accessToken() { return this.$route.params.access_token as string; },
+    isAwaiting() { return this.status === 'await'; },
+    isUploading() { return this.status === 'prepare' || this.status === 'upload'; },
+    isFinishedUpload() { return this.status === 'uploaded'; },
+    disabledButton() { return !this.isFinishedUpload && (this.password === '' || this.isErrorPassword); },
+    hintGoogleDriveText() { return this.$t('addWallet.google.dataWillStoreOnGDrive'); },
+    popupMessage() { return this.$t(this.isAwaiting ? 'accounts.validatePass' : 'addWallet.google.saved'); },
     statusMessagesHeader() {
       if (this.status === 'prepare') return this.$t('googleExport.prepData');
-          if (this.status === 'upload') return this.$t('googleExport.uploading');
-
-          return '';
+      if (this.status === 'upload') return this.$t('googleExport.uploading');
+      return '';
     },
   },
   watch: {
-    "password": 'resetStatusError',
+    password: 'invalidateRequest',
+    selectedWalletAddress() { this.password = ''; this.invalidateRequest(); },
+    accessToken() { this.password = ''; this.invalidateRequest(); },
   },
+  beforeUnmount() { this.abandon(); },
   methods: {
-    changePassword(value: string) {
-      this.password = value;
-    },
-    resetStatusError() {
+    changePassword(value: string) { this.password = value; },
+    invalidateRequest() {
+      this.revision++;
+      this.prepared = null;
+      this.status = 'await';
       this.isErrorPassword = false;
+      this.uploadError = false;
+    },
+    abandon() {
+      this.active = false;
+      this.password = '';
+      this.invalidateRequest();
+    },
+    close() {
+      this.abandon();
+      this.$emit('closePopup');
     },
     async onConfirm() {
-      if (this.isFinishedUpload) {
-            this.$emit('closePopup');
-
-            return;
-          }
-
-          this.status = 'prepare';
-
-          const isValid = await validatePassword(this.password);
-
-          if (!isValid) {
-            this.status = 'await';
-            this.isErrorPassword = true;
-
-            return;
-          }
-
-          let ethWalletId;
-          let substrateWalletId;
-
-          const { json: substrateJson } = await exportJSON(this.selectedWalletAddress, this.password);
-          const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
-          const stringifyJson = JSON.stringify(substrateJson);
-
-          this.status = 'upload';
-
-          if (isEthereumAddress) {
-            const { json: ethereumJson } = await exportJSON(substrateJson.meta.ethereumAddress as string, this.password);
-
-            const ethOptions = this.prepUploadMeta(substrateJson);
-            ethWalletId = await this.createFile(JSON.stringify(ethereumJson), ethOptions);
-
-            const substrateOptions = this.prepUploadMeta(substrateJson, ethWalletId);
-            substrateWalletId = await this.createFile(stringifyJson, substrateOptions);
-          } else {
-            const substrateOptions = this.prepUploadMeta(substrateJson);
-            substrateWalletId = await this.createFile(stringifyJson, substrateOptions);
-          }
-
-          this.status = substrateWalletId ? 'uploaded' : 'await';
+      if (!this.active || this.isUploading) return;
+      if (this.isFinishedUpload) { this.close(); return; }
+      if (this.disabledButton) return;
+      const revision = ++this.revision;
+      const password = this.password;
+      const address = this.selectedWalletAddress;
+      const token = this.accessToken;
+      const ownsRequest = () => this.active && this.revision === revision && this.password === password &&
+        this.selectedWalletAddress === address && this.accessToken === token;
+      this.status = 'prepare';
+      this.uploadError = false;
+      try {
+        const valid = await validatePassword(password);
+        if (!ownsRequest()) return;
+        if (!valid) { this.status = 'await'; this.isErrorPassword = true; return; }
+        let prepared = this.prepared;
+        if (!prepared) {
+          const { json: primary } = await exportJSON(address, password);
+          if (!ownsRequest()) return;
+          const linkedAddress = primary.meta.ethereumAddress as string | undefined;
+          const linked = linkedAddress && linkedAddress.toLowerCase() !== primary.address.toLowerCase()
+            ? (await exportJSON(linkedAddress, password)).json : undefined;
+          if (!ownsRequest()) return;
+          prepared = { primary, linked };
+          this.prepared = prepared;
+        }
+        this.status = 'upload';
+        if (prepared.linked && !prepared.linkedFileId) {
+          const id = await this.createFile(JSON.stringify(prepared.linked), this.prepUploadMeta(prepared.linked), token);
+          if (!ownsRequest()) return;
+          // Keep acknowledged partial progress for an explicit retry. The child
+          // remains an independently restorable encrypted file if the parent fails.
+          prepared.linkedFileId = id;
+        }
+        await this.createFile(JSON.stringify(prepared.primary), this.prepUploadMeta(prepared.primary, prepared.linkedFileId), token);
+        if (ownsRequest()) this.status = 'uploaded';
+      } catch {
+        if (ownsRequest()) { this.status = 'await'; this.uploadError = true; }
+      }
     },
-    prepUploadMeta(json: KeyringPair$Json, ethWalletId?: string) {
+    prepUploadMeta(json: KeyringPair$Json, linkedFileId?: string) {
       return {
-            name: json.meta.name as string,
-            address: ethWalletId ? `${json.address}/${ethWalletId}` : (json.meta.ethereumAddress as string) ?? '',
-            password: this.password,
-          };
+        name: typeof json.meta.name === 'string' ? json.meta.name : '',
+        address: linkedFileId ? `${json.address}/${linkedFileId}` : json.address,
+      };
     },
-    async createFile(json: string, options: ICreateFile['options']) {
-      const res = await createGoogleFile({
-            json,
-            options,
-            token: this.$route.params.access_token,
-          });
-
-          return res.id;
+    async createFile(json: string, options: ICreateFile['options'], token: string) {
+      const response = await createGoogleFile({ json, options, token });
+      if (typeof response?.id !== 'string' || !response.id.trim()) throw new Error('Missing Google Drive file identifier');
+      return response.id;
     },
   },
 });
@@ -182,6 +183,11 @@ export default defineComponent({ name: 'GoogleExportPopup' ,
   justify-content: center;
   padding: 0 25px;
   min-height: 175px;
+
+  .upload-error {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
 
   .password-input {
     width: 100%;

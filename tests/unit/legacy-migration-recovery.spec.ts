@@ -179,6 +179,25 @@ describe('per-account request ownership', () => {
     wrapper.unmount();
   });
 
+  it('can explicitly restore a healthy primary file while its linked file is unavailable', async () => {
+    const json = { address: PARENT } as never;
+    const file = { id: 'root-file', address: PARENT, password: 'fixture', json, ethWalletID: 'missing-linked-file', active: true, fileLoadError: true };
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [file] }, global });
+    await wrapper.vm.importFromGoogle(0, true);
+    expect(mocks.restoreJson).toHaveBeenCalledExactlyOnceWith(json, 'fixture', undefined);
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: false, isComplete: true, primaryOnly: true }]);
+    wrapper.unmount();
+  });
+
+  it('does not restore or link the child when the primary-only action is chosen', async () => {
+    const json = { address: PARENT } as never;
+    const child = { address: CHILD } as never;
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ id: 'root-file', address: PARENT, password: 'fixture', json, ethJson: child, ethWalletID: 'linked-file', active: true }] }, global });
+    await wrapper.vm.importFromGoogle(0, true);
+    expect(mocks.restoreJson).toHaveBeenCalledExactlyOnceWith(json, 'fixture', undefined);
+    wrapper.unmount();
+  });
+
   it('waits for a declared linked Google backup and retries that file without importing only the parent', async () => {
     const file = { id: 'root-file', address: PARENT, password: 'fixture', json: { address: PARENT } as never, ethWalletID: 'linked-file', active: true, fileLoadError: true };
     const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [file] }, global });

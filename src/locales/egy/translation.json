@@ -122,7 +122,10 @@
       "saved": "𓋴𓄿𓅱 𓅓𓄿𓂝",
       "dataWillStoreOnGDrive": "𓅓 𓈙𓊪𓏏 “𓅓𓄿𓂝”, 𓈙𓋴𓊪𓎡 𓉔𓄿𓃀 𓅓𓆓𓄿𓏏 𓈖 𓉒 𓐍𓏏𓅓 𓅓 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛, 𓎛𓈖𓂝 𓂋𓈖𓆑 𓎛𓈖𓂝 𓊨 𓈖 𓂋𓈖𓆑, 𓂋 Google Drive 𓈖𓏏𓎡 𓉐 𓈖 𓅓𓆓𓄿𓏏, 𓂋 𓋴𓄿𓅱 𓎛𓈖𓂝 𓅱𓎛𓅓 ·",
       "passphraseSaved": "𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓𓂧𓅱 𓋴𓄿𓅱 𓁷 Google Drive",
-      "noWallets": "𓈖𓈖 𓋴𓄿𓅱 𓉒 𓏥 𓅓𓂧𓅱 𓁷 Google Drive"
+      "noWallets": "𓈖𓈖 𓋴𓄿𓅱 𓉒 𓏥 𓅓𓂧𓅱 𓁷 Google Drive",
+      "importFileOnly": "𓇋𓈖 𓅓𓆓𓄿𓏏 𓏏𓈖 𓅱𓂝𓏏𓋴",
+      "importFileOnlyHint": "𓇋𓅱 𓇋𓂋𓏏 𓏏𓈖 𓁷 𓇋𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓇋𓅓𓇌𓅱 𓅓𓆓𓄿𓏏 𓏏𓈖. 𓅱𓎛𓅓 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓈖𓏏 Ethereum 𓄡𓈖𓅓𓏏 𓂋𓋴𓈖 𓅓 𓇋𓂋𓏏 𓎡𓏏.",
+      "importFileOnlyDone": "𓇋𓅱 𓅓𓆓𓄿𓏏 𓏏𓈖 𓇋𓈖𓏏𓇋. 𓈖 𓇋𓈖𓏏𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓈖𓏏 Ethereum 𓄡𓈖𓅓𓏏 𓂋𓋴 𓅓 𓇋𓂋𓏏 𓏏𓈖."
     },
     "recommended": "𓋴𓏏𓊪 𓅓𓂋𓇌",
     "alternative": "𓅱𓄿𓏏 𓎡𓇌",

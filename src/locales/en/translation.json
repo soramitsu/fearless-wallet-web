@@ -152,7 +152,10 @@
       "saved": "Saved",
       "dataWillStoreOnGDrive": "By clicking “Confirm”, you agree to upload a password-encrypted wallet backup and its wallet label and address to your private Google Drive app data storage for backup and restore.",
       "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
-      "noWallets": "No saved wallets have been found on the Google Drive"
+      "noWallets": "No saved wallets have been found on the Google Drive",
+      "importFileOnly": "Import this file only",
+      "importFileOnlyHint": "This imports the account in this file. Restore its linked Ethereum backup separately.",
+      "importFileOnlyDone": "This file was imported. Its linked Ethereum backup was not imported by this action."
     }
   },
   "mobileConnector": {

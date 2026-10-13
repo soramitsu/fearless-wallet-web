@@ -19,17 +19,18 @@
     @handlerClose="close"
   >
     <div class="wallet-details">
-      <div v-if="selectedAccountIsSubstrate" class="row" @click="openWalletDetails">
-        <div class="label" data-testid="walletDetails">{{ $t('walletDetailsPopup.details') }}</div>
-      </div>
+      <button v-if="selectedAccountIsSubstrate" type="button" class="row" @click="openWalletDetails">
+        <span class="label" data-testid="walletDetails">{{ $t('walletDetailsPopup.details') }}</span>
+      </button>
 
-      <div v-if="isExportPossible" class="row" @click="exportToGoogleDrive">
-        <div class="label google" data-testid="exportToGoogle">{{ $t('walletDetailsPopup.exportToGoogle') }}</div>
-      </div>
+      <button v-if="isExportPossible" type="button" class="row" :disabled="isAuthFlowInit" :aria-busy="isAuthFlowInit" @click="exportToGoogleDrive">
+        <span class="label google" data-testid="exportToGoogle">{{ $t('walletDetailsPopup.exportToGoogle') }}</span>
+      </button>
+      <p v-if="googleAuthError" role="alert" class="google-auth-error">{{ $t('addWallet.google.somethingWrong') }}</p>
 
-      <div class="row" @click="deleteWallet">
-        <div class="label delete" data-testid="deleteWallet">{{ $t('walletDetailsPopup.deleteWallet') }}</div>
-      </div>
+      <button type="button" class="row" @click="deleteWallet">
+        <span class="label delete" data-testid="deleteWallet">{{ $t('walletDetailsPopup.deleteWallet') }}</span>
+      </button>
     </div>
   </Popup>
 </template>
@@ -56,6 +57,10 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
       isExtension: IS_EXTENSION,
       accountsStore: useAccountsStore(),
       confirmDelete: false,
+      isAuthFlowInit: false,
+      googleAuthError: false,
+      isActive: true,
+      authRevision: 0,
     };
   },
   computed: {
@@ -68,18 +73,25 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
     isExportPossible() {
       if (!this.isExtension || !isGoogleDriveBackupEnabled() || this.selectedAccount?.isMobile) return false;
 
-          return this.selectedAccountIsSubstrate;
+      return this.selectedAccountIsSubstrate || this.selectedAccount?.walletEcosystem === WalletEcosystem.Evm;
     },
     top() {
       return this.buttonTopClick - 30;
     },
   },
+  beforeUnmount() { this.abandon(); },
+  watch: {
+    selectedWalletAddress() { this.authRevision++; this.googleAuthError = false; this.isAuthFlowInit = false; },
+  },
   methods: {
+    abandon() { this.isActive = false; this.authRevision++; },
     close() {
+      this.abandon();
       this.$emit('close');
     },
     // One click never deletes: the confirmation shows the balance, offers the export and asks for the password.
     deleteWallet() {
+      this.abandon();
       this.confirmDelete = true;
     },
     onDeleted() {
@@ -88,8 +100,16 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
       if (remaining.length === 0) this.$router.push({ name: Components.Welcome });
       else this.close();
     },
-    exportToGoogleDrive() {
-      initGoogleAuth('export', this.selectedWalletAddress);
+    async exportToGoogleDrive() {
+      if (!this.isActive || this.isAuthFlowInit || !this.isExportPossible) return;
+      const revision = ++this.authRevision;
+      const address = this.selectedWalletAddress;
+      const ownsRequest = () => this.isActive && this.authRevision === revision && this.selectedWalletAddress === address;
+      this.isAuthFlowInit = true;
+      this.googleAuthError = false;
+      try { await initGoogleAuth('export', address); }
+      catch { if (ownsRequest()) this.googleAuthError = true; }
+      finally { if (ownsRequest()) this.isAuthFlowInit = false; }
     },
     async openWalletDetails() {
       const walletInfo = this.accountsStore.accounts.find(({ address }) => address === this.selectedWalletAddress);
@@ -110,12 +130,27 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
   font-weight: 500;
   display: flex;
   flex-flow: column;
-  max-height: 90px;
-  overflow: hidden;
+  max-height: min(70vh, 400px);
+  overflow-y: auto;
   gap: 16px;
   padding: 0 10px;
 
+  .google-auth-error {
+    margin: 0;
+    color: var(--fw-danger);
+    overflow-wrap: anywhere;
+  }
+
   .row {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    flex-shrink: 0;
+    &:disabled { opacity: 0.6; cursor: wait; }
+    &:focus-visible { outline: 2px solid var(--fw-focus); outline-offset: 2px; }
     &:last-child {
       margin-bottom: 0;
     }
@@ -131,7 +166,9 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
 
     .label {
       margin: auto 0 auto 10px;
-      width: 160px;
+      display: block;
+      max-width: 160px;
+      overflow-wrap: anywhere;
       text-align: left;
     }
 

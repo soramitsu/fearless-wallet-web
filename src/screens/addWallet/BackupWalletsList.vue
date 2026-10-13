@@ -61,6 +61,18 @@
               />
             </div>
 
+            <div v-if="isGoogle && file.ethWalletID && file.active && !file.isComplete" class="primary-file-recovery">
+              <p>{{ $t('addWallet.google.importFileOnlyHint') }}</p>
+              <FButton
+                text="addWallet.google.importFileOnly"
+                type="secondary"
+                :disabled="isDisabled(file, true)"
+                data-testid="importGoogleFileOnly"
+                @click="importFromGoogle(index, true)"
+              />
+            </div>
+            <p v-if="file.primaryOnly" class="row-status" role="status">{{ $t('addWallet.google.importFileOnlyDone') }}</p>
+
             <p v-if="file.isComplete && !file.active" class="row-status" role="status" aria-live="polite">
               {{ $t('migration.completed') }}
             </p>
@@ -108,9 +120,9 @@ export default defineComponent({
     onConfirm(index: number) {
       return this.isGoogle ? this.importFromGoogle(index) : this.migrateAccounts(index);
     },
-    beginOperation(index: number): RowOperation | undefined {
+    beginOperation(index: number, primaryOnly = false): RowOperation | undefined {
       const source = this.items[index];
-      if (!this.isActive || !source || this.isDisabled(source)) return;
+      if (!this.isActive || !source || this.isDisabled(source, primaryOnly)) return;
       const file = { ...source };
       const key = rowKey(file);
       const token = Symbol(key);
@@ -127,11 +139,11 @@ export default defineComponent({
           file.password === operation.file.password
       );
     },
-    finishOperation(operation: RowOperation, success: boolean) {
+    finishOperation(operation: RowOperation, success: boolean, primaryOnly = false) {
       const index = this.operationIndex(operation);
       if (index >= 0) {
         const complete = success || !!this.items[index].isComplete;
-        this.setItemValue(index, { isError: !complete, isComplete: complete, isLoading: false });
+        this.setItemValue(index, { isError: !complete, isComplete: complete, isLoading: false, ...(success && primaryOnly ? { primaryOnly: true } : {}) });
       }
       if (this.pendingRows.get(operation.key) === operation.token) this.pendingRows.delete(operation.key);
     },
@@ -147,8 +159,8 @@ export default defineComponent({
         this.finishOperation(operation, success);
       }
     },
-    async importFromGoogle(index: number) {
-      const operation = this.beginOperation(index);
+    async importFromGoogle(index: number, primaryOnly = false) {
+      const operation = this.beginOperation(index, primaryOnly);
       if (!operation) return;
       const { json, ethJson, password } = operation.file;
       let success = false;
@@ -157,7 +169,7 @@ export default defineComponent({
         const { value: valid } = await isJsonValid(json, password);
         if (!valid || this.operationIndex(operation) < 0) return;
         let linkedEthereumAddress: string | undefined;
-        if (ethJson) {
+        if (ethJson && !primaryOnly) {
           linkedEthereumAddress = await jsonRestore(ethJson, password);
           if (this.operationIndex(operation) < 0) return;
         }
@@ -169,7 +181,7 @@ export default defineComponent({
       } catch {
         // A failed import never appears complete, and always releases the loading state.
       } finally {
-        this.finishOperation(operation, success);
+        this.finishOperation(operation, success, primaryOnly);
       }
     },
     buttonText(file: FilesState) {
@@ -181,10 +193,10 @@ export default defineComponent({
         return file.fileLoadError ? 'addWallet.google.somethingWrong' : 'addWallet.google.fetchInfo';
       return !file.password ? 'addWallet.enterPassword' : '';
     },
-    isDisabled(file: FilesState) {
+    isDisabled(file: FilesState, primaryOnly = false) {
       return (
         this.disabled ||
-        (this.isGoogle && this.missingBackup(file)) ||
+        (this.isGoogle && (primaryOnly ? !file.json : this.missingBackup(file))) ||
         !file.password ||
         file.isLoading ||
         file.isComplete ||
@@ -338,4 +350,14 @@ export default defineComponent({
 .wallets__list > li:has(.is-loading) ~ li :deep(.is-loading) {
   box-shadow: none;
 }
+</style>
+
+<style lang="scss" scoped>
+.primary-file-recovery {
+  width: 100%;
+  margin-top: 16px;
+  color: var(--fw-text-2);
+  overflow-wrap: anywhere;
+}
+.primary-file-recovery p { margin: 0 0 12px; }
 </style>

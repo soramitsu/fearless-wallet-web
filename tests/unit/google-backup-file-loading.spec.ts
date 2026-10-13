@@ -1,4 +1,5 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
+import { reactive } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ file: vi.fn(), files: vi.fn(), token: vi.fn() }));
@@ -20,11 +21,13 @@ const deferred = <T>() => {
   });
   return { promise, resolve };
 };
-const open = async () => {
+const open = async (route = reactive({ params: { access_token: 'public-test-token' } })) => {
   const wrapper = shallowMount(AddFromGoogle, {
     global: {
+      config: { errorHandler: vi.fn() },
+      stubs: { FButton: true },
       mocks: {
-        $route: { params: { access_token: 'public-test-token' } },
+        $route: route,
         $router: { push: vi.fn().mockResolvedValue(undefined), replace: vi.fn().mockResolvedValue(undefined) },
         $t: (key: string) => key,
       },
@@ -112,5 +115,74 @@ describe('Google backup file request ownership', () => {
     root.resolve({ address: 'publicParent' });
     await request;
     expect(state.files[0].json).toBeUndefined();
+  });
+});
+
+
+describe('Google backup inventory', () => {
+  it('keeps standalone, linked, orphan and legacy encrypted files individually reachable', async () => {
+    mocks.files.mockResolvedValue({ files: [
+      { id: 'parent', name: 'Parent.with.dots.json', description: 'publicParent/child' },
+      { id: 'child', name: 'Linked Ethereum.json', description: '0xPublicChild' },
+      { id: 'orphan', name: 'Interrupted backup.json', description: '0xOrphan' },
+      { id: 'standalone', name: 'Standalone.json', description: 'publicStandalone' },
+      { id: 'legacy', name: 'Legacy.json', description: '' },
+      { id: 'missing', name: 'Missing metadata.json' },
+    ] });
+    const wrapper = await open();
+    expect(wrapper.vm.files.map((file) => file.id)).toEqual(['parent', 'child', 'orphan', 'standalone', 'legacy', 'missing']);
+    expect(wrapper.vm.files[0]).toMatchObject({ name: 'Parent.with.dots', ethWalletID: 'child' });
+    wrapper.unmount();
+  });
+
+  it('leaves inventory failure retryable instead of an endless loading state', async () => {
+    mocks.files.mockRejectedValueOnce(new Error('Public fixture list failure'));
+    const wrapper = await open();
+    expect(wrapper.vm.isLoading).toBe(false);
+    expect(wrapper.vm.buttonText).toBe('ux.retry');
+    expect(wrapper.vm.isAllowedContinue).toBe(false);
+    await wrapper.vm.proceed();
+    await flushPromises();
+    expect(wrapper.vm.files).toHaveLength(2);
+    wrapper.unmount();
+  });
+});
+
+
+describe('Google backup inventory generations', () => {
+  it('does not let an old file completion release the new token download for the same ID', async () => {
+    const oldFile = deferred<{ address: string }>();
+    const newFile = deferred<{ address: string }>();
+    mocks.file.mockReturnValueOnce(oldFile.promise).mockReturnValue(newFile.promise);
+    const route = reactive({ params: { access_token: 'public-test-token' } });
+    const wrapper = await open(route);
+    const oldRequest = wrapper.vm.getFile('root-file', 0);
+    route.params.access_token = 'public-replacement-token';
+    await flushPromises();
+    const newRequest = wrapper.vm.getFile('root-file', 0);
+    oldFile.resolve({ address: 'old-public-address' });
+    await oldRequest;
+    void wrapper.vm.getFile('root-file', 0);
+    expect(mocks.file).toHaveBeenCalledTimes(2);
+    expect(wrapper.vm.files[0].json).toBeUndefined();
+    expect(wrapper.vm.files[0].isFileLoading).toBe(true);
+    newFile.resolve({ address: 'new-public-address' });
+    await newRequest;
+    expect(wrapper.vm.files[0].json.address).toBe('new-public-address');
+    wrapper.unmount();
+  });
+
+  it('ignores the old inventory response after changing tokens', async () => {
+    const oldList = deferred<{ files: unknown[] }>();
+    mocks.files.mockReturnValueOnce(oldList.promise);
+    const route = reactive({ params: { access_token: 'public-test-token' } });
+    const wrapper = await open(route);
+    route.params.access_token = 'public-replacement-token';
+    await flushPromises();
+    oldList.resolve({ files: [] });
+    await flushPromises();
+    expect(wrapper.vm.files).toHaveLength(2);
+    expect(wrapper.vm.$router.push).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 });

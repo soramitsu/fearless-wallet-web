@@ -8,7 +8,7 @@
     :showFullScreenIcon="false"
     @back="back"
   >
-    <NegativeMessage v-if="isAccessDenied" :message="$t('addWallet.google.somethingWrong')" />
+    <NegativeMessage v-if="isAccessDenied || loadError" :message="$t('addWallet.google.somethingWrong')" />
 
     <BackupWalletsList
       v-else-if="haveWalletsToImport"
@@ -57,6 +57,8 @@ export default defineComponent({ name: 'AddFromGoogle',
       step: 1,
       tokenValidation: 'pending',
       isActive: true,
+      loadError: false,
+      loadRevision: 0,
       fileRequests: new Map<string, string>(),
     };
   },
@@ -83,6 +85,8 @@ export default defineComponent({ name: 'AddFromGoogle',
       return !this.isLoading && this.isFilesExists;
     },
     buttonText() {
+      if (this.loadError) return this.$t('ux.retry');
+      if (this.isAccessDenied) return this.$t('common.finish');
       return this.step === 2 ? this.$t('common.finish') : this.$t('common.continue');
     },
     isActiveNotComplete() {
@@ -92,6 +96,7 @@ export default defineComponent({ name: 'AddFromGoogle',
       return this.files.every(({ isComplete }) => !isComplete);
     },
     isAllowedContinue() {
+      if (this.loadError || this.isAccessDenied) return false;
       return this.isImportInProgress || this.isActiveNotComplete || this.importAcquired;
     },
     header() {
@@ -104,55 +109,52 @@ export default defineComponent({ name: 'AddFromGoogle',
   },
   beforeUnmount() {
     this.isActive = false;
+    this.loadRevision++;
     this.fileRequests.clear();
   },
-  async mounted() {
-    const isValidToken = await this.isTokenValid();
-
-        if (!isValidToken || !this.isActive) return;
-
-        const { files } = await getGoogleFiles(this.token);
-        if (!this.isActive) return;
-
-        const jsonsWithoutEth = files.filter((el) => el.description === '' || el.description === 'undefined');
-        const regex = /\w+\/\w+/;
-        const filterFiles = files.filter((el) => el && regex.test(el.description));
-        const filesToImport = [...filterFiles, ...jsonsWithoutEth];
-
-        if (filesToImport.length === 0) {
-          this.$router.push({
-            name: Components.CreateGoogle,
-            params: {
-              access_token: this.$route.params.access_token,
-            },
-          });
-
-          this.isLoading = false;
-
+  watch: {
+    token() { void this.loadBackups(); },
+  },
+  async mounted() { await this.loadBackups(); },
+  methods: {
+    async loadBackups() {
+      if (!this.isActive) return;
+      const revision = ++this.loadRevision;
+      const token = this.token;
+      const current = () => this.isActive && this.loadRevision === revision && this.token === token;
+      this.files = [];
+      this.fileRequests.clear();
+      this.isLoading = true;
+      this.loadError = false;
+      this.tokenValidation = 'pending';
+      try {
+        const data = token && token !== 'null' ? await verifyToken(token) : null;
+        if (!current()) return;
+        if (!data || !Number.isFinite(+data.expires_in) || +data.expires_in <= 0) {
+          this.tokenValidation = 'invalid';
           return;
         }
-
-        filesToImport.forEach(({ id, description, name }) => {
-          const [prepName] = name.split('.');
-
-          const [address, ethID] = description.split('/');
-
-          this.files.push({
-            id,
-            name: prepName,
-            address,
-            isComplete: false,
-            isLoading: false,
-            isError: false,
-            ethWalletID: ethID,
-            password: '',
-            active: false,
-          });
+        this.tokenValidation = 'valid';
+        const { files } = await getGoogleFiles(token);
+        if (!current()) return;
+        if (!Array.isArray(files)) throw new Error('Invalid Google Drive inventory');
+        if (files.length === 0) {
+          await this.$router.push({ name: Components.CreateGoogle, params: { access_token: token } });
+          return;
+        }
+        // Descriptions are metadata, not authority to hide encrypted files. Keep
+        // standalone keys and children from interrupted backups reachable too.
+        this.files = files.map(({ id, description, name }) => {
+          const parts = typeof description === 'string' ? description.split('/') : [];
+          return {
+            id, name: typeof name === 'string' ? name.replace(/\.json$/i, '') : id, address: parts[0] ?? '',
+            ethWalletID: parts.length === 2 && parts[1] && parts[1] !== id ? parts[1] : undefined,
+            isComplete: false, isLoading: false, isError: false, password: '', active: false,
+          };
         });
-
-        this.isLoading = false;
-  },
-  methods: {
+      } catch { if (current()) this.loadError = true; }
+      finally { if (current()) this.isLoading = false; }
+    },
     goBack() {
       this.$router.replace('/').catch((e) => e);
           this.$router.push({ name: Components.Wallet }).catch((e) => e);
@@ -168,15 +170,17 @@ export default defineComponent({ name: 'AddFromGoogle',
     },
     async getFile(id: string, key: number) {
       const row = this.files[key];
+      const token = this.token;
+      const revision = this.loadRevision;
       if (!this.isActive || !row || !id || (id !== row.id && id !== row.ethWalletID)) return;
-      const requestKey = JSON.stringify([row.id, id]);
+      const requestKey = JSON.stringify([revision, row.id, id]);
       if (this.fileRequests.has(requestKey)) return;
       this.fileRequests.set(requestKey, row.id);
-      const currentIndex = () => this.isActive ? this.files.findIndex((file) =>
+      const currentIndex = () => this.isActive && this.token === token && this.loadRevision === revision ? this.files.findIndex((file) =>
         file.id === row.id && file.address === row.address && file.ethWalletID === row.ethWalletID) : -1;
       this.setItemValue(key, { isFileLoading: true, fileLoadError: false });
       try {
-        const file = await getGoogleFile(id, this.token);
+        const file = await getGoogleFile(id, token);
         const index = currentIndex();
         if (index < 0) return;
         // The requested file ID determines its role, including an EVM-only primary backup.
@@ -192,7 +196,8 @@ export default defineComponent({ name: 'AddFromGoogle',
         });
       }
     },
-    proceed() {
+    async proceed() {
+      if (this.loadError) { await this.loadBackups(); return; }
       if (this.isFinishForm || this.isAccessDenied) {
             this.goBack();
 
@@ -207,26 +212,7 @@ export default defineComponent({ name: 'AddFromGoogle',
     setItemPassword(index: number, password: string) {
       this.files[index] = { ...this.files[index], password };
     },
-    async isTokenValid() {
-      if (this.token === 'null') {
-            this.isLoading = false;
 
-            return false;
-          }
-
-          const data = await verifyToken(this.token);
-
-          if (data === null || +data.expires_in <= 0) {
-            this.tokenValidation = 'invalid';
-            this.isLoading = false;
-
-            return false;
-          }
-
-          this.tokenValidation = 'valid';
-
-          return true;
-    },
   },
 });
 </script>

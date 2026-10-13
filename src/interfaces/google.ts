@@ -9,6 +9,7 @@ interface FileData {
   isError: boolean;
   isLoading: boolean;
   isComplete: boolean;
+  primaryOnly: boolean;
   isFileLoading: boolean;
   fileLoadError: boolean;
   ethWalletID: string;

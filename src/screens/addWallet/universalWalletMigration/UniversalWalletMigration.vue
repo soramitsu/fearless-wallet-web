@@ -67,6 +67,7 @@
           :loading="isOpening === 'import'"
           @click="importWallet"
         />
+        <RecoveryDataLink />
       </div>
     </div>
   </AboveForm>
@@ -76,6 +77,7 @@
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AboveForm from '@/components/AboveForm.vue';
+import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 import { Components } from '@/router/routes';
 import { getUniversalWalletMigrationSnapshot, hasMasterPassword } from '@/extension/messaging';
 import { WalletEcosystem } from '@/interfaces';

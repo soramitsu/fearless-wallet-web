@@ -1,10 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ push: vi.fn(), password: vi.fn(), snapshot: vi.fn(), select: vi.fn() }));
+const mocks = vi.hoisted(() => ({ push: vi.fn(), password: vi.fn(), snapshot: vi.fn(), select: vi.fn(), records: vi.fn() }));
+vi.mock('@/consts/global', async original => ({ ...(await original<Record<string, unknown>>()), IS_EXTENSION: false }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/router/routes', () => ({ Components: { AddWallet: 'AddWallet', ChangePassword: 'ChangePassword' } }));
+vi.mock('@/router/routes', () => ({ Components: { AddWallet: 'AddWallet', ChangePassword: 'ChangePassword', StorageRecovery: 'StorageRecovery' } }));
 vi.mock('@/extension/messaging', () => ({
   hasMasterPassword: mocks.password,
+  getRecoveryRecords: mocks.records,
   getUniversalWalletMigrationSnapshot: mocks.snapshot,
 }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [], setSelectedWallet: mocks.select }) }));
@@ -25,6 +27,7 @@ const mountEntry = () =>
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.snapshot.mockResolvedValue({ legacyVaults: [] });
+  mocks.records.mockResolvedValue([]);
   mocks.push.mockResolvedValue(undefined);
 });
 
@@ -162,6 +165,27 @@ describe('migration entry pending and failure states', () => {
     await button.trigger('click');
     expect(mocks.select).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+});
+
+
+describe('retained recovery at the empty-wallet entry', () => {
+  it.each([false, true])('opens recovery even when migration snapshot failure is %s', async (failed) => {
+    mocks.records.mockResolvedValue([{ key: 'fw:account:public-unloaded', kind: 'account' }]);
+    if (failed) mocks.snapshot.mockRejectedValue(new Error('snapshot unavailable'));
+    const wrapper = mountEntry();
+    await flushPromises();
+    await wrapper.get('[data-testid="recoveryDataLink"] button').trigger('click');
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'StorageRecovery' });
+    expect(mocks.password).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('does not offer an empty retained inventory', async () => {
+    const wrapper = mountEntry();
+    await flushPromises();
+    expect(wrapper.find('[data-testid="recoveryDataLink"]').exists()).toBe(false);
     wrapper.unmount();
   });
 });

@@ -10,6 +10,7 @@ import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
 import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
 import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
 import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
+import { checkJsonImportStorage } from './extension-smoke-json-import.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -49,7 +50,8 @@ const primitivesScreenshotsDir =
       );
 const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
 const localImportStorageOnly = process.argv.includes('--local-account-import-storage');
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly);
+const jsonImportStorageOnly = process.argv.includes('--json-account-import-storage');
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -316,9 +318,9 @@ async function main() {
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
 
-    if (tonImportStorageOnly || localImportStorageOnly) {
+    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly) {
       let controlSession = extensionSession;
-      const checkImport = localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
+      const checkImport = jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
       const result = await checkImport({
         eventually,
         fixture: universalWalletFixture,
@@ -326,6 +328,7 @@ async function main() {
         assert,
         send: (message, request) => extensionSend(cdp, controlSession, message, request),
         read: (key) => evaluate(cdp, controlSession, `chrome.storage.local.get(${JSON.stringify(key)}).then((data) => data[${JSON.stringify(key)}])`),
+        remove: (keys) => evaluate(cdp, controlSession, `chrome.storage.local.remove(${JSON.stringify(keys)})`),
         restart: async () => {
           await stopExtensionKeepAlive();
           const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, backgroundSession);
@@ -339,7 +342,7 @@ async function main() {
           await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
         },
       });
-      console.info(JSON.stringify({ extensionId, [localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
+      console.info(JSON.stringify({ extensionId, [jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
       return;
     }
 

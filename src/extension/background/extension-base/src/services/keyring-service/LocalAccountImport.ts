@@ -1,5 +1,5 @@
 import { keyring } from '@subwallet/ui-keyring';
-import { u8aEq } from '@polkadot/util';
+import { u8aEq, stringToU8a } from '@polkadot/util';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { accountStorageKey, alreadyPersistedAccountStore } from './AccountMetadata';
 import { PREVIOUS_PASSWORD_REQUIRED } from './AccountAccessErrors';
@@ -12,6 +12,10 @@ const assertKey = (pair: KeyringPair, expected: KeyringPair) => {
   if (pair.type !== expected.type || !u8aEq(pair.publicKey, expected.publicKey)) {
     throw new Error('Stored account key does not match the imported key.');
   }
+  const proof = stringToU8a('Fearless stored account key validation');
+  if (!pair.verify(proof, pair.sign(proof), pair.publicKey)) {
+    throw new Error('Stored account private key does not match its public key.');
+  }
 };
 
 function publish(json: KeyringPair$Json): void {
@@ -20,7 +24,7 @@ function publish(json: KeyringPair$Json): void {
 }
 
 function masterMetadata(meta: FWKeyringMeta, haveEntropy: boolean): FWKeyringMeta {
-  const result: FWKeyringMeta = { ...meta, isMasterPassword: true, isMasterAccount: haveEntropy };
+  const result: FWKeyringMeta = { ...meta, isMasterPassword: true, isMasterAccount: haveEntropy && !meta.isMnemonicUnverified };
   delete result.pendingMigrate;
   delete result.isSubWallet;
   return result;

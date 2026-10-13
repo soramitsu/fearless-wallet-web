@@ -156,11 +156,12 @@ export default defineComponent({
         if (!json || !password) return;
         const { value: valid } = await isJsonValid(json, password);
         if (!valid || this.operationIndex(operation) < 0) return;
+        let linkedEthereumAddress: string | undefined;
         if (ethJson) {
-          await jsonRestore(ethJson, password);
+          linkedEthereumAddress = await jsonRestore(ethJson, password);
           if (this.operationIndex(operation) < 0) return;
         }
-        const address = await jsonRestore(json, password);
+        const address = await jsonRestore(json, password, linkedEthereumAddress);
         if (this.operationIndex(operation) < 0) return;
         if (!address) throw new Error('Import returned no account');
         await updateCurrentAccount(address);

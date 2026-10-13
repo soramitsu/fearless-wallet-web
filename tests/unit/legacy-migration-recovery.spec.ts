@@ -192,7 +192,7 @@ describe('per-account request ownership', () => {
     await wrapper.setProps({ items: [{ ...file, ethJson: linked, fileLoadError: false }] });
     await wrapper.vm.importFromGoogle(0);
     expect(mocks.restoreJson).toHaveBeenNthCalledWith(1, linked, 'fixture');
-    expect(mocks.restoreJson).toHaveBeenNthCalledWith(2, file.json, 'fixture');
+    expect(mocks.restoreJson).toHaveBeenNthCalledWith(2, file.json, 'fixture', 'restored-fixture');
     expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: false, isComplete: true }]);
     wrapper.unmount();
   });

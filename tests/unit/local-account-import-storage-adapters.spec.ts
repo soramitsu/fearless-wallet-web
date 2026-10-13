@@ -52,7 +52,10 @@ const P1 = 'Public account adapter password';
 const phrase = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk';
 const observe = (promise: Promise<string>) => promise.then(() => 'resolved', () => 'rejected');
 
-describe.each([true, false])('local account through real store adapter (extension: %s)', { timeout: 60_000 }, (extension) => {
+describe.each([
+  { extension: true, json: false }, { extension: false, json: false },
+  { extension: true, json: true }, { extension: false, json: true },
+])('local account through real store adapter (extension: $extension, JSON: $json)', { timeout: 60_000 }, ({ extension, json }) => {
   let flush: () => Promise<void>;
   let importAccount: () => Promise<string>;
 
@@ -106,7 +109,12 @@ describe.each([true, false])('local account through real store adapter (extensio
     const { default: AccountsStore } = await import('@extension-base/stores/Accounts');
     expect(new AccountsStore()).toBeInstanceOf(extension ? BaseExtensionStore : BaseWebStore);
     const { importLocalAccount } = await import('@extension-base/services/keyring-service/LocalAccountImport');
-    importAccount = () => importLocalAccount(fixture.backend!.createFromUri(phrase) as unknown as KeyringPair, WalletEcosystem.Substrate, () => P1);
+    const { decodeJsonAccount } = await import('@extension-base/services/keyring-service/JsonAccountImport');
+    importAccount = () => {
+      const pair = fixture.backend!.createFromUri(phrase);
+      const imported = json ? decodeJsonAccount(pair.toJson('Public backup password'), 'Public backup password') : pair;
+      return importLocalAccount(imported as unknown as KeyringPair, WalletEcosystem.Substrate, () => P1);
+    };
   });
   afterEach(async () => {
     await flush().catch(() => undefined);

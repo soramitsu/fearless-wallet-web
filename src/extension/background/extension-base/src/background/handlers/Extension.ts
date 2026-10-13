@@ -2,13 +2,12 @@ import { validatePolkadotSigningContext } from '@extension-base/services/wallet-
 import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { checkIfDenied } from '@polkadot/phishing';
-import { hexToU8a, isHex, assert } from '@polkadot/util';
-import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
+import { assert } from '@polkadot/util';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import {
   assertSubstrateSigningPair,
   validateSubstrateSigningAccount,
 } from '@extension-base/services/request-service/handlers/substrateSigningAccount';
-import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, VoidSigner, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
@@ -196,8 +195,6 @@ import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import type { HexString } from '@polkadot/util/types';
-import type { KeyringPair$Json } from '@subwallet/keyring/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
@@ -411,7 +408,7 @@ export default class Extension extends FWExtensionBase {
       if (isEthereumAddress(address)) return [];
 
       const pair = this.state.keyringService.getPair(address);
-      const haveEntropy = pair?.haveEntropy;
+      const haveEntropy = pair?.haveEntropy && !meta.isMnemonicUnverified;
 
       return {
         address,
@@ -593,73 +590,27 @@ export default class Extension extends FWExtensionBase {
     return this.state.requestService.metaSubject.value;
   }
 
-  private validatePassword(json: KeyringPair$Json, password: string): boolean {
-    const cryptoType = Array.isArray(json.encoding.content) ? json.encoding.content[1] : 'ed25519';
-    const encType = Array.isArray(json.encoding.type) ? json.encoding.type : [json.encoding.type];
-
-    const pair = createPair(
-      { toSS58: this.encodeAddress, type: cryptoType as KeypairType },
-      { publicKey: this.decodeAddress(json.address, true) },
-      json.meta,
-      isHex(json.encoded) ? hexToU8a(json.encoded) : base64Decode(json.encoded),
-      encType
-    );
-
-    // unlock then lock (locking cleans secretKey, so needs to be last)
+  async jsonRestore({ file, password, linkedEthereumAddress }: RequestJsonRestore): Promise<string> {
     try {
-      if (password) {
-        pair.decodePkcs8(password);
-        pair.lock();
+      const stringFile = JSON.stringify(file);
+      if (ethers.isKeystoreJson(stringFile)) {
+        const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
+        return await this.state.keyringService.addAccount(
+          privateKey,
+          { name: (file.meta?.name ?? '') as string, isMobile: false },
+          WalletEcosystem.Substrate,
+          'ethereum'
+        );
       }
-
-      return true;
-    } catch (e) {
-      console.error(e);
-
-      return false;
+      const { address } = await this.state.keyringService.restoreAccount(file, password, linkedEthereumAddress);
+      if (!isEthereumAddress(address)) {
+        this.state.updateNetworkForNewWallet(address);
+        this.state.updateCurrentAccount({ address });
+      }
+      return address;
+    } catch (error) {
+      throw { error: (error as Error).message };
     }
-  }
-
-  jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
-    const stringFile = JSON.stringify(file);
-
-    if (ethers.isKeystoreJson(stringFile))
-      return new Promise((resolve, reject) => {
-        try {
-          const { privateKey } = ethers.decryptKeystoreJsonSync(stringFile, password);
-
-          const address = this.state.keyringService.addAccount(
-            privateKey,
-            { name: (file.meta?.name ?? '') as string, isMobile: false },
-            WalletEcosystem.Substrate,
-            'ethereum'
-          );
-
-          resolve(address);
-        } catch (error) {
-          reject({ error: (error as Error).message });
-        }
-      });
-
-    const isPasswordValidated = this.validatePassword(file, password);
-
-    if (isPasswordValidated)
-      return new Promise((resolve, reject) => {
-        try {
-          const { address } = this.state.keyringService.restoreAccount(file, password);
-          const isEthereum = isEthereumAddress(address);
-
-          if (!isEthereum) {
-            this.state.updateNetworkForNewWallet(address);
-            this.state.updateCurrentAccount({ address });
-          }
-
-          resolve(address);
-        } catch (error) {
-          reject({ error: (error as Error).message });
-        }
-      });
-    else throw new Error('Unable to decode using the supplied passphrase');
   }
 
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {

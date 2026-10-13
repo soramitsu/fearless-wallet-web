@@ -92,8 +92,8 @@ export function validatePassword(password: string): Promise<boolean> {
   return sendMessage('pri(accounts.validate)', { password });
 }
 
-export function jsonRestore(file: KeyringPair$Json, password: string): Promise<string> {
-  return sendMessage('pri(accounts.json.restore)', { file, password });
+export function jsonRestore(file: KeyringPair$Json, password: string, linkedEthereumAddress?: string): Promise<string> {
+  return sendMessage('pri(accounts.json.restore)', { file, password, linkedEthereumAddress });
 }
 
 export function isJsonValid(file: KeyringPair$Json, password: string, isSubstrate = true): Promise<ValidateJsonResult> {

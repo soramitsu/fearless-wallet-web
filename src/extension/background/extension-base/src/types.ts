@@ -146,6 +146,8 @@ export interface NetworkJson {
 export interface FWKeyringMeta extends KeyringPair$Meta {
   isMobile?: boolean;
   isMasterAccount?: boolean;
+  /** Imported encrypted entropy is retained but cannot yet prove this primary key. */
+  isMnemonicUnverified?: boolean;
   isMasterPassword?: boolean;
   wcTopic?: string;
   ethereumAddress?: string;

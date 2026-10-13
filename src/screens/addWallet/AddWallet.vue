@@ -749,6 +749,7 @@ export default defineComponent({ name: 'AddWallet',
     },
     async saveKeypairFromJson() {
       const substrateJSON = { ...this.substrateJSON };
+      let linkedEthereumAddress: string | undefined;
 
           if (this.ethereumJson) {
             const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
@@ -762,10 +763,10 @@ export default defineComponent({ name: 'AddWallet',
               return '';
             }
 
-            substrateJSON.meta.ethereumAddress = ethereumAddress;
+            linkedEthereumAddress = ethereumAddress;
           }
 
-          const address = await jsonRestore(substrateJSON, this.passwordSubstrateJson);
+          const address = await jsonRestore(substrateJSON, this.passwordSubstrateJson, linkedEthereumAddress);
 
           return address;
     },

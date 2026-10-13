@@ -49,6 +49,7 @@ export function needsLegacyNetworkEnrollment(pair: KeyringPair): boolean {
   // Native TON phrases, raw keys and remotely signing accounts do not establish
   // a BIP39 root. Existing local account encryption is never replaced here.
   return ['sr25519', 'ed25519', 'ethereum'].includes(pair.type) && !!meta.isMasterPassword &&
+    !meta.isMnemonicUnverified &&
     !meta.isExternal && !meta.isHardware && !meta.isInjected && !meta.isMobile &&
     networks.some((network) => !hasNetwork(meta, network));
 }

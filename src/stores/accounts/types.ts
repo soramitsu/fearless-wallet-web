@@ -14,6 +14,7 @@ export interface Wallet {
   walletEcosystem?: WalletEcosystem;
   isMobile?: boolean;
   isMasterAccount?: boolean;
+  isMnemonicUnverified?: boolean;
   isMasterPassword?: boolean;
   haveEntropy?: boolean;
 }

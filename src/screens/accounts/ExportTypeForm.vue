@@ -1,5 +1,8 @@
 <template>
   <div>
+    <p v-if="selectedWallet.isMnemonicUnverified" role="note" class="json-backup-note">
+      {{ $t('accounts.jsonBackupOnly') }}
+    </p>
     <InfoRow
       v-if="isTonWallet || hasSubstrateMnemonic"
       text="accounts.mnemonic"
@@ -39,8 +42,15 @@ const selectedWallet = computed(() => accountsStore.selectedWallet);
 const isTonWallet = computed(() => selectedWallet.value.isTon);
 
 const hasSubstrateMnemonic = computed(
-  () => !!(selectedWallet.value.isMasterAccount || selectedWallet.value.haveEntropy)
+  () => !selectedWallet.value.isMnemonicUnverified && !!(selectedWallet.value.isMasterAccount || selectedWallet.value.haveEntropy)
 );
 
 const openExport = (type: ExportType) => emit('setExportType', type);
 </script>
+
+<style scoped>
+.json-backup-note {
+  overflow-wrap: anywhere;
+  margin-block: 0 1rem;
+}
+</style>

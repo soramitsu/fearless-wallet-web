@@ -25,6 +25,7 @@ import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
 import { updateAccountMetadata } from './AccountMetadata';
 import { importLocalAccount } from './LocalAccountImport';
+import { decodeJsonAccount } from './JsonAccountImport';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
 import {
   AccountAccessService,
@@ -477,17 +478,33 @@ export class KeyringService {
     return { wallet, accounts, tonWritten };
   }
 
-  restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
-    delete file.meta.genesisHash;
-    delete file.meta.isMasterAccount;
-    delete file.meta.isMasterPassword;
-    delete file.meta.isMobile;
-
-    const ethereumAddress = (file.meta as FWKeyringMeta).ethereumAddress ?? '';
-
-    if (!this.getAccount(ethereumAddress)) delete file.meta.ethereumAddress;
-
-    return keyring.restoreAccount(file, password, withMasterPassword);
+  async restoreAccount(file: KeyringPair$Json, password: string, linkedEthereumAddress?: string): Promise<{ address: string }> {
+    // Capture the caller's backup before waiting; never mutate its encrypted recovery copy.
+    const json = structuredClone(file);
+    return this.tonKeyring.vault.exclusive(async () => {
+      if (!this.password || keyring.keyring.isLocked) throw new Error('Wallet locked. Unlock and retry.');
+      const pair = decodeJsonAccount(json, password);
+      try {
+        if (linkedEthereumAddress) {
+          // Only an explicit restore request may link a separately selected/imported EVM key.
+          // Passive backup metadata cannot hide an unrelated existing wallet from the list.
+          if (pair.type === 'ethereum' || !isEthereumAddress(linkedEthereumAddress)) throw new Error('Invalid linked Ethereum account.');
+          const linked = this.getPair(linkedEthereumAddress);
+          if (!linked || linked.type !== 'ethereum') throw new Error('Linked Ethereum account is unavailable.');
+          const saved = await new AccountsStore().getAndWait(`account:${linkedEthereumAddress.toLowerCase()}`);
+          if (!saved || ['isExternal', 'isHardware', 'isInjected', 'isMobile'].some((flag) => saved.meta[flag])) {
+            throw new Error('Linked Ethereum account is not stored locally.');
+          }
+          const verified = decodeJsonAccount(saved, this.password);
+          try {
+            if (verified.address.toLowerCase() !== linkedEthereumAddress.toLowerCase()) throw new Error('Linked Ethereum account changed.');
+            pair.setMeta({ ethereumAddress: verified.address });
+          } finally { verified.lock(); }
+        }
+        const ecosystem = pair.type === 'ethereum' ? WalletEcosystem.Evm : WalletEcosystem.Substrate;
+        return { address: await importLocalAccount(pair, ecosystem, () => this.password) };
+      } finally { pair.lock(); }
+    });
   }
 
   createFromJson(file: KeyringPair$Json) {
@@ -744,6 +761,10 @@ export class KeyringService {
 
     const passphrase = password ?? this.password;
     const accountPair = this.getPair(address);
+
+    if (accountPair?.meta.isMnemonicUnverified) {
+      throw new Error('This backup does not establish a recovery phrase for this account. Use its encrypted JSON backup.');
+    }
 
     if (needsLegacyPasswordMigration(accountPair)) throw new Error(LEGACY_PASSWORD_REQUIRED);
 

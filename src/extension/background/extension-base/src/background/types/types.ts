@@ -770,6 +770,7 @@ export interface RequestSign {
 }
 
 export interface RequestJsonRestore {
+  linkedEthereumAddress?: string;
   file: KeyringPair$Json;
   password: string;
 }

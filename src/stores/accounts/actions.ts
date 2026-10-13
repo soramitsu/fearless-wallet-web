@@ -47,6 +47,7 @@ export const actions: Actions = {
       name: account?.name ?? '',
       isMobile: account?.isMobile ?? false,
       isMasterAccount: account?.isMasterAccount ?? false,
+      isMnemonicUnverified: account?.isMnemonicUnverified ?? false,
       isMasterPassword: account?.isMasterPassword ?? false,
       haveEntropy: account?.haveEntropy ?? false,
       isSubstrate: account?.walletEcosystem === WalletEcosystem.Substrate,

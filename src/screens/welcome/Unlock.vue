@@ -15,7 +15,7 @@
 
       <div class="logo-container">
         <div class="logo-mark" role="img" :aria-label="t('common.fearlessLogo')">
-          <Icon icon="fw-logo" className="unlock-logo" aria-hidden="true" />
+          <img :src="sunColour" class="unlock-logo" alt="" />
         </div>
 
         <Logo
@@ -75,6 +75,7 @@
 <script lang="ts" setup>
 import { watch, ref, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import sunColour from '@/assets/brand/winged-sun-colour.svg';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
@@ -155,9 +156,9 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     padding: 24px 0 8px;
 
     :deep(.unlock-logo) {
-      width: 160px;
-      height: 70px;
-      color: $plain-white;
+      width: 240px;
+      max-width: 100%;
+      height: auto;
     }
   }
 

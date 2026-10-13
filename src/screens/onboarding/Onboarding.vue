@@ -3,7 +3,8 @@
     <div class="onboarding">
       <template v-if="showStartingScreen">
         <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
-        <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" :alt="$t('common.fearlessLogo')" />
+        <img class="onboarding__logo" src="@/assets/brand/winged-sun-colour.svg" :alt="$t('common.fearlessLogo')" />
+        <BrandSignature animated />
         <h1 class="onboarding__header">
           {{ $t('onboarding.titleFirst') }}
           <span class="onboarding__header--red">{{ $t('onboarding.titleLast') }}</span>
@@ -39,6 +40,7 @@ import { defineComponent } from 'vue';
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
 import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
+import BrandSignature from '@/components/BrandSignature.vue';
 import { Components } from '@/router/routes';
 import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
@@ -48,6 +50,7 @@ export default defineComponent({
     OnboardingStory,
     StoryCounter,
     RecoveryDataLink,
+    BrandSignature,
   },
   data() {
     return {
@@ -107,6 +110,8 @@ export default defineComponent({
 
   &__logo {
     width: 100%;
+    height: auto;
+    padding-block: 24px;
   }
 
   &__header {

@@ -31,7 +31,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { type RouteLocationRaw } from 'vue-router';
 import type { FearlessNft } from '@extension-base/services/nft-service/types';
-import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { Components } from '@/router/routes';
 import router from '@/router';
 

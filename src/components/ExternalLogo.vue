@@ -1,10 +1,11 @@
 <template>
-  <img :src="iconName" :style="style" :alt="altName" :width="width" :height="width" loading="lazy" decoding="async" />
+  <img ref="image" :key="iconName" :src="imageSource" :style="style" :alt="altName" :width="width" :height="width" loading="lazy" decoding="async" @error="imageFailed" />
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useNetworksStore } from '@/stores/networks';
+import fallbackImage from '@/assets/image-placeholder.svg';
 
 type Props = {
   name?: string;
@@ -17,6 +18,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const networksStore = useNetworksStore();
+const image = ref<HTMLImageElement>();
+const failed = ref(false);
 
 const style = computed(() => {
   const styles: Record<string, string> = {};
@@ -42,4 +45,11 @@ const iconName = computed(() => {
 
   return networkIcon || props.name;
 });
+
+watch(iconName, () => { failed.value = false; }, { flush: 'sync' });
+const imageSource = computed(() => !iconName.value || failed.value ? fallbackImage : iconName.value);
+const imageFailed = (event: Event) => {
+  if (event.currentTarget !== image.value || imageSource.value === fallbackImage) return;
+  failed.value = true;
+};
 </script>

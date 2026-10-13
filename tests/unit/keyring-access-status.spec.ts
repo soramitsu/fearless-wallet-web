@@ -43,8 +43,8 @@ vi.mock('@extension-base/utils/crossenv', () => ({
 }));
 
 import { KeyringService } from '@extension-base/services/keyring-service';
-import type { AccountAccessService } from '@extension-base/services/keyring-service/AccountAccess';
 import Extension from '@extension-base/background/handlers/Extension';
+import type { AccountAccessService } from '@extension-base/services/keyring-service/AccountAccess';
 
 const PARENT = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
 const KUSAMA = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';

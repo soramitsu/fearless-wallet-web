@@ -13,6 +13,23 @@ const params = () => [
 ];
 
 describe('EVM request snapshot ownership', () => {
+  it('rejects a context captured before authorization changed instead of requeuing it after reset', async () => {
+    const handler = new EvmRequestHandler({ updateIcon: vi.fn(), popupOpen: vi.fn(),
+      authRequestHandler: { getEvmAuthorizationSnapshot: () => ({ revision: context.authorizationRevision + 1 }) },
+    } as unknown as RequestService);
+    await expect(handler.confirmSign('stale', 'https://public.example', 'eth_sendTransaction', params(), context)).rejects.toThrow();
+    expect(handler.signEvmSubject.value).toEqual({});
+  });
+  it('rejects a pending claimed request on reset and ignores its late signer result', async () => {
+    const handler = create();
+    const signing = handler.confirmSign('reset-pending', 'https://public.example', 'eth_sendTransaction', params(), context);
+    const result = signing.then(() => 'resolved', () => 'rejected');
+    const queued = handler.claimEvmSignRequest('reset-pending');
+    handler.resetWallet();
+    queued.resolve({ id: 'reset-pending', payload: '0x1234' });
+    expect(await result).toBe('rejected');
+    expect(handler.signEvmSubject.value).toEqual({});
+  });
   it('publishes the exact method, account and network and registers before notifying observers', async () => {
     const handler = create();
     let registered = false;

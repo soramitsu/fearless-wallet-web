@@ -126,6 +126,7 @@ beforeEach(async () => {
     cleanupDeletedAccount: vi.fn(),
     setCurrentAccount: vi.fn(),
   } as unknown as State;
+  Object.assign(service.authRequestHandler, { getEvmAuthorizationSnapshot: (origin: string) => state.getEvmAuthorizationSnapshot(origin) });
   substrate = new SubstrateRequestHandler(service, state);
   Object.assign(service, {
     evmRequestHandler: evm,

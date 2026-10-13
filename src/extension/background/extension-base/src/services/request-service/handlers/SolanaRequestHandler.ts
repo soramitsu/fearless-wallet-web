@@ -48,6 +48,10 @@ export default class SolanaRequestHandler {
     return Object.keys(this.solanaRequests).length;
   }
 
+  resetWallet(): void {
+    for (const request of Object.values(this.solanaRequests)) request.reject(new Error('Reset wallet'));
+  }
+
   getSolanaSignRequest(id: string): SolanaRequestsSubjectPayload | undefined {
     return this.solanaRequests[id];
   }

@@ -92,6 +92,8 @@ export class SubstrateRequestHandler {
     _id?: string,
     walletConnectContext?: PolkadotSigningContext
   ): Promise<ResponseSigning> {
+    const resetRevision = this.state.keyringService.walletResetRevision;
+    if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     // Capture caller-owned data before the authorization load can yield.
     const snapshot = structuredClone({ account, url, walletConnectContext });
     const signer = request.snapshot();
@@ -106,6 +108,8 @@ export class SubstrateRequestHandler {
         snapshot.account.address
       );
     }
+    if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision)
+      throw new Error('Wallet changed during signing admission');
     const signingContext = captureSubstrateSigningContext(this.state, this.requestService, signer.payload);
     const signingAccount = captureSubstrateSigningAccount(this.state, signer, snapshot.account);
     snapshot.account.address = signingAccount.address;

@@ -109,6 +109,7 @@ export class WalletConnectDAppService {
   }
 
   public getSession(topic: string): SessionTypes.Struct {
+    if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.sessions.find((el) => el.topic === topic);
 
     if (!session || this.retiredTopics.has(topic)) {
@@ -119,6 +120,7 @@ export class WalletConnectDAppService {
   }
 
   async initPairing(id: string, port?: Port): Promise<string> {
+    if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     if (typeof id !== 'string' || !id || id.length > 128 || this.usedPairingIds.has(id))
       throw new Error('Invalid or reused mobile pairing attempt');
     this.usedPairingIds.add(id);
@@ -298,6 +300,23 @@ export class WalletConnectDAppService {
     await this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
   }
 
+  async resetWallet(): Promise<void> {
+    // finishPairing marks attempts inactive synchronously, including attempts
+    // whose SDK approval is still pending. Their late sessions are retired by
+    // the existing completion path and cannot publish an account or selection.
+    await Promise.all([...this.pairingAttempts.values()].map((attempt) => this.finishPairing(attempt)));
+    await this.initApp();
+    const topics = (this.app?.client.session.values ?? []).map((session) => session.topic);
+    for (const topic of topics) {
+      this.invalidateSession(topic);
+      this.state.walletConnectService.invalidateSession(topic);
+    }
+    await Promise.all(topics.map((topic) => new WalletConnectRetiredSessions().retire(topic)));
+    // Durable local retirement is authoritative even while the relay is offline.
+    for (const topic of topics)
+      void this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
+  }
+
   availableNetworks(address: string) {
     const pairing = this.state.keyringService.getAddress(address);
     if (!pairing || typeof pairing.meta.wcTopic !== 'string') return [];
@@ -325,6 +344,9 @@ export class WalletConnectDAppService {
     this.invalidateSession(topic);
     this.state?.walletConnectService?.invalidateSession(topic);
     await new WalletConnectRetiredSessions().retire(topic);
+    // Whole reset owns the vault queue and the final account snapshot. Let it
+    // remove public records, without a reentrant deletion or fallback selection.
+    if (this.state.keyringService.isResetting) return;
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {

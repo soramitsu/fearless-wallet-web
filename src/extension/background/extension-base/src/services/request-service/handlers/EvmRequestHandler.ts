@@ -36,6 +36,11 @@ export default class EvmRequestHandler {
     return Object.keys(this.evmRequests).length;
   }
 
+  resetWallet(): void {
+    for (const request of Object.values(this.evmRequests)) request.reject(new Error('Reset wallet'));
+    for (const request of [...this.wcRequests.values()]) request.reject(new Error('Reset wallet'));
+  }
+
   getSignWCRequest(approvalId: string): WCSignRequest | undefined {
     return this.wcRequests.get(approvalId);
   }
@@ -108,6 +113,10 @@ export default class EvmRequestHandler {
     context: EvmSigningContext
   ): Promise<ResponseSigning> {
     return new Promise<ResponseSigning>((resolve, reject): void => {
+      if (this.requestService.keyringService?.isResetting) throw new Error('Wallet reset is in progress');
+      const authorization = this.requestService.authRequestHandler?.getEvmAuthorizationSnapshot(url);
+      if (authorization && authorization.revision !== context.authorizationRevision)
+        throw new Error('Signing authorization changed; request approval again');
       if (this.evmRequests[id]) throw new Error('Duplicate EVM request ID');
       const snapshot = structuredClone({ url, method, data: params, id, ...context });
       let settled = false;
@@ -139,6 +148,7 @@ export default class EvmRequestHandler {
     context?: WalletConnectSigningContext
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {
+      if (this.requestService.keyringService?.isResetting) throw new Error('Wallet reset is in progress');
       if (typeof event.topic !== 'string' || !event.topic || !Number.isSafeInteger(event.id) || event.id < 0)
         throw new Error('Invalid WalletConnect request identity');
       if ([...this.wcRequests.values()].some(({ request }) => request.topic === event.topic && request.id === event.id))

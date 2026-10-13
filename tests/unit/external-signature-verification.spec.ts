@@ -78,6 +78,7 @@ beforeEach(() => {
       getPair: vi.fn(),
     },
   } as unknown as State;
+  Object.assign(service.authRequestHandler, { getEvmAuthorizationSnapshot: (origin: string) => state.getEvmAuthorizationSnapshot(origin) });
   evm = new EvmRequestHandler(service);
   substrate = new SubstrateRequestHandler(service, state);
   Object.assign(service, {

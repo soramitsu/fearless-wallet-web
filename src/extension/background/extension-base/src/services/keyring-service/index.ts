@@ -215,6 +215,14 @@ export class KeyringService {
     return this.selectionRevision ?? 0;
   }
 
+  get isResetting(): boolean {
+    return !!this.resetting;
+  }
+
+  get walletResetRevision(): number {
+    return this.resetRevision ?? 0;
+  }
+
   private removingAccounts = new Set<string>();
   private removalRevisions = new Map<string, number>();
 

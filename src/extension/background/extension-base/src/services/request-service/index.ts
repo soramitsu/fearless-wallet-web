@@ -64,6 +64,19 @@ export class RequestService {
     this.popupHandler.updateIcon(shouldClose);
   }
 
+  public async resetWallet(): Promise<void> {
+    // Revocation vetoes existing grants synchronously, then acknowledges its
+    // durable write. Pending signing promises are settled before keys disappear.
+    const revoked = this.authRequestHandler.resetWallet();
+    this.substrateRequestHandler.resetWallet();
+    this.evmRequestHandler.resetWallet();
+    this.solanaRequestHandler.resetWallet();
+    this.metadataRequestHandler.resetWallet();
+    this.connectWCRequestHandler.resetWallet();
+    this.notSupportWCRequestHandler.resetWallet();
+    await revoked;
+  }
+
   // Popup
   public popupOpen(path?: string): void {
     // Not open new popup and use existed
@@ -96,6 +109,7 @@ export class RequestService {
   }
 
   public injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
+    if (this.keyringService.isResetting) return Promise.reject(new Error('Wallet reset is in progress'));
     return this.metadataRequestHandler.injectMetadata(url, request);
   }
 
@@ -233,6 +247,7 @@ export class RequestService {
   }
 
   public addConnectWCRequest(request: WalletConnectSessionRequest): void {
+    if (this.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     return this.connectWCRequestHandler.addConnectWCRequest(request);
   }
 
@@ -254,6 +269,7 @@ export class RequestService {
   }
 
   public addNotSupportWCRequest(request: WalletConnectNotSupportRequest): void {
+    if (this.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     return this.notSupportWCRequestHandler.addNotSupportWCRequest(request);
   }
 

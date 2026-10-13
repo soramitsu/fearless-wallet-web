@@ -60,6 +60,7 @@ async function open() {
 }
 
 beforeEach(() => {
+  Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 0 });
   fixture.data = {};
   fixture.failRead = false;
   fixture.failWrite = false;
@@ -80,6 +81,59 @@ beforeEach(() => {
   vi.spyOn(Provider, 'init').mockResolvedValue({ client } as unknown as Provider);
   vi.spyOn(WalletConnect, 'init').mockResolvedValue(client as unknown as WalletConnect);
   vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %s role', (role) => {
+  async function services() {
+    const mobile = await open();
+    const incoming = await openIncoming();
+    Object.assign(state, { walletConnectDappService: mobile, walletConnectService: incoming });
+    return { mobile, incoming };
+  }
+  it('acknowledges durable retirement and keeps retained SDK sessions revoked after restart', async () => {
+    const all = await services();
+    fixture.holdWrite = true;
+    let done = false;
+    const result = observe(all[role].resetWallet().then(() => { done = true; }));
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    expect(done).toBe(false);
+    expect(() => all.mobile.getSession(topic)).toThrow();
+    expect(() => all.incoming.getSession(topic)).toThrow();
+    fixture.writes.shift()!();
+    expect(await result).toBe('resolved');
+    expect(fixture.data[key]).toMatchObject({ topics: [topic] });
+    const restarted = await services();
+    expect(() => restarted.mobile.getSession(topic)).toThrow();
+    expect(() => restarted.incoming.getSession(topic)).toThrow();
+  });
+  it('rejects a failed retirement and retries the raw SDK record even after local invalidation', async () => {
+    const all = await services();
+    fixture.failWrite = true;
+    expect(await observe(all[role].resetWallet())).toBe('rejected');
+    expect(() => all[role].getSession(topic)).toThrow();
+    fixture.failWrite = false;
+    await all[role].resetWallet();
+    expect(fixture.data[key]).toMatchObject({ topics: [topic] });
+  });
+});
+
+describe('incoming session approval across reset', () => {
+  it('retires a session whose SDK approval completes after reset', async () => {
+    const incoming = await openIncoming();
+    let finish!: (result: { topic: string }) => void;
+    Object.assign(client, { approve: vi.fn(() => new Promise((resolve) => { finish = resolve; })) });
+    const approved = observe(incoming.approveSession({ id: 1, namespaces: {} }));
+    Object.assign(state.keyringService, { isResetting: true, walletResetRevision: 1 });
+    await incoming.resetWallet();
+    Object.assign(state.keyringService, { isResetting: false });
+    const lateTopic = 'public-late-approved-topic';
+    client.session.values.push({ topic: lateTopic } as SessionTypes.Struct);
+    finish({ topic: lateTopic });
+    expect(await approved).toBe('rejected');
+    expect(() => incoming.getSession(lateTopic)).toThrow();
+    const restarted = await openIncoming();
+    expect(() => restarted.getSession(lateTopic)).toThrow();
+  });
 });
 afterEach(async () => {
   fixture.failWrite = false;

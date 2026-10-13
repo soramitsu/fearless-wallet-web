@@ -77,6 +77,11 @@ export class AuthRequestHandler {
     return Object.keys(this.authRequests).length;
   }
 
+  private assertWalletAvailable(resetRevision = this.keyringService.walletResetRevision): void {
+    if (this.keyringService.isResetting || this.keyringService.walletResetRevision !== resetRevision)
+      throw new Error('Wallet changed during authorization');
+  }
+
   private get authValues() {
     return Object.values(this.authRequests);
   }
@@ -153,6 +158,7 @@ export class AuthRequestHandler {
   // Admission waits for loading once. Final signing checks read this snapshot
   // synchronously, so no storage await separates authorization from submission.
   public getEvmAuthorizationSnapshot(url: string): { revision: number; authorization?: AuthUrlInfo } {
+    this.assertWalletAvailable();
     if (!this.authorizeLoaded) throw new Error('Site authorization is not loaded');
     const origin = stripUrl(url);
     return {
@@ -182,6 +188,7 @@ export class AuthRequestHandler {
     url: string,
     protocol: 'substrate' | 'solana'
   ): { revision: number; authorization?: AuthUrlInfo } {
+    this.assertWalletAvailable();
     if (!this.authorizeLoaded) throw new Error('Site authorization is not loaded');
     const origin = stripUrl(url);
     return {
@@ -241,8 +248,10 @@ export class AuthRequestHandler {
   }
 
   public async mutateAuthorizations(update: (entries: AuthUrls) => void): Promise<AuthUrls> {
+    const resetRevision = this.keyringService.walletResetRevision;
+    this.assertWalletAvailable(resetRevision);
     await this.getAuthList();
-    await this.authorizeWrites!.mutate(update);
+    await this.authorizeWrites!.mutate((entries) => { this.assertWalletAvailable(resetRevision); update(entries); });
     return structuredClone(this.authorizeCached);
   }
 
@@ -261,6 +270,7 @@ export class AuthRequestHandler {
     };
     return {
       resolve: async ({ authorizedAccounts }: AuthResponse): Promise<void> => {
+        this.assertWalletAvailable();
         if (approving) throw new Error('Site authorization is already being saved');
         const request = this.authRequests[id];
         if (!request) throw new Error('Unable to find authorization request');
@@ -330,7 +340,10 @@ export class AuthRequestHandler {
   };
 
   public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
+    const resetRevision = this.keyringService.walletResetRevision;
+    this.assertWalletAvailable(resetRevision);
     await this.getAuthList();
+    this.assertWalletAvailable(resetRevision);
     const authList = this.authorizeCached;
 
     const accountAuthType = request.accountAuthType ?? 'substrate';

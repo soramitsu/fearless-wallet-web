@@ -2436,7 +2436,12 @@ export default class Extension extends FWExtensionBase {
         return this.state.keyringService.getPassword();
 
       case 'pri(keyring.reset)':
-        return this.state.keyringService.resetWallet();
+        return this.state.keyringService.resetWallet(async () => {
+          await this.state.requestService.resetWallet();
+          await this.state.walletConnectDappService.resetWallet();
+          await this.state.walletConnectService.resetWallet();
+          await this.state.setCurrentAccount(null);
+        });
 
       case 'pri(keyring.getAccessStatus)':
         return this.state.keyringService.getAccessStatus();

@@ -131,7 +131,7 @@ describe('Solana origin-scoped authorization', () => {
       popupOpen: vi.fn(),
       updateIcon: vi.fn(),
     } as unknown as RequestService;
-    const handler = new SubstrateRequestHandler(requestService, {} as State);
+    const handler = new SubstrateRequestHandler(requestService, { keyringService: {} } as State);
 
     await expect(
       handler.sign(URL, { snapshot: () => ({}) } as never, { address: 'another-account' } as never)

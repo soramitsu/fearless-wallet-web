@@ -256,6 +256,19 @@ describe('mobile pairing negotiation and approved identities', () => {
 });
 
 describe('pairing attempt ownership', () => {
+  it('cancels a pending attempt on reset and retires its late SDK approval without importing it', async () => {
+    Object.assign(state, { walletConnectService: { invalidateSession: vi.fn() } });
+    await begin();
+    Object.assign(state.keyringService, { isResetting: true });
+    await service.resetWallet();
+    await expect(service.initPairing('during-reset', port)).rejects.toThrow();
+    Object.assign(state.keyringService, { isResetting: false });
+    await settle();
+    noImport();
+    expect(() => service.getSession(session.topic)).toThrow();
+    expect(callbacks.first).not.toHaveBeenCalledWith({ status: true });
+    expect(await new WalletConnectRetiredSessions().readTopics()).toContain(session.topic);
+  });
   it('consumes approval once and rejects a second subscriber without replacing the owner', async () => {
     const uri = await begin();
     await service.subscribePairing(uri, 'second', port);

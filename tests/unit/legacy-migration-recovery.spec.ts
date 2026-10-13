@@ -107,6 +107,18 @@ beforeEach(() => {
 });
 
 describe('per-account request ownership', () => {
+  it('validates a standalone Google Ethereum file without the Substrate-only address restriction', async () => {
+    const json = { address: '0x02' + '11'.repeat(32), encoding: { content: ['pkcs8', 'ethereum'] } } as never;
+    mocks.validateJson.mockImplementation(async (_file, _password, isSubstrate = true) => ({ value: !isSubstrate }));
+    mocks.restoreJson.mockResolvedValue(CHILD);
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: CHILD, password: 'fixture', json }] }, global });
+    await wrapper.vm.importFromGoogle(0);
+    expect(mocks.validateJson).toHaveBeenCalledExactlyOnceWith(json, 'fixture', false);
+    expect(mocks.selectAccount).toHaveBeenCalledExactlyOnceWith(CHILD);
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: false, isComplete: true }]);
+    wrapper.unmount();
+  });
+
   it('prevents duplicate requests before parent props update and follows the same account after rows reorder', async () => {
     let finish!: (value: boolean) => void;
     mocks.migrate.mockReturnValue(new Promise<boolean>((resolve) => { finish = resolve; }));
@@ -186,6 +198,13 @@ describe('per-account request ownership', () => {
     await wrapper.vm.importFromGoogle(0, true);
     expect(mocks.restoreJson).toHaveBeenCalledExactlyOnceWith(json, 'fixture', undefined);
     expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: false, isComplete: true, primaryOnly: true }]);
+    wrapper.unmount();
+  });
+
+  it('does not offer an inert download retry after explicit primary-only completion', () => {
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: PARENT, active: true, isComplete: true, primaryOnly: true, json: {} as never, ethWalletID: 'missing-child' }] }, global });
+    expect(wrapper.find('.backup-loading').exists()).toBe(false);
+    expect(wrapper.text()).toContain('addWallet.google.importFileOnlyDone');
     wrapper.unmount();
   });
 

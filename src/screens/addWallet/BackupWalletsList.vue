@@ -52,7 +52,7 @@
               </div>
             </transition>
 
-            <div v-if="isGoogle && file.active && missingBackup(file)" class="backup-loading">
+            <div v-if="isGoogle && file.active && !file.isComplete && missingBackup(file)" class="backup-loading">
               <FButton
                 text="ux.retry"
                 type="secondary"
@@ -166,7 +166,8 @@ export default defineComponent({
       let success = false;
       try {
         if (!json || !password) return;
-        const { value: valid } = await isJsonValid(json, password);
+        // Cloud files can independently contain either Substrate or Ethereum keys.
+        const { value: valid } = await isJsonValid(json, password, false);
         if (!valid || this.operationIndex(operation) < 0) return;
         let linkedEthereumAddress: string | undefined;
         if (ethJson && !primaryOnly) {

@@ -171,7 +171,8 @@ export default defineComponent({
         if (!json || !password) return;
         // Cloud files can independently contain either Substrate or Ethereum keys.
         const validation = await isJsonValid(json, password, false);
-        if (!validation.value && validation.errorType === 'jsonPassword') errorDescription = 'common.invalidPassword';
+        if (!validation.value && 'errorType' in validation && validation.errorType === 'jsonPassword')
+          errorDescription = 'common.invalidPassword';
         if (!validation.value || this.operationIndex(operation) < 0) return;
         let linkedEthereumAddress: string | undefined;
         if (ethJson && !primaryOnly) {

@@ -47,6 +47,7 @@ export function toCurrentAccountInfo({ address, meta }: MainAccount): CurrentAcc
     name,
     ethereumAddress,
     isMobile,
+    wcTopic,
     bitcoinAddress,
     bitcoinTestnetAddress,
     solanaAddress,
@@ -65,6 +66,7 @@ export function toCurrentAccountInfo({ address, meta }: MainAccount): CurrentAcc
     irohaAddress,
     irohaPublicKeyHex,
     isMobile: isMobile!,
+    wcTopic: typeof wcTopic === 'string' ? wcTopic : undefined,
     walletEcosystem: walletEcosystem!,
   };
 }

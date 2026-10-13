@@ -110,7 +110,7 @@ beforeEach(async () => {
         records.push({ address, meta });
       }),
     },
-    updateCurrentAccount: vi.fn(),
+    updateCurrentAccount: vi.fn(async (_request, _isNew, context) => { context?.assertCurrent(); context?.onCommitted?.(); return true; }),
     subscriptionService: {
       createSubscription: vi.fn((id) => (callbacks[id] = vi.fn())),
       setUnsubscriptionHandle: vi.fn((id, cb) => {

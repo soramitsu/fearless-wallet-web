@@ -1,3 +1,4 @@
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -225,33 +226,46 @@ export default class State {
     void this.requestService.getAuthorize(cb).catch(() => cb({}));
   }
 
-  async onInstall() {
+  private async selectableAccounts() {
     const accounts = this.keyringService.getAllMainAccounts();
+    if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
+    const retired = new Set(await new WalletConnectRetiredSessions().readTopics());
+    return this.keyringService.getAllMainAccounts().filter((account) => !account.meta.isMobile || !retired.has(account.meta.wcTopic as string));
+  }
+
+  async onInstall() {
+    const revision = this.keyringService.currentAccountRevision;
+    const selected = this.currentAccount;
+    const accounts = await this.selectableAccounts();
+    if (revision !== this.keyringService.currentAccountRevision || selected !== this.currentAccount) return;
     const storedAccount = existingCurrentAccount(this.currentAccount, accounts);
 
     if (storedAccount) {
-      this.setCurrentAccount(storedAccount);
+      await this.setCurrentAccount(storedAccount);
 
       return;
     }
 
     const account = pickDefaultCurrentAccount(accounts);
 
-    this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
+    await this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
   }
 
   // Start-up calls this once the wallet storage has been read. Chrome sends onInstalled only
   // on install or update, so a missing selection, or one whose account was removed, is
   // replaced here as well. A valid selection is not written again.
-  ensureCurrentAccount() {
-    const accounts = this.keyringService.getAllMainAccounts();
+  async ensureCurrentAccount(): Promise<void> {
+    const revision = this.keyringService.currentAccountRevision;
+    const selected = this.currentAccount;
+    const accounts = await this.selectableAccounts();
+    if (revision !== this.keyringService.currentAccountRevision || selected !== this.currentAccount) return;
 
     if (existingCurrentAccount(this.currentAccount, accounts)) return;
     if (!this.currentAccount && !accounts.length) return;
 
     const account = pickDefaultCurrentAccount(accounts);
 
-    this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
+    await this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
   }
 
   async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
@@ -557,15 +571,16 @@ export default class State {
     this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
-  updateCurrentAccount(
+  async updateCurrentAccount(
     { address, walletEcosystem = WalletEcosystem.Substrate }: RequestUpdateCurrentAccount,
-    isNew = true
-  ): boolean {
+    isNew = true,
+    selectionContext?: { assertCurrent: () => void; onCommitted?: () => void }
+  ): Promise<boolean> {
     if (isEthereumAddress(address)) return false;
 
     this.balanceService.generateDefaultBalance(address, walletEcosystem);
 
-    this.saveCurrentAccountAddress(address, walletEcosystem, () => {
+    await this.saveCurrentAccountAddress(address, walletEcosystem, () => {
       this.keyringService.triggerWalletsSubscription(address, walletEcosystem);
 
       const activeValue =
@@ -577,46 +592,48 @@ export default class State {
 
       this.nftService.publishNfts();
       if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
-    });
+      selectionContext?.onCommitted?.();
+    }, selectionContext?.assertCurrent);
 
     return true;
   }
 
-  setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
-    this.keyringService.setCurrentAccount(data);
-
-    // logic for Sora library
-    this.poolsService.unsubscribePools();
-
-    const isTonWallet = data?.walletEcosystem === WalletEcosystem.Ton;
-
-    // logic for Sora library
-    if (!isTonWallet && data?.address && !data.isMobile && data.walletEcosystem === 'substrate') {
-      const pair = this.keyringService.getPair(data?.address)!;
-
+  async setCurrentAccount(
+    data: CurrentAccountState, callback: () => void = () => null, assertCurrent?: () => void
+  ): Promise<void> {
+    const updateContext = (committed: CurrentAccountState) => {
+      this.poolsService.unsubscribePools();
+      const pair = committed?.address && !committed.isMobile && committed.walletEcosystem === WalletEcosystem.Substrate
+        ? this.keyringService.getPair(committed.address) : undefined;
+      const soraAccount = pair ? { json: null, pair } : undefined;
+      // The SDK exposes these fields as protected; clear the old signing pair
+      // when the selected wallet has no local Substrate key, including recovery.
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.account = { json: null, pair };
-
+      apiSora.account = soraAccount;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.bridgeProxy.sub.account = { json: null, pair };
-    }
-
-    this.updateServiceInfo();
-    callback();
+      apiSora.bridgeProxy.sub.account = soraAccount;
+      this.updateServiceInfo();
+    };
+    await this.keyringService.setCurrentAccount(data, (committed) => {
+      updateContext(committed);
+      callback();
+    }, assertCurrent, updateContext);
   }
 
-  saveCurrentAccountAddress(
+  async saveCurrentAccountAddress(
     address: string,
     walletEcosystem: WalletEcosystem,
-    callback?: (account: CurrentAccountState) => void
+    callback?: (account: CurrentAccountState) => void,
+    assertCurrent?: () => void
   ) {
-    if (address === '') return this.setCurrentAccount(null);
+    if (address === '') return this.setCurrentAccount(null, () => callback?.(null), assertCurrent);
 
     const {
       meta: {
         isMobile,
+        wcTopic,
         name,
         ethereumAddress,
         bitcoinAddress,
@@ -630,6 +647,7 @@ export default class State {
     const accountInfo: CurrentAccountInfo = {
       address,
       isMobile: !!(isMobile as boolean),
+      wcTopic: typeof wcTopic === 'string' ? wcTopic : undefined,
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
       bitcoinAddress: bitcoinAddress as string | undefined,
@@ -640,7 +658,7 @@ export default class State {
       walletEcosystem,
     };
 
-    this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
+    await this.setCurrentAccount(accountInfo, () => callback?.(accountInfo), assertCurrent);
   }
 
   cleanupDeletedAccount(address: string) {

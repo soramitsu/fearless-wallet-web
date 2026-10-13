@@ -43,7 +43,7 @@ import { TonKeyringService } from '@extension-base/services/keyring-service/TonK
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import Extension from '@extension-base/background/handlers/Extension';
-import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { KeyringJson, KeyringAddressType } from '@subwallet/ui-keyring/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
@@ -298,12 +298,12 @@ describe('actual direct mobile import handler', () => {
         address: 'public-original-selection', ethereumAddress: '', name: 'Public selection',
         isMobile: false, walletEcosystem: WalletEcosystem.Substrate,
       }),
-      currentAccountStore: { set: vi.fn() },
+      currentAccountStore: new CurrentAccountStore(),
     });
     const state = {
       keyringService: service,
       get currentAccount() { return service.currentAccountSubject.value; },
-      set currentAccount(value: CurrentAccountState) { service.setCurrentAccount(value); },
+      set currentAccount(value: CurrentAccountState) { void track(service.setCurrentAccount(value)); },
       updateCurrentAccount: vi.fn(),
     };
     const extension = Object.create(Extension.prototype) as Extension;
@@ -332,7 +332,7 @@ describe('actual direct mobile import handler', () => {
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();
     await drain();
     expect(await result).toEqual({ value: true });
-    expect(state.updateCurrentAccount).toHaveBeenCalledWith({ address });
+    expect(state.updateCurrentAccount).toHaveBeenCalledWith({ address }, true, { assertCurrent: expect.any(Function) });
   });
 
   it('does not select or acknowledge a failed direct write', async () => {

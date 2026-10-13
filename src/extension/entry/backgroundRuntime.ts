@@ -109,7 +109,7 @@ const loadWalletStorage = retryableInitialization(async () => {
   }
 
   try {
-    state.ensureCurrentAccount();
+    await state.ensureCurrentAccount();
   } catch (error) {
     console.error('Default account could not be selected', error);
   }

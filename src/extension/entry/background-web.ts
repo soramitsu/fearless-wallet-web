@@ -33,7 +33,7 @@ const initialize = retryableInitialization(async () => {
   // The web wallet has no install event, so start-up is where a missing selection is repaired.
   // A failure here must not keep the wallet from starting.
   try {
-    state.ensureCurrentAccount();
+    await state.ensureCurrentAccount();
   } catch (error) {
     console.error('Default account could not be selected', error);
   }

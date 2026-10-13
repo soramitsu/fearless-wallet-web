@@ -9,7 +9,8 @@ import {
 import { accounts as accountsObservable } from '@subwallet/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@subwallet/ui-keyring/observable/addresses';
 import { BehaviorSubject } from 'rxjs';
-import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
+import CurrentAccountStore, { CurrentAccountContextChanged, type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
@@ -104,6 +105,7 @@ export class KeyringService {
   private accountAccess?: AccountAccessService;
   private password = '';
   private selectionRevision = 0;
+  private selectionRequestRevision = 0;
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
   private enrollmentGate: (address: string) => boolean = () => true;
@@ -162,12 +164,20 @@ export class KeyringService {
 
   // A failed read rejects instead of leaving start-up waiting; start-up calls this again.
   async restoreCurrentAccount(): Promise<void> {
-    const currentAccount = await this.currentAccountStore.getAndWait('CurrentAccountInfo');
-
-    if (currentAccount) {
-      this.selectionRevision = this.currentAccountRevision + 1;
-      this.currentAccountSubject.next(currentAccount);
+    const request = (this.selectionRequestRevision ?? 0) + 1;
+    this.selectionRequestRevision = request;
+    const currentAccount = await this.currentAccountStore.readSelection();
+    // A cancelled mobile selection whose compensation failed cannot regain
+    // authority after worker restart, even if the SDK retains its old session.
+    const retired = currentAccount?.isMobile && currentAccount.wcTopic &&
+      (await new WalletConnectRetiredSessions().readTopics()).includes(currentAccount.wcTopic);
+    if (this.selectionRequestRevision !== request) return;
+    if (retired) {
+      await this.setCurrentAccount(null, undefined, () => {});
+      return;
     }
+    this.selectionRevision = this.currentAccountRevision + 1;
+    this.currentAccountSubject.next(currentAccount);
   }
 
   get addressSubject() {
@@ -199,10 +209,41 @@ export class KeyringService {
     return this.selectionRevision ?? 0;
   }
 
-  setCurrentAccount(currentAccountData: CurrentAccountState) {
+  async setCurrentAccount(
+    currentAccountData: CurrentAccountState,
+    onCommitted?: (account: CurrentAccountState) => void,
+    assertCurrent?: () => void,
+    onRecoveryState?: (account: CurrentAccountState) => void
+  ): Promise<void> {
+    const previous = this.currentAccountSubject.value;
+    const request = (this.selectionRequestRevision ?? 0) + 1;
+    this.selectionRequestRevision = request;
+    // A pending choice invalidates earlier selection-bound work immediately.
     this.selectionRevision = this.currentAccountRevision + 1;
-    this.currentAccountSubject.next(currentAccountData);
-    this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
+    const publish = (value: CurrentAccountState) => {
+      this.selectionRevision = this.currentAccountRevision + 1;
+      this.currentAccountSubject.next(value);
+    };
+    await this.currentAccountStore.select(currentAccountData, (committed) => {
+      publish(committed);
+      onCommitted?.(committed);
+    }, assertCurrent ? () => {
+      if (this.selectionRequestRevision !== request || this.currentAccountSubject.value !== previous)
+        throw new CurrentAccountContextChanged();
+      assertCurrent();
+    } : undefined, () => {
+      publish(null);
+      onRecoveryState?.(null);
+    }, (value) => {
+      if (this.currentAccountSubject.value !== previous) {
+        publish(value);
+        onRecoveryState?.(value);
+      }
+    });
+  }
+
+  settleCurrentAccount(): Promise<void> {
+    return this.currentAccountStore.settleSelection();
   }
 
   // ui-keyring's loadAll() works once per service worker: it ends by initialising its

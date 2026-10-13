@@ -1,7 +1,9 @@
+import { CurrentAccountContextChanged } from '@extension-base/stores/CurrentAccountStore';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
 import { ecdsaRecordKeys } from '@extension-base/stores/EcdsaAccountRecords';
+import { isSameAddress } from '@extension-base/utils';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   RequestAccountExport,
@@ -97,14 +99,18 @@ export default class FWExtensionBase {
           if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
-      if (this.state.currentAccount) {
-        this.state.setCurrentAccount(
+      if (this.state.currentAccount && isSameAddress(this.state.currentAccount.address, address)) {
+        await this.state.setCurrentAccount(
           {
             ...this.state.currentAccount,
             ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
-          cb
-        );
+          cb,
+          () => {}
+        ).catch((error: unknown) => {
+          // Metadata is durable; a newer wallet choice owns selection now.
+          if (!(error instanceof CurrentAccountContextChanged)) throw error;
+        });
       }
 
       this.state.updateServiceInfo();

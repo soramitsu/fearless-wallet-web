@@ -26,6 +26,7 @@ type PairingAttempt = {
   completing?: boolean;
   persistingTopic?: string;
   retirement?: Promise<void>;
+  selection?: Promise<boolean>;
   uri?: string;
   session?: SessionTypes.Struct;
   priorTopics: Set<string>;
@@ -202,7 +203,13 @@ export class WalletConnectDAppService {
     attempt.active = false;
     // Keep a failed retirement available for an explicit cancellation retry.
     // Set this before cancelSubscription, whose callback can re-enter here.
-    attempt.retirement = (result?.status ? Promise.resolve() : this.discardPairingSession(attempt))
+    attempt.retirement = (result?.status ? Promise.resolve() : (async () => {
+      await this.discardPairingSession(attempt);
+      if (attempt.selection) {
+        await attempt.selection.catch(() => {});
+        await this.state.keyringService.settleCurrentAccount();
+      }
+    })())
       .then(() => { this.pairingAttempts.delete(attempt.id); })
       .finally(() => { attempt.retirement = undefined; });
     if (wasActive) {
@@ -222,12 +229,16 @@ export class WalletConnectDAppService {
     try {
       const session = attempt.session;
       const revision = this.getSessionRevision(session.topic);
-      const assertCurrent = () => {
-        if (!attempt.active || this.state.currentAccount?.address !== attempt.currentAddress ||
-          this.state.keyringService.currentAccountRevision !== attempt.currentAccountRevision ||
-          attempt.priorTopics.has(session.topic) || this.getSessionRevision(session.topic) !== revision)
+      const assertSession = () => {
+        if (!attempt.active || attempt.priorTopics.has(session.topic) || this.getSessionRevision(session.topic) !== revision)
           throw new Error('Mobile pairing context changed');
         captureMobilePairingAccount(this, session);
+      };
+      const assertCurrent = () => {
+        assertSession();
+        if (this.state.currentAccount?.address !== attempt.currentAddress ||
+          this.state.keyringService.currentAccountRevision !== attempt.currentAccountRevision)
+          throw new Error('Mobile pairing selection changed');
       };
       assertCurrent();
       const account = captureMobilePairingAccount(this, session);
@@ -269,8 +280,11 @@ export class WalletConnectDAppService {
       // A submitted public record can outlive cancellation; retain it, retire its
       // session and refuse late selection/success instead of blindly deleting it.
       assertCurrent();
-      this.state.updateCurrentAccount({ address: encodedAddress });
-      await this.finishPairing(attempt, { status: true });
+      attempt.selection = this.state.updateCurrentAccount({ address: encodedAddress }, true, {
+        assertCurrent: assertSession,
+        onCommitted: () => { void this.finishPairing(attempt, { status: true }).catch(console.error); },
+      });
+      await attempt.selection;
     } catch {
       await this.finishPairing(attempt, { status: false, message: duplicate ? 'duplicate' : 'unavailable' });
     }
@@ -318,8 +332,8 @@ export class WalletConnectDAppService {
       if (this.state.currentAccount?.address === account.address) {
         const accounts = this.state.keyringService.getAllSubstrateAccounts();
 
-        if (accounts.length) this.state.updateCurrentAccount({ address: accounts[0].address });
-        else this.state.setCurrentAccount(null);
+        if (accounts.length) await this.state.updateCurrentAccount({ address: accounts[0].address });
+        else await this.state.setCurrentAccount(null);
       }
 
       this.state.cleanupDeletedAccount(account.address);

@@ -47,7 +47,7 @@ describe('default current account', () => {
 
 describe('selecting a current account after install or update', () => {
   function install(currentAccount: CurrentAccountState, accounts: MainAccount[]) {
-    const state = { currentAccount, keyringService: { getAllMainAccounts: () => accounts }, setCurrentAccount: vi.fn() };
+    const state = Object.setPrototypeOf({ currentAccount, keyringService: { getAllMainAccounts: () => accounts }, setCurrentAccount: vi.fn() }, State.prototype);
     return State.prototype.onInstall.call(state as unknown as State).then(() => state.setCurrentAccount);
   }
 
@@ -93,29 +93,29 @@ describe('selecting a current account after install or update', () => {
 });
 
 describe('repairing the selection at every start-up', () => {
-  function start(currentAccount: CurrentAccountState, accounts: MainAccount[]) {
-    const state = { currentAccount, keyringService: { getAllMainAccounts: () => accounts }, setCurrentAccount: vi.fn() };
-    State.prototype.ensureCurrentAccount.call(state as unknown as State);
+  async function start(currentAccount: CurrentAccountState, accounts: MainAccount[]) {
+    const state = Object.setPrototypeOf({ currentAccount, keyringService: { getAllMainAccounts: () => accounts }, setCurrentAccount: vi.fn() }, State.prototype);
+    await State.prototype.ensureCurrentAccount.call(state as unknown as State);
     return state.setCurrentAccount;
   }
 
-  it('writes nothing while the stored selection exists or there is nothing to select', () => {
-    expect(start(toCurrentAccountInfo(SUBSTRATE), [EVM, SUBSTRATE])).not.toHaveBeenCalled();
-    expect(start(toCurrentAccountInfo(EVM), [EVM])).not.toHaveBeenCalled();
-    expect(start(null, [])).not.toHaveBeenCalled();
+  it('writes nothing while the stored selection exists or there is nothing to select', async () => {
+    expect(await start(toCurrentAccountInfo(SUBSTRATE), [EVM, SUBSTRATE])).not.toHaveBeenCalled();
+    expect(await start(toCurrentAccountInfo(EVM), [EVM])).not.toHaveBeenCalled();
+    expect(await start(null, [])).not.toHaveBeenCalled();
   });
 
-  it('selects the default account when none is stored, never a standalone EVM account before others', () => {
-    expect(start(null, [EVM, TON, SUBSTRATE])).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+  it('selects the default account when none is stored, never a standalone EVM account before others', async () => {
+    expect(await start(null, [EVM, TON, SUBSTRATE])).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       address: SUBSTRATE.address,
       walletEcosystem: WalletEcosystem.Substrate,
     }));
   });
 
-  it('replaces a selection whose account was removed, and clears it when no account remains', () => {
+  it('replaces a selection whose account was removed, and clears it when no account remains', async () => {
     const removed = toCurrentAccountInfo(LEGACY_SUBSTRATE);
-    expect(start(removed, [EVM, TON])).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ address: TON.address }));
-    expect(start(removed, [])).toHaveBeenCalledExactlyOnceWith(null);
+    expect(await start(removed, [EVM, TON])).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ address: TON.address }));
+    expect(await start(removed, [])).toHaveBeenCalledExactlyOnceWith(null);
   });
 });
 

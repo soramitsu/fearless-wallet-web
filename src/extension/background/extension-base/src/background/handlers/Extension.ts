@@ -333,10 +333,10 @@ export default class Extension extends FWExtensionBase {
     if (isWasCurrentAccount) {
       const nextAccount = pickDefaultCurrentAccount(this.state.keyringService.getAllMainAccounts());
 
-      if (!nextAccount) this.state.setCurrentAccount(null);
-      else if (isEthereumAddress(nextAccount.address)) this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
+      if (!nextAccount) await this.state.setCurrentAccount(null);
+      else if (isEthereumAddress(nextAccount.address)) await this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
       else
-        this.state.updateCurrentAccount({
+        await this.state.updateCurrentAccount({
           address: nextAccount.address,
           walletEcosystem: nextAccount.meta.walletEcosystem,
         });
@@ -356,7 +356,7 @@ export default class Extension extends FWExtensionBase {
 
       if (walletEcosystem !== WalletEcosystem.Ton) this.state.updateNetworkForNewWallet(result.address);
 
-      this.state.updateCurrentAccount({ address: result.address, walletEcosystem });
+      await this.state.updateCurrentAccount({ address: result.address, walletEcosystem });
     }
 
     return result;
@@ -372,7 +372,7 @@ export default class Extension extends FWExtensionBase {
     );
 
     if (!isEthereumAddress(address) && !IS_EXTENSION_SMOKE) {
-      this.state.updateCurrentAccount({ address, walletEcosystem });
+      await this.state.updateCurrentAccount({ address, walletEcosystem });
     }
 
     return address;
@@ -605,7 +605,7 @@ export default class Extension extends FWExtensionBase {
     const { address } = await this.state.keyringService.restoreAccount(file, password, linkedEthereumAddress);
     if (!isEthereumAddress(address)) {
       this.state.updateNetworkForNewWallet(address);
-      this.state.updateCurrentAccount({ address });
+      await this.state.updateCurrentAccount({ address });
     }
     return address;
   }
@@ -1786,7 +1786,7 @@ export default class Extension extends FWExtensionBase {
     await this.state.keyringService.saveAddress(address, meta, 'address', { assertCurrent });
 
     assertCurrent();
-    this.state.updateCurrentAccount({ address });
+    await this.state.updateCurrentAccount({ address }, true, { assertCurrent: () => {} });
     return true;
   }
 

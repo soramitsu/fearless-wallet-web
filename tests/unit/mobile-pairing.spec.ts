@@ -1,14 +1,18 @@
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import Provider from '@walletconnect/universal-provider';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady, encodeAddress } from '@polkadot/util-crypto';
 import { Wallet } from 'ethers';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
+import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { Port } from '@extension-base/background/types/types';
 import type { SessionTypes } from '@walletconnect/types';
 
-vi.mock('@extension-base/utils/crossenv', () => ({ chrome: { runtime: { getURL: (p: string) => p } } }));
+vi.mock('@extension-base/utils/crossenv', async () => ({
+  chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
+}));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
@@ -28,7 +32,7 @@ let sessions: SessionTypes.Struct[];
 let records: { address: string; meta: Record<string, unknown> }[];
 let port: Port, disconnectPort: () => void;
 let init: (id: string, port?: Port) => Promise<string>;
-let abort: (id: string, port?: Port) => boolean;
+let abort: (id: string, port?: Port) => Promise<boolean>;
 let sessionListeners: Record<string, (event: { topic: string }) => void>;
 
 beforeAll(async () => {
@@ -37,7 +41,9 @@ beforeAll(async () => {
   alice = keys.addFromUri('//Alice').address;
   bob = keys.addFromUri('//Bob').address;
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await new WalletConnectRetiredSessions().readTopics();
+  sessionStorage.data = {};
   vi.restoreAllMocks();
   callbacks = {};
   unsubscribe = {};
@@ -133,7 +139,8 @@ async function begin() {
 async function settle(data = session) {
   approve(data);
   // Allow SDK approval and completion/finally continuations, without wall-clock sleeps.
-  for (let i = 0; i < 12; i++) await Promise.resolve();
+  for (let i = 0; i < 24; i++) await Promise.resolve();
+  await new WalletConnectRetiredSessions().readTopics();
 }
 function noImport() {
   expect(state.keyringService.saveAddress).not.toHaveBeenCalled();
@@ -285,7 +292,8 @@ describe('pairing boundary failures and isolation', () => {
     const delayed = new WalletConnectDAppService(state);
     const pending = delayed.initPairing('before-init', port);
     const rejected = expect(pending).rejects.toThrow('cancelled');
-    delayed.abortPairingAttempt('before-init', port);
+    void delayed.abortPairingAttempt('before-init', port);
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
     release({ client: { on: vi.fn() } } as unknown as Provider);
     await rejected;
     expect(client.connect).not.toHaveBeenCalled();
@@ -301,7 +309,7 @@ describe('pairing boundary failures and isolation', () => {
     );
     const pending = init('during-connect', port);
     const rejected = expect(pending).rejects.toThrow('cancelled');
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
     abort('during-connect', port);
     release({ uri: 'wc:late-fixture', approval });
     await rejected;
@@ -387,7 +395,8 @@ function delayedAddressWrite() {
 }
 
 async function continueCompletion() {
-  for (let i = 0; i < 12; i++) await Promise.resolve();
+  for (let i = 0; i < 24; i++) await Promise.resolve();
+  await new WalletConnectRetiredSessions().readTopics();
 }
 
 describe('pairing storage acknowledgement and late invalidation', () => {

@@ -1,3 +1,4 @@
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import Provider from '@walletconnect/universal-provider';
 import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +16,7 @@ import { captureEvmSigningContext } from '@extension-base/services/request-servi
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { AccountJson } from '@extension-base/background/types/types';
@@ -26,8 +28,8 @@ vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 vi.mock('@extension-base/services', () => ({}));
 const background = vi.hoisted(() => ({ state: {} }));
 vi.mock('@extension-base/background/handlers', () => ({ state: background.state, extension: {}, handlers: vi.fn() }));
-vi.mock('@extension-base/utils/crossenv', () => ({
-  chrome: { runtime: { getURL: (path: string) => `chrome-extension://fixture/${path}` } },
+vi.mock('@extension-base/utils/crossenv', async () => ({
+  chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
 }));
 
 // Unfunded public development material. No relay or chain connection is made.
@@ -46,7 +48,9 @@ let send: ReturnType<typeof vi.fn>, listeners: Record<string, (event: { topic: s
 beforeAll(async () => {
   await cryptoWaitReady();
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await new WalletConnectRetiredSessions().readTopics();
+  sessionStorage.data = {};
   alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
   record = {
     address: alice.address,

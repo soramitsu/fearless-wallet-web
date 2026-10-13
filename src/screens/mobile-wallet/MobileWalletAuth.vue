@@ -53,18 +53,40 @@ const attemptId = crypto.randomUUID();
 let unsubscribe: (() => void) | undefined;
 let terminal = false;
 let subscriptionReady = false;
-const cleanup = () => {
-  if (!active) return;
-  active = false;
-  unsubscribe?.();
-  void walletConnectDappCancelSession(attemptId).catch(() => undefined);
+let mounted = true;
+let cancelled = false;
+let cancellation: Promise<void> | undefined;
+let leaving: Promise<void> | undefined;
+const cleanup = (): Promise<void> => {
+  if (cancelled) return Promise.resolve();
+  if (cancellation) return cancellation;
+  if (active) {
+    active = false;
+    unsubscribe?.();
+    qr.value = null;
+  }
+  cancellation = walletConnectDappCancelSession(attemptId)
+    .then(() => { cancelled = true; })
+    .finally(() => { cancellation = undefined; });
+  return cancellation;
 };
-onBeforeUnmount(cleanup);
+onBeforeUnmount(() => {
+  mounted = false;
+  void cleanup().catch(console.error);
+});
+const leave = (): Promise<void> => {
+  if (leaving) return leaving;
+  leaving = cleanup().then(() => {
+    if (mounted) router.back();
+  }).catch(() => {
+    if (mounted) notify({ title: t('mobileConnector.connectionFailed').toString(), message: '', type: 'warning' });
+  }).finally(() => { leaving = undefined; });
+  return leaving;
+};
 const failed = () => {
   if (!active) return;
   notify({ title: t('mobileConnector.connectionFailed').toString(), message: '', type: 'warning' });
-  cleanup();
-  router.back();
+  void leave();
 };
 onMounted(async () => {
   try {
@@ -83,8 +105,7 @@ onMounted(async () => {
       } else {
         if (message === 'rejected') {
           notify({ title: t('mobileConnector.rejected').toString(), message: '', type: 'warning' });
-          cleanup();
-          router.back();
+          void leave();
         } else failed();
       }
     });
@@ -99,10 +120,7 @@ onMounted(async () => {
 
 const isQRPrep = computed(() => !isWalletAlreadyExists.value && qr.value);
 
-const onClose = () => {
-  cleanup();
-  router.back();
-};
+const onClose = () => leave();
 const onContinue = () => router.push({ name: Components.Wallet });
 </script>
 

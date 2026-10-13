@@ -313,7 +313,7 @@ export default class Extension extends FWExtensionBase {
     });
 
     if (type === 'native') {
-      this.state.walletConnectService.removeSessions(address, ethereumAddress);
+      await this.state.walletConnectService.removeSessions(address, ethereumAddress);
 
       if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
 
@@ -321,8 +321,9 @@ export default class Extension extends FWExtensionBase {
     } else {
       const account = this.state.keyringService.getAddress(address);
 
+      if (typeof account?.meta.wcTopic === 'string')
+        await this.state.walletConnectDappService.disconnect(account.meta.wcTopic);
       this.state.keyringService.forgetAddress(address);
-      this.state.walletConnectDappService.disconnect(account?.meta.wcTopic as string);
     }
 
     const isWasCurrentAccount = address === this.state.currentAccount?.address;

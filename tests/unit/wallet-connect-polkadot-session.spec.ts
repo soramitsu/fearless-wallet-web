@@ -1,3 +1,4 @@
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Keyring } from '@polkadot/keyring';
 import WalletConnect from '@walletconnect/sign-client';
@@ -8,6 +9,7 @@ import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
 import Extension from '@extension-base/background/handlers/Extension';
 import { PolkadotHandler } from '@extension-base/services/wallet-connect-service/requestHandlers/PolkadotHandler';
 import { SubstrateRequestHandler } from '@extension-base/services/request-service/handlers/SubstrateRequestHandler';
+import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
@@ -17,8 +19,8 @@ vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
-vi.mock('@extension-base/utils/crossenv', () => ({
-  chrome: { runtime: { getURL: (path: string) => `chrome-extension://fixture/${path}` } },
+vi.mock('@extension-base/utils/crossenv', async () => ({
+  chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
 }));
 
 // Public unfunded development keys; no WalletConnect relay or live chain calls.
@@ -34,7 +36,9 @@ let respond: ReturnType<typeof vi.fn>;
 beforeAll(async () => {
   await cryptoWaitReady();
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await new WalletConnectRetiredSessions().readTopics();
+  sessionStorage.data = {};
   vi.mocked(checkIfDenied).mockResolvedValue(false);
   alice = new Keyring({ type: 'sr25519' }).addFromUri('//Alice');
   const record = {
@@ -530,6 +534,7 @@ describe('incoming WalletConnect client ownership', () => {
     try {
       const first = live.initClient(true),
         second = live.initClient(true);
+      await vi.waitFor(() => expect(init).toHaveBeenCalledOnce());
       const calls = init.mock.calls.length;
       release(client);
       await Promise.all([first, second]);
@@ -546,7 +551,7 @@ describe('incoming WalletConnect client ownership', () => {
   });
   it('can retry a failed initialization without retaining a broken promise', async () => {
     const live = Object.create(LiveWalletConnectService.prototype) as LiveWalletConnectService;
-    Object.assign(live, { sessionSubject: { next: vi.fn() } });
+    Object.assign(live, { sessionSubject: { next: vi.fn() }, retiredTopics: new Set() });
     const client = { session: { values: [] }, on: vi.fn(), removeAllListeners: vi.fn() };
     const init = vi
       .spyOn(WalletConnect, 'init')

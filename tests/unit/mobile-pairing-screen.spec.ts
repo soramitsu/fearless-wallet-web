@@ -147,3 +147,38 @@ describe('mobile pairing screen ownership', () => {
     wrapper.unmount();
   });
 });
+
+
+describe('mobile cancellation storage acknowledgement', () => {
+  it('waits for cancellation acknowledgement before leaving the screen', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.cancel.mockReturnValue(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const wrapper = open();
+    await flushPromises();
+    await wrapper.get('[data-testid="close"]').trigger('click');
+    expect(mocks.back).not.toHaveBeenCalled();
+    callback({ status: true });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="finished"]').exists()).toBe(false);
+    finish(true);
+    await flushPromises();
+    expect(mocks.back).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
+  it('stays open on cancellation failure and allows a close retry', async () => {
+    mocks.cancel.mockRejectedValueOnce(new Error('Public storage failure')).mockResolvedValue(true);
+    const wrapper = open();
+    await flushPromises();
+    await wrapper.get('[data-testid="close"]').trigger('click');
+    await flushPromises();
+    expect(mocks.back).not.toHaveBeenCalled();
+    expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'mobileConnector.connectionFailed' }));
+    expect(wrapper.find('[data-testid="qr"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="close"]').trigger('click');
+    await flushPromises();
+    expect(mocks.cancel).toHaveBeenCalledTimes(2);
+    expect(mocks.back).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+});

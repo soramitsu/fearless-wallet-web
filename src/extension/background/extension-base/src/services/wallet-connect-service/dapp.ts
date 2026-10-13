@@ -4,6 +4,7 @@ import { evmSigningAddress } from '@extension-base/services/request-service/hand
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { PROJECT_ID_EXTENSION, WALLET_CONNECT_METADATA } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
@@ -24,6 +25,7 @@ type PairingAttempt = {
   active: boolean;
   completing?: boolean;
   persistingTopic?: string;
+  retirement?: Promise<void>;
   uri?: string;
   session?: SessionTypes.Struct;
   priorTopics: Set<string>;
@@ -48,6 +50,11 @@ export class WalletConnectDAppService {
     this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
   }
 
+  invalidateSession(topic: string): void {
+    this.retiredTopics.add(topic);
+    this.sessionChanged(topic);
+  }
+
   private readonly pairingAttempts = new Map<string, PairingAttempt>();
   private readonly usedPairingIds = new Set<string>();
 
@@ -58,12 +65,16 @@ export class WalletConnectDAppService {
   private initApp(): Promise<void> {
     if (this.app) return Promise.resolve();
     if (!this.initialization) {
-      this.initialization = Provider.init({
-        projectId: PROJECT_ID_EXTENSION,
-        metadata: WALLET_CONNECT_METADATA,
-        logger: undefined,
-        storage: new WalletConnectStorage(),
-      })
+      this.initialization = new WalletConnectRetiredSessions().readTopics()
+        .then((topics) => {
+          topics.forEach((topic) => this.retiredTopics.add(topic));
+          return Provider.init({
+            projectId: PROJECT_ID_EXTENSION,
+            metadata: WALLET_CONNECT_METADATA,
+            logger: undefined,
+            storage: new WalletConnectStorage(),
+          });
+        })
         .then((app) => {
           this.app = app;
           this.setListeners();
@@ -76,7 +87,7 @@ export class WalletConnectDAppService {
   }
 
   public get sessions(): SessionTypes.Struct[] {
-    return this.app?.client.session.values || [];
+    return (this.app?.client.session.values || []).filter((session) => !this.retiredTopics.has(session.topic));
   }
 
   private setListeners() {
@@ -85,8 +96,8 @@ export class WalletConnectDAppService {
     this.listenerClients.add(client);
     client.on('session_update', ({ topic }) => this.sessionChanged(topic));
     client.on('session_extend', ({ topic }) => this.sessionChanged(topic));
-    client.on('session_expire', ({ topic }) => this.onSessionDelete({ topic }));
-    client.on('session_delete', ({ topic }) => this.onSessionDelete({ topic }));
+    client.on('session_expire', ({ topic }) => this.onSessionDelete({ topic }).catch(console.error));
+    client.on('session_delete', ({ topic }) => this.onSessionDelete({ topic }).catch(console.error));
   }
 
   checkClient() {
@@ -116,7 +127,7 @@ export class WalletConnectDAppService {
       priorTopics: new Set(),
       currentAddress: this.state.currentAccount?.address,
       currentAccountRevision: this.state.keyringService.currentAccountRevision,
-      disconnectListener: () => this.abortPairingAttempt(id, port),
+      disconnectListener: () => { void this.abortPairingAttempt(id, port).catch(console.error); },
     };
     this.pairingAttempts.set(id, attempt);
     port?.onDisconnect.addListener(attempt.disconnectListener);
@@ -128,12 +139,13 @@ export class WalletConnectDAppService {
       // Observe exactly once, including a late approval after cancellation.
       pairing
         .approval()
-        .then((session) => {
+        .then(async (session) => {
           attempt.session = structuredClone(session);
-          if (!attempt.active) this.discardPairingSession(attempt);
-          else void this.completePairing(attempt);
+          if (!attempt.active) await this.discardPairingSession(attempt);
+          else await this.completePairing(attempt);
         })
-        .catch(() => this.finishPairing(attempt, { status: false, message: 'rejected' }));
+        .catch(() => this.finishPairing(attempt, { status: false, message: 'rejected' }))
+        .catch(console.error);
       if (!attempt.active) throw new Error('Mobile pairing was cancelled');
       if (
         !pairing.uri ||
@@ -143,7 +155,7 @@ export class WalletConnectDAppService {
       attempt.uri = pairing.uri;
       return pairing.uri;
     } catch (error) {
-      this.finishPairing(attempt);
+      await this.finishPairing(attempt);
       throw error;
     }
   }
@@ -163,12 +175,14 @@ export class WalletConnectDAppService {
       return result;
     }
     attempt.subscriber = { id, callback };
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => this.abortPairingAttempt(attempt.id, port));
-    void this.completePairing(attempt);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      void this.abortPairingAttempt(attempt.id, port).catch(console.error);
+    });
+    void this.completePairing(attempt).catch(console.error);
     return { uri };
   }
 
-  private discardPairingSession(attempt: PairingAttempt): void {
+  private async discardPairingSession(attempt: PairingAttempt): Promise<void> {
     const topic = attempt.session?.topic;
     // A rejected attempt cannot disconnect an already imported/previous session.
     // Its own submitted write may have published before a late cancellation check.
@@ -179,19 +193,26 @@ export class WalletConnectDAppService {
         this.state.keyringService.getAllAccounts().some((account) => account.meta.wcTopic === topic))
     )
       return;
-    this.disconnect(topic);
+    await this.disconnect(topic);
   }
 
-  private finishPairing(attempt: PairingAttempt, result?: PairingSubjectType): void {
-    if (!attempt.active) return;
+  private finishPairing(attempt: PairingAttempt, result?: PairingSubjectType): Promise<void> {
+    if (attempt.retirement) return attempt.retirement;
+    const wasActive = attempt.active;
     attempt.active = false;
-    this.pairingAttempts.delete(attempt.id);
-    attempt.port?.onDisconnect.removeListener(attempt.disconnectListener);
-    if (!result?.status) this.discardPairingSession(attempt);
-    if (attempt.subscriber) {
-      if (result) attempt.subscriber.callback(result);
-      this.state.subscriptionService.cancelSubscription(attempt.subscriber.id);
+    // Keep a failed retirement available for an explicit cancellation retry.
+    // Set this before cancelSubscription, whose callback can re-enter here.
+    attempt.retirement = (result?.status ? Promise.resolve() : this.discardPairingSession(attempt))
+      .then(() => { this.pairingAttempts.delete(attempt.id); })
+      .finally(() => { attempt.retirement = undefined; });
+    if (wasActive) {
+      attempt.port?.onDisconnect.removeListener(attempt.disconnectListener);
+      if (attempt.subscriber) {
+        if (result) attempt.subscriber.callback(result);
+        this.state.subscriptionService.cancelSubscription(attempt.subscriber.id);
+      }
     }
+    return attempt.retirement;
   }
 
   private async completePairing(attempt: PairingAttempt): Promise<void> {
@@ -222,7 +243,7 @@ export class WalletConnectDAppService {
               ))
         );
       if (isDuplicate()) {
-        this.finishPairing(attempt, { status: false, message: 'duplicate' });
+        await this.finishPairing(attempt, { status: false, message: 'duplicate' });
         return;
       }
       await this.state.keyringService.saveAddress(
@@ -249,16 +270,17 @@ export class WalletConnectDAppService {
       // session and refuse late selection/success instead of blindly deleting it.
       assertCurrent();
       this.state.updateCurrentAccount({ address: encodedAddress });
-      this.finishPairing(attempt, { status: true });
+      await this.finishPairing(attempt, { status: true });
     } catch {
-      this.finishPairing(attempt, { status: false, message: duplicate ? 'duplicate' : 'unavailable' });
+      await this.finishPairing(attempt, { status: false, message: duplicate ? 'duplicate' : 'unavailable' });
     }
   }
 
-  disconnect(topic: string) {
-    this.retiredTopics.add(topic);
-    this.sessionChanged(topic);
-    this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
+  async disconnect(topic: string): Promise<void> {
+    this.invalidateSession(topic);
+    this.state?.walletConnectService?.invalidateSession(topic);
+    await new WalletConnectRetiredSessions().retire(topic);
+    await this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
   }
 
   availableNetworks(address: string) {
@@ -278,15 +300,16 @@ export class WalletConnectDAppService {
     }
   }
 
-  abortPairingAttempt(id: string, port?: Port): boolean {
+  async abortPairingAttempt(id: string, port?: Port): Promise<boolean> {
     const attempt = this.pairingAttempts.get(id);
-    if (attempt?.port === port && attempt) this.finishPairing(attempt);
+    if (attempt?.port === port && attempt) await this.finishPairing(attempt);
     return true;
   }
 
   async onSessionDelete({ topic }: { topic: string }) {
-    this.retiredTopics.add(topic);
-    this.sessionChanged(topic);
+    this.invalidateSession(topic);
+    this.state?.walletConnectService?.invalidateSession(topic);
+    await new WalletConnectRetiredSessions().retire(topic);
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {

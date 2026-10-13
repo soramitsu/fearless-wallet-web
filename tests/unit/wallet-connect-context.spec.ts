@@ -1,3 +1,4 @@
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, Transaction, getBytes, verifyMessage } from 'ethers';
 import { checkIfDenied } from '@polkadot/phishing';
@@ -5,6 +6,7 @@ import { WalletConnectService } from '@extension-base/services/wallet-connect-se
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { Eip155RequestHandler } from '@extension-base/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import Extension from '@extension-base/background/handlers/Extension';
+import { sessionStorage } from '../helpers/session-storage';
 import type { SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
@@ -13,8 +15,8 @@ vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
-vi.mock('@extension-base/utils/crossenv', () => ({
-  chrome: { runtime: { getURL: (path: string) => `chrome-extension://fixture/${path}` } },
+vi.mock('@extension-base/utils/crossenv', async () => ({
+  chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
 }));
 
 // Public, unfunded fixture key. No RPC or relay is contacted.
@@ -40,7 +42,9 @@ const event = (method = 'personal_sign', params: unknown[] = ['0x1234', address]
     params: { chainId: 'eip155:1', request: { method, params } },
     verifyContext: { verified: { origin: 'https://public.example', validation: 'VALID', verifyUrl: '' } },
   }) as SignClientTypes.EventArguments['session_request'];
-beforeEach(() => {
+beforeEach(async () => {
+  await new WalletConnectRetiredSessions().readTopics();
+  sessionStorage.data = {};
   vi.mocked(checkIfDenied).mockResolvedValue(false);
   revision = 0;
   session = {
@@ -489,6 +493,7 @@ describe('WalletConnect live session revisions', () => {
     );
     const pending = live.disconnect('public-topic');
     expect(live.getSessionRevision('public-topic')).toBe(1);
+    await vi.waitFor(() => expect(done).toBeTypeOf('function'));
     done();
     await pending;
   });

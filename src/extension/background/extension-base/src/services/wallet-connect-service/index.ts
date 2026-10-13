@@ -6,11 +6,11 @@ import { storage } from '@extension-base/stores/Storage';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import {
   DEFAULT_WALLET_CONNECT_OPTIONS,
-  WALLET_CONNECT_EIP155_NAMESPACE,
-  WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { isSameAddress } from '@extension-base/utils';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
@@ -40,6 +40,16 @@ export class WalletConnectService {
     if (retired) this.retiredTopics.add(topic);
     this.sessionRevisions.set(topic, this.getSessionRevision(topic) + 1);
     this.updateSessions();
+  }
+
+  invalidateSession(topic: string): void {
+    this.sessionChanged(topic, true);
+  }
+
+  private async retireSession(topic: string): Promise<void> {
+    this.invalidateSession(topic);
+    this.state?.walletConnectDappService?.invalidateSession(topic);
+    await new WalletConnectRetiredSessions().retire(topic);
   }
 
   readonly eip155RequestHandler: Eip155RequestHandler;
@@ -100,10 +110,14 @@ export class WalletConnectService {
     // The storage read above may yield while another caller initializes.
     if (this.client) return;
     if (!this.initialization) {
-      this.initialization = WalletConnect.init({
-        ...DEFAULT_WALLET_CONNECT_OPTIONS,
-        storage: new WalletConnectStorage(),
-      })
+      this.initialization = new WalletConnectRetiredSessions().readTopics()
+        .then((topics) => {
+          topics.forEach((topic) => this.retiredTopics.add(topic));
+          return WalletConnect.init({
+            ...DEFAULT_WALLET_CONNECT_OPTIONS,
+            storage: new WalletConnectStorage(),
+          });
+        })
         .then((client) => {
           this.client = client;
           this.updateSessions();
@@ -127,9 +141,7 @@ export class WalletConnectService {
 
     if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
 
-    const haveData = await this.haveData();
-
-    if (!haveData) await this.initClient(true);
+    await this.initClient(true);
 
     this.checkClient();
 
@@ -151,34 +163,31 @@ export class WalletConnectService {
   }
 
   async disconnect(topic: string) {
-    this.sessionChanged(topic, true);
+    await this.retireSession(topic);
     await this.client?.disconnect({
       topic: topic,
       reason: getSdkError('USER_DISCONNECTED'),
-    });
+    }).catch(console.error);
 
     this.updateSessions();
   }
 
-  removeSessions(address: string, ethereumAddress?: string) {
-    this.sessions.forEach((session) => {
-      const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
-      const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE] ?? [];
-      const evmAccounts = namespaceAccounts(evm);
-      const polkadotAccounts = namespaceAccounts(polkadot);
-
-      if (ethereumAddress && evmAccounts.length) {
-        const [, , evmAddress] = evmAccounts[0].split(':');
-
-        if (isSameString(ethereumAddress, evmAddress)) return this.disconnect(session.topic);
-      }
-
-      if (polkadotAccounts.length) {
-        const [, , substrateAddress] = polkadotAccounts[0].split(':');
-
-        if (isSameString(address, substrateAddress)) this.disconnect(session.topic);
-      }
-    });
+  async removeSessions(address: string, ethereumAddress?: string): Promise<void> {
+    await this.initClient();
+    // Include locally retired SDK records: a prior failed storage write still
+    // needs acknowledgement on retry before the account can be removed.
+    const sessions = this.client?.session.values ?? [];
+    await Promise.all(sessions.map(async (session) => {
+      const ownsAccount = Object.entries(session.namespaces).some(([key, namespace]) =>
+        namespaceAccounts(namespace).some((account) => {
+          const [kind, , candidate] = account.split(':');
+          if (!candidate || kind !== key.split(':')[0]) return false;
+          if (kind === 'eip155') return !!ethereumAddress && isSameString(ethereumAddress, candidate);
+          return kind === 'polkadot' && isSameAddress(address, candidate);
+        })
+      );
+      if (ownsAccount) await this.disconnect(session.topic);
+    }));
   }
 
   private onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
@@ -227,8 +236,8 @@ export class WalletConnectService {
     this.client?.on('session_proposal', (event) => this.onSessionProposal(event));
     this.client?.on('session_request', (event) => this.onSessionRequest(event));
     this.client?.on('session_request_expire', ({ id }) => this.expiredRequestIds.add(id));
-    this.client?.on('session_delete', ({ topic }) => this.sessionChanged(topic, true));
-    this.client?.on('session_expire', ({ topic }) => this.sessionChanged(topic, true));
+    this.client?.on('session_delete', ({ topic }) => this.retireSession(topic).catch(console.error));
+    this.client?.on('session_expire', ({ topic }) => this.retireSession(topic).catch(console.error));
     this.client?.on('session_ping', (data: unknown) => console.info('ping', data));
     this.client?.on('session_event', (data: unknown) => console.info('event', data));
     this.client?.on('session_update', ({ topic }) => this.sessionChanged(topic));

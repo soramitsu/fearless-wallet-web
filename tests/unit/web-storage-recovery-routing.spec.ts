@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fixture = vi.hoisted(() => ({ hasMasterPassword: true, onboarding: vi.fn() }));
+const fixture = vi.hoisted(() => ({ hasMasterPassword: true, recoveryOnly: true, onboarding: vi.fn() }));
 vi.mock('@/consts/global', () => ({ IS_EXTENSION: false, IS_PRODUCTION: true, IS_TEST_ONLY: false }));
 vi.mock('@/router/helpers', () => ({ updateTitle: vi.fn() }));
 vi.mock('@/router/routes', () => ({
@@ -8,7 +8,7 @@ vi.mock('@/router/routes', () => ({
   default: ['Wallet', 'StorageRecovery', 'Welcome', 'Unlock'].map(name => ({ name, path: '/' + name.toLowerCase(), component: {} })),
 }));
 vi.mock('@/extension/messaging', () => ({
-  getAccessStatus: async () => ({ storageRecoveryOnly: true, hasMasterPassword: fixture.hasMasterPassword, issues: [] }),
+  getAccessStatus: async () => ({ storageRecoveryOnly: fixture.recoveryOnly, hasMasterPassword: fixture.hasMasterPassword, issues: [] }),
   isOnboardingRequired: fixture.onboarding,
   keyringIsLocked: async () => fixture.hasMasterPassword,
   hasMasterPassword: async () => fixture.hasMasterPassword,
@@ -21,10 +21,17 @@ vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ selectedWallet:
 import router from '@/router';
 
 beforeEach(() => {
+  fixture.recoveryOnly = true;
   fixture.onboarding.mockReset().mockRejectedValue(new Error('Wallet storage needs repair.'));
 });
 
 describe('web recovery-only startup routing', () => {
+  it('allows explicit read-only recovery before onboarding even with healthy password storage', async () => {
+    fixture.recoveryOnly = false;
+    await router.push('/storagerecovery?retained=true').catch(() => {});
+    expect(router.currentRoute.value.name).toBe('StorageRecovery');
+    expect(fixture.onboarding).not.toHaveBeenCalled();
+  });
   it.each([true, false])('reaches encrypted exports before onboarding or password setup (master password: %s)', async hasMasterPassword => {
     fixture.hasMasterPassword = hasMasterPassword;
     await router.push('/wallet?master=' + hasMasterPassword).catch(() => {});

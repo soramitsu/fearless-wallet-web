@@ -2,8 +2,9 @@
   <main class="storage-recovery" data-testid="storageRecovery">
     <header>
       <h1>{{ t('storageRecovery.title') }}</h1>
-      <p role="status">{{ t('storageRecovery.description') }}</p>
-      <FButton text="storageRecovery.reload" type="secondary" :disabled="reloading" @click="reload" />
+      <p v-if="recoveryOnly" role="status">{{ t('storageRecovery.description') }}</p>
+      <FButton v-if="recoveryOnly" text="storageRecovery.reload" type="secondary" :disabled="reloading" @click="reload" />
+      <FButton v-else text="common.close" type="secondary" @click="close" />
       <p v-if="reloadFailed" role="alert">{{ t('ux.startupUnavailable') }}</p>
     </header>
     <section v-if="exposure && exposure.state !== 'not_exposed'" class="recovery-notice" data-testid="recoveryExposure">
@@ -27,7 +28,7 @@
       <p>{{ t('accountAccess.loadFailed') }}</p>
       <FButton text="ux.retry" @click="load" />
     </div>
-    <p v-else-if="!rows.length">{{ t('storageRecovery.empty') }}</p>
+    <p v-else-if="recoveryOnly && !rows.length">{{ t('storageRecovery.empty') }}</p>
     <section v-if="rawRows.length || rawFailed" class="recovery-account" data-testid="recoveryRecords">
       <h2>{{ t('storageRecovery.recordsTitle') }}</h2>
       <p>{{ t('storageRecovery.recordsHint') }}</p>
@@ -66,6 +67,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
 import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
 import type { StorageRecoveryAccount } from '@extension-base/background/types/types';
@@ -76,9 +78,13 @@ import { downloadJsonAccount, downloadRecoveryData } from '@/helpers/files';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
 import { LEGACY_EXPOSURE_VERSIONS } from '@/util/legacyExposure';
+import { Components } from '@/router/routes';
 
 type Row = StorageRecoveryAccount & { password: string; seed: string; error: string; busy: boolean };
 const { t } = useI18n();
+const router = useRouter();
+const close = () => router.replace({ name: Components.Wallet });
+const recoveryOnly = ref(false);
 const rows = ref<Row[]>([]);
 const exposure = ref<LegacyExposureStatus>();
 const rawRows = ref<RecoveryRecordSummary[]>([]);
@@ -109,6 +115,7 @@ async function load() {
   failed.value = false;
   try {
     const status = await getAccessStatus();
+    if (!disposed) recoveryOnly.value = status.storageRecoveryOnly === true;
     if (!disposed) rows.value = (status.storageRecoveryAccounts ?? []).map(account => ({
       ...account, password: '', seed: '', error: '', busy: false,
     }));
@@ -199,11 +206,11 @@ onBeforeUnmount(() => { disposed = true; hideSecrets(); document.removeEventList
   display: grid;
   gap: 24px;
   padding-block: 16px 32px;
-  h1, h2, p { overflow-wrap: anywhere; }
+  h1, h2, p, li { overflow-wrap: anywhere; }
   h1 { font-size: 28px; }
   h2 { font-size: 20px; }
   p { line-height: 1.5; }
-  header, .recovery-account, .recovery-notice { display: grid; gap: 16px; }
+  header, .recovery-account, .recovery-notice { display: grid; gap: 16px; min-width: 0; }
   .recovery-notice { border-inline-start: 3px solid var(--fw-warning, #f0ad4e); padding-inline-start: 16px; }
   .recovery-notice li { overflow-wrap: anywhere; margin-block: 8px; }
   .recovery-account { padding-block: 24px; border-top: 1px solid var(--fw-border, #4e4e57); }

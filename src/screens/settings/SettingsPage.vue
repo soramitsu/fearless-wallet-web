@@ -179,6 +179,13 @@ const groups = computed<SettingsGroup[]>(() => [
   {
     title: t('settingsPage.groups.security'),
     items: [
+      ...(!IS_EXTENSION ? [{
+        id: 'recovery-data',
+        label: t('storageRecovery.title'),
+        description: t('storageRecovery.recordsTitle'),
+        icon: 'key',
+        open: open(Components.StorageRecovery),
+      }] : []),
       ...(accessIssueCount.value
         ? [
             {

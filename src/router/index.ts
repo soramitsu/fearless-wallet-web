@@ -56,7 +56,10 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
   if (to.name === Components.StorageRecovery) {
-    next({ name: Components.Welcome });
+    // Raw retained data may be the only surviving copy even when the password
+    // store is healthy. Its explicit read-only route precedes onboarding/unlock.
+    if (!IS_EXTENSION) next();
+    else next({ name: Components.Welcome });
     return;
   }
 

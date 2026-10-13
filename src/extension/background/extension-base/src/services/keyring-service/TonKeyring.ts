@@ -45,7 +45,19 @@ export class TonKeyringService {
 
   // Reads every stored TON account again; start-up calls this after a failed read.
   loadAll(): Promise<void> {
-    const saveAccounts = async (address: string, record: TonStoreAccount) => this.setAccounts({ ...record, address });
+    // Store enumeration is synchronous. A rejected async callback used to escape
+    // the awaited startup read and could prevent recovery of a different account.
+    const saveAccounts = (address: string, record: TonStoreAccount) => {
+      try {
+        if (!record || typeof record.publicKeyHex !== 'string' || !/^[0-9a-f]{64}$/iu.test(record.publicKeyHex))
+          throw new Error('Invalid stored TON public key');
+        this.setAccounts({ ...record, address });
+      } catch {
+        // Preserve the original record for the raw recovery download. Never log
+        // its contents or repair/delete it as a side effect of startup.
+        console.warn('Stored TON account could not be loaded; recovery data is retained.', address);
+      }
+    };
 
     return tonStore.all(saveAccounts);
   }

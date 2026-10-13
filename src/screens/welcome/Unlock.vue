@@ -51,6 +51,7 @@
       />
 
       <p class="unlock-error" role="alert" aria-live="polite" aria-atomic="true">{{ unlockFailed ? t('accountAccess.unlockFailed') : '' }}</p>
+      <RecoveryDataLink />
 
       <div class="bottom">
         <button type="button" class="pink" data-testid="forgotPassword" :disabled="isUnlocking" @click="toggleResetPopup">
@@ -80,6 +81,7 @@ import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';
 import { URLS } from '@/consts/urls';
 import ResetPopup from '@/screens/welcome/ResetPopup.vue';
+import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 import { resolveUnlockRedirect } from '@/router/unlockRedirect';
 
 const router = useRouter();

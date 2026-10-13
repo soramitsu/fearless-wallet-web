@@ -28,6 +28,7 @@
         />
         <FButton class="button-main" size="big" :text="buttonText" data-testid="continueBtn" @click="onContinue" />
       </div>
+      <RecoveryDataLink />
     </div>
   </Fragment>
 </template>
@@ -37,6 +38,7 @@ import { defineComponent } from 'vue';
 
 import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
+import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 import { Components } from '@/router/routes';
 import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
@@ -45,6 +47,7 @@ export default defineComponent({
   components: {
     OnboardingStory,
     StoryCounter,
+    RecoveryDataLink,
   },
   data() {
     return {

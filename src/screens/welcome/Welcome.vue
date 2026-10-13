@@ -68,6 +68,7 @@
         </div>
       </div>
 
+      <RecoveryDataLink />
       <div class="privacy-policy" data-testid="infoPolicyText">
         {{ $t('welcome.agreeWith') }}
 
@@ -96,10 +97,11 @@ import { IS_EXTENSION } from '@/consts/global';
 import { type WalletEcosystem } from '@/interfaces';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
+import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 
 export default defineComponent({
   name: 'Welcome',
-  components: { ChoiceEcosystem },
+  components: { ChoiceEcosystem, RecoveryDataLink },
   data() {
     return {
       isExtension: IS_EXTENSION,

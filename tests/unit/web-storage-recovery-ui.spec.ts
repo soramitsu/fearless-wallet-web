@@ -6,6 +6,8 @@ vi.mock('@/extension/messaging', () => ({ getAccessStatus: fixture.status, migra
 vi.mock('@/extension/messaging/legacy-exposure', () => ({ getLegacyExposureStatus: fixture.exposure }));
 vi.mock('@/helpers/files', () => ({ downloadJsonAccount: fixture.download, downloadRecoveryData: fixture.rawDownload }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+vi.mock('vue-router', async original => ({ ...(await original<typeof import('vue-router')>()), useRouter: () => ({ replace: vi.fn() }) }));
+vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet' } }));
 import StorageRecovery from '@/screens/settings/StorageRecovery.vue';
 
 const accounts = [
@@ -33,6 +35,18 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('web storage recovery exports', () => {
+  it('offers retained exports with healthy storage without claiming that sending is unavailable', async () => {
+    fixture.status.mockResolvedValue({ issues: [] });
+    fixture.inventory.mockResolvedValue([{ key: 'account:unloaded', name: '', address: '' }]);
+    const wrapper = await open();
+    expect(wrapper.text()).not.toContain('storageRecovery.description');
+    expect(wrapper.text()).not.toContain('storageRecovery.empty');
+    expect(wrapper.get('header button').text()).toBe('common.close');
+    await wrapper.get('[data-testid="recoveryRecords"] button').trigger('click');
+    await flushPromises();
+    expect(fixture.rawDownload).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
   it('lists and exports unloaded retained records even when no active account loaded', async () => {
     fixture.status.mockResolvedValue({ storageRecoveryOnly: true, storageRecoveryAccounts: [] });
     fixture.inventory.mockResolvedValue([{ key: 'deletedWallet:public', name: 'Public retained savings', address: '' },

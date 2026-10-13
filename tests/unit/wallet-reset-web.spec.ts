@@ -165,6 +165,25 @@ afterEach(async () => {
 });
 
 describe('web reset with one IndexedDB password/account commit', { timeout: 60_000 }, () => {
+  it('loads healthy TON records while preserving malformed records without detached callback failures', async () => {
+    await drain();
+    const malformed = { name: 'Public unreadable TON', cipherSeed: 'original retained ciphertext' };
+    const publicKeyHex = vectors.vectors[0].expected.ton.publicKeyHex;
+    const address = vectors.vectors[0].expected.ton.addressNonBounceable;
+    Object.assign(fixture.data, {
+      'fw:ton:public-malformed': malformed,
+      [`fw:ton:${address}`]: { address, name: 'Public healthy TON', cipherSeed: 'public retained ciphertext', publicKeyHex },
+    });
+    const before = structuredClone(fixture.data);
+    const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const loaded = track(service.tonKeyring.loadAll());
+    await drain();
+    expect(await loaded).toHaveProperty('value');
+    expect(service.tonKeyring.getAccounts().map(account => account.address)).toEqual([address]);
+    expect(report).toHaveBeenCalledExactlyOnceWith('Stored TON account could not be loaded; recovery data is retained.', 'public-malformed');
+    expect(fixture.data).toEqual(before);
+  });
+
   it('exports exact loaded, unloaded, malformed and archived records through trusted read-only handlers', async () => {
     const records = Object.fromEntries(Object.entries(historical.storage).filter(([key]) => key.startsWith('fw:account:')));
     const first = Object.values(records)[0];

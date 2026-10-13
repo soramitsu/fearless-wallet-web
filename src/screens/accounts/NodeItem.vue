@@ -94,8 +94,7 @@ export default defineComponent({ name: 'NodeItem' ,
     font-size: 0.875em;
     text-align: left;
     width: 100%;
-    height: 21px;
-    line-height: 21px;
+    line-height: 1.5;
     color: #888888;
     overflow: hidden;
     text-overflow: ellipsis;

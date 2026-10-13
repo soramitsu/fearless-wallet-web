@@ -288,19 +288,25 @@ export default defineComponent({ name: 'Nodes',
       .address-wrapper {
         display: flex;
         align-items: center;
-        width: 135px;
+        width: 100%;
+        min-width: 0;
         color: $gray-color;
 
         .address {
           font-size: 0.8125em;
           width: 100%;
+          min-width: 0;
           margin-right: 5px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .copy {
           filter: invert(0.5);
           width: 20px;
           height: 20px;
+          flex-shrink: 0;
         }
 
         &:hover {

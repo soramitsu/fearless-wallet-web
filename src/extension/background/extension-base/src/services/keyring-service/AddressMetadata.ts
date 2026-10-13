@@ -1,5 +1,6 @@
 import { keyring } from '@subwallet/ui-keyring';
-import { addressKey, contractKey } from '@subwallet/ui-keyring/defaults';
+import { u8aToHex } from '@polkadot/util';
+import { decodeAddress } from '@polkadot/util-crypto';
 import AddressesStore from '@extension-base/stores/Addresses';
 import { alreadyPersistedAccountStore } from './AccountMetadata';
 import type { FWKeyringMeta } from '@extension-base/types';
@@ -18,7 +19,8 @@ export async function updatePublicAddress(
   options: PublicAddressUpdateOptions = {}
 ): Promise<void> {
   if (type !== 'address' && type !== 'contract') throw new Error('Unsupported public address type.');
-  const storageKey = type === 'address' ? addressKey : contractKey;
+  // Match ui-keyring/defaults without importing its development-key initialization.
+  const storageKey = (value: string) => `${type}:${u8aToHex(decodeAddress(value, true))}`;
   const identity = storageKey(address);
   await new AddressesStore().updateAndWait(identity, (current) => {
     if (current !== undefined && (

@@ -321,6 +321,7 @@ async function main() {
 
     if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly) {
       let controlSession = extensionSession;
+      let liveBackgroundSession = backgroundSession;
       const checkImport = jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
       const result = await checkImport({
         eventually,
@@ -336,14 +337,15 @@ async function main() {
         remove: (keys) => evaluate(cdp, controlSession, `chrome.storage.local.remove(${JSON.stringify(keys)})`),
         restart: async () => {
           await stopExtensionKeepAlive();
-          const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, backgroundSession);
-          await evaluate(cdp, backgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
+          const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, liveBackgroundSession);
+          await evaluate(cdp, liveBackgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
           await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
             && ['background_page', 'service_worker'].includes(target.type)
             && target.url.startsWith(`chrome-extension://${extensionId}/`), 'restarted extension worker', chrome);
-          await openExtensionBackgroundSession(cdp, extensionId, chrome);
+          liveBackgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome);
           controlSession = await openExtensionControlPage(cdp, extensionId);
           await setupExtensionMessaging(cdp, controlSession);
+          stopExtensionKeepAlive = startExtensionKeepAlive(cdp, controlSession, liveBackgroundSession);
           await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
         },
       });

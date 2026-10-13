@@ -119,6 +119,26 @@ describe('per-account request ownership', () => {
     wrapper.unmount();
   });
 
+  it.each([
+    ['wrong password', { value: false, errorType: 'jsonPassword' }, 'common.invalidPassword'],
+    ['invalid file', { value: false, errorType: 'jsonInvalid' }, 'addWallet.google.somethingWrong'],
+    ['selection failure', { value: true }, 'addWallet.google.somethingWrong'],
+  ])('shows the correct retry explanation for %s', async (failure, validation, expected) => {
+    mocks.validateJson.mockResolvedValue(validation);
+    if (failure === 'selection failure') mocks.selectAccount.mockRejectedValueOnce(new Error('Public storage failure'));
+    const file = { address: PARENT, active: true, password: 'fixture', json: { address: PARENT } as never };
+    const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [file] }, global: { ...global,
+      stubs: { ...global.stubs, ValidatedInput: { props: ['isError', 'errorDescriptions'], template: '<span role="alert" v-if="isError">{{ errorDescriptions }}</span>' } },
+    } });
+    await wrapper.vm.importFromGoogle(0);
+    const [, fields] = wrapper.emitted('setItemValue')!.at(-1)!;
+    await wrapper.setProps({ items: [{ ...file, ...fields as object }] });
+    expect(wrapper.get('[role="alert"]').text()).toBe(expected);
+    expect(wrapper.vm.isDisabled(wrapper.props('items')[0])).toBe(false);
+    if (failure === 'selection failure') expect(mocks.restoreJson).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
   it('prevents duplicate requests before parent props update and follows the same account after rows reorder', async () => {
     let finish!: (value: boolean) => void;
     mocks.migrate.mockReturnValue(new Promise<boolean>((resolve) => { finish = resolve; }));
@@ -157,7 +177,7 @@ describe('per-account request ownership', () => {
     const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: PARENT, password: 'fixture', json }] }, global });
     mocks.validateJson.mockRejectedValueOnce(new Error('worker unavailable'));
     await wrapper.vm.importFromGoogle(0);
-    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false }]);
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false, errorDescription: 'addWallet.google.somethingWrong' }]);
     let restore!: (value: string) => void;
     mocks.restoreJson.mockReturnValueOnce(new Promise<string>((resolve) => { restore = resolve; }));
     const request = wrapper.vm.importFromGoogle(0);
@@ -187,7 +207,7 @@ describe('per-account request ownership', () => {
     const wrapper = shallowMount(BackupWalletsList, { props: { isGoogle: true, items: [{ address: PARENT, password: 'fixture', json: {} as never }] }, global });
     await wrapper.vm.importFromGoogle(0);
     expect(mocks.selectAccount).not.toHaveBeenCalled();
-    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false }]);
+    expect(wrapper.emitted('setItemValue')?.at(-1)).toEqual([0, { isLoading: false, isError: true, isComplete: false, errorDescription: 'addWallet.google.somethingWrong' }]);
     wrapper.unmount();
   });
 

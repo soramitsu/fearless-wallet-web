@@ -26,7 +26,7 @@
                   class="input__validate-pass"
                   typeText="text"
                   placeholder="addWallet.enterPassword"
-                  errorDescriptions="common.invalidPassword"
+                  :errorDescriptions="file.errorDescription || 'common.invalidPassword'"
                   :showPassword="true"
                   :readonly="disabled || file.isComplete || file.isLoading"
                   :isError="file.isError"
@@ -139,11 +139,13 @@ export default defineComponent({
           file.password === operation.file.password
       );
     },
-    finishOperation(operation: RowOperation, success: boolean, primaryOnly = false) {
+    finishOperation(operation: RowOperation, success: boolean, primaryOnly = false, errorDescription?: string) {
       const index = this.operationIndex(operation);
       if (index >= 0) {
         const complete = success || !!this.items[index].isComplete;
-        this.setItemValue(index, { isError: !complete, isComplete: complete, isLoading: false, ...(success && primaryOnly ? { primaryOnly: true } : {}) });
+        this.setItemValue(index, { isError: !complete, isComplete: complete, isLoading: false,
+          ...(!complete && errorDescription ? { errorDescription } : {}),
+          ...(success && primaryOnly ? { primaryOnly: true } : {}) });
       }
       if (this.pendingRows.get(operation.key) === operation.token) this.pendingRows.delete(operation.key);
     },
@@ -164,11 +166,13 @@ export default defineComponent({
       if (!operation) return;
       const { json, ethJson, password } = operation.file;
       let success = false;
+      let errorDescription = 'addWallet.google.somethingWrong';
       try {
         if (!json || !password) return;
         // Cloud files can independently contain either Substrate or Ethereum keys.
-        const { value: valid } = await isJsonValid(json, password, false);
-        if (!valid || this.operationIndex(operation) < 0) return;
+        const validation = await isJsonValid(json, password, false);
+        if (!validation.value && validation.errorType === 'jsonPassword') errorDescription = 'common.invalidPassword';
+        if (!validation.value || this.operationIndex(operation) < 0) return;
         let linkedEthereumAddress: string | undefined;
         if (ethJson && !primaryOnly) {
           linkedEthereumAddress = await jsonRestore(ethJson, password);
@@ -182,7 +186,7 @@ export default defineComponent({
       } catch {
         // A failed import never appears complete, and always releases the loading state.
       } finally {
-        this.finishOperation(operation, success, primaryOnly);
+        this.finishOperation(operation, success, primaryOnly, errorDescription);
       }
     },
     buttonText(file: FilesState) {

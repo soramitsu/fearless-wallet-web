@@ -191,7 +191,7 @@ describe('deleted wallet recovery with actual keyring and acknowledged Chrome st
     expect(service.tonKeyring.getAccount(address)).toBeDefined();
     expect(fixture.data[`fw:ton:${address}`]).toEqual(original);
     expect(fixture.data[key]).toBeUndefined();
-    expect(await decryptTonSeed(original.cipherSeed, PASSWORD, Buffer.from(original.publicKeyHex, 'hex'))).toBe(PHRASE);
+    expect(await decryptTonSeed(original.cipherSeed, PASSWORD, service.tonKeyring.accountSubject.value[address].publicKey)).toBe(PHRASE);
   });
 
   it('publishes a recovered pair without a second unacknowledged account write', async () => {

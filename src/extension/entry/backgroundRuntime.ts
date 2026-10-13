@@ -16,6 +16,7 @@ import { retryableInitialization } from '@/bootstrap/retryableInitialization';
 console.info('background initialization');
 
 const ASSET_DISCOVERY_ALARM = 'fearless-asset-discovery-sweep';
+const REGISTRY_RETRY_ALARM = 'fearless-network-registry-retry';
 const STORAGE_READ = { attempts: 3, retryDelaysMs: [250, 1000] };
 // A request is answered within this time even when a read never answers. It is shorter
 // than the popup's own 20 s start-up limit, so the popup can show the storage message.
@@ -170,9 +171,12 @@ export const backgroundRuntime = {
   handleMessage,
   onInstalled,
   getActiveTabs,
-  onAlarm(alarm: chrome.alarms.Alarm) {
+  async onAlarm(alarm: chrome.alarms.Alarm) {
+    if (alarm.name === REGISTRY_RETRY_ALARM && state.isReady()) {
+      if (await state.networkService.retryRegistryIfNeeded()) state.updateServiceInfo();
+    }
     if (alarm.name === ASSET_DISCOVERY_ALARM && state.isReady()) {
-      void state.assetDiscoverySweepService.runIfDue();
+      await state.assetDiscoverySweepService.runIfDue();
     }
   },
 };

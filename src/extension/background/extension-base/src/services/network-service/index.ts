@@ -30,6 +30,7 @@ function usableNetwork(value: unknown): value is NetworkJson {
   if (!value || typeof value !== 'object') return false;
   const row = value as NetworkJson;
   return typeof row.name === 'string' && !!row.name && typeof row.chainId === 'string' && !!row.chainId &&
+    (row.options === undefined || (Array.isArray(row.options) && row.options.every((option) => typeof option === 'string'))) &&
     ['substrate', 'ethereumBased', 'ethereum', 'ton', 'bitcoin', 'solana', 'iroha'].includes(row.ecosystem) &&
     Array.isArray(row.assets) && row.assets.every((asset) => asset && typeof asset.id === 'string' &&
       typeof asset.symbol === 'string' && Number.isFinite(asset.precision)) &&
@@ -38,6 +39,10 @@ function usableNetwork(value: unknown): value is NetworkJson {
 }
 
 export class NetworkService {
+  private registryAvailable = false;
+  private registryAttemptAt = 0;
+  private registryInitialization?: Promise<void>;
+  private registryRetry?: Promise<boolean>;
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   readonly selectedNetworksStore = new SelectedNetworkStore(null);
@@ -128,7 +133,23 @@ export class NetworkService {
     };
   }
 
-  public async initNetworkMap() {
+  public initNetworkMap(): Promise<void> {
+    this.registryInitialization ??= this.loadNetworkMap().finally(() => { this.registryInitialization = undefined; });
+    return this.registryInitialization;
+  }
+
+  retryRegistryIfNeeded(): Promise<boolean> {
+    if (this.registryRetry) return this.registryRetry;
+    if (this.registryAvailable || Date.now() - this.registryAttemptAt < 60000) return Promise.resolve(false);
+    this.registryRetry = this.initNetworkMap().then(() => {
+      if (this.registryAvailable) this.initNetworkApis();
+      return this.registryAvailable;
+    }).finally(() => { this.registryRetry = undefined; });
+    return this.registryRetry;
+  }
+
+  private async loadNetworkMap() {
+    this.registryAttemptAt = Date.now();
     this.logger.log('Init Network Map');
 
     const networksFromStorage = await this.getStoredNetworks();
@@ -147,6 +168,7 @@ export class NetworkService {
       networks = Object.values({ ...networksFromStorage, ...this.networkMap }).filter(usableNetwork)
         .map((network) => withoutUntrustedPrices(network));
     }
+    this.registryAvailable = remote;
 
     networks
       .filter((el) => {
@@ -200,7 +222,7 @@ export class NetworkService {
     });
 
     // A remote failure must not replace a previously useful cache with a partial/offline catalog.
-    if (remote) this.updateNetworkStore();
+    if (remote && networksFromStorage !== undefined) this.updateNetworkStore();
     this.onAuthoritativeRegistryUpdated();
   }
 

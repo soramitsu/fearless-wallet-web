@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkService } from '@extension-base/services/network-service';
 import { readSnapshot } from '../fixtures/legacy-305/generate';
 import type { NetworkJson } from '@extension-base/types';
@@ -22,6 +22,7 @@ const create = () => new NetworkService({ getAllMainAccounts: () => [] } as neve
 const historical = () => readSnapshot().find(({ name }) => name === 'Polkadot')!;
 
 describe('offline network startup', () => {
+  afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     vi.clearAllMocks();
     cache.read.mockResolvedValue(undefined);
@@ -74,6 +75,47 @@ describe('offline network startup', () => {
     await service.initNetworkMap();
     expect(service.networkValues.some(({ ecosystem }) => ecosystem === 'bitcoin')).toBe(true);
     expect(cache.write).not.toHaveBeenCalled();
+  });
+
+  it('does not overwrite unread personal settings when the remote fetch succeeds', async () => {
+    cache.read.mockRejectedValue(new Error('IO error'));
+    vi.mocked(axios.get).mockResolvedValue({ data: [historical()] });
+    await create().initNetworkMap();
+    expect(cache.write).not.toHaveBeenCalled();
+  });
+
+  it('isolates malformed options without discarding a healthy registry row', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: [
+      { ...historical(), name: 'Bad options', options: {} }, historical(),
+    ] });
+    const service = create();
+    await service.initNetworkMap();
+    expect(service.networkMap.Polkadot).toBeDefined();
+    expect(service.networkMap['Bad options']).toBeUndefined();
+  });
+
+  it('shares a single retry after the cooldown and stops retrying after success', async () => {
+    vi.useFakeTimers();
+    const service = create();
+    const apis = vi.spyOn(service, 'initNetworkApis').mockImplementation(() => {});
+    await service.initNetworkMap();
+    await service.retryRegistryIfNeeded();
+    expect(axios.get).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60000);
+    let release!: (value: unknown) => void;
+    vi.mocked(axios.get).mockReturnValue(new Promise((resolve) => { release = resolve; }));
+    const first = service.retryRegistryIfNeeded();
+    const second = service.retryRegistryIfNeeded();
+    expect(first).toBe(second);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    release({ data: [historical()] });
+    await expect(first).resolves.toBe(true);
+    expect(apis).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60000);
+    await expect(service.retryRegistryIfNeeded()).resolves.toBe(false);
+    expect(axios.get).toHaveBeenCalledTimes(2);
   });
 
   it('isolates a bad remote row from healthy rows', async () => {

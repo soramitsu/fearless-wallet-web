@@ -161,7 +161,9 @@ async function startBackground() {
     onboardingService: { updateStorage: vi.fn(() => Promise.resolve()), init: vi.fn() },
     onInstall: vi.fn(),
     ensureCurrentAccount: vi.fn(),
-    isReady: () => false,
+    networkService: { retryRegistryIfNeeded: vi.fn(async () => true) },
+    updateServiceInfo: vi.fn(),
+    isReady: vi.fn(() => false),
   };
   mocks.state = state;
   const answered: Record<string, unknown>[] = [];
@@ -208,6 +210,18 @@ afterEach(() => {
 });
 
 describe('background start-up ordering (W10)', () => {
+  it('wakes the bounded registry retry and publishes only a refreshed catalog', async () => {
+    const background = await startBackground();
+    expect(background.api.alarms.create).toHaveBeenCalledWith('fearless-network-registry-retry', { periodInMinutes: 1 });
+    background.state.isReady.mockReturnValue(true);
+    background.api.alarms.onAlarm.emit({ name: 'fearless-network-registry-retry' });
+    await vi.waitFor(() => expect(background.state.updateServiceInfo).toHaveBeenCalledOnce());
+    background.state.networkService.retryRegistryIfNeeded.mockResolvedValue(false);
+    background.api.alarms.onAlarm.emit({ name: 'fearless-network-registry-retry' });
+    await flush();
+    expect(background.state.networkService.retryRegistryIfNeeded).toHaveBeenCalledTimes(2);
+    expect(background.state.updateServiceInfo).toHaveBeenCalledOnce();
+  });
   it.each([
     ['the master-password record', 'the TON accounts', 1],
     ['the TON accounts', 'the master-password record', 0],

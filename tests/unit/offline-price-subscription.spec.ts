@@ -83,4 +83,33 @@ describe('offline price subscriptions', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mocks.write).not.toHaveBeenCalled();
   });
+
+  it('does not replace a refreshed price with an older delayed cache read', async () => {
+    let release!: (value: PriceJson) => void;
+    mocks.read.mockReturnValue(new Promise((resolve) => { release = resolve; }));
+    mocks.coin.mockResolvedValue({ tokenPriceMap: { bitcoin: 61000 }, tokenPriceChange: { bitcoin: 2 } });
+    const service = new PricesService({} as never);
+    const reply = vi.fn();
+    service.getPrice(reply);
+    service.refreshPrice();
+    await vi.waitFor(() => expect(mocks.write).toHaveBeenCalled());
+    release(stored);
+    await vi.waitFor(() => expect(reply).toHaveBeenCalled());
+    expect(service.prices.json.tokenPriceMap.bitcoin).toBe(61000);
+    expect(reply.mock.calls[0][0].tokenPriceMap.bitcoin).toBe(61000);
+  });
+
+  it('does not let a slow earlier refresh replace a newer response in the same currency', async () => {
+    let release!: (value: ReturnType<typeof empty>) => void;
+    mocks.coin.mockReturnValueOnce(new Promise((resolve) => { release = resolve; }))
+      .mockResolvedValueOnce({ tokenPriceMap: { bitcoin: 62000 }, tokenPriceChange: {} });
+    const service = new PricesService({} as never);
+    service.refreshPrice();
+    service.refreshPrice();
+    await vi.waitFor(() => expect(service.prices.json.tokenPriceMap.bitcoin).toBe(62000));
+    release({ tokenPriceMap: { bitcoin: 60000 }, tokenPriceChange: {} });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(service.prices.json.tokenPriceMap.bitcoin).toBe(62000);
+    expect(mocks.write).toHaveBeenCalledOnce();
+  });
 });

@@ -24,6 +24,8 @@ export class PricesService {
   private readonly priceStore: PriceStore;
   private fiats: FiatJson[] = [];
   private priceStoreReady = false;
+  private priceRevision = 0;
+  private requestRevision = 0;
   public fiatSymbol = 'usd';
   public soraPricingService: SoraPricingService;
   public tonPricingService: TonPricingService;
@@ -74,9 +76,15 @@ export class PricesService {
   }
 
   setFiatSymbol(symbol: string) {
+    if (this.fiatSymbol !== symbol) {
+      this.priceStoreReady = false;
+      this.priceRevision += 1;
+      this.requestRevision += 1;
+      this.prices.json = { fiat: symbol, tokenPriceMap: {}, tokenPriceChange: {} };
+    }
     this.fiatSymbol = symbol;
 
-    storage.set({ fiatSymbol: this.fiatSymbol });
+    void storage.set({ fiatSymbol: this.fiatSymbol }).catch((error) => console.warn('Fiat preference could not be saved', error));
   }
 
   setPriceStore(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -88,16 +96,19 @@ export class PricesService {
   }
 
   getPrice(update: (value: PriceJson) => void): void {
+    const revision = this.priceRevision;
     void withDeadline(this.priceStore.getAndWait('PriceData'), 5000, 'Price cache read timed out')
       .catch((error) => {
         console.warn('Price cache could not be read', error);
         return undefined;
       }).then((cached) => {
-        if (cached?.fiat === this.fiatSymbol && cached.tokenPriceMap && cached.tokenPriceChange) {
+        if (revision === this.priceRevision && cached?.fiat === this.fiatSymbol && cached.tokenPriceMap && cached.tokenPriceChange) {
           this.prices.json = cached;
+          this.priceRevision += 1;
         }
         if (this.prices.json.fiat !== this.fiatSymbol) {
           this.prices.json = { fiat: this.fiatSymbol, tokenPriceMap: {}, tokenPriceChange: {} };
+          this.priceStoreReady = false;
         }
         // Answer before network work. A failed or hanging provider must not leave the popup waiting.
         update(this.prices.json);
@@ -116,6 +127,7 @@ export class PricesService {
   }
 
   setPriceValue({ tokenPriceChange, tokenPriceMap }: BasePriceJson) {
+    this.priceRevision += 1;
     const previous = this.prices.json.fiat === this.fiatSymbol ? this.prices.json : DEFAULT_PRICES;
     this.prices = {
       json: {
@@ -129,6 +141,7 @@ export class PricesService {
 
   async fetchTokensPrice(): Promise<PriceJson> {
     const fiat = this.fiatSymbol;
+    const revision = ++this.requestRevision;
     const [tonAssetsPrice, coinGeckoAssetsPrice, soraAssetsPrice] = await Promise.all([
       this.tonPricingService.fetchTonAsstetsPrice(),
       this.coinGeckoService.fetchAssetsPrice(),
@@ -138,7 +151,7 @@ export class PricesService {
       return { tokenPriceMap: {}, tokenPriceChange: {} };
     })));
 
-    if (fiat !== this.fiatSymbol) throw new Error('Fiat preference changed during price request');
+    if (fiat !== this.fiatSymbol || revision !== this.requestRevision) throw new Error('Price request was superseded');
 
     const allRates: BasePriceJson = {
       tokenPriceMap: {

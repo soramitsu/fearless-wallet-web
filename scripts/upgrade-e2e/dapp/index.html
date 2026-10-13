@@ -20,12 +20,13 @@
       };
       window.e2e = {
         // Substrate: polkadot-js injected signer, signRaw over bytes (wrapped in <Bytes> by the signer).
-        substrate: (id, address, data) =>
+        substrate: (id, address, message) =>
           settle(
             id,
             (async () => {
               const injected = await window.injectedWeb3['fearless-wallet'].enable('Fearless upgrade E2E');
               const accounts = (await injected.accounts.get()).map((account) => account.address);
+              const data = '0x' + [...new TextEncoder().encode(message)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
               const { signature } = await injected.signer.signRaw({ address, data, type: 'bytes' });
               return { accounts, signature };
             })()

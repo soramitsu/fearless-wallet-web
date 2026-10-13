@@ -199,6 +199,10 @@ export const publicKeyOf = (address) => u8aToHex(decodeAddress(address));
  * popup's own approval screens do (messages.ts pri(authorize.approve), pri(signing.approve)). Returns the signature.
  */
 export async function signThroughDapp({ port, popup, dappUrl, kind, address, message, authorizedAccounts }) {
+  // Each proof explicitly grants this account through the normal approval handler.
+  // EVM sites have one selected wallet; a previous wallet's grant cannot authorize the next one.
+  const removed = await popup.call('pri(authorize.remove)', new URL(dappUrl).origin);
+  if (removed.err) throw new Error(`Unable to reset public dApp permission: ${removed.err}`);
   const target = await (await devtools(port, `/json/new?${dappUrl}`, { method: 'PUT' })).json();
   const page = cdp(target.webSocketDebuggerUrl);
   await page.ready;
@@ -217,7 +221,9 @@ export async function signThroughDapp({ port, popup, dappUrl, kind, address, mes
       const result = await page.eval(`window.e2eResults[${JSON.stringify(id)}]`);
       if (result && !result.pending) return result;
       for (const request of (await popup.call('pri(authorize.requests)')).ok ?? []) {
-        await popup.call('pri(authorize.approve)', { id: request.id, authorizedAccounts });
+        if (new URL(request.url).origin !== new URL(dappUrl).origin) continue;
+        const approved = await popup.call('pri(authorize.approve)', { id: request.id, authorizedAccounts });
+        if (approved.err) throw new Error(`Public dApp approval failed: ${approved.err}`);
       }
       const signing =
         kind === 'substrate'

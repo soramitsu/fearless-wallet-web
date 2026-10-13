@@ -130,6 +130,8 @@ export async function checkDappSigning(r, ctx, session, popup, profile) {
     ({ ethereumAddress, ethereumPending }) => ethereumAddress && !ethereumPending
   );
   for (const wallet of evmAccounts) {
+    const selected = accounts.find((account) => lower(account.ethereumAddress) === lower(wallet.ethereumAddress));
+    if (!selected) throw new Error(`No wallet owns the original Ethereum account ${wallet.ethereumAddress}`);
     const result = await signThroughDapp({
       port: session.port,
       popup,
@@ -137,7 +139,7 @@ export async function checkDappSigning(r, ctx, session, popup, profile) {
       kind: 'evm',
       address: wallet.ethereumAddress,
       message,
-      authorizedAccounts,
+      authorizedAccounts: [selected.address],
     });
     r.check(
       'A4',

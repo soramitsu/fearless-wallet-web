@@ -118,7 +118,7 @@ export async function quoteBitcoinTransfer(
   const source = resolveBitcoinTransferSource(params.state, params.from, network);
   const indexer = client ?? new BitcoinEsploraClient({ network });
   const discovered = await discoverCachedBitcoinTransferSources(source, network, indexer, discoveryOptions);
-  const { inMempool, unresolved } = await loadPendingSends(pendingStore, source.accountAddress, network, indexer);
+  const { inMempool, unresolved } = await loadPendingSends(pendingStore, source, network, indexer, params.state);
   const amountSat = optionalBitcoinAmountToSats(params.amount);
   const quote = await quoteBitcoinSend({
     amountSat,
@@ -186,7 +186,7 @@ export async function makeBitcoinTransfer(
   const recipient = normalizeRecipient(to, network);
   return withLocalTransferLock(`bitcoin:${network}:${source.source.address}`, 'bitcoin_previous_send_pending', async () => {
     const discovered = await discoverBitcoinTransferSources(source, network, indexer, discoveryOptions);
-    const { inMempool, unresolved } = await loadPendingSends(pendingStore, source.accountAddress, network, indexer);
+    const { inMempool, unresolved } = await loadPendingSends(pendingStore, source, network, indexer, params.state);
 
     // Its coins are spent in the mempool, so no new transaction could conflict
     // with it: nothing new is signed until it confirms.
@@ -217,6 +217,7 @@ export async function makeBitcoinTransfer(
     // find this transaction on the next send.
     await pendingStore.save({
       accountAddress: source.accountAddress,
+      senderAddress: source.source.address,
       amountSat,
       createdAt: Date.now(),
       network,
@@ -363,16 +364,29 @@ export function invalidateBitcoinQuoteCache(accountAddress?: string, network?: B
 // ones still in the mempool or unknown.
 async function loadPendingSends(
   store: BitcoinPendingSendStore,
-  accountAddress: string,
+  source: BitcoinTransferSource,
   network: BitcoinNetworkKind,
-  client: Partial<BitcoinPendingSendClient>
+  client: Partial<BitcoinPendingSendClient>,
+  state: State
 ): Promise<{ inMempool: BitcoinPendingSend[]; unresolved: BitcoinPendingSend[] }> {
-  const records = (await store.list()).filter(
-    (record) => record.accountAddress === accountAddress && record.network === network
+  const accounts = state.keyringService.getAllAccounts();
+  const senderOf = (record: BitcoinPendingSend): string | undefined => {
+    const account = accounts.find(({ address }) => address === record.accountAddress);
+    const legacyAddress = account && (network === 'mainnet' ? account.meta.bitcoinAddress : account.meta.bitcoinTestnetAddress);
+    const address = record.senderAddress ?? legacyAddress ??
+      (record.accountAddress === source.accountAddress ? source.source.address : undefined);
+    return typeof address === 'string' && isBitcoinAddress(address, network) ? normalizeRecipient(address, network) : undefined;
+  };
+  const records = (await store.list()).filter(record =>
+    record.network === network && (senderOf(record) === undefined || senderOf(record) === source.source.address)
   );
+  const unknownOwner = (record: BitcoinPendingSend) => senderOf(record) === undefined;
 
   if (!records.length) return { inMempool: [], unresolved: [] };
-  if (!client.getTransactionStatus || !client.getOutspend) return { inMempool: [], unresolved: records };
+  if (!client.getTransactionStatus || !client.getOutspend) {
+    if (records.some(unknownOwner)) throw new Error('bitcoin_previous_send_pending');
+    return { inMempool: [], unresolved: records };
+  }
 
   const { inMempool, resolved, unresolved } = await resolveBitcoinPendingSends(
     records,
@@ -380,6 +394,9 @@ async function loadPendingSends(
   );
 
   if (resolved.length) await store.remove(resolved.map(({ txid }) => txid), network);
+  // A removed legacy account may leave no recoverable root identity. Resolve
+  // its public chain outcome, but never assume an unknown record is unrelated.
+  if ([...inMempool, ...unresolved].some(unknownOwner)) throw new Error('bitcoin_previous_send_pending');
 
   return { inMempool, unresolved };
 }
@@ -483,7 +500,7 @@ export function resolveBitcoinTransferSource(
     bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
     mnemonicOrSeed: seed,
     source: {
-      address: sourceAddress,
+      address: normalizeRecipient(sourceAddress, network),
       derivationPath: getBitcoinReceivePath(network),
     },
   };

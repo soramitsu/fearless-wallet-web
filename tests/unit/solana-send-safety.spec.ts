@@ -406,6 +406,39 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
   });
 
 
+  it.each(['current', 'legacy'])('retains the unresolved Solana barrier under another primary account for %s records', async recordKind => {
+    const store = memoryPendingStore();
+    const first = createClient({ statuses: [null], blockHeights: [100] });
+    await expect(makeSolanaTransfer(solParams(), first, sendOptions(store, 1_000))).rejects.toThrow('solana_broadcast_ambiguous');
+    if (recordKind === 'legacy') delete (store.records[0] as SolanaPendingSend & { senderAddress?: string }).senderAddress;
+    const state = createState();
+    const [original] = state.keyringService.getAllAccounts();
+    vi.mocked(state.keyringService.getAllAccounts).mockReturnValue([{ ...original, address: 'public-alias' }] as never);
+    const retry = createClient({ statuses: [null], blockHeights: [100] });
+    await expect(makeSolanaTransfer(solParams({ state, from: 'public-alias', amount: '0.1' }), retry, sendOptions(store)))
+      .rejects.toThrow('solana_previous_send_pending');
+    expect(retry.getLatestBlockhash).not.toHaveBeenCalled();
+    expect(retry.sendRawTransaction).toHaveBeenCalledOnce();
+    expect(retry.sendRawTransaction.mock.calls[0][0]).toBe(store.records[0].transactionBase64);
+    expect(store.records).toHaveLength(1);
+  });
+
+  it('keeps unknown legacy ownership read-only until the old bytes have a proven outcome', async () => {
+    const record: SolanaPendingSend = { accountAddress: 'removed primary', createdAt: 1, network: 'mainnet',
+      lastValidBlockHeight: 456, signature: 'unresolved public signature', transactionBase64: 'AQID' };
+    const store = memoryPendingStore([record]);
+    const unavailable = createClient({ statuses: [null], blockHeights: [100] });
+    await expect(makeSolanaTransfer(solParams(), unavailable, sendOptions(store))).rejects.toThrow('solana_previous_send_pending');
+    expect(unavailable.sendRawTransaction).not.toHaveBeenCalled();
+    expect(unavailable.getLatestBlockhash).not.toHaveBeenCalled();
+    expect(store.records).toEqual([record]);
+    const resolved = createClient({ statuses: [null, { confirmationStatus: 'confirmed', confirmations: 1, err: null, slot: 130 }], blockHeights: [500] });
+    await makeSolanaTransfer(solParams(), resolved, sendOptions(store));
+    expect(resolved.sendRawTransaction).toHaveBeenCalledOnce();
+    expect(resolved.sendRawTransaction.mock.calls[0][0]).not.toBe(record.transactionBase64);
+    expect(store.records).toEqual([]);
+  });
+
   it('refuses overlapping Solana sends before either can bypass the pending record check', async () => {
     const state = createState();
     const store = memoryPendingStore();

@@ -1,9 +1,12 @@
+import { ed25519 } from '@noble/curves/ed25519';
+import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import { storage } from '@extension-base/stores/Storage';
 import type {
   SolanaRpcClient,
   SolanaRpcNetwork,
   SolanaSignatureStatus,
 } from '@extension-base/services/solana-rpc-service';
+import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
 /**
  * A signed Solana transaction recorded before it is broadcast and kept until
@@ -17,6 +20,8 @@ import type {
  */
 export type SolanaPendingSend = {
   accountAddress: string;
+  // On-chain sender identity is shared by aliases of the same imported key.
+  senderAddress?: string;
   createdAt: number;
   lastValidBlockHeight: number;
   network: SolanaRpcNetwork;
@@ -69,7 +74,10 @@ export function createStorageSolanaPendingSendStore(
   const read = async (): Promise<SolanaPendingSend[]> => {
     const { solanaPendingSends } = await backend.get(['solanaPendingSends']);
 
-    return Array.isArray(solanaPendingSends) ? solanaPendingSends.filter(isPendingSend) : [];
+    if (solanaPendingSends === undefined) return [];
+    if (!Array.isArray(solanaPendingSends) || !solanaPendingSends.every(isPendingSend))
+      throw new Error('Invalid saved pending transaction records.');
+    return solanaPendingSends;
   };
   const update = (change: (records: SolanaPendingSend[]) => SolanaPendingSend[]): Promise<void> => {
     const next = queue.then(async () => backend.set({ solanaPendingSends: change(await read()) }));
@@ -111,7 +119,8 @@ export const getDefaultSolanaPendingSendStore = (): SolanaPendingSendStore =>
 export async function resolveSolanaPendingSends(
   records: SolanaPendingSend[],
   client: SolanaPendingSendClient,
-  assertCurrent?: () => void
+  assertCurrent?: () => void,
+  rebroadcast = true
 ): Promise<{ resolved: SolanaPendingSend[]; unresolved: SolanaPendingSend[] }> {
   assertCurrent?.();
   if (!records.length) return { resolved: [], unresolved: [] };
@@ -133,7 +142,7 @@ export async function resolveSolanaPendingSends(
     });
 
     await Promise.all(
-      unresolved.map(async ({ transactionBase64 }) => {
+      (rebroadcast ? unresolved : []).map(async ({ transactionBase64 }) => {
         assertCurrent?.();
         try {
           await client.sendRawTransaction(transactionBase64, { maxRetries: 0, skipPreflight: true }, assertCurrent);
@@ -149,4 +158,18 @@ export async function resolveSolanaPendingSends(
     assertCurrent?.();
     return { resolved: [], unresolved: records };
   }
+}
+
+// Legacy records did not store a canonical sender. The signed message carries
+// its fee payer; verify the envelope instead of trusting its old UI account ID.
+export function legacySolanaPendingSender(record: SolanaPendingSend): string | undefined {
+  try {
+    const bytes = Uint8Array.from(atob(record.transactionBase64), char => char.charCodeAt(0));
+    const parsed = parseSolanaSerializedTransaction(bytes);
+    const signature = bytes.slice(parsed.signaturesOffset, parsed.signaturesOffset + 64);
+    const sender = parsed.accountKeys[0];
+    if (base58Encode(signature) !== record.signature || !ed25519.verify(signature, parsed.messageBytes, base58Decode(sender)))
+      return undefined;
+    return sender;
+  } catch { return undefined; }
 }

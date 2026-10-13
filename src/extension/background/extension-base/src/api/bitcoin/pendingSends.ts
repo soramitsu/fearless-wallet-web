@@ -18,6 +18,8 @@ import type { BitcoinOutpoint } from '@/util/bitcoinSend';
  */
 export type BitcoinPendingSend = {
   accountAddress: string;
+  // On-chain sender identity is shared by aliases of the same imported key.
+  senderAddress?: string;
   amountSat: number;
   createdAt: number;
   network: BitcoinNetworkKind;
@@ -64,7 +66,10 @@ export function createStorageBitcoinPendingSendStore(
   const read = async (): Promise<BitcoinPendingSend[]> => {
     const { bitcoinPendingSends } = await backend.get(['bitcoinPendingSends']);
 
-    return Array.isArray(bitcoinPendingSends) ? bitcoinPendingSends.filter(isPendingSend) : [];
+    if (bitcoinPendingSends === undefined) return [];
+    if (!Array.isArray(bitcoinPendingSends) || !bitcoinPendingSends.every(isPendingSend))
+      throw new Error('Invalid saved pending transaction records.');
+    return bitcoinPendingSends;
   };
   // Serialise read-modify-write so two sends never drop each other's record.
   const update = (change: (records: BitcoinPendingSend[]) => BitcoinPendingSend[]): Promise<void> => {

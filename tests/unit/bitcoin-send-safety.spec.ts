@@ -298,6 +298,32 @@ describe('Bitcoin send kill switch', () => {
 });
 
 describe('Bitcoin ambiguous broadcast guard', () => {
+  it.each(['current', 'legacy', 'orphaned legacy'])('keeps the Bitcoin conflict barrier across account aliases for %s records', async recordKind => {
+    const firstState = createState();
+    const store = memoryPendingStore();
+    const first = transferClient({ broadcast: async () => { throw new BitcoinBroadcastError('bitcoin_broadcast_ambiguous', true); } });
+    await expect(makeBitcoinTransfer(params(firstState, { amount: '0.0012' }), first, discovery, store)).rejects.toThrow('bitcoin_broadcast_ambiguous');
+    const earlier = structuredClone(store.records[0]);
+    if (recordKind !== 'current') delete (store.records[0] as BitcoinPendingSend & { senderAddress?: string }).senderAddress;
+    const otherState = createState();
+    const [oldAccount] = firstState.keyringService.getAllAccounts();
+    const alias = { ...oldAccount, address: 'public-alias', meta: { ...oldAccount.meta, bitcoinAddress: mainnetAddress.toUpperCase() } };
+    vi.mocked(otherState.keyringService.getAllAccounts).mockReturnValue(
+      (recordKind === 'legacy' ? [oldAccount, alias] : [alias]) as never
+    );
+    const second = transferClient();
+    if (recordKind === 'orphaned legacy') {
+      await expect(makeBitcoinTransfer(params(otherState, { from: alias.address, amount: '0.0001' }), second, discovery, store))
+        .rejects.toThrow('bitcoin_previous_send_pending');
+      expect(second.broadcastTransaction).not.toHaveBeenCalled();
+      expect(store.records).toHaveLength(1);
+    } else {
+      await makeBitcoinTransfer(params(otherState, { from: alias.address, amount: '0.0001' }), second, discovery, store);
+      const replacement = bitcoin.Transaction.fromHex(second.broadcastTransaction.mock.calls[0][0]);
+      expect(inputsOf(replacement)).toEqual(expect.arrayContaining(earlier.outpoints.map(({ txid, vout }) => `${txid}:${vout}`)));
+    }
+  });
+
   it.each(['reset', 'rejected'])('preserves an earlier identical ambiguous send when its retry is %s', async boundary => {
     const state = createState();
     let stored: BitcoinPendingSend[] = [];
@@ -319,6 +345,15 @@ describe('Bitcoin ambiguous broadcast guard', () => {
     );
     expect(stored).toEqual(earlier);
     expect(client.broadcastTransaction).toHaveBeenCalledTimes(boundary === 'reset' ? 1 : 2);
+  });
+
+  it('allows sending after an orphaned legacy Bitcoin record is proven resolved', async () => {
+    const record = pendingRecord({ accountAddress: 'removed primary' });
+    const store = memoryPendingStore([record]);
+    const client = transferClient({ statuses: { [record.txid]: { confirmed: true } } });
+    await makeBitcoinTransfer(params(), client, discovery, store);
+    expect(client.broadcastTransaction).toHaveBeenCalledOnce();
+    expect(store.records).toEqual([]);
   });
 
   it('refuses overlapping sends while the earlier account operation is preparing', async () => {
@@ -562,7 +597,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
   });
 
   it('persists pending sends through extension storage without losing concurrent writes', async () => {
-    let stored: unknown = {};
+    let stored: unknown = undefined;
     const backend = {
       get: vi.fn(async () => ({ bitcoinPendingSends: stored })),
       set: vi.fn(async (value: { bitcoinPendingSends?: unknown }) => {

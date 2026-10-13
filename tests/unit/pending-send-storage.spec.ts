@@ -4,6 +4,16 @@ import { createStorageSolanaPendingSendStore, type SolanaPendingSend } from '@ex
 // These stores are the durable duplicate-payment barrier after a worker restart.
 // Exercise actual read-modify-write behavior with public signed-data fixtures.
 describe.each(['bitcoin', 'solana'] as const)('%s pending send evidence', chain => {
+  it.each([{}, [null], [{ network: 'mainnet', accountAddress: 'damaged public record' }]])('refuses damaged pending storage without overwriting it: %j', async damaged => {
+    const key = chain === 'bitcoin' ? 'bitcoinPendingSends' : 'solanaPendingSends';
+    const backend = { get: async () => ({ [key]: structuredClone(damaged) }), set: vi.fn(async () => {}) };
+    const store = chain === 'bitcoin' ? createStorageBitcoinPendingSendStore(backend as never)
+      : createStorageSolanaPendingSendStore(backend as never);
+    await expect(store.list()).rejects.toThrow('Invalid saved pending transaction records');
+    await expect(store.remove(['public id'])).rejects.toThrow('Invalid saved pending transaction records');
+    expect(backend.set).not.toHaveBeenCalled();
+  });
+
   it('preserves original duplicates, other networks and more than fifty unresolved sends', async () => {
     const key = chain === 'bitcoin' ? 'bitcoinPendingSends' : 'solanaPendingSends';
     let stored: unknown[] = [];

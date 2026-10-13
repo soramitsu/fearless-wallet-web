@@ -16,8 +16,10 @@ import { type BasicTxResponse, type ResponseSolanaTransferQuote } from '@extensi
 import {
   getDefaultSolanaPendingSendStore,
   isConfirmedSolanaStatus,
+  legacySolanaPendingSender,
   resolveSolanaPendingSends,
   type SolanaPendingSendStore,
+  type SolanaPendingSend,
 } from './pendingSends';
 import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
@@ -274,9 +276,23 @@ async function makeSolanaTransfer(
   const source = resolveSolanaTransferSource(params.state, params.from);
   const network = getSolanaNetworkKind(networkJson);
   return withLocalTransferLock(`solana:${network}:${source.solanaAddress}`, 'solana_previous_send_pending', async () => {
-    const pending = (await pendingStore.list()).filter(
-      (record) => record.accountAddress === source.accountAddress && record.network === network
-    );
+    const accounts = params.state.keyringService.getAllAccounts();
+    const senderOf = (record: SolanaPendingSend): string | undefined => {
+      const known = accounts.find(({ address }) => address === record.accountAddress)?.meta.solanaAddress;
+      const verified = legacySolanaPendingSender(record);
+      if (record.senderAddress !== undefined) return verified === record.senderAddress ? verified : undefined;
+      return verified ?? (typeof known === 'string' ? known : undefined) ??
+        (record.accountAddress === source.accountAddress ? source.solanaAddress : undefined);
+    };
+    const records = (await pendingStore.list()).filter(record => record.network === network);
+    const senders = new Map(records.map(record => [record, senderOf(record)]));
+    const unknown = records.filter(record => senders.get(record) === undefined);
+    // Unknown legacy ownership may be resolved by reads, never by rebroadcast
+    // from a different selected account. An unresolved record blocks new sends.
+    const unknownOutcome = await resolveSolanaPendingSends(unknown, transferClient, assertCurrent, false);
+    if (unknownOutcome.resolved.length) await pendingStore.remove(unknownOutcome.resolved.map(({ signature }) => signature), network);
+    if (unknownOutcome.unresolved.length) throw new Error('solana_previous_send_pending');
+    const pending = records.filter(record => senders.get(record) === source.solanaAddress);
     const { resolved, unresolved } = await resolveSolanaPendingSends(pending, transferClient, assertCurrent);
 
     if (resolved.length) await pendingStore.remove(resolved.map(({ signature }) => signature), network);
@@ -301,6 +317,7 @@ async function makeSolanaTransfer(
     // Recorded before broadcast so a stopped service worker still finds it.
     await pendingStore.save({
       accountAddress: source.accountAddress,
+      senderAddress: source.solanaAddress,
       createdAt: now(),
       lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
       network,

@@ -69,6 +69,7 @@ export default defineComponent({
     countSteps: { required: true, type: Number },
     step: { required: true, type: Number },
     isLoading: { default: false, type: Boolean },
+    completionConfirmed: { default: true, type: Boolean },
     header: String,
     showFullScreenIcon: { default: false },
     showAdvancedForm: { default: false },
@@ -78,7 +79,7 @@ export default defineComponent({
       return getGoogleWalletProgressState(this.countSteps, this.step);
     },
     isFinishStep() {
-      return this.progressState.isFinishStep;
+      return this.progressState.isFinishStep && this.completionConfirmed;
     },
     showBackButton() {
       return this.progressState.isValid && !this.showAdvancedForm && !this.isFinishStep;

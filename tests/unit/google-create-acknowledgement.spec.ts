@@ -11,7 +11,6 @@ vi.mock('@/screens/addWallet/AdvancedButton.vue', () => ({ default: { template: 
 vi.mock('@/screens/addWallet/NicknameForm.vue', () => ({ default: { template: '<div />' } }));
 vi.mock('@/screens/addWallet/CreateWallet.vue', () => ({ default: { template: '<div />' } }));
 vi.mock('@/screens/addWallet/AdvancedForm.vue', () => ({ default: { template: '<div />' } }));
-vi.mock('@/screens/addWallet/google/FlowStepLayout.vue', () => ({ default: { template: '<div><slot /><slot name="control" /></div>' } }));
 import CreateGoogle from '@/screens/addWallet/google/CreateGoogle.vue';
 const root = { address: 'public-root', encoded: 'public-encrypted-root', meta: { name: 'Root', ethereumAddress: '0xPublicChild' } };
 const child = { address: '0xPublicChild', encoded: 'public-encrypted-child', meta: { name: 'Child' } };
@@ -26,7 +25,7 @@ const open = async () => {
   const wrapper = shallowMount(CreateGoogle, { global: {
     config: { errorHandler: vi.fn() },
     mocks: { $t: (key: string) => key, $route: { params: { access_token: 'public-test-token' } }, $router: { replace: vi.fn().mockResolvedValue(undefined) } },
-    stubs: { FlowStepLayout: { template: '<div><slot /><slot name="control" /></div>' }, FButton: true, NotificationPopup: true, NegativeMessage: true },
+    stubs: { FlowStepLayout: false, CircleButton: true, Loader: true, FinishForm: { template: '<div data-testid="finishForm">Finished</div>' }, FButton: true, NotificationPopup: true, NegativeMessage: true },
   } });
   await flushPromises();
   await wrapper.setData({ nickname: 'Public fixture', step: 4 });
@@ -50,11 +49,13 @@ describe('Google create backup acknowledgements', () => {
     const wrapper = await open();
     expect(mocks.upload).toHaveBeenCalledTimes(2);
     expect(wrapper.vm.isLoading).toBe(true);
+    expect(wrapper.find('[data-testid=finishForm]').exists()).toBe(false);
     expect(mocks.select).not.toHaveBeenCalled();
     upload.resolve({ id: 'root-file' });
     await flushPromises();
     expect(mocks.select).toHaveBeenCalledExactlyOnceWith(root.address);
     expect(wrapper.vm.isLoading).toBe(false);
+    expect(wrapper.find('[data-testid=finishForm]').exists()).toBe(true);
     wrapper.unmount();
   });
 

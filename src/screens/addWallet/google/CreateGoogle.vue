@@ -3,6 +3,8 @@
     :countSteps="countSteps"
     :showAdvancedForm="showAdvancedForm"
     :step="step"
+    :completionConfirmed="isFinished"
+    :isLoading="isLoading"
     :header="header"
     :showFullScreenIcon="false"
     @back="back"

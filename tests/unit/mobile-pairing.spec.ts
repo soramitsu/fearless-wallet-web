@@ -29,6 +29,7 @@ let records: { address: string; meta: Record<string, unknown> }[];
 let port: Port, disconnectPort: () => void;
 let init: (id: string, port?: Port) => Promise<string>;
 let abort: (id: string, port?: Port) => boolean;
+let sessionListeners: Record<string, (event: { topic: string }) => void>;
 
 beforeAll(async () => {
   await cryptoWaitReady();
@@ -42,6 +43,7 @@ beforeEach(() => {
   unsubscribe = {};
   existing = [];
   records = [];
+  sessionListeners = {};
   session = {
     topic: 'public-pairing-session',
     acknowledged: true,
@@ -79,7 +81,7 @@ beforeEach(() => {
           return sessions;
         },
       },
-      on: vi.fn(),
+      on: vi.fn((event, callback) => { sessionListeners[event] = callback; }),
     },
     abortPairingAttempt: vi.fn(),
   };
@@ -96,7 +98,10 @@ beforeEach(() => {
       getAllAccounts: () => [...existing, ...records],
       getAddresses: () => records,
       getAddress: (address: string) => records.find((r) => r.address === address),
-      saveAddress: vi.fn((address, meta) => records.push({ address, meta })),
+      saveAddress: vi.fn(async (address, meta, _type, options) => {
+        options?.assertCurrent?.();
+        records.push({ address, meta });
+      }),
     },
     updateCurrentAccount: vi.fn(),
     subscriptionService: {
@@ -360,4 +365,102 @@ describe('pairing boundary failures and isolation', () => {
     await settle({ ...session, topic: 'unknown-session' });
     noImport();
   });
+});
+
+function delayedAddressWrite() {
+  let submit!: () => void, acknowledge!: () => void, reject!: (reason: Error) => void;
+  vi.mocked(state.keyringService.saveAddress).mockImplementationOnce((address, meta, _type, options) =>
+    new Promise<void>((resolve, fail) => {
+      reject = fail;
+      submit = () => {
+        try { options?.assertCurrent?.(); } catch (error) { fail(error); return; }
+        acknowledge = () => { records.push({ address, meta }); resolve(); };
+      };
+    })
+  );
+  return {
+    submit: () => submit(),
+    acknowledge: () => acknowledge(),
+    reject: () => reject(new Error('Public storage failure')),
+  };
+}
+
+async function continueCompletion() {
+  for (let i = 0; i < 12; i++) await Promise.resolve();
+}
+
+describe('pairing storage acknowledgement and late invalidation', () => {
+  it('waits for durable storage before selecting or announcing success', async () => {
+    const write = delayedAddressWrite();
+    await begin();
+    await settle();
+    write.submit();
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    expect(callbacks.first).not.toHaveBeenCalled();
+    write.acknowledge();
+    await continueCompletion();
+    expect(state.updateCurrentAccount).toHaveBeenCalledOnce();
+    expect(callbacks.first).toHaveBeenLastCalledWith({ status: true });
+    expect(client.disconnect).not.toHaveBeenCalled();
+  });
+
+  it('reports storage failure without selecting and retires its new session', async () => {
+    const write = delayedAddressWrite();
+    await begin();
+    await settle();
+    write.submit();
+    write.reject();
+    await continueCompletion();
+    expect(records).toEqual([]);
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    expect(callbacks.first).toHaveBeenLastCalledWith({ status: false, message: 'unavailable' });
+    expect(() => service.getSession(session.topic)).toThrow();
+  });
+
+  it('rechecks cancellation before a queued write starts', async () => {
+    const write = delayedAddressWrite();
+    await begin();
+    await settle();
+    abort('public-attempt', port);
+    write.submit();
+    await continueCompletion();
+    expect(records).toEqual([]);
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    expect(callbacks.first).not.toHaveBeenCalledWith({ status: true });
+  });
+
+  it('rechecks duplicate ownership before a queued write starts', async () => {
+    const write = delayedAddressWrite();
+    await begin();
+    await settle();
+    existing.push({ address: bob, meta: { ethereumAddress: evm } });
+    write.submit();
+    await continueCompletion();
+    expect(records).toEqual([]);
+    expect(callbacks.first).toHaveBeenLastCalledWith({ status: false, message: 'duplicate' });
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+  });
+
+  it.each(['cancel', 'port disconnect', 'selection changed', 'session changed', 'session revision', 'expired'])(
+    'retains an acknowledged public record but refuses late success after %s', async (kind) => {
+      const write = delayedAddressWrite();
+      await begin();
+      await settle();
+      write.submit();
+      if (kind === 'cancel') abort('public-attempt', port);
+      if (kind === 'port disconnect') disconnectPort();
+      if (kind === 'selection changed') Object.assign(state, { currentAccount: { address: bob } });
+      if (kind === 'session changed') session.peer.publicKey = 'changed-public-peer';
+      if (kind === 'session revision') sessionListeners.session_update({ topic: session.topic });
+      if (kind === 'expired') session.expiry = Math.floor(Date.now() / 1000) - 1;
+      write.acknowledge();
+      await continueCompletion();
+      expect(records).toHaveLength(1);
+      expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+      expect(callbacks.first).not.toHaveBeenCalledWith({ status: true });
+      expect(() => service.getSession(session.topic)).toThrow();
+      expect(service.availableNetworks(records[0].address)).toEqual([]);
+      expect(client.disconnect).toHaveBeenCalledWith(expect.objectContaining({ topic: session.topic }));
+    }
+  );
 });

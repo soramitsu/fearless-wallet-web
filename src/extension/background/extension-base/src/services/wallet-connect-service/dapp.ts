@@ -22,6 +22,8 @@ type PairingAttempt = {
   id: string;
   port?: Port;
   active: boolean;
+  completing?: boolean;
+  persistingTopic?: string;
   uri?: string;
   session?: SessionTypes.Struct;
   priorTopics: Set<string>;
@@ -127,7 +129,7 @@ export class WalletConnectDAppService {
         .then((session) => {
           attempt.session = structuredClone(session);
           if (!attempt.active) this.discardPairingSession(attempt);
-          else this.completePairing(attempt);
+          else void this.completePairing(attempt);
         })
         .catch(() => this.finishPairing(attempt, { status: false, message: 'rejected' }));
       if (!attempt.active) throw new Error('Mobile pairing was cancelled');
@@ -160,17 +162,19 @@ export class WalletConnectDAppService {
     }
     attempt.subscriber = { id, callback };
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => this.abortPairingAttempt(attempt.id, port));
-    this.completePairing(attempt);
+    void this.completePairing(attempt);
     return { uri };
   }
 
   private discardPairingSession(attempt: PairingAttempt): void {
     const topic = attempt.session?.topic;
     // A rejected attempt cannot disconnect an already imported/previous session.
+    // Its own submitted write may have published before a late cancellation check.
     if (
       !topic ||
       attempt.priorTopics.has(topic) ||
-      this.state.keyringService.getAllAccounts().some((account) => account.meta.wcTopic === topic)
+      (attempt.persistingTopic !== topic &&
+        this.state.keyringService.getAllAccounts().some((account) => account.meta.wcTopic === topic))
     )
       return;
     this.disconnect(topic);
@@ -188,17 +192,23 @@ export class WalletConnectDAppService {
     }
   }
 
-  private completePairing(attempt: PairingAttempt): void {
-    if (!attempt.active || !attempt.session || !attempt.subscriber) return;
+  private async completePairing(attempt: PairingAttempt): Promise<void> {
+    if (!attempt.active || !attempt.session || !attempt.subscriber || attempt.completing) return;
+    attempt.completing = true;
+    let duplicate = false;
     try {
-      if (
-        this.state.currentAccount?.address !== attempt.currentAddress ||
-        attempt.priorTopics.has(attempt.session.topic)
-      )
-        throw new Error('Mobile pairing context changed');
-      const account = captureMobilePairingAccount(this, attempt.session);
+      const session = attempt.session;
+      const revision = this.getSessionRevision(session.topic);
+      const assertCurrent = () => {
+        if (!attempt.active || this.state.currentAccount?.address !== attempt.currentAddress ||
+          attempt.priorTopics.has(session.topic) || this.getSessionRevision(session.topic) !== revision)
+          throw new Error('Mobile pairing context changed');
+        captureMobilePairingAccount(this, session);
+      };
+      assertCurrent();
+      const account = captureMobilePairingAccount(this, session);
       const encodedAddress = this.state.keyringService.encodeAddress(account.address);
-      const duplicate = this.state.keyringService
+      const isDuplicate = () => this.state.keyringService
         .getAllAccounts()
         .some(
           (existing) =>
@@ -208,25 +218,37 @@ export class WalletConnectDAppService {
                 (address) => typeof address === 'string' && sameMobileIdentity(address, account.ethereumAddress)
               ))
         );
-      if (duplicate) {
+      if (isDuplicate()) {
         this.finishPairing(attempt, { status: false, message: 'duplicate' });
         return;
       }
-      this.state.keyringService.saveAddress(
+      await this.state.keyringService.saveAddress(
         encodedAddress,
         {
           name: account.name,
           isMobile: true,
-          wcTopic: attempt.session.topic,
+          wcTopic: session.topic,
           ethereumAddress: account.ethereumAddress,
           chains: account.chains,
         },
-        'address'
+        'address',
+        {
+          requireAbsent: true,
+          assertCurrent: () => {
+            assertCurrent();
+            duplicate = !!isDuplicate();
+            if (duplicate) throw new Error('Mobile account already exists.');
+            attempt.persistingTopic = session.topic;
+          },
+        }
       );
+      // A submitted public record can outlive cancellation; retain it, retire its
+      // session and refuse late selection/success instead of blindly deleting it.
+      assertCurrent();
       this.state.updateCurrentAccount({ address: encodedAddress });
       this.finishPairing(attempt, { status: true });
     } catch {
-      this.finishPairing(attempt, { status: false, message: 'unavailable' });
+      this.finishPairing(attempt, { status: false, message: duplicate ? 'duplicate' : 'unavailable' });
     }
   }
 

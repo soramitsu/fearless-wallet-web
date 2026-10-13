@@ -24,6 +24,7 @@ import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
 import { updateAccountMetadata } from './AccountMetadata';
+import { updatePublicAddress, type PublicAddressUpdateOptions } from './AddressMetadata';
 import { importLocalAccount } from './LocalAccountImport';
 import { decodeJsonAccount } from './JsonAccountImport';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
@@ -292,15 +293,11 @@ export class KeyringService {
     });
   }
 
-  saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType) {
-    keyring.saveAddress(
-      address,
-      {
-        ...meta,
-        walletEcosystem: WalletEcosystem.Substrate,
-      },
-      type
-    );
+  saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType, options: PublicAddressUpdateOptions = {}) {
+    const snapshot = structuredClone(meta);
+    return updatePublicAddress(address, type, (current) => ({
+      ...current, ...snapshot, walletEcosystem: WalletEcosystem.Substrate,
+    }), options);
   }
 
   backupAccount(address: string, password: string) {
@@ -606,11 +603,10 @@ export class KeyringService {
     const account = this.getAddress(address);
 
     if (account) {
-      this.saveAddress(
-        address,
-        withUniversalWalletKeyringMeta(address, { ...(account.meta as FWKeyringMeta), ...meta }, meta.walletEcosystem),
-        'address'
-      );
+      const snapshot = structuredClone(meta);
+      return updatePublicAddress(address, 'address', (current) =>
+        withUniversalWalletKeyringMeta(address, { ...current, ...snapshot },
+          snapshot.walletEcosystem ?? current.walletEcosystem ?? WalletEcosystem.Substrate), { requireExisting: true });
     }
   }
 

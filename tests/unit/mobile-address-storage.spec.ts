@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { cryptoWaitReady, encodeAddress } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { addressKey, contractKey } from '@subwallet/ui-keyring/defaults';
-import type { KeyringJson, KeyringAddressType } from '@subwallet/ui-keyring/types';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, KeyringJson>,
@@ -42,6 +41,7 @@ import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
+import type { KeyringJson, KeyringAddressType } from '@subwallet/ui-keyring/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 
 const PASSWORD = 'Public mobile persistence password';
@@ -57,8 +57,10 @@ async function drain() {
   }
 }
 function begin(meta: FWKeyringMeta = mobile(), type: KeyringAddressType = 'address') {
-  const result = Promise.resolve().then(() => service.saveAddress(address, meta, type))
-    .then((value) => ({ value }), (error) => ({ error }));
+  return track(service.saveAddress(address, meta, type));
+}
+function track<T>(promise: Promise<T>) {
+  const result = promise.then((value) => ({ value }), (error) => ({ error }));
   pending.push(result);
   return result;
 }
@@ -85,7 +87,8 @@ beforeEach(async () => {
   keyring.keyring.changeMasterPassword(PASSWORD);
   service = Object.create(KeyringService.prototype);
   Object.assign(service, { password: PASSWORD, tonKeyring: new TonKeyringService(service) });
-  const pair = keyring.createFromUri('//Alice');
+  // A public development derivation absent from ui-keyring's built-in dev pairs.
+  const pair = keyring.createFromUri('//Alice//mobile-storage');
   address = pair.address;
   pair.lock();
 });
@@ -187,5 +190,99 @@ describe('durable mobile address publication with installed keyring', () => {
     expect(fixture.data[storedKey()]).toEqual(addressRecord);
     expect(fixture.data[storedKey('contract')].meta).not.toHaveProperty('wcTopic');
     expect(keyring.getContract(address)?.meta.name).toBe('Public contract');
+  });
+
+  it('captures nested caller metadata before waiting in the storage queue', async () => {
+    const meta = mobile();
+    const result = begin(meta);
+    meta.name = 'Mutated after submission';
+    meta.chains.push('999');
+    await drain();
+    expect(await result).toHaveProperty('value');
+    expect(fixture.data[storedKey()].meta).toMatchObject(mobile());
+    expect(keyring.getAddress(address)?.meta.chains).toEqual(['10']);
+  });
+
+  it('applies concurrent partial updates to the latest durable record', async () => {
+    await seed();
+    const rename = begin({ name: 'Queued name' });
+    const tag = begin({ tags: ['Public tag'] });
+    await drain();
+    expect(await rename).toHaveProperty('value');
+    expect(await tag).toHaveProperty('value');
+    expect(fixture.data[storedKey()].meta).toMatchObject({ name: 'Queued name', tags: ['Public tag'], wcTopic: 'public-topic' });
+  });
+
+  it('renames through the service using durable metadata, with no stale live-field overwrite', async () => {
+    await seed();
+    fixture.data[storedKey()].meta.chains = ['42161'];
+    const result = track(service.saveAccountMeta(address, { name: 'Renamed via service' }));
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    expect(keyring.getAddress(address)?.meta.name).toBe(mobile().name);
+    await drain();
+    expect(await result).toHaveProperty('value');
+    expect(keyring.getAddress(address)?.meta).toMatchObject({ name: 'Renamed via service', chains: ['42161'] });
+  });
+
+  it('does not resurrect a deleted durable record during a stale service rename', async () => {
+    await seed();
+    delete fixture.data[storedKey()];
+    const result = track(service.saveAccountMeta(address, { name: 'Stale rename' }));
+    await drain();
+    expect(await result).toHaveProperty('error');
+    expect(fixture.data[storedKey()]).toBeUndefined();
+  });
+
+  it('preserves a valid stored SS58 alias and restores only acknowledged metadata on reload', async () => {
+    const alias = encodeAddress(address, 0);
+    fixture.data[storedKey()] = { address: alias, meta: { ...mobile(), whenCreated: 12345 } };
+    const result = begin({ name: 'Alias rename' });
+    await drain();
+    expect(await result).toHaveProperty('value');
+    expect(fixture.data[storedKey()]).toMatchObject({ address: alias, meta: { name: 'Alias rename', whenCreated: 12345 } });
+    keyring.addresses.removeSubjectOnly(address);
+    keyring.loadAll({ type: 'sr25519', isDevelopment: false, store: new AccountsStore(),
+      password_store: { get: (callback) => callback(undefined), set: () => {}, remove: () => {} },
+    });
+    await drain();
+    expect(keyring.getAddresses()).toHaveLength(1);
+    expect(keyring.getAddresses()[0].meta).toMatchObject({ name: 'Alias rename', wcTopic: 'public-topic' });
+  });
+
+  it.each([null, { address: 'invalid', meta: {} }, { address: undefined, meta: {} }, { meta: [] }, { meta: null }])(
+    'retains malformed durable record %j without publishing a replacement', async (record) => {
+      fixture.data[storedKey()] = (record && { address, ...record }) as KeyringJson;
+      const before = structuredClone(fixture.data);
+      const result = begin();
+      await drain();
+      expect(await result).toHaveProperty('error');
+      expect(fixture.data).toEqual(before);
+      expect(keyring.getAddresses()).toEqual([]);
+    }
+  );
+
+  it('refuses a new pairing over an existing durable address', async () => {
+    await seed();
+    const original = structuredClone(fixture.data);
+    const result = track(service.saveAddress(address, { ...mobile(), wcTopic: 'replacement' }, 'address', { requireAbsent: true }));
+    await drain();
+    expect(await result).toHaveProperty('error');
+    expect(fixture.data).toEqual(original);
+  });
+
+  it('rechecks pairing ownership at the queued write boundary', async () => {
+    let current = true;
+    const blocking = begin({ name: 'Public contract' }, 'contract');
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    const result = track(service.saveAddress(address, mobile(), 'address', {
+      requireAbsent: true,
+      assertCurrent: () => { if (!current) throw new Error('Pairing cancelled'); },
+    }));
+    current = false;
+    await drain();
+    expect(await blocking).toHaveProperty('value');
+    expect(await result).toHaveProperty('error');
+    expect(fixture.data[storedKey()]).toBeUndefined();
+    expect(keyring.getAddresses()).toEqual([]);
   });
 });

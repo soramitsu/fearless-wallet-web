@@ -11,6 +11,7 @@ import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
 import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
 import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
 import { checkJsonImportStorage } from './extension-smoke-json-import.mjs';
+import { checkMobileAddressStorage } from './extension-smoke-mobile-address.mjs';
 import { captureJsonRecoveryNotice } from './extension-smoke-json-notice.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -52,7 +53,8 @@ const primitivesScreenshotsDir =
 const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
 const localImportStorageOnly = process.argv.includes('--local-account-import-storage');
 const jsonImportStorageOnly = process.argv.includes('--json-account-import-storage');
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly);
+const mobileAddressStorageOnly = process.argv.includes('--mobile-address-storage');
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -319,10 +321,10 @@ async function main() {
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
 
-    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly) {
+    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly) {
       let controlSession = extensionSession;
       let liveBackgroundSession = backgroundSession;
-      const checkImport = jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
+      const checkImport = mobileAddressStorageOnly ? checkMobileAddressStorage : jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
       const result = await checkImport({
         eventually,
         inspectUI: ({ address, password }) => captureJsonRecoveryNotice({ cdp, extensionId,
@@ -349,7 +351,7 @@ async function main() {
           await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
         },
       });
-      console.info(JSON.stringify({ extensionId, [jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
+      console.info(JSON.stringify({ extensionId, [mobileAddressStorageOnly ? 'mobileAddressStorage' : jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
       return;
     }
 

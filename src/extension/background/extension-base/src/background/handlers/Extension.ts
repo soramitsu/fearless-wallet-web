@@ -1773,10 +1773,11 @@ export default class Extension extends FWExtensionBase {
     return this.state.scamService.checkScamAddress(request);
   }
 
-  private createMobileWallet({ address, meta }: RequestAddressCreate) {
-    this.state.keyringService.saveAddress(address, meta, 'address');
+  private async createMobileWallet({ address, meta }: RequestAddressCreate) {
+    await this.state.keyringService.saveAddress(address, meta, 'address');
 
     this.state.updateCurrentAccount({ address });
+    return true;
   }
 
   private subscribeNetworkMap(id: string, port?: Port): Record<string, NetworkJson> {

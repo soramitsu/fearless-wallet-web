@@ -158,6 +158,18 @@ afterEach(async () => {
 });
 
 describe('web reset with one IndexedDB password/account commit', { timeout: 60_000 }, () => {
+  it('loads actual ui-keyring accounts without its normal persistence callbacks writing during recovery-only startup', async () => {
+    await native();
+    KeyringStoreWeb.readOnly = true;
+    const write = vi.spyOn(BaseWebStore.prototype, 'writeToDB');
+    const remove = vi.spyOn(BaseWebStore.prototype, 'removeFromDB');
+    const loading = track(new AccountsStore().all((key, json) => keyring.loadAccount(json, key)));
+    await drain();
+    expect(await loading).toHaveProperty('value');
+    expect(write.mock.calls.length).toBe(0);
+    expect(remove.mock.calls.length).toBe(0);
+  });
+
   it('does not enroll additional network keys during recovery-only unlock', async () => {
     await native();
     KeyringStoreWeb.readOnly = true;

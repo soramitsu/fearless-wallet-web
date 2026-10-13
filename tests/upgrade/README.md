@@ -97,6 +97,14 @@ Passwords include a non-ASCII master password (`Pässwörd-日本語-🔐`).
 
 ## Results
 
+### Final audit source, 14 October 2026 JST
+
+Clean `ba8798b7af5df6900b83137b4e692373557fa872` passed all12 scenarios and482 checks with Node24.19.0 and Chrome for Testing147.0.7727.15. The run completed at `2026-10-13T21:26:50.870Z`. Report SHA256 `acd96fceea2fae356c2c6ef626c3ca427109661aee4b456fafb733467634a6ad`; the report and original profiles are in the parent `build/safe-upgrade/evidence/codex-20261012/web-final-upgrade-matrix-v1`. `final-source-validation.json` binds the318-file candidate artifact,503 checked legacy files, source tools and a complete hashed run inventory.
+
+This final-source rerun includes exact export, wrong-password rejection, migration/recovery, worker restarts/cold starts, ECDSA record ownership and R1 clean3.0.6 rollback. All network operations use local stand-ins with external DNS denied. It qualifies the production-mode test-key artifact, not store-signed distribution, Firefox upgrades, Linux CI or every required cohort. The1.3.1 background-only/UI-kit-stub boundary remains explicit.
+
+### Earlier integrated result
+
 The integrated production-mode test artifact at clean `3ec8623ba271be5f2ba7475f815cf650c4827277` passed all 12 scenarios and 482 assertions on 12 October 2026 with harness `dfb43b85`, Node 24.19.0 and Chrome for Testing 147.0.7727.15. The run completed at 05:05:35 UTC. Report: `build/safe-upgrade/evidence/codex-20261012/wk5-integrated-document-probe/report.json` in the parent workspace; SHA-256 `25c3fa6dae6c6c43282e60005bd765b6021cc0f9700516e70128313b920fc566`. It includes every first-response cold-start assertion, historical key/sign/export checks and R1 clean rollback. This qualifies that cached test artifact; final distribution artifacts, Linux CI and signed Firefox upgrades retain their separate gates.
 
 ### Earlier failed integrated run

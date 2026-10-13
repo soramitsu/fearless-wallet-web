@@ -132,6 +132,7 @@ hoisted.createUiKeyring = () => {
         return pair.toJson(master);
       },
       addFromJson: (json: KeyringPair$Json) => backend.addFromJson(json),
+      addPair: (pair: KeyringPair) => backend.addPair(pair),
       removePair: (address: string) => backend.removePair(address),
     },
     loadAll(options: { store: AccountsStoreLike & { all: (load: (key: string, json: KeyringPair$Json) => void) => void }; password_store: typeof passwordStore }) {

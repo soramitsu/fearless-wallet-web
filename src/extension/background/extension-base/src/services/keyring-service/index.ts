@@ -16,7 +16,6 @@ import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { ecdsaPairKeys } from '@extension-base/stores/EcdsaAccountRecords';
-import { tonStore } from '@extension-base/stores/TonStore';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
@@ -24,7 +23,7 @@ import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
-import { isCurrentAccountPair, updateAccountMetadata } from './AccountMetadata';
+import { alreadyPersistedAccountStore, isCurrentAccountPair, updateAccountMetadata } from './AccountMetadata';
 import { removePublicAddress, updatePublicAddress, type PublicAddressUpdateOptions } from './AddressMetadata';
 import { importLocalAccount } from './LocalAccountImport';
 import { decodeJsonAccount } from './JsonAccountImport';
@@ -530,55 +529,77 @@ export class KeyringService {
    * of it is back.
    */
   async restoreDeletedWallet(id: string): Promise<ResponseRestoreDeletedWallet> {
-    let restored: Awaited<ReturnType<KeyringService['writeBackDeletedWallet']>>;
-
-    try {
-      restored = await this.writeBackDeletedWallet(id);
-    } catch (e) {
-      console.error(e);
-
-      return { ok: false, code: 'storage_failed' };
-    }
-
-    if ('code' in restored) return { ok: false, code: restored.code };
-
-    const { wallet, accounts, tonWritten } = restored;
-
-    if (wallet.ton && tonWritten) {
-      this.tonKeyring.setAccounts({ ...wallet.ton, address: wallet.address });
-      // A phrase kept under an earlier password is listed in Account access, as after an unlock.
-      if (this.password) this.access.scheduleScan(this.password);
-    }
-
-    // What keyring.loadAll does with each stored record at a start (Keyring.loadAccount, private in its typings).
-    const loader = keyring as unknown as { loadAccount: (json: KeyringPair$Json, key: string) => void };
-
-    loadableAccountRecords(accounts).forEach(([key, record]) => loader.loadAccount(record as KeyringPair$Json, key));
-
-    return { ok: true, address: wallet.address, name: wallet.name, walletEcosystem: wallet.walletEcosystem };
+    return this.tonKeyring.vault.exclusive(async () => {
+      try {
+        return await this.writeBackDeletedWallet(id);
+      } catch (error) {
+        console.error(error);
+        return { ok: false, code: 'storage_failed' };
+      }
+    });
   }
 
-  private async writeBackDeletedWallet(
-    id: string
-  ): Promise<{ code: 'not_found' | 'already_in_wallet' } | { wallet: DeletedWallet; accounts: Record<string, unknown>; tonWritten: boolean }> {
+  private async writeBackDeletedWallet(id: string): Promise<ResponseRestoreDeletedWallet> {
     const store = this.accountsStore ?? new AccountsStore();
     const key = deletedWalletKey(id);
     const wallet = readDeletedWallet(await store.getAndWait(key));
 
-    if (!wallet) return { code: 'not_found' };
-    if (this.isInWallet(wallet.address)) return { code: 'already_in_wallet' };
+    if (!wallet) return { ok: false, code: 'not_found' };
+    if (this.isInWallet(wallet.address)) return { ok: false, code: 'already_in_wallet' };
 
-    const records = Object.entries(wallet.accounts);
-    const current = await Promise.all(records.map(([recordKey]) => store.getAndWait(recordKey)));
-    const accounts = Object.fromEntries(records.filter((_record, index) => current[index] === undefined));
-    const { ton } = wallet;
-    // Written only where nothing is stored, in one queued read and write.
-    const tonWritten = !!ton && (await tonStore.updateAndWait(wallet.address, (stored) => (stored ? undefined : ton))) !== undefined;
-    const everyRecordIsBack = (!ton || tonWritten) && Object.keys(accounts).length === records.length;
-
-    await store.replaceAndWait(accounts, everyRecordIsBack ? [key] : []);
-
-    return { wallet, accounts, tonWritten };
+    // Prepare detached pairs before removing the recovery copy. Publication below never
+    // calls ui-keyring.loadAccount: that would enqueue another unacknowledged store write.
+    const prepared = loadableAccountRecords(wallet.accounts).map(([storageKey, record]) => {
+      const json = record as KeyringPair$Json;
+      const pair = keyring.createFromJson(json);
+      if (accountStoreKey(pair) !== storageKey || json.meta.isTesting) {
+        throw new Error('Recovery account does not match its storage identity.');
+      }
+      return { pair, json };
+    });
+    if (!wallet.ton && !prepared.some(({ pair }) => walletAddressIdentity(pair.address) === walletAddressIdentity(wallet.address))) {
+      throw new Error('Recovery copy has no primary wallet key.');
+    }
+    if (wallet.ton) {
+      if (!/^[0-9a-f]{64}$/i.test(wallet.ton.publicKeyHex) || !wallet.ton.cipherSeed) {
+        throw new Error('Recovery copy has an invalid TON key.');
+      }
+      const contract = this.tonKeyring.createContractV4(hexToU8a(`0x${wallet.ton.publicKeyHex}`));
+      if (this.tonKeyring.getUserFriendlyAddress(contract.address) !== wallet.address) {
+        throw new Error('Recovery TON key does not match its address.');
+      }
+    }
+    const records = { ...wallet.accounts, ...(wallet.ton ? { [`ton:${wallet.address}`]: wallet.ton } : {}) };
+    let conflict: 'not_found' | 'already_in_wallet' | undefined;
+    await store.mutateRecordsAndWait([key, ...Object.keys(records)], (current) => {
+      if (current[key] === undefined) {
+        conflict = 'not_found';
+        return { entries: {}, remove: [] };
+      }
+      if (JSON.stringify(current[key]) !== JSON.stringify(wallet)) {
+        throw new Error('Recovery copy changed. Retry with the current copy.');
+      }
+      // A prior failed archive removal may have written identical records without
+      // publishing them. Reuse only those exact copies; never overwrite another wallet.
+      if (this.isInWallet(wallet.address) || prepared.some(({ pair }) => this.isInWallet(pair.address)) ||
+        Object.entries(records).some(([recordKey, record]) => current[recordKey] !== undefined &&
+          JSON.stringify(current[recordKey]) !== JSON.stringify(record))) {
+        conflict = 'already_in_wallet';
+        return { entries: {}, remove: [] };
+      }
+      return { entries: Object.fromEntries(Object.entries(records).filter(([recordKey]) => current[recordKey] === undefined)), remove: [key] };
+    }, () => {
+      if (conflict) return;
+      for (const { pair, json } of prepared) {
+        keyring.keyring.addPair(pair);
+        keyring.accounts.add(alreadyPersistedAccountStore, pair.address, pair.publicKey, json, pair.type);
+      }
+      if (wallet.ton) this.tonKeyring.setAccounts({ ...wallet.ton, address: wallet.address });
+    });
+    if (conflict) return { ok: false, code: conflict };
+    // An older encrypted key remains recoverable with its earlier password.
+    if (this.password) this.access.scheduleScan(this.password);
+    return { ok: true, address: wallet.address, name: wallet.name, walletEcosystem: wallet.walletEcosystem };
   }
 
   async restoreAccount(file: KeyringPair$Json, password: string, linkedEthereumAddress?: string): Promise<{ address: string }> {

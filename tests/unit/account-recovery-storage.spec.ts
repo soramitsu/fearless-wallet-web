@@ -191,7 +191,7 @@ describe('deleted wallet recovery with actual keyring and acknowledged Chrome st
     expect(service.tonKeyring.getAccount(address)).toBeDefined();
     expect(fixture.data[`fw:ton:${address}`]).toEqual(original);
     expect(fixture.data[key]).toBeUndefined();
-    expect(await decryptTonSeed(original.cipherSeed, PASSWORD)).toBe(PHRASE);
+    expect(await decryptTonSeed(original.cipherSeed, PASSWORD, Buffer.from(original.publicKeyHex, 'hex'))).toBe(PHRASE);
   });
 
   it('publishes a recovered pair without a second unacknowledged account write', async () => {
@@ -234,6 +234,50 @@ describe('deleted wallet recovery with actual keyring and acknowledged Chrome st
     expect(fixture.data).toEqual(snapshot);
     expect(service.getPair(address)).toBeNull();
     expect(archives()).toHaveLength(1);
+  });
+
+  it('validates every linked record before writing or consuming the recovery copy', async () => {
+    const address = await native();
+    const linked = await native('ethereum');
+    const linkedKey = accountStoreKey(service.getPair(linked)!);
+    const saved = track(service.saveAccountMeta(address, { ethereumAddress: linked }));
+    await drain();
+    expect(await saved).toHaveProperty('value');
+    const { id, key } = await deleted(address);
+    Object.assign(fixture.data[key].accounts[linkedKey], { encoding: { content: ['pkcs8', 'invalid'] } });
+    const snapshot = structuredClone(fixture.data);
+    const result = track(service.restoreDeletedWallet(id));
+    await drain();
+    expect(await result).toEqual({ value: { ok: false, code: 'storage_failed' } });
+    expect(fixture.data).toEqual(snapshot);
+    expect(service.getPair(address)).toBeNull();
+    expect(service.getPair(linked)).toBeNull();
+  });
+
+  it('rejects a recovery record stored under another public identity', async () => {
+    const address = await native();
+    const storageKey = accountStoreKey(service.getPair(address)!);
+    const { id, key } = await deleted(address);
+    fixture.data[key].accounts[`account:0x${'11'.repeat(32)}`] = fixture.data[key].accounts[storageKey];
+    delete fixture.data[key].accounts[storageKey];
+    const snapshot = structuredClone(fixture.data);
+    const result = track(service.restoreDeletedWallet(id));
+    await drain();
+    expect(await result).toEqual({ value: { ok: false, code: 'storage_failed' } });
+    expect(fixture.data).toEqual(snapshot);
+    expect(service.getPair(address)).toBeNull();
+  });
+
+  it('rejects a TON recovery copy whose public key differs from its wallet address', async () => {
+    const address = await native('sr25519', WalletEcosystem.Ton);
+    const { id, key } = await deleted(address);
+    fixture.data[key].ton.publicKeyHex = '11'.repeat(32);
+    const snapshot = structuredClone(fixture.data);
+    const result = track(service.restoreDeletedWallet(id));
+    await drain();
+    expect(await result).toEqual({ value: { ok: false, code: 'storage_failed' } });
+    expect(fixture.data).toEqual(snapshot);
+    expect(service.tonKeyring.getAccount(address)).toBeUndefined();
   });
 
   it('serializes duplicate restoration and reports success only once', async () => {

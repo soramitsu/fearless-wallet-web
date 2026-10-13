@@ -200,7 +200,7 @@ const pendingAddresses = async (popup) =>
 
 /** The password row of one account, as the user selects it, types the password and confirms. */
 async function migrateRowThroughUi(popup, label, password) {
-  const row = `[...document.querySelectorAll("li.wallets__item")].find((li) => li.querySelector(".wallet__checkbox")?.textContent.trim() === ${JSON.stringify(label)})`;
+  const row = `[...document.querySelectorAll(".wallets__list > li")].find((li) => li.querySelector(".wallet__checkbox")?.textContent.trim() === ${JSON.stringify(label)})`;
   await popup.eval(
     `(() => { const row = ${row}; if (!row) throw new Error('no row ' + ${JSON.stringify(label)}); if (!row.querySelector('.json__controls') || row.querySelector('.json__controls').style.display === 'none') row.querySelector('.json__info').click(); return true; })()`
   );
@@ -248,12 +248,12 @@ async function migratePerAccountProfile(ctx, r, s, popup, profile, { rows, wrong
   await startPromptThroughUi(r, popup, profile.master);
   const domRows = await waitFor(
     async () => {
-      const count = await popup.eval('document.querySelectorAll("li.wallets__item").length');
+      const count = await popup.eval('document.querySelectorAll(".wallets__list > li").length');
       return count === expected.length ? count : undefined;
     },
     30000,
     'one row per waiting key'
-  ).catch(() => popup.eval('document.querySelectorAll("li.wallets__item").length'));
+  ).catch(() => popup.eval('document.querySelectorAll(".wallets__list > li").length'));
   r.check('A7', 'the password rows show one row per waiting key', domRows === expected.length, domRows);
 
   for (const [label, password, opens] of rows) {
@@ -470,7 +470,7 @@ async function runPerAccount(ctx, r, version, title) {
   await page.goto('#/migration-accounts');
   await page.waitHash('migration-accounts', 'the password rows');
   await waitFor(
-    () => popup.eval('document.querySelectorAll("li.wallets__item").length > 0'),
+    () => popup.eval('document.querySelectorAll(".wallets__list > li").length > 0'),
     30000,
     'the password rows'
   );

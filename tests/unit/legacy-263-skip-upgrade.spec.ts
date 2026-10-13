@@ -1,4 +1,5 @@
 import { Keyring } from '@polkadot/keyring';
+import { Keyring as DetachedKeyring } from '@subwallet/keyring/keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,6 +15,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 const mocks = vi.hoisted(() => ({
   backend: undefined as unknown as Keyring,
   hash: '',
+  passwordRecord: undefined as { passwordHash: string } | undefined,
   master: '',
   stored: new Map<string, KeyringPair$Json>(),
   prompt: new Map<string, unknown>(),
@@ -29,6 +31,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
   keyring: {
+    setupMasterPassword: (hash: string) => { mocks.hash = hash; },
     get hasMasterPassword() { return !!mocks.hash; },
     get isLocked() { return !mocks.master; },
     createJsonPairWithMasterPassword: (pair: KeyringPair) => {
@@ -43,7 +46,10 @@ vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
   createFromUri: (suri: string, meta: Record<string, unknown>, type: 'sr25519' | 'ethereum') => mocks.backend.createFromUri(suri, meta, type),
   createFromJson: (json: KeyringPair$Json) => mocks.backend.createFromJson(json),
   unlockKeyring: (password: string) => {
-    if (!mocks.hash || password !== mocks.hash) throw new Error('Invalid master password');
+    const verifier = new DetachedKeyring();
+    verifier.setupMasterPassword(mocks.passwordRecord?.passwordHash);
+    verifier.unlockKeyring(password);
+    mocks.hash = password;
     mocks.master = password;
   },
   unlockPair: (address: string) => {
@@ -65,6 +71,19 @@ vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
 } }));
 // AccountsStore.updateAndWait over the stored records.
 vi.mock('@extension-base/stores/Accounts', () => ({ default: class {
+  allMap = async (update: (records: Record<string, unknown>) => void) => {
+    update({ ...Object.fromEntries(mocks.stored), keyring: structuredClone(mocks.passwordRecord) });
+  };
+  mutateRecordsAndWait = async (_keys: string[], transform, publish: () => void) => {
+    const { entries, remove } = transform({ ...Object.fromEntries(mocks.stored), keyring: structuredClone(mocks.passwordRecord) });
+    expect(remove).toEqual([]);
+    for (const [key, value] of Object.entries(entries)) {
+      if (key === 'keyring') mocks.passwordRecord = structuredClone(value) as { passwordHash: string };
+      else mocks.stored.set(key, structuredClone(value) as KeyringPair$Json);
+    }
+    publish();
+  };
+
   updateAndWait = async (
     key: string,
     transform: (current?: KeyringPair$Json) => KeyringPair$Json | undefined,
@@ -284,6 +303,7 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.hash = '';
+  mocks.passwordRecord = undefined;
   mocks.prompt.clear();
   mocks.stored.clear();
   shippedRecords().forEach(([key, json]) => mocks.stored.set(key, json));

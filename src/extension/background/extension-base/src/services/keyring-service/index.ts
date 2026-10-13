@@ -48,8 +48,8 @@ import {
   walletRecordKeys,
   type DeletedWallet,
 } from './DeletedWallets';
+import { commitMasterPasswordChange } from './MasterPasswordChange';
 import type { TonStoreAccount } from '@extension-base/stores/TonStore';
-import type { StagedTonSeed } from './TonSeedVault';
 import type { EventService } from '@extension-base/services';
 import type {
   AccountAccessStatus,
@@ -107,6 +107,7 @@ export class KeyringService {
   private accountsStore?: AccountsStore;
   private accountAccess?: AccountAccessService;
   private password = '';
+  private authenticationRevision = 0;
   private selectionRevision = 0;
   private selectionRequestRevision = 0;
   private enrollmentEpoch = 0;
@@ -794,79 +795,33 @@ export class KeyringService {
     return !!account.meta.isMobile;
   }
 
-  // TON phrases are encrypted outside ui-keyring, so they are re-encrypted here: a verified copy under
-  // the new password is staged next to each ciphertext, the keyring password changes, and only then do
-  // the copies become current. An interruption at any point leaves a copy the current password opens.
   async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
-    const { vault } = this.tonKeyring;
-
-    return vault.exclusive(async () => {
-      const wasLocked = !this.password;
-      const hadMasterPassword = this.hasMasterPassword;
-
-      if (!newPassword || (hadMasterPassword && !this.verifyMasterPassword(oldPassword))) return false;
-
-      let staged: StagedTonSeed[] = [];
-      let setAside: KeyringPair[];
-
+    const revision = this.authenticationRevision ?? 0;
+    const assertCurrent = () => {
+      if ((this.authenticationRevision ?? 0) !== revision) throw new Error('Wallet authentication changed during password change.');
+    };
+    return this.tonKeyring.vault.exclusive(async () => {
+      if (!newPassword) return false;
       try {
-        if (hadMasterPassword) staged = await vault.stage(oldPassword!, newPassword);
-        setAside = this.changeKeyringPassword(newPassword, hadMasterPassword ? oldPassword : undefined);
-      } catch (e) {
-        console.error(e);
-        await vault.rollback(staged);
-        if (wasLocked) keyring.lockAll();
-
+        await flushWalletWrites();
+        assertCurrent();
+        const pairs = this.getAccounts().map(({ address }) => this.getPair(address))
+          .filter((pair): pair is KeyringPair => !!pair);
+        const retained = await commitMasterPasswordChange(pairs, this.tonKeyring, this.hasMasterPassword,
+          oldPassword, newPassword, assertCurrent, password => {
+            if ((this.authenticationRevision ?? 0) !== revision) { this.password = ''; return false; }
+            this.password = password;
+            return true;
+          });
+        retained.forEach(address => this.access.flagPreviousMasterPair(address));
+        this.scheduleLegacyNetworkEnrollment();
+        this.access.scheduleScan(newPassword);
+        return true;
+      } catch (error) {
+        console.error(error);
         return false;
       }
-
-      this.password = newPassword;
-      setAside.forEach(({ address }) => this.access.flagPreviousMasterPair(address));
-      // The staged TON copies become current only once the new password hash and keys are stored.
-      await flushWalletWrites();
-      await vault.commit(staged);
-      this.scheduleLegacyNetworkEnrollment();
-      this.access.scheduleScan(newPassword);
-
-      return true;
     });
-  }
-
-  // Checks the old password before anything is written. A wrong one changes nothing.
-  private verifyMasterPassword(password?: string): boolean {
-    if (!password) return false;
-    if (this.password) return password === this.password;
-
-    try {
-      keyring.unlockKeyring(password);
-
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // ui-keyring re-encrypts every master-password key and stores them only when all of them succeeded,
-  // after it has already stored the new password hash. One key left under an earlier password would
-  // abort that and strand every key under the old password. Such keys are set aside: they keep their
-  // stored ciphertext and are recovered with the password that opens them.
-  private changeKeyringPassword(newPassword: string, oldPassword?: string): KeyringPair[] {
-    const setAside = oldPassword
-      ? this.getAccounts()
-          .map(({ address }) => this.getPair(address))
-          .filter((pair): pair is KeyringPair => isMasterPasswordPair(pair))
-          .filter((pair) => pair.isLocked && !decodesWithPassword(pair, oldPassword))
-      : [];
-
-    setAside.forEach((pair) => pair.setMeta({ isMasterPassword: false }));
-
-    try {
-      keyring.changeMasterPassword(newPassword, oldPassword);
-    } finally {
-      setAside.forEach((pair) => pair.setMeta({ isMasterPassword: true }));
-    }
-
-    return setAside;
   }
 
   async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
@@ -1032,6 +987,7 @@ export class KeyringService {
   unlockKeyring({ password }: RequestUnlockExtension): boolean {
     try {
       keyring.unlockKeyring(password);
+      this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
       this.password = password;
       this.scheduleLegacyNetworkEnrollment();
       this.access.scheduleScan(password);
@@ -1047,6 +1003,7 @@ export class KeyringService {
   lockKeyring(): boolean {
     try {
       keyring.lockAll();
+      this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
 
       this.password = '';
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;

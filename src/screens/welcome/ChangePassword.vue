@@ -1,7 +1,11 @@
 <template>
   <AboveForm :fullScreen="true" :header="header" @closeHandler="close">
     <Scroll>
-      <div class="password-content">
+      <div class="password-content" :aria-busy="isLoading || isWait">
+        <div v-if="loadFailed" role="alert" data-testid="passwordLoadFailed">
+          <p>{{ t('migration.loadFailed') }}</p>
+          <FButton text="ux.retry" type="secondary" @click="loadStatus" />
+        </div>
         <div>
           <div class="warning">{{ $t('welcome.passwordWarning') }}</div>
 
@@ -35,7 +39,7 @@
 
 <script lang="ts" setup>
 import { useRouter, useRoute } from 'vue-router';
-import { ref, nextTick, computed, watch } from 'vue';
+import { ref, nextTick, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from '@/locales/useI18n';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -67,9 +71,19 @@ const needMigration = ref(false);
 const hasAccount = ref(false);
 const isWait = ref(false);
 const isAuthFlowInit = ref(false);
+const isLoading = ref(true);
+const loadFailed = ref(false);
+const isValidatingPassword = ref(false);
+let disposed = false;
+let validationRevision = 0;
+let loadingStatus = false;
+onBeforeUnmount(() => { disposed = true; validationRevision++; });
 
 const isDisabled = computed(
   () =>
+    isLoading.value ||
+    loadFailed.value ||
+    isValidatingPassword.value ||
     isWait.value ||
     isAuthFlowInit.value ||
     isErrorOldPassword.value ||
@@ -78,12 +92,25 @@ const isDisabled = computed(
     (oldPassword.value === '' && alreadyHasMasterPassword.value)
 );
 
-// Update alreadyHasMasterPassword, hasAccount, isNeedMigration
-(async () => {
-  alreadyHasMasterPassword.value = await hasMasterPassword();
-  hasAccount.value = await hasAccounts();
-  needMigration.value = await isNeedMigration();
-})();
+const loadStatus = async () => {
+  if (disposed || loadingStatus) return;
+  loadingStatus = true;
+  isLoading.value = true;
+  loadFailed.value = false;
+  try {
+    const [password, accounts, migration] = await Promise.all([hasMasterPassword(), hasAccounts(), isNeedMigration()]);
+    if (disposed) return;
+    alreadyHasMasterPassword.value = password;
+    hasAccount.value = accounts;
+    needMigration.value = migration;
+  } catch {
+    if (!disposed) loadFailed.value = true;
+  } finally {
+    loadingStatus = false;
+    if (!disposed) isLoading.value = false;
+  }
+};
+void loadStatus();
 
 const header = computed(() => (alreadyHasMasterPassword.value ? 'common.changePassword' : 'common.createPassword'));
 
@@ -94,16 +121,20 @@ watch(alreadyHasMasterPassword, async () => {
 });
 
 const changeOldPass = async (password: string) => {
+  if (disposed || isWait.value) return;
+  const revision = ++validationRevision;
   oldPassword.value = password;
-
-  const isInlock = await unlockExtension({ password: oldPassword.value });
-
-  isErrorOldPassword.value = !isInlock;
+  isValidatingPassword.value = true;
+  const unlocked = await unlockExtension({ password }).catch(() => false);
+  if (disposed || revision !== validationRevision) return;
+  isErrorOldPassword.value = !unlocked;
+  isValidatingPassword.value = false;
 };
 
 const setPassword = (password: string) => (walletPassword.value = password);
 
 const close = (isClose = true) => {
+  if (disposed) return;
   if (isClose) {
     router.back();
 
@@ -144,14 +175,15 @@ const close = (isClose = true) => {
 };
 
 const changePassword = async () => {
+  if (disposed || isDisabled.value) return;
   isWait.value = true;
 
-  // The background answers false (or fails) when the old password does not check out or a TON phrase could not be
-  // stored under the new one. Nothing was changed then, so the user stays here and can try again.
+  // A transport failure can hide an acknowledged commit. Failure copy must not promise that the old password remains.
   const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value }).catch(
     () => false
   );
 
+  if (disposed) return;
   if (!changed) {
     isWait.value = false;
 
@@ -174,14 +206,13 @@ const changePassword = async () => {
     .then(({ issues }) => issues.filter(({ kind }) => kind === 'previous_master_password').length)
     .catch(() => 0);
 
+  if (disposed) return;
   if (waiting) {
     notify({ title: tc('accountAccess.changePasswordPending', waiting, { count: waiting }), message: '', type: 'info' });
   }
 
   // Confirm stays disabled until the screen is left: a second press would check the old password again and fail.
   close(false);
-
-  isWait.value = false;
 };
 </script>
 

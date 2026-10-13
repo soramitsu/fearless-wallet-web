@@ -45,6 +45,10 @@ export default class KeyringStoreWeb implements PasswordStore {
     this.assertWritable();
   }
 
+  static commitPassword(value: KeyringPasswordJson): void {
+    this.value = value;
+  }
+
   static commitReset(): void {
     this.value = null;
   }

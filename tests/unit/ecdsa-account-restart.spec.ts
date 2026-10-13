@@ -1,4 +1,5 @@
 import { Keyring } from '@polkadot/keyring';
+import { Keyring as DetachedKeyring } from '@subwallet/keyring/keyring';
 import { u8aToHex } from '@polkadot/util';
 import { cryptoWaitReady, decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -101,17 +102,12 @@ hoisted.createUiKeyring = () => {
     },
   };
   const masterPairs = () => backend.getPairs().filter(({ meta }) => meta.isMasterPassword && !meta.isInjected);
-  const opens = (pair: KeyringPair, password: string) => {
-    try {
-      backend.createFromJson(accounts.subject.value[pair.address].json).decodePkcs8(password);
-      return true;
-    } catch {
-      return false;
-    }
+  // Verify the persisted bcrypt authority, including the exact hash shipped by historical builds.
+  const verify = (password: string) => {
+    const verifier = new DetachedKeyring();
+    verifier.setupMasterPassword(passwordHash);
+    try { verifier.unlockKeyring(password); return true; } catch { return false; }
   };
-  // Instead of the bcrypt hash: a password is checked against a stored key, or by value before any key uses it.
-  const verify = (password: string) =>
-    masterPairs().length ? opens(masterPairs()[0], password) : passwordHash === `stand-in:${password}`;
   const forgetAccount = (address: string) => {
     const pair = backend.getPair(address);
     const key = isEthereumAddress(address) ? address : u8aToHex(pair.publicKey); // Pairs.remove returns the public key
@@ -126,6 +122,7 @@ hoisted.createUiKeyring = () => {
     contracts: { subject: { value: {} }, removeSubjectOnly: vi.fn() },
     get ready() { return ready; },
     keyring: {
+      setupMasterPassword: (hash: string) => { passwordHash = hash; },
       get hasMasterPassword() { return !!passwordHash; },
       get isLocked() { return !master; },
       createJsonPairWithMasterPassword: (pair: KeyringPair) => {
@@ -180,7 +177,7 @@ hoisted.createUiKeyring = () => {
       if (passwordHash && (!old || !verify(old))) throw new Error('Invalid master password');
       const pairs = masterPairs();
       pairs.forEach((pair) => pair.isLocked && pair.decodePkcs8(old));
-      passwordHash = `stand-in:${next}`;
+      passwordHash = new DetachedKeyring().changeMasterPassword(next).passwordHash;
       master = next;
       passwordStore.set({ passwordHash });
       for (const json of pairs.map((pair) => pair.toJson(next))) {

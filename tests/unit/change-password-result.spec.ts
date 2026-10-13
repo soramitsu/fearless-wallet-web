@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
   push: vi.fn(),
   back: vi.fn(),
+  unlock: vi.fn(),
 }));
 vi.mock('@/extension/messaging', () => ({
   extensionChangePassword: mocks.extensionChangePassword,
@@ -15,7 +16,7 @@ vi.mock('@/extension/messaging', () => ({
   getAccessStatus: mocks.getAccessStatus,
   hasAccounts: async () => true,
   isNeedMigration: async () => false,
-  unlockExtension: async () => true,
+  unlockExtension: mocks.unlock,
   initGoogleAuth: vi.fn(),
 }));
 vi.mock('@/plugins/soramitsuUI', () => ({ useNotify: () => mocks.notify }));
@@ -73,6 +74,7 @@ describe('changing the master password', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasMasterPassword.mockResolvedValue(true);
+    mocks.unlock.mockResolvedValue(true);
     mocks.getAccessStatus.mockResolvedValue({ issues: [] });
   });
 
@@ -163,6 +165,69 @@ describe('changing the master password', () => {
 
     expect(mocks.notify).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'success' }));
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
+  });
+
+  it('does not notify or navigate after the password response arrives on an unmounted screen', async () => {
+    let answer!: (value: boolean) => void;
+    mocks.extensionChangePassword.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+    const wrapper = await openWithPasswords();
+    await confirm(wrapper);
+    wrapper.unmount();
+    answer(true);
+    await flushPromises();
+    expect(mocks.notify).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it('admits only one pending confirmation even before the disabled DOM refreshes', async () => {
+    let answer!: (value: boolean) => void;
+    mocks.extensionChangePassword.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+    const wrapper = await openWithPasswords();
+    const button = wrapper.get('[data-testid="confirm"]').element;
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(mocks.extensionChangePassword).toHaveBeenCalledOnce();
+    answer(false);
+    await flushPromises();
+    wrapper.unmount();
+  });
+
+  it('ignores obsolete old-password validation after a newer value failed', async () => {
+    const wrapper = await openWithPasswords();
+    let answer!: (value: boolean) => void;
+    mocks.unlock.mockImplementationOnce(() => new Promise(resolve => { answer = resolve; })).mockResolvedValueOnce(false);
+    await wrapper.get('[data-testid="oldPassword"]').setValue('earlier valid password');
+    await wrapper.get('[data-testid="oldPassword"]').setValue('newer invalid password');
+    await flushPromises();
+    answer(true);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="confirm"]').attributes('disabled')).toBeDefined();
+    wrapper.unmount();
+  });
+
+  it('keeps confirmation disabled until status loads, then permits retry after a read failure', async () => {
+    mocks.hasMasterPassword.mockRejectedValueOnce(new Error('private storage detail'));
+    const wrapper = await openWithPasswords();
+    expect(wrapper.get('[data-testid="passwordLoadFailed"]').text()).toContain('migration.loadFailed');
+    expect(wrapper.text()).not.toContain('private storage detail');
+    expect(wrapper.findAll('[data-testid="confirm"]').at(-1)!.attributes('disabled')).toBeDefined();
+    await wrapper.get('[data-testid="passwordLoadFailed"] button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[data-testid="passwordLoadFailed"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="oldPassword"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('does not navigate after leaving during the post-change account scan', async () => {
+    let answer!: (value: { issues: never[] }) => void;
+    mocks.extensionChangePassword.mockResolvedValue(true);
+    mocks.getAccessStatus.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+    const wrapper = await openWithPasswords();
+    await confirm(wrapper);
+    wrapper.unmount();
+    answer({ issues: [] });
+    await flushPromises();
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it('does not mention a current password when the first master password could not be saved', async () => {

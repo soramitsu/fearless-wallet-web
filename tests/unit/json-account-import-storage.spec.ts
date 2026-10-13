@@ -10,6 +10,7 @@ import { keyring } from '@subwallet/ui-keyring';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, KeyringPair$Json>,
+  passwordRecord: undefined as { passwordHash: string } | undefined,
   writes: [] as Array<() => void>,
   failRead: false,
   failWrite: false,
@@ -24,16 +25,20 @@ vi.mock('@/consts/global', async (original) => ({
 vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
   runtime: fixture.runtime,
   storage: { local: {
-    get: (_keys: unknown, callback: (data: typeof fixture.data) => void) => {
+    get: (_keys: unknown, callback: (data: Record<string, unknown>) => void) => {
       fixture.runtime.lastError = fixture.failRead ? { message: 'Public read failed' } : undefined;
-      callback(structuredClone(fixture.data));
+      callback(structuredClone({ ...fixture.data, 'fw:keyring': fixture.passwordRecord }));
       fixture.runtime.lastError = undefined;
     },
     set: (data: typeof fixture.data, callback: () => void) => {
       const snapshot = structuredClone(data);
       fixture.writes.push(() => {
         fixture.runtime.lastError = fixture.failWrite ? { message: 'Public write failed' } : undefined;
-        if (!fixture.failWrite) Object.assign(fixture.data, snapshot);
+        if (!fixture.failWrite) {
+          const { ['fw:keyring']: password, ...accounts } = snapshot;
+          if (password) fixture.passwordRecord = password as unknown as { passwordHash: string };
+          Object.assign(fixture.data, accounts);
+        }
         callback();
         fixture.runtime.lastError = undefined;
       });
@@ -81,6 +86,7 @@ function begin(file: KeyringPair$Json, password = P2) {
 beforeEach(async () => {
   await cryptoWaitReady();
   fixture.data = {};
+  fixture.passwordRecord = undefined;
   fixture.writes = [];
   fixture.failRead = false;
   fixture.failWrite = false;
@@ -90,10 +96,10 @@ beforeEach(async () => {
   // observables and storage remain real while each test gets a fresh keyring backend.
   vi.spyOn(keyring.keyringOption, 'init').mockImplementation(() => {});
   keyring.loadAll({ type: 'sr25519', isDevelopment: false, store: new AccountsStore(),
-    password_store: { get: (callback) => callback(undefined), set: () => {}, remove: () => {} },
+    password_store: { get: (callback) => callback(fixture.passwordRecord), set: (record) => { fixture.passwordRecord = structuredClone(record); }, remove: () => { fixture.passwordRecord = undefined; } },
   });
   // Real keyring crypto/master state; the fixture controls only storage acknowledgements.
-  keyring.keyring.changeMasterPassword(P1);
+  keyring.changeMasterPassword(P1);
   service = Object.create(KeyringService.prototype);
   Object.assign(service, { password: P1, tonKeyring: new TonKeyringService(service) });
   Object.assign(service, { accountAccess: { scheduleScan: vi.fn(), flagPreviousMasterPair: vi.fn() }, scheduleLegacyNetworkEnrollment: vi.fn() });

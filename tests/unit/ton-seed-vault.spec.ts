@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js';
+import { Keyring as DetachedKeyring } from '@subwallet/keyring/keyring';
 import * as tonWebMnemonic from 'tonweb-mnemonic';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tonStore } from '@extension-base/stores/TonStore';
@@ -6,6 +7,7 @@ import { KeyringService } from '@extension-base/services/keyring-service';
 import { decryptTonSeed } from '@extension-base/services/keyring-service/TonSeedVault';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import legacyVectors from '../fixtures/ton/ton-bip39-3.0.5-vectors.json';
+import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { TonStoreAccount } from '@extension-base/stores/TonStore';
 import { createTonWalletContractV4R2 } from '@/util/tonKeyring';
 import { WalletEcosystem } from '@/interfaces';
@@ -16,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   failReads: false,
   beforeWrite: undefined as undefined | (() => Promise<void>),
   keyring: { hash: '', master: '' },
+  passwordRecord: undefined as KeyringPasswordJson | undefined,
   changeMasterPassword: vi.fn(),
   prompt: new Map<string, unknown>(),
 }));
@@ -56,12 +59,16 @@ vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
   keyring: {
     get hasMasterPassword() { return !!mocks.keyring.hash; },
     get isLocked() { return !mocks.keyring.master; },
+    setupMasterPassword: (hash: string) => { mocks.keyring.hash = hash; },
   },
   getAccounts: () => [],
   getAddresses: () => [],
   getPair: () => { throw new Error('Missing pair'); },
   unlockKeyring: (password: string) => {
-    if (!mocks.keyring.hash || password !== mocks.keyring.hash) throw new Error('Invalid master password');
+    const verifier = new DetachedKeyring();
+    verifier.setupMasterPassword(mocks.passwordRecord?.passwordHash);
+    verifier.unlockKeyring(password);
+    mocks.keyring.hash = password;
     mocks.keyring.master = password;
   },
   changeMasterPassword: mocks.changeMasterPassword,
@@ -71,7 +78,27 @@ vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
 vi.mock('@subwallet/ui-keyring/observable/accounts', () => ({ accounts: { subject: { value: {} } } }));
 vi.mock('@subwallet/ui-keyring/observable/addresses', () => ({ addresses: { subject: { value: {} } } }));
 vi.mock('@extension-base/stores/CurrentAccountStore', () => ({ default: class {} }));
-vi.mock('@extension-base/stores/Accounts', () => ({ default: class {} }));
+vi.mock('@extension-base/stores/Accounts', () => {
+  const snapshot = () => ({ keyring: structuredClone(mocks.passwordRecord),
+    ...Object.fromEntries([...mocks.records].map(([address, record]) => [`ton:${address}`, structuredClone(record)])) });
+  return { default: class {
+    async allMap(update: (records: Record<string, unknown>) => void) {
+      if (mocks.failReads) throw new Error('read unavailable');
+      update(snapshot());
+    }
+    async mutateRecordsAndWait(_keys: string[], transform, publish: () => void) {
+      const { entries, remove } = transform(snapshot());
+      expect(remove).toEqual([]);
+      await mocks.beforeWrite?.();
+      if (mocks.failWrites) throw new Error('disk unavailable');
+      for (const [key, value] of Object.entries(entries)) {
+        if (key === 'keyring') mocks.passwordRecord = structuredClone(value) as KeyringPasswordJson;
+        else if (key.startsWith('ton:')) mocks.records.set(key.slice(4), structuredClone(value) as TonStoreAccount);
+      }
+      publish();
+    }
+  } };
+});
 vi.mock('@extension-base/stores/KeyringStore', () => ({ default: class {} }));
 vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: class {} }));
 vi.mock('@extension-base/stores/LegacyPasswordPromptStore', () => ({ default: class {
@@ -120,6 +147,7 @@ function record(source: Fixture, password: string, extra: Partial<TonStoreAccoun
 async function wallet(hash: string, records?: TonStoreAccount[]) {
   if (records) mocks.records = new Map(records.map((value) => [value.address, value]));
   mocks.keyring.hash = hash;
+  mocks.passwordRecord = hash ? new DetachedKeyring().changeMasterPassword(hash) : undefined;
   mocks.keyring.master = '';
   const service = new KeyringService({ waitCryptoReady: new Promise(() => {}) } as never);
   await service.tonKeyring.loadAll();
@@ -250,7 +278,7 @@ describe('durable TON account import', PBKDF2_SUITE, () => {
     await entered.promise;
     const imported = importUniversal(service);
     mocks.beforeWrite = undefined;
-    // The existing native account has already been staged. A late import must wait for P2.
+    // The password/account commit is pending. A late import must wait for P2.
     await new Promise((resolve) => setTimeout(resolve, 40));
     release.resolve();
     await expect(change).resolves.toBe(true);
@@ -440,11 +468,11 @@ describe('changing the master password with TON accounts', PBKDF2_SUITE, () => {
     expect(service.getPassword()).toBe(P1);
   });
 
-  it('removes the staged copies when the keyring refuses the change', async () => {
+  it('keeps all TON ciphertext and the old password when the atomic commit fails', async () => {
     const service = await wallet(P1, ALL.map((source) => record(source, P1)));
     const before = structuredClone([...mocks.records.values()]);
     expect(service.unlockKeyring({ password: P1 })).toBe(true);
-    mocks.changeMasterPassword.mockImplementationOnce(() => { throw new Error('Require new password'); });
+    mocks.failWrites = true;
 
     expect(await service.changeMasterPassword({ oldPassword: P1, newPassword: P2 })).toBe(false);
 

@@ -25,6 +25,8 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
+import { enrollLegacyAccountNetworks } from '@extension-base/services/keyring-service/LegacyNetworkEnrollment';
 import { WEB_PASSWORD_RECORD_KEY, WEB_RESET_PASSWORD_KEY } from '@extension-base/stores/WebPasswordRecord';
 import { WalletEcosystem } from '@/interfaces';
 
@@ -156,6 +158,29 @@ afterEach(async () => {
 });
 
 describe('web reset with one IndexedDB password/account commit', { timeout: 60_000 }, () => {
+  it('does not enroll additional network keys during recovery-only unlock', async () => {
+    await native();
+    KeyringStoreWeb.readOnly = true;
+    vi.mocked(enrollLegacyAccountNetworks).mockClear();
+    Reflect.get(KeyringService.prototype, 'scheduleLegacyNetworkEnrollment').call(service);
+    await drain();
+    expect(vi.mocked(enrollLegacyAccountNetworks).mock.calls.length).toBe(0);
+  });
+
+  it('suppresses a retired saved selection in memory without rewriting it during recovery-only startup', async () => {
+    KeyringStoreWeb.readOnly = true;
+    const key = 'fwcurrent_account:CurrentAccountInfo';
+    const selection = { address: 'public-retired-mobile', ethereumAddress: '', name: 'Retired mobile',
+      isMobile: true, wcTopic: 'public-retired-topic', walletEcosystem: WalletEcosystem.Substrate };
+    fixture.data[key] = structuredClone(selection);
+    vi.spyOn(WalletConnectRetiredSessions.prototype, 'readTopics').mockResolvedValue([selection.wcTopic]);
+    const ready = track(service.restoreCurrentAccount());
+    await drain();
+    expect(await ready).toHaveProperty('value');
+    expect(service.currentAccountSubject.value).toBeNull();
+    expect(fixture.data[key]).toEqual(selection);
+  });
+
   it('keeps password and live accounts until commit, then ignores retained legacy bytes after restart', async () => {
     const address = await native();
     const pair = service.getPair(address)!;

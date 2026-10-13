@@ -40,18 +40,33 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
             throw error;
           }
           await cdp.send('Page.bringToFront', {}, sessionId);
+          await evalUi(`Promise.race([
+            Promise.all([document.fonts.ready, ...document.getAnimations().filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity).map((animation) => animation.finished.catch(() => undefined))]).then(() => true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Notice fonts/animation timeout')), 3000))
+          ])`);
           const semantics = await evalUi(`new Promise((resolve, reject) => { const timeout = setTimeout(() => reject(new Error('Notice paint timeout')), 3000); requestAnimationFrame(() => requestAnimationFrame(() => {
             clearTimeout(timeout); const note = document.querySelector(${JSON.stringify(selector)}); const box = note.getBoundingClientRect();
             const range = document.createRange(); range.selectNodeContents(note); const text = range.getBoundingClientRect();
-            resolve({ text: note.textContent.trim(), noteBox: box.toJSON(), textBox: text.toJSON(), role: note.getAttribute('role'), scrollHeight: note.scrollHeight, clientHeight: note.clientHeight,
+            resolve({ text: note.textContent.trim(), noteBox: box.toJSON(), textBox: text.toJSON(), role: note.getAttribute('role'), fontSize: parseFloat(getComputedStyle(note).fontSize), scrollHeight: note.scrollHeight, clientHeight: note.clientHeight,
               pageWidth: document.documentElement.scrollWidth, viewport: innerWidth, internalFlag: ${APP}.pinia._s.get('accounts').selectedWallet.isMnemonicUnverified,
               exportLabels: [...document.querySelectorAll('.accounts-layout .row')].map((row) => row.textContent.trim()) });
           })); })`);
           if (!semantics.text || semantics.text.includes('accounts.jsonBackupOnly') || !semantics.internalFlag || semantics.noteBox.x < 0 || semantics.noteBox.right > 321 || semantics.textBox.right > 321) throw new Error('JSON recovery notice lost its status or horizontal containment');
+          if (semantics.fontSize !== 14 * scale / 100) throw new Error('JSON recovery text did not scale');
+          if (view === 'export' && (semantics.exportLabels.length !== 1 || semantics.exportLabels[0] !== 'JSON')) throw new Error('Unverified mnemonic was offered as recovery material');
           const name = `${locale}-${scale}-${view}`;
           const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
           await fs.writeFile(path.join(outputDir, `${name}.png`), Buffer.from(data, 'base64'));
           results.push({ name, locale, scale, view, ...semantics });
+          if (view === 'main' && semantics.scrollHeight > semantics.clientHeight + 1) {
+            await evalUi(`(document.querySelector('.json-backup-notice').focus(), true)`);
+            await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'End', code: 'End', windowsVirtualKeyCode: 35 }, sessionId);
+            await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'End', code: 'End', windowsVirtualKeyCode: 35 }, sessionId);
+            await wait(`(() => { const note = document.querySelector('.json-backup-notice'); return note.scrollTop + note.clientHeight >= note.scrollHeight - 1; })()`, 'keyboard reaches the end of the recovery notice');
+            const { data: endData } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+            await fs.writeFile(path.join(outputDir, `${name}-end.png`), Buffer.from(endData, 'base64'));
+            results.at(-1).keyboardScrollReachedEnd = true;
+          }
         }
       }
     }

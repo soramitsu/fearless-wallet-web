@@ -29,7 +29,7 @@
 
     <LegacyExposureBanner />
     <AccountAccessBanner />
-    <p v-if="accountsStore.selectedWallet.isMnemonicUnverified" class="json-backup-notice" role="status">
+    <p v-if="accountsStore.selectedWallet.isMnemonicUnverified" class="json-backup-notice" role="status" tabindex="0">
       {{ $t('accounts.jsonBackupOnly') }}
     </p>
 

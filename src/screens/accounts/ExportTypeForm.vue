@@ -52,5 +52,7 @@ const openExport = (type: ExportType) => emit('setExportType', type);
 .json-backup-note {
   overflow-wrap: anywhere;
   margin-block: 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 </style>

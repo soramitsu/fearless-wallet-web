@@ -107,6 +107,15 @@ export default defineComponent({
   justify-content: space-between;
   align-items: center;
   height: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+
+  > * {
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
+  }
 
   &__logo {
     width: 100%;
@@ -128,12 +137,17 @@ export default defineComponent({
 
   &__controls {
     display: flex;
-    flex-flow: row nowrap;
+    flex-flow: row wrap;
     gap: 10px;
     width: 100%;
 
     .button-main {
       flex-grow: 2;
+    }
+
+    > * {
+      min-width: 0;
+      flex: 1 1 120px;
     }
   }
 }

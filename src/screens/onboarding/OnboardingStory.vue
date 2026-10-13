@@ -25,9 +25,14 @@ defineProps<{ story: OnboardingStory }>();
   flex-flow: column;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
 
   &__image {
+    max-width: 100%;
     max-height: 330px;
+    object-fit: contain;
   }
 
   &__title {
@@ -38,7 +43,6 @@ defineProps<{ story: OnboardingStory }>();
 
   &__content {
     max-width: 380px;
-    height: 60px;
     flex-shrink: 0;
     font-size: 1em;
     font-style: normal;

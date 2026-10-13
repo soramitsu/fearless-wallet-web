@@ -1,3 +1,4 @@
+import { Transaction } from 'bitcoinjs-lib';
 import { storage } from '@extension-base/stores/Storage';
 import type { BitcoinEsploraClient } from '@extension-base/services/bitcoin-indexer-service';
 import type { BitcoinNetworkKind } from '@/util/bitcoin';
@@ -42,21 +43,27 @@ const isPendingSend = (value: unknown): value is BitcoinPendingSend => {
 
   const record = value as Record<string, unknown>;
 
-  return (
-    typeof record.accountAddress === 'string' &&
-    typeof record.txid === 'string' &&
-    /^[0-9a-f]{64}$/u.test(record.txid) &&
-    typeof record.txHex === 'string' &&
-    (record.network === 'mainnet' || record.network === 'testnet') &&
-    Array.isArray(record.outpoints) &&
-    record.outpoints.every(
-      (outpoint) =>
-        typeof outpoint === 'object' &&
-        outpoint !== null &&
-        typeof (outpoint as BitcoinOutpoint).txid === 'string' &&
-        Number.isInteger((outpoint as BitcoinOutpoint).vout)
-    )
-  );
+  if (
+    typeof record.accountAddress !== 'string' ||
+    typeof record.txid !== 'string' || !/^[0-9a-f]{64}$/u.test(record.txid) ||
+    typeof record.txHex !== 'string' || !/^(?:[0-9a-f]{2})+$/iu.test(record.txHex) ||
+    (record.network !== 'mainnet' && record.network !== 'testnet') ||
+    !Array.isArray(record.outpoints) || record.outpoints.length === 0 ||
+    !record.outpoints.every(outpoint => typeof outpoint === 'object' && outpoint !== null &&
+      typeof outpoint.txid === 'string' && /^[0-9a-f]{64}$/iu.test(outpoint.txid) &&
+      Number.isInteger(outpoint.vout) && outpoint.vout >= 0 && outpoint.vout <= 0xffffffff)
+  ) return false;
+
+  try {
+    const transaction = Transaction.fromHex(record.txHex);
+    const inputs = transaction.ins.map(({ hash, index }) =>
+      `${Array.from(hash).reverse().map(byte => byte.toString(16).padStart(2, '0')).join('')}:${index}`
+    );
+    const declared = record.outpoints.map(({ txid, vout }) => `${txid.toLowerCase()}:${vout}`);
+    return transaction.getId() === record.txid && new Set(inputs).size === inputs.length &&
+      inputs.length === declared.length && new Set(declared).size === declared.length &&
+      inputs.every(input => declared.includes(input));
+  } catch { return false; }
 };
 
 export function createStorageBitcoinPendingSendStore(

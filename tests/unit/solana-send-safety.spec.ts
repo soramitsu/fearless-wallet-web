@@ -423,6 +423,20 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(store.records).toHaveLength(1);
   });
 
+  it('does not authorize unverifiable legacy bytes using the current account label', async () => {
+    const store = memoryPendingStore();
+    const first = createClient({ statuses: [null], blockHeights: [100] });
+    await expect(makeSolanaTransfer(solParams(), first, sendOptions(store, 1_000))).rejects.toThrow('solana_broadcast_ambiguous');
+    delete store.records[0].senderAddress;
+    store.records[0].signature = 'different public signature';
+    const earlier = structuredClone(store.records);
+    const retry = createClient({ statuses: [null], blockHeights: [100] });
+    await expect(makeSolanaTransfer(solParams(), retry, sendOptions(store))).rejects.toThrow('solana_previous_send_pending');
+    expect(retry.sendRawTransaction).not.toHaveBeenCalled();
+    expect(retry.getLatestBlockhash).not.toHaveBeenCalled();
+    expect(store.records).toEqual(earlier);
+  });
+
   it('keeps unknown legacy ownership read-only until the old bytes have a proven outcome', async () => {
     const record: SolanaPendingSend = { accountAddress: 'removed primary', createdAt: 1, network: 'mainnet',
       lastValidBlockHeight: 456, signature: 'unresolved public signature', transactionBase64: 'AQID' };

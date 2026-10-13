@@ -62,7 +62,7 @@ const isPendingSend = (value: unknown): value is SolanaPendingSend => {
     typeof record.accountAddress === 'string' &&
     typeof record.signature === 'string' &&
     typeof record.transactionBase64 === 'string' &&
-    Number.isSafeInteger(record.lastValidBlockHeight) &&
+    Number.isSafeInteger(record.lastValidBlockHeight) && Number(record.lastValidBlockHeight) >= 0 &&
     (record.network === 'mainnet' || record.network === 'devnet')
   );
 };

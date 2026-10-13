@@ -22,7 +22,7 @@ import {
   selectBitcoinFeeRateSatPerVbyte,
   summarizeBitcoinSpendable,
 } from '@/util/bitcoinSend';
-import { estimateBitcoinTransactionVSize } from '@/util/bitcoinTransaction';
+import { buildBitcoinP2wpkhTransaction, estimateBitcoinTransactionVSize } from '@/util/bitcoinTransaction';
 
 const mnemonic = vectors.vectors[0].mnemonic;
 const mainnetAddress = vectors.vectors[0].expected.bitcoin.mainnet.firstReceiveAddress;
@@ -605,22 +605,22 @@ describe('Bitcoin ambiguous broadcast guard', () => {
       }),
     };
     const store = createStorageBitcoinPendingSendStore(backend as never);
-    const record = (txid: string): BitcoinPendingSend => ({
-      accountAddress: 'a',
-      amountSat: 1,
-      createdAt: 1,
-      network: 'mainnet',
-      outpoints: [{ txid: '11'.repeat(32), vout: 0 }],
-      recipient,
-      txHex: '00',
-      txid,
-    });
+    const record = (inputTxid: string): BitcoinPendingSend => {
+      const tx = buildBitcoinP2wpkhTransaction({
+        mnemonicOrSeed: vectors.vectors[0].mnemonic,
+        inputs: [{ txid: inputTxid, value: 100_000, vout: 0 }],
+        outputs: [{ address: recipient, value: 99_000 }],
+        feeSat: 1_000,
+      });
+      return { accountAddress: 'a', amountSat: 1, createdAt: 1, network: 'mainnet',
+        outpoints: [{ txid: inputTxid, vout: 0 }], recipient, txHex: tx.txHex, txid: tx.txid };
+    };
 
     expect(await store.list()).toEqual([]);
     await Promise.all([store.save(record('aa'.repeat(32))), store.save(record('bb'.repeat(32)))]);
-    expect((await store.list()).map(({ txid }) => txid)).toEqual(['aa'.repeat(32), 'bb'.repeat(32)]);
-    await store.remove(['aa'.repeat(32)]);
-    expect((await store.list()).map(({ txid }) => txid)).toEqual(['bb'.repeat(32)]);
+    expect((await store.list()).map(({ txid }) => txid)).toEqual([record('aa'.repeat(32)).txid, record('bb'.repeat(32)).txid]);
+    await store.remove([record('aa'.repeat(32)).txid]);
+    expect((await store.list()).map(({ txid }) => txid)).toEqual([record('bb'.repeat(32)).txid]);
   });
 });
 

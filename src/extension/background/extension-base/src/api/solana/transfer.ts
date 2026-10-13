@@ -276,13 +276,10 @@ async function makeSolanaTransfer(
   const source = resolveSolanaTransferSource(params.state, params.from);
   const network = getSolanaNetworkKind(networkJson);
   return withLocalTransferLock(`solana:${network}:${source.solanaAddress}`, 'solana_previous_send_pending', async () => {
-    const accounts = params.state.keyringService.getAllAccounts();
     const senderOf = (record: SolanaPendingSend): string | undefined => {
-      const known = accounts.find(({ address }) => address === record.accountAddress)?.meta.solanaAddress;
       const verified = legacySolanaPendingSender(record);
       if (record.senderAddress !== undefined) return verified === record.senderAddress ? verified : undefined;
-      return verified ?? (typeof known === 'string' ? known : undefined) ??
-        (record.accountAddress === source.accountAddress ? source.solanaAddress : undefined);
+      return verified;
     };
     const records = (await pendingStore.list()).filter(record => record.network === network);
     const senders = new Map(records.map(record => [record, senderOf(record)]));

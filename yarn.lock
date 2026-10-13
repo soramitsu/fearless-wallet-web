@@ -4753,7 +4753,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bitcoinjs-lib@npm:^6.1.5":
+"bitcoinjs-lib@npm:6.1.7, bitcoinjs-lib@npm:^6.1.5":
   version: 6.1.7
   resolution: "bitcoinjs-lib@npm:6.1.7"
   dependencies:
@@ -7022,6 +7022,7 @@ __metadata:
     axios: "npm:^1.18.1"
     bignumber.js: "npm:^11.1.4"
     bip39: "npm:3.1.0"
+    bitcoinjs-lib: "npm:6.1.7"
     country-code-emoji: "npm:^2.3.0"
     crypto-js: "npm:^4.2.0"
     date-fns: "npm:^4.4.0"

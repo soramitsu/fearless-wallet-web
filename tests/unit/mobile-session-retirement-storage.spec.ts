@@ -118,6 +118,20 @@ describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %
 });
 
 describe('incoming session approval across reset', () => {
+  it('retires a saved mobile account topic even when the SDK currently has no session', async () => {
+    const mobile = await open();
+    const incoming = await openIncoming();
+    Object.assign(state, { walletConnectDappService: mobile, walletConnectService: incoming });
+    client.session.values = [];
+    vi.spyOn(state.keyringService, 'getAllAccounts').mockReturnValue([
+      { address: 'public-mobile-address', meta: { isMobile: true, wcTopic: topic } },
+    ] as never);
+    await mobile.resetWallet();
+    expect(fixture.data[key]).toMatchObject({ topics: [topic] });
+    client.session.values = [{ topic }] as SessionTypes.Struct[];
+    const restarted = await open();
+    expect(() => restarted.getSession(topic)).toThrow();
+  });
   it('retires a session whose SDK approval completes after reset', async () => {
     const incoming = await openIncoming();
     let finish!: (result: { topic: string }) => void;

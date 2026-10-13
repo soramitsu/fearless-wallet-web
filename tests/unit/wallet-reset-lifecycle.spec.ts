@@ -24,9 +24,9 @@ beforeEach(() => {
   extension = new Extension({
     requestService: { resetWallet: requests }, walletConnectService: { resetWallet: incoming },
     walletConnectDappService: { resetWallet: mobile }, setCurrentAccount: clear,
-    keyringService: { ...keyring, resetWallet: async (before?: () => Promise<void>) => {
+    keyringService: Object.assign(keyring, { resetWallet: async (before?: () => Promise<void>) => {
       try { await before?.(); order.push('archive-and-remove'); return true; } catch { return false; }
-    } },
+    } }),
   } as unknown as State);
 });
 const reset = () => extension.handle('public-reset', 'pri(keyring.reset)', null);
@@ -59,7 +59,7 @@ describe('reset handler lifecycle prerequisites', () => {
   });
   it.each(['pri(keyring.getPassword)', 'pri(keyring.export.mnemonic)'] as const)(
     'does not admit %s while reset still retains live keys for failure recovery', async (type) => {
-      Object.assign(extension.state.keyringService, { isResetting: true });
+      keyring.isResetting = true;
       await expect(extension.handle('public-during-reset', type, { address: 'public-fixture' } as never))
         .rejects.toThrow('Wallet reset is in progress');
       expect(keyring.getPassword).not.toHaveBeenCalled();

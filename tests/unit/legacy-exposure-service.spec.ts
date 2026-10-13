@@ -402,7 +402,7 @@ describe('when the stored state cannot be read', () => {
 describe('popup messages', () => {
   it('answers status, acknowledgement and updates with plain data', async () => {
     const { exposure } = load(MASTER_305.storage);
-    const extension = { state: { legacyExposureService: exposure } } as unknown as Extension;
+    const extension = { state: { keyringService: { isResetting: false }, legacyExposureService: exposure } } as unknown as Extension;
     const handle = (message: string, request: unknown = null) =>
       Extension.prototype.handle.call(extension, 'id', message as never, request as never);
 

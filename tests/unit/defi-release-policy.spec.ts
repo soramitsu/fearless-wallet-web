@@ -96,7 +96,7 @@ const polkamarktSnapshot = (): PolkamarktSnapshot => ({
 
 const snapshotWith = async (enabled: boolean) => {
   const extension = Object.assign(Object.create(Extension.prototype) as Extension, {
-    state: { actionCapabilityService: { isActionEnabled: vi.fn().mockReturnValue(enabled) } },
+    state: { keyringService: { isResetting: false }, actionCapabilityService: { isActionEnabled: vi.fn().mockReturnValue(enabled) } },
     createPolkamarktService: () => ({ snapshot: async () => polkamarktSnapshot() }),
   });
 

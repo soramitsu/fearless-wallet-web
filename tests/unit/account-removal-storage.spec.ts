@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 import { addressKey } from '@subwallet/ui-keyring/defaults';
 
 const fixture = vi.hoisted(() => ({
-  data: {} as Record<string, KeyringPairJson & { accounts: Record<string, KeyringPairJson>; ton: TonStoreAccount; pendingCipherSeed?: string }>,
+  data: {} as Record<string, KeyringPairJson & { accounts: Record<string, KeyringPairJson>; ton: TonStoreAccount; cipherSeed: string; pendingCipherSeed?: string }>,
   writes: [] as Array<() => void>,
   removals: [] as Array<{ keys: string[]; finish: () => void }>,
   failRead: false, failWrite: false, failRemove: false, failSelection: false,

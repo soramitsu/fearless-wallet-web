@@ -5,7 +5,7 @@ export type NetworkMapEdit = NetworkJson | { network: NetworkJson; expected: Nod
 
 export function nodePreferences(network: NodePreferences): NodePreferences {
   return { currentProvider: network.currentProvider, customNodes: network.customNodes ?? [],
-    customProviders: network.customProviders, isManual: network.isManual ?? false };
+    customProviders: network.customProviders ?? {}, isManual: network.isManual ?? false };
 }
 
 export function sameNodePreferences(current: NodePreferences, expected: NodePreferences): boolean {

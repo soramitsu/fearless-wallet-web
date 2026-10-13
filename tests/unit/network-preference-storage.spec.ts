@@ -129,4 +129,16 @@ describe('actual network preference storage queue', () => {
     await Promise.all([service.toggleFavoriteNetwork('Bitcoin', 'owner-a', true), service.toggleFavoriteNetwork('Bitcoin', 'owner-a', true)]);
     expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.favorite).toEqual(['owner-a']);
   });
+
+  it('treats omitted historical empty-provider preferences as the displayed defaults', async () => {
+    const service = create(); await service.initNetworkMap();
+    const legacy = { ...service.networkMap.Bitcoin };
+    delete legacy.customProviders;
+    delete legacy.isManual;
+    await service.networkMapStore.setAndWait('NetworkMap', { Bitcoin: legacy });
+    service.networkMap.Bitcoin.customProviders = {};
+    service.networkMap.Bitcoin.isManual = false;
+    await service.upsertNetworkMap(edit(service), structuredClone(service.networkMap.Bitcoin));
+    expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.currentProvider).toBe('https://personal.invalid');
+  });
 });

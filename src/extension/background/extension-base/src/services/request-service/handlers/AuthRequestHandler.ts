@@ -1,5 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 import { assert } from '@polkadot/util';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { getId } from '@extension-base/utils';
 import { type DAppChainInfoPayload } from '@extension-base/services/request-service/types';
@@ -286,8 +287,10 @@ export class AuthRequestHandler {
         const version = this.authorizeWrites!.version(originKey);
         approving = true;
         try {
-          const substrateAccount = this.keyringService.getAccount(authorizedAccounts[0]);
-          const ethereumAddress = substrateAccount?.meta.ethereumAddress as string;
+          const selectedAccount = this.keyringService.getAccount(authorizedAccounts[0]);
+          const ethereumAddress = selectedAccount && isEthereumAddress(selectedAccount.address ?? '')
+            ? selectedAccount.address
+            : selectedAccount?.meta.ethereumAddress as string;
           const requestType = request.request.accountAuthType ?? request.accountAuthType;
           const preserved = current?.isAllowed ? current : undefined;
           // Build from the effective grant, never from uncommitted new scopes.

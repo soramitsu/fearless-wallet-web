@@ -110,6 +110,20 @@ const expectBlocked = (protocol: 'evm' | 'substrate' | 'solana') => {
     ).toThrow();
 };
 describe('durable site authorization', () => {
+  it('durably authorizes a standalone Ethereum primary key without linked metadata', async () => {
+    const keyring = (auth as unknown as { keyringService: { getAccount: (address: string) => unknown } }).keyringService;
+    keyring.getAccount = (address) => address === evm ? { address: evm, meta: { name: 'Legacy Ethereum' } } : undefined;
+    const dapp = outcome(auth.authorizeUrl(first, { origin: 'Public origin', accountAuthType: 'evm' }));
+    await tick();
+    const request = Object.values(auth.authRequests)[0];
+    await request.resolve({ authorizedAccounts: [evm] });
+    expect((await dapp).status).toBe('resolved');
+    expect(storage.data[first]?.evmAuthorizedAccount).toBe(evm);
+    auth = create();
+    await auth.getAuthList();
+    expect(auth.getEvmAuthorizationSnapshot(first).authorization?.evmAuthorizedAccount).toBe(evm);
+  });
+
   it('blocks new authorization and signing snapshots during a wallet reset', async () => {
     await auth.setAuthorize({ [first]: grant() });
     const wallet = (auth as unknown as { keyringService: { isResetting: boolean; walletResetRevision: number } }).keyringService;

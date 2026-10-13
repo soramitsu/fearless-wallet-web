@@ -117,6 +117,7 @@ const accounts = computed<AccountJson[]>(() => {
   return accounts.filter((account) => {
     const { ethereumAddress, solanaAddress, walletEcosystem } = account;
 
+    if (accountAuthType.value === 'substrate' && walletEcosystem === WalletEcosystem.Evm) return false;
     if (accountAuthType.value === 'evm' && !ethereumAddress) return false;
     if (accountAuthType.value === 'solana') return !!solanaAddress || walletEcosystem === WalletEcosystem.Solana;
     if (accountAuthType.value === 'iroha') return !!resolveIrohaAuthAddress(account, allowedAccounts.value);

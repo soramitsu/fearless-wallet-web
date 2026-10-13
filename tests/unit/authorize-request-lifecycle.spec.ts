@@ -85,6 +85,29 @@ beforeEach(() => {
 });
 
 describe('authorization screen request ownership', () => {
+  it('allows a presented standalone Ethereum wallet to be selected for its own EVM grant', async () => {
+    const address = `0x${'12'.repeat(20)}`;
+    mocks.accounts.accounts = [{ address, ethereumAddress: address, name: 'Legacy Ethereum', walletEcosystem: 'evm' } as AccountJson];
+    const wrapper = open();
+    await flushPromises();
+    expect(Object.keys(form(wrapper).props('accounts'))).toEqual([address]);
+    form(wrapper).vm.$emit('onSelect', true, address);
+    await flushPromises();
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', accounts: [address] });
+    wrapper.unmount();
+  });
+
+  it('does not offer an Ethereum-only wallet for a Substrate grant', async () => {
+    const address = `0x${'12'.repeat(20)}`;
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    mocks.accounts.accounts.push({ address, ethereumAddress: address, name: 'Legacy Ethereum', walletEcosystem: 'evm' } as AccountJson);
+    const wrapper = open();
+    await flushPromises();
+    expect(Object.keys(form(wrapper).props('accounts'))).toEqual(['alice', 'bob']);
+    wrapper.unmount();
+  });
+
   it('guards a directly activated unavailable approval and rejects unknown row selections', async () => {
     const wrapper = open();
     await approve(wrapper).trigger('click');

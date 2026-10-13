@@ -418,7 +418,8 @@ export default class Extension extends FWExtensionBase {
 
   convertAccounts(accounts: SubjectInfo, walletEcosystem = WalletEcosystem.Substrate): AccountJson[] {
     return Object.values(accounts).flatMap<AccountJson>(({ json: { address, meta }, type }) => {
-      if (isEthereumAddress(address)) return [];
+      const standaloneEvm = isEthereumAddress(address);
+      if (standaloneEvm && !isSameString(this.state.keyringService.getSubstrateAddress(address), address)) return [];
 
       const pair = this.state.keyringService.getPair(address);
       const haveEntropy = pair?.haveEntropy && !meta.isMnemonicUnverified;
@@ -433,6 +434,9 @@ export default class Extension extends FWExtensionBase {
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         walletEcosystem,
         ...meta,
+        // Linked keys appear on their parent; independently imported EVM keys
+        // retain their own selectable identity without rewriting legacy metadata.
+        ...(standaloneEvm ? { ethereumAddress: address, walletEcosystem: WalletEcosystem.Evm } : {}),
       };
     });
   }

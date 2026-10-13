@@ -463,3 +463,33 @@ describe('acknowledged wallet removal with actual keyring and Chrome storage', {
   });
 
 });
+
+
+describe('standalone Ethereum account presentation', () => {
+  it('exposes an unlinked encrypted Ethereum import with its own identity without rewriting storage', async () => {
+    const pair = keyring.createFromUri(PHRASE, { name: 'Legacy Ethereum' }, 'ethereum');
+    const json = pair.toJson(PASSWORD);
+    const installed = keyring.keyring.addFromJson(json);
+    keyring.accounts.add({ all() {}, get() {}, remove() {}, set() {} }, installed.address, installed.publicKey, json, installed.type);
+    const before = structuredClone(fixture.data);
+    const { extension } = handler();
+    const rows = extension.convertAccounts(service.accountSubject.value);
+    expect(rows).toMatchObject([{ address: pair.address, ethereumAddress: pair.address, walletEcosystem: WalletEcosystem.Evm, name: 'Legacy Ethereum' }]);
+    expect(fixture.data).toEqual(before);
+    expect(keyring.getAccount(pair.address)?.meta.ethereumAddress).toBeUndefined();
+  });
+
+  it('still groups a linked Ethereum child with its Substrate parent', async () => {
+    const child = keyring.createFromUri(PHRASE, {}, 'ethereum');
+    const parent = keyring.createFromUri(PHRASE, { ethereumAddress: child.address });
+    for (const pair of [parent, child]) {
+      const json = pair.toJson(PASSWORD);
+      const installed = keyring.keyring.addFromJson(json);
+      keyring.accounts.add({ all() {}, get() {}, remove() {}, set() {} }, installed.address, installed.publicKey, json, installed.type);
+    }
+    const { extension } = handler();
+    const rows = extension.convertAccounts(service.accountSubject.value);
+    expect(rows.map((row) => row.address)).toEqual([parent.address]);
+    expect(rows[0].ethereumAddress).toBe(child.address);
+  });
+});

@@ -57,6 +57,7 @@ import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import State from '@extension-base/background/handlers/State';
 import { decryptTonSeed } from '@extension-base/services/keyring-service/TonSeedVault';
 import Extension from '@extension-base/background/handlers/Extension';
+import { AuthRequestHandler } from '@extension-base/services/request-service/handlers/AuthRequestHandler';
 import type { TonStoreAccount } from '@extension-base/stores/TonStore';
 import type { KeyringPair$Json as KeyringPairJson, KeypairType } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
@@ -477,6 +478,28 @@ describe('standalone Ethereum account presentation', () => {
     expect(rows).toMatchObject([{ address: pair.address, ethereumAddress: pair.address, walletEcosystem: WalletEcosystem.Evm, name: 'Legacy Ethereum' }]);
     expect(fixture.data).toEqual(before);
     expect(keyring.getAccount(pair.address)?.meta.ethereumAddress).toBeUndefined();
+  });
+
+  it.each([false, true])('authorizes a visible public Ethereum identity (linked parent=%s)', async (linked) => {
+    const ethereumAddress = keyring.createFromUri(PHRASE, {}, 'ethereum').address;
+    const address = linked ? keyring.createFromUri(PHRASE).address : ethereumAddress;
+    const save = track(service.saveAddress(address, { name: 'Public Ethereum address', ...(linked ? { ethereumAddress } : {}) }, 'address'));
+    await drain();
+    expect(await save).toHaveProperty('value');
+    expect(service.getAccount(address)).toBeUndefined();
+    expect(service.getAddress(address)?.address).toBe(address);
+    const { extension, state } = handler();
+    expect(extension.convertAccounts(service.addressSubject.value)).toMatchObject([{ address, ethereumAddress }]);
+    const auth = new AuthRequestHandler({ updateIcon: vi.fn(), popupOpen: vi.fn() } as never, state);
+    const origin = 'https://public-ethereum.example';
+    const dapp = track(auth.authorizeUrl(origin, { origin: 'Public Ethereum', accountAuthType: 'evm' }));
+    await drain();
+    const request = Object.values(auth.authRequests)[0];
+    const approval = track(request.resolve({ authorizedAccounts: [address] }));
+    await drain();
+    expect(await approval).toHaveProperty('value');
+    expect(await dapp).toHaveProperty('value');
+    expect(auth.getEvmAuthorizationSnapshot(origin).authorization?.evmAuthorizedAccount).toBe(ethereumAddress);
   });
 
   it('still groups a linked Ethereum child with its Substrate parent', async () => {

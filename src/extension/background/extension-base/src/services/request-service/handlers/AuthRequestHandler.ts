@@ -287,7 +287,8 @@ export class AuthRequestHandler {
         const version = this.authorizeWrites!.version(originKey);
         approving = true;
         try {
-          const selectedAccount = this.keyringService.getAccount(authorizedAccounts[0]);
+          const selectedAccount = this.keyringService.getAccount(authorizedAccounts[0])
+            ?? this.keyringService.getAddress(authorizedAccounts[0]);
           const ethereumAddress = selectedAccount && isEthereumAddress(selectedAccount.address ?? '')
             ? selectedAccount.address
             : selectedAccount?.meta.ethereumAddress as string;

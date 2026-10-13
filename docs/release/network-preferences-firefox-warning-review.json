@@ -1,0 +1,28 @@
+{
+  "recordedAt": "2026-10-13T17:44:11.633532+00:00",
+  "status": "Accepted bounded exact-warning configuration update. No new warning-policy waiver or Firefox release approval.",
+  "sourceCommit": "eca52cf5fe37e6b78cb1ba021a265cdc5471aaf8",
+  "behaviorSourceCommit": "9481b520d4240f1d5277ae746b956fe55751c700",
+  "checks": [
+    "Git delta changes only warningSetSha256 and accounts.js artifact hash in the exact baseline JSON. The policy implementation, thresholds and CSP are unchanged.",
+    "Independently rehashed the supplied review record and both raw warning reports. The full41 warning multiset is identical by code/message/description/file.",
+    "Independently read both actual ZIPs: all41 reviewed before/after contexts occur in their pinned artifacts, and every reported old/new warning-bearing artifact hash matches. Eight of nine files are byte-identical.",
+    "Of17 accounts.js warning sites,15 context strings are byte-identical. The two differing snippets retain literal Function(`return this`) behind global/self detection and only rename surrounding local minified bindings. Eleven line/column positions move.",
+    "Baseline JSON at9481 exactly equals reviewed oldBaseline; at eca52 exactly equals reviewed newBaseline. Logged policy19 adversarial tests and exact41-warning gate pass; these test commands were not duplicated by this reviewer."
+  ],
+  "configSha256": "8fad6cad41b0f97c67973853b1a206a163c10db03d4a19d37029526f8e0304da",
+  "remainingLimits": [
+    "Retained dependency Function/eval references remain subject to existing CSP and their previously documented bounds; this is not qualification of every dependency branch.",
+    "Final production candidate provenance, runtime/browser evidence, full archive entry inventories and AMO/signed Firefox installation remain outside this warning-only review.",
+    "No application security, live chain, OS or overall production approval is inferred from a static-warning baseline."
+  ],
+  "evidenceSha256": {
+    "network-preferences-firefox-warning-review-v1.json": "451aaffec758938e880df6c780779254c644a2097c4af6ac157b41a5b0e0cca6",
+    "standalone-evm-firefox-raw-warnings-v2.json": "f32187d6ef1c5aefb9813dd2a4e0865735e50417d3e16a912661c2beadc84e3e",
+    "network-preferences-firefox-raw-warnings-v1.json": "53694a6e0ba20b8d448799deb1fc7d37b48fcea13666a4cbe061912a36da7f9d",
+    "offline-startup-production-firefox-v3.zip": "bfe6f6a941ce2685051278ede64365a661974aa0322fa38e6f4bacc0dd160170",
+    "network-preferences-production-firefox-v3.zip": "cfdbbe33fc032c2eabbdc81e3e33a52c3a2fa45c41266c90ee64703c3c15e55d",
+    "network-preferences-firefox-warning-policy-v3.log": "741b4fb076840d4858a5de20a80b35aa58d5f934b045b992ab05398d1b2ae3ac",
+    "network-preferences-firefox-warnings-v3.log": "23b94b12daba4ab26124ed0e82abce6b558df136900ad174d3692eb75178f0ea"
+  }
+}

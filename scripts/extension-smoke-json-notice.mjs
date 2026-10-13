@@ -67,6 +67,17 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
             await fs.writeFile(path.join(outputDir, `${name}-end.png`), Buffer.from(endData, 'base64'));
             results.at(-1).keyboardScrollReachedEnd = true;
           }
+          if (view === 'export') {
+            const reachable = `(() => { const row = document.querySelector('.accounts-layout .row'); const box = row.getBoundingClientRect(); const middle = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2); return box.y >= 0 && box.bottom <= innerHeight && row.contains(middle); })()`;
+            for (let attempt = 0; attempt < 5 && !await evalUi(reachable); attempt++) {
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 160, y: 500, deltaX: 0, deltaY: 400 }, sessionId);
+              await evalUi(`new Promise((resolve) => setTimeout(() => resolve(true), 100))`);
+            }
+            if (!await evalUi(reachable)) throw new Error('Encrypted JSON backup choice is unreachable');
+            const { data: endData } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+            await fs.writeFile(path.join(outputDir, `${name}-end.png`), Buffer.from(endData, 'base64'));
+            results.at(-1).jsonChoiceReachable = true;
+          }
         }
       }
     }

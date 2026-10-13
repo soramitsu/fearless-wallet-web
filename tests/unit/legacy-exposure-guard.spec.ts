@@ -25,6 +25,7 @@ vi.mock('@/extension/messaging', () => ({
   hasMasterPassword: async () => true,
   hasAccounts: async () => true,
   isNeedMigration: mocks.migration,
+  getAccessStatus: async () => ({ storageRecoveryOnly: false, issues: [] }),
   isOnboardingRequired: mocks.onboarding,
 }));
 vi.mock('@/extension/messaging/legacy-exposure', () => ({ getLegacyExposureStatus: mocks.status }));

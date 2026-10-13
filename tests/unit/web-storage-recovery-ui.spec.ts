@@ -26,9 +26,25 @@ beforeEach(() => {
   fixture.status.mockResolvedValue({ storageRecoveryOnly: true, storageRecoveryAccounts: accounts });
   fixture.backup.mockResolvedValue({ json: { encoded: 'public encrypted fixture', meta: {} } });
 });
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('web storage recovery exports', () => {
+  it('waits for the old worker registration to retire before reloading so migration can retry', async () => {
+    let retire!: (value: boolean) => void;
+    const unregister = vi.fn(() => new Promise<boolean>(resolve => { retire = resolve; }));
+    vi.stubGlobal('navigator', { serviceWorker: { getRegistration: async () => ({ unregister }) } });
+    const reload = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+    const wrapper = await open();
+    await wrapper.get('header button').trigger('click');
+    await flushPromises();
+    expect(unregister).toHaveBeenCalledOnce();
+    expect(reload).not.toHaveBeenCalled();
+    retire(true);
+    await flushPromises();
+    expect(reload).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
   it('keeps each native account backup reachable and only downloads after the read succeeds', async () => {
     const wrapper = await open();
     expect(wrapper.findAll('[data-address]')).toHaveLength(3);

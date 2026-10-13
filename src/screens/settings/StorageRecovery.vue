@@ -3,7 +3,8 @@
     <header>
       <h1>{{ t('storageRecovery.title') }}</h1>
       <p role="status">{{ t('storageRecovery.description') }}</p>
-      <FButton text="storageRecovery.reload" type="secondary" @click="reload" />
+      <FButton text="storageRecovery.reload" type="secondary" :disabled="reloading" @click="reload" />
+      <p v-if="reloadFailed" role="alert">{{ t('ux.startupUnavailable') }}</p>
     </header>
     <Loader v-if="loading" />
     <div v-else-if="failed" role="alert">
@@ -48,6 +49,8 @@ const { t } = useI18n();
 const rows = ref<Row[]>([]);
 const loading = ref(true);
 const failed = ref(false);
+const reloading = ref(false);
+const reloadFailed = ref(false);
 let disposed = false;
 let secretRevision = 0;
 
@@ -69,7 +72,20 @@ function hideSecrets() {
 }
 function onVisibilityChange() { if (document.hidden) hideSecrets(); }
 function setPassword(row: Row, password: string) { row.password = password; row.seed = ''; row.error = ''; }
-function reload() { hideSecrets(); window.location.reload(); }
+async function reload() {
+  if (reloading.value || disposed) return;
+  reloading.value = true;
+  reloadFailed.value = false;
+  hideSecrets();
+  try {
+    // A successful recovery-only initialization is cached in the worker. A page
+    // refresh alone reuses it, so retire this registration before starting again.
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration && !await registration.unregister()) throw new Error('Worker registration could not be retired');
+    if (!disposed) window.location.reload();
+  } catch { if (!disposed) reloadFailed.value = true; }
+  finally { reloading.value = false; }
+}
 
 async function download(row: Row) {
   if (disposed || row.busy) return;

@@ -12,6 +12,7 @@ import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
 import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
 import { checkJsonImportStorage } from './extension-smoke-json-import.mjs';
 import { checkMobileAddressStorage } from './extension-smoke-mobile-address.mjs';
+import { checkWalletResetStorage } from './extension-smoke-wallet-reset.mjs';
 import { checkAccountRemovalStorage } from './extension-smoke-account-removal.mjs';
 import { checkCurrentAccountStorage } from './extension-smoke-current-account.mjs';
 import { checkSessionRetirementStorage } from './extension-smoke-session-retirement.mjs';
@@ -57,10 +58,11 @@ const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
 const localImportStorageOnly = process.argv.includes('--local-account-import-storage');
 const jsonImportStorageOnly = process.argv.includes('--json-account-import-storage');
 const mobileAddressStorageOnly = process.argv.includes('--mobile-address-storage');
+const walletResetStorageOnly = process.argv.includes('--wallet-reset-storage');
 const accountRemovalStorageOnly = process.argv.includes('--account-removal-storage');
 const currentAccountStorageOnly = process.argv.includes('--current-account-storage');
 const sessionRetirementStorageOnly = process.argv.includes('--session-retirement-storage');
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly);
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -327,10 +329,10 @@ async function main() {
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
 
-    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly) {
+    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly) {
       let controlSession = extensionSession;
       let liveBackgroundSession = backgroundSession;
-      const checkImport = accountRemovalStorageOnly ? checkAccountRemovalStorage : currentAccountStorageOnly ? checkCurrentAccountStorage : sessionRetirementStorageOnly ? checkSessionRetirementStorage : mobileAddressStorageOnly ? checkMobileAddressStorage : jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
+      const checkImport = walletResetStorageOnly ? checkWalletResetStorage : accountRemovalStorageOnly ? checkAccountRemovalStorage : currentAccountStorageOnly ? checkCurrentAccountStorage : sessionRetirementStorageOnly ? checkSessionRetirementStorage : mobileAddressStorageOnly ? checkMobileAddressStorage : jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
       const result = await checkImport({
         eventually,
         inspectUI: ({ address, password }) => captureJsonRecoveryNotice({ cdp, extensionId,
@@ -360,7 +362,7 @@ async function main() {
           await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
         },
       });
-      console.info(JSON.stringify({ extensionId, [accountRemovalStorageOnly ? 'accountRemovalStorage' : currentAccountStorageOnly ? 'currentAccountStorage' : sessionRetirementStorageOnly ? 'sessionRetirementStorage' : mobileAddressStorageOnly ? 'mobileAddressStorage' : jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
+      console.info(JSON.stringify({ extensionId, [walletResetStorageOnly ? 'walletResetStorage' : accountRemovalStorageOnly ? 'accountRemovalStorage' : currentAccountStorageOnly ? 'currentAccountStorage' : sessionRetirementStorageOnly ? 'sessionRetirementStorage' : mobileAddressStorageOnly ? 'mobileAddressStorage' : jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
       return;
     }
 

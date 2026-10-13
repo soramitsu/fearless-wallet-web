@@ -306,7 +306,11 @@ export class WalletConnectDAppService {
     // the existing completion path and cannot publish an account or selection.
     await Promise.all([...this.pairingAttempts.values()].map((attempt) => this.finishPairing(attempt)));
     await this.initApp();
-    const topics = (this.app?.client.session.values ?? []).map((session) => session.topic);
+    const topics = [...new Set([
+      ...(this.app?.client.session.values ?? []).map((session) => session.topic),
+      ...this.state.keyringService.getAllAccounts().flatMap(({ meta }) =>
+        typeof meta.wcTopic === 'string' && meta.wcTopic ? [meta.wcTopic] : []),
+    ])];
     for (const topic of topics) {
       this.invalidateSession(topic);
       this.state.walletConnectService.invalidateSession(topic);

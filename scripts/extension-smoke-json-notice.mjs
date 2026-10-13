@@ -28,16 +28,24 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
           if (view === 'export' && !await evalUi(`Boolean(document.querySelector('.json-backup-note'))`)) {
             await wait(`Boolean(document.querySelector('[data-testid="passwordExport"] input'))`, 'JSON export password form');
             await evalUi(`(() => { const input = document.querySelector('[data-testid="passwordExport"] input'); input.value = ${JSON.stringify(password)}; input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
-            await evalUi(`(document.querySelector('[data-testid="wantExportJsonBtn"]').click(), true)`);
+            await evalUi(`(document.querySelector('[data-testid="wantExportJsonBtn"] button').click(), true)`);
           }
-          await wait(`Boolean(document.querySelector(${JSON.stringify(selector)}))`, 'localized JSON recovery notice');
+          try {
+            await wait(`Boolean(document.querySelector(${JSON.stringify(selector)}))`, `localized JSON recovery notice ${locale}/${scale}/${view}`);
+          } catch (error) {
+            const state = await evalUi(`({ route: ${APP}.router.currentRoute.value.fullPath, text: document.body.innerText, inputs: [...document.querySelectorAll('input')].map((input) => ({ type: input.type, length: input.value.length, disabled: input.disabled })), flag: ${APP}.pinia._s.get('accounts').selectedWallet.isMnemonicUnverified })`);
+            await fs.writeFile(path.join(outputDir, 'failure-state.json'), JSON.stringify(state, null, 2) + '\n');
+            const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+            await fs.writeFile(path.join(outputDir, 'failure.png'), Buffer.from(data, 'base64'));
+            throw error;
+          }
           await cdp.send('Page.bringToFront', {}, sessionId);
           const semantics = await evalUi(`new Promise((resolve, reject) => { const timeout = setTimeout(() => reject(new Error('Notice paint timeout')), 3000); requestAnimationFrame(() => requestAnimationFrame(() => {
             clearTimeout(timeout); const note = document.querySelector(${JSON.stringify(selector)}); const box = note.getBoundingClientRect();
             const range = document.createRange(); range.selectNodeContents(note); const text = range.getBoundingClientRect();
             resolve({ text: note.textContent.trim(), noteBox: box.toJSON(), textBox: text.toJSON(), role: note.getAttribute('role'), scrollHeight: note.scrollHeight, clientHeight: note.clientHeight,
               pageWidth: document.documentElement.scrollWidth, viewport: innerWidth, internalFlag: ${APP}.pinia._s.get('accounts').selectedWallet.isMnemonicUnverified,
-              exportLabels: [...document.querySelectorAll('.info-row')].map((row) => row.textContent.trim()) });
+              exportLabels: [...document.querySelectorAll('.accounts-layout .row')].map((row) => row.textContent.trim()) });
           })); })`);
           if (!semantics.text || semantics.text.includes('accounts.jsonBackupOnly') || !semantics.internalFlag || semantics.noteBox.x < 0 || semantics.noteBox.right > 321 || semantics.textBox.right > 321) throw new Error('JSON recovery notice lost its status or horizontal containment');
           const name = `${locale}-${scale}-${view}`;

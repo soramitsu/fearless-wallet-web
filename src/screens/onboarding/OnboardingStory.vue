@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <img class="story__image" :src="story.image" :alt="story.title" />
+    <ExternalLogo class="story__image" :name="story.image" :alt="story.title" :width="330" fit="natural" />
     <h2 class="story__title">{{ story.title }}</h2>
     <p class="story__content">{{ story.description }}</p>
   </div>
@@ -8,6 +8,7 @@
 
 <script lang="ts" setup>
 import type { OnboardingStory } from '@/interfaces';
+import ExternalLogo from '@/components/ExternalLogo.vue';
 
 defineProps<{ story: OnboardingStory }>();
 </script>

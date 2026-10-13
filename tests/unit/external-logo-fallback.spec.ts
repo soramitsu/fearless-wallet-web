@@ -38,6 +38,19 @@ describe('ExternalLogo unavailable artwork', () => {
     expect(wrapper.get('img').attributes('src')).toBe(fallback);
   });
 
+  it('preserves natural artwork proportions through failure and story replacement', async () => {
+    const wrapper = mount(ExternalLogo, { props: { name: 'https://icons.invalid/story.svg', alt: 'Story', width: 330, fit: 'natural' } });
+    expect(wrapper.get('img').attributes('height')).toBeUndefined();
+    expect(wrapper.get('img').element.style.height).toBe('auto');
+    await wrapper.get('img').trigger('error');
+    expect(wrapper.get('img').attributes('src')).not.toMatch(/^https?:/);
+    await wrapper.setProps({ name: 'https://icons.invalid/next.svg', alt: 'Next story' });
+    expect(wrapper.get('img').attributes('src')).toBe('https://icons.invalid/next.svg');
+    expect(wrapper.get('img').attributes('alt')).toBe('Next story');
+    expect(wrapper.get('img').attributes('width')).toBe('330');
+    expect(wrapper.get('img').element.style.height).toBe('auto');
+  });
+
   it('ignores an error from a replaced image, including when its URL is selected again', async () => {
     const wrapper = mount(ExternalLogo, { props: { name: 'https://icons.invalid/a.svg' } });
     const oldImage = wrapper.get('img').element;

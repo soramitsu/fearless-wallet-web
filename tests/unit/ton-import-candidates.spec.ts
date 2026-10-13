@@ -431,6 +431,33 @@ describe('restoring a 3.0.x TON wallet from its phrase', PBKDF2_SUITE, () => {
     expect(mocks.records.size).toBe(0);
   });
 
+  it('keeps a seed committed during lock but rejects late success and account selection', async () => {
+    const { create, keyringService, state } = await background();
+    const [golden] = vectors.vectors;
+    const address = golden.expected.ton.addressNonBounceable;
+    let release!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const started = new Promise<void>((resolve) => { entered = resolve; });
+    mocks.beforeWrite = async () => { entered(); await gate; };
+    const imported = create(golden.mnemonic).then(
+      () => ({ success: true }),
+      (error) => ({ success: false, code: error.code })
+    );
+    await started;
+    expect(keyringService.lockKeyring()).toBe(true);
+    release();
+    await expect(imported).resolves.toEqual({ success: false, code: 'keyring_locked' });
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    const committed = structuredClone(stored(address));
+    expect(decrypt(committed)).toBe(golden.mnemonic);
+    // The write already landed. Unlock and retry reuse that record without replacing its ciphertext.
+    expect(keyringService.unlockKeyring({ password: MASTER_PASSWORD })).toBe(true);
+    await expect(create(golden.mnemonic)).resolves.toBe(address);
+    expect(stored(address)).toEqual(committed);
+    expect(state.updateCurrentAccount).toHaveBeenCalledOnce();
+  });
+
   it('reopens a TON wallet that 3.0.x imported from a BIP39 phrase at its stored address', async () => {
     for (const vector of bip39Vectors.vectors.slice(0, 4)) {
       const { candidates, create, keyringService, sendBlockchainMessage, state } = await background();

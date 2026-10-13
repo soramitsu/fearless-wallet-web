@@ -131,6 +131,10 @@ export class TonSeedVault {
         (committed) => this.owner.setAccounts({ ...committed, address }),
         false // This awaited import owns its error; a later password flush must not replay it.
       );
+
+      // The write may finish after lock. Keep that encrypted record, but do not let the caller
+      // report success or change selection until the user unlocks and explicitly retries.
+      if (password() !== currentPassword) throw new TonKeyringError('keyring_locked');
     });
   }
 

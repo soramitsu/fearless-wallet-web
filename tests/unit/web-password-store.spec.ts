@@ -34,17 +34,20 @@ async function bridge() {
 }
 
 describe('web password storage bridge', () => {
-  it('preserves the existing record and key across read, write, and removal', async () => {
+  it('reads the legacy record and rejects writes/removals, including late old-worker operations', async () => {
     const { send, reply } = await bridge();
     const record = JSON.stringify({ passwordHash: { test: 'encrypted-fixture' } });
     localStorage.setItem('unrelated', 'keep');
-    send('set', record);
+    localStorage.setItem('fw:keyring', record);
+    send('set', 'late-old-worker-record');
+    expect(reply).toHaveBeenLastCalledWith({ error: 'Wallet storage is unavailable.' });
     expect(localStorage.getItem('fw:keyring')).toBe(record);
     send('get');
     expect(reply).toHaveBeenLastCalledWith({ value: record });
     send('remove');
+    expect(reply).toHaveBeenLastCalledWith({ error: 'Wallet storage is unavailable.' });
     send('get');
-    expect(reply).toHaveBeenLastCalledWith({ value: null });
+    expect(reply).toHaveBeenLastCalledWith({ value: record });
     expect(localStorage.getItem('unrelated')).toBe('keep');
   });
   it('ignores requests from a different worker and rejects unsupported operations', async () => {
@@ -78,8 +81,8 @@ it('discovers a listening wallet when the focused same-origin window has no brid
   };
   vi.stubGlobal('clients', { matchAll: vi.fn().mockResolvedValue([silentWindow, walletWindow]) });
   const { requestWebPasswordStorage } = await import('@/bootstrap/webPasswordStore');
-  await expect(requestWebPasswordStorage('set', 'encrypted-fixture')).resolves.toBe(null);
+  await expect(requestWebPasswordStorage('get')).resolves.toBe(null);
   expect(silentWindow.postMessage).toHaveBeenCalledTimes(1);
   expect(silentWindow.postMessage.mock.calls[0][0].operation).toBe('ready');
-  expect(walletWindow.postMessage.mock.calls.map(([data]) => data.operation)).toEqual(['ready', 'set']);
+  expect(walletWindow.postMessage.mock.calls.map(([data]) => data.operation)).toEqual(['ready', 'get']);
 });

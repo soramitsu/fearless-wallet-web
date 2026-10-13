@@ -1,16 +1,20 @@
-import { recoverWebResetPassword } from './WebResetPassword';
+import { decodeWebPassword, loadWebPasswordRecord, WEB_PASSWORD_RECORD_KEY, WebPasswordStore } from './WebPasswordRecord';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
-import { requestWebPasswordStorage } from '@/bootstrap/webPasswordStore';
 
 export default class KeyringStoreWeb implements PasswordStore {
   private static value: KeyringPasswordJson | null = null;
   private static pending = Promise.resolve();
+  static readOnly = false;
 
   static async initialize(): Promise<void> {
-    await recoverWebResetPassword();
-    const serialized = await requestWebPasswordStorage('get');
-    this.value = serialized ? JSON.parse(serialized) : null;
+    const { record, persisted } = await loadWebPasswordRecord();
+    this.value = decodeWebPassword(record.serialized);
+    this.readOnly = !persisted;
+  }
+
+  static assertWritable(): void {
+    if (this.readOnly) throw new Error('Wallet storage needs repair. Reload to retry. Existing accounts can still be exported.');
   }
 
   static async flush(): Promise<void> {
@@ -29,18 +33,14 @@ export default class KeyringStoreWeb implements PasswordStore {
   }
 
   public remove(update?: () => void): void {
-    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(() => requestWebPasswordStorage('remove')).then(() => {
-      KeyringStoreWeb.value = null;
-      update?.();
-    });
-    void KeyringStoreWeb.pending.catch(() => {});
+    this.write(null, update);
   }
 
-  // Reset owns the vault queue and keeps its previous in-memory password until
-  // the account transaction commits. A failed bridge call is explicitly retryable.
+  // Reset writes its null tombstone in the same transaction as account archives.
+  // Preparation never changes the durable or in-memory password.
   static async removeForReset(): Promise<void> {
     await this.flush();
-    await requestWebPasswordStorage('remove');
+    this.assertWritable();
   }
 
   static commitReset(): void {
@@ -48,7 +48,15 @@ export default class KeyringStoreWeb implements PasswordStore {
   }
 
   public set(value: KeyringPasswordJson, update?: () => void): void {
-    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(() => requestWebPasswordStorage('set', JSON.stringify(value))).then(() => {
+    this.write(value, update);
+  }
+
+  private write(value: KeyringPasswordJson | null, update?: () => void): void {
+    const serialized = value === null ? null : JSON.stringify(value);
+    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(async () => {
+      KeyringStoreWeb.assertWritable();
+      decodeWebPassword(serialized);
+      await new WebPasswordStore().replaceAndWait({ [WEB_PASSWORD_RECORD_KEY]: { version: 1, serialized } }, [], false);
       KeyringStoreWeb.value = value;
       update?.();
     });

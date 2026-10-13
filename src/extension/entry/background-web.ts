@@ -29,11 +29,11 @@ const initialize = retryableInitialization(async () => {
   } catch (error) {
     console.error('Security notice state could not be prepared', error);
   }
-  await MigrationService.start();
+  if (!KeyringStoreWeb.readOnly) await MigrationService.start();
   // The web wallet has no install event, so start-up is where a missing selection is repaired.
   // A failure here must not keep the wallet from starting.
   try {
-    await state.ensureCurrentAccount();
+    if (!KeyringStoreWeb.readOnly) await state.ensureCurrentAccount();
   } catch (error) {
     console.error('Default account could not be selected', error);
   }

@@ -20,7 +20,7 @@ import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
-import { recoverWebResetPassword, retainWebResetPassword, WEB_RESET_PASSWORD_KEY } from '@extension-base/stores/WebResetPassword';
+import { WEB_PASSWORD_RECORD_KEY } from '@extension-base/stores/WebPasswordRecord';
 import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
@@ -1064,12 +1064,11 @@ export class KeyringService {
         const store = this.accountsStore ?? new AccountsStore();
         if (!IS_EXTENSION) {
           await KeyringStoreWeb.flush();
-          await retainWebResetPassword();
           await KeyringStoreWeb.removeForReset();
         }
         await store.mutateRecordsAndWait(null, (current) => {
           const mutation = walletResetMutation(current, pairs);
-          if (!IS_EXTENSION) mutation.remove.push(WEB_RESET_PASSWORD_KEY);
+          if (!IS_EXTENSION) mutation.entries[WEB_PASSWORD_RECORD_KEY] = { version: 1, serialized: null };
           return mutation;
         }, () => {
           // Memory changes only after storage acknowledges every archive/removal.
@@ -1085,11 +1084,6 @@ export class KeyringService {
         return true;
       } catch (error) {
         console.error(error);
-        if (!IS_EXTENSION) {
-          // If compensation also fails, the durable journal is retried before
-          // startup can expose the wallet or accept a new password.
-          await recoverWebResetPassword().catch(console.error);
-        }
         return false;
       } finally {
         this.resetting = false;

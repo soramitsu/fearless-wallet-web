@@ -24,6 +24,7 @@ import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
 import { updateAccountMetadata } from './AccountMetadata';
+import { importLocalAccount } from './LocalAccountImport';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
 import {
   AccountAccessService,
@@ -283,19 +284,11 @@ export class KeyringService {
       return account.address.toString();
     }
 
-    const initialMeta = { ...meta, isMobile: false, walletEcosystem };
-    const {
-      pair: { address },
-    } = keyring.addUri(suri, initialMeta, type);
-
-    const effectiveEcosystem = isEthereumAddress(address) ? WalletEcosystem.Evm : walletEcosystem;
-    const pair = this.getPair(address);
-
-    if (pair) {
-      await this.saveAccountMeta(address, { ...initialMeta, walletEcosystem: effectiveEcosystem });
-    }
-
-    return address;
+    return this.tonKeyring.vault.exclusive(async () => {
+      const pair = keyring.createFromUri(suri, { ...meta, isMobile: false, walletEcosystem }, type);
+      const effectiveEcosystem = isEthereumAddress(pair.address) ? WalletEcosystem.Evm : walletEcosystem;
+      return importLocalAccount(pair, effectiveEcosystem, () => this.password);
+    });
   }
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType) {

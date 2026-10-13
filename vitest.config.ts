@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => {
       server: {
         deps: {
           inline: [
+            // Exercise the installed keyring in storage tests through the same compatibility
+            // transforms and scrypt parameters as the extension build.
+            '@subwallet/ui-keyring',
+            '@subwallet/keyring',
             /\/node_modules\/@(?:subwallet|polkadot)\/keyring\/pair\/encode\.js$/,
             /\/node_modules\/@polkadot\/util-crypto\/json\/encrypt\.js$/,
             /\/node_modules\/@polkadot\/util-crypto\/scrypt\/(?:defaults|encode)\.js$/,

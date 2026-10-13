@@ -9,6 +9,7 @@ import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
 import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
 import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
 import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
+import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -47,7 +48,8 @@ const primitivesScreenshotsDir =
           : 'output/primitives-screenshots'
       );
 const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly);
+const localImportStorageOnly = process.argv.includes('--local-account-import-storage');
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -314,9 +316,11 @@ async function main() {
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
 
-    if (tonImportStorageOnly) {
+    if (tonImportStorageOnly || localImportStorageOnly) {
       let controlSession = extensionSession;
-      const result = await checkTonImportStorage({
+      const checkImport = localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
+      const result = await checkImport({
+        eventually,
         fixture: universalWalletFixture,
         password: TEST_PASSWORD,
         assert,
@@ -335,7 +339,7 @@ async function main() {
           await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
         },
       });
-      console.info(JSON.stringify({ extensionId, tonImportStorage: result }, null, 2));
+      console.info(JSON.stringify({ extensionId, [localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
       return;
     }
 

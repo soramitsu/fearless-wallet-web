@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cryptoWaitReady, encodeAddress } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
+import { BehaviorSubject } from 'rxjs';
 import { addressKey, contractKey } from '@subwallet/ui-keyring/defaults';
 
 const fixture = vi.hoisted(() => ({
@@ -41,8 +42,11 @@ import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
+import Extension from '@extension-base/background/handlers/Extension';
+import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { KeyringJson, KeyringAddressType } from '@subwallet/ui-keyring/types';
 import type { FWKeyringMeta } from '@extension-base/types';
+import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public mobile persistence password';
 let service: KeyringService;
@@ -284,5 +288,59 @@ describe('durable mobile address publication with installed keyring', () => {
     expect(await result).toHaveProperty('error');
     expect(fixture.data[storedKey()]).toBeUndefined();
     expect(keyring.getAddresses()).toEqual([]);
+  });
+});
+
+describe('actual direct mobile import handler', () => {
+  function handler() {
+    Object.assign(service, {
+      currentAccountSubject: new BehaviorSubject<CurrentAccountState>({
+        address: 'public-original-selection', ethereumAddress: '', name: 'Public selection',
+        isMobile: false, walletEcosystem: WalletEcosystem.Substrate,
+      }),
+      currentAccountStore: { set: vi.fn() },
+    });
+    const state = {
+      keyringService: service,
+      get currentAccount() { return service.currentAccountSubject.value; },
+      set currentAccount(value: CurrentAccountState) { service.setCurrentAccount(value); },
+      updateCurrentAccount: vi.fn(),
+    };
+    const extension = Object.create(Extension.prototype) as Extension;
+    Object.assign(extension, { state });
+    return { state, create: () => track(extension['createMobileWallet']({ address, meta: mobile() })) };
+  }
+
+  it.each(['changed selection', 'away and back'])('retains submitted public data without late selection after %s', async (change) => {
+    const { state, create } = handler();
+    const result = create();
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    const initial = state.currentAccount;
+    state.currentAccount = { ...initial!, address: 'public-second-selection' };
+    // Even reusing the exact prior object cannot revive a stale import.
+    if (change === 'away and back') state.currentAccount = initial;
+    await drain();
+    expect(await result).toHaveProperty('error');
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    expect(fixture.data[storedKey()].meta).toMatchObject(mobile());
+  });
+
+  it('acknowledges and selects only after a successful current write', async () => {
+    const { state, create } = handler();
+    const result = create();
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    await drain();
+    expect(await result).toEqual({ value: true });
+    expect(state.updateCurrentAccount).toHaveBeenCalledWith({ address });
+  });
+
+  it('does not select or acknowledge a failed direct write', async () => {
+    const { state, create } = handler();
+    fixture.failWrite = true;
+    const result = create();
+    await drain();
+    expect(await result).toHaveProperty('error');
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
   });
 });

@@ -103,6 +103,7 @@ export class KeyringService {
   private accountsStore?: AccountsStore;
   private accountAccess?: AccountAccessService;
   private password = '';
+  private selectionRevision = 0;
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
   private enrollmentGate: (address: string) => boolean = () => true;
@@ -163,7 +164,10 @@ export class KeyringService {
   async restoreCurrentAccount(): Promise<void> {
     const currentAccount = await this.currentAccountStore.getAndWait('CurrentAccountInfo');
 
-    if (currentAccount) this.currentAccountSubject.next(currentAccount);
+    if (currentAccount) {
+      this.selectionRevision = this.currentAccountRevision + 1;
+      this.currentAccountSubject.next(currentAccount);
+    }
   }
 
   get addressSubject() {
@@ -191,7 +195,12 @@ export class KeyringService {
     return this.password;
   }
 
+  get currentAccountRevision(): number {
+    return this.selectionRevision ?? 0;
+  }
+
   setCurrentAccount(currentAccountData: CurrentAccountState) {
+    this.selectionRevision = this.currentAccountRevision + 1;
     this.currentAccountSubject.next(currentAccountData);
     this.currentAccountStore.set('CurrentAccountInfo', currentAccountData);
   }

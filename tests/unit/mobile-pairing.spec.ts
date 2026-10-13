@@ -94,6 +94,7 @@ beforeEach(() => {
   state = {
     networkService: { networksGithub: networks, networkValues: networks },
     keyringService: {
+      currentAccountRevision: 0,
       encodeAddress,
       getAllAccounts: () => [...existing, ...records],
       getAddresses: () => records,
@@ -441,7 +442,7 @@ describe('pairing storage acknowledgement and late invalidation', () => {
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();
   });
 
-  it.each(['cancel', 'port disconnect', 'selection changed', 'session changed', 'session revision', 'expired'])(
+  it.each(['cancel', 'port disconnect', 'selection changed', 'selection revision', 'session changed', 'session revision', 'expired'])(
     'retains an acknowledged public record but refuses late success after %s', async (kind) => {
       const write = delayedAddressWrite();
       await begin();
@@ -450,6 +451,7 @@ describe('pairing storage acknowledgement and late invalidation', () => {
       if (kind === 'cancel') abort('public-attempt', port);
       if (kind === 'port disconnect') disconnectPort();
       if (kind === 'selection changed') Object.assign(state, { currentAccount: { address: bob } });
+      if (kind === 'selection revision') Object.assign(state.keyringService, { currentAccountRevision: 2 });
       if (kind === 'session changed') session.peer.publicKey = 'changed-public-peer';
       if (kind === 'session revision') sessionListeners.session_update({ topic: session.topic });
       if (kind === 'expired') session.expiry = Math.floor(Date.now() / 1000) - 1;

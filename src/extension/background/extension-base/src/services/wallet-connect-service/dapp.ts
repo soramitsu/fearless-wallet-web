@@ -28,6 +28,7 @@ type PairingAttempt = {
   session?: SessionTypes.Struct;
   priorTopics: Set<string>;
   currentAddress?: string;
+  currentAccountRevision: number;
   subscriber?: { id: string; callback: (data: PairingSubjectType) => void };
   disconnectListener: () => void;
 };
@@ -114,6 +115,7 @@ export class WalletConnectDAppService {
       active: true,
       priorTopics: new Set(),
       currentAddress: this.state.currentAccount?.address,
+      currentAccountRevision: this.state.keyringService.currentAccountRevision,
       disconnectListener: () => this.abortPairingAttempt(id, port),
     };
     this.pairingAttempts.set(id, attempt);
@@ -201,6 +203,7 @@ export class WalletConnectDAppService {
       const revision = this.getSessionRevision(session.topic);
       const assertCurrent = () => {
         if (!attempt.active || this.state.currentAccount?.address !== attempt.currentAddress ||
+          this.state.keyringService.currentAccountRevision !== attempt.currentAccountRevision ||
           attempt.priorTopics.has(session.topic) || this.getSessionRevision(session.topic) !== revision)
           throw new Error('Mobile pairing context changed');
         captureMobilePairingAccount(this, session);

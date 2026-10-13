@@ -1774,8 +1774,17 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async createMobileWallet({ address, meta }: RequestAddressCreate) {
-    await this.state.keyringService.saveAddress(address, meta, 'address');
+    const selected = this.state.currentAccount;
+    const selectedAddress = selected?.address;
+    const revision = this.state.keyringService.currentAccountRevision;
+    const assertCurrent = () => {
+      if (this.state.currentAccount !== selected || this.state.currentAccount?.address !== selectedAddress ||
+        this.state.keyringService.currentAccountRevision !== revision)
+        throw new Error('Wallet selection changed during mobile import. Retry with the current wallet.');
+    };
+    await this.state.keyringService.saveAddress(address, meta, 'address', { assertCurrent });
 
+    assertCurrent();
     this.state.updateCurrentAccount({ address });
     return true;
   }

@@ -6,6 +6,22 @@
       <FButton text="storageRecovery.reload" type="secondary" :disabled="reloading" @click="reload" />
       <p v-if="reloadFailed" role="alert">{{ t('ux.startupUnavailable') }}</p>
     </header>
+    <section v-if="exposure && exposure.state !== 'not_exposed'" class="recovery-notice" data-testid="recoveryExposure">
+      <h2>{{ t(exposure.state === 'unknown' ? 'exposureNotice.title' : 'exposureNotice.heading') }}</h2>
+      <p>{{ t('exposureNotice.whatHappened', LEGACY_EXPOSURE_VERSIONS) }}</p>
+      <p>{{ t('exposureNotice.thisVersion') }}</p>
+      <template v-if="exposure.wallets.length">
+        <p>{{ t('exposureNotice.whatWeKnow') }}</p>
+        <ul>
+          <li v-for="wallet in exposure.wallets" :key="wallet.address">
+            <strong>{{ wallet.name }}</strong> {{ wallet.address }}
+            <span v-if="!wallet.present"> — {{ t('exposureNotice.walletRemoved') }}</span>
+          </li>
+        </ul>
+      </template>
+      <p>{{ t('exposureNotice.whatItMeans') }}</p>
+      <p>{{ t('exposureNotice.passwordAdvice') }}</p>
+    </section>
     <Loader v-if="loading" />
     <div v-else-if="failed" role="alert">
       <p>{{ t('accountAccess.loadFailed') }}</p>
@@ -37,22 +53,37 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
 import type { StorageRecoveryAccount } from '@extension-base/background/types/types';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import { exportMnemonic, getAccessStatus, migrateExportJSON } from '@/extension/messaging';
+import { getLegacyExposureStatus } from '@/extension/messaging/legacy-exposure';
 import { downloadJsonAccount } from '@/helpers/files';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
+import { LEGACY_EXPOSURE_VERSIONS } from '@/util/legacyExposure';
 
 type Row = StorageRecoveryAccount & { password: string; seed: string; error: string; busy: boolean };
 const { t } = useI18n();
 const rows = ref<Row[]>([]);
+const exposure = ref<LegacyExposureStatus>();
 const loading = ref(true);
 const failed = ref(false);
 const reloading = ref(false);
 const reloadFailed = ref(false);
 let disposed = false;
 let secretRevision = 0;
+
+async function loadExposure() {
+  // Recovery stays available even when notice state cannot be persisted or read.
+  // Acknowledgement and guide mutations resume after normal storage is repaired.
+  try {
+    const status = await getLegacyExposureStatus();
+    if (!disposed) exposure.value = status;
+  } catch {
+    if (!disposed) exposure.value = { state: 'unknown', wallets: [], newWallets: [] };
+  }
+}
 
 async function load() {
   loading.value = true;
@@ -114,7 +145,7 @@ async function reveal(row: Row) {
   finally { row.busy = false; }
 }
 
-onMounted(() => { document.addEventListener('visibilitychange', onVisibilityChange); void load(); });
+onMounted(() => { document.addEventListener('visibilitychange', onVisibilityChange); void load(); void loadExposure(); });
 onBeforeUnmount(() => { disposed = true; hideSecrets(); document.removeEventListener('visibilitychange', onVisibilityChange); });
 </script>
 
@@ -130,7 +161,9 @@ onBeforeUnmount(() => { disposed = true; hideSecrets(); document.removeEventList
   h1 { font-size: 28px; }
   h2 { font-size: 20px; }
   p { line-height: 1.5; }
-  header, .recovery-account { display: grid; gap: 16px; }
+  header, .recovery-account, .recovery-notice { display: grid; gap: 16px; }
+  .recovery-notice { border-inline-start: 3px solid var(--fw-warning, #f0ad4e); padding-inline-start: 16px; }
+  .recovery-notice li { overflow-wrap: anywhere; margin-block: 8px; }
   .recovery-account { padding-block: 24px; border-top: 1px solid var(--fw-border, #4e4e57); }
   .recovery-account__address { font-family: monospace; }
   .recovery-account__phrase { padding: 16px; border: 1px solid var(--fw-border, #4e4e57); user-select: all; }

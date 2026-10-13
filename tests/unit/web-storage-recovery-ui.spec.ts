@@ -1,8 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fixture = vi.hoisted(() => ({ status: vi.fn(), backup: vi.fn(), phrase: vi.fn(), download: vi.fn() }));
+const fixture = vi.hoisted(() => ({ status: vi.fn(), backup: vi.fn(), phrase: vi.fn(), download: vi.fn(), exposure: vi.fn() }));
 vi.mock('@/extension/messaging', () => ({ getAccessStatus: fixture.status, migrateExportJSON: fixture.backup, exportMnemonic: fixture.phrase }));
+vi.mock('@/extension/messaging/legacy-exposure', () => ({ getLegacyExposureStatus: fixture.exposure }));
 vi.mock('@/helpers/files', () => ({ downloadJsonAccount: fixture.download }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 import StorageRecovery from '@/screens/settings/StorageRecovery.vue';
@@ -23,12 +24,41 @@ async function open() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  fixture.exposure.mockResolvedValue({ state: 'not_exposed', wallets: [], newWallets: [] });
   fixture.status.mockResolvedValue({ storageRecoveryOnly: true, storageRecoveryAccounts: accounts });
   fixture.backup.mockResolvedValue({ json: { encoded: 'public encrypted fixture', meta: {} } });
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('web storage recovery exports', () => {
+  it.each(['notice_pending', 'acknowledged'])('retains the incident warning for %s without gating recovery on acknowledgement', async state => {
+    fixture.exposure.mockResolvedValue({ state, wallets: [{ address: 'old-public-address', name: 'Old public wallet', present: false }], newWallets: [] });
+    const wrapper = await open();
+    const warning = wrapper.get('[data-testid="recoveryExposure"]');
+    expect(warning.text()).toContain('exposureNotice.heading');
+    expect(warning.text()).toContain('exposureNotice.whatItMeans');
+    expect(warning.text()).toContain('old-public-address');
+    expect(warning.text()).toContain('exposureNotice.walletRemoved');
+    expect(warning.findAll('button')).toHaveLength(0);
+    await wrapper.get('[data-address="public-substrate"] button').trigger('click');
+    await flushPromises();
+    expect(fixture.download).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+  it('keeps the general notice and backup access if incident status cannot be read', async () => {
+    fixture.exposure.mockRejectedValue(new Error('Public read failure'));
+    const wrapper = await open();
+    const warning = wrapper.get('[data-testid="recoveryExposure"]');
+    expect(warning.text()).toContain('exposureNotice.whatHappened');
+    expect(warning.text()).not.toContain('exposureNotice.whatWeKnow');
+    expect(wrapper.findAll('[data-address]')).toHaveLength(3);
+    wrapper.unmount();
+  });
+  it('omits the warning when the recorded profile is not exposed', async () => {
+    const wrapper = await open();
+    expect(wrapper.find('[data-testid="recoveryExposure"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
   it('waits for the old worker registration to retire before reloading so migration can retry', async () => {
     let retire!: (value: boolean) => void;
     const unregister = vi.fn(() => new Promise<boolean>(resolve => { retire = resolve; }));

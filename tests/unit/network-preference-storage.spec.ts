@@ -106,4 +106,26 @@ describe('actual network preference storage queue', () => {
     expect(service.networkMap.Bitcoin.active).toBe(true);
     expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.active).toBe(true);
   });
+
+  it('rejects a stale second editor instead of dropping the first acknowledged addition, then permits retry', async () => {
+    const service = create(); await service.initNetworkMap();
+    const original = structuredClone(service.networkMap.Bitcoin);
+    io.hold = true;
+    const first = service.upsertNetworkMap(edit(service), original);
+    await vi.waitFor(() => expect(io.acknowledgements).toHaveLength(1));
+    const later = { ...original, customNodes: [{ name: 'Later', url: 'https://later.invalid' }] };
+    const second = service.upsertNetworkMap(later, original).then(() => 'unexpected success', (error: Error) => error.message);
+    io.hold = false; io.acknowledgements.shift()!(); await first;
+    expect(await second).toContain('Network settings changed');
+    expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.customNodes).toEqual(edit(service).customNodes);
+    const current = structuredClone(service.networkMap.Bitcoin);
+    await service.upsertNetworkMap({ ...current, customNodes: [...current.customNodes, ...later.customNodes] }, current);
+    expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.customNodes).toHaveLength(2);
+  });
+
+  it('keeps two concurrent add-favorite intents idempotent for the same wallet', async () => {
+    const service = create(); await service.initNetworkMap();
+    await Promise.all([service.toggleFavoriteNetwork('Bitcoin', 'owner-a', true), service.toggleFavoriteNetwork('Bitcoin', 'owner-a', true)]);
+    expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.favorite).toEqual(['owner-a']);
+  });
 });

@@ -155,7 +155,7 @@ export default defineComponent({ name: 'EditNodeForm' ,
           ...network, customNodes,
           currentProvider: selectEdited ? this.url : network.currentProvider,
           isManual: selectEdited ? true : network.isManual,
-        });
+        }, network);
         if (this.viewActive) this.$emit('closeForm', true);
       } catch {
         if (this.viewActive) this.saveError = true;

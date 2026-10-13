@@ -63,7 +63,7 @@ describe('acknowledged network controls', () => {
     const held = deferred(); io.save.mockReturnValue(held.promise);
     const wrapper = open(Nodes);
     await wrapper.get('[data-testid="auto"]').trigger('click');
-    expect(io.save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ name: 'Polkadot', isManual: false, currentProvider: 'wss://public.invalid' }));
+    expect(io.save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ name: 'Polkadot', isManual: false, currentProvider: 'wss://public.invalid' }), io.networks.Polkadot);
     expect(wrapper.get('[data-testid="auto"]').attributes('aria-checked')).toBe('false');
     expect(wrapper.get('[data-testid="auto"]').attributes('disabled')).toBeDefined();
     Object.assign(io.networks.Polkadot, io.save.mock.calls[0][0]); held.resolve(); await flushPromises();
@@ -91,7 +91,7 @@ describe('acknowledged network controls', () => {
   it('keeps deletion open until acknowledgement and commits active-node fallback atomically', async () => {
     const held = deferred(); io.save.mockReturnValue(held.promise);
     const wrapper = open(AccountsLayout); await deletion(wrapper);
-    expect(io.save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ customNodes: [], currentProvider: 'wss://public.invalid', isManual: false }));
+    expect(io.save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ customNodes: [], currentProvider: 'wss://public.invalid', isManual: false }), io.networks.Polkadot);
     expect(wrapper.find('[data-testid="delete-dialog"]').exists()).toBe(true);
     expect(io.networks.Polkadot.customNodes).toHaveLength(1);
     await wrapper.get('[data-testid="delete-dialog"] button').trigger('click'); expect(io.save).toHaveBeenCalledOnce();

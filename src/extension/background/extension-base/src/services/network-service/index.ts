@@ -6,6 +6,7 @@ import { EvmApiHandler } from '@extension-base/services/network-service/handlers
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { logger as createLogger } from '@polkadot/util';
 import { TonApiHandler } from './handlers/TonApiHandler';
+import { nodePreferences, sameNodePreferences, type NodePreferences } from './preferences';
 import type { KeyringService } from '@extension-base/services';
 import type { ApiMap } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -439,12 +440,17 @@ export class NetworkService {
     });
   }
 
-  async upsertNetworkMap(networkJson: NetworkJson): Promise<void> {
+  async upsertNetworkMap(networkJson: NetworkJson, expected?: NodePreferences): Promise<void> {
     const requested = structuredClone(networkJson);
     if (!usableNetwork(requested)) throw new Error('Invalid network settings');
     const { name, currentProvider, customNodes, customProviders, isManual } = requested;
     const patch = { currentProvider, customNodes, customProviders, isManual };
-    await this.persistPreferences(name, requested, () => patch, true);
+    const previous = structuredClone(nodePreferences(expected ?? this.networkMap[name] ?? requested));
+    const catalog = { ...requested, ...nodePreferences(this.networkMap[name] ?? requested) };
+    await this.persistPreferences(name, catalog, (saved) => {
+      if (!sameNodePreferences(saved, previous)) throw new Error('Network settings changed. Retry the edit.');
+      return patch;
+    }, true);
     const network = this.networkMap[name];
     // Connection setup is best effort after the preference commit; it cannot undo the saved choice.
     try {
@@ -459,12 +465,13 @@ export class NetworkService {
     } catch (error) { console.warn('Saved network connection is unavailable', error); }
   }
 
-  async toggleFavoriteNetwork(name: string, address: string): Promise<void> {
+  async toggleFavoriteNetwork(name: string, address: string, desired?: boolean): Promise<void> {
     const network = this.networkMap[name];
     if (!network) throw new Error('Network unavailable');
     await this.persistPreferences(name, network, (saved) => {
       const favorite = Array.isArray(saved.favorite) ? saved.favorite : [];
-      return { favorite: favorite.includes(address) ? favorite.filter((item) => item !== address) : [...favorite, address] };
+      const include = desired ?? !favorite.includes(address);
+      return { favorite: include ? (favorite.includes(address) ? favorite : [...favorite, address]) : favorite.filter((item) => item !== address) };
     });
   }
 

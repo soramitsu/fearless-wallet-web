@@ -91,6 +91,7 @@ import {
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
+import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type {
   IrohaConnectAccountRequest,
   IrohaConnectPendingRequest,
@@ -628,13 +629,14 @@ export default class Extension extends FWExtensionBase {
     return address;
   }
 
-  private async toggleNetworkFavorite(request: string | { networkName: string; address: string }): Promise<void> {
+  private async toggleNetworkFavorite(request: string | { networkName: string; address: string; favorite?: boolean }): Promise<void> {
     await this.state.setFavoriteNetwork(typeof request === 'string' ? request : request.networkName,
-      typeof request === 'string' ? undefined : request.address);
+      typeof request === 'string' ? undefined : request.address, typeof request === 'string' ? undefined : request.favorite);
   }
 
-  private async upsertNetworkMap(data: NetworkJson): Promise<void> {
-    await this.state.networkService.upsertNetworkMap(data);
+  private async upsertNetworkMap(data: NetworkMapEdit): Promise<void> {
+    if ('network' in data) await this.state.networkService.upsertNetworkMap(data.network, data.expected);
+    else await this.state.networkService.upsertNetworkMap(data);
     this.state.updateServiceInfo();
   }
 
@@ -2414,10 +2416,10 @@ export default class Extension extends FWExtensionBase {
         return this.state.isReady();
 
       case 'pri(networkMap.upsert)':
-        return this.upsertNetworkMap(request as NetworkJson);
+        return this.upsertNetworkMap(request as NetworkMapEdit);
 
       case 'pri(networkMap.toggle.favorite)':
-        return this.toggleNetworkFavorite(request as string | { networkName: string; address: string });
+        return this.toggleNetworkFavorite(request as string | { networkName: string; address: string; favorite?: boolean });
 
       case 'pri(window.open)':
         return this.windowOpen(request as string);

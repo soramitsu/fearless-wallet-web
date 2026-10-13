@@ -278,7 +278,7 @@ export const actions: Actions = {
     const favoriteIndex = network.favorite.findIndex((el) => el === address);
     const isFavorite = favoriteIndex !== -1;
 
-    await toggleFavoriteNetwork(networkName, address);
+    await toggleFavoriteNetwork(networkName, address, !isFavorite);
 
     return isFavorite;
   },

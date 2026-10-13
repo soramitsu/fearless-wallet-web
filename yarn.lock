@@ -6991,6 +6991,8 @@ __metadata:
     "@scure/base": "npm:^1.2.6"
     "@scure/bip32": "npm:^1.4.0"
     "@scure/bip39": "npm:2.2.0"
+    "@sora-substrate/api": "npm:1.40.2"
+    "@sora-substrate/connection": "npm:1.40.2"
     "@sora-substrate/sdk": "npm:1.43.0-betaMST-1.0.21"
     "@sora-substrate/util": "npm:1.40.2"
     "@stylistic/eslint-plugin": "npm:^5.10.0"

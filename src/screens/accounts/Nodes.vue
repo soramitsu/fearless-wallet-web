@@ -171,7 +171,7 @@ export default defineComponent({ name: 'Nodes',
       this.saving = true;
       this.saveError = false;
       try {
-        await upsertNetworkMap({ ...this.networkJson, isManual, currentProvider });
+        await upsertNetworkMap({ ...this.networkJson, isManual, currentProvider }, this.networkJson);
       } catch {
         if (this.viewActive && this.selectedNetwork === name) this.saveError = true;
       } finally {

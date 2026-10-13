@@ -1,12 +1,13 @@
+import { nodePreferences } from '@extension-base/services/network-service/preferences';
 import type { NetworkJson } from '@extension-base/types';
 import { sendMessage } from '@/extension/messaging/index';
 
-export function upsertNetworkMap(data: NetworkJson): Promise<void> {
-  return sendMessage('pri(networkMap.upsert)', data);
+export function upsertNetworkMap(data: NetworkJson, previous?: NetworkJson): Promise<void> {
+  return sendMessage('pri(networkMap.upsert)', previous ? { network: data, expected: nodePreferences(previous) } : data);
 }
 
-export function toggleFavoriteNetwork(networkName: string, address?: string): Promise<void> {
-  return sendMessage('pri(networkMap.toggle.favorite)', address ? { networkName, address } : networkName);
+export function toggleFavoriteNetwork(networkName: string, address?: string, favorite?: boolean): Promise<void> {
+  return sendMessage('pri(networkMap.toggle.favorite)', address ? { networkName, address, favorite } : networkName);
 }
 
 export function subscribeNetworkMap(

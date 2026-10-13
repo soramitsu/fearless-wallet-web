@@ -1,4 +1,5 @@
 import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
+import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
@@ -241,10 +242,10 @@ export interface RequestSignatures {
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
   'pri(app.isReady)': [null, boolean];
-  'pri(networkMap.upsert)': [NetworkJson, void];
+  'pri(networkMap.upsert)': [NetworkMapEdit, void];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   'pri(selectedNetworks.getSubscription)': [null, string, string];
-  'pri(networkMap.toggle.favorite)': [string | { networkName: string; address: string }, void];
+  'pri(networkMap.toggle.favorite)': [string | { networkName: string; address: string; favorite?: boolean }, void];
 
   // Authorize
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];

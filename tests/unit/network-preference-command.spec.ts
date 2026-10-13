@@ -35,17 +35,32 @@ describe('network preference worker commands', () => {
     expect(publish).not.toHaveBeenCalled();
   });
 
+  it('forwards the editor snapshot to the atomic conflict check', async () => {
+    const network = { name: 'Polkadot' } as never;
+    const expected = { currentProvider: 'wss://original.invalid', isManual: true, customNodes: [] } as never;
+    await extension.handle('settings', 'pri(networkMap.upsert)', { network, expected });
+    expect(save).toHaveBeenCalledExactlyOnceWith(network, expected);
+  });
+
   it('rejects a favorite request whose captured wallet is no longer selected', async () => {
     await expect(extension.handle('favorite', 'pri(networkMap.toggle.favorite)', { networkName: 'Polkadot', address: 'owner-b' }))
       .rejects.toThrow('Selected wallet changed');
     expect(favorite).not.toHaveBeenCalled();
   });
 
+  it('forwards an explicit favorite intent and rejects an empty captured wallet', async () => {
+    await extension.handle('favorite', 'pri(networkMap.toggle.favorite)', { networkName: 'Polkadot', address: 'owner-a', favorite: true });
+    expect(favorite).toHaveBeenCalledExactlyOnceWith('Polkadot', 'owner-a', true);
+    await expect(extension.handle('favorite', 'pri(networkMap.toggle.favorite)', { networkName: 'Polkadot', address: '', favorite: true }))
+      .rejects.toThrow('Selected wallet changed');
+    expect(favorite).toHaveBeenCalledOnce();
+  });
+
   it('captures the requested favorite owner before the selection changes during storage', async () => {
     let acknowledge!: () => void;
     favorite.mockReturnValue(new Promise<void>((resolve) => { acknowledge = resolve; }));
     const pending = extension.handle('favorite', 'pri(networkMap.toggle.favorite)', { networkName: 'Polkadot', address: 'owner-a' });
-    await vi.waitFor(() => expect(favorite).toHaveBeenCalledExactlyOnceWith('Polkadot', 'owner-a'));
+    await vi.waitFor(() => expect(favorite).toHaveBeenCalledExactlyOnceWith('Polkadot', 'owner-a', undefined));
     Object.defineProperty(state, 'currentAccount', { value: { address: 'owner-b' }, configurable: true });
     acknowledge(); await pending;
     expect(favorite).toHaveBeenCalledOnce();
@@ -55,6 +70,6 @@ describe('network preference worker commands', () => {
     favorite.mockRejectedValueOnce(new Error('disk full')).mockResolvedValueOnce(undefined);
     await expect(extension.handle('favorite', 'pri(networkMap.toggle.favorite)', 'Polkadot')).rejects.toThrow('disk full');
     await extension.handle('favorite', 'pri(networkMap.toggle.favorite)', 'Polkadot');
-    expect(favorite).toHaveBeenLastCalledWith('Polkadot', 'owner-a');
+    expect(favorite).toHaveBeenLastCalledWith('Polkadot', 'owner-a', undefined);
   });
 });

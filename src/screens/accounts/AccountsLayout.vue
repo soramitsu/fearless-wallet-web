@@ -246,7 +246,7 @@ export default defineComponent({ name: 'AccountsLayout',
         await upsertNetworkMap({ ...network, customNodes,
           currentProvider: removesActive ? network.nodes[0]?.url ?? '' : network.currentProvider,
           isManual: removesActive ? false : network.isManual,
-        });
+        }, network);
         if (this.viewActive && request === this.nodeRequest) this.closeNotificationPopup();
       } catch {
         if (this.viewActive && request === this.nodeRequest) this.nodeSaveError = true;

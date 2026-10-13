@@ -296,14 +296,14 @@ export default class State {
     });
   }
 
-  async setFavoriteNetwork(networkName: string, expectedAddress?: string): Promise<void> {
+  async setFavoriteNetwork(networkName: string, expectedAddress?: string, desired?: boolean): Promise<void> {
     const currentAccount = this.currentAccount;
 
-    if (!currentAccount || (expectedAddress && currentAccount.address !== expectedAddress)) {
+    if (!currentAccount || (expectedAddress !== undefined && currentAccount.address !== expectedAddress)) {
       throw new Error('Selected wallet changed');
     }
 
-    await this.networkService.toggleFavoriteNetwork(networkName, currentAccount.address);
+    await this.networkService.toggleFavoriteNetwork(networkName, currentAccount.address, desired);
   }
 
   async setActiveNetworks(type: string) {

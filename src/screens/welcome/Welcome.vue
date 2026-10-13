@@ -209,6 +209,12 @@ export default defineComponent({
   min-height: 0;
   gap: 24px;
   overflow-y: auto;
+  overflow-wrap: anywhere;
+
+  > div {
+    flex-shrink: 0;
+    min-width: 0;
+  }
 
   .back-wallet-container {
     height: 32px;
@@ -222,7 +228,7 @@ export default defineComponent({
     margin-top: 17px;
     font-size: 0.75rem;
     font-weight: 400;
-    line-height: 16px;
+    line-height: 1.5;
     color: $grayish-white;
 
     .important-text {

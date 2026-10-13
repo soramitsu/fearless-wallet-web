@@ -1,6 +1,7 @@
 import PriceStore from '@extension-base/stores/Price';
 import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
+import { Subject } from 'rxjs';
 import { SoraPricingService } from './SoraPricingService';
 import { TonPricingService } from './TonPricingService';
 import { CoinGeckoService } from './CoinGeckoService';
@@ -26,6 +27,8 @@ export class PricesService {
   private priceStoreReady = false;
   private priceRevision = 0;
   private requestRevision = 0;
+  private fiatWasSelected = false;
+  private readonly priceSubject = new Subject<PriceJson>();
   public fiatSymbol = 'usd';
   public soraPricingService: SoraPricingService;
   public tonPricingService: TonPricingService;
@@ -47,7 +50,7 @@ export class PricesService {
     this.priceStore = new PriceStore();
 
     storage.get(['fiatSymbol']).then(({ fiatSymbol }) => {
-      if (fiatSymbol) this.fiatSymbol = fiatSymbol;
+      if (fiatSymbol && !this.fiatWasSelected) this.applyFiatSymbol(fiatSymbol);
     }).catch((error) => console.warn('Fiat preference could not be read', error));
   }
 
@@ -76,6 +79,12 @@ export class PricesService {
   }
 
   setFiatSymbol(symbol: string) {
+    this.fiatWasSelected = true;
+    this.applyFiatSymbol(symbol);
+    void storage.set({ fiatSymbol: this.fiatSymbol }).catch((error) => console.warn('Fiat preference could not be saved', error));
+  }
+
+  private applyFiatSymbol(symbol: string) {
     if (this.fiatSymbol !== symbol) {
       this.priceStoreReady = false;
       this.priceRevision += 1;
@@ -84,14 +93,15 @@ export class PricesService {
     }
     this.fiatSymbol = symbol;
 
-    void storage.set({ fiatSymbol: this.fiatSymbol }).catch((error) => console.warn('Fiat preference could not be saved', error));
   }
 
   setPriceStore(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
+    const revision = this.priceRevision;
     this.priceStore.set('PriceData', priceData, () => {
-      if (callback) callback(priceData);
-
+      if (revision !== this.priceRevision || priceData.fiat !== this.fiatSymbol) return;
       this.priceStoreReady = true;
+      this.priceSubject.next(priceData);
+      if (callback) callback(priceData);
     });
   }
 
@@ -117,7 +127,7 @@ export class PricesService {
   }
 
   getSubject() {
-    return this.priceStore.getSubject();
+    return this.priceSubject;
   }
 
   getTokenPrice(assetName: string) {

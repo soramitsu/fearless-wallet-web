@@ -240,6 +240,8 @@ export class NetworkService {
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
+    // Re-enable writes only after saved preferences have been rebased into the active map.
+    this.cacheReadable = networksFromStorage !== undefined;
     // A remote failure must not replace a previously useful cache with a partial/offline catalog.
     if (remote && networksFromStorage !== undefined) this.updateNetworkStore();
     this.onAuthoritativeRegistryUpdated();
@@ -257,7 +259,6 @@ export class NetworkService {
   async getStoredNetworks(): Promise<Record<string, NetworkJson> | undefined> {
     try {
       const stored = await withDeadline(this.networkMapStore.getAndWait('NetworkMap'), 5000, 'Network cache read timed out');
-      this.cacheReadable = true;
       return Object.fromEntries(Object.values(stored ?? {}).filter(usableNetwork).map((network) => [network.name, network]));
     } catch (error) {
       this.cacheReadable = false;

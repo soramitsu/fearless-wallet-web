@@ -3,8 +3,8 @@ import { PricesService } from '@extension-base/services/prices-service';
 import { Subject } from 'rxjs';
 import type { PriceJson } from '@extension-base/background/types/types';
 
-const mocks = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), coin: vi.fn(), ton: vi.fn(), sora: vi.fn() }));
-vi.mock('@extension-base/stores/Storage', () => ({ storage: { get: async () => ({}), set: async () => {} } }));
+const mocks = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), coin: vi.fn(), ton: vi.fn(), sora: vi.fn(), preference: vi.fn() }));
+vi.mock('@extension-base/stores/Storage', () => ({ storage: { get: () => mocks.preference(), set: async () => {} } }));
 vi.mock('@extension-base/stores/Price', () => ({ default: class {
   get(_key: string, update: (value: unknown) => void) { void mocks.read().then(update); }
   getAndWait() { return mocks.read(); }
@@ -28,6 +28,7 @@ describe('offline price subscriptions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.read.mockResolvedValue(undefined);
+    mocks.preference.mockResolvedValue({});
     mocks.coin.mockRejectedValue(new Error('offline'));
     mocks.ton.mockResolvedValue(empty());
     mocks.sora.mockResolvedValue(empty());
@@ -82,6 +83,17 @@ describe('offline price subscriptions', () => {
     release({ tokenPriceMap: { bitcoin: 60000 }, tokenPriceChange: {} });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mocks.write).not.toHaveBeenCalled();
+  });
+
+  it.each(['eur', 'usd'])('does not undo an explicit %s selection with a delayed initial preference', async (symbol) => {
+    let release!: (value: { fiatSymbol: string }) => void;
+    mocks.preference.mockReturnValue(new Promise((resolve) => { release = resolve; }));
+    const service = new PricesService({} as never);
+    service.setFiatSymbol(symbol);
+    release({ fiatSymbol: symbol === 'usd' ? 'eur' : 'usd' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(service.fiatSymbol).toBe(symbol);
+    expect(service.prices.json.fiat).toBe(symbol);
   });
 
   it('does not replace a refreshed price with an older delayed cache read', async () => {

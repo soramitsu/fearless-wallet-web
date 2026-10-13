@@ -36,4 +36,14 @@ describe('offline Substrate initialization', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(handler.api.polkadot.apiStatus).toBe(NETWORK_STATUS.DISCONNECTED);
   });
+
+  it('leaves cached balances alone while an API exists but has no decorated query pallets', async () => {
+    const network = readSnapshot().find(({ name }) => name === 'Polkadot')!;
+    const setBalanceItem = vi.fn();
+    const state = { networkService: { networkMap: { Polkadot: network }, assetsMap: network.assets },
+      getSubstrateApiMap: { polkadot: { api: { query: {} } } }, balanceService: { setBalanceItem } };
+    const service = new SubstrateBalanceService(state as never);
+    await expect(service.fetchBalance({ address: 'owner', networks: ['Polkadot'] })).resolves.toEqual([]);
+    expect(setBalanceItem).not.toHaveBeenCalled();
+  });
 });

@@ -118,6 +118,24 @@ describe('offline network startup', () => {
     expect(service.networkMap.Polkadot.isManual).toBe(true);
   });
 
+  it('keeps writes fenced until recovered settings are merged after the remote request', async () => {
+    cache.read.mockRejectedValue(new Error('IO error'));
+    vi.mocked(axios.get).mockResolvedValue({ data: [historical()] });
+    const service = create();
+    await service.initNetworkMap();
+    cache.read.mockResolvedValue({ Polkadot: { ...historical(), favorite: ['saved-owner'] } });
+    let release!: (value: unknown) => void;
+    vi.mocked(axios.get).mockReturnValue(new Promise((resolve) => { release = resolve; }));
+    const pending = service.initNetworkMap();
+    await vi.waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
+    service.updateNetworkStatus('Polkadot', NETWORK_STATUS.CONNECTED);
+    expect(cache.write).not.toHaveBeenCalled();
+    release({ data: [historical()] });
+    await pending;
+    expect(service.networkMap.Polkadot.favorite).toEqual(['saved-owner']);
+    expect(cache.write).toHaveBeenCalledOnce();
+  });
+
   it('retains live favorites and custom providers when merging bundled networks after a retry', async () => {
     const service = create();
     await service.initNetworkMap();

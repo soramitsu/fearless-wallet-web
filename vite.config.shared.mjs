@@ -246,6 +246,8 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       // exported promises breaks initialization across the popup's cyclic chunks.
       target: nativeAsyncModules ? 'es2022' : 'es2020',
       cssCodeSplit: true,
+      // Extension CSP permits packaged fonts only, including tiny language subsets.
+      assetsInlineLimit: (filePath) => /\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined,
       rollupOptions: {
         output: {
           entryFileNames: '[name].js',

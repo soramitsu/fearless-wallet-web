@@ -19,6 +19,7 @@ vi.mock('@extension-base/stores/Storage', () => ({ storage: storageMock }));
 vi.mock('axios', () => ({ default: { get: vi.fn() } }));
 vi.mock('@extension-base/stores/NetworkMap', () => ({
   default: class {
+    async getAndWait() { return undefined; }
     get(_key: string, update: (value: undefined) => void) {
       update(undefined);
     }

@@ -21,8 +21,21 @@ import {
   mergeUniversalWalletRegistryNetworks,
 } from '@/util/universalWalletRegistryNetworks';
 import { withoutUntrustedPrices } from '@/portfolio/untrustedAssets';
+import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 export type NetworkMap = Record<string, NetworkJson>;
+
+// Registry/cache rows are rebuildable data. One malformed row must not stop wallets opening.
+function usableNetwork(value: unknown): value is NetworkJson {
+  if (!value || typeof value !== 'object') return false;
+  const row = value as NetworkJson;
+  return typeof row.name === 'string' && !!row.name && typeof row.chainId === 'string' && !!row.chainId &&
+    ['substrate', 'ethereumBased', 'ethereum', 'ton', 'bitcoin', 'solana', 'iroha'].includes(row.ecosystem) &&
+    Array.isArray(row.assets) && row.assets.every((asset) => asset && typeof asset.id === 'string' &&
+      typeof asset.symbol === 'string' && Number.isFinite(asset.precision)) &&
+    Array.isArray(row.nodes) && row.nodes.length > 0 && row.nodes.every((node) => node &&
+      typeof node.name === 'string' && typeof node.url === 'string' && !!node.url);
+}
 
 export class NetworkService {
   private readonly logger = createLogger('Network_Service');
@@ -118,15 +131,24 @@ export class NetworkService {
   public async initNetworkMap() {
     this.logger.log('Init Network Map');
 
-    const { data: registry } = await axios.get<NetworkJson[]>(URLS.CHAINS);
-    // The untrusted list overrides the registry price where the registry is read, for every consumer at once.
-    const networks = registry.map((network) => withoutUntrustedPrices(network));
-
     const networksFromStorage = await this.getStoredNetworks();
+    let remote = false;
+    let networks: NetworkJson[];
+    try {
+      const { data } = await axios.get<unknown>(URLS.CHAINS, { timeout: 10000 });
+      const rows = Array.isArray(data) ? data.filter(usableNetwork) : [];
+      if (!rows.length) throw new Error('No usable registry networks');
+      networks = rows.map((network) => withoutUntrustedPrices(network));
+      this.networksGithub = networks;
+      remote = true;
+    } catch (error) {
+      console.warn('Network registry unavailable; using cached and bundled networks', error);
+      // Cached custom networks are usable locally but never become an authoritative discovery registry.
+      networks = Object.values({ ...networksFromStorage, ...this.networkMap }).filter(usableNetwork)
+        .map((network) => withoutUntrustedPrices(network));
+    }
 
-    this.networksGithub = networks;
-
-    this.networksGithub
+    networks
       .filter((el) => {
         if (el.disabled) return false;
 
@@ -145,7 +167,8 @@ export class NetworkService {
         network.nodes.forEach(({ name, url }) => (providers[name] = url));
 
         const isEthereum = isEthereumNetwork(network.name);
-        const favorite = networksFromStorage?.[network.name]?.favorite ?? [];
+        const saved = networksFromStorage?.[network.name];
+        const favorite = Array.isArray(saved?.favorite) ? saved.favorite.filter((value) => typeof value === 'string') : [];
 
         this.networkMap[network.name] = {
           ...network,
@@ -154,7 +177,7 @@ export class NetworkService {
           isEthereum,
           genesisHash: `0x${network.chainId}`,
           active: true,
-          customNodes: [],
+          customNodes: saved?.customNodes ?? [],
           favorite,
           providers,
           currentProvider,
@@ -176,7 +199,8 @@ export class NetworkService {
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
-    this.updateNetworkStore();
+    // A remote failure must not replace a previously useful cache with a partial/offline catalog.
+    if (remote) this.updateNetworkStore();
     this.onAuthoritativeRegistryUpdated();
   }
 
@@ -189,10 +213,14 @@ export class NetworkService {
     else this.substrateApiHandler.destroyApi(name);
   }
 
-  getStoredNetworks(): Promise<Record<string, NetworkJson> | undefined> {
-    return new Promise((resolve) =>
-      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => resolve(accountsFromStorage))
-    );
+  async getStoredNetworks(): Promise<Record<string, NetworkJson> | undefined> {
+    try {
+      const stored = await withDeadline(this.networkMapStore.getAndWait('NetworkMap'), 5000, 'Network cache read timed out');
+      return Object.fromEntries(Object.values(stored ?? {}).filter(usableNetwork).map((network) => [network.name, network]));
+    } catch (error) {
+      console.warn('Network cache unavailable; rebuilding network catalog', error);
+      return undefined;
+    }
   }
 
   updateNetworkStore() {

@@ -8,6 +8,7 @@ import type { BasePriceJson, PriceJson } from '@extension-base/background/types/
 import type State from '@extension-base/background/handlers/State';
 import { URLS } from '@/consts/urls';
 import { type FiatJson } from '@/interfaces';
+import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 export type Prices = {
   json: PriceJson;
@@ -45,7 +46,7 @@ export class PricesService {
 
     storage.get(['fiatSymbol']).then(({ fiatSymbol }) => {
       if (fiatSymbol) this.fiatSymbol = fiatSymbol;
-    });
+    }).catch((error) => console.warn('Fiat preference could not be read', error));
   }
 
   async getFiats() {
@@ -87,20 +88,21 @@ export class PricesService {
   }
 
   getPrice(update: (value: PriceJson) => void): void {
-    this.priceStore.get('PriceData', (rs) => {
-      if (this.priceStoreReady) update(rs);
-      else {
-        this.fetchTokensPrice()
-          .then((rs) => {
-            this.setPriceStore(rs);
-
-            update(rs);
-          })
-          .catch((err) => {
-            throw err;
-          });
-      }
-    });
+    void withDeadline(this.priceStore.getAndWait('PriceData'), 5000, 'Price cache read timed out')
+      .catch((error) => {
+        console.warn('Price cache could not be read', error);
+        return undefined;
+      }).then((cached) => {
+        if (cached?.fiat === this.fiatSymbol && cached.tokenPriceMap && cached.tokenPriceChange) {
+          this.prices.json = cached;
+        }
+        if (this.prices.json.fiat !== this.fiatSymbol) {
+          this.prices.json = { fiat: this.fiatSymbol, tokenPriceMap: {}, tokenPriceChange: {} };
+        }
+        // Answer before network work. A failed or hanging provider must not leave the popup waiting.
+        update(this.prices.json);
+        if (!this.priceStoreReady) this.refreshPrice();
+      }).catch((error) => console.warn('Price subscriber could not be updated', error));
   }
 
   getSubject() {
@@ -114,20 +116,29 @@ export class PricesService {
   }
 
   setPriceValue({ tokenPriceChange, tokenPriceMap }: BasePriceJson) {
+    const previous = this.prices.json.fiat === this.fiatSymbol ? this.prices.json : DEFAULT_PRICES;
     this.prices = {
       json: {
         fiat: this.fiatSymbol,
-        tokenPriceChange: { ...this.prices.json.tokenPriceChange, ...tokenPriceChange },
-        tokenPriceMap: { ...this.prices.json.tokenPriceMap, ...tokenPriceMap },
+        tokenPriceChange: { ...previous.tokenPriceChange, ...tokenPriceChange },
+        tokenPriceMap: { ...previous.tokenPriceMap, ...tokenPriceMap },
       },
       timestamp: Date.now(),
     };
   }
 
   async fetchTokensPrice(): Promise<PriceJson> {
-    const tonAssetsPrice = await this.tonPricingService.fetchTonAsstetsPrice();
-    const coinGeckoAssetsPrice = await this.coinGeckoService.fetchAssetsPrice();
-    const soraAssetsPrice = await this.soraPricingService.fetchSoraExplorerPricing();
+    const fiat = this.fiatSymbol;
+    const [tonAssetsPrice, coinGeckoAssetsPrice, soraAssetsPrice] = await Promise.all([
+      this.tonPricingService.fetchTonAsstetsPrice(),
+      this.coinGeckoService.fetchAssetsPrice(),
+      this.soraPricingService.fetchSoraExplorerPricing(),
+    ].map((work) => withDeadline(work, 15000, 'Price request timed out').catch((error) => {
+      console.warn('Price provider unavailable', error);
+      return { tokenPriceMap: {}, tokenPriceChange: {} };
+    })));
+
+    if (fiat !== this.fiatSymbol) throw new Error('Fiat preference changed during price request');
 
     const allRates: BasePriceJson = {
       tokenPriceMap: {

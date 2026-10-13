@@ -46,7 +46,7 @@ export class CoinGeckoService {
       result.tokenPriceMap[token] = res.data[token][this.fiatSymbol];
 
       return result;
-    }, DEFAULT_PRICES);
+    }, { tokenPriceMap: {}, tokenPriceChange: {} });
 
     return basePriceJson;
   }

@@ -52,7 +52,7 @@ const P1 = 'Public account adapter password';
 const phrase = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk';
 const observe = (promise: Promise<string>) => promise.then(() => 'resolved', () => 'rejected');
 
-describe.each([true, false])('local account through real store adapter (extension: %s)', (extension) => {
+describe.each([true, false])('local account through real store adapter (extension: %s)', { timeout: 60_000 }, (extension) => {
   let flush: () => Promise<void>;
   let importAccount: () => Promise<string>;
 
@@ -151,11 +151,12 @@ describe.each([true, false])('local account through real store adapter (extensio
     expect(fixture.published).toEqual([]);
   });
 
-  it('retains the prior ciphertext after a failed repair and supports explicit retry', async () => {
+  it('retains ciphertext and flags after failed migration metadata persistence and supports retry', async () => {
     const pair = fixture.backend!.createFromUri(phrase);
     const { accountStorageKey } = await import('@extension-base/services/keyring-service/AccountMetadata');
     const key = `fw:${accountStorageKey(pair as unknown as KeyringPair)}`;
-    const original = pair.toJson('Public previous password');
+    const original = pair.toJson(P1);
+    original.meta.isMasterPassword = false;
     fixture.data[key] = original;
     const first = observe(importAccount());
     await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));

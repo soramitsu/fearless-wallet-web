@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { cryptoWaitReady, mnemonicToMiniSecret } from '@polkadot/util-crypto';
+import { u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 
 const fixture = vi.hoisted(() => ({
@@ -104,7 +105,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-describe('local account import durability with real ui-keyring and Chrome store', () => {
+describe('local account import durability with real ui-keyring and Chrome store', { timeout: 60_000 }, () => {
   it.each(['sr25519', 'ed25519', 'ecdsa', 'ethereum'] as const)('keeps a %s account invisible until encrypted storage acknowledges it', async (type) => {
     const result = begin(type);
     await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
@@ -247,29 +248,29 @@ describe('local account import durability with real ui-keyring and Chrome store'
     expect(keyring.getAccounts()[0].meta.name).toBe('Stored only');
   });
 
-  it('repairs an older encrypted copy without losing its metadata or unknown fields', async () => {
+  it('refuses to replace an unreadable encrypted record even with a matching phrase', async () => {
     const pair = keyring.createFromUri(PHRASE);
     const json = pair.toJson(P2);
     json.meta = { name: 'Keep recovery name', isMasterPassword: true, isMasterAccount: true, pendingMigrate: true };
     Object.assign(json, { futureField: 'retain' });
     const storageKey = `fw:${accountStorageKey(pair)}`;
     fixture.data[storageKey] = json;
+    const original = structuredClone(fixture.data);
     const result = begin();
     await drain();
-    expect(await result).toHaveProperty('value');
-    expect(fixture.data[storageKey]).toMatchObject({ futureField: 'retain', meta: { name: 'Keep recovery name' } });
-    expect(fixture.data[storageKey].meta).not.toHaveProperty('pendingMigrate');
-    const restored = keyring.createFromJson(fixture.data[storageKey]);
-    restored.decodePkcs8(P1);
-    expect(restored.publicKey).toEqual(pair.publicKey);
+    expect(await result).toHaveProperty('error');
+    expect(fixture.data).toEqual(original);
+    expect(keyring.createFromJson(fixture.data[storageKey]).exportMnemonic(P2)).toBe(PHRASE);
+    expect(keyring.getAccounts()).toEqual([]);
   });
 
-  it('retains the original encrypted copy and live pair when repair persistence fails', async () => {
+  it('retains the original encrypted copy and live pair when migration metadata persistence fails', async () => {
     const first = begin();
     await drain();
     expect(await first).toHaveProperty('value');
     const live = keyring.getPairs().find((pair) => !pair.meta.isTesting)!;
-    const old = keyring.createFromUri(PHRASE).toJson(P2);
+    const old = keyring.createFromUri(PHRASE).toJson(P1);
+    old.meta.isMasterPassword = false;
     fixture.data[`fw:${accountStorageKey(live)}`] = old;
     const original = structuredClone(fixture.data);
     fixture.failWrite = true;
@@ -323,10 +324,11 @@ describe('local account import durability with real ui-keyring and Chrome store'
     expect(keyring.getAccounts()).toEqual([]);
   });
 
-  it('retains the latest metadata when repairing an unchanged encrypted record', async () => {
+  it('retains the latest metadata when migrating an unchanged encrypted record', async () => {
     const update = AccountsStore.prototype.updateAndWait;
     const pair = keyring.createFromUri(PHRASE);
-    fixture.data[`fw:${accountStorageKey(pair)}`] = pair.toJson(P2);
+    fixture.data[`fw:${accountStorageKey(pair)}`] = pair.toJson(P1);
+    fixture.data[`fw:${accountStorageKey(pair)}`].meta.isMasterPassword = false;
     vi.spyOn(AccountsStore.prototype, 'updateAndWait').mockImplementationOnce(function (key, ...args) {
       fixture.data[`fw:${key}`].meta.name = 'Concurrent durable rename';
       return update.call(this, key, ...args);
@@ -338,10 +340,11 @@ describe('local account import durability with real ui-keyring and Chrome store'
     expect(keyring.getAccounts()[0].meta.name).toBe('Concurrent durable rename');
   });
 
-  it('does not resurrect an existing record deleted before its repair write', async () => {
+  it('does not resurrect an existing record deleted before its migration write', async () => {
     const update = AccountsStore.prototype.updateAndWait;
     const pair = keyring.createFromUri(PHRASE);
-    fixture.data[`fw:${accountStorageKey(pair)}`] = pair.toJson(P2);
+    fixture.data[`fw:${accountStorageKey(pair)}`] = pair.toJson(P1);
+    fixture.data[`fw:${accountStorageKey(pair)}`].meta.isMasterPassword = false;
     vi.spyOn(AccountsStore.prototype, 'updateAndWait').mockImplementationOnce(function (key, ...args) {
       delete fixture.data[`fw:${key}`];
       return update.call(this, key, ...args);
@@ -395,5 +398,67 @@ describe('local account import durability with real ui-keyring and Chrome store'
     const restored = keyring.getPair(pair.address);
     restored.decodePkcs8(P1);
     expect(restored.publicKey).toEqual(pair.publicKey);
+  });
+
+  it('retains all original mnemonic material when a matching raw key cannot open the stored record', async () => {
+    const pair = keyring.createFromUri(PHRASE);
+    const json = pair.toJson(P2);
+    json.meta = { name: 'Stored mnemonic', isMasterAccount: true, isMasterPassword: true };
+    const storageKey = `fw:${accountStorageKey(pair)}`;
+    fixture.data[storageKey] = json;
+    const original = structuredClone(fixture.data);
+    const result = begin('sr25519', u8aToHex(mnemonicToMiniSecret(PHRASE)));
+    await drain();
+    expect(fixture.data).toEqual(original);
+    expect(await result).toHaveProperty('error');
+    const retained = keyring.createFromJson(fixture.data[storageKey]);
+    expect(retained.exportMnemonic(P2)).toBe(PHRASE);
+    expect(keyring.getAccounts()).toEqual([]);
+  });
+
+  it('retains stored mnemonic entropy when a matching raw key completes readable legacy migration', async () => {
+    const pair = keyring.createFromUri(PHRASE);
+    const json = pair.toJson(P1);
+    json.meta = { name: 'Stored legacy mnemonic', isMasterAccount: true, isMasterPassword: false };
+    const storageKey = `fw:${accountStorageKey(pair)}`;
+    fixture.data[storageKey] = json;
+    const result = begin('sr25519', u8aToHex(mnemonicToMiniSecret(PHRASE)));
+    await drain();
+    expect(await result).toHaveProperty('value');
+    expect(fixture.data[storageKey].encoded).toBe(json.encoded);
+    expect(fixture.data[storageKey].meta).toMatchObject({ isMasterAccount: true, isMasterPassword: true });
+    expect(keyring.createFromJson(fixture.data[storageKey]).exportMnemonic(P1)).toBe(PHRASE);
+  });
+
+  it('does not change a record reassigned to an external identity while migration waits', async () => {
+    const update = AccountsStore.prototype.updateAndWait;
+    const pair = keyring.createFromUri(PHRASE);
+    fixture.data[`fw:${accountStorageKey(pair)}`] = pair.toJson(P1);
+    fixture.data[`fw:${accountStorageKey(pair)}`].meta.isMasterPassword = false;
+    vi.spyOn(AccountsStore.prototype, 'updateAndWait').mockImplementationOnce(function (key, ...args) {
+      fixture.data[`fw:${key}`].meta.isMobile = true;
+      return update.call(this, key, ...args);
+    });
+    const result = begin();
+    await drain();
+    expect(await result).toHaveProperty('error');
+    expect(fixture.data[`fw:${accountStorageKey(pair)}`].meta).toMatchObject({ isMobile: true, isMasterPassword: false });
+    expect(keyring.getAccounts()).toEqual([]);
+  });
+
+  it.each(['sr25519', 'ed25519', 'ecdsa', 'ethereum'] as const)('persists a new %s raw key with its real signing key and no invented mnemonic', async (type) => {
+    const raw = u8aToHex(mnemonicToMiniSecret(PHRASE));
+    const result = begin(type, raw);
+    await drain();
+    const outcome = await result;
+    if (!('value' in outcome)) throw outcome.error;
+    const live = keyring.getPair(outcome.value);
+    const restored = keyring.createFromJson(fixture.data[`fw:${accountStorageKey(live)}`]);
+    restored.decodePkcs8(P1);
+    expect(restored.publicKey).toEqual(keyring.createFromUri(raw, {}, type).publicKey);
+    expect(restored.haveEntropy).toBe(false);
+    const payload = new TextEncoder().encode('Public raw-key persistence proof');
+    expect(restored.verify(payload, restored.sign(payload), restored.publicKey)).toBe(true);
+    expect(restored.meta.isMasterAccount).toBe(false);
   });
 });

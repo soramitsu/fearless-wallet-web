@@ -19,6 +19,7 @@ import { Components } from './router/routes';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import { setTitle } from '@/helpers/only-web';
 import {
+  getAccessStatus,
   soraFeesSubscribe,
   pingServiceWorker,
   subscribeAccounts,
@@ -61,6 +62,12 @@ export default defineComponent({
     },
   },
   async created() {
+    if (!IS_EXTENSION && (await getAccessStatus()).storageRecoveryOnly) {
+      // The recovery screen reads its own inventory; normal startup requests can
+      // mutate selection or settings and are deliberately unavailable here.
+      this.setupSWPing();
+      return;
+    }
     lockExtension();
     // Before onboarding can create a wallet: the By token layout note is only for wallets older than this.
     this.accountsStore.recordPortfolioLayoutFirstRun();

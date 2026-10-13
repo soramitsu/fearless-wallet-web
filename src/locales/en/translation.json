@@ -1515,5 +1515,17 @@
     "checking": "Checking requester…",
     "signed": "Signed for {origin}",
     "submitted": "Submitted for {origin}"
+  },
+  "storageRecovery": {
+    "title": "Wallet recovery",
+    "description": "Wallet storage could not be updated. Sending and changes are unavailable. You can back up the accounts below, then reload to retry.",
+    "reload": "Reload wallet",
+    "empty": "No active account keys were loaded. Retained recovery copies remain on this device. Reload to retry.",
+    "tonPassword": "Enter the password that protects this TON account. It may be an earlier wallet password.",
+    "showPhrase": "Show recovery phrase",
+    "hidePhrase": "Hide recovery phrase",
+    "phraseHint": "Keep this phrase private. Anyone with it can control the account.",
+    "backupHint": "This backup keeps the account encrypted. Keep the password that was used for this account; you will need it to restore the backup.",
+    "exportFailed": "The phrase could not be exported. Check the account password and try again."
   }
 }

@@ -134,6 +134,7 @@ export enum Components {
   SettingsNetworksAssets = 'SettingsNetworksAssets',
   SettingsChangePassword = 'SettingsChangePassword',
   AccountAccessRecovery = 'AccountAccessRecovery',
+  StorageRecovery = 'StorageRecovery',
   IrohaConnect = 'IrohaConnect',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
@@ -155,6 +156,12 @@ export enum Components {
 }
 
 const routes: Array<RouteRecordRaw> = [
+  {
+    path: '/storage-recovery',
+    name: Components.StorageRecovery,
+    component: () => import('@/screens/settings/StorageRecovery.vue'),
+    meta: { title: 'export', calm: true },
+  },
   {
     path: '/migration-description',
     name: Components.MigrationDescription,

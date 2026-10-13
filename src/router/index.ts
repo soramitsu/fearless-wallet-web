@@ -49,6 +49,17 @@ router.beforeEach(async (to, from, next) => {
   // так же, 150ms минимальное время для того, чтобы balances успели подтянуться из SW
   setTimeout(() => updateTitle(to), 150);
 
+  // Recovery must remain reachable even when onboarding/password migration cannot write.
+  if (!IS_EXTENSION && (await getAccessStatus()).storageRecoveryOnly) {
+    if (to.name === Components.StorageRecovery) next();
+    else next({ name: Components.StorageRecovery });
+    return;
+  }
+  if (to.name === Components.StorageRecovery) {
+    next({ name: Components.Welcome });
+    return;
+  }
+
   const isRequiredOnboarding = await isOnboardingRequired();
 
   if (IS_PRODUCTION || IS_TEST_ONLY) {

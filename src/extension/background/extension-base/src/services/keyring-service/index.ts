@@ -893,6 +893,12 @@ export class KeyringService {
   // account's public key, and never empty: a phrase that does not open throws its recovery code.
   async exportAccountMnemonic(request: RequestExportSeed): Promise<ResponseExportSeed> {
     if (request.walletEcosystem !== WalletEcosystem.Ton) return this.exportMnemonic(request);
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
+      // Emergency export verifies the supplied account password against the stored
+      // public key, including a previous password. The vault cannot repair storage here.
+      if (!request.password) throw new TonKeyringError('wrong_password');
+      return { seed: await this.tonKeyring.vault.decryptVerified(request.address, () => request.password!) };
+    }
     if (request.password !== undefined && request.password !== this.password) throw new TonKeyringError('wrong_password');
 
     return { seed: await this.tonKeyring.decodeMnemonicVerified(request.address) };
@@ -1110,8 +1116,18 @@ export class KeyringService {
     return summarizeLegacyPasswordAccounts(this.getLegacyPasswordPairs(), this.getAccounts());
   }
 
-  getAccessStatus(): Promise<AccountAccessStatus> {
-    return this.access.getStatus(this.getLegacyPasswordPairs());
+  async getAccessStatus(): Promise<AccountAccessStatus> {
+    const status = await this.access.getStatus(this.getLegacyPasswordPairs());
+    if (IS_EXTENSION || !KeyringStoreWeb.readOnly) return status;
+    return { ...status, storageRecoveryOnly: true, storageRecoveryAccounts: [
+      ...this.getAccounts().filter(({ meta }) =>
+        !['isMobile', 'isExternal', 'isHardware', 'isInjected'].some(flag => meta[flag])
+      ).map(({ address, meta }) => ({ address, name: meta.name ?? '',
+        walletEcosystem: isEthereumAddress(address) ? WalletEcosystem.Evm : WalletEcosystem.Substrate })),
+      ...Object.entries(this.tonKeyring.accountSubject.value).map(([address, account]) => ({
+        address, name: account.name ?? '', walletEcosystem: WalletEcosystem.Ton,
+      })),
+    ] };
   }
 
   // Whether to show the per-account password prompt now. Accounts that are still pending after the

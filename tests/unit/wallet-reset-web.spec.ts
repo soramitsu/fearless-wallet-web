@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { BehaviorSubject } from 'rxjs';
+import CryptoJS from 'crypto-js';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, unknown>, password: null as string | null,
@@ -28,6 +29,7 @@ import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { enrollLegacyAccountNetworks } from '@extension-base/services/keyring-service/LegacyNetworkEnrollment';
 import { WEB_PASSWORD_RECORD_KEY, WEB_RESET_PASSWORD_KEY } from '@extension-base/stores/WebPasswordRecord';
+import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public web reset password';
@@ -181,6 +183,46 @@ describe('web reset with one IndexedDB password/account commit', { timeout: 60_0
     expect(await editing).toEqual({ error: expect.objectContaining({ message: expect.stringContaining('storage needs repair') }) });
     expect(fixture.data).toEqual(before);
     expect(service.getPair(address)!.meta.name).toBe(originalName);
+  });
+
+  it('reports every native identity for recovery, including linked EVM keys, without changing storage', async () => {
+    const address = await native();
+    const importing = track(service.addAccount(PHRASE, { name: 'Public EVM' }, WalletEcosystem.Evm, 'ethereum'));
+    await drain();
+    const imported = await importing;
+    if (!('value' in imported)) throw imported.error;
+    const linking = track(service.saveAccountMeta(address, { ethereumAddress: imported.value }));
+    await drain();
+    expect(await linking).toHaveProperty('value');
+    const before = structuredClone(fixture.data);
+    KeyringStoreWeb.readOnly = true;
+    Object.assign(Reflect.get(service, 'accountAccess'), { getStatus: async () => ({ issues: [], hasMasterPassword: true }) });
+    const status = await service.getAccessStatus();
+    expect(status.storageRecoveryOnly).toBe(true);
+    expect(status.storageRecoveryAccounts?.map(account => account.address).sort()).toEqual(service.getAccounts().map(account => account.address).sort());
+    expect(status.storageRecoveryAccounts?.some(account => account.walletEcosystem === WalletEcosystem.Evm)).toBe(true);
+    expect(fixture.data).toEqual(before);
+  });
+
+  it.each(['current', 'pending'])('exports a verified TON phrase with its previous %s password without modifying either ciphertext', async which => {
+    const vector = vectors.vectors[0];
+    const address = vector.expected.ton.addressNonBounceable;
+    const previous = 'Public previous TON password';
+    const record = { address, name: 'Public TON', publicKeyHex: vector.expected.ton.publicKeyHex,
+      cipherSeed: CryptoJS.AES.encrypt(vector.mnemonic, which === 'current' ? previous : PASSWORD).toString(),
+      pendingCipherSeed: CryptoJS.AES.encrypt(vector.mnemonic, which === 'pending' ? previous : PASSWORD).toString() };
+    fixture.data['fw:ton:' + address] = structuredClone(record);
+    service.tonKeyring.setAccounts(record);
+    const before = structuredClone(fixture.data);
+    KeyringStoreWeb.readOnly = true;
+    const request = { address, password: previous, walletEcosystem: WalletEcosystem.Ton };
+    const exporting = track(service.exportAccountMnemonic(request));
+    await drain();
+    expect(await exporting).toEqual({ value: { seed: vector.mnemonic } });
+    const wrong = track(service.exportAccountMnemonic({ ...request, password: 'wrong password' }));
+    await drain();
+    expect(await wrong).toHaveProperty('error');
+    expect(fixture.data).toEqual(before);
   });
 
   it('does not enroll additional network keys during recovery-only unlock', async () => {

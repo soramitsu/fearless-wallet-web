@@ -603,7 +603,16 @@ export interface AccountAccessIssue {
   canDownloadEncryptedBackup: boolean;
 }
 
+export interface StorageRecoveryAccount {
+  address: string;
+  name: string;
+  walletEcosystem: WalletEcosystem;
+}
+
 export interface AccountAccessStatus {
+  /** Web password migration could not commit; only read/export operations are available. */
+  storageRecoveryOnly?: boolean;
+  storageRecoveryAccounts?: StorageRecoveryAccount[];
   hasMasterPassword: boolean;
   mustCreateMasterPassword: boolean;
   /** Show the per-account password prompt now. Same value as `pri(keyring.isNeedMigration)`. */

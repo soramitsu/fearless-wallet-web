@@ -1526,6 +1526,9 @@
     "hidePhrase": "Hide recovery phrase",
     "phraseHint": "Keep this phrase private. Anyone with it can control the account.",
     "backupHint": "This backup keeps the account encrypted. Keep the password that was used for this account; you will need it to restore the backup.",
-    "exportFailed": "The phrase could not be exported. Check the account password and try again."
+    "exportFailed": "The phrase could not be exported. Check the account password and try again.",
+    "recordsTitle": "Retained wallet records",
+    "recordsHint": "This recovery data file includes stored account records, including archived records and records that could not be loaded. Keep it private and keep the original account passwords. Some records may need repair before they can be restored.",
+    "recordsDownload": "Download retained wallet data"
   }
 }

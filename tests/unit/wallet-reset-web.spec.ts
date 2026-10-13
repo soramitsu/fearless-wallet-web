@@ -26,10 +26,15 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import Extension from '@extension-base/background/handlers/Extension';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { enrollLegacyAccountNetworks } from '@extension-base/services/keyring-service/LegacyNetworkEnrollment';
 import { WEB_PASSWORD_RECORD_KEY, WEB_RESET_PASSWORD_KEY } from '@extension-base/stores/WebPasswordRecord';
+import historical from '../fixtures/upgrade/s1-2.6.3-per-account-passwords.json';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
+import type WalletRecoveryRecords from '@extension-base/stores/WalletRecoveryRecords';
+import type State from '@extension-base/background/handlers/State';
+import { decodeRecoveryValue } from '@/util/recoveryData';
 import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public web reset password';
@@ -160,6 +165,47 @@ afterEach(async () => {
 });
 
 describe('web reset with one IndexedDB password/account commit', { timeout: 60_000 }, () => {
+  it('exports exact loaded, unloaded, malformed and archived records through trusted read-only handlers', async () => {
+    const records = Object.fromEntries(Object.entries(historical.storage).filter(([key]) => key.startsWith('fw:account:')));
+    const first = Object.values(records)[0];
+    Object.assign(fixture.data, records, {
+      'fw:archivedAccount:public': { records: [first], original: undefined },
+      'fw:deletedWallet:public': { name: 'Public retained archive', accounts: { 'account:retained': first } },
+      'fw:account:damaged': null,
+      'fw:ton:unloaded': { cipherSeed: 'original cipher', pendingCipherSeed: 'pending cipher', bytes: new Uint8Array([0, 255]) },
+      'fw:unrelated': { password: 'must not export' },
+      'fw:pendingResetPassword': { serialized: 'must not export' },
+      'fwWalletConnectSdk:private': { secret: 'must not export' },
+    });
+    const before = structuredClone(fixture.data);
+    const writes = vi.spyOn(BaseWebStore.prototype, 'writeToDB');
+    const remove = vi.spyOn(BaseWebStore.prototype, 'removeFromDB');
+    KeyringStoreWeb.readOnly = true;
+    const extension = new Extension({ keyringService: service } as State);
+    const inventory = await extension.handle('public-record-inventory', 'pri(accounts.recovery.list)', null) as Awaited<ReturnType<WalletRecoveryRecords['inventory']>>;
+    expect(inventory).toHaveLength(Object.keys(records).length + 4);
+    expect(inventory.some(item => item.key === 'account:damaged')).toBe(true);
+    const result = await extension.handle('public-record-export', 'pri(accounts.recovery.export)', null) as { json: string };
+    const packet = JSON.parse(result.json);
+    expect(packet.format).toBe('fearless-wallet-recovery-data');
+    const restored = decodeRecoveryValue(packet.data) as Record<string, unknown>;
+    const selected = Object.fromEntries(Object.entries(before).filter(([key]) => /^fw:(account|archivedAccount|deletedWallet|ton):/u.test(key)).map(([key, value]) => [key.slice(3), value]));
+    expect(restored).toEqual(selected);
+    expect(result.json).not.toContain('must not export');
+    expect(result.json).not.toContain('passwordHash');
+    for (const wallet of historical.wallets) {
+      const json = Object.values(restored).find(value => value && typeof value === 'object' && (value as { address?: string }).address === wallet.address);
+      const pair = keyring.createFromJson(json as never);
+      pair.decodePkcs8(wallet.password);
+      expect(pair.isLocked).toBe(false);
+      expect(pair.address).toBe(wallet.address);
+      pair.lock();
+    }
+    expect(fixture.data).toEqual(before);
+    expect(writes).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
   it('loads actual ui-keyring accounts without its normal persistence callbacks writing during recovery-only startup', async () => {
     await native();
     KeyringStoreWeb.readOnly = true;

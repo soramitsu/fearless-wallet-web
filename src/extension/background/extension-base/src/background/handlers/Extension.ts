@@ -1,3 +1,4 @@
+import WalletRecoveryRecords from '@extension-base/stores/WalletRecoveryRecords';
 import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
 import { validatePolkadotSigningContext } from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
 import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
@@ -2543,6 +2544,10 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.forget)':
         return this.accountsForget(request as RequestAccountForget);
 
+      case 'pri(accounts.recovery.list)':
+        return new WalletRecoveryRecords().inventory();
+      case 'pri(accounts.recovery.export)':
+        return new WalletRecoveryRecords().export();
       case 'pri(accounts.deleted.list)':
         return this.state.keyringService.getDeletedWallets();
 

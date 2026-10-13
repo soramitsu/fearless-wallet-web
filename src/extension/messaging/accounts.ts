@@ -1,3 +1,4 @@
+import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@subwallet/keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
@@ -122,4 +123,12 @@ export function getTotalBalances(request: RequestTotalBalances | null = null): P
 
 export function getHistory(address: string, network: NetworkName): Promise<TonEventTokens> {
   return sendMessage('pri(accounts.getHistory)', { address, network });
+}
+
+export function getRecoveryRecords(): Promise<RecoveryRecordSummary[]> {
+  return sendMessage('pri(accounts.recovery.list)', null);
+}
+
+export function exportRecoveryRecords(): Promise<{ json: string }> {
+  return sendMessage('pri(accounts.recovery.export)', null);
 }

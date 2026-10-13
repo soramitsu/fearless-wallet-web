@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fixture = vi.hoisted(() => ({ status: vi.fn(), backup: vi.fn(), phrase: vi.fn(), download: vi.fn(), exposure: vi.fn() }));
-vi.mock('@/extension/messaging', () => ({ getAccessStatus: fixture.status, migrateExportJSON: fixture.backup, exportMnemonic: fixture.phrase }));
+const fixture = vi.hoisted(() => ({ status: vi.fn(), backup: vi.fn(), phrase: vi.fn(), download: vi.fn(), exposure: vi.fn(), inventory: vi.fn(), raw: vi.fn(), rawDownload: vi.fn() }));
+vi.mock('@/extension/messaging', () => ({ getAccessStatus: fixture.status, migrateExportJSON: fixture.backup, exportMnemonic: fixture.phrase, getRecoveryRecords: fixture.inventory, exportRecoveryRecords: fixture.raw }));
 vi.mock('@/extension/messaging/legacy-exposure', () => ({ getLegacyExposureStatus: fixture.exposure }));
-vi.mock('@/helpers/files', () => ({ downloadJsonAccount: fixture.download }));
+vi.mock('@/helpers/files', () => ({ downloadJsonAccount: fixture.download, downloadRecoveryData: fixture.rawDownload }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 import StorageRecovery from '@/screens/settings/StorageRecovery.vue';
 
@@ -26,11 +26,57 @@ beforeEach(() => {
   vi.clearAllMocks();
   fixture.exposure.mockResolvedValue({ state: 'not_exposed', wallets: [], newWallets: [] });
   fixture.status.mockResolvedValue({ storageRecoveryOnly: true, storageRecoveryAccounts: accounts });
+  fixture.inventory.mockResolvedValue([]);
+  fixture.raw.mockResolvedValue({ json: '{"format":"public recovery fixture"}' });
   fixture.backup.mockResolvedValue({ json: { encoded: 'public encrypted fixture', meta: {} } });
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('web storage recovery exports', () => {
+  it('lists and exports unloaded retained records even when no active account loaded', async () => {
+    fixture.status.mockResolvedValue({ storageRecoveryOnly: true, storageRecoveryAccounts: [] });
+    fixture.inventory.mockResolvedValue([{ key: 'deletedWallet:public', name: 'Public retained savings', address: '' },
+      { key: 'account:damaged', name: '', address: '' }]);
+    const wrapper = await open();
+    const section = wrapper.get('[data-testid="recoveryRecords"]');
+    expect(section.text()).toContain('Public retained savings');
+    expect(section.text()).toContain('account:damaged');
+    expect(fixture.raw).not.toHaveBeenCalled();
+    await section.get('button').trigger('click');
+    await flushPromises();
+    expect(fixture.rawDownload).toHaveBeenCalledExactlyOnceWith('{"format":"public recovery fixture"}');
+    wrapper.unmount();
+  });
+
+  it('keeps raw export failures retryable and never downloads a late result after leaving recovery', async () => {
+    fixture.inventory.mockResolvedValue([{ key: 'account:public', name: 'Public retained record', address: '' }]);
+    const wrapper = await open();
+    const button = wrapper.get('[data-testid="recoveryRecords"] button');
+    fixture.raw.mockRejectedValueOnce(new Error('Public export failure'));
+    await button.trigger('click');
+    await flushPromises();
+    expect(wrapper.get('[data-testid="recoveryRecords"] [role="alert"]').text()).toBe('migration.downloadBackupFailed');
+    expect(fixture.rawDownload).not.toHaveBeenCalled();
+    let finish!: (result: { json: string }) => void;
+    fixture.raw.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    await button.trigger('click');
+    expect((button.element as HTMLButtonElement).disabled).toBe(true);
+    wrapper.unmount();
+    finish({ json: 'public delayed recovery data' });
+    await flushPromises();
+    expect(fixture.rawDownload).not.toHaveBeenCalled();
+  });
+
+  it('reports an inventory read failure without hiding active encrypted account exports', async () => {
+    fixture.inventory.mockRejectedValue(new Error('Public raw inventory read failure'));
+    const wrapper = await open();
+    expect(wrapper.get('[data-testid="recoveryRecords"] [role="alert"]').text()).toBe('accountAccess.loadFailed');
+    await wrapper.get('[data-address="public-substrate"] button').trigger('click');
+    await flushPromises();
+    expect(fixture.download).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
   it.each(['notice_pending', 'acknowledged'])('retains the incident warning for %s without gating recovery on acknowledgement', async state => {
     fixture.exposure.mockResolvedValue({ state, wallets: [{ address: 'old-public-address', name: 'Old public wallet', present: false }], newWallets: [] });
     const wrapper = await open();

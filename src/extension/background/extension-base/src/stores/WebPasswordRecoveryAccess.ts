@@ -5,6 +5,7 @@ const recoveryMessages = new Set([
   'pri(keyring.hasAccounts)', 'pri(keyring.keyringIsLocked)', 'pri(keyring.unlock)', 'pri(keyring.lock)',
   'pri(keyring.getAccessStatus)', 'pri(keyring.getMigrationAccounts)', 'pri(keyring.isNeedMigration)',
   'pri(keyring.getUniversalWalletMigrationSnapshot)', 'pri(keyring.export.mnemonic)', 'pri(keyring.export.rowSeed)',
+  'pri(accounts.recovery.list)', 'pri(accounts.recovery.export)',
   'pri(accounts.export.json)', 'pri(migrate.export.json)', 'pri(accounts.deleted.list)', 'pri(accounts.subscribe)',
   'pri(accounts.validate)', 'pri(networkMap.getSubscription)', 'pri(selectedNetworks.getSubscription)',
   'pri(accounts.totalBalances)', 'pri(accounts.soraFees.subscribe)', 'pri(price.subscription)', 'pri(price.getFiats)',

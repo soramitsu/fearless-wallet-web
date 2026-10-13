@@ -28,6 +28,19 @@
       <FButton text="ux.retry" @click="load" />
     </div>
     <p v-else-if="!rows.length">{{ t('storageRecovery.empty') }}</p>
+    <section v-if="rawRows.length || rawFailed" class="recovery-account" data-testid="recoveryRecords">
+      <h2>{{ t('storageRecovery.recordsTitle') }}</h2>
+      <p>{{ t('storageRecovery.recordsHint') }}</p>
+      <template v-if="rawFailed">
+        <p role="alert">{{ t('accountAccess.loadFailed') }}</p>
+        <FButton text="ux.retry" :disabled="rawLoading" @click="loadRaw" />
+      </template>
+      <template v-else>
+        <ul><li v-for="record in rawRows" :key="record.key">{{ record.name || record.address || record.key }}</li></ul>
+        <FButton text="storageRecovery.recordsDownload" :disabled="rawBusy" @click="downloadRaw" />
+      </template>
+      <p v-if="rawExportFailed" role="alert">{{ t('migration.downloadBackupFailed') }}</p>
+    </section>
     <section v-for="row in rows" :key="row.address" class="recovery-account" :data-address="row.address">
       <h2>{{ row.name || row.address }}</h2>
       <p class="recovery-account__address">{{ row.address }}</p>
@@ -54,11 +67,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
+import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
 import type { StorageRecoveryAccount } from '@extension-base/background/types/types';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { exportMnemonic, getAccessStatus, migrateExportJSON } from '@/extension/messaging';
+import { exportMnemonic, getAccessStatus, migrateExportJSON, getRecoveryRecords, exportRecoveryRecords } from '@/extension/messaging';
 import { getLegacyExposureStatus } from '@/extension/messaging/legacy-exposure';
-import { downloadJsonAccount } from '@/helpers/files';
+import { downloadJsonAccount, downloadRecoveryData } from '@/helpers/files';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
 import { LEGACY_EXPOSURE_VERSIONS } from '@/util/legacyExposure';
@@ -67,6 +81,11 @@ type Row = StorageRecoveryAccount & { password: string; seed: string; error: str
 const { t } = useI18n();
 const rows = ref<Row[]>([]);
 const exposure = ref<LegacyExposureStatus>();
+const rawRows = ref<RecoveryRecordSummary[]>([]);
+const rawFailed = ref(false);
+const rawLoading = ref(false);
+const rawBusy = ref(false);
+const rawExportFailed = ref(false);
 const loading = ref(true);
 const failed = ref(false);
 const reloading = ref(false);
@@ -95,6 +114,29 @@ async function load() {
     }));
   } catch { if (!disposed) failed.value = true; }
   finally { loading.value = false; }
+}
+
+async function loadRaw() {
+  if (disposed || rawLoading.value) return;
+  rawLoading.value = true;
+  rawFailed.value = false;
+  try {
+    const inventory = await getRecoveryRecords();
+    if (!disposed) rawRows.value = inventory;
+  } catch {
+    if (!disposed) { rawRows.value = []; rawFailed.value = true; }
+  } finally { rawLoading.value = false; }
+}
+
+async function downloadRaw() {
+  if (disposed || rawBusy.value) return;
+  rawBusy.value = true;
+  rawExportFailed.value = false;
+  try {
+    const { json } = await exportRecoveryRecords();
+    if (!disposed) downloadRecoveryData(json);
+  } catch { if (!disposed) rawExportFailed.value = true; }
+  finally { rawBusy.value = false; }
 }
 
 function hideSecrets() {
@@ -145,7 +187,7 @@ async function reveal(row: Row) {
   finally { row.busy = false; }
 }
 
-onMounted(() => { document.addEventListener('visibilitychange', onVisibilityChange); void load(); void loadExposure(); });
+onMounted(() => { document.addEventListener('visibilitychange', onVisibilityChange); void load(); void loadExposure(); void loadRaw(); });
 onBeforeUnmount(() => { disposed = true; hideSecrets(); document.removeEventListener('visibilitychange', onVisibilityChange); });
 </script>
 

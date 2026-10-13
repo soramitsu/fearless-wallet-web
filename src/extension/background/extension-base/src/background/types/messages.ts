@@ -1,3 +1,4 @@
+import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
@@ -223,6 +224,8 @@ export interface RequestSignatures {
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
+  'pri(accounts.recovery.list)': [null, RecoveryRecordSummary[]];
+  'pri(accounts.recovery.export)': [null, { json: string }];
   'pri(accounts.deleted.list)': [null, DeletedWalletSummary[]];
   'pri(accounts.deleted.restore)': [RequestRestoreDeletedWallet, ResponseRestoreDeletedWallet];
   'pri(accounts.list)': [null, InjectedAccount[]];

@@ -341,10 +341,13 @@ async function main() {
           await stopExtensionKeepAlive();
           const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, liveBackgroundSession);
           await evaluate(cdp, liveBackgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
-          await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
+          const restartedTarget = await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
             && ['background_page', 'service_worker'].includes(target.type)
             && target.url.startsWith(`chrome-extension://${extensionId}/`), 'restarted extension worker', chrome);
-          liveBackgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome);
+          // The retiring worker may still be listed. Attach the new target we just
+          // observed, rather than choosing the first matching (possibly old) worker.
+          console.info(`[extension-smoke] worker restart ${targetInfo.targetId} -> ${restartedTarget.targetId}`);
+          liveBackgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome, restartedTarget.targetId);
           controlSession = await openExtensionControlPage(cdp, extensionId);
           await setupExtensionMessaging(cdp, controlSession);
           stopExtensionKeepAlive = startExtensionKeepAlive(cdp, controlSession, liveBackgroundSession);
@@ -1220,11 +1223,12 @@ async function assertProductionPopup(cdp, extensionId, backgroundSession) {
   }
 }
 
-async function openExtensionBackgroundSession(cdp, extensionId, chrome) {
+async function openExtensionBackgroundSession(cdp, extensionId, chrome, targetId) {
   const target = await waitForTarget(
     cdp,
     (candidate) =>
       ['background_page', 'service_worker'].includes(candidate.type) &&
+      (!targetId || candidate.targetId === targetId) &&
       candidate.url.startsWith(`chrome-extension://${extensionId}/`),
     'extension background target',
     chrome

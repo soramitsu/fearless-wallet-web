@@ -114,7 +114,11 @@ export class SubstrateApiHandler {
   }
 
   async onReady(networkName: NetworkName) {
-    if (isSora(networkName)) SoraApiHandler.initialize(this.state);
+    const revision = this.connectionRevision[networkName];
+    const api = this.api[networkName]?.api;
+    const ownsConnection = () => this.connectionRevision[networkName] === revision && this.api[networkName]?.api === api;
+    if (isSora(networkName)) await SoraApiHandler.initialize(this.state, ownsConnection);
+    if (!ownsConnection()) return;
 
     const account = this.state.currentAccount;
 

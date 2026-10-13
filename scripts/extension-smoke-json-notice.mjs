@@ -10,6 +10,10 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
   const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
   await cdp.send('Runtime.enable', {}, sessionId);
   await cdp.send('Page.enable', {}, sessionId);
+  // Native scroll gestures are bounded by the host widget, even when screenshots
+  // and DOM dimensions use an emulated viewport taller than Chrome's default window.
+  const { windowId } = await cdp.send('Browser.getWindowForTarget', { targetId });
+  await cdp.send('Browser.setWindowBounds', { windowId, bounds: { width: 800, height: 1400 } });
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 600, deviceScaleFactor: 2, mobile: false }, sessionId);
   const stop = await servePopupOffline(cdp, sessionId);
   const results = [];
@@ -69,12 +73,14 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
           }
           if (view === 'export') {
             const reachable = `(() => { const row = document.querySelector('.accounts-layout .row'); const box = row.getBoundingClientRect(); const middle = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2); return box.y >= 0 && box.bottom <= innerHeight && row.contains(middle); })()`;
+            await evalUi(`(() => { globalThis.__jsonNoticeWheels = []; document.addEventListener('wheel', (event) => { globalThis.__jsonNoticeWheels.push({ x: event.clientX, y: event.clientY, deltaY: event.deltaY, trusted: event.isTrusted, target: event.target.className, prevented: event.defaultPrevented }); }, { capture: true, once: true, passive: true }); return true; })()`);
             for (let attempt = 0; attempt < 5 && !await evalUi(reachable); attempt++) {
-              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 160, y: 500, deltaX: 0, deltaY: 400 }, sessionId);
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 160, y: 500 }, sessionId);
+              await cdp.send('Input.synthesizeScrollGesture', { x: 160, y: 500, yDistance: -400, speed: 800, gestureSourceType: 'mouse' }, sessionId);
               await evalUi(`new Promise((resolve) => setTimeout(() => resolve(true), 100))`);
             }
             if (!await evalUi(reachable)) {
-              const failure = await evalUi(`(() => { const row = document.querySelector('.accounts-layout .row'); const ancestors = []; for (let el = row; el; el = el.parentElement) { const box = el.getBoundingClientRect(); const css = getComputedStyle(el); ancestors.push({ className: el.className, box: box.toJSON(), scrollTop: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight, overflow: css.overflow }); } return { ancestors, point: document.elementFromPoint(160, 500)?.outerHTML }; })()`);
+              const failure = await evalUi(`(() => { const row = document.querySelector('.accounts-layout .row'); const ancestors = []; for (let el = row; el; el = el.parentElement) { const box = el.getBoundingClientRect(); const css = getComputedStyle(el); ancestors.push({ className: el.className, box: box.toJSON(), scrollTop: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight, overflow: css.overflow }); } return { ancestors, wheels: globalThis.__jsonNoticeWheels, point: document.elementFromPoint(160, 500)?.outerHTML }; })()`);
               await fs.writeFile(path.join(outputDir, `${name}-unreachable.json`), JSON.stringify(failure, null, 2) + '\n');
               const { data: failedData } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
               await fs.writeFile(path.join(outputDir, `${name}-unreachable.png`), Buffer.from(failedData, 'base64'));

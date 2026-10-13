@@ -72,6 +72,7 @@ const openPage = (url: string) => window.open(url);
 
   .description {
     margin: 37px 0 60px;
+    overflow-wrap: anywhere;
   }
 }
 

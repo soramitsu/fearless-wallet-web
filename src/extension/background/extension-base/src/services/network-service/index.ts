@@ -444,7 +444,7 @@ export class NetworkService {
     if (!usableNetwork(requested)) throw new Error('Invalid network settings');
     const { name, currentProvider, customNodes, customProviders, isManual } = requested;
     const patch = { currentProvider, customNodes, customProviders, isManual };
-    await this.persistPreferences(name, requested, () => patch);
+    await this.persistPreferences(name, requested, () => patch, true);
     const network = this.networkMap[name];
     // Connection setup is best effort after the preference commit; it cannot undo the saved choice.
     try {
@@ -471,15 +471,18 @@ export class NetworkService {
   private async persistPreferences(
     name: string,
     catalog: NetworkJson,
-    update: (saved: NetworkJson) => Partial<NetworkPreferences>
+    update: (saved: NetworkJson) => Partial<NetworkPreferences>,
+    activate = false
   ): Promise<void> {
     await this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
       const current = readableSettings(stored);
-      const saved = { ...catalog, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) };
+      const saved = { ...catalog, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}),
+        ...(activate ? { active: true } : {}) };
       return { ...current, [name]: { ...current[name], ...saved, ...update(saved) } };
     }, (committed) => {
       const saved = committed[name];
-      this.networkMap[name] = { ...(this.networkMap[name] ?? saved), ...preferences(saved) };
+      this.networkMap[name] = { ...(this.networkMap[name] ?? saved), ...preferences(saved),
+        ...(activate ? { active: true } : {}) };
       this.networkPreferenceRevision[name] = ++this.preferenceRevision;
       this.networkMapStore.getSubject().next(this.networkMap);
     }, false);

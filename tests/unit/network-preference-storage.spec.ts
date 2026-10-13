@@ -94,4 +94,16 @@ describe('actual network preference storage queue', () => {
     expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.favorite).toEqual(['owner-a', 'owner-b']);
     expect(service.networkMap.Bitcoin.favorite).toEqual(['owner-a', 'owner-b']);
   });
+
+  it('reactivates a disabled network only when an explicit provider edit is committed', async () => {
+    const service = create(); await service.initNetworkMap();
+    service.networkMap.Bitcoin.active = false;
+    io.failWrite = true;
+    await expect(service.upsertNetworkMap(edit(service))).rejects.toThrow();
+    expect(service.networkMap.Bitcoin.active).toBe(false);
+    io.failWrite = false;
+    await service.upsertNetworkMap(edit(service));
+    expect(service.networkMap.Bitcoin.active).toBe(true);
+    expect((await service.networkMapStore.getAndWait('NetworkMap'))?.Bitcoin.active).toBe(true);
+  });
 });

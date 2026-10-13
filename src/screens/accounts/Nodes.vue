@@ -241,24 +241,28 @@ export default defineComponent({ name: 'Nodes',
 
   .network-description {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 16px;
     padding: $default-padding;
 
     .switch-nodes {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 12px;
 
       .auto-select-nodes {
         color: $plain-white;
         font-weight: 500;
-        margin-right: 7px;
         font-size: 0.875em;
-        width: 130px;
+        text-align: left;
+        overflow-wrap: anywhere;
       }
     }
 
     .img-container {
-      width: 50px;
+      width: 40px;
+      flex-shrink: 0;
       margin: auto 0;
 
       .img {
@@ -268,6 +272,9 @@ export default defineComponent({ name: 'Nodes',
 
     .description {
       display: flex;
+      min-width: 0;
+
+      > div:last-child { min-width: 0; }
 
       .network-name {
         font-size: 1.375em;
@@ -275,6 +282,7 @@ export default defineComponent({ name: 'Nodes',
         color: rgba(255, 255, 255, 1);
         margin-bottom: 5px;
         text-align: left;
+        overflow-wrap: anywhere;
       }
 
       .address-wrapper {

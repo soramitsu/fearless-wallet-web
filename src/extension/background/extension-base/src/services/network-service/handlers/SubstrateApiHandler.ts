@@ -15,21 +15,27 @@ import { MAX_CONTINUE_RETRY } from '@/consts/networks';
 
 export class SubstrateApiHandler {
   api: Record<NetworkName, ApiProps> = {};
+  private readonly connectionRevision: Record<NetworkName, number> = {};
 
   constructor(readonly networkService: NetworkService, public state: State) {}
 
   async destroyApi(network: string) {
     const networkLower = network.toLowerCase();
 
-    if (!this.api[networkLower]) return;
+    const entry = this.api[networkLower];
+    if (!entry) return false;
+    const { api, provider } = entry;
+    const revision = this.connectionRevision[networkLower];
 
-    this.api[networkLower].apiRetry = 0;
+    entry.apiRetry = 0;
 
-    await this.api[networkLower]?.api?.disconnect();
-    await this.api[networkLower]?.provider?.disconnect();
+    await api?.disconnect();
+    await provider?.disconnect();
 
-    delete this.api[networkLower]?.api;
-    delete this.api[networkLower]?.provider;
+    if (this.connectionRevision[networkLower] !== revision || this.api[networkLower] !== entry) return false;
+    delete entry.api;
+    delete entry.provider;
+    return true;
   }
 
   refreshDotSamaApi(key: string) {
@@ -50,20 +56,22 @@ export class SubstrateApiHandler {
   getListeners(network: NetworkJson) {
     const { name, nodes } = network;
     const networkName = name.toLowerCase();
+    const revision = this.connectionRevision[networkName];
+    const ownsConnection = () => this.connectionRevision[networkName] === revision;
 
     if (this.api[networkName] === undefined) this.api[networkName] = this.createApiObject();
     const { nodeIndex } = this.api[networkName];
 
-    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex].url ?? nodes[0].url;
+    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex]?.url ?? nodes[0].url;
 
     if (currentProvider.includes('dwellir')) {
       currentProvider = `${currentProvider}/${process.env.FL_WEB_DWELLIR_API_KEY || process.env.FL_DWELLIR_API_KEY || ''}`;
     }
 
     const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
-      ['connected', () => this.onConnected(networkName)],
-      ['disconnected', () => this.onDisconnected(name)],
-      ['ready', () => this.onReady(networkName)],
+      ['connected', () => { if (ownsConnection()) this.onConnected(networkName); }],
+      ['disconnected', () => { if (ownsConnection()) void this.onDisconnected(name).catch(console.warn); }],
+      ['ready', () => { if (ownsConnection()) void this.onReady(networkName).catch(console.warn); }],
       ['error', () => null],
     ];
 
@@ -75,8 +83,11 @@ export class SubstrateApiHandler {
 
   async initApi(network: NetworkJson) {
     const networkName = network.name.toLowerCase();
+    this.connectionRevision[networkName] = (this.connectionRevision[networkName] ?? 0) + 1;
 
     const { currentProvider, eventListeners } = this.getListeners(network);
+    this.api[networkName].apiStatus = NETWORK_STATUS.CONNECTING;
+    this.api[networkName].apiRetry = 0;
 
     if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
 
@@ -133,7 +144,7 @@ export class SubstrateApiHandler {
 
     if (api.apiRetry < MAX_CONTINUE_RETRY) return;
 
-    await this.destroyApi(networkName);
+    if (!await this.destroyApi(networkName)) return;
 
     api.nodeIndex += 1;
 

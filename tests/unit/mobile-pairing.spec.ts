@@ -256,6 +256,25 @@ describe('mobile pairing negotiation and approved identities', () => {
 });
 
 describe('pairing attempt ownership', () => {
+  it('finishes reset after durable retirement even when an approved pairing relay never disconnects', async () => {
+    Object.assign(state, { walletConnectService: { invalidateSession: vi.fn() } });
+    await init('public-attempt', port);
+    await settle(); // Approval arrived before a subscriber accepted/imported it.
+    let release!: () => void;
+    client.disconnect.mockImplementation(() => new Promise<void>(resolve => { release = resolve; }));
+    let finished = false;
+    const reset = service.resetWallet().then(() => { finished = true; });
+    try {
+      await vi.waitFor(() => expect(client.disconnect).toHaveBeenCalled());
+      expect(await new WalletConnectRetiredSessions().readTopics()).toContain(session.topic);
+      expect(() => service.getSession(session.topic)).toThrow();
+      await vi.waitFor(() => expect(finished).toBe(true), { timeout: 300 });
+      noImport();
+    } finally {
+      release?.();
+      await reset;
+    }
+  });
   it('cancels a pending attempt on reset and retires its late SDK approval without importing it', async () => {
     Object.assign(state, { walletConnectService: { invalidateSession: vi.fn() } });
     await begin();

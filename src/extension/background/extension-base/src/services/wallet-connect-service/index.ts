@@ -177,10 +177,12 @@ export class WalletConnectService {
 
   async disconnect(topic: string) {
     await this.retireSession(topic);
-    await this.client?.disconnect({
-      topic: topic,
+    // Local retirement is already durable; an offline relay cannot delay reset
+    // or removal of the account that owned this session.
+    void Promise.resolve().then(() => this.client?.disconnect({
+      topic,
       reason: getSdkError('USER_DISCONNECTED'),
-    }).catch(console.error);
+    })).catch(console.error);
 
     this.updateSessions();
   }

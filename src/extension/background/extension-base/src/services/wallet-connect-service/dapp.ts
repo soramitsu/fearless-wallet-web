@@ -297,7 +297,10 @@ export class WalletConnectDAppService {
     this.invalidateSession(topic);
     this.state?.walletConnectService?.invalidateSession(topic);
     await new WalletConnectRetiredSessions().retire(topic);
-    await this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
+    // The persisted local veto is the acknowledgement. Relay cleanup may stay
+    // pending offline and must not hold cancellation, selection repair or reset.
+    void Promise.resolve().then(() => this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }))
+      .catch(console.error);
   }
 
   async resetWallet(): Promise<void> {

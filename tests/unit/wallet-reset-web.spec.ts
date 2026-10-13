@@ -163,11 +163,24 @@ describe('web reset with one IndexedDB password/account commit', { timeout: 60_0
     KeyringStoreWeb.readOnly = true;
     const write = vi.spyOn(BaseWebStore.prototype, 'writeToDB');
     const remove = vi.spyOn(BaseWebStore.prototype, 'removeFromDB');
-    const loading = track(new AccountsStore().all((key, json) => keyring.loadAccount(json, key)));
+    const activeStore = Reflect.get(keyring, '_store') as AccountsStore;
+    const loading = track(activeStore.reloadAll());
     await drain();
     expect(await loading).toHaveProperty('value');
     expect(write.mock.calls.length).toBe(0);
     expect(remove.mock.calls.length).toBe(0);
+  });
+
+  it('rejects a metadata edit before it can replace encrypted storage or publish runtime metadata in recovery-only mode', async () => {
+    const address = await native();
+    const before = structuredClone(fixture.data);
+    const originalName = service.getPair(address)!.meta.name;
+    KeyringStoreWeb.readOnly = true;
+    const editing = track(service.saveAccountMeta(address, { name: 'Must not be saved' }));
+    await drain();
+    expect(await editing).toEqual({ error: expect.objectContaining({ message: expect.stringContaining('storage needs repair') }) });
+    expect(fixture.data).toEqual(before);
+    expect(service.getPair(address)!.meta.name).toBe(originalName);
   });
 
   it('does not enroll additional network keys during recovery-only unlock', async () => {

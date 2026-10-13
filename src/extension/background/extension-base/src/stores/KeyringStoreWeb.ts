@@ -1,11 +1,13 @@
 import { decodeWebPassword, loadWebPasswordRecord, WEB_PASSWORD_RECORD_KEY, WebPasswordStore } from './WebPasswordRecord';
+import { assertWebStorageWritable, webStorageMode } from './WebStorageMode';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
 
 export default class KeyringStoreWeb implements PasswordStore {
   private static value: KeyringPasswordJson | null = null;
   private static pending = Promise.resolve();
-  static readOnly = false;
+  static get readOnly(): boolean { return webStorageMode.recoveryOnly; }
+  static set readOnly(value: boolean) { webStorageMode.recoveryOnly = value; }
 
   static async initialize(): Promise<void> {
     const { record, persisted } = await loadWebPasswordRecord();
@@ -14,7 +16,7 @@ export default class KeyringStoreWeb implements PasswordStore {
   }
 
   static assertWritable(): void {
-    if (this.readOnly) throw new Error('Wallet storage needs repair. Reload to retry. Existing accounts can still be exported.');
+    assertWebStorageWritable();
   }
 
   static async flush(): Promise<void> {

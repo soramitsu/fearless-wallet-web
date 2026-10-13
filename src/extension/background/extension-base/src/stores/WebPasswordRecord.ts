@@ -8,6 +8,9 @@ export const WEB_RESET_PASSWORD_KEY = 'pendingResetPassword';
 export type WebPasswordRecord = { version: 1; serialized: string | null };
 export class WebPasswordStore extends BaseWebStore<unknown> {
   constructor() { super(EXTENSION_PREFIX); }
+  // Only migration may repair missing authority in recovery mode. Ordinary
+  // password writes separately assert writability in KeyringStoreWeb.
+  protected assertWritable(): void {}
 }
 
 export function decodeWebPassword(serialized: string | null): KeyringPasswordJson | null {

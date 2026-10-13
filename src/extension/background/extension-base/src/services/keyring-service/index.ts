@@ -143,11 +143,12 @@ export class KeyringService {
   }
 
   private scheduleLegacyNetworkEnrollment(): void {
-    if (!this.password) return;
+    if (!this.password || (!IS_EXTENSION && KeyringStoreWeb.readOnly)) return;
     const password = this.password;
     const epoch = (this.enrollmentEpoch ?? 0) + 1;
     this.enrollmentEpoch = epoch;
-    const isCurrent = () => this.enrollmentEpoch === epoch && this.password === password;
+    const isCurrent = () => this.enrollmentEpoch === epoch && this.password === password &&
+      (IS_EXTENSION || !KeyringStoreWeb.readOnly);
     this.enrollmentWork = (this.enrollmentWork ?? Promise.resolve()).catch(() => {}).then(async () => {
       // Start after the successful unlock response can be delivered.
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -179,6 +180,11 @@ export class KeyringService {
       (await new WalletConnectRetiredSessions().readTopics()).includes(currentAccount.wcTopic);
     if (this.selectionRequestRevision !== request) return;
     if (retired) {
+      if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
+        this.selectionRevision = this.currentAccountRevision + 1;
+        this.currentAccountSubject.next(null);
+        return;
+      }
       await this.setCurrentAccount(null, undefined, () => {});
       return;
     }

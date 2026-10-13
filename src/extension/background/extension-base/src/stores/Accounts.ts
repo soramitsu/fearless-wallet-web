@@ -1,6 +1,7 @@
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
+import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { reconcileEcdsaAccountRecords, type AccountRecordsReconciliation } from '@extension-base/stores/EcdsaAccountRecords';
 import type { TransformStoredRecords } from './StoreMutation';
 import type { FWKeyringMeta } from '../types';
@@ -20,12 +21,14 @@ export default class AccountsStore
   public allLoaded: Promise<void> = Promise.resolve();
 
   private load?: (key: string, value: FWKeyringJson) => void;
+  private loading = false;
 
   constructor() {
     super(EXTENSION_PREFIX);
   }
 
   public set(key: string, value: FWKeyringJson, update?: () => void): void {
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly && this.loading) { update?.(); return; }
     super.set(key, value, update);
   }
 
@@ -63,6 +66,7 @@ export default class AccountsStore
   }
 
   public remove(key: string, update?: () => void): void {
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly && this.loading) { update?.(); return; }
     super.remove(key, update);
   }
 
@@ -80,8 +84,11 @@ export default class AccountsStore
         console.error(error);
       }
 
-      reconciled.writes.forEach(({ set, remove }) => void this.replaceAndWait(set, remove, false).catch(console.error));
-      Object.entries(reconciled.records).forEach(([key, value]) => update(key, value));
+      if (IS_EXTENSION || !KeyringStoreWeb.readOnly)
+        reconciled.writes.forEach(({ set, remove }) => void this.replaceAndWait(set, remove, false).catch(console.error));
+      this.loading = true;
+      try { Object.entries(reconciled.records).forEach(([key, value]) => update(key, value)); }
+      finally { this.loading = false; }
     });
 
     return this.allLoaded;

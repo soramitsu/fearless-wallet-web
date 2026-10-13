@@ -1,4 +1,6 @@
 import { CurrentAccountContextChanged } from '@extension-base/stores/CurrentAccountStore';
+import BaseWebStore from '@extension-base/stores/BaseWeb';
+import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
@@ -18,9 +20,11 @@ import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/ba
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { WalletEcosystem, type DerivationPath } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
 
 const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 type StoredAccount = { address?: string } & Record<string, unknown>;
+class WebAccountBackups extends BaseWebStore<StoredAccount> {}
 
 // The storage key 2.x and 3.0.x used for the account at a Substrate address.
 function legacyAccountKey(address: string): string | undefined {
@@ -38,8 +42,11 @@ export default class FWExtensionBase {
 
   // The account's record exactly as stored, still encrypted with whatever password it has. Read-only.
   async migrateExportJSON(address: string): Promise<ResponseAccountExport> {
-    const values = (await chrome.storage.local.get(null)) as unknown as Record<string, StoredAccount>;
-    const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+    const values = IS_EXTENSION
+      ? await chrome.storage.local.get(null) as Record<string, StoredAccount>
+      : await new WebAccountBackups(EXTENSION_PREFIX).getAllAndWait();
+    const prefix = IS_EXTENSION ? `${EXTENSION_PREFIX}:account:` : 'account:';
+    const accounts = Object.entries(values).filter(([key]) => key.startsWith(prefix));
     const legacyKey = legacyAccountKey(address);
 
     const stored = accounts.find(([key, value]) => {

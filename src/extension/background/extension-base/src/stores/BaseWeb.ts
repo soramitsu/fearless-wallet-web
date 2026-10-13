@@ -1,4 +1,6 @@
+import { EXTENSION_PREFIX } from '../defaults';
 import { openWebDatabase, WEB_STORE_NAME } from './WebDatabase';
+import { assertWebStorageWritable } from './WebStorageMode';
 import type { TransformStoredRecords } from './StoreMutation';
 
 export default abstract class BaseWebStore<T> {
@@ -32,6 +34,16 @@ export default abstract class BaseWebStore<T> {
     this.#prefix = prefix ? `${prefix}:` : '';
   }
 
+  protected assertWritable(): void {
+    if (this.#prefix === `${EXTENSION_PREFIX}:` || this.#prefix.startsWith(`${EXTENSION_PREFIX}:ton:`))
+      assertWebStorageWritable();
+  }
+
+  private enqueueMutation<TResult>(write: () => Promise<TResult>, trackFailure = true): Promise<TResult> {
+    this.assertWritable();
+    return this.enqueueWrite(() => { this.assertWritable(); return write(); }, trackFailure);
+  }
+
   public getPrefix(): string {
     return this.#prefix;
   }
@@ -48,7 +60,7 @@ export default abstract class BaseWebStore<T> {
   }
 
   public writeToDB(key: string, value: T): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -99,7 +111,7 @@ export default abstract class BaseWebStore<T> {
   }
 
   public removeFromDB(key: string): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -164,7 +176,7 @@ export default abstract class BaseWebStore<T> {
     publish?: (committed: T) => void,
     trackFailure = true
   ): Promise<T | undefined> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       return new Promise<T | undefined>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -200,7 +212,7 @@ export default abstract class BaseWebStore<T> {
     publish?: () => void
   ): Promise<void> {
     const requested = keys && [...new Set(keys)];
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -249,7 +261,7 @@ export default abstract class BaseWebStore<T> {
 
   // Stores every entry and removes `keys` in one transaction: all of it lands, or none of it.
   public replaceAndWait(entries: Record<string, unknown>, keys: string[], trackFailure = true): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');

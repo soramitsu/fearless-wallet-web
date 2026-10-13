@@ -1,8 +1,10 @@
 import CryptoJS from 'crypto-js';
 import { tonStore } from '../../stores/TonStore';
+import KeyringStoreWeb from '../../stores/KeyringStoreWeb';
 import { TON_SEED_NEEDS_PREVIOUS_PASSWORD } from './AccountAccessErrors';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import { TonKeyringError, verifyTonPhrase } from '@/util/tonKeyring';
+import { IS_EXTENSION } from '@/consts/global';
 
 type TonSeedAccount = Pick<TonStoreAccount, 'cipherSeed' | 'pendingCipherSeed'> & { publicKey: Uint8Array };
 
@@ -259,7 +261,8 @@ export class TonSeedVault {
 
     if (current !== undefined) {
       if (isCurrent()) {
-        if (pendingCipherSeed) await this.replace(address, account, cipherSeed, false).catch(() => false);
+        if (pendingCipherSeed && (IS_EXTENSION || !KeyringStoreWeb.readOnly))
+          await this.replace(address, account, cipherSeed, false).catch(() => false);
         this.needsPreviousPassword.delete(address);
       }
 
@@ -270,7 +273,8 @@ export class TonSeedVault {
 
     if (pending !== undefined) {
       if (isCurrent()) {
-        await this.replace(address, account, pendingCipherSeed!, false).catch(() => false);
+        if (IS_EXTENSION || !KeyringStoreWeb.readOnly)
+          await this.replace(address, account, pendingCipherSeed!, false).catch(() => false);
         this.needsPreviousPassword.delete(address);
       }
 

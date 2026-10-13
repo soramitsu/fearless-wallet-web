@@ -5,6 +5,7 @@ import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { PROJECT_ID_EXTENSION, WALLET_CONNECT_METADATA } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
+import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
 import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
@@ -334,7 +335,8 @@ export class WalletConnectDAppService {
       };
       await this.state.keyringService.forgetAddress(account.address, async () => {
         assertCurrent();
-        if (this.state.currentAccount?.address !== account.address) return;
+        const selected = this.state.currentAccount?.address;
+        if (!selected || walletAddressIdentity(selected) !== walletAddressIdentity(account.address)) return;
         await this.state.setCurrentAccount(null, undefined, assertCurrent);
         clearedRevision = this.state.keyringService.currentAccountRevision;
       }, assertCurrent);

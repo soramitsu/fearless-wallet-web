@@ -411,6 +411,30 @@ describe('acknowledged wallet removal with actual keyring and Chrome storage', {
     expect(urls.public.evmAuthorizedAccount).toBe('');
   });
 
+  it.each([false, true])('clears saved SS58-alias mobile context and applies deletion fallback (remaining wallet: %s)', async (withFallback) => {
+    const fallback = withFallback ? await native() : undefined;
+    const address = await mobile();
+    const selected = await select(address);
+    const { state } = handler();
+    const alias = encodeAddress(address, 0);
+    expect(alias).not.toBe(address);
+    const saving = track(state.setCurrentAccount({ ...selected, address: alias }));
+    await drain();
+    expect(await saving).toHaveProperty('value');
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toHaveProperty('address', alias);
+    vi.mocked(state.poolsService.unsubscribePools).mockClear();
+    const dapp = Object.create(WalletConnectDAppService.prototype);
+    Object.assign(dapp, { state, invalidateSession: vi.fn() });
+    const result = track(dapp.onSessionDelete({ topic: 'public-remove-topic' }));
+    await drain();
+    expect(await result).toHaveProperty('value');
+    expect(state.poolsService.unsubscribePools).toHaveBeenCalled();
+    expect(state.currentAccount?.address).toBe(fallback);
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toEqual(state.currentAccount);
+    expect(service.getAddress(address)).toBeUndefined();
+    expect(state.cleanupDeletedAccount).toHaveBeenCalledWith(address);
+  });
+
   it('does not clear a rebound mobile wallet when an obsolete session deletion waits in the vault queue', async () => {
     const address = await mobile();
     const { state } = handler();

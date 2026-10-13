@@ -2,7 +2,7 @@ import { nodePreferences } from '@extension-base/services/network-service/prefer
 import type { NetworkJson } from '@extension-base/types';
 import { sendMessage } from '@/extension/messaging/index';
 
-export function upsertNetworkMap(data: NetworkJson, previous?: NetworkJson): Promise<void> {
+export function upsertNetworkMap(data: NetworkJson, previous?: Parameters<typeof nodePreferences>[0]): Promise<void> {
   return sendMessage('pri(networkMap.upsert)', previous ? { network: data, expected: nodePreferences(previous) } : data);
 }
 

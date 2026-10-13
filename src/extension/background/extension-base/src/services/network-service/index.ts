@@ -293,9 +293,10 @@ export class NetworkService {
   updateNetworkStore() {
     // Status polling and connection callbacks also reach here. None may erase unread personal settings.
     if (!this.cacheReadable) return;
-    const catalog = structuredClone(this.networkMap);
     // Background status/catalog writes never replace preferences committed by a concurrent user action.
     void this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
+      // A queued explicit edit may reactivate a network before this operation starts.
+      const catalog = structuredClone(this.networkMap);
       const current = readableSettings(stored);
       return { ...current, ...Object.fromEntries(Object.entries(catalog).map(([name, network]) => [name,
         { ...network, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) },

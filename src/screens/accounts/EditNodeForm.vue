@@ -44,6 +44,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { nodePreferences, sameNodePreferences } from '@extension-base/services/network-service/preferences';
+import type { NodePreferences } from '@extension-base/services/network-service/preferences';
 
 import { upsertNetworkMap } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
@@ -64,6 +66,7 @@ export default defineComponent({ name: 'EditNodeForm' ,
       saving: false,
       saveError: false,
       viewActive: true,
+      openedPreferences: undefined as NodePreferences | undefined,
     };
   },
   computed: {
@@ -108,6 +111,7 @@ export default defineComponent({ name: 'EditNodeForm' ,
   mounted() {
     this.name = this.nodeName;
         this.url = this.nodeUrl;
+    if (this.networkJson) this.openedPreferences = JSON.parse(JSON.stringify(nodePreferences(this.networkJson)));
   },
   beforeUnmount() { this.viewActive = false; },
   methods: {
@@ -141,6 +145,11 @@ export default defineComponent({ name: 'EditNodeForm' ,
     },
     async updateNodes() {
       if (this.buttonDisabled || !this.viewActive) return;
+      // Inputs and isActive belong to the opened editor. Never silently rebase them onto newer settings.
+      if (!this.networkJson || !this.openedPreferences || !sameNodePreferences(this.networkJson, this.openedPreferences)) {
+        this.saveError = true;
+        return;
+      }
       this.saving = true;
       this.saveError = false;
       const network = this.networkJson;
@@ -155,7 +164,7 @@ export default defineComponent({ name: 'EditNodeForm' ,
           ...network, customNodes,
           currentProvider: selectEdited ? this.url : network.currentProvider,
           isManual: selectEdited ? true : network.isManual,
-        }, network);
+        }, this.openedPreferences);
         if (this.viewActive) this.$emit('closeForm', true);
       } catch {
         if (this.viewActive) this.saveError = true;

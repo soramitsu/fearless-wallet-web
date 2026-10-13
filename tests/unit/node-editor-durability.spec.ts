@@ -8,8 +8,8 @@ vi.mock('@/extension/messaging', () => ({ upsertNetworkMap: io.save }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ getNetwork: () => io.network }) }));
 
 const wrappers: ReturnType<typeof mount>[] = [];
-const open = async (onCloseForm = vi.fn()) => {
-  const wrapper = mount(EditNodeForm, { props: { network: 'Polkadot', onCloseForm }, global: { mocks: { $t: (key: string) => key },
+const open = async (onCloseForm = vi.fn(), props = {}) => {
+  const wrapper = mount(EditNodeForm, { props: { network: 'Polkadot', onCloseForm, ...props }, global: { mocks: { $t: (key: string) => key },
     stubs: { AboveForm: { template: '<div><slot /></div>' }, FInput: true, ValidatedInput: true,
       FButton: { props: ['disabled'], template: '<button :disabled="disabled" @click="$emit(\'click\')">Save</button>' } } } });
   wrappers.push(wrapper);
@@ -18,7 +18,7 @@ const open = async (onCloseForm = vi.fn()) => {
 };
 
 describe('node editor acknowledgement', () => {
-  beforeEach(() => { vi.resetAllMocks(); io.network.customNodes = []; });
+  beforeEach(() => { vi.resetAllMocks(); io.network.customNodes = []; io.network.currentProvider = 'wss://public.invalid'; io.network.isManual = false; });
   afterEach(() => { wrappers.splice(0).forEach((wrapper) => wrapper.unmount()); });
 
   it('keeps the editor and current settings unchanged while saving, then closes after acknowledgement', async () => {
@@ -66,5 +66,30 @@ describe('node editor acknowledgement', () => {
     expect(wrapper.get('[data-testid="name"]').attributes('disabled')).toBe('true');
     expect(wrapper.get('[data-testid="urlAddress"]').attributes('disabled')).toBe('true');
     acknowledge(); await flushPromises();
+  });
+
+  it('rejects a mounted editor after another editor changes its node and selection', async () => {
+    io.network.customNodes = [{ name: 'Old', url: 'wss://same.invalid' }];
+    io.network.currentProvider = 'wss://same.invalid';
+    io.network.isManual = true;
+    const wrapper = await open(vi.fn(), { nodeName: 'Old', nodeUrl: 'wss://same.invalid', isActive: true });
+    io.network.customNodes = [{ name: 'Renamed', url: 'wss://same.invalid' }];
+    io.network.currentProvider = 'wss://public.invalid';
+    io.network.isManual = false;
+    await wrapper.setData({ name: 'My new name', url: 'wss://same.invalid' });
+    await wrapper.get('button').trigger('click'); await flushPromises();
+    expect(io.save).not.toHaveBeenCalled();
+    expect(wrapper.emitted('closeForm')).toBeUndefined();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(io.network.customNodes).toEqual([{ name: 'Renamed', url: 'wss://same.invalid' }]);
+    expect(io.network.currentProvider).toBe('wss://public.invalid');
+    wrapper.unmount();
+    const reopened = await open(vi.fn(), { nodeName: 'Renamed', nodeUrl: 'wss://same.invalid', isActive: false });
+    await reopened.setData({ name: 'My new name', url: 'wss://same.invalid' });
+    await reopened.get('button').trigger('click'); await flushPromises();
+    expect(io.save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      customNodes: [{ name: 'My new name', url: 'wss://same.invalid' }], currentProvider: 'wss://public.invalid', isManual: false,
+    }), expect.objectContaining({ customNodes: [{ name: 'Renamed', url: 'wss://same.invalid' }] }));
+    expect(reopened.emitted('closeForm')).toEqual([[true]]);
   });
 });

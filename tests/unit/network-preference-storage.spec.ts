@@ -47,6 +47,7 @@ describe('actual network preference storage queue', () => {
 
   it('serializes a held user edit with status writes without rolling the committed preference back', async () => {
     const service = create(); await service.initNetworkMap();
+    service.networkMap.Bitcoin.active = false;
     const published = vi.fn(); service.networkMapStore.getSubject().subscribe(published);
     io.hold = true;
     const pending = service.upsertNetworkMap(edit(service));
@@ -56,7 +57,7 @@ describe('actual network preference storage queue', () => {
     expect(published).not.toHaveBeenCalled();
     io.hold = false; io.acknowledgements.shift()!(); await pending;
     const saved = await service.networkMapStore.getAndWait('NetworkMap');
-    expect(saved?.Bitcoin).toMatchObject({ currentProvider: 'https://personal.invalid', isManual: true });
+    expect(saved?.Bitcoin).toMatchObject({ currentProvider: 'https://personal.invalid', isManual: true, active: true });
     expect(service.networkMap.Bitcoin.currentProvider).toBe('https://personal.invalid');
   });
 

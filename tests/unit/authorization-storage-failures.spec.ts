@@ -110,6 +110,22 @@ const expectBlocked = (protocol: 'evm' | 'substrate' | 'solana') => {
     ).toThrow();
 };
 describe('durable site authorization', () => {
+  it('blocks new authorization and signing snapshots during a wallet reset', async () => {
+    await auth.setAuthorize({ [first]: grant() });
+    const wallet = (auth as unknown as { keyringService: { isResetting: boolean; walletResetRevision: number } }).keyringService;
+    wallet.isResetting = true;
+    wallet.walletResetRevision = 1;
+    const request = outcome(auth.authorizeUrl(second, { origin: 'Public site', accountAuthType: 'substrate' }));
+    await tick();
+    const queued = auth.numAuthRequests;
+    // Clean up the pre-fix queued promise too, so the baseline failure is bounded.
+    Object.values(auth.authRequests).forEach((entry) => entry.reject(new Error('Fixture cleanup')));
+    expect((await request).status).toBe('rejected');
+    expect(queued).toBe(0);
+    expect(() => auth.getEvmAuthorizationSnapshot(first)).toThrow();
+    expect(() => auth.getSigningAuthorizationSnapshot(first, 'substrate')).toThrow();
+    expect(() => auth.getSigningAuthorizationSnapshot(first, 'solana')).toThrow();
+  });
   it('physically clears stored grants when resetting before the first load', async () => {
     storage.data = { [first]: grant() };
     auth = create();

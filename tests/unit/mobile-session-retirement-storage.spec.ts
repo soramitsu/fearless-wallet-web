@@ -357,3 +357,39 @@ describe('session retirement across roles and removal', () => {
     expect(() => restarted.getSession(topic)).toThrow();
   });
 });
+
+
+describe('standalone EVM removal retirement', () => {
+  const owned = '0x' + '44'.repeat(20);
+  async function incomingForStandalone() {
+    client.session.values[0].namespaces = { eip155: {
+      accounts: [`eip155:1:${owned}`], methods: ['personal_sign'], events: [],
+    } };
+    return openIncoming();
+  }
+
+  it('matches a standalone primary EVM address without linked-account metadata', async () => {
+    const incoming = await incomingForStandalone();
+    await incoming.removeSessions(owned);
+    expect(fixture.data[key]).toMatchObject({ topics: [topic] });
+    const restarted = await openIncoming();
+    expect(() => restarted.getSession(topic)).toThrow();
+  });
+
+  it('persists session retirement through actual native account removal for a standalone EVM pair', async () => {
+    const incoming = await incomingForStandalone();
+    const forgetAccount = vi.fn();
+    const removalState = {
+      keyringService: { archiveWallet: vi.fn(async () => undefined), getPair: () => ({ address: owned, meta: {} }), forgetAccount },
+      requestService: { mutateAuthorizations: async (update) => update({}) },
+      walletConnectService: incoming,
+      cleanupDeletedAccount: vi.fn(),
+    } as unknown as State;
+    const extension = new Extension(removalState);
+    expect(await extension.accountsForget({ address: owned, type: 'native' })).toBe(true);
+    expect(forgetAccount).toHaveBeenCalledExactlyOnceWith(owned);
+    expect(fixture.data[key]).toMatchObject({ topics: [topic] });
+    const restarted = await openIncoming();
+    expect(() => restarted.getSession(topic)).toThrow();
+  });
+});

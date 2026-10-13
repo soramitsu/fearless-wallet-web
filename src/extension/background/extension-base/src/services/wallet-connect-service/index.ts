@@ -1,3 +1,4 @@
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
@@ -182,7 +183,8 @@ export class WalletConnectService {
         namespaceAccounts(namespace).some((account) => {
           const [kind, , candidate] = account.split(':');
           if (!candidate || kind !== key.split(':')[0]) return false;
-          if (kind === 'eip155') return !!ethereumAddress && isSameString(ethereumAddress, candidate);
+          if (kind === 'eip155') return (isEthereumAddress(address) && isSameString(address, candidate)) ||
+            (!!ethereumAddress && isSameString(ethereumAddress, candidate));
           return kind === 'polkadot' && isSameAddress(address, candidate);
         })
       );

@@ -119,11 +119,11 @@ export default defineComponent({ name: 'CreateGoogle',
     return {
       countSteps: 4,
       buttonTextForStep: {
-    1: this.$t('common.continue'),
-    2: this.$t('addWallet.haveWrittenPassphrase'),
-    3: this.$t('addWallet.ConfirmSecretData'),
-    4: this.$t('common.finish'),
-  },
+        1: 'common.continue',
+        2: 'addWallet.haveWrittenPassphrase',
+        3: 'addWallet.ConfirmSecretData',
+        4: 'common.finish',
+      },
       selectedMnemonicElements: [],
       step: 1,
       nickname: '',
@@ -172,7 +172,7 @@ export default defineComponent({ name: 'CreateGoogle',
     },
     buttonText() {
       if (this.creationError) return this.$t('ux.retry');
-      if (this.buttonTextForStep[this.step]) return this.buttonTextForStep[this.step];
+      if (this.buttonTextForStep[this.step]) return this.$t(this.buttonTextForStep[this.step]);
 
           return this.$t('addWallet.createWallet');
     },

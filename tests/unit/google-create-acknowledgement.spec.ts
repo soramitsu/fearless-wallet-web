@@ -1,5 +1,6 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ref } from 'vue';
 
 const mocks = vi.hoisted(() => ({ add: vi.fn(), upload: vi.fn(), export: vi.fn(), select: vi.fn(), password: vi.fn(), phrase: vi.fn() }));
 vi.mock('@/extension/messaging', () => ({ addAccount: mocks.add, createGoogleFile: mocks.upload, exportJSON: mocks.export,
@@ -21,10 +22,10 @@ const deferred = <T>() => {
   return { promise, resolve, reject };
 };
 const settle = (promise: unknown) => Promise.resolve(promise).catch(() => undefined);
-const open = async () => {
+const open = async (translate = (key: string) => key) => {
   const wrapper = shallowMount(CreateGoogle, { global: {
     config: { errorHandler: vi.fn() },
-    mocks: { $t: (key: string) => key, $route: { params: { access_token: 'public-test-token' } }, $router: { replace: vi.fn().mockResolvedValue(undefined) } },
+    mocks: { $t: translate, $route: { params: { access_token: 'public-test-token' } }, $router: { replace: vi.fn().mockResolvedValue(undefined) } },
     stubs: { FlowStepLayout: false, CircleButton: true, Loader: true, FinishForm: { template: '<div data-testid="finishForm">Finished</div>' }, FButton: true, NotificationPopup: true, NegativeMessage: true },
   } });
   await flushPromises();
@@ -43,6 +44,16 @@ beforeEach(() => {
 });
 
 describe('Google create backup acknowledgements', () => {
+  it('keeps the completion action in the current language', async () => {
+    const locale = ref('en');
+    const wrapper = await open((key) => `${locale.value}:${key}`);
+    expect(wrapper.findAll('f-button-stub').at(-1)?.attributes('text')).toBe('en:common.finish');
+    locale.value = 'ru';
+    await flushPromises();
+    expect(wrapper.findAll('f-button-stub').at(-1)?.attributes('text')).toBe('ru:common.finish');
+    wrapper.unmount();
+  });
+
   it('does not select or finish while the primary upload is pending', async () => {
     const upload = deferred<{ id: string }>();
     mocks.upload.mockResolvedValueOnce({ id: 'child-file' }).mockReturnValueOnce(upload.promise);

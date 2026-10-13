@@ -153,6 +153,30 @@ afterEach(async () => {
 });
 
 describe('web reset across IndexedDB accounts and the window password bridge', { timeout: 60_000 }, () => {
+  it('leaves the legacy window password untouched while account reset is held', async () => {
+    await native();
+    const password = fixture.password;
+    const resetting = track(service.resetWallet());
+    await drain(false);
+    expect(fixture.password).toBe(password);
+    expect(fixture.bridge.mock.calls.filter(([operation]) => operation === 'remove')).toEqual([]);
+    await drain();
+    expect(await resetting).toEqual({ value: true });
+  });
+
+  it('opens retained password state without needing a window compensation write', async () => {
+    const password = fixture.password;
+    fixture.data[journalKey] = { serialized: password };
+    fixture.password = null;
+    fixture.failCompensation = true;
+    const ready = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await ready).toHaveProperty('value');
+    const read = vi.fn();
+    new KeyringStoreWeb().get(read);
+    expect(read).toHaveBeenCalledWith(JSON.parse(password!));
+  });
+
   it('keeps memory and the recovery journal until the account transaction commits', async () => {
     const address = await native();
     const pair = service.getPair(address)!;

@@ -3,7 +3,6 @@ import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
-import { storage } from '@extension-base/stores/Storage';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
@@ -72,13 +71,15 @@ export class WalletConnectService {
   }
 
   private async haveData(): Promise<boolean> {
-    const data = await storage.get([
+    const keys = [
       'wc@2:client:0.3//session',
       'wc@2:client:0.3//proposal',
       'wc@2:core:0.3//pairing',
       'wc@2:core:0.3//subscription',
       'wc@2:core:0.3//history',
-    ]);
+    ];
+    const sdkStorage = new WalletConnectStorage();
+    const data = Object.fromEntries(await Promise.all(keys.map(async (key) => [key, await sdkStorage.getItem(key)])));
 
     const sessions = data['wc@2:client:0.3//session'] ?? [];
     const pairings = data['wc@2:core:0.3//pairing'] ?? [];

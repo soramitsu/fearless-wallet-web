@@ -148,6 +148,14 @@ export default abstract class BaseWebStore<T> {
     return this.enqueueWrite(() => this.getByKey(`${this.#prefix}${key}`), false);
   }
 
+  public getAllAndWait(): Promise<Record<string, T>> {
+    return this.enqueueWrite(async () => {
+      let records: Record<string, T> = {};
+      await this.allMap((values) => { records = values; });
+      return records;
+    }, false);
+  }
+
   // Keep the read and write in one transaction. The callback publishes only
   // after commit, while the same queue still excludes password/deletion writes.
   public updateAndWait(

@@ -224,6 +224,11 @@ const buttonClasses = computed(() => {
   display: flex;
   justify-content: center;
   align-items: center;
+
+  > span:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
 }
 
 .import-button {

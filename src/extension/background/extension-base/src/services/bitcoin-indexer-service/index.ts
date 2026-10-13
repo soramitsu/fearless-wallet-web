@@ -223,13 +223,14 @@ class BitcoinEsploraClient {
    * endpoint is retried on the next. `expectedTxid` lets an "already known"
    * rejection count as success.
    */
-  async broadcastTransaction(txHex: string, expectedTxid?: string): Promise<string> {
+  async broadcastTransaction(txHex: string, expectedTxid?: string, assertCurrent?: () => void): Promise<string> {
     const body = normalizeTxHex(txHex);
     const expected = expectedTxid === undefined ? undefined : normalizeTxid(expectedTxid);
     let ambiguous = false;
     let reason: string | undefined;
 
     for (const baseUrl of this.endpoints.endpoints) {
+      assertCurrent?.();
       let response: Response;
       let text: string;
 

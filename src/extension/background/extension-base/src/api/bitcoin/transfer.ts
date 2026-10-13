@@ -1,3 +1,4 @@
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { type BasicTxResponse, type ResponseBitcoinTransferQuote } from '@extension-base/background/types/types';
 import {
   BitcoinBroadcastError,
@@ -172,7 +173,9 @@ export async function makeBitcoinTransfer(
   discoveryOptions: DiscoveryOptions = {},
   pendingStore: BitcoinPendingSendStore = getDefaultBitcoinPendingSendStore()
 ): Promise<void> {
+  const assertCurrent = captureWalletResetGuard(params.state);
   await assertSendCapability(params.state, 'bitcoinSend');
+  assertCurrent();
 
   const { amount, callback, networkKey, state, to } = params;
   const network = getBitcoinNetworkKind(state.networkService.networkMap[networkKey]);
@@ -187,7 +190,9 @@ export async function makeBitcoinTransfer(
   // with it: nothing new is signed until it confirms.
   if (inMempool.length) throw new Error('bitcoin_previous_send_unconfirmed');
 
+  assertCurrent();
   const prepared = await prepareBitcoinSend({
+    assertCurrent,
     amountSat,
     changeAddress: discovered.changeAddress,
     feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
@@ -205,6 +210,7 @@ export async function makeBitcoinTransfer(
     throw error instanceof BitcoinSendError ? new Error(toBitcoinTransferErrorCode(error.code), { cause: error }) : error;
   });
 
+  assertCurrent();
   // Recorded before broadcast: a service worker stopped mid-request must still
   // find this transaction on the next send.
   await pendingStore.save({
@@ -218,10 +224,16 @@ export async function makeBitcoinTransfer(
     txid: prepared.txid,
   });
 
+  try { assertCurrent(); } catch (error) {
+    // These bytes were never handed to a node. Remove only this operation's
+    // pending record; earlier ambiguous sends remain available for resolution.
+    await pendingStore.remove([prepared.txid]);
+    throw error;
+  }
   let broadcastTxid: string;
 
   try {
-    broadcastTxid = await indexer.broadcastTransaction(prepared.txHex, prepared.txid);
+    broadcastTxid = await indexer.broadcastTransaction(prepared.txHex, prepared.txid, assertCurrent);
   } catch (error) {
     if (error instanceof BitcoinBroadcastError && !error.ambiguous) {
       // Every endpoint answered with a definite rejection: nothing was relayed.

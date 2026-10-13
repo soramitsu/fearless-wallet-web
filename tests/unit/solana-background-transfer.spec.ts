@@ -22,6 +22,7 @@ import {
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
+import * as solanaTransaction from '@/util/solanaTransaction';
 import { WalletEcosystem } from '@/interfaces';
 import { getSolanaSerializedMessageBase64, parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
@@ -514,7 +515,7 @@ describe('background Solana transfer adapter', () => {
       maxRetries: 3,
       preflightCommitment: 'confirmed',
       skipPreflight: false,
-    });
+    }, expect.any(Function));
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);
@@ -560,6 +561,49 @@ describe('background Solana transfer adapter', () => {
     expect(missingClient.getLatestBlockhash).not.toHaveBeenCalled();
   });
 
+  it.each(['fee lookup', 'simulation', 'pending save'])('does not broadcast after reset during %s', async boundary => {
+    const state = createState();
+    const reset = () => Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
+    const prepared = await prepareSolanaTransferForTest(transferParams(state), createClient());
+    const client = createClient({ sendSignature: prepared.signed.signatureBase58 });
+    const sign = vi.spyOn(solanaTransaction, 'signSolanaSerializedTransaction');
+    const pendingStore = memoryPendingStore();
+    if (boundary === 'fee lookup') vi.mocked(client.getFeeForMessage).mockImplementation(async () => {
+      reset(); return { context: { slot: 124 }, value: 5000 };
+    });
+    if (boundary === 'simulation') vi.mocked(client.simulateTransaction).mockImplementation(async () => {
+      reset(); return { context: { slot: 125 }, value: { err: null, logs: [] } };
+    });
+    if (boundary === 'pending save') pendingStore.save.mockImplementation(async () => { reset(); });
+    await expect(makeSolanaTransfer(transferParams(state), client, sendOptions(pendingStore)))
+      .rejects.toThrow('Wallet changed during transfer');
+    expect(client.sendRawTransaction).not.toHaveBeenCalled();
+    if (boundary === 'fee lookup') {
+      expect(sign).not.toHaveBeenCalled();
+      expect(client.simulateTransaction).not.toHaveBeenCalled();
+    }
+    if (boundary === 'pending save') expect(pendingStore.remove).toHaveBeenCalledOnce();
+    else expect(pendingStore.save).not.toHaveBeenCalled();
+    sign.mockRestore();
+  });
+
+  it('stops Solana rebroadcast after reset and retains an already-submitted pending record', async () => {
+    const state = createState();
+    const prepared = await prepareSolanaTransferForTest(transferParams(state), createClient());
+    const client = createClient({ sendSignature: prepared.signed.signatureBase58, signatureStatus: null });
+    const pendingStore = memoryPendingStore();
+    let polls = 0;
+    vi.mocked(client.getSignatureStatuses).mockImplementation(async () => {
+      if (++polls === 2) Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
+      return [null];
+    });
+    await expect(makeSolanaTransfer(transferParams(state), client, sendOptions(pendingStore)))
+      .rejects.toThrow('Wallet changed during transfer');
+    expect(client.sendRawTransaction).toHaveBeenCalledOnce();
+    expect(pendingStore.remove).not.toHaveBeenCalled();
+    expect(pendingStore.records).toHaveLength(1);
+  });
+
   it('signs, simulates, broadcasts, and schedules a Solana balance refresh', async () => {
     vi.useFakeTimers();
 
@@ -581,7 +625,7 @@ describe('background Solana transfer adapter', () => {
       maxRetries: 3,
       preflightCommitment: 'confirmed',
       skipPreflight: false,
-    });
+    }, expect.any(Function));
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);

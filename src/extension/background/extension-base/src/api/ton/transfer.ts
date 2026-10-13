@@ -1,3 +1,4 @@
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { Address, beginCell, external, internal, storeMessage, toNano, SendMode } from '@ton/core';
 import { parseUnits } from 'ethers';
 import { type BalanceItem } from '@extension-base/api/evm/types';
@@ -21,6 +22,7 @@ interface TransferParams {
 export const MAX_TON_FEE = '0.02';
 
 export async function makeTonTransfer(params: TransferParams, state: State): Promise<void> {
+  const assertCurrent = captureWalletResetGuard(state);
   const {
     networkKey,
     from,
@@ -37,12 +39,14 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
   // Without one, nothing is decrypted or signed.
   const broadcaster = await provider.broadcaster();
 
+  assertCurrent();
   const { walletContract, publicKey } = state.keyringService.tonKeyring.accountSubject.value[from];
   if (!walletContract.address.equals(Address.parse(from))) throw new Error('TON account address mismatch');
   // Rejects with ton_seed_needs_previous_password, before the wallet is read or anything is sent, when the phrase
   // does not open with the current master password.
   const seed = await state.keyringService.tonKeyring.decodeMnemonicVerified(from);
 
+  assertCurrent();
   const { secretKey } = await state.keyringService.tonKeyring
     .mnemonicToKeyPair(seed.split(' '), undefined, publicKey)
     .catch((error: unknown) => {
@@ -83,6 +87,7 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
 
   const { seqno, deployed } = await broadcaster.getWalletState(walletContract.address);
 
+  assertCurrent();
   const body = walletContract.createTransfer({
     seqno,
     secretKey: Buffer.from(secretKey),
@@ -99,6 +104,7 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
 
   const externalMessageCell = beginCell().store(storeMessage(externalMessage)).endCell();
 
+  assertCurrent();
   await broadcaster.sendMessage(externalMessageCell);
 
   params.callback?.({ status: true });

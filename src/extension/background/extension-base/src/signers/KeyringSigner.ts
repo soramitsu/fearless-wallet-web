@@ -20,6 +20,7 @@ interface KeyringSignerProps {
   registry: Registry;
   keyPair: KeyringPair | null;
   isMobile: boolean;
+  finalGuard?: () => void;
 }
 
 let id = 1;
@@ -28,14 +29,17 @@ export default class KeyringSigner implements Signer {
   readonly #pair: KeyringPair | null;
   readonly #registry: Registry;
   readonly #isMobile: boolean;
+  readonly #finalGuard?: () => void;
 
-  constructor({ keyPair, registry, isMobile }: KeyringSignerProps) {
+  constructor({ keyPair, registry, isMobile, finalGuard }: KeyringSignerProps) {
     this.#pair = keyPair;
     this.#registry = registry;
     this.#isMobile = isMobile;
+    this.#finalGuard = finalGuard;
   }
 
   public async signPayload(payload: SignerPayloadJSON): Promise<SignerResult> {
+    this.#finalGuard?.();
     if (this.#isMobile) {
       const request = new RequestExtrinsicSign(structuredClone(payload));
       const account = { address: request.payload.address, name: '', ethereumAddress: '' };
@@ -49,6 +53,7 @@ export default class KeyringSigner implements Signer {
         signingContext: captureSubstrateSigningContext(state, state.requestService, request.payload),
       };
       const assertCurrent = () => {
+        this.#finalGuard?.();
         validateSubstrateSigningAccount(state, reviewed);
         validateSubstrateSigningContext(state, reviewed);
       };
@@ -67,6 +72,7 @@ export default class KeyringSigner implements Signer {
   }
 
   async sign(payload: SignerPayloadRaw): Promise<{ signature: HexString }> {
+    this.#finalGuard?.();
     if (!this.#pair) throw new Error('unable to find pair');
 
     return {

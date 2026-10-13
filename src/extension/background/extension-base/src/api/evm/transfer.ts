@@ -1,3 +1,4 @@
+import { captureWalletResetGuard, WalletResetContextChanged } from '@extension-base/api/walletResetGuard';
 import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
 import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { state } from '@extension-base/background/handlers';
@@ -21,6 +22,7 @@ interface TransactionObject {
 
 interface MakeTransferParams extends TransferParams {
   privateKey: string;
+  finalGuard?: () => void;
   callback?: (data: BasicTxResponse) => void;
 }
 
@@ -32,15 +34,22 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export async function handleTransfer({ callback, networkKey, privateKey, tx }: HandleTransferProps): Promise<void> {
+export async function handleTransfer({ callback, networkKey, privateKey, tx, finalGuard }: HandleTransferProps): Promise<void> {
   const web3Api = state.getEvmApi(networkKey)?.api;
   const signer = new Wallet(privateKey, web3Api);
 
   try {
-    await signer.sendTransaction(tx);
+    finalGuard?.();
+    const populated = await signer.populateTransaction(tx);
+    finalGuard?.();
+    const signed = await signer.signTransaction(populated);
+    finalGuard?.();
+    if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
+    await web3Api.broadcastTransaction(signed);
 
     callback?.({ status: true });
   } catch (error: unknown) {
+    if (error instanceof WalletResetContextChanged) throw error;
     console.warn(error);
 
     callback?.({
@@ -152,6 +161,9 @@ export function getEVMTransactionObject(params: TransferParams, state: State): P
 }
 
 export async function makeEVMTransfer(params: MakeTransferParams, state: State): Promise<void> {
+  const resetGuard = captureWalletResetGuard(state);
+  const callerGuard = params.finalGuard;
+  params = { ...params, finalGuard: () => { resetGuard(); callerGuard?.(); } };
   const transfer = params.balance.isUtility ? makeUtilityTransfer(params) : makeERC20Transfer(params, state);
 
   return transfer.finally(() => {

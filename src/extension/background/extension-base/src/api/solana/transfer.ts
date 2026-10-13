@@ -1,3 +1,4 @@
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha2';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
@@ -263,7 +264,9 @@ async function makeSolanaTransfer(
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   }: SolanaSendOptions = {}
 ): Promise<void> {
+  const assertCurrent = captureWalletResetGuard(params.state);
   await assertSendCapability(params.state, 'solanaSend');
+  assertCurrent();
 
   const networkJson = params.state.networkService.networkMap[params.networkKey];
   const transferClient = client ?? createSolanaTransferClient(networkJson);
@@ -279,7 +282,9 @@ async function makeSolanaTransfer(
   // until the previous one has landed or expired.
   if (unresolved.length) throw new Error('solana_previous_send_pending');
 
-  const prepared = await prepareSolanaTransfer(params, transferClient);
+  assertCurrent();
+  const prepared = await prepareSolanaTransfer(params, transferClient, assertCurrent);
+  assertCurrent();
   const signature = prepared.signed.signatureBase58;
   const transactionBase64 = prepared.signed.signedTransactionBase64;
   const simulation = await transferClient.simulateTransaction(transactionBase64, {
@@ -290,6 +295,7 @@ async function makeSolanaTransfer(
 
   if (simulation.value.err !== null) throw new Error('solana_simulation_failed');
 
+  assertCurrent();
   // Recorded before broadcast so a stopped service worker still finds it.
   await pendingStore.save({
     accountAddress: source.accountAddress,
@@ -300,12 +306,16 @@ async function makeSolanaTransfer(
     transactionBase64,
   });
 
+  try { assertCurrent(); } catch (error) {
+    await pendingStore.remove([signature]);
+    throw error;
+  }
   try {
     const broadcastSignature = await transferClient.sendRawTransaction(transactionBase64, {
       maxRetries: DEFAULT_SEND_MAX_RETRIES,
       preflightCommitment: 'confirmed',
       skipPreflight: false,
-    });
+    }, assertCurrent);
 
     // A node answering with someone else's signature is broken; whether it
     // relayed ours is unknown, so the record stays until the next send resolves it.
@@ -324,6 +334,7 @@ async function makeSolanaTransfer(
   }
 
   const outcome = await waitForSolanaSignature({
+    assertCurrent,
     client: transferClient,
     lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
     maxWaitMs: maxConfirmationWaitMs,
@@ -361,6 +372,7 @@ async function makeSolanaTransfer(
  * blockhash expires; rebroadcasts the identical signed bytes meanwhile.
  */
 async function waitForSolanaSignature({
+  assertCurrent,
   client,
   lastValidBlockHeight,
   maxWaitMs,
@@ -370,6 +382,7 @@ async function waitForSolanaSignature({
   sleep,
   transactionBase64,
 }: {
+  assertCurrent?: () => void;
   client: Pick<SolanaTransferClient, 'getBlockHeight' | 'getSignatureStatuses' | 'sendRawTransaction'>;
   lastValidBlockHeight: number;
   maxWaitMs: number;
@@ -382,6 +395,7 @@ async function waitForSolanaSignature({
   const deadline = now() + maxWaitMs;
 
   for (let poll = 0; ; poll += 1) {
+    assertCurrent?.();
     try {
       const [status] = await client.getSignatureStatuses([signature]);
 
@@ -399,9 +413,11 @@ async function waitForSolanaSignature({
         }
       }
       if (!status && poll % REBROADCAST_EVERY_POLLS === REBROADCAST_EVERY_POLLS - 1) {
-        await client.sendRawTransaction(transactionBase64, { maxRetries: 0, skipPreflight: true }).catch(() => undefined);
+        assertCurrent?.();
+        await client.sendRawTransaction(transactionBase64, { maxRetries: 0, skipPreflight: true }, assertCurrent).catch(() => undefined);
       }
     } catch {
+      assertCurrent?.();
       // An RPC hiccup is not an outcome; keep polling until the deadline.
     }
 
@@ -420,9 +436,11 @@ async function prepareSolanaTransferForTest(
 
 async function prepareSolanaTransfer(
   params: SolanaTransferParams,
-  client?: SolanaTransferClient
+  client?: SolanaTransferClient,
+  assertCurrent?: () => void
 ): Promise<PreparedSolanaTransfer> {
   const plan = await planSolanaTransfer(params, client, { quote: false });
+  assertCurrent?.();
   const signed = signSolanaSerializedTransaction({
     expectedSigner: plan.source.solanaAddress,
     mnemonic: plan.source.mnemonicOrSeed,

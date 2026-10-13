@@ -45,6 +45,7 @@ type BitcoinOutpoint = {
 };
 
 type PrepareBitcoinSendParams = {
+  assertCurrent?: () => void;
   amountSat: number;
   changeAddress?: string;
   client?: BitcoinSendClient | BitcoinPlanClient;
@@ -144,6 +145,7 @@ export async function prepareBitcoinSend(params: PrepareBitcoinSendParams): Prom
   }
 
   const plan = await planBitcoinSend(params);
+  params.assertCurrent?.();
   const built = buildBitcoinP2wpkhTransaction({
     changeAddress: plan.selection.changeAddress,
     feeSat: plan.selection.fee,
@@ -172,6 +174,7 @@ export async function sendBitcoinTransaction(params: SendBitcoinTransactionParam
   const network = normalizeNetwork(params.network ?? 'mainnet');
   const client = params.client ?? new BitcoinEsploraClient({ network });
   const prepared = await prepareBitcoinSend({ ...params, client, network });
+  params.assertCurrent?.();
   const broadcastTxid = await client.broadcastTransaction(prepared.txHex, prepared.txid);
 
   if (broadcastTxid !== prepared.txid) throw new BitcoinSendError('broadcast_txid_mismatch');

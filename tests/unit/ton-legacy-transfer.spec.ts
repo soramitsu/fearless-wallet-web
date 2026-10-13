@@ -160,6 +160,18 @@ describe('TON accounts imported from BIP39 phrases in 3.0.x', () => {
 });
 
 describe('TON transfers through the verified provider', () => {
+  it.each([true, false])('does not sign or broadcast after reset during wallet state lookup (still resetting: %s)', async isResetting => {
+    mocks.records = [legacyRecord(account)];
+    const { getAccountSeqno, sendBlockchainMessage, state } = await upgradedState();
+    const sign = vi.spyOn(state.keyringService.tonKeyring.accountSubject.value[account.address].walletContract, 'createTransfer');
+    getAccountSeqno.mockImplementation(async () => {
+      Object.assign(state.keyringService, { isResetting, walletResetRevision: 1 });
+      return { seqno: 7 };
+    });
+    await expect(transfer(state)).rejects.toThrow('Wallet changed during transfer');
+    expect(sign).not.toHaveBeenCalled();
+    expect(sendBlockchainMessage).not.toHaveBeenCalled();
+  });
   it('send a jetton amount in the jetton\'s own decimals, not in nanotons', async () => {
     mocks.records = [legacyRecord(account)];
     const { sendBlockchainMessage, state } = await upgradedState();

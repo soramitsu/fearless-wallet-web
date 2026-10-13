@@ -49,6 +49,7 @@ vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () =
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import Extension from '@extension-base/background/handlers/Extension';
 import State from '@extension-base/background/handlers/State';
@@ -120,6 +121,26 @@ afterEach(async () => {
 });
 
 describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000 }, () => {
+  it.each([false, true])('permanently invalidates an admitted transfer when actual reset starts (prerequisite fails: %s)', async fails => {
+    const address = await native();
+    const guard = captureWalletResetGuard({ keyringService: service } as State);
+    const beforeRevision = service.walletResetRevision;
+    let entered = false;
+    const result = track(service.resetWallet(async () => {
+      entered = true;
+      expect(service.isResetting).toBe(true);
+      expect(() => guard()).toThrow('Wallet changed during transfer');
+      if (fails) throw new Error('Public revocation storage failure');
+    }));
+    await drain();
+    expect(entered).toBe(true);
+    expect(await result).toEqual({ value: !fails });
+    expect(service.isResetting).toBe(false);
+    expect(service.walletResetRevision).toBe(beforeRevision + 1);
+    expect(() => guard()).toThrow('Wallet changed during transfer');
+    if (fails) expect(service.getPair(address)).not.toBeNull();
+  });
+
   it('clears the actual State signing contexts after durable selection and before archived-key removal', async () => {
     const address = await native();
     const state = Object.create(State.prototype) as State;

@@ -366,7 +366,8 @@ class SolanaRpcClient {
       minContextSlot,
       preflightCommitment = 'confirmed',
       skipPreflight = false,
-    }: SolanaBroadcastOptions = {}
+    }: SolanaBroadcastOptions = {},
+    assertCurrent?: () => void
   ): Promise<string> {
     const options: Record<string, unknown> = {
       encoding: 'base64',
@@ -389,6 +390,7 @@ class SolanaRpcClient {
     let lastError: unknown;
 
     for (const rpcUrl of this.endpoints.endpoints) {
+      assertCurrent?.();
       try {
         return await this.requestOnce(
           rpcUrl,

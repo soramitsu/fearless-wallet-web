@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ add: vi.fn(), upload: vi.fn(), export: vi.fn(), select: vi.fn(), password: vi.fn(), phrase: vi.fn() }));
 vi.mock('@/extension/messaging', () => ({ addAccount: mocks.add, createGoogleFile: mocks.upload, exportJSON: mocks.export,
   updateCurrentAccount: mocks.select, getExtensionPassword: mocks.password, generateMnemonic: mocks.phrase }));
+vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet' } }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: () => ({}) }));
 vi.mock('@/util/BaseApi', () => ({ default: { isValidSequenceMnemonic: () => true } }));
 vi.mock('@/screens/addWallet/AdvancedButton.vue', () => ({ default: { template: '<div />' } }));

@@ -156,8 +156,7 @@ export default defineComponent({ name: 'AddFromGoogle',
       finally { if (current()) this.isLoading = false; }
     },
     goBack() {
-      this.$router.replace('/').catch((e) => e);
-          this.$router.push({ name: Components.Wallet }).catch((e) => e);
+      this.$router.replace({ name: Components.Wallet, params: { access_token: '' } }).catch((e) => e);
     },
     back() {
       if (this.step === 1) {

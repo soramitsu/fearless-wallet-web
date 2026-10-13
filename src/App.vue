@@ -149,14 +149,14 @@ export default defineComponent({
     onAccountUpdate(accounts: AccountJson[]) {
       const selectedAccount = accounts.find((account) => account.active);
 
-      // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
-      // это любой кейс смены аккаунта за исключением выше описанного
+      // Creation and cloud recovery own their completion screens, including
+      // partial imports. Account publication must not dismiss them mid-request.
       if (
         this.accountsStore.selectedWallet.address &&
         selectedAccount?.address !== this.accountsStore.selectedWallet.address &&
-        this.$route.name !== Components.AddWallet
+        ![Components.AddWallet, Components.AddFromGoogle, Components.CreateGoogle].includes(this.$route.name as Components)
       ) {
-        this.$router.push({ name: Components.Wallet }).catch(() => {});
+        this.$router.push({ name: Components.Wallet, params: { access_token: '' } }).catch(() => {});
       }
 
       this.accountsStore.setAccounts({ accounts });

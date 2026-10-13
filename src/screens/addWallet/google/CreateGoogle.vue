@@ -83,6 +83,7 @@ import { defineComponent } from 'vue';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 
 import type { FWKeyringMeta } from '@extension-base/types';
+import { Components } from '@/router/routes';
 import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
@@ -277,7 +278,7 @@ export default defineComponent({ name: 'CreateGoogle',
     },
     goBack() {
       this.abandon();
-      this.$router.replace('/').catch((e) => e);
+      this.$router.replace({ name: Components.Wallet, params: { access_token: '' } }).catch((e) => e);
     },
     back() {
       if (this.step === 1 || this.step === 4) this.goBack();

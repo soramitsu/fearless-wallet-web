@@ -77,21 +77,17 @@ export class GoogleService {
     this.authPending = true;
     try {
       const state = crypto.randomUUID();
-      const token = await new Promise<string>((resolve, reject) => {
-        chrome.identity.launchWebAuthFlow({ url: this.authURL(state), interactive: true }, (redirectUrl) => {
-          try {
-            if (chrome.runtime.lastError || !redirectUrl) throw new Error('Google authorization was not completed');
-            const redirect = new URL(redirectUrl);
-            const expected = new URL(this.extensionRedirectURL);
-            const params = new URLSearchParams(redirect.hash.slice(1));
-            const accessToken = params.get('access_token');
-            if (redirect.origin !== expected.origin || redirect.pathname !== expected.pathname ||
-              params.get('state') !== state || params.has('error') || !accessToken?.trim())
-              throw new Error('Google authorization response was not valid');
-            resolve(accessToken);
-          } catch (error) { reject(error); }
-        });
-      });
+      // Promise form works with Firefox's browser namespace and Chrome >=106
+      // (the manifest requires 116). Rejection also releases authPending below.
+      const redirectUrl = await chrome.identity.launchWebAuthFlow({ url: this.authURL(state), interactive: true });
+      if (!redirectUrl) throw new Error('Google authorization was not completed');
+      const redirect = new URL(redirectUrl);
+      const expected = new URL(this.extensionRedirectURL);
+      const params = new URLSearchParams(redirect.hash.slice(1));
+      const token = params.get('access_token');
+      if (redirect.origin !== expected.origin || redirect.pathname !== expected.pathname ||
+        params.get('state') !== state || params.has('error') || !token?.trim())
+        throw new Error('Google authorization response was not valid');
       const popup = chrome.runtime.getURL('popup.html');
       const baseURL = `${popup}#/${this.urlTypes[type]}/${encodeURIComponent(token)}`;
       const url = type === 'export' && wallet ? `${baseURL}?wallet=${encodeURIComponent(wallet)}` : baseURL;

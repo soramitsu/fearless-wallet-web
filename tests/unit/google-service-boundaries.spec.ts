@@ -20,9 +20,10 @@ const deferred = <T>() => {
 };
 const settle = <T>(promise: Promise<T>) => promise.then((value) => ({ value }), (error) => ({ error }));
 const tick = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
+let identityFlow: ReturnType<typeof deferred<string | undefined>>;
 const request = () => {
-  const [options, callback] = mocks.launch.mock.calls.at(-1)!;
-  return { callback, state: new URL(options.url).searchParams.get('state')! };
+  const [options] = mocks.launch.mock.calls.at(-1)!;
+  return { callback: identityFlow.resolve, reject: identityFlow.reject, state: new URL(options.url).searchParams.get('state')! };
 };
 const redirect = (state: string, token = 'public-test-token') =>
   `https://fixture.chromiumapp.org/welcome#access_token=${encodeURIComponent(token)}&state=${encodeURIComponent(state)}`;
@@ -30,6 +31,7 @@ const redirect = (state: string, token = 'public-test-token') =>
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.runtime.lastError = undefined;
+  mocks.launch.mockImplementation(() => { identityFlow = deferred<string | undefined>(); return identityFlow.promise; });
   mocks.post.mockResolvedValue({ data: { id: 'public-file-id' } });
   mocks.query.mockResolvedValue([]);
   mocks.create.mockResolvedValue({ id: 1 });
@@ -90,6 +92,16 @@ describe('Google Drive transport boundaries', () => {
 });
 
 describe('Google authorization ownership', () => {
+  it('handles the promise-only identity API used by Firefox and current Chrome', async () => {
+    mocks.launch.mockImplementation(async ({ url }: { url: string }) => redirect(new URL(url).searchParams.get('state')!));
+    let completed = false;
+    void settle(new GoogleService().authExtension({ type: 'main' })).then(() => { completed = true; });
+    await tick();
+    expect(completed).toBe(true);
+    expect(mocks.create).toHaveBeenCalledOnce();
+    expect(mocks.launch.mock.calls[0]).toHaveLength(1);
+  });
+
   it.each(['cancelled', 'error', 'wrong origin', 'wrong path', 'wrong state', 'empty token'])('rejects %s without navigating', async (mode) => {
     const pending = settle(new GoogleService().authExtension({ type: 'main' }));
     const { callback, state } = request();
@@ -104,12 +116,11 @@ describe('Google authorization ownership', () => {
     expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  it('propagates runtime cancellation and permits a fresh explicit retry with a new state', async () => {
+  it('propagates identity promise rejection and permits a fresh explicit retry with a new state', async () => {
     const service = new GoogleService();
     const first = settle(service.authExtension({ type: 'main' }));
     const before = request();
-    mocks.runtime.lastError = { message: 'Public cancellation' };
-    before.callback(undefined);
+    before.reject(new Error('Public cancellation'));
     expect(await first).toHaveProperty('error');
     mocks.runtime.lastError = undefined;
     const second = service.authExtension({ type: 'main' });

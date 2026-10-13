@@ -40,7 +40,6 @@ import {
   accountStoreKey,
   deletedWalletId,
   deletedWalletKey,
-  loadableAccountRecords,
   readDeletedWallet,
   summarizeDeletedWallets,
   walletAddressIdentity,
@@ -549,13 +548,22 @@ export class KeyringService {
 
     // Prepare detached pairs before removing the recovery copy. Publication below never
     // calls ui-keyring.loadAccount: that would enqueue another unacknowledged store write.
-    const prepared = loadableAccountRecords(wallet.accounts).map(([storageKey, record]) => {
+    const prepared = Object.entries(wallet.accounts).flatMap(([storageKey, record]) => {
+      // Earlier ECDSA copies remain inert, exactly as stored. Every account entry
+      // that a keyring can load must validate, including legacy account-id keys.
+      if (/^archivedAccount:0x[0-9a-f]{64}$/.test(storageKey)) return [];
+      if (!/^account:0x[0-9a-f]+$/.test(storageKey) || !record || typeof record !== 'object' || Array.isArray(record)) {
+        throw new Error('Recovery copy contains an invalid account record.');
+      }
       const json = record as KeyringPair$Json;
+      if (typeof json.encoded !== 'string' || !json.encoded || !json.meta || typeof json.meta !== 'object' || Array.isArray(json.meta)) {
+        throw new Error('Recovery copy contains an invalid encrypted account.');
+      }
       const pair = keyring.createFromJson(json);
-      if (accountStoreKey(pair) !== storageKey || json.meta.isTesting) {
+      if (json.meta.isTesting || (accountStoreKey(pair) !== storageKey && ecdsaPairKeys(pair)?.legacy !== storageKey)) {
         throw new Error('Recovery account does not match its storage identity.');
       }
-      return { pair, json };
+      return ecdsaPairKeys(pair)?.legacy === storageKey ? [] : [{ pair, json }];
     });
     if (!wallet.ton && !prepared.some(({ pair }) => walletAddressIdentity(pair.address) === walletAddressIdentity(wallet.address))) {
       throw new Error('Recovery copy has no primary wallet key.');

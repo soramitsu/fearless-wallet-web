@@ -254,6 +254,26 @@ describe('deleted wallet recovery with actual keyring and acknowledged Chrome st
     expect(service.getPair(linked)).toBeNull();
   });
 
+  it.each(['empty', 'missing', 'scalar'])('keeps recovery intact when a linked account is malformed (%s)', async (corruption) => {
+    const address = await native();
+    const linked = await native('ethereum');
+    const linkedKey = accountStoreKey(service.getPair(linked)!);
+    const saved = track(service.saveAccountMeta(address, { ethereumAddress: linked }));
+    await drain();
+    expect(await saved).toHaveProperty('value');
+    const { id, key } = await deleted(address);
+    if (corruption === 'empty') fixture.data[key].accounts[linkedKey].encoded = '';
+    else if (corruption === 'missing') Reflect.deleteProperty(fixture.data[key].accounts[linkedKey], 'encoded');
+    else Object.assign(fixture.data[key].accounts, { [linkedKey]: 'corrupt' });
+    const snapshot = structuredClone(fixture.data);
+    const result = track(service.restoreDeletedWallet(id));
+    await drain();
+    expect(await result).toEqual({ value: { ok: false, code: 'storage_failed' } });
+    expect(fixture.data).toEqual(snapshot);
+    expect(service.getPair(address)).toBeNull();
+    expect(service.getPair(linked)).toBeNull();
+  });
+
   it('rejects a recovery record stored under another public identity', async () => {
     const address = await native();
     const storageKey = accountStoreKey(service.getPair(address)!);

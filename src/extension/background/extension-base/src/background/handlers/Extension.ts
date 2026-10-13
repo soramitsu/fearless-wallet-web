@@ -2396,6 +2396,11 @@ export default class Extension extends FWExtensionBase {
     request: RequestTypes[TMessageType],
     port?: Port
   ): Promise<ResponseType<TMessageType>> {
+    // Reset retains live keys until storage succeeds, but another popup must
+    // not use that recovery window to export, sign or mutate the wallet.
+    if (this.state.keyringService.isResetting &&
+      type !== 'pri(keyring.reset)' && type !== 'pri(app.port.ping)' && type !== 'pri(app.isReady)')
+      throw new Error('Wallet reset is in progress');
     switch (type) {
       // App Management, networks
       case 'pri(app.port.ping)':

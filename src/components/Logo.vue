@@ -57,6 +57,7 @@ const styleCircle = computed(() => ({ height: sizeCircle.value, width: sizeCircl
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
 
   .brand-badge {
     display: block;
@@ -66,6 +67,7 @@ const styleCircle = computed(() => ({ height: sizeCircle.value, width: sizeCircl
   }
 
   .text {
+    overflow-wrap: anywhere;
     margin-top: 17px;
     font-weight: 700;
     font-size: 3em;
@@ -73,6 +75,7 @@ const styleCircle = computed(() => ({ height: sizeCircle.value, width: sizeCircl
   }
 
   .subtext {
+    overflow-wrap: anywhere;
     font-size: 1.125em;
     line-height: 150%;
     margin-top: 6px;

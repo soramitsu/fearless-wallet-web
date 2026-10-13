@@ -29,13 +29,11 @@ export type BitcoinPendingSend = {
 
 export type BitcoinPendingSendStore = {
   list: () => Promise<BitcoinPendingSend[]>;
-  remove: (txids: string[]) => Promise<void>;
+  remove: (txids: string[], network?: BitcoinNetworkKind) => Promise<void>;
   save: (record: BitcoinPendingSend) => Promise<void>;
 };
 
 export type BitcoinPendingSendClient = Pick<BitcoinEsploraClient, 'getOutspend' | 'getTransactionStatus'>;
-
-const MAX_PENDING_SENDS = 50;
 
 const isPendingSend = (value: unknown): value is BitcoinPendingSend => {
   if (typeof value !== 'object' || value === null) return false;
@@ -79,9 +77,15 @@ export function createStorageBitcoinPendingSendStore(
 
   return {
     list: read,
-    remove: (txids) => update((records) => records.filter(({ txid }) => !txids.includes(txid))),
-    save: (record) =>
-      update((records) => [...records.filter(({ txid }) => txid !== record.txid), record].slice(-MAX_PENDING_SENDS)),
+    remove: (txids, network) => update((records) => records.filter((record) =>
+      !txids.includes(record.txid) || (network !== undefined && record.network !== network)
+    )),
+    // Keep the original evidence for an identical retry. Never evict unresolved
+    // transactions merely because other accounts added more pending sends.
+    save: (record) => update((records) =>
+      records.some((existing) => existing.txid === record.txid && existing.network === record.network)
+        ? records : [...records, record]
+    ),
   };
 }
 

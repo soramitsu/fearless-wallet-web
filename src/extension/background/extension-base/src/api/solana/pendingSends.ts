@@ -26,7 +26,7 @@ export type SolanaPendingSend = {
 
 export type SolanaPendingSendStore = {
   list: () => Promise<SolanaPendingSend[]>;
-  remove: (signatures: string[]) => Promise<void>;
+  remove: (signatures: string[], network?: SolanaRpcNetwork) => Promise<void>;
   save: (record: SolanaPendingSend) => Promise<void>;
 };
 
@@ -47,8 +47,6 @@ export const isConfirmedSolanaStatus = ({
   confirmationStatus === 'confirmed' ||
   confirmationStatus === 'finalized' ||
   (confirmationStatus === null && confirmations === null);
-
-const MAX_PENDING_SENDS = 50;
 
 const isPendingSend = (value: unknown): value is SolanaPendingSend => {
   if (typeof value !== 'object' || value === null) return false;
@@ -83,11 +81,15 @@ export function createStorageSolanaPendingSendStore(
 
   return {
     list: read,
-    remove: (signatures) => update((records) => records.filter(({ signature }) => !signatures.includes(signature))),
-    save: (record) =>
-      update((records) =>
-        [...records.filter(({ signature }) => signature !== record.signature), record].slice(-MAX_PENDING_SENDS)
-      ),
+    remove: (signatures, network) => update((records) => records.filter((record) =>
+      !signatures.includes(record.signature) || (network !== undefined && record.network !== network)
+    )),
+    // Keep the original evidence for an identical retry. Never evict unresolved
+    // transactions merely because other accounts added more pending sends.
+    save: (record) => update((records) =>
+      records.some((existing) => existing.signature === record.signature && existing.network === record.network)
+        ? records : [...records, record]
+    ),
   };
 }
 
@@ -108,8 +110,10 @@ export const getDefaultSolanaPendingSendStore = (): SolanaPendingSendStore =>
  */
 export async function resolveSolanaPendingSends(
   records: SolanaPendingSend[],
-  client: SolanaPendingSendClient
+  client: SolanaPendingSendClient,
+  assertCurrent?: () => void
 ): Promise<{ resolved: SolanaPendingSend[]; unresolved: SolanaPendingSend[] }> {
+  assertCurrent?.();
   if (!records.length) return { resolved: [], unresolved: [] };
 
   try {
@@ -117,6 +121,7 @@ export async function resolveSolanaPendingSends(
       client.getSignatureStatuses(records.map(({ signature }) => signature)),
       client.getBlockHeight('confirmed'),
     ]);
+    assertCurrent?.();
     const resolved: SolanaPendingSend[] = [];
     const unresolved: SolanaPendingSend[] = [];
 
@@ -128,15 +133,20 @@ export async function resolveSolanaPendingSends(
     });
 
     await Promise.all(
-      unresolved.map(({ transactionBase64 }) =>
-        client
-          .sendRawTransaction(transactionBase64, { maxRetries: 0, skipPreflight: true })
-          .catch(() => undefined)
-      )
+      unresolved.map(async ({ transactionBase64 }) => {
+        assertCurrent?.();
+        try {
+          await client.sendRawTransaction(transactionBase64, { maxRetries: 0, skipPreflight: true }, assertCurrent);
+        } catch {
+          assertCurrent?.();
+        }
+      })
     );
 
     return { resolved, unresolved };
   } catch {
+    // A lookup/broadcast failure preserves evidence, but must not hide reset.
+    assertCurrent?.();
     return { resolved: [], unresolved: records };
   }
 }

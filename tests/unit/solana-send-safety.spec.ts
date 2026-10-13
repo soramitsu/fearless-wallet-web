@@ -405,6 +405,44 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(store.records).toEqual([]);
   });
 
+
+  it('refuses overlapping Solana sends before either can bypass the pending record check', async () => {
+    const state = createState();
+    const store = memoryPendingStore();
+    const client = createClient();
+    let release!: () => void;
+    const waiting = new Promise<void>(resolve => { release = resolve; });
+    const fee = client.getFeeForMessage.getMockImplementation()!;
+    client.getFeeForMessage.mockImplementation(async message => { await waiting; return fee(message); });
+    const first = makeSolanaTransfer(solParams({ state }), client, sendOptions(store));
+    await vi.waitFor(() => expect(client.getFeeForMessage).toHaveBeenCalledOnce());
+    const second = makeSolanaTransfer(solParams({ state, amount: '0.1' }), client, sendOptions(store));
+    const checked = expect(second).rejects.toThrow('solana_previous_send_pending');
+    release();
+    await Promise.all([first, checked]);
+    expect(client.sendRawTransaction).toHaveBeenCalledOnce();
+  });
+
+  it.each(['pending read', 'status lookup', 'failed lookup'])('does not rebroadcast an earlier Solana send after reset during %s', async boundary => {
+    const state = createState();
+    const record: SolanaPendingSend = { accountAddress: 'stored-account', createdAt: 1, network: 'mainnet',
+      lastValidBlockHeight: 456, signature: 'public previous signature', transactionBase64: 'AQID' };
+    const store = memoryPendingStore([record]);
+    const client = createClient({ statuses: [null] });
+    const reset = () => Object.assign(state.keyringService, { walletResetRevision: 1 });
+    if (boundary === 'pending read') store.list.mockImplementation(async () => { reset(); return [record]; });
+    else client.getSignatureStatuses.mockImplementation(async () => {
+      reset();
+      if (boundary === 'failed lookup') throw new Error('public offline');
+      return [null] as never;
+    });
+    await expect(makeSolanaTransfer(solParams({ state }), client, sendOptions(store)))
+      .rejects.toThrow('Wallet changed during transfer');
+    expect(client.sendRawTransaction).not.toHaveBeenCalled();
+    expect(client.getLatestBlockhash).not.toHaveBeenCalled();
+    expect(store.records).toEqual([record]);
+  });
+
   it('keeps the record and refuses a new send while the outcome is unknown', async () => {
     const store = memoryPendingStore();
     const client = createClient({ blockHeights: [100], statuses: [null] });
@@ -424,7 +462,7 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(prepareSpy.sendRawTransaction).toHaveBeenCalledWith(store.records[0].transactionBase64, {
       maxRetries: 0,
       skipPreflight: true,
-    });
+    }, expect.any(Function));
   });
 
   it('lets a new send through once the earlier one landed or expired', async () => {

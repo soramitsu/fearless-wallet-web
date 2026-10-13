@@ -1,3 +1,4 @@
+import { withLocalTransferLock } from '@extension-base/api/localTransferLock';
 import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha2';
@@ -272,99 +273,100 @@ async function makeSolanaTransfer(
   const transferClient = client ?? createSolanaTransferClient(networkJson);
   const source = resolveSolanaTransferSource(params.state, params.from);
   const network = getSolanaNetworkKind(networkJson);
-  const pending = (await pendingStore.list()).filter(
-    (record) => record.accountAddress === source.accountAddress && record.network === network
-  );
-  const { resolved, unresolved } = await resolveSolanaPendingSends(pending, transferClient);
+  return withLocalTransferLock(`solana:${network}:${source.solanaAddress}`, 'solana_previous_send_pending', async () => {
+    const pending = (await pendingStore.list()).filter(
+      (record) => record.accountAddress === source.accountAddress && record.network === network
+    );
+    const { resolved, unresolved } = await resolveSolanaPendingSends(pending, transferClient, assertCurrent);
 
-  if (resolved.length) await pendingStore.remove(resolved.map(({ signature }) => signature));
-  // A Solana transaction cannot conflict with an earlier one, so a new send waits
-  // until the previous one has landed or expired.
-  if (unresolved.length) throw new Error('solana_previous_send_pending');
+    if (resolved.length) await pendingStore.remove(resolved.map(({ signature }) => signature), network);
+    // A Solana transaction cannot conflict with an earlier one, so a new send waits
+    // until the previous one has landed or expired.
+    if (unresolved.length) throw new Error('solana_previous_send_pending');
 
-  assertCurrent();
-  const prepared = await prepareSolanaTransfer(params, transferClient, assertCurrent);
-  assertCurrent();
-  const signature = prepared.signed.signatureBase58;
-  const transactionBase64 = prepared.signed.signedTransactionBase64;
-  const simulation = await transferClient.simulateTransaction(transactionBase64, {
-    commitment: 'confirmed',
-    replaceRecentBlockhash: false,
-    sigVerify: true,
-  });
+    assertCurrent();
+    const prepared = await prepareSolanaTransfer(params, transferClient, assertCurrent);
+    assertCurrent();
+    const signature = prepared.signed.signatureBase58;
+    const transactionBase64 = prepared.signed.signedTransactionBase64;
+    const simulation = await transferClient.simulateTransaction(transactionBase64, {
+      commitment: 'confirmed',
+      replaceRecentBlockhash: false,
+      sigVerify: true,
+    });
 
-  if (simulation.value.err !== null) throw new Error('solana_simulation_failed');
+    if (simulation.value.err !== null) throw new Error('solana_simulation_failed');
 
-  assertCurrent();
-  // Recorded before broadcast so a stopped service worker still finds it.
-  await pendingStore.save({
-    accountAddress: source.accountAddress,
-    createdAt: now(),
-    lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
-    network,
-    signature,
-    transactionBase64,
-  });
+    assertCurrent();
+    // Recorded before broadcast so a stopped service worker still finds it.
+    await pendingStore.save({
+      accountAddress: source.accountAddress,
+      createdAt: now(),
+      lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
+      network,
+      signature,
+      transactionBase64,
+    });
 
-  try { assertCurrent(); } catch (error) {
-    await pendingStore.remove([signature]);
-    throw error;
-  }
-  try {
-    const broadcastSignature = await transferClient.sendRawTransaction(transactionBase64, {
-      maxRetries: DEFAULT_SEND_MAX_RETRIES,
-      preflightCommitment: 'confirmed',
-      skipPreflight: false,
-    }, assertCurrent);
+    // A durable record survives reset even when this attempt did not submit it.
+    // Only a proven chain outcome (or a definite first-attempt rejection) removes it.
+    assertCurrent();
+    try {
+      const broadcastSignature = await transferClient.sendRawTransaction(transactionBase64, {
+        maxRetries: DEFAULT_SEND_MAX_RETRIES,
+        preflightCommitment: 'confirmed',
+        skipPreflight: false,
+      }, assertCurrent);
 
-    // A node answering with someone else's signature is broken; whether it
-    // relayed ours is unknown, so the record stays until the next send resolves it.
-    if (broadcastSignature !== signature) throw new Error('solana_broadcast_signature_mismatch');
-  } catch (error) {
-    if (error instanceof SolanaBroadcastError && !error.ambiguous) {
-      // Every node that answered refused the transaction before relaying it
-      // (preflight), and no earlier post may have reached one: nothing was sent.
-      await pendingStore.remove([signature]);
-      throw new Error('solana_simulation_failed', { cause: error });
+      // A node answering with someone else's signature is broken; whether it
+      // relayed ours is unknown, so the record stays until the next send resolves it.
+      if (broadcastSignature !== signature) throw new Error('solana_broadcast_signature_mismatch');
+    } catch (error) {
+      if (error instanceof SolanaBroadcastError && !error.ambiguous) {
+        // Every node that answered refused the transaction before relaying it
+        // (preflight), and no earlier post may have reached one: nothing was sent.
+        await pendingStore.remove([signature], network);
+        throw new Error('solana_simulation_failed', { cause: error });
+      }
+      if (error instanceof Error && error.message === 'solana_broadcast_signature_mismatch') throw error;
+      // Anything else (a timeout, throttling, every node unreachable, a refusal
+      // after a post that may have been relayed) is ambiguous: keep polling the
+      // signature and rebroadcasting the same bytes until it lands or expires.
     }
-    if (error instanceof Error && error.message === 'solana_broadcast_signature_mismatch') throw error;
-    // Anything else (a timeout, throttling, every node unreachable, a refusal
-    // after a post that may have been relayed) is ambiguous: keep polling the
-    // signature and rebroadcasting the same bytes until it lands or expires.
-  }
 
-  const outcome = await waitForSolanaSignature({
-    assertCurrent,
-    client: transferClient,
-    lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
-    maxWaitMs: maxConfirmationWaitMs,
-    now,
-    pollIntervalMs,
-    signature,
-    sleep,
-    transactionBase64,
+    const outcome = await waitForSolanaSignature({
+      assertCurrent,
+      client: transferClient,
+      lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
+      maxWaitMs: maxConfirmationWaitMs,
+      now,
+      pollIntervalMs,
+      signature,
+      sleep,
+      transactionBase64,
+    });
+
+    if (outcome !== 'pending') await pendingStore.remove([signature], network);
+    if (outcome === 'failed') throw new Error('solana_transaction_failed');
+    if (outcome === 'expired') throw new Error('solana_transaction_expired');
+    if (outcome === 'pending') throw new Error('solana_broadcast_ambiguous');
+
+    params.callback?.({ status: true });
+
+    setTimeout(() => {
+      params.state.balanceService
+        .fetchBalance({
+          address: prepared.source.accountAddress,
+          ethereumAddress: '',
+          solanaAddress: prepared.source.solanaAddress,
+          solanaNetworks: [prepared.networkKey],
+          walletEcosystem: WalletEcosystem.Solana,
+        })
+        .catch((error) => console.warn('Failed to refresh Solana balance after transfer', error));
+    }, 8000);
+
+    console.info(`Solana transfer confirmed: ${signature}`);
   });
-
-  if (outcome !== 'pending') await pendingStore.remove([signature]);
-  if (outcome === 'failed') throw new Error('solana_transaction_failed');
-  if (outcome === 'expired') throw new Error('solana_transaction_expired');
-  if (outcome === 'pending') throw new Error('solana_broadcast_ambiguous');
-
-  params.callback?.({ status: true });
-
-  setTimeout(() => {
-    params.state.balanceService
-      .fetchBalance({
-        address: prepared.source.accountAddress,
-        ethereumAddress: '',
-        solanaAddress: prepared.source.solanaAddress,
-        solanaNetworks: [prepared.networkKey],
-        walletEcosystem: WalletEcosystem.Solana,
-      })
-      .catch((error) => console.warn('Failed to refresh Solana balance after transfer', error));
-  }, 8000);
-
-  console.info(`Solana transfer confirmed: ${signature}`);
 }
 
 /**

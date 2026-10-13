@@ -582,7 +582,7 @@ describe('background Solana transfer adapter', () => {
       expect(sign).not.toHaveBeenCalled();
       expect(client.simulateTransaction).not.toHaveBeenCalled();
     }
-    if (boundary === 'pending save') expect(pendingStore.remove).toHaveBeenCalledOnce();
+    if (boundary === 'pending save') expect(pendingStore.remove).not.toHaveBeenCalled();
     else expect(pendingStore.save).not.toHaveBeenCalled();
     sign.mockRestore();
   });

@@ -1,0 +1,34 @@
+import { createStorageBitcoinPendingSendStore, type BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
+import { createStorageSolanaPendingSendStore, type SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
+
+// These stores are the durable duplicate-payment barrier after a worker restart.
+// Exercise actual read-modify-write behavior with public signed-data fixtures.
+describe.each(['bitcoin', 'solana'] as const)('%s pending send evidence', chain => {
+  it('preserves original duplicates, other networks and more than fifty unresolved sends', async () => {
+    const key = chain === 'bitcoin' ? 'bitcoinPendingSends' : 'solanaPendingSends';
+    let stored: unknown[] = [];
+    const backend = { get: async () => ({ [key]: structuredClone(stored) }),
+      set: async (value: Record<string, unknown[]>) => { stored = structuredClone(value[key]); } };
+    const bitcoinStore = createStorageBitcoinPendingSendStore(backend as never);
+    const solanaStore = createStorageSolanaPendingSendStore(backend as never);
+    const id = (index: number) => index.toString(16).padStart(64, '0');
+    const record = (index: number) => chain === 'bitcoin'
+      ? { accountAddress: 'public account', amountSat: 1, createdAt: index, network: 'mainnet',
+        outpoints: [{ txid: '11'.repeat(32), vout: index }], recipient: 'public recipient', txHex: '0102', txid: id(index) }
+      : { accountAddress: 'public account', createdAt: index, network: 'mainnet',
+        lastValidBlockHeight: 456, signature: id(index), transactionBase64: 'AQID' };
+    const save = (value: ReturnType<typeof record>) => chain === 'bitcoin'
+      ? bitcoinStore.save(value as BitcoinPendingSend) : solanaStore.save(value as SolanaPendingSend);
+    await Promise.all(Array.from({ length: 55 }, (_, index) => save(record(index))));
+    expect(stored).toHaveLength(55);
+    const original = structuredClone(stored);
+    await save({ ...record(0), createdAt: 999 });
+    expect(stored).toEqual(original);
+    const other = { ...record(0), network: chain === 'bitcoin' ? 'testnet' : 'devnet' };
+    await save(other);
+    expect(stored).toEqual([...original, other]);
+    if (chain === 'bitcoin') await bitcoinStore.remove([id(0)], 'mainnet');
+    else await solanaStore.remove([id(0)], 'mainnet');
+    expect(stored).toEqual([...original.slice(1), other]);
+  });
+});

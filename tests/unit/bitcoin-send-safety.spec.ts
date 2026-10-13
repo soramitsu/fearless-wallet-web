@@ -298,6 +298,45 @@ describe('Bitcoin send kill switch', () => {
 });
 
 describe('Bitcoin ambiguous broadcast guard', () => {
+  it.each(['reset', 'rejected'])('preserves an earlier identical ambiguous send when its retry is %s', async boundary => {
+    const state = createState();
+    let stored: BitcoinPendingSend[] = [];
+    let writes = 0;
+    const backend = {
+      get: async () => ({ bitcoinPendingSends: structuredClone(stored) }),
+      set: async (value: { bitcoinPendingSends: BitcoinPendingSend[] }) => {
+        stored = structuredClone(value.bitcoinPendingSends);
+        if (++writes === 2 && boundary === 'reset') Object.assign(state.keyringService, { walletResetRevision: 1 });
+      },
+    };
+    const store = createStorageBitcoinPendingSendStore(backend as never);
+    const client = transferClient({ broadcast: async () => { throw new BitcoinBroadcastError('bitcoin_broadcast_ambiguous', true); } });
+    await expect(makeBitcoinTransfer(params(state), client, discovery, store)).rejects.toThrow('bitcoin_broadcast_ambiguous');
+    const earlier = structuredClone(stored);
+    client.broadcastTransaction.mockImplementation(async () => { throw new BitcoinBroadcastError('bitcoin_broadcast_rejected', false); });
+    await expect(makeBitcoinTransfer(params(state), client, discovery, store)).rejects.toThrow(
+      boundary === 'reset' ? 'Wallet changed during transfer' : 'bitcoin_broadcast_rejected'
+    );
+    expect(stored).toEqual(earlier);
+    expect(client.broadcastTransaction).toHaveBeenCalledTimes(boundary === 'reset' ? 1 : 2);
+  });
+
+  it('refuses overlapping sends while the earlier account operation is preparing', async () => {
+    const state = createState();
+    const store = memoryPendingStore();
+    const client = transferClient();
+    let release!: () => void;
+    const waiting = new Promise<void>(resolve => { release = resolve; });
+    client.getFeeEstimates.mockImplementation(async () => { await waiting; return { 1: 4, 2: 3 }; });
+    const first = makeBitcoinTransfer(params(state), client, discovery, store);
+    await vi.waitFor(() => expect(client.getFeeEstimates).toHaveBeenCalledOnce());
+    const second = makeBitcoinTransfer(params(state), client, discovery, store);
+    const checked = expect(second).rejects.toThrow('bitcoin_previous_send_pending');
+    release();
+    await Promise.all([first, checked]);
+    expect(client.broadcastTransaction).toHaveBeenCalledOnce();
+  });
+
   it('keeps the signed transaction when no endpoint confirmed the broadcast', async () => {
     const store = memoryPendingStore();
     const client = transferClient({

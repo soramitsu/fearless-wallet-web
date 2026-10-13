@@ -1,5 +1,5 @@
 import { captureWalletResetGuard, WalletResetContextChanged } from '@extension-base/api/walletResetGuard';
-import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
+import { type TransactionRequest, Transaction, Wallet, getAddress, parseEther, parseUnits } from 'ethers';
 import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types';
@@ -41,11 +41,18 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx, fin
   try {
     finalGuard?.();
     const populated = await signer.populateTransaction(tx);
+    // populateTransaction resolves names, nonce, fees and chain ID. Signing
+    // those resolved fields synchronously keeps reset from entering an extra
+    // promise gap inside Wallet.signTransaction before the crypto operation.
+    const { from, ...unsigned } = populated;
+    if (from != null && getAddress(from) !== signer.address) throw new Error('Transaction from address mismatch');
+    const transaction = Transaction.from(unsigned);
+    const digest = transaction.unsignedHash;
     finalGuard?.();
-    const signed = await signer.signTransaction(populated);
+    transaction.signature = signer.signingKey.sign(digest);
     finalGuard?.();
     if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
-    await web3Api.broadcastTransaction(signed);
+    await web3Api.broadcastTransaction(transaction.serialized);
 
     callback?.({ status: true });
   } catch (error: unknown) {

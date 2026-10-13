@@ -1,3 +1,4 @@
+import { withLocalTransferLock } from '@extension-base/api/localTransferLock';
 import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { type BasicTxResponse, type ResponseBitcoinTransferQuote } from '@extension-base/background/types/types';
 import {
@@ -183,96 +184,97 @@ export async function makeBitcoinTransfer(
   const indexer = client ?? new BitcoinEsploraClient({ network });
   const amountSat = bitcoinAmountToSats(amount);
   const recipient = normalizeRecipient(to, network);
-  const discovered = await discoverBitcoinTransferSources(source, network, indexer, discoveryOptions);
-  const { inMempool, unresolved } = await loadPendingSends(pendingStore, source.accountAddress, network, indexer);
+  return withLocalTransferLock(`bitcoin:${network}:${source.source.address}`, 'bitcoin_previous_send_pending', async () => {
+    const discovered = await discoverBitcoinTransferSources(source, network, indexer, discoveryOptions);
+    const { inMempool, unresolved } = await loadPendingSends(pendingStore, source.accountAddress, network, indexer);
 
-  // Its coins are spent in the mempool, so no new transaction could conflict
-  // with it: nothing new is signed until it confirms.
-  if (inMempool.length) throw new Error('bitcoin_previous_send_unconfirmed');
+    // Its coins are spent in the mempool, so no new transaction could conflict
+    // with it: nothing new is signed until it confirms.
+    if (inMempool.length) throw new Error('bitcoin_previous_send_unconfirmed');
 
-  assertCurrent();
-  const prepared = await prepareBitcoinSend({
-    assertCurrent,
-    amountSat,
-    changeAddress: discovered.changeAddress,
-    feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
-    feeTargetBlocks: params.bitcoinFeeTargetBlocks,
-    includeUnconfirmed: params.bitcoinIncludeUnconfirmed,
-    maxInputs: params.bitcoinMaxInputs,
-    client: indexer,
-    mnemonicOrSeed: source.mnemonicOrSeed,
-    network,
-    requiredOutpoints: unresolved.flatMap(({ outpoints }) => outpoints),
-    selectedOutpoints: params.bitcoinSelectedOutpoints,
-    sources: discovered.sources,
-    toAddress: recipient,
-  }).catch((error: unknown) => {
-    throw error instanceof BitcoinSendError ? new Error(toBitcoinTransferErrorCode(error.code), { cause: error }) : error;
-  });
+    assertCurrent();
+    const prepared = await prepareBitcoinSend({
+      assertCurrent,
+      amountSat,
+      changeAddress: discovered.changeAddress,
+      feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
+      feeTargetBlocks: params.bitcoinFeeTargetBlocks,
+      includeUnconfirmed: params.bitcoinIncludeUnconfirmed,
+      maxInputs: params.bitcoinMaxInputs,
+      client: indexer,
+      mnemonicOrSeed: source.mnemonicOrSeed,
+      network,
+      requiredOutpoints: unresolved.flatMap(({ outpoints }) => outpoints),
+      selectedOutpoints: params.bitcoinSelectedOutpoints,
+      sources: discovered.sources,
+      toAddress: recipient,
+    }).catch((error: unknown) => {
+      throw error instanceof BitcoinSendError ? new Error(toBitcoinTransferErrorCode(error.code), { cause: error }) : error;
+    });
 
-  assertCurrent();
-  // Recorded before broadcast: a service worker stopped mid-request must still
-  // find this transaction on the next send.
-  await pendingStore.save({
-    accountAddress: source.accountAddress,
-    amountSat,
-    createdAt: Date.now(),
-    network,
-    outpoints: prepared.selectedUtxos.map(({ txid, vout }) => ({ txid, vout })),
-    recipient,
-    txHex: prepared.txHex,
-    txid: prepared.txid,
-  });
+    assertCurrent();
+    // Recorded before broadcast: a service worker stopped mid-request must still
+    // find this transaction on the next send.
+    await pendingStore.save({
+      accountAddress: source.accountAddress,
+      amountSat,
+      createdAt: Date.now(),
+      network,
+      outpoints: prepared.selectedUtxos.map(({ txid, vout }) => ({ txid, vout })),
+      recipient,
+      txHex: prepared.txHex,
+      txid: prepared.txid,
+    });
 
-  try { assertCurrent(); } catch (error) {
-    // These bytes were never handed to a node. Remove only this operation's
-    // pending record; earlier ambiguous sends remain available for resolution.
-    await pendingStore.remove([prepared.txid]);
-    throw error;
-  }
-  let broadcastTxid: string;
+    // Preserve the durable record on cancellation. Identical bytes may already
+    // have been submitted by an earlier attempt; reset cannot prove otherwise.
+    assertCurrent();
+    let broadcastTxid: string;
 
-  try {
-    broadcastTxid = await indexer.broadcastTransaction(prepared.txHex, prepared.txid, assertCurrent);
-  } catch (error) {
-    if (error instanceof BitcoinBroadcastError && !error.ambiguous) {
-      // Every endpoint answered with a definite rejection: nothing was relayed.
-      await pendingStore.remove([prepared.txid]);
-      throw new Error('bitcoin_broadcast_rejected', { cause: error });
+    try {
+      broadcastTxid = await indexer.broadcastTransaction(prepared.txHex, prepared.txid, assertCurrent);
+    } catch (error) {
+      if (error instanceof BitcoinBroadcastError && !error.ambiguous) {
+        // Every endpoint answered with a definite rejection: nothing was relayed.
+        if (!unresolved.some(({ txid }) => txid === prepared.txid)) {
+          await pendingStore.remove([prepared.txid], network);
+        }
+        throw new Error('bitcoin_broadcast_rejected', { cause: error });
+      }
+
+      throw new Error('bitcoin_broadcast_ambiguous', { cause: error });
     }
 
-    throw new Error('bitcoin_broadcast_ambiguous', { cause: error });
-  }
+    if (broadcastTxid !== prepared.txid) throw new Error('bitcoin_broadcast_ambiguous');
 
-  if (broadcastTxid !== prepared.txid) throw new Error('bitcoin_broadcast_ambiguous');
+    // An earlier unresolved send whose coins the new transaction spends again can
+    // no longer confirm alongside it. Coin selection requires all of them, but
+    // only what was actually spent is forgotten.
+    const spent = new Set(prepared.selectedUtxos.map(({ txid, vout }) => `${txid.toLowerCase()}:${vout}`));
+    const conflicting = unresolved.filter(({ outpoints }) =>
+      outpoints.every(({ txid, vout }) => spent.has(`${txid.toLowerCase()}:${vout}`))
+    );
 
-  // An earlier unresolved send whose coins the new transaction spends again can
-  // no longer confirm alongside it. Coin selection requires all of them, but
-  // only what was actually spent is forgotten.
-  const spent = new Set(prepared.selectedUtxos.map(({ txid, vout }) => `${txid.toLowerCase()}:${vout}`));
-  const conflicting = unresolved.filter(({ outpoints }) =>
-    outpoints.every(({ txid, vout }) => spent.has(`${txid.toLowerCase()}:${vout}`))
-  );
+    await pendingStore.remove([prepared.txid, ...conflicting.map(({ txid }) => txid)], network);
+    invalidateBitcoinQuoteCache(source.accountAddress, network);
 
-  await pendingStore.remove([prepared.txid, ...conflicting.map(({ txid }) => txid)]);
-  invalidateBitcoinQuoteCache(source.accountAddress, network);
+    callback?.({ status: true });
 
-  callback?.({ status: true });
+    setTimeout(() => {
+      state.balanceService
+        .fetchBalance({
+          address: source.accountAddress,
+          bitcoinAddress: source.bitcoinAddress,
+          bitcoinNetworks: [networkKey],
+          bitcoinTestnetAddress: source.bitcoinTestnetAddress,
+          ethereumAddress: '',
+          walletEcosystem: WalletEcosystem.Bitcoin,
+        })
+        .catch((error) => console.warn('Failed to refresh Bitcoin balance after transfer', error));
+    }, 8000);
 
-  setTimeout(() => {
-    state.balanceService
-      .fetchBalance({
-        address: source.accountAddress,
-        bitcoinAddress: source.bitcoinAddress,
-        bitcoinNetworks: [networkKey],
-        bitcoinTestnetAddress: source.bitcoinTestnetAddress,
-        ethereumAddress: '',
-        walletEcosystem: WalletEcosystem.Bitcoin,
-      })
-      .catch((error) => console.warn('Failed to refresh Bitcoin balance after transfer', error));
-  }, 8000);
-
-  console.info(`Bitcoin transfer broadcast: ${broadcastTxid}`);
+    console.info(`Bitcoin transfer broadcast: ${broadcastTxid}`);
+  });
 }
 
 export async function prepareBitcoinTransferForTest(
@@ -377,7 +379,7 @@ async function loadPendingSends(
     client as BitcoinPendingSendClient
   );
 
-  if (resolved.length) await store.remove(resolved.map(({ txid }) => txid));
+  if (resolved.length) await store.remove(resolved.map(({ txid }) => txid), network);
 
   return { inMempool, unresolved };
 }

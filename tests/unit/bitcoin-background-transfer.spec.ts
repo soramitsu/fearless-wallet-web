@@ -234,7 +234,7 @@ describe('background Bitcoin transfer adapter', () => {
     if (boundary === 'fee lookup') {
       expect(sign).not.toHaveBeenCalled();
       expect(pendingStore.save).not.toHaveBeenCalled();
-    } else expect(pendingStore.remove).toHaveBeenCalledOnce();
+    } else expect(pendingStore.remove).not.toHaveBeenCalled();
     sign.mockRestore();
   });
 

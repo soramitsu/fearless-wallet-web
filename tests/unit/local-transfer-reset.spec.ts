@@ -1,4 +1,4 @@
-import { Transaction, Wallet, type TransactionLike } from 'ethers';
+import { SigningKey, Transaction, Wallet, type TransactionLike } from 'ethers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BitcoinEsploraClient } from '@extension-base/services/bitcoin-indexer-service';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
@@ -61,6 +61,37 @@ describe('local transfer reset ownership', () => {
     expect(callback).toHaveBeenCalledWith({ status: true });
   });
 
+  it('does not yield between the final EVM guard and the actual cryptographic signature', async () => {
+    const sender = new Wallet('0x' + '11'.repeat(32));
+    const provider = { broadcastTransaction: vi.fn(async () => ({ hash: 'public hash' })),
+      estimateGas: async () => 21000n, getBlock: async () => ({ baseFeePerGas: 0n }),
+      getFeeData: async () => ({ maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, gasPrice: 1n }),
+    };
+    Object.assign(provider, { provider });
+    Object.assign(state, { getEvmApi: () => ({ api: provider }) });
+    Object.assign(fixture.state, state);
+    let populated = false;
+    let scheduled = false;
+    vi.spyOn(Wallet.prototype, 'populateTransaction').mockImplementation(async tx => {
+      populated = true;
+      return { ...tx, from: sender.address, nonce: 7, chainId: 1n, type: 2 } as TransactionLike<string>;
+    });
+    const sign = SigningKey.prototype.sign;
+    const revisions: number[] = [];
+    vi.spyOn(SigningKey.prototype, 'sign').mockImplementation(function (digest) {
+      revisions.push(state.keyringService.walletResetRevision);
+      return sign.call(this, digest);
+    });
+    const finalGuard = () => {
+      if (populated && !scheduled) { scheduled = true; queueMicrotask(reset); }
+    };
+    await makeEVMTransfer({ from: sender.address, to: '0x' + '22'.repeat(20), networkKey: 'Ethereum',
+      amount: '1', privateKey: sender.privateKey, balance: { isUtility: true, id: 'ETH' } as never,
+      finalGuard }, state).catch(() => undefined);
+    expect(scheduled).toBe(true);
+    expect(revisions).toEqual([0]);
+  });
+
   it('revalidates the caller guard after the nonce lookup and before signing', async () => {
     let nonceRead = false;
     const finalGuard = vi.fn(() => { if (nonceRead) throw new Error('Public changed reviewed route'); });
@@ -89,9 +120,10 @@ describe('local transfer reset ownership', () => {
       if (boundary === 'nonce population') reset();
       return tx as never;
     });
-    const sign = vi.spyOn(Wallet.prototype, 'signTransaction').mockImplementation(async () => {
+    const originalSign = SigningKey.prototype.sign;
+    const sign = vi.spyOn(SigningKey.prototype, 'sign').mockImplementation(function (digest) {
       if (boundary === 'signature') reset();
-      return '0x0102';
+      return originalSign.call(this, digest);
     });
     await expect(makeEVMTransfer({ from: '0x' + '11'.repeat(20), to: '0x' + '22'.repeat(20), networkKey: 'Ethereum',
       amount: '1', privateKey: '0x' + '11'.repeat(32), balance: { isUtility: true, id: 'ETH' } as never }, state))

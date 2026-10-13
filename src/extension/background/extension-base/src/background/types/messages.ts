@@ -244,7 +244,7 @@ export interface RequestSignatures {
   'pri(networkMap.upsert)': [NetworkJson, void];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   'pri(selectedNetworks.getSubscription)': [null, string, string];
-  'pri(networkMap.toggle.favorite)': [string, void];
+  'pri(networkMap.toggle.favorite)': [string | { networkName: string; address: string }, void];
 
   // Authorize
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];

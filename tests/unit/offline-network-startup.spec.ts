@@ -11,6 +11,14 @@ vi.mock('@extension-base/stores/NetworkMap', () => ({ default: class {
   get(_key: string, update: (value: unknown) => void) { void cache.read().then(update); }
   getAndWait() { return cache.read(); }
   set(...args: unknown[]) { cache.write(...args); }
+  getSubject() { return { next() {} }; }
+  async updateAndWait(key: string, transform: (current: unknown) => unknown, publish?: (value: unknown) => void) {
+    const value = transform(await cache.read());
+    cache.write(key, value);
+    cache.read.mockResolvedValue(structuredClone(value));
+    publish?.(value);
+    return value;
+  }
 } }));
 vi.mock('@extension-base/stores/SelectedNetworkStore', () => ({ default: class {
   get(_key: string, update: (value: unknown) => void) { update({}); }
@@ -144,8 +152,8 @@ describe('offline network startup', () => {
     vi.mocked(axios.get).mockReturnValue(new Promise((resolve) => { release = resolve; }));
     const pending = service.initNetworkMap();
     await vi.waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
-    service.networkMap.Bitcoin.favorite.push('new-owner');
-    service.upsertNetworkMap({ ...service.networkMap.Bitcoin, isManual: true, currentProvider: 'https://personal.invalid',
+    await service.toggleFavoriteNetwork('Bitcoin', 'new-owner');
+    await service.upsertNetworkMap({ ...service.networkMap.Bitcoin, isManual: true, currentProvider: 'https://personal.invalid',
       customNodes: [{ name: 'Personal', url: 'https://personal.invalid' }] });
     release({ data: [historical()] });
     await pending;

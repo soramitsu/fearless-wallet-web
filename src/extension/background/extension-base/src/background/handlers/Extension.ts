@@ -628,17 +628,14 @@ export default class Extension extends FWExtensionBase {
     return address;
   }
 
-  private async toggleNetworkFavorite(networkKey: string): Promise<void> {
-    await this.state.setFavoriteNetwork(networkKey);
+  private async toggleNetworkFavorite(request: string | { networkName: string; address: string }): Promise<void> {
+    await this.state.setFavoriteNetwork(typeof request === 'string' ? request : request.networkName,
+      typeof request === 'string' ? undefined : request.address);
   }
 
   private async upsertNetworkMap(data: NetworkJson): Promise<void> {
-    try {
-      this.state.networkService.upsertNetworkMap(data);
-      this.state.updateServiceInfo();
-    } catch (e) {
-      console.error(e);
-    }
+    await this.state.networkService.upsertNetworkMap(data);
+    this.state.updateServiceInfo();
   }
 
   async signEvmApprove({ id }: RequestSigningApprove): Promise<boolean> {
@@ -2420,7 +2417,7 @@ export default class Extension extends FWExtensionBase {
         return this.upsertNetworkMap(request as NetworkJson);
 
       case 'pri(networkMap.toggle.favorite)':
-        return this.toggleNetworkFavorite(request as string);
+        return this.toggleNetworkFavorite(request as string | { networkName: string; address: string });
 
       case 'pri(window.open)':
         return this.windowOpen(request as string);

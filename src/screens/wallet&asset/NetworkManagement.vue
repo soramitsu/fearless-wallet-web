@@ -102,6 +102,8 @@ export default defineComponent({ name: 'NetworkManagement',
       accountsStore: useAccountsStore(),
       networksStore: useNetworksStore(),
       filterValue: '',
+      pendingFavorites: [] as string[],
+      viewActive: true,
       activeTab: ALL_NETWORKS,
       value: '',
     };
@@ -157,6 +159,7 @@ export default defineComponent({ name: 'NetworkManagement',
     if (isNetworkGroup(this.accountsStore.selectedNetwork))
           this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
   },
+  beforeUnmount() { this.viewActive = false; },
   methods: {
     changeFilterValue(value: string) {
       this.filterValue = value;
@@ -212,19 +215,20 @@ export default defineComponent({ name: 'NetworkManagement',
           this.$notify({ title: prepNotification, message: '', type: 'success' });
     },
     async toggleFavorite(network: string) {
-      const isFavorite = await this.networksStore.toggleFavoriteNetwork({
-            networkName: network,
-            address: this.accountsStore.selectedWallet.address,
-          });
-
-          const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
-          const prepNotification = this.$t(t, { network });
-
-          this.$notify({
-            title: prepNotification as string,
-            message: '',
-            type: 'success',
-          });
+      if (this.pendingFavorites.includes(network) || !this.viewActive) return;
+      const address = this.accountsStore.selectedWallet.address;
+      this.pendingFavorites.push(network);
+      try {
+        const isFavorite = await this.networksStore.toggleFavoriteNetwork({ networkName: network, address });
+        if (!this.viewActive || this.accountsStore.selectedWallet.address !== address) return;
+        const title = this.$t(this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite'), { network });
+        this.$notify({ title: title as string, message: '', type: 'success' });
+      } catch {
+        if (this.viewActive && this.accountsStore.selectedWallet.address === address)
+          this.$notify({ title: this.$t('addWallet.google.somethingWrong'), message: '', type: 'error' });
+      } finally {
+        this.pendingFavorites = this.pendingFavorites.filter((name) => name !== network);
+      }
     },
   },
 });

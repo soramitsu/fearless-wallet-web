@@ -18,6 +18,7 @@
           size="big"
           class="row"
           data-testid="name"
+          :disabled="saving"
           :maxlength="45"
           @change="changeName"
         />
@@ -27,6 +28,7 @@
           placeholder="accounts.urlAddress"
           class="row"
           data-testid="urlAddress"
+          :disabled="saving"
           :errorDescriptions="errorMessage"
           :isError="isError"
           :maxlength="150"
@@ -34,6 +36,7 @@
         />
       </div>
 
+      <p v-if="saveError" role="alert">{{ $t('addWallet.google.somethingWrong') }}</p>
       <FButton size="big" data-testid="addNodeBtn" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
     </div>
   </AboveForm>
@@ -42,7 +45,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import type { NetworkJson } from '@extension-base/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 
@@ -59,6 +61,9 @@ export default defineComponent({ name: 'EditNodeForm' ,
       name: '',
       url: '',
       isError: false,
+      saving: false,
+      saveError: false,
+      viewActive: true,
     };
   },
   computed: {
@@ -94,7 +99,7 @@ export default defineComponent({ name: 'EditNodeForm' ,
       return this.name !== this.nodeName;
     },
     buttonDisabled() {
-      return this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
+      return this.saving || this.name === '' || this.urlLength === 0 || this.isError || (!this.isUrlChanged && !this.isNameChanged);
     },
   },
   watch: {
@@ -104,6 +109,7 @@ export default defineComponent({ name: 'EditNodeForm' ,
     this.name = this.nodeName;
         this.url = this.nodeUrl;
   },
+  beforeUnmount() { this.viewActive = false; },
   methods: {
     isErrorUrlNode() {
       this.isError = false;
@@ -128,34 +134,34 @@ export default defineComponent({ name: 'EditNodeForm' ,
           this.isError = isTooLengthTooSmall || !this.url.startsWith('wss://');
     },
     changeName(value: string) {
-      this.name = value;
+      if (!this.saving) this.name = value;
     },
     changeUrl(value: string) {
-      this.url = value;
+      if (!this.saving) this.url = value;
     },
-    updateNodes() {
-      if (this.urlLength === 0) return;
-
-          const prepData: Partial<NetworkJson> = {};
-          const customNodeIndex = this.networkJson.customNodes.findIndex(
-            ({ url, name }) => url === this.nodeUrl && name === this.nodeName
-          );
-
-          prepData.customNodes = this.networkJson.customNodes ?? [];
-          const editedNode = { name: this.name, url: this.url };
-
-          if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = editedNode;
-          else prepData.customNodes.push(editedNode);
-
-          prepData.currentProvider = this.url;
-
-          upsertNetworkMap({
-            ...this.networkJson,
-            ...prepData,
-            isManual: false,
-          });
-
-          this.$emit('closeForm', true);
+    async updateNodes() {
+      if (this.buttonDisabled || !this.viewActive) return;
+      this.saving = true;
+      this.saveError = false;
+      const network = this.networkJson;
+      const customNodes = (network.customNodes ?? []).map((node) => ({ ...node }));
+      const index = customNodes.findIndex(({ url, name }) => url === this.nodeUrl && name === this.nodeName);
+      const edited = { name: this.name, url: this.url };
+      if (index >= 0) customNodes[index] = edited;
+      else customNodes.push(edited);
+      const selectEdited = !this.isEdit || this.isActive;
+      try {
+        await upsertNetworkMap({
+          ...network, customNodes,
+          currentProvider: selectEdited ? this.url : network.currentProvider,
+          isManual: selectEdited ? true : network.isManual,
+        });
+        if (this.viewActive) this.$emit('closeForm', true);
+      } catch {
+        if (this.viewActive) this.saveError = true;
+      } finally {
+        if (this.viewActive) this.saving = false;
+      }
     },
   },
 });

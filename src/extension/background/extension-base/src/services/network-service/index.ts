@@ -25,6 +25,20 @@ import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
+type NetworkPreferences = Pick<NetworkJson, 'favorite' | 'currentProvider' | 'customNodes' | 'customProviders' | 'isManual'>;
+
+function preferences(network: NetworkJson): NetworkPreferences {
+  return { favorite: network.favorite, currentProvider: network.currentProvider, customNodes: network.customNodes,
+    customProviders: network.customProviders, isManual: network.isManual };
+}
+
+function readableSettings(stored: NetworkMap | undefined): NetworkMap {
+  if (stored !== undefined && (!stored || typeof stored !== 'object' || Array.isArray(stored))) {
+    throw new Error('Network settings are unavailable');
+  }
+  return stored ?? {};
+}
+
 // Registry/cache rows are rebuildable data. One malformed row must not stop wallets opening.
 function usableNetwork(value: unknown): value is NetworkJson {
   if (!value || typeof value !== 'object') return false;
@@ -45,6 +59,8 @@ export class NetworkService {
   private registryAttemptAt = 0;
   private registryInitialization?: Promise<void>;
   private registryRetry?: Promise<boolean>;
+  private preferenceRevision = 0;
+  private readonly networkPreferenceRevision: Record<string, number> = {};
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   readonly selectedNetworksStore = new SelectedNetworkStore(null);
@@ -152,6 +168,7 @@ export class NetworkService {
 
   private async loadNetworkMap() {
     const hadReadableCache = this.cacheReadable;
+    const preferenceRevision = this.preferenceRevision;
     this.registryAttemptAt = Date.now();
     this.logger.log('Init Network Map');
 
@@ -193,7 +210,8 @@ export class NetworkService {
 
         const isEthereum = isEthereumNetwork(network.name);
         // A refresh must not roll back settings edited while its HTTP request was pending.
-        const saved = (hadReadableCache ? this.networkMap[network.name] : undefined) ?? networksFromStorage?.[network.name];
+        const useCurrent = hadReadableCache || this.networkPreferenceRevision[network.name] > preferenceRevision;
+        const saved = (useCurrent ? this.networkMap[network.name] : undefined) ?? networksFromStorage?.[network.name];
         const favorite = Array.isArray(saved?.favorite) ? saved.favorite.filter((value) => typeof value === 'string') : [];
 
         this.networkMap[network.name] = {
@@ -215,6 +233,7 @@ export class NetworkService {
     if (!hadReadableCache) {
       // A recovered cache may contain settings for bundled chains absent from the remote response.
       for (const [name, saved] of Object.entries(networksFromStorage ?? {})) {
+        if (this.networkPreferenceRevision[name] > preferenceRevision) continue;
         const existing = this.networkMap[name];
         if (!existing) continue;
         existing.favorite = saved.favorite ?? existing.favorite;
@@ -224,8 +243,11 @@ export class NetworkService {
         existing.isManual = saved.isManual ?? existing.isManual;
       }
     }
-    mergeUniversalWalletRegistryNetworks(this.networkMap,
-      hadReadableCache ? { ...networksFromStorage, ...this.networkMap } : networksFromStorage);
+    const registryPreferences = { ...networksFromStorage };
+    for (const [name, network] of Object.entries(this.networkMap)) {
+      if (hadReadableCache || this.networkPreferenceRevision[name] > preferenceRevision) registryPreferences[name] = network;
+    }
+    mergeUniversalWalletRegistryNetworks(this.networkMap, registryPreferences);
 
     const activeNetworks = this.getActiveNetworks();
 
@@ -270,7 +292,15 @@ export class NetworkService {
   updateNetworkStore() {
     // Status polling and connection callbacks also reach here. None may erase unread personal settings.
     if (!this.cacheReadable) return;
-    this.networkMapStore.set('NetworkMap', this.networkMap);
+    const catalog = structuredClone(this.networkMap);
+    // Background status/catalog writes never replace preferences committed by a concurrent user action.
+    void this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
+      const current = readableSettings(stored);
+      return { ...current, ...Object.fromEntries(Object.entries(catalog).map(([name, network]) => [name,
+        { ...network, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) },
+      ])) };
+    }, () => this.networkMapStore.getSubject().next(this.networkMap), false)
+      .catch((error) => console.warn('Network catalog could not be saved', error));
   }
 
   saveSelectedNetworks() {
@@ -409,33 +439,50 @@ export class NetworkService {
     });
   }
 
-  upsertNetworkMap(networkJson: NetworkJson) {
-    const { name, currentProvider, customNodes, ecosystem } = networkJson;
+  async upsertNetworkMap(networkJson: NetworkJson): Promise<void> {
+    const requested = structuredClone(networkJson);
+    if (!usableNetwork(requested)) throw new Error('Invalid network settings');
+    const { name, currentProvider, customNodes, customProviders, isManual } = requested;
+    const patch = { currentProvider, customNodes, customProviders, isManual };
+    await this.persistPreferences(name, requested, () => patch);
+    const network = this.networkMap[name];
+    // Connection setup is best effort after the preference commit; it cannot undo the saved choice.
+    try {
+      if (network.ecosystem === 'ethereum') this.evmApiHandler.initEvmApi(network);
+      else if (network.ecosystem === 'ton') this.tonApiHandler.initApi(network);
+      else if (network.ecosystem === 'substrate' || network.ecosystem === 'ethereumBased') {
+        const previous = this.substrateApiHandler.api[name.toLowerCase()];
+        void previous?.api?.disconnect().catch(console.warn);
+        void previous?.provider?.disconnect().catch(console.warn);
+        await this.substrateApiHandler.initApi(network);
+      }
+    } catch (error) { console.warn('Saved network connection is unavailable', error); }
+  }
 
-    if (name in this.networkMap) {
-      this.networkMap[name].active = true;
-      this.networkMap[name].customNodes = customNodes;
-      this.networkMap[name].customProviders = networkJson.customProviders;
-      this.networkMap[name].isManual = networkJson.isManual;
+  async toggleFavoriteNetwork(name: string, address: string): Promise<void> {
+    const network = this.networkMap[name];
+    if (!network) throw new Error('Network unavailable');
+    await this.persistPreferences(name, network, (saved) => {
+      const favorite = Array.isArray(saved.favorite) ? saved.favorite : [];
+      return { favorite: favorite.includes(address) ? favorite.filter((item) => item !== address) : [...favorite, address] };
+    });
+  }
 
-      if (currentProvider !== this.networkMap[name].currentProvider && currentProvider)
-        this.networkMap[name].currentProvider = currentProvider;
-    } else this.networkMap[name] = networkJson;
-
-    this.updateNetworkStore();
-
-    if (!this.networkMap[name].active) return;
-
-    if (ecosystem === 'ethereum') this.evmApiHandler.initEvmApi(networkJson);
-    else if (ecosystem === 'ton') this.tonApiHandler.initApi(networkJson);
-    else if (ecosystem === 'bitcoin') return;
-    else if (ecosystem === 'iroha') return;
-    else {
-      this.substrateApiHandler.api[name].api?.disconnect();
-      this.substrateApiHandler.api[name].provider?.disconnect();
-
-      this.substrateApiHandler.initApi(networkJson);
-    }
+  private async persistPreferences(
+    name: string,
+    catalog: NetworkJson,
+    update: (saved: NetworkJson) => Partial<NetworkPreferences>
+  ): Promise<void> {
+    await this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
+      const current = readableSettings(stored);
+      const saved = { ...catalog, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) };
+      return { ...current, [name]: { ...current[name], ...saved, ...update(saved) } };
+    }, (committed) => {
+      const saved = committed[name];
+      this.networkMap[name] = { ...(this.networkMap[name] ?? saved), ...preferences(saved) };
+      this.networkPreferenceRevision[name] = ++this.preferenceRevision;
+      this.networkMapStore.getSubject().next(this.networkMap);
+    }, false);
   }
 
   disableNetworkMap(networkKey: string) {

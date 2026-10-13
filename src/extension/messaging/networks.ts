@@ -5,8 +5,8 @@ export function upsertNetworkMap(data: NetworkJson): Promise<void> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
-export function toggleFavoriteNetwork(name: string): Promise<void> {
-  return sendMessage('pri(networkMap.toggle.favorite)', name);
+export function toggleFavoriteNetwork(networkName: string, address?: string): Promise<void> {
+  return sendMessage('pri(networkMap.toggle.favorite)', address ? { networkName, address } : networkName);
 }
 
 export function subscribeNetworkMap(

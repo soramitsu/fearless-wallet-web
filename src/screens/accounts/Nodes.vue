@@ -22,7 +22,7 @@
           <div class="switch-nodes">
             <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
 
-            <Switcher :value="autoSelectNode" @change="toggleAutoSelectNode" />
+            <Switcher :disabled="saving" :ariaLabel="$t('accounts.autoNodes')" :value="autoSelectNode" @change="toggleAutoSelectNode" />
           </div>
         </div>
       </ContentForm>
@@ -66,6 +66,7 @@
       </ContentForm>
     </div>
 
+    <p v-if="saveError" role="alert">{{ $t('addWallet.google.somethingWrong') }}</p>
     <FButton
       class="row"
       size="big"
@@ -81,7 +82,6 @@ import { defineComponent } from 'vue';
 
 import { isNativeEVMNetwork } from '@extension-base/background/handlers/utils';
 import NodeItem from './NodeItem.vue';
-import type { NetworkJson } from '@extension-base/types';
 import BaseApi from '@/util/BaseApi';
 
 import { upsertNetworkMap } from '@/extension/messaging';
@@ -93,6 +93,9 @@ export default defineComponent({ name: 'Nodes',
   components: { NodeItem },
   data() {
     return {
+      saving: false,
+      saveError: false,
+      viewActive: true,
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
     };
@@ -111,13 +114,8 @@ export default defineComponent({ name: 'Nodes',
     showCustomNodesForm() {
       return this.customNodes.length !== 0;
     },
-    autoSelectNode: {
-      get() {
-        return this.accountsStore.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
-      },
-      set(value: boolean) {
-        this.accountsStore.setAutoSelectNode({ value, network: this.selectedNetwork });
-      },
+    autoSelectNode() {
+      return !this.networkJson?.isManual;
     },
     activeNode() {
       const { currentProvider } = this.networkJson;
@@ -161,43 +159,41 @@ export default defineComponent({ name: 'Nodes',
       return this.$route.params.network.toUpperCase();
     },
   },
-  watch: {
-    "autoSelectNode": 'toggleAutoSelectNodesValue',
-  },
+  beforeUnmount() { this.viewActive = false; },
   methods: {
-    toggleAutoSelectNodesValue() {
-      const [{ url }] = this.defaultNodes;
-
-          this.changeNode(url);
+    async toggleAutoSelectNode(value: boolean) {
+      const provider = value ? this.defaultNodes[0]?.url : this.networkJson.currentProvider;
+      if (provider) await this.saveSelection(!value, provider);
     },
-    toggleAutoSelectNode(value: boolean) {
-      this.autoSelectNode = value;
+    async saveSelection(isManual: boolean, currentProvider: string) {
+      if (this.saving || !this.viewActive) return;
+      const name = this.selectedNetwork;
+      this.saving = true;
+      this.saveError = false;
+      try {
+        await upsertNetworkMap({ ...this.networkJson, isManual, currentProvider });
+      } catch {
+        if (this.viewActive && this.selectedNetwork === name) this.saveError = true;
+      } finally {
+        if (this.viewActive) this.saving = false;
+      }
     },
     openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
       this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
     },
-    changeNode(url: string) {
-      if (this.autoSelectNode) return;
-
-          const prepData: Partial<NetworkJson> = {};
-
-          prepData.currentProvider = url;
-
-          upsertNetworkMap({
-            ...this.networkJson,
-            ...prepData,
-            isManual: !this.autoSelectNode,
-          });
+    async changeNode(url: string) {
+      if (!this.autoSelectNode) await this.saveSelection(true, url);
     },
     copyAddress() {
       setClipboard(this.formattedAddress);
     },
     getActiveStatus(nodeName: string, url: string) {
-      if (this.autoSelectNode) return false;
+      if (this.autoSelectNode || !this.activeNode) return false;
 
           return nodeName === this.activeNode.name && this.activeNode.url === url;
     },
     getRemoveBorderBottomValue(index: number, isCustomNode = false) {
+      if (!this.activeNode) return;
       const nodes = isCustomNode ? this.customNodes : this.defaultNodes;
           const { name: activeNodeName, url: activeNodeUrl } = this.activeNode;
 

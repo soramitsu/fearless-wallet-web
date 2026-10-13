@@ -20,7 +20,7 @@ function publish(json: KeyringPair$Json): void {
 }
 
 function masterMetadata(meta: FWKeyringMeta, haveEntropy: boolean): FWKeyringMeta {
-  const result = { ...meta, isMasterPassword: true, isMasterAccount: haveEntropy };
+  const result: FWKeyringMeta = { ...meta, isMasterPassword: true, isMasterAccount: haveEntropy };
   delete result.pendingMigrate;
   delete result.isSubWallet;
   return result;

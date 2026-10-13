@@ -43,6 +43,7 @@ vi.mock('@extension-base/utils/crossenv', () => ({
 }));
 
 import { KeyringService } from '@extension-base/services/keyring-service';
+import type { AccountAccessService } from '@extension-base/services/keyring-service/AccountAccess';
 import Extension from '@extension-base/background/handlers/Extension';
 
 const PARENT = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
@@ -211,14 +212,15 @@ describe('when the per-account password prompt is shown', () => {
     expect(await keyring.isNeedMigration()).toBe(true);
   });
 
-  it('is shown again after a wallet reset', async () => {
+  it('forgets the in-memory deferral after the committed wallet reset', async () => {
     pair(PARENT);
     const keyring = service();
     expect(await keyring.deferLegacyPasswordMigration()).toBe(true);
 
-    expect(keyring.resetWallet()).toBe(true);
-
-    expect(mocks.reset).toHaveBeenCalledWith(true);
+    // The reset transaction now owns durable prompt removal; this unit covers
+    // the access service's cached deferral. Real storage reset is covered separately.
+    mocks.prompt.delete('legacyPasswordPrompt');
+    (keyring as unknown as { accountAccess: AccountAccessService }).accountAccess.reset();
     expect(mocks.prompt.size).toBe(0);
     mocks.hash = 'new-master-password';
     pair(KUSAMA);

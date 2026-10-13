@@ -20,6 +20,7 @@ import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import { recoverWebResetPassword, retainWebResetPassword, WEB_RESET_PASSWORD_KEY } from '@extension-base/stores/WebResetPassword';
 import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
@@ -27,6 +28,7 @@ import { alreadyPersistedAccountStore, isCurrentAccountPair, updateAccountMetada
 import { removePublicAddress, updatePublicAddress, type PublicAddressUpdateOptions } from './AddressMetadata';
 import { importLocalAccount } from './LocalAccountImport';
 import { decodeJsonAccount } from './JsonAccountImport';
+import { walletResetMutation } from './WalletReset';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
 import {
   AccountAccessService,
@@ -110,6 +112,9 @@ export class KeyringService {
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
   private enrollmentGate: (address: string) => boolean = () => true;
+  private resetting = false;
+  private resetRevision = 0;
+  private resetWork?: Promise<boolean>;
 
   private get access(): AccountAccessService {
     return (this.accountAccess ??= new AccountAccessService(this));
@@ -241,9 +246,11 @@ export class KeyringService {
     onRecoveryState?: (account: CurrentAccountState) => void
   ): Promise<void> {
     const address = currentAccountData?.address ? walletAddressIdentity(currentAccountData.address) : undefined;
+    const resetRevision = this.resetRevision ?? 0;
     const removalRevision = address ? this.removalRevisions?.get(address) ?? 0 : 0;
     const assertAvailable = () => {
-      if (address && (this.removingAccounts?.has(address) || (this.removalRevisions?.get(address) ?? 0) !== removalRevision))
+      if (address && (this.resetting || (this.resetRevision ?? 0) !== resetRevision ||
+        this.removingAccounts?.has(address) || (this.removalRevisions?.get(address) ?? 0) !== removalRevision))
         throw new CurrentAccountContextChanged();
     };
     assertAvailable();
@@ -380,9 +387,14 @@ export class KeyringService {
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType, options: PublicAddressUpdateOptions = {}) {
     const snapshot = structuredClone(meta);
+    const resetRevision = this.resetRevision ?? 0;
+    const admittedDuringReset = this.resetting;
     return updatePublicAddress(address, type, (current) => ({
       ...current, ...snapshot, walletEcosystem: WalletEcosystem.Substrate,
-    }), options);
+    }), { ...options, assertCurrent: () => {
+      if (admittedDuringReset || this.resetting || (this.resetRevision ?? 0) !== resetRevision) throw new CurrentAccountContextChanged();
+      options.assertCurrent?.();
+    } });
   }
 
   backupAccount(address: string, password: string) {
@@ -429,20 +441,6 @@ export class KeyringService {
 
   forgetAccount(address: string, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
     return this.archiveWallet(address, true, beforeRemoval, assertCurrent);
-  }
-
-  // ui-keyring deletes an account's record under its current key only. An ECDSA account kept from 2.x or 3.0.x
-  // also has the record those versions wrote under its account id, set aside at load (EcdsaAccountRecords.ts).
-  // They go with the account, so it does not come back at the next start.
-  private forgetEarlierRecords(pair: KeyringPair): void {
-    const keys = ecdsaPairKeys(pair);
-
-    if (!keys) return;
-
-    const store = this.accountsStore ?? new AccountsStore();
-
-    store.remove(keys.legacy);
-    store.remove(keys.archive);
   }
 
   forgetAddress(address: string, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
@@ -1042,26 +1040,56 @@ export class KeyringService {
     }
   }
 
-  resetWallet(): boolean {
-    try {
-      const pairs = Object.keys(this.accountSubject.value)
-        .map((address) => this.getPair(address))
-        .filter((pair): pair is KeyringPair => !!pair);
-
-      keyring.resetWallet(true);
-      pairs.forEach((pair) => this.forgetEarlierRecords(pair));
-      this.password = '';
+  resetWallet(beforeReset?: () => Promise<void>): Promise<boolean> {
+    if (this.resetWork) return this.resetWork;
+    const work = this.tonKeyring.vault.exclusive(async () => {
+      this.resetting = true;
+      this.resetRevision = (this.resetRevision ?? 0) + 1;
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
-      // TON records are not part of the reset (as in 3.0.5); they are listed for recovery after the
-      // new password is set.
-      this.access.reset();
-
-      return true;
-    } catch (e) {
-      console.error(e);
-
-      return false;
-    }
+      try {
+        await beforeReset?.();
+        // The handler clears State/Sora too. Direct callers still acknowledge
+        // durable empty selection, including a stale stored selection at startup.
+        if (!beforeReset || this.currentAccountSubject.value) await this.setCurrentAccount(null);
+        const pairs = Object.keys(this.accountSubject.value).map((address) => this.getPair(address))
+          .filter((pair): pair is KeyringPair => !!pair);
+        const store = this.accountsStore ?? new AccountsStore();
+        if (!IS_EXTENSION) {
+          await KeyringStoreWeb.flush();
+          await retainWebResetPassword();
+          await KeyringStoreWeb.removeForReset();
+        }
+        await store.mutateRecordsAndWait(null, (current) => {
+          const mutation = walletResetMutation(current, pairs);
+          if (!IS_EXTENSION) mutation.remove.push(WEB_RESET_PASSWORD_KEY);
+          return mutation;
+        }, () => {
+          // Memory changes only after storage acknowledges every archive/removal.
+          for (const pair of pairs) { pair.lock(); keyring.keyring.removePair(pair.address); }
+          for (const subject of [keyring.accounts, keyring.addresses, keyring.contracts]) {
+            Object.keys(subject.subject.value).forEach((address) => subject.removeSubjectOnly(address));
+          }
+          keyring.keyring.resetPassword();
+          if (!IS_EXTENSION) KeyringStoreWeb.commitReset();
+          this.password = '';
+          this.access.reset();
+        });
+        return true;
+      } catch (error) {
+        console.error(error);
+        if (!IS_EXTENSION) {
+          // If compensation also fails, the durable journal is retried before
+          // startup can expose the wallet or accept a new password.
+          await recoverWebResetPassword().catch(console.error);
+        }
+        return false;
+      } finally {
+        this.resetting = false;
+      }
+    });
+    this.resetWork = work;
+    void work.finally(() => { if (this.resetWork === work) this.resetWork = undefined; }).catch(() => {});
+    return work;
   }
 
   private getLegacyPasswordPairs(): KeyringPair[] {

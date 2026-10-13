@@ -37,7 +37,7 @@ export default class AccountsStore
     return super.getAndWait(key);
   }
 
-  public mutateRecordsAndWait(keys: string[], transform: TransformStoredRecords, publish?: () => void): Promise<void> {
+  public mutateRecordsAndWait(keys: string[] | null, transform: TransformStoredRecords, publish?: () => void): Promise<void> {
     return super.mutateRecordsAndWait(keys, transform, publish);
   }
 

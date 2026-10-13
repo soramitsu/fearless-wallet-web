@@ -122,6 +122,8 @@ hoisted.createUiKeyring = () => {
 
   return {
     accounts,
+    addresses: { subject: { value: {} }, removeSubjectOnly: vi.fn() },
+    contracts: { subject: { value: {} }, removeSubjectOnly: vi.fn() },
     get ready() { return ready; },
     keyring: {
       get hasMasterPassword() { return !!passwordHash; },
@@ -134,6 +136,7 @@ hoisted.createUiKeyring = () => {
       addFromJson: (json: KeyringPair$Json) => backend.addFromJson(json),
       addPair: (pair: KeyringPair) => backend.addPair(pair),
       removePair: (address: string) => backend.removePair(address),
+      resetPassword: () => { passwordHash = undefined; master = ''; },
     },
     loadAll(options: { store: AccountsStoreLike & { all: (load: (key: string, json: KeyringPair$Json) => void) => void }; password_store: typeof passwordStore }) {
       store = options.store;
@@ -400,13 +403,19 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
   it('leaves no ECDSA record behind after Reset wallet, at the next start either', SCRYPT_SUITE, async () => {
     const first = await startWorker();
 
-    expect(first.service.resetWallet()).toBe(true);
+    expect(await first.service.resetWallet()).toBe(true);
     await first.settle();
     expect(Object.keys(stored()).filter((key) => key.startsWith(ACCOUNT) || key.startsWith(ARCHIVE))).toEqual([]);
 
     const second = await startWorker();
     expect(second.service.getAccounts()).toEqual([]);
     expect(second.service.hasMasterPassword).toBe(false);
+    const recoverable = await second.service.getDeletedWallets();
+    expect(recoverable.map(({ address }) => address).sort()).toEqual([signer.address, spare.address, daily.address].sort());
+    for (const wallet of recoverable) expect(await second.service.restoreDeletedWallet(wallet.id)).toMatchObject({ ok: true });
+    expect(second.service.getAccounts().map(({ address }) => address).sort())
+      .toEqual([signer.address, signer.ethereumAddress, spare.address, spare.ethereumAddress, daily.address].sort());
+    for (const [, json] of accountRecords()) expect(opensWith(json, MASTER)).toBeDefined();
   });
 });
 

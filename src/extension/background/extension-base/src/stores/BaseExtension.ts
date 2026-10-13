@@ -167,17 +167,20 @@ export default abstract class BaseExtensionStore<T> {
   // while holding one queue slot. Chrome has separate set/remove calls: a failed
   // removal may leave an extra recovery copy, but never removes unarchived keys.
   public mutateRecordsAndWait(
-    keys: string[],
+    keys: string[] | null,
     transform: TransformStoredRecords,
     publish?: () => void
   ): Promise<void> {
-    const requested = [...keys];
+    const requested = keys && [...keys];
     return this.enqueueWrite(async () => {
       const current = await new Promise<Record<string, unknown>>((resolve, reject) => {
-        chrome.storage.local.get(requested.map((key) => `${this.prefix}${key}`), (data: StoreValue) => {
+        chrome.storage.local.get(requested?.map((key) => `${this.prefix}${key}`) ?? null, (data: StoreValue) => {
           const error = chrome.runtime.lastError;
           if (error) reject(new Error(error.message || 'Wallet account read failed.'));
-          else resolve(Object.fromEntries(requested.map((key) => [key, data[`${this.prefix}${key}`]])));
+          else resolve(requested
+            ? Object.fromEntries(requested.map((key) => [key, data[`${this.prefix}${key}`]]))
+            : Object.fromEntries(Object.entries(data).filter(([key]) => key.startsWith(this.prefix))
+              .map(([key, value]) => [key.slice(this.prefix.length), value])));
         });
       });
       const { entries, remove } = transform(current);

@@ -53,6 +53,7 @@ const FButtonStub = defineComponent({
 describe('ResetWallet confirmation phrase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.resetWallet.mockResolvedValue(true);
   });
 
   it('shows and accepts the same stable literal in every locale', async () => {
@@ -88,6 +89,7 @@ describe('ResetWallet confirmation phrase', () => {
     expect(button.attributes()).not.toHaveProperty('disabled');
 
     await button.trigger('click');
+    await flushPromises();
     expect(mocks.resetWallet).toHaveBeenCalledOnce();
     expect(mocks.push).toHaveBeenCalledWith({ name: 'Welcome' });
   });

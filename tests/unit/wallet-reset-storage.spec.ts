@@ -50,7 +50,8 @@ vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}
 
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
-import { accountStoreKey } from '@extension-base/services/keyring-service/DeletedWallets';
+import { accountStoreKey, walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
+import { updateAccountMetadata } from '@extension-base/services/keyring-service/AccountMetadata';
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
@@ -132,7 +133,7 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
     expect(service.getPair(address)).toBeNull();
   });
 
-  it.each(['sr25519', 'ecdsa', 'ethereum'] as const)('keeps exact %s encrypted records in recoverable archives after reset', async (type) => {
+  it.each(['sr25519', 'ed25519', 'ecdsa', 'ethereum'] as const)('keeps exact %s encrypted records in recoverable archives after reset', async (type) => {
     const address = await native(type);
     const storageKey = accountStoreKey(service.getPair(address)!);
     const original = structuredClone(fixture.data[`fw:${storageKey}`]);
@@ -144,6 +145,110 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
     const listed = track(service.getDeletedWallets());
     await drain();
     expect(await listed).toHaveProperty('value', expect.arrayContaining([expect.objectContaining({ address })]));
+    const changed = track(service.changeMasterPassword({ newPassword: 'New public fixture password' }));
+    await drain();
+    expect(await changed).toEqual({ value: true });
+    const id = Object.keys(fixture.data).find((key) => key.startsWith('fw:deletedWallet:'))!.slice('fw:deletedWallet:'.length);
+    const restored = track(service.restoreDeletedWallet(id));
+    await drain();
+    expect(await restored).toHaveProperty('value.ok', true);
+    const pair = service.getPair(address)!;
+    pair.decodePkcs8(PASSWORD);
+    expect(pair.verify(new Uint8Array([1, 7, 9]), pair.sign(new Uint8Array([1, 7, 9])), pair.publicKey)).toBe(true);
+    expect(fixture.data[`fw:${storageKey}`]).toEqual(original);
+  });
+
+  it('keeps linked native records together and preserves all older recovery copies', async () => {
+    const address = await native();
+    const child = await native('ethereum');
+    const linked = track(updateAccountMetadata(service.getPair(address)!, (meta) => ({ ...meta, ethereumAddress: child })));
+    await drain();
+    expect(await linked).toHaveProperty('value');
+    const original = structuredClone(fixture.data);
+    fixture.data['fw:deletedWallet:older'] = { preserved: 'older encrypted recovery entry' } as never;
+    const result = track(service.resetWallet());
+    await drain();
+    expect(await result).toEqual({ value: true });
+    expect(fixture.data['fw:deletedWallet:older']).toEqual({ preserved: 'older encrypted recovery entry' });
+    const fresh = archives().filter((wallet) => wallet.accounts);
+    expect(fresh).toHaveLength(1);
+    for (const [key, record] of Object.entries(original).filter(([key]) => key.startsWith('fw:account:')))
+      expect(fresh[0].accounts[key.slice(3)]).toEqual(record);
+  });
+
+  it('archives a valid unloaded key and leaves unrelated or inert records untouched', async () => {
+    const detached = keyring.createFromUri(PHRASE, { name: 'Unloaded key' }, 'ed25519');
+    const record = detached.toJson(PASSWORD);
+    const storageKey = accountStoreKey(detached);
+    fixture.data[`fw:${storageKey}`] = record as never;
+    fixture.data['other:account:key'] = { preserve: true } as never;
+    fixture.data['fw:archivedAccount:unrecognized'] = { preserve: 'inert ciphertext' } as never;
+    const result = track(service.resetWallet());
+    await drain();
+    expect(await result).toEqual({ value: true });
+    expect(archives()[0].accounts[storageKey]).toEqual(record);
+    expect(fixture.data['other:account:key']).toEqual({ preserve: true });
+    expect(fixture.data['fw:archivedAccount:unrecognized']).toEqual({ preserve: 'inert ciphertext' });
+    expect(fixture.data[`fw:${storageKey}`]).toBeUndefined();
+  });
+
+  it('rejects a corrupt unloaded active record and preserves its bytes and password', async () => {
+    const address = await native();
+    fixture.data['fw:account:0x1234'] = { encoded: 'unrecognized encrypted key', meta: {} } as never;
+    const original = structuredClone(fixture.data);
+    const result = track(service.resetWallet());
+    await drain();
+    expect(await result).toEqual({ value: false });
+    for (const [key, value] of Object.entries(original)) expect(fixture.data[key]).toEqual(value);
+    expect(service.hasMasterPassword).toBe(true);
+    expect(service.getPair(address)).not.toBeNull();
+  });
+
+  it('acknowledges prompt removal and clears its cached deferral only after storage succeeds', async () => {
+    delete (service as unknown as { accountAccess?: unknown }).accountAccess;
+    const deferred = track(service.deferLegacyPasswordMigration());
+    await drain();
+    expect(await deferred).toEqual({ value: true });
+    expect(await service.getAccessStatus()).toHaveProperty('deferred', true);
+    const resetting = track(service.resetWallet());
+    await drain(false);
+    expect(fixture.data['fw:legacyPasswordPrompt']).toBeDefined();
+    expect(await service.getAccessStatus()).toHaveProperty('deferred', true);
+    await drain();
+    expect(await resetting).toEqual({ value: true });
+    expect(fixture.data['fw:legacyPasswordPrompt']).toBeUndefined();
+    expect(await service.getAccessStatus()).toHaveProperty('deferred', false);
+  });
+
+  it('removes public addresses only after acknowledgement and rejects admission or selection during reset', async () => {
+    const mobile = keyring.createFromUri(`${PHRASE}//public`, {}, 'sr25519').address;
+    const stored = track(service.saveAddress(mobile, { name: 'Public mobile', isMobile: true, wcTopic: 'public-topic' }, 'address'));
+    await drain();
+    expect(await stored).toHaveProperty('value');
+    const reset = track(service.resetWallet());
+    await drain(false);
+    expect(service.getAddress(mobile)).toBeDefined();
+    const newer = track(service.saveAddress(mobile, { name: 'Late public wallet' }, 'address'));
+    const selection = track(service.setCurrentAccount({ address: mobile, name: 'Late choice', isMobile: true, ethereumAddress: '', walletEcosystem: WalletEcosystem.Substrate }));
+    await drain();
+    expect(await reset).toEqual({ value: true });
+    expect(await newer).toHaveProperty('error');
+    expect(await selection).toHaveProperty('error');
+    expect(service.getAddress(mobile)).toBeUndefined();
+    expect(fixture.data[`fw:address:${walletAddressIdentity(mobile)}`]).toBeUndefined();
+    expect(service.currentAccountSubject.value).toBeNull();
+  });
+
+  it.each(['failRead', 'failSelection'] as const)('fails closed when %s prevents the reset prerequisite', async (failure) => {
+    const address = await native();
+    const original = structuredClone(fixture.data);
+    fixture[failure] = true;
+    const result = track(service.resetWallet());
+    await drain();
+    expect(await result).toEqual({ value: false });
+    expect(fixture.data).toEqual(original);
+    expect(service.getPair(address)).not.toBeNull();
+    expect(service.hasMasterPassword).toBe(true);
   });
 
   it('leaves the master password, stored keys and live wallets intact when the recovery write fails', async () => {

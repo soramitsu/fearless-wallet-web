@@ -19,7 +19,8 @@
     "needHelp": "Do you need help? Сontact",
     "resetWallet": "Reset wallet",
     "wantReset": "Are you sure you want to reset your wallet?",
-    "walletWillBeDeleted": "Your current wallet, accounts, and assets will be deleted from Fearless Wallet. You will need to re-import your original account using the recovery phrase or private key.",
+    "walletWillBeDeleted": "Reset removes your password and active wallet list from this browser. Encrypted recovery copies and TON keys stay on this device. After creating a new password, use Account access to recover them with their previous passwords. Funds remain on their networks.",
+    "resetFailed": "Reset could not be completed. Try again.",
     "enterReset": "To proceed, enter '{phrase}'",
     "resetWarning": "Resetting the wallet will delete your current data and assets. We cannot recover your password as it is stored only on your device. Try other passwords. If you want to reset the wallet, import your original recovery phrase. Proceed only if you have the recovery phrase.",
     "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers.",
@@ -56,7 +57,7 @@
     "mobileDescription": "Fearless removes this wallet from the list in this browser. Its keys stay in the Fearless mobile app.",
     "exportFirst": "Export recovery phrase first",
     "passwordHint": "Enter your password to delete this wallet.",
-    "failed": "The wallet was not deleted. Nothing was changed. Try again."
+    "failed": "The wallet was not deleted. Try again."
   },
   "addWallet": {
     "createWallet": "Create a new wallet",
@@ -1494,7 +1495,7 @@
     "deletedHint": "Deleted on {date}. Restoring brings the wallet back as it was, with the same keys.",
     "restore": "Restore",
     "restored": "{name} is back in your wallet list",
-    "restoreFailed": "The wallet could not be restored. Nothing was changed. Try again.",
+    "restoreFailed": "The wallet could not be restored. Try again.",
     "alreadyRestored": "This wallet is already in your wallet list."
   },
   "signingReview": {

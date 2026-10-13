@@ -187,11 +187,11 @@ export default abstract class BaseWebStore<T> {
   // Read, archive and remove in the same IndexedDB transaction. Publish only
   // after its commit, while the queue still excludes later metadata writes.
   public mutateRecordsAndWait(
-    keys: string[],
+    keys: string[] | null,
     transform: TransformStoredRecords,
     publish?: () => void
   ): Promise<void> {
-    const requested = [...new Set(keys)];
+    const requested = keys && [...new Set(keys)];
     return this.enqueueWrite(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
@@ -203,7 +203,7 @@ export default abstract class BaseWebStore<T> {
         transaction.onabort = () => reject(transaction.error ?? new Error('Wallet removal was aborted.'));
         const store = transaction.objectStore(WEB_STORE_NAME);
         const current: Record<string, unknown> = {};
-        let remaining = requested.length;
+        let remaining = requested?.length ?? 0;
         const apply = () => {
           try {
             const { entries, remove } = transform(current);
@@ -214,8 +214,17 @@ export default abstract class BaseWebStore<T> {
             reject(error);
           }
         };
-        if (!remaining) apply();
-        for (const key of requested) {
+        if (requested === null) {
+          const request = store.openCursor();
+          request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) { apply(); return; }
+            if (typeof cursor.key === 'string' && cursor.key.startsWith(this.#prefix))
+              current[cursor.key.slice(this.#prefix.length)] = cursor.value;
+            cursor.continue();
+          };
+        } else if (!remaining) apply();
+        for (const key of requested ?? []) {
           const request = store.get(`${this.#prefix}${key}`);
           request.onsuccess = () => {
             current[key] = request.result;

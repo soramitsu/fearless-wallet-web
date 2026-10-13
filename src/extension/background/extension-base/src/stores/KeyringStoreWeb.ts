@@ -1,3 +1,4 @@
+import { recoverWebResetPassword } from './WebResetPassword';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
 import { requestWebPasswordStorage } from '@/bootstrap/webPasswordStore';
@@ -7,6 +8,7 @@ export default class KeyringStoreWeb implements PasswordStore {
   private static pending = Promise.resolve();
 
   static async initialize(): Promise<void> {
+    await recoverWebResetPassword();
     const serialized = await requestWebPasswordStorage('get');
     this.value = serialized ? JSON.parse(serialized) : null;
   }
@@ -32,6 +34,17 @@ export default class KeyringStoreWeb implements PasswordStore {
       update?.();
     });
     void KeyringStoreWeb.pending.catch(() => {});
+  }
+
+  // Reset owns the vault queue and keeps its previous in-memory password until
+  // the account transaction commits. A failed bridge call is explicitly retryable.
+  static async removeForReset(): Promise<void> {
+    await this.flush();
+    await requestWebPasswordStorage('remove');
+  }
+
+  static commitReset(): void {
+    this.value = null;
   }
 
   public set(value: KeyringPasswordJson, update?: () => void): void {

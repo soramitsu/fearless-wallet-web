@@ -59,6 +59,7 @@
             :disabled="isDisabled"
             @click="reset"
           />
+          <p v-if="resetFailed" role="alert" data-testid="resetFailed">{{ t('welcome.resetFailed') }}</p>
         </div>
       </div>
     </Scroll>
@@ -67,7 +68,7 @@
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import type { LegacyPasswordAccountSummary } from '@extension-base/background/types/types';
 import { useI18n } from '@/locales/useI18n';
 import FInput from '@/components/FInput.vue';
@@ -90,18 +91,25 @@ const isDownloading = ref(false);
 const backupsDownloaded = ref(false);
 const backupFailed = ref(false);
 const hasOwnBackups = ref(false);
+const isResetting = ref(false);
+const resetFailed = ref(false);
+let mounted = true;
+onBeforeUnmount(() => { mounted = false; });
 
 const canConfirm = computed(
   () => isListRead.value && (!legacyAccounts.value.length || backupsDownloaded.value || hasOwnBackups.value)
 );
-const isDisabled = computed(() => !canConfirm.value || password.value !== phrase);
+const isDisabled = computed(() => isResetting.value || !canConfirm.value || password.value !== phrase);
 
 onMounted(async () => {
   // Reset has to stay possible when the list cannot be read (for example with a forgotten master password).
-  legacyAccounts.value = await getMigrationAccounts().catch(() => []);
+  const accounts = await getMigrationAccounts().catch(() => []);
+  if (!mounted) return;
+  legacyAccounts.value = accounts;
   isListRead.value = true;
 
   await nextTick();
+  if (!mounted) return;
   passInput.value?.input?.focus();
 });
 
@@ -130,10 +138,20 @@ const downloadBackups = async () => {
 const changeOPassword = async (pass: string) => (password.value = pass);
 const close = () => router.back();
 
-const reset = () => {
-  resetWallet();
-
-  router.push({ name: Components.Welcome });
+const reset = async () => {
+  if (isDisabled.value) return;
+  isResetting.value = true;
+  resetFailed.value = false;
+  try {
+    const success = await resetWallet();
+    if (!mounted) return;
+    if (success) await router.push({ name: Components.Welcome });
+    else resetFailed.value = true;
+  } catch {
+    if (mounted) resetFailed.value = true;
+  } finally {
+    if (mounted) isResetting.value = false;
+  }
 };
 </script>
 

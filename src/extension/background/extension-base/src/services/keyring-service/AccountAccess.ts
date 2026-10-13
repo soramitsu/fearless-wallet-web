@@ -139,13 +139,12 @@ export class AccountAccessService {
     }
   }
 
-  /** After a wallet reset: forget the deferral and every finding of this session. */
+  /** After the reset transaction removed the prompt record, clear this session's findings. */
   reset(): void {
     this.cancelScan();
     this.previousMasterPairs.clear();
     this.keyringService.tonKeyring.vault.needsPreviousPassword.clear();
     this.deferred = false;
-    this.promptStore.remove(LEGACY_PASSWORD_PROMPT_KEY);
   }
 
   async getStatus(legacyPairs: KeyringPair[]): Promise<AccountAccessStatus> {

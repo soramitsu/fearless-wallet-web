@@ -47,6 +47,7 @@ vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () =
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 
+import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
 import { accountStoreKey, walletRecordKeys } from '@extension-base/services/keyring-service/DeletedWallets';
@@ -128,7 +129,7 @@ function handler() {
   Object.assign(state, {
     keyringService: service,
     requestService: { mutateAuthorizations: async (mutate: (auth: object) => void) => mutate({}) },
-    walletConnectService: { removeSessions: vi.fn().mockResolvedValue(undefined) },
+    walletConnectService: { removeSessions: vi.fn().mockResolvedValue(undefined), invalidateSession: vi.fn() },
     walletConnectDappService: { disconnect: vi.fn().mockResolvedValue(undefined) },
     poolsService: { unsubscribePools: vi.fn() }, updateServiceInfo: vi.fn(),
     balanceService: { generateDefaultBalance: vi.fn() }, networkService: { selectedNetworks: {} },
@@ -408,6 +409,33 @@ describe('acknowledged wallet removal with actual keyring and Chrome storage', {
     await drain();
     expect(await result).toEqual({ value: true });
     expect(urls.public.evmAuthorizedAccount).toBe('');
+  });
+
+  it('does not clear a rebound mobile wallet when an obsolete session deletion waits in the vault queue', async () => {
+    const address = await mobile();
+    const { state } = handler();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const blocker = track(service.tonKeyring.vault.exclusive(() => gate));
+    const dapp = Object.create(WalletConnectDAppService.prototype);
+    Object.assign(dapp, { state, invalidateSession: vi.fn() });
+    const forgetting = vi.spyOn(service, 'forgetAddress');
+    const result = track(dapp.onSessionDelete({ topic: 'public-remove-topic' }));
+    await drain(false);
+    expect(forgetting).toHaveBeenCalled();
+    const rebind = track(service.saveAddress(address, { wcTopic: 'public-rebound-topic' }, 'address'));
+    await drain();
+    expect(await rebind).toHaveProperty('value');
+    const selected = await select(address);
+    expect(selected.wcTopic).toBe('public-rebound-topic');
+    release();
+    await drain();
+    await blocker;
+    expect(await result).toHaveProperty('error');
+    expect(state.currentAccount).toEqual(selected);
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toEqual(selected);
+    expect(service.getAddress(address)?.meta.wcTopic).toBe('public-rebound-topic');
+    expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
   });
 
 });

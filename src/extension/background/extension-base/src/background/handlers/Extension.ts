@@ -321,7 +321,7 @@ export default class Extension extends FWExtensionBase {
       const selected = this.state.currentAccount?.address;
       if (!selected || (walletAddressIdentity(selected) !== walletAddressIdentity(address) &&
         (!ethereumAddress || walletAddressIdentity(selected) !== walletAddressIdentity(ethereumAddress)))) return;
-      await this.state.setCurrentAccount(null);
+      await this.state.setCurrentAccount(null, undefined, assertCurrent);
       clearedSelection = true;
       clearedRevision = this.state.keyringService.currentAccountRevision;
     };

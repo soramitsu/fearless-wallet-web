@@ -188,13 +188,13 @@ describe('removing the current account', () => {
   it('switches to the next non-EVM account, not a standalone EVM account listed first', async () => {
     const state = await forget(SUBSTRATE, [EVM, TON]);
     expect(state.updateCurrentAccount).toHaveBeenCalledExactlyOnceWith({ address: TON.address, walletEcosystem: WalletEcosystem.Ton });
-    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null);
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null, undefined, expect.any(Function));
   });
 
   it('stores the remaining standalone EVM account instead of keeping the removed one selected', async () => {
     const state = await forget(SUBSTRATE, [EVM]);
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();
-    expect(state.setCurrentAccount).toHaveBeenNthCalledWith(1, null);
+    expect(state.setCurrentAccount).toHaveBeenNthCalledWith(1, null, undefined, expect.any(Function));
     expect(state.setCurrentAccount).toHaveBeenNthCalledWith(2, expect.objectContaining({
       address: EVM_ADDRESS,
       walletEcosystem: WalletEcosystem.Evm,
@@ -204,7 +204,7 @@ describe('removing the current account', () => {
   it('clears the selection when no account remains', async () => {
     const state = await forget(SUBSTRATE, []);
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();
-    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null);
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null, undefined, expect.any(Function));
     expect(state.cleanupDeletedAccount).toHaveBeenCalledWith(SUBSTRATE.address);
   });
 

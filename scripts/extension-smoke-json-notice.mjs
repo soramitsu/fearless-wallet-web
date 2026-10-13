@@ -73,7 +73,13 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
               await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 160, y: 500, deltaX: 0, deltaY: 400 }, sessionId);
               await evalUi(`new Promise((resolve) => setTimeout(() => resolve(true), 100))`);
             }
-            if (!await evalUi(reachable)) throw new Error('Encrypted JSON backup choice is unreachable');
+            if (!await evalUi(reachable)) {
+              const failure = await evalUi(`(() => { const row = document.querySelector('.accounts-layout .row'); const ancestors = []; for (let el = row; el; el = el.parentElement) { const box = el.getBoundingClientRect(); const css = getComputedStyle(el); ancestors.push({ className: el.className, box: box.toJSON(), scrollTop: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight, overflow: css.overflow }); } return { ancestors, point: document.elementFromPoint(160, 500)?.outerHTML }; })()`);
+              await fs.writeFile(path.join(outputDir, `${name}-unreachable.json`), JSON.stringify(failure, null, 2) + '\n');
+              const { data: failedData } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+              await fs.writeFile(path.join(outputDir, `${name}-unreachable.png`), Buffer.from(failedData, 'base64'));
+              throw new Error(`Encrypted JSON backup choice is unreachable: ${name}`);
+            }
             const { data: endData } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
             await fs.writeFile(path.join(outputDir, `${name}-end.png`), Buffer.from(endData, 'base64'));
             results.at(-1).jsonChoiceReachable = true;

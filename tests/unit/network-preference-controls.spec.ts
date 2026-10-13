@@ -22,6 +22,7 @@ vi.mock('@/router/routes', () => ({ Components: { Nodes: 'Nodes' } }));
 import Nodes from '@/screens/accounts/Nodes.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
+import Switcher from '@/components/Switcher.vue';
 
 const route = reactive({ name: 'Nodes', params: { network: 'Polkadot' } });
 const wrappers: ReturnType<typeof mount>[] = [];
@@ -33,8 +34,8 @@ const stubs = {
   RouterView: true, NetworkItem: true, SearchInput: true, Tabs: true,
   NotificationPopup: { props: ['acceptDisabled', 'headers'], template: '<section data-testid="delete-dialog"><p>{{headers.text}}</p><button :disabled="acceptDisabled" @click="$emit(\'handlerAccept\')">Delete</button><button @click="$emit(\'handlerClose\')">Cancel</button></section>' },
 };
-function open(component: Component) {
-  const wrapper = mount(component, { global: { stubs, mocks: { $t: (key: string) => key, $notify: io.notify,
+function open(component: Component, nativeSwitch = false) {
+  const wrapper = mount(component, { attachTo: document.body, global: { components: { Switcher }, stubs: nativeSwitch ? { ...stubs, Switcher: false } : stubs, mocks: { $t: (key: string) => key, $notify: io.notify,
     $route: route, $router: { push: vi.fn(), back: vi.fn() } } } });
   wrappers.push(wrapper);
   return wrapper;
@@ -68,6 +69,25 @@ describe('acknowledged network controls', () => {
     expect(wrapper.get('[data-testid="auto"]').attributes('disabled')).toBeDefined();
     Object.assign(io.networks.Polkadot, io.save.mock.calls[0][0]); held.resolve(); await flushPromises();
     expect(wrapper.get('[data-testid="auto"]').attributes('aria-checked')).toBe('true');
+  });
+
+  it('keeps the actual checkbox aligned with acknowledged settings during save and failure', async () => {
+    const held = deferred(); io.save.mockReturnValueOnce(held.promise).mockResolvedValueOnce(undefined);
+    const wrapper = open(Nodes, true);
+    const input = wrapper.get('input[role="switch"]').element as HTMLInputElement;
+    input.click(); await flushPromises();
+    expect(io.save).toHaveBeenCalledOnce();
+    expect(input.disabled).toBe(true);
+    expect(input.checked).toBe(false);
+    expect(input.getAttribute('aria-checked')).toBe('false');
+    held.reject(new Error('storage unavailable')); await flushPromises();
+    expect(input.disabled).toBe(false);
+    expect(input.checked).toBe(false);
+    input.click(); await flushPromises();
+    expect(io.save).toHaveBeenCalledTimes(2);
+    Object.assign(io.networks.Polkadot, io.save.mock.calls[1][0]); await flushPromises();
+    expect(input.checked).toBe(true);
+    expect(input.getAttribute('aria-checked')).toBe('true');
   });
 
   it('retains the current node after failed selection and permits retry', async () => {

@@ -1,16 +1,17 @@
 <template>
   <label class="switch" data-testid="switch">
     <input
-      v-model="vModel"
+      :checked="value"
       class="switch__input"
       type="checkbox"
       role="switch"
-      :aria-checked="vModel"
+      :aria-checked="value"
       :aria-label="ariaLabel || undefined"
       :disabled="disabled"
+      @change="change"
     />
     <span class="switch__core" aria-hidden="true"></span>
-    <span v-if="activeText || inactiveText" class="switch__text">{{ vModel ? activeText : inactiveText }}</span>
+    <span v-if="activeText || inactiveText" class="switch__text">{{ value ? activeText : inactiveText }}</span>
   </label>
 </template>
 
@@ -36,10 +37,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(['change']);
 
-const vModel = computed({
-  get: () => props.value,
-  set: (value: boolean) => emit('change', value),
-});
+function change(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const desired = input.checked;
+  // Native activation changes checked before this event. Keep the displayed state controlled by the owner.
+  input.checked = props.value;
+  if (!props.disabled) emit('change', desired);
+}
 
 const activeText = computed(() => props.activeText);
 const inactiveText = computed(() => props.inactiveText);

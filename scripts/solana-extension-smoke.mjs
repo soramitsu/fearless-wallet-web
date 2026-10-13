@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
 import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
 import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
+import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -45,7 +46,8 @@ const primitivesScreenshotsDir =
           ? process.argv[primitivesScreenshotsArg + 1]
           : 'output/primitives-screenshots'
       );
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir);
+const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -311,6 +313,31 @@ async function main() {
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
     console.info('[extension-smoke] wallet seeded');
+
+    if (tonImportStorageOnly) {
+      let controlSession = extensionSession;
+      const result = await checkTonImportStorage({
+        fixture: universalWalletFixture,
+        password: TEST_PASSWORD,
+        assert,
+        send: (message, request) => extensionSend(cdp, controlSession, message, request),
+        read: (key) => evaluate(cdp, controlSession, `chrome.storage.local.get(${JSON.stringify(key)}).then((data) => data[${JSON.stringify(key)}])`),
+        restart: async () => {
+          await stopExtensionKeepAlive();
+          const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, backgroundSession);
+          await evaluate(cdp, backgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
+          await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
+            && ['background_page', 'service_worker'].includes(target.type)
+            && target.url.startsWith(`chrome-extension://${extensionId}/`), 'restarted extension worker', chrome);
+          await openExtensionBackgroundSession(cdp, extensionId, chrome);
+          controlSession = await openExtensionControlPage(cdp, extensionId);
+          await setupExtensionMessaging(cdp, controlSession);
+          await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
+        },
+      });
+      console.info(JSON.stringify({ extensionId, tonImportStorage: result }, null, 2));
+      return;
+    }
 
     if (effectsScreenshotsDir) {
       const { shots, results } = await captureEffectsScreenshots({

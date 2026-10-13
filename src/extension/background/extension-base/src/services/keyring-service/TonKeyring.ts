@@ -157,7 +157,7 @@ export class TonKeyringService {
   // `choice` is the address the user picked on the import screen for the text in `suri`; the phrase that
   // opens it is stored, tidied or exactly as typed. Without one, a BIP39 phrase gets the universal address
   // and any other phrase the native one, as for a newly created wallet.
-  async createAccount(suri: string, meta: FWKeyringMeta | string = '', password?: string, choice?: TonImportChoice) {
+  async createAccount(suri: string, meta: FWKeyringMeta | string = '', choice?: TonImportChoice) {
     const chosen = choice && (await deriveTonImportChoice(suri, choice));
     const account = chosen || (await deriveCompatibleTonKeyPair(suri.split(' ')));
     const suriArray = (chosen ? chosen.phrase : suri).split(' ');
@@ -175,17 +175,6 @@ export class TonKeyringService {
     const wallet = this.createContractV4(account.publicKey);
     const address = this.getUserFriendlyAddress(wallet.address);
     const publicKeyHex = bytesToHex(account.publicKey);
-
-    // Already in the wallet: its record (name, settings, stored phrase) stays as it is. Only a stored
-    // phrase that no longer opens with the current password is replaced, by this one, which derives
-    // the same key.
-    if (password && this.accountSubject.value[address]) {
-      await this.vault
-        .decryptVerified(address, () => password)
-        .catch(() => this.vault.recoverWithPhrase(address, suriArray.join(' '), () => password));
-
-      return { wallet, address };
-    }
 
     const name = initialMeta.name ?? '';
     const universalMeta = withUniversalWalletKeyringMeta(
@@ -210,12 +199,11 @@ export class TonKeyringService {
       });
     }
 
-    if (password) {
-      const cipherSeed = this.encodeMnemonic(suriArray, password);
-      tonStore.set(address, { name, address, cipherSeed, meta: universalMeta, publicKeyHex });
-
-      this.setAccounts({ address, name, cipherSeed, meta: universalMeta, publicKeyHex });
-    }
+    await this.vault.importAccount(
+      { address, name, meta: universalMeta, publicKeyHex },
+      suriArray.join(' '),
+      () => this.keyringService.getPassword()
+    );
 
     return { wallet, address };
   }

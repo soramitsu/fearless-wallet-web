@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   records: new Map<string, TonStoreAccount>(),
   keyring: { hash: '', master: '' },
+  failWrites: false,
+  beforeWrite: undefined as undefined | (() => Promise<void>),
 }));
 
 // An in-memory chrome.storage double for `fw:ton:*` that, like BaseExtensionStore.updateAndWait,
@@ -22,10 +24,13 @@ vi.mock('@extension-base/stores/TonStore', () => {
         for (const [address, record] of mocks.records) update(address, copy(record));
       },
       set: vi.fn((address: string, record: TonStoreAccount) => mocks.records.set(address, copy(record))),
+      getAndWait: vi.fn(async (address: string) => copy(mocks.records.get(address))),
       remove: vi.fn((address: string) => mocks.records.delete(address)),
       updateAndWait: vi.fn(async (address: string, transform, publish?: (record: TonStoreAccount) => void) => {
         const next = transform(copy(mocks.records.get(address)));
         if (next === undefined) return undefined;
+        await mocks.beforeWrite?.();
+        if (mocks.failWrites) throw new Error('disk unavailable');
         mocks.records.set(address, copy(next));
         publish?.(copy(next));
         return next;
@@ -381,6 +386,8 @@ async function signedBy(state: State, sendBlockchainMessage: ReturnType<typeof v
 beforeEach(() => {
   deployedWallets.clear();
   mocks.records.clear();
+  mocks.failWrites = false;
+  mocks.beforeWrite = undefined;
   vi.mocked(tonStore.set).mockClear();
   vi.mocked(tonStore.updateAndWait).mockClear();
 });
@@ -391,6 +398,39 @@ afterEach(() => {
 });
 
 describe('restoring a 3.0.x TON wallet from its phrase', PBKDF2_SUITE, () => {
+  it('does not select a TON wallet or answer the creation message before its seed commits', async () => {
+    const { create, state } = await background();
+    const [golden] = vectors.vectors;
+    let release!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const started = new Promise<void>((resolve) => { entered = resolve; });
+    mocks.beforeWrite = async () => { entered(); await gate; };
+    let answered = false;
+    const imported = create(golden.mnemonic).then((address) => { answered = true; return address; });
+    try {
+      await Promise.race([started, imported]);
+      expect(answered).toBe(false);
+      expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    } finally {
+      release();
+      await imported;
+    }
+    expect(state.updateCurrentAccount).toHaveBeenCalledWith({
+      address: golden.expected.ton.addressNonBounceable,
+      walletEcosystem: WalletEcosystem.Ton,
+    });
+  });
+
+  it('propagates failed seed persistence through the creation message and leaves selection alone', async () => {
+    const { create, keyringService, state } = await background();
+    mocks.failWrites = true;
+    await expect(create(vectors.vectors[0].mnemonic)).rejects.toThrow('disk unavailable');
+    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
+    expect(keyringService.tonKeyring.getAccounts()).toEqual([]);
+    expect(mocks.records.size).toBe(0);
+  });
+
   it('reopens a TON wallet that 3.0.x imported from a BIP39 phrase at its stored address', async () => {
     for (const vector of bip39Vectors.vectors.slice(0, 4)) {
       const { candidates, create, keyringService, sendBlockchainMessage, state } = await background();
@@ -561,6 +601,7 @@ describe('importing a TON address that is already in the wallet', PBKDF2_SUITE, 
     await create(REAL_BUILD.mnemonic, { derivation: legacy.derivation, address: legacy.address }, 'Fearless 3.0 TON');
     const first = JSON.stringify(stored(legacy.address));
     vi.mocked(tonStore.set).mockClear();
+    vi.mocked(tonStore.updateAndWait).mockClear();
 
     const [universalAgain, legacyAgain] = await candidates(REAL_BUILD.mnemonic);
     expect(legacyAgain).toMatchObject({ address: legacy.address, inWallet: true });

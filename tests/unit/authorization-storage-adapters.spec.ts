@@ -13,7 +13,7 @@ const fixture = vi.hoisted(() => ({
 }));
 vi.mock('@/consts/global', async (original) => ({
   ...(await original<Record<string, unknown>>()),
-  IS_EXTENSION: fixture.extension,
+  get IS_EXTENSION() { return fixture.extension; },
 }));
 vi.mock('@extension-base/utils/crossenv', () => ({
   chrome: {
@@ -114,6 +114,8 @@ describe.each([true, false])('real authorization store (extension: %s)', (extens
       },
     } as unknown as IDBDatabase);
     const { AuthRequestHandler } = await import('@extension-base/services/request-service/handlers/AuthRequestHandler');
+    const { default: AuthorizeStore } = await import('@extension-base/stores/Authorize');
+    expect(new AuthorizeStore()).toBeInstanceOf(extension ? BaseExtensionStore : BaseWebStore);
     create = () => new AuthRequestHandler(requests, state);
   });
   afterEach(async () => {

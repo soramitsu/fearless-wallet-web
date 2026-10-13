@@ -278,7 +278,7 @@ export class KeyringService {
     tonImport?: TonImportChoice
   ) {
     if (walletEcosystem === 'ton') {
-      const account = await this.tonKeyring.createAccount(suri, meta, this.password, tonImport);
+      const account = await this.tonKeyring.createAccount(suri, meta, tonImport);
 
       return account.address.toString();
     }

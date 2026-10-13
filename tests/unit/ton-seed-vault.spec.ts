@@ -13,6 +13,8 @@ import { WalletEcosystem } from '@/interfaces';
 const mocks = vi.hoisted(() => ({
   records: new Map<string, TonStoreAccount>(),
   failWrites: false,
+  failReads: false,
+  beforeWrite: undefined as undefined | (() => Promise<void>),
   keyring: { hash: '', master: '' },
   changeMasterPassword: vi.fn(),
   prompt: new Map<string, unknown>(),
@@ -31,10 +33,15 @@ vi.mock('@extension-base/stores/TonStore', () => {
         for (const [address, record] of mocks.records) update(address, copy(record));
       },
       set: vi.fn((address: string, record: TonStoreAccount) => mocks.records.set(address, copy(record))),
+      getAndWait: vi.fn(async (address: string) => {
+        if (mocks.failReads) throw new Error('read unavailable');
+        return copy(mocks.records.get(address));
+      }),
       remove: vi.fn((address: string) => mocks.records.delete(address)),
       updateAndWait: vi.fn(async (address: string, transform, publish?: (record: TonStoreAccount) => void) => {
         const next = transform(copy(mocks.records.get(address)));
         if (next === undefined) return undefined;
+        await mocks.beforeWrite?.();
         if (mocks.failWrites) throw new Error('disk unavailable');
         mocks.records.set(address, copy(next));
         publish?.(copy(next));
@@ -129,12 +136,203 @@ const publicKey = (source: Fixture) => Buffer.from(source.publicKeyHex, 'hex');
 beforeEach(() => {
   vi.mocked(tonStore.updateAndWait).mockClear();
   mocks.failWrites = false;
+  mocks.failReads = false;
+  mocks.beforeWrite = undefined;
   mocks.prompt.clear();
   mocks.changeMasterPassword.mockReset().mockImplementation((next: string, old?: string) => {
     if (mocks.keyring.hash && old !== mocks.keyring.hash) throw new Error('Invalid master password');
     if (!next) throw new Error('Require new password');
     mocks.keyring.hash = next;
     mocks.keyring.master = next;
+  });
+});
+
+describe('durable TON account import', PBKDF2_SUITE, () => {
+  const importUniversal = (service: KeyringService, name = 'Imported TON') =>
+    service.addAccount(UNIVERSAL.phrase, { name }, WalletEcosystem.Ton);
+  const deferred = () => {
+    let resolve!: () => void;
+    const promise = new Promise<void>((done) => { resolve = done; });
+    return { promise, resolve };
+  };
+
+  it('does not publish or answer success before the seed write commits', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const entered = deferred();
+    const release = deferred();
+    mocks.beforeWrite = async () => { entered.resolve(); await release.promise; };
+    let answered = false;
+    const imported = importUniversal(service).then((address) => { answered = true; return address; });
+    try {
+      await Promise.race([entered.promise, imported]);
+      expect(answered).toBe(false);
+      expect(service.tonKeyring.getAccounts()).toEqual([]);
+      expect(mocks.records.size).toBe(0);
+    } finally {
+      release.resolve();
+      await imported;
+    }
+    expect(service.tonKeyring.getAccounts().map(({ address }) => address)).toEqual([UNIVERSAL.address]);
+    const restarted = await wallet(P1);
+    expect(restarted.unlockKeyring({ password: P1 })).toBe(true);
+    await expect(exportTon(restarted, UNIVERSAL.address, P1)).resolves.toEqual({ seed: UNIVERSAL.phrase });
+  });
+
+  it('rejects a failed write, publishes nothing, and allows an explicit retry', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    mocks.failWrites = true;
+    await expect(importUniversal(service)).rejects.toThrow('disk unavailable');
+    expect(service.tonKeyring.getAccounts()).toEqual([]);
+    expect(mocks.records.size).toBe(0);
+    mocks.failWrites = false;
+    await expect(importUniversal(service)).resolves.toBe(UNIVERSAL.address);
+    expect(await decryptTonSeed(stored(UNIVERSAL.address).cipherSeed, P1, publicKey(UNIVERSAL))).toBe(UNIVERSAL.phrase);
+  });
+
+  it('rejects a failed durable read without treating the account as new', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const existing = { ...record(UNIVERSAL, P1), futureField: 'preserved' };
+    mocks.records.set(UNIVERSAL.address, existing);
+    mocks.failReads = true;
+    await expect(importUniversal(service)).rejects.toThrow('read unavailable');
+    expect(stored(UNIVERSAL.address)).toEqual(existing);
+    expect(service.tonKeyring.getAccounts()).toEqual([]);
+  });
+
+  it('preserves an existing durable record absent from the in-memory inventory', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const existing = { ...record(UNIVERSAL, P1), futureField: 'preserved' };
+    mocks.records.set(UNIVERSAL.address, existing);
+    await expect(importUniversal(service, 'Do not rename')).resolves.toBe(UNIVERSAL.address);
+    expect(stored(UNIVERSAL.address)).toEqual(existing);
+    expect(service.tonKeyring.accountSubject.value[UNIVERSAL.address].name).toBe(existing.name);
+  });
+
+  it('coalesces concurrent imports without replacing the first committed record', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    await expect(Promise.all([importUniversal(service, 'First import'), importUniversal(service, 'Second import')]))
+      .resolves.toEqual([UNIVERSAL.address, UNIVERSAL.address]);
+    expect(stored(UNIVERSAL.address).name).toBe('First import');
+    expect(tonStore.updateAndWait).toHaveBeenCalledOnce();
+  });
+
+  it('queues imports behind a password change and reads the new password when it runs', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const release = deferred();
+    const blocker = service.tonKeyring.vault.exclusive(() => release.promise);
+    const change = service.changeMasterPassword({ oldPassword: P1, newPassword: P2 });
+    const imported = importUniversal(service);
+    // Derivation may complete before the vault queue opens. It must not persist under P1.
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    release.resolve();
+    await blocker;
+    await expect(change).resolves.toBe(true);
+    await expect(imported).resolves.toBe(UNIVERSAL.address);
+    expect(await decryptTonSeed(stored(UNIVERSAL.address).cipherSeed, P2, publicKey(UNIVERSAL))).toBe(UNIVERSAL.phrase);
+    const restarted = await wallet(P2);
+    expect(restarted.unlockKeyring({ password: P2 })).toBe(true);
+    await expect(exportTon(restarted, UNIVERSAL.address, P2)).resolves.toEqual({ seed: UNIVERSAL.phrase });
+  });
+
+  it('does not import under the old password after a password change has already taken its account snapshot', async () => {
+    const service = await wallet(P1, [record(NATIVE, P1)]);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const entered = deferred();
+    const release = deferred();
+    mocks.beforeWrite = async () => { entered.resolve(); await release.promise; };
+    const change = service.changeMasterPassword({ oldPassword: P1, newPassword: P2 });
+    await entered.promise;
+    const imported = importUniversal(service);
+    mocks.beforeWrite = undefined;
+    // The existing native account has already been staged. A late import must wait for P2.
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    release.resolve();
+    await expect(change).resolves.toBe(true);
+    await expect(imported).resolves.toBe(UNIVERSAL.address);
+    expect(await decryptTonSeed(stored(UNIVERSAL.address).cipherSeed, P2, publicKey(UNIVERSAL))).toBe(UNIVERSAL.phrase);
+  });
+
+  it('keeps the earlier ciphertext and inventory when repairing an existing import fails to persist', async () => {
+    const original = { ...record(UNIVERSAL, P0), futureField: 'preserved' };
+    const service = await wallet(P1, [original]);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    mocks.failWrites = true;
+    await expect(importUniversal(service)).rejects.toThrow('disk unavailable');
+    expect(stored(UNIVERSAL.address)).toEqual(original);
+    expect(service.tonKeyring.accountSubject.value[UNIVERSAL.address].cipherSeed).toBe(original.cipherSeed);
+    mocks.failWrites = false;
+    await expect(importUniversal(service)).resolves.toBe(UNIVERSAL.address);
+    expect(stored(UNIVERSAL.address)).toMatchObject({ name: original.name, futureField: 'preserved' });
+    expect(await decryptTonSeed(stored(UNIVERSAL.address).cipherSeed, P1, publicKey(UNIVERSAL))).toBe(UNIVERSAL.phrase);
+  });
+
+  it('rejects a conflicting durable public key without replacing or publishing that record', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const original = { ...record(UNIVERSAL, P1), publicKeyHex: NATIVE.publicKeyHex };
+    mocks.records.set(UNIVERSAL.address, original);
+    await expect(importUniversal(service)).rejects.toMatchObject({ code: 'account_key_mismatch' });
+    expect(stored(UNIVERSAL.address)).toEqual(original);
+    expect(service.tonKeyring.getAccounts()).toEqual([]);
+    expect(tonStore.updateAndWait).not.toHaveBeenCalled();
+  });
+
+  it('keeps a record that appears after the import read, requiring a fresh retry', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const original = { ...record(UNIVERSAL, P1), futureField: 'preserved' };
+    vi.mocked(tonStore.getAndWait).mockImplementationOnce(async () => {
+      mocks.records.set(UNIVERSAL.address, original);
+      return undefined;
+    });
+    await expect(importUniversal(service)).rejects.toMatchObject({ code: 'account_changed' });
+    expect(stored(UNIVERSAL.address)).toEqual(original);
+    expect(service.tonKeyring.getAccounts()).toEqual([]);
+    await expect(importUniversal(service)).resolves.toBe(UNIVERSAL.address);
+    expect(stored(UNIVERSAL.address)).toEqual(original);
+  });
+
+  it('includes a pending import in the password change that follows it', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const entered = deferred();
+    const release = deferred();
+    mocks.beforeWrite = async () => { entered.resolve(); await release.promise; };
+    const imported = importUniversal(service);
+    await Promise.race([entered.promise, imported]);
+    const change = service.changeMasterPassword({ oldPassword: P1, newPassword: P2 });
+    mocks.beforeWrite = undefined;
+    release.resolve();
+    await expect(imported).resolves.toBe(UNIVERSAL.address);
+    await expect(change).resolves.toBe(true);
+    expect(await decryptTonSeed(stored(UNIVERSAL.address).cipherSeed, P2, publicKey(UNIVERSAL))).toBe(UNIVERSAL.phrase);
+  });
+
+  it('rejects a locked import without returning an unstored address', async () => {
+    const service = await wallet(P1, []);
+    await expect(importUniversal(service)).rejects.toMatchObject({ code: 'keyring_locked' });
+    expect(mocks.records.size).toBe(0);
+    expect(service.tonKeyring.getAccounts()).toEqual([]);
+  });
+
+  it('rechecks a lock while an import waits for the vault', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const release = deferred();
+    const blocker = service.tonKeyring.vault.exclusive(() => release.promise);
+    const imported = importUniversal(service);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    service.lockKeyring();
+    release.resolve();
+    await blocker;
+    await expect(imported).rejects.toMatchObject({ code: 'keyring_locked' });
+    expect(mocks.records.size).toBe(0);
   });
 });
 

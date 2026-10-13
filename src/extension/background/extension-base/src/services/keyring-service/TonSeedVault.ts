@@ -79,6 +79,61 @@ export class TonSeedVault {
     return result;
   }
 
+  /** Import shares the password-change queue. The durable record owns an existing address; a new
+   * record is published only after its verified seed has been stored under the current password. */
+  importAccount(
+    record: Omit<TonStoreAccount, 'cipherSeed' | 'pendingCipherSeed'>,
+    phrase: string,
+    password: () => string
+  ): Promise<void> {
+    return this.exclusive(async () => {
+      const currentPassword = password();
+
+      if (!currentPassword) throw new TonKeyringError('keyring_locked');
+
+      const { address, publicKeyHex } = record;
+      const existing = await tonStore.getAndWait(address);
+
+      if (existing) {
+        if (existing.publicKeyHex?.toLowerCase() !== publicKeyHex.toLowerCase()) {
+          throw new TonKeyringError('account_key_mismatch');
+        }
+
+        this.owner.setAccounts({ ...existing, address });
+        try {
+          await this.open(address, currentPassword, () => password() === currentPassword);
+        } catch (error) {
+          if (!(error instanceof TonKeyringError) || error.code !== TON_SEED_NEEDS_PREVIOUS_PASSWORD) throw error;
+          if (!(await derivesPublicKey(phrase, this.account(address).publicKey))) {
+            throw new TonKeyringError('account_key_mismatch');
+          }
+          await this.storeRecovered(address, phrase, password);
+        }
+
+        if (!password()) throw new TonKeyringError('keyring_locked');
+
+        return;
+      }
+
+      const cipherSeed = await this.encryptVerified(phrase, currentPassword, Buffer.from(publicKeyHex, 'hex'));
+
+      if (password() !== currentPassword) throw new TonKeyringError('keyring_locked');
+
+      await tonStore.updateAndWait(
+        address,
+        (current) => {
+          if (password() !== currentPassword) throw new TonKeyringError('keyring_locked');
+          // A record arriving from outside this vault must never be overwritten by an import.
+          if (current) throw new TonKeyringError('account_changed');
+
+          return { ...record, cipherSeed };
+        },
+        (committed) => this.owner.setAccounts({ ...committed, address }),
+        false // This awaited import owns its error; a later password flush must not replay it.
+      );
+    });
+  }
+
   /** Returns the stored phrase exactly as stored. The password is read once this operation runs, after
    * any password change ahead of it. A cancelled scan (`isCurrent`) neither repairs nor flags. */
   decryptVerified(address: string, password: () => string, isCurrent: () => boolean = () => true): Promise<string> {
@@ -272,7 +327,8 @@ export class TonSeedVault {
 
         return { ...record, cipherSeed };
       },
-      (record) => this.owner.setAccounts({ ...record, address })
+      (record) => this.owner.setAccounts({ ...record, address }),
+      false // Recovery awaits and reports this write directly.
     );
 
     if (!saved) throw new TonKeyringError('not_found');

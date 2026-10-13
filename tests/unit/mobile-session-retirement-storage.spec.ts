@@ -352,7 +352,7 @@ describe('session retirement across roles and removal', () => {
     fixture.holdWrite = false;
     fixture.failWrite = false;
     expect(await extension.accountsForget({ address: 'public-mobile-address', type: 'mobile' })).toBe(true);
-    expect(forgetAddress).toHaveBeenCalledExactlyOnceWith('public-mobile-address');
+    expect(forgetAddress).toHaveBeenCalledExactlyOnceWith('public-mobile-address', expect.any(Function), expect.any(Function));
     const restarted = await open();
     expect(() => restarted.getSession(topic)).toThrow();
   });
@@ -387,7 +387,7 @@ describe('standalone EVM removal retirement', () => {
     } as unknown as State;
     const extension = new Extension(removalState);
     expect(await extension.accountsForget({ address: owned, type: 'native' })).toBe(true);
-    expect(forgetAccount).toHaveBeenCalledExactlyOnceWith(owned);
+    expect(forgetAccount).toHaveBeenCalledExactlyOnceWith(owned, expect.any(Function), expect.any(Function));
     expect(fixture.data[key]).toMatchObject({ topics: [topic] });
     const restarted = await openIncoming();
     expect(() => restarted.getSession(topic)).toThrow();

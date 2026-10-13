@@ -1,3 +1,4 @@
+import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
 import { validatePolkadotSigningContext } from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
 import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
@@ -284,27 +285,28 @@ export default class Extension extends FWExtensionBase {
   }
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
-    // A wallet with keys here is removed only once they are kept where Account access can restore them; if they
-    // could not be stored, nothing changes.
-    if (type === 'native') {
-      try {
-        await this.state.keyringService.archiveWallet(address);
-      } catch (error) {
-        console.error(error);
-
-        return false;
-      }
-    }
-
     const pair = this.state.keyringService.getPair(address);
-    const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
-    const solanaAddress = pair?.meta.solanaAddress as string | undefined;
-    const irohaAddress = pair?.meta.irohaAddress as string | undefined;
+    const mobileAccount = type === 'mobile' ? this.state.keyringService.getAddress(address) : undefined;
+    const meta = pair?.meta ?? mobileAccount?.meta;
+    const ethereumAddress = meta?.ethereumAddress as string | undefined;
+    const solanaAddress = meta?.solanaAddress as string | undefined;
+    const irohaAddress = meta?.irohaAddress as string | undefined;
+    const topic = mobileAccount?.meta.wcTopic;
+    const assertCurrent = () => {
+      const currentPair = this.state.keyringService.getPair(address);
+      const currentMobile = type === 'mobile' ? this.state.keyringService.getAddress(address) : undefined;
+      const currentMeta = currentPair?.meta ?? currentMobile?.meta;
+      if (currentPair !== pair || currentMeta?.ethereumAddress !== ethereumAddress ||
+        currentMeta?.solanaAddress !== solanaAddress || currentMeta?.irohaAddress !== irohaAddress ||
+        currentMobile?.meta.wcTopic !== topic)
+        throw new Error('Wallet changed during removal. Retry with the current wallet.');
+    };
 
     await this.state.requestService.mutateAuthorizations((authUrls) => {
       for (const auth of Object.values(authUrls)) {
-        auth.authorizedAccounts = auth.authorizedAccounts.filter((candidate) => candidate !== address);
-        if (ethereumAddress && auth.evmAuthorizedAccount === ethereumAddress) auth.evmAuthorizedAccount = '';
+        auth.authorizedAccounts = auth.authorizedAccounts.filter((candidate) => walletAddressIdentity(candidate) !== walletAddressIdentity(address));
+        if (auth.evmAuthorizedAccount && ((isEthereumAddress(address) && isSameString(auth.evmAuthorizedAccount, address)) ||
+          (ethereumAddress && isSameString(auth.evmAuthorizedAccount, ethereumAddress)))) auth.evmAuthorizedAccount = '';
         if (auth.solanaAuthorizedAccount === address || (solanaAddress && auth.solanaAuthorizedAccount === solanaAddress))
           auth.solanaAuthorizedAccount = '';
         if (auth.irohaAuthorizedAccount === address || (irohaAddress && auth.irohaAuthorizedAccount === irohaAddress))
@@ -312,30 +314,39 @@ export default class Extension extends FWExtensionBase {
       }
     });
 
+    let clearedSelection = false;
+    let clearedRevision = 0;
+    const beforeRemoval = async () => {
+      assertCurrent();
+      const selected = this.state.currentAccount?.address;
+      if (!selected || (walletAddressIdentity(selected) !== walletAddressIdentity(address) &&
+        (!ethereumAddress || walletAddressIdentity(selected) !== walletAddressIdentity(ethereumAddress)))) return;
+      await this.state.setCurrentAccount(null);
+      clearedSelection = true;
+      clearedRevision = this.state.keyringService.currentAccountRevision;
+    };
+
     if (type === 'native') {
       await this.state.walletConnectService.removeSessions(address, ethereumAddress);
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
-
-      this.state.keyringService.forgetAccount(address);
+      try { await this.state.keyringService.forgetAccount(address, beforeRemoval, assertCurrent); }
+      catch (error) { console.error(error); return false; }
     } else {
-      const account = this.state.keyringService.getAddress(address);
-
-      if (typeof account?.meta.wcTopic === 'string')
-        await this.state.walletConnectDappService.disconnect(account.meta.wcTopic);
-      this.state.keyringService.forgetAddress(address);
+      if (typeof topic === 'string') await this.state.walletConnectDappService.disconnect(topic);
+      try { await this.state.keyringService.forgetAddress(address, beforeRemoval, assertCurrent); }
+      catch (error) { console.error(error); return false; }
     }
 
-    const isWasCurrentAccount = address === this.state.currentAccount?.address;
+    const isWasCurrentAccount = clearedSelection && !this.state.currentAccount &&
+      this.state.keyringService.currentAccountRevision === clearedRevision;
 
     // Never leave the removed account selected: updateCurrentAccount refuses EVM addresses,
     // so a remaining standalone EVM account is stored directly, and no account means none.
     if (isWasCurrentAccount) {
       const nextAccount = pickDefaultCurrentAccount(this.state.keyringService.getAllMainAccounts());
 
-      if (!nextAccount) await this.state.setCurrentAccount(null);
-      else if (isEthereumAddress(nextAccount.address)) await this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
-      else
+      if (nextAccount && isEthereumAddress(nextAccount.address)) await this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
+      else if (nextAccount)
         await this.state.updateCurrentAccount({
           address: nextAccount.address,
           walletEcosystem: nextAccount.meta.walletEcosystem,

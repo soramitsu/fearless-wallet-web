@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { cryptoWaitReady, encodeAddress } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
+import { BehaviorSubject } from 'rxjs';
 import { addressKey } from '@subwallet/ui-keyring/defaults';
 
 const fixture = vi.hoisted(() => ({
-  data: {} as Record<string, any>,
+  data: {} as Record<string, KeyringPairJson & { accounts: Record<string, KeyringPairJson>; ton: TonStoreAccount; pendingCipherSeed?: string }>,
   writes: [] as Array<() => void>,
   removals: [] as Array<{ keys: string[]; finish: () => void }>,
-  failRead: false, failWrite: false, failRemove: false,
+  failRead: false, failWrite: false, failRemove: false, failSelection: false,
   runtime: { lastError: undefined as { message: string } | undefined, getURL: (path: string) => path },
 }));
 vi.mock('@subwallet/keyring/pair/nobody', () => ({ nobody: () => { throw new Error('Unused development pair'); } }));
@@ -23,8 +24,9 @@ vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
     set: (data: typeof fixture.data, callback: () => void) => {
       const snapshot = structuredClone(data);
       fixture.writes.push(() => {
-        fixture.runtime.lastError = fixture.failWrite ? { message: 'Recovery write failed' } : undefined;
-        if (!fixture.failWrite) Object.assign(fixture.data, snapshot);
+        const failed = fixture.failWrite || (fixture.failSelection && Object.hasOwn(snapshot, 'fwcurrent_account:CurrentAccountInfo'));
+        fixture.runtime.lastError = failed ? { message: 'Recovery write failed' } : undefined;
+        if (!failed) Object.assign(fixture.data, snapshot);
         callback();
         fixture.runtime.lastError = undefined;
       });
@@ -50,8 +52,12 @@ import { TonKeyringService } from '@extension-base/services/keyring-service/TonK
 import { accountStoreKey, walletRecordKeys } from '@extension-base/services/keyring-service/DeletedWallets';
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
+import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
+import State from '@extension-base/background/handlers/State';
+import { decryptTonSeed } from '@extension-base/services/keyring-service/TonSeedVault';
 import Extension from '@extension-base/background/handlers/Extension';
-import type { KeypairType } from '@subwallet/keyring/types';
+import type { TonStoreAccount } from '@extension-base/stores/TonStore';
+import type { KeyringPair$Json as KeyringPairJson, KeypairType } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public removal fixture password';
@@ -93,7 +99,7 @@ beforeEach(async () => {
   fixture.data = {};
   fixture.writes = [];
   fixture.removals = [];
-  fixture.failRead = fixture.failWrite = fixture.failRemove = false;
+  fixture.failRead = fixture.failWrite = fixture.failRemove = fixture.failSelection = false;
   pending = [];
   for (const subject of [keyring.accounts, keyring.addresses, keyring.contracts]) {
     for (const address of Object.keys(subject.subject.value)) subject.removeSubjectOnly(address);
@@ -105,15 +111,41 @@ beforeEach(async () => {
   keyring.keyring.changeMasterPassword(PASSWORD);
   service = Object.create(KeyringService.prototype);
   Object.assign(service, { password: PASSWORD, tonKeyring: new TonKeyringService(service),
+    currentAccountStore: new CurrentAccountStore(), currentAccountSubject: new BehaviorSubject(null),
+    selectionRevision: 0, selectionRequestRevision: 0,
     accountAccess: { scheduleScan: vi.fn(), flagPreviousMasterPair: vi.fn() }, scheduleLegacyNetworkEnrollment: vi.fn() });
 });
 afterEach(async () => {
-  fixture.failRead = fixture.failWrite = fixture.failRemove = false;
+  fixture.failRead = fixture.failWrite = fixture.failRemove = fixture.failSelection = false;
   await drain();
   await Promise.all(pending);
   await BaseExtensionStore.flush().catch(() => undefined);
   vi.restoreAllMocks();
 });
+
+function handler() {
+  const state = Object.create(State.prototype) as State;
+  Object.assign(state, {
+    keyringService: service,
+    requestService: { mutateAuthorizations: async (mutate: (auth: object) => void) => mutate({}) },
+    walletConnectService: { removeSessions: vi.fn().mockResolvedValue(undefined) },
+    walletConnectDappService: { disconnect: vi.fn().mockResolvedValue(undefined) },
+    poolsService: { unsubscribePools: vi.fn() }, updateServiceInfo: vi.fn(),
+    balanceService: { generateDefaultBalance: vi.fn() }, networkService: { selectedNetworks: {} },
+    nftService: { publishNfts: vi.fn() }, setActiveNetworks: vi.fn(), cleanupDeletedAccount: vi.fn(),
+  });
+  vi.spyOn(service, 'triggerWalletsSubscription').mockImplementation(() => {});
+  const extension = Object.create(Extension.prototype) as Extension;
+  Object.assign(extension, { state });
+  return { state, extension };
+}
+async function select(address: string) {
+  const { state } = handler();
+  const result = track(state.updateCurrentAccount({ address }));
+  await drain();
+  expect(await result).toHaveProperty('value');
+  return state.currentAccount!;
+}
 
 describe('acknowledged wallet removal with actual keyring and Chrome storage', { timeout: 60_000 }, () => {
   it('retains a mobile address and pending result until removal is acknowledged', async () => {
@@ -244,4 +276,138 @@ describe('acknowledged wallet removal with actual keyring and Chrome storage', {
     expect(await result).toEqual({ value: true });
     expect(cleanup).toHaveBeenCalledWith(address);
   });
+  it('snapshots the latest acknowledged metadata and prevents a queued rename from resurrecting the account', async () => {
+    const address = await native();
+    const key = accountStoreKey(service.getPair(address)!);
+    const rename = track(service.saveAccountMeta(address, { name: 'Latest durable name' }));
+    const removal = track(service.forgetAccount(address));
+    await drain(false);
+    expect(await rename).toHaveProperty('value');
+    expect(archives()[0].accounts[key].meta.name).toBe('Latest durable name');
+    const stale = track(service.saveAccountMeta(address, { name: 'Too late' }));
+    await drain();
+    expect(await removal).toHaveProperty('value');
+    await stale;
+    expect(fixture.data[`fw:${key}`]).toBeUndefined();
+    expect(service.getPair(address)).toBeNull();
+  });
+
+  it('rejects a failed recovery read without removing or changing live keys', async () => {
+    const address = await native();
+    const pair = service.getPair(address);
+    const original = structuredClone(fixture.data);
+    fixture.failRead = true;
+    const result = track(service.forgetAccount(address));
+    await drain();
+    expect(await result).toHaveProperty('error');
+    expect(fixture.data).toEqual(original);
+    expect(service.getPair(address)).toBe(pair);
+  });
+
+  it('removes TON only after acknowledgement, preserves old observable snapshots and verifies the recovery phrase', async () => {
+    const address = await native('sr25519', WalletEcosystem.Ton);
+    const previous = service.tonKeyring.accountSubject.value;
+    const result = track(service.forgetAccount(address));
+    await drain(false);
+    expect(service.tonKeyring.accountSubject.value[address]).toBe(previous[address]);
+    expect(archives()[0].ton).toEqual(fixture.data[`fw:ton:${address}`]);
+    await drain();
+    expect(await result).toHaveProperty('value');
+    expect(previous[address]).toBeDefined();
+    expect(service.tonKeyring.accountSubject.value[address]).toBeUndefined();
+    expect(await decryptTonSeed(archives()[0].ton.cipherSeed, PASSWORD, previous[address].publicKey)).toBe(PHRASE);
+  });
+
+  it('does not remove a current wallet when clearing its durable selection fails', async () => {
+    const address = await native();
+    const original = await select(address);
+    const { state, extension } = handler();
+    fixture.failSelection = true;
+    const result = track(extension.accountsForget({ address, type: 'native' }));
+    await drain();
+    expect(await result).toEqual({ value: false });
+    expect(state.currentAccount).toEqual(original);
+    expect(service.getPair(address)).not.toBeNull();
+    expect(archives()).toEqual([]);
+    expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
+  });
+
+  it('clears the real State selection before removal and rejects reselection while removal is pending', async () => {
+    const address = await native();
+    const original = await select(address);
+    const { state, extension } = handler();
+    const result = track(extension.accountsForget({ address, type: 'native' }));
+    await drain(false);
+    expect(state.currentAccount).toBeNull();
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toBeNull();
+    expect(service.getPair(address)).not.toBeNull();
+    expect(await track(service.setCurrentAccount(original))).toHaveProperty('error');
+    expect(await track(service.setCurrentAccount({ ...original, address: encodeAddress(address, 0) }))).toHaveProperty('error');
+    await drain();
+    expect(await result).toEqual({ value: true });
+    expect(service.getPair(address)).toBeNull();
+  });
+
+  it('does not replace a newer explicit choice with the deletion fallback', async () => {
+    const address = await native();
+    const other = await mobile();
+    await select(address);
+    const { state, extension } = handler();
+    const result = track(extension.accountsForget({ address, type: 'native' }));
+    await drain(false);
+    const choice = track(state.updateCurrentAccount({ address: other }));
+    await drain();
+    expect(await result).toEqual({ value: true });
+    expect(await choice).toHaveProperty('value');
+    expect(state.currentAccount?.address).toBe(other);
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo'].address).toBe(other);
+  });
+
+  it('rejects a selection already queued before removal starts, with durable compensation', async () => {
+    const address = await native();
+    const original = await select(address);
+    const queued = track(service.setCurrentAccount(original));
+    await vi.waitFor(() => expect(fixture.writes).toHaveLength(1));
+    const { state, extension } = handler();
+    const result = track(extension.accountsForget({ address, type: 'native' }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await drain();
+    expect(await queued).toHaveProperty('error');
+    expect(await result).toEqual({ value: true });
+    expect(state.currentAccount).toBeNull();
+    expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toBeNull();
+  });
+
+  it('rejects removal if a linked wallet changes while permission revocation is awaiting storage', async () => {
+    const address = await native('ecdsa');
+    const linked = await native('ethereum');
+    const { state, extension } = handler();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const mutate = vi.spyOn(state.requestService, 'mutateAuthorizations').mockImplementation(async () => { await gate; return {}; });
+    const result = track(extension.accountsForget({ address, type: 'native' }));
+    await vi.waitFor(() => expect(mutate).toHaveBeenCalled());
+    const rename = track(service.saveAccountMeta(address, { ethereumAddress: linked }));
+    await drain();
+    expect(await rename).toHaveProperty('value');
+    release();
+    await drain();
+    expect(await result).toEqual({ value: false });
+    expect(service.getPair(address)).not.toBeNull();
+    expect(service.getPair(linked)).not.toBeNull();
+    expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
+    expect(archives()).toEqual([]);
+  });
+
+  it('revokes a standalone primary EVM site grant regardless of address case', async () => {
+    const address = await native('ethereum');
+    const { state, extension } = handler();
+    const urls = { public: { authorizedAccounts: [], evmAuthorizedAccount: `0x${address.slice(2).toUpperCase()}` } };
+    vi.spyOn(state.requestService, 'mutateAuthorizations').mockImplementation(async (mutate) => { mutate(urls as never); return urls as never; });
+    const result = track(extension.accountsForget({ address, type: 'native' }));
+    await drain();
+    expect(await result).toEqual({ value: true });
+    expect(urls.public.evmAuthorizedAccount).toBe('');
+  });
+
 });

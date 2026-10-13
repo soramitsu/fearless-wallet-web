@@ -24,8 +24,8 @@ import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
-import { updateAccountMetadata } from './AccountMetadata';
-import { updatePublicAddress, type PublicAddressUpdateOptions } from './AddressMetadata';
+import { isCurrentAccountPair, updateAccountMetadata } from './AccountMetadata';
+import { removePublicAddress, updatePublicAddress, type PublicAddressUpdateOptions } from './AddressMetadata';
 import { importLocalAccount } from './LocalAccountImport';
 import { decodeJsonAccount } from './JsonAccountImport';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
@@ -38,14 +38,17 @@ import {
 } from './AccountAccess';
 import { LEGACY_PASSWORD_REQUIRED, PREVIOUS_PASSWORD_REQUIRED } from './AccountAccessErrors';
 import {
+  accountStoreKey,
   deletedWalletId,
   deletedWalletKey,
   loadableAccountRecords,
   readDeletedWallet,
   summarizeDeletedWallets,
+  walletAddressIdentity,
   walletRecordKeys,
   type DeletedWallet,
 } from './DeletedWallets';
+import type { TonStoreAccount } from '@extension-base/stores/TonStore';
 import type { StagedTonSeed } from './TonSeedVault';
 import type { EventService } from '@extension-base/services';
 import type {
@@ -209,12 +212,43 @@ export class KeyringService {
     return this.selectionRevision ?? 0;
   }
 
+  private removingAccounts = new Set<string>();
+  private removalRevisions = new Map<string, number>();
+
+  private async withAccountRemoval(
+    addresses: string[], beforeRemoval: (() => Promise<void>) | undefined, operation: () => Promise<void>
+  ): Promise<void> {
+    const identities = addresses.map(walletAddressIdentity);
+    this.removingAccounts ??= new Set();
+    this.removalRevisions ??= new Map();
+    for (const address of identities) {
+      this.removingAccounts.add(address);
+      this.removalRevisions.set(address, (this.removalRevisions.get(address) ?? 0) + 1);
+    }
+    try {
+      await beforeRemoval?.();
+      // The handler supplies State's callback to clear Sora/context too. Direct
+      // service callers still cannot leave a removed wallet selected.
+      if (identities.includes(walletAddressIdentity(this.currentAccountSubject?.value?.address ?? ''))) await this.setCurrentAccount(null);
+      await operation();
+    } finally {
+      identities.forEach((address) => this.removingAccounts.delete(address));
+    }
+  }
+
   async setCurrentAccount(
     currentAccountData: CurrentAccountState,
     onCommitted?: (account: CurrentAccountState) => void,
     assertCurrent?: () => void,
     onRecoveryState?: (account: CurrentAccountState) => void
   ): Promise<void> {
+    const address = currentAccountData?.address ? walletAddressIdentity(currentAccountData.address) : undefined;
+    const removalRevision = address ? this.removalRevisions?.get(address) ?? 0 : 0;
+    const assertAvailable = () => {
+      if (address && (this.removingAccounts?.has(address) || (this.removalRevisions?.get(address) ?? 0) !== removalRevision))
+        throw new CurrentAccountContextChanged();
+    };
+    assertAvailable();
     const previous = this.currentAccountSubject.value;
     const request = (this.selectionRequestRevision ?? 0) + 1;
     this.selectionRequestRevision = request;
@@ -227,11 +261,14 @@ export class KeyringService {
     await this.currentAccountStore.select(currentAccountData, (committed) => {
       publish(committed);
       onCommitted?.(committed);
-    }, assertCurrent ? () => {
-      if (this.selectionRequestRevision !== request || this.currentAccountSubject.value !== previous)
-        throw new CurrentAccountContextChanged();
-      assertCurrent();
-    } : undefined, () => {
+    }, () => {
+      assertAvailable();
+      if (assertCurrent) {
+        if (this.selectionRequestRevision !== request || this.currentAccountSubject.value !== previous)
+          throw new CurrentAccountContextChanged();
+        assertCurrent();
+      }
+    }, () => {
       publish(null);
       onRecoveryState?.(null);
     }, (value) => {
@@ -392,17 +429,8 @@ export class KeyringService {
     return keyring.getAddress(address, type);
   }
 
-  forgetAccount(address: string) {
-    if (this.tonKeyring.accountSubject.value[address]) {
-      this.tonKeyring.forgetAccount(address);
-
-      return;
-    }
-
-    const pair = this.getPair(address);
-
-    keyring.forgetAccount(address);
-    if (pair) this.forgetEarlierRecords(pair);
+  forgetAccount(address: string, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
+    return this.archiveWallet(address, true, beforeRemoval, assertCurrent);
   }
 
   // ui-keyring deletes an account's record under its current key only. An ECDSA account kept from 2.x or 3.0.x
@@ -419,8 +447,10 @@ export class KeyringService {
     store.remove(keys.archive);
   }
 
-  forgetAddress(address: string) {
-    return keyring.forgetAddress(address);
+  forgetAddress(address: string, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
+    return this.tonKeyring.vault.exclusive(() => this.withAccountRemoval(
+      [address], beforeRemoval, () => removePublicAddress(address, assertCurrent)
+    ));
   }
 
   /**
@@ -429,30 +459,56 @@ export class KeyringService {
    * (DeletedWallets.ts). Settles once that entry is written and rejects if it is not, so a wallet is deleted only
    * when its keys are kept.
    */
-  async archiveWallet(address: string): Promise<void> {
-    const store = this.accountsStore ?? new AccountsStore();
-    const ton = this.tonKeyring.accountSubject.value[address] ? await tonStore.getAndWait(address) : undefined;
-    const pair = ton ? null : this.getPair(address);
-    const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
-    const ethereumPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
-    const keys = walletRecordKeys([pair, ethereumPair].filter((candidate): candidate is KeyringPair => !!candidate));
-    const records = await Promise.all(keys.map(async (key) => [key, await store.getAndWait(key)] as const));
-    const accounts = Object.fromEntries(records.filter(([, record]) => record !== undefined));
-
-    if (!ton && !Object.keys(accounts).length) return;
-
-    const meta = (pair?.meta ?? {}) as FWKeyringMeta;
-    const deletedAt = Date.now();
-    const wallet: DeletedWallet = {
-      address,
-      name: ton?.name ?? (typeof meta.name === 'string' ? meta.name : ''),
-      walletEcosystem: ton ? WalletEcosystem.Ton : (meta.walletEcosystem as WalletEcosystem | undefined) ?? WalletEcosystem.Substrate,
-      deletedAt,
-      accounts,
-      ...(ton ? { ton } : {}),
-    };
-
-    await store.replaceAndWait({ [deletedWalletKey(deletedWalletId(address, deletedAt))]: wallet }, []);
+  async archiveWallet(address: string, remove = false, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
+    // Import, password rotation and TON repair share this queue; metadata shares
+    // the underlying storage queue. No newer key can arrive between snapshot and removal.
+    await this.tonKeyring.vault.exclusive(async () => {
+      const store = this.accountsStore ?? new AccountsStore();
+      const ton = this.tonKeyring.accountSubject.value[address];
+      const pair = ton ? null : this.getPair(address);
+      const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
+      const ethereumPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
+      const pairs = [...new Set([pair, ethereumPair].filter((candidate): candidate is KeyringPair => !!candidate))];
+      const accountKeys = walletRecordKeys(pairs);
+      const keys = [...accountKeys, ...(ton ? [`ton:${address}`] : [])];
+      if (!keys.length) return;
+      const persist = () => store.mutateRecordsAndWait(keys, (current) => {
+        assertCurrent?.();
+        if (pairs.some((candidate) => !isCurrentAccountPair(candidate)) ||
+          (ton && !this.tonKeyring.accountSubject.value[address]))
+          throw new Error('Wallet changed before removal.');
+        // A live private key without its durable primary record is not safe to delete.
+        if (pairs.some((candidate) => !current[accountStoreKey(candidate)]) || (ton && !current[`ton:${address}`]))
+          throw new Error('Wallet recovery record is missing.');
+        if (pair && (current[accountStoreKey(pair)] as KeyringPair$Json).meta.ethereumAddress !== ethereumAddress)
+          throw new Error('Linked wallet changed before removal.');
+        const accounts = Object.fromEntries(accountKeys.filter((key) => current[key] !== undefined)
+          .map((key) => [key, current[key]]));
+        const tonRecord = current[`ton:${address}`] as TonStoreAccount | undefined;
+        const meta = (pair ? (current[accountStoreKey(pair)] as KeyringPair$Json).meta : {}) as FWKeyringMeta;
+        const deletedAt = Date.now();
+        const wallet: DeletedWallet = {
+          address, name: tonRecord?.name ?? (typeof meta.name === 'string' ? meta.name : ''),
+          walletEcosystem: ton ? WalletEcosystem.Ton : meta.walletEcosystem ?? WalletEcosystem.Substrate,
+          deletedAt, accounts, ...(tonRecord ? { ton: tonRecord } : {}),
+        };
+        // Repeated attempts may leave an extra recovery copy after a failed Chrome
+        // removal. Never replace an older copy, even in the same millisecond.
+        const id = `${deletedWalletId(address, deletedAt)}:${crypto.randomUUID()}`;
+        return { entries: { [deletedWalletKey(id)]: wallet }, remove: remove ? keys : [] };
+      }, () => {
+        if (!remove) return;
+        for (const candidate of pairs) {
+          if (!isCurrentAccountPair(candidate)) continue;
+          candidate.lock();
+          keyring.keyring.removePair(candidate.address);
+          keyring.accounts.removeSubjectOnly(candidate.address);
+        }
+        if (ton) this.tonKeyring.removeAccountFromMemory(address);
+      });
+      if (remove) await this.withAccountRemoval([...pairs.map((candidate) => candidate.address), ...(ton ? [address] : [])], beforeRemoval, persist);
+      else await persist();
+    });
   }
 
   private isInWallet(address: string): boolean {

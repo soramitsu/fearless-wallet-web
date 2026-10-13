@@ -1,4 +1,5 @@
 import { chrome } from '@extension-base/utils/crossenv';
+import type { TransformStoredRecords } from './StoreMutation';
 
 type StoreValue = Record<string, unknown>;
 
@@ -160,6 +161,47 @@ export default abstract class BaseExtensionStore<T> {
         });
       }
     }, trackFailure);
+  }
+
+  // Read the latest records, keep their recovery copy and remove their active keys
+  // while holding one queue slot. Chrome has separate set/remove calls: a failed
+  // removal may leave an extra recovery copy, but never removes unarchived keys.
+  public mutateRecordsAndWait(
+    keys: string[],
+    transform: TransformStoredRecords,
+    publish?: () => void
+  ): Promise<void> {
+    const requested = [...keys];
+    return this.enqueueWrite(async () => {
+      const current = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        chrome.storage.local.get(requested.map((key) => `${this.prefix}${key}`), (data: StoreValue) => {
+          const error = chrome.runtime.lastError;
+          if (error) reject(new Error(error.message || 'Wallet account read failed.'));
+          else resolve(Object.fromEntries(requested.map((key) => [key, data[`${this.prefix}${key}`]])));
+        });
+      });
+      const { entries, remove } = transform(current);
+      if (Object.keys(entries).length) {
+        await new Promise<void>((resolve, reject) => {
+          const items = Object.fromEntries(Object.entries(entries).map(([key, value]) => [`${this.prefix}${key}`, value]));
+          chrome.storage.local.set(items, () => {
+            const error = chrome.runtime.lastError;
+            if (error) reject(new Error(error.message || 'Wallet recovery write failed.'));
+            else resolve();
+          });
+        });
+      }
+      if (remove.length) {
+        await new Promise<void>((resolve, reject) => {
+          chrome.storage.local.remove(remove.map((key) => `${this.prefix}${key}`), () => {
+            const error = chrome.runtime.lastError;
+            if (error) reject(new Error(error.message || 'Wallet account removal failed.'));
+            else resolve();
+          });
+        });
+      }
+      publish?.();
+    }, false);
   }
 
   public setAndWait(key: string, value: T): Promise<void> {

@@ -1,6 +1,7 @@
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import BaseExtensionStore from './BaseExtension';
 import BaseWebStore from './BaseWeb';
+import type { TransformStoredRecords } from './StoreMutation';
 import type { KeyringJson } from '@subwallet/ui-keyring/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import { IS_EXTENSION } from '@/consts/global';
@@ -11,6 +12,10 @@ export type PublicAddressJson = KeyringJson & { meta: FWKeyringMeta };
 export default class AddressesStore extends (IS_EXTENSION ? BaseExtensionStore : BaseWebStore)<PublicAddressJson> {
   constructor() {
     super(EXTENSION_PREFIX);
+  }
+
+  public mutateRecordsAndWait(keys: string[], transform: TransformStoredRecords, publish?: () => void): Promise<void> {
+    return super.mutateRecordsAndWait(keys, transform, publish);
   }
 
   public updateAndWait(

@@ -90,6 +90,10 @@ hoisted.createUiKeyring = () => {
       accounts.subject.value = { ...accounts.subject.value, [address]: { json: { ...json, address }, type } };
       if (!json.meta.isInjected) target.set(accountKey(storeKey(address, rawKey)), json);
     },
+    removeSubjectOnly(address: string) {
+      const { [address]: _removed, ...rest } = accounts.subject.value;
+      accounts.subject.value = rest;
+    },
     remove(target: AccountsStoreLike, address: string, rawKey: string) {
       const { [address]: _removed, ...rest } = accounts.subject.value;
       accounts.subject.value = rest;
@@ -128,6 +132,7 @@ hoisted.createUiKeyring = () => {
         return pair.toJson(master);
       },
       addFromJson: (json: KeyringPair$Json) => backend.addFromJson(json),
+      removePair: (address: string) => backend.removePair(address),
     },
     loadAll(options: { store: AccountsStoreLike & { all: (load: (key: string, json: KeyringPair$Json) => void) => void }; password_store: typeof passwordStore }) {
       store = options.store;
@@ -277,9 +282,7 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
     expect(await first.service.changeMasterPassword({ oldPassword: MASTER, newPassword: NEW_MASTER })).toBe(true);
     // Settings → Delete wallet: the keys are kept first, then the Ethereum account and the account are removed
     // (Extension.accountsForget).
-    await first.service.archiveWallet(spare.address);
-    first.service.forgetAccount(spare.ethereumAddress);
-    first.service.forgetAccount(spare.address);
+    await first.service.forgetAccount(spare.address);
     await first.settle();
 
     const second = await startWorker();
@@ -334,9 +337,7 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
     expect(first.service.unlockKeyring({ password: MASTER })).toBe(true);
     await first.settle();
     const before = structuredClone(stored());
-    await first.service.archiveWallet(spare.address);
-    first.service.forgetAccount(spare.ethereumAddress);
-    first.service.forgetAccount(spare.address);
+    await first.service.forgetAccount(spare.address);
     await first.settle();
 
     // Every record that held the wallet's keys, byte for byte, in one entry no keyring loads.
@@ -388,7 +389,7 @@ describe('ECDSA accounts from 3.0.x across service worker restarts', () => {
     await first.settle();
     const before = structuredClone(stored());
     const { default: AccountsStore } = await import('@extension-base/stores/Accounts');
-    vi.spyOn(AccountsStore.prototype, 'replaceAndWait').mockRejectedValueOnce(new Error('QUOTA_BYTES quota exceeded'));
+    vi.spyOn(AccountsStore.prototype, 'mutateRecordsAndWait').mockRejectedValueOnce(new Error('QUOTA_BYTES quota exceeded'));
 
     await expect(first.service.archiveWallet(spare.address)).rejects.toThrow('QUOTA_BYTES');
     await first.settle();
@@ -424,9 +425,7 @@ describe('ECDSA accounts from 2.x (a password per account) across service worker
     );
     expect(await first.service.changeMasterPassword({ newPassword: MASTER })).toBe(true);
     expect(await first.service.keyringMigrateMasterPassword({ address: vault.address, password: vault.password })).toBe(true);
-    await first.service.archiveWallet(spare.address);
-    first.service.forgetAccount(spare.ethereumAddress);
-    first.service.forgetAccount(spare.address);
+    await first.service.forgetAccount(spare.address);
     await first.settle();
 
     const second = await startWorker();

@@ -26,6 +26,11 @@ export interface DeletedWallet {
   ton?: TonStoreAccount;
 }
 
+/** Compare aliases of the same Substrate/EVM public identity; TON uses its stored address. */
+export function walletAddressIdentity(address: string): string {
+  try { return u8aToHex(decodeAddress(address)); } catch { return address; }
+}
+
 /** Where @subwallet/ui-keyring 0.1.14 stores a pair (genericSubject getStoreKey, defaults accountKey). */
 export function accountStoreKey(pair: { address: string; publicKey: Uint8Array }): string {
   const rawKey = isEthereumAddress(pair.address) ? pair.address : u8aToHex(pair.publicKey);

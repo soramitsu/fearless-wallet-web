@@ -2,6 +2,7 @@ import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import { reconcileEcdsaAccountRecords, type AccountRecordsReconciliation } from '@extension-base/stores/EcdsaAccountRecords';
+import type { TransformStoredRecords } from './StoreMutation';
 import type { FWKeyringMeta } from '../types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { KeyringStore } from '@subwallet/ui-keyring/types';
@@ -34,6 +35,10 @@ export default class AccountsStore
 
   public getAndWait(key: string): Promise<FWKeyringJson | undefined> {
     return super.getAndWait(key);
+  }
+
+  public mutateRecordsAndWait(keys: string[], transform: TransformStoredRecords, publish?: () => void): Promise<void> {
+    return super.mutateRecordsAndWait(keys, transform, publish);
   }
 
   public updateAndWait(

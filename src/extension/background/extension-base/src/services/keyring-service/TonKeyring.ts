@@ -138,14 +138,15 @@ export class TonKeyringService {
     return await tonWebMnemonic.isPasswordNeeded(mnemonic);
   }
 
-  async forgetAccount(address: string) {
-    const accounts = this.accountSubject.value;
+  forgetAccount(address: string): Promise<void> {
+    return this.keyringService.forgetAccount(address);
+  }
 
+  removeAccountFromMemory(address: string): void {
+    const accounts = { ...this.accountSubject.value };
     delete accounts[address];
-
-    this.accountSubject.next({ ...accounts });
-
-    tonStore.remove(address);
+    this.accountSubject.next(accounts);
+    this.vault.needsPreviousPassword.delete(address);
   }
 
   createContractV4(publicKey: Uint8Array) {

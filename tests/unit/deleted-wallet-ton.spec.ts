@@ -90,8 +90,7 @@ describe('a TON wallet from 3.0.5, deleted and restored', () => {
     expect(Object.keys(first.service.tonKeyring.accountSubject.value).sort()).toEqual([TON_BIP39, TON_NATIVE].sort());
 
     // Extension.accountsForget: the keys are kept first, then the wallet is removed.
-    await first.service.archiveWallet(TON_BIP39);
-    first.service.forgetAccount(TON_BIP39);
+    await first.service.forgetAccount(TON_BIP39);
     await first.settle();
 
     expect(stored()[`fw:ton:${TON_BIP39}`]).toBeUndefined();
@@ -129,8 +128,7 @@ describe('a TON wallet from 3.0.5, deleted and restored', () => {
 
   it('never writes over a wallet that was imported again, and keeps the copy', PBKDF2_SUITE, async () => {
     const first = await startWorker();
-    await first.service.archiveWallet(TON_BIP39);
-    first.service.forgetAccount(TON_BIP39);
+    await first.service.forgetAccount(TON_BIP39);
     await first.settle();
     const [[entryKey]] = deletedEntries();
 

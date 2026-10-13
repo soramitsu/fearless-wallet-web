@@ -327,13 +327,21 @@ export class WalletConnectDAppService {
     const account = this.state.keyringService.getAddresses().find((el) => el.meta.wcTopic === topic);
 
     if (account) {
-      this.state.keyringService.forgetAddress(account?.address);
+      let clearedRevision: number | undefined;
+      await this.state.keyringService.forgetAddress(account.address, async () => {
+        if (this.state.currentAccount?.address !== account.address) return;
+        await this.state.setCurrentAccount(null);
+        clearedRevision = this.state.keyringService.currentAccountRevision;
+      }, () => {
+        if (this.state.keyringService.getAddress(account.address)?.meta.wcTopic !== topic)
+          throw new Error('Mobile wallet session changed during removal.');
+      });
 
-      if (this.state.currentAccount?.address === account.address) {
+      if (clearedRevision !== undefined && !this.state.currentAccount &&
+        this.state.keyringService.currentAccountRevision === clearedRevision) {
         const accounts = this.state.keyringService.getAllSubstrateAccounts();
 
         if (accounts.length) await this.state.updateCurrentAccount({ address: accounts[0].address });
-        else await this.state.setCurrentAccount(null);
       }
 
       this.state.cleanupDeletedAccount(account.address);

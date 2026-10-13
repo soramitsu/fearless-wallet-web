@@ -1,4 +1,5 @@
 import { openWebDatabase, WEB_STORE_NAME } from './WebDatabase';
+import type { TransformStoredRecords } from './StoreMutation';
 
 export default abstract class BaseWebStore<T> {
   #prefix: string;
@@ -181,6 +182,48 @@ export default abstract class BaseWebStore<T> {
         };
       });
     }, trackFailure);
+  }
+
+  // Read, archive and remove in the same IndexedDB transaction. Publish only
+  // after its commit, while the queue still excludes later metadata writes.
+  public mutateRecordsAndWait(
+    keys: string[],
+    transform: TransformStoredRecords,
+    publish?: () => void
+  ): Promise<void> {
+    const requested = [...new Set(keys)];
+    return this.enqueueWrite(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => {
+          try { publish?.(); resolve(); } catch (error) { reject(error); }
+        };
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet removal failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet removal was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        const current: Record<string, unknown> = {};
+        let remaining = requested.length;
+        const apply = () => {
+          try {
+            const { entries, remove } = transform(current);
+            Object.entries(entries).forEach(([key, value]) => store.put(value, `${this.#prefix}${key}`));
+            remove.forEach((key) => store.delete(`${this.#prefix}${key}`));
+          } catch (error) {
+            transaction.abort();
+            reject(error);
+          }
+        };
+        if (!remaining) apply();
+        for (const key of requested) {
+          const request = store.get(`${this.#prefix}${key}`);
+          request.onsuccess = () => {
+            current[key] = request.result;
+            if (--remaining === 0) apply();
+          };
+        }
+      });
+    }, false);
   }
 
   public setAndWait(key: string, value: T): Promise<void> {

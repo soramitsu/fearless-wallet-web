@@ -140,17 +140,18 @@ describe('removing the current account', () => {
     expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
   });
   function forget(removed: MainAccount, remaining: MainAccount[], current = removed) {
+    const pair = { meta: removed.meta };
     const state = {
-      currentAccount: toCurrentAccountInfo(current),
+      currentAccount: toCurrentAccountInfo(current) as ReturnType<typeof toCurrentAccountInfo> | null,
       keyringService: {
-        archiveWallet: vi.fn(async () => undefined),
-        getPair: () => ({ meta: removed.meta }),
-        forgetAccount: vi.fn(),
+        currentAccountRevision: 0,
+        getPair: () => pair,
+        forgetAccount: vi.fn(async (_address: string, beforeRemoval: () => Promise<void>) => beforeRemoval()),
         getAllMainAccounts: () => remaining,
       },
       requestService: { mutateAuthorizations: vi.fn(async (update: (urls: object) => void) => { update({}); return {}; }) },
       walletConnectService: { removeSessions: vi.fn() },
-      setCurrentAccount: vi.fn(),
+      setCurrentAccount: vi.fn(async (value) => { state.currentAccount = value; state.keyringService.currentAccountRevision++; }),
       updateCurrentAccount: vi.fn(() => true),
       cleanupDeletedAccount: vi.fn(),
     };
@@ -158,41 +159,27 @@ describe('removing the current account', () => {
     return Extension.prototype.accountsForget.call(extension, { address: removed.address, type: 'native' }).then(() => state);
   }
 
-  it('keeps the keys where Account access restores them before removing anything', async () => {
+  it('uses the acknowledged archive-and-remove operation', async () => {
     const state = await forget(SUBSTRATE, [TON]);
-    const [archived] = state.keyringService.archiveWallet.mock.invocationCallOrder;
-    const [forgotten] = state.keyringService.forgetAccount.mock.invocationCallOrder;
-
-    expect(state.keyringService.archiveWallet).toHaveBeenCalledExactlyOnceWith(SUBSTRATE.address);
-    expect(archived).toBeLessThan(forgotten);
+    expect(state.keyringService.forgetAccount).toHaveBeenCalledExactlyOnceWith(SUBSTRATE.address, expect.any(Function), expect.any(Function));
   });
 
-  it('removes nothing and says the delete failed when the keys could not be kept', async () => {
+  it('reports failure and does not clean up when archive-and-remove rejects', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const state = {
       currentAccount: toCurrentAccountInfo(SUBSTRATE),
       keyringService: {
-        archiveWallet: vi.fn(async () => {
-          throw new Error('QUOTA_BYTES quota exceeded');
-        }),
         getPair: () => ({ meta: SUBSTRATE.meta }),
-        forgetAccount: vi.fn(),
-        forgetAddress: vi.fn(),
+        forgetAccount: vi.fn(async () => { throw new Error('QUOTA_BYTES quota exceeded'); }),
         getAllMainAccounts: () => [TON],
       },
       requestService: { mutateAuthorizations: vi.fn() },
       walletConnectService: { removeSessions: vi.fn() },
-      setCurrentAccount: vi.fn(),
-      updateCurrentAccount: vi.fn(),
-      cleanupDeletedAccount: vi.fn(),
+      setCurrentAccount: vi.fn(), updateCurrentAccount: vi.fn(), cleanupDeletedAccount: vi.fn(),
     };
-
-    const result = await Extension.prototype.accountsForget.call({ state } as unknown as Extension, { address: SUBSTRATE.address, type: 'native' });
-
+    const result = await Extension.prototype.accountsForget.call({ state } as unknown as Extension,
+      { address: SUBSTRATE.address, type: 'native' });
     expect(result).toBe(false);
-    expect(state.keyringService.forgetAccount).not.toHaveBeenCalled();
-    expect(state.requestService.mutateAuthorizations).not.toHaveBeenCalled();
-    expect(state.walletConnectService.removeSessions).not.toHaveBeenCalled();
     expect(state.setCurrentAccount).not.toHaveBeenCalled();
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();
     expect(state.cleanupDeletedAccount).not.toHaveBeenCalled();
@@ -201,13 +188,14 @@ describe('removing the current account', () => {
   it('switches to the next non-EVM account, not a standalone EVM account listed first', async () => {
     const state = await forget(SUBSTRATE, [EVM, TON]);
     expect(state.updateCurrentAccount).toHaveBeenCalledExactlyOnceWith({ address: TON.address, walletEcosystem: WalletEcosystem.Ton });
-    expect(state.setCurrentAccount).not.toHaveBeenCalled();
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null);
   });
 
   it('stores the remaining standalone EVM account instead of keeping the removed one selected', async () => {
     const state = await forget(SUBSTRATE, [EVM]);
     expect(state.updateCurrentAccount).not.toHaveBeenCalled();
-    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+    expect(state.setCurrentAccount).toHaveBeenNthCalledWith(1, null);
+    expect(state.setCurrentAccount).toHaveBeenNthCalledWith(2, expect.objectContaining({
       address: EVM_ADDRESS,
       walletEcosystem: WalletEcosystem.Evm,
     }));

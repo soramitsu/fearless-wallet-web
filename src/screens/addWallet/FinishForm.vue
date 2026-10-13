@@ -14,7 +14,7 @@
         iconName="twitter"
         iconColor="pink"
         class="follow-button"
-        width="256px"
+        width="100%"
         data-testid="twitterBtn"
         @click="openPage(URLS.TWITTER)"
       />
@@ -23,7 +23,7 @@
         text="common.joinTelegram"
         iconName="telegram"
         iconColor="pink"
-        width="256px"
+        width="100%"
         data-testid="telegramBtn"
         @click="openPage(URLS.TELEGRAM)"
       />
@@ -33,7 +33,7 @@
         text="common.readMedium"
         iconName="medium"
         iconColor="pink"
-        width="256px"
+        width="100%"
         data-testid="mediumBtn"
         @click="openPage(URLS.MEDIUM)"
       />
@@ -41,7 +41,7 @@
       <BorderButton
         text="common.learnWiki"
         iconName="file-dock"
-        width="256px"
+        width="100%"
         data-testid="wikiBtn"
         @click="openPage(URLS.WIKI)"
       />
@@ -59,9 +59,15 @@ const openPage = (url: string) => window.open(url);
 .finish {
   .row {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     margin-top: 15px;
     gap: 10px;
+
+    > * {
+      flex: 1 1 256px;
+      min-width: 0;
+    }
   }
 
   .description {
@@ -74,6 +80,12 @@ const openPage = (url: string) => window.open(url);
     flex-direction: column;
     align-items: center;
     margin-top: 10px;
+
+    > * {
+      flex-basis: auto;
+      width: 100%;
+      max-width: 256px;
+    }
   }
   .description {
     margin: 27px 0 30px;

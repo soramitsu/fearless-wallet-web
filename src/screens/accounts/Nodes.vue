@@ -237,6 +237,7 @@ export default defineComponent({ name: 'Nodes',
     text-align: left;
     font-weight: 600;
     margin-left: 9px;
+    overflow-wrap: anywhere;
   }
 
   .network-description {

@@ -73,11 +73,55 @@ async function typeAndConfirm(wrapper: VueWrapper) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.reset.mockReset().mockResolvedValue(true);
   mocks.list.mockResolvedValue([]);
   mocks.exportJson.mockImplementation(async (address: string) => ({ json: stored(address) }));
 });
 
 describe('Reset wallet', () => {
+  it('waits for acknowledgement and disables repeated confirmation while reset is pending', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.reset.mockReturnValueOnce(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const wrapper = await open();
+    await typeAndConfirm(wrapper);
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(confirmStep(wrapper).get('button').attributes('disabled')).toBeDefined();
+    await confirmStep(wrapper).get('button').trigger('click');
+    expect(mocks.reset).toHaveBeenCalledOnce();
+    finish(true);
+    await flushPromises();
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Welcome' });
+    wrapper.unmount();
+  });
+
+  it.each(['false', 'rejection'])('retains typed confirmation and offers retry after %s', async (failure) => {
+    const failed = failure === 'false' ? Promise.resolve(false) : Promise.reject(new Error('Storage unavailable'));
+    void failed.catch(() => undefined);
+    mocks.reset.mockReturnValueOnce(failed);
+    const wrapper = await open();
+    await typeAndConfirm(wrapper);
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(wrapper.get('[data-testid="resetFailed"]').attributes('role')).toBe('alert');
+    expect((wrapper.get('[data-testid="resetPhrase"]').element as HTMLInputElement).value).toBe('Reset wallet');
+    expect(confirmStep(wrapper).get('button').attributes('disabled')).toBeUndefined();
+    await confirmStep(wrapper).get('button').trigger('click');
+    await flushPromises();
+    expect(mocks.reset).toHaveBeenCalledTimes(2);
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Welcome' });
+    wrapper.unmount();
+  });
+
+  it('does not navigate from a reset screen that closed while storage was pending', async () => {
+    let finish!: (value: boolean) => void;
+    mocks.reset.mockReturnValueOnce(new Promise<boolean>((resolve) => { finish = resolve; }));
+    const wrapper = await open();
+    await typeAndConfirm(wrapper);
+    wrapper.unmount();
+    finish(true);
+    await flushPromises();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
   it('asks only for the typed confirmation when every account opens with the master password', async () => {
     const wrapper = await open();
 

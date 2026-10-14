@@ -1,5 +1,13 @@
 # Neon Glass component verification
 
+## Raw colour guard qualification, 14 October 2026
+
+`scripts/check-raw-colours.mjs` scans all Vue template/script/style/comment text outside `src/styles`, including multiline RGB expressions. Exceptions match an exact file and source context, with occurrence counts. New colours, changed values/context, moved sites and duplicate occurrences fail; obsolete exceptions must be removed. CI also compares the allowlist with the pull-request base or push predecessor, so retired entries cannot return and additions cannot be hidden by editing the allowlist. Missing base objects fail unless CI fetches the exact validated commit; the initial adoption explicitly reports that the older commit had no allowlist. The existing unit-test CI includes ten adversarial guard tests.
+
+The reconciled inventory is 203 occurrences across 181 unique sites in 65 of 243 Vue files, including one colour in a comment. The binding plan's earlier count of 179 is not reproduced: the frozen 10 October source has 180 occurrences under this rule, and the accepted 12 October source has 191. `web-raw-colour-inventory-v1.json` in the audit evidence directory retains those Git-bound inventories and differences. The initial guard prevents further growth from the current source; it does not close the older colour-migration debt or permit future expansion. Production source and rendered colours are unchanged.
+
+The initial test run retained a Vite/shebang loading failure and six Node-global lint errors. Explicit Node imports and the Node test environment correct the harness. Final targeted runs pass 30 tests (ten guard plus 20 existing palette/contrast tests), full typecheck and scoped lint. Final evidence freezing and independent review are pending. Android/iOS counterparts, raw-colour migration and broader design/release gates remain open.
+
 W-A5 component foundation, 12 October 2026. This is development-build evidence, not a release qualification. Source is the commit containing this document; its parent preserves the independent local-chain test-discovery fix.
 
 ## Behavior covered

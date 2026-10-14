@@ -157,7 +157,7 @@ const aboveFormClasses = computed(() => {
     min-height: $extension-height - 80px;
     height: calc(100% - 80px);
     // Sheets are opaque raised paint, and Calm screens open in them (design-system 2.1, 3.2).
-    background-color: palette(#111111, var(--fw-raised));
+    background-color: $fw-panel-surface;
     clip-path: $big-clip-path-left-top;
 
     @keyframes transform {

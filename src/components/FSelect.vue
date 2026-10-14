@@ -79,7 +79,7 @@ const containerSelectClasses = computed(() => {
 }
 
 .el-select-dropdown {
-  background-color: palette(#111111, var(--fw-raised)) !important;
+  background-color: $fw-panel-surface !important;
   border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
   margin-top: 5px !important;
   min-width: 370px !important;

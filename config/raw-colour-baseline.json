@@ -9,11 +9,6 @@
     },
     {
       "path": "src/components/AboveForm.vue",
-      "source": "background-color: palette(#111111, var(--fw-raised));",
-      "count": 1
-    },
-    {
-      "path": "src/components/AboveForm.vue",
       "source": "background: rgba(51, 51, 51, 0.5);",
       "count": 1
     },
@@ -48,11 +43,6 @@
       "count": 2
     },
     {
-      "path": "src/components/ContentForm.vue",
-      "source": "background-color: palette(#1c1c1c, var(--fw-raised));",
-      "count": 1
-    },
-    {
       "path": "src/components/DirectionContentForm.vue",
       "source": "background-color: rgb(29, 29, 29);",
       "count": 1
@@ -64,17 +54,7 @@
     },
     {
       "path": "src/components/Dropdown.vue",
-      "source": "background-color: palette(#111111, var(--fw-raised)) !important;",
-      "count": 1
-    },
-    {
-      "path": "src/components/Dropdown.vue",
       "source": "border-color: #111111 !important;",
-      "count": 1
-    },
-    {
-      "path": "src/components/Dropdown.vue",
-      "source": "border: 1px solid palette(#111111, var(--fw-raised)) !important;",
       "count": 1
     },
     {
@@ -99,27 +79,7 @@
     },
     {
       "path": "src/components/FButton.vue",
-      "source": "background-color: palette(#f8087b, var(--fw-raised-2)) !important;",
-      "count": 1
-    },
-    {
-      "path": "src/components/FButton.vue",
       "source": "background-color: rgba(255, 255, 255, 0.5) !important;",
-      "count": 1
-    },
-    {
-      "path": "src/components/FButton.vue",
-      "source": "background: palette(rgb(228.48, 0, 114.24), var(--fw-fill));",
-      "count": 1
-    },
-    {
-      "path": "src/components/FButton.vue",
-      "source": "border-color: palette(#f8087b, var(--fw-raised-2)) !important;",
-      "count": 1
-    },
-    {
-      "path": "src/components/FButton.vue",
-      "source": "border-color: palette(rgb(228.48, 0, 114.24), var(--fw-fill-top));",
       "count": 1
     },
     {
@@ -154,11 +114,6 @@
     },
     {
       "path": "src/components/FCorners.vue",
-      "source": "border-top: 1px solid palette(#7700ee, var(--fw-focus));",
-      "count": 1
-    },
-    {
-      "path": "src/components/FCorners.vue",
       "source": "border-top: 1px solid rgba(255, 255, 255, 0.2);",
       "count": 1
     },
@@ -170,11 +125,6 @@
     {
       "path": "src/components/FInput.vue",
       "source": "inset 2px 2px 6px rgb(0 0 0 / 0.55),",
-      "count": 1
-    },
-    {
-      "path": "src/components/FSelect.vue",
-      "source": "background-color: palette(#111111, var(--fw-raised)) !important;",
       "count": 1
     },
     {
@@ -205,11 +155,6 @@
     {
       "path": "src/components/InfiniteScroll.vue",
       "source": "background-color: rgba(255, 255, 255, 0.25);",
-      "count": 1
-    },
-    {
-      "path": "src/components/Popup.vue",
-      "source": "background-color: palette(#111111, var(--fw-raised));",
       "count": 1
     },
     {
@@ -253,33 +198,13 @@
       "count": 1
     },
     {
-      "path": "src/components/SelectInput.vue",
-      "source": "border: 1px solid palette(#7700ee, var(--fw-focus)) !important;",
-      "count": 1
-    },
-    {
       "path": "src/components/Shimmer.vue",
       "source": "background: #777;",
       "count": 1
     },
     {
-      "path": "src/components/Switcher.vue",
-      "source": "background-color: palette(#422539, var(--fw-sunken)) !important;",
-      "count": 1
-    },
-    {
-      "path": "src/components/Switcher.vue",
-      "source": "background-color: palette(#7700ee, var(--fw-fill-top)) !important;",
-      "count": 1
-    },
-    {
       "path": "src/components/ValidatedInput.vue",
       "source": "color: #ee7700;",
-      "count": 1
-    },
-    {
-      "path": "src/components/ValidatedInput.vue",
-      "source": "color: palette(#ee7700, var(--fw-text-1));",
       "count": 1
     },
     {
@@ -674,23 +599,8 @@
     },
     {
       "path": "src/screens/main/Menu.vue",
-      "source": "background: palette(rgba(17, 17, 17, 0.96), var(--fw-chrome-solid));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/main/Menu.vue",
       "source": "border-top: 1px solid rgba(255, 255, 255, 0.08);",
       "count": 1
-    },
-    {
-      "path": "src/screens/main/MenuItem.vue",
-      "source": "box-shadow: 0 0 0 5px palette(#111, var(--fw-bg-base));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/main/MenuItem.vue",
-      "source": "color: palette(#111, var(--fw-on-accent));",
-      "count": 2
     },
     {
       "path": "src/screens/main/SettingMenuItem.vue",
@@ -768,11 +678,6 @@
       "count": 1
     },
     {
-      "path": "src/screens/wallet&asset/asset/Asset.vue",
-      "source": "border: 1px solid palette(rgba(255, 255, 255, 0.28), var(--fw-stroke-strong));",
-      "count": 1
-    },
-    {
       "path": "src/screens/wallet&asset/asset/HistoryItem.vue",
       "source": "color: rgba(255, 255, 255, 0.64);",
       "count": 1
@@ -819,27 +724,7 @@
     },
     {
       "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
-      "source": "background: palette(#111111, var(--fw-raised));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
-      "source": "background: palette(rgba(187, 119, 255, 0.08), var(--fw-row-selected));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
       "source": "background: rgba(0, 0, 0, 0.6);",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
-      "source": "border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-hud-trace));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
-      "source": "border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-strong));",
       "count": 1
     },
     {
@@ -849,17 +734,7 @@
     },
     {
       "path": "src/screens/wallet&asset/wallet/PortfolioHiddenFundsNotice.vue",
-      "source": "border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-accent-edge));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioHiddenFundsNotice.vue",
       "source": "color: #111;",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioLayoutNote.vue",
-      "source": "border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-accent-edge));",
       "count": 1
     },
     {
@@ -870,21 +745,6 @@
     {
       "path": "src/screens/wallet&asset/wallet/PortfolioNetworkSection.vue",
       "source": "color: #111;",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioTokenRow.vue",
-      "source": "border-color: palette(rgba(187, 119, 255, 0.45), var(--fw-hud-trace));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioTokenRow.vue",
-      "source": "border-left: 2px solid palette(rgba(187, 119, 255, 0.35), var(--fw-hud-trace));",
-      "count": 1
-    },
-    {
-      "path": "src/screens/wallet&asset/wallet/PortfolioTokenRow.vue",
-      "source": "border: 1px solid palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-control));",
       "count": 1
     },
     {

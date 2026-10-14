@@ -101,11 +101,11 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
     height: 48px;
     margin-top: -22px;
     background: palette($pink-lavender-color, var(--fw-fill));
-    box-shadow: 0 0 0 5px palette(#111, var(--fw-bg-base));
+    box-shadow: 0 0 0 5px $fw-page-base;
   }
 
   .menu-icon {
-    color: palette(#111, var(--fw-on-accent));
+    color: $fw-on-accent;
   }
 }
 
@@ -117,7 +117,7 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
   }
 
   &.emphasized .menu-icon {
-    color: palette(#111, var(--fw-on-accent));
+    color: $fw-on-accent;
   }
 }
 </style>

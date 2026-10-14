@@ -251,7 +251,7 @@ export default defineComponent({
   .legacy-crowdloan {
     min-height: 48px;
     padding: 8px 14px;
-    border: 1px solid palette(rgba(255, 255, 255, 0.28), var(--fw-stroke-strong));
+    border: 1px solid $fw-asset-detail-edge;
     border-radius: 12px;
     background: $secondary-background-color;
     display: flex;

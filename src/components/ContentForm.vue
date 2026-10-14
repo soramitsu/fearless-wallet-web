@@ -68,7 +68,7 @@ const contentClasses = computed(() => {
 }
 
 .background-black {
-  background-color: palette(#1c1c1c, var(--fw-raised));
+  background-color: $fw-form-surface;
 }
 
 .background-light-black {

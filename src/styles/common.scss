@@ -26,6 +26,29 @@ $fw-palette: 'v1' !default;
   }
 }
 
+// Shared role mappings for migrated components. Preserve their exact shipped
+// legacy values while v1 uses the generated semantic tokens; components never
+// need a private copy of either colour. These are compile-time Sass values.
+$fw-panel-surface: palette(#111111, var(--fw-raised));
+$fw-form-surface: palette(#1c1c1c, var(--fw-raised));
+$fw-focus-ring: palette(#7700ee, var(--fw-focus));
+$fw-primary-fill: palette(rgb(228.48, 0, 114.24), var(--fw-fill));
+$fw-primary-fill-edge: palette(rgb(228.48, 0, 114.24), var(--fw-fill-top));
+$fw-secondary-hover: palette(#f8087b, var(--fw-raised-2));
+$fw-field-sunken: palette(#422539, var(--fw-sunken));
+$fw-toggle-fill: palette(#7700ee, var(--fw-fill-top));
+$fw-validation-label: palette(#ee7700, var(--fw-text-1));
+$fw-chrome-surface: palette(rgba(17, 17, 17, 0.96), var(--fw-chrome-solid));
+$fw-page-base: palette(#111, var(--fw-bg-base));
+$fw-on-accent: palette(#111, var(--fw-on-accent));
+$fw-strong-edge: palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-strong));
+$fw-accent-edge: palette(rgba(187, 119, 255, 0.45), var(--fw-accent-edge));
+$fw-hud-trace: palette(rgba(187, 119, 255, 0.45), var(--fw-hud-trace));
+$fw-hud-selection-line: palette(rgba(187, 119, 255, 0.35), var(--fw-hud-trace));
+$fw-row-selection: palette(rgba(187, 119, 255, 0.08), var(--fw-row-selected));
+$fw-control-edge: palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-control));
+$fw-asset-detail-edge: palette(rgba(255, 255, 255, 0.28), var(--fw-stroke-strong));
+
 $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;

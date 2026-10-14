@@ -212,9 +212,9 @@ const buttonClasses = computed(() => {
 .primary {
   // White labels need 4.5:1: the legacy look darkens the brand pink by 4% (mix(black, #ee0077, 4%)), Neon Glass
   // fills with accent.fill (5.04:1 at its lightest stop).
-  background: palette(rgb(228.48, 0, 114.24), var(--fw-fill));
+  background: $fw-primary-fill;
   color: palette(white, var(--fw-on-accent));
-  border-color: palette(rgb(228.48, 0, 114.24), var(--fw-fill-top));
+  border-color: $fw-primary-fill-edge;
 }
 .button:focus-visible {
   outline: 2px solid white;
@@ -319,8 +319,8 @@ const buttonClasses = computed(() => {
 
 .is-disabled {
   opacity: palette(0.7, 1);
-  background-color: palette(#f8087b, var(--fw-raised-2)) !important;
-  border-color: palette(#f8087b, var(--fw-raised-2)) !important;
+  background-color: $fw-secondary-hover !important;
+  border-color: $fw-secondary-hover !important;
 
   // A disabled button is flat raised-2 with a tertiary label (5.75:1), never the fill at reduced opacity.
   @include v1-palette {

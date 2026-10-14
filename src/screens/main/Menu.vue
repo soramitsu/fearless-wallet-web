@@ -79,7 +79,7 @@ function open(item: MenuDefinition): void {
   padding: 8px 8px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   // The dock is chrome; without blur it takes the solid chrome tint (design-system 3.2).
-  background: palette(rgba(17, 17, 17, 0.96), var(--fw-chrome-solid));
+  background: $fw-chrome-surface;
   user-select: none;
   z-index: 199;
 }

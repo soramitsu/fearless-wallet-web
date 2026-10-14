@@ -91,7 +91,7 @@ const cornersClasses = computed(() => [
 }
 
 .corner-border-selected {
-  border-top: 1px solid palette(#7700ee, var(--fw-focus));
+  border-top: 1px solid $fw-focus-ring;
 }
 
 .top-left[class~='corner-size-big'] {

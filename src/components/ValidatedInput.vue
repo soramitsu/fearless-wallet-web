@@ -94,7 +94,7 @@ defineExpose({ input });
     align-items: center;
     gap: 5px;
     font-size: 0.875em;
-    color: palette(#ee7700, var(--fw-text-1));
+    color: $fw-validation-label;
     text-align: left;
     margin-top: 15px;
   }

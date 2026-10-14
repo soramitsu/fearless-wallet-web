@@ -1,5 +1,11 @@
 # Neon Glass component verification
 
+## Shared component colour roles, 14 October 2026
+
+Nineteen explicit roles in `src/styles/common.scss` now own the existing legacy/v1 mappings for panels, fills, focus, control edges, selection and chrome. Seventeen Vue components consume those roles, removing 29 private literal occurrences. The exact allowlist only shrinks: 203 occurrences/181 unique sites become 174 occurrences/153 sites. Remaining literals still require migration; passing below the earlier numerical inventory does not complete the screen/design audit.
+
+Before and after compilation uses the existing Vite Sass recipe for all 251 style units, under both legacy and v1 palettes. All 502 CSS outputs are byte-identical, with the complete source/compiled snapshots and comparison saved under `web-semantic-colour-*` in the audit evidence directory. No templates, scripts, callbacks or wallet logic change. Final targeted tests, typecheck, scoped lint, source freezing and independent acceptance are in progress; no new browser or packaged-build qualification is claimed.
+
 ## Raw colour guard qualification, 14 October 2026
 
 `scripts/check-raw-colours.mjs` scans all Vue template/script/style/comment text outside `src/styles`, including multiline RGB expressions. Exceptions match an exact file and source context, with occurrence counts. New colours, changed values/context, moved sites and duplicate occurrences fail; obsolete exceptions must be removed. CI also compares the allowlist with the pull-request base or push predecessor, so retired entries cannot return and additions cannot be hidden by editing the allowlist. Missing base objects fail unless CI fetches the exact validated commit; the initial adoption explicitly reports that the older commit had no allowlist. The existing unit-test CI includes ten adversarial guard tests.

@@ -80,7 +80,7 @@ const disabled = computed(() => props.disabled);
   height: 20px;
   border-radius: 20px;
   position: relative;
-  background-color: palette(#422539, var(--fw-sunken)) !important;
+  background-color: $fw-field-sunken !important;
   border: 1px solid palette($default-background-color, var(--fw-stroke-control)) !important;
 
   &::after {
@@ -102,7 +102,7 @@ const disabled = computed(() => props.disabled);
 }
 
 .switch__input:checked + .switch__core {
-  background-color: palette(#7700ee, var(--fw-fill-top)) !important;
+  background-color: $fw-toggle-fill !important;
   // The edge lifts the on track to 3:1 over glass (design-system 3.4).
   border: 1px solid palette($default-background-color, var(--fw-accent-edge)) !important;
 

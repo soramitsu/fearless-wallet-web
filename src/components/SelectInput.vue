@@ -218,7 +218,7 @@ export default defineComponent({ name: 'SelectInput' ,
 
 <style lang="scss" scoped>
 .select-focused {
-  border: 1px solid palette(#7700ee, var(--fw-focus)) !important;
+  border: 1px solid $fw-focus-ring !important;
 }
 
 .select {

@@ -84,8 +84,8 @@ const select = (value: string) => {
   min-width: 160px;
   padding: 6px 0;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
-  background-color: palette(#111111, var(--fw-raised)) !important;
-  border: 1px solid palette(#111111, var(--fw-raised)) !important;
+  background-color: $fw-panel-surface !important;
+  border: 1px solid $fw-panel-surface !important;
   margin-top: 5px !important;
 }
 

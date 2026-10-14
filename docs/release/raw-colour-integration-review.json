@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted within test/CI literal-colour ratchet scope",
+  "candidate": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-candidate-v1.json",
+    "sha256": "a80d40d71d5da38a708aee22067ad7bfc0e791288d67003b377a583513baf874"
+  },
+  "sourceCommit": "ff88e823cf310a384404a9f7a9d59a12489e90e5",
+  "baseCommit": "65e6efb4cd058918e523cebaf4c4e0f434979015",
+  "reviewedSourcePins": {
+    ".github/workflows/ci.yml": "7ccff6aea959cc6e049a3547570dba41388fd398b3ce63f90c3d31e2da168d54",
+    "config/raw-colour-baseline.json": "43f1a82a6368885dc57dea1cc098e8d567bd509ab94101db78f45a8547e6b940",
+    "scripts/check-raw-colours.mjs": "1d414717a517e1d9c25b8cb255c8749acb875c018c55d0beac4ff9e70f301031",
+    "tests/unit/raw-colour-ratchet.spec.ts": "e644049690f63695cc3ce4b2c1b1e0d17c29b08dd233d2a7fe213da120287d72"
+  },
+  "independentChecks": {
+    "changedGitAndWorkingFiles": 4,
+    "snapshotGitAndWorkingFiles": 1382,
+    "evidenceFiles": 24,
+    "hashMismatches": [],
+    "replayedTargetedVitest": {
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-independent-tests-v1.log",
+      "sha256": "39422db39d7a83cc6aa77c5fbee398f0168a398845c8db3dd52fb2bb6fc9994c"
+    },
+    "rehash": {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-independent-rehash-v1.json",
+      "sha256": "8f9df6640b52246b03d59e996df8c88917910c6423ee346927d0f2cfc7ffda2a"
+    }
+  },
+  "sourceAssessment": [
+    "Exact path plus trimmed source context plus occurrence count prevents moving, duplicating, changing or reviving accepted literal sites under the fixed baseline. Stale entries fail until removed.",
+    "CI supplies validated PR base SHA or push predecessor; unavailable commits are fetched explicitly, invalid/missing refs fail. A baseline absent from the base is transparently initial adoption, not shrink evidence. The initial shared branch adoption still requires review.",
+    "Malformed/duplicate/zero-count/wildcard path entries fail. Symlink traversal is rejected. Scanner deliberately inspects Vue template/script/style/comments, skips only src/styles; no CSS or wallet production source change.",
+    "Replayed ten guard tests plus twenty existing palette/contrast cases. Tests include real Git retired-exception revival, invalid ref, same-file duplication and cross-line RGB channel changes."
+  ],
+  "limitations": [
+    "No historical raw-colour debt closure: current203 occurrences versus plan179 and documented earlier180/191 are explicitly retained.",
+    "The lexical matcher is grep-like, not a CSS parser: nested functional/escaped syntax and other colour syntaxes are not a claim of complete colour semantic analysis. Current pinned baseline uses ordinary literal hex and flat rgb/rgba forms; introducing changed forms cannot reuse those exact source entries.",
+    "No remote GitHub execution, full suite, browser/render/packaging or production migration acceptance; Android/iOS guards are separate."
+  ],
+  "findings": []
+}

@@ -61,6 +61,9 @@ const IROHA_MOVEMENT_FIELDS = [
   'tx_hash',
   'type',
 ] as const;
+// Indexer gateways drop the odd request (502s, rate limits, timeouts); retry those before showing no history.
+const TRANSIENT_HISTORY_RETRY_DELAYS_MS = [1_000, 3_000];
+const TRANSIENT_HISTORY_ERROR_MESSAGES = new Set(['iroha_request_timeout', 'iroha_network_error']);
 
 async function fetchSubqueryHistory(
   url: string,
@@ -696,6 +699,31 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+async function retryTransientHistory<T>(load: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await load();
+    } catch (error) {
+      const delayMs = TRANSIENT_HISTORY_RETRY_DELAYS_MS[attempt];
+
+      if (delayMs === undefined || !isTransientHistoryError(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+function isTransientHistoryError(error: unknown): boolean {
+  // fetch rejects with a TypeError when the indexer cannot be reached at all.
+  if (error instanceof TypeError) return true;
+  if (!(error instanceof Error)) return false;
+
+  const { status } = error as Error & { status?: unknown };
+
+  if (typeof status === 'number') return status === 408 || status === 429 || status >= 500;
+
+  return TRANSIENT_HISTORY_ERROR_MESSAGES.has(error.message);
+}
+
 export async function fetchHistory(
   url: string,
   address: string,
@@ -719,19 +747,17 @@ export async function fetchHistory(
 
     if (type === 'zeta') return await fetchZetaHistory(url, address);
 
-    if (type === 'solana') return await fetchSolanaHistory(url, address, assetId, isUtility);
+    if (type === 'solana') return await retryTransientHistory(() => fetchSolanaHistory(url, address, assetId, isUtility));
 
     if (type === 'bitcoin') {
-      return await fetchBitcoinHistory(
-        url,
-        bitcoinAddresses?.length ? bitcoinAddresses : [address],
-        networkName,
-        assetId,
-        isUtility
+      return await retryTransientHistory(() =>
+        fetchBitcoinHistory(url, bitcoinAddresses?.length ? bitcoinAddresses : [address], networkName, assetId, isUtility)
       );
     }
 
-    if (type === 'iroha') return await fetchIrohaHistory(url, address, networkChainId, assetId, isUtility);
+    if (type === 'iroha') {
+      return await retryTransientHistory(() => fetchIrohaHistory(url, address, networkChainId, assetId, isUtility));
+    }
 
     if (type === 'subquery') return await fetchSubqueryHistory(url, address);
 

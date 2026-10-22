@@ -71,6 +71,7 @@ describe('Bitcoin history fetching', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('normalizes outgoing and incoming BTC transactions from Esplora', async () => {
@@ -174,23 +175,26 @@ describe('Bitcoin history fetching', () => {
   });
 
   it('fails a multi-address Bitcoin history refresh closed when any discovered address lookup fails', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     const fetchFn = vi.fn(async (input: string | URL) =>
       input.toString().includes(CHANGE_ADDRESS) ? jsonResponse({ error: 'unavailable' }, 503) : jsonResponse([])
     );
     vi.stubGlobal('fetch', fetchFn);
 
-    await expect(
-      fetchHistory(
-        'https://blockstream.info/api',
-        WALLET,
-        'bitcoin',
-        'Bitcoin',
-        'BTC',
-        true,
-        [WALLET, CHANGE_ADDRESS]
-      )
-    ).resolves.toBeUndefined();
+    const pending = fetchHistory(
+      'https://blockstream.info/api',
+      WALLET,
+      'bitcoin',
+      'Bitcoin',
+      'BTC',
+      true,
+      [WALLET, CHANGE_ADDRESS]
+    );
+    await vi.runAllTimersAsync();
+
+    await expect(pending).resolves.toBeUndefined();
+    expect(fetchFn.mock.calls.filter(([input]) => String(input).includes(CHANGE_ADDRESS))).toHaveLength(3);
 
     info.mockRestore();
   });
@@ -330,14 +334,34 @@ describe('Bitcoin history fetching', () => {
   });
 
   it('returns undefined on Bitcoin indexer outage so cached history can be preserved', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     const fetchFn = vi.fn(async () => jsonResponse({ error: 'unavailable' }, 503));
     vi.stubGlobal('fetch', fetchFn);
 
-    await expect(fetchHistory('https://blockstream.info/api', WALLET, 'bitcoin', 'Bitcoin', 'BTC', true)).resolves.toBeUndefined();
+    const pending = fetchHistory('https://blockstream.info/api', WALLET, 'bitcoin', 'Bitcoin', 'BTC', true);
+    await vi.runAllTimersAsync();
+
+    await expect(pending).resolves.toBeUndefined();
+    expect(fetchFn).toHaveBeenCalledTimes(3);
     expect(fetchFn).toHaveBeenCalledWith(`https://blockstream.info/api/address/${WALLET}/txs`);
 
     info.mockRestore();
+  });
+
+  it('retries a rate-limited Esplora request before loading history', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ error: 'Too Many Requests' }, 429))
+      .mockResolvedValueOnce(jsonResponse([outgoingBitcoinTx(1)]));
+    vi.stubGlobal('fetch', fetchFn);
+
+    const pending = fetchHistory('https://blockstream.info/api', WALLET, 'bitcoin', 'Bitcoin', 'BTC', true);
+    await vi.runAllTimersAsync();
+
+    await expect(pending).resolves.toEqual([expect.objectContaining({ id: txidAt(1) })]);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 
   it('formats Bitcoin history arrays for store pagination shape', () => {

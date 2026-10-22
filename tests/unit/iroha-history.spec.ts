@@ -124,6 +124,7 @@ describe('Iroha history fetching', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('normalizes Taira account movements read directly from Torii', async () => {
@@ -312,16 +313,50 @@ describe('Iroha history fetching', () => {
     info.mockRestore();
   });
 
-  it('uses Minamoto for an exact Nexus chain id and fails closed when definitions are unavailable', async () => {
+  it('uses Minamoto for an exact Nexus chain id and fails closed when definitions stay unavailable', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
     const fetchFn = vi.fn(async (_input: RequestInfo | URL) => {
       throw new Error('minamoto_unavailable');
     });
     vi.stubGlobal('fetch', fetchFn);
 
-    await expect(
-      fetchHistory('', NEXUS_WALLET, 'iroha', 'SORA Nexus', 'xor#sora', true, undefined, NEXUS_CHAIN_ID)
-    ).resolves.toBeUndefined();
+    const pending = fetchHistory('', NEXUS_WALLET, 'iroha', 'SORA Nexus', 'xor#sora', true, undefined, NEXUS_CHAIN_ID);
+    await vi.runAllTimersAsync();
+
+    await expect(pending).resolves.toBeUndefined();
+    // An unreachable gateway is retried twice before history gives up.
+    expect(fetchFn).toHaveBeenCalledTimes(3);
     expect(fetchFn.mock.calls[0]?.[0].toString()).toContain('https://minamoto.sora.org/v1/assets/definitions/');
+  });
+
+  it('retries a transient Torii gateway error before loading history', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    const { fetchFn: torii } = historyRouter([{ items: [movement()] }]);
+    let gatewayErrors = 1;
+    const fetchFn = vi.fn(async (input: string | URL) => {
+      if (gatewayErrors-- > 0) {
+        return new Response('<html>502 Bad Gateway</html>', { headers: { 'content-type': 'text/html' }, status: 502 });
+      }
+
+      return torii(input);
+    });
+    vi.stubGlobal('fetch', fetchFn);
+
+    const pending = fetchTairaHistory();
+    await vi.runAllTimersAsync();
+
+    await expect(pending).resolves.toEqual([expect.objectContaining({ id: `${HASH_1}:outgoing:0` })]);
+    expect(fetchFn).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry a malformed Torii movement', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const { fetchFn } = historyRouter([{ items: [movement({ block_height: 0 })] }]);
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(fetchTairaHistory()).resolves.toBeUndefined();
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    info.mockRestore();
   });
 
   it('rejects ambiguous Iroha networks before issuing a request', async () => {

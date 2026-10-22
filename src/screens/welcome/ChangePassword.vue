@@ -20,6 +20,8 @@
           <PasswordForm :focus="!alreadyHasMasterPassword" @setPassword="setPassword" />
         </div>
 
+        <p v-if="actionError" role="alert" class="action-error">{{ t('welcome.passwordChangeFailed') }}</p>
+
         <FButton
           size="big"
           fontSize="big"
@@ -65,6 +67,7 @@ const alreadyHasMasterPassword = ref(false);
 const needMigration = ref(false);
 const hasAccount = ref(false);
 const isWait = ref(false);
+const actionError = ref(false);
 const isAuthFlowInit = ref(false);
 
 const isDisabled = computed(
@@ -143,19 +146,31 @@ const close = (isClose = true) => {
 };
 
 const changePassword = async () => {
+  if (isWait.value) return;
+
   isWait.value = true;
+  actionError.value = false;
 
-  await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value });
+  try {
+    const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value });
 
-  const title = t(
-    `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
-  ).toString();
+    if (!changed) {
+      actionError.value = true;
 
-  notify({ title, message: '', type: 'success' });
+      return;
+    }
 
-  close(false);
+    const title = t(
+      `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
+    ).toString();
 
-  isWait.value = false;
+    notify({ title, message: '', type: 'success' });
+    close(false);
+  } catch {
+    actionError.value = true;
+  } finally {
+    isWait.value = false;
+  }
 };
 </script>
 
@@ -172,6 +187,11 @@ const changePassword = async () => {
   padding: 0 $default-padding;
   text-align: left;
   margin-bottom: 14px;
+}
+
+.action-error {
+  color: $default-white;
+  padding: 0 $default-padding;
 }
 
 .old-pass {

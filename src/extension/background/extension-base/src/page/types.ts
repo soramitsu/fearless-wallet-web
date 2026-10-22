@@ -99,6 +99,7 @@ export type SolanaRpcCommitment = 'processed' | 'confirmed' | 'finalized';
 
 export interface SolanaSignAndSendTransactionOptions {
   maxRetries?: number;
+  minContextSlot?: number;
   preflightCommitment?: SolanaRpcCommitment;
   skipPreflight?: boolean;
 }
@@ -150,6 +151,43 @@ export interface SolanaWalletStandardAccount {
   chains: readonly SolanaChainId[];
   features: readonly string[];
   publicKey: Uint8Array;
+}
+
+export interface SolanaWalletStandardSignMessageInput {
+  readonly account: SolanaWalletStandardAccount;
+  readonly message: Uint8Array;
+}
+
+export interface SolanaWalletStandardSignMessageOutput {
+  readonly signature: Uint8Array;
+  readonly signatureType: 'ed25519';
+  readonly signedMessage: Uint8Array;
+}
+
+export interface SolanaWalletStandardSignTransactionInput {
+  readonly account: SolanaWalletStandardAccount;
+  readonly chain?: SolanaChainId;
+  readonly options?: {
+    readonly minContextSlot?: number;
+    readonly preflightCommitment?: SolanaRpcCommitment;
+  };
+  readonly transaction: Uint8Array;
+}
+
+export interface SolanaWalletStandardSignTransactionOutput {
+  readonly signedTransaction: Uint8Array;
+}
+
+export interface SolanaWalletStandardSignAndSendTransactionInput
+  extends SolanaWalletStandardSignTransactionInput {
+  readonly chain: SolanaChainId;
+  readonly options?: SolanaWalletStandardSignTransactionInput['options'] & SolanaSignAndSendTransactionOptions & {
+    readonly commitment?: SolanaRpcCommitment;
+  };
+}
+
+export interface SolanaWalletStandardSignAndSendTransactionOutput {
+  readonly signature: Uint8Array;
 }
 
 export interface FWSolanaProvider {

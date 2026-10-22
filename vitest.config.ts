@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
     ...config,
     test: {
       globals: true,
+      // Real scrypt/HD-key regression tests need bounded CPU and memory contention.
+      maxWorkers: 4,
+      server: { deps: { inline: ['@subwallet/keyring'] } },
       environment: 'happy-dom',
       coverage: {
         provider: 'v8',
@@ -20,6 +23,12 @@ export default defineConfig(({ mode }) => {
         reportsDirectory: 'coverage',
         include: ['src/**/*.{js,jsx,ts,tsx,vue}'],
         exclude: ['src/**/*.d.ts'],
+        thresholds: {
+          // Repository-wide ratchet: raise these floors as legacy surfaces gain tests.
+          branches: 26,
+          functions: 16,
+          lines: 23,
+        },
       },
     },
   };

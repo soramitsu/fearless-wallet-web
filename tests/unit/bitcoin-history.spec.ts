@@ -12,6 +12,7 @@ vi.mock('@/extension/messaging/price', () => ({
 }));
 
 const WALLET = 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu';
+const CHANGE_ADDRESS = 'bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m';
 const TESTNET_WALLET = 'tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl';
 const COUNTERPARTY = 'bc1q6rz28mcfaxtmd6v789l9rrlrusdprr9pkv76kj';
 const TXID_1 = '11'.repeat(32);
@@ -130,6 +131,93 @@ describe('Bitcoin history fetching', () => {
       },
     ]);
     expect(fetchFn).toHaveBeenCalledWith(`https://blockstream.info/api/address/${WALLET}/txs`);
+  });
+
+  it('nets wallet-owned change across discovered addresses and deduplicates the shared transaction', async () => {
+    const transaction = bitcoinTx({
+      vin: [{ prevout: { scriptpubkey_address: WALLET, value: 100_000 } }],
+      vout: [
+        { scriptpubkey_address: COUNTERPARTY, value: 60_000 },
+        { scriptpubkey_address: CHANGE_ADDRESS, value: 39_859 },
+      ],
+    });
+    const fetchFn = vi.fn(async () => jsonResponse([transaction]));
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(
+      fetchHistory(
+        'https://blockstream.info/api',
+        WALLET,
+        'bitcoin',
+        'Bitcoin',
+        'BTC',
+        true,
+        [WALLET, CHANGE_ADDRESS]
+      )
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: TXID_1,
+        transfer: {
+          amount: '60000',
+          fee: '141',
+          from: WALLET,
+          to: COUNTERPARTY,
+        },
+      }),
+    ]);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(fetchFn).toHaveBeenCalledWith(`https://blockstream.info/api/address/${WALLET}/txs`);
+    expect(fetchFn).toHaveBeenCalledWith(`https://blockstream.info/api/address/${CHANGE_ADDRESS}/txs`);
+  });
+
+  it('fails a multi-address Bitcoin history refresh closed when any discovered address lookup fails', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const fetchFn = vi.fn(async (input: string | URL) =>
+      input.toString().includes(CHANGE_ADDRESS) ? jsonResponse({ error: 'unavailable' }, 503) : jsonResponse([])
+    );
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(
+      fetchHistory(
+        'https://blockstream.info/api',
+        WALLET,
+        'bitcoin',
+        'Bitcoin',
+        'BTC',
+        true,
+        [WALLET, CHANGE_ADDRESS]
+      )
+    ).resolves.toBeUndefined();
+
+    info.mockRestore();
+  });
+
+  it('rejects conflicting transaction bodies for the same txid across discovered addresses', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const fetchFn = vi.fn(async (input: string | URL) =>
+      jsonResponse([
+        bitcoinTx({
+          fee: input.toString().includes(CHANGE_ADDRESS) ? 142 : 141,
+          vin: [{ prevout: { scriptpubkey_address: WALLET, value: 100_000 } }],
+          vout: [{ scriptpubkey_address: COUNTERPARTY, value: 99_859 }],
+        }),
+      ])
+    );
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(
+      fetchHistory(
+        'https://blockstream.info/api',
+        WALLET,
+        'bitcoin',
+        'Bitcoin',
+        'BTC',
+        true,
+        [WALLET, CHANGE_ADDRESS]
+      )
+    ).resolves.toBeUndefined();
+
+    info.mockRestore();
   });
 
   it('filters non-native assets and malformed no-movement transactions', async () => {

@@ -17,7 +17,7 @@
 
       <div class="values" data-testid="values">
         <div class="earn">
-          Earn
+          {{ $t('pools.earn') }}
           <p class="asset" data-testid="earnAsset">{{ asset2 }}</p>
         </div>
       </div>

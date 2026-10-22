@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-08-01",
+  "runtimes": [
+    {
+      "name": "Polkadot",
+      "chainId": "91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3",
+      "specVersion": "2003002",
+      "calls": [
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedTeleportAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"]
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedReserveTransferAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"]
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "reserveTransferAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem"]
+        }
+      ]
+    },
+    {
+      "name": "Kusama",
+      "chainId": "b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe",
+      "specVersion": "2003002",
+      "calls": [
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedTeleportAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"]
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedReserveTransferAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"]
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "reserveTransferAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem"]
+        }
+      ]
+    },
+    {
+      "name": "Acala",
+      "chainId": "fc41b9bd8ef8fe53d58c7ea67c794c7ec9a73daf05e6d54b14ff6342c99ba64c",
+      "specVersion": "2350",
+      "calls": [
+        { "pallet": "xTokens", "call": "transfer", "args": ["currencyId", "amount", "dest", "destWeightLimit"] }
+      ]
+    },
+    {
+      "name": "Astar",
+      "chainId": "9eb76c5184c4ab8679d2d5d819fdf90b9c001403e9e17da2e14b6d8aec4029c6",
+      "specVersion": "2207",
+      "calls": [
+        {
+          "pallet": "polkadotXcm",
+          "call": "reserveTransferAssets",
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem"]
+        }
+      ]
+    },
+    {
+      "name": "SORA Mainnet",
+      "chainId": "7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5",
+      "specVersion": "130",
+      "calls": [
+        { "pallet": "bridgeProxy", "call": "burn", "args": ["networkId", "assetId", "recipient", "amount"] },
+        {
+          "pallet": "ethBridge",
+          "call": "transferToSidechain",
+          "args": ["assetId", "to", "amount", "networkId"],
+          "status": "blocked-multi-transaction-claim"
+        }
+      ]
+    },
+    {
+      "name": "Liberland",
+      "chainId": "6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6",
+      "specVersion": "34",
+      "calls": [{ "pallet": "soraBridgeApp", "call": "burn", "args": ["networkId", "assetId", "recipient", "amount"] }]
+    }
+  ]
+}

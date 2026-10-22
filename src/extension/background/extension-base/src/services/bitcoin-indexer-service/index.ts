@@ -62,6 +62,10 @@ type BitcoinEsploraClientOptions = {
   network?: BitcoinNetworkKind;
 };
 
+const MAX_BITCOIN_SATOSHIS = 2_100_000_000_000_000;
+const MAX_BITCOIN_INDEXER_JSON_BYTES = 32 * 1024 * 1024;
+const MAX_BITCOIN_BROADCAST_RESPONSE_BYTES = 64 * 1024;
+
 class BitcoinIndexerError extends Error {
   constructor(
     message: string,
@@ -93,11 +97,11 @@ class BitcoinEsploraClient {
     const confirmedSats = chainStats.funded_txo_sum - chainStats.spent_txo_sum;
     const mempoolSats = mempoolStats.funded_txo_sum - mempoolStats.spent_txo_sum;
 
-    return {
+    return normalizeBalance({
       confirmedSats,
       mempoolSats,
       totalSats: confirmedSats + mempoolSats,
-    };
+    });
   }
 
   async getUtxos(address: string): Promise<BitcoinEsploraUtxo[]> {
@@ -146,7 +150,11 @@ class BitcoinEsploraClient {
       headers: { 'content-type': 'text/plain' },
       method: 'POST',
     });
-    const body = await response.text();
+    const body = await readBoundedText(
+      response,
+      MAX_BITCOIN_BROADCAST_RESPONSE_BYTES,
+      'bitcoin_broadcast_response_too_large'
+    );
 
     if (!response.ok) throw new BitcoinIndexerError(`bitcoin_indexer_http_${response.status}`, response.status, body);
 
@@ -165,8 +173,9 @@ class BitcoinEsploraClient {
 
 function normalizeBaseUrl(baseUrl: string): string {
   const url = new URL(baseUrl);
+  const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
 
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
+  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) || url.username || url.password) {
     throw new BitcoinIndexerError('invalid_base_url');
   }
 
@@ -261,7 +270,7 @@ function normalizeStatus(value: unknown): BitcoinEsploraTxStatus {
 }
 
 async function readJson(response: Response): Promise<unknown> {
-  const text = await response.text();
+  const text = await readBoundedText(response, MAX_BITCOIN_INDEXER_JSON_BYTES, 'bitcoin_indexer_response_too_large');
   if (!text) return null;
 
   try {
@@ -269,6 +278,68 @@ async function readJson(response: Response): Promise<unknown> {
   } catch {
     throw new BitcoinIndexerError('invalid_json', response.status, text);
   }
+}
+
+async function readBoundedText(response: Response, maxBytes: number, errorCode: string): Promise<string> {
+  const contentLength = response.headers.get('content-length');
+
+  if (contentLength !== null) {
+    if (!/^(?:0|[1-9]\d*)$/u.test(contentLength) || Number(contentLength) > maxBytes) {
+      throw new BitcoinIndexerError(errorCode, response.status);
+    }
+  }
+  if (!response.body) return '';
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let byteLength = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+      byteLength += value.byteLength;
+      if (byteLength > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new BitcoinIndexerError(errorCode, response.status);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(byteLength);
+  let offset = 0;
+
+  chunks.forEach((chunk) => {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  });
+
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new BitcoinIndexerError('invalid_json', response.status);
+  }
+}
+
+function normalizeBalance(balance: BitcoinAddressBalance): BitcoinAddressBalance {
+  if (
+    !Number.isSafeInteger(balance.confirmedSats) ||
+    balance.confirmedSats < 0 ||
+    balance.confirmedSats > MAX_BITCOIN_SATOSHIS ||
+    !Number.isSafeInteger(balance.mempoolSats) ||
+    Math.abs(balance.mempoolSats) > MAX_BITCOIN_SATOSHIS ||
+    !Number.isSafeInteger(balance.totalSats) ||
+    balance.totalSats < 0 ||
+    balance.totalSats > MAX_BITCOIN_SATOSHIS
+  ) {
+    throw new BitcoinIndexerError('invalid_balance_response');
+  }
+
+  return balance;
 }
 
 function requireString(value: unknown, errorCode: string): string {
@@ -304,7 +375,7 @@ function requireVout(value: unknown, errorCode: string): number {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export {

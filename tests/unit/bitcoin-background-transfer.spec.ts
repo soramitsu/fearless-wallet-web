@@ -15,11 +15,13 @@ import type { BitcoinEsploraUtxo } from '@extension-base/services/bitcoin-indexe
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import { WalletEcosystem } from '@/interfaces';
+import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
 
 const mnemonic = vectors.vectors[0].mnemonic;
 const mainnetAddress = vectors.vectors[0].expected.bitcoin.mainnet.firstReceiveAddress;
 const testnetAddress = vectors.vectors[0].expected.bitcoin.testnet.firstReceiveAddress;
 const recipient = vectors.vectors[1].expected.bitcoin.mainnet.firstReceiveAddress;
+const originalEnableBitcoinTransfers = process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS;
 
 const network = (name: string, chainId: string): NetworkJson =>
   ({
@@ -49,6 +51,24 @@ const confirmedUtxo = (value: number, txid = '11'.repeat(32), vout = 0): Bitcoin
   txid,
   value,
   vout,
+});
+
+const addressStats = (address: string, used = address === mainnetAddress) => ({
+  address,
+  chain_stats: {
+    funded_txo_count: used ? 1 : 0,
+    funded_txo_sum: used ? 100_000 : 0,
+    spent_txo_count: 0,
+    spent_txo_sum: 0,
+    tx_count: used ? 1 : 0,
+  },
+  mempool_stats: {
+    funded_txo_count: 0,
+    funded_txo_sum: 0,
+    spent_txo_count: 0,
+    spent_txo_sum: 0,
+    tx_count: 0,
+  },
 });
 
 const createState = ({
@@ -86,8 +106,42 @@ const createState = ({
   }) as unknown as State;
 
 describe('background Bitcoin transfer adapter', () => {
+  beforeEach(() => {
+    process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
+  });
+
   afterEach(() => {
     vi.useRealTimers();
+    if (originalEnableBitcoinTransfers === undefined) delete process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS;
+    else process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = originalEnableBitcoinTransfers;
+  });
+
+  it('fails closed before estimating or broadcasting when Bitcoin release evidence is not enabled', async () => {
+    delete process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS;
+    const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(),
+      getFeeEstimates: vi.fn(async () => ({ 1: 2 })),
+      getUtxos: vi.fn(),
+    };
+
+    await expect(estimateBitcoinTransferFee({ client, network: 'mainnet' })).rejects.toThrow(
+      'bitcoin_transfer_disabled'
+    );
+    await expect(
+      makeBitcoinTransfer(
+        {
+          amount: '0.0005',
+          from: 'stored-substrate-account',
+          networkKey: 'Bitcoin',
+          state: createState(),
+          to: recipient,
+        },
+        client
+      )
+    ).rejects.toThrow('bitcoin_transfer_disabled');
+    expect(client.getFeeEstimates).not.toHaveBeenCalled();
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
   });
 
   it('normalizes BTC amounts and display fees without floating point loss', () => {
@@ -154,6 +208,7 @@ describe('background Bitcoin transfer adapter', () => {
     const callback = vi.fn();
     const client = {
       broadcastTransaction: vi.fn(async (txHex: string) => bitcoin.Transaction.fromHex(txHex).getId()),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
       getFeeEstimates: vi.fn(async () => ({ 1: 2 })),
       getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
     };
@@ -167,7 +222,8 @@ describe('background Bitcoin transfer adapter', () => {
         state,
         to: recipient,
       },
-      client
+      client,
+      { gapLimit: 2, maxLookahead: 20 }
     );
 
     await makeBitcoinTransfer(
@@ -179,7 +235,8 @@ describe('background Bitcoin transfer adapter', () => {
         state,
         to: recipient,
       },
-      client
+      client,
+      { gapLimit: 2, maxLookahead: 20 }
     );
 
     expect(prepared.txid).toBe(bitcoin.Transaction.fromHex(prepared.txHex).getId());
@@ -203,6 +260,7 @@ describe('background Bitcoin transfer adapter', () => {
     const state = createState();
     const client = {
       broadcastTransaction: vi.fn(async (txHex: string) => bitcoin.Transaction.fromHex(txHex).getId()),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
       getFeeEstimates: vi.fn(async () => ({ 1: 50 })),
       getUtxos: vi.fn(async () => [
         confirmedUtxo(250_000, '66'.repeat(32), 0),
@@ -222,12 +280,54 @@ describe('background Bitcoin transfer adapter', () => {
         state,
         to: recipient,
       },
-      client
+      client,
+      { gapLimit: 2, maxLookahead: 20 }
     );
 
     expect(prepared.feeRateSatPerVbyte).toBe(1);
     expect(prepared.inputTotal).toBe(70_000);
     expect(prepared.selectedUtxos).toEqual([expect.objectContaining({ txid: selectedTxid, vout: 2 })]);
     expect(client.getFeeEstimates).not.toHaveBeenCalled();
+  });
+
+  it('discovers and spends a funded change address while rotating change to the next internal index', async () => {
+    const state = createState();
+    const changePath = getBitcoinReceivePath('mainnet', 1, 1);
+    const changeAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: mnemonic, path: changePath });
+    const nextChangePath = getBitcoinReceivePath('mainnet', 2, 1);
+    const nextChangeAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: mnemonic, path: nextChangePath });
+    const client = {
+      broadcastTransaction: vi.fn(async (txHex: string) => bitcoin.Transaction.fromHex(txHex).getId()),
+      getAddress: vi.fn(async (address: string) =>
+        addressStats(address, address === mainnetAddress || address === changeAddress)
+      ),
+      getFeeEstimates: vi.fn(async () => ({ 1: 1 })),
+      getUtxos: vi.fn(async (address: string) =>
+        address === changeAddress ? [confirmedUtxo(100_000, '77'.repeat(32), 1)] : []
+      ),
+    };
+
+    const prepared = await prepareBitcoinTransferForTest(
+      {
+        amount: '0.0005',
+        from: 'stored-substrate-account',
+        networkKey: 'Bitcoin',
+        state,
+        to: recipient,
+      },
+      client,
+      { gapLimit: 2, maxLookahead: 20 }
+    );
+
+    expect(prepared.selectedUtxos).toEqual([
+      expect.objectContaining({
+        address: changeAddress,
+        derivationPath: changePath,
+        txid: '77'.repeat(32),
+      }),
+    ]);
+    expect(prepared.changeAddress).toBe(nextChangeAddress);
+    expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
+    expect(client.getUtxos).toHaveBeenCalledWith(changeAddress);
   });
 });

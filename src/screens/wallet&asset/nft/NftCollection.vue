@@ -6,6 +6,7 @@
           v-for="nft in ownedNfts"
           data-testid="nftOwned"
           :collectionName="name"
+          :chainId="chainId"
           class="ownedNfts"
           :key="nft.id"
           :nft="nft"
@@ -21,6 +22,7 @@
             v-for="nft in nftCollectionFromStore"
             data-testid="nftAvailable"
             :collectionName="name"
+            :chainId="chainId"
             :key="nft.id"
             :nft="nft"
             @share="onShare"
@@ -43,11 +45,14 @@ import NftItem from '@/screens/wallet&asset/nft/NftItem.vue';
 import Tooltip from '@/components/Tooltip.vue';
 
 import { setClipboard } from '@/helpers';
+import { buildAvailableNftKey, findNftCollection } from '@/portfolio/nftIdentity';
 import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
 const route = useRoute();
 const router = useRouter();
 const accountsStore = useAccountsStore();
+const networksStore = useNetworksStore();
 
 const { t } = useI18n();
 
@@ -56,25 +61,28 @@ const selectedWallet = computed(() => accountsStore.selectedWallet);
 const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
 const contract = computed(() => routeParam(route.params.contract));
+const chainId = computed(() => routeParam(route.params.chainId));
+const availableKey = computed(() => buildAvailableNftKey(chainId.value, contract.value));
 const availableNftsFromStore = computed<AvailableNftState>(() => accountsStore.availableNfts);
 const nftCollectionFromStore = computed<FearlessNft[]>(
-  () => availableNftsFromStore.value[contract.value]?.collection ?? []
+  () => availableNftsFromStore.value[availableKey.value]?.collection ?? []
 );
 const isAvailableNfts = computed(() => nftCollectionFromStore.value.length);
 
 const state = reactive<{ pageKey?: string; canLoadMore: boolean }>({
-  pageKey: availableNftsFromStore.value[contract.value]?.pageKey,
+  pageKey: availableNftsFromStore.value[availableKey.value]?.pageKey,
   canLoadMore: true,
 });
 
 const tooltip = ref<InstanceType<typeof Tooltip> | null>(null);
 
-const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks ?? []);
-const collection = computed(() => nfts.value.find((el) => el.address === contract.value));
+const collection = computed<NftCollection | undefined>(() =>
+  findNftCollection(accountsStore.nfts, networksStore.allNetworks, chainId.value, contract.value)
+);
 const name = computed(() => collection.value?.name);
 const ownedNfts = computed(() => collection.value?.ownedNfts ?? []);
 
-const header = computed(() => (collection.value ? collection.value.name : ''));
+const header = computed(() => (collection.value ? `${collection.value.name ?? contract.value} · ${collection.value.network}` : ''));
 const additionalNftsHeader = computed(() => t('nft.availableNfts', { name: collection.value?.name }));
 const network = computed<string>(() => collection.value?.network ?? '');
 
@@ -117,7 +125,7 @@ const onScroll = async () => {
   state.pageKey = nfts.pageKey;
 
   const avNfts: AvailableNftState = {
-    [contract.value]: {
+    [availableKey.value]: {
       collection: nfts.nfts,
       pageKey: nfts.pageKey,
     },

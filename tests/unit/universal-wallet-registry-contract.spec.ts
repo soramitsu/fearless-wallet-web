@@ -254,9 +254,15 @@ function taira(): UniversalWalletChainRegistryEntry {
   return {
     id: 'taira-testnet',
     ecosystem: WalletEcosystem.Iroha,
-    chainId: 'iroha3-taira',
+    chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
     displayName: 'Taira Testnet',
     enabledByDefault: true,
+    nativeAsset: {
+      id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
+      symbol: 'XOR',
+      decimals: 9,
+      name: 'XOR',
+    },
     features: ['transfer'],
     endpoints: [
       {

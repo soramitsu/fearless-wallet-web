@@ -9,17 +9,13 @@
 
           <div class="be-deleted">{{ t('welcome.walletWillBeDeleted') }}</div>
 
-          <div class="enter-reset">{{ t('welcome.enterReset') }}</div>
+          <div class="enter-reset">{{ t('welcome.enterReset', { phrase }) }}</div>
         </div>
 
         <div>
-          <FInput
-            ref="passInput"
-            size="big"
-            :value="password"
-            :placeholder="$t('welcome.resetWallet')"
-            @change="changeOPassword"
-          />
+          <FInput ref="passInput" size="big" :value="password" :placeholder="phrase" @change="changeOPassword" />
+
+          <p v-if="actionError" role="alert">{{ t('welcome.walletResetFailed') }}</p>
 
           <FButton
             class="pass"
@@ -49,19 +45,34 @@ const router = useRouter();
 const { t } = useI18n();
 
 const password = ref('');
+const isWait = ref(false);
+const actionError = ref(false);
 const passInput = ref<InstanceType<typeof FInput> | null>(null);
 
-const isDisabled = computed(() => password.value !== phrase);
+const isDisabled = computed(() => isWait.value || password.value !== phrase);
 
 onMounted(() => passInput.value?.input?.focus());
 
 const changeOPassword = async (pass: string) => (password.value = pass);
 const close = () => router.back();
 
-const reset = () => {
-  resetWallet();
+const reset = async () => {
+  if (isWait.value) return;
 
-  router.push({ name: Components.Welcome });
+  isWait.value = true;
+  actionError.value = false;
+
+  try {
+    if (await resetWallet()) {
+      router.push({ name: Components.Welcome });
+    } else {
+      actionError.value = true;
+    }
+  } catch {
+    actionError.value = true;
+  } finally {
+    isWait.value = false;
+  }
 };
 </script>
 

@@ -1,8 +1,14 @@
 <template>
   <div>
-    <div :class="backgroundClass" @click="click($event)">
-      <Icon :icon="iconName" :className="imageClasses" />
-    </div>
+    <button
+      type="button"
+      :class="backgroundClass"
+      :disabled="disabled"
+      :aria-label="accessibleLabel"
+      @click="click($event)"
+    >
+      <Icon :icon="iconName" :className="imageClasses" aria-hidden="true" />
+    </button>
 
     <Tooltip v-show="showTooltip" :text="tooltipText" :target="target" :placement="placement" />
   </div>
@@ -11,13 +17,15 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { Placement } from '@/interfaces';
+import { useI18n } from '@/locales/useI18n';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 
-type Size = 'small' | 'medium';
+type Size = 'small' | 'medium' | 'big' | 'large';
 
 type Props = {
   iconName: string;
+  ariaLabel?: string;
   backgroundColor: BackgroundType;
   backgroundColorHover?: BackgroundType;
   target?: string;
@@ -34,6 +42,32 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   size: 'medium',
 });
+
+const { t } = useI18n();
+const actionLabels: Record<string, string> = {
+  'chevron-left': 'ux.back',
+  'chevron-right': 'common.next',
+  expand: 'common.fullScreen',
+  settings: 'header.settingsAndManagement',
+  copy: 'common.copyToClipboard',
+  close: 'common.close',
+  cross: 'common.close',
+  reload: 'ux.refresh',
+  search: 'ux.search',
+  send: 'assets.send',
+  'send-white': 'assets.send',
+  receive: 'assets.receive',
+  'receive-white': 'assets.receive',
+  swap: 'primaryMenu.polkaswap',
+  'cross-chain': 'ux.transferNetworks',
+  'arrow-link': 'ux.openExplorer',
+  share: 'ux.share',
+  'plus-pink': 'ux.add',
+  filter: 'common.filters',
+};
+const accessibleLabel = computed(
+  () => props.ariaLabel || t(props.tooltipText || actionLabels[props.iconName] || 'ux.moreOptions')
+);
 
 const showTooltip = computed(() => props.tooltipText !== '');
 
@@ -73,6 +107,21 @@ const click = (event: Event) => {
 
 <style lang="scss" scoped>
 .circle-button {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  flex-shrink: 0;
+
+  &:focus-visible {
+    outline: 2px solid $pink-color;
+    outline-offset: 3px;
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -112,8 +161,8 @@ const click = (event: Event) => {
 }
 
 .circle-button-small {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
 
   .image {
     width: 8px;
@@ -122,8 +171,8 @@ const click = (event: Event) => {
 }
 
 .circle-button-medium {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 
   .image {
     width: 18px;
@@ -132,8 +181,8 @@ const click = (event: Event) => {
 }
 
 .circle-button-big {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 
   .image {
     width: 24px;
@@ -141,7 +190,7 @@ const click = (event: Event) => {
   }
 }
 
-.circle-button-big {
+.circle-button-large {
   width: 48px;
   height: 48px;
 

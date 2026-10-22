@@ -36,11 +36,17 @@ const UNIVERSAL_WALLET_DERIVATION_PATHS = {
 const UNIVERSAL_WALLET_IROHA_NETWORKS = {
   taira: {
     id: 'taira-testnet',
-    chainId: 'iroha3-taira',
+    chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
     chainDiscriminant: 369,
     toriiBaseUrl: 'https://taira.sora.org',
     mcpPath: '/v1/mcp',
     enabledByDefault: true,
+    nativeAsset: {
+      id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
+      symbol: 'XOR',
+      decimals: 9,
+      name: 'XOR',
+    },
   },
   nexus: {
     id: 'sora-nexus-mainnet',
@@ -261,6 +267,7 @@ const UNIVERSAL_WALLET_TAIRA_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry =
   chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId,
   displayName: 'Taira Testnet',
   enabledByDefault: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.enabledByDefault,
+  nativeAsset: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset,
   derivationPath: UNIVERSAL_WALLET_DERIVATION_PATHS.irohaDefault,
   slip44CoinType: 617,
   features: ['transfer'],

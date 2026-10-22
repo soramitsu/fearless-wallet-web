@@ -58,6 +58,7 @@ type SolanaSimulationOptions = {
 
 type SolanaBroadcastOptions = {
   maxRetries?: number;
+  minContextSlot?: number;
   preflightCommitment?: SolanaRpcCommitment;
   skipPreflight?: boolean;
 };
@@ -155,6 +156,7 @@ class SolanaRpcClient {
     transactionBase64: string,
     {
       maxRetries,
+      minContextSlot,
       preflightCommitment = 'confirmed',
       skipPreflight = false,
     }: SolanaBroadcastOptions = {}
@@ -170,6 +172,9 @@ class SolanaRpcClient {
         throw new SolanaRpcError('invalid_max_retries');
       }
       options.maxRetries = maxRetries;
+    }
+    if (minContextSlot !== undefined) {
+      options.minContextSlot = requireSafeInteger(minContextSlot, 'invalid_min_context_slot');
     }
 
     return this.request(

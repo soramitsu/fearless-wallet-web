@@ -16,6 +16,8 @@ import {
 
 const DEFAULT_FEE_TARGET_BLOCKS = 2;
 const DEFAULT_MAX_INPUTS = 100;
+const MAX_SOURCE_ADDRESSES = 2_000;
+const UTXO_FETCH_CONCURRENCY = 8;
 const MAX_FEE_TARGET_BLOCKS = 1008;
 const MAX_SATOSHI = 2_100_000_000_000_000;
 
@@ -200,14 +202,30 @@ async function fetchSpendableUtxos(
   includeUnconfirmed: boolean,
   allowEmpty = false
 ): Promise<BitcoinUtxo[]> {
-  const results = await Promise.all(
-    sources.map(async (source) => {
+  const results: Array<Array<BitcoinUtxo & { status?: BitcoinEsploraUtxo['status'] }>> = [];
+
+  for (let offset = 0; offset < sources.length; offset += UTXO_FETCH_CONCURRENCY) {
+    const batch = sources.slice(offset, offset + UTXO_FETCH_CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map(async (source) => {
       const utxos = await client.getUtxos(source.address);
 
       return utxos.map((utxo) => normalizeSpendableUtxo(utxo, source));
-    })
-  );
+      })
+    );
+
+    results.push(...batchResults);
+  }
+
+  const seenOutpoints = new Set<string>();
   const spendable = results.flat().filter((utxo) => includeUnconfirmed || utxo.status?.confirmed);
+
+  spendable.forEach(({ txid, vout }) => {
+    const outpoint = `${txid.toLowerCase()}:${vout}`;
+
+    if (seenOutpoints.has(outpoint)) throw new BitcoinSendError('duplicate_utxo');
+    seenOutpoints.add(outpoint);
+  });
 
   if (spendable.length === 0 && !allowEmpty) throw new BitcoinSendError('no_spendable_utxos');
 
@@ -334,7 +352,7 @@ function estimateFee(inputCount: number, outputCount: number, feeRateSatPerVbyte
 
 function normalizeSources(sources: BitcoinSendSource[], network: BitcoinDerivationNetwork): BitcoinSendSource[] {
   if (!Array.isArray(sources) || sources.length === 0) throw new BitcoinSendError('sources_required');
-  if (sources.length > 100) throw new BitcoinSendError('too_many_sources');
+  if (sources.length > MAX_SOURCE_ADDRESSES) throw new BitcoinSendError('too_many_sources');
 
   const seen = new Set<string>();
 

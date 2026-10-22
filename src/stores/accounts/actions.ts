@@ -1,9 +1,17 @@
-import type { SetAutoSelectNode, SetAccountsProps, SetHiddenAsset } from './types';
+import type {
+  MigrateLegacyAssetPreferences,
+  SetAssetPreference,
+  SetAutoSelectNode,
+  SetAccountsProps,
+  SetHiddenAsset,
+} from './types';
 import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
 import type { AccountStore } from '@/stores/accounts';
 import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
 import { accountController } from '@/controllers/accountController';
 import { WalletEcosystem } from '@/interfaces';
+import { acceptSoraDisclaimer, getSoraDisclaimerStatus } from '@/extension/messaging/sora-policy';
+import { SORA_DISCLAIMER_VERSION } from '@/defi/soraDisclaimer';
 
 type Actions = {
   setSelectedWallet(this: AccountStore, props: AccountJson | undefined): void;
@@ -13,8 +21,11 @@ type Actions = {
   setAccounts(this: AccountStore, props: SetAccountsProps): void;
   setAutoSelectNode(this: AccountStore, props: SetAutoSelectNode): void;
   setHiddenAssets(this: AccountStore, props: SetHiddenAsset): void;
+  setAssetPreference(this: AccountStore, props: SetAssetPreference): void;
+  migrateLegacyAssetPreferences(this: AccountStore, props: MigrateLegacyAssetPreferences): void;
   setSelectedNetwork(this: AccountStore, network: string): void;
-  hidePolkaswapAlert(this: AccountStore): void;
+  hidePolkaswapAlert(this: AccountStore): Promise<boolean>;
+  syncSoraDisclaimerStatus(this: AccountStore): Promise<boolean>;
   hideNetworkWarning(this: AccountStore, network: string): void;
   setIsBalanceLoading(this: AccountStore, value: boolean): void;
   setAvailableNfts(this: AccountStore, nfts: AvailableNftState): void;
@@ -45,10 +56,10 @@ export const actions: Actions = {
   },
 
   setAvailableNfts(nfts) {
-    this.availableNfts = nfts;
+    this.availableNfts = { ...this.availableNfts, ...nfts };
   },
 
-  setBalance({ details, saveSequence = false }) {
+  setBalance({ details, saveSequence = false, scanStates }) {
     if (saveSequence) {
       const address = this.selectedWallet.address;
       const sequence = details.map(({ groupId }) => groupId);
@@ -64,6 +75,7 @@ export const actions: Actions = {
     }
 
     this.balances = details;
+    if (scanStates) this.networkScanStates = scanStates;
   },
 
   hideNetworkWarning(network) {
@@ -105,6 +117,37 @@ export const actions: Actions = {
     accountController.setHiddenAssets(this.hiddenAssetsForAllAccounts);
   },
 
+  setAssetPreference({ key, preference }) {
+    const address = this.selectedWallet.address;
+    const current = this.assetPreferencesForAllAccounts[address] ?? {};
+
+    this.assetPreferencesForAllAccounts = {
+      ...this.assetPreferencesForAllAccounts,
+      [address]: { ...current, [key]: preference },
+    };
+
+    accountController.setAssetPreferences(this.assetPreferencesForAllAccounts);
+  },
+
+  migrateLegacyAssetPreferences({ assets, complete }) {
+    const address = this.selectedWallet.address;
+    if (!address || !complete || accountController.getAssetPreferenceMigrationState()[address]) return;
+
+    const legacyHidden = new Set(this.hiddenAssetsForAllAccounts[address] ?? []);
+    const current = { ...(this.assetPreferencesForAllAccounts[address] ?? {}) };
+
+    assets.forEach(({ key, groupId }) => {
+      if (legacyHidden.has(groupId) && current[key] === undefined) current[key] = 'hidden';
+    });
+
+    this.assetPreferencesForAllAccounts = {
+      ...this.assetPreferencesForAllAccounts,
+      [address]: current,
+    };
+    accountController.setAssetPreferences(this.assetPreferencesForAllAccounts);
+    accountController.setAssetPreferenceMigrationComplete(address);
+  },
+
   setSelectedFiat(fiatName) {
     this.selectedFiat = fiatName;
   },
@@ -128,11 +171,26 @@ export const actions: Actions = {
     this.autoSelectNode = { ...this.autoSelectNode, [network]: value };
   },
 
-  hidePolkaswapAlert() {
-    setTimeout(() => {
-      this.showPolkaswapAlert = false;
+  async hidePolkaswapAlert() {
+    const status = await acceptSoraDisclaimer(SORA_DISCLAIMER_VERSION);
+    this.showPolkaswapAlert = !status.accepted;
+    if (status.accepted) accountController.setAgreeSwapDisclaimer();
 
-      accountController.setAgreeSwapDisclaimer();
-    }, 100);
+    return status.accepted;
+  },
+
+  async syncSoraDisclaimerStatus() {
+    try {
+      const status = await getSoraDisclaimerStatus();
+      this.showPolkaswapAlert = !status.accepted;
+      if (status.accepted) accountController.setAgreeSwapDisclaimer();
+      else accountController.clearAgreeSwapDisclaimer();
+
+      return status.accepted;
+    } catch {
+      this.showPolkaswapAlert = true;
+      accountController.clearAgreeSwapDisclaimer();
+      return false;
+    }
   },
 };

@@ -50,6 +50,30 @@ function mergeUniversalWalletRegistryNetworks(
   }
 }
 
+/**
+ * Produces the discovery catalog from maintained sources only. The remote
+ * chain catalog remains authoritative for chains it knows about, while the
+ * bundled universal-wallet registry supplies production ecosystems that are
+ * not published there yet. User-created networkMap entries are deliberately
+ * not an input.
+ */
+function createAuthoritativeDiscoveryRegistryNetworks(
+  remoteNetworks: NetworkJson[],
+  registry: UniversalWalletChainRegistry = UNIVERSAL_WALLET_CHAIN_REGISTRY
+): NetworkJson[] {
+  const authoritativeMap: UniversalWalletNetworkMap = {};
+
+  for (const network of remoteNetworks) {
+    const existingKey = findExistingNetworkKey(authoritativeMap, network);
+
+    if (!existingKey) authoritativeMap[network.name] = network;
+  }
+
+  mergeUniversalWalletRegistryNetworks(authoritativeMap, undefined, registry);
+
+  return Object.values(authoritativeMap);
+}
+
 function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry): NetworkJson {
   const name = getRuntimeNetworkName(entry);
   const nodes = createNodes(entry.endpoints);
@@ -93,7 +117,10 @@ function mergeRegistryNetworkDefaults(
     ...existing,
     key: existing.key || registryNetwork.key,
     chain: existing.chain || registryNetwork.chain,
-    chainId: existing.chainId || registryNetwork.chainId,
+    chainId:
+      registryNetwork.ecosystem === WalletEcosystem.Iroha
+        ? registryNetwork.chainId
+        : existing.chainId || registryNetwork.chainId,
     ecosystem: registryNetwork.ecosystem,
     externalApi: mergeExternalApi(existing.externalApi, registryNetwork.externalApi),
     assets: mergeNativeAssets(existing.assets, registryNetwork.assets),
@@ -213,6 +240,7 @@ function getRuntimeOptions(entry: UniversalWalletChainRegistryEntry): NetworkJso
 
 export {
   createUniversalWalletRegistryNetworks,
+  createAuthoritativeDiscoveryRegistryNetworks,
   mergeUniversalWalletRegistryNetworks,
   createNetworkFromRegistryEntry,
 };

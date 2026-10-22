@@ -143,6 +143,7 @@ export interface NetworkJson {
 }
 
 export interface FWKeyringMeta extends KeyringPair$Meta {
+  walletSecurityGeneration?: number;
   isMobile?: boolean;
   isMasterAccount?: boolean;
   isMasterPassword?: boolean;

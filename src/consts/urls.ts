@@ -29,7 +29,7 @@ const BASE_URLS_PREFIX = {
 };
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
-const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
+const FEARLESS_PRIVACY = 'https://github.com/soramitsu/fearless-wallet-web/blob/52c54b90febe08742f5f41fe318f84cc3a8fe62a/docs/browser-extension-privacy.md';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
 const GITHUB = 'https://github.com/soramitsu/shared-features-utils';

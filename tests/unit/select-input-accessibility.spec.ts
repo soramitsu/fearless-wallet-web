@@ -1,0 +1,20 @@
+import { flushPromises, mount } from '@vue/test-utils';
+import { expect, it, vi } from 'vitest';
+vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ balances: [], fiatSymbol: '$' }) }));
+import SelectInput from '@/components/SelectInput.vue';
+it('names the amount and native asset/maximum controls and honors read-only availability', async () => {
+  const wrapper = mount(SelectInput, { props: { text: 'assets.sendButtonText', asset: 'XOR', amount: '10', value: '10', totalAmount: 25, isRotate: false }, global: { mocks: { $t: (key: string) => key, $n: (n: number) => String(n) }, stubs: { Icon: true, ExternalLogo: true, Rotate: { template: '<span><slot /></span>' }, FCorners: { template: '<div><slot /></div>' } } } });
+  await flushPromises();
+  expect(wrapper.get('input').attributes('aria-label')).toBe('assets.sendButtonText');
+  const asset = wrapper.get('button[data-testid="selectBtn"]');
+  const maximum = wrapper.get('button[data-testid="balanceValue"]');
+  await asset.trigger('click');
+  expect(wrapper.emitted('togglePopupVisibility')).toHaveLength(1);
+  await maximum.trigger('click');
+  expect(wrapper.emitted('setMax')).toHaveLength(1);
+  await wrapper.setProps({ disableSelection: true });
+  expect(asset.attributes('disabled')).toBeDefined();
+  await wrapper.setProps({ readonly: true });
+  expect(maximum.attributes('disabled')).toBeDefined();
+  wrapper.unmount();
+});

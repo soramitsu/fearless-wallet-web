@@ -18,7 +18,7 @@ import type { FWKeyringMeta, NetworkJson, PriceProvider } from '@extension-base/
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { BalanceItem } from '@extension-base/api/evm/types';
+import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type {
   NetworkName,
@@ -32,6 +32,10 @@ import type {
   WalletEcosystem,
 } from '@/interfaces';
 import type { WarningValueName } from '@/consts/messages';
+import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
+import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
+import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
+import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -224,6 +228,7 @@ export interface RequestMetadataReject {
 }
 
 export interface RequestAccountCreateSuri {
+  requireFreshGeneration?: boolean;
   suri: string;
   type?: SubwalletKeypairType;
   meta: FWKeyringMeta;
@@ -234,6 +239,7 @@ export interface BalanceJson {
   reset?: boolean;
   details: TokenGroup[];
   saveSequence?: boolean;
+  scanStates?: Record<NetworkName, NetworkScanState>;
 }
 
 export interface RequestMobileSign {
@@ -350,8 +356,14 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   from: string;
   to: string;
   assetId: string;
+  assetKey: string;
+  routeId: string;
+  routeProviderId: CrossChainRouteProviderId;
   relayChain?: RelayChainName;
   amount?: string;
+  expectedOriginFee?: string;
+  expectedDestinationFee?: string;
+  expectedExecutionFingerprint?: string;
 }
 
 export interface ResponseCheckTransfer {
@@ -363,6 +375,8 @@ export interface ResponseCheckTransfer {
 export interface ResponseCheckCrossChain {
   estimateFee?: string;
   destEstimateFee?: string;
+  minimum?: string;
+  executionFingerprint?: string;
   errors?: BasicTxError[];
 }
 
@@ -413,6 +427,7 @@ export interface ResponseMakeSwap {
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
 
 export interface RequestSwap extends ActivityRequestSign<RequestCheckSwap> {
+  disclaimerAccepted: boolean;
   feeSymbol?: string;
 }
 
@@ -723,6 +738,11 @@ export type IState = {
   windows: number[];
   fiatSymbol: string;
   balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
+  assetBalances: Record<WalletAddress, Record<string, BalanceItem & { chain: NetworkName }>>;
+  networkScanStates: Record<WalletAddress, Record<NetworkName, NetworkScanState>>;
+  assetDiscoverySweep: AssetDiscoverySweepState;
+  actionCapabilities: ActionCapabilityConfig;
+  soraDisclaimerAcceptance: SoraDisclaimerAcceptance;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
@@ -777,7 +797,7 @@ export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResult
 
 export type ResponseTotalBalances = {
   address: string;
-  total: number;
+  total: string;
   change: ChangeWalletBalance;
 };
 

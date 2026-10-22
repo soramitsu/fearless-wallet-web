@@ -24,10 +24,11 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
 
   const api = state.getTonApiMap[networkKey.toLowerCase()];
 
-  const { walletContract, cipherSeed } = state.keyringService.tonKeyring.accountSubject.value[from];
-  const seed = state.keyringService.tonKeyring.decodeMnemonic(cipherSeed);
+  const { walletContract, publicKey } = state.keyringService.tonKeyring.accountSubject.value[from];
+  if (!walletContract.address.equals(Address.parse(from))) throw new Error('TON account address mismatch');
+  const seed = await state.keyringService.tonKeyring.decodeAccountMnemonic(from);
 
-  const { secretKey } = await state.keyringService.tonKeyring.mnemonicToKeyPair(seed.split(' '));
+  const { secretKey } = await state.keyringService.tonKeyring.mnemonicToKeyPair(seed.split(' '), undefined, publicKey);
   const destinationAddress = Address.parse(to);
 
   const messageBody = beginCell()

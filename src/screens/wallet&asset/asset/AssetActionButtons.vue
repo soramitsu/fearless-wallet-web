@@ -1,6 +1,7 @@
 <template>
   <div class="activity">
     <BorderButton
+      v-if="showSendButton"
       class="activity-button"
       text="assets.sendButtonText"
       iconName="send"
@@ -9,6 +10,7 @@
     />
 
     <BorderButton
+      v-if="!recoveryOnly"
       class="activity-button"
       width="100%"
       text="assets.receiveButtonText"
@@ -36,7 +38,7 @@
     />
 
     <BorderButton
-      v-if="showBuyButton && !isNeedPopupButton"
+      v-if="!recoveryOnly && showBuyButton && !isNeedPopupButton"
       class="activity-button"
       text="assets.buy"
       iconName="plus-pink"
@@ -61,6 +63,10 @@ import { isSora } from '@/helpers';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { WalletEcosystem } from '@/interfaces';
+import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -94,6 +100,9 @@ export default defineComponent({ name: 'AssetActionButtons' ,
     };
   },
   computed: {
+    recoveryOnly() {
+      return IS_EXTENSION && isSelectedWalletRecoveryOnly(this.accountsStore.accounts, this.accountsStore.selectedWallet.address);
+    },
     selectedNetwork() {
       return this.$route.params.selectedNetwork ?? '';
     },
@@ -101,13 +110,18 @@ export default defineComponent({ name: 'AssetActionButtons' ,
       return this.currency?.symbol?.toLowerCase() ?? '';
     },
     showSwapButton() {
-      return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
+      return !this.recoveryOnly && isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
+    },
+    showSendButton() {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+
+      return network?.ecosystem !== WalletEcosystem.Bitcoin || isBitcoinTransfersEnabled();
     },
     isNeedPopupButton() {
       return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
     },
     showCrossChainButton() {
-      if (this.selectedNetwork === '') return false;
+      if (this.recoveryOnly || this.selectedNetwork === '') return false;
 
           const network = this.networksStore.getNetwork(this.selectedNetwork);
 

@@ -28,6 +28,13 @@ type IrohaTransferSource = {
   walletEcosystem?: WalletEcosystem;
 };
 
+type IrohaWalletSmokeMetadata = Readonly<{
+  evidence_role: 'wallet-smoke';
+  route_governance_action_hash: string;
+  wallet_platform: 'web';
+  wallet_commit: string;
+}>;
+
 type IrohaTransferCodecInput = {
   amount: string;
   assetDefinitionId: string;
@@ -35,6 +42,7 @@ type IrohaTransferCodecInput = {
   chainId: string;
   derivationPath: string;
   destinationAccountId: string;
+  metadata?: IrohaWalletSmokeMetadata;
   mnemonicOrSeed: string;
   network: IrohaNetworkKey;
   signingPublicKeyHex: string;
@@ -63,6 +71,10 @@ type PreparedIrohaTransfer = {
   toriiBaseUrl: string;
 };
 
+type IrohaTransferRoute = Pick<PreparedIrohaTransfer, 'chainId' | 'network' | 'toriiBaseUrl'> & {
+  configuredToriiBaseUrl: string;
+};
+
 function isIrohaTransferNetwork(network: NetworkJson | undefined): boolean {
   return network?.ecosystem === WalletEcosystem.Iroha;
 }
@@ -76,7 +88,7 @@ async function estimateIrohaTransferFee(params: IrohaTransferParams): Promise<st
 
   prepareIrohaTransfer(params);
 
-  return '0';
+  throw new Error('iroha_fee_estimation_unavailable');
 }
 
 async function makeIrohaTransfer(params: IrohaTransferParams, codec?: IrohaTransferCodec): Promise<void> {
@@ -86,6 +98,41 @@ async function makeIrohaTransfer(params: IrohaTransferParams, codec?: IrohaTrans
 
   if (!codec) throw new Error('iroha_transfer_codec_unavailable');
 
+  return submitPreparedIrohaTransfer(params, prepared, codec);
+}
+
+async function makeIrohaWalletSmokeTransfer(
+  params: IrohaTransferParams,
+  routeGovernanceActionHash: string,
+  walletCommit: string,
+  codec?: IrohaTransferCodec
+): Promise<void> {
+  if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
+
+  const metadata = createIrohaWalletSmokeMetadata(routeGovernanceActionHash, walletCommit);
+  const route = resolveIrohaTransferRoute(params);
+
+  if (route.network !== 'nexus') throw new Error('iroha_wallet_smoke_requires_nexus');
+  if (route.chainId !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId) {
+    throw new Error('iroha_wallet_smoke_requires_canonical_nexus_chain');
+  }
+  if (route.configuredToriiBaseUrl !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl) {
+    throw new Error('iroha_wallet_smoke_requires_canonical_nexus_torii');
+  }
+  if (!codec) throw new Error('iroha_transfer_codec_unavailable');
+
+  const prepared = prepareIrohaTransferForRoute(params, route);
+
+  return submitPreparedIrohaTransfer(params, prepared, codec, metadata);
+}
+
+async function submitPreparedIrohaTransfer(
+  params: IrohaTransferParams,
+  prepared: PreparedIrohaTransfer,
+  codec: IrohaTransferCodec,
+  metadata?: IrohaWalletSmokeMetadata
+): Promise<void> {
+
   const result = await codec.buildAndSignTransfer({
     amount: prepared.amount,
     assetDefinitionId: prepared.assetDefinitionId,
@@ -93,6 +140,7 @@ async function makeIrohaTransfer(params: IrohaTransferParams, codec?: IrohaTrans
     chainId: prepared.chainId,
     derivationPath: prepared.source.derivationPath,
     destinationAccountId: prepared.destinationAccountId,
+    ...(metadata ? { metadata } : {}),
     mnemonicOrSeed: prepared.source.mnemonicOrSeed,
     network: prepared.network,
     signingPublicKeyHex: prepared.source.publicKeyHex,
@@ -100,46 +148,134 @@ async function makeIrohaTransfer(params: IrohaTransferParams, codec?: IrohaTrans
     sourceAssetId: prepared.sourceAssetId,
   });
   const signedTransaction = normalizeSignedTransactionPayload(result.signedTransaction);
+  const signedTransactionHash = normalizeSignedTransactionHash(result.signedTransactionHashHex);
   const client = new IrohaToriiWalletClient({ baseUrl: prepared.toriiBaseUrl, network: prepared.network });
 
-  await client.submitTransaction(signedTransaction);
+  await client.submitTransactionAndWait(signedTransaction, signedTransactionHash);
 
   params.callback?.({ status: true });
 
-  setTimeout(() => {
-    params.state.balanceService
-      .fetchBalance({
-        address: prepared.source.accountAddress,
-        ethereumAddress: '',
-        irohaAddress: prepared.source.irohaAddress,
-        irohaNetworks: [prepared.networkKey],
-        walletEcosystem: WalletEcosystem.Iroha,
-      })
-      .catch((error) => console.warn('Failed to refresh Iroha balance after transfer', error));
-  }, 8000);
+  params.state.balanceService
+    .fetchBalance({
+      address: prepared.source.accountAddress,
+      ethereumAddress: '',
+      irohaAddress: prepared.source.irohaAddress,
+      irohaNetworks: [prepared.networkKey],
+      walletEcosystem: WalletEcosystem.Iroha,
+    })
+    .catch((error) => console.warn('Failed to refresh Iroha balance after transfer', error));
 
-  console.info(`Iroha transfer broadcast${result.signedTransactionHashHex ? `: ${result.signedTransactionHashHex}` : ''}`);
+  console.info(`Iroha transfer applied: ${signedTransactionHash}`);
 }
 
-function prepareIrohaTransfer({ amount, assetId, from, networkKey, state, to }: IrohaTransferParams): PreparedIrohaTransfer {
+function createIrohaWalletSmokeMetadata(
+  routeGovernanceActionHash: string,
+  walletCommit: string
+): IrohaWalletSmokeMetadata {
+  return normalizeIrohaWalletSmokeMetadata({
+    evidence_role: 'wallet-smoke',
+    route_governance_action_hash: routeGovernanceActionHash,
+    wallet_platform: 'web',
+    wallet_commit: walletCommit,
+  });
+}
+
+function normalizeIrohaWalletSmokeMetadata(metadata: unknown): IrohaWalletSmokeMetadata {
+  if (metadata === null || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    throw new Error('invalid_iroha_wallet_smoke_metadata');
+  }
+
+  const prototype = Object.getPrototypeOf(metadata);
+
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new Error('invalid_iroha_wallet_smoke_metadata');
+  }
+
+  const expectedKeys = [
+    'evidence_role',
+    'route_governance_action_hash',
+    'wallet_platform',
+    'wallet_commit',
+  ] as const;
+  const ownKeys = Reflect.ownKeys(metadata);
+
+  if (
+    ownKeys.length !== expectedKeys.length ||
+    ownKeys.some((key) => typeof key !== 'string' || !expectedKeys.includes(key as typeof expectedKeys[number]))
+  ) {
+    throw new Error('invalid_iroha_wallet_smoke_metadata');
+  }
+
+  const snapshot = Object.create(null) as Record<typeof expectedKeys[number], unknown>;
+
+  for (const key of expectedKeys) {
+    const descriptor = Object.getOwnPropertyDescriptor(metadata, key);
+
+    if (!descriptor || !descriptor.enumerable || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) {
+      throw new Error('invalid_iroha_wallet_smoke_metadata');
+    }
+    snapshot[key] = descriptor.value;
+  }
+
+  if (
+    snapshot.evidence_role !== 'wallet-smoke' ||
+    snapshot.wallet_platform !== 'web' ||
+    typeof snapshot.route_governance_action_hash !== 'string' ||
+    !/^sha256:[0-9a-f]{64}$/u.test(snapshot.route_governance_action_hash) ||
+    /^sha256:0{64}$/u.test(snapshot.route_governance_action_hash) ||
+    typeof snapshot.wallet_commit !== 'string' ||
+    !/^[0-9a-f]{40}$/u.test(snapshot.wallet_commit) ||
+    /^0{40}$/u.test(snapshot.wallet_commit)
+  ) {
+    throw new Error('invalid_iroha_wallet_smoke_metadata');
+  }
+
+  return Object.freeze({
+    evidence_role: snapshot.evidence_role,
+    route_governance_action_hash: snapshot.route_governance_action_hash,
+    wallet_platform: snapshot.wallet_platform,
+    wallet_commit: snapshot.wallet_commit,
+  });
+}
+
+function prepareIrohaTransfer(params: IrohaTransferParams): PreparedIrohaTransfer {
+  return prepareIrohaTransferForRoute(params, resolveIrohaTransferRoute(params));
+}
+
+function resolveIrohaTransferRoute({ networkKey, state }: IrohaTransferParams): IrohaTransferRoute {
   const networkJson = state.networkService.networkMap[networkKey];
 
   if (!isIrohaTransferNetwork(networkJson)) throw new Error('unsupported_iroha_network');
 
   const network = getIrohaNetworkKey(networkJson);
-  const toriiBaseUrl = getIrohaToriiBaseUrl(networkJson, network);
+  const configuredToriiBaseUrl = getConfiguredIrohaToriiBaseUrl(networkJson, network);
+  const chainId = networkJson.chainId;
 
-  if (!toriiBaseUrl) throw new Error('iroha_network_unavailable');
+  if (!configuredToriiBaseUrl) throw new Error('iroha_network_unavailable');
+
+  return {
+    chainId,
+    configuredToriiBaseUrl,
+    network,
+    toriiBaseUrl: normalizeIrohaToriiBaseUrl(configuredToriiBaseUrl),
+  };
+}
+
+function prepareIrohaTransferForRoute(
+  { amount, assetId, from, networkKey, state, to }: IrohaTransferParams,
+  route: IrohaTransferRoute
+): PreparedIrohaTransfer {
+  const { chainId, network, toriiBaseUrl } = route;
 
   const source = resolveIrohaTransferSource(state, from, network);
   const destinationAccountId = normalizeIrohaRecipient(to, network);
   const normalizedAmount = normalizeIrohaTransferAmount(amount);
-  const assetDefinitionId = normalizeIrohaAssetDefinitionId(assetId);
+  const assetDefinitionId = normalizeIrohaAssetDefinitionId(assetId, network);
 
   return {
     amount: normalizedAmount,
     assetDefinitionId,
-    chainId: normalizeIrohaChainId(networkJson.chainId),
+    chainId,
     destinationAccountId,
     network,
     networkKey,
@@ -153,7 +289,7 @@ function resolveIrohaTransferSource(state: State, from: string, network: IrohaNe
   const account = state.keyringService.getAllAccounts().find(({ address, meta }) => {
     const { irohaAddress } = meta as FWKeyringMeta;
 
-    return address === from || irohaAddress?.toLowerCase() === from.toLowerCase();
+    return address === from || irohaAddress === from;
   });
 
   if (!account) throw new Error('iroha_account_not_found');
@@ -185,26 +321,48 @@ function resolveIrohaAccountAddress(meta: FWKeyringMeta, fallbackAddress: string
 }
 
 function getIrohaNetworkKey(network: NetworkJson): IrohaNetworkKey {
+  if (typeof network.chainId !== 'string' || !network.chainId || network.chainId !== network.chainId.trim()) {
+    throw new Error('invalid_iroha_chain_id');
+  }
   const discriminant = (network as { chainDiscriminant?: unknown; i105Prefix?: unknown }).chainDiscriminant ??
     (network as { i105Prefix?: unknown }).i105Prefix;
-  const descriptor = [network.chainId, network.name, network.key, ...(network.options ?? [])].join(' ').toLowerCase();
-
-  if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant || descriptor.includes('nexus')) {
-    return 'nexus';
+  if (
+    discriminant !== undefined &&
+    discriminant !== null &&
+    discriminant !== UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant &&
+    discriminant !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant
+  ) {
+    throw new Error('unsupported_iroha_network');
   }
+  const matches = (key: IrohaNetworkKey): boolean => {
+    const profile = UNIVERSAL_WALLET_IROHA_NETWORKS[key];
 
+    if (network.chainId !== profile.chainId) return false;
+    if (discriminant === undefined || discriminant === null) return true;
+    if (discriminant !== profile.chainDiscriminant) throw new Error('ambiguous_iroha_network');
+
+    return true;
+  };
+
+  if (matches('taira')) return 'taira';
+  if (matches('nexus')) return 'nexus';
   if (
     discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant ||
-    descriptor.includes('taira') ||
-    descriptor.includes('testnet')
+    discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant
   ) {
-    return 'taira';
+    throw new Error('noncanonical_iroha_chain_id');
   }
 
-  return 'nexus';
+  throw new Error('unsupported_iroha_network');
 }
 
 function getIrohaToriiBaseUrl(network: NetworkJson, key: IrohaNetworkKey): string | null {
+  const configuredUrl = getConfiguredIrohaToriiBaseUrl(network, key);
+
+  return configuredUrl === null ? null : normalizeIrohaToriiBaseUrl(configuredUrl);
+}
+
+function getConfiguredIrohaToriiBaseUrl(network: NetworkJson, key: IrohaNetworkKey): string | null {
   const urls = [
     network.providers?.[network.currentProvider],
     network.customProviders?.[network.currentProvider],
@@ -214,7 +372,33 @@ function getIrohaToriiBaseUrl(network: NetworkJson, key: IrohaNetworkKey): strin
     UNIVERSAL_WALLET_IROHA_NETWORKS[key].toriiBaseUrl,
   ];
 
-  return urls.find((url): url is string => typeof url === 'string' && url.trim().length > 0)?.trim() ?? null;
+  return urls.find((url): url is string => typeof url === 'string' && url.length > 0) ?? null;
+}
+
+function normalizeIrohaToriiBaseUrl(value: string): string {
+  if (!value || value !== value.trim()) throw new Error('invalid_iroha_torii_url');
+
+  let url: URL;
+
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('invalid_iroha_torii_url');
+  }
+
+  const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+
+  if (
+    (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error('invalid_iroha_torii_url');
+  }
+
+  return url.toString().replace(/\/+$/u, '');
 }
 
 function normalizeIrohaRecipient(address: string, network: IrohaNetworkKey): string {
@@ -232,22 +416,16 @@ function normalizeIrohaTransferAmount(amount: string): string {
   return amount;
 }
 
-function normalizeIrohaAssetDefinitionId(assetId: string): string {
-  const normalized = assetId.trim();
+function normalizeIrohaAssetDefinitionId(assetId: string, network: IrohaNetworkKey = 'taira'): string {
+  const valid = network === 'taira'
+    ? /^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(assetId)
+    : /^[^\s%/?:#]+#[^\s%/?:#]+$/u.test(assetId);
 
-  if (normalized !== assetId || !/^[^\s%/?:#]+#[^\s%/?:#]+$/u.test(normalized)) {
+  if (assetId !== assetId.trim() || !valid) {
     throw new Error('invalid_iroha_asset_id');
   }
 
-  return normalized;
-}
-
-function normalizeIrohaChainId(chainId: string): string {
-  const normalized = chainId.trim();
-
-  if (!normalized || normalized !== chainId) throw new Error('invalid_iroha_chain_id');
-
-  return normalized;
+  return assetId;
 }
 
 function normalizeSignedTransactionPayload(payload: ArrayBuffer | ArrayBufferView | string): BodyInit {
@@ -275,14 +453,26 @@ function hexToArrayBuffer(value: string): ArrayBuffer {
   return buffer;
 }
 
+function normalizeSignedTransactionHash(value: string | undefined): string {
+  if (typeof value !== 'string' || !/^[0-9a-f]{63}[13579bdf]$/u.test(value)) {
+    throw new Error('invalid_iroha_transaction_hash');
+  }
+
+  return value;
+}
+
 export {
+  createIrohaWalletSmokeMetadata,
   estimateIrohaTransferFee,
   getIrohaNetworkKey,
   getIrohaToriiBaseUrl,
   isIrohaTransferEnabled,
   isIrohaTransferNetwork,
   makeIrohaTransfer,
+  makeIrohaWalletSmokeTransfer,
   normalizeIrohaAssetDefinitionId,
+  normalizeIrohaToriiBaseUrl,
+  normalizeIrohaWalletSmokeMetadata,
   normalizeIrohaTransferAmount,
   prepareIrohaTransfer,
   resolveIrohaTransferSource,
@@ -292,5 +482,6 @@ export {
   type IrohaTransferCodecInput,
   type IrohaTransferParams,
   type IrohaTransferSource,
+  type IrohaWalletSmokeMetadata,
   type PreparedIrohaTransfer,
 };

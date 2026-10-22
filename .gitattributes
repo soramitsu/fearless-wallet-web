@@ -1,0 +1,7 @@
+# Preserve hash-pinned release evidence byte-for-byte across platforms.
+artifacts/iroha-js-candidate/** -text
+artifacts/iroha-js-candidate-safari-qa/** -text
+artifacts/iroha-js-candidate/**/*.patch whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+artifacts/iroha-js-candidate/**/*.tar.gz -diff
+artifacts/iroha-js-candidate/**/*.tgz -diff
+vendor/iroha-js/**/*.tgz -text -diff

@@ -10,9 +10,7 @@ import {
   createIrohaToriiWalletClient,
 } from '@extension-base/services/iroha-torii-service';
 
-const fixture = JSON.parse(
-  readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')
-) as {
+const fixture = JSON.parse(readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')) as {
   vectors: Array<{
     expected: {
       iroha: {
@@ -25,21 +23,54 @@ const fixture = JSON.parse(
 
 const TAIRA_ACCOUNT_ID = fixture.vectors[0].expected.iroha.taira.i105;
 const NEXUS_ACCOUNT_ID = fixture.vectors[0].expected.iroha.nexus.i105;
-const HASH = 'a'.repeat(64);
+const TAIRA_XOR_ASSET_ID = '6TEAJqbb8oEPmLncoNiMRbLEK6tw';
+const HASH = `${'a'.repeat(63)}b`;
+const COMPLETE_FANOUT_HEADERS = {
+  'x-iroha-fanout-routes-attempted': '1',
+  'x-iroha-fanout-routes-succeeded': '1',
+  'x-iroha-fanout-routes-failed': '0',
+  'x-iroha-fanout-routes-denied': '0',
+  'x-iroha-fanout-routes-unavailable': '0',
+  'x-iroha-fanout-routes-not-found': '0',
+};
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...COMPLETE_FANOUT_HEADERS },
     status,
   });
 }
 
-function rpcResult(result: unknown): Response {
+function rpcResult(result: unknown, id = 1): Response {
   return jsonResponse({
     jsonrpc: '2.0',
-    id: 1,
+    id,
     result,
   });
+}
+
+function submitAndWaitResult(hash = HASH) {
+  return {
+    status: 200,
+    hash,
+    tx_hash: hash,
+    terminal_kind: 'Applied',
+    terminal_statuses: ['Applied'],
+    attempts: 2,
+    elapsed_ms: 500,
+    submit: {
+      status: 202,
+      headers: COMPLETE_FANOUT_HEADERS,
+      content_type: 'application/json',
+      body: { payload: { entrypoint_hash: hash } },
+    },
+    final_status: {
+      status: 200,
+      headers: COMPLETE_FANOUT_HEADERS,
+      content_type: 'application/json',
+      body: { hash, status: { kind: 'Applied' } },
+    },
+  };
 }
 
 describe('IrohaToriiMcpClient', () => {
@@ -59,26 +90,35 @@ describe('IrohaToriiMcpClient', () => {
       const request = JSON.parse(init?.body as string);
 
       if (request.method === 'initialize') {
-        return rpcResult({
-          protocolVersion: IROHA_MCP_PROTOCOL_VERSION,
-          serverInfo: { name: 'iroha-torii-mcp' },
-          capabilities: { tools: { count: 1, listChanged: false, toolsetVersion: 'abc' } },
-        });
+        return rpcResult(
+          {
+            protocolVersion: IROHA_MCP_PROTOCOL_VERSION,
+            serverInfo: { name: 'iroha-torii-mcp' },
+            capabilities: { tools: { count: 1, listChanged: false, toolsetVersion: 'abc' } },
+          },
+          request.id
+        );
       }
 
       if (request.method === 'tools/list') {
-        return rpcResult({
-          tools: [{ name: 'iroha.accounts.get', inputSchema: { type: 'object' } }],
-          nextCursor: null,
-          listChanged: true,
-          toolsetVersion: 'abc',
-        });
+        return rpcResult(
+          {
+            tools: [{ name: 'iroha.accounts.get', inputSchema: { type: 'object' } }],
+            nextCursor: null,
+            listChanged: true,
+            toolsetVersion: 'abc',
+          },
+          request.id
+        );
       }
 
-      return rpcResult({
-        isError: false,
-        structuredContent: { status: 200, body: { account: request.params.arguments.id } },
-      });
+      return rpcResult(
+        {
+          isError: false,
+          structuredContent: { status: 200, body: { account: request.params.arguments.id } },
+        },
+        request.id
+      );
     });
     const client = new IrohaToriiMcpClient({ fetchFn });
 
@@ -89,6 +129,7 @@ describe('IrohaToriiMcpClient', () => {
 
     expect(result.structuredContent).toEqual({ status: 200, body: { account: 'alice@wonderland.universal' } });
     expect(calls.every(({ url }) => url === 'https://taira.sora.org/v1/mcp')).toBe(true);
+    expect(calls.every(({ init }) => init?.redirect === 'error')).toBe(true);
     expect(calls[1]?.init?.headers).toEqual({ 'content-type': 'application/json' });
 
     const listBody = JSON.parse(calls[2]?.init?.body as string);
@@ -134,6 +175,21 @@ describe('IrohaToriiMcpClient', () => {
     ]);
   });
 
+  it.each([undefined, 'text/plain'])('rejects an outer MCP response with non-JSON content type %s', async (type) => {
+    const fetchFn = vi.fn(async (_input: string | URL, init?: RequestInit) => {
+      const request = JSON.parse(init?.body as string);
+
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: request.id, result: {} }), {
+        headers: type === undefined ? {} : { 'content-type': type },
+        status: 200,
+      });
+    });
+
+    await expect(new IrohaToriiMcpClient({ fetchFn }).ping()).rejects.toMatchObject({
+      message: 'invalid_json_content_type',
+    });
+  });
+
   it('uses Minamoto for Nexus by default and allows explicit runtime Torii roots', async () => {
     const calls: string[] = [];
     const fetchFn = vi.fn(async (input: string | URL) => {
@@ -143,16 +199,24 @@ describe('IrohaToriiMcpClient', () => {
     await createIrohaToriiMcpClient('nexus', { fetchFn }).ping();
     await createIrohaToriiMcpClient('nexus', { baseUrl: 'https://nexus.example.org', fetchFn }).ping();
 
-    expect(calls).toEqual([
-      'https://minamoto.sora.org/v1/mcp',
-      'https://nexus.example.org/v1/mcp',
-    ]);
+    expect(calls).toEqual(['https://minamoto.sora.org/v1/mcp', 'https://nexus.example.org/v1/mcp']);
   });
 
   it('rejects unsafe URLs, non-curated tools, bad arguments, and unsupported headers before fetch', async () => {
     expect(() => new IrohaToriiMcpClient({ baseUrl: 'http://taira.sora.org', fetchFn: vi.fn() })).toThrow(
       IrohaToriiMcpError
     );
+    expect(() => new IrohaToriiMcpClient({ baseUrl: 'ftp://localhost', fetchFn: vi.fn() })).toThrow(IrohaToriiMcpError);
+    expect(() => new IrohaToriiMcpClient({ baseUrl: 'https://user:secret@taira.sora.org', fetchFn: vi.fn() })).toThrow(
+      IrohaToriiMcpError
+    );
+    for (const baseUrl of [
+      'https://taira.sora.org?route=/v1/mcp',
+      'https://taira.sora.org#route=/v1/mcp',
+    ]) {
+      expect(() => new IrohaToriiMcpClient({ baseUrl, fetchFn: vi.fn() })).toThrow(IrohaToriiMcpError);
+      expect(() => new IrohaToriiWalletClient({ baseUrl, fetchFn: vi.fn() })).toThrow(IrohaToriiMcpError);
+    }
 
     const fetchFn = vi.fn();
     const client = new IrohaToriiMcpClient({ fetchFn });
@@ -234,6 +298,44 @@ describe('IrohaToriiMcpClient', () => {
     });
   });
 
+  it('rejects mismatched JSON-RPC identities and ambiguous result/error envelopes', async () => {
+    const wrongId = new IrohaToriiMcpClient({
+      fetchFn: vi.fn(async () => rpcResult({}, 2)),
+    });
+    const ambiguous = new IrohaToriiMcpClient({
+      fetchFn: vi.fn(async () =>
+        jsonResponse({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {},
+          error: { code: -32603, message: 'ambiguous' },
+        })
+      ),
+    });
+
+    await expect(wrongId.ping()).rejects.toMatchObject({ message: 'invalid_jsonrpc_response' });
+    await expect(ambiguous.ping()).rejects.toMatchObject({ message: 'invalid_jsonrpc_response' });
+  });
+
+  it('bounds response size and request duration', async () => {
+    const oversized = new IrohaToriiMcpClient({
+      maxResponseBytes: 32,
+      fetchFn: vi.fn(async () => rpcResult({ value: 'x'.repeat(128) })),
+    });
+    const stalled = new IrohaToriiMcpClient({
+      timeoutMs: 5,
+      fetchFn: vi.fn(
+        (_input: string | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          })
+      ),
+    });
+
+    await expect(oversized.ping()).rejects.toMatchObject({ message: 'iroha_response_too_large' });
+    await expect(stalled.ping()).rejects.toMatchObject({ message: 'iroha_request_timeout' });
+  });
+
   it('sends the initialized notification and runtime-only auth headers', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
@@ -274,35 +376,41 @@ describe('IrohaToriiWalletClient', () => {
       calls.push(request);
 
       if (request.params.name === 'iroha.accounts.get') {
-        return rpcResult({
+        return rpcResult(
+          {
+            isError: false,
+            structuredContent: {
+              status: 200,
+              headers: { 'content-type': 'application/json', ...COMPLETE_FANOUT_HEADERS },
+              content_type: 'application/json',
+              body: {
+                id: request.params.arguments.account_id,
+              },
+            },
+          },
+          request.id
+        );
+      }
+
+      return rpcResult(
+        {
           isError: false,
           structuredContent: {
             status: 200,
-            headers: { 'content-type': 'application/json' },
+            headers: { 'content-type': 'application/json', ...COMPLETE_FANOUT_HEADERS },
             content_type: 'application/json',
             body: {
-              id: request.params.arguments.account_id,
+              items: [
+                {
+                  asset_id: TAIRA_XOR_ASSET_ID,
+                  value: '1000000000',
+                },
+              ],
             },
           },
-        });
-      }
-
-      return rpcResult({
-        isError: false,
-        structuredContent: {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-          content_type: 'application/json',
-          body: {
-            items: [
-              {
-                asset_id: 'xor#wonderland',
-                value: '1000000000',
-              },
-            ],
-          },
         },
-      });
+        request.id
+      );
     });
     const client = new IrohaToriiWalletClient({ network: 'taira', fetchFn });
 
@@ -310,7 +418,8 @@ describe('IrohaToriiWalletClient', () => {
     const assets = await client.getAccountAssets<{ items: Array<{ asset_id: string; value: string }> }>(
       TAIRA_ACCOUNT_ID,
       {
-        assetId: 'xor#wonderland',
+        assetId: TAIRA_XOR_ASSET_ID,
+        countMode: 'bounded',
         limit: 50,
         offset: 10,
       }
@@ -318,13 +427,13 @@ describe('IrohaToriiWalletClient', () => {
 
     expect(account).toEqual({
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...COMPLETE_FANOUT_HEADERS },
       contentType: 'application/json',
       body: {
         id: TAIRA_ACCOUNT_ID,
       },
     });
-    expect(assets.body.items[0]).toEqual({ asset_id: 'xor#wonderland', value: '1000000000' });
+    expect(assets.body.items[0]).toEqual({ asset_id: TAIRA_XOR_ASSET_ID, value: '1000000000' });
     expect(calls).toMatchObject([
       {
         method: 'tools/call',
@@ -343,7 +452,8 @@ describe('IrohaToriiWalletClient', () => {
           arguments: {
             account_id: TAIRA_ACCOUNT_ID,
             accept: 'application/json',
-            asset_id: 'xor#wonderland',
+            asset_id: TAIRA_XOR_ASSET_ID,
+            count_mode: 'bounded',
             limit: 50,
             offset: 10,
           },
@@ -364,7 +474,7 @@ describe('IrohaToriiWalletClient', () => {
             isError: false,
             structuredContent: {
               status: 200,
-              headers: {},
+              headers: COMPLETE_FANOUT_HEADERS,
               content_type: 'application/json',
               body: call.name === 'iroha.accounts.get' ? { id: TAIRA_ACCOUNT_ID } : { items: [] },
             },
@@ -413,7 +523,7 @@ describe('IrohaToriiWalletClient', () => {
         isError: false,
         structuredContent: {
           status: 200,
-          headers: {},
+          headers: COMPLETE_FANOUT_HEADERS,
           content_type: 'application/json',
           body: {
             items: [
@@ -431,11 +541,11 @@ describe('IrohaToriiWalletClient', () => {
     await expect(
       client.getInstructions<{ items: Array<{ transaction_hash: string }> }>({
         account: TAIRA_ACCOUNT_ID,
-        assetId: 'xor#sora',
+        assetId: TAIRA_XOR_ASSET_ID,
         kind: 'Transfer',
         page: 0,
         perPage: 100,
-        transactionHash: `0x${HASH}`,
+        transactionHash: HASH,
         transactionStatus: 'committed',
       })
     ).resolves.toMatchObject({
@@ -452,7 +562,7 @@ describe('IrohaToriiWalletClient', () => {
           arguments: {
             account: TAIRA_ACCOUNT_ID,
             accept: 'application/json',
-            asset_id: 'xor#sora',
+            asset_id: TAIRA_XOR_ASSET_ID,
             kind: 'Transfer',
             page: 0,
             per_page: 100,
@@ -464,36 +574,39 @@ describe('IrohaToriiWalletClient', () => {
     ]);
   });
 
-  it('uses direct Torii routes for asset definitions transaction status and Norito submission', async () => {
+  it('uses bounded reads and canonical MCP submit-and-wait for transaction submission', async () => {
     const noritoPayload = new Uint8Array([1, 2, 3]);
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
       calls.push({ url: input.toString(), init });
 
-      if (input.toString().endsWith('/v1/pipeline/transactions')) {
-        expect(init?.body).toBe(noritoPayload);
+      if (input.toString().endsWith('/v1/mcp')) {
+        const request = JSON.parse(init?.body as string);
 
-        return jsonResponse({
-          payload: {
-            tx_hash: HASH,
-          },
-        });
+        return rpcResult({ isError: false, structuredContent: submitAndWaitResult() }, request.id);
       }
 
       if (input.toString().includes('/v1/pipeline/transactions/status')) {
         return jsonResponse({
           hash: HASH,
           status: {
-            kind: 'committed',
+            kind: 'Applied',
           },
           scope: 'global',
+        });
+      }
+
+      if (input.toString().includes('/v1/assets/definitions/')) {
+        return jsonResponse({
+          id: TAIRA_XOR_ASSET_ID,
+          spec: { scale: 9 },
         });
       }
 
       return jsonResponse({
         items: [
           {
-            id: 'xor#sora',
+            id: TAIRA_XOR_ASSET_ID,
           },
         ],
       });
@@ -506,34 +619,49 @@ describe('IrohaToriiWalletClient', () => {
       network: 'taira',
     });
 
-    await expect(client.getAssetDefinitions()).resolves.toEqual({ items: [{ id: 'xor#sora' }] });
-    await expect(client.getTransactionStatus(`0x${HASH}`, { scope: 'global' })).resolves.toMatchObject({
-      hash: HASH,
-      scope: 'global',
+    await expect(client.getAssetDefinitions({ countMode: 'bounded', limit: 500, offset: 0 })).resolves.toMatchObject({
+      body: { items: [{ id: TAIRA_XOR_ASSET_ID }] },
+    });
+    await expect(client.getAssetDefinition(TAIRA_XOR_ASSET_ID)).resolves.toMatchObject({
+      body: { id: TAIRA_XOR_ASSET_ID, spec: { scale: 9 } },
+    });
+    await expect(client.getTransactionStatus(HASH, { scope: 'global' })).resolves.toMatchObject({
+      body: { hash: HASH, scope: 'global' },
     });
     await expect(
-      client.submitTransaction(noritoPayload, {
+      client.submitTransactionAndWait(noritoPayload, HASH, {
         headers: {
           'x-iroha-api-version': '1',
         },
       })
-    ).resolves.toEqual({
-      payload: {
-        tx_hash: HASH,
-      },
-    });
+    ).resolves.toMatchObject({ hash: HASH, terminal_kind: 'Applied', tx_hash: HASH });
 
     expect(calls.map(({ url }) => url)).toEqual([
-      'https://taira.sora.org/v1/assets/definitions',
+      'https://taira.sora.org/v1/assets/definitions?count_mode=bounded&limit=500&offset=0',
+      `https://taira.sora.org/v1/assets/definitions/${TAIRA_XOR_ASSET_ID}`,
       `https://taira.sora.org/v1/pipeline/transactions/status?hash=${HASH}&scope=global`,
-      'https://taira.sora.org/v1/pipeline/transactions',
+      'https://taira.sora.org/v1/mcp',
     ]);
-    expect(calls[2]?.init?.method).toBe('POST');
-    expect(calls[2]?.init?.headers).toEqual({
-      accept: 'application/json',
-      'content-type': 'application/x-norito',
+    expect(calls[3]?.init?.method).toBe('POST');
+    expect(calls[3]?.init?.headers).toEqual({
+      'content-type': 'application/json',
       authorization: 'Bearer runtime-token',
       'x-iroha-api-version': '1',
+    });
+    expect(JSON.parse(calls[3]?.init?.body as string)).toMatchObject({
+      method: 'tools/call',
+      params: {
+        name: 'iroha.transactions.submit_and_wait',
+        arguments: {
+          accept: 'application/json',
+          body_base64: 'AQID',
+          hash: HASH,
+          poll_interval_ms: 500,
+          status_accept: 'application/json',
+          terminal_statuses: ['Applied'],
+          timeout_ms: 120000,
+        },
+      },
     });
   });
 
@@ -551,6 +679,11 @@ describe('IrohaToriiWalletClient', () => {
       network: 'nexus',
     }).getAssetDefinitions();
     await new IrohaToriiWalletClient({
+      baseUrl: 'https://nexus.example.org/v1/mcp',
+      fetchFn,
+      network: 'nexus',
+    }).getAssetDefinition('xor#sora');
+    await new IrohaToriiWalletClient({
       baseUrl: 'http://localhost:18080/custom',
       fetchFn,
       network: 'taira',
@@ -558,6 +691,7 @@ describe('IrohaToriiWalletClient', () => {
 
     expect(calls).toEqual([
       'https://nexus.example.org/v1/assets/definitions',
+      'https://nexus.example.org/v1/assets/definitions/xor%23sora',
       `http://localhost:18080/custom/v1/pipeline/transactions/status?hash=${HASH}&scope=auto`,
     ]);
 
@@ -576,34 +710,46 @@ describe('IrohaToriiWalletClient', () => {
 
     await expect(client.getAccount('0x1234')).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getAccount(NEXUS_ACCOUNT_ID)).rejects.toThrow(IrohaToriiMcpError);
-    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { accept: 'application/x-norito' as never })).rejects.toThrow(
-      IrohaToriiMcpError
-    );
+    await expect(
+      client.getAccountAssets(TAIRA_ACCOUNT_ID, { accept: 'application/x-norito' as never })
+    ).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { limit: 0 })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { offset: -1 })).rejects.toThrow(IrohaToriiMcpError);
-    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { assetId: ' xor#wonderland ' })).rejects.toThrow(
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { countMode: 'other' as never })).rejects.toThrow(
       IrohaToriiMcpError
     );
-    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { query: [] as never })).rejects.toThrow(
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { assetId: ` ${TAIRA_XOR_ASSET_ID} ` })).rejects.toThrow(
       IrohaToriiMcpError
     );
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID, { query: [] as never })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ account: NEXUS_ACCOUNT_ID })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ authority: 'not-i105' })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ page: -1 })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ perPage: 0 })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ block: 0 })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ transactionHash: 'not-a-hash' })).rejects.toThrow(IrohaToriiMcpError);
-    await expect(client.getInstructions({ transactionStatus: 'pending' as never })).rejects.toThrow(
-      IrohaToriiMcpError
-    );
+    for (const nonCanonicalHash of [`0x${HASH}`, HASH.toUpperCase(), ` ${HASH}`]) {
+      await expect(client.getInstructions({ transactionHash: nonCanonicalHash })).rejects.toThrow(IrohaToriiMcpError);
+      await expect(client.getTransactionStatus(nonCanonicalHash)).rejects.toThrow(IrohaToriiMcpError);
+      await expect(client.submitTransactionAndWait(new Uint8Array([1]), nonCanonicalHash)).rejects.toThrow(
+        IrohaToriiMcpError
+      );
+    }
+    await expect(client.getInstructions({ transactionStatus: 'pending' as never })).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getInstructions({ kind: ' Transfer ' })).rejects.toThrow(IrohaToriiMcpError);
+    await expect(client.getAssetDefinition(` ${TAIRA_XOR_ASSET_ID} `)).rejects.toThrow(IrohaToriiMcpError);
+    await expect(
+      client.getAssetDefinition(TAIRA_XOR_ASSET_ID, { headers: { host: 'bad' } as never })
+    ).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getTransactionStatus('not-a-hash')).rejects.toThrow(IrohaToriiMcpError);
     await expect(client.getTransactionStatus(HASH, { scope: 'bad' as never })).rejects.toThrow(IrohaToriiMcpError);
-    await expect(client.submitTransaction(new Uint8Array())).rejects.toThrow(IrohaToriiMcpError);
-    await expect(client.submitTransaction('not-norito' as never)).rejects.toThrow(IrohaToriiMcpError);
-    await expect(client.getAssetDefinitions({ headers: { host: 'bad' } as never })).rejects.toThrow(
+    await expect(client.submitTransactionAndWait(new Uint8Array(), HASH)).rejects.toThrow(IrohaToriiMcpError);
+    await expect(client.submitTransactionAndWait('not-norito' as never, HASH)).rejects.toThrow(IrohaToriiMcpError);
+    await expect(client.submitTransactionAndWait(new Uint8Array([1]), 'a'.repeat(64))).rejects.toThrow(
       IrohaToriiMcpError
     );
+    await expect(client.getAssetDefinitions({ headers: { host: 'bad' } as never })).rejects.toThrow(IrohaToriiMcpError);
+    await expect(client.getAssetDefinitions({ countMode: 'other' as never })).rejects.toThrow(IrohaToriiMcpError);
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
@@ -655,6 +801,8 @@ describe('IrohaToriiWalletClient', () => {
                 isError: false,
                 structuredContent: {
                   status: 200,
+                  headers: COMPLETE_FANOUT_HEADERS,
+                  content_type: 'application/json',
                   body: {},
                 },
               },
@@ -674,5 +822,310 @@ describe('IrohaToriiWalletClient', () => {
       name: 'IrohaToriiMcpError',
       message: 'iroha_mcp_batch_tool_error',
     });
+  });
+
+  it('rejects nested routed redirects even with complete fanout evidence', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 302,
+            headers: COMPLETE_FANOUT_HEADERS,
+            content_type: 'application/json',
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'iroha_mcp_route_error',
+      status: 302,
+    });
+  });
+
+  it('fails closed on incomplete fanout reads even when Torii returns HTTP 200', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: {
+              'x-iroha-fanout-routes-attempted': '5',
+              'x-iroha-fanout-routes-succeeded': '1',
+              'x-iroha-fanout-routes-failed': '4',
+              'x-iroha-fanout-routes-denied': '0',
+              'x-iroha-fanout-routes-unavailable': '4',
+              'x-iroha-fanout-routes-not-found': '0',
+            },
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'iroha_torii_partial_response',
+      data: {
+        fanout: {
+          attempted: 5,
+          succeeded: 1,
+          failed: 4,
+          unavailable: 4,
+        },
+      },
+    });
+  });
+
+  it('rejects routed reads that omit all fanout evidence', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: {},
+            content_type: 'application/json',
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'invalid_fanout_headers',
+    });
+  });
+
+  it('rejects case-colliding routed header names instead of overwriting fanout evidence', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: {
+              'X-Iroha-Fanout-Routes-Attempted': '9',
+              ...COMPLETE_FANOUT_HEADERS,
+            },
+            content_type: 'application/json',
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'invalid_route_response',
+    });
+  });
+
+  it.each([undefined, 'text/plain'])('rejects a routed read with non-JSON content type %s', async (contentType) => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: COMPLETE_FANOUT_HEADERS,
+            ...(contentType === undefined ? {} : { content_type: contentType }),
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'invalid_route_response',
+    });
+  });
+
+  it('rejects direct routed HTTP reads that omit all fanout evidence', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(
+        async () =>
+          new Response(JSON.stringify({ items: [] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+      ),
+    });
+
+    await expect(client.getAssetDefinitions()).rejects.toMatchObject({
+      message: 'invalid_fanout_headers',
+    });
+  });
+
+  it('rejects a routed response that claims zero attempted routes', async () => {
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: {
+              'x-iroha-fanout-routes-attempted': '0',
+              'x-iroha-fanout-routes-succeeded': '0',
+              'x-iroha-fanout-routes-failed': '0',
+              'x-iroha-fanout-routes-denied': '0',
+              'x-iroha-fanout-routes-unavailable': '0',
+              'x-iroha-fanout-routes-not-found': '0',
+            },
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'invalid_fanout_headers',
+    });
+  });
+
+  it('rejects overflowing fanout counter totals without unsafe arithmetic', async () => {
+    const maximum = String(Number.MAX_SAFE_INTEGER);
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async () =>
+        rpcResult({
+          isError: false,
+          structuredContent: {
+            status: 200,
+            headers: {
+              'x-iroha-fanout-routes-attempted': maximum,
+              'x-iroha-fanout-routes-succeeded': '0',
+              'x-iroha-fanout-routes-failed': maximum,
+              'x-iroha-fanout-routes-denied': maximum,
+              'x-iroha-fanout-routes-unavailable': maximum,
+              'x-iroha-fanout-routes-not-found': maximum,
+            },
+            body: { items: [] },
+          },
+        })
+      ),
+    });
+
+    await expect(client.getAccountAssets(TAIRA_ACCOUNT_ID)).rejects.toMatchObject({
+      message: 'invalid_fanout_headers',
+    });
+  });
+
+  it('rejects submit-and-wait hash mismatches instead of reporting transfer success', async () => {
+    const mismatchedHash = `${'c'.repeat(63)}d`;
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async (_input: string | URL, init?: RequestInit) => {
+        const request = JSON.parse(init?.body as string);
+
+        return rpcResult(
+          {
+            isError: false,
+            structuredContent: {
+              ...submitAndWaitResult(),
+              submit: {
+                ...submitAndWaitResult().submit,
+                body: { payload: { entrypoint_hash: mismatchedHash } },
+              },
+            },
+          },
+          request.id
+        );
+      }),
+    });
+
+    await expect(client.submitTransactionAndWait(new Uint8Array([1, 2, 3]), HASH)).rejects.toMatchObject({
+      message: 'iroha_transaction_receipt_mismatch',
+    });
+  });
+
+  it('rejects non-canonical submit-and-wait hash spellings without normalization', async () => {
+    const canonical = submitAndWaitResult();
+    const mutations = [
+      { ...canonical, hash: `0x${HASH}` },
+      { ...canonical, tx_hash: HASH.toUpperCase() },
+      {
+        ...canonical,
+        submit: {
+          ...canonical.submit,
+          body: { payload: { entrypoint_hash: ` ${HASH}` } },
+        },
+      },
+      {
+        ...canonical,
+        final_status: {
+          ...canonical.final_status,
+          body: { ...canonical.final_status.body, hash: `${HASH}\n` },
+        },
+      },
+    ];
+
+    for (const structuredContent of mutations) {
+      const client = new IrohaToriiWalletClient({
+        fetchFn: vi.fn(async (_input: string | URL, init?: RequestInit) => {
+          const request = JSON.parse(init?.body as string);
+
+          return rpcResult({ isError: false, structuredContent }, request.id);
+        }),
+      });
+
+      await expect(client.submitTransactionAndWait(new Uint8Array([1, 2, 3]), HASH)).rejects.toThrow(
+        IrohaToriiMcpError
+      );
+    }
+  });
+
+  it('rejects submit-and-wait responses that omit the final transaction hash', async () => {
+    const result = submitAndWaitResult();
+    const client = new IrohaToriiWalletClient({
+      fetchFn: vi.fn(async (_input: string | URL, init?: RequestInit) => {
+        const request = JSON.parse(init?.body as string);
+
+        return rpcResult(
+          {
+            isError: false,
+            structuredContent: {
+              ...result,
+              final_status: {
+                ...result.final_status,
+                body: { status: { kind: 'Applied' } },
+              },
+            },
+          },
+          request.id
+        );
+      }),
+    });
+
+    await expect(client.submitTransactionAndWait(new Uint8Array([1, 2, 3]), HASH)).rejects.toMatchObject({
+      message: 'iroha_transaction_receipt_mismatch',
+    });
+  });
+
+  it('rejects retired submit receipt and final-status hash aliases', async () => {
+    const canonical = submitAndWaitResult();
+    const mutations = [
+      {
+        ...canonical,
+        submit: { ...canonical.submit, body: { tx_hash_hex: HASH } },
+      },
+      {
+        ...canonical,
+        final_status: { ...canonical.final_status, body: { tx_hash: HASH, status: { kind: 'Applied' } } },
+      },
+    ];
+
+    for (const structuredContent of mutations) {
+      const client = new IrohaToriiWalletClient({
+        fetchFn: vi.fn(async (_input: string | URL, init?: RequestInit) => {
+          const request = JSON.parse(init?.body as string);
+
+          return rpcResult({ isError: false, structuredContent }, request.id);
+        }),
+      });
+
+      await expect(client.submitTransactionAndWait(new Uint8Array([1, 2, 3]), HASH)).rejects.toThrow(
+        IrohaToriiMcpError
+      );
+    }
   });
 });

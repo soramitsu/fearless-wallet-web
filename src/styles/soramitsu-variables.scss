@@ -41,9 +41,13 @@ $s-size-small: 42px;
 $s-size-medium: 48px;
 $s-size-big: 64px;
 // Shadows
-$s-shadow-surface: 1px 1px 5px var(--s-shadow-color-dark), inset 1px 1px 1px var(--s-shadow-color-dark);
+$s-shadow-surface:
+  1px 1px 5px var(--s-shadow-color-dark),
+  inset 1px 1px 1px var(--s-shadow-color-dark);
 $s-shadow-tooltip: 0px 1px 4px rgba(13, 2, 72, 0.35);
-$s-shadow-tab: 1px 1px 2px #ffffff, inset 1px 1px 2px rgba(0, 0, 0, 0.1); // 0px 1px 1px rgba(0, 0, 0, 0.1);
+$s-shadow-tab:
+  1px 1px 2px #ffffff,
+  inset 1px 1px 2px rgba(0, 0, 0, 0.1); // 0px 1px 1px rgba(0, 0, 0, 0.1);
 $s-shadow-dropdown: 0px 4px 8px rgba(19, 19, 19, 0.15);
 $s-shadow-mobile-tap-bar: 0px -4px 8px rgba(19, 19, 19, 0.15);
 $s-shadow-mobile-side-menu: -4px 4px 8px rgba(19, 19, 19, 0.15);
@@ -68,7 +72,7 @@ $s-transition-default: all 0.125s ease-in-out;
 :root {
   --s-color-brand-day: #{$s-color-brand-day};
   --s-transition-default: #{$s-transition-default};
-  --s-font-family-default: 'Sora Variable', sans-serif;
+  --s-font-family-default: 'Sora Variable', 'Noto Sans Egyptian Hieroglyphs', sans-serif;
   --s-font-family-mono: 'JetBrains Mono', monospace;
   --s-font-feature-settings-common: #{$s-font-feature-settings-common};
   --s-font-feature-settings-heading: #{$s-font-feature-settings-heading};

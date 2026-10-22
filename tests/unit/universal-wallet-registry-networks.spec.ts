@@ -94,6 +94,24 @@ describe('Universal Wallet registry network mapping', () => {
     expect(networkMap['Taira Testnet'].chainId).toBe(UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId);
   });
 
+  it('never prices test-network coins as their mainnet namesakes', () => {
+    const networks = createUniversalWalletRegistryNetworks();
+    const byName = Object.fromEntries(networks.map((network) => [network.name, network]));
+
+    expect(byName.Bitcoin.assets[0].priceId).toBe('btc');
+    expect(byName['Bitcoin Testnet'].assets[0].priceId).toBe('');
+    expect(byName['Taira Testnet'].assets[0].priceId).toBe('');
+
+    const taira = byName['Taira Testnet'];
+    const networkMap: Record<string, NetworkJson> = {
+      'Taira Testnet': { ...taira, assets: [{ ...taira.assets[0], priceId: 'xor' }] },
+    };
+
+    mergeUniversalWalletRegistryNetworks(networkMap, {});
+
+    expect(networkMap['Taira Testnet'].assets[0].priceId).toBe('');
+  });
+
   it('fails closed when registry validation fails', () => {
     const invalidRegistry = {
       schemaVersion: 1,

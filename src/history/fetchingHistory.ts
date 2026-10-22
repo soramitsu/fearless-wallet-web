@@ -579,10 +579,10 @@ function toIrohaMovementHistoryElement(
   precision: number,
   network: IrohaNetworkKind
 ): HistoryElement | null {
-  if (!isRecord(item) || !IROHA_MOVEMENT_FIELDS.every((key) => Object.hasOwn(item, key))) {
-    throw new Error('invalid_iroha_history_item');
-  }
+  if (!isRecord(item)) throw new Error('invalid_iroha_history_item');
+  // Other movement kinds (for example RAW_ON_CHAIN rows without an amount) are not transfers.
   if (item.type !== 'TRANSFER' || item.asset_definition_id !== assetId) return null;
+  if (!IROHA_MOVEMENT_FIELDS.every((key) => Object.hasOwn(item, key))) throw new Error('invalid_iroha_history_item');
   if (item.account_id !== address) throw new Error('invalid_iroha_history_account');
 
   const counterparty = item.counterparty_account_id;

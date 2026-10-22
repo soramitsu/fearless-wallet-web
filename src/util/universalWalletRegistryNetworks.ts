@@ -149,11 +149,15 @@ function mergeNativeAssets(existingAssets: Asset[], registryAssets: Asset[]): As
 
   if (!nativeAsset) return existingAssets;
 
-  const hasNativeAsset = existingAssets.some(({ id, isNative, isUtility, symbol }) => {
-    return isNative || isUtility || isSameString(id, nativeAsset.id) || isSameString(symbol, nativeAsset.symbol);
-  });
+  const isRegistryNative = ({ id, isNative, isUtility, symbol }: Asset) =>
+    isNative || isUtility || isSameString(id, nativeAsset.id) || isSameString(symbol, nativeAsset.symbol);
 
-  return hasNativeAsset ? existingAssets : [nativeAsset, ...existingAssets];
+  if (!existingAssets.some(isRegistryNative)) return [nativeAsset, ...existingAssets];
+
+  // Stored test networks may still carry the mainnet price id from earlier releases.
+  return nativeAsset.priceId
+    ? existingAssets
+    : existingAssets.map((asset) => (isRegistryNative(asset) ? { ...asset, priceId: '' } : asset));
 }
 
 function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryNetwork: NetworkJson): string | undefined {
@@ -166,7 +170,8 @@ function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryN
   })?.[0];
 }
 
-function createNativeAsset({ ecosystem, nativeAsset }: UniversalWalletChainRegistryEntry): Asset {
+function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
+  const { ecosystem, nativeAsset } = entry;
   const symbol = nativeAsset?.symbol ?? 'UNKNOWN';
 
   return {
@@ -176,7 +181,8 @@ function createNativeAsset({ ecosystem, nativeAsset }: UniversalWalletChainRegis
     symbol,
     currencyId: nativeAsset?.id ?? symbol,
     precision: nativeAsset?.decimals ?? 0,
-    priceId: symbol.toLowerCase(),
+    // Test-network coins share a mainnet symbol but have no market value.
+    priceId: isTestnetEntry(entry) ? '' : symbol.toLowerCase(),
     icon: symbol.toLowerCase(),
     color: '',
     staking: '',
@@ -234,10 +240,14 @@ function getRuntimeNetworkName(entry: UniversalWalletChainRegistryEntry): string
   return entry.displayName;
 }
 
-function getRuntimeOptions(entry: UniversalWalletChainRegistryEntry): NetworkJson['options'] {
+function isTestnetEntry(entry: UniversalWalletChainRegistryEntry): boolean {
   const descriptor = `${entry.id} ${entry.chainId} ${entry.displayName}`.toLowerCase();
 
-  return descriptor.includes('testnet') || descriptor.includes('devnet') ? ['testnet'] : undefined;
+  return descriptor.includes('testnet') || descriptor.includes('devnet');
+}
+
+function getRuntimeOptions(entry: UniversalWalletChainRegistryEntry): NetworkJson['options'] {
+  return isTestnetEntry(entry) ? ['testnet'] : undefined;
 }
 
 export {

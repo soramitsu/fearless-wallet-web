@@ -643,7 +643,8 @@ export default class IrohaBalanceService {
     if (existing) {
       existing.mainNetwork = network.name;
       existing.relayChain = 'iroha' as RelayChainName;
-      if (priceId) existing.priceId = priceId;
+      // Follow the network asset, including clearing a price the asset no longer has (test networks).
+      existing.priceId = priceId || undefined;
 
       return existing;
     }

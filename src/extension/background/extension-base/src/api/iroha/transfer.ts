@@ -118,11 +118,42 @@ async function estimateIrohaTransferFee(
 ): Promise<string> {
   if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
 
-  const prepared = prepareIrohaTransfer(params);
+  const prepared = prepareIrohaFeeEstimate(params);
   const torii = client ?? createTransferClient(prepared);
   const quote = await quoteIrohaTransfer(torii, prepared, frameSizer, Date.now());
 
   return quote.fee;
+}
+
+// The send form asks for the fee before the recipient and amount are complete. The fee does not
+// depend on either, so an incomplete form is priced as a transfer of 1 unit to the sender.
+function prepareIrohaFeeEstimate(params: IrohaTransferParams): PreparedIrohaTransfer {
+  const network = getIrohaNetworkKey(params.state.networkService.networkMap[params.networkKey]);
+  const source = resolveIrohaTransferSource(params.state, params.from, network);
+  const amount = isValidIrohaAmount(params.amount) ? params.amount : '1';
+  const to = isIrohaRecipientFor(params.to, network) ? params.to : source.irohaAddress;
+
+  return prepareIrohaTransfer({ ...params, amount, to });
+}
+
+function isValidIrohaAmount(amount: string | undefined): amount is string {
+  try {
+    normalizeIrohaTransferAmount(amount ?? '');
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isIrohaRecipientFor(address: string | undefined, network: IrohaNetworkKey): address is string {
+  try {
+    normalizeIrohaRecipient(address ?? '', network);
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function makeIrohaTransfer(

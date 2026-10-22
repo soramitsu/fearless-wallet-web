@@ -313,6 +313,17 @@ describe('background Iroha transfer', () => {
     ).toBe('0.5106');
   });
 
+  it('prices an incomplete send form as a placeholder transfer', async () => {
+    const { client } = scriptedTorii();
+
+    await expect(
+      estimateIrohaTransferFee(transferParams(createState(), { amount: '0', to: '' }), getIrohaTransferFrameBytes, client)
+    ).resolves.toBe('0.01');
+    await expect(
+      estimateIrohaTransferFee(transferParams(createState(), { to: NEXUS_COUNTERPARTY }), getIrohaTransferFrameBytes, client)
+    ).resolves.toBe('0.01');
+  });
+
   it('settles the signed fee cap when the fee depends on the encoded size', async () => {
     const { client } = scriptedTorii({ fees: { ...TAIRA_FEES, per_byte_fee: '0.000001' } });
     const sizes: string[] = [];

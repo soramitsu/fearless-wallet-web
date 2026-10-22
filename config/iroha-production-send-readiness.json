@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
   "platform": "browser-extension",
-  "status": "blocked",
-  "releaseEnabled": false,
-  "blockers": ["taira-transfer-evidence-missing"],
+  "status": "ready",
+  "releaseEnabled": true,
+  "blockers": [],
   "transport": "torii-rest",
   "networks": {
     "taira": {
-      "releaseEnabled": false,
+      "releaseEnabled": true,
       "toriiBaseUrl": "https://taira.sora.org",
       "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774",
       "networkPrefix": 369,
@@ -28,7 +28,10 @@
     "sourceRepository": "https://github.com/hyperledger-iroha/iroha",
     "sourceCommit": "581c49d95995b57b2b0ef3245a6f11b01248ad08",
     "sourcePath": "javascript/iroha_js",
-    "entryPoints": ["@iroha/iroha-js/transaction-codec", "@iroha/iroha-js/browser"],
+    "entryPoints": [
+      "@iroha/iroha-js/transaction-codec",
+      "@iroha/iroha-js/browser"
+    ],
     "browserAddressBinding": "src/util/irohaSdkBrowserBinding.ts"
   },
   "wire": {
@@ -52,5 +55,20 @@
       "vite.config.shared.mjs"
     ]
   },
-  "evidence": []
+  "evidence": [
+    {
+      "network": "taira",
+      "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774",
+      "transactionHash": "1e9f1439484bb64e586e274fac63592fdb6e3a3771f43d32cd978d1634a75065",
+      "blockHeight": 57,
+      "amount": "1.25",
+      "fee": "0.01",
+      "assetDefinitionId": "6TEAJqbb8oEPmLncoNiMRbLEK6tw",
+      "source": "testuﾛ1NﾆhUﾁzｦHﾖﾒnXJ2ALWMﾎfｾRi2kﾀ9SGﾀA4ｵMvHr6ｿRLWDTX",
+      "recipient": "testuﾛ1NﾐoaｳｼヱﾃﾆﾑﾄaAｻwmｼｴPﾜKｱｿﾗ2Kiｵﾗgｻ2ﾁ3zcﾗｳﾓY7YWWD",
+      "recordedAt": "2026-10-22T14:17:33.817Z",
+      "commit": "1e16f06259891d6c2b8ce9a19bb3edf9bcd53ed8",
+      "operator": "claude-code (yarn test:smoke:taira)"
+    }
+  ]
 }

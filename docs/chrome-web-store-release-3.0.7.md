@@ -18,10 +18,16 @@ in 3.0.6 (source `a1dafd8f85fa5bc08e8792f8cb295dbcc1a105ef`). Wallet
 records encrypted by that version must remain readable after the update.
 
 Bitcoin mainnet/testnet address discovery, balances and transaction history are
-available. SORA Nexus Taira testnet accounts, balances, transaction history and
-IrohaConnect dApp connections are available. Bitcoin and Iroha sends remain disabled.
-Nexus mainnet remains disabled by default. Production builds disable test-only
-and smoke flags. No customer secrets or build credentials are committed.
+available. SORA Nexus Taira testnet accounts, balances, transaction history, XOR
+sends and IrohaConnect dApp connections are available. Taira sends are signed in
+the extension and submitted directly to Torii REST. The build enables them only
+while `config/iroha-production-send-readiness.json` records ready on-chain
+evidence for the unchanged transfer path, and the release gate re-verifies that
+evidence on Taira. Bitcoin sends stay disabled until
+`scripts/bitcoin-testnet-broadcast-evidence.json` records a ready testnet
+broadcast from the shipped transfer path. Nexus mainnet remains disabled by
+default. Production builds disable test-only and smoke flags. No customer
+secrets or build credentials are committed.
 
 ## Store release note
 
@@ -38,9 +44,9 @@ activity, and view balances and transaction history. Bitcoin sending is not
 available in this release.
 
 SORA Nexus Taira testnet: access testnet accounts, balances and transaction
-history, with IrohaConnect dApp pairing and per-request signature approval for
-eligible new wallets. Taira asset transfers are not available in this release.
-SORA Nexus mainnet is disabled by default.
+history, send testnet XOR, and use IrohaConnect dApp pairing with per-request
+signature approval for eligible new wallets. SORA Nexus mainnet is disabled by
+default.
 
 The privacy notice was approved by the release owner and published at the
 immutable official-repository URL:
@@ -59,6 +65,9 @@ The gate includes unit/type/lint checks, browser smoke, security scanners,
 production identity/configuration checks and two byte-identical package builds.
 Record the source commit and ZIP SHA-256 from
 `dist/extension/chrome-release-provenance.json` with the upload evidence.
+Before submission, check that the store text matches the transfer flags in
+`dist/extension/chrome/extension-build-metadata.json`; if Bitcoin evidence has
+been recorded by then, Bitcoin sending is enabled and its sentence must change.
 
 The configuration importer remains pinned to the reviewed 3.0.5 reference CRX;
 that reference is separate from the minimum store-version check, now 3.0.6.

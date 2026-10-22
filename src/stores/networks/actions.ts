@@ -16,7 +16,7 @@ import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/ba
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/history/fetchingHistory';
 import { getUtilityAsset } from '@/helpers/currencies';
-import { toggleFavoriteNetwork, getHistory } from '@/extension/messaging';
+import { fetchBalance, toggleFavoriteNetwork, getHistory } from '@/extension/messaging';
 import { isSameString, isSora, isTonNetwork } from '@/helpers';
 import { getFormattedHistory } from '@/helpers/history';
 import { SORA_VAL_ASSET_ID, SORA_XOR_ASSET_ID } from '@/consts/sora';
@@ -29,6 +29,7 @@ type Actions = {
   fetchHistory(this: NetworksStore, props: FetchHistory): Promise<void>;
   fetchTonNetwork(this: NetworksStore, props: FetchTonHistory): Promise<void>;
   toggleFavoriteNetwork(this: NetworksStore, props: ToggleFavorite): Promise<boolean>;
+  loadIndexerNetworkBalance(this: NetworksStore, networkName: string): Promise<void>;
   setNetworks(this: NetworksStore, props: SetNetworksStatusProps): void;
   setPrices(this: NetworksStore, props: BasePriceJson): void;
   setSoraFees(this: NetworksStore, props: SetSoraFee): void;
@@ -194,16 +195,15 @@ export const actions: Actions = {
     const isNativeEvm = isNativeEVMNetwork(networkName);
     const balances = (accountsStore.balances ?? []) as unknown as TokenGroup[];
 
+    // Prefer the group that holds this network's balance: networks sharing an asset id may be cached apart.
     const asset = isUniversalIndexerNetwork
-      ? balances.find(
-          ({ balances, groupId }) =>
-            groupId === assetId ||
-            balances.some(
-              (balance) =>
-                isSameString(balance.name, networkName) &&
-                (balance.id === assetId || getCanonicalAssetId(balance) === assetId)
-            )
-        )
+      ? (balances.find(({ balances }) =>
+          balances.some(
+            (balance) =>
+              isSameString(balance.name, networkName) &&
+              (balance.id === assetId || getCanonicalAssetId(balance) === assetId)
+          )
+        ) ?? balances.find(({ groupId }) => groupId === assetId))
       : isNativeEvm
         ? balances.find(({ balances, groupId }) =>
             balances.some(
@@ -270,6 +270,22 @@ export const actions: Actions = {
         serviceType: type,
       });
     }
+  },
+
+  // The background refreshes one default network per indexer-based ecosystem (Bitcoin, Taira, Solana). The others,
+  // such as Bitcoin Testnet or SORA Nexus, load when the user selects or refreshes them.
+  async loadIndexerNetworkBalance(networkName) {
+    const { selectedWallet } = useAccountsStore();
+    const network = this.getNetwork(networkName);
+    const indexerEcosystems = [WalletEcosystem.Bitcoin, WalletEcosystem.Iroha, WalletEcosystem.Solana];
+
+    if (!network || !indexerEcosystems.some((ecosystem) => isSameString(network.ecosystem, ecosystem))) return;
+
+    await fetchBalance({
+      address: selectedWallet.address,
+      networks: [network.name],
+      walletEcosystem: selectedWallet.walletEcosystem ?? WalletEcosystem.Substrate,
+    });
   },
 
   async toggleFavoriteNetwork({ address, networkName }) {

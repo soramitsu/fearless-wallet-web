@@ -76,6 +76,13 @@ export default class BalanceService {
           return;
         }
 
+        const sameAssetGroup = this.findIndexerAssetGroup(address, item.id, item.relayChain);
+
+        if (sameAssetGroup) {
+          sameAssetGroup.balances.push({ ...item });
+          return;
+        }
+
         this.balanceMap[address].push({
           balances: [{ ...item }],
           groupId: item.id,
@@ -387,9 +394,24 @@ export default class BalanceService {
             )
         );
 
-        if (missingBalances.length) this.balanceMap[address].push({ ...candidate, balances: missingBalances });
+        if (!missingBalances.length) return;
+
+        const sameAssetGroup = this.findIndexerAssetGroup(address, candidate.groupId, candidate.relayChain);
+
+        if (sameAssetGroup) sameAssetGroup.balances.push(...missingBalances);
+        else this.balanceMap[address].push({ ...candidate, balances: missingBalances });
       });
     });
+  }
+
+  // Bitcoin, Iroha and Solana services keep one group per asset across networks (Bitcoin and Bitcoin Testnet both
+  // hold BTC); restoring or seeding balances must not split those into duplicate groups.
+  private findIndexerAssetGroup(address: string, groupId: string, relayChain?: string): TokenGroup | undefined {
+    if (!['bitcoin', 'iroha', 'solana'].some((indexerChain) => isSameString(relayChain, indexerChain))) return undefined;
+
+    return this.balanceMap[address]?.find(
+      (group) => group.groupId === groupId && isSameString(group.relayChain, relayChain)
+    );
   }
 
   getTokenBalance(address: string, assetId: string, relayChain?: string) {

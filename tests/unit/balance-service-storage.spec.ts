@@ -130,6 +130,36 @@ describe('BalanceService AssetKey persistence', () => {
     });
   });
 
+  it('hydrates Bitcoin and Bitcoin Testnet balances into the one BTC group the Bitcoin service keeps', async () => {
+    const address = 'universal-wallet';
+    const mainnet = network('Bitcoin', 'bitcoin:mainnet', 'bitcoin');
+    const testnet = network('Bitcoin Testnet', 'bitcoin:testnet', 'bitcoin');
+    mockStorage();
+    const writer = new BalanceService(stateFor([mainnet, testnet]));
+
+    await writer.updateBalanceStore(
+      mainnet.name,
+      { ...balance({ id: 'BTC', name: mainnet.name, symbol: 'BTC', total: '0' }), relayChain: 'bitcoin' },
+      address
+    );
+    await writer.updateBalanceStore(
+      testnet.name,
+      { ...balance({ id: 'BTC', name: testnet.name, symbol: 'BTC', total: '0.0006' }), relayChain: 'bitcoin' },
+      address
+    );
+
+    const hydrated = new BalanceService(stateFor([mainnet, testnet]));
+    hydrated.balanceMap[address] = [];
+    await hydrated.hydrateBalanceStorage([address]);
+
+    expect(hydrated.balanceMap[address]).toHaveLength(1);
+    expect(hydrated.balanceMap[address][0]).toMatchObject({ groupId: 'BTC', relayChain: 'bitcoin' });
+    expect(hydrated.balanceMap[address][0].balances.map(({ name, total }) => `${name}:${total}`).sort()).toEqual([
+      'Bitcoin Testnet:0.0006',
+      'Bitcoin:0',
+    ]);
+  });
+
   it('persists and hydrates same-symbol EVM contracts as separate lowercase AssetKeys', async () => {
     const address = '0xowner';
     const ethereum = network('Ethereum', '1', 'ethereumBased');

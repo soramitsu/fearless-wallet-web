@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     allNetworks: [],
     assetsPrice: { tokenPriceMap: {} },
     getNetwork: vi.fn(),
+    loadIndexerNetworkBalance: vi.fn(),
   },
   extensionStore: {
     features: { assetDiscoveryMode: 'visible' },
@@ -85,6 +86,7 @@ describe('Portfolio manual refresh', () => {
       () => new Promise<void>((resolve) => (completeSweep = resolve))
     );
     mocks.fetchNfts.mockResolvedValue(undefined);
+    mocks.networksStore.loadIndexerNetworkBalance.mockResolvedValue(undefined);
 
     const wrapper = mountPortfolio();
     const refresh = wrapper.get('[data-testid="portfolioRefresh"]');
@@ -93,6 +95,8 @@ describe('Portfolio manual refresh', () => {
     await (wrapper.vm as InstanceType<typeof Currencies>).refreshPortfolio();
 
     expect(mocks.forceAssetDiscoverySweep).toHaveBeenCalledTimes(1);
+    // The sweep skips test networks, so the selected network is also reloaded directly.
+    expect(mocks.networksStore.loadIndexerNetworkBalance).toHaveBeenCalledWith('All networks');
     expect(mocks.fetchNfts).toHaveBeenCalledWith('0x0000000000000000000000000000000000000001');
     expect(refresh.attributes('aria-busy')).toBe('true');
     expect(refresh.text()).toBe('Syncing');

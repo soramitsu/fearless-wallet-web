@@ -158,7 +158,11 @@ export default defineComponent({
       this.refreshError = '';
 
       try {
-        const refreshes: Promise<unknown>[] = [forceAssetDiscoverySweep()];
+        // The sweep skips test networks, so a selected one is reloaded directly.
+        const refreshes: Promise<unknown>[] = [
+          forceAssetDiscoverySweep(),
+          this.networksStore.loadIndexerNetworkBalance(this.accountsStore.selectedNetwork),
+        ];
         const ethereumAddress = this.accountsStore.selectedWallet.ethereumAddress;
 
         if (ethereumAddress) refreshes.push(fetchNfts(ethereumAddress));

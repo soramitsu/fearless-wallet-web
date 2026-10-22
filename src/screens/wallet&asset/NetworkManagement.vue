@@ -116,10 +116,10 @@ export default defineComponent({ name: 'NetworkManagement',
       return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
     },
     filterByGroupNetworks() {
-      if (this.activeTab === ALL_NETWORKS) return this.networksStore.networks;
+      if (this.activeTab === ALL_NETWORKS) return this.networksStore.selectableNetworks;
 
           if (this.activeTab === POPULAR_NETWORKS) {
-            return this.networksStore.networks
+            return this.networksStore.selectableNetworks
               .filter(({ rank }) => rank !== undefined)
               .sort((a, b) => {
                 if (a.rank === undefined || b.rank === undefined) return 0;
@@ -128,7 +128,7 @@ export default defineComponent({ name: 'NetworkManagement',
               });
           }
 
-          return this.networksStore.networks.filter(({ favorite }) =>
+          return this.networksStore.selectableNetworks.filter(({ favorite }) =>
             favorite.some((address) => address === this.accountsStore.selectedWallet.address)
           );
     },
@@ -205,6 +205,7 @@ export default defineComponent({ name: 'NetworkManagement',
           if (isSelected) return;
 
           this.accountsStore.setSelectedNetwork(network);
+          void this.networksStore.loadIndexerNetworkBalance(network).catch(() => undefined);
 
           const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 

@@ -84,8 +84,11 @@ or any release flag. Its package identity is:
 reconstruct the exact candidate-relevant base into a disposable checkout from
 the stored bounded archive, apply all 32 patch paths, validate every resulting
 byte/mode, restore only the stored generated 134-byte Darwin arm64 checksum
-sidecar, and prove that `npm pack --ignore-scripts` reproduces the tar
-byte-for-byte. No live Iroha checkout, Git fetch, or network access is used.
+sidecar, and prove that `npm pack --ignore-scripts` reproduces the complete TAR
+byte-for-byte, including headers, ordering and padding. The original stored
+`.tgz` digest remains pinned; both envelopes are recompressed by the same
+runtime and must then match exactly, allowing only zlib gzip encoding to vary.
+No live Iroha checkout, Git fetch, or network access is used.
 
 The replay archive SHA-256 is
 `cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c`:
@@ -99,8 +102,10 @@ and `offlineFullSourceReplayable` truthfully remains false even though the
 candidate itself is now entirely replayable offline. The parser rejects
 over-limit compression, traversal, links/special files, duplicates, unsafe
 extraction, commit/tree mismatch, and any extra, missing, or changed inventory
-entry. Its adversarial suite passes 40 checks, including portable replay from
-an isolated repository with no dependency on the live Iroha checkout.
+entry. Its adversarial suite passes 41 checks, including portable replay from
+an isolated repository with no dependency on the live Iroha checkout, plus a
+14-assertion repack suite rejecting changed TAR content, headers, modes, order,
+padding, duplicated entries and decompression beyond the exact archive bound.
 
 The final `node --test` command executed 2,317 tests: 2,244 passed, 73
 intentional skips, and zero failed, cancelled, or todo. Focused validation also

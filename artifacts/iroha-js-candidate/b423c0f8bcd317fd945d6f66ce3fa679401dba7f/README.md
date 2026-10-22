@@ -20,7 +20,7 @@ apply every one of the 32 patch paths and repack `javascript/iroha_js`. It is
 305-entry inventory (285 regular files and 20 directories). It deliberately
 excludes tracked `javascript/iroha_js/node_modules` and is not a copy of the
 full repository; `baseRepositoryBundled` and `offlineFullSourceReplayable`
-therefore remain false. Candidate replay and byte-identical repacking are fully
+therefore remain false. Candidate replay and byte-identical TAR repacking are fully
 offline and require no Iroha checkout or Git/network access.
 
 The package tar contains a generated 134-byte Darwin arm64 native checksum
@@ -50,11 +50,20 @@ snapshot. The separate post-freeze evidence is stored under
 `artifacts/iroha-js-candidate-safari-qa/15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8/`
 and binds the exact tar without rewriting that historical manifest.
 
-Run exact source replay and byte-identical repacking in a disposable directory:
+Run exact source replay and byte-identical TAR repacking in a disposable directory:
 
 ```sh
 bash scripts/verify-iroha-js-candidate.sh --replay-source
 ```
+
+The stored historical `.tgz` keeps its original pinned SHA-256. Current replay
+requires byte-identical complete decompressed TAR bytes, including every
+header, mode, entry order, padding byte and file payload. Both gzip envelopes
+are then canonicalized with the same runtime and must also match exactly.
+Only the gzip encoding may vary: Homebrew Node linked to system zlib 1.2.12
+and official Node with bundled zlib produce different compressed bytes for
+the identical archive. No alternate historical digest is accepted, and the
+immutable manifest's original byte-identical gzip observation is unchanged.
 
 The dedicated parser checks compressed and expanded bounds, POSIX tar header
 checksums, exact commit/tree metadata, exact entry inventory, normalized paths,

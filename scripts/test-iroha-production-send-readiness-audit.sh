@@ -30,6 +30,8 @@ new_fixture() {
   cp "$ROOT_DIR/scripts/audit-vendored-iroha-js-sdk.mjs" "$fixture/scripts/"
   cp "$ROOT_DIR/scripts/verify-iroha-js-candidate.sh" \
     "$ROOT_DIR/scripts/test-iroha-js-candidate-verifier.sh" \
+    "$ROOT_DIR/scripts/verify-iroha-js-candidate-repack.mjs" \
+    "$ROOT_DIR/scripts/test-iroha-js-candidate-repack.mjs" \
     "$ROOT_DIR/scripts/verify-iroha-js-base-source-archive.mjs" "$fixture/scripts/"
   cp \
     "$ROOT_DIR/scripts/iroha-js-candidate-safari-qa-contract.mjs" \

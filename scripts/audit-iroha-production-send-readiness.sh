@@ -532,7 +532,8 @@ for marker in \
   'current SDK policy rejection changed' \
   'offline historical evidence and current-policy rejection verification passed' \
   'verify-iroha-js-base-source-archive.mjs' \
-  'exact source replay and byte-identical repack passed'; do
+  'verify-iroha-js-candidate-repack.mjs' \
+  'exact source replay and byte-identical TAR/canonical gzip repack passed'; do
   require_fixed "$CANDIDATE_VERIFIER" "$marker" "durable candidate verifier marker '$marker'"
 done
 for marker in \
@@ -548,6 +549,7 @@ for marker in \
   'NODE_OPTIONS preload' \
   'caller PATH hijack is ignored' \
   'ambient Git configuration and parameter injection is ignored' \
+  'gzip portability rejects every TAR mutation' \
   'corrupted generated sidecar changes exact offline repack'; do
   require_fixed "$CANDIDATE_VERIFIER_TEST" "$marker" "durable candidate adversarial marker '$marker'"
 done
@@ -806,7 +808,7 @@ for marker in \
   '723c46192d369dac939f75d1ef1fb2f82456b3cd6afbd0ac51c0071383871a4d' \
   'b50de5592570e96f9d48374ed39d55cb4a4cc8298e99fc0657e698d3e4c81049' \
   'candidate itself is now entirely replayable offline' \
-  'adversarial suite passes 40 checks' \
+  'adversarial suite passes 41 checks' \
   'cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c' \
   '949e4b1f101cc47ebcd37f933784bffa183224262c94200708c1fcf237bf61d4' \
   '04fbf3b60512c7daf734d3f72c6a60ceb79316af' \

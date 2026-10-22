@@ -631,7 +631,9 @@ export interface RequestRecoverAccountWithPassword {
 
 export interface ResponseRecoverAccountWithPassword {
   ok: boolean;
-  code?: 'wrong_password' | 'locked' | 'not_found' | 'storage_failed';
+  /** `previous_password_required`: the password opened a TON record's outer layer only (TonSeedVault); its phrase
+   * still waits for the password it was stored with. */
+  code?: 'wrong_password' | 'previous_password_required' | 'locked' | 'not_found' | 'storage_failed';
 }
 
 export interface RequestRecoverAccountWithPhrase {

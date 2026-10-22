@@ -1,5 +1,7 @@
 import { Address, loadMessage, type Cell } from '@ton/core';
 import { mnemonicToPrivateKey, sign, signVerify } from '@ton/crypto';
+import { u8aToString } from '@polkadot/util';
+import { jsonDecrypt } from '@polkadot/util-crypto';
 import { validateMnemonic } from 'bip39';
 import CryptoJS from 'crypto-js';
 import * as tonWebMnemonic from 'tonweb-mnemonic';
@@ -356,7 +358,14 @@ async function background(lookup: (address: string) => unknown = () => { throw n
 }
 
 const stored = (address: string) => mocks.records.get(address)!;
-const decrypt = (record: TonStoreAccount) => CryptoJS.AES.decrypt(record.cipherSeed, MASTER_PASSWORD).toString(CryptoJS.enc.Utf8);
+// Saved as version 2 (TonSeedVault.ts): the text exactly as stored, under the master password.
+const decrypt = (record: TonStoreAccount) => {
+  const saved = JSON.parse(record.cipherSeed);
+
+  expect(saved.version).toBe(2);
+
+  return u8aToString(jsonDecrypt(saved, MASTER_PASSWORD));
+};
 const tonPublicAccount = (record: TonStoreAccount) =>
   record.meta!.universalWallet!.publicAccounts.find(({ ecosystem }) => ecosystem === WalletEcosystem.Ton)!;
 

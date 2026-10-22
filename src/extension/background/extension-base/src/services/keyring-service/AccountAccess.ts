@@ -201,7 +201,8 @@ export class AccountAccessService {
   }
 
   /** After unlock or a password change: opens every TON phrase with `password` (about 100 ms each),
-   * after the response was delivered. Only the vault's own repairs write. Lock cancels it. */
+   * after the response was delivered. Only the vault's own repairs write, including the move of 3.0.x
+   * ciphertext to the current formats. Lock cancels it. */
   scheduleScan(password: string): void {
     if (!password) return;
     const epoch = this.scanEpoch + 1;
@@ -214,7 +215,7 @@ export class AccountAccessService {
       for (const address of Object.keys(tonKeyring.accountSubject.value)) {
         if (!isCurrent()) return;
         // A phrase that does not open is recorded by the vault as needing a previous password.
-        await tonKeyring.vault.decryptVerified(address, () => password, isCurrent).catch(() => {});
+        await tonKeyring.vault.decryptVerified(address, () => password, isCurrent, true).catch(() => {});
       }
       if (isCurrent()) this.scanComplete = true;
     }).catch(() => {});

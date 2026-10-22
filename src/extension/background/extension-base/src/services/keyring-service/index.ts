@@ -1171,9 +1171,9 @@ export class KeyringService {
       if (!this.tonKeyring.accountSubject.value[address]) return { ok: false, code: 'not_found' };
 
       try {
-        const recovered = await this.tonKeyring.vault.recoverWithPassword(address, password, () => this.password);
+        const result = await this.tonKeyring.vault.recoverWithPassword(address, password, () => this.password);
 
-        return recovered ? { ok: true } : { ok: false, code: 'wrong_password' };
+        return result === 'recovered' ? { ok: true } : { ok: false, code: result };
       } catch (e) {
         console.error(e);
 

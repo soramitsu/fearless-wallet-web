@@ -429,14 +429,17 @@ function toBitcoinHistoryElement(
     ? outputs.find((output) => !walletAddresses.has(output.address.toLowerCase()) && output.value > 0)?.address
     : inputs.find((input) => !walletAddresses.has(input.address.toLowerCase()) && input.value > 0)?.address;
 
+  // A mempool transaction has no block yet: date it when it was seen rather than at the Unix epoch.
+  const timestamp = transaction.status.block_time ?? Math.floor(Date.now() / SEC1);
+
   return {
     address,
-    blockHash: transaction.status.block_hash ?? transaction.txid,
+    blockHash: transaction.status.block_hash,
     blockHeight: transaction.status.block_height,
     extrinsicHash: transaction.txid,
     id: transaction.txid,
     success: true,
-    timestamp: (transaction.status.block_time ?? 0).toString(),
+    timestamp: timestamp.toString(),
     transfer: {
       amount: amount.toString(),
       fee: isOutgoing ? fee.toString() : '0',

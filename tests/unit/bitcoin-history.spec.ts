@@ -70,6 +70,7 @@ function asBitcoinHistory(history: Awaited<ReturnType<typeof fetchHistory>>): Hi
 describe('Bitcoin history fetching', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('normalizes outgoing and incoming BTC transactions from Esplora', async () => {
@@ -97,6 +98,8 @@ describe('Bitcoin history fetching', () => {
       ])
     );
     vi.stubGlobal('fetch', fetchFn);
+    // The pending transaction is dated when it was fetched, not at the Unix epoch.
+    vi.spyOn(Date, 'now').mockReturnValue(1_761_166_800_500);
 
     await expect(fetchHistory('https://blockstream.info/api', WALLET, 'bitcoin', 'Bitcoin', 'BTC', true)).resolves.toEqual([
       {
@@ -116,12 +119,12 @@ describe('Bitcoin history fetching', () => {
       },
       {
         address: WALLET,
-        blockHash: TXID_2,
+        blockHash: undefined,
         blockHeight: undefined,
         extrinsicHash: TXID_2,
         id: TXID_2,
         success: true,
-        timestamp: '0',
+        timestamp: '1761166800',
         transfer: {
           amount: '75000',
           fee: '0',

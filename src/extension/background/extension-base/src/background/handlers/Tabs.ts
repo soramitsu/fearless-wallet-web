@@ -47,6 +47,8 @@ import type {
 } from '@polkadot/extension-inject/types';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { requiresGenericUrlAuthorization } from '@/extension/background/extension-base/src/background/handlers/tabAuthorization';
+import { IS_EXTENSION } from '@/consts/global';
+import { assertWalletAllowsNormalUse } from '@/util/walletRecoveryPolicy';
 import {
   transformAccounts,
   transformAddresses,
@@ -489,9 +491,13 @@ export default class Tabs {
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
 
       case 'pub(decrypt.cosigner)':
+        await this.state.requestService.ensureAccountAuthorized(url, (request as DecryptForCosignerData).address);
+        if (IS_EXTENSION) assertWalletAllowsNormalUse(this.state.keyringService.getAllAccounts(), (request as DecryptForCosignerData).address);
         return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
 
       case 'pub(encrypt.cosigner)':
+        await this.state.requestService.ensureAccountAuthorized(url, (request as EncryptByCosignerData).address);
+        if (IS_EXTENSION) assertWalletAllowsNormalUse(this.state.keyringService.getAllAccounts(), (request as EncryptByCosignerData).address);
         return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':

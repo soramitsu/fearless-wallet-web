@@ -98,13 +98,14 @@ export class TonKeyringService {
   }
 
   getAccounts() {
-    return Object.values(this.accountSubject.value).map(({ json: { address }, name, walletEcosystem }) => ({
+    return Object.values(this.accountSubject.value).map(({ json: { address, meta }, name, walletEcosystem }) => ({
       address,
       walletEcosystem,
       meta: {
         name,
         walletEcosystem,
         isMobile: false,
+        walletSecurityGeneration: meta.walletSecurityGeneration,
       } as FWKeyringMeta,
     }));
   }
@@ -158,7 +159,7 @@ export class TonKeyringService {
 
   async createAccount(suri: string, meta: FWKeyringMeta | string = '', password?: string) {
     const suriArray = suri.split(' ');
-    const initialMeta: FWKeyringMeta =
+    const providedMeta: FWKeyringMeta =
       typeof meta === 'string'
         ? {
             name: meta,
@@ -168,6 +169,7 @@ export class TonKeyringService {
             ...meta,
             walletEcosystem: WalletEcosystem.Ton,
           };
+    const initialMeta = this.keyringService.getAccountCreationMeta(suri, providedMeta);
     const account = await deriveCompatibleTonKeyPair(suriArray);
     const wallet = this.createContractV4(account.publicKey);
     const address = this.getUserFriendlyAddress(wallet.address);

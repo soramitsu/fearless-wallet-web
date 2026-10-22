@@ -21,6 +21,7 @@ import { TonKeyringService } from './TonKeyring';
 import { upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
 import { updateAccountMetadata } from './AccountMetadata';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
+import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import type { EventService } from '@extension-base/services';
 import type {
   DecryptForCosignerData,
@@ -65,6 +66,15 @@ export class KeyringService {
   private password = '';
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
+  private walletSecurityProvenance?: WalletSecurityProvenance;
+
+  private get securityProvenance(): WalletSecurityProvenance {
+    return this.walletSecurityProvenance ??= new WalletSecurityProvenance();
+  }
+
+  getAccountCreationMeta(suri: string, meta: FWKeyringMeta, requireFreshGeneration = false): FWKeyringMeta {
+    return this.securityProvenance.accountMetadata(suri, meta, requireFreshGeneration);
+  }
 
   // Public completion seam for lifecycle qualification; normal unlock never
   // awaits optional account generation or requires it to succeed.
@@ -205,14 +215,15 @@ export class KeyringService {
     accountsObservable.subject.next(accountsObservable.subject.getValue());
   }
 
-  async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
+  async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType, requireFreshGeneration = false) {
+    const creationMeta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
     if (walletEcosystem === 'ton') {
-      const account = await this.tonKeyring.createAccount(suri, meta, this.password);
+      const account = await this.tonKeyring.createAccount(suri, creationMeta, this.password);
 
       return account.address.toString();
     }
 
-    const initialMeta = { ...meta, isMobile: false, walletEcosystem };
+    const initialMeta = { ...creationMeta, isMobile: false, walletEcosystem };
     const {
       pair: { address },
     } = keyring.addUri(suri, initialMeta, type);
@@ -290,6 +301,7 @@ export class KeyringService {
   }
 
   restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
+    file.meta = withoutWalletSecurityClaims(file.meta as FWKeyringMeta);
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
@@ -303,6 +315,7 @@ export class KeyringService {
   }
 
   createFromJson(file: KeyringPair$Json) {
+    file.meta = withoutWalletSecurityClaims(file.meta as FWKeyringMeta);
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
@@ -360,6 +373,9 @@ export class KeyringService {
   }
 
   async saveAccountMeta(address: string, meta: FWKeyringMeta) {
+    // Renames, enrollment and caller-supplied metadata cannot establish or
+    // remove the provenance recorded when a genuinely fresh root was saved.
+    meta = withoutWalletSecurityClaims(meta);
     const pair = this.getPair(address);
 
     if (pair) {
@@ -385,7 +401,7 @@ export class KeyringService {
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
-    return keyring.createFromUri(suri, meta, keypairType);
+    return keyring.createFromUri(suri, withoutWalletSecurityClaims(meta), keypairType);
   }
 
   getSubstrateAddress(address: string) {
@@ -461,13 +477,11 @@ export class KeyringService {
   }
 
   async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
-    if (walletEcosystem === 'ton') {
-      const seed = await this.tonKeyring.generateMnemonic(undefined, wordCount);
-
-      return seed.join(' ');
-    }
-
-    return mnemonicGenerate(wordCount);
+    const mnemonic = walletEcosystem === 'ton'
+      ? (await this.tonKeyring.generateMnemonic(undefined, wordCount)).join(' ')
+      : mnemonicGenerate(wordCount);
+    this.securityProvenance.rememberGeneratedMnemonic(mnemonic);
+    return mnemonic;
   }
 
   async mnemonicValidate({ walletEcosystem, seed }: RequestValidateMnemonic): Promise<boolean> {

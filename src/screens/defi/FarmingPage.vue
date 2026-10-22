@@ -3,7 +3,7 @@
     <header class="workspace-header">
       <div>
         <h1>{{ t('farmingPage.title') }}</h1>
-        <p>{{ t('farmingPage.subtitle') }}</p>
+        <p v-if="!recoveryOnly">{{ t('farmingPage.subtitle') }}</p>
       </div>
       <button type="button" class="refresh" :disabled="loading" @click="loadPools">
         {{ t('farmingPage.refresh') }}
@@ -35,7 +35,7 @@
             <PoolCard v-for="pool in positions" :key="`position-${pool.key}`" :pool="pool" position />
           </section>
 
-          <section class="pool-section">
+          <section v-if="!recoveryOnly" class="pool-section">
             <div class="section-title">
               <span>{{ t('farmingPage.farmingPools') }}</span>
               <small>{{ activePools.length }}</small>
@@ -123,8 +123,11 @@ import type {
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { getDemeterPools, mutateDemeter } from '@/extension/messaging';
 import { useI18n } from '@/locales/useI18n';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { isRecoveryDemeterAction } from '@/util/walletRecoveryActions';
 
 const { t } = useI18n();
+const recoveryOnly = useWalletRecovery();
 const route = useRoute();
 const positionElements = new Map<string, HTMLElement>();
 const contentHeight = CONTENT_FORM_HEIGHT;
@@ -155,6 +158,7 @@ const selectedFee = computed(() =>
 const depositFee = computed(() => `${Number(selectedPool.value?.depositFee ?? 0) * 100}%`);
 const canReview = computed(() => {
   if (!catalog.value?.canSign || !selectedOperation.value) return false;
+  if (recoveryOnly.value && !isRecoveryDemeterAction(selectedOperation.value)) return false;
   if (selectedOperation.value === 'claim') return selectedPool.value?.earnedRewards !== '0';
   return /^(?:0|[1-9]\d*)(?:\.\d+)?$/u.test(amount.value) && Number(amount.value) > 0;
 });
@@ -200,7 +204,7 @@ const PoolCard = defineComponent({
               ])
             : null,
           h('div', { class: 'pool-actions' }, [
-            h(
+            !recoveryOnly.value ? h(
               'button',
               {
                 type: 'button',
@@ -208,7 +212,7 @@ const PoolCard = defineComponent({
                 onClick: () => openAction(props.pool, 'deposit'),
               },
               t('farmingPage.deposit')
-            ),
+            ) : null,
             props.position
               ? h(
                   'button',
@@ -249,6 +253,7 @@ async function loadPools(): Promise<void> {
 }
 
 function openAction(pool: DemeterPoolView, operation: DemeterOperation): void {
+  if (recoveryOnly.value && !isRecoveryDemeterAction(operation)) return;
   selectedPool.value = pool;
   selectedOperation.value = operation;
   amount.value = '';
@@ -266,6 +271,7 @@ async function confirmAction(): Promise<void> {
   const pool = selectedPool.value;
   const operation = selectedOperation.value;
   if (!pool || !operation || pending.value) return;
+  if (recoveryOnly.value && !isRecoveryDemeterAction(operation)) return;
   pending.value = true;
   formError.value = '';
 
@@ -308,6 +314,9 @@ async function focusLinkedPosition(): Promise<void> {
 }
 watch([loading, () => route.query.position], () => {
   if (!loading.value) void focusLinkedPosition();
+});
+watch(recoveryOnly, (restricted) => {
+  if (restricted && !isRecoveryDemeterAction(selectedOperation.value)) closeAction();
 });
 onMounted(loadPools);
 </script>

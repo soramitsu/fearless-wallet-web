@@ -64,7 +64,7 @@
               :amount2="amount2"
               :priceId1="poolParams?.asset1.priceId"
               :priceId2="poolParams?.asset2.priceId"
-              icon="plus-pink"
+              :icon="extrinsicType === 'removeLiquidity' ? 'unbond' : 'plus-pink'"
             />
 
             <ContentForm :height="225" :isStaticHeight="true" :bottomRightCorner="true">
@@ -97,7 +97,7 @@
           <div class="activity-buttons">
             <FButton
               v-if="showSecondBtn"
-              width="260px"
+              :width="showPrimaryBtn ? '260px' : '530px'"
               size="big"
               fontSize="big"
               class="remove-button"
@@ -109,6 +109,7 @@
             />
 
             <FButton
+              v-if="showPrimaryBtn"
               :width="widthConfirmBtn"
               size="big"
               fontSize="big"
@@ -123,7 +124,7 @@
     </Scroll>
 
     <ConfirmationPasswordPopup
-      v-if="showConfirmationPasswordPopup"
+      v-if="showConfirmationPasswordPopup && (!recoveryOnly || extrinsicType === 'removeLiquidity')"
       :currency="currency1"
       :amount="amount1"
       :value="amount1Value"
@@ -155,8 +156,10 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { usePoolsStore } from '@/stores/pools';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
 
 export default defineComponent({ name: 'PoolDetails',
+  setup: () => ({ recoveryOnly: useWalletRecovery() }),
   components: {
     InputsForm,
     PoolHeader,
@@ -183,6 +186,10 @@ export default defineComponent({ name: 'PoolDetails',
     };
   },
   computed: {
+    showPrimaryBtn() {
+      return !this.recoveryOnly || this.showSettings ||
+        (this.step !== 1 && this.step !== 4 && this.extrinsicType === 'removeLiquidity');
+    },
     fee() {
       if (!this.networksStore.soraFees) return '';
 
@@ -365,7 +372,7 @@ export default defineComponent({ name: 'PoolDetails',
             return this.$t('pools.removeLiquidity');
           }
 
-          if (this.step === 3) return this.$t('pools.confirmSupply');
+          if (this.step === 3) return this.$t(this.extrinsicType === 'removeLiquidity' ? 'pools.removeLiquidity' : 'pools.confirmSupply');
 
           return '';
     },
@@ -380,6 +387,17 @@ export default defineComponent({ name: 'PoolDetails',
             isExchangeB: this.isExchangeB,
             expectedFee: this.fee,
           } as RequestPool;
+    },
+  },
+  watch: {
+    recoveryOnly(restricted) {
+      if (restricted && this.extrinsicType !== 'removeLiquidity') {
+        this.showConfirmationPasswordPopup = false;
+        this.showSettings = false;
+        this.step = this.poolParams?.isMyPool ? 4 : 1;
+        this.amount1 = '';
+        this.amount2 = '';
+      }
     },
   },
   async created() {
@@ -435,6 +453,7 @@ export default defineComponent({ name: 'PoolDetails',
       this.amount2 = value;
     },
     supply() {
+      if (this.recoveryOnly && !this.showPrimaryBtn) return;
       if (this.showSettings) {
             this.slippage = this.temporarySlippage;
             this.showSettings = false;

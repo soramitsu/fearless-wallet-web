@@ -28,6 +28,9 @@ import type { FWKeyringMeta } from '@extension-base/types';
 import { WalletEcosystem } from '@/interfaces';
 import { deriveIrohaSigningKey } from '@/util/irohaKeyring';
 import { encodeIrohaI105Address, parseIrohaI105Address } from '@/util/iroha';
+import { IS_EXTENSION } from '@/consts/global';
+import { isRecoveryOnlyWallet } from '@/util/walletSecurity';
+import { WALLET_RECOVERY_ONLY_ERROR } from '@/util/walletRecoveryPolicy';
 
 export * from './legacyWire';
 export * from './types';
@@ -615,6 +618,7 @@ export class IrohaConnectService {
     if (!keyringAccount) throw new Error('The selected Iroha account is no longer available.');
 
     const meta = keyringAccount.meta as FWKeyringMeta;
+    if (IS_EXTENSION && isRecoveryOnlyWallet(meta)) throw new Error(WALLET_RECOVERY_ONLY_ERROR);
     if (!meta.walletEcosystem) throw new Error('The selected account cannot export Iroha signing material.');
     const { seed } = this.state.keyringService.exportMnemonic({
       address: keyringAccount.address,

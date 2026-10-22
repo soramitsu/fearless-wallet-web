@@ -12,6 +12,8 @@ import {
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { resolvePrimaryBackTarget, type PrimaryDestination } from '@/router/primaryNavigation';
 import { useAccountsStore } from '@/stores/accounts';
+import { initialAccountsReady } from '@/bootstrap/accountsReady';
+import { isSelectedWalletRecoveryOnly, isWalletRecoveryRoute } from '@/util/walletRecoveryPolicy';
 
 const router = createRouter({
   history: createWebHashHistory(IS_EXTENSION ? process.env.BASE_URL : undefined),
@@ -98,6 +100,15 @@ router.beforeEach(async (to, from, next) => {
       next({ name: universalMigrationRedirect });
 
       return;
+    }
+
+    if (IS_EXTENSION && !isWalletRecoveryRoute(to.name)) {
+      await initialAccountsReady;
+      const store = useAccountsStore();
+      if (isSelectedWalletRecoveryOnly(store.accounts, store.selectedWallet.address)) {
+        next({ name: Components.Wallet, query: { security: 'recovery-only' } });
+        return;
+      }
     }
   }
 

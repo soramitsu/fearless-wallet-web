@@ -7,6 +7,8 @@
       @toggleSettingsVisible="toggleSettingsVisible"
     />
 
+    <LegacyWalletUpgradeNotice />
+
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
       @close="setSelectWalletPopupVisible"
@@ -57,6 +59,7 @@ import WalletDetailsPopup from './WalletDetailsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
+import LegacyWalletUpgradeNotice from './LegacyWalletUpgradeNotice.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -70,6 +73,7 @@ export default defineComponent({ name: 'Main',
     LanguagePopup,
     SelectWalletPopup,
     WalletDetailsPopup,
+    LegacyWalletUpgradeNotice,
   },
   data() {
     return {

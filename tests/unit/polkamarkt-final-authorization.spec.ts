@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { PolkamarktFinalAuthorizationContext } from '@/extension/background/extension-base/src/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@/extension/background/extension-base/src/services/polkamarkt-service/finalAuthorization';
+import { assertWalletAllowsRecoveryAction, isRecoveryPolkamarktAction } from '@/util/walletRecoveryActions';
 
 const formatAddress = (address: string) => address.toLowerCase().replace(/^sora:/, '');
 const context: PolkamarktFinalAuthorizationContext = {
@@ -28,6 +29,30 @@ function guardState() {
 }
 
 describe('Polkamarkt final background authorization', () => {
+  it.each(['sell', 'claimMarket', 'claimCreatorFees', 'buy'] as const)('checks recovery policy for %s at the final signer boundary', async (action) => {
+    const state = guardState();
+    const onAuthorized = vi.fn();
+    const assertWalletAction = vi.fn(({ request }: PolkamarktFinalAuthorizationContext) =>
+      assertWalletAllowsRecoveryAction([{ address: state.pair.address, meta: {} }], state.pair.address,
+        isRecoveryPolkamarktAction(request.action)));
+    const guard = createPolkamarktFinalAuthorizationGuard({
+      capturedAccountAddress: context.accountAddress, capturedPair: state.pair, capturedRuntime: state.runtime,
+      isActionEnabled: () => true, isDisclaimerAccepted: () => true, isRuntimeReady: async () => true,
+      getCurrentPair: () => state.currentPair, getCurrentRuntime: () => state.currentRuntime,
+      getSelectedAddress: () => state.selectedAddress, isSubmitAvailable: () => true,
+      unlockPair: () => true, formatAddress, onAuthorized, assertWalletAction,
+    });
+    const request = { ...context.request, action } as PolkamarktFinalAuthorizationContext['request'];
+    if (action === 'buy') {
+      await expect(guard({ ...context, request })).rejects.toThrow('recovery-only');
+      expect(onAuthorized).not.toHaveBeenCalled();
+    } else {
+      await expect(guard({ ...context, request })).resolves.toBeUndefined();
+      expect(assertWalletAction).toHaveBeenCalledTimes(3);
+      expect(onAuthorized).toHaveBeenCalledOnce();
+    }
+  });
+
   it('checks runtime on both sides of a successful unlock before authorizing', async () => {
     const state = guardState();
     const isRuntimeReady = vi.fn().mockResolvedValue(true);

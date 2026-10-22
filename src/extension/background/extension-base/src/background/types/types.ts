@@ -228,6 +228,7 @@ export interface RequestMetadataReject {
 }
 
 export interface RequestAccountCreateSuri {
+  requireFreshGeneration?: boolean;
   suri: string;
   type?: SubwalletKeypairType;
   meta: FWKeyringMeta;

@@ -192,7 +192,11 @@ import {
   getBalanceItem,
 } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { IS_EXTENSION_SMOKE } from '@/consts/global';
+import { IS_EXTENSION, IS_EXTENSION_SMOKE } from '@/consts/global';
+import {
+  assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isRecoveryPoolAction,
+  isRecoveryDemeterAction, isRecoveryPolkamarktAction,
+} from '@/util/walletRecoveryActions';
 import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import {
@@ -226,6 +230,14 @@ function formatSoraAddress(address: string): string {
 }
 
 export default class Extension extends FWExtensionBase {
+  private assertNormalWalletUse(address: string, recoveryAction = false): void {
+    if (!IS_EXTENSION) return;
+    assertWalletAllowsRecoveryAction([
+      ...this.state.keyringService.getAllAccounts(),
+      ...this.state.keyringService.tonKeyring.getAccounts(),
+    ], address, recoveryAction);
+  }
+
   constructor(state: State) {
     super(state);
   }
@@ -292,12 +304,13 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async accountsCreate({ suri, type, meta, walletEcosystem }: RequestAccountCreateSuri): Promise<string> {
+  async accountsCreate({ suri, type, meta, walletEcosystem, requireFreshGeneration }: RequestAccountCreateSuri): Promise<string> {
     const address = await this.state.keyringService.addAccount(
       suri,
       { ...meta, isMobile: false },
       walletEcosystem,
-      type
+      type,
+      requireFreshGeneration
     );
 
     if (!isEthereumAddress(address) && !IS_EXTENSION_SMOKE) {
@@ -312,8 +325,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   convertAccounts(accounts: SubjectInfo, walletEcosystem = WalletEcosystem.Substrate): AccountJson[] {
+    const linkedEthereumAddresses = new Set(Object.values(accounts)
+      .filter(({ json: { address } }) => !isEthereumAddress(address))
+      .map(({ json: { meta } }) => (meta.ethereumAddress as string | undefined)?.toLowerCase())
+      .filter(Boolean));
     return Object.values(accounts).flatMap<AccountJson>(({ json: { address, meta }, type }) => {
-      if (isEthereumAddress(address)) return [];
+      const isEvm = isEthereumAddress(address);
+      if (isEvm && linkedEthereumAddresses.has(address.toLowerCase())) return [];
 
       const pair = this.state.keyringService.getPair(address);
       const haveEntropy = pair?.haveEntropy;
@@ -328,6 +346,7 @@ export default class Extension extends FWExtensionBase {
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         walletEcosystem,
         ...meta,
+        ...(isEvm ? { walletEcosystem: WalletEcosystem.Evm, ethereumAddress: address } : {}),
       };
     });
   }
@@ -392,6 +411,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
+    authorizedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     const authRequest = this.state.requestService.getAuthRequest(id);
 
     assert(authRequest, 'Unable to find request');
@@ -402,6 +422,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeUpdate({ authorizedAccounts, url, authType }: RequestUpdateAuthorizedAccounts): Promise<void> {
+    authorizedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 
@@ -609,9 +630,11 @@ export default class Extension extends FWExtensionBase {
     const { data } = request;
 
     const address = getEip155MessageAddress(request.method, data);
+    this.assertNormalWalletUse(address);
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+    this.assertNormalWalletUse(ethereumAddress);
     const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);
 
     if (isMobile) {
@@ -700,6 +723,8 @@ export default class Extension extends FWExtensionBase {
 
     assert(request, 'Unable to find request');
 
+    this.assertNormalWalletUse(request.account.publicKey);
+
     try {
       const accounts = this.state.keyringService.getAllAccounts();
       const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) =>
@@ -740,6 +765,8 @@ export default class Extension extends FWExtensionBase {
 
     if (isSolanaSignRequest(queued)) return this.signSolanaApprove({ id });
     if (isEvmSignRequest(queued)) return this.signEvmApprove({ id }); // sign evm requests
+
+    this.assertNormalWalletUse(queued.account.address);
 
     const account = this.state.keyringService
       .getAllAccounts()
@@ -791,6 +818,10 @@ export default class Extension extends FWExtensionBase {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
+
+    this.assertNormalWalletUse(isEvmSignRequest(queued)
+      ? getEip155MessageAddress(queued.method, queued.data)
+      : isSolanaSignRequest(queued) ? queued.account.publicKey : queued.account.address);
 
     if (isSolanaSignRequest(queued)) {
       queued.reject(new Error('External signature approval is not supported for Solana'));
@@ -973,6 +1004,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
+    this.assertNormalWalletUse(this.state.getAccountAddress());
     if (!this.state.actionCapabilityService.isActionEnabled('polkaswap')) {
       return {
         status: false,
@@ -1198,6 +1230,8 @@ export default class Extension extends FWExtensionBase {
         capturedRuntime,
         isActionEnabled: () => this.state.actionCapabilityService.isActionEnabled('polkamarkt'),
         isDisclaimerAccepted: () => this.state.soraDisclaimerService.isAccepted(),
+        assertWalletAction: ({ accountAddress, request }) =>
+          this.assertNormalWalletUse(accountAddress, isRecoveryPolkamarktAction(request.action)),
         isRuntimeReady,
         getCurrentPair: () => soraRoot.account?.pair,
         getCurrentRuntime: () => soraRoot.api,
@@ -1241,6 +1275,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private mutatePolkamarkt(request: PolkamarktMutationRequest) {
+    this.assertNormalWalletUse(this.state.getAccountAddress(), isRecoveryPolkamarktAction(request.action));
     if (!this.state.actionCapabilityService.isActionEnabled('polkamarkt')) {
       return Promise.resolve({ status: false, error: 'Polkamarkt actions are temporarily paused.' });
     }
@@ -1535,6 +1570,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeCrossChain(id: string, request: RequestCrossChain, port?: Port): Promise<BasicTxResponse> {
+    this.assertNormalWalletUse(request.from);
     const {
       from,
       originNet,
@@ -1720,6 +1756,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
+    const recoveryAction = isRecoveryStakingAction(request.type);
+    this.assertNormalWalletUse(request.params.from, recoveryAction);
+    this.assertNormalWalletUse(this.state.getAccountAddress(), recoveryAction);
     const { from } = request.params;
 
     this.state.keyringService.unlockPair(from);
@@ -1728,6 +1767,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
+    this.assertNormalWalletUse(this.state.getAccountAddress(), isRecoveryPoolAction(request.type));
     if (!this.state.actionCapabilityService.isActionEnabled('polkaswap')) {
       return {
         status: false,
@@ -1753,6 +1793,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async mutateDemeter(request: DemeterMutationRequest): Promise<BasicTxResponse> {
+    this.assertNormalWalletUse(this.state.getAccountAddress(), isRecoveryDemeterAction(request.operation));
     if (!this.state.actionCapabilityService.isActionEnabled('demeter')) {
       return {
         status: false,
@@ -1912,6 +1953,7 @@ export default class Extension extends FWExtensionBase {
     accounts: selectedAccounts,
     id,
   }: RequestApproveConnectWalletSession): Promise<NotificationResponse> {
+    selectedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     const request = this.state.requestService.getConnectWCRequest(id);
 
     if (isProposalExpired(request.request.params)) {
@@ -2090,8 +2132,10 @@ export default class Extension extends FWExtensionBase {
   }
 
   async wcRequestApprove({ address, topic }: RequestApproveWalletConnect) {
+    this.assertNormalWalletUse(address);
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+    this.assertNormalWalletUse(ethereumAddress);
 
     const request = this.state.requestService.signWcRequest(topic);
 

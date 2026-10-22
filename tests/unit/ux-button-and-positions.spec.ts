@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 const accounts = reactive({ selectedWallet: { address: 'wallet-a', isSubstrate: true } });
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 379 }));
+vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 379, IS_EXTENSION: false }));
 vi.mock('@/consts/sora', () => ({ SORA_NETWORK_NAME: 'sora mainnet' }));
 vi.mock('@/router/routes', () => ({ Components: {} }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key, tc: (key: string) => key }) }));

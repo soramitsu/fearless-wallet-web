@@ -3,7 +3,7 @@
     <header class="workspace-header">
       <div>
         <h1>{{ t('defiHub.title') }}</h1>
-        <p>{{ t('defiHub.subtitle') }}</p>
+        <p>{{ recoveryOnly ? recoveryCopy.defiDescription : t('defiHub.subtitle') }}</p>
       </div>
       <span class="network-context">{{ t('defiHub.multiNetwork') }}</span>
     </header>
@@ -42,12 +42,12 @@
         </section>
 
         <section class="hub-section">
-          <h2>{{ t('defiHub.earn') }}</h2>
+          <h2>{{ recoveryOnly ? recoveryCopy.recoveryActions : t('defiHub.earn') }}</h2>
           <button class="hub-row" type="button" @click="open(Components.Staking)">
             <Icon icon="staking" className="hub-icon" :hover="false" />
             <span
               ><strong>{{ t('defiHub.staking') }}</strong
-              ><small>{{ t('defiHub.stakingDescription') }}</small></span
+              ><small v-if="!recoveryOnly">{{ t('defiHub.stakingDescription') }}</small></span
             >
             <span class="capability">{{ stakingCapability }}</span>
             <Icon icon="chevron-right" :hover="false" />
@@ -56,7 +56,7 @@
             <Icon icon="pools" className="hub-icon" :hover="false" />
             <span
               ><strong>{{ t('defiHub.liquidityPools') }}</strong
-              ><small>{{ t('defiHub.liquidityDescription') }}</small></span
+              ><small v-if="!recoveryOnly">{{ t('defiHub.liquidityDescription') }}</small></span
             >
             <span class="capability">SORA</span>
             <Icon icon="chevron-right" :hover="false" />
@@ -65,7 +65,7 @@
             <Icon icon="stake" className="hub-icon" :hover="false" />
             <span
               ><strong>{{ t('defiHub.farming') }}</strong
-              ><small>{{ t('defiHub.farmingDescription') }}</small></span
+              ><small v-if="!recoveryOnly">{{ t('defiHub.farmingDescription') }}</small></span
             >
             <span class="capability">SORA</span>
             <Icon icon="chevron-right" :hover="false" />
@@ -77,7 +77,7 @@
           <button class="hub-row" type="button" @click="open(Components.Polkamarkt)">
             <Icon icon="controller" className="hub-icon" :hover="false" />
             <span
-              ><strong>Polkamarkt</strong><small>{{ t('defiHub.polkamarktDescription') }}</small></span
+              ><strong>Polkamarkt</strong><small v-if="!recoveryOnly">{{ t('defiHub.polkamarktDescription') }}</small></span
             >
             <span class="capability">{{ t('defiHub.soraXorFees') }}</span>
             <Icon icon="chevron-right" :hover="false" />
@@ -102,9 +102,13 @@ import { SORA_NETWORK_NAME } from '@/consts/sora';
 import { getPolkamarktSnapshot } from '@/extension/messaging/polkamarkt';
 import { loadPositionDashboard, type PositionDashboard } from '@/defi/positionDashboard';
 import { useI18n } from '@/locales/useI18n';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
 const router = useRouter();
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const recoveryOnly = useWalletRecovery();
+const recoveryCopy = computed(() => legacyWalletUpgradeMessages[locale.value === 'ru-RU' ? 'ru-RU' : 'en-EN']);
 const accountsStore = useAccountsStore();
 const stakingStore = useStakingStore();
 const poolsStore = usePoolsStore();

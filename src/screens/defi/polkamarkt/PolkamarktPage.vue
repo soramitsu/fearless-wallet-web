@@ -108,7 +108,7 @@
               <span>{{ t('polkamarktPage.authoritativeQuote') }}</span>
             </div>
             <div class="segmented">
-              <button type="button" :class="{ selected: mode === 'buy' }" @click="setMode('buy')">
+              <button v-if="!recoveryOnly" type="button" :class="{ selected: mode === 'buy' }" @click="setMode('buy')">
                 {{ t('polkamarktPage.buy') }}
               </button>
               <button type="button" :class="{ selected: mode === 'sell' }" @click="setMode('sell')">
@@ -289,20 +289,23 @@ import { Components } from '@/router/routes';
 import { getPolkamarktQuote, getPolkamarktSnapshot, mutatePolkamarkt } from '@/extension/messaging';
 import { useI18n } from '@/locales/useI18n';
 import { useAccountsStore } from '@/stores/accounts';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { isRecoveryPolkamarktAction } from '@/util/walletRecoveryActions';
 
 const route = useRoute();
 const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
+const recoveryOnly = useWalletRecovery();
 const contentHeight = CONTENT_FORM_HEIGHT;
 const views = ['Markets', 'Positions', 'Activity'] as const;
-const view = ref<(typeof views)[number]>('Markets');
+const view = ref<(typeof views)[number]>(recoveryOnly.value ? 'Positions' : 'Markets');
 const snapshot = ref<PolkamarktSnapshot | null>(null);
 const loading = ref(false);
 const fatalError = ref('');
 const search = ref('');
 const statusFilter = ref<'active' | 'finalized' | 'all'>('active');
-const mode = ref<PolkamarktTradeMode>('buy');
+const mode = ref<PolkamarktTradeMode>(recoveryOnly.value ? 'sell' : 'buy');
 const selectedOutcome = ref<PolkamarktOutcome>('Yes');
 const amount = ref('');
 const quote = ref<PolkamarktQuote | null>(null);
@@ -353,8 +356,8 @@ const actionReason = computed(() => {
 const confirmTradeLabel = computed(() =>
   mode.value === 'buy' ? t('polkamarktPage.confirmBuy') : t('polkamarktPage.confirmSell')
 );
-const quoteDisabled = computed(() => Boolean(actionReason.value || !/^\d+(\.\d+)?$/.test(amount.value) || amount.value === '0'));
-const mutationDisabled = computed(() => Boolean(actionReason.value || !quote.value));
+const quoteDisabled = computed(() => Boolean((recoveryOnly.value && !isRecoveryPolkamarktAction(mode.value)) || actionReason.value || !/^\d+(\.\d+)?$/.test(amount.value) || amount.value === '0'));
+const mutationDisabled = computed(() => Boolean((recoveryOnly.value && !isRecoveryPolkamarktAction(mode.value)) || actionReason.value || !quote.value));
 const canClaimMarket = computed(() => Boolean(snapshot.value?.account.signable && snapshot.value?.account.hasXorForFees && snapshot.value?.capabilities.claimMarket && !accountsStore.showPolkaswapAlert));
 const canClaimCreator = computed(() => Boolean(snapshot.value?.account.signable && snapshot.value?.account.hasXorForFees && snapshot.value?.capabilities.claimCreatorFees && !accountsStore.showPolkaswapAlert));
 const historyPolyline = computed(() => {
@@ -433,6 +436,7 @@ async function acceptRisk() {
   await accountsStore.hidePolkaswapAlert();
 }
 function setMode(value: PolkamarktTradeMode) {
+  if (recoveryOnly.value && !isRecoveryPolkamarktAction(value)) return;
   mode.value = value;
   clearQuote();
 }
@@ -479,6 +483,7 @@ async function requestQuote() {
   }
 }
 async function runMutation(request: PolkamarktMutationRequest) {
+  if (recoveryOnly.value && !isRecoveryPolkamarktAction(request.action)) return;
   mutating.value = true;
   mutationMessage.value = '';
   try {
@@ -499,7 +504,7 @@ async function runMutation(request: PolkamarktMutationRequest) {
   }
 }
 function submitTrade() {
-  if (!selectedMarket.value || !quote.value) return;
+  if (!selectedMarket.value || !quote.value || mutationDisabled.value) return;
   runMutation({
     action: mode.value,
     marketId: selectedMarket.value.id,
@@ -525,6 +530,12 @@ async function shareMarket() {
 watch(routeMarketId, () => {
   clearQuote();
   load();
+});
+watch(recoveryOnly, (restricted) => {
+  if (restricted) {
+    setMode('sell');
+    view.value = 'Positions';
+  }
 });
 onMounted(load);
 </script>

@@ -1,5 +1,8 @@
 import { createMemoryHistory, createRouter, type RouteLocationRaw } from 'vue-router';
+import { getStakingNetwork } from '@/router/helpers';
+import { useAccountsStore } from '@/stores/accounts';
 
+vi.mock('@/consts/global', () => ({ IS_EXTENSION: true }));
 vi.mock('@/router/helpers', () => ({
   getStakingNetwork: vi.fn(),
   haveAuthRequests: vi.fn(),
@@ -21,6 +24,22 @@ vi.mock('@/screens/extension-ui/DAppsAuths.vue', () => ({ default: {} }));
 vi.mock('@/screens/wallet&asset/wallet/Currencies.vue', () => ({ default: {} }));
 
 describe('authenticated shell routes', () => {
+  it.each([undefined, 1])('keeps zero-stake reward recovery accessible only for recovery wallets (generation %s)', async (generation) => {
+    vi.mocked(useAccountsStore).mockReturnValue({
+      accounts: [{ address: 'fixture', walletSecurityGeneration: generation }], selectedWallet: { address: 'fixture' },
+    } as ReturnType<typeof useAccountsStore>);
+    vi.mocked(getStakingNetwork).mockResolvedValue({ totalStake: '0' } as Awaited<ReturnType<typeof getStakingNetwork>>);
+    const { default: routes, Components } = await import('@/router/routes');
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    const target = router.resolve({ name: Components.MyStake, params: { network: 'sora mainnet' } });
+    const guard = target.matched.at(-1)!.beforeEnter;
+    expect(typeof guard).toBe('function');
+    const next = vi.fn();
+    if (typeof guard === 'function') await guard.call(undefined, target, target, next);
+    if (generation === 1) expect(next).toHaveBeenCalledWith({ name: Components.Staking });
+    else expect(next).toHaveBeenCalledExactlyOnceWith();
+  });
+
   it('keeps every primary destination and authenticated child under Main', async () => {
     const { default: routes, Components } = await import('@/router/routes');
     const router = createRouter({ history: createMemoryHistory(), routes });

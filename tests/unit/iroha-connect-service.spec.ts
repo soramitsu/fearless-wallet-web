@@ -9,6 +9,7 @@ import {
 import { WalletEcosystem } from '@/interfaces';
 import { encodeIrohaI105Address } from '@/util/iroha';
 import { deriveIrohaSigningKey } from '@/util/irohaKeyring';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const SID_BYTES = new Uint8Array(32).fill(0x11);
@@ -228,6 +229,7 @@ const createHarness = (
       irohaPublicKeyHex: derived.publicKeyHex,
       name: 'Sakura',
       walletEcosystem: WalletEcosystem.Iroha,
+      walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION as number | undefined,
     },
   };
   const observableAccount = {
@@ -252,7 +254,7 @@ const createHarness = (
     onStateChange,
   });
 
-  return { accountId, createSocket, derived, keyringService, onStateChange, service, socket };
+  return { accountId, createSocket, derived, keyringService, onStateChange, service, socket, storedAccount };
 };
 
 const openAndApprove = async (
@@ -274,6 +276,17 @@ describe('IrohaConnectService', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('does not sign an Iroha Connect approval with a pre-update wallet', async () => {
+    const { accountId, keyringService, service, socket, storedAccount } = createHarness();
+    storedAccount.meta.walletSecurityGeneration = undefined;
+    service.connect(walletUri());
+    socket.emit(openFrame());
+
+    await expect(service.approveSession(accountId)).rejects.toThrow(/recovery-only/i);
+    expect(keyringService.exportMnemonic).not.toHaveBeenCalled();
+    expect(socket.sent).toHaveLength(0);
   });
 
   it('connects to the authenticated relay and exposes the Open session for explicit approval', () => {

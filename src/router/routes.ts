@@ -8,6 +8,8 @@ import { useExtensionStore } from '@/stores/extension';
 import { useStakingStore } from '@/stores/staking';
 import Unlock from '@/screens/welcome/Unlock.vue';
 import { initialAccountsReady } from '@/bootstrap/accountsReady';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -383,7 +385,15 @@ const routes: Array<RouteRecordRaw> = [
         name: Components.Wallet,
         component: Wallet,
         redirect: { name: Components.Currencies },
-        beforeEnter: (to, from, next) => {
+        beforeEnter: async (to, from, next) => {
+          if (IS_EXTENSION) {
+            await initialAccountsReady;
+            const accounts = useAccountsStore();
+            if (isSelectedWalletRecoveryOnly(accounts.accounts, accounts.selectedWallet.address)) {
+              next();
+              return;
+            }
+          }
           const extensionStore = useExtensionStore();
 
           if (haveAuthRequests(extensionStore)) next({ name: Components.Authorize });
@@ -493,8 +503,10 @@ const routes: Array<RouteRecordRaw> = [
           const network = (Array.isArray(to.params.network) ? to.params.network[0] : to.params.network) as NetworkName;
           const stakingStore = useStakingStore();
           const stakingParams = await getStakingNetwork(stakingStore, network);
+          const accountsStore = useAccountsStore();
+          const recoveryOnly = IS_EXTENSION && isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address);
 
-          if (stakingParams.totalStake === '0') next({ name: Components.Staking });
+          if (stakingParams.totalStake === '0' && !recoveryOnly) next({ name: Components.Staking });
           else next();
         },
         meta: { title: 'myStake', primaryNavigation: 'defi' },

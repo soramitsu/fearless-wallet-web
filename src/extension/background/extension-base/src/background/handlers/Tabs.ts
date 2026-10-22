@@ -457,10 +457,16 @@ export default class Tabs {
       case 'pub(authorize.tab)':
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
 
+      // These use the account's secret key without a confirmation popup: only an account the user shared with
+      // this site (AUDIT-01, as in 3.0.6).
       case 'pub(decrypt.cosigner)':
+        await this.state.requestService.ensureAccountAuthorized(url, (request as DecryptForCosignerData).address);
+
         return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
 
       case 'pub(encrypt.cosigner)':
+        await this.state.requestService.ensureAccountAuthorized(url, (request as EncryptByCosignerData).address);
+
         return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':

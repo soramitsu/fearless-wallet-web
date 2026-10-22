@@ -307,6 +307,33 @@ describe('3.0.6: release gate for built packages', () => {
 
     expect(findRemovedCode(dir)).toEqual([]);
   });
+
+  // The package is public and webpack inlines absolute build paths (import.meta.url).
+  const withBuildPath = (buildPath: string) =>
+    `${cleanBundle}const i={path:new URL("${buildPath}node_modules/@polkadot/api/packageInfo.js").pathname};`;
+
+  it.each([
+    ['a personal folder', 'file:///Users/someone/dev/fearless-wallet-web/'],
+    ['the build user', 'file:///opt/builds/someone/fearless-wallet-web/'],
+    ['the release', 'file:///Users/Shared/fearless-wallet-web-hotfix-3.0.6/'],
+    ['a temporary folder', 'file:///private/var/folders/xy/T/fearless-wallet-web/'],
+    ['the tooling', 'file:///private/tmp/claude-501/scratchpad/build/'],
+  ])('fails a package whose build path names %s', (_case, buildPath) => {
+    fs.writeFileSync(path.join(dir, 'popup.js'), withBuildPath(buildPath));
+
+    expect(findRemovedCode(dir, 'someone')).toEqual([
+      expect.objectContaining({ file: 'popup.js', label: expect.stringContaining('build path') }),
+    ]);
+  });
+
+  it.each(['file:///var/jenkins/workspace/fearless_wallet-web_master/', 'file:///Users/Shared/fearless-wallet-web/'])(
+    'passes the neutral build path %s',
+    (buildPath) => {
+      fs.writeFileSync(path.join(dir, 'popup.js'), withBuildPath(buildPath));
+
+      expect(findRemovedCode(dir, 'someone')).toEqual([]);
+    }
+  );
 });
 
 describe('3.0.6: comparison of a built bundle with the published one', () => {

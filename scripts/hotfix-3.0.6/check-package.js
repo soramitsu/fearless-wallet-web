@@ -7,6 +7,7 @@
 // Files are read as text and never executed. Exit code 0: clean. 1: at least one finding. 2: usage error.
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 // Every entry is text the removed code put into the 3.0.5 bundle; minification keeps all of them
@@ -38,12 +39,35 @@ function findRemovedText(content) {
   );
 }
 
-function findRemovedCode(packageDir) {
+// Webpack inlines import.meta.url, so the package carries absolute build paths (3.0.5 has
+// /var/jenkins/workspace/fearless_wallet-web_master/...). The package is public: a build path must not point into a
+// personal or temporary folder, name the build machine's user, or say what the release or its tooling is.
+const PERSONAL_LOCATION = /^file:\/\/\/(Users\/(?!Shared\/)|home\/|root\/|(private\/)?var\/folders\/)/;
+const REVEALING_WORD = /hotfix|incident|security|audit|exfil|release-3\.0\.6|scratchpad|claude|codex/i;
+
+function findRevealingPaths(content, username = os.userInfo().username) {
+  const user = username && username.length >= 3 ? username.toLowerCase() : null;
+  const buildPaths = new Set(content.match(/file:\/\/\/[^"'`\s)]+/g) ?? []);
+
+  return [...buildPaths].filter(
+    (buildPath) =>
+      PERSONAL_LOCATION.test(buildPath) ||
+      REVEALING_WORD.test(buildPath) ||
+      (user !== null && buildPath.toLowerCase().includes(user))
+  );
+}
+
+function findRemovedCode(packageDir, username = os.userInfo().username) {
   return listFiles(packageDir)
     .filter((file) => TEXT_FILE.test(file))
-    .flatMap((file) =>
-      findRemovedText(fs.readFileSync(path.join(packageDir, file), 'utf8')).map((label) => ({ file, label }))
-    );
+    .flatMap((file) => {
+      const content = fs.readFileSync(path.join(packageDir, file), 'utf8');
+
+      return [
+        ...findRemovedText(content).map((label) => ({ file, label })),
+        ...findRevealingPaths(content, username).map((buildPath) => ({ file, label: `build path ${buildPath}` })),
+      ];
+    });
 }
 
 function main(packageDirs) {
@@ -65,4 +89,4 @@ function main(packageDirs) {
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
 
-module.exports = { findRemovedCode, findRemovedText };
+module.exports = { findRemovedCode, findRemovedText, findRevealingPaths };

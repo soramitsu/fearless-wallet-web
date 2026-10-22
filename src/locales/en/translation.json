@@ -1,5 +1,7 @@
 {
   "welcome": {
+    "passwordChangeFailed": "Could not confirm the password change. Unlock the wallet and try again. If a TON account needs recovery, recover it with its earlier password first.",
+    "walletResetFailed": "Could not confirm the wallet reset. Please try again before setting up another wallet.",
     "tonStorageUnavailable": "Some TON accounts could not be loaded or updated. Their stored records have been preserved, and your other wallets remain available. Reopen the wallet or lock and unlock it to retry. Do not reset the wallet or remove affected accounts.",
     "tonRecoveryRequired": "Some TON accounts need the password used before an earlier wallet update. Your other accounts are available. To restore access to an affected TON account, open Export for that account and enter its earlier password. Do not reset the wallet or remove the account before recovery.",
     "importWallet": "Import wallet",

@@ -26,14 +26,18 @@ class TonStore extends SubscribableStore<TonStoreAccount> {
 
     return Object.entries(records)
       .filter(([key]) => key.startsWith(this.getPrefix()))
-      .map(([key, value]) => {
+      .flatMap(([key, value]) => {
         const record = value as TonStoreAccount;
 
+        // A record this wallet did not write is left in storage untouched and not listed; it must not hide the
+        // other TON accounts.
         if (!record || key !== this.getPrefix() + record.address || !/^[a-f0-9]{64}$/.test(record.publicKeyHex)) {
-          throw new Error('Invalid TON storage record');
+          console.error('Skipped a TON storage record in an unknown layout');
+
+          return [];
         }
 
-        return record;
+        return [record];
       });
   }
 

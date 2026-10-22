@@ -19,7 +19,13 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api } from '@sora-substrate/sdk';
-import { readWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import {
+  PASSWORD_STORAGE_KEY,
+  flushWalletWrites,
+  readWalletRecords,
+  removeWalletRecords,
+  writeWalletRecords,
+} from '@extension-base/stores/WalletStorage';
 import { tonStore } from '@extension-base/stores/TonStore';
 import { TonKeyringService } from './TonKeyring';
 import { preparePasswordRecords } from './PasswordChange';
@@ -46,6 +52,10 @@ import { IS_EXTENSION } from '@/consts/global';
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
+// Records a wallet reset removes, below the extension prefix: what the keyring library stores (its accountKey,
+// addressKey and contractKey) and the TON records. The password verifier is removed with them.
+const WALLET_RECORD_PREFIXES = ['account:', 'address:', 'contract:', 'ton:'];
+
 export class KeyringService {
   private readonly currentAccountStore = new CurrentAccountStore();
   readonly tonKeyring = new TonKeyringService(this);
@@ -53,7 +63,9 @@ export class KeyringService {
 
   private password = '';
   private unlockGeneration = 0;
-  private passwordChangeInProgress = false;
+  // Held for the whole of a password change or a reset; unlock, account changes and the other of the two are
+  // refused meanwhile.
+  private walletRewriteInProgress = false;
 
   constructor(eventService: EventService) {
     eventService.waitCryptoReady
@@ -90,8 +102,8 @@ export class KeyringService {
     return this.password;
   }
 
-  private ensurePasswordChangeIdle(): void {
-    if (this.passwordChangeInProgress) throw new Error('A wallet password change is in progress');
+  private ensureNoWalletRewrite(): void {
+    if (this.walletRewriteInProgress) throw new Error('The wallet is being changed; try again in a moment');
   }
 
   setCurrentAccount(currentAccountData: CurrentAccountState) {
@@ -151,7 +163,7 @@ export class KeyringService {
   }
 
   async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
 
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, meta.name!, this.password);
@@ -220,7 +232,7 @@ export class KeyringService {
   }
 
   forgetAccount(address: string) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     if (this.tonKeyring.accountSubject.value[address]) return this.tonKeyring.forgetAccount(address);
 
     return keyring.forgetAccount(address);
@@ -231,7 +243,7 @@ export class KeyringService {
   }
 
   restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
@@ -302,7 +314,7 @@ export class KeyringService {
   }
 
   async saveAccountMeta(address: string, meta: FWKeyringMeta): Promise<void> {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     const pair = this.getPair(address);
 
     if (pair) {
@@ -366,25 +378,35 @@ export class KeyringService {
   }
 
   async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
-    if (this.passwordChangeInProgress) return false;
+    if (this.walletRewriteInProgress) return false;
 
-    this.passwordChangeInProgress = true;
+    this.walletRewriteInProgress = true;
     const generation = ++this.unlockGeneration;
+    let committed = false;
 
     this.password = '';
     keyring.lockAll();
 
     try {
       return await this.tonKeyring.withStoreLock(async () => {
+        // Account and verifier writes the keyring library started earlier must have landed before the snapshot, or
+        // one could arrive afterwards, still under the old password. If one of them failed, the change stops here.
+        await flushWalletWrites();
+
         const records = await readWalletRecords();
         const prepared = preparePasswordRecords(records, oldPassword || '', newPassword);
-        const tonAccounts = await this.tonKeyring.preparePasswordChange(oldPassword || '', newPassword);
+        // Without a stored verifier this sets the first password. TON records can then only be leftovers of a wallet
+        // reset by an earlier version; this change neither opens nor rewrites them.
+        const tonAccounts = records[PASSWORD_STORAGE_KEY]
+          ? await this.tonKeyring.preparePasswordChange(oldPassword || '', newPassword)
+          : [];
 
         for (const account of tonAccounts) {
           prepared.replacements[`${tonStore.getPrefix()}${account.address}`] = account;
         }
 
         await writeWalletRecords(prepared.replacements);
+        committed = true;
 
         // Publish only committed records. A memory-only store prevents the account
         // observable from issuing separate writes after the atomic storage batch.
@@ -413,9 +435,11 @@ export class KeyringService {
         this.password = '';
       }
 
-      return false;
+      // Once the batch is stored the new password is in force, whatever failed in memory afterwards. Report the
+      // change, with the wallet locked, so it is opened again with the new password; a restart loads the stored state.
+      return committed;
     } finally {
-      this.passwordChangeInProgress = false;
+      this.walletRewriteInProgress = false;
     }
   }
 
@@ -506,7 +530,7 @@ export class KeyringService {
   }
 
   async unlockKeyring({ password }: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required'> {
-    if (this.passwordChangeInProgress) return false;
+    if (this.walletRewriteInProgress) return false;
 
     const generation = ++this.unlockGeneration;
 
@@ -516,7 +540,14 @@ export class KeyringService {
     try {
       keyring.unlockKeyring(password);
       keyring.lockAll();
-      await this.tonKeyring.migrateOnUnlock(password);
+
+      try {
+        await this.tonKeyring.migrateOnUnlock(password);
+      } catch {
+        // The TON records stay exactly as stored and the upgrade runs again at the next unlock. It must never keep
+        // the user out of the wallet.
+        console.error('TON storage upgrade did not complete');
+      }
 
       if (generation !== this.unlockGeneration) return false;
 
@@ -550,19 +581,47 @@ export class KeyringService {
     }
   }
 
-  resetWallet(): boolean {
-    this.ensurePasswordChangeIdle();
+  // Removes the whole wallet - verifier, accounts, address book and TON records - in one storage operation, so a
+  // storage failure leaves it as it was. Memory is cleared only after that operation has succeeded.
+  async resetWallet(): Promise<boolean> {
+    if (this.walletRewriteInProgress) return false;
+
+    // Nothing may write a verifier or an account between the records being read and removed below.
+    this.walletRewriteInProgress = true;
     this.unlockGeneration += 1;
     this.password = '';
+    keyring.lockAll();
+
+    let committed = false;
 
     try {
+      await this.tonKeyring.reset(async () => {
+        // Let writes the keyring library started earlier land first, so none recreates a record afterwards. One that
+        // failed does not matter here: everything goes.
+        await flushWalletWrites().catch(() => undefined);
+
+        const prefixes = WALLET_RECORD_PREFIXES.map((prefix) => `${EXTENSION_PREFIX}:${prefix}`);
+        const keys = Object.keys(await readWalletRecords()).filter(
+          (key) => key === PASSWORD_STORAGE_KEY || prefixes.some((prefix) => key.startsWith(prefix))
+        );
+
+        await removeWalletRecords(keys);
+        committed = true;
+      });
+
+      // The stored wallet is gone; now clear the keyring's memory. The removals it queues find nothing left.
       keyring.resetWallet(true);
+      await flushWalletWrites().catch(() => undefined);
 
       return true;
     } catch (e) {
       console.error(e);
 
-      return false;
+      // Once the records are removed the wallet is gone, whatever failed in memory afterwards. Report it; the wallet
+      // stays locked, and a restart loads the empty storage.
+      return committed;
+    } finally {
+      this.walletRewriteInProgress = false;
     }
   }
 
@@ -578,7 +637,7 @@ export class KeyringService {
   }
 
   keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
 
     try {
       const account = this.getAccount(address);

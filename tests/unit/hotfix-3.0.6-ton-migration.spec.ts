@@ -280,4 +280,69 @@ describe('TON storage encryption and durable upgrade', () => {
     expect(disk[0].address).toBe(sample.stored.address);
     expect((await keyring.decodeAccountMnemonic(sample.stored.address)) === sample.phrase).toBe(true);
   });
+
+  it('keeps upgrading the other accounts when one record cannot be processed', async () => {
+    const unknown = { ...disk[0], cipherSeed: 'not a record this wallet wrote' };
+
+    disk = [unknown, disk[1]];
+    const keyring = await loaded();
+
+    expect(keyring.hasRecoveryAccounts).toBe(false);
+    await expect(keyring.migrateOnUnlock(fixture.password)).resolves.toBeUndefined();
+    expect(disk.find(({ address }) => address === unknown.address)).toEqual(unknown);
+    expect(
+      isLegacyTonSeed(disk.find(({ address }) => address === fixture.accounts[1].stored.address)!.cipherSeed)
+    ).toBe(false);
+    expect(keyring.hasRecoveryAccounts).toBe(false);
+  });
+
+  it('upgrades a 3.0.5 record whose phrase fails phrase validation but derives its stored key', async () => {
+    // 3.0.5 stored phrases without validating them; a synthetic phrase that is neither valid BIP39 nor a valid TON
+    // phrase stands for such an account.
+    const keyring = await loaded();
+    const words = Array(24).fill('abandon');
+    const { publicKey } = await keyring.mnemonicToKeyPair(words);
+    const address = keyring.getUserFriendlyAddress(keyring.createContractV4(publicKey).address);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const CryptoJS = require('crypto-js');
+    const record = {
+      name: 'Unvalidated',
+      address,
+      cipherSeed: CryptoJS.AES.encrypt(words.join(' '), fixture.password).toString(),
+      publicKeyHex: Buffer.from(publicKey).toString('hex'),
+    };
+
+    expect(await keyring.validateMnemonic(words)).toBe(false);
+    disk = [record];
+    const restarted = await loaded();
+
+    await restarted.migrateOnUnlock(fixture.password);
+    expect(JSON.parse(disk[0].cipherSeed).version).toBe(2);
+    expect(restarted.hasRecoveryAccounts).toBe(false);
+    expect((await restarted.decodeAccountMnemonic(address)) === words.join(' ')).toBe(true);
+  });
+
+  it('reset drops the accounts only after the stored records are gone, also when loading had failed', async () => {
+    const keyring = await loaded();
+    const removeStored = jest.fn(async () => {
+      disk = [];
+    });
+
+    await expect(keyring.reset(jest.fn().mockRejectedValue(new Error('Cannot save wallet storage')))).rejects.toThrow(
+      'Cannot save'
+    );
+    expect(keyring.getAccounts()).toHaveLength(2);
+
+    await keyring.reset(removeStored);
+    expect(removeStored).toHaveBeenCalledTimes(1);
+    expect(keyring.getAccounts()).toHaveLength(0);
+    expect(disk).toHaveLength(0);
+
+    (tonStore.readAll as jest.Mock).mockRejectedValueOnce(new Error('Cannot read wallet storage'));
+    const unloaded = start();
+
+    await expect(unloaded.withStoreLock(async () => undefined)).rejects.toThrow('Cannot read');
+    await expect(unloaded.reset(removeStored)).resolves.toBeUndefined();
+    expect(unloaded.getAccounts()).toHaveLength(0);
+  });
 });

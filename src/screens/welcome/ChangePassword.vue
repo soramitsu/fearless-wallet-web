@@ -49,6 +49,7 @@ import {
 } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { useNotify } from '@/plugins/soramitsuUI';
+import { runWalletAction } from '@/util/walletAction';
 
 const router = useRouter();
 const route = useRoute();
@@ -139,21 +140,24 @@ const close = (isClose = true) => {
     });
 };
 
-const changePassword = async () => {
-  isWait.value = true;
+// On failure the password is unchanged: stay on the form and say so.
+const changePassword = () =>
+  runWalletAction(
+    () => extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value }),
+    {
+      setWaiting: (waiting) => (isWait.value = waiting),
+      onSuccess: () => {
+        const title = t(
+          `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
+        ).toString();
 
-  await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value });
+        notify({ title, message: '', type: 'success' });
 
-  const title = t(
-    `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
-  ).toString();
-
-  notify({ title, message: '', type: 'success' });
-
-  close(false);
-
-  isWait.value = false;
-};
+        close(false);
+      },
+      onFailure: () => notify({ title: t('welcome.passwordChangeFailed').toString(), message: '', type: 'error' }),
+    }
+  );
 </script>
 
 <style lang="scss" scoped>

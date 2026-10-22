@@ -43,26 +43,32 @@ import { useI18n } from 'vue-i18n-composable';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { resetWallet } from '@/extension/messaging';
 import { Components } from '@/router/routes';
+import { useNotify } from '@/plugins/soramitsuUI';
+import { runWalletAction } from '@/util/walletAction';
 
 const phrase = 'Reset wallet';
 const router = useRouter();
+const notify = useNotify();
 const { t } = useI18n();
 
 const password = ref('');
 const passInput = ref<ValidatedInput>(null);
+const isWait = ref(false);
 
-const isDisabled = computed(() => password.value !== phrase);
+const isDisabled = computed(() => password.value !== phrase || isWait.value);
 
 onMounted(() => passInput.value.input.focus());
 
 const changeOPassword = async (pass: string) => (password.value = pass);
 const close = () => router.back();
 
-const reset = () => {
-  resetWallet();
-
-  router.push({ name: Components.Welcome });
-};
+// Leave only once the wallet is gone; a failed reset changes nothing, so stay and say so.
+const reset = () =>
+  runWalletAction(resetWallet, {
+    setWaiting: (waiting) => (isWait.value = waiting),
+    onSuccess: () => router.push({ name: Components.Welcome }),
+    onFailure: () => notify({ title: t('welcome.resetFailed').toString(), message: '', type: 'error' }),
+  });
 </script>
 
 <style lang="scss" scoped>

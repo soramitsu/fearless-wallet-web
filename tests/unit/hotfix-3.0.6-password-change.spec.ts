@@ -5,7 +5,13 @@ import { accountKey } from '@subwallet/ui-keyring/defaults';
 import { keyring } from '@subwallet/ui-keyring';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { preparePasswordRecords } from '@extension-base/services/keyring-service/PasswordChange';
-import { PASSWORD_STORAGE_KEY, readWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import {
+  PASSWORD_STORAGE_KEY,
+  flushWalletWrites,
+  readWalletRecords,
+  removeWalletRecords,
+  writeWalletRecords,
+} from '@extension-base/stores/WalletStorage';
 import { tonStore } from '@extension-base/stores/TonStore';
 import fixture from '../fixtures/3.0.5/ton-accounts.json';
 import type { EventService } from '@extension-base/services';
@@ -25,6 +31,7 @@ jest.mock('@subwallet/ui-keyring', () => ({
   keyring: {
     lockAll: jest.fn(),
     unlockKeyring: jest.fn(),
+    resetWallet: jest.fn(),
     keyring: { setupMasterPassword: jest.fn(), addFromJson: jest.fn() },
   },
 }));
@@ -45,7 +52,9 @@ jest.mock('@extension-base/stores/TonStore', () => ({
 }));
 jest.mock('@extension-base/stores/WalletStorage', () => ({
   PASSWORD_STORAGE_KEY: 'fw:keyring',
+  flushWalletWrites: jest.fn(),
   readWalletRecords: jest.fn(),
+  removeWalletRecords: jest.fn(),
   writeWalletRecords: jest.fn(),
 }));
 jest.mock('@extension-base/services/keyring-service/TonKeyring', () => ({
@@ -54,6 +63,7 @@ jest.mock('@extension-base/services/keyring-service/TonKeyring', () => ({
     preparePasswordChange = jest.fn(async () => []);
     applyAccounts = jest.fn();
     migrateOnUnlock = jest.fn(async () => undefined);
+    reset = jest.fn((removeStoredWallet: () => Promise<void>) => removeStoredWallet());
   },
 }));
 
@@ -102,6 +112,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   (readWalletRecords as jest.Mock).mockResolvedValue(structuredClone(records));
   (writeWalletRecords as jest.Mock).mockResolvedValue(undefined);
+  (flushWalletWrites as jest.Mock).mockResolvedValue(undefined);
+  (removeWalletRecords as jest.Mock).mockResolvedValue(undefined);
   (keyring.unlockKeyring as jest.Mock).mockImplementation(() => undefined);
   (keyring.keyring.addFromJson as jest.Mock).mockImplementation((json: KeyringPair$Json) => ({
     address: json.address,
@@ -141,6 +153,9 @@ describe('password rotation prepares and verifies records without changing the a
 });
 
 describe('password changes commit as one batch', () => {
+  // Real scrypt and TON key derivation for several accounts; well over the 5 s default on a loaded machine.
+  jest.setTimeout(30000);
+
   it('serializes a pending metadata write before taking the password-change snapshot', async () => {
     const wallet = service();
     const durable = structuredClone(records);
@@ -347,7 +362,20 @@ describe('unlock session and migration', () => {
     expect(wallet.tonKeyring.migrateOnUnlock).not.toHaveBeenCalled();
   });
 
-  it('does not report success or cache the password before migration commits', async () => {
+  it('does not cache the password before migration settles', async () => {
+    const wallet = service();
+    const pending = deferred();
+
+    (wallet.tonKeyring.migrateOnUnlock as jest.Mock).mockImplementation(() => pending.promise);
+    const unlock = wallet.unlockKeyring({ password: OLD });
+
+    expect(wallet.getPassword()).toBe('');
+    pending.resolve();
+    await expect(unlock).resolves.toBe(true);
+    expect(wallet.getPassword()).toBe(OLD);
+  });
+
+  it('still unlocks when the TON upgrade fails; the records stay as stored for the next unlock', async () => {
     const wallet = service();
     const pending = deferred();
 
@@ -356,8 +384,9 @@ describe('unlock session and migration', () => {
 
     expect(wallet.getPassword()).toBe('');
     pending.reject();
-    await expect(unlock).resolves.toBe(false);
-    expect(wallet.getPassword()).toBe('');
+    await expect(unlock).resolves.toBe(true);
+    expect(wallet.getPassword()).toBe(OLD);
+    expect(writeWalletRecords).not.toHaveBeenCalled();
   });
 
   it('a lock during migration prevents its completion from unlocking the wallet', async () => {
@@ -372,5 +401,188 @@ describe('unlock session and migration', () => {
     await expect(unlock).resolves.toBe(false);
     expect(wallet.getPassword()).toBe('');
     expect(keyring.unlockKeyring).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('3.0.6 review: queued writes, committed changes and reset', () => {
+  jest.setTimeout(30000);
+
+  it('waits for writes the keyring library queued before reading the records it re-encrypts', async () => {
+    const wallet = service();
+    const pending = deferred();
+
+    (flushWalletWrites as jest.Mock).mockImplementation(() => pending.promise);
+    const change = wallet.changeMasterPassword({ oldPassword: OLD, newPassword: NEXT });
+
+    for (let step = 0; step < 20; step += 1) await Promise.resolve();
+    expect(readWalletRecords).not.toHaveBeenCalled();
+    pending.resolve();
+    await expect(change).resolves.toBe(true);
+    expect((flushWalletWrites as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (readWalletRecords as jest.Mock).mock.invocationCallOrder[0]
+    );
+  });
+
+  it('stops before writing anything when a queued earlier write failed', async () => {
+    const wallet = service();
+
+    (flushWalletWrites as jest.Mock).mockRejectedValue(new Error('An earlier wallet write failed'));
+    await expect(wallet.changeMasterPassword({ oldPassword: OLD, newPassword: NEXT })).resolves.toBe(false);
+    expect(readWalletRecords).not.toHaveBeenCalled();
+    expect(writeWalletRecords).not.toHaveBeenCalled();
+    expect(keyring.keyring.setupMasterPassword).not.toHaveBeenCalled();
+  });
+
+  it('reports a stored change, locked, when refreshing memory fails; after a restart only the new password opens it', async () => {
+    const durable = structuredClone(records);
+
+    (readWalletRecords as jest.Mock).mockImplementation(async () => structuredClone(durable));
+    (writeWalletRecords as jest.Mock).mockImplementation(async (batch) => {
+      Object.assign(durable, structuredClone(batch));
+    });
+    (keyring.keyring.addFromJson as jest.Mock).mockImplementation(() => {
+      throw new Error('Synthetic in-memory refresh failure');
+    });
+    const wallet = service();
+
+    await expect(wallet.changeMasterPassword({ oldPassword: OLD, newPassword: NEXT })).resolves.toBe(true);
+    expect(writeWalletRecords).toHaveBeenCalledTimes(1);
+    expect(wallet.getPassword()).toBe('');
+    expect(keyring.unlockKeyring).not.toHaveBeenCalled();
+    expect(keyring.keyring.setupMasterPassword).toHaveBeenCalledWith(
+      (durable[PASSWORD_STORAGE_KEY] as KeyringPasswordJson).passwordHash
+    );
+
+    const restarted = new Keyring({ type: 'sr25519' });
+
+    restarted.setupMasterPassword((durable[PASSWORD_STORAGE_KEY] as KeyringPasswordJson).passwordHash);
+    expect(() => restarted.unlockKeyring(OLD)).toThrow();
+    expect(() => restarted.unlockKeyring(NEXT)).not.toThrow();
+
+    for (const storageKey of [accountStorageKey, evmStorageKey]) {
+      const restored = restarted.createFromJson(durable[storageKey] as KeyringPair$Json);
+
+      expect(() => restored.decodePkcs8(NEXT)).not.toThrow();
+      restored.lock();
+    }
+
+    restarted.lockALl();
+  });
+
+  it('sets a first password without opening or rewriting TON records left by an earlier reset', async () => {
+    const leftovers: Record<string, unknown> = {
+      'fw:ton:leftover': { name: 'Leftover', address: 'leftover', cipherSeed: 'x', publicKeyHex: '0'.repeat(64) },
+    };
+    const wallet = service();
+
+    (readWalletRecords as jest.Mock).mockResolvedValue(leftovers);
+    await expect(wallet.changeMasterPassword({ newPassword: NEXT })).resolves.toBe(true);
+    expect(wallet.tonKeyring.preparePasswordChange).not.toHaveBeenCalled();
+
+    const [batch] = (writeWalletRecords as jest.Mock).mock.calls[0] as [Record<string, unknown>];
+
+    expect(Object.keys(batch)).toEqual([PASSWORD_STORAGE_KEY]);
+  });
+
+  it('resets verifier, accounts, address book and TON records in one removal, then clears memory', async () => {
+    const stored = {
+      ...structuredClone(records),
+      'fw:address:0x01': { address: 'contact' },
+      'fw:contract:0x02': { address: 'contract' },
+      'fw:ton:one': { name: 'TON', address: 'one', cipherSeed: 'x', publicKeyHex: '0'.repeat(64) },
+      'fw:authUrls': { kept: true },
+      'fw:CurrentAccountInfo': { kept: true },
+    };
+    const wallet = service();
+
+    (readWalletRecords as jest.Mock).mockResolvedValue(stored);
+    await expect(wallet.resetWallet()).resolves.toBe(true);
+    expect(removeWalletRecords).toHaveBeenCalledTimes(1);
+    expect([...(removeWalletRecords as jest.Mock).mock.calls[0][0]].sort()).toEqual(
+      [
+        PASSWORD_STORAGE_KEY,
+        accountStorageKey,
+        evmStorageKey,
+        'fw:address:0x01',
+        'fw:contract:0x02',
+        'fw:ton:one',
+      ].sort()
+    );
+    expect(wallet.tonKeyring.reset).toHaveBeenCalledTimes(1);
+    expect(keyring.resetWallet).toHaveBeenCalledWith(true);
+    expect((removeWalletRecords as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (keyring.resetWallet as jest.Mock).mock.invocationCallOrder[0]
+    );
+    expect(wallet.getPassword()).toBe('');
+  });
+
+  it('changes nothing when the reset cannot remove the stored records', async () => {
+    const wallet = service();
+
+    (removeWalletRecords as jest.Mock).mockRejectedValue(new Error('Cannot save wallet storage'));
+    await expect(wallet.resetWallet()).resolves.toBe(false);
+    expect(keyring.resetWallet).not.toHaveBeenCalled();
+  });
+
+  it('reports a reset whose records are removed as done, locked, when clearing memory fails', async () => {
+    const wallet = service();
+
+    (keyring.resetWallet as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Synthetic memory cleanup failure');
+    });
+    await expect(wallet.resetWallet()).resolves.toBe(true);
+    expect(removeWalletRecords).toHaveBeenCalledTimes(1);
+    expect(wallet.getPassword()).toBe('');
+    expect(keyring.lockAll).toHaveBeenCalled();
+
+    // After a restart the storage is empty and a first password can be set again.
+    (readWalletRecords as jest.Mock).mockResolvedValue({});
+    await expect(wallet.changeMasterPassword({ newPassword: NEXT })).resolves.toBe(true);
+  });
+});
+
+describe('3.0.6 review: reset, unlock and password change exclude one another', () => {
+  jest.setTimeout(30000);
+
+  it('refuses unlock, a password change, another reset and account changes while a reset runs, then releases', async () => {
+    const wallet = service();
+    const removal = deferred();
+
+    (removeWalletRecords as jest.Mock).mockImplementation(() => removal.promise);
+    const reset = wallet.resetWallet();
+
+    while (!(removeWalletRecords as jest.Mock).mock.calls.length) await Promise.resolve();
+    await expect(wallet.unlockKeyring({ password: OLD })).resolves.toBe(false);
+    await expect(wallet.changeMasterPassword({ newPassword: NEXT })).resolves.toBe(false);
+    await expect(wallet.resetWallet()).resolves.toBe(false);
+    expect(() => wallet.forgetAccount('any account')).toThrow(/being changed/);
+    expect(writeWalletRecords).not.toHaveBeenCalled();
+    removal.resolve();
+    await expect(reset).resolves.toBe(true);
+
+    (readWalletRecords as jest.Mock).mockResolvedValue({});
+    await expect(wallet.changeMasterPassword({ newPassword: NEXT })).resolves.toBe(true);
+  });
+
+  it('refuses a reset while a password change is writing its batch', async () => {
+    const wallet = service();
+    const batch = deferred();
+
+    (writeWalletRecords as jest.Mock).mockImplementation(() => batch.promise);
+    const change = wallet.changeMasterPassword({ oldPassword: OLD, newPassword: NEXT });
+
+    while (!(writeWalletRecords as jest.Mock).mock.calls.length) await Promise.resolve();
+    await expect(wallet.resetWallet()).resolves.toBe(false);
+    expect(removeWalletRecords).not.toHaveBeenCalled();
+    batch.resolve();
+    await expect(change).resolves.toBe(true);
+  });
+
+  it('releases the gate after a failed reset', async () => {
+    const wallet = service();
+
+    (removeWalletRecords as jest.Mock).mockRejectedValueOnce(new Error('Cannot save wallet storage'));
+    await expect(wallet.resetWallet()).resolves.toBe(false);
+    await expect(wallet.resetWallet()).resolves.toBe(true);
   });
 });

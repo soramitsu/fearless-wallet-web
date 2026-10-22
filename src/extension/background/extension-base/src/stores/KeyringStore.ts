@@ -1,4 +1,5 @@
 import { EXTENSION_PREFIX } from '../defaults';
+import { removeWalletRecords, scheduleWalletWrite, writeWalletRecords } from './WalletStorage';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
 
@@ -23,19 +24,12 @@ export default class KeyringStore implements PasswordStore {
     });
   }
 
+  // Queued so a password change or reset can wait for the verifier write (see scheduleWalletWrite).
   public remove(update?: () => void): void {
-    chrome.storage.local.remove(FEARLESS_KEYRING, (): void => {
-      lastError('remove');
-
-      update?.();
-    });
+    scheduleWalletWrite(() => removeWalletRecords([FEARLESS_KEYRING]), update);
   }
 
   public set(value: KeyringPasswordJson, update?: () => void): void {
-    chrome.storage.local.set({ [FEARLESS_KEYRING]: value }, (): void => {
-      lastError('set');
-
-      update?.();
-    });
+    scheduleWalletWrite(() => writeWalletRecords({ [FEARLESS_KEYRING]: value }), update);
   }
 }

@@ -14,6 +14,8 @@
     "reenterNewPassword": "Reenter new password",
     "masterPasswordSetUp": "Successful master password set up",
     "successfulChangePassword": "Password changed successfully",
+    "passwordChangeFailed": "The password was not changed. Please try again.",
+    "resetFailed": "The wallet was not reset. Nothing was deleted. Please try again.",
     "unlock": "Unlock",
     "forgotYourPassword": "Forgot your password?",
     "needHelp": "Do you need help? Сontact",

@@ -108,14 +108,36 @@ export class TonKeyringService {
     return next;
   }
 
+  // Wallet reset. `removeStoredWallet` deletes the stored records, TON ones included, in one operation; the accounts
+  // leave memory only once it has succeeded. Unlike withStoreLock this also runs when the start-up load failed, after
+  // that load has settled, so a reset is always possible and a late load cannot bring the accounts back.
+  reset(removeStoredWallet: () => Promise<void>): Promise<void> {
+    const next = this.storeOperation
+      .then(() => this.ready.catch(() => undefined))
+      .then(async () => {
+        await removeStoredWallet();
+
+        this.records.clear();
+        this.accountSubject.next({});
+      });
+
+    this.storeOperation = next.catch(() => undefined);
+
+    return next;
+  }
+
   applyAccounts(accounts: TonStoreAccount[]): void {
     accounts.forEach((account) => this.setAccounts(account));
   }
 
   get hasRecoveryAccounts(): boolean {
-    return [...this.records.values()].some(
-      ({ cipherSeed }) => parseStoredSeed(cipherSeed)?.version === TON_RECOVERY_VERSION
-    );
+    return [...this.records.values()].some(({ cipherSeed }) => {
+      try {
+        return parseStoredSeed(cipherSeed)?.version === TON_RECOVERY_VERSION;
+      } catch {
+        return false; // an unknown format is not a recovery record, and must not break unlocking
+      }
+    });
   }
 
   setAccounts(record: TonStoreAccount) {
@@ -344,7 +366,9 @@ export class TonKeyringService {
   private async verifyRecord(record: TonStoreAccount, password: string): Promise<string> {
     const mnemonic = this.decodeMnemonic(record.cipherSeed, password);
 
-    if (!(await this.validateMnemonic(mnemonic.split(' ')))) throw new Error('Invalid TON account');
+    // The check is the public key and address stored when the account was added. Phrase validation is not repeated:
+    // 3.0.5 stored phrases without it, and every account it stored must keep opening.
+    if (!mnemonic) throw new Error('Invalid TON account');
 
     const keyPair = await this.mnemonicToKeyPair(mnemonic.split(' '));
 
@@ -384,36 +408,50 @@ export class TonKeyringService {
     return prepared;
   }
 
+  // The record to store in place of `record` at unlock, or null when it stays as it is. Throws when it cannot be
+  // processed; the caller then leaves it unchanged.
+  private async migrateRecord(record: TonStoreAccount, password: string): Promise<TonStoreAccount | null> {
+    if (parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION) {
+      this.readRecoveryRecord(record, password);
+
+      return null;
+    }
+
+    let mnemonic: string;
+
+    try {
+      mnemonic = await this.verifyRecord(record, password);
+    } catch (error) {
+      if (!isLegacyTonSeed(record.cipherSeed)) throw error;
+
+      // A 3.0.5 record that the accepted wallet password does not open was left under an earlier password. Keep it,
+      // inside strong encryption, for recovery with that password.
+      return this.protectRecoveryRecord(record, password);
+    }
+
+    if (!isLegacyTonSeed(record.cipherSeed)) return null;
+
+    const cipherSeed = this.encodeMnemonic(mnemonic.split(' '), password);
+    const replacement = { ...record, cipherSeed };
+
+    if ((await this.verifyRecord(replacement, password)) !== mnemonic) throw new Error('TON seed verification failed');
+
+    return replacement;
+  }
+
   async migrateOnUnlock(password: string): Promise<void> {
     return this.withStoreLock(async () => {
       const replacements: TonStoreAccount[] = [];
 
       for (const record of this.records.values()) {
-        if (parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION) {
-          this.readRecoveryRecord(record, password);
-          continue;
-        }
-
-        let mnemonic: string;
-
         try {
-          mnemonic = await this.verifyRecord(record, password);
-        } catch (error) {
-          if (!isLegacyTonSeed(record.cipherSeed)) throw error;
+          const replacement = await this.migrateRecord(record, password);
 
-          replacements.push(this.protectRecoveryRecord(record, password));
-          continue;
+          if (replacement) replacements.push(replacement);
+        } catch {
+          // Left exactly as stored, so it opens as before; the others still migrate, and this one is retried at the
+          // next unlock.
         }
-
-        if (!isLegacyTonSeed(record.cipherSeed)) continue;
-
-        const cipherSeed = this.encodeMnemonic(mnemonic.split(' '), password);
-        const replacement = { ...record, cipherSeed };
-
-        if ((await this.verifyRecord(replacement, password)) !== mnemonic)
-          throw new Error('TON seed verification failed');
-
-        replacements.push(replacement);
       }
 
       // Prepare and verify all accounts before replacing them in one durable batch.

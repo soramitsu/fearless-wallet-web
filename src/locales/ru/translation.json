@@ -12,6 +12,8 @@
     "reenterNewPassword": "Повторите новый пароль",
     "masterPasswordSetUp": "Мастер пароль успешно установлен",
     "successfulChangePassword": "Пароль успешно изменен",
+    "passwordChangeFailed": "Пароль не изменён. Попробуйте ещё раз.",
+    "resetFailed": "Кошелёк не сброшен. Ничего не удалено. Попробуйте ещё раз.",
     "unlock": "Разблокировать",
     "forgotYourPassword": "Забыли пароль?",
     "needHelp": "Нужна помощь? Напишите в ",

@@ -113,3 +113,80 @@ export async function writeWalletRecords(records: Record<string, unknown>): Prom
     }
   }
 }
+
+// Removes records as one storage operation: all of them or, on failure, none. On the web the verifier is replaced
+// by a tombstone instead, so the legacy localStorage copy cannot come back (see readWalletRecords).
+export async function removeWalletRecords(keys: string[]): Promise<void> {
+  if (!keys.length) return;
+
+  if (IS_EXTENSION) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.remove(keys, () => {
+        if (chrome.runtime.lastError) reject(new Error('Cannot save wallet storage'));
+        else resolve();
+      });
+    });
+  }
+
+  const db = await openDatabase();
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(DATABASE, 'readwrite');
+    const objectStore = transaction.objectStore(DATABASE);
+
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+
+    transaction.onabort = transaction.onerror = () => {
+      db.close();
+      reject(new Error('Cannot save wallet storage'));
+    };
+
+    try {
+      keys.forEach((key) => (key === PASSWORD_STORAGE_KEY ? objectStore.put(null, key) : objectStore.delete(key)));
+    } catch {
+      transaction.abort();
+    }
+  });
+
+  if (keys.includes(PASSWORD_STORAGE_KEY)) {
+    try {
+      localStorage.removeItem(PASSWORD_STORAGE_KEY);
+    } catch {
+      // The committed tombstone is authoritative.
+    }
+  }
+}
+
+// The keyring library writes account records and the password verifier through callbacks it never waits for.
+// The stores queue those writes here, so a password change or a reset can first wait for every one of them, and
+// stop if one failed, before it reads what it is about to replace.
+let pendingWrites: Promise<void> = Promise.resolve();
+let failedWrites = 0;
+
+export function scheduleWalletWrite(write: () => Promise<void>, update?: () => void): void {
+  const result = pendingWrites.then(write);
+
+  pendingWrites = result.catch(() => {
+    failedWrites += 1;
+  });
+
+  // As before, the library's callback runs whether or not the write succeeded.
+  result.then(
+    () => update?.(),
+    () => update?.()
+  );
+}
+
+// Resolves once every write scheduled so far has finished; rejects if any of them failed since the last flush.
+export async function flushWalletWrites(): Promise<void> {
+  await pendingWrites;
+
+  if (failedWrites) {
+    failedWrites = 0;
+
+    throw new Error('An earlier wallet write failed');
+  }
+}

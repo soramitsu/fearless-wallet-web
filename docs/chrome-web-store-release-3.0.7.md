@@ -84,8 +84,10 @@ comparison; any rollback package also needs a higher Chrome version.
 
 The production Firefox build retains 41 reviewed lint warnings (40
 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`), with no errors or notices.
-The six warning-bearing background vendor files match the prior baseline
-byte-for-byte. The three changed application chunks retain the same 19 flagged
+Four of the six warning-bearing background vendor files match the prior
+baseline byte-for-byte; the bcryptjs and Cardano serialization chunks differ
+only in sibling chunk-name hashes and one minifier import alias, at the same
+size. The three changed application chunks retain the same 19 flagged
 syntax sites after minifier identifier renaming: dependency global-object
 fallbacks, legacy bind/generator detection, intrinsic `eval` references, and
 Vue's compiled static-content insertion. No new evaluation sites were added.

@@ -121,8 +121,9 @@ describe('Universal Wallet registry network mapping', () => {
     expect(byName['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
     expect(byName['Bitcoin Testnet'].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
     expect(byName['Bitcoin Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
-    // No icon is published for SOL, so the registry keeps its symbol rather than guessing a URL.
-    expect(byName.Solana.assets[0].icon).toBe('sol');
+    // shared-features-utils publishes no SOL icon, so the extension bundles one.
+    expect(byName.Solana.icon).toBe('/icons/tokens/coloured/SOL.svg');
+    expect(byName.Solana.assets[0].icon).toBe('/icons/tokens/coloured/SOL.svg');
 
     const taira = byName['Taira Testnet'];
     const bitcoin = byName.Bitcoin;
@@ -138,6 +139,16 @@ describe('Universal Wallet registry network mapping', () => {
     expect(networkMap['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
     expect(networkMap.Bitcoin.icon).toBe(customIcon);
     expect(networkMap.Bitcoin.assets[0].icon).toBe(customIcon);
+
+    const solana = byName.Solana;
+    const solanaMap: Record<string, NetworkJson> = {
+      Solana: { ...solana, icon: 'sol', assets: [{ ...solana.assets[0], icon: 'sol' }] },
+    };
+
+    mergeUniversalWalletRegistryNetworks(solanaMap, {});
+
+    expect(solanaMap.Solana.icon).toBe('/icons/tokens/coloured/SOL.svg');
+    expect(solanaMap.Solana.assets[0].icon).toBe('/icons/tokens/coloured/SOL.svg');
   });
 
   it('fails closed when registry validation fails', () => {

@@ -368,6 +368,8 @@ export default class SolanaBalanceService {
     );
 
     if (existing) {
+      // Groups restored from the balance cache may carry an icon from an earlier release.
+      existing.icon = assetIcon;
       if (priceId) existing.priceId = priceId;
       return existing;
     }

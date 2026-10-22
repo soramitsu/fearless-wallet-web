@@ -1,13 +1,13 @@
 {
   "name": "fearless-wallet",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "private": true,
   "author": {
     "email": "fearless.web@soramitsu.co.jp",
     "name": "Soramitsu",
     "url": "https://soramitsu.co.jp"
   },
-  "description": "Non-custodial multichain wallet for Polkadot, Ethereum, TON, Bitcoin, Solana, and SORA ecosystems.",
+  "description": "Manage crypto accounts, view balances, and connect to compatible decentralized apps.",
   "browserslist": "last 2 Chrome versions, last 2 Firefox versions",
   "scripts": {
     "audit:dependencies": "yarn test:development-dependency-guards && yarn npm audit --all --recursive --severity low --no-deprecations",

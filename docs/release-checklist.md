@@ -3,7 +3,8 @@
 Use this checklist for every browser-extension release PR from `develop` to
 `master`.
 
-For Chrome `3.0.7`, also use the recovery-mode release notes and approved privacy notice in
+For the Chrome `3.0.8` metadata correction, use `docs/chrome-web-store-release-3.0.8.md`.
+For the underlying `3.0.7` recovery changes, also use the recovery-mode release notes and approved privacy notice in
 `docs/chrome-web-store-release-3.0.7.md`. Earlier configuration, permission and credentialed artifact guidance remains in `docs/chrome-web-store-release-3.0.6.md`.
 
 ## Before The Release PR

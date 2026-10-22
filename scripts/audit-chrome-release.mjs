@@ -14,7 +14,7 @@ export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
 export const MINIMUM_SUPPORTED_CHROME_VERSION = '116';
 const EXPECTED_EXTENSION_AUTHOR = 'Soramitsu';
 const EXPECTED_EXTENSION_DESCRIPTION =
-  'Non-custodial multichain wallet for Polkadot, Ethereum, TON, Bitcoin, Solana, and SORA ecosystems.';
+  'Manage crypto accounts, view balances, and connect to compatible decentralized apps.';
 const EXPECTED_EXTENSION_HOMEPAGE = 'https://fearlesswallet.io/';
 const EXPECTED_EXTENSION_NAME = 'Fearless Wallet';
 const EXPECTED_EXTENSION_SHORT_NAME = 'FW';

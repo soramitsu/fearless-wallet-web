@@ -38,9 +38,9 @@ listed there are not release sources.
 - Run `bash ./scripts/test-todo-debt-audit.sh && bash ./scripts/audit-todo-debt.sh`
   and confirm no new TODO/FIXME/STOPSHIP debt was introduced.
 - Run `yarn audit:dependencies`, `yarn audit:dependencies:production`, and
-  `yarn test:crypto-dependency-shims`; confirm there are no dependency audit
-  findings outside the two documented `image-size` development-tool
-  exceptions in `docs/dependency-audit-exceptions.md`, and confirm the unused
+  `yarn test:crypto-dependency-shims`; confirm both audits have no findings or
+  advisory ignores. The full audit also checks the installed development-tool
+  guards documented in `docs/dependency-audit-exceptions.md`. Confirm the unused
   generic/BIP-322 crypto paths still fail closed.
 - Confirm public extension builds work without private manifest credentials.
 - Run `yarn test:extension-package`, `yarn test:extension-build-environment`,

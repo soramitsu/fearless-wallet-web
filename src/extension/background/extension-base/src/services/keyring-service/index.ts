@@ -13,11 +13,16 @@ import CurrentAccountStore, { type CurrentAccountState } from '@extension-base/s
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
+import { accountKey } from '@subwallet/ui-keyring/defaults';
+import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import AccountsStore from '@extension-base/stores/Accounts';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api } from '@sora-substrate/sdk';
+import { readWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import { tonStore } from '@extension-base/stores/TonStore';
 import { TonKeyringService } from './TonKeyring';
+import { preparePasswordRecords } from './PasswordChange';
 import type { EventService } from '@extension-base/services';
 import type {
   DecryptForCosignerData,
@@ -33,7 +38,7 @@ import type {
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
+import type { KeyringAddressType, KeyringItemType, KeyringStore as UIKeyringStore } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
@@ -47,6 +52,8 @@ export class KeyringService {
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
 
   private password = '';
+  private unlockGeneration = 0;
+  private passwordChangeInProgress = false;
 
   constructor(eventService: EventService) {
     eventService.waitCryptoReady
@@ -81,6 +88,10 @@ export class KeyringService {
 
   getPassword(): string {
     return this.password;
+  }
+
+  private ensurePasswordChangeIdle(): void {
+    if (this.passwordChangeInProgress) throw new Error('A wallet password change is in progress');
   }
 
   setCurrentAccount(currentAccountData: CurrentAccountState) {
@@ -140,6 +151,8 @@ export class KeyringService {
   }
 
   async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType) {
+    this.ensurePasswordChangeIdle();
+
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, meta.name!, this.password);
 
@@ -207,8 +220,10 @@ export class KeyringService {
   }
 
   forgetAccount(address: string) {
-    if (this.tonKeyring.accountSubject.value[address]) this.tonKeyring.forgetAccount(address);
-    else keyring.forgetAccount(address);
+    this.ensurePasswordChangeIdle();
+    if (this.tonKeyring.accountSubject.value[address]) return this.tonKeyring.forgetAccount(address);
+
+    return keyring.forgetAccount(address);
   }
 
   forgetAddress(address: string) {
@@ -216,6 +231,7 @@ export class KeyringService {
   }
 
   restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
+    this.ensurePasswordChangeIdle();
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
@@ -285,10 +301,27 @@ export class KeyringService {
     return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
   }
 
-  saveAccountMeta(address: string, meta: FWKeyringMeta) {
+  async saveAccountMeta(address: string, meta: FWKeyringMeta): Promise<void> {
+    this.ensurePasswordChangeIdle();
     const pair = this.getPair(address);
 
-    if (pair) return keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
+    if (pair) {
+      return this.tonKeyring.withStoreLock(async () => {
+        // Serialize read-modify-write metadata updates with password rotation so
+        // an older JSON record cannot overwrite freshly encrypted account data.
+        const storageKey = `${EXTENSION_PREFIX}:${accountKey(pair.address)}`;
+        const records = await readWalletRecords();
+        const previous = records[storageKey] as KeyringPair$Json | undefined;
+
+        if (!previous) throw new Error('Stored account not found');
+
+        const updated = { ...previous, meta: { ...previous.meta, ...meta } };
+
+        await writeWalletRecords({ [storageKey]: updated });
+        pair.setMeta(updated.meta);
+        accountsObservable.add({ set: () => undefined } as unknown as UIKeyringStore, pair.address, updated, pair.type);
+      });
+    }
 
     const account = this.getAddress(address);
 
@@ -332,17 +365,57 @@ export class KeyringService {
     return !!account.meta.isMobile;
   }
 
-  changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
+  async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
+    if (this.passwordChangeInProgress) return false;
+
+    this.passwordChangeInProgress = true;
+    const generation = ++this.unlockGeneration;
+
+    this.password = '';
+    keyring.lockAll();
+
     try {
-      this.password = newPassword;
+      return await this.tonKeyring.withStoreLock(async () => {
+        const records = await readWalletRecords();
+        const prepared = preparePasswordRecords(records, oldPassword || '', newPassword);
+        const tonAccounts = await this.tonKeyring.preparePasswordChange(oldPassword || '', newPassword);
 
-      keyring.changeMasterPassword(newPassword, oldPassword);
+        for (const account of tonAccounts) {
+          prepared.replacements[`${tonStore.getPrefix()}${account.address}`] = account;
+        }
 
-      return true;
-    } catch (e) {
-      console.error(e);
+        await writeWalletRecords(prepared.replacements);
+
+        // Publish only committed records. A memory-only store prevents the account
+        // observable from issuing separate writes after the atomic storage batch.
+        keyring.keyring.setupMasterPassword(prepared.password.passwordHash);
+        const memoryOnlyStore = { set: () => undefined } as unknown as UIKeyringStore;
+
+        for (const json of prepared.accounts) {
+          const pair = keyring.keyring.addFromJson(json, true);
+
+          accountsObservable.add(memoryOnlyStore, pair.address, json, pair.type);
+        }
+
+        this.tonKeyring.applyAccounts(tonAccounts);
+        keyring.lockAll();
+
+        if (generation === this.unlockGeneration) {
+          keyring.unlockKeyring(newPassword);
+          this.password = newPassword;
+        }
+
+        return true;
+      });
+    } catch {
+      if (generation === this.unlockGeneration) {
+        keyring.lockAll();
+        this.password = '';
+      }
 
       return false;
+    } finally {
+      this.passwordChangeInProgress = false;
     }
   }
 
@@ -366,10 +439,9 @@ export class KeyringService {
     return mnemonicValidate(seed);
   }
 
-  exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): ResponseExportSeed {
+  async exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): Promise<ResponseExportSeed> {
     if (walletEcosystem === WalletEcosystem.Ton) {
-      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
-      const seed = this.tonKeyring.decodeMnemonic(cipherSeed);
+      const seed = await this.tonKeyring.decodeAccountMnemonic(address, password ?? this.password);
 
       return { seed };
     }
@@ -400,14 +472,14 @@ export class KeyringService {
     };
   }
 
-  public accountExportRawSeed(request: RequestExportSeed): ResponseExportSeed {
+  public async accountExportRawSeed(request: RequestExportSeed): Promise<ResponseExportSeed> {
     if (request.isEVM) {
       const { privateKey } = this.accountExportPrivateKey(request);
 
       return { seed: privateKey };
     }
 
-    const { seed } = this.exportMnemonic(request);
+    const { seed } = await this.exportMnemonic(request);
 
     if (!seed) return { seed: '' };
 
@@ -420,8 +492,8 @@ export class KeyringService {
     return { seed: rawSeed };
   }
 
-  public accountExportSecretKey(request: RequestExportSeed) {
-    const { seed } = this.exportMnemonic(request);
+  public async accountExportSecretKey(request: RequestExportSeed) {
+    const { seed } = await this.exportMnemonic(request);
 
     if (!seed) return null;
 
@@ -433,21 +505,38 @@ export class KeyringService {
     return secretKey;
   }
 
-  unlockKeyring({ password }: RequestUnlockExtension): boolean {
+  async unlockKeyring({ password }: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required'> {
+    if (this.passwordChangeInProgress) return false;
+
+    const generation = ++this.unlockGeneration;
+
+    this.password = '';
+    keyring.lockAll();
+
     try {
-      this.password = password;
+      keyring.unlockKeyring(password);
+      keyring.lockAll();
+      await this.tonKeyring.migrateOnUnlock(password);
+
+      if (generation !== this.unlockGeneration) return false;
 
       keyring.unlockKeyring(password);
+      this.password = password;
 
-      return true;
-    } catch (e) {
-      console.info(e);
+      return this.tonKeyring.hasRecoveryAccounts ? 'ton-recovery-required' : true;
+    } catch {
+      if (generation === this.unlockGeneration) {
+        keyring.lockAll();
+        this.password = '';
+      }
 
       return false;
     }
   }
 
   lockKeyring(): boolean {
+    this.unlockGeneration += 1;
+
     try {
       keyring.lockAll();
 
@@ -462,6 +551,10 @@ export class KeyringService {
   }
 
   resetWallet(): boolean {
+    this.ensurePasswordChangeIdle();
+    this.unlockGeneration += 1;
+    this.password = '';
+
     try {
       keyring.resetWallet(true);
 
@@ -485,6 +578,8 @@ export class KeyringService {
   }
 
   keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): boolean {
+    this.ensurePasswordChangeIdle();
+
     try {
       const account = this.getAccount(address);
       const meta = account?.meta as FWKeyringMeta;
@@ -502,26 +597,26 @@ export class KeyringService {
     }
   }
 
-  decryptForCosigner({ address, data, encryptorPublicKey }: DecryptForCosignerData) {
+  async decryptForCosigner({ address, data, encryptorPublicKey }: DecryptForCosignerData) {
     const pair = this.getPair(address);
 
     if (!pair) throw new Error('Key pair not exist');
 
-    const secretKey = this.accountExportSecretKey({ address, password: this.password });
+    const secretKey = await this.accountExportSecretKey({ address, password: this.password });
 
     if (secretKey === null) throw new Error('Seckret key is undefined');
 
     return api.crypto.decryptForCosigner(address, encryptorPublicKey, data, secretKey);
   }
 
-  encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData) {
+  async encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData) {
     if (this.password === '') throw new Error('First unlock the extension');
 
     const pair = this.getPair(address);
 
     if (!pair) throw new Error('Key pair not exist');
 
-    const secretKey = this.accountExportSecretKey({ address, password: this.password });
+    const secretKey = await this.accountExportSecretKey({ address, password: this.password });
 
     if (secretKey === null) throw new Error('Seckret key is undefined');
 

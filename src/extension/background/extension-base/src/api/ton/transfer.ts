@@ -24,8 +24,8 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
 
   const api = state.getTonApiMap[networkKey.toLowerCase()];
 
-  const { walletContract, cipherSeed } = state.keyringService.tonKeyring.accountSubject.value[from];
-  const seed = state.keyringService.tonKeyring.decodeMnemonic(cipherSeed);
+  const { walletContract } = state.keyringService.tonKeyring.accountSubject.value[from];
+  const seed = await state.keyringService.tonKeyring.decodeAccountMnemonic(from);
 
   const { secretKey } = await state.keyringService.tonKeyring.mnemonicToKeyPair(seed.split(' '));
   const destinationAddress = Address.parse(to);

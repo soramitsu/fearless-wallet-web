@@ -4,6 +4,7 @@
       <div class="header" data-testid="headerExport">{{ $t('accounts.exportAccount') }}</div>
 
       <InformationBlock class="information" :text="warningText" />
+      <p v-if="accountsStore.selectedWallet.isTon" class="information">{{ $t('accounts.tonEarlierPassword') }}</p>
     </div>
 
     <div>
@@ -36,7 +37,7 @@
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router/composables';
 import BaseApi from '@/util/BaseApi';
-import { validatePassword } from '@/extension/messaging';
+import { exportMnemonic, getExtensionPassword, validatePassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
 const emit = defineEmits(['setPassword']);
@@ -70,6 +71,25 @@ const changePassword = (value: string) => {
 };
 
 const checkPassword = async () => {
+  if (accountsStore.selectedWallet.isTon) {
+    try {
+      const { address, walletEcosystem } = accountsStore.selectedWallet;
+      const { seed } = await exportMnemonic(address, password.value, walletEcosystem);
+      const currentPassword = await getExtensionPassword();
+
+      if (!seed || !currentPassword) throw new Error('Unable to export TON account');
+
+      isWrongPassword.value = false;
+      // Successful earlier-password recovery has re-encrypted this account with
+      // the current master password before the next export screen reads it.
+      emit('setPassword', currentPassword);
+    } catch {
+      isWrongPassword.value = true;
+    }
+
+    return;
+  }
+
   const validatePass = await validatePassword(password.value);
 
   isWrongPassword.value = !validatePass;

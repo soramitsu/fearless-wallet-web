@@ -22,7 +22,8 @@
     "walletWillBeDeleted": "Your current wallet, accounts, and assets will be deleted from Fearless Wallet. You will need to re-import your original account using the recovery phrase or private key.",
     "enterReset": "To proceed, enter 'Reset wallet'",
     "resetWarning": "Resetting the wallet will delete your current data and assets. We cannot recover your password as it is stored only on your device. Try other passwords. If you want to reset the wallet, import your original recovery phrase. Proceed only if you have the recovery phrase.",
-    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers."
+    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers.",
+    "tonRecoveryRequired": "Some TON accounts need the password used before an earlier wallet update. Your other accounts are available. To restore access to an affected TON account, open Export for that account and enter its earlier password. Do not reset the wallet or remove the account before recovery."
   },
   "addWallet": {
     "createWallet": "Create a new wallet",
@@ -350,7 +351,8 @@
     "rawSeed": "Raw Seed",
     "json": "JSON",
     "backupKeyPair": "Backup Key Pair",
-    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
+    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?",
+    "tonEarlierPassword": "If this TON account stopped working after a password change, enter its earlier password here to restore access."
   },
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."

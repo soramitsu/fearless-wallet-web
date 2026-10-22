@@ -181,9 +181,9 @@ export default class Extension extends FWExtensionBase {
     if (type === 'native') {
       this.state.walletConnectService.removeSessions(address, ethereumAddress);
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) await this.state.keyringService.forgetAccount(ethereumAddress);
 
-      this.state.keyringService.forgetAccount(address);
+      await this.state.keyringService.forgetAccount(address);
     } else {
       const account = this.state.keyringService.getAddress(address);
 
@@ -1489,7 +1489,7 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
-  changeMasterPassword(request: RequestChangePassword): boolean {
+  changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
@@ -1503,7 +1503,7 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.lockKeyring();
   }
 
-  unlockKeyring(request: RequestUnlockExtension): boolean {
+  unlockKeyring(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required'> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);

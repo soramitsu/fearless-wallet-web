@@ -1,24 +1,18 @@
-import { EXTENSION_PREFIX } from '../defaults';
+import { PASSWORD_STORAGE_KEY, readWalletRecords, writeWalletRecords } from './WalletStorage';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
 
-const FEARLESS_KEYRING = `${EXTENSION_PREFIX}:keyring`;
-
 export default class KeyringStoreWeb implements PasswordStore {
   public get(update: (value: KeyringPasswordJson) => void): void {
-    const keyring = JSON.parse(localStorage.getItem(FEARLESS_KEYRING) || '') as KeyringPasswordJson;
-    update?.(keyring);
+    void readWalletRecords().then((records) => update(records[PASSWORD_STORAGE_KEY] as KeyringPasswordJson));
   }
 
   public remove(update?: () => void): void {
-    localStorage.removeItem(FEARLESS_KEYRING);
-
-    update?.();
+    // Keep a tombstone so a failed localStorage cleanup cannot resurrect a verifier.
+    void writeWalletRecords({ [PASSWORD_STORAGE_KEY]: null }).then(() => update?.());
   }
 
   public set(value: KeyringPasswordJson, update?: () => void): void {
-    localStorage.setItem(FEARLESS_KEYRING, JSON.stringify(value));
-
-    update?.();
+    void writeWalletRecords({ [PASSWORD_STORAGE_KEY]: value }).then(() => update?.());
   }
 }

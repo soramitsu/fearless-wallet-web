@@ -27,7 +27,13 @@
     </div>
 
     <div class="pass-block">
+      <div v-if="tonRecoveryRequired" class="recovery-notice" role="alert">
+        <p>{{ t('welcome.tonRecoveryRequired') }}</p>
+        <FButton text="common.continue" size="big" @click="continueToWallet" />
+      </div>
+
       <ValidatedInput
+        v-else
         size="big"
         placeholder="common.password"
         errorDescriptions="common.invalidPassword"
@@ -39,6 +45,7 @@
       />
 
       <FButton
+        v-if="!tonRecoveryRequired"
         class="unlock-btn"
         text="welcome.unlock"
         size="big"
@@ -78,16 +85,25 @@ const isError = ref(false);
 const showResetPopup = ref(false);
 const isDisabledBtn = ref(false);
 const isPopup = ref(IS_POPUP);
+const tonRecoveryRequired = ref(false);
 const { t } = useI18n();
 
 watch(password, () => (isError.value = false));
 
 const changeSyncedPassword = (pass: string) => (password.value = pass);
+const continueToWallet = () => router.push({ name: Components.Wallet });
 
 const unlock = async () => {
   isDisabledBtn.value = true;
 
   const isUnlock = await unlockExtension({ password: password.value });
+
+  if (isUnlock === 'ton-recovery-required') {
+    password.value = '';
+    tonRecoveryRequired.value = true;
+
+    return;
+  }
 
   if (isUnlock) {
     router.push({ name: Components.Wallet });
@@ -133,6 +149,12 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
   }
 
   .pass-block {
+    .recovery-notice {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
     .unlock-btn {
       margin: 16px 0;
     }

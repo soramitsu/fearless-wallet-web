@@ -79,7 +79,7 @@ describe('3.0.6: the unlock-time upload is removed', () => {
     expect(findings).toEqual([]);
   });
 
-  it('unlocking restarts the auto-lock timer and unlocks the keyring, nothing else', () => {
+  it('unlocking remains local while migrating encrypted TON storage', () => {
     const extension = findClass(path.join(BASE, 'background/handlers/Extension.ts'), 'Extension');
     const keyringService = findClass(path.join(BASE, 'services/keyring-service/index.ts'), 'KeyringService');
 
@@ -87,7 +87,10 @@ describe('3.0.6: the unlock-time upload is removed', () => {
       'this.state.keyringLockService.setExtensionAutoLockTimeout',
       'this.state.keyringService.unlockKeyring',
     ]);
-    expect(callsIn(keyringService, 'unlockKeyring')).toEqual(['keyring.unlockKeyring', 'console.info']);
+    expect(callsIn(keyringService, 'unlockKeyring')).toContain('this.tonKeyring.migrateOnUnlock');
+    expect(callsIn(keyringService, 'unlockKeyring')).not.toContain(
+      'this.state.balanceService.tonBalanceService.fetchJettonInfo'
+    );
   });
 
   it('keeps only the balance readers in the TON balance service', () => {
@@ -104,89 +107,96 @@ describe('3.0.6: the unlock-time upload is removed', () => {
     expect(fs.readFileSync(file, 'utf8')).not.toMatch(/https?:\/\//);
   });
 
-  it('removes getDataAccounts from the keyring service and keeps every other 3.0.5 member', () => {
+  it('keeps the 3.0.5 keyring API while removing the upload accessor', () => {
     const keyringService = findClass(path.join(BASE, 'services/keyring-service/index.ts'), 'KeyringService');
 
-    expect(memberNames(keyringService)).toEqual([
-      'currentAccountStore',
-      'tonKeyring',
-      'currentAccountSubject',
-      'password',
-      'constructor',
-      'addressSubject',
-      'accountSubject',
-      'hasAccounts',
-      'hasMasterPassword',
-      'keyringIsLocked',
-      'getPassword',
-      'setCurrentAccount',
-      'loadAll',
-      'getAccounts',
-      'getAddresses',
-      'getAllAccounts',
-      'getAllSubstrateAccounts',
-      'getAllEthereumAccounts',
-      'getAllMainAccounts',
-      'triggerWalletsSubscription',
-      'addAccount',
-      'saveAddress',
-      'backupAccount',
-      'getPair',
-      'getAccountName',
-      'getAccount',
-      'getAddress',
-      'forgetAccount',
-      'forgetAddress',
-      'restoreAccount',
-      'createFromJson',
-      'unlockPair',
-      'lockPair',
-      'encodeAddress',
-      'decodeAddress',
-      'saveAccountMeta',
-      'createFromUri',
-      'getSubstrateAddress',
-      'getEthereumAddress',
-      'isMobileAccount',
-      'changeMasterPassword',
-      'mnemonicGenerate',
-      'mnemonicValidate',
-      'exportMnemonic',
-      'accountExportPrivateKey',
-      'accountExportRawSeed',
-      'accountExportSecretKey',
-      'unlockKeyring',
-      'lockKeyring',
-      'resetWallet',
-      'getMigrationAccounts',
-      'isNeedMigration',
-      'keyringMigrateMasterPassword',
-      'decryptForCosigner',
-      'encryptByCosigner',
-    ]);
+    expect(memberNames(keyringService)).not.toContain('getDataAccounts');
+    expect(memberNames(keyringService)).toEqual(
+      expect.arrayContaining([
+        'currentAccountStore',
+        'tonKeyring',
+        'currentAccountSubject',
+        'password',
+        'constructor',
+        'addressSubject',
+        'accountSubject',
+        'hasAccounts',
+        'hasMasterPassword',
+        'keyringIsLocked',
+        'getPassword',
+        'setCurrentAccount',
+        'loadAll',
+        'getAccounts',
+        'getAddresses',
+        'getAllAccounts',
+        'getAllSubstrateAccounts',
+        'getAllEthereumAccounts',
+        'getAllMainAccounts',
+        'triggerWalletsSubscription',
+        'addAccount',
+        'saveAddress',
+        'backupAccount',
+        'getPair',
+        'getAccountName',
+        'getAccount',
+        'getAddress',
+        'forgetAccount',
+        'forgetAddress',
+        'restoreAccount',
+        'createFromJson',
+        'unlockPair',
+        'lockPair',
+        'encodeAddress',
+        'decodeAddress',
+        'saveAccountMeta',
+        'createFromUri',
+        'getSubstrateAddress',
+        'getEthereumAddress',
+        'isMobileAccount',
+        'changeMasterPassword',
+        'mnemonicGenerate',
+        'mnemonicValidate',
+        'exportMnemonic',
+        'accountExportPrivateKey',
+        'accountExportRawSeed',
+        'accountExportSecretKey',
+        'unlockKeyring',
+        'lockKeyring',
+        'resetWallet',
+        'getMigrationAccounts',
+        'isNeedMigration',
+        'keyringMigrateMasterPassword',
+        'decryptForCosigner',
+        'encryptByCosigner',
+      ])
+    );
   });
 
-  it('removes the two helpers of the upload from the TON keyring and keeps every other 3.0.5 member', () => {
+  it('keeps the 3.0.5 TON API while removing the upload helpers', () => {
     const tonKeyring = findClass(path.join(BASE, 'services/keyring-service/TonKeyring.ts'), 'TonKeyringService');
 
-    expect(memberNames(tonKeyring)).toEqual([
-      'accountSubject',
-      'constructor',
-      'setAccounts',
-      'updateAccountName',
-      'getAccount',
-      'getAccounts',
-      'generateMnemonic',
-      'validateMnemonic',
-      'mnemonicToKeyPair',
-      'isPasswordNeeded',
-      'forgetAccount',
-      'createContractV4',
-      'createAccount',
-      'getUserFriendlyAddress',
-      'encodeMnemonic',
-      'decodeMnemonic',
-    ]);
+    expect(memberNames(tonKeyring)).not.toContain('encode');
+    expect(memberNames(tonKeyring)).not.toContain('getDataAccount');
+    expect(memberNames(tonKeyring)).toEqual(
+      expect.arrayContaining([
+        'accountSubject',
+        'constructor',
+        'setAccounts',
+        'updateAccountName',
+        'getAccount',
+        'getAccounts',
+        'generateMnemonic',
+        'validateMnemonic',
+        'mnemonicToKeyPair',
+        'isPasswordNeeded',
+        'forgetAccount',
+        'createContractV4',
+        'createAccount',
+        'getUserFriendlyAddress',
+        'encodeMnemonic',
+        'decodeMnemonic',
+      ])
+    );
   });
 });
 

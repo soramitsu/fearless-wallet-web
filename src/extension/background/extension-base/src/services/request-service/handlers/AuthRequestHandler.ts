@@ -236,6 +236,40 @@ export class AuthRequestHandler {
     });
   }
 
+  // For requests that use one account's keys without a confirmation popup: the site must be enabled and the account
+  // must be one the user shared with it. Old entries without an account list do not qualify.
+  public async ensureAccountAuthorized(url: string, address: string): Promise<boolean> {
+    const authUrls = await this.getAuthList();
+    const entry = authUrls[stripUrl(url)];
+
+    if (!entry || entry.isAllowed !== true) throw new Error(`The source ${url} has not been enabled yet`);
+    if (typeof address !== 'string' || !address) throw new Error('The requested account is invalid');
+
+    let requestedAddress: string;
+
+    try {
+      requestedAddress = this.keyringService.encodeAddress(address);
+    } catch {
+      throw new Error('The requested account is invalid');
+    }
+
+    const authorized =
+      Array.isArray(entry.authorizedAccounts) &&
+      entry.authorizedAccounts.some((candidate) => {
+        if (typeof candidate !== 'string' || !candidate) return false;
+
+        try {
+          return this.keyringService.encodeAddress(candidate) === requestedAddress;
+        } catch {
+          return false;
+        }
+      });
+
+    if (!authorized) throw new Error(`The source ${url} is not authorized for the requested account`);
+
+    return true;
+  }
+
   getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
     const networks = this.networkService.activeNetworkByEcosystem.evm;
     const defaultChain = options.defaultChain;

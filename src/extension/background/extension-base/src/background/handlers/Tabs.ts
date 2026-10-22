@@ -229,9 +229,13 @@ export default class Tabs {
         return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
 
       case 'pub(decrypt.cosigner)':
+        await this.state.requestService.ensureAccountAuthorized(url, (request as DecryptForCosignerData).address);
+
         return this.state.keyringService.decryptForCosigner(request as DecryptForCosignerData);
 
       case 'pub(encrypt.cosigner)':
+        await this.state.requestService.ensureAccountAuthorized(url, (request as EncryptByCosignerData).address);
+
         return this.state.keyringService.encryptByCosigner(request as EncryptByCosignerData);
 
       case 'pub(accounts.list)':

@@ -464,6 +464,8 @@ export default class BitcoinBalanceService {
     if (existing) {
       existing.mainNetwork = network.name;
       existing.relayChain = 'bitcoin';
+      // Groups restored from the balance cache may carry an icon from an earlier release.
+      existing.icon = assetIcon;
       if (priceId) existing.priceId = priceId;
 
       return existing;

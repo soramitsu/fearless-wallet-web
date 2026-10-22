@@ -15,6 +15,16 @@ type UniversalWalletNetworkMap = Record<string, NetworkJson>;
 
 const TAIRA_TESTNET_NETWORK_NAME = 'Taira Testnet';
 const DEFAULT_ADDRESS_PREFIX = 42;
+const SHARED_ICONS_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons';
+// Published icons for registry chains the remote chain catalog does not list yet; other entries keep their symbol.
+const REGISTRY_TOKEN_ICONS: Partial<Record<string, string>> = {
+  BTC: `${SHARED_ICONS_URL}/tokens/coloured/BTC.svg`,
+  XOR: `${SHARED_ICONS_URL}/tokens/coloured/XOR.svg`,
+};
+const REGISTRY_NETWORK_ICONS: Partial<Record<string, string>> = {
+  [WalletEcosystem.Bitcoin]: REGISTRY_TOKEN_ICONS.BTC,
+  [WalletEcosystem.Iroha]: `${SHARED_ICONS_URL}/chains/white/SORA.svg`,
+};
 
 function createUniversalWalletRegistryNetworks(
   registry: UniversalWalletChainRegistry = UNIVERSAL_WALLET_CHAIN_REGISTRY
@@ -85,7 +95,7 @@ function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry
   return {
     key: name,
     chain: name,
-    icon: entry.nativeAsset?.symbol.toLowerCase() ?? entry.ecosystem,
+    icon: REGISTRY_NETWORK_ICONS[entry.ecosystem] ?? entry.nativeAsset?.symbol.toLowerCase() ?? entry.ecosystem,
     active,
     providers,
     currentProvider,
@@ -115,6 +125,7 @@ function mergeRegistryNetworkDefaults(
 ): NetworkJson {
   return {
     ...existing,
+    icon: pickIcon(existing.icon, registryNetwork.icon),
     key: existing.key || registryNetwork.key,
     chain: existing.chain || registryNetwork.chain,
     chainId:
@@ -154,10 +165,23 @@ function mergeNativeAssets(existingAssets: Asset[], registryAssets: Asset[]): As
 
   if (!existingAssets.some(isRegistryNative)) return [nativeAsset, ...existingAssets];
 
-  // Stored test networks may still carry the mainnet price id from earlier releases.
-  return nativeAsset.priceId
-    ? existingAssets
-    : existingAssets.map((asset) => (isRegistryNative(asset) ? { ...asset, priceId: '' } : asset));
+  return existingAssets.map((asset) =>
+    isRegistryNative(asset)
+      ? {
+          ...asset,
+          icon: pickIcon(asset.icon, nativeAsset.icon),
+          // Stored test networks may still carry the mainnet price id from earlier releases.
+          priceId: nativeAsset.priceId ? asset.priceId : '',
+        }
+      : asset
+  );
+}
+
+// Earlier releases stored bare symbols that never resolve to an image; a published icon URL replaces them.
+function pickIcon(existingIcon: string, registryIcon: string): string {
+  const isIconUrl = (icon: string) => icon?.startsWith('https://') ?? false;
+
+  return !isIconUrl(existingIcon) && isIconUrl(registryIcon) ? registryIcon : existingIcon;
 }
 
 function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryNetwork: NetworkJson): string | undefined {
@@ -183,7 +207,7 @@ function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
     precision: nativeAsset?.decimals ?? 0,
     // Test-network coins share a mainnet symbol but have no market value.
     priceId: isTestnetEntry(entry) ? '' : symbol.toLowerCase(),
-    icon: symbol.toLowerCase(),
+    icon: REGISTRY_TOKEN_ICONS[symbol] ?? symbol.toLowerCase(),
     color: '',
     staking: '',
     isUtility: true,

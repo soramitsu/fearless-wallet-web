@@ -505,6 +505,43 @@ describe('IrohaBalanceService', () => {
     warn.mockRestore();
   });
 
+  it('refreshes a token group restored from the balance cache to the network asset icon and price', async () => {
+    const xorIcon = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg';
+    const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
+    taira.assets[0] = { ...taira.assets[0], icon: xorIcon, priceId: '' };
+    const cachedGroup = {
+      balances: [{ id: TAIRA_XOR_ASSET_ID, name: 'Taira', state: APIItemState.READY, symbol: 'XOR', total: '7' }],
+      groupId: TAIRA_XOR_ASSET_ID,
+      icon: 'xor',
+      mainNetwork: 'Taira',
+      priceId: 'xor',
+      providers: [],
+      relayChain: 'iroha',
+      symbol: 'XOR',
+      tokenName: 'XOR',
+    } as TokenGroup;
+    const { state } = createState([taira], { [SUBSTRATE_ADDRESS]: [cachedGroup] });
+    const client: IrohaBalanceClient = {
+      getAccountAssets: vi.fn().mockResolvedValue(
+        routeBody({
+          items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '9', scope: 'global' }],
+        })
+      ),
+      getAssetDefinitions: vi.fn().mockResolvedValue(
+        routeBody({ items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale: 9 } }] })
+      ),
+    };
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
+
+    await service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] });
+
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS]).toEqual([cachedGroup]);
+    expect(cachedGroup).toMatchObject({ icon: xorIcon, priceId: undefined });
+  });
+
   it('keeps cached balances stale when definition retrieval fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);

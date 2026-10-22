@@ -112,6 +112,34 @@ describe('Universal Wallet registry network mapping', () => {
     expect(networkMap['Taira Testnet'].assets[0].priceId).toBe('');
   });
 
+  it('gives registry coins published icons and upgrades bare stored icons only', () => {
+    const icons = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons';
+    const networks = createUniversalWalletRegistryNetworks();
+    const byName = Object.fromEntries(networks.map((network) => [network.name, network]));
+
+    expect(byName['Taira Testnet'].icon).toBe(`${icons}/chains/white/SORA.svg`);
+    expect(byName['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
+    expect(byName['Bitcoin Testnet'].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
+    expect(byName['Bitcoin Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
+    // No icon is published for SOL, so the registry keeps its symbol rather than guessing a URL.
+    expect(byName.Solana.assets[0].icon).toBe('sol');
+
+    const taira = byName['Taira Testnet'];
+    const bitcoin = byName.Bitcoin;
+    const customIcon = 'https://example.org/btc.svg';
+    const networkMap: Record<string, NetworkJson> = {
+      Bitcoin: { ...bitcoin, icon: customIcon, assets: [{ ...bitcoin.assets[0], icon: customIcon }] },
+      'Taira Testnet': { ...taira, icon: 'xor', assets: [{ ...taira.assets[0], icon: 'xor' }] },
+    };
+
+    mergeUniversalWalletRegistryNetworks(networkMap, {});
+
+    expect(networkMap['Taira Testnet'].icon).toBe(`${icons}/chains/white/SORA.svg`);
+    expect(networkMap['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
+    expect(networkMap.Bitcoin.icon).toBe(customIcon);
+    expect(networkMap.Bitcoin.assets[0].icon).toBe(customIcon);
+  });
+
   it('fails closed when registry validation fails', () => {
     const invalidRegistry = {
       schemaVersion: 1,

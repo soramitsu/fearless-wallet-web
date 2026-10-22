@@ -643,7 +643,9 @@ export default class IrohaBalanceService {
     if (existing) {
       existing.mainNetwork = network.name;
       existing.relayChain = 'iroha' as RelayChainName;
-      // Follow the network asset, including clearing a price the asset no longer has (test networks).
+      // Follow the network asset: groups restored from the balance cache may carry an outdated icon,
+      // or a price the asset no longer has (test networks).
+      existing.icon = assetIcon;
       existing.priceId = priceId || undefined;
 
       return existing;

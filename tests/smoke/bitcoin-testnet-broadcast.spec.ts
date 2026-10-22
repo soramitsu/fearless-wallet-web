@@ -116,7 +116,10 @@ describe('Bitcoin testnet broadcast smoke', () => {
     ).toThrow('FEARLESS_BITCOIN_TESTNET_SOURCE_ADDRESS does not match the supplied mnemonic and derivation path');
   });
 
-  const liveConfig = readLiveSmokeConfig(process.env);
+  // `process` is the browser polyfill inside transformed modules; the opt-in lives in the real Node env.
+  const liveConfig = readLiveSmokeConfig(
+    (globalThis as { process?: { env?: Record<string, string> } }).process?.env ?? {}
+  );
   const liveTest = liveConfig ? it : it.skip;
 
   liveTest(

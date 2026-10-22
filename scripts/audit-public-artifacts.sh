@@ -101,11 +101,19 @@ for env_file in .env.example .env.extension .env.web; do
   done < "$env_file"
 done
 
-if [[ "$iroha_transfers_enabled" == "true" ]]; then
-  fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true is blocked: browser codec source exists locally, but no reviewed immutable release artifact is published, pinned, and bundled (browser_transaction_codec_unpublished_source_only)'
+# A send flag may be enabled only when its evidence manifest is ready and release-enabled.
+evidence_ready() {
+  node -e '
+    const manifest = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+    process.exit(manifest.status === "ready" && manifest.releaseEnabled === true ? 0 : 1);
+  ' "$1" 2>/dev/null
+}
+
+if [[ "$iroha_transfers_enabled" == "true" ]] && ! evidence_ready config/iroha-production-send-readiness.json; then
+  fail 'VUE_APP_ENABLE_IROHA_TRANSFERS=true is blocked until config/iroha-production-send-readiness.json records ready Taira transfer evidence (iroha_transfer_evidence_missing)'
 fi
 
-if [[ "$bitcoin_transfers_enabled" == "true" ]]; then
+if [[ "$bitcoin_transfers_enabled" == "true" ]] && ! evidence_ready scripts/bitcoin-testnet-broadcast-evidence.json; then
   fail 'VUE_APP_ENABLE_BITCOIN_TRANSFERS=true is blocked until funded testnet broadcast evidence is marked ready and release-enabled (bitcoin_testnet_broadcast_evidence_missing)'
 fi
 

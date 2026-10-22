@@ -606,9 +606,9 @@ expect_failure \
   env IROHA_JS_SDK_PACKAGE_DIR="$AGGREGATE_BASELINE_DRIFT_REPO/iroha-js-package"
 
 expect_failure \
-  "env transfer enablement without reviewed codec artifact" \
+  "Iroha transfer enablement without Taira transfer evidence" \
   "$VALID_REPO" \
-  "browser_transaction_codec_unpublished_source_only" \
+  "iroha_transfer_evidence_missing" \
   env VUE_APP_ENABLE_IROHA_TRANSFERS=true
 
 expect_failure \
@@ -616,6 +616,39 @@ expect_failure \
   "$VALID_REPO" \
   "bitcoin_testnet_broadcast_evidence_missing" \
   env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true
+
+write_transfer_manifests() {
+  local repo="$1"
+  local status="$2"
+  local enabled="$3"
+
+  mkdir -p "$repo/config" "$repo/scripts"
+  printf '{"status":"%s","releaseEnabled":%s}\n' "$status" "$enabled" > "$repo/config/iroha-production-send-readiness.json"
+  printf '{"status":"%s","releaseEnabled":%s}\n' "$status" "$enabled" > "$repo/scripts/bitcoin-testnet-broadcast-evidence.json"
+}
+
+BLOCKED_EVIDENCE_REPO="$TMP_DIR/blocked-evidence"
+write_fixture_repo "$BLOCKED_EVIDENCE_REPO"
+write_transfer_manifests "$BLOCKED_EVIDENCE_REPO" blocked false
+expect_failure \
+  "Iroha transfer enablement against a blocked manifest" \
+  "$BLOCKED_EVIDENCE_REPO" \
+  "iroha_transfer_evidence_missing" \
+  env VUE_APP_ENABLE_IROHA_TRANSFERS=true
+
+UNRELEASED_EVIDENCE_REPO="$TMP_DIR/ready-but-unreleased-evidence"
+write_fixture_repo "$UNRELEASED_EVIDENCE_REPO"
+write_transfer_manifests "$UNRELEASED_EVIDENCE_REPO" ready false
+expect_failure \
+  "Bitcoin transfer enablement against a ready manifest that is not release-enabled" \
+  "$UNRELEASED_EVIDENCE_REPO" \
+  "bitcoin_testnet_broadcast_evidence_missing" \
+  env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true
+
+READY_EVIDENCE_REPO="$TMP_DIR/ready-evidence"
+write_fixture_repo "$READY_EVIDENCE_REPO"
+write_transfer_manifests "$READY_EVIDENCE_REPO" ready true
+run_audit "$READY_EVIDENCE_REPO" env VUE_APP_ENABLE_IROHA_TRANSFERS=true VUE_APP_ENABLE_BITCOIN_TRANSFERS=true >/dev/null
 
 INVALID_VALUE_REPO="$TMP_DIR/invalid-value"
 write_fixture_repo "$INVALID_VALUE_REPO"
@@ -652,9 +685,9 @@ write_fixture_package "$ENABLED_REPO/iroha-js-package"
   git add .env.example
 )
 expect_failure \
-  "transfer enablement with pinned old package still blocked without reviewed codec artifact" \
+  "transfer enablement in an env file still requires Taira transfer evidence" \
   "$ENABLED_REPO" \
-  "browser_transaction_codec_unpublished_source_only" \
+  "iroha_transfer_evidence_missing" \
   env IROHA_JS_SDK_PACKAGE_DIR="$ENABLED_REPO/iroha-js-package"
 
 GITHUB_RELEASE_REPO="$TMP_DIR/enabled-with-github-release-sdk"

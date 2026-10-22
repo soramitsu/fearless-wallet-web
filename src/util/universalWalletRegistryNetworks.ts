@@ -210,7 +210,9 @@ function createExternalApi(entry: UniversalWalletChainRegistryEntry): NetworkJso
 
 function getHistoryEndpoint(entry: UniversalWalletChainRegistryEntry): UniversalWalletRegistryEndpoint | undefined {
   if (entry.ecosystem === WalletEcosystem.Iroha) {
-    return entry.endpoints.find(({ kind }) => kind === 'torii-mcp');
+    return (
+      entry.endpoints.find(({ kind }) => kind === 'torii') ?? entry.endpoints.find(({ kind }) => kind === 'torii-mcp')
+    );
   }
 
   return entry.endpoints.find(({ kind }) => kind === 'indexer');

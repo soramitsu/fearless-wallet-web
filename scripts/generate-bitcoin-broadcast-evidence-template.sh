@@ -117,6 +117,7 @@ const ALLOWED_MANIFEST_FIELDS = [
   'liveSmokeEnvironment',
   'defaultIndexerUrl',
   'requiredEvidenceFields',
+  'transferPathFiles',
   'evidence'
 ];
 
@@ -347,6 +348,7 @@ const template = {
   liveSmokeEnvironment: manifest.liveSmokeEnvironment,
   defaultIndexerUrl: manifest.defaultIndexerUrl,
   requiredEvidenceFields: manifest.requiredEvidenceFields,
+  ...(manifest.transferPathFiles ? { transferPathFiles: manifest.transferPathFiles } : {}),
   evidence: [evidence]
 };
 

@@ -145,6 +145,7 @@ const ALLOWED_MANIFEST_FIELDS = [
   'liveSmokeEnvironment',
   'defaultIndexerUrl',
   'requiredEvidenceFields',
+  'transferPathFiles',
   'evidence'
 ];
 const REQUIRED_ENV = [
@@ -593,6 +594,40 @@ function resolveCurrentReleaseCommit() {
   }
 
   return String(commit).toLowerCase();
+}
+
+// A committed manifest cannot name its own commit, so evidence may also come from an ancestor of
+// the release commit as long as none of the manifest's Bitcoin transfer-path files changed since.
+function evidenceCommitCoversRelease(evidenceCommit, releaseCommit) {
+  const commit = String(evidenceCommit || '').toLowerCase();
+
+  if (commit === releaseCommit) return true;
+  if (selftestMode || !Array.isArray(manifest.transferPathFiles) || manifest.transferPathFiles.length === 0) return false;
+  if (!manifest.transferPathFiles.every((file) => typeof file === 'string' && /^[A-Za-z0-9._/-]+$/.test(file))) {
+    fail('transferPathFiles must list repository-relative paths');
+    return false;
+  }
+
+  const runGit = (args) =>
+    execFileSync(GIT_BIN, ['-C', rootDir, ...args], {
+      encoding: 'utf8',
+      env: sealedToolEnvironment('/'),
+      maxBuffer: 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 10000
+    }).trim();
+
+  try {
+    runGit(['merge-base', '--is-ancestor', commit, releaseCommit]);
+  } catch {
+    return false;
+  }
+
+  try {
+    return runGit(['diff', '--name-only', commit, releaseCommit, '--', ...manifest.transferPathFiles]) === '';
+  } catch {
+    return false;
+  }
 }
 
 function splitOutpoint(value) {
@@ -1078,13 +1113,13 @@ if (manifest) {
     let verifiedCurrentCommitRecords = 0;
     evidence.forEach((entry, index) => {
       const verified = verifyBroadcastRecord(entry, index);
-      if (verified && currentReleaseCommit && String(entry.commit || '').toLowerCase() === currentReleaseCommit) {
+      if (verified && currentReleaseCommit && evidenceCommitCoversRelease(entry.commit, currentReleaseCommit)) {
         verifiedCurrentCommitRecords += 1;
       }
     });
 
     if (currentReleaseCommit && verifiedCurrentCommitRecords === 0) {
-      fail(`ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record for current release commit ${currentReleaseCommit}`);
+      fail(`ready Bitcoin broadcast evidence requires at least one indexer-verified funded testnet broadcast record for current release commit ${currentReleaseCommit} or an ancestor with unchanged transferPathFiles`);
     }
   }
 }

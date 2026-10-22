@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { inflateRawSync, inflateSync } from 'node:zlib';
 import { parseAst } from 'rollup/parseAst';
 import { assertNoKnownKeyExfiltration } from './audit-key-exfiltration.mjs';
+import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
 export const CURRENT_PUBLISHED_VERSION = '3.0.6';
 export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
@@ -59,12 +60,14 @@ const EXPECTED_CONTENT_SCRIPT_MATCHES = ['https://*/*', 'http://*/*'];
 const EXPECTED_WEB_RESOURCE_MATCHES = ['https://*/*', 'http://*/*', 'http://localhost/*'];
 const EXPECTED_EXTENSION_CSP =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:";
-const EXPECTED_RELEASE_FLAGS = {
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-  VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
-  VUE_APP_EXTENSION_SMOKE: 'false',
-  VUE_APP_TEST_ONLY: 'false',
-};
+// Send flags follow the audited root's evidence manifests; smoke and test-only builds never ship.
+function expectedReleaseFlags(rootDir) {
+  return {
+    ...readReleaseTransferFlags(rootDir),
+    VUE_APP_EXTENSION_SMOKE: 'false',
+    VUE_APP_TEST_ONLY: 'false',
+  };
+}
 const REQUIRED_MANIFEST_KEYS = [
   'action',
   'author',
@@ -718,7 +721,8 @@ function validateManifest(
   label,
   release,
   releaseEnvironment,
-  expectedOAuthClientIdSha256
+  expectedOAuthClientIdSha256,
+  releaseFlags
 ) {
   validateObjectKeyAllowlist(manifest, REQUIRED_MANIFEST_KEYS, OPTIONAL_MANIFEST_KEYS, `${label} top-level manifest`);
   requireCondition(manifest.manifest_version === 3, `${label} must use manifest_version 3`);
@@ -816,10 +820,10 @@ function validateManifest(
   requireCondition(buildMetadata.mode === 'production', `${label} extension build metadata mode must be production`);
   validateExactObjectKeys(
     buildMetadata.releaseFlags,
-    Object.keys(EXPECTED_RELEASE_FLAGS),
+    Object.keys(releaseFlags),
     `${label} extension build release flags`
   );
-  for (const [key, expected] of Object.entries(EXPECTED_RELEASE_FLAGS)) {
+  for (const [key, expected] of Object.entries(releaseFlags)) {
     requireCondition(
       buildMetadata.releaseFlags[key] === expected,
       `${label} extension build release flag ${key} must be ${expected}`
@@ -1005,6 +1009,7 @@ export async function auditChromeRelease({
   validateNoProductionDebugOutput(zipFiles, 'Chrome ZIP artifact');
   assertNoKnownKeyExfiltration(directoryFiles, 'Chrome directory artifact');
   assertNoKnownKeyExfiltration(zipFiles, 'Chrome ZIP artifact');
+  const releaseFlags = expectedReleaseFlags(rootDir);
   const directoryExtensionId = validateManifest(
     directoryManifest,
     packageJson,
@@ -1012,7 +1017,8 @@ export async function auditChromeRelease({
     'Chrome directory manifest',
     release,
     releaseEnvironment,
-    expectedOAuthClientIdSha256
+    expectedOAuthClientIdSha256,
+    releaseFlags
   );
   const zipExtensionId = validateManifest(
     zipManifest,
@@ -1021,7 +1027,8 @@ export async function auditChromeRelease({
     'Chrome ZIP manifest',
     release,
     releaseEnvironment,
-    expectedOAuthClientIdSha256
+    expectedOAuthClientIdSha256,
+    releaseFlags
   );
   compareArtifacts(directoryFiles, zipFiles);
   requireCondition(

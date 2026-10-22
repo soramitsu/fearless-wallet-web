@@ -50,20 +50,17 @@ IROHA_JS_SDK_RELEASE_ASSET=<asset> IROHA_JS_SDK_RELEASE_SHA256=<sha256>
 - Run
   `bash ./scripts/test-iroha-js-candidate-verifier.sh && bash ./scripts/verify-iroha-js-candidate.sh --replay-source &&
 bash ./scripts/test-iroha-production-send-readiness-audit.sh && bash ./scripts/audit-iroha-production-send-readiness.sh`.
-  Keep `VUE_APP_ENABLE_IROHA_TRANSFERS=false` while
-  `config/iroha-production-send-readiness.json` is `blocked`. The pinned SDK
-  vendored-artifact audit proves that the installed package is byte-for-byte
-  identical to the reviewed 0.0.2 tarball (1,843,179 bytes, 141 files,
-  SHA-256 `68def75061c3842cd2fddbd4629b1ceaf80b2b1ff3069a477596ada9bae61339`).
-  The original upstream JavaScript asset is no longer downloadable, so the
-  exact tarball is retained at `vendor/iroha-js/iroha-iroha-js-0.0.2.tgz` for
-  durable fresh installs. The latest browser-codec security hardening is only
-  in the unpublished local `0.0.3` candidate built from
-  `b423c0f8bcd317fd945d6f66ce3fa679401dba7f` plus the frozen candidate patch;
-  the pinned immutable `0.0.2` artifact still lacks it. Do not enable send until
-  a reviewed `0.0.3` artifact and digest are published, checksum-pinned, bundled
-  without the global test seam, the pinned native Safari QA remains green, and the documented live
-  asset/fee/node/funded gates pass.
+  Production builds enable Iroha (Taira) sends exactly when
+  `config/iroha-production-send-readiness.json` is ready and release-enabled;
+  the environment cannot override it. The gate requires the vendored
+  `@iroha/iroha-js` 0.0.3 archive (1,082,778 bytes, 259 files, SHA-256
+  `1fefeae587873fed45821f4a59f7b5722eab72dcc161561ffa7ecdb97049dd41`, packed
+  from Hyperledger Iroha `581c49d95995b57b2b0ef3245a6f11b01248ad08`), the
+  pinned Taira network ID and wire constants, direct Torii REST transport, and
+  live `yarn test:smoke:taira` evidence from an ancestor commit with unchanged
+  transfer-path files. `prepare:chrome-release` reruns it with
+  `--require-ready --live`. After a Taira reset, follow
+  `docs/iroha-production-send-readiness.md` before releasing.
 - Preserve the 2026-07-12 final-candidate evidence exactly. The exact tar and
   frozen patch are durably stored only as non-production evidence under
   `artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f`;
@@ -111,7 +108,9 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
   `https://blockstream.info/testnet/api` indexer URL, operator, timestamp, and
   commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,
   set `status: ready` and `releaseEnabled: true`, then rerun
-  `yarn audit:bitcoin-broadcast-evidence --require-ready`.
+  `yarn audit:bitcoin-broadcast-evidence --require-ready`. Production builds
+  enable Bitcoin sends exactly when that manifest is ready and release-enabled,
+  and `prepare:chrome-release` then requires the ready audit to pass.
 - Run or confirm green CI for branch-flow audit, public artifact audit,
   TODO-debt audit, production dependency audit, typecheck, lint, unit tests,
   extension build, Solana extension e2e smoke, and Bitcoin broadcast smoke.

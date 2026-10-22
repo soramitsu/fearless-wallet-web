@@ -39,7 +39,7 @@ describe('Universal Wallet registry network mapping', () => {
     expect(byName['Taira Testnet']).toMatchObject({
       chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId,
       ecosystem: WalletEcosystem.Iroha,
-      externalApi: { history: { type: 'iroha', url: 'https://taira.sora.org/v1/mcp' } },
+      externalApi: { history: { type: 'iroha', url: 'https://taira.sora.org' } },
     });
     expect(byName['Taira Testnet'].assets[0]).toMatchObject({
       id: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.id,
@@ -49,11 +49,11 @@ describe('Universal Wallet registry network mapping', () => {
     expect(byName['SORA Nexus']).toMatchObject({
       active: false,
       disabled: true,
-      externalApi: { history: { type: 'iroha', url: 'https://minamoto.sora.org/v1/mcp' } },
+      externalApi: { history: { type: 'iroha', url: 'https://minamoto.sora.org' } },
     });
     expect(byName['SORA Nexus'].nodes[0]).toMatchObject({
-      name: 'sora-nexus-mainnet-torii-mcp',
-      url: 'https://minamoto.sora.org/v1/mcp',
+      name: 'sora-nexus-mainnet-torii',
+      url: 'https://minamoto.sora.org',
     });
   });
 

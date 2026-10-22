@@ -35,5 +35,14 @@
     "operator",
     "commit"
   ],
+  "transferPathFiles": [
+    "src/extension/background/extension-base/src/api/bitcoin/transfer.ts",
+    "src/extension/background/extension-base/src/services/bitcoin-indexer-service/index.ts",
+    "src/util/bitcoin.ts",
+    "src/util/bitcoinDiscovery.ts",
+    "src/util/bitcoinKeyring.ts",
+    "src/util/bitcoinSend.ts",
+    "src/util/bitcoinTransaction.ts"
+  ],
   "evidence": []
 }

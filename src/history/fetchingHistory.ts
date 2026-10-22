@@ -39,23 +39,28 @@ type BitcoinParsedOutput = {
 
 type IrohaNetworkKind = 'taira' | 'nexus';
 
-type IrohaTransferInstruction = {
-  amount: string;
-  from: string;
-  legId: string | null;
-  to: string;
-};
-
 const BITCOIN_ESPLORA_HISTORY_PAGE_SIZE = 25;
 const BITCOIN_HISTORY_ADDRESS_CONCURRENCY = 8;
 const BITCOIN_HISTORY_MAX_PAGES = 12;
 const MAX_IROHA_PRECISION = 28;
 const MAX_IROHA_QUANTITY_DIGITS = 154;
 const MAX_IROHA_QUANTITY = (1n << 511n) - 1n;
-const MAX_IROHA_BATCH_ENTRIES = 1_000;
-const MAX_IROHA_BATCH_LEG_ID_LENGTH = 256;
 const IROHA_HISTORY_PER_PAGE = 100;
-const MAX_IROHA_HISTORY_PAGES = 100;
+const MAX_IROHA_HISTORY_PAGES = 10;
+const IROHA_MOVEMENT_FIELDS = [
+  'account_id',
+  'amount',
+  'asset_definition_id',
+  'block_height',
+  'counterparty_account_id',
+  'direction',
+  'movement_index',
+  'result_ok',
+  'status',
+  'timestamp_ms',
+  'tx_hash',
+  'type',
+] as const;
 
 async function fetchSubqueryHistory(
   url: string,
@@ -507,34 +512,25 @@ async function fetchIrohaHistory(
 
   const client = new IrohaToriiWalletClient({ baseUrl, network });
   const precision = await validateIrohaHistoryAssetDefinition(client, network, assetId, isUtility);
+  const filter = `asset_definition_id = ${JSON.stringify(assetId)} and type = "TRANSFER"`;
   const history: HistoryElement[] = [];
-  let expectedTotalItems: number | null = null;
-  let expectedTotalPages: number | null = null;
+  let cursor: string | undefined;
 
-  for (let page = 1; page <= MAX_IROHA_HISTORY_PAGES; page += 1) {
-    const { body } = await client.getInstructions<unknown>({
-      account: address,
-      assetId,
-      kind: 'Transfer',
-      page,
-      perPage: IROHA_HISTORY_PER_PAGE,
-      transactionStatus: 'committed',
+  // Movements arrive newest first; anything beyond the page bound is not shown.
+  for (let page = 0; page < MAX_IROHA_HISTORY_PAGES; page += 1) {
+    const { body } = await client.getAccountHistory<unknown>(address, {
+      cursor,
+      filter,
+      limit: IROHA_HISTORY_PER_PAGE,
     });
-    const parsed = parseIrohaHistoryPage(body, page, IROHA_HISTORY_PER_PAGE);
 
-    if (expectedTotalItems === null) {
-      expectedTotalItems = parsed.totalItems;
-      expectedTotalPages = parsed.totalPages;
-      if (parsed.totalPages > MAX_IROHA_HISTORY_PAGES) throw new Error('iroha_history_page_limit_exceeded');
-    } else if (parsed.totalItems !== expectedTotalItems || parsed.totalPages !== expectedTotalPages) {
-      throw new Error('iroha_history_pagination_changed');
+    for (const item of body.items) {
+      const element = toIrohaMovementHistoryElement(item, address, assetId, precision, network);
+
+      if (element) history.push(element);
     }
-
-    for (const item of parsed.items) {
-      history.push(...toIrohaHistoryElements(item, address, assetId, precision, network));
-    }
-
-    if (page >= parsed.totalPages) break;
+    if (!body.next_cursor) break;
+    cursor = body.next_cursor;
   }
 
   if (new Set(history.map(({ id }) => id)).size !== history.length) {
@@ -542,46 +538,6 @@ async function fetchIrohaHistory(
   }
 
   return history;
-}
-
-function parseIrohaHistoryPage(
-  body: unknown,
-  requestedPage: number,
-  requestedPerPage: number
-): { items: unknown[]; totalItems: number; totalPages: number } {
-  if (
-    !isRecord(body) ||
-    !hasExactRecordKeys(body, ['pagination', 'items']) ||
-    !Array.isArray(body.items) ||
-    !isRecord(body.pagination) ||
-    !hasExactRecordKeys(body.pagination, ['page', 'per_page', 'total_pages', 'total_items'])
-  ) {
-    throw new Error('invalid_iroha_history_response');
-  }
-
-  const page = parseSafeInteger(body.pagination.page);
-  const perPage = parseSafeInteger(body.pagination.per_page);
-  const totalPages = parseSafeInteger(body.pagination.total_pages);
-  const totalItems = parseSafeInteger(body.pagination.total_items);
-
-  if (
-    page !== requestedPage ||
-    perPage !== requestedPerPage ||
-    totalPages === undefined ||
-    totalItems === undefined ||
-    totalPages !== Math.ceil(totalItems / requestedPerPage)
-  ) {
-    throw new Error('invalid_iroha_history_pagination');
-  }
-
-  const start = (requestedPage - 1) * requestedPerPage;
-  const expectedItems = start >= totalItems ? 0 : Math.min(requestedPerPage, totalItems - start);
-
-  if (!Number.isSafeInteger(start) || body.items.length !== expectedItems) {
-    throw new Error('truncated_iroha_history_page');
-  }
-
-  return { items: body.items, totalItems, totalPages };
 }
 
 async function validateIrohaHistoryAssetDefinition(
@@ -615,259 +571,62 @@ async function validateIrohaHistoryAssetDefinition(
   return scale;
 }
 
-function toIrohaHistoryElements(
+// Torii reports each account movement once, already resolved to this account's side.
+function toIrohaMovementHistoryElement(
   item: unknown,
   address: string,
   assetId: string,
   precision: number,
   network: IrohaNetworkKind
-): HistoryElement[] {
-  if (!isRecord(item)) throw new Error('invalid_iroha_history_item');
+): HistoryElement | null {
+  if (!isRecord(item) || !IROHA_MOVEMENT_FIELDS.every((key) => Object.hasOwn(item, key))) {
+    throw new Error('invalid_iroha_history_item');
+  }
+  if (item.type !== 'TRANSFER' || item.asset_definition_id !== assetId) return null;
+  if (item.account_id !== address) throw new Error('invalid_iroha_history_account');
+
+  const counterparty = item.counterparty_account_id;
+
+  if (typeof counterparty !== 'string' || !isIrohaI105Address(counterparty, network)) {
+    throw new Error('invalid_iroha_history_counterparty');
+  }
+  if (item.direction !== 'incoming' && item.direction !== 'outgoing') {
+    throw new Error('invalid_iroha_history_direction');
+  }
+
+  const hash = parseCanonicalIrohaHash(typeof item.tx_hash === 'string' ? item.tx_hash : null);
+  const amount = normalizeIrohaAmount(item.amount, precision);
+  const blockHeight = parseSafeInteger(item.block_height);
+  const movementIndex = parseSafeInteger(item.movement_index);
+  const timestampMs = parseSafeInteger(item.timestamp_ms);
+
   if (
-    !hasExactRecordKeys(item, [
-      'authority',
-      'created_at',
-      'kind',
-      'box',
-      'transaction_hash',
-      'transaction_status',
-      'block',
-      'index',
-    ]) ||
-    typeof item.authority !== 'string' ||
-    !isIrohaI105Address(item.authority, network)
+    !hash ||
+    !amount ||
+    blockHeight === undefined ||
+    blockHeight < 1 ||
+    movementIndex === undefined ||
+    timestampMs === undefined ||
+    typeof item.result_ok !== 'boolean'
   ) {
     throw new Error('invalid_iroha_history_item');
   }
 
-  const hash = parseCanonicalIrohaHash(
-    getCanonicalIrohaHistoryString(item, 'transaction_hash', ['transactionHash', 'hash'])
-  );
-  const timestamp = parseIrohaTimestamp(
-    getCanonicalIrohaHistoryString(item, 'created_at', ['createdAt', 'timestamp'])
-  );
-  const payload = getIrohaInstructionPayload(item);
-  const instructionIndex = parseIrohaInstructionIndex(item.index);
-  const blockHeight = parseSafeInteger(item.block);
+  const outgoing = item.direction === 'outgoing';
 
-  if (!hash || !timestamp || instructionIndex === null || blockHeight === undefined || blockHeight < 1) {
-    throw new Error('invalid_iroha_history_item');
-  }
-
-  const transactionStatus = getCanonicalIrohaHistoryString(item, 'transaction_status', [
-    'transactionStatus',
-    'status',
-  ]);
-  if (transactionStatus !== 'Committed') throw new Error('invalid_iroha_history_transaction_status');
-
-  const transfers = parseIrohaTransferPayload(payload, address, assetId, precision, network);
-  return transfers.map(({ amount, from, legId, to }) => ({
+  return {
     address,
     blockHash: hash,
     blockHeight,
     extrinsicHash: hash,
-    id: legId === null ? `${hash}:${instructionIndex}` : `${hash}:${instructionIndex}:${legId}`,
-    success: true,
-    timestamp,
+    id: `${hash}:${item.direction}:${movementIndex}`,
+    success: item.result_ok && item.status === 'SUCCESS',
+    timestamp: Math.floor(timestampMs / SEC1).toString(),
     transfer: {
       amount,
       fee: null,
-      from,
-      to,
-    },
-  }));
-}
-
-function getIrohaInstructionPayload(item: Record<string, unknown>): Record<string, unknown> {
-  if (item.kind !== 'Transfer') throw new Error('invalid_iroha_instruction_kind');
-  const box = item['box'];
-
-  if (!isRecord(box) || !hasExactRecordKeys(box, ['encoded', 'framed_sha256', 'json'])) {
-    throw new Error('invalid_iroha_instruction_box');
-  }
-
-  const json = box.json;
-
-  if (!isRecord(json) || !hasExactRecordKeys(json, ['kind', 'payload', 'wire_id', 'encoded'])) {
-    throw new Error('invalid_iroha_instruction_json');
-  }
-  if (json.kind !== 'Transfer' || typeof json.encoded !== 'string' || !/^(?:[0-9a-f]{2})+$/u.test(json.encoded)) {
-    throw new Error('invalid_iroha_instruction_json');
-  }
-  if (
-    box.encoded !== `0x${json.encoded}` ||
-    typeof box.framed_sha256 !== 'string' ||
-    !/^0x[0-9a-f]{64}$/u.test(box.framed_sha256)
-  ) {
-    throw new Error('invalid_iroha_instruction_box');
-  }
-
-  const payload = json.payload;
-
-  if (!isRecord(payload) || !hasExactRecordKeys(payload, ['variant', 'value'])) {
-    throw new Error('invalid_iroha_instruction_payload');
-  }
-  if (payload.variant === 'Asset' && json.wire_id !== 'iroha.transfer') {
-    throw new Error('invalid_iroha_instruction_wire_id');
-  }
-  if (payload.variant === 'AssetBatch' && json.wire_id !== 'iroha.transfer_batch') {
-    throw new Error('invalid_iroha_instruction_wire_id');
-  }
-
-  return payload;
-}
-
-function parseIrohaTransferPayload(
-  payload: unknown,
-  address: string,
-  assetId: string,
-  precision: number,
-  network: IrohaNetworkKind
-): IrohaTransferInstruction[] {
-  if (!isRecord(payload)) throw new Error('invalid_iroha_transfer_payload');
-
-  const variant = getRecordString(payload, ['variant']);
-  const value = payload.value;
-
-  if (variant === 'Asset') {
-    const transfer = parseIrohaAssetTransfer(value, address, assetId, precision, network);
-
-    return transfer ? [transfer] : [];
-  }
-
-  if (variant === 'AssetBatch') {
-    return parseIrohaAssetBatch(value, address, assetId, precision, network);
-  }
-
-  throw new Error('invalid_iroha_transfer_variant');
-}
-
-function parseIrohaAssetTransfer(
-  value: unknown,
-  address: string,
-  assetId: string,
-  precision: number,
-  network: IrohaNetworkKind
-): IrohaTransferInstruction | null {
-  if (!isRecord(value) || !hasExactRecordKeys(value, ['source', 'object', 'destination'])) {
-    throw new Error('invalid_iroha_asset_transfer');
-  }
-
-  const source = getCanonicalRecordString(value, 'source');
-  const destination = getCanonicalRecordString(value, 'destination');
-  const amount = normalizeIrohaAmount(value.object, precision);
-  const sourceParts = source ? parseIrohaAssetIdLiteral(source) : null;
-  const sourceAccount = sourceParts?.account ?? null;
-
-  if (!source || !sourceAccount || !destination || !amount) throw new Error('invalid_iroha_asset_transfer');
-  if (network === 'taira' && !/^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(sourceParts?.definition ?? '')) {
-    throw new Error('invalid_iroha_asset_transfer');
-  }
-  if (!isIrohaI105Address(sourceAccount, network) || !isIrohaI105Address(destination, network)) {
-    throw new Error('invalid_iroha_asset_transfer_account');
-  }
-  if (sourceParts?.definition !== assetId) return null;
-
-  const isIncoming = isSameIrohaLiteral(destination, address);
-  const isOutgoing = isSameIrohaLiteral(sourceAccount, address);
-
-  if (!isIncoming && !isOutgoing) return null;
-
-  return {
-    amount,
-    from: isOutgoing ? address : (sourceAccount ?? ''),
-    legId: null,
-    to: isIncoming ? address : destination,
-  };
-}
-
-function parseIrohaAssetBatch(
-  value: unknown,
-  address: string,
-  assetId: string,
-  precision: number,
-  network: IrohaNetworkKind
-): IrohaTransferInstruction[] {
-  if (!isRecord(value) || !hasExactRecordKeys(value, ['mode', 'entries'])) {
-    throw new Error('invalid_iroha_asset_batch');
-  }
-  const mode = value.mode;
-
-  if (
-    !isRecord(mode) ||
-    !hasExactRecordKeys(mode, ['mode', 'value']) ||
-    mode.mode !== 'Atomic' ||
-    mode.value !== null
-  ) {
-    throw new Error('invalid_iroha_asset_batch_mode');
-  }
-  if (!Array.isArray(value.entries) || value.entries.length > MAX_IROHA_BATCH_ENTRIES) {
-    throw new Error('invalid_iroha_asset_batch');
-  }
-
-  const transfers: IrohaTransferInstruction[] = [];
-  const legIds = new Set<string>();
-
-  for (const entry of value.entries) {
-    const parsed = parseIrohaAssetBatchEntry(entry, address, assetId, precision, network);
-
-    if (!parsed.canonical) throw new Error('invalid_iroha_asset_batch_entry');
-    if (parsed.legId === null || legIds.has(parsed.legId)) throw new Error('duplicate_iroha_asset_batch_leg');
-    legIds.add(parsed.legId);
-    if (parsed.transfer) transfers.push(parsed.transfer);
-  }
-
-  return transfers;
-}
-
-function parseIrohaAssetBatchEntry(
-  value: unknown,
-  address: string,
-  assetId: string,
-  precision: number,
-  network: IrohaNetworkKind
-): { canonical: boolean; legId: string | null; transfer: IrohaTransferInstruction | null } {
-  if (!isRecord(value) || !hasExactRecordKeys(value, ['leg_id', 'from', 'to', 'asset_definition', 'amount'])) {
-    return { canonical: false, legId: null, transfer: null };
-  }
-
-  const legId = getCanonicalRecordString(value, 'leg_id');
-  const from = getCanonicalRecordString(value, 'from');
-  const to = getCanonicalRecordString(value, 'to');
-  const definition = getCanonicalRecordString(value, 'asset_definition');
-  const amount = normalizeIrohaAmount(value.amount, precision);
-
-  if (
-    !legId ||
-    new TextEncoder().encode(legId).length > MAX_IROHA_BATCH_LEG_ID_LENGTH ||
-    !from ||
-    !to ||
-    !definition ||
-    !amount
-  ) {
-    return { canonical: false, legId: null, transfer: null };
-  }
-  if (!isIrohaI105Address(from, network) || !isIrohaI105Address(to, network)) {
-    return { canonical: false, legId: null, transfer: null };
-  }
-  if (network === 'taira' && !/^[1-9A-HJ-NP-Za-km-z]{20,64}$/u.test(definition)) {
-    return { canonical: false, legId: null, transfer: null };
-  }
-  if (definition !== assetId) return { canonical: true, legId, transfer: null };
-
-  const isIncoming = isSameIrohaLiteral(to, address);
-  const isOutgoing = isSameIrohaLiteral(from, address);
-
-  if (!isIncoming && !isOutgoing) return { canonical: true, legId, transfer: null };
-
-  return {
-    canonical: true,
-    legId,
-    transfer: {
-      amount,
-      from: isOutgoing ? address : from,
-      legId,
-      to: isIncoming ? address : to,
+      from: outgoing ? address : counterparty,
+      to: outgoing ? counterparty : address,
     },
   };
 }
@@ -910,110 +669,12 @@ function scaledIrohaIntegerToBaseUnits(mantissa: string, scale: number, precisio
   return (value / divisor).toString();
 }
 
-function parseIrohaTimestamp(value: string | null): string | null {
-  const match = value?.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{0,8}[1-9]))?Z$/u
-  );
-
-  if (!match) return null;
-
-  const [, yearText, monthText, dayText, hourText, minuteText, secondText, fraction = ''] = match;
-  const [year, month, day, hour, minute, second] = [
-    yearText,
-    monthText,
-    dayText,
-    hourText,
-    minuteText,
-    secondText,
-  ].map(Number);
-
-  if (year < 1970 || month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) return null;
-
-  const milliseconds = Number(fraction.padEnd(3, '0').slice(0, 3));
-  const timestamp = Date.UTC(year, month - 1, day, hour, minute, second, milliseconds);
-  const parsed = new Date(timestamp);
-
-  if (
-    !Number.isFinite(timestamp) ||
-    parsed.getUTCFullYear() !== year ||
-    parsed.getUTCMonth() !== month - 1 ||
-    parsed.getUTCDate() !== day ||
-    parsed.getUTCHours() !== hour ||
-    parsed.getUTCMinutes() !== minute ||
-    parsed.getUTCSeconds() !== second
-  ) {
-    return null;
-  }
-
-  const seconds = Math.floor(timestamp / SEC1);
-
-  return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds.toString() : null;
-}
-
 function parseCanonicalIrohaHash(value: string | null): string | null {
   return value && /^[0-9a-f]{63}[13579bdf]$/u.test(value) ? value : null;
 }
 
-function parseIrohaInstructionIndex(value: unknown): number | null {
-  const parsed = parseSafeInteger(value);
-
-  return parsed !== undefined && parsed <= 0xffff_ffff ? parsed : null;
-}
-
-function parseIrohaAssetIdLiteral(value: string): { account: string; definition: string } | null {
-  const parts = value.split('#');
-
-  if (parts.length !== 2) return null;
-
-  const [definition, account] = parts;
-
-  if (!definition || !account) return null;
-
-  return { account, definition };
-}
-
-function getRecordString(record: Record<string, unknown>, keys: string[]): string | null {
-  for (const key of keys) {
-    const value = record[key];
-
-    if (typeof value === 'string' && value.trim().length > 0) return value;
-  }
-
-  return null;
-}
-
-function getCanonicalRecordString(record: Record<string, unknown>, key: string): string | null {
-  const value = record[key];
-
-  return typeof value === 'string' && value.length > 0 && value === value.trim() ? value : null;
-}
-
-function hasExactRecordKeys(record: Record<string, unknown>, keys: string[]): boolean {
-  const actualKeys = Object.keys(record);
-
-  return actualKeys.length === keys.length && keys.every((key) => Object.hasOwn(record, key));
-}
-
-function getCanonicalIrohaHistoryString(
-  record: Record<string, unknown>,
-  canonicalKey: string,
-  aliases: string[]
-): string | null {
-  if (aliases.some((alias) => Object.hasOwn(record, alias))) {
-    throw new Error('noncanonical_iroha_history_field');
-  }
-
-  const value = record[canonicalKey];
-
-  return typeof value === 'string' && value.length > 0 && value === value.trim() ? value : null;
-}
-
 function parseSafeInteger(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
-}
-
-function isSameIrohaLiteral(left: string | null | undefined, right: string): boolean {
-  return typeof left === 'string' && left === right;
 }
 
 function getIrohaNetworkKind(chainId: string | undefined): IrohaNetworkKind {

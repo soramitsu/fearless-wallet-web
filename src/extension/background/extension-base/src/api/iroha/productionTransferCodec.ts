@@ -1,140 +1,91 @@
+import { NetworkId } from '@iroha/iroha-js/browser';
 import {
-  createIrohaNexusSdkTransferCodec,
-  type NexusTransactionCodec,
-} from './nexusSdkTransferCodec';
-import type { IrohaTransferCodec } from './transfer';
+  browserTransactionPayloadHashHex,
+  buildBrowserTransferPayload,
+  finalizeBrowserSignedTransaction,
+} from '@iroha/iroha-js/transaction-codec';
+import { ed25519 } from '@noble/curves/ed25519';
 
-type NativeBrowserTransactionBinding = {
-  buildTransferAssetPayload?: (...args: unknown[]) => unknown;
-  finalizeSignedTransaction?: (input: Record<string, unknown>) => unknown;
-  finalizeTransactionWithSignature?: (input: Record<string, unknown>) => unknown;
-};
+import type { IrohaSignedTransaction, IrohaTransferCodec, IrohaTransferCodecInput } from './transfer';
+import { deriveIrohaSigningKey } from '@/util/irohaKeyring';
 
-type IrohaBrowserGlobal = typeof globalThis & {
-  __IROHA_NATIVE_BINDING__?: NativeBrowserTransactionBinding;
-};
+// Norito V1 frame header that Torii counts toward the per-byte fee (`tx_bytes_len`).
+const NORITO_FRAME_HEADER_BYTES = 40;
 
-let cachedBinding: NativeBrowserTransactionBinding | undefined;
-let cachedCodec: Promise<IrohaTransferCodec> | undefined;
+type IrohaTransferPayloadInput = Omit<IrohaTransferCodecInput, 'derivationPath' | 'mnemonicOrSeed'>;
 
-async function loadProductionIrohaTransferCodec(): Promise<IrohaTransferCodec | undefined> {
-  if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS !== 'true') return undefined;
-
-  const binding = (globalThis as IrohaBrowserGlobal).__IROHA_NATIVE_BINDING__;
-
-  if (!hasBrowserTransactionCodec(binding)) return undefined;
-  if (cachedBinding === binding && cachedCodec) return cachedCodec;
-
-  cachedBinding = binding;
-  cachedCodec = createProductionCodec(binding);
-
-  return cachedCodec;
-}
-
-async function requireProductionIrohaTransferCodec(): Promise<IrohaTransferCodec> {
-  const codec = await loadProductionIrohaTransferCodec();
-
-  if (!codec) throw new Error('iroha_transfer_codec_unavailable');
-
-  return codec;
-}
-
-async function createProductionCodec(binding: NativeBrowserTransactionBinding): Promise<IrohaTransferCodec> {
-  const [{ NexusAppClient, nexusPayloadHashHex }, { signEd25519 }] = await Promise.all([
-    import('@iroha/iroha-js/nexus-app'),
-    import('@iroha/iroha-js/crypto'),
-  ]);
-
-  return createIrohaNexusSdkTransferCodec({
-    NexusAppClient: NexusAppClient as never,
-    payloadHashHex: (payloadBytes) => nexusPayloadHashHex(payloadBytes),
-    signEd25519,
-    transactionCodec: createNativeTransactionCodec(binding),
+function buildTransferPayload(input: IrohaTransferPayloadInput): Uint8Array {
+  return buildBrowserTransferPayload({
+    networkId: NetworkId.parse(input.networkId),
+    networkPrefix: input.networkPrefix,
+    authority: input.authority,
+    sourceAssetHoldingId: input.sourceAssetId,
+    quantity: input.amount,
+    destinationAccountId: input.destinationAccountId,
+    feePayment: {
+      payer: 'authority',
+      chargeLimits: [{ kind: 'nexus', assetDefinitionId: input.feeAssetDefinitionId, maxAmount: input.maxFee }],
+      gasLimit: null,
+    },
+    creationTimeMs: input.creationTimeMs,
+    ttlMs: input.ttlMs,
   });
 }
 
-function createNativeTransactionCodec(binding: NativeBrowserTransactionBinding): NexusTransactionCodec {
-  const buildTransferAssetPayload = binding.buildTransferAssetPayload;
-  const finalize = binding.finalizeSignedTransaction ?? binding.finalizeTransactionWithSignature;
+// Size Torii charges per-byte fees on; independent of the signature and creation time.
+function getIrohaTransferFrameBytes(input: IrohaTransferPayloadInput): number {
+  return buildTransferPayload(input).byteLength + NORITO_FRAME_HEADER_BYTES;
+}
 
-  if (typeof buildTransferAssetPayload !== 'function' || typeof finalize !== 'function') {
-    throw new Error('iroha_transaction_codec_unavailable');
-  }
+const browserIrohaTransferCodec: IrohaTransferCodec = {
+  async buildAndSignTransfer(input: IrohaTransferCodecInput): Promise<IrohaSignedTransaction> {
+    const signingKey = deriveIrohaSigningKey({ mnemonic: input.mnemonicOrSeed, path: input.derivationPath });
 
-  return {
-    buildTransferPayload(input) {
-      const result = buildTransferAssetPayload.call(
-        binding,
-        requireString(input.chainId, 'invalid_iroha_chain_id'),
-        requireString(input.authority, 'invalid_iroha_authority'),
-        requireString(input.sourceAssetHoldingId ?? input.sourceAssetId, 'invalid_iroha_asset_id'),
-        requireString(String(input.quantity ?? ''), 'invalid_iroha_amount'),
-        requireString(input.destinationAccountId, 'invalid_iroha_destination'),
-        input.metadata == null ? null : JSON.stringify(input.metadata),
-        input.creationTimeMs ?? null,
-        input.ttlMs ?? null,
-        input.nonce ?? null
+    try {
+      if (signingKey.publicKeyHex.toLowerCase() !== input.signingPublicKeyHex.toLowerCase()) {
+        throw new Error('iroha_signing_key_mismatch');
+      }
+
+      const networkId = NetworkId.parse(input.networkId);
+      const payloadBytes = buildTransferPayload(input);
+      const payloadHashHex = browserTransactionPayloadHashHex(payloadBytes, input.networkPrefix);
+      const publicKey = hexToBytes(signingKey.publicKeyHex);
+      const signature = ed25519.sign(hexToBytes(payloadHashHex), signingKey.privateKeySeed);
+      // Finalization re-validates the payload, authority, key and signature before returning bytes.
+      const finalized = finalizeBrowserSignedTransaction(
+        {
+          networkId,
+          networkPrefix: input.networkPrefix,
+          payloadBytes,
+          payloadHashHex,
+          authority: input.authority,
+          signingPublicKey: publicKey,
+          signatureAlgorithm: 'ed25519',
+        },
+        signature,
+        publicKey
       );
 
-      return extractBinary(result, ['payloadBytes', 'payload_bytes'], 'invalid_iroha_signable_transaction');
-    },
-    finalizeSignedTransaction(signable, signature, signingPublicKey) {
-      return finalize.call(binding, {
-        authority: signable.authority,
-        payload_hash_hex: signable.payloadHashHex,
-        payloadBytes: signable.payloadBytes,
-        payloadHashHex: signable.payloadHashHex,
-        publicKey: signingPublicKey,
-        signature: signature.signature,
-        signatureBytes: signature.signature,
-        signingPublicKey,
-      }) as ReturnType<NexusTransactionCodec['finalizeSignedTransaction']>;
-    },
-  };
-}
-
-function hasBrowserTransactionCodec(
-  binding: NativeBrowserTransactionBinding | undefined
-): binding is NativeBrowserTransactionBinding {
-  return Boolean(
-    binding &&
-    typeof binding.buildTransferAssetPayload === 'function' &&
-    (typeof binding.finalizeSignedTransaction === 'function' ||
-      typeof binding.finalizeTransactionWithSignature === 'function')
-  );
-}
-
-function requireString(value: unknown, errorCode: string): string {
-  if (typeof value !== 'string' || !value.trim() || value !== value.trim()) throw new Error(errorCode);
-
-  return value;
-}
-
-function extractBinary(value: unknown, keys: string[], errorCode: string): ArrayBuffer | ArrayBufferView | string {
-  if (typeof value === 'string' || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return value;
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-
-    for (const key of keys) {
-      const candidate = record[key];
-
-      if (typeof candidate === 'string' || candidate instanceof ArrayBuffer || ArrayBuffer.isView(candidate)) {
-        return candidate;
-      }
+      return {
+        signedTransaction: new Uint8Array(finalized.signedTransaction),
+        signedTransactionHashHex: finalized.hashHex,
+      };
+    } finally {
+      signingKey.privateKeySeed.fill(0);
     }
-  }
-
-  throw new Error(errorCode);
-}
-
-function resetProductionIrohaTransferCodecForTest(): void {
-  cachedBinding = undefined;
-  cachedCodec = undefined;
-}
-
-export {
-  loadProductionIrohaTransferCodec,
-  requireProductionIrohaTransferCodec,
-  resetProductionIrohaTransferCodecForTest,
+  },
 };
-export type { NativeBrowserTransactionBinding };
+
+async function requireProductionIrohaTransferCodec(): Promise<IrohaTransferCodec> {
+  return browserIrohaTransferCodec;
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const digits = hex.startsWith('0x') ? hex.slice(2) : hex;
+
+  if (!/^(?:[0-9a-fA-F]{2})+$/u.test(digits)) throw new Error('invalid_iroha_hex');
+
+  return Uint8Array.from(digits.match(/../gu) ?? [], (pair) => Number.parseInt(pair, 16));
+}
+
+export { browserIrohaTransferCodec, getIrohaTransferFrameBytes, requireProductionIrohaTransferCodec };

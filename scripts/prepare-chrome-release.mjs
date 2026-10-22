@@ -12,17 +12,17 @@ import {
   REQUIRED_PUBLIC_CONFIG_KEYS,
 } from './audit-chrome-release.mjs';
 import { auditReleaseSource } from './audit-release-source.mjs';
+import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
 const EXPECTED_NODE_VERSION = 'v24.19.0';
 const EXPECTED_YARN_VERSION = '4.17.0';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const provenancePath = path.join(rootDir, 'dist/extension/chrome-release-provenance.json');
 const provenanceTemporaryPath = `${provenancePath}.tmp`;
+// Send flags are derived from the evidence manifests by the build, not taken from this environment.
 const EXPECTED_RELEASE_ENVIRONMENT = {
   IS_EXTENSION: 'true',
   NODE_ENV: 'production',
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-  VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 };
@@ -169,6 +169,20 @@ function runAutomatedReleaseGates(yarnPath) {
       testEnvironmentScripts.has(script) ? { NODE_ENV: 'test' } : {},
       script,
       ...arguments_
+    );
+  }
+
+  // An enabled send ships only with evidence that still verifies against the live network.
+  const transferFlags = readReleaseTransferFlags(rootDir);
+
+  if (transferFlags.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
+    runYarn(yarnPath, 'audit:bitcoin-broadcast-evidence', '--require-ready');
+  }
+  if (transferFlags.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true') {
+    runCommand(
+      'bash',
+      ['scripts/audit-iroha-production-send-readiness.sh', '--require-ready', '--live'],
+      'bash scripts/audit-iroha-production-send-readiness.sh --require-ready --live'
     );
   }
 }

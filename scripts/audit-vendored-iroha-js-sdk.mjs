@@ -8,43 +8,33 @@ import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-export const VENDORED_IROHA_ARCHIVE = 'vendor/iroha-js/iroha-iroha-js-0.0.2.tgz';
+// @iroha/iroha-js 0.0.3 packed from hyperledger-iroha/iroha 581c49d95995b57b2b0ef3245a6f11b01248ad08
+// (javascript/iroha_js); vendor/iroha-js/README.md records how to reproduce it.
+export const VENDORED_IROHA_ARCHIVE = 'vendor/iroha-js/iroha-iroha-js-0.0.3.tgz';
 export const VENDORED_IROHA_DEPENDENCY = `file:${VENDORED_IROHA_ARCHIVE}`;
-export const VENDORED_IROHA_ARCHIVE_BYTES = 1_843_179;
-export const VENDORED_IROHA_ARCHIVE_SHA256 = '68def75061c3842cd2fddbd4629b1ceaf80b2b1ff3069a477596ada9bae61339';
-export const VENDORED_IROHA_FILE_COUNT = 141;
+export const VENDORED_IROHA_ARCHIVE_BYTES = 1_082_778;
+export const VENDORED_IROHA_ARCHIVE_SHA256 = '1fefeae587873fed45821f4a59f7b5722eab72dcc161561ffa7ecdb97049dd41';
+export const VENDORED_IROHA_FILE_COUNT = 259;
+export const VENDORED_IROHA_VERSION = '0.0.3';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_PREFIX = 'package/';
+// The wallet imports only these entry points (NetworkId and the browser transfer codec).
 const REQUIRED_EXPORTS = {
   '.': { import: './dist/index.js', types: './index.d.ts' },
   './browser': {
     browser: './dist/browser.js',
     import: './dist/browser.js',
-    types: './index.d.ts',
+    types: './browser.d.ts',
   },
-  './crypto': {
-    browser: './dist/crypto.browser.js',
-    import: './dist/crypto.js',
-    types: './index.d.ts',
-  },
-  './instruction-builders': {
-    import: './dist/instructionBuilders.js',
-    types: './index.d.ts',
-  },
-  './nexus-app': {
-    browser: './dist/nexusApp.js',
-    import: './dist/nexusApp.js',
-    types: './nexus-app.d.ts',
-  },
-  './torii-browser': {
-    browser: './dist/toriiBrowserClient.js',
-    import: './dist/toriiBrowserClient.js',
-    types: './index.d.ts',
+  './transaction-codec': {
+    browser: './dist/public/transactionCodec.js',
+    import: './dist/public/transactionCodec.js',
+    types: './transaction-codec.d.ts',
   },
 };
-const FORBIDDEN_EXPORTS = ['./ivm-artifact', './transaction-codec'];
-const BROWSER_NATIVE_FAILURE = 'iroha_js_host is unavailable in browser builds.';
+// Without the wallet's address binding the SDK must still fail closed in browsers.
+const BROWSER_NATIVE_FAILURE = 'Native binding required; the canonical Rust codec is unavailable in browsers';
 
 function fail(message) {
   throw new Error(message);
@@ -155,7 +145,7 @@ function validatePackageContents(files) {
   }
 
   const pkg = parseJsonFile(files, 'package.json');
-  if (pkg.name !== '@iroha/iroha-js' || pkg.version !== '0.0.2') {
+  if (pkg.name !== '@iroha/iroha-js' || pkg.version !== VENDORED_IROHA_VERSION) {
     fail(`unexpected package identity ${pkg.name ?? '<missing>'}@${pkg.version ?? '<missing>'}`);
   }
   if (pkg.type !== 'module' || pkg.license !== 'Apache-2.0' || pkg.private !== false) {
@@ -163,17 +153,14 @@ function validatePackageContents(files) {
   }
   for (const [exportName, expected] of Object.entries(REQUIRED_EXPORTS)) {
     if (!isDeepStrictEqual(pkg.exports?.[exportName], expected)) {
-      fail(`package export ${exportName} differs from the reviewed 0.0.2 surface`);
-    }
-  }
-  for (const exportName of FORBIDDEN_EXPORTS) {
-    if (Object.hasOwn(pkg.exports ?? {}, exportName)) {
-      fail(`blocked-send package unexpectedly exposes ${exportName}`);
+      fail(`package export ${exportName} differs from the reviewed ${VENDORED_IROHA_VERSION} surface`);
     }
   }
   if (
     !isDeepStrictEqual(pkg.browser, {
-      './dist/crypto.js': './dist/crypto.browser.js',
+      './dist/authenticatedBlockProofs.js': './dist/authenticatedBlockProofs.browser.js',
+      './dist/crypto.js': './dist/cryptoInternal.browser.js',
+      './dist/cryptoHash.js': './dist/cryptoHash.browser.js',
       './dist/native.js': './dist/native.browser.js',
     })
   ) {
@@ -199,6 +186,8 @@ async function collectInstalledFiles(packageDirectory) {
     for (const entry of entries) {
       const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
       const fullPath = path.join(directory, entry.name);
+      // Nested dependencies are separate packages pinned by yarn.lock, not part of this archive.
+      if (relativePath === 'node_modules' && entry.isDirectory()) continue;
       if (entry.isSymbolicLink()) fail(`installed package contains a symlink: ${relativePath}`);
       if (entry.isDirectory()) await visit(fullPath, relativePath);
       else if (entry.isFile()) files.set(relativePath, await fs.readFile(fullPath));
@@ -256,7 +245,7 @@ export async function auditVendoredIrohaJsSdk({ auditRoot = rootDir } = {}) {
     archiveSha256,
     dependency: VENDORED_IROHA_DEPENDENCY,
     installedFileCount: installedFiles.size,
-    version: '0.0.2',
+    version: VENDORED_IROHA_VERSION,
   };
 }
 

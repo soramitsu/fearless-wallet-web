@@ -16,7 +16,10 @@ import {
   isIrohaTransferNetwork,
   makeIrohaTransfer,
 } from '@extension-base/api/iroha/transfer';
-import { requireProductionIrohaTransferCodec } from '@extension-base/api/iroha/productionTransferCodec';
+import {
+  getIrohaTransferFrameBytes,
+  requireProductionIrohaTransferCodec,
+} from '@extension-base/api/iroha/productionTransferCodec';
 import {
   estimateSolanaTransferFee,
   isSolanaTransferNetwork,
@@ -1309,14 +1312,17 @@ export default class Extension extends FWExtensionBase {
 
     if (isIrohaTransferNetwork(network)) {
       try {
-        fee = await estimateIrohaTransferFee({
-          amount: amount ?? '0',
-          assetId,
-          from,
-          networkKey,
-          state: this.state,
-          to,
-        });
+        fee = await estimateIrohaTransferFee(
+          {
+            amount: amount ?? '0',
+            assetId,
+            from,
+            networkKey,
+            state: this.state,
+            to,
+          },
+          getIrohaTransferFrameBytes
+        );
       } catch (e) {
         console.info(e);
         errors.push({
@@ -1456,7 +1462,8 @@ export default class Extension extends FWExtensionBase {
             state: this.state,
             to,
           },
-          codec
+          codec,
+          getIrohaTransferFrameBytes
         )
       );
     } else if (isSolanaTransferNetwork(network)) {

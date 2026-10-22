@@ -15,6 +15,10 @@ import {
   EXPECTED_CHROME_EXTENSION_ID,
   REQUIRED_PUBLIC_CONFIG_KEYS,
 } from './audit-chrome-release.mjs';
+import { readReleaseTransferFlags, TRANSFER_EVIDENCE_MANIFESTS } from './release-transfer-flags.mjs';
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const RELEASE_TRANSFER_FLAGS = readReleaseTransferFlags(repositoryRoot);
 
 const TEST_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1/GrfVJTMm3BhHOSkdgMWyd2KR7DtyEwOXKxDetfPP6c9ZLXN8EdmOlhIVK5AOr14mY2Rdf/mtyFA0VgwyWl1P8OZiKs1gtn1TPm7wvGpd4ccwIaWQlh+8vIaaG2/bRPc3GtK8WeUT97eSYRTgC7XeFqlP4oHYm3gnqwzKGBQ0tS2cG3scrUuq7OhxXV8GNwDFwVgW3rnBm9KhwP8MpbDBXuapS/0f+4dzp576BjHNuO+EbaLrhYzIE2OwXb0s+w5cO6NVqpjSjpldnZPiicGQzJwyPMfUGclcoj/lUQRF/JtYg5lAiYU6qsh0eiiWn8tsc7f6zJh/Wj1DI0gae0vQIDAQAB';
@@ -124,8 +128,7 @@ function baseFiles(manifest) {
             browser: 'chrome',
             mode: 'production',
             releaseFlags: {
-              VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-              VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+              ...RELEASE_TRANSFER_FLAGS,
               VUE_APP_EXTENSION_SMOKE: 'false',
               VUE_APP_TEST_ONLY: 'false',
             },
@@ -225,6 +228,10 @@ async function createFixture(tempRoot, label, options = {}) {
     path.join(rootDir, 'package.json'),
     `${JSON.stringify({ description: manifest.description, name: 'fixture', version: packageVersion }, null, 2)}\n`
   );
+  for (const manifestPath of Object.values(TRANSFER_EVIDENCE_MANIFESTS)) {
+    await fs.mkdir(path.dirname(path.join(rootDir, manifestPath)), { recursive: true });
+    await fs.copyFile(path.join(repositoryRoot, manifestPath), path.join(rootDir, manifestPath));
+  }
 
   const files = baseFiles(manifest);
   for (const name of options.removeFiles ?? []) files.delete(name);

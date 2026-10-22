@@ -8,6 +8,7 @@ import { build, createLogger } from 'vite';
 import { commonViteConfig } from '../vite.config.shared.mjs';
 import { createFirefoxBuildLogPolicy, polkadotIifePackageInfoPlugin } from './firefox-build-warning-policy.mjs';
 import { auditKeyExfiltrationDirectory } from './audit-key-exfiltration.mjs';
+import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
 const require = createRequire(import.meta.url);
 const makeManifest = require('../src/extension/makeManifest.cjs');
@@ -23,8 +24,7 @@ const browser = process.env.EXTENSION_TYPE || 'chrome';
 const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
 export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-  VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+  ...readReleaseTransferFlags(root),
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 });

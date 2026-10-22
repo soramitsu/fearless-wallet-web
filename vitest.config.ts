@@ -15,7 +15,8 @@ export default defineConfig(({ mode }) => {
       globals: true,
       // Real scrypt/HD-key regression tests need bounded CPU and memory contention.
       maxWorkers: 4,
-      server: { deps: { inline: ['@subwallet/keyring'] } },
+      // The Iroha SDK must go through Vite so its native import resolves to the browser binding.
+      server: { deps: { inline: ['@subwallet/keyring', '@iroha/iroha-js'] } },
       environment: 'happy-dom',
       coverage: {
         provider: 'v8',

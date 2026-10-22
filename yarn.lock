@@ -813,15 +813,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@iroha/iroha-js@file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz::locator=fearless-wallet%40workspace%3A.":
-  version: 0.0.2
-  resolution: "@iroha/iroha-js@file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz#vendor/iroha-js/iroha-iroha-js-0.0.2.tgz::hash=c60602&locator=fearless-wallet%40workspace%3A."
+"@iroha/iroha-js@file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz::locator=fearless-wallet%40workspace%3A.":
+  version: 0.0.3
+  resolution: "@iroha/iroha-js@file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz#vendor/iroha-js/iroha-iroha-js-0.0.3.tgz::hash=219f53&locator=fearless-wallet%40workspace%3A."
   dependencies:
     "@noble/ciphers": "npm:^1.2.0"
     "@noble/curves": "npm:^1.4.0"
     "@noble/hashes": "npm:^1.5.0"
+    "@scure/bip39": "npm:^2.2.0"
     buffer: "npm:^6.0.3"
-  checksum: 10/d9800e8065da8ccb5c27dbea439e51ae14569527c5722e3bfa4bdabd8050101b3aad90cc1269e498e1f2cd50db23e599c76dca77beaba259d3bc073a0f1d6662
+  checksum: 10/f01a5fd05c4b47e784148fd777e2b65cd3bae7b7808ded7d2e6b990c19c81430bbe9f0b8b321387450b2e292cd4227d9e5bd06fbd8922b3226749da88a2e3f02
   languageName: node
   linkType: hard
 
@@ -1107,6 +1108,13 @@ __metadata:
   version: 2.2.0
   resolution: "@noble/hashes@npm:2.2.0"
   checksum: 10/b1b78bedc2a01394be047429f3d888905015fe8a09f1b7e43e0b5736b54133df62f73dcc73ede43af38e96e86156afb45b86973fdeaa95d9f0880333c3fc0907
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:2.4.0":
+  version: 2.4.0
+  resolution: "@noble/hashes@npm:2.4.0"
+  checksum: 10/88d4cdd6cef00f412a39f65bda1d24cba2264c6cacdd1c6c48d7ed66fd9be865ffb7231024fb81177975c684b8a463879b89c5ae6960370b05a546c0fd8afa2c
   languageName: node
   linkType: hard
 
@@ -2423,6 +2431,15 @@ __metadata:
     "@noble/hashes": "npm:~1.8.0"
     "@scure/base": "npm:~1.2.5"
   checksum: 10/63e60c40fa1bda2c1b50351546fee6d7b0947cc814aa7a4209dcedd3693b5053302c8fca28292f5f50735e11c613265359acdc019127393dbab17e53489fc449
+  languageName: node
+  linkType: hard
+
+"@scure/bip39@npm:^2.2.0":
+  version: 2.4.0
+  resolution: "@scure/bip39@npm:2.4.0"
+  dependencies:
+    "@noble/hashes": "npm:2.4.0"
+  checksum: 10/6934cc6ac8a205d941e3d49f0cb49352f8d3b1e1188007589f2f4970618a9e4b8f7c4ce537d63f00638063c3a25623508402a16f7a97092d10a4ebac2963b0ae
   languageName: node
   linkType: hard
 
@@ -6963,7 +6980,7 @@ __metadata:
     "@fontsource-variable/sora": "npm:^5.2.8"
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/noto-sans-egyptian-hieroglyphs": "npm:^5.3.0"
-    "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz"
+    "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz"
     "@metamask/safe-event-emitter": "npm:^3.1.2"
     "@noble/curves": "npm:^1.7.0"
     "@noble/hashes": "npm:^1.4.0"

@@ -72,7 +72,7 @@ const irohaNetwork = (name: string, chainId: string): NetworkJson => {
 const routeBody = <TBody>(body: TBody) => ({
   body:
     typeof body === 'object' && body !== null && 'items' in body
-      ? { count_mode: 'bounded', has_more: false, ...body }
+      ? { next_cursor: null, ...body }
       : body,
   contentType: 'application/json',
   headers: {},
@@ -155,12 +155,8 @@ describe('IrohaBalanceService', () => {
     ]);
 
     expect(clientFactory).toHaveBeenCalledWith(taira, 'taira');
-    expect(client.getAccountAssets).toHaveBeenCalledWith(TAIRA_ACCOUNT_ID, {
-      countMode: 'bounded',
-      limit: 500,
-      offset: 0,
-    });
-    expect(client.getAssetDefinitions).toHaveBeenCalledWith({ countMode: 'bounded', limit: 500, offset: 0 });
+    expect(client.getAccountAssets).toHaveBeenCalledWith(TAIRA_ACCOUNT_ID, { cursor: undefined, limit: 100 });
+    expect(client.getAssetDefinitions).toHaveBeenCalledWith({ cursor: undefined, limit: 100 });
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       free: '340282366920938463463374607431768211455',
       precision: 9,
@@ -176,6 +172,45 @@ describe('IrohaBalanceService', () => {
       SUBSTRATE_ADDRESS
     );
     expect(publishBalance).toHaveBeenCalled();
+  });
+
+  it('joins account asset and definition pages through Torii cursors', async () => {
+    const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
+    const { state } = createState([taira]);
+    const getAccountAssets = vi
+      .fn()
+      .mockResolvedValueOnce(
+        routeBody({
+          next_cursor: 'page-2',
+          items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '1.5', scope: 'global' }],
+        })
+      )
+      .mockResolvedValueOnce(
+        routeBody({
+          items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '2.25', scope: 'dataspace:7' }],
+        })
+      );
+    const getAssetDefinitions = vi
+      .fn()
+      .mockResolvedValueOnce(
+        routeBody({ next_cursor: 'defs-2', items: [{ id: '5HFTUK41MFWnFdeHo5XySHC7PQun', name: 'Kina', spec: { scale: 2 } }] })
+      )
+      .mockResolvedValueOnce(routeBody({ items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale: 9 } }] }));
+    const client: IrohaBalanceClient = {
+      getAccountAssets: getAccountAssets as IrohaBalanceClient['getAccountAssets'],
+      getAssetDefinitions: getAssetDefinitions as IrohaBalanceClient['getAssetDefinitions'],
+    };
+    const service = new IrohaBalanceService(
+      state,
+      vi.fn(() => client)
+    );
+
+    await expect(
+      service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
+    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '3.75', network: 'Taira' }]);
+
+    expect(getAccountAssets).toHaveBeenNthCalledWith(2, TAIRA_ACCOUNT_ID, { cursor: 'page-2', limit: 100 });
+    expect(getAssetDefinitions).toHaveBeenNthCalledWith(2, { cursor: 'defs-2', limit: 100 });
   });
 
   it.each([
@@ -208,13 +243,13 @@ describe('IrohaBalanceService', () => {
     warn.mockRestore();
   });
 
-  it('fails closed when account assets exceed one complete bounded snapshot', async () => {
+  it('fails closed when account asset pages do not end within the page bound', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
     const { state } = createState([taira]);
     const getAccountAssets = vi.fn().mockResolvedValue(
       routeBody({
-        has_more: true,
+        next_cursor: 'more',
         items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '1', scope: 'global' }],
       })
     );
@@ -232,23 +267,20 @@ describe('IrohaBalanceService', () => {
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
     ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
 
-    expect(getAccountAssets).toHaveBeenCalledTimes(1);
-    expect(getAccountAssets).toHaveBeenCalledWith(TAIRA_ACCOUNT_ID, {
-      countMode: 'bounded',
-      limit: 500,
-      offset: 0,
-    });
+    expect(getAccountAssets).toHaveBeenCalledTimes(10);
+    expect(getAccountAssets).toHaveBeenNthCalledWith(1, TAIRA_ACCOUNT_ID, { cursor: undefined, limit: 100 });
+    expect(getAccountAssets).toHaveBeenNthCalledWith(2, TAIRA_ACCOUNT_ID, { cursor: 'more', limit: 100 });
     expect(getAssetDefinitions).not.toHaveBeenCalled();
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0].state).toBe(APIItemState.ERROR);
     warn.mockRestore();
   });
 
-  it('fails closed when definitions exceed one complete bounded snapshot', async () => {
+  it('fails closed when definition pages do not end within the page bound', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
     const { state } = createState([taira]);
     const getAssetDefinitions = vi.fn().mockResolvedValue(
-      routeBody({ has_more: true, items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale: 9 } }] })
+      routeBody({ next_cursor: 'more', items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale: 9 } }] })
     );
     const client: IrohaBalanceClient = {
       getAccountAssets: vi.fn().mockResolvedValue(
@@ -267,8 +299,8 @@ describe('IrohaBalanceService', () => {
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
     ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
 
-    expect(getAssetDefinitions).toHaveBeenCalledTimes(1);
-    expect(getAssetDefinitions).toHaveBeenCalledWith({ countMode: 'bounded', limit: 500, offset: 0 });
+    expect(getAssetDefinitions).toHaveBeenCalledTimes(20);
+    expect(getAssetDefinitions).toHaveBeenLastCalledWith({ cursor: 'more', limit: 100 });
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0].state).toBe(APIItemState.ERROR);
     warn.mockRestore();
   });
@@ -527,7 +559,8 @@ describe('IrohaBalanceService', () => {
     } as TokenGroup;
     const repeatedPage = Array.from({ length: 200 }, (_, index) => ({ id: `other-${index}#wonderland` }));
     const { state } = createState([taira], { [SUBSTRATE_ADDRESS]: [existingGroup] });
-    const getAssetDefinitions = vi.fn().mockResolvedValue(routeBody({ has_more: true, items: repeatedPage }));
+    // Malformed definition ids fail the snapshot on the first page, before any further cursor walk.
+    const getAssetDefinitions = vi.fn().mockResolvedValue(routeBody({ next_cursor: 'more', items: repeatedPage }));
     const client: IrohaBalanceClient = {
       getAccountAssets: vi
         .fn()
@@ -547,7 +580,7 @@ describe('IrohaBalanceService', () => {
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
     ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '7', network: 'Taira' }]);
 
-    expect(getAssetDefinitions.mock.calls.map(([options]) => options?.offset)).toEqual([0]);
+    expect(getAssetDefinitions).toHaveBeenCalledTimes(1);
     expect(existingGroup.balances[0]).toMatchObject({ state: APIItemState.ERROR, total: '7' });
     warn.mockRestore();
   });

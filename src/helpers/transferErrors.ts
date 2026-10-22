@@ -1,6 +1,10 @@
 const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',
   iroha_transfer_disabled: 'assets.irohaTransfersDisabled',
+  // A reset or upgraded Iroha network needs a wallet release pinned to it.
+  iroha_network_reset: 'assets.irohaTransfersDisabled',
+  iroha_network_identity_unavailable: 'assets.irohaTransfersDisabled',
+  iroha_node_protocol_unsupported: 'assets.irohaTransfersDisabled',
   unsupported_solana_asset: 'assets.unsupportedSolanaTokenTransfer',
   cross_chain_network_unavailable: 'assets.crossChainRuntimeUnavailable',
   cross_chain_runtime_unavailable: 'assets.crossChainRuntimeUnavailable',

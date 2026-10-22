@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,6 +58,22 @@ const CARDANO_MESSAGE_SIGNING_BROWSER = path.resolve(
 const NOOP_DEVTOOLS_API = path.resolve(__dirname, 'src/util/noopDevtoolsApi.ts');
 const VUEDRAGGABLE_ESM = path.resolve(__dirname, 'node_modules/vuedraggable/src/vuedraggable.js');
 const UNSUPPORTED_NODE_VM = path.resolve(__dirname, 'src/util/unsupportedNodeVm.ts');
+const IROHA_SDK_DIST = path.join('node_modules', '@iroha', 'iroha-js', 'dist') + path.sep;
+const IROHA_SDK_BROWSER_BINDING = path.resolve(__dirname, 'src/util/irohaSdkBrowserBinding.ts');
+
+// The Iroha SDK reaches its Rust binding through `native.js`; browsers get the wallet's
+// I105 address binding instead (see src/util/irohaSdkBrowserBinding.ts).
+function irohaSdkBrowserBindingPlugin() {
+  return {
+    name: 'fearless-iroha-sdk-browser-binding',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!importer || (source !== './native.js' && source !== '../native.js')) return null;
+
+      return path.normalize(importer.split('?')[0]).includes(IROHA_SDK_DIST) ? IROHA_SDK_BROWSER_BINDING : null;
+    },
+  };
+}
 
 function createSymbolId(template, file) {
   return template.replace('[name]', path.basename(file, '.svg'));
@@ -135,22 +152,42 @@ export function makeDefine(mode, extraEnv = {}) {
   return define;
 }
 
-export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
-  if (process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
-    throw new Error(
-      'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
-    );
+// A send flag may only be enabled once its live-network evidence manifest is marked ready.
+// The release audits verify the recorded evidence itself (on-chain status, artifact digest).
+function assertTransferEvidenceReady(flag, manifestPath, errorCode, description) {
+  if (process.env[flag] !== 'true') return;
+
+  let manifest;
+
+  try {
+    manifest = JSON.parse(readFileSync(path.resolve(__dirname, manifestPath), 'utf8'));
+  } catch {
+    manifest = undefined;
   }
 
-  if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true') {
-    throw new Error(
-      'browser_transaction_codec_unpublished_source_only: local browser codec source is not a reviewed immutable release artifact; Iroha transfers must remain disabled in every build mode'
-    );
+  if (manifest?.status !== 'ready' || manifest.releaseEnabled !== true) {
+    throw new Error(`${errorCode}: ${description} stay disabled until ${manifestPath} records ready release evidence`);
   }
+}
+
+export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
+  assertTransferEvidenceReady(
+    'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
+    'scripts/bitcoin-testnet-broadcast-evidence.json',
+    'bitcoin_testnet_broadcast_evidence_missing',
+    'Bitcoin transfers'
+  );
+  assertTransferEvidenceReady(
+    'VUE_APP_ENABLE_IROHA_TRANSFERS',
+    'config/iroha-production-send-readiness.json',
+    'iroha_transfer_evidence_missing',
+    'Iroha transfers'
+  );
 
   return {
     publicDir,
     plugins: [
+      irohaSdkBrowserBindingPlugin(),
       vue(),
       subwalletPackageCompatPlugin(),
       ...(asyncWasm ? [wasm(), ...(nativeAsyncModules ? [] : [topLevelAwait()])] : []),

@@ -11,6 +11,7 @@ import {
   parseReviewedIrohaArchive,
   VENDORED_IROHA_ARCHIVE,
   VENDORED_IROHA_DEPENDENCY,
+  VENDORED_IROHA_FILE_COUNT,
 } from './audit-vendored-iroha-js-sdk.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -38,8 +39,8 @@ try {
   }
 
   const result = await auditVendoredIrohaJsSdk({ auditRoot: temporaryDirectory });
-  assert.equal(result.archiveFileCount, 141);
-  assert.equal(result.installedFileCount, 141);
+  assert.equal(result.archiveFileCount, VENDORED_IROHA_FILE_COUNT);
+  assert.equal(result.installedFileCount, VENDORED_IROHA_FILE_COUNT);
 
   const installedManifest = path.join(installedDirectory, 'package.json');
   await fs.appendFile(installedManifest, '\n');

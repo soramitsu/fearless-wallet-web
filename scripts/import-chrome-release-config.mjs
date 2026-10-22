@@ -131,8 +131,7 @@ export async function importChromeReleaseConfig({
     EXTENSION_PUBLIC_KEY: manifest.key,
     IS_EXTENSION: 'true',
     NODE_ENV: 'production',
-    VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-    VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+    // Send flags come from the evidence manifests at build time (scripts/release-transfer-flags.mjs).
     VUE_APP_EXTENSION_SMOKE: 'false',
     VUE_APP_TEST_ONLY: 'false',
   };

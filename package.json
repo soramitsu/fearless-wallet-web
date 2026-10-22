@@ -56,6 +56,7 @@
     "test:vendored-iroha-sdk-audit": "node scripts/test-vendored-iroha-js-sdk-audit.mjs",
     "test:smoke:firefox": "yarn test:firefox-smoke-policy && node scripts/firefox-extension-smoke.mjs",
     "test:smoke:bitcoin": "vitest run tests/smoke/bitcoin-testnet-broadcast.spec.ts",
+    "test:smoke:taira": "vitest run tests/smoke/iroha-taira-transfer.spec.ts",
     "generate:bitcoin-broadcast-evidence-template": "bash scripts/generate-bitcoin-broadcast-evidence-template.sh",
     "audit:bitcoin-broadcast-evidence": "bash scripts/audit-bitcoin-broadcast-evidence.sh",
     "test:bitcoin-broadcast-evidence-audit": "bash scripts/test-bitcoin-broadcast-evidence-audit.sh",
@@ -68,7 +69,7 @@
   "main": "index.js",
   "dependencies": {
     "@emurgo/cardano-serialization-lib-browser": "^15.0.3",
-    "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.2.tgz",
+    "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz",
     "@metamask/safe-event-emitter": "^3.1.2",
     "@noble/curves": "^1.7.0",
     "@noble/hashes": "^1.4.0",

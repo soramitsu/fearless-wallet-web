@@ -1,25 +1,38 @@
-# Vendored Iroha JavaScript SDK 0.0.2
+# Vendored Iroha JavaScript SDK 0.0.3
 
-`iroha-iroha-js-0.0.2.tgz` is the exact package previously published as
-`iroha-js-0.0.2-v2.0.0-rc.2.1-fearless-mobile-sdk.3.tgz` on the Hyperledger
-Iroha GitHub release `v2.0.0-rc.2.1-fearless-mobile-sdk.3`.
+`iroha-iroha-js-0.0.3.tgz` is `@iroha/iroha-js` 0.0.3 packed from the public
+Hyperledger Iroha source:
 
-The upstream JavaScript asset was later removed while this web project still
-depended on its URL. The archive here was recovered from Yarn's content cache
-and reproduced with `npm pack --ignore-scripts`. It is byte-for-byte identical
-to the original reviewed artifact:
+- repository: <https://github.com/hyperledger-iroha/iroha>
+- commit: `581c49d95995b57b2b0ef3245a6f11b01248ad08` (`optimizations`, 2026-10-21),
+  path `javascript/iroha_js`
+- bytes: `1,082,778`
+- files/archive entries: `259`
+- SHA-256: `1fefeae587873fed45821f4a59f7b5722eab72dcc161561ffa7ecdb97049dd41`
 
-- bytes: `1,843,179`
-- files/archive entries: `141`
-- SHA-256: `68def75061c3842cd2fddbd4629b1ceaf80b2b1ff3069a477596ada9bae61339`
-- npm integrity: `sha512-xgYC90huCue607RGBHRfXo46eafmy96/IyQ7GODYqB1f9icWRyHp5ShiiUol/2zCfuQuBipzVBkE1AgckG27GQ==`
+The wallet uses two browser entry points: `@iroha/iroha-js/transaction-codec`
+(canonical transfer payloads, payload hashing and signed-transaction
+finalization) and `NetworkId` from `@iroha/iroha-js/browser`. The SDK reaches
+its Rust binding only to parse and render I105 account literals; the extension
+build redirects that import to `src/util/irohaSdkBrowserBinding.ts`, which uses
+the wallet's I105 codec. Every other native operation still fails closed.
 
-This package is retained only to make the existing 0.0.2 account/read support
-installable and reproducible. It does not expose the reviewed browser
-`transaction-codec` or `ivm-artifact` entry points from the unpublished 0.0.3
-candidate. Iroha transfers must remain disabled; do not replace this package
-with that candidate or treat this vendoring as production-send approval.
+This SDK encodes data model 4 with signed-transaction schema hash
+`7ab5ff9c572efb316deac478f19209c5`, the format Taira reported on 2026-10-22
+(`/v1/node/capabilities`). Transfers check that pair on the node before signing.
 
-Run `yarn audit:vendored-iroha-sdk` after dependency installation. The audit
-pins the archive bytes and digest, validates its fail-closed browser surface,
-and compares all installed package files byte-for-byte with this archive.
+## Reproduce
+
+With Node 24.19.0:
+
+```sh
+git -C <iroha checkout> archive 581c49d95995b57b2b0ef3245a6f11b01248ad08 javascript/iroha_js | tar -x -C <empty dir>
+cd <empty dir>/javascript/iroha_js
+npm ci
+npm run build:dist
+npm pack --ignore-scripts
+```
+
+`yarn audit:vendored-iroha-sdk` pins the archive bytes and digest, the export
+surface the wallet imports, the SDK's fail-closed browser native shim, and that
+the installed package matches the archive byte for byte.

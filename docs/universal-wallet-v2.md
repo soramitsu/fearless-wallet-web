@@ -224,7 +224,9 @@ must be non-empty human-readable strings without control characters, native asse
 symbols must be uppercase, decimals must be in `0...255`, and derivation paths
 must be rooted at `m`.
 
-Endpoint kinds are `indexer`, `rpc`, `torii-mcp`, and `explorer`. Public URLs
+Endpoint kinds are `indexer`, `rpc`, `torii`, `torii-mcp`, and `explorer`.
+`torii` is a Torii REST base URL; the web wallet calls Torii directly and only
+reads `torii-mcp` from older registries. Public URLs
 must be HTTPS; local development URLs may use `http://localhost` or
 `http://127.0.0.1`. Registry endpoint URLs must not embed credentials, query
 parameters, or fragments. Public indexer endpoints are read-only. Broadcasts,
@@ -237,40 +239,24 @@ endpoints, never a public indexer endpoint.
   configured Solana RPC endpoint directly.
 - Taira testnet is enabled with I105 chain discriminant `369`, Torii root
   `https://taira.sora.org`, and chain id
-  `fc56984b-2be7-431d-840e-21514d1883f0`.
+  `fc56984b-2be7-431d-840e-21514d1883f0`. Transfers are signed for the pinned
+  Taira network ID (the genesis block hash) and refused after a Taira reset
+  until the wallet is updated.
 - Nexus mainnet uses I105 chain discriminant `753` and chain id
   `sora:nexus:global`, but remains registry-gated until the
   production Torii/TLS endpoint is confirmed.
-- Iroha `features: ['transfer']` is capability metadata, not a production-send
-  enablement claim. Browser send remains fail closed under
-  `config/iroha-production-send-readiness.json`; see
-  `docs/iroha-production-send-readiness.md` for the unpublished-source-only
-  artifact blocker and the remaining live asset, fee, node, and funded-send
-  gates.
+- Iroha `features: ['transfer']` is capability metadata. Browser sends are
+  enabled only while `config/iroha-production-send-readiness.json` is ready
+  with live Taira evidence; see `docs/iroha-production-send-readiness.md`.
+  Nexus sends stay disabled.
 
 ### Nexus wallet-smoke transaction metadata
 
-The operator-only `makeIrohaWalletSmokeTransfer` seam binds a web smoke
-transaction to the exact route-governance action whose canonical Norito bytes
-were published. It is not wired to extension or dapp request handlers, does not
-enable production sending, requires the canonical Nexus chain and Minamoto
-Torii endpoint, and fails before signing or network access unless metadata is
-exactly:
-
-```json
-{
-  "evidence_role": "wallet-smoke",
-  "route_governance_action_hash": "sha256:<64 lowercase hex>",
-  "wallet_platform": "web",
-  "wallet_commit": "<40 lowercase git hex>"
-}
-```
-
-Missing, additional, inherited, accessor, symbol, incorrectly cased, all-zero
-sentinel, or otherwise malformed fields are rejected. The validated values are copied into
-a frozen snapshot before the Nexus SDK builds the signable payload, preventing
-caller mutation from changing the evidence binding during signing. Ordinary
-wallet transfers omit transaction metadata.
+The operator-only Nexus wallet-smoke seam was removed with the earlier NexusApp
+transfer codec. It required a Nexus chain identity the current data model no
+longer signs against. It returns with Nexus enablement, once Nexus has an
+approved Torii endpoint and a pinned network ID. Ordinary wallet transfers omit
+transaction metadata.
 
 ## Normalized Indexer Contract
 

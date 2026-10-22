@@ -12,10 +12,10 @@
     {
       "id": "3.0.6",
       "commit": "hotfix/3.0.6",
-      "sha": "a7c1f172c3fd99d8b26d5c0f317666af5e1b9978",
+      "sha": "cfcdb591fd7098b24022e8e9afc19b511d0fe785",
       "node": "20",
       "yarn": "3.4.1",
-      "note": "The published 3.0.5 minus the phrase upload (HOTFIX-3.0.6). The Web Store rollback target; R1 rolls back to it."
+      "note": "The final 3.0.6 source: the published 3.0.5 minus the phrase upload, with AUDIT-01, AUDIT-02 (TON version 2/3 storage) and the availability fixes (HOTFIX-3.0.6). The Web Store rollback target; R1 rolls back to it."
     },
     {
       "id": "2.7.1",

@@ -222,7 +222,7 @@ function rejectUnsupportedKeys(value, allowedFields, path) {
   }
 }
 
-function validateCommittedEvidence(value) {
+function validateCommittedEvidence(value, isReady) {
   const evidence = requireArray(value, 'evidence');
   evidence.forEach((record, index) => {
     const path = `evidence[${index}]`;
@@ -233,8 +233,12 @@ function validateCommittedEvidence(value) {
     rejectUnsupportedKeys(record, REQUIRED_EVIDENCE_FIELDS, path);
   });
 
-  if (evidence.length > 0) {
+  // A ready manifest is refreshed before its evidence expires; a blocked one has not recorded any yet.
+  if (!isReady && evidence.length > 0) {
     fail('committed Bitcoin broadcast evidence manifest must not prefill evidence');
+  }
+  if (isReady && evidence.length === 0) {
+    fail('ready Bitcoin broadcast evidence manifest must already record evidence');
   }
 }
 
@@ -300,12 +304,23 @@ if (manifest) {
     }
   }
 
+  const isReady = manifest.status === 'ready';
+  if (manifest.status !== 'blocked' && !isReady) {
+    fail('status must be blocked or ready');
+  }
+  if (manifest.releaseEnabled !== isReady) {
+    fail('releaseEnabled must be true exactly when status is ready');
+  }
+
   const blockers = requireArray(manifest.blockers, 'blockers');
   const blockerSet = new Set(blockers);
-  for (const blocker of REQUIRED_BLOCKERS) {
+  for (const blocker of isReady ? [] : REQUIRED_BLOCKERS) {
     if (!blockers.includes(blocker)) {
       fail(`blocked Bitcoin broadcast evidence missing ${blocker}`);
     }
+  }
+  if (isReady && blockers.length > 0) {
+    fail('ready Bitcoin broadcast evidence must not list blockers');
   }
   for (const blocker of blockers) {
     if (!REQUIRED_BLOCKERS.includes(blocker)) {
@@ -321,7 +336,7 @@ if (manifest) {
     fail('duplicate Bitcoin broadcast evidence verification command in manifest');
   }
   requireArray(manifest.liveSmokeEnvironment, 'liveSmokeEnvironment');
-  validateCommittedEvidence(manifest.evidence);
+  validateCommittedEvidence(manifest.evidence, isReady);
 }
 
 if (errors.length > 0) {

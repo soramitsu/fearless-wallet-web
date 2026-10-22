@@ -36,6 +36,21 @@ expect_failure() {
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+# Mutation cases start from the blocked state whatever the committed release state.
+blocked_manifest="$tmp_dir/blocked-manifest.json"
+node - "$DEFAULT_MANIFEST" "$blocked_manifest" <<'NODE'
+const fs = require('fs');
+const [source, target] = process.argv.slice(2);
+const manifest = JSON.parse(fs.readFileSync(source, 'utf8'));
+Object.assign(manifest, {
+  status: 'blocked',
+  releaseEnabled: false,
+  blockers: ['funded-testnet-broadcast-evidence-missing'],
+  evidence: []
+});
+fs.writeFileSync(target, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+
 BITCOIN_BROADCAST_EVIDENCE_ROOT="$tmp_dir" expect_failure \
   "ambient Bitcoin evidence template root override" \
   "BITCOIN_BROADCAST_EVIDENCE_ROOT is forbidden" \
@@ -66,6 +81,11 @@ separator_template="$tmp_dir/separator-template.json"
 bash "$GENERATOR_SCRIPT" -- --manifest "$DEFAULT_MANIFEST" --output "$separator_template" >"$tmp_dir/separator-stdout.json"
 cmp "$output_template" "$separator_template" >/dev/null || fail "template generation must accept a standalone argument separator"
 cmp "$separator_template" "$tmp_dir/separator-stdout.json" >/dev/null || fail "separator template output file must match stdout"
+
+# Refreshing a ready manifest and recording a first broadcast produce the same template.
+blocked_template="$tmp_dir/blocked-template.json"
+bash "$GENERATOR_SCRIPT" --manifest "$blocked_manifest" --output "$blocked_template" >/dev/null
+cmp "$output_template" "$blocked_template" >/dev/null || fail "template must not depend on the committed release state"
 
 node - "$output_template" <<'NODE'
 const fs = require('fs');
@@ -159,7 +179,7 @@ printf '{' >"$bad_json"
 expect_failure "invalid manifest JSON" "must be valid JSON" bash "$GENERATOR_SCRIPT" --manifest "$bad_json"
 
 bad_scope="$tmp_dir/bad-scope.json"
-cp "$DEFAULT_MANIFEST" "$bad_scope"
+cp "$blocked_manifest" "$bad_scope"
 node - "$bad_scope" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -170,7 +190,7 @@ NODE
 expect_failure "wrong evidence scope" "scope must be web-bitcoin-testnet-broadcast-readiness" bash "$GENERATOR_SCRIPT" --manifest "$bad_scope"
 
 missing_last_reviewed="$tmp_dir/missing-last-reviewed.json"
-cp "$DEFAULT_MANIFEST" "$missing_last_reviewed"
+cp "$blocked_manifest" "$missing_last_reviewed"
 node - "$missing_last_reviewed" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -181,7 +201,7 @@ NODE
 expect_failure "missing Bitcoin broadcast review date" "lastReviewed must be a YYYY-MM-DD UTC review date" bash "$GENERATOR_SCRIPT" --manifest "$missing_last_reviewed"
 
 future_last_reviewed="$tmp_dir/future-last-reviewed.json"
-cp "$DEFAULT_MANIFEST" "$future_last_reviewed"
+cp "$blocked_manifest" "$future_last_reviewed"
 node - "$future_last_reviewed" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -192,7 +212,7 @@ NODE
 expect_failure "future Bitcoin broadcast review date" "lastReviewed must not be in the future" bash "$GENERATOR_SCRIPT" --manifest "$future_last_reviewed"
 
 unsupported_blocker="$tmp_dir/unsupported-blocker.json"
-cp "$DEFAULT_MANIFEST" "$unsupported_blocker"
+cp "$blocked_manifest" "$unsupported_blocker"
 node - "$unsupported_blocker" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -203,7 +223,7 @@ NODE
 expect_failure "unsupported Bitcoin broadcast evidence blocker" "unsupported Bitcoin broadcast evidence blocker in manifest: manual-approval-pending" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_blocker"
 
 duplicate_blocker="$tmp_dir/duplicate-blocker.json"
-cp "$DEFAULT_MANIFEST" "$duplicate_blocker"
+cp "$blocked_manifest" "$duplicate_blocker"
 node - "$duplicate_blocker" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -214,7 +234,7 @@ NODE
 expect_failure "duplicate Bitcoin broadcast evidence blocker" "duplicate Bitcoin broadcast evidence blocker in manifest" bash "$GENERATOR_SCRIPT" --manifest "$duplicate_blocker"
 
 duplicate_ready_command="$tmp_dir/duplicate-ready-command.json"
-cp "$DEFAULT_MANIFEST" "$duplicate_ready_command"
+cp "$blocked_manifest" "$duplicate_ready_command"
 node - "$duplicate_ready_command" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -225,7 +245,7 @@ NODE
 expect_failure "duplicate Bitcoin broadcast evidence verification command" "duplicate Bitcoin broadcast evidence verification command in manifest" bash "$GENERATOR_SCRIPT" --manifest "$duplicate_ready_command"
 
 missing_required_field="$tmp_dir/missing-required-field.json"
-cp "$DEFAULT_MANIFEST" "$missing_required_field"
+cp "$blocked_manifest" "$missing_required_field"
 node - "$missing_required_field" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -236,7 +256,7 @@ NODE
 expect_failure "missing outpoint field" "requiredEvidenceFields missing outpoint" bash "$GENERATOR_SCRIPT" --manifest "$missing_required_field"
 
 duplicate_required_field="$tmp_dir/duplicate-required-field.json"
-cp "$DEFAULT_MANIFEST" "$duplicate_required_field"
+cp "$blocked_manifest" "$duplicate_required_field"
 node - "$duplicate_required_field" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -247,7 +267,7 @@ NODE
 expect_failure "duplicate Bitcoin broadcast evidence required field" "duplicate Bitcoin broadcast evidence required field in manifest" bash "$GENERATOR_SCRIPT" --manifest "$duplicate_required_field"
 
 unsupported_field="$tmp_dir/unsupported-field.json"
-cp "$DEFAULT_MANIFEST" "$unsupported_field"
+cp "$blocked_manifest" "$unsupported_field"
 node - "$unsupported_field" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -258,7 +278,7 @@ NODE
 expect_failure "unsupported evidence field" "unsupported evidence field in manifest: network" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_field"
 
 unsupported_top_level="$tmp_dir/unsupported-top-level.json"
-cp "$DEFAULT_MANIFEST" "$unsupported_top_level"
+cp "$blocked_manifest" "$unsupported_top_level"
 node - "$unsupported_top_level" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -269,7 +289,7 @@ NODE
 expect_failure "unsupported top-level manifest field" "manifest.network is not supported in public Bitcoin broadcast evidence manifest" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_top_level"
 
 unsupported_record_field="$tmp_dir/unsupported-record-field.json"
-cp "$DEFAULT_MANIFEST" "$unsupported_record_field"
+cp "$blocked_manifest" "$unsupported_record_field"
 node - "$unsupported_record_field" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -280,7 +300,7 @@ NODE
 expect_failure "unsupported Bitcoin broadcast evidence record field" "evidence[0].network is not supported in public Bitcoin broadcast evidence manifest" bash "$GENERATOR_SCRIPT" --manifest "$unsupported_record_field"
 
 prefilled_evidence="$tmp_dir/prefilled-evidence.json"
-cp "$DEFAULT_MANIFEST" "$prefilled_evidence"
+cp "$blocked_manifest" "$prefilled_evidence"
 node - "$prefilled_evidence" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -301,7 +321,7 @@ NODE
 expect_failure "prefilled Bitcoin broadcast evidence" "committed Bitcoin broadcast evidence manifest must not prefill evidence" bash "$GENERATOR_SCRIPT" --manifest "$prefilled_evidence"
 
 secret_manifest="$tmp_dir/secret-manifest.json"
-cp "$DEFAULT_MANIFEST" "$secret_manifest"
+cp "$blocked_manifest" "$secret_manifest"
 node - "$secret_manifest" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -312,7 +332,7 @@ NODE
 expect_failure "secret-like manifest key" "must not be read from public Bitcoin broadcast evidence manifest" bash "$GENERATOR_SCRIPT" --manifest "$secret_manifest"
 
 http_indexer="$tmp_dir/http-indexer.json"
-cp "$DEFAULT_MANIFEST" "$http_indexer"
+cp "$blocked_manifest" "$http_indexer"
 node - "$http_indexer" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -323,7 +343,7 @@ NODE
 expect_failure "unsafe default indexer" "defaultIndexerUrl must use https" bash "$GENERATOR_SCRIPT" --manifest "$http_indexer"
 
 custom_indexer="$tmp_dir/custom-indexer.json"
-cp "$DEFAULT_MANIFEST" "$custom_indexer"
+cp "$blocked_manifest" "$custom_indexer"
 node - "$custom_indexer" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
@@ -332,5 +352,48 @@ manifest.defaultIndexerUrl = 'https://example.invalid/testnet/api';
 fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
 NODE
 expect_failure "unreviewed default indexer" "defaultIndexerUrl must be https://blockstream.info/testnet/api" bash "$GENERATOR_SCRIPT" --manifest "$custom_indexer"
+
+ready_manifest="$tmp_dir/ready-manifest.json"
+node - "$blocked_manifest" "$ready_manifest" <<'NODE'
+const fs = require('fs');
+const [source, target] = process.argv.slice(2);
+const manifest = JSON.parse(fs.readFileSync(source, 'utf8'));
+Object.assign(manifest, {
+  status: 'ready',
+  releaseEnabled: true,
+  blockers: [],
+  evidence: [{
+    txid: 'a'.repeat(64),
+    sourceAddress: 'tb1qsourceaddressxxxxxxxxxxxxxxxxxxxxxxxx',
+    recipientAddress: 'tb1qrecipientaddressxxxxxxxxxxxxxxxxxxxxx',
+    amountSat: '1000',
+    outpoint: `${'b'.repeat(64)}:0`,
+    indexerUrl: manifest.defaultIndexerUrl,
+    timestamp: '2026-06-26T00:00:00Z',
+    operator: 'release',
+    commit: 'c'.repeat(40)
+  }]
+});
+fs.writeFileSync(target, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+bash "$GENERATOR_SCRIPT" --manifest "$ready_manifest" >/dev/null || fail "a ready manifest must generate a refresh template"
+
+for ready_case in blocker no-evidence not-enabled unknown-status; do
+  ready_variant="$tmp_dir/ready-$ready_case.json"
+  node - "$ready_manifest" "$ready_variant" "$ready_case" <<'NODE'
+const fs = require('fs');
+const [source, target, variant] = process.argv.slice(2);
+const manifest = JSON.parse(fs.readFileSync(source, 'utf8'));
+if (variant === 'blocker') manifest.blockers = ['funded-testnet-broadcast-evidence-missing'];
+if (variant === 'no-evidence') manifest.evidence = [];
+if (variant === 'not-enabled') manifest.releaseEnabled = false;
+if (variant === 'unknown-status') manifest.status = 'pending';
+fs.writeFileSync(target, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
+done
+expect_failure "ready manifest with blockers" "ready Bitcoin broadcast evidence must not list blockers" bash "$GENERATOR_SCRIPT" --manifest "$tmp_dir/ready-blocker.json"
+expect_failure "ready manifest without evidence" "ready Bitcoin broadcast evidence manifest must already record evidence" bash "$GENERATOR_SCRIPT" --manifest "$tmp_dir/ready-no-evidence.json"
+expect_failure "ready manifest not release-enabled" "releaseEnabled must be true exactly when status is ready" bash "$GENERATOR_SCRIPT" --manifest "$tmp_dir/ready-not-enabled.json"
+expect_failure "unknown manifest status" "status must be blocked or ready" bash "$GENERATOR_SCRIPT" --manifest "$tmp_dir/ready-unknown-status.json"
 
 echo "[bitcoin-broadcast-template-test] all assertions passed"

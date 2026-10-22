@@ -130,7 +130,7 @@ describe('password rotation prepares and verifies records without changing the a
     expect(() => isolated.unlockKeyring(NEXT)).not.toThrow();
     expect(() => isolated.unlockKeyring(OLD)).toThrow();
     expect(prepared.accounts[0].meta.name).toBe('Public regression fixture');
-  });
+  }, 30000);
 
   it('fails the complete preparation for a wrong master password', () => {
     expect(() => preparePasswordRecords(records, 'incorrect', NEXT)).toThrow();

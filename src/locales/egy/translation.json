@@ -1,5 +1,9 @@
 {
   "welcome": {
+    "tonRecoveryRequired": "TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 𓂧𓃀𓎛 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏 𓁹 𓅓𓄿𓅱 𓉒 · 𓎡𓇌 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 𓃹𓈖 · 𓂋 𓅱𓎛𓅓 · 𓃹𓈖 𓉔𓄿𓃀 𓅓𓆓𓄿𓏏 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎛𓈖𓂝 𓂝𓎡 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 · 𓅓 𓅱𓎛𓅓 𓄂 𓉒 𓂋𓊪𓅱 𓋴𓎡 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓 𓎛𓄿𓏏 𓅱𓎛𓅓 ·",
+    "tonStorageUnavailable": "𓈖𓈖 𓇋𓈖 𓂋𓊪𓅱 𓁹 𓅓𓄿𓅱 TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 · 𓅓𓆓𓄿𓏏𓏥 𓋴𓄿𓅱 · 𓎡𓇌 𓉒 𓏥 𓃹𓈖 · 𓃹𓈖 𓉒 𓋴𓊪 𓎡𓇌 𓂋𓊪𓅱 𓐍𓏏𓅓 𓎛𓈖𓂝 𓃹𓈖 𓊪𓅱 · 𓅓 𓅱𓎛𓅓 𓄂 𓉒 · 𓅓 𓋴𓎡 𓊪𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 ·",
+    "walletResetFailed": "𓈖𓈖 𓅓𓄿𓂝 𓐙 𓅱𓎛𓅓 𓄂 𓉒 · 𓁹 𓋴𓊪 𓎡𓇌 𓅓 𓎛𓄿𓏏 𓁹 𓎡𓇌 𓉒 ·",
+    "passwordChangeFailed": "𓈖𓈖 𓅓𓄿𓂝 𓐙 𓎡𓇌 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 · 𓃹𓈖 𓐍𓏏𓅓 𓉒 𓎛𓈖𓂝 𓁹 𓋴𓊪 𓎡𓇌 · 𓇋𓂋 TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓂧𓃀𓎛 𓅱𓎛𓅓 · 𓅱𓎛𓅓 𓊪𓅱 𓁹 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓎛𓄿𓏏 ·",
     "importWallet": "𓇋𓈖 𓉒",
     "ecosystemEvmSubstrate": "𓁹 𓂋𓊪𓅱 𓇋𓈖 Substrate 𓂋𓊪𓅱 EVM 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥",
     "ecosystemTon": "𓄡𓈖𓅓 𓂋 𓅓𓂧𓅱 𓋹 𓄡𓈖𓅓𓏥 𓅓𓂧𓅱",
@@ -376,6 +380,7 @@
     }
   },
   "accounts": {
+    "tonEarlierPassword": "𓇋𓂋 TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖𓈖 𓁹 𓅓 𓐍𓏏 𓎡𓇌 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 · 𓂝𓎡 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓊨 𓏏𓈖 𓂋 𓅱𓎛𓅓 ·",
     "invalidAccountAddress": "𓈖 𓐙 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊨 𓈖 𓂋𓈖",
     "walletName": "𓉒 𓂋𓈖",
     "createNewAccount": "𓁹 𓅓𓄿𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖",

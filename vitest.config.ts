@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
     ...config,
     test: {
       globals: true,
+      // Real scrypt/HD-key regression tests need bounded CPU and memory contention.
+      maxWorkers: 4,
       server: { deps: { inline: ['@subwallet/keyring'] } },
       environment: 'happy-dom',
       coverage: {

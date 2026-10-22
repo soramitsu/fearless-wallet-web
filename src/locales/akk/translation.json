@@ -1,5 +1,9 @@
 {
   "welcome": {
+    "tonRecoveryRequired": "Ṭuppāt šumim ša TON awāt pirištim ša pān uddūš kīsim iḫaššaḫū. Ṭuppāt šumīka šanâtum petâtum. Ana turrim, šūṣâm ša ṭuppim petē-ma awāt pirištišu labīrtam šukun. Adi turrim, kīsam e tanassaḫ u ṭuppam e tuḫallaq.",
+    "tonStorageUnavailable": "Ṭuppāt šumim ša TON kalîšina lā innadnū ū lā uddišū. Ṭuppūšunu naṣrū u kīsūka šanûtum petû. Kīsam turram pite ū ēdil-ma pite ana šanīš epēšim. Kīsam e tanassaḫ u ṭuppāt šumim annâtim e tuḫallaq.",
+    "walletResetFailed": "Nasāḫ kīsim lā ukīn. Adi kīsam šanâm tabannû, šanīš epūš.",
+    "passwordChangeFailed": "Šunnûm ša awāt pirištim lā ukīn. Kīsam pite-ma šanīš epūš. Šumma ṭuppum ša šumim TON turram iḫaššaḫ, ina awāt pirištišu labīrtim pānam tēršu.",
     "importWallet": "Šūrib kīsam",
     "ecosystemEvmSubstrate": "Binī ū šūrib ṭuppāt šumim ša Substrate ū EVM",
     "ecosystemTon": "Kuṣur ana kiššatim ša eli kalīš rapāšim illaku",
@@ -761,6 +765,7 @@
     "existentialDepositSubtext": "Epšum annûm nikkassam ša ṭuppim ina šapli makkūrim ṣeḫrim ša balāṭim ušērid, u ṭuppum innassiḫ: ina riksāt ṭuppī mimma ša šumšu imassi ana ašrim naṣārim. Šumma talak pānam, makkūrum ša ina šapli minât makkūrim ṣeḫertim ša riksum iškun iḫalliq. Ana ṭēmim gamrim ṭuppāt riksim kīnātim amur, kīma Polkadot Wiki. Fearless Wallet epšum ša lā maṣṣartim gamratum; eli epšātīka ina riksim lā išû. ŠUMMA KALÂŠUNU TAMAGGAR U TĒDEMA-MA ALIK PĀNAM;"
   },
   "accounts": {
+    "tonEarlierPassword": "Šumma ṭuppum ša šumim TON warki šunnê awāt pirištim lā illak, awāt pirištišu labīrtam annākam šukun ana turrim.",
     "invalidAccountAddress": "Ašar ṭuppim ša šumim lā kīnum",
     "walletName": "Šum kīsim",
     "createNewAccount": "Binī ṭuppam ša šumim eššam",

@@ -110,5 +110,5 @@ describe('unlock must not upload wallet secrets', () => {
     await expect(tonKeyring.decodeAccountMnemonic(identity.address, '')).rejects.toThrow();
     await expect(tonKeyring.decodeAccountMnemonic(identity.address, 'wrong')).rejects.toThrow();
     expect(forbiddenNetwork).not.toHaveBeenCalled();
-  });
+  }, 30000);
 });

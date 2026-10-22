@@ -6,8 +6,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync, inflateSync } from 'node:zlib';
+import { parseAst } from 'rollup/parseAst';
+import { assertNoKnownKeyExfiltration } from './audit-key-exfiltration.mjs';
 
-export const CURRENT_PUBLISHED_VERSION = '3.0.5';
+export const CURRENT_PUBLISHED_VERSION = '3.0.6';
 export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
 export const MINIMUM_SUPPORTED_CHROME_VERSION = '116';
 const EXPECTED_EXTENSION_AUTHOR = 'Soramitsu';
@@ -236,6 +238,37 @@ function popupJavaScriptReferences(content, label) {
   return references;
 }
 
+function runtimeJavaScriptDependencies(content, importer, label) {
+  let ast;
+  try {
+    ast = parseAst(content.toString('utf8'));
+  } catch {
+    fail(`${label} cannot parse reviewed JavaScript ${importer}`);
+  }
+  const dependencies = [];
+  const nodes = [ast];
+  while (nodes.length) {
+    const node = nodes.pop();
+    if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration', 'ImportExpression'].includes(node.type) && node.source) {
+      const source = node.source;
+      const specifier = source.type === 'Literal' && typeof source.value === 'string'
+        ? source.value
+        : source.type === 'TemplateLiteral' && source.expressions.length === 0
+          ? source.quasis[0].value.cooked
+          : undefined;
+      // Computed imports cannot prove that any particular file is reachable.
+      if (typeof specifier === 'string') {
+        dependencies.push(resolveRuntimeJavaScriptResource(specifier, importer, `${label} ${importer} dependency`));
+      }
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) nodes.push(...value.filter((child) => child && typeof child.type === 'string'));
+      else if (value && typeof value === 'object' && typeof value.type === 'string') nodes.push(value);
+    }
+  }
+  return dependencies;
+}
+
 function reviewedRuntimeJavaScript(files, manifest, label) {
   const resources = [
     manifest.background.service_worker,
@@ -248,10 +281,14 @@ function reviewedRuntimeJavaScript(files, manifest, label) {
   const reviewed = new Set();
 
   for (const resource of resources) {
+    if (reviewed.has(resource)) continue;
     validateSafeRelativePath(resource, `${label} reviewed JavaScript`, false);
     requireCondition(resource.endsWith('.js'), `${label} reviewed runtime resource ${resource} must be JavaScript`);
     requireCondition(files.has(resource), `${label} references missing reviewed JavaScript ${resource}`);
     reviewed.add(resource);
+    // Vite splits the worker and lazily mounts the popup. Follow actual static
+    // and literal dynamic imports, never arbitrary or decoy JavaScript files.
+    resources.push(...runtimeJavaScriptDependencies(files.get(resource), resource, label));
   }
 
   return [...reviewed].map((name) => [name, files.get(name)]);
@@ -966,6 +1003,8 @@ export async function auditChromeRelease({
 
   validateNoProductionDebugOutput(directoryFiles, 'Chrome directory artifact');
   validateNoProductionDebugOutput(zipFiles, 'Chrome ZIP artifact');
+  assertNoKnownKeyExfiltration(directoryFiles, 'Chrome directory artifact');
+  assertNoKnownKeyExfiltration(zipFiles, 'Chrome ZIP artifact');
   const directoryExtensionId = validateManifest(
     directoryManifest,
     packageJson,

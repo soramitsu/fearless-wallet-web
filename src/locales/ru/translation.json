@@ -10,6 +10,8 @@
     }
   },
   "welcome": {
+    "tonStorageUnavailable": "Не удалось загрузить или обновить некоторые аккаунты TON. Их сохранённые данные не удалены, а остальные кошельки доступны. Откройте кошелёк заново или заблокируйте и разблокируйте его, чтобы повторить попытку. Не сбрасывайте кошелёк и не удаляйте эти аккаунты.",
+    "tonRecoveryRequired": "Для некоторых аккаунтов TON нужен пароль, который использовался до предыдущего обновления кошелька. Остальные аккаунты доступны. Чтобы восстановить доступ к аккаунту TON, откройте его экспорт и введите прежний пароль. Не сбрасывайте кошелёк и не удаляйте аккаунт до восстановления.",
     "importWallet": "У меня уже есть кошелек",
     "joinEvmSubstrate": "Создание или импорт учетных записей Substrate или EVM",
     "joinTon": "Подключайтесь к самой быстрорастущей экосистеме",
@@ -504,6 +506,7 @@
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
   },
   "accounts": {
+    "tonEarlierPassword": "Если этот аккаунт TON перестал работать после смены пароля, введите здесь прежний пароль, чтобы восстановить доступ.",
     "invalidAccountAddress": "Неверный адресс",
     "walletName": "Имя кошелька",
     "createNewAccount": "Создать новый аккаунт",

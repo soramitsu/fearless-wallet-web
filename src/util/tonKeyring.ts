@@ -105,13 +105,18 @@ export async function deriveCompatibleTonKeyPair(
 ): Promise<{ publicKey: Uint8Array; secretKey: Uint8Array }> {
   const matches = (publicKey: Uint8Array) => !expectedPublicKey ||
     (publicKey.length === expectedPublicKey.length && publicKey.every((byte, index) => byte === expectedPublicKey[index]));
-  if (!password && validateMnemonic(mnemonic.join(' '))) {
+  const isBip39 = !password && validateMnemonic(mnemonic.join(' '));
+  if (isBip39) {
     const universal = deriveTonAccount({ mnemonic: mnemonic.join(' ') });
     if (matches(universal.publicKey)) return universal;
+    universal.secretKey.fill(0);
   }
-  if (await tonWebMnemonic.validateMnemonic(mnemonic, password)) {
+  // Older releases persisted native derivations without validating phrase
+  // shape. Only a stored matching public key authorizes that legacy path.
+  if (expectedPublicKey || await tonWebMnemonic.validateMnemonic(mnemonic, password)) {
     const native = await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
     if (matches(native.publicKey)) return native;
+    native.secretKey.fill(0);
   }
   throw new TonKeyringError(expectedPublicKey ? 'account_key_mismatch' : 'invalid_mnemonic');
 }

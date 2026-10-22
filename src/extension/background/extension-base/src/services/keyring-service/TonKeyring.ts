@@ -1,13 +1,16 @@
 import * as tonWebMnemonic from 'tonweb-mnemonic';
 import CryptoJS from 'crypto-js';
 import { BehaviorSubject } from 'rxjs';
+import { stringToU8a, u8aToString } from '@polkadot/util';
+import { jsonDecrypt, jsonEncrypt } from '@polkadot/util-crypto';
 import { tonStore } from './../../stores/TonStore';
 import { validateBip39Mnemonic } from './Bip39';
 import { type KeyringService } from '.';
+import type { Address, WalletContractV4 } from '@ton/ton';
+import type { EncryptedJson } from '@polkadot/util-crypto/types';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import type { FWKeyringMeta } from '../../types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
-import type { Address, WalletContractV4 } from '@ton/ton';
 import { WalletEcosystem } from '@/interfaces';
 import { createTonWalletContractV4R2, deriveCompatibleTonKeyPair } from '@/util/tonKeyring';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
@@ -28,26 +31,126 @@ export function hexToBytes(hex: string) {
   return Uint8Array.from(Buffer.from(hex, 'hex')) as Uint8Array;
 }
 
+// How a TON phrase is stored in `cipherSeed`:
+// - version 1 (3.0.1-3.0.5): CryptoJS AES with its passphrase key derivation, one MD5 round per block and no
+//   authentication, so a copied record allows cheap password guessing. Still read, never written.
+// - version 2: scrypt (deployed N = 2^15, current N = 2^17; r = 8, p = 1) + xsalsa20-poly1305 JSON protecting every account
+//   under the same master password, stored as {"version":2,"encoded":...,"encoding":...}.
+export const TON_SEED_VERSION = 2;
+const TON_RECOVERY_VERSION = 3;
+
+type StoredSeed = EncryptedJson & { version: typeof TON_SEED_VERSION | typeof TON_RECOVERY_VERSION };
+
+function parseStoredSeed(cipherSeed: string): StoredSeed | null {
+  if (typeof cipherSeed !== 'string' || cipherSeed.length > 8192) throw new Error('Invalid TON seed format');
+
+  if (!cipherSeed.startsWith('{')) {
+    // Only the historical salted OpenSSL format is eligible for legacy reading.
+    const bytes = Buffer.from(cipherSeed, 'base64');
+
+    if (
+      bytes.toString('base64') !== cipherSeed ||
+      bytes.length < 32 ||
+      bytes.length % 16 !== 0 ||
+      bytes.subarray(0, 8).toString() !== 'Salted__'
+    )
+      throw new Error('Unsupported TON seed format');
+
+    return null;
+  }
+
+  const value = JSON.parse(cipherSeed) as StoredSeed;
+
+  if (
+    !value ||
+    ![TON_SEED_VERSION, TON_RECOVERY_VERSION].includes(value.version) ||
+    value.encoding?.version !== '3' ||
+    JSON.stringify(value.encoding.type) !== JSON.stringify(['scrypt', 'xsalsa20-poly1305']) ||
+    JSON.stringify(value.encoding.content) !==
+      JSON.stringify([value.version === TON_SEED_VERSION ? 'ton-mnemonic' : 'ton-legacy-recovery']) ||
+    typeof value.encoded !== 'string'
+  ) {
+    throw new Error('Unsupported TON seed format');
+  }
+
+  const bytes = Buffer.from(value.encoded, 'base64');
+
+  if (bytes.toString('base64') !== value.encoded || bytes.length < 85) throw new Error('Invalid TON seed encoding');
+
+  // Read the deployed 3.0.6 preset and the current library's stronger preset only.
+  // Reject any other injected cost before expensive work.
+  if (![32768, 131072].includes(bytes.readUInt32LE(32)) || bytes.readUInt32LE(36) !== 1 || bytes.readUInt32LE(40) !== 8) {
+    throw new Error('Unsupported TON seed KDF');
+  }
+
+  return value;
+}
+
+export function isLegacyTonSeed(cipherSeed: string) {
+  return parseStoredSeed(cipherSeed) === null;
+}
+
 export class TonKeyringService {
   readonly accountSubject: BehaviorSubject<SubjectInfo & TonAccount> = new BehaviorSubject({});
 
-  constructor(private keyringService: KeyringService) {
-    const saveAccounts = async (address: string, { name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) =>
-      this.setAccounts({ address, name, cipherSeed, meta, publicKeyHex });
+  private ready: Promise<void>;
+  private loaded = false;
+  private migrationIssue = false;
+  private storeOperation: Promise<unknown> = Promise.resolve();
+  private readonly records = new Map<string, TonStoreAccount>();
 
-    tonStore.all(saveAccounts);
+  constructor(private keyringService: KeyringService) {
+    this.ready = this.loadAccounts();
+    // Operations still reject on loading errors; never log account contents.
+    this.ready.catch(() => undefined);
   }
 
-  setAccounts({ address, name, cipherSeed, meta, publicKeyHex }: TonStoreAccount) {
+  private async loadAccounts(): Promise<void> {
+    const accounts = await tonStore.readAll();
+    this.records.clear();
+    this.accountSubject.next({});
+    this.applyAccounts(accounts);
+    this.loaded = true;
+  }
+
+  get hasStorageIssues(): boolean {
+    return this.migrationIssue || !!tonStore.hasUnreadableRecords;
+  }
+
+  withStoreLock<T>(operation: () => Promise<T>, requireTonAccounts = true): Promise<T> {
+    const next = this.storeOperation.then(async () => {
+      if (requireTonAccounts) {
+        try { await this.ready; } catch {
+          // A failed startup read is retryable, and never poisons unrelated
+          // Substrate metadata operations sharing the serialization gate.
+          if (!this.loaded) this.ready = this.loadAccounts();
+          await this.ready;
+        }
+      }
+      return operation();
+    });
+    this.storeOperation = next.catch(() => undefined);
+    return next;
+  }
+
+  applyAccounts(accounts: TonStoreAccount[]): void {
+    accounts.forEach((account) => this.setAccounts(account));
+  }
+
+  get hasRecoveryAccounts(): boolean {
+    return [...this.records.values()].some(({ cipherSeed }) => {
+      try { return parseStoredSeed(cipherSeed)?.version === TON_RECOVERY_VERSION; } catch { return false; }
+    });
+  }
+
+  setAccounts(record: TonStoreAccount) {
+    const { address, name, cipherSeed, publicKeyHex, meta } = record;
     const accounts = this.accountSubject.value;
 
     const publicKey = hexToBytes(publicKeyHex);
-    const walletContract = this.keyringService.tonKeyring.createContractV4(publicKey);
-    const accountMeta: FWKeyringMeta = meta ?? {
-      name,
-      cipherSeed,
-      walletEcosystem: WalletEcosystem.Ton,
-    };
+    const walletContract = this.createContractV4(publicKey);
+
+    this.records.set(address, record);
 
     this.accountSubject.next({
       ...accounts,
@@ -60,7 +163,7 @@ export class TonKeyringService {
         walletEcosystem: WalletEcosystem.Ton,
         json: {
           address,
-          meta: accountMeta,
+          meta: meta ?? { name, walletEcosystem: WalletEcosystem.Ton },
         },
         option: {
           name,
@@ -71,26 +174,20 @@ export class TonKeyringService {
     });
   }
 
-  updateAccountName(address: string, name: string) {
-    const {
-      cipherSeed,
-      json: { meta },
-      publicKey: pubKey,
-    } = this.accountSubject.value[address];
-    const publicKeyHex = bytesToHex(pubKey);
-    const nextMeta = withUniversalWalletKeyringMeta(
-      address,
-      {
-        ...meta,
-        name,
-        walletEcosystem: WalletEcosystem.Ton,
-      },
-      WalletEcosystem.Ton
-    );
+  async updateAccountName(address: string, name: string) {
+    return this.withStoreLock(async () => {
+      const record = this.records.get(address);
 
-    tonStore.set(address, { name, address, cipherSeed, meta: nextMeta, publicKeyHex });
+      if (!record) throw new Error('TON account not found');
 
-    this.setAccounts({ address, name, publicKeyHex, cipherSeed, meta: nextMeta });
+      const meta = withUniversalWalletKeyringMeta(address, {
+        ...record.meta, name, walletEcosystem: WalletEcosystem.Ton,
+      }, WalletEcosystem.Ton);
+      const updated = { ...record, name, meta };
+
+      await tonStore.saveMany([updated]);
+      this.setAccounts(updated);
+    });
   }
 
   getAccount(_address: string) {
@@ -127,28 +224,15 @@ export class TonKeyringService {
   }
 
   async forgetAccount(address: string) {
-    const accounts = this.accountSubject.value;
+    return this.withStoreLock(async () => {
+      await tonStore.removeAccount(address);
+      const accounts = { ...this.accountSubject.value };
 
-    delete accounts[address];
+      delete accounts[address];
+      this.records.delete(address);
 
-    this.accountSubject.next({ ...accounts });
-
-    tonStore.remove(address);
-  }
-
-  decode(value: string) {
-    const password = this.keyringService.getPassword();
-
-    const bytes = CryptoJS.AES.decrypt(value, password);
-    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-
-    return decryptedText;
-  }
-
-  encode(value: string) {
-    const cipherText = CryptoJS.AES.encrypt(value, '').toString();
-
-    return cipherText;
+      this.accountSubject.next(accounts);
+    });
   }
 
   createContractV4(publicKey: Uint8Array) {
@@ -171,28 +255,37 @@ export class TonKeyringService {
           };
     const initialMeta = this.keyringService.getAccountCreationMeta(suri, providedMeta);
     const account = await deriveCompatibleTonKeyPair(suriArray);
-    const wallet = this.createContractV4(account.publicKey);
-    const address = this.getUserFriendlyAddress(wallet.address);
-    const publicKeyHex = bytesToHex(account.publicKey);
-    const name = initialMeta.name ?? '';
-    const universalMeta = withUniversalWalletKeyringMeta(
-      address,
-      {
-        ...initialMeta,
-        tonAddress: address,
-        tonPublicKeyHex: publicKeyHex,
-      },
-      WalletEcosystem.Ton
-    );
+    try {
+      const wallet = this.createContractV4(account.publicKey);
+      const address = this.getUserFriendlyAddress(wallet.address);
+      const publicKeyHex = bytesToHex(account.publicKey);
+      const name = initialMeta.name ?? '';
+      const universalMeta = withUniversalWalletKeyringMeta(
+        address,
+        {
+          ...initialMeta,
+          tonAddress: address,
+          tonPublicKeyHex: publicKeyHex,
+        },
+        WalletEcosystem.Ton
+      );
 
-    if (password) {
-      const cipherSeed = this.encodeMnemonic(suriArray, password);
-      tonStore.set(address, { name, address, cipherSeed, meta: universalMeta, publicKeyHex });
+      if (password) {
+        await this.withStoreLock(async () => {
+          if (password !== this.keyringService.getPassword()) throw new Error('Wallet session changed');
+          const cipherSeed = this.encodeMnemonic(suriArray, password);
+          const record = { name, address, cipherSeed, meta: universalMeta, publicKeyHex };
+          await this.verifyRecord(record, password);
+          if (password !== this.keyringService.getPassword()) throw new Error('Wallet session changed');
+          await tonStore.saveMany([record]);
+          this.setAccounts(record);
+        });
+      }
 
-      this.setAccounts({ address, name, cipherSeed, meta: universalMeta, publicKeyHex });
+      return { wallet, address };
+    } finally {
+      account.secretKey.fill(0);
     }
-
-    return { wallet, address };
   }
 
   getUserFriendlyAddress(address: Address) {
@@ -203,18 +296,177 @@ export class TonKeyringService {
   }
 
   encodeMnemonic(mnemonicArray: string[], password: string) {
-    const mnemonic = mnemonicArray.join(' ');
-    const cipherText = CryptoJS.AES.encrypt(mnemonic, password).toString();
+    // jsonEncrypt keeps the data unencrypted when there is no passphrase; a phrase must never be stored that way.
+    if (!password) throw new Error('A password is required to store a TON phrase');
 
-    return cipherText;
+    const { encoded, encoding } = jsonEncrypt(stringToU8a(mnemonicArray.join(' ')), ['ton-mnemonic'], password);
+
+    return JSON.stringify({ version: TON_SEED_VERSION, encoded, encoding });
   }
 
-  decodeMnemonic(cipherMnemonic: string) {
-    const password = this.keyringService.getPassword();
+  decodeMnemonic(cipherMnemonic: string, password: string = this.keyringService.getPassword()) {
+    if (!password) throw new Error('Unlock the wallet first');
+
+    const stored = parseStoredSeed(cipherMnemonic);
+
+    if (stored) {
+      if (stored.version === TON_RECOVERY_VERSION) throw new Error('This TON account requires its earlier password');
+
+      // Authenticated: a wrong password throws instead of returning other text.
+      return u8aToString(jsonDecrypt(stored, password));
+    }
 
     const bytes = CryptoJS.AES.decrypt(cipherMnemonic, password);
     const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
 
     return decryptedText;
+  }
+
+  async decodeAccountMnemonic(address: string, password = this.keyringService.getPassword()): Promise<string> {
+    return this.withStoreLock(async () => {
+      const record = this.records.get(address);
+
+      if (!record) throw new Error('TON account not found');
+
+      if (parseStoredSeed(record.cipherSeed)?.version !== TON_RECOVERY_VERSION)
+        return this.verifyRecord(record, password);
+
+      const masterPassword = this.keyringService.getPassword();
+      const legacy = this.readRecoveryRecord(record, masterPassword);
+      const mnemonic = await this.verifyRecord(legacy, password);
+      const replacement = { ...record, cipherSeed: this.encodeMnemonic(mnemonic.split(' '), masterPassword) };
+
+      await this.verifyRecord(replacement, masterPassword);
+
+      if (masterPassword !== this.keyringService.getPassword()) throw new Error('Wallet session changed');
+
+      await tonStore.saveMany([replacement]);
+      this.setAccounts(replacement);
+
+      return mnemonic;
+    });
+  }
+
+  private protectRecoveryRecord(record: TonStoreAccount, password: string): TonStoreAccount {
+    if (!password) throw new Error('Unlock the wallet first');
+
+    // 3.0.5 did not rotate TON passwords. Preserve those unreadable ciphertexts
+    // inside strong encryption instead of exposing the old password verifier or
+    // blocking access to all the user's other accounts.
+    const archive = JSON.stringify({
+      address: record.address,
+      publicKeyHex: record.publicKeyHex,
+      cipherSeed: record.cipherSeed,
+    });
+    const encrypted = jsonEncrypt(stringToU8a(archive), ['ton-legacy-recovery'], password);
+    const replacement = { ...record, cipherSeed: JSON.stringify({ version: TON_RECOVERY_VERSION, ...encrypted }) };
+    const recovered = this.readRecoveryRecord(replacement, password);
+
+    if (recovered.cipherSeed !== record.cipherSeed) throw new Error('TON recovery verification failed');
+
+    return replacement;
+  }
+
+  private readRecoveryRecord(record: TonStoreAccount, password: string): TonStoreAccount {
+    if (!password) throw new Error('Unlock the wallet first');
+
+    const stored = parseStoredSeed(record.cipherSeed);
+
+    if (stored?.version !== TON_RECOVERY_VERSION) throw new Error('Invalid TON recovery record');
+
+    const archive = JSON.parse(u8aToString(jsonDecrypt(stored, password))) as TonStoreAccount;
+
+    if (
+      archive.address !== record.address ||
+      archive.publicKeyHex !== record.publicKeyHex ||
+      !isLegacyTonSeed(archive.cipherSeed)
+    )
+      throw new Error('Invalid TON recovery record');
+
+    return { ...record, cipherSeed: archive.cipherSeed };
+  }
+
+  private async verifyRecord(record: TonStoreAccount, password: string): Promise<string> {
+    const mnemonic = this.decodeMnemonic(record.cipherSeed, password);
+
+    // Older releases persisted phrases without validating their shape. The
+    // stored public key and address remain the authority for those accounts.
+    if (!mnemonic) throw new Error('Invalid TON account');
+
+    const keyPair = await this.mnemonicToKeyPair(mnemonic.split(' '), undefined, hexToBytes(record.publicKeyHex));
+
+    try {
+      if (
+        bytesToHex(keyPair.publicKey) !== record.publicKeyHex ||
+        this.getUserFriendlyAddress(this.createContractV4(keyPair.publicKey).address) !== record.address
+      ) {
+        throw new Error('TON account key mismatch');
+      }
+    } finally {
+      keyPair.secretKey.fill(0);
+    }
+
+    return mnemonic;
+  }
+
+  async preparePasswordChange(oldPassword: string, newPassword: string): Promise<TonStoreAccount[]> {
+    if (tonStore.hasUnreadableRecords) throw new Error('Some TON accounts could not be loaded; reopen the wallet and retry');
+    const prepared: TonStoreAccount[] = [];
+
+    for (const record of this.records.values()) {
+      if (parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION) {
+        prepared.push(this.protectRecoveryRecord(this.readRecoveryRecord(record, oldPassword), newPassword));
+        continue;
+      }
+
+      const mnemonic = await this.verifyRecord(record, oldPassword);
+      const cipherSeed = this.encodeMnemonic(mnemonic.split(' '), newPassword);
+      const replacement = { ...record, cipherSeed };
+
+      if ((await this.verifyRecord(replacement, newPassword)) !== mnemonic)
+        throw new Error('TON seed verification failed');
+
+      prepared.push(replacement);
+    }
+
+    return prepared;
+  }
+
+  private async migrateRecord(record: TonStoreAccount, password: string): Promise<TonStoreAccount | null> {
+    if (parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION) {
+      this.readRecoveryRecord(record, password);
+      return null;
+    }
+    let mnemonic: string;
+    try {
+      mnemonic = await this.verifyRecord(record, password);
+    } catch (error) {
+      if (!isLegacyTonSeed(record.cipherSeed)) throw error;
+      return this.protectRecoveryRecord(record, password);
+    }
+    if (!isLegacyTonSeed(record.cipherSeed)) return null;
+    const replacement = { ...record, cipherSeed: this.encodeMnemonic(mnemonic.split(' '), password) };
+    if ((await this.verifyRecord(replacement, password)) !== mnemonic) throw new Error('TON seed verification failed');
+    return replacement;
+  }
+
+  async migrateOnUnlock(password: string): Promise<void> {
+    return this.withStoreLock(async () => {
+      if (this.hasStorageIssues) await this.loadAccounts();
+      const replacements: TonStoreAccount[] = [];
+      this.migrationIssue = false;
+      for (const record of this.records.values()) {
+        try {
+          const replacement = await this.migrateRecord(record, password);
+          if (replacement) replacements.push(replacement);
+        } catch {
+          // Preserve an unreadable record byte-for-byte, and disclose the issue
+          // after unlock while other accounts remain available for recovery.
+          this.migrationIssue = true;
+        }
+      }
+      if (replacements.length) await tonStore.saveMany(replacements);
+      this.applyAccounts(replacements);
+    });
   }
 }

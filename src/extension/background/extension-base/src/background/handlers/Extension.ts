@@ -276,9 +276,9 @@ export default class Extension extends FWExtensionBase {
     if (type === 'native') {
       this.state.walletConnectService.removeSessions(address, ethereumAddress);
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) await this.state.keyringService.forgetAccount(ethereumAddress);
 
-      this.state.keyringService.forgetAccount(address);
+      await this.state.keyringService.forgetAccount(address);
     } else {
       const account = this.state.keyringService.getAddress(address);
 
@@ -2255,7 +2255,7 @@ export default class Extension extends FWExtensionBase {
     return this.state.irohaConnectService.snapshot;
   }
 
-  changeMasterPassword(request: RequestChangePassword): boolean {
+  changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
@@ -2269,7 +2269,7 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.lockKeyring();
   }
 
-  unlockKeyring(request: RequestUnlockExtension): boolean {
+  unlockKeyring(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
@@ -2338,7 +2338,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.keyringService.keyringMigrateMasterPassword(request as RequestMigratePassword);
 
       case 'pri(keyring.export.mnemonic)':
-        return this.state.keyringService.exportMnemonic(request as RequestExportSeed);
+        return this.state.keyringService.exportAccountMnemonic(request as RequestExportSeed);
 
       case 'pri(keyring.export.rowSeed)':
         return this.state.keyringService.accountExportRawSeed(request as RequestExportSeed);

@@ -3,8 +3,8 @@
 Use this checklist for every browser-extension release PR from `develop` to
 `master`.
 
-For Chrome `3.0.6`, also use the store copy, permission/privacy handoff, and
-credentialed artifact gates in `docs/chrome-web-store-release-3.0.6.md`.
+For Chrome `3.0.7`, also use the recovery-mode release notes and approved privacy notice in
+`docs/chrome-web-store-release-3.0.7.md`. Earlier configuration, permission and credentialed artifact guidance remains in `docs/chrome-web-store-release-3.0.6.md`.
 
 ## Before The Release PR
 

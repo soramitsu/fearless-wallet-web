@@ -7,6 +7,7 @@ import { build, createLogger } from 'vite';
 
 import { commonViteConfig } from '../vite.config.shared.mjs';
 import { createFirefoxBuildLogPolicy, polkadotIifePackageInfoPlugin } from './firefox-build-warning-policy.mjs';
+import { auditKeyExfiltrationDirectory } from './audit-key-exfiltration.mjs';
 
 const require = createRequire(import.meta.url);
 const makeManifest = require('../src/extension/makeManifest.cjs');
@@ -139,6 +140,7 @@ async function normalizePopupHtml() {
 
 async function run() {
   enforceProductionReleaseEnvironment(process.env, mode);
+  await auditKeyExfiltrationDirectory(path.join(root, 'src'));
   if (!watch) await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
 
@@ -225,6 +227,7 @@ async function run() {
   }
 
   await writeStaticAssets();
+  if (!watch) await auditKeyExfiltrationDirectory(outDir);
 
   if (watch) {
     console.info(`Watching extension build in ${outDir}`);

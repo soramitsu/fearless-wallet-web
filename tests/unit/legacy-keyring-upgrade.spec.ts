@@ -48,7 +48,8 @@ function pair(address: string, migrated = false, password = 'legacy-password') {
 
 function service() {
   const value = Object.create(KeyringService.prototype) as KeyringService;
-  Object.defineProperty(value, 'tonKeyring', { value: { getAccounts: () => [] } });
+  Object.assign(value, { unlockGeneration: 0 });
+  Object.defineProperty(value, 'tonKeyring', { value: { getAccounts: () => [], withStoreLock: (fn) => fn(), migrateOnUnlock: async () => {} } });
   return value;
 }
 
@@ -144,7 +145,7 @@ describe('legacy enrollment lifecycle', () => {
     let finish!: () => void;
     mocks.enroll.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve; }));
     const wallet = service();
-    expect(wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
+    expect(await wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
     expect(mocks.enroll).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(mocks.enroll).toHaveBeenCalledOnce());
     const isCurrent = mocks.enroll.mock.calls[0][2];
@@ -160,9 +161,9 @@ describe('legacy enrollment lifecycle', () => {
     pair(SUBSTRATE, true);
     mocks.enroll.mockRejectedValueOnce(new Error('Optional dependency unavailable'));
     const wallet = service();
-    expect(wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
+    expect(await wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
     await wallet.waitForLegacyNetworkEnrollment();
-    expect(wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
+    expect(await wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
     await wallet.waitForLegacyNetworkEnrollment();
     expect(mocks.enroll).toHaveBeenCalledTimes(2);
   });
@@ -171,7 +172,7 @@ describe('legacy enrollment lifecycle', () => {
     pair(SUBSTRATE, true);
     mocks.unlock.mockImplementation(() => { throw new Error('Wrong password'); });
     const wallet = service();
-    expect(wallet.unlockKeyring({ password: 'incorrect' })).toBe(false);
+    expect(await wallet.unlockKeyring({ password: 'incorrect' })).toBe(false);
     expect(wallet.getPassword()).not.toBe('incorrect');
     await wallet.waitForLegacyNetworkEnrollment();
     expect(mocks.enroll).not.toHaveBeenCalled();

@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     ...config,
     test: {
       globals: true,
+      server: { deps: { inline: ['@subwallet/keyring'] } },
       environment: 'happy-dom',
       coverage: {
         provider: 'v8',

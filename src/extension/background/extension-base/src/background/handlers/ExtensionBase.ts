@@ -96,7 +96,7 @@ export default class FWExtensionBase {
   }
 
   async accountUpdateName({ address, name, walletEcosystem }: RequestAccountName): Promise<boolean> {
-    if (walletEcosystem === WalletEcosystem.Ton) this.state.keyringService.tonKeyring.updateAccountName(address, name);
+    if (walletEcosystem === WalletEcosystem.Ton) await this.state.keyringService.tonKeyring.updateAccountName(address, name);
     else await this.state.keyringService.saveAccountMeta(address, { name });
 
     return true;

@@ -1,3 +1,5 @@
+import BaseWebStore from './BaseWeb';
+import { PASSWORD_STORAGE_KEY, readWalletRecords, writeWalletRecords } from './WalletStorage';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
 import { requestWebPasswordStorage } from '@/bootstrap/webPasswordStore';
@@ -7,8 +9,12 @@ export default class KeyringStoreWeb implements PasswordStore {
   private static pending = Promise.resolve();
 
   static async initialize(): Promise<void> {
-    const serialized = await requestWebPasswordStorage('get');
-    this.value = serialized ? JSON.parse(serialized) : null;
+    const records = await readWalletRecords();
+    this.value = (records[PASSWORD_STORAGE_KEY] as KeyringPasswordJson | undefined) ?? null;
+  }
+
+  static applyCommittedPassword(value: KeyringPasswordJson): void {
+    this.value = value;
   }
 
   static async flush(): Promise<void> {
@@ -27,7 +33,11 @@ export default class KeyringStoreWeb implements PasswordStore {
   }
 
   public remove(update?: () => void): void {
-    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(() => requestWebPasswordStorage('remove')).then(() => {
+    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(async () => {
+      const store = new (class extends BaseWebStore<KeyringPasswordJson> {})(null);
+      await store.removeFromDB(PASSWORD_STORAGE_KEY);
+      await requestWebPasswordStorage('remove');
+    }).then(() => {
       KeyringStoreWeb.value = null;
       update?.();
     });
@@ -35,7 +45,7 @@ export default class KeyringStoreWeb implements PasswordStore {
   }
 
   public set(value: KeyringPasswordJson, update?: () => void): void {
-    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(() => requestWebPasswordStorage('set', JSON.stringify(value))).then(() => {
+    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(() => writeWalletRecords({ [PASSWORD_STORAGE_KEY]: value })).then(() => {
       KeyringStoreWeb.value = value;
       update?.();
     });

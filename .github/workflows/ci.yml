@@ -78,6 +78,11 @@ jobs:
       - name: Typecheck
         run: yarn typecheck
 
+      - name: Reject known key-exfiltration code
+        run: |
+          yarn test:key-exfiltration-audit
+          yarn audit:key-exfiltration
+
       - name: Lint
         run: yarn lint:check
 

@@ -1,5 +1,7 @@
 {
   "welcome": {
+    "tonStorageUnavailable": "Some TON accounts could not be loaded or updated. Their stored records have been preserved, and your other wallets remain available. Reopen the wallet or lock and unlock it to retry. Do not reset the wallet or remove affected accounts.",
+    "tonRecoveryRequired": "Some TON accounts need the password used before an earlier wallet update. Your other accounts are available. To restore access to an affected TON account, open Export for that account and enter its earlier password. Do not reset the wallet or remove the account before recovery.",
     "importWallet": "Import wallet",
     "ecosystemEvmSubstrate": "Create or import Substrate or EVM accounts",
     "ecosystemTon": "Connect to the fastest growing ecosystem ever",
@@ -761,6 +763,7 @@
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
   },
   "accounts": {
+    "tonEarlierPassword": "If this TON account stopped working after a password change, enter its earlier password here to restore access.",
     "invalidAccountAddress": "Invalid account address",
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",

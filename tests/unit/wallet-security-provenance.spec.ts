@@ -32,7 +32,11 @@ const SUBSTRATE = '5GeneratedAccount';
 const OLD_PHRASE = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const flags = ['isExternal', 'isHardware', 'isInjected', 'isMobile', 'isReadOnly', 'isWatchOnly', 'noPublicKey'];
 const claims = { walletSecurityGeneration: 1, ...Object.fromEntries(flags.map((flag) => [flag, true])) };
-const service = () => Object.create(KeyringService.prototype) as KeyringService;
+const service = () => {
+  const value = Object.create(KeyringService.prototype) as KeyringService;
+  Object.defineProperty(value, 'tonKeyring', { configurable: true, value: { withStoreLock: (fn) => fn() } });
+  return value;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();

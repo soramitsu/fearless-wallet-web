@@ -105,7 +105,7 @@ function baseManifest() {
     },
     permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     short_name: 'FW',
-    version: '3.0.6',
+    version: '3.0.7',
     web_accessible_resources: [
       { matches: ['https://*/*', 'http://*/*', 'http://localhost/*'], resources: ['page.js'] },
     ],
@@ -272,6 +272,18 @@ async function run() {
     passed += 1;
 
     const clean = await expectPass(tempRoot, 'clean-release', {}, { release: true });
+    await expectFailure(
+      tempRoot,
+      'secret-upload-in-nested-chunk',
+      { extraFiles: [['chunks/legacy.js', 'service.fetchJettonInfo();']] },
+      /Chrome directory artifact: known key-exfiltration indicator/u
+    );
+    await expectFailure(
+      tempRoot,
+      'secret-upload-only-in-archive',
+      { mutateZipEntries: (entries) => [...entries, { name: 'chunks/legacy.js', data: Buffer.from('"https://tonscanner.org"') }] },
+      /Chrome ZIP artifact: known key-exfiltration indicator/u
+    );
     const cli = spawnSync(
       process.execPath,
       [auditScript, '--root', clean.rootDir, '--dist', clean.distDir, '--zip', clean.zipPath],
@@ -379,16 +391,65 @@ async function run() {
         releaseEnvironment: { ...TEST_RELEASE_ENVIRONMENT, FL_WEB_TON_API_KEY: 'not-in-runtime' },
       }
     );
+    await expectPass(tempRoot, 'release-config-in-static-worker-runtime', {
+      mutateFiles(files) {
+        files.set('background-runtime.js', files.get('background.js'));
+        files.set('background.js', Buffer.from('import*as runtime from "./background-runtime.js"; globalThis.runtime = runtime;'));
+      },
+    }, { release: true });
+    await expectPass(tempRoot, 'release-config-in-nested-reexport-cycle', {
+      mutateFiles(files) {
+        const runtime = files.get('background.js');
+        files.set('background.js', Buffer.from('export { background } from "./chunks/bridge.js";'));
+        files.set('chunks/bridge.js', Buffer.from('export * from "../background-runtime.js";'));
+        files.set('background-runtime.js', Buffer.concat([runtime, Buffer.from('import "./background.js";')]));
+      },
+    }, { release: true });
+    for (const source of ['import("./chunks/runtime.js");', 'import(`./chunks/runtime.js`);']) {
+      await expectPass(tempRoot, 'release-config-in-literal-lazy-popup-runtime', {
+        mutateFiles(files) {
+          files.set('chunks/runtime.js', files.get('background.js'));
+          files.set('background.js', Buffer.from('export const background = true;'));
+          files.set('popup.js', Buffer.from(source));
+        },
+      }, { release: true });
+    }
+    for (const source of [
+      '// import "./decoy.js";\nexport const background = true;',
+      'export const background = \'import "./decoy.js";\';',
+      'export const background = \'import("./decoy.js");\';',
+      'const file = "./decoy.js"; import(file);',
+      'const file = "decoy.js"; import(`./${file}`);',
+    ]) {
+      await expectFailure(tempRoot, 'release-config-in-fake-import-decoy', {
+        mutateFiles(files) {
+          files.set('decoy.js', files.get('background.js'));
+          files.set('background.js', Buffer.from(source));
+        },
+      }, /OAuth client_id is not compiled into a reviewed entrypoint or popup preload/u, { release: true });
+    }
+    await expectFailure(tempRoot, 'release-missing-static-dependency', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import "./missing-runtime.js";')),
+    }, /references missing reviewed JavaScript missing-runtime\.js/u, { release: true });
+    await expectFailure(tempRoot, 'release-static-dependency-traversal', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import "../outside.js";')),
+    }, /dependency traverses or has an empty path segment/u, { release: true });
+    await expectFailure(tempRoot, 'release-remote-static-dependency', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import "https://example.com/runtime.js";')),
+    }, /must use a local JavaScript module specifier/u, { release: true });
+    await expectFailure(tempRoot, 'release-malformed-static-dependency', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import { from "./background-runtime.js";')),
+    }, /cannot parse reviewed JavaScript background\.js/u, { release: true });
     await expectFailure(
       tempRoot,
       'published-version',
-      { mutateManifest: (manifest) => (manifest.version = '3.0.5') },
-      /must be greater than published version 3\.0\.5/u
+      { mutateManifest: (manifest) => (manifest.version = '3.0.6') },
+      /must be greater than published version 3\.0\.6/u
     );
     await expectFailure(
       tempRoot,
       'package-version-mismatch',
-      { packageVersion: '3.0.7' },
+      { packageVersion: '3.0.8' },
       /does not match package\.json/u
     );
     await expectFailure(

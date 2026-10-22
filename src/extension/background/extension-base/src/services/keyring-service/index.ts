@@ -14,12 +14,17 @@ import { decodePair } from '@polkadot/keyring/pair/decode';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
+import BaseExtensionStore from '@extension-base/stores/BaseExtension';
+import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api as soraSdk } from '@sora-substrate/sdk';
+import { readWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import { tonStore } from '@extension-base/stores/TonStore';
 import { TonKeyringService } from './TonKeyring';
 import { upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
-import { updateAccountMetadata } from './AccountMetadata';
+import { alreadyPersistedAccountStore, updateAccountMetadata } from './AccountMetadata';
+import { preparePasswordRecords } from './PasswordChange';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
 import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import type { EventService } from '@extension-base/services';
@@ -64,6 +69,12 @@ export class KeyringService {
   readonly currentAccountReady: Promise<void>;
 
   private password = '';
+  private passwordChangeInProgress = false;
+  private unlockGeneration = 0;
+
+  private ensurePasswordChangeIdle(): void {
+    if (this.passwordChangeInProgress) throw new Error('Password change is in progress');
+  }
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
   private walletSecurityProvenance?: WalletSecurityProvenance;
@@ -216,6 +227,7 @@ export class KeyringService {
   }
 
   async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType, requireFreshGeneration = false) {
+    this.ensurePasswordChangeIdle();
     const creationMeta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, creationMeta, this.password);
@@ -291,8 +303,9 @@ export class KeyringService {
     return keyring.getAddress(address, type);
   }
 
-  forgetAccount(address: string) {
-    if (this.tonKeyring.accountSubject.value[address]) this.tonKeyring.forgetAccount(address);
+  async forgetAccount(address: string) {
+    this.ensurePasswordChangeIdle();
+    if (this.tonKeyring.accountSubject.value[address]) await this.tonKeyring.forgetAccount(address);
     else keyring.forgetAccount(address);
   }
 
@@ -301,6 +314,7 @@ export class KeyringService {
   }
 
   restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
+    this.ensurePasswordChangeIdle();
     file.meta = withoutWalletSecurityClaims(file.meta as FWKeyringMeta);
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
@@ -373,6 +387,7 @@ export class KeyringService {
   }
 
   async saveAccountMeta(address: string, meta: FWKeyringMeta) {
+    this.ensurePasswordChangeIdle();
     // Renames, enrollment and caller-supplied metadata cannot establish or
     // remove the provenance recorded when a genuinely fresh root was saved.
     meta = withoutWalletSecurityClaims(meta);
@@ -384,9 +399,9 @@ export class KeyringService {
           ? WalletEcosystem.Evm
           : meta.walletEcosystem ?? (pair.meta as FWKeyringMeta).walletEcosystem;
 
-      return updateAccountMetadata(pair, (current) =>
+      return this.tonKeyring.withStoreLock(() => updateAccountMetadata(pair, (current) =>
         withUniversalWalletKeyringMeta(address, { ...current, ...meta }, walletEcosystem)
-      );
+      ), false);
     }
 
     const account = this.getAddress(address);
@@ -437,42 +452,64 @@ export class KeyringService {
     return !!account.meta.isMobile;
   }
 
-  getDataAccounts({ address, walletEcosystem }: RequestExportSeed) {
-    if (walletEcosystem === WalletEcosystem.Ton) {
-      return { value: address };
-    }
+  async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
+    if (this.passwordChangeInProgress) return false;
+
+    this.passwordChangeInProgress = true;
+    const generation = ++this.unlockGeneration;
+
+    this.password = '';
+    this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
+    keyring.lockAll();
 
     try {
-      const pair = keyring.getPair(address);
+      // Optional metadata enrollment and queued account creation must finish
+      // before the atomic password snapshot; a stale encrypted write cannot win later.
+      await this.waitForLegacyNetworkEnrollment();
+      return await this.tonKeyring.withStoreLock(async () => {
+        await (IS_EXTENSION ? BaseExtensionStore : BaseWebStore).flush();
+        if (!IS_EXTENSION) await KeyringStoreWeb.flush();
+        const records = await readWalletRecords();
+        const prepared = preparePasswordRecords(records, oldPassword || '', newPassword);
+        const tonAccounts = await this.tonKeyring.preparePasswordChange(oldPassword || '', newPassword);
 
-      return { value: pair.address };
+        for (const account of tonAccounts) {
+          prepared.replacements[`${tonStore.getPrefix()}${account.address}`] = account;
+        }
+
+        await writeWalletRecords(prepared.replacements);
+
+        // Publish only committed records. A memory-only store prevents the account
+        // observable from issuing separate writes after the atomic storage batch.
+        keyring.keyring.setupMasterPassword(prepared.password.passwordHash);
+        if (!IS_EXTENSION) KeyringStoreWeb.applyCommittedPassword(prepared.password);
+
+        for (const json of prepared.accounts) {
+          const pair = keyring.keyring.addFromJson(json, true);
+
+          keyring.accounts.add(alreadyPersistedAccountStore, pair.address, pair.publicKey, json, pair.type);
+        }
+
+        this.tonKeyring.applyAccounts(tonAccounts);
+        keyring.lockAll();
+
+        if (generation === this.unlockGeneration) {
+          keyring.unlockKeyring(newPassword);
+          this.password = newPassword;
+          this.scheduleLegacyNetworkEnrollment();
+        }
+
+        return true;
+      });
     } catch {
-      console.info();
-    }
-
-    try {
-      const value1 = this.backupAccount(address, this.password);
-
-      return {
-        value: JSON.stringify(value1),
-        value2: value1?.address ?? '',
-      };
-    } catch {
-      return { value: '' };
-    }
-  }
-
-  changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): boolean {
-    try {
-      keyring.changeMasterPassword(newPassword, oldPassword);
-      this.password = newPassword;
-      this.scheduleLegacyNetworkEnrollment();
-
-      return true;
-    } catch (e) {
-      console.error(e);
+      if (generation === this.unlockGeneration) {
+        keyring.lockAll();
+        this.password = '';
+      }
 
       return false;
+    } finally {
+      this.passwordChangeInProgress = false;
     }
   }
 
@@ -494,12 +531,16 @@ export class KeyringService {
     return mnemonicValidate(seed);
   }
 
+  async exportAccountMnemonic(request: RequestExportSeed): Promise<ResponseExportSeed> {
+    if (request.walletEcosystem === WalletEcosystem.Ton) {
+      return { seed: await this.tonKeyring.decodeAccountMnemonic(request.address, request.password ?? this.password) };
+    }
+    return this.exportMnemonic(request);
+  }
+
   exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): ResponseExportSeed {
     if (walletEcosystem === WalletEcosystem.Ton) {
-      const { cipherSeed } = this.tonKeyring.accountSubject.value[address];
-      const seed = this.tonKeyring.decodeMnemonic(cipherSeed);
-
-      return { seed };
+      throw new Error('TON mnemonic export requires exportAccountMnemonic');
     }
 
     const passphrase = password ?? this.password;
@@ -593,21 +634,48 @@ export class KeyringService {
     return soraSdk.crypto.encryptBySigner(data, cosignerBytes, secretKey);
   }
 
-  unlockKeyring({ password }: RequestUnlockExtension): boolean {
+  async unlockKeyring({ password }: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
+    if (this.passwordChangeInProgress) return false;
+
+    const generation = ++this.unlockGeneration;
+
+    this.password = '';
+    this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
+    keyring.lockAll();
+
     try {
+      keyring.unlockKeyring(password);
+      keyring.lockAll();
+      let tonStorageUnavailable = false;
+      try {
+        await this.tonKeyring.migrateOnUnlock(password);
+        tonStorageUnavailable = this.tonKeyring.hasStorageIssues;
+      } catch {
+        // The master verifier already succeeded. Optional TON storage failure
+        // must not prevent recovery of unrelated, valid accounts.
+        tonStorageUnavailable = true;
+      }
+
+      if (generation !== this.unlockGeneration) return false;
+
       keyring.unlockKeyring(password);
       this.password = password;
       this.scheduleLegacyNetworkEnrollment();
 
-      return true;
-    } catch (e) {
-      console.info(e);
+      if (tonStorageUnavailable) return 'ton-storage-unavailable';
+      return this.tonKeyring.hasRecoveryAccounts ? 'ton-recovery-required' : true;
+    } catch {
+      if (generation === this.unlockGeneration) {
+        keyring.lockAll();
+        this.password = '';
+      }
 
       return false;
     }
   }
 
   lockKeyring(): boolean {
+    this.unlockGeneration += 1;
     try {
       keyring.lockAll();
 
@@ -623,6 +691,8 @@ export class KeyringService {
   }
 
   resetWallet(): boolean {
+    this.ensurePasswordChangeIdle();
+    this.unlockGeneration += 1;
     try {
       keyring.resetWallet(true);
       this.password = '';
@@ -663,34 +733,37 @@ export class KeyringService {
   }
 
   async keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): Promise<boolean> {
-    try {
-      const pair = this.getPair(address);
-      if (!pair) return false;
-      const ethereumAddress = pair.meta.ethereumAddress as string | undefined;
-      const child = ethereumAddress ? this.getPair(ethereumAddress) : null;
-      // Keep independently encrypted children discoverable after a partial
-      // migration. Each pair is migrated once and remains retryable on reopen.
-      const pending = [...new Set([child, pair])].filter(needsLegacyPasswordMigration);
-      for (const candidate of pending) {
-        // Validate every old password before changing either pair. A linked
-        // account may have its own password and can be migrated separately.
-        const wasLocked = candidate.isLocked;
-        try {
-          candidate.decodePkcs8(password);
-        } finally {
-          if (wasLocked) candidate.lock();
+    this.ensurePasswordChangeIdle();
+    return this.tonKeyring.withStoreLock(async () => {
+      try {
+        const pair = this.getPair(address);
+        if (!pair) return false;
+        const ethereumAddress = pair.meta.ethereumAddress as string | undefined;
+        const child = ethereumAddress ? this.getPair(ethereumAddress) : null;
+        // Keep independently encrypted children discoverable after a partial
+        // migration. Each pair is migrated once and remains retryable on reopen.
+        const pending = [...new Set([child, pair])].filter(needsLegacyPasswordMigration);
+        for (const candidate of pending) {
+          // Validate every old password before changing either pair. A linked
+          // account may have its own password and can be migrated separately.
+          const wasLocked = candidate.isLocked;
+          try {
+            candidate.decodePkcs8(password);
+          } finally {
+            if (wasLocked) candidate.lock();
+          }
         }
-      }
-      for (const candidate of pending) {
-        await upgradeLegacyAccountPassword(candidate, password);
-      }
-      this.scheduleLegacyNetworkEnrollment();
+        for (const candidate of pending) {
+          await upgradeLegacyAccountPassword(candidate, password);
+        }
+        this.scheduleLegacyNetworkEnrollment();
 
-      return true;
-    } catch (e) {
-      console.error(e);
+        return true;
+      } catch (e) {
+        console.error(e);
 
-      return false;
-    }
+        return false;
+      }
+    }, false);
   }
 }

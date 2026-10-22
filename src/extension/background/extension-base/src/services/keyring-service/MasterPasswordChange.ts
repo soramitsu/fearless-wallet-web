@@ -115,16 +115,24 @@ export async function commitMasterPasswordChange(
     }
     return { entries, remove: [] };
   }, () => {
-    keyring.keyring.setupMasterPassword(nextPassword.passwordHash);
-    keyring.lockAll();
-    if (!IS_EXTENSION) KeyringStoreWeb.commitPassword(nextPassword);
-    for (const json of committedNative) {
-      const pair = keyring.keyring.addFromJson(json);
-      keyring.accounts.add(alreadyPersistedAccountStore, pair.address, pair.publicKey, json, pair.type);
+    try {
+      keyring.keyring.setupMasterPassword(nextPassword.passwordHash);
+      keyring.lockAll();
+      if (!IS_EXTENSION) KeyringStoreWeb.commitPassword(nextPassword);
+      for (const json of committedNative) {
+        const pair = keyring.keyring.addFromJson(json);
+        keyring.accounts.add(alreadyPersistedAccountStore, pair.address, pair.publicKey, json, pair.type);
+      }
+      for (const record of committedTon) ton.setAccounts(record);
+      // A lock after submission does not undo the durable change or unlock the user.
+      if (publishPassword(newPassword)) keyring.unlockKeyring(newPassword);
+    } catch (error) {
+      // Stored, so the new password is in force; memory could not follow. Nothing stays open under the old one:
+      // the wallet locks, and unlocking or a restart reads the stored records (as in 3.0.6).
+      publishPassword('');
+      keyring.lockAll();
+      throw error;
     }
-    for (const record of committedTon) ton.setAccounts(record);
-    // A lock after submission does not undo the durable change or unlock the user.
-    if (publishPassword(newPassword)) keyring.unlockKeyring(newPassword);
   });
   assertCurrent();
   return retained;

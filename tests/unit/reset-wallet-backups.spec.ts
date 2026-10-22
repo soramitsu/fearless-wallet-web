@@ -94,8 +94,11 @@ describe('Reset wallet', () => {
     wrapper.unmount();
   });
 
-  it.each(['false', 'rejection'])('retains typed confirmation and offers retry after %s', async (failure) => {
-    const failed = failure === 'false' ? Promise.resolve(false) : Promise.reject(new Error('Storage unavailable'));
+  it.each(['false', 'rejection', 'no answer'])('retains typed confirmation and offers retry after %s', async (failure) => {
+    const failed =
+      failure === 'false' ? Promise.resolve(false)
+        : failure === 'no answer' ? Promise.resolve(undefined)
+          : Promise.reject(new Error('Storage unavailable'));
     void failed.catch(() => undefined);
     mocks.reset.mockReturnValueOnce(failed);
     const wrapper = await open();

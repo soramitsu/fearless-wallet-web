@@ -48,6 +48,7 @@ vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () =
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 
+import { Keyring } from '@subwallet/keyring/keyring';
 import { accountStorageKey } from '@extension-base/services/keyring-service/AccountMetadata';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
@@ -218,6 +219,37 @@ describe('acknowledged master-password change', { timeout: 60_000 }, () => {
     expect(await changing).not.toEqual({ value: true });
     expect(service.getPassword()).toBe('');
     expect(service.keyringIsLocked).toBe(true);
+  });
+
+  // 3.0.6: once the batch is stored the new password is in force, whatever failed in memory afterwards.
+  it('locks the wallet when memory cannot follow a stored password change', async () => {
+    const address = await native();
+    vi.spyOn(keyring.keyring, 'addFromJson').mockImplementationOnce(() => { throw new Error('Public memory failure'); });
+    const changing = change();
+    await drain();
+    // Not confirmed, as after a lock during the change; the screen then suggests the new password first.
+    expect(await changing).not.toEqual({ value: true });
+    expect(service.getPassword()).toBe('');
+    expect(service.keyringIsLocked).toBe(true);
+    const verifier = new Keyring();
+    verifier.setupMasterPassword((fixture.data['fw:keyring'] as unknown as { passwordHash: string }).passwordHash);
+    expect(() => verifier.unlockKeyring(PASSWORD)).toThrow();
+    verifier.unlockKeyring(NEW_PASSWORD);
+    const stored = keyring.createFromJson(structuredClone(fixture.data['fw:' + accountStorageKey(service.getPair(address)!)]!));
+    expect(() => stored.decodePkcs8(NEW_PASSWORD)).not.toThrow();
+    stored.lock();
+  });
+
+  it('reports a stored reset, with the wallet locked, when clearing memory fails', async () => {
+    await native();
+    vi.spyOn(keyring.keyring, 'removePair').mockImplementationOnce(() => { throw new Error('Public memory failure'); });
+    const resetting = track(service.resetWallet());
+    await drain();
+    expect(await resetting).toEqual({ value: true });
+    expect(service.getPassword()).toBe('');
+    expect(fixture.data['fw:keyring']).toBeUndefined();
+    expect(Object.keys(fixture.data).some((key) => key.startsWith('fw:account:'))).toBe(false);
+    expect(Object.keys(fixture.data).some((key) => key.startsWith('fw:deletedWallet:'))).toBe(true);
   });
 
   it.each(['sr25519', 'ed25519', 'ecdsa', 'ethereum'] as KeypairType[])('retains the %s phrase and key through acknowledged rotation', async type => {

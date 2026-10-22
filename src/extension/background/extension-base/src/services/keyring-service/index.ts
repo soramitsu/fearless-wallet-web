@@ -171,11 +171,29 @@ export class KeyringService {
       return account.address.toString();
     }
 
+    // Earlier write failures are not this account's (see confirmSaved).
+    await flushWalletWrites().catch(() => undefined);
+
     const {
       pair: { address },
     } = keyring.addUri(suri, { ...meta, isMobile: false, walletEcosystem: WalletEcosystem.Substrate }, type);
 
+    await this.confirmSaved(address);
+
     return address;
+  }
+
+  // The keyring library only queues an added account's write. Success is reported once it has landed; otherwise the
+  // account would be gone after a restart while the user believes it was saved.
+  private async confirmSaved(address: string): Promise<void> {
+    try {
+      await flushWalletWrites();
+    } catch {
+      keyring.forgetAccount(address);
+      await flushWalletWrites().catch(() => undefined);
+
+      throw new Error('The account could not be saved');
+    }
   }
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType) {
@@ -242,7 +260,7 @@ export class KeyringService {
     return keyring.forgetAddress(address);
   }
 
-  restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
+  async restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
     this.ensureNoWalletRewrite();
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
@@ -253,7 +271,13 @@ export class KeyringService {
 
     if (!this.getAccount(ethereumAddress)) delete file.meta.ethereumAddress;
 
-    return keyring.restoreAccount(file, password, withMasterPassword);
+    await flushWalletWrites().catch(() => undefined);
+
+    const pair = keyring.restoreAccount(file, password, withMasterPassword);
+
+    await this.confirmSaved(pair.address);
+
+    return pair;
   }
 
   createFromJson(file: KeyringPair$Json) {

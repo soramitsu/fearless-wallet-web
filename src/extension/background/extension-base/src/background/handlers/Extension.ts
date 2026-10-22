@@ -474,18 +474,18 @@ export default class Extension extends FWExtensionBase {
 
     if (isPasswordValidated)
       return new Promise((resolve, reject) => {
-        try {
-          const { address } = this.state.keyringService.restoreAccount(file, password);
-          const isEthereum = isEthereumAddress(address);
+        this.state.keyringService
+          .restoreAccount(file, password)
+          .then(({ address }) => {
+            const isEthereum = isEthereumAddress(address);
 
-          if (!isEthereum) {
-            this.state.updateCurrentAccount({ address });
-          }
+            if (!isEthereum) {
+              this.state.updateCurrentAccount({ address });
+            }
 
-          resolve(address);
-        } catch (error) {
-          reject({ error: (error as Error).message });
-        }
+            resolve(address);
+          })
+          .catch((error) => reject({ error: (error as Error).message }));
       });
     else throw new Error('Unable to decode using the supplied passphrase');
   }

@@ -176,9 +176,12 @@ describe('TON storage encryption and durable upgrade', () => {
     const swapped = await loaded();
 
     await expect(swapped.decodeAccountMnemonic(disk[1].address)).rejects.toThrow('mismatch');
-    await expect(
-      swapped.withStoreLock(() => swapped.preparePasswordChange(fixture.password, 'new test password'))
-    ).rejects.toThrow();
+    // The swapped record is never accepted or re-encrypted; it no longer blocks the password change for the other.
+    const prepared = await swapped.withStoreLock(() =>
+      swapped.preparePasswordChange(fixture.password, 'new test password')
+    );
+
+    expect(prepared.map(({ address }) => address)).toEqual([disk[0].address]);
     expect(tonStore.saveMany).not.toHaveBeenCalled();
     await swapped.migrateOnUnlock(fixture.password);
     expect(swapped.hasRecoveryAccounts).toBe(true);
@@ -344,5 +347,49 @@ describe('TON storage encryption and durable upgrade', () => {
     await expect(unloaded.withStoreLock(async () => undefined)).rejects.toThrow('Cannot read');
     await expect(unloaded.reset(removeStored)).resolves.toBeUndefined();
     expect(unloaded.getAccounts()).toHaveLength(0);
+  });
+
+  it('a password change re-encrypts a record that opens with the new password and leaves one neither opens', async () => {
+    const newPassword = 'public new-password fixture';
+    const [first, second] = fixture.accounts;
+    const keyring = await loaded();
+
+    // As left by an interrupted change: the first record under the new password, the second under neither.
+    disk = [
+      { ...first.stored, cipherSeed: keyring.encodeMnemonic(first.phrase.split(' '), newPassword) },
+      { ...second.stored, cipherSeed: keyring.encodeMnemonic(second.phrase.split(' '), 'public unrelated password') },
+      { ...second.stored, address: 'unknown-format', cipherSeed: 'not a record this wallet wrote' },
+    ];
+    const restarted = await loaded();
+    const prepared = await restarted.withStoreLock(() =>
+      restarted.preparePasswordChange(fixture.password, newPassword)
+    );
+
+    expect(prepared.map(({ address }) => address)).toEqual([first.stored.address]);
+    expect(restarted.decodeMnemonic(prepared[0].cipherSeed, newPassword) === first.phrase).toBe(true);
+    expect(tonStore.saveMany).not.toHaveBeenCalled();
+  });
+
+  it('opens only version-1 records at unlock; upgraded records cost no key derivation', async () => {
+    const keyring = await loaded();
+
+    await keyring.migrateOnUnlock(fixture.password);
+    expect(disk.every((record) => !isLegacyTonSeed(record.cipherSeed))).toBe(true);
+
+    const restarted = await loaded();
+    const derive = jest.spyOn(restarted, 'mnemonicToKeyPair');
+
+    await restarted.migrateOnUnlock(fixture.password);
+    expect(derive).not.toHaveBeenCalled();
+    expect(tonStore.saveMany).toHaveBeenLastCalledWith([]);
+  });
+
+  it('refuses to add a TON account without the session password instead of storing nothing', async () => {
+    disk = [];
+    const keyring = await loaded();
+
+    await expect(keyring.createAccount(fixture.accounts[1].phrase, 'Imported', '')).rejects.toThrow('Unlock');
+    expect(tonStore.saveMany).not.toHaveBeenCalled();
+    expect(keyring.getAccounts()).toHaveLength(0);
   });
 });

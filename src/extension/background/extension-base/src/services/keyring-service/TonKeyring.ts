@@ -239,6 +239,9 @@ export class TonKeyringService {
   }
 
   async createAccount(suri: string, name: string = '', password?: string) {
+    // Without the session password nothing could be stored; 3.0.5 then reported success and saved nothing.
+    if (!password) throw new Error('Unlock the wallet first');
+
     const suriArray = suri.split(' ');
 
     const { publicKey: pubKey } = await this.mnemonicToKeyPair(suriArray);
@@ -390,46 +393,81 @@ export class TonKeyringService {
     const prepared: TonStoreAccount[] = [];
 
     for (const record of this.records.values()) {
-      if (parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION) {
-        prepared.push(this.protectRecoveryRecord(this.readRecoveryRecord(record, oldPassword), newPassword));
-        continue;
-      }
+      const replacement = await this.prepareRecordForPassword(record, oldPassword, newPassword);
 
-      const mnemonic = await this.verifyRecord(record, oldPassword);
-      const cipherSeed = this.encodeMnemonic(mnemonic.split(' '), newPassword);
-      const replacement = { ...record, cipherSeed };
-
-      if ((await this.verifyRecord(replacement, newPassword)) !== mnemonic)
-        throw new Error('TON seed verification failed');
-
-      prepared.push(replacement);
+      if (replacement) prepared.push(replacement);
     }
 
     return prepared;
   }
 
+  // `record` re-encrypted under `newPassword`. It must open with the current password or, as for the keyring accounts
+  // (PasswordChange.ts), with the new one; a record that opens with neither, or whose format this version cannot read,
+  // is left as stored (null) instead of blocking the change. Once a record has opened, any failure to re-encrypt and
+  // verify it stops the whole change.
+  private async prepareRecordForPassword(
+    record: TonStoreAccount,
+    oldPassword: string,
+    newPassword: string
+  ): Promise<TonStoreAccount | null> {
+    let isRecovery: boolean;
+
+    try {
+      isRecovery = parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION;
+    } catch {
+      return null;
+    }
+
+    for (const password of [oldPassword, newPassword]) {
+      if (!password) continue;
+
+      if (isRecovery) {
+        let legacy: TonStoreAccount;
+
+        try {
+          legacy = this.readRecoveryRecord(record, password);
+        } catch {
+          continue;
+        }
+
+        return this.protectRecoveryRecord(legacy, newPassword);
+      }
+
+      let mnemonic: string;
+
+      try {
+        mnemonic = await this.verifyRecord(record, password);
+      } catch {
+        continue;
+      }
+
+      const replacement = { ...record, cipherSeed: this.encodeMnemonic(mnemonic.split(' '), newPassword) };
+
+      if ((await this.verifyRecord(replacement, newPassword)) !== mnemonic)
+        throw new Error('TON seed verification failed');
+
+      return replacement;
+    }
+
+    return null;
+  }
+
   // The record to store in place of `record` at unlock, or null when it stays as it is. Throws when it cannot be
   // processed; the caller then leaves it unchanged.
   private async migrateRecord(record: TonStoreAccount, password: string): Promise<TonStoreAccount | null> {
-    if (parseStoredSeed(record.cipherSeed)?.version === TON_RECOVERY_VERSION) {
-      this.readRecoveryRecord(record, password);
-
-      return null;
-    }
+    // Only version-1 records change at unlock. Version 2 and 3 records are left as they are without opening them:
+    // that would cost a full key derivation per account at every unlock and change nothing.
+    if (!isLegacyTonSeed(record.cipherSeed)) return null;
 
     let mnemonic: string;
 
     try {
       mnemonic = await this.verifyRecord(record, password);
-    } catch (error) {
-      if (!isLegacyTonSeed(record.cipherSeed)) throw error;
-
+    } catch {
       // A 3.0.5 record that the accepted wallet password does not open was left under an earlier password. Keep it,
       // inside strong encryption, for recovery with that password.
       return this.protectRecoveryRecord(record, password);
     }
-
-    if (!isLegacyTonSeed(record.cipherSeed)) return null;
 
     const cipherSeed = this.encodeMnemonic(mnemonic.split(' '), password);
     const replacement = { ...record, cipherSeed };

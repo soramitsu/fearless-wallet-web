@@ -17,6 +17,7 @@ import fixture from '../fixtures/3.0.5/ton-accounts.json';
 import type { EventService } from '@extension-base/services';
 import type { KeyringPasswordJson, KeyringPair$Json, KeyringPair } from '@subwallet/keyring/types';
 import type { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
+import { WalletEcosystem } from '@/interfaces';
 
 // The legacy keyring's duplicate-package detector resolves this subpath to ESM
 // under Jest 27. Only package metadata is isolated; all key cryptography is real.
@@ -32,6 +33,10 @@ jest.mock('@subwallet/ui-keyring', () => ({
     lockAll: jest.fn(),
     unlockKeyring: jest.fn(),
     resetWallet: jest.fn(),
+    addUri: jest.fn(),
+    restoreAccount: jest.fn(),
+    forgetAccount: jest.fn(),
+    getAccount: jest.fn(),
     keyring: { setupMasterPassword: jest.fn(), addFromJson: jest.fn() },
   },
 }));
@@ -142,12 +147,18 @@ describe('password rotation prepares and verifies records without changing the a
     expect(() => preparePasswordRecords(records, 'incorrect', NEXT)).toThrow();
   });
 
-  it('fails the complete preparation if one managed account cannot decrypt', () => {
+  // Changed by the 3.0.6 review: refusing the whole change here stranded accounts an interrupted 3.0.5 change had left
+  // under the earlier password. An account neither password opens is now left exactly as stored.
+  it('leaves a managed account that neither password opens as stored and changes the others', () => {
     const damaged = structuredClone(records);
     const json = damaged[accountStorageKey] as KeyringPair$Json;
 
     json.encoded = 'invalid encrypted account';
-    expect(() => preparePasswordRecords(damaged, OLD, NEXT)).toThrow();
+    const prepared = preparePasswordRecords(damaged, OLD, NEXT);
+
+    expect(prepared.replacements[accountStorageKey]).toBeUndefined();
+    expect(prepared.replacements[evmStorageKey]).toBeDefined();
+    expect(prepared.accounts).toHaveLength(1);
     expect(writeWalletRecords).not.toHaveBeenCalled();
   });
 });
@@ -584,5 +595,104 @@ describe('3.0.6 review: reset, unlock and password change exclude one another', 
     (removeWalletRecords as jest.Mock).mockRejectedValueOnce(new Error('Cannot save wallet storage'));
     await expect(wallet.resetWallet()).resolves.toBe(false);
     await expect(wallet.resetWallet()).resolves.toBe(true);
+  });
+});
+
+describe('3.0.6 review: accounts left under an earlier password stay recoverable', () => {
+  jest.setTimeout(30000);
+
+  const THIRD = 'public-test-only-third-password';
+  const verifierFor = (password: string) => new Keyring({ type: 'sr25519' }).changeMasterPassword(password);
+
+  const opensWith = (json: unknown, password: string) => {
+    const pair = new Keyring({ type: 'sr25519' }).createFromJson(json as KeyringPair$Json);
+
+    try {
+      pair.decodePkcs8(password);
+
+      return true;
+    } catch {
+      return false;
+    } finally {
+      pair.lock();
+    }
+  };
+
+  // 3.0.5 stored the verifier for NEXT before rewriting the accounts, which an interruption left under OLD.
+  const interrupted = () => ({ ...structuredClone(records), [PASSWORD_STORAGE_KEY]: verifierFor(NEXT) });
+
+  it('repairs them when the earlier password is chosen again, as 3.0.5 did', () => {
+    const prepared = preparePasswordRecords(interrupted(), NEXT, OLD);
+
+    expect(prepared.accounts).toHaveLength(2);
+    [accountStorageKey, evmStorageKey].forEach((key) => expect(opensWith(prepared.replacements[key], OLD)).toBe(true));
+  });
+
+  it('changes to another password leaving them as stored, and they can still be repaired afterwards', () => {
+    const split = interrupted();
+    const prepared = preparePasswordRecords(split, NEXT, THIRD);
+
+    expect(Object.keys(prepared.replacements)).toEqual([PASSWORD_STORAGE_KEY]);
+
+    const repaired = preparePasswordRecords({ ...split, ...prepared.replacements }, THIRD, OLD);
+
+    expect(repaired.accounts).toHaveLength(2);
+    expect(opensWith(repaired.replacements[accountStorageKey], OLD)).toBe(true);
+  });
+
+  it('sets a first password over leftover accounts instead of refusing every one', () => {
+    const leftovers = structuredClone(records);
+
+    delete leftovers[PASSWORD_STORAGE_KEY];
+    expect(preparePasswordRecords(leftovers, '', OLD).accounts).toHaveLength(2);
+    expect(preparePasswordRecords(leftovers, '', NEXT).accounts).toHaveLength(0);
+  });
+
+  it('still refuses a wrong current password, and still stops when an opened account fails verification', () => {
+    const misfiled = structuredClone(records);
+
+    misfiled['fw:account:0x00'] = misfiled[accountStorageKey];
+    expect(() => preparePasswordRecords(structuredClone(records), 'public-wrong-password', NEXT)).toThrow();
+    expect(() => preparePasswordRecords(misfiled, OLD, NEXT)).toThrow('Account storage address mismatch');
+  });
+});
+
+describe('3.0.6 review: adding an account reports a failed save', () => {
+  it('reports success only after the added account was written', async () => {
+    const wallet = service();
+
+    (keyring.addUri as jest.Mock).mockReturnValue({ pair: { address: 'added' } });
+    await expect(wallet.addAccount(PHRASE, { name: 'Added' }, WalletEcosystem.Substrate)).resolves.toBe('added');
+    expect(flushWalletWrites).toHaveBeenCalledTimes(2);
+    expect((keyring.addUri as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (flushWalletWrites as jest.Mock).mock.invocationCallOrder[1]
+    );
+    expect(keyring.forgetAccount).not.toHaveBeenCalled();
+  });
+
+  it('takes the account out again and reports the failure when its write failed', async () => {
+    const wallet = service();
+
+    (keyring.addUri as jest.Mock).mockReturnValue({ pair: { address: 'added' } });
+    (flushWalletWrites as jest.Mock)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('An earlier wallet write failed'));
+    await expect(wallet.addAccount(PHRASE, { name: 'Added' }, WalletEcosystem.Substrate)).rejects.toThrow(
+      'could not be saved'
+    );
+    expect(keyring.forgetAccount).toHaveBeenCalledWith('added');
+  });
+
+  it('does the same for a JSON import', async () => {
+    const wallet = service();
+
+    (keyring.restoreAccount as jest.Mock).mockReturnValue({ address: 'restored' });
+    (flushWalletWrites as jest.Mock)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('An earlier wallet write failed'));
+    await expect(wallet.restoreAccount({ address: 'restored', meta: {} } as never, OLD)).rejects.toThrow(
+      'could not be saved'
+    );
+    expect(keyring.forgetAccount).toHaveBeenCalledWith('restored');
   });
 });

@@ -616,7 +616,6 @@ function toIrohaMovementHistoryElement(
 
   return {
     address,
-    blockHash: hash,
     blockHeight,
     extrinsicHash: hash,
     id: `${hash}:${item.direction}:${movementIndex}`,

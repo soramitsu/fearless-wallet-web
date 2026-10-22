@@ -160,7 +160,6 @@ describe('Iroha history fetching', () => {
     expect(result).toEqual([
       {
         address: WALLET,
-        blockHash: HASH_1,
         blockHeight: 12,
         extrinsicHash: HASH_1,
         id: `${HASH_1}:outgoing:0`,
@@ -170,7 +169,6 @@ describe('Iroha history fetching', () => {
       },
       {
         address: WALLET,
-        blockHash: HASH_2,
         blockHeight: 12,
         extrinsicHash: HASH_2,
         id: `${HASH_2}:incoming:1`,

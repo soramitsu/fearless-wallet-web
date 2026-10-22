@@ -156,7 +156,7 @@ export default defineComponent({
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
-      if (BaseApi.isBitcoinNetwork(this.selectedNetwork)) {
+      if (BaseApi.isBitcoinNetwork(this.selectedNetwork) || BaseApi.isIrohaNetwork(this.selectedNetwork)) {
         return (
           this.historyElement.address ?? BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork)
         );

@@ -98,3 +98,48 @@ export async function writeWalletRecords(records: Record<string, unknown>): Prom
     }
   }
 }
+
+// Removes records as one storage operation: all of them or, on failure, none. On the web the verifier is replaced
+// by a tombstone instead, so the legacy localStorage copy cannot come back (see readWalletRecords).
+export async function removeWalletRecords(keys: string[]): Promise<void> {
+  if (!keys.length) return;
+
+  if (IS_EXTENSION) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.remove(keys, () => {
+        if (chrome.runtime.lastError) reject(new Error('Cannot save wallet storage'));
+        else resolve();
+      });
+    });
+  }
+
+  const db = await openWebDatabase();
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+    const objectStore = transaction.objectStore(WEB_STORE_NAME);
+
+    transaction.oncomplete = () => {
+      resolve();
+    };
+
+    transaction.onabort = transaction.onerror = () => {
+      reject(new Error('Cannot save wallet storage'));
+    };
+
+    try {
+      keys.forEach((key) => (key === PASSWORD_STORAGE_KEY ? objectStore.put(null, key) : objectStore.delete(key)));
+    } catch {
+      transaction.abort();
+    }
+  });
+
+  if (keys.includes(PASSWORD_STORAGE_KEY)) {
+    try {
+      if (typeof localStorage === 'undefined') await requestWebPasswordStorage('remove');
+      else localStorage.removeItem(PASSWORD_STORAGE_KEY);
+    } catch {
+      // The committed tombstone is authoritative.
+    }
+  }
+}

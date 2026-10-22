@@ -133,6 +133,23 @@ export class TonKeyringService {
     return next;
   }
 
+  // Reset remains available when startup loading failed. Wait for any pending
+  // load and earlier TON mutation before removal, then discard memory only
+  // after storage confirms that the complete wallet was removed.
+  reset(removeStoredWallet: () => Promise<void>): Promise<void> {
+    const next = this.storeOperation.then(() => this.ready.catch(() => undefined)).then(async () => {
+      await removeStoredWallet();
+      this.records.clear();
+      this.accountSubject.next({});
+      this.migrationIssue = false;
+      this.loaded = true;
+      this.ready = Promise.resolve();
+      tonStore.hasUnreadableRecords = false;
+    });
+    this.storeOperation = next.catch(() => undefined);
+    return next;
+  }
+
   applyAccounts(accounts: TonStoreAccount[]): void {
     accounts.forEach((account) => this.setAccounts(account));
   }

@@ -1,8 +1,6 @@
-import BaseWebStore from './BaseWeb';
-import { PASSWORD_STORAGE_KEY, readWalletRecords, writeWalletRecords } from './WalletStorage';
+import { PASSWORD_STORAGE_KEY, readWalletRecords, removeWalletRecords, writeWalletRecords } from './WalletStorage';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
 import type { PasswordStore } from '@subwallet/ui-keyring/types';
-import { requestWebPasswordStorage } from '@/bootstrap/webPasswordStore';
 
 export default class KeyringStoreWeb implements PasswordStore {
   private static value: KeyringPasswordJson | null = null;
@@ -13,7 +11,7 @@ export default class KeyringStoreWeb implements PasswordStore {
     this.value = (records[PASSWORD_STORAGE_KEY] as KeyringPasswordJson | undefined) ?? null;
   }
 
-  static applyCommittedPassword(value: KeyringPasswordJson): void {
+  static applyCommittedPassword(value: KeyringPasswordJson | null): void {
     this.value = value;
   }
 
@@ -33,11 +31,7 @@ export default class KeyringStoreWeb implements PasswordStore {
   }
 
   public remove(update?: () => void): void {
-    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(async () => {
-      const store = new (class extends BaseWebStore<KeyringPasswordJson> {})(null);
-      await store.removeFromDB(PASSWORD_STORAGE_KEY);
-      await requestWebPasswordStorage('remove');
-    }).then(() => {
+    KeyringStoreWeb.pending = KeyringStoreWeb.pending.then(() => removeWalletRecords([PASSWORD_STORAGE_KEY])).then(() => {
       KeyringStoreWeb.value = null;
       update?.();
     });

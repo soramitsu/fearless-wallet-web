@@ -19,7 +19,8 @@ import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { api as soraSdk } from '@sora-substrate/sdk';
-import { readWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import { PASSWORD_STORAGE_KEY, readWalletRecords, removeWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { tonStore } from '@extension-base/stores/TonStore';
 import { TonKeyringService } from './TonKeyring';
 import { upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
@@ -69,11 +70,12 @@ export class KeyringService {
   readonly currentAccountReady: Promise<void>;
 
   private password = '';
-  private passwordChangeInProgress = false;
+  // Shared by password rotation and reset to exclude every account mutation.
+  private walletRewriteInProgress = false;
   private unlockGeneration = 0;
 
-  private ensurePasswordChangeIdle(): void {
-    if (this.passwordChangeInProgress) throw new Error('Password change is in progress');
+  private ensureNoWalletRewrite(): void {
+    if (this.walletRewriteInProgress) throw new Error('The wallet is being changed; try again in a moment');
   }
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
@@ -227,7 +229,7 @@ export class KeyringService {
   }
 
   async addAccount(suri: string, meta: FWKeyringMeta, walletEcosystem: WalletEcosystem, type?: KeypairType, requireFreshGeneration = false) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     const creationMeta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, creationMeta, this.password);
@@ -251,6 +253,7 @@ export class KeyringService {
   }
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType) {
+    this.ensureNoWalletRewrite();
     keyring.saveAddress(
       address,
       {
@@ -304,17 +307,18 @@ export class KeyringService {
   }
 
   async forgetAccount(address: string) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     if (this.tonKeyring.accountSubject.value[address]) await this.tonKeyring.forgetAccount(address);
     else keyring.forgetAccount(address);
   }
 
   forgetAddress(address: string) {
+    this.ensureNoWalletRewrite();
     return keyring.forgetAddress(address);
   }
 
   restoreAccount(file: KeyringPair$Json, password: string, withMasterPassword: boolean = true) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     file.meta = withoutWalletSecurityClaims(file.meta as FWKeyringMeta);
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
@@ -387,7 +391,7 @@ export class KeyringService {
   }
 
   async saveAccountMeta(address: string, meta: FWKeyringMeta) {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     // Renames, enrollment and caller-supplied metadata cannot establish or
     // remove the provenance recorded when a genuinely fresh root was saved.
     meta = withoutWalletSecurityClaims(meta);
@@ -453,10 +457,11 @@ export class KeyringService {
   }
 
   async changeMasterPassword({ newPassword, oldPassword }: RequestChangePassword): Promise<boolean> {
-    if (this.passwordChangeInProgress) return false;
+    if (this.walletRewriteInProgress) return false;
 
-    this.passwordChangeInProgress = true;
+    this.walletRewriteInProgress = true;
     const generation = ++this.unlockGeneration;
+    let committed = false;
 
     this.password = '';
     this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
@@ -471,13 +476,18 @@ export class KeyringService {
         if (!IS_EXTENSION) await KeyringStoreWeb.flush();
         const records = await readWalletRecords();
         const prepared = preparePasswordRecords(records, oldPassword || '', newPassword);
-        const tonAccounts = await this.tonKeyring.preparePasswordChange(oldPassword || '', newPassword);
+        // Older resets could leave TON records behind without a verifier.
+        // Establishing the first password must not open or rewrite those records.
+        const tonAccounts = records[PASSWORD_STORAGE_KEY]
+          ? await this.tonKeyring.preparePasswordChange(oldPassword || '', newPassword)
+          : [];
 
         for (const account of tonAccounts) {
           prepared.replacements[`${tonStore.getPrefix()}${account.address}`] = account;
         }
 
         await writeWalletRecords(prepared.replacements);
+        committed = true;
 
         // Publish only committed records. A memory-only store prevents the account
         // observable from issuing separate writes after the atomic storage batch.
@@ -507,9 +517,10 @@ export class KeyringService {
         this.password = '';
       }
 
-      return false;
+      // A committed verifier is authoritative even if rebuilding memory fails.
+      return committed;
     } finally {
-      this.passwordChangeInProgress = false;
+      this.walletRewriteInProgress = false;
     }
   }
 
@@ -635,7 +646,7 @@ export class KeyringService {
   }
 
   async unlockKeyring({ password }: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
-    if (this.passwordChangeInProgress) return false;
+    if (this.walletRewriteInProgress) return false;
 
     const generation = ++this.unlockGeneration;
 
@@ -690,19 +701,41 @@ export class KeyringService {
     }
   }
 
-  resetWallet(): boolean {
-    this.ensurePasswordChangeIdle();
+  async resetWallet(): Promise<boolean> {
+    if (this.walletRewriteInProgress) return false;
+    this.walletRewriteInProgress = true;
     this.unlockGeneration += 1;
+    this.password = '';
+    this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
+    keyring.lockAll();
+    let committed = false;
+
     try {
+      await this.waitForLegacyNetworkEnrollment();
+      await this.tonKeyring.reset(async () => {
+        // Wait even for a failed earlier write: no delayed account/verifier
+        // write may arrive after the reset snapshot and recreate the wallet.
+        const flushes = [(IS_EXTENSION ? BaseExtensionStore : BaseWebStore).flush()];
+        if (!IS_EXTENSION) flushes.push(KeyringStoreWeb.flush());
+        await Promise.allSettled(flushes);
+        const prefixes = ['account:', 'address:', 'contract:', 'ton:'].map((prefix) => `${EXTENSION_PREFIX}:${prefix}`);
+        const keys = Object.keys(await readWalletRecords()).filter((key) =>
+          key === PASSWORD_STORAGE_KEY || prefixes.some((prefix) => key.startsWith(prefix)));
+        await removeWalletRecords(keys);
+        committed = true;
+      });
+      if (!IS_EXTENSION) KeyringStoreWeb.applyCommittedPassword(null);
+      // These library removals clear observers and find no stored wallet left.
       keyring.resetWallet(true);
-      this.password = '';
-      this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
-
+      const flushes = [(IS_EXTENSION ? BaseExtensionStore : BaseWebStore).flush()];
+      if (!IS_EXTENSION) flushes.push(KeyringStoreWeb.flush());
+      await Promise.allSettled(flushes);
       return true;
-    } catch (e) {
-      console.error(e);
-
-      return false;
+    } catch {
+      // Storage is authoritative after commit; a restart clears stale memory.
+      return committed;
+    } finally {
+      this.walletRewriteInProgress = false;
     }
   }
 
@@ -733,7 +766,7 @@ export class KeyringService {
   }
 
   async keyringMigrateMasterPassword({ address, password }: RequestMigratePassword): Promise<boolean> {
-    this.ensurePasswordChangeIdle();
+    this.ensureNoWalletRewrite();
     return this.tonKeyring.withStoreLock(async () => {
       try {
         const pair = this.getPair(address);

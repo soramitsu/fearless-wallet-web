@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-const { request, write, readRecords, removeDB } = vi.hoisted(() => ({ request: vi.fn(), write: vi.fn(), readRecords: vi.fn(), removeDB: vi.fn() }));
+const { request, write, readRecords, removeRecords } = vi.hoisted(() => ({ request: vi.fn(), write: vi.fn(), readRecords: vi.fn(), removeRecords: vi.fn() }));
 vi.mock('@/bootstrap/webPasswordStore', () => ({ requestWebPasswordStorage: request }));
-vi.mock('@extension-base/stores/WalletStorage', () => ({ PASSWORD_STORAGE_KEY: 'fw:keyring', writeWalletRecords: write, readWalletRecords: readRecords }));
-vi.mock('@extension-base/stores/BaseWeb', () => ({ default: class { removeFromDB = removeDB; } }));
+vi.mock('@extension-base/stores/WalletStorage', () => ({ PASSWORD_STORAGE_KEY: 'fw:keyring', writeWalletRecords: write, readWalletRecords: readRecords, removeWalletRecords: removeRecords }));
 afterEach(() => { vi.resetModules(); vi.resetAllMocks(); });
 
 describe('encrypted password record persistence', () => {
@@ -11,7 +10,7 @@ describe('encrypted password record persistence', () => {
     let finish!: () => void;
     write.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; })).mockResolvedValue(null);
     request.mockResolvedValue(null);
-    removeDB.mockResolvedValue(undefined);
+    removeRecords.mockResolvedValue(undefined);
     const store = new Store();
     const written = vi.fn();
     const removed = vi.fn();
@@ -25,8 +24,8 @@ describe('encrypted password record persistence', () => {
     expect(written).not.toHaveBeenCalled();
     finish();
     await flush;
-    expect(removeDB).toHaveBeenCalledExactlyOnceWith('fw:keyring');
-    expect(request).toHaveBeenCalledExactlyOnceWith('remove');
+    expect(removeRecords).toHaveBeenCalledExactlyOnceWith(['fw:keyring']);
+    expect(request).not.toHaveBeenCalled();
     expect(written).toHaveBeenCalledOnce();
     expect(removed).toHaveBeenCalledOnce();
     const read = vi.fn();

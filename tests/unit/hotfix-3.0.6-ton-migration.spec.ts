@@ -397,4 +397,39 @@ describe('TON storage encryption and durable upgrade', () => {
     expect(tonStore.saveMany).not.toHaveBeenCalled();
   });
 
+  it('waits for a late TON load before reset and clears memory only after durable removal', async () => {
+    let finishLoad!: (records: TonStoreAccount[]) => void;
+    vi.mocked(tonStore.readAll).mockImplementationOnce(() => new Promise((resolve) => { finishLoad = resolve; }));
+    const wallet = start();
+    let finishRemoval!: () => void;
+    const remove = vi.fn(() => new Promise<void>((resolve) => { finishRemoval = resolve; }));
+    const resetting = wallet.reset(remove);
+    await Promise.resolve();
+    expect(remove).not.toHaveBeenCalled();
+    finishLoad(clone(disk));
+    await vi.waitFor(() => expect(remove).toHaveBeenCalledOnce());
+    expect(wallet.getAccounts()).toHaveLength(2);
+    finishRemoval();
+    await resetting;
+    expect(wallet.getAccounts()).toEqual([]);
+    await expect(wallet.withStoreLock(async () => wallet.getAccounts())).resolves.toEqual([]);
+  });
+
+  it('keeps TON accounts in memory when reset storage removal fails', async () => {
+    const wallet = await loaded();
+    const before = wallet.getAccounts();
+    await expect(wallet.reset(async () => { throw new Error('Synthetic reset storage failure'); })).rejects.toThrow();
+    expect(wallet.getAccounts()).toEqual(before);
+  });
+
+  it('can reset after a failed startup read without poisoning the next wallet', async () => {
+    vi.mocked(tonStore.readAll).mockRejectedValueOnce(new Error('Synthetic startup read failure'));
+    const wallet = start();
+    const remove = vi.fn(async () => {});
+    await wallet.reset(remove);
+    expect(remove).toHaveBeenCalledOnce();
+    await expect(wallet.withStoreLock(async () => 'ready for a new wallet')).resolves.toBe('ready for a new wallet');
+    expect(wallet.hasStorageIssues).toBe(false);
+  });
+
 });

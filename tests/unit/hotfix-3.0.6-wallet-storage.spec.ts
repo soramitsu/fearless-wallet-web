@@ -1,13 +1,13 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { chrome } from '@extension-base/utils/crossenv';
-import { readWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
+import { readWalletRecords, removeWalletRecords, writeWalletRecords } from '@extension-base/stores/WalletStorage';
 
 vi.mock('@/consts/global', () => ({ IS_EXTENSION: true }));
 vi.mock('@extension-base/utils/crossenv', () => ({
   chrome: {
     runtime: {},
-    storage: { local: { get: vi.fn(), set: vi.fn() } },
+    storage: { local: { get: vi.fn(), set: vi.fn(), remove: vi.fn() } },
   },
 }));
 
@@ -72,5 +72,31 @@ describe('Chrome wallet storage batches', () => {
       })
     ).rejects.toThrow('Cannot save wallet storage');
     expect(persisted).toEqual(before);
+  });
+});
+
+
+describe('complete Chrome wallet removal', () => {
+  it('waits for one removal acknowledgement for the complete wallet', async () => {
+    let acknowledge!: () => void;
+    (chrome.storage.local.remove as Mock).mockImplementation((_keys, done) => { acknowledge = done!; });
+    const keys = ['fw:keyring', 'fw:account:fixture', 'fw:ton:fixture'];
+    let completed = false;
+    const removing = removeWalletRecords(keys).then(() => { completed = true; });
+    await Promise.resolve();
+    expect(completed).toBe(false);
+    expect(chrome.storage.local.remove).toHaveBeenCalledExactlyOnceWith(keys, expect.any(Function));
+    acknowledge();
+    await removing;
+    expect(completed).toBe(true);
+  });
+
+  it('rejects storage removal failure and does not pretend an empty reset succeeded', async () => {
+    (chrome.storage.local.remove as Mock).mockImplementation((_keys, done) => {
+      runtime.lastError = { message: 'Synthetic removal failure' };
+      done!();
+      delete runtime.lastError;
+    });
+    await expect(removeWalletRecords(['fw:keyring', 'fw:ton:fixture'])).rejects.toThrow('Cannot save wallet storage');
   });
 });

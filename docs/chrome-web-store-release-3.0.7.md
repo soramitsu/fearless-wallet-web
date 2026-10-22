@@ -69,3 +69,19 @@ permissions and privacy declarations, upload the exact validated ZIP and submit
 for review with publication after approval. Submission is not proof that the
 update is live. Preserve the published 3.0.6 package and its recorded hash for
 comparison; any rollback package also needs a higher Chrome version.
+
+## Firefox regression review
+
+The production Firefox build retains 41 reviewed lint warnings (40
+`DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`), with no errors or notices.
+The six warning-bearing background vendor files match the prior baseline
+byte-for-byte. The three changed application chunks retain the same 19 flagged
+syntax sites after minifier identifier renaming: dependency global-object
+fallbacks, legacy bind/generator detection, intrinsic `eval` references, and
+Vue's compiled static-content insertion. No new evaluation sites were added.
+The baseline records the new exact positions and file hashes. The runtime
+smoke still verifies that CSP rejects dynamic `Function` execution.
+
+CI obtains the pinned Firefox runtime from Mozilla with checksum verification
+because the repository's action policy rejects the previous third-party setup
+action. The version pin, runtime assertions and permissions are unchanged.

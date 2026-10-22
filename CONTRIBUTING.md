@@ -60,13 +60,18 @@ Firefox profile and kills the complete owned process group afterward. It fails
 on bounded RDP timeouts or protocol errors, an unmounted/noninteractive popup,
 Firefox JavaScript startup errors, or an extension CSP that permits dynamic
 `Function` execution. Set `FIREFOX_BINARY` when Firefox is installed in a
-nonstandard location. CI pins the repeatedly verified Firefox `152.0.4`
-runtime, passes its executable path through one contiguous setup/smoke block,
+nonstandard location. CI downloads the repeatedly verified Firefox `152.0.4`
+Linux x86-64 en-US archive directly from Mozilla over HTTPS and verifies its
+SHA-256 against a repository pin taken from the release's
+[official checksums](https://archive.mozilla.org/pub/firefox/releases/152.0.4/SHA256SUMS)
+before extraction. This uses the runner's shell tools without a third-party
+setup action. CI passes its executable path through one contiguous setup/smoke block,
 and fails before launch unless that exact executable reports `Mozilla Firefox
 152.0.4`; GitHub Actions cannot fall back to a system Firefox. Mutable channels such as `latest`,
 `beta`, `nightly`, and `esr` are rejected by the smoke-policy test. Upgrade the
-pin, its policy constant, and this documentation together only after the full
-`yarn test:e2e:firefox` gate passes on the candidate version.
+version and checksum pins, their policy constants, and this documentation
+together only after the full `yarn test:e2e:firefox` gate passes on the candidate
+version.
 
 ## Pull Requests
 

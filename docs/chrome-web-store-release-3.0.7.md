@@ -23,10 +23,13 @@ sends and IrohaConnect dApp connections are available. Taira sends are signed in
 the extension and submitted directly to Torii REST. The build enables them only
 while `config/iroha-production-send-readiness.json` records ready on-chain
 evidence for the unchanged transfer path, and the release gate re-verifies that
-evidence on Taira. Bitcoin sends stay disabled until
-`scripts/bitcoin-testnet-broadcast-evidence.json` records a ready testnet
-broadcast from the shipped transfer path. Nexus mainnet remains disabled by
-default. Production builds disable test-only and smoke flags. No customer
+evidence on Taira. Bitcoin sends are enabled the same way:
+`scripts/bitcoin-testnet-broadcast-evidence.json` records a confirmed testnet
+broadcast from the shipped transfer path, and the gate re-verifies it through
+the Blockstream testnet indexer. That evidence expires seven days after its
+block, so a later release must first rerun
+`FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin` and record the new
+transaction. Nexus mainnet remains disabled by default. Production builds disable test-only and smoke flags. No customer
 secrets or build credentials are committed.
 
 ## Store release note
@@ -40,8 +43,7 @@ wallets. Deposits, swaps and other normal use require a new wallet.
 ## Store feature description
 
 Bitcoin: manage Bitcoin mainnet and testnet addresses, discover existing address
-activity, and view balances and transaction history. Bitcoin sending is not
-available in this release.
+activity, view balances and transaction history, and send BTC.
 
 SORA Nexus Taira testnet: access testnet accounts, balances and transaction
 history, send testnet XOR, and use IrohaConnect dApp pairing with per-request
@@ -66,8 +68,7 @@ production identity/configuration checks and two byte-identical package builds.
 Record the source commit and ZIP SHA-256 from
 `dist/extension/chrome-release-provenance.json` with the upload evidence.
 Before submission, check that the store text matches the transfer flags in
-`dist/extension/chrome/extension-build-metadata.json`; if Bitcoin evidence has
-been recorded by then, Bitcoin sending is enabled and its sentence must change.
+`dist/extension/chrome/extension-build-metadata.json`.
 
 The configuration importer remains pinned to the reviewed 3.0.5 reference CRX;
 that reference is separate from the minimum store-version check, now 3.0.6.

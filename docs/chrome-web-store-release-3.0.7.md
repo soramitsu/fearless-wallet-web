@@ -74,13 +74,19 @@ comparison; any rollback package also needs a higher Chrome version.
 
 The production Firefox build retains 41 reviewed lint warnings (40
 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`), with no errors or notices.
-The six warning-bearing background vendor files match the prior baseline
-byte-for-byte. The three changed application chunks retain the same 19 flagged
-syntax sites after minifier identifier renaming: dependency global-object
+After dependency security updates, all nine warning-bearing files retain the
+same 41 flagged syntax sites after minifier identifier renaming: dependency global-object
 fallbacks, legacy bind/generator detection, intrinsic `eval` references, and
 Vue's compiled static-content insertion. No new evaluation sites were added.
 The baseline records the new exact positions and file hashes. The runtime
 smoke still verifies that CSP rejects dynamic `Function` execution.
+
+Both dependency audits now pass without advisory ignores. Patched upstream
+versions replace the affected application/build libraries. The two remaining
+unpatched development tools use a depth-bounded local brace parser and a
+fail-closed shim for unused Android ADB cryptography. Their 125 source-integrity,
+compatibility and adversarial checks run as part of the full dependency audit;
+see `docs/dependency-audit-exceptions.md` for the scope and replacement policy.
 
 CI obtains the pinned Firefox runtime from Mozilla with checksum verification
 because the repository's action policy rejects the previous third-party setup

@@ -37,6 +37,8 @@ async function createFixture() {
     path.join(directory, 'package.json'),
     `${JSON.stringify({ dependencies: { '@iroha/iroha-js': 'file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz' } })}\n`
   );
+  // Fixtures start blocked whatever the checked-in release state; its evidence commits are not in this repository.
+  await editJson(directory, manifestPath, blockedManifest);
   git(directory, 'init', '-q');
   git(directory, 'add', '.');
   git(directory, '-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-q', '-m', 'fixture');
@@ -56,6 +58,14 @@ async function editText(directory, file, mutate) {
   const target = path.join(directory, file);
 
   await fs.writeFile(target, mutate(await fs.readFile(target, 'utf8')));
+}
+
+function blockedManifest(manifest) {
+  manifest.status = 'blocked';
+  manifest.releaseEnabled = false;
+  manifest.blockers = ['taira-transfer-evidence-missing'];
+  manifest.networks.taira.releaseEnabled = false;
+  manifest.evidence = [];
 }
 
 function readyManifest(commit, overrides = {}) {
@@ -113,8 +123,8 @@ function liveFetch({ genesis, kind = 'Applied', resolvedFrom = 'state', schema =
 const fixtures = [];
 
 try {
-  // The checked-in manifest passes as it stands.
-  await expectPass(rootDir);
+  // The checked-in manifest passes as it stands, judged at the current time rather than the fixture date.
+  await expectPass(rootDir, { now: Date.now() });
 
   const blocked = await createFixture();
   fixtures.push(blocked.directory);

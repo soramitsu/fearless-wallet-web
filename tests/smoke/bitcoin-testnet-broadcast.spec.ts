@@ -1,3 +1,6 @@
+// @vitest-environment node
+// happy-dom preflights every cross-origin fetch and Esplora answers OPTIONS with 404, so the live
+// broadcast uses Node's fetch, as a browser's simple GET would need no preflight.
 import * as bitcoin from 'bitcoinjs-lib';
 
 import { BitcoinEsploraClient } from '@extension-base/services/bitcoin-indexer-service';

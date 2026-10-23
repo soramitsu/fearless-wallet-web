@@ -203,6 +203,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
   for (const script of [
     'test:extension-build-environment',
     'test:extension-package',
+    'test:verified-crx',
     'test:import-chrome-release-config',
     'test:prepare-chrome-release',
     'test:release-source-audit',

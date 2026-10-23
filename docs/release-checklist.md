@@ -4,6 +4,7 @@ Use this checklist for every browser-extension release PR from `develop` to
 `master`.
 
 For Chrome `3.0.9` Bitcoin and Taira sends, use `docs/chrome-web-store-release-3.0.9.md`.
+For signed uploads after Verified CRX enrollment, follow `docs/verified-crx-uploads.md` using the unchanged, fully verified release ZIP.
 For the Chrome `3.0.8` metadata correction, use `docs/chrome-web-store-release-3.0.8.md`.
 For the underlying `3.0.7` recovery changes, also use the recovery-mode release notes and approved privacy notice in
 `docs/chrome-web-store-release-3.0.7.md`. Earlier configuration, permission and credentialed artifact guidance remains in `docs/chrome-web-store-release-3.0.6.md`.

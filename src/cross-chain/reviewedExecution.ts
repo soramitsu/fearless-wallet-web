@@ -6,6 +6,7 @@ import type {
   ReviewedRelayExecution,
   ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
+import { assertReviewedRecipient } from '@/cross-chain/recipient';
 
 type RuntimeMethod = ((...args: unknown[]) => Extrinsic) & {
   meta?: { args?: Array<{ name: { toString(): string } }> };
@@ -248,6 +249,7 @@ export async function createReviewedCrossChainExtrinsic({
   ) {
     throw new Error('cross_chain_execution_fingerprint_mismatch');
   }
+  assertReviewedRecipient(execution, to);
 
   await api.isReadyOrError;
 

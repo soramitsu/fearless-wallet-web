@@ -1623,6 +1623,7 @@ export default class Extension extends FWExtensionBase {
         destination: this.state.networkService.networkMap[destinationNet],
         tokenBalance,
         amount,
+        to,
         requireAmount: Boolean(amount?.trim()),
       });
       if (!this.state.actionCapabilityService.isActionEnabled(validation.action)) {
@@ -1701,6 +1702,7 @@ export default class Extension extends FWExtensionBase {
         destination: this.state.networkService.networkMap[destinationNet],
         tokenBalance,
         amount,
+        to,
         requireAmount: true,
       });
       if (!this.state.actionCapabilityService.isActionEnabled(validation.action)) {

@@ -121,7 +121,6 @@ import { defineComponent } from 'vue';
 import type { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { NftTx } from '@extension-base/services/nft-service/types';
 import type {
-  RequestCheckCrossChain,
   RequestCheckTransfer,
   RequestTransfer,
   RequestCrossChain,
@@ -137,7 +136,7 @@ import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
-import { isSameString, isSora, setClipboard } from '@/helpers';
+import { isSameString, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import {
@@ -391,19 +390,16 @@ export default defineComponent({
           this.hash = result.hash;
         }
 
-        const txCross = this.tx as RequestCheckCrossChain;
-
         // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
         // аналогично для TON экосистемы
-        if (
-          this.isTon ||
-          this.isStaking ||
-          this.isPool ||
-          this.extrinsicType === 'swap' ||
-          this.extrinsicType === 'nft' ||
-          (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
-        )
+        if (this.isTon || this.isStaking || this.isPool || this.extrinsicType === 'swap' || this.extrinsicType === 'nft')
           this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);
+        // A cross-chain send reports its outcome through the subscription callback for every origin. The background
+        // answers { status: true } as soon as the send was started, which must never replace a failure the callback
+        // already reported. The response only matters while nothing has settled the state yet: an early rejection
+        // (nothing was subscribed) arrives only here, and it must not leave the popup pending forever.
+        else if (this.extrinsicType === 'crossChain' && this.transactionState === 'pending')
+          this.applyTransactionResponse(results as BasicTxResponse | undefined);
       } catch (error) {
         // A key that waits for its password fails before anything is signed; say so instead of "failed".
         this.applyTransactionResponse(

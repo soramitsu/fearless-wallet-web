@@ -99,6 +99,9 @@ describe('Universal Wallet registry network mapping', () => {
     const byName = Object.fromEntries(networks.map((network) => [network.name, network]));
 
     expect(byName.Bitcoin.assets[0].priceId).toBe('btc');
+    // CoinGecko serves SOL as `solana`; `sol` is not one of its ids, so it must not be the price id.
+    expect(byName.Solana.assets[0].priceId).toBe('solana');
+    expect(byName['Solana Devnet']?.assets[0].priceId ?? '').toBe('');
     expect(byName['Bitcoin Testnet'].assets[0].priceId).toBe('');
     expect(byName['Taira Testnet'].assets[0].priceId).toBe('');
 

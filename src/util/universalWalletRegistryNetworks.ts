@@ -199,6 +199,10 @@ function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryN
   })?.[0];
 }
 
+// CoinGecko knows SOL as `solana`; the lower-cased ticker `sol` is not an id it serves, so a Solana balance would
+// otherwise have no fiat price and be left out of every total.
+const NATIVE_PRICE_IDS: Readonly<Record<string, string>> = Object.freeze({ 'solana:mainnet': 'solana' });
+
 function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
   const { ecosystem, nativeAsset } = entry;
   const symbol = nativeAsset?.symbol ?? 'UNKNOWN';
@@ -211,7 +215,7 @@ function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
     currencyId: nativeAsset?.id ?? symbol,
     precision: nativeAsset?.decimals ?? 0,
     // Test-network coins share a mainnet symbol but have no market value.
-    priceId: isTestnetEntry(entry) ? '' : symbol.toLowerCase(),
+    priceId: isTestnetEntry(entry) ? '' : NATIVE_PRICE_IDS[entry.chainId] ?? symbol.toLowerCase(),
     icon: REGISTRY_TOKEN_ICONS[symbol] ?? symbol.toLowerCase(),
     color: '',
     staking: '',

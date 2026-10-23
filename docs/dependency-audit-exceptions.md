@@ -16,6 +16,25 @@ the `addons-linter` dependency used by `web-ext`. The Firefox lint wrapper still
 strips environment overrides, disables config discovery, bounds output, and
 terminates lint after 120 seconds.
 
+## `zod` resolved to 4.6.6
+
+`@ton/ton` (16.3.0, the latest release, and the 15.x that `@subwallet/keyring`
+brings) depends on `zod` `^3.21.4`. The advisory
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
+(memory exhaustion while validating oversized arrays) covers every `zod` before
+4.6.6 and has no fix for 3.x, so the audits failed on a clean install. The release
+resolves `zod` to the patched 4.6.6. `@ton/ton` uses `zod` only in its HTTP
+clients (`TonClient4` and `HttpApi`), which the wallet does not use; it derives TON
+wallet contracts and addresses, so its own code imports the contract module
+directly (`@ton/ton/dist/wallets/WalletContractV4`) and no longer loads
+`@ton/ton` 16's clients. `zod` 4 still reaches the bundle through
+`@subwallet/keyring`'s own `@ton/ton` 15; there its `Function("")` capability
+probe, wrapped in try/catch, is the one new Firefox lint finding recorded in
+`config/firefox-webext-warning-baseline.json`. The package still loads and derives
+wallets with 4.6.6, the TON specs pass, and the extension builds and runs in
+Chrome. Reassess when `@ton/ton` and `@subwallet/keyring` publish releases that
+depend on `zod` 4, and remove the resolution then.
+
 ## Unpatched development dependencies
 
 Two development dependencies have no published fix at the time of this release.

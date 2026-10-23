@@ -41,6 +41,7 @@ function context(overrides: Record<string, unknown> = {}) {
     isTransfer: true,
     isValidAddressByNetwork: true,
     isValidRecipientAddress: true,
+    solanaPriceHint: null,
     solanaQuote: null,
     syncedAmount: '',
     syncedAssetId: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
@@ -130,6 +131,83 @@ describe('Solana quote on the send form', () => {
     expect(form.syncedFee).toBe('0.00204528');
     expect(form.solanaQuote).toMatchObject({ maxSendable: '12.5' });
     expect(form.calcTransferableSendMinusFee).not.toHaveBeenCalled();
+  });
+
+  describe('pricing the amount Max produced', () => {
+    const maxQuote = (price: number) => ({
+      estimateFee: '0.00204528',
+      destEstimateFee: '0',
+      maxAmount: '12.5',
+      solana: quote({ computeUnitPriceMicroLamports: price, maxSendable: '12.5' }),
+    });
+    const lastPin = () => checkTransfer.mock.lastCall?.[0].solanaComputeUnitPriceMicroLamports;
+
+    it("quotes the amount Max produced at the priority fee Max quoted, so a price that moved cannot make it a shortfall", async () => {
+      const form = context();
+
+      checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
+      await component.methods.setMax.call(form);
+      // The amount watcher then quotes the entered amount again.
+      form.syncedAmount = '12.5';
+      checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
+      await component.methods.verifyTx.call(form);
+
+      expect(checkTransfer).toHaveBeenLastCalledWith(expect.objectContaining({ amount: '12.5' }));
+      expect(lastPin()).toBe(1_000);
+    });
+
+    it('prices any other amount afresh', async () => {
+      const form = context();
+
+      checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
+      await component.methods.setMax.call(form);
+      form.syncedAmount = '3';
+      checkTransfer.mockResolvedValueOnce({ estimateFee: '0.000006', destEstimateFee: '0', solana: quote() });
+      await component.methods.verifyTx.call(form);
+
+      expect(lastPin()).toBeUndefined();
+    });
+
+    it("does not carry Max's price to another asset or network", async () => {
+      const form = context();
+
+      checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
+      await component.methods.setMax.call(form);
+      form.syncedAmount = '12.5';
+      form.syncedAssetId = 'SOL';
+      checkTransfer.mockResolvedValueOnce({ estimateFee: '0.000006', destEstimateFee: '0', solana: quote() });
+      await component.methods.verifyTx.call(form);
+
+      expect(lastPin()).toBeUndefined();
+    });
+
+    it('prices afresh once the hint is old', async () => {
+      vi.useFakeTimers();
+
+      try {
+        const form = context();
+
+        checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
+        await component.methods.setMax.call(form);
+        form.syncedAmount = '12.5';
+        await vi.advanceTimersByTimeAsync(61_000);
+        checkTransfer.mockResolvedValueOnce(maxQuote(50_000));
+        await component.methods.verifyTx.call(form);
+
+        expect(lastPin()).toBeUndefined();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('asks for no pin when nothing has been quoted by Max', async () => {
+      const form = context({ syncedAmount: '3' });
+
+      checkTransfer.mockResolvedValueOnce({ estimateFee: '0.000006', destEstimateFee: '0', solana: quote() });
+      await component.methods.verifyTx.call(form);
+
+      expect(lastPin()).toBeUndefined();
+    });
   });
 
   it('shows a recipient problem the quote found instead of a generic fee error', async () => {

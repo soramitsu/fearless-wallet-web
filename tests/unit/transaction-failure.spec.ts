@@ -34,6 +34,18 @@ describe('transaction failure presentation', () => {
     expect(getUnknownTransactionHash({ ...response, transactionHash: `${signature.slice(0, -1)}l` })).toBeNull();
   });
 
+  it('accepts the shorter signatures that a small number encodes to, and still reads a hex hash as hex', () => {
+    const unknown = (transactionHash: string) => ({ status: false, outcome: 'unknown', transactionHash });
+    const shortSignature = '3'.repeat(85);
+
+    expect(getUnknownTransactionHash(unknown(shortSignature))).toBe(shortSignature);
+    expect(getUnknownTransactionHash(unknown('3'.repeat(88)))).toBe('3'.repeat(88));
+    expect(getUnknownTransactionHash(unknown('3'.repeat(89)))).toBeNull();
+    expect(getUnknownTransactionHash(unknown('3'.repeat(63)))).toBeNull();
+    // Without a zero, 64 hex digits are also valid base58; a hash is lower-cased, a signature never is.
+    expect(getUnknownTransactionHash(unknown('AB12CD34'.repeat(8)))).toBe('ab12cd34'.repeat(8));
+  });
+
   it('presents Solana send failures with specific messages', () => {
     expect(
       getTransactionFailurePresentation({

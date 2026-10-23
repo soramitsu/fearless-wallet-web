@@ -34,7 +34,8 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
 ]);
 
 const HEX_TRANSACTION_HASH = /^[0-9a-f]{64}$/iu;
-const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{86,88}$/u;
+// 64 bytes in base58: 88 characters at most, and fewer for the rare signature that is a smaller number.
+const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/u;
 const SAFE_ASSET_SYMBOL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/u;
 
 function asResponse(value: unknown): TransactionResponseLike | null {
@@ -145,10 +146,11 @@ function getUnknownTransactionHash(value: unknown): string | null {
     hash.kind !== 'value' || typeof hash.value !== 'string'
   ) return null;
 
-  // A Solana signature is base58 and case-sensitive; Bitcoin and Iroha hashes are hex.
-  if (SOLANA_SIGNATURE.test(hash.value)) return hash.value;
+  // Bitcoin and Iroha hashes are hex, which a base58 reading would also accept when it holds no zero; a Solana
+  // signature is base58 and case-sensitive.
+  if (HEX_TRANSACTION_HASH.test(hash.value)) return hash.value.toLowerCase();
 
-  return HEX_TRANSACTION_HASH.test(hash.value) ? hash.value.toLowerCase() : null;
+  return SOLANA_SIGNATURE.test(hash.value) ? hash.value : null;
 }
 
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {

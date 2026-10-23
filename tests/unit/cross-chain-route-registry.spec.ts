@@ -146,10 +146,12 @@ describe('reviewed cross-chain route registry', () => {
     ]);
     expect(providers.find(({ id }) => id === 'wallet-xcm')).toMatchObject({ availability: 'available' });
     expect(providers.find(({ id }) => id === 'wallet-xcm')?.reviewedRouteCount).toBeGreaterThan(0);
+    // The SORA parachains for Polkadot and Kusama stopped producing blocks, so every route of this provider is retired.
     expect(providers.find(({ id }) => id === 'sora-substrate-bridge')).toMatchObject({
-      availability: 'available',
+      availability: 'unavailable',
+      reason: expect.stringContaining('SORA parachains have stopped producing blocks'),
+      reviewedRouteCount: 0,
     });
-    expect(providers.find(({ id }) => id === 'sora-substrate-bridge')?.reviewedRouteCount).toBeGreaterThan(0);
     expect(providers.find(({ id }) => id === 'sora-evm-bridge')).toMatchObject({
       availability: 'unavailable',
       reason: expect.stringContaining('claim and recovery flow'),
@@ -162,7 +164,8 @@ describe('reviewed cross-chain route registry', () => {
   it('distinguishes policy-disabled providers from providers without executable authority', () => {
     const providers = buildCrossChainProviderCapabilities({});
 
-    expect(providers.filter(({ availability }) => availability === 'action-disabled')).toHaveLength(3);
+    expect(providers.filter(({ availability }) => availability === 'action-disabled')).toHaveLength(2);
+    expect(providers.find(({ id }) => id === 'sora-substrate-bridge')).toMatchObject({ availability: 'unavailable' });
     expect(providers.find(({ id }) => id === 'wallet-xcm')?.reason).toContain('current capability policy');
     expect(providers.find(({ id }) => id === 'sora-evm-bridge')).toMatchObject({
       availability: 'unavailable',

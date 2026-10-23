@@ -92,8 +92,9 @@ describe('cross-chain provider coverage', () => {
     expect(wrapper.get('[data-testid="crossChainProvider-wallet-xcm"]').text()).toMatch(
       /Wallet XCM.*Disabled.*not enabled by the current capability policy/s
     );
+    // Every SORA ↔ Polkadot/Kusama route is retired while the SORA parachains are halted.
     expect(wrapper.get('[data-testid="crossChainProvider-sora-substrate-bridge"]').text()).toMatch(
-      /SORA ↔ Substrate.*Reviewed.*reviewed route/s
+      /SORA ↔ Substrate.*Unavailable.*No reviewed executable route is bundled/s
     );
     expect(wrapper.get('[data-testid="crossChainProvider-sora-evm-bridge"]').text()).toMatch(
       /SORA ↔ Ethereum.*Unavailable.*claim and recovery flow/s
@@ -116,9 +117,11 @@ describe('cross-chain provider coverage', () => {
       },
     });
 
-    const policyControlledRows = wrapper.findAll('.provider-row').filter((row) => !row.text().includes('Ethereum'));
+    const policyControlledRows = wrapper
+      .findAll('.provider-row')
+      .filter((row) => !row.text().includes('Ethereum') && !row.text().includes('Substrate'));
 
-    expect(policyControlledRows).toHaveLength(3);
+    expect(policyControlledRows).toHaveLength(2);
     policyControlledRows.forEach((row) => {
       expect(row.text()).toContain('Disabled');
       expect(row.text()).toContain('not enabled by the current capability policy');

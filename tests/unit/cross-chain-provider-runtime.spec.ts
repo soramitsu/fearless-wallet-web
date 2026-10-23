@@ -55,6 +55,27 @@ const bundledExecution = (
   return execution;
 };
 
+/**
+ * SORA to Liberland is no longer bundled (its latest transfers stay pending), but the burn builder and the
+ * registration authority check stay reachable for a requalified route, so they keep being exercised here.
+ */
+const soraToLiberlandBurn: Readonly<ReviewedCrossChainExecution> = {
+  kind: 'sora-bridge-proxy-burn-v3',
+  originChainId: '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5',
+  destinationChainId: '6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6',
+  assetXcmId: '0ef3afdc-cdd3-47cc-bd52-817c54ae65b5',
+  assetPrecision: 18,
+  bridgeNetwork: 'Liberland',
+  recipientKind: 'liberland',
+  soraAssetId: '0x00073edd278e1bd6a7f9d0b27d4f3e93b73c8f0832b58a4df13c69611a99f156',
+  soraAssetKind: 'Sidechain',
+  sidechainPrecision: 12,
+  externalAsset: 1,
+  callCandidates: [{ pallet: 'bridgeProxy', call: 'burn', args: ['networkId', 'assetId', 'recipient', 'amount'] }],
+  destinationFee: '0',
+  destinationMinimum: { kind: 'assets-min-balance', assetId: 1, precision: 12 },
+};
+
 const codec = (value: string | number, json: unknown = value) => ({
   isSome: true,
   toHex: () => String(value),
@@ -126,9 +147,8 @@ describe('reviewed cross-chain providers and runtime authority', () => {
 
     expect(bridgeRoutes.length).toBeGreaterThan(0);
     expect(bridgeRoutes.every(({ execution }) => Boolean(execution))).toBe(true);
-    expect(new Set(bridgeRoutes.map(({ execution }) => execution?.kind))).toEqual(
-      new Set(['external-to-sora-xcm-v3', 'sora-bridge-proxy-burn-v3', 'liberland-to-sora-burn'])
-    );
+    // Only Liberland to SORA still delivers; every other bridge route is retired (see cross-chain-retired-routes.spec.ts).
+    expect(new Set(bridgeRoutes.map(({ execution }) => execution?.kind))).toEqual(new Set(['liberland-to-sora-burn']));
   });
 
   it('negotiates only an exact allowlisted pallet, call, and metadata argument signature', () => {
@@ -158,9 +178,7 @@ describe('reviewed cross-chain providers and runtime authority', () => {
   });
 
   it('constructs SORA and Liberland burns only from their reviewed descriptors', async () => {
-    const sora = bundledExecution(
-      (execution) => execution.kind === 'sora-bridge-proxy-burn-v3' && execution.bridgeNetwork === 'Liberland'
-    );
+    const sora = soraToLiberlandBurn;
     const liberland = bundledExecution(
       (execution) => execution.kind === 'liberland-to-sora-burn' && execution.externalAsset === 1
     );
@@ -224,12 +242,7 @@ describe('reviewed cross-chain providers and runtime authority', () => {
   });
 
   it('reads the destination minimum and rejects exact Liberland registration drift', async () => {
-    const execution = bundledExecution(
-      (candidate) =>
-        candidate.kind === 'sora-bridge-proxy-burn-v3' &&
-        candidate.bridgeNetwork === 'Liberland' &&
-        candidate.externalAsset === 1
-    );
+    const execution = soraToLiberlandBurn;
     if (execution.kind !== 'sora-bridge-proxy-burn-v3') throw new Error('Unexpected execution fixture');
 
     const soraQuery = {
@@ -264,12 +277,37 @@ describe('reviewed cross-chain providers and runtime authority', () => {
   });
 
   it('fails closed when an authoritative intermediate SORA parachain runtime is unavailable', async () => {
-    const execution = bundledExecution(({ kind }) => kind === 'external-to-sora-xcm-v3');
+    // No external-to-SORA route is bundled any more, so the execution shape is built here.
+    const execution: Readonly<ReviewedCrossChainExecution> = {
+      kind: 'external-to-sora-xcm-v3',
+      originChainId: 'fc41b9bd8ef8fe53d58c7ea67c794c7ec9a73daf05e6d54b14ff6342c99ba64c',
+      destinationChainId: '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5',
+      assetXcmId: 'aca',
+      assetPrecision: 12,
+      source: 'acala-native',
+      relayNetwork: 'Polkadot',
+      soraParachainId: 2025,
+      soraParachainChainId: 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738',
+      soraAssetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
+      soraAssetKind: 'Sidechain',
+      bridgeNetwork: 'Polkadot',
+      bridgeParachainId: 2000,
+      callCandidates: [],
+      destinationFee: '0',
+      destinationMinimum: {
+        kind: 'sora-parachain-asset-minimum',
+        chainId: 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738',
+        assetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
+        precision: 12,
+      },
+    };
     const originApi = authorityApi(execution.originChainId);
+    const soraAssetId = (execution as never as { soraAssetId: string }).soraAssetId;
     const destinationApi = authorityApi(execution.destinationChainId, {
       parachainBridgeApp: {
+        allowedParachainAssets: vi.fn(async () => [codec(soraAssetId)] as never),
         assetKinds: vi.fn(async () => codec('Sidechain')),
-        relaychainAsset: vi.fn(async () => codec((execution as never as { soraAssetId: string }).soraAssetId)),
+        relaychainAsset: vi.fn(async () => codec(soraAssetId)),
         sidechainPrecision: vi.fn(async () => codec(execution.assetPrecision)),
       },
     });

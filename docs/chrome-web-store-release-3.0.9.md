@@ -11,6 +11,11 @@ privacy notice and metadata corrections from 3.0.8.
   and history.
 - Send testnet XOR on Taira using local signing and direct Torii submission.
   History correctly identifies outgoing transfers and their recipients.
+- Calculate Bitcoin fees from actual spendable inputs, support maximum sends
+  from fragmented balances, and require a new approval if either network fee
+  increases. Quotes are invalidated when the transfer form changes.
+- Preserve the transaction hash when a Bitcoin or Taira submission has an
+  uncertain outcome, and warn users to check history before sending again.
 - Show pending Bitcoin sends first, with a current timestamp while awaiting
   confirmation. Retry transient history-provider errors and display the
   Bitcoin, XOR and Solana icons and address identicons.

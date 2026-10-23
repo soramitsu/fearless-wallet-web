@@ -14,25 +14,24 @@ import {
 } from '@/util/bitcoinDiscovery';
 import {
   prepareBitcoinSend,
-  selectBitcoinFeeRateSatPerVbyte,
+  quoteBitcoinSend,
   sendBitcoinTransaction,
   type BitcoinSendClient,
   type BitcoinOutpoint,
   type BitcoinSendSource,
 } from '@/util/bitcoinSend';
-import { estimateP2wpkhTransactionVSize } from '@/util/bitcoinTransaction';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
 import { isBitcoinTransfersEnabled } from '@/util/releaseFeatures';
 
 const BITCOIN_DECIMALS = 8;
 const MAX_SATOSHI = 2_100_000_000_000_000n;
-const DEFAULT_ESTIMATE_INPUTS = 1;
-const DEFAULT_ESTIMATE_OUTPUTS = 2;
 
 type HandleBasicTx = (data: BasicTxResponse) => void;
 
 type BitcoinTransferParams = {
   amount: string;
+  approvedMaxFee?: string;
+  sendMax?: boolean;
   bitcoinFeeRateSatPerVbyte?: number;
   bitcoinFeeTargetBlocks?: number;
   bitcoinIncludeUnconfirmed?: boolean;
@@ -59,27 +58,100 @@ type BitcoinDiscoveredTransferSources = {
   sources: BitcoinSendSource[];
 };
 
+const QUOTE_DISCOVERY_TTL_MS = 30_000;
+const MAX_QUOTE_DISCOVERY_ENTRIES = 32;
+type QuoteDiscoveryEntry = {
+  accountAddress: string;
+  network: BitcoinNetworkKind;
+  expiresAt: number;
+  result: Promise<BitcoinDiscoveredTransferSources>;
+};
+// Only public discovery results are retained, scoped to the wallet state. UTXOs and fees are never cached.
+const quoteDiscoveryCache = new WeakMap<State, Map<string, QuoteDiscoveryEntry>>();
+
+function invalidateQuoteDiscovery(state: State, accountAddress: string, network: BitcoinNetworkKind): void {
+  const entries = quoteDiscoveryCache.get(state);
+
+  for (const [key, entry] of entries ?? []) {
+    if (entry.accountAddress === accountAddress && entry.network === network) entries?.delete(key);
+  }
+}
+
+function getQuoteDiscovery(
+  state: State,
+  source: BitcoinTransferSource,
+  network: BitcoinNetworkKind,
+  client: BitcoinDiscoveryClient,
+  options: { gapLimit?: number; maxLookahead?: number }
+): Promise<BitcoinDiscoveredTransferSources> {
+  let entries = quoteDiscoveryCache.get(state);
+
+  if (!entries) {
+    entries = new Map();
+    quoteDiscoveryCache.set(state, entries);
+  }
+  const cache = entries;
+  const key = JSON.stringify([source.accountAddress, source.source.address, network, options.gapLimit, options.maxLookahead]);
+  const cached = cache.get(key);
+
+  if (cached && cached.expiresAt > Date.now()) return cached.result;
+  cache.delete(key);
+  while (cache.size >= MAX_QUOTE_DISCOVERY_ENTRIES) cache.delete(cache.keys().next().value!);
+
+  const entry: QuoteDiscoveryEntry = {
+    accountAddress: source.accountAddress,
+    network,
+    expiresAt: Date.now() + QUOTE_DISCOVERY_TTL_MS,
+    result: discoverBitcoinTransferSources(source, network, client, options).then((result) => {
+      entry.expiresAt = Date.now() + QUOTE_DISCOVERY_TTL_MS;
+
+      return result;
+    }).catch((error: unknown) => {
+      if (cache.get(key) === entry) cache.delete(key);
+
+      throw error;
+    }),
+  };
+
+  cache.set(key, entry);
+
+  return entry.result;
+}
+
 export function isBitcoinTransferNetwork(network: NetworkJson | undefined): boolean {
   return network?.ecosystem === WalletEcosystem.Bitcoin;
 }
 
-export async function estimateBitcoinTransferFee({
-  client,
-  network,
-}: {
-  client?: Pick<BitcoinEsploraClient, 'getFeeEstimates'>;
-  network: BitcoinNetworkKind;
-}): Promise<string> {
+export async function estimateBitcoinTransferFee(
+  params: BitcoinTransferParams,
+  client?: BitcoinTransferClient,
+  discoveryOptions: { gapLimit?: number; maxLookahead?: number } = {}
+): Promise<{ fee: string; maxAmount?: string }> {
   if (!isBitcoinTransfersEnabled()) throw new Error('bitcoin_transfer_disabled');
 
-  const feeRateSatPerVbyte = selectBitcoinFeeRateSatPerVbyte(
-    await (client ?? new BitcoinEsploraClient({ network })).getFeeEstimates()
-  );
-  const feeSat = Math.ceil(
-    estimateP2wpkhTransactionVSize(DEFAULT_ESTIMATE_INPUTS, DEFAULT_ESTIMATE_OUTPUTS) * feeRateSatPerVbyte
-  );
+  const network = getBitcoinNetworkKind(params.state.networkService.networkMap[params.networkKey]);
+  const source = resolveBitcoinTransferSource(params.state, params.from, network);
+  const indexer = client ?? new BitcoinEsploraClient({ network });
+  const discovered = await getQuoteDiscovery(params.state, source, network, indexer, discoveryOptions);
+  const quote = await quoteBitcoinSend({
+    amountSat: params.sendMax ? 1 : bitcoinAmountToSats(params.amount),
+    changeAddress: discovered.changeAddress,
+    client: indexer,
+    feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
+    feeTargetBlocks: params.bitcoinFeeTargetBlocks,
+    includeUnconfirmed: params.bitcoinIncludeUnconfirmed,
+    maxInputs: params.bitcoinMaxInputs,
+    network,
+    selectedOutpoints: params.bitcoinSelectedOutpoints,
+    sendMax: params.sendMax,
+    sources: discovered.sources,
+    toAddress: normalizeRecipient(params.to, network),
+  });
 
-  return satsToBitcoinString(feeSat);
+  return {
+    fee: satsToBitcoinString(quote.fee),
+    ...(params.sendMax ? { maxAmount: satsToBitcoinString(quote.amountSat) } : {}),
+  };
 }
 
 export async function makeBitcoinTransfer(
@@ -88,28 +160,40 @@ export async function makeBitcoinTransfer(
   discoveryOptions: { gapLimit?: number; maxLookahead?: number } = {}
 ): Promise<void> {
   if (!isBitcoinTransfersEnabled()) throw new Error('bitcoin_transfer_disabled');
+  if (typeof params.approvedMaxFee !== 'string') throw new Error('transfer_fee_approval_required');
+
+  const approvedMaxFeeSat = bitcoinAmountToSats(params.approvedMaxFee);
 
   const { amount, callback, networkKey, state, to } = params;
   const network = getBitcoinNetworkKind(state.networkService.networkMap[networkKey]);
   const source = resolveBitcoinTransferSource(state, params.from, network);
   const indexer = client ?? new BitcoinEsploraClient({ network });
   const amountSat = bitcoinAmountToSats(amount);
+  invalidateQuoteDiscovery(state, source.accountAddress, network);
   const discovered = await discoverBitcoinTransferSources(source, network, indexer, discoveryOptions);
 
-  const result = await sendBitcoinTransaction({
-    amountSat,
-    changeAddress: discovered.changeAddress,
-    feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
-    feeTargetBlocks: params.bitcoinFeeTargetBlocks,
-    includeUnconfirmed: params.bitcoinIncludeUnconfirmed,
-    maxInputs: params.bitcoinMaxInputs,
-    client: indexer,
-    mnemonicOrSeed: source.mnemonicOrSeed,
-    network,
-    selectedOutpoints: params.bitcoinSelectedOutpoints,
-    sources: discovered.sources,
-    toAddress: normalizeRecipient(to, network),
-  });
+  let result;
+
+  try {
+    result = await sendBitcoinTransaction({
+      amountSat,
+      approvedMaxFeeSat,
+      changeAddress: discovered.changeAddress,
+      feeRateSatPerVbyte: params.bitcoinFeeRateSatPerVbyte,
+      feeTargetBlocks: params.bitcoinFeeTargetBlocks,
+      includeUnconfirmed: params.bitcoinIncludeUnconfirmed,
+      maxInputs: params.bitcoinMaxInputs,
+      client: indexer,
+      mnemonicOrSeed: source.mnemonicOrSeed,
+      network,
+      selectedOutpoints: params.bitcoinSelectedOutpoints,
+      sources: discovered.sources,
+      toAddress: normalizeRecipient(to, network),
+    });
+  } finally {
+    // Accepted and uncertain submissions may have created a new change address.
+    invalidateQuoteDiscovery(state, source.accountAddress, network);
+  }
 
   callback?.({ status: true });
 

@@ -12,13 +12,17 @@ type TransactionErrorLike = {
 
 type TransactionResponseLike = {
   errors?: unknown;
+  outcome?: unknown;
   passwordError?: unknown;
   status?: unknown;
+  transactionHash?: unknown;
 };
 
 type OwnDataProperty = { kind: 'invalid' } | { kind: 'missing' } | { kind: 'value'; value: unknown };
 
 const KNOWN_MESSAGE_KEYS = new Map<string, string>([
+  ['transfer_fee_changed', 'assets.transferFeeChanged'],
+  ['transfer_fee_approval_required', 'assets.transferFeeApprovalRequired'],
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
   ['iroha_network_reset', 'assets.irohaTransfersDisabled'],
@@ -106,17 +110,38 @@ function transactionResponseSucceeded(value: unknown): boolean {
   if (!response) return false;
 
   const status = ownDataProperty(response, 'status');
+  const outcome = ownDataProperty(response, 'outcome');
   const errors = errorsFrom(response);
   const passwordError = passwordErrorState(response);
 
   return (
     status.kind === 'value' &&
     status.value === true &&
+    (outcome.kind === 'missing' || (outcome.kind === 'value' && outcome.value === undefined)) &&
     errors !== null &&
     errors.length === 0 &&
     passwordError.valid &&
     !passwordError.present
   );
+}
+
+// Only typed background outcomes may expose a hash. Never display provider text or an
+// accessor-supplied value as transaction status.
+function getUnknownTransactionHash(value: unknown): string | null {
+  const response = asResponse(value);
+  if (!response) return null;
+
+  const status = ownDataProperty(response, 'status');
+  const outcome = ownDataProperty(response, 'outcome');
+  const hash = ownDataProperty(response, 'transactionHash');
+
+  if (
+    status.kind !== 'value' || status.value !== false ||
+    outcome.kind !== 'value' || outcome.value !== 'unknown' ||
+    hash.kind !== 'value' || typeof hash.value !== 'string' || !/^[0-9a-f]{64}$/iu.test(hash.value)
+  ) return null;
+
+  return hash.value.toLowerCase();
 }
 
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {
@@ -154,5 +179,5 @@ function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown
   return { key: 'assets.transactionFailedDetails' };
 }
 
-export { getTransactionFailurePresentation, transactionResponseSucceeded };
+export { getTransactionFailurePresentation, getUnknownTransactionHash, transactionResponseSucceeded };
 export type { TransactionFailurePresentation };

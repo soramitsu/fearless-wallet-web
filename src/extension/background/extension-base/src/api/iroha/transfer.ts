@@ -32,6 +32,7 @@ const MAX_BALANCE_PAGES = 10;
 
 type IrohaTransferParams = {
   amount: string;
+  approvedMaxFee?: string;
   assetId: string;
   callback?: HandleBasicTx;
   from: string;
@@ -172,6 +173,11 @@ async function makeIrohaTransfer(
   const creationTimeMs = Date.now();
   const quote = await quoteIrohaTransfer(torii, prepared, frameSizer, creationTimeMs);
 
+  if (typeof params.approvedMaxFee !== 'string') throw new Error('transfer_fee_approval_required');
+  const approvedMaxFee = canonicalizeIrohaQuantity(params.approvedMaxFee);
+
+  if (compareIrohaQuantities(quote.fee, approvedMaxFee) > 0) throw new Error('transfer_fee_changed');
+
   await assertIrohaTransferFunded(torii, prepared, quote);
 
   const result = await codec.buildAndSignTransfer({
@@ -251,6 +257,9 @@ async function quoteIrohaTransfer(
   assertAmountPrecision(prepared, definition.body);
 
   const schedule = parseFeeSchedule(parameters.body);
+  if (schedule.assetDefinitionId !== UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.id) {
+    throw new Error('iroha_fee_estimation_unavailable');
+  }
   let quote: IrohaTransferQuote = {
     fee: computeIrohaTransferFee(schedule, 0),
     feeAssetDefinitionId: schedule.assetDefinitionId,

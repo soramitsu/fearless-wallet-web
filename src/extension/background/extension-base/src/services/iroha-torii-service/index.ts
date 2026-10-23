@@ -237,8 +237,12 @@ class IrohaToriiWalletClient {
     const receipt = body as IrohaSubmissionReceipt | null;
     const receiptHash = receipt?.payload?.signed_transaction_hash ?? receipt?.payload?.entrypoint_hash;
 
-    if (receiptHash !== undefined && hashLiteralToHex(receiptHash) !== hash) {
-      throw new IrohaToriiError('iroha_transaction_receipt_mismatch', response.status, body);
+    if (receiptHash !== undefined) {
+      try {
+        if (hashLiteralToHex(receiptHash) !== hash) throw new Error('receipt hash mismatch');
+      } catch {
+        throw new IrohaToriiError('iroha_transaction_receipt_mismatch', response.status, body);
+      }
     }
   }
 
@@ -388,7 +392,8 @@ function isAmbiguousSubmissionError(error: unknown): boolean {
   if (!(error instanceof IrohaToriiError)) return false;
 
   return error.message === 'iroha_request_timeout' || error.message === 'iroha_network_error' ||
-    error.status === 502 || error.status === 503 || error.status === 504;
+    error.message === 'iroha_response_read_error' ||
+    (error.status !== undefined && (error.status >= 500 || (error.status >= 200 && error.status < 300)));
 }
 
 function normalizeTransactionStatus(value: unknown, expectedHash: string): IrohaTransactionStatusBody {
@@ -604,7 +609,15 @@ async function requestJson(
       throw new IrohaToriiError('iroha_network_error', undefined, error);
     }
 
-    const body = await Promise.race([readResponseBody(response, maxResponseBytes), timeout]);
+    let body: unknown;
+
+    try {
+      body = await Promise.race([readResponseBody(response, maxResponseBytes), timeout]);
+    } catch (error) {
+      if (error instanceof IrohaToriiError) throw error;
+
+      throw new IrohaToriiError('iroha_response_read_error', response.status, error);
+    }
 
     return { response, body };
   } catch (error) {

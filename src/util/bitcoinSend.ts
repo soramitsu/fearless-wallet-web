@@ -1,5 +1,6 @@
 import {
   BitcoinEsploraClient,
+  BitcoinIndexerError,
   type BitcoinEsploraUtxo,
   type BitcoinFeeEstimates,
 } from '@extension-base/services/bitcoin-indexer-service';
@@ -35,6 +36,7 @@ type BitcoinOutpoint = {
 
 type PrepareBitcoinSendParams = {
   amountSat: number;
+  approvedMaxFeeSat?: number;
   changeAddress?: string;
   client?: BitcoinSendClient;
   feeRateSatPerVbyte?: number;
@@ -48,19 +50,24 @@ type PrepareBitcoinSendParams = {
   toAddress: string;
 };
 
+type QuoteBitcoinSendParams = Omit<PrepareBitcoinSendParams, 'mnemonicOrSeed'> & { sendMax?: boolean };
+
 type SendBitcoinTransactionParams = PrepareBitcoinSendParams;
 
-type BitcoinPreparedSend = BuildBitcoinTransactionResult & {
+type BitcoinSendQuote = {
   absorbedDustSat: number;
   amountSat: number;
   changeAddress?: string;
   feeRateSatPerVbyte: number;
+  fee: number;
   feeTargetBlocks?: number;
   network: BitcoinDerivationNetwork;
   recipientAddress: string;
   selectedUtxos: BitcoinUtxo[];
   sourceAddresses: string[];
 };
+
+type BitcoinPreparedSend = BuildBitcoinTransactionResult & BitcoinSendQuote;
 
 type BitcoinSendResult = BitcoinPreparedSend & {
   broadcastTxid: string;
@@ -84,25 +91,32 @@ export class BitcoinSendError extends Error {
   }
 }
 
-export async function prepareBitcoinSend({
+export class BitcoinTransactionStatusUnknownError extends BitcoinSendError {
+  constructor(readonly transactionHash: string, code = 'bitcoin_submission_unknown') {
+    super(code);
+    this.name = 'BitcoinTransactionStatusUnknownError';
+  }
+}
+
+export async function quoteBitcoinSend({
   amountSat,
+  approvedMaxFeeSat,
   changeAddress,
   client,
   feeRateSatPerVbyte,
   feeTargetBlocks = DEFAULT_FEE_TARGET_BLOCKS,
   includeUnconfirmed = false,
   maxInputs = DEFAULT_MAX_INPUTS,
-  mnemonicOrSeed,
   network = 'mainnet',
   selectedOutpoints,
+  sendMax = false,
   sources,
   toAddress,
-}: PrepareBitcoinSendParams): Promise<BitcoinPreparedSend> {
+}: QuoteBitcoinSendParams): Promise<BitcoinSendQuote> {
   const normalizedNetwork = normalizeNetwork(network);
   const normalizedSources = normalizeSources(sources, normalizedNetwork);
-  const normalizedAmount = normalizeSatoshiAmount(amountSat, 'invalid_amount');
+  let normalizedAmount = sendMax ? BITCOIN_P2WPKH_DUST_SAT : normalizeSatoshiAmount(amountSat, 'invalid_amount');
   if (normalizedAmount < BITCOIN_P2WPKH_DUST_SAT) throw new BitcoinSendError('amount_below_dust');
-  if (!mnemonicOrSeed.trim()) throw new BitcoinSendError('mnemonic_required');
   if (!isBitcoinAddress(toAddress, normalizedNetwork)) throw new BitcoinSendError('invalid_recipient_address');
 
   const normalizedChangeAddress = changeAddress ?? normalizedSources[0].address;
@@ -124,25 +138,31 @@ export async function prepareBitcoinSend({
     selectedOutpointKeys !== undefined
   );
   const utxos = applySelectedOutpoints(fetchedUtxos, selectedOutpointKeys);
+  if (sendMax) {
+    if (utxos.length > maxSelectedInputs) throw new BitcoinSendError('too_many_inputs_required');
+    const total = utxos.reduce((sum, input) => sum + input.value, 0);
+
+    normalizedAmount = total - estimateFee(utxos.length, 1, resolvedFeeRate);
+    if (!Number.isSafeInteger(total) || total > MAX_SATOSHI || normalizedAmount < BITCOIN_P2WPKH_DUST_SAT) {
+      throw new BitcoinSendError('insufficient_funds');
+    }
+  }
   const selection = selectBitcoinUtxos({
     amountSat: normalizedAmount,
     changeAddress: normalizedChangeAddress,
     feeRateSatPerVbyte: resolvedFeeRate,
     maxInputs: maxSelectedInputs,
-    spendAll: selectedOutpointKeys !== undefined,
+    spendAll: sendMax || selectedOutpointKeys !== undefined,
     utxos,
   });
-  const built = buildBitcoinP2wpkhTransaction({
-    changeAddress: selection.changeAddress,
-    feeSat: selection.fee,
-    inputs: selection.selectedUtxos,
-    mnemonicOrSeed,
-    network: normalizedNetwork,
-    outputs: [{ address: toAddress, value: normalizedAmount }],
-  });
+  if (approvedMaxFeeSat !== undefined) {
+    const cap = normalizeSatoshiAmount(approvedMaxFeeSat, 'invalid_approved_fee');
+
+    if (selection.fee > cap) throw new BitcoinSendError('transfer_fee_changed');
+  }
 
   return {
-    ...built,
+    fee: selection.fee,
     absorbedDustSat: selection.absorbedDustSat,
     amountSat: normalizedAmount,
     changeAddress: selection.changeAddress,
@@ -155,13 +175,43 @@ export async function prepareBitcoinSend({
   };
 }
 
+export async function prepareBitcoinSend(params: PrepareBitcoinSendParams): Promise<BitcoinPreparedSend> {
+  if (!params.mnemonicOrSeed.trim()) throw new BitcoinSendError('mnemonic_required');
+
+  // Quote and enforce the approved fee before deriving signing keys. The same selection is signed.
+  const quote = await quoteBitcoinSend(params);
+  const built = buildBitcoinP2wpkhTransaction({
+    changeAddress: quote.changeAddress,
+    feeSat: quote.fee,
+    inputs: quote.selectedUtxos,
+    mnemonicOrSeed: params.mnemonicOrSeed,
+    network: quote.network,
+    outputs: [{ address: quote.recipientAddress, value: quote.amountSat }],
+  });
+
+  return { ...built, ...quote };
+}
+
 export async function sendBitcoinTransaction(params: SendBitcoinTransactionParams): Promise<BitcoinSendResult> {
   const network = normalizeNetwork(params.network ?? 'mainnet');
   const client = params.client ?? new BitcoinEsploraClient({ network });
   const prepared = await prepareBitcoinSend({ ...params, client, network });
-  const broadcastTxid = await client.broadcastTransaction(prepared.txHex);
+  let broadcastTxid: string;
 
-  if (broadcastTxid !== prepared.txid) throw new BitcoinSendError('broadcast_txid_mismatch');
+  try {
+    broadcastTxid = await client.broadcastTransaction(prepared.txHex);
+  } catch (error) {
+    // A dropped response or server failure can happen after the transaction was
+    // accepted. Preserve the locally computed txid and never suggest a replacement.
+    if (error instanceof BitcoinIndexerError && error.status !== undefined &&
+      error.status >= 400 && error.status < 500 && error.status !== 408) throw error;
+
+    throw new BitcoinTransactionStatusUnknownError(prepared.txid);
+  }
+
+  if (broadcastTxid !== prepared.txid) {
+    throw new BitcoinTransactionStatusUnknownError(prepared.txid, 'broadcast_txid_mismatch');
+  }
 
   return {
     ...prepared,
@@ -468,6 +518,8 @@ function compareUtxos(left: BitcoinUtxo, right: BitcoinUtxo): number {
 }
 
 export {
+  type BitcoinSendQuote,
+  type QuoteBitcoinSendParams,
   type BitcoinPreparedSend,
   type BitcoinSendClient,
   type BitcoinSendResult,

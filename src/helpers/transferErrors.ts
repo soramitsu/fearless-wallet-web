@@ -1,4 +1,6 @@
 const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
+  transfer_fee_changed: 'assets.transferFeeChanged',
+  transfer_fee_approval_required: 'assets.transferFeeApprovalRequired',
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',
   iroha_transfer_disabled: 'assets.irohaTransfersDisabled',
   // A reset or upgraded Iroha network needs a wallet release pinned to it.

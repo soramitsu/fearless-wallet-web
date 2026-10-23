@@ -208,6 +208,7 @@ function scriptedTorii(script: ToriiScript = {}) {
 function transferParams(state = createState(), overrides: Record<string, unknown> = {}) {
   return {
     amount: '12.34',
+    approvedMaxFee: '0.01',
     assetId: TAIRA_XOR_ASSET_ID,
     callback: vi.fn(),
     from: TAIRA_ACCOUNT_ID,
@@ -228,6 +229,19 @@ describe('background Iroha transfer', () => {
   afterEach(() => {
     if (originalEnableIrohaTransfers === undefined) delete process.env.VUE_APP_ENABLE_IROHA_TRANSFERS;
     else process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = originalEnableIrohaTransfers;
+  });
+
+  it('rejects an increased or missing approved fee before signing or submitting', async () => {
+    for (const approvedMaxFee of ['0.009', undefined]) {
+      const { client, submitted } = scriptedTorii();
+      const codec = { buildAndSignTransfer: vi.fn() };
+
+      await expect(
+        makeIrohaTransfer(transferParams(createState(), { approvedMaxFee }), codec, getIrohaTransferFrameBytes, client)
+      ).rejects.toThrow(approvedMaxFee === undefined ? 'transfer_fee_approval_required' : 'transfer_fee_changed');
+      expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
+      expect(submitted).toHaveLength(0);
+    }
   });
 
   it('stays disabled without the release flag and makes no request', async () => {

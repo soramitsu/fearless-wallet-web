@@ -1,7 +1,27 @@
 import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
-import { getTransactionFailurePresentation, transactionResponseSucceeded } from '@/helpers/transactionFailure';
+import {
+  getTransactionFailurePresentation,
+  getUnknownTransactionHash,
+  transactionResponseSucceeded,
+} from '@/helpers/transactionFailure';
 
 describe('transaction failure presentation', () => {
+  it('preserves only a typed, bounded unknown-outcome hash and rejects contradictory success', () => {
+    const hash = 'ab'.repeat(32);
+    const response = { status: false, outcome: 'unknown', transactionHash: hash.toUpperCase() };
+
+    expect(getUnknownTransactionHash(response)).toBe(hash);
+    expect(transactionResponseSucceeded(response)).toBe(false);
+    expect(transactionResponseSucceeded({ ...response, status: true })).toBe(false);
+    expect(getUnknownTransactionHash({ ...response, status: true })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: '<script>secret</script>' })).toBeNull();
+    expect(getUnknownTransactionHash(Object.create(response))).toBeNull();
+    const getter = vi.fn(() => hash);
+    Object.defineProperty(response, 'transactionHash', { get: getter });
+    expect(getUnknownTransactionHash(response)).toBeNull();
+    expect(getter).not.toHaveBeenCalled();
+  });
+
   it('surfaces insufficient balance with a bounded normalized asset symbol', () => {
     const response = {
       status: false,

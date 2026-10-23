@@ -287,6 +287,8 @@ export interface BasicTxResponse {
   passwordError?: string | null;
   status?: boolean;
   errors?: BasicTxError[];
+  outcome?: 'unknown';
+  transactionHash?: string;
 }
 
 export interface PrepareExternalRequest {
@@ -334,6 +336,8 @@ export type FetchBalancePayload = {
 export type BaseRequestSign = object;
 
 export interface RequestCheckTransfer extends BaseRequestSign {
+  approvedMaxFee?: string;
+  sendMax?: boolean;
   networkKey: NetworkName;
   from: string;
   to: string;
@@ -368,6 +372,7 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
 
 export interface ResponseCheckTransfer {
   estimateFee?: string;
+  maxAmount?: string;
   destEstimateFee: '0';
   errors?: BasicTxError[];
 }

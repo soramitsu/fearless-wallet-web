@@ -311,6 +311,7 @@ export default defineComponent({
       newAddress: '',
       filterValue: '',
       isFetchingFees: false,
+      feeQuoteRevision: 0,
       estimateFeeError: false,
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
@@ -718,6 +719,7 @@ export default defineComponent({
         return {
           ...baseRequest,
           networkKey: this.syncedNetwork,
+          approvedMaxFee: this.syncedFee,
         } as RequestCheckTransfer;
 
       return {
@@ -798,6 +800,7 @@ export default defineComponent({
     },
   },
   watch: {
+    transactionAddress: 'calculateFee',
     syncedRecipient: ['checkScam', 'calculateFee'],
     showSelectedAssetPopup: 'resetAssetPopupVisible',
     showSelectNetworkPopup: 'resetOriginPopupVisible',
@@ -859,6 +862,11 @@ export default defineComponent({
       });
     },
     calculateFee() {
+      this.feeQuoteRevision += 1;
+      this.syncedFee = '';
+      this.syncedDestNetFee = '';
+      this.crossChainExecutionFingerprint = '';
+      this.isFetchingFees = true;
       if (!this.currency || this.isBitcoinTransferDisabled) return;
 
       clearTimeout(this.timeoutSubscription);
@@ -867,12 +875,17 @@ export default defineComponent({
     },
     async calculateEstimates() {
       if (!this.currency || this.isBitcoinTransferDisabled) return;
+      const revision = ++this.feeQuoteRevision;
+      const requestKey = this.feeQuoteRequestKey();
+
+      this.isFetchingFees = true;
 
       try {
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
         const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors } = await this.verifyTx();
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         const transferError = errors?.[0];
 
         if (transferError) {
@@ -886,12 +899,21 @@ export default defineComponent({
         this.crossChainRuntimeMinimum = minimum ?? '';
         this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);
       } catch {
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         this.syncedFee = '';
         this.syncedDestNetFee = '';
         this.crossChainExecutionFingerprint = '';
         this.crossChainRuntimeMinimum = '';
         this.$emit('update:runtimeMinimum', '');
+      } finally {
+        if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
       }
+    },
+    feeQuoteRequestKey() {
+      return JSON.stringify([
+        this.transactionAddress, this.syncedNetwork, this.syncedDestNet, this.syncedAssetId,
+        this.syncedRecipient, this.syncedAmount, this.reviewedRouteId, this.reviewedRouteProviderId,
+      ]);
     },
     toggleEditBook(address: string = '') {
       this.showEditAddressBook = !this.showEditAddressBook;
@@ -972,30 +994,49 @@ export default defineComponent({
     },
     async setMax() {
       if (!this.currency) return;
+      clearTimeout(this.timeoutSubscription);
+      clearTimeout(this.timeoutSetMax);
+      const revision = ++this.feeQuoteRevision;
+      const requestKey = this.feeQuoteRequestKey();
 
-      const setMax = async () => {
-        const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
-        const transferable = this.calcTransferableSendMinusFee(estimateFee!);
+      this.syncedFee = '';
+      this.isFetchingFees = true;
+      try {
+        const quote = await this.verifyTx(this.transferableAmount.toString(), true);
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
+
+        if (quote.errors?.length || quote.estimateFee === undefined) {
+          this.estimateFeeError = true;
+          this.estimateFeeErrorMessage = getTransferErrorLocaleKey(quote.errors?.[0]?.message);
+
+          return;
+        }
+        const maxAmount = 'maxAmount' in quote ? quote.maxAmount : undefined;
+        const transferable = typeof maxAmount === 'string'
+          ? new FPNumber(maxAmount, this.currencyBalance?.precision)
+          : this.calcTransferableSendMinusFee(quote.estimateFee);
+
+        this.syncedFee = quote.estimateFee;
+        this.estimateFeeError = false;
+        this.estimateFeeErrorMessage = '';
 
         this.syncedAmount = transferable.toString();
         this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
-      };
-
-      if (this.syncedFee === '' || this.syncedFee === '0') {
-        clearTimeout(this.timeoutSetMax);
-
-        this.timeoutSetMax = setTimeout(setMax, 2000);
-      } else setMax();
+      } catch {
+        if (revision === this.feeQuoteRevision) this.estimateFeeError = true;
+      } finally {
+        if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
+      }
     },
     toggleLoading(value = true) {
       this.isFetchingFees = value;
     },
-    async verifyTx(_amount?: string) {
-      this.toggleLoading();
-
-      // A cross-chain quote is intentionally bound to the confirmed recipient.
+    async verifyTx(_amount?: string, sendMax = false) {
+      // Price the entered recipient whenever it is valid for the selected network.
       const to =
-        !this.isTransfer && this.isValidRecipientAddress ? this.syncedRecipient : this.getFeeEstimateRecipient();
+        this.isValidRecipientAddress && (!this.isTransfer || this.isValidAddressByNetwork)
+          ? this.syncedRecipient
+          : this.getFeeEstimateRecipient();
 
       const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0' ? this.syncedAmount : '1');
 
@@ -1007,9 +1048,8 @@ export default defineComponent({
           relayChain: this.currency?.relayChain,
           amount,
           assetId: this.syncedAssetId,
+          sendMax,
         });
-
-        this.toggleLoading(false);
 
         return ex;
       }
@@ -1026,8 +1066,6 @@ export default defineComponent({
         routeId: this.reviewedRouteId,
         routeProviderId: this.reviewedRouteProviderId,
       });
-
-      this.toggleLoading(false);
 
       return ex;
     },

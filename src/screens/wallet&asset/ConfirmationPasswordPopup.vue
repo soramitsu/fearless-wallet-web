@@ -6,11 +6,27 @@
       <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
+        <template v-if="isUnknown">
+          <p class="transaction-unknown-message" data-testid="transactionUnknownMessage">
+            {{ $t('assets.transactionStatusUnknownDetails') }}
+          </p>
+          <code class="transaction-hash" data-testid="unknownTransactionHash">{{ unknownTransactionHash }}</code>
+          <FButton
+            text="common.copyHash"
+            class="copy-hash"
+            iconName="copy"
+            type="secondary"
+            size="small"
+            data-testid="copyUnknownHashBtn"
+            @click="copyUnknownHash"
+          />
+          <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+        </template>
         <p v-if="isFailed" class="transaction-error-message" data-testid="transactionErrorMessage">
           {{ transactionErrorText }}
         </p>
 
-        <template v-if="extrinsicType !== 'nft'">
+        <template v-if="extrinsicType !== 'nft' && !isUnknown">
           <div class="descriptions">
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
@@ -25,7 +41,7 @@
           <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
         </template>
 
-        <template v-else>
+        <template v-else-if="extrinsicType === 'nft'">
           <div class="icon-circle">
             <Icon
               :icon="isFailed ? 'close' : 'check'"
@@ -108,7 +124,11 @@ import { sendNft } from '@/extension/messaging/nfts';
 import { isSameString, isSora, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { getTransactionFailurePresentation, transactionResponseSucceeded } from '@/helpers/transactionFailure';
+import {
+  getTransactionFailurePresentation,
+  getUnknownTransactionHash,
+  transactionResponseSucceeded,
+} from '@/helpers/transactionFailure';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
@@ -181,6 +201,12 @@ export default defineComponent({
     isFailed() {
       return this.transactionState === 'failed';
     },
+    isUnknown() {
+      return this.transactionState === 'unknown';
+    },
+    unknownTransactionHash() {
+      return getUnknownTransactionHash(this.transactionResponse);
+    },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
 
@@ -194,6 +220,8 @@ export default defineComponent({
       return 'pending';
     },
     popupHeader() {
+      if (this.isUnknown) return 'assets.transactionStatusUnknown';
+
       if (this.isSuccess) return 'assets.transactionDone';
 
       if (this.isFailed) return 'assets.transactionError';
@@ -221,7 +249,7 @@ export default defineComponent({
       return this.transactionState === 'pending';
     },
     isTransactionFinished() {
-      return this.isSuccess || this.isFailed;
+      return this.isSuccess || this.isFailed || this.isUnknown;
     },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
@@ -259,6 +287,9 @@ export default defineComponent({
     },
     copyHash() {
       setClipboard(this.hash ?? '');
+    },
+    copyUnknownHash() {
+      setClipboard(this.unknownTransactionHash ?? '');
     },
     async onSignMobile() {
       if (this.extrinsicType === 'swap') await makeSwap(this.request as RequestSwap);
@@ -329,7 +360,9 @@ export default defineComponent({
     },
     applyTransactionResponse(response: BasicTxResponse | ResponseNftTransfer | undefined) {
       this.transactionResponse = response ?? null;
-      this.transactionState = transactionResponseSucceeded(response) ? 'success' : 'failed';
+      this.transactionState = getUnknownTransactionHash(response)
+        ? 'unknown'
+        : transactionResponseSucceeded(response) ? 'success' : 'failed';
     },
   },
 });
@@ -350,6 +383,15 @@ export default defineComponent({
     font-size: 0.875rem;
     line-height: 1.25rem;
     margin: 0;
+    max-width: 280px;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .transaction-unknown-message,
+  .transaction-hash {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     max-width: 280px;
     overflow-wrap: anywhere;
     text-align: center;

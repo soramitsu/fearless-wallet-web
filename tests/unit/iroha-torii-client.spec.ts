@@ -265,4 +265,30 @@ describe('Iroha Torii REST client', () => {
     await expect(definitive.client.submitTransactionAndWait(SIGNED_TRANSACTION, HASH)).rejects.toThrow('bad bytes');
     expect(definitive.fetchFn).toHaveBeenCalledTimes(1);
   });
+
+  it.each([500, 501, 502, 503, 504])('reconciles HTTP %i without posting a replacement', async (status) => {
+    const { client, fetchFn } = createClient([
+      jsonResponse({ message: 'server error after submission' }, status),
+      jsonResponse(statusBody('Applied')),
+    ]);
+
+    await expect(client.submitTransactionAndWait(SIGNED_TRANSACTION, HASH)).resolves.toMatchObject({ hash: HASH });
+    expect(fetchFn.mock.calls.map(([, init]) => init?.method)).toEqual(['POST', 'GET']);
+  });
+
+  it('reconciles a broken response body and malformed successful receipt against the original hash', async () => {
+    const brokenBody = new Response(new ReadableStream({
+      start(controller) { controller.error(new TypeError('connection lost while reading')); },
+    }), { status: 202 });
+    const { client, fetchFn } = createClient([
+      brokenBody,
+      jsonResponse(statusBody('Applied')),
+      jsonResponse({ payload: { signed_transaction_hash: 'malformed' } }, 202),
+      jsonResponse(statusBody('Applied')),
+    ]);
+
+    await expect(client.submitTransactionAndWait(SIGNED_TRANSACTION, HASH)).resolves.toMatchObject({ hash: HASH });
+    await expect(client.submitTransactionAndWait(SIGNED_TRANSACTION, HASH)).resolves.toMatchObject({ hash: HASH });
+    expect(fetchFn.mock.calls.map(([, init]) => init?.method)).toEqual(['POST', 'GET', 'POST', 'GET']);
+  });
 });

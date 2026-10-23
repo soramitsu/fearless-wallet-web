@@ -7,7 +7,6 @@ import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
   estimateBitcoinTransferFee,
-  getBitcoinNetworkKind,
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
 } from '@extension-base/api/bitcoin/transfer';
@@ -68,6 +67,7 @@ import {
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
@@ -183,6 +183,7 @@ import type {
   PolkamarktQuoteRequest,
 } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import { BitcoinTransactionStatusUnknownError } from '@/util/bitcoinSend';
 import {
   isCapturedSoraPairStillSelected,
   isLocallySignableSelectedSoraPair,
@@ -1294,7 +1295,9 @@ export default class Extension extends FWExtensionBase {
 
     if (isBitcoinTransferNetwork(network)) {
       try {
-        fee = await estimateBitcoinTransferFee({ network: getBitcoinNetworkKind(network) });
+        const quote = await estimateBitcoinTransferFee({ ...request, amount: amount ?? '0', state: this.state });
+
+        return { destEstimateFee: '0', estimateFee: quote.fee, maxAmount: quote.maxAmount, errors };
       } catch (e) {
         console.info(e);
         errors.push({
@@ -1439,6 +1442,7 @@ export default class Extension extends FWExtensionBase {
     if (isBitcoinTransferNetwork(network)) {
       transferProm = makeBitcoinTransfer({
         amount,
+        approvedMaxFee: request.approvedMaxFee,
         bitcoinFeeRateSatPerVbyte: request.bitcoinFeeRateSatPerVbyte,
         bitcoinFeeTargetBlocks: request.bitcoinFeeTargetBlocks,
         bitcoinIncludeUnconfirmed: request.bitcoinIncludeUnconfirmed,
@@ -1455,6 +1459,7 @@ export default class Extension extends FWExtensionBase {
         makeIrohaTransfer(
           {
             amount,
+            approvedMaxFee: request.approvedMaxFee,
             assetId,
             callback,
             from,
@@ -1511,6 +1516,9 @@ export default class Extension extends FWExtensionBase {
 
       callback({
         status: false,
+        ...(ex instanceof IrohaTransactionStatusUnknownError || ex instanceof BitcoinTransactionStatusUnknownError
+          ? { outcome: 'unknown' as const, transactionHash: ex.transactionHash }
+          : {}),
         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
       });
 

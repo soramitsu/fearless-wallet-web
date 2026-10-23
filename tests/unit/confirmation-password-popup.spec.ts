@@ -81,6 +81,28 @@ const mountPopup = async (rejectDirectRequest = false) => {
 describe('confirmation password transaction failures', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('shows an uncertain outcome with its hash, without claiming failure or retrying', async () => {
+    const wrapper = await mountPopup();
+    const hash = 'ab'.repeat(32);
+
+    transferCallback?.({
+      status: false,
+      outcome: 'unknown',
+      transactionHash: hash,
+      errors: [{ message: 'private provider diagnostic' }],
+    });
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="transactionUnknownMessage"]').text())
+      .toBe('assets.transactionStatusUnknownDetails');
+    expect(wrapper.get('[data-testid="unknownTransactionHash"]').text()).toBe(hash);
+    expect(wrapper.find('[data-testid="transactionErrorMessage"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="confirmedTransferAmount"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="pending"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('private provider diagnostic');
+    expect(makeTransfer).toHaveBeenCalledTimes(1);
+  });
+
   it('surfaces insufficient balance and does not expose raw provider diagnostics', async () => {
     const wrapper = await mountPopup();
 

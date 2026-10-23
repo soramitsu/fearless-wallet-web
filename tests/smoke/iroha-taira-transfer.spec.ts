@@ -66,6 +66,7 @@ describe('Taira transfer smoke', () => {
         await makeIrohaTransfer(
           {
             amount: liveConfig.amount,
+            approvedMaxFee: '0.01',
             assetId: XOR,
             callback,
             from: liveConfig.source,

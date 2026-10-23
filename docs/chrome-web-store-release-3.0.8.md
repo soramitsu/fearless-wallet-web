@@ -12,9 +12,11 @@ expectation are:
 
 > Manage crypto accounts, view balances, and connect to compatible decentralized apps.
 
-The full listing uses ordinary feature sentences, retains the limited
-Bitcoin and Taira capabilities, and describes recovery actions as supported
-operations rather than guaranteeing recovery of every asset or position.
+The full listing uses ordinary feature sentences and describes recovery
+actions as supported operations rather than guaranteeing recovery of every
+asset or position. Its Bitcoin and Taira sentences must match the send flags in
+`dist/extension/chrome/extension-build-metadata.json`; with both sends enabled,
+they include sending BTC and testnet XOR.
 The privacy single-purpose statement describes the wallet purpose without
 listing network brands or embedding a version number.
 

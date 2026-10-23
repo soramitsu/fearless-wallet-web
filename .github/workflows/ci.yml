@@ -2,6 +2,15 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      prepare_chrome_release:
+        description: Run the complete production Chrome packaging gate
+        type: boolean
+        default: false
+      public_config_json:
+        description: Public configuration from the shipped extension only; never supply secrets
+        type: string
+        default: ''
   push:
     branches:
       - develop
@@ -19,6 +28,73 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-chrome-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.prepare_chrome_release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+
+      - name: Enable Corepack and install dependencies
+        run: |
+          npm install -g corepack@0.34.1
+          corepack enable
+          yarn install --immutable
+
+      - name: Prepare verified production Chrome package
+        env:
+          RELEASE_PUBLIC_CONFIG_JSON: ${{ inputs.public_config_json }}
+        run: |
+          yarn node --input-type=module <<'JS'
+          import { spawnSync } from 'node:child_process';
+          import { REQUIRED_PUBLIC_CONFIG_KEYS } from './scripts/audit-chrome-release.mjs';
+          const config = JSON.parse(process.env.RELEASE_PUBLIC_CONFIG_JSON);
+          const keys = [...REQUIRED_PUBLIC_CONFIG_KEYS, 'EXTENSION_PUBLIC_KEY'];
+          if (!config || Array.isArray(config) || typeof config !== 'object' ||
+              Object.keys(config).length !== keys.length ||
+              Object.keys(config).some(key => !keys.includes(key))) {
+            throw new Error('Release configuration must contain exactly the approved public fields');
+          }
+          for (const key of keys) {
+            if (typeof config[key] !== 'string' || !config[key] || /[\r\n\0]/.test(config[key])) {
+              throw new Error(`Invalid public configuration field: ${key}`);
+            }
+            console.log(`::add-mask::${config[key].replaceAll('%', '%25')}`);
+          }
+          const env = {
+            ...process.env,
+            ...config,
+            IS_EXTENSION: 'true',
+            NODE_ENV: 'production',
+            VUE_APP_EXTENSION_SMOKE: 'false',
+            VUE_APP_TEST_ONLY: 'false',
+          };
+          delete env.RELEASE_PUBLIC_CONFIG_JSON;
+          const result = spawnSync('corepack', ['yarn', 'prepare:chrome-release'], { env, stdio: 'inherit' });
+          if (result.error) throw result.error;
+          process.exit(result.status ?? 1);
+          JS
+          test -s dist/extension/chrome/fearless-wallet-extension-chrome.zip
+          test -s dist/extension/chrome-release-provenance.json
+
+      - name: Upload verified Chrome package and provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: chrome-release-${{ github.sha }}
+          path: |
+            dist/extension/chrome/fearless-wallet-extension-chrome.zip
+            dist/extension/chrome-release-provenance.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30

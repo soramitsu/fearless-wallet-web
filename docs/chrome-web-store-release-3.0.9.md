@@ -44,6 +44,14 @@ lint, unit and browser tests, live transfer-evidence checks, two reproducible
 production package builds and an artifact audit. Record the source commit,
 package SHA-256 and submission result outside the checkout.
 
+If the local host is too busy for reliable crypto tests, dispatch the existing
+CI workflow on the release branch with `prepare_chrome_release` enabled. Its
+`public_config_json` input accepts only the public configuration fields already
+shipped in the extension, including its public key. Never supply wallet secrets
+or store credentials. The runner executes the same complete gate and uploads
+only the verified ZIP and provenance. Check their commit, hashes, version and
+extension ID after downloading them.
+
 Submit the verified ZIP to the existing Chrome Web Store item, with automatic
 publication after approval. If 3.0.8 is still pending review, replace that draft
 only after the 3.0.9 candidate is verified. Google review is external; pending

@@ -49,3 +49,10 @@ publication after approval. If 3.0.8 is still pending review, replace that draft
 only after the 3.0.9 candidate is verified. Google review is external; pending
 review is not a published release. Follow `docs/release-checklist.md` for the
 reviewed source merge and release tagging.
+
+The Firefox production build at source `7cb4c076` was independently compared
+with the previously approved warning artifacts. All 41 warning expressions and
+locations are unchanged (40 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`), with
+zero errors or notices. Only the `chunks/accounts.js` artifact hash changed;
+the reviewed baseline records that hash. The complete comparison is retained
+outside the checkout with the release evidence.

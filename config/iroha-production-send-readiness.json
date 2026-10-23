@@ -57,18 +57,18 @@
   },
   "evidence": [
     {
+      "amount": "0.5",
+      "assetDefinitionId": "6TEAJqbb8oEPmLncoNiMRbLEK6tw",
+      "blockHeight": 191,
+      "fee": "0.01",
       "network": "taira",
       "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774",
-      "transactionHash": "13b406c99bbbf14ddb18dec2daf222a1b83c77613ca0333621ed7f65c2e495cf",
-      "blockHeight": 60,
-      "amount": "1.5",
-      "fee": "0.01",
-      "assetDefinitionId": "6TEAJqbb8oEPmLncoNiMRbLEK6tw",
-      "source": "testuﾛ1NﾆhUﾁzｦHﾖﾒnXJ2ALWMﾎfｾRi2kﾀ9SGﾀA4ｵMvHr6ｿRLWDTX",
       "recipient": "testuﾛ1NﾐoaｳｼヱﾃﾆﾑﾄaAｻwmｼｴPﾜKｱｿﾗ2Kiｵﾗgｻ2ﾁ3zcﾗｳﾓY7YWWD",
-      "recordedAt": "2026-10-22T15:01:06.358Z",
-      "commit": "0a88ee5404bebf1f43656c0e323ec1c5c33f6978",
-      "operator": "claude-code (yarn test:smoke:taira)"
+      "recordedAt": "2026-10-23T04:27:53.218Z",
+      "source": "testuﾛ1NﾆhUﾁzｦHﾖﾒnXJ2ALWMﾎfｾRi2kﾀ9SGﾀA4ｵMvHr6ｿRLWDTX",
+      "transactionHash": "6d57858fad0c151783c4a98103f5fe473d516f337e5ff3b7406cfd94bea62b9d",
+      "commit": "7cb4c076819cf5009ecf295b079bba4a759dfce4",
+      "operator": "codex (yarn test:smoke:taira)"
     }
   ]
 }

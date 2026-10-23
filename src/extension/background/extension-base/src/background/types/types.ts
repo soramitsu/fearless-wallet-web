@@ -1001,6 +1001,8 @@ export type PortfolioHolding = {
   networkName: string;
   /** Free plus reserved, as a decimal string. */
   amount: string;
+  /** The part of `amount` that can be sent now; the rest is reserved, locked or staked. */
+  transferable: string;
   /** `amount` times the asset's trusted price, as a decimal string. */
   fiat: string;
   /** The 24 h change of the trusted price in percent, when there is one. */

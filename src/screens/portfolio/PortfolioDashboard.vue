@@ -31,8 +31,10 @@
         :activeKey="activeKey"
         :focus="focus"
         :loading="dashboard.pending.value"
+        :readinessOf="readinessOf"
         @update:lens="setLens"
         @openWallet="openWallet"
+        @open="openLocations"
       />
     </div>
 
@@ -59,8 +61,10 @@ import PortfolioAllWallets from '@/screens/portfolio/PortfolioAllWallets.vue';
 import PortfolioCountingSheet from '@/screens/portfolio/PortfolioCountingSheet.vue';
 import PortfolioHero from '@/screens/portfolio/PortfolioHero.vue';
 import PortfolioSyncSheet from '@/screens/portfolio/PortfolioSyncSheet.vue';
+import { locationsLocation } from '@/portfolio/dashboard/handoff';
 import { registerDashboardMessages } from '@/portfolio/dashboard/locales';
 import { usePortfolioDashboard } from '@/portfolio/dashboard/usePortfolioDashboard';
+import { useReadiness } from '@/portfolio/dashboard/useReadiness';
 import { Components } from '@/router/routes';
 import { forceAssetDiscoverySweep, updateCurrentAccount } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -84,6 +88,7 @@ const router = useRouter();
 const accountsStore = useAccountsStore();
 const dashboardStore = usePortfolioDashboardStore();
 const dashboard = usePortfolioDashboard({ summaryInput: toRef(props, 'summaryInput'), hiddenKeys: toRef(props, 'hiddenKeys') });
+const { readinessOf } = useReadiness();
 
 const activeKey = ref<string | null>(null);
 const focus = ref<{ key: string; count: number } | null>(null);
@@ -111,7 +116,7 @@ const exclusions = computed(() => {
 
 const slotOf = (key: string): number => dashboard.allocation.value.slots[key] ?? 0;
 
-// A chip or a ray: the first pick highlights the group, the second opens it where there is a list to open.
+// A chip or a ray: the first pick highlights the group, the second opens it (All wallets: its row; one wallet: Where it lives).
 function select(key: string): void {
   if (activeKey.value !== key) {
     activeKey.value = key;
@@ -119,8 +124,15 @@ function select(key: string): void {
     return;
   }
 
-  if (singleWallet.value) activeKey.value = null;
-  else focus.value = { key, count: (focus.value?.count ?? 0) + 1 };
+  if (singleWallet.value) {
+    // One wallet has no list to open, so the second pick opens the token itself; the others only clear the highlight.
+    activeKey.value = null;
+    if (dashboard.lens.value === 'token' && key !== 'other') openLocations(key);
+  } else focus.value = { key, count: (focus.value?.count ?? 0) + 1 };
+}
+
+function openLocations(tokenKey: string, holdingId?: string): void {
+  void router.push(locationsLocation(tokenKey, holdingId));
 }
 
 // A highlight belongs to one lens of one scope, and to a group that is still there.

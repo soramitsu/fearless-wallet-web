@@ -143,7 +143,7 @@ export default defineComponent({ name: 'Header',
     showBackIcon() {
       const route = this.$route.name;
 
-          return route === Components.AssetNetworks || route === Components.AssetHistory;
+          return route === Components.AssetNetworks || route === Components.AssetHistory || route === Components.TokenLocations;
     },
     // Behind a build flag (src/portfolio/dashboard): on the portfolio, All wallets is named instead of one wallet.
     showsAllWallets(): boolean {

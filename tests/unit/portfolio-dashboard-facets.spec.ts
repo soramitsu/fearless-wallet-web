@@ -17,6 +17,7 @@ const holding = (key: string, symbol: string, networkName: string, amount: strin
   name: symbol,
   networkName,
   amount,
+  transferable: amount,
   fiat,
   changePercent,
 });

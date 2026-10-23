@@ -27,14 +27,13 @@
 
     <ul v-else-if="lens === 'token'" class="rows" data-testid="allTokens">
       <li v-for="row in tokenRows" :key="row.id" class="row" :class="{ 'row--active': row.id === activeKey }" :data-key="row.id">
-        <component
-          :is="row.children.length > 1 ? 'button' : 'div'"
+        <button
+          type="button"
           class="row-head"
-          :type="row.children.length > 1 ? 'button' : undefined"
           :aria-expanded="row.children.length > 1 ? isOpen(row.id) : undefined"
-          :aria-label="row.children.length > 1 ? t(isOpen(row.id) ? 'portfolioDashboard.rows.collapse' : 'portfolioDashboard.rows.expand', { name: row.symbol }) : undefined"
+          :aria-label="rowLabel(row)"
           :data-testid="`tokenRow-${row.id}`"
-          @click="row.children.length > 1 && toggle(row.id)"
+          @click="onRowClick(row)"
         >
           <span class="orb" :style="orbStyle(row.id)" aria-hidden="true">{{ row.symbol.slice(0, 4) }}</span>
           <span class="identity">
@@ -44,20 +43,35 @@
                 {{ change(row.changePercent)?.percentText }}
               </span>
             </span>
-            <span class="sub">{{ tc('portfolioDashboard.rows.networks', row.networks.length, { count: row.networks.length }) }} · {{ row.wallets.join(', ') }}</span>
+            <span class="sub">
+              {{ tc('portfolioDashboard.rows.networks', row.networks.length, { count: row.networks.length }) }} · {{ row.wallets.join(', ') }}
+              <PortfolioReadinessChip v-if="row.children.length === 1" :readiness="readinessOf(row.children[0])" />
+            </span>
           </span>
           <span class="value">
             <span class="fiat">{{ formatFiatValue(row.fiat) }}</span>
             <span class="amount">{{ formatAmount(row.amount) }} {{ row.symbol }}</span>
           </span>
-          <Icon v-if="row.children.length > 1" icon="down" width="12px" height="10px" :hover="false" class="chevron" :class="{ 'chevron--open': isOpen(row.id) }" />
-        </component>
+          <Icon
+            v-if="row.children.length > 1"
+            icon="down"
+            width="12px"
+            height="10px"
+            :hover="false"
+            class="chevron"
+            :class="{ 'chevron--open': isOpen(row.id) }"
+          />
+          <Icon v-else icon="chevron-right" width="16px" height="16px" :hover="false" class="chevron" />
+        </button>
 
         <ul v-if="row.children.length > 1 && isOpen(row.id)" class="children" :data-testid="`tokenChildren-${row.id}`">
           <li v-for="(child, index) in row.children" :key="`${child.address}-${child.networkName}-${index}`" class="child">
             <span class="identity">
               <span class="title">{{ child.networkName }}</span>
-              <span class="sub">{{ child.walletName }}</span>
+              <span class="sub">
+                {{ child.walletName }}
+                <PortfolioReadinessChip :readiness="readinessOf(child)" />
+              </span>
             </span>
             <span class="value">
               <span class="fiat">{{ formatFiatValue(child.fiat) }}</span>
@@ -65,6 +79,9 @@
             </span>
           </li>
         </ul>
+        <button v-if="row.children.length > 1 && isOpen(row.id)" type="button" class="open" :data-testid="`whereItLives-${row.id}`" @click="$emit('open', row.id)">
+          {{ t('portfolioDashboard.where.action') }}
+        </button>
       </li>
     </ul>
 
@@ -76,15 +93,27 @@
           <span class="fiat">{{ formatFiatValue(section.fiat) }}</span>
         </header>
         <ul class="children">
-          <li v-for="row in section.rows" :key="row.id" class="child">
-            <span class="identity">
-              <span class="title">{{ row.symbol }}</span>
-              <span class="sub">{{ row.walletName }}</span>
-            </span>
-            <span class="value">
-              <span class="fiat">{{ formatFiatValue(row.fiat) }}</span>
-              <span class="amount">{{ formatAmount(row.amount) }} {{ row.symbol }}</span>
-            </span>
+          <li v-for="row in section.rows" :key="row.id" class="child child--button">
+            <button
+              type="button"
+              class="child-open"
+              :aria-label="t('portfolioDashboard.where.open', { name: row.symbol })"
+              :data-testid="`networkRow-${row.id}`"
+              @click="$emit('open', row.tokenKey, row.holdingId)"
+            >
+              <span class="identity">
+                <span class="title">{{ row.symbol }}</span>
+                <span class="sub">
+                  {{ row.walletName }}
+                  <PortfolioReadinessChip :readiness="readinessOf({ key: row.key, symbol: row.symbol, networkName: section.name })" />
+                </span>
+              </span>
+              <span class="value">
+                <span class="fiat">{{ formatFiatValue(row.fiat) }}</span>
+                <span class="amount">{{ formatAmount(row.amount) }} {{ row.symbol }}</span>
+              </span>
+              <Icon icon="chevron-right" width="16px" height="16px" :hover="false" class="chevron" />
+            </button>
           </li>
         </ul>
       </section>
@@ -116,10 +145,12 @@ import { computed, nextTick, ref, watch } from 'vue';
 import type { AggregatedWallet } from '@/portfolio/dashboard/aggregate';
 import type { AggregateNetworkSection, AggregateTokenRow } from '@/portfolio/dashboard/facets';
 import type { AllWalletsLens } from '@/portfolio/dashboard/preferences';
+import type { Readiness, ReadinessSubject } from '@/portfolio/dashboard/readiness';
 import { formatChange, formatShare } from '@/portfolio/dashboard/format';
 import { chartColour } from '@/portfolio/dashboard/skyGeometry';
 import { formatSyncAge } from '@/portfolio/syncFreshness';
 import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
+import PortfolioReadinessChip from '@/screens/portfolio/PortfolioReadinessChip.vue';
 import { useI18n } from '@/locales/useI18n';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -135,9 +166,16 @@ const props = defineProps<{
   /** The group to open: the row expands and scrolls into view. The count makes a repeated pick count again. */
   focus: { key: string; count: number } | null;
   loading: boolean;
+  /** How a holding stands to a swap on Polkaswap; a chip says so when it is actionable. */
+  readinessOf: (holding: ReadinessSubject) => Readiness;
 }>();
 
-defineEmits<{ (event: 'update:lens', lens: AllWalletsLens): void; (event: 'openWallet', address: string): void }>();
+const emit = defineEmits<{
+  (event: 'update:lens', lens: AllWalletsLens): void;
+  (event: 'openWallet', address: string): void;
+  /** Where it lives for a token, with one holding chosen when the row names one. */
+  (event: 'open', tokenKey: string, holdingId?: string): void;
+}>();
 
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
@@ -163,6 +201,16 @@ const change = (percent: string | null) => {
   return formatted.direction === 'flat' ? null : formatted;
 };
 const initial = (name: string): string => Array.from(name.trim())[0]?.toUpperCase() ?? '';
+
+// A token with several holdings opens to them; one holding opens Where it lives at once (spec 4.3).
+function onRowClick(row: AggregateTokenRow): void {
+  if (row.children.length > 1) toggle(row.id);
+  else emit('open', row.id, row.children[0]?.holdingId);
+}
+const rowLabel = (row: AggregateTokenRow): string =>
+  row.children.length > 1
+    ? t(isOpen(row.id) ? 'portfolioDashboard.rows.collapse' : 'portfolioDashboard.rows.expand', { name: row.symbol })
+    : t('portfolioDashboard.where.open', { name: row.symbol });
 
 const open = ref<Set<string>>(new Set());
 const isOpen = (id: string): boolean => open.value.has(id);
@@ -344,6 +392,10 @@ button.row-head {
 }
 
 .sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
   color: var(--fw-text-2);
   font-size: 0.72rem;
   overflow-wrap: anywhere;
@@ -405,6 +457,32 @@ button.row-head {
 
   &:first-child {
     border-top: 0;
+  }
+}
+
+.child--button {
+  display: block;
+  padding: 0;
+}
+
+.child-open {
+  width: 100%;
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
   }
 }
 

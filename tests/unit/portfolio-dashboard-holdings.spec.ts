@@ -92,7 +92,7 @@ describe('portfolio holdings read', () => {
     const [holdings] = await serviceWith({ [MAIN]: walletBalances(MAIN_AMOUNTS) }).getPortfolioHoldings(null);
     const dot = holdings.holdings.find(({ key }) => key === DOT_KEY);
 
-    expect(dot).toMatchObject({ key: DOT_KEY, networkName: 'Polkadot', amount: '2', fiat: '10', changePercent: null });
+    expect(dot).toMatchObject({ key: DOT_KEY, networkName: 'Polkadot', amount: '2', transferable: '2', fiat: '10', changePercent: null });
   });
 
   it('drops hidden holdings from the total and the list, and names how many are hidden', async () => {

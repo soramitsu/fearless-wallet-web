@@ -60,6 +60,7 @@ export function buildWalletHoldings(
           name: asset.name,
           networkName: asset.networkName,
           amount: asset.balanceText,
+          transferable: asset.transferableText,
           fiat: asset.fiatValue as string,
           changePercent: asset.priceChangePercent,
         });

@@ -97,7 +97,7 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
   const aggregate = computed(() => aggregatePortfolios(portfolios.value));
   const refs = computed(() => holdingRefs(portfolios.value));
   const tokenRows = computed(() => buildAggregateTokenRows(refs.value, groupOf.value));
-  const networkSections = computed(() => buildAggregateNetworkSections(refs.value));
+  const networkSections = computed(() => buildAggregateNetworkSections(refs.value, groupOf.value));
 
   const slotKey = computed(() => slotMapKey(scope.value, lens.value, selectedAddress.value));
   const allocation = computed(() =>
@@ -175,5 +175,20 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
   onDeactivated(stop);
   onBeforeUnmount(stop);
 
-  return { scope, lens, canAggregate, pending, portfolios, aggregate, tokenRows, networkSections, allocation, syncState, groupOf, refresh };
+  return {
+    scope,
+    lens,
+    canAggregate,
+    pending,
+    portfolios,
+    aggregate,
+    refs,
+    tokenRows,
+    networkSections,
+    allocation,
+    syncState,
+    groupIndex,
+    groupOf,
+    refresh,
+  };
 }

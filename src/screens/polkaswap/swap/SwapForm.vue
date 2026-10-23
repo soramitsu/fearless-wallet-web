@@ -220,6 +220,7 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { getPolkaswapCapabilityReasons } from '@/defi/polkaswapCapability';
+import { swapPairFromQuery } from '@/portfolio/dashboard/handoff';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
@@ -240,6 +241,8 @@ export default defineComponent({ name: 'SwapForm',
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
       extensionStore: useExtensionStore(),
+      /** The pair a portfolio dashboard hand-off last set, so it is applied once (src/portfolio/dashboard/handoff.ts). */
+      handedOverPair: '',
       step: 1,
       slippage: 0.5,
       temporarySlippage: 0.5,
@@ -575,6 +578,26 @@ export default defineComponent({ name: 'SwapForm',
           }
 
           this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
+
+          // A pair handed over by the portfolio dashboard (src/portfolio/dashboard/handoff.ts): the pay asset and the
+          // asset to receive, never an amount. A build without the dashboard folds this away.
+          if (process.env.FW_PORTFOLIO_DASHBOARD === 'true') {
+            const pair = swapPairFromQuery(this.$route.query);
+
+            // The pay asset follows the route as it does for `assetId`; the rest is set once per hand-off, so coming back
+            // to this screen (it is kept alive) does not clear what the person has entered since.
+            if (pair) {
+              const handedOver = `${pair.from}>${pair.to ?? ''}`;
+
+              this.sendAssetId = pair.from;
+              if (handedOver !== this.handedOverPair) {
+                this.receiveAssetId = pair.to ?? '';
+                this.sendAmount = '';
+                this.receiveAmount = '';
+                this.handedOverPair = handedOver;
+              }
+            } else this.handedOverPair = '';
+          }
     },
     async checkSwap() {
       if (!this.runtimeAvailable || !this.hasUsableAssets) return;

@@ -65,6 +65,10 @@ export function seedSlots(facet: AllocationFacet, refs: readonly HoldingRef[], g
 }
 
 export interface AggregateTokenChild {
+  /** The wallet's address and the asset key: the holding Where it lives opens with. */
+  holdingId: string;
+  /** The portfolio asset key, for how the holding stands to a swap. */
+  key: string;
   address: string;
   walletName: string;
   networkName: string;
@@ -111,6 +115,8 @@ export function buildAggregateTokenRows(refs: readonly HoldingRef[], groupOf: Gr
     row.fiat = new FPNumber(row.fiat).add(new FPNumber(holding.fiat)).toString();
     row.amount = new FPNumber(row.amount).add(new FPNumber(holding.amount)).toString();
     row.children.push({
+      holdingId: `${address}|${holding.key}`,
+      key: holding.key,
       address,
       walletName,
       networkName: holding.networkName,
@@ -136,6 +142,11 @@ export function buildAggregateTokenRows(refs: readonly HoldingRef[], groupOf: Gr
 
 export interface AggregateNetworkRow {
   id: string;
+  /** The token this holding belongs to (an approved group or the asset itself), for Where it lives. */
+  tokenKey: string;
+  holdingId: string;
+  /** The portfolio asset key, for how the holding stands to a swap. */
+  key: string;
   address: string;
   walletName: string;
   symbol: string;
@@ -152,7 +163,7 @@ export interface AggregateNetworkSection {
   rows: AggregateNetworkRow[];
 }
 
-export function buildAggregateNetworkSections(refs: readonly HoldingRef[]): AggregateNetworkSection[] {
+export function buildAggregateNetworkSections(refs: readonly HoldingRef[], groupOf: GroupOf = () => undefined): AggregateNetworkSection[] {
   const sections = new Map<string, AggregateNetworkSection>();
 
   refs.forEach(({ address, walletName, holding }) => {
@@ -161,6 +172,9 @@ export function buildAggregateNetworkSections(refs: readonly HoldingRef[]): Aggr
     section.fiat = new FPNumber(section.fiat).add(new FPNumber(holding.fiat)).toString();
     section.rows.push({
       id: `${address}:${holding.key}`,
+      tokenKey: tokenKeyOf(holding, groupOf),
+      holdingId: `${address}|${holding.key}`,
+      key: holding.key,
       address,
       walletName,
       symbol: holding.symbol,

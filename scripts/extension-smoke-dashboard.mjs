@@ -23,6 +23,8 @@ const MAIN_HOLDINGS = [
   ['Ethereum', 'usdt', '700'],
   ['Ethereum', 'usdc', '400'],
   ['Kusama', 'ksm', '25'],
+  ['SORA Mainnet', 'xor', '25000'],
+  ['SORA Mainnet', 'val', '12000'],
 ];
 // What the second wallet holds, as the background would report it.
 const SAVINGS_HOLDINGS = [
@@ -30,7 +32,7 @@ const SAVINGS_HOLDINGS = [
   ['Ethereum', 'eth', '0.4'],
   ['Ethereum', 'usdt', '250'],
 ];
-const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin': 1 };
+const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin': 1, sora: 0.02, 'sora-validator-token': 0.01 };
 const PRICE_CHANGES = { polkadot: 2.5, ethereum: -1.2 };
 
 const assetKey = (network, asset) =>
@@ -71,6 +73,7 @@ function walletAnswer(fixture, address, held) {
       name: asset.name,
       networkName,
       amount,
+      transferable: amount,
       fiat: String(Number(amount) * price),
       changePercent: change === undefined ? null : String(change),
     };
@@ -105,7 +108,7 @@ const OVERFLOW = `(() => {
   const issues = [];
   const viewport = window.innerWidth;
   if (document.documentElement.scrollWidth > viewport) issues.push('page ' + document.documentElement.scrollWidth + ' > ' + viewport);
-  for (const element of document.querySelectorAll('.hero-card, .hero-text, .legend, .actions, .segmented, .row-head, .child, .section-head, .sheet, .scope-row, .all-panel')) {
+  for (const element of document.querySelectorAll('.hero-card, .hero-text, .legend, .actions, .segmented, .row-head, .child, .section-head, .sheet, .scope-row, .all-panel, .where, .head, .holding, .panel, .actions, .action, .polkaswap, .route, .orbit, .check')) {
     const box = element.getBoundingClientRect();
     // The legend scrolls sideways by design: its own box must fit, the chips inside it may run past the edge.
     const inLegend = Boolean(element.closest('.legend'));
@@ -201,6 +204,8 @@ export async function captureDashboardScreenshots({
     if (onUnlock) await extensionSend(cdp, controlSession, 'pri(keyring.unlock)', { password });
     await wait(`${APP}.pinia._s.get('accounts').selectedWallet.address !== ''`, 'the wallet on screen');
     await wait(`${APP}.pinia._s.get('accounts').accounts.length === 2`, 'both wallets in the popup');
+    // The dashboard store exists once the wallet screen's header has mounted.
+    await wait(`${APP}.pinia._s.has('portfolioDashboard')`, 'the dashboard store');
 
     await evalPage(`(() => {
       const { pinia } = ${APP};
@@ -219,14 +224,25 @@ export async function captureDashboardScreenshots({
       accounts.setIsBalanceLoading = () => undefined;
 
       // The offline background cannot load balances: its answer, for every wallet, is what the background would send.
-      dashboard.holdings = [${JSON.stringify(main.answer)}, ${JSON.stringify(savings.answer)}];
-      dashboard.readAt = Date.now();
-      dashboard.status = 'ready';
       dashboard.refresh = () => Promise.resolve();
       dashboard.setScope('all');
       dashboard.setLens('token');
       return true;
     })()`);
+    // A read the real background started before the stub may still be on its way: what it answers is not what the offline
+    // popup should show, so the injected answers go in again once it has landed.
+    const injectHoldings = () =>
+      evalPage(`(() => {
+        const dashboard = ${APP}.pinia._s.get('portfolioDashboard');
+
+        dashboard.holdings = [${JSON.stringify(main.answer)}, ${JSON.stringify(savings.answer)}];
+        dashboard.readAt = Date.now();
+        dashboard.status = 'ready';
+        return true;
+      })()`);
+    await injectHoldings();
+    await sleep(1500);
+    await injectHoldings();
 
     await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
     await wait(`Boolean(document.querySelector('[data-testid="portfolioHero"]'))`, 'the dashboard hero');
@@ -294,6 +310,140 @@ export async function captureDashboardScreenshots({
     await click('[data-testid="portfolioSheetClose"]');
     await evalPage(`(() => { const dashboard = ${APP}.pinia._s.get('portfolioDashboard'); dashboard.holdings = dashboard.holdings.map((entry) => ({ ...entry, staleNetworks: [], latestTimestamp: Date.now() - 20000 })); return true; })()`);
 
+
+    // ---- Where it lives (phase P1): readiness chips, the screen for one token, the Swap and Move hand-offs ----------
+    const features = (change) =>
+      evalPage(`(() => { const extension = ${APP}.pinia._s.get('extension'); extension.features = { ...(extension.features ?? { fiat: {} }), actions: { ...(extension.features?.actions ?? {}), ...${JSON.stringify(change)} } }; return true; })()`);
+    const lens = (value) => evalPage(`(() => { const dashboard = ${APP}.pinia._s.get('portfolioDashboard'); dashboard.setScope('all'); dashboard.setLens('${value}'); return true; })()`);
+    // The dock's first tab is the Wallet: it returns to the screen the person was on there (each tab keeps its own history).
+    const dockWallet = () => evalPage(`(document.querySelectorAll('[data-testid="menu"] button')[0].click(), true)`);
+    // The header's back button, as on every screen that has a way back.
+    const headerBack = async () => {
+      const present = await evalPage(`Boolean(document.querySelector('[data-testid="backBtn"]'))`);
+      if (!present) throw new Error('There is no back button on ' + (await evalPage(`${APP}.router.currentRoute.value.fullPath`)));
+      // The test id lands on the button's wrapper; the click handler is on the button inside it.
+      await click('[data-testid="backBtn"] button');
+      await sleep(500);
+    };
+
+    await lens('token');
+    await features({ polkaswap: true, crossChainXcm: false, crossChainSoraBridge: false, crossChainLiberland: false });
+    await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the token list');
+    await check('a token on SORA is swap-ready, with the words and an icon', `document.querySelector('[data-testid="tokenRow-substrate:7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5:b774c386-5cce-454a-a845-1ec0381538ec"] [data-testid="readiness-ready"]')?.innerText.trim()`, 'Swap-ready');
+    await check('KSM, which has a reviewed route to SORA that is turned off in this version, says Moves paused', `document.querySelector('[data-testid="tokenRow-group:ksm"] [data-testid="readiness-off"], [data-testid^="tokenRow-substrate:b0a8d493"] [data-testid="readiness-off"]')?.innerText.trim()`, 'Moves paused');
+    await click('[data-testid="tokenRow-group:usdt"]');
+    await check('USDT, which has no route to SORA, has no chip on any of its holdings', `document.querySelectorAll('[data-testid="tokenChildren-group:usdt"] [data-testid^="readiness-"]').length`, 0);
+    await click('[data-testid="tokenRow-group:usdt"]');
+    await evalPage(`(document.querySelector('[data-testid="tokenRow-group:ksm"], [data-testid^="tokenRow-substrate:b0a8d493"]')?.scrollIntoView({ block: 'center' }), true)`);
+    await capture('13-readiness-chips', 'The tokens with how each stands to a swap: Swap-ready on SORA, Moves paused where a reviewed route exists but is off, nothing where there is no route.');
+
+    // DOT lives on two networks in two wallets: open it, then Where it lives.
+    const dotRow = await evalPage(`(() => { const row = [...document.querySelectorAll('[data-testid^="tokenRow-group:dot"]')][0]; return row?.dataset.testid ?? null; })()`);
+    if (!dotRow) throw new Error('The DOT row is not on screen');
+    await click(`[data-testid="${dotRow}"]`);
+    await click(`[data-testid="whereItLives-group:dot"]`);
+    await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives');
+    await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'the holdings');
+    await check('Where it lives names the token and its holdings across wallets and networks', `[document.querySelector('.head-symbol')?.innerText, document.querySelectorAll('[data-testid="locationsHoldings"] [data-testid^="holding-"]').length]`, ['DOT', 3]);
+    await check('the orbit has one satellite per network', `document.querySelectorAll('[data-testid^="satellite-"]').length`, 2);
+    await check('the breakdown adds up: transferable plus the rest is the total counted', `(() => { const read = (id) => parseFloat(document.querySelector('[data-testid="' + id + '"]').innerText.replace(/,/g, '')); return Math.abs(read('breakdownTransferable') + read('breakdownHeld') - read('breakdownTotal')) < 0.0002; })()`, true);
+    await check('the route card says the moves are paused, and names the move', `[document.querySelector('[data-testid="portfolioRouteCard"] .lead')?.innerText.trim(), document.querySelectorAll('[data-testid="routeHops"] li').length]`, ['Moves paused', 1]);
+    await check('a paused move is shown as unavailable, with its reason', `[document.querySelector('[data-testid="action-move"]')?.disabled, document.querySelector('[data-testid="action-move"]')?.innerText.trim(), document.querySelector('[data-testid="actionReason"]')?.innerText.trim()]`, [true, 'Move unavailable', 'Cross-network moves are turned off in this version.']);
+    await check('Receive on SORA is offered instead, because a reviewed route names the asset there', `Boolean(document.querySelector('[data-testid="action-receiveOnSora"]'))`, true);
+    await check('the Polkaswap card says moves are off and swaps are on', `[document.querySelector('[data-testid="check-moves"]')?.dataset.ok, document.querySelector('[data-testid="check-swaps"]')?.dataset.ok]`, ['false', 'true']);
+    await capture('14-where-it-lives-dot', 'Where it lives for DOT: the orbit, its holdings in both wallets, the breakdown, the route card with its move paused, and the Polkaswap card.');
+    await evalPage(`(document.querySelector('[data-testid="holdingPanel"]')?.scrollIntoView({ block: 'start' }), true)`);
+    await capture('14b-where-it-lives-panel', 'The holding picked: its breakdown with a pattern bar, the route card, and its actions with the reason a move is unavailable.');
+    await evalPage(`(document.querySelector('[data-testid="polkaswapCard"]')?.scrollIntoView({ block: 'start' }), true)`);
+    await capture('14c-polkaswap-card', 'The Polkaswap card: the checks behind a swap, with words as well as marks, and one way in.');
+    await evalPage(`(document.querySelector('[data-testid="tokenLocations"]')?.scrollTo(0, 0), true)`);
+
+    // While the move is paused, Receive on SORA opens Receive for the SORA asset a reviewed route names: the person can
+    // ask for it to be sent to SORA, where it is swap-ready.
+    await click('[data-testid="action-receiveOnSora"]');
+    await wait(`${APP}.router.currentRoute.value.name === 'ReceiveForm'`, 'the Receive screen');
+    await check(
+      'Receive on SORA opens Receive for the SORA asset a reviewed route names, on the SORA network',
+      `(() => { const { assetId, network } = ${APP}.router.currentRoute.value.params; return [assetId, /^SORA/.test(network)]; })()`,
+      ['cd092a5a-4eb6-4318-9f11-4bf8454d67a2', true]
+    );
+    await wait(`Boolean(document.querySelector('[data-testid="receiveNetworkChip"]'))`, 'the network on the Receive screen');
+    await check('the Receive screen names SORA as the network', `/SORA/.test(document.querySelector('[data-testid="receiveNetworkChip"]').innerText)`, true);
+    await capture('14d-receive-on-sora', 'Receive on SORA instead: the Receive screen opened for the SORA counterpart of DOT, on the SORA network.');
+    await evalPage(`(${APP}.router.back(), true)`);
+    await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'back on Where it lives from Receive');
+    await wait(`Boolean(document.querySelector('[data-testid="holdingPanel"]'))`, 'the holding panel again');
+    checks.push('Receive on SORA returns to Where it lives');
+
+    // The same screen once moves are on: a route with one move, and a Move sheet that hands off to the cross-chain screen.
+    await features({ crossChainSoraBridge: true });
+    await wait(`document.querySelector('[data-testid="action-move"]')?.disabled === false`, 'the move enabled');
+    await check('with moves on the chip counts the move', `document.querySelector('[data-testid="holdingPanel"] [data-testid="readiness-route"]')?.innerText.trim()`, '1 move');
+    await click('[data-testid="action-move"]');
+    await wait(`Boolean(document.querySelector('[data-testid="portfolioMoveSheet"]'))`, 'the Move sheet');
+    await check('the Move sheet names where from and where to, and the route', `[document.querySelector('[data-testid="moveFrom"] strong')?.innerText, document.querySelector('[data-testid="moveTo"] strong')?.innerText]`, ['Polkadot', 'SORA Mainnet']);
+    await capture('15-move-sheet', 'The Move sheet: from, to, the reviewed route, time, fee and minimum, and the button that hands over to the review screen.');
+    await click('[data-testid="moveReview"]');
+    await wait(`${APP}.router.currentRoute.value.name === 'CrossChain'`, 'the cross-chain screen');
+    await check('the move hands over with the network and asset already chosen', `(() => { const { originChainId, assetKey } = ${APP}.router.currentRoute.value.query; return [originChainId.slice(0, 8), assetKey.startsWith('substrate:91b171bb')]; })()`, ['91b171bb', true]);
+    await features({ crossChainSoraBridge: false });
+    await dockWallet();
+    await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'the Wallet tab back on Where it lives');
+    checks.push('the Wallet tab returns to Where it lives after a hand-off');
+    await headerBack();
+    await wait(`${APP}.router.currentRoute.value.name === 'Currencies' && Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the header back on the token list');
+    checks.push('the header back leaves Where it lives for the list');
+
+    // A token on SORA is swap-ready: the Swap sheet picks the pair and hands over to Polkaswap.
+    await click(`[data-testid="tokenRow-substrate:7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5:b774c386-5cce-454a-a845-1ec0381538ec"]`);
+    await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives for XOR');
+    await wait(`Boolean(document.querySelector('[data-testid="action-swap"]'))`, 'the swap action');
+    await check('a swap-ready token offers a swap first, with the Polkaswap mark', `[document.querySelector('[data-testid="action-swap"]')?.innerText.trim(), Boolean(document.querySelector('[data-testid="action-swap"] use'))]`, ['Swap XOR on Polkaswap', true]);
+    await capture('16-where-it-lives-swap-ready', 'Where it lives for XOR, which is on SORA: swap-ready, with Swap on Polkaswap as the first action.');
+    await click('[data-testid="action-swap"]');
+    await wait(`Boolean(document.querySelector('[data-testid="portfolioSwapSheet"]'))`, 'the Swap sheet');
+    await check('the Swap sheet leaves the pay asset out of the targets', `[...document.querySelectorAll('[data-testid^="swapTarget-"]')].map((target) => target.innerText.trim())`, ['VAL', 'PSWAP', 'XSTUSD']);
+    await capture('17-swap-sheet', 'The Swap sheet: what you pay, popular targets, the checks, and one line saying Polkaswap shows price, fee and impact before you sign.');
+    await click('[data-testid="swapTarget-PSWAP"]');
+    await click('[data-testid="swapOpen"]');
+    await wait(`${APP}.router.currentRoute.value.name === 'Polkaswap'`, 'the Polkaswap screen');
+    await check('the swap hands over the pair, never an amount', `(() => { const { from, to } = ${APP}.router.currentRoute.value.query; return [from, to.slice(0, 8)]; })()`, ['b774c386-5cce-454a-a845-1ec0381538ec', '37a999a2']);
+    await wait(`/XOR/i.test(document.body.innerText) && /PSWAP/i.test(document.body.innerText)`, 'the pair on the Polkaswap screen');
+    checks.push('the Polkaswap screen opens with the pair chosen');
+    await dockWallet();
+    await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'the Wallet tab back on Where it lives');
+    await headerBack();
+    await wait(`${APP}.router.currentRoute.value.name === 'Currencies' && Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'back on the token list');
+
+    // A holding in another wallet: the screen says it switches first, and does.
+    await click(`[data-testid="tokenRow-group:usdt"]`);
+    await click(`[data-testid="whereItLives-group:usdt"]`);
+    await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives for USDT');
+    const otherWallet = await evalPage(`(() => { const rows = [...document.querySelectorAll('[data-testid="locationsHoldings"] button')]; const other = rows.find((row) => /Savings/.test(row.innerText)); other?.click(); return Boolean(other); })()`);
+    if (!otherWallet) throw new Error('USDT has no holding in the second wallet');
+    await wait(`Boolean(document.querySelector('[data-testid="switchNote"]'))`, 'the switch note');
+    await check('a holding of another wallet says it switches first, on the button too', `[document.querySelector('[data-testid="switchNote"]')?.innerText.trim(), document.querySelector('[data-testid="action-send"]')?.innerText.trim()]`, ['This is in Savings. We switch to it first and you can switch back any time.', 'Switch to Savings and send']);
+    await capture('18-switch-wallet-first', 'A holding in Savings while another wallet is selected: the note, and a button that says it switches first.');
+    await click('[data-testid="action-send"]');
+    await wait(`${APP}.router.currentRoute.value.name === 'SendForm'`, 'the Send screen');
+    await check('the wallet was switched, and Send opens for the holding', `[${APP}.pinia._s.get('accounts').selectedWallet.name, ${APP}.router.currentRoute.value.params.network]`, ['Savings', 'Ethereum']);
+    await extensionSend(cdp, controlSession, 'pri(accounts.update.current)', { address: walletAddress, walletEcosystem: 'substrate' });
+    await wait(`${APP}.pinia._s.get('accounts').selectedWallet.address === ${JSON.stringify(walletAddress)}`, 'the first wallet selected again');
+    await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
+    await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'back on All wallets');
+
+    // One wallet: the second pick of a legend chip opens Where it lives for that wallet alone.
+    await evalPage(`(() => { ${APP}.pinia._s.get('portfolioDashboard').setScope('wallet'); return true; })()`);
+    await wait(`Boolean(document.querySelector('[data-testid="heroSwap"]'))`, 'one wallet');
+    await click('[data-testid="legend-group:dot"]');
+    await click('[data-testid="legend-group:dot"]');
+    await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'Where it lives from the legend');
+    await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'the holdings of one wallet');
+    await check('in one wallet Where it lives shows only that wallet', `[...new Set([...document.querySelectorAll('[data-testid="locationsHoldings"] .holding-meta > span:first-child')].map((node) => node.innerText))]`, ['Solana Smoke']);
+    await capture('19-where-it-lives-one-wallet', 'Where it lives from the legend of one wallet: only that wallet holds are listed.');
+    await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
+    await lens('token');
+
     // The wallet picker: All wallets first, then each wallet.
     await evalPage(`document.querySelector('.wallet-name .name').click()`);
     await wait(`Boolean(document.querySelector('[data-testid="allWalletsRow"]'))`, 'All wallets in the wallet picker');
@@ -322,6 +472,11 @@ export async function captureDashboardScreenshots({
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'All wallets in Russian');
     await scrollTop();
     await capture('12-all-wallets-russian', 'All wallets in Russian at the popup width.');
+    await click('[data-testid="tokenRow-group:dot"]');
+    await click('[data-testid="whereItLives-group:dot"]');
+    await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives in Russian');
+    await wait(`/где хранится/i.test(document.body.innerText)`, 'Russian Where it lives text');
+    await capture('20-where-it-lives-russian', 'Where it lives in Russian at the popup width.');
 
     await fs.writeFile(
       path.join(outputDir, 'README.md'),

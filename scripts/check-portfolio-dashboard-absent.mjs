@@ -7,10 +7,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** Text that exists only in the dashboard's screens, styles and storage. */
-export const DASHBOARD_MARKERS = ['How we count your balance', 'Winged sun with your allocation', '--fw-chart-1', 'dashboard-v1', 'allWalletsPanel'];
+export const DASHBOARD_MARKERS = [
+  'How we count your balance',
+  'Winged sun with your allocation',
+  'Where it lives and where it can go',
+  'Route to Polkaswap',
+  '--fw-chart-1',
+  'dashboard-v1',
+  'allWalletsPanel',
+  'portfolioOrbit',
+];
 /** File names of its screens and of the four layers of the winged sun it draws. */
 export const DASHBOARD_FILE_PATTERNS = [
-  /Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet)/,
+  /(Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet|Orbit|ReadinessChip|RouteCard|Breakdown|CheckList|SwapSheet|MoveSheet)|TokenLocations)/,
   /(^|\/)(wings|uraeus-left|uraeus-right|sun-disc)(-[\w-]+)?\.svg$/,
 ];
 

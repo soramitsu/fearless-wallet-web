@@ -35,18 +35,24 @@ describe('check that a build carries no portfolio dashboard', () => {
       'chunks/a.js': 'x("How we count your balance")',
       'assets/b.css': ':root{--fw-chart-1:#f09}',
       'chunks/c.js': 'k("dashboard-v1")',
+      'chunks/d.js': 'y("Where it lives and where it can go")',
+      'chunks/e.js': 'z("Route to Polkaswap")',
     });
 
     expect((await findDashboardInBuild(root)).sort()).toEqual([
       'assets/b.css: contains "--fw-chart-1"',
       'chunks/a.js: contains "How we count your balance"',
       'chunks/c.js: contains "dashboard-v1"',
+      'chunks/d.js: contains "Where it lives and where it can go"',
+      'chunks/e.js: contains "Route to Polkaswap"',
     ]);
   });
 
   it('finds the dashboard by its screens and the layers of the sun it draws', async () => {
     const root = build({
       'chunks/PortfolioDashboard.js': 'export {}',
+      'chunks/TokenLocations.js': 'export {}',
+      'chunks/PortfolioOrbit.js': 'export {}',
       'assets/wings-9f8e7d.svg': '<svg></svg>',
       'assets/uraeus-left.svg': '<svg></svg>',
     });
@@ -55,6 +61,8 @@ describe('check that a build carries no portfolio dashboard', () => {
       'assets/uraeus-left.svg: a dashboard file',
       'assets/wings-9f8e7d.svg: a dashboard file',
       'chunks/PortfolioDashboard.js: a dashboard file',
+      'chunks/PortfolioOrbit.js: a dashboard file',
+      'chunks/TokenLocations.js: a dashboard file',
     ]);
   });
 });

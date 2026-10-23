@@ -106,6 +106,13 @@ Per the release plan, a small funded mainnet canary (SOL to a fresh address and
 back) is a team task before staged rollout; no mainnet transaction was made while
 preparing this release.
 
+The Firefox production build at source `e6a39d16` was compared with the
+previously approved warning artifacts (the 3.0.9 build). All 41 warning
+expressions are unchanged (40 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`),
+with zero errors or notices; one `DANGEROUS_EVAL` in `chunks/accounts.js` moved
+51 columns along its line. Only the `chunks/accounts.js` artifact hash changed,
+and the reviewed baseline records it.
+
 Submit the verified ZIP to the existing Chrome Web Store item with automatic
 publication after approval. If 3.0.9 is still pending review, replace that draft
 only after the 3.0.10 candidate is verified. Google review is external; pending

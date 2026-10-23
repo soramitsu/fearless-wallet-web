@@ -18,7 +18,7 @@
     "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "406facf35b081d0406c46446fea92e7758bdefc41f6c134f763b1d4cc4d4d400",
+  "warningSetSha256": "2090a8e4a5b04b8aea94e7b620bdc6cfa1018bb946945e42082c07c1430e606c",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
@@ -26,7 +26,7 @@
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "bc8002a9851784f44faf70cf9a88f77570446b1f626a0987acec4184b51f30a8"
+      "sha256": "279f7f5bc8b5951ddb68df0fd90b71d3f5efe8d7ed197d388611cea6def3a24d"
     },
     {
       "file": "chunks/background-vendor/assert-Blv9rAXX.js",

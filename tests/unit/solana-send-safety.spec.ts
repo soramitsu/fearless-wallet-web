@@ -260,6 +260,16 @@ describe('Solana rent and balance checks', () => {
     ).resolves.toMatchObject({ amountBaseUnits: 1_000_000_000n - fee });
   });
 
+  it('reports a shortfall for the whole balance quoted as an amount, so Max quotes without an amount', async () => {
+    const client = createClient({ balanceLamports: 1_000_000_000 });
+    const whole = await quoteSolanaTransfer(solParams({ amount: '1' }), client);
+    const none = await quoteSolanaTransfer(solParams({ amount: '0' }), client);
+
+    expect(whole.unavailableReason).toBe('solana_insufficient_funds');
+    expect(none.unavailableReason).toBeUndefined();
+    expect(whole.maxSendable).toBe(none.maxSendable);
+  });
+
   it('charges the recipient token-account deposit and refuses when SOL cannot cover it', async () => {
     const quote = await quoteSolanaTransfer(tokenParams(), createClient());
 

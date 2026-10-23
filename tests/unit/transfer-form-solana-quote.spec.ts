@@ -124,6 +124,8 @@ describe('Solana quote on the send form', () => {
     });
     await component.methods.setMax.call(form);
 
+    // The whole balance is never quoted as the amount: the fee and any deposit come out of it.
+    expect(checkTransfer).toHaveBeenCalledWith(expect.objectContaining({ amount: '0', sendMax: true }));
     expect(form.syncedAmount).toBe('12.5');
     expect(form.syncedFee).toBe('0.00204528');
     expect(form.solanaQuote).toMatchObject({ maxSendable: '12.5' });

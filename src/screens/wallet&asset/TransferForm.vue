@@ -1045,7 +1045,11 @@ export default defineComponent({
       this.syncedFee = '';
       this.isFetchingFees = true;
       try {
-        const quote = await this.verifyTx(this.transferableAmount.toString(), true);
+        // A Solana quote without an amount returns the exact maximum; quoting the whole balance as the amount would
+        // report a shortfall, because the fee and any account deposit come out of it.
+        const quotedAmount =
+          this.isTransfer && BaseApi.isSolanaNetwork(this.syncedNetwork) ? '0' : this.transferableAmount.toString();
+        const quote = await this.verifyTx(quotedAmount, true);
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
 
         if (quote.errors?.length || quote.estimateFee === undefined) {

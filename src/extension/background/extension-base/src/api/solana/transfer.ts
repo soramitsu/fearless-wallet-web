@@ -28,6 +28,7 @@ import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/univers
 import { isSameString } from '@/helpers';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
 import { deriveSolanaAccount } from '@/util/solanaKeyring';
+import { isUsableSolanaRpcUrl } from '@/util/solanaRpcUrl';
 import {
   getSolanaSerializedMessageBase64,
   signSolanaSerializedTransaction,
@@ -72,7 +73,7 @@ const SOLANA_PRIORITY_FEE_PERCENTILE = 0.75;
 
 const SIGNATURE_POLL_INTERVAL_MS = 1_000;
 const REBROADCAST_EVERY_POLLS = 2;
-const BLOCK_HEIGHT_CHECK_EVERY_POLLS = 3;
+const EXPIRY_CHECK_EVERY_POLLS = 3;
 const MAX_CONFIRMATION_WAIT_MS = 120_000;
 
 type HandleBasicTx = (data: BasicTxResponse) => void;
@@ -99,12 +100,12 @@ type SolanaTransferClient = Pick<
   SolanaRpcClient,
   | 'getAccountInfo'
   | 'getBalance'
-  | 'getBlockHeight'
   | 'getFeeForMessage'
   | 'getLatestBlockhash'
   | 'getMinimumBalanceForRentExemption'
   | 'getRecentPrioritizationFees'
   | 'getSignatureStatuses'
+  | 'resolveSignatures'
   | 'sendRawTransaction'
   | 'simulateTransaction'
 >;
@@ -303,6 +304,12 @@ async function makeSolanaTransfer(
     assertCurrent();
     const signature = prepared.signed.signatureBase58;
     const transactionBase64 = prepared.signed.signedTransactionBase64;
+    // Once the outcome is settled, failing to forget the record must not change what is reported: a record left
+    // behind is resolved and removed again by the next send.
+    const forgetRecord = (): Promise<void> =>
+      pendingStore.remove([signature], network).catch((error: unknown) => {
+        console.warn('Failed to clear a settled Solana pending send', error);
+      });
     const simulation = await transferClient.simulateTransaction(transactionBase64, {
       commitment: 'confirmed',
       replaceRecentBlockhash: false,
@@ -340,7 +347,7 @@ async function makeSolanaTransfer(
       if (error instanceof SolanaBroadcastError && !error.ambiguous) {
         // Every node that answered refused the transaction before relaying it
         // (preflight), and no earlier post may have reached one: nothing was sent.
-        await pendingStore.remove([signature], network);
+        await forgetRecord();
         throw new Error('solana_simulation_failed', { cause: error });
       }
       if (error instanceof Error && error.message === 'solana_broadcast_signature_mismatch') throw error;
@@ -361,7 +368,7 @@ async function makeSolanaTransfer(
       transactionBase64,
     });
 
-    if (outcome !== 'pending') await pendingStore.remove([signature], network);
+    if (outcome !== 'pending') await forgetRecord();
     if (outcome === 'failed') throw new Error('solana_transaction_failed');
     if (outcome === 'expired') throw new Error('solana_transaction_expired');
     if (outcome === 'pending') throw new Error('solana_broadcast_ambiguous');
@@ -400,7 +407,7 @@ async function waitForSolanaSignature({
   transactionBase64,
 }: {
   assertCurrent?: () => void;
-  client: Pick<SolanaTransferClient, 'getBlockHeight' | 'getSignatureStatuses' | 'sendRawTransaction'>;
+  client: Pick<SolanaTransferClient, 'getSignatureStatuses' | 'resolveSignatures' | 'sendRawTransaction'>;
   lastValidBlockHeight: number;
   maxWaitMs: number;
   now: () => number;
@@ -419,15 +426,13 @@ async function waitForSolanaSignature({
       // A `processed` result, failed or not, can still be rolled back with its
       // fork and the same bytes land elsewhere, so only a confirmed one counts.
       if (status && isConfirmedSolanaStatus(status)) return status.err ? 'failed' : 'confirmed';
-      if (!status && poll % BLOCK_HEIGHT_CHECK_EVERY_POLLS === BLOCK_HEIGHT_CHECK_EVERY_POLLS - 1) {
-        if ((await client.getBlockHeight('confirmed')) > lastValidBlockHeight) {
-          // One last look: it may have landed in the final valid block. A
-          // status that is not confirmed yet is followed by the next polls.
-          const [finalStatus] = await client.getSignatureStatuses([signature]);
+      if (!status && poll % EXPIRY_CHECK_EVERY_POLLS === EXPIRY_CHECK_EVERY_POLLS - 1) {
+        // Expired only when one node has finalized past the last valid block and, from a state at least that recent,
+        // still has no trace of it. A trace that is not confirmed yet is followed by the next polls.
+        const [resolution] = await client.resolveSignatures([{ lastValidBlockHeight, signature }]);
 
-          if (!finalStatus) return 'expired';
-          if (isConfirmedSolanaStatus(finalStatus)) return finalStatus.err ? 'failed' : 'confirmed';
-        }
+        if (resolution?.state === 'expired') return 'expired';
+        if (resolution?.state === 'landed') return resolution.status.err ? 'failed' : 'confirmed';
       }
       if (!status && poll % REBROADCAST_EVERY_POLLS === REBROADCAST_EVERY_POLLS - 1) {
         assertCurrent?.();
@@ -893,30 +898,23 @@ function getSolanaNetworkKind(network: NetworkJson | undefined): SolanaRpcNetwor
 }
 
 /**
- * The user's selected or custom node first, then the registry nodes, then the
- * built-in public mainnet (or devnet) nodes, so one unavailable node never
- * blocks balances or a send.
+ * The node the user selected first, then their custom nodes, the registry
+ * nodes and the built-in public mainnet (or devnet) nodes, so one unavailable
+ * node never blocks balances or a send. The node screen stores the chosen
+ * node's address as the current provider; a state that has never been touched
+ * names a provider key instead.
  */
 function getSolanaRpcUrls(network: NetworkJson): string[] {
-  const selected = network.providers?.[network.currentProvider] ?? network.customProviders?.[network.currentProvider];
+  const { currentProvider } = network;
+  const selected = network.providers?.[currentProvider] ?? network.customProviders?.[currentProvider] ?? currentProvider;
   const nodes = [...(network.customNodes ?? []), ...(network.nodes ?? [])].map(({ url }) => url);
   const candidates = [selected, ...nodes, ...UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS[getSolanaNetworkKind(network)]];
 
-  return [...new Set(candidates.filter((url): url is string => typeof url === 'string' && isUsableRpcUrl(url)))];
+  return [...new Set(candidates.filter((url): url is string => typeof url === 'string' && isUsableSolanaRpcUrl(url)))];
 }
 
 function getSolanaRpcUrl(network: NetworkJson): string {
   return getSolanaRpcUrls(network)[0];
-}
-
-function isUsableRpcUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-
-    return url.protocol === 'https:' || (url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1'));
-  } catch {
-    return false;
-  }
 }
 
 function solanaAmountToLamports(amount: string): bigint {

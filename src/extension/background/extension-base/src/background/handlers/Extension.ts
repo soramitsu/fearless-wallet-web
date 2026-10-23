@@ -1348,7 +1348,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const { from, networkKey, to, assetId, relayChain, amount } = request;
+    const { from, networkKey, to, assetId, relayChain, amount, solanaComputeUnitPriceMicroLamports } = request;
     const network = this.state.networkService.networkMap[networkKey];
 
     let fee = '0';
@@ -1415,11 +1415,13 @@ export default class Extension extends FWExtensionBase {
 
     if (isSolanaTransferNetwork(network)) {
       try {
+        // The Send screen passes the priority fee of the quote it is repricing, so the price does not move under it.
         const { fee: quotedFee, ...solana } = await quoteSolanaTransfer({
           amount: amount ?? '0',
           assetId,
           from,
           networkKey,
+          solanaComputeUnitPriceMicroLamports,
           state: this.state,
           to,
         });

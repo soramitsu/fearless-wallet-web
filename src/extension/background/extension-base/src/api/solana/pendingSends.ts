@@ -1,11 +1,8 @@
 import { ed25519 } from '@noble/curves/ed25519';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import { storage } from '@extension-base/stores/Storage';
-import type {
-  SolanaRpcClient,
-  SolanaRpcNetwork,
-  SolanaSignatureStatus,
-} from '@extension-base/services/solana-rpc-service';
+import { isConfirmedSolanaStatus } from '@extension-base/services/solana-rpc-service';
+import type { SolanaRpcClient, SolanaRpcNetwork } from '@extension-base/services/solana-rpc-service';
 import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
 /**
@@ -35,23 +32,9 @@ export type SolanaPendingSendStore = {
   save: (record: SolanaPendingSend) => Promise<void>;
 };
 
-export type SolanaPendingSendClient = Pick<
-  SolanaRpcClient,
-  'getBlockHeight' | 'getSignatureStatuses' | 'sendRawTransaction'
->;
+export type SolanaPendingSendClient = Pick<SolanaRpcClient, 'resolveSignatures' | 'sendRawTransaction'>;
 
-/**
- * Only a supermajority-confirmed status is an outcome; a `processed` one can
- * still be rolled back with its fork. Nodes report a rooted transaction with
- * `confirmations: null`.
- */
-export const isConfirmedSolanaStatus = ({
-  confirmationStatus,
-  confirmations,
-}: Pick<SolanaSignatureStatus, 'confirmationStatus' | 'confirmations'>): boolean =>
-  confirmationStatus === 'confirmed' ||
-  confirmationStatus === 'finalized' ||
-  (confirmationStatus === null && confirmations === null);
+export { isConfirmedSolanaStatus };
 
 const isPendingSend = (value: unknown): value is SolanaPendingSend => {
   if (typeof value !== 'object' || value === null) return false;
@@ -109,12 +92,13 @@ export const getDefaultSolanaPendingSendStore = (): SolanaPendingSendStore =>
 /**
  * Splits pending sends into resolved and still in flight. A record is resolved
  * once its outcome can no longer change: the signature is confirmed
- * (successfully or not), or the chain has passed its last valid block height,
- * after which the bytes can never be included again. A signature seen only at
- * `processed` before then may still be dropped with its fork and land later,
- * so it stays in flight. Lookup failures keep a record in flight. In-flight
- * transactions are rebroadcast unchanged, which is idempotent and helps them
- * land before they expire.
+ * (successfully or not), or one node has finalized past its last valid block
+ * height and still has no trace of it, after which the bytes can never be
+ * included again (`SolanaRpcClient.resolveSignatures` holds the rule). A
+ * signature seen only at `processed` before then may still be dropped with its
+ * fork and land later, so it stays in flight. Lookup failures keep a record in
+ * flight. In-flight transactions are rebroadcast unchanged, which is idempotent
+ * and helps them land before they expire.
  */
 export async function resolveSolanaPendingSends(
   records: SolanaPendingSend[],
@@ -126,18 +110,17 @@ export async function resolveSolanaPendingSends(
   if (!records.length) return { resolved: [], unresolved: [] };
 
   try {
-    const [statuses, blockHeight] = await Promise.all([
-      client.getSignatureStatuses(records.map(({ signature }) => signature)),
-      client.getBlockHeight('confirmed'),
-    ]);
+    const resolutions = await client.resolveSignatures(
+      records.map(({ lastValidBlockHeight, signature }) => ({ lastValidBlockHeight, signature }))
+    );
     assertCurrent?.();
     const resolved: SolanaPendingSend[] = [];
     const unresolved: SolanaPendingSend[] = [];
 
     records.forEach((record, index) => {
-      const status = statuses[index];
+      const state = resolutions[index]?.state;
 
-      if ((status && isConfirmedSolanaStatus(status)) || blockHeight > record.lastValidBlockHeight) resolved.push(record);
+      if (state === 'landed' || state === 'expired') resolved.push(record);
       else unresolved.push(record);
     });
 

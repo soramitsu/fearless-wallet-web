@@ -161,7 +161,6 @@ function createClient({
   return {
     getAccountInfo: vi.fn(async (address: string) => (accounts[address] ?? null) as never),
     getBalance: vi.fn(async () => balanceLamports),
-    getBlockHeight: vi.fn(async () => 400),
     getFeeForMessage: vi.fn(async () => ({ context: { slot: 124 }, value: feeLamports })),
     getLatestBlockhash: vi.fn(async () => ({
       context: { slot: 123 },
@@ -170,6 +169,8 @@ function createClient({
     getMinimumBalanceForRentExemption: vi.fn(async (bytes: number) => (bytes === 0 ? 890_880 : 2_039_280)),
     getRecentPrioritizationFees: vi.fn(async () => [{ prioritizationFee: 0, slot: 120 }]),
     getSignatureStatuses: vi.fn(async () => [signatureStatus as never]),
+    // The blockhash is still valid, so an unconfirmed signature stays pending.
+    resolveSignatures: vi.fn(async (queries) => queries.map(() => ({ state: 'pending' }) as const)),
     sendRawTransaction: vi.fn(async () => sendSignature ?? ''),
     simulateTransaction: vi.fn(async () => ({
       context: { slot: 125 },
@@ -351,6 +352,47 @@ describe('background Solana transfer adapter', () => {
     expect(getSolanaRpcUrls(devnet)).toEqual(['https://node.solana.example', 'https://api.devnet.solana.com']);
     expect(getSolanaRpcUrls(mainnet).some((url) => url.includes('si.soramitsu.io'))).toBe(false);
     expect(() => getSolanaNetworkKind({ ecosystem: 'substrate' } as NetworkJson)).toThrow('unsupported_solana_network');
+  });
+
+  it('puts the node the user chose first, whether the state names a provider or stores its address', () => {
+    const chosen = 'https://chosen.solana.example/?api-key=key';
+    const stored = solanaNetwork('Solana', 'solana:mainnet', {
+      currentProvider: chosen,
+      customNodes: [
+        { name: 'first', url: 'https://first.solana.example' },
+        { name: 'chosen', url: chosen },
+      ],
+    });
+
+    // The node screen stores the chosen node's address, not a provider key, and the other custom nodes follow it.
+    expect(getSolanaRpcUrls(stored)).toEqual([
+      chosen,
+      'https://first.solana.example',
+      'https://node.solana.example',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://solana.drpc.org',
+    ]);
+    expect(getSolanaRpcUrl(stored)).toBe(chosen);
+  });
+
+  it('ignores node addresses it cannot use, so the public nodes still serve', () => {
+    const network = solanaNetwork('Solana', 'solana:mainnet', {
+      currentProvider: 'wss://ws.solana.example',
+      customNodes: [
+        { name: 'insecure', url: 'http://insecure.solana.example' },
+        { name: 'credentials', url: 'https://user:secret@solana.example' },
+        { name: 'local', url: 'http://localhost:8899' },
+      ],
+      nodes: [],
+    });
+
+    expect(getSolanaRpcUrls(network)).toEqual([
+      'http://localhost:8899',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://solana.drpc.org',
+    ]);
   });
 
   it('builds a canonical legacy SystemProgram transfer transaction', () => {

@@ -322,6 +322,8 @@ import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { canonicalGroupIndexFor, canonicalGroupOf } from '@/portfolio/tokenGroups';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 
+// How long the priority fee that Max quoted is kept for pricing the amount it produced.
+const SOLANA_PRICE_HINT_MS = 60_000;
 const VALID_BITCOIN_ADDRESS = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4';
 const VALID_BITCOIN_TESTNET_ADDRESS = 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx';
 
@@ -376,6 +378,7 @@ export default defineComponent({
       crossChainRuntimeMinimum: '',
       bitcoinQuote: null as ResponseBitcoinTransferQuote | null,
       solanaQuote: null as ResponseSolanaTransferQuote | null,
+      solanaPriceHint: null as { amount: string; assetId: string; at: number; network: string; price: number } | null,
       isScamAddress: false,
       scamInfo: null,
       step: 1,
@@ -1182,6 +1185,17 @@ export default defineComponent({
 
         if (max === undefined) return;
 
+        // Setting the amount quotes it again. That quote must use the priority fee Max just quoted: a price that moved
+        // meanwhile would turn the exact maximum into a shortfall, or leave a remainder below the rent minimum.
+        this.solanaPriceHint = solana
+          ? {
+              amount: max,
+              assetId: this.transferAssetId,
+              at: Date.now(),
+              network: this.syncedNetwork,
+              price: solana.computeUnitPriceMicroLamports,
+            }
+          : null;
         this.syncedAmount = max;
         this.syncedValue = getCostOfAssets(+max, this.assetPrice).toString();
 
@@ -1205,6 +1219,16 @@ export default defineComponent({
     toggleLoading(value = true) {
       this.isFetchingFees = value;
     },
+    /** Only the amount Max produced is priced at Max's priority fee, and only for a minute; any other edit reprices. */
+    getSolanaPriceHint(amount: string): number | undefined {
+      const hint = this.solanaPriceHint;
+
+      if (!hint || Date.now() - hint.at >= SOLANA_PRICE_HINT_MS) return undefined;
+
+      return hint.amount === amount && hint.assetId === this.transferAssetId && hint.network === this.syncedNetwork
+        ? hint.price
+        : undefined;
+    },
     async verifyTx(_amount?: string) {
       this.toggleLoading();
 
@@ -1226,6 +1250,7 @@ export default defineComponent({
           relayChain: this.currency?.relayChain,
           amount,
           assetId: this.transferAssetId,
+          solanaComputeUnitPriceMicroLamports: this.getSolanaPriceHint(amount),
         });
 
         this.toggleLoading(false);

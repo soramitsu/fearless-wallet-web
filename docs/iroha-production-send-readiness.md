@@ -84,8 +84,12 @@ or any release flag. Its package identity is:
 reconstruct the exact candidate-relevant base into a disposable checkout from
 the stored bounded archive, apply all 32 patch paths, validate every resulting
 byte/mode, restore only the stored generated 134-byte Darwin arm64 checksum
-sidecar, and prove that `npm pack --ignore-scripts` reproduces the tar
-byte-for-byte. No live Iroha checkout, Git fetch, or network access is used.
+sidecar, and run `npm pack --ignore-scripts`. Python 3's standard-library system
+zlib recompresses the unchanged tar bytes with the historical gzip settings
+(level 9, zero timestamp, portable OS marker), avoiding Node compressor drift.
+The original compressed SHA-256 and byte-for-byte comparison remain mandatory;
+unexpected compression output or changed tar bytes fail verification. No live
+Iroha checkout, Git fetch, or network access is used.
 
 The replay archive SHA-256 is
 `cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c`:

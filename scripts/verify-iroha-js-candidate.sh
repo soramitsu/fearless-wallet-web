@@ -109,7 +109,7 @@ if [[ "$ADVERSARIAL_CORRUPT_REPACK_SIDECAR" == true ]]; then
     fail "adversarial repack corruption is forbidden for the canonical bundle"
 fi
 
-for command in node git tar shasum wc cmp mktemp npm awk; do
+for command in node git tar shasum wc cmp mktemp npm awk python3; do
   command -v "$command" >/dev/null 2>&1 || fail "required command not found: $command"
 done
 
@@ -556,6 +556,22 @@ run_bounded 60 env \
 
 repacked="$repack_dir/iroha-iroha-js-0.0.3.tgz"
 [[ -f "$repacked" && ! -L "$repacked" ]] || fail "replay did not produce the expected tarball"
+# Node's bundled zlib variant changes DEFLATE output across platforms even
+# when npm produces identical tar bytes. Recompress those bytes with Python's
+# system zlib and the historical portable gzip settings. Isolated mode ignores
+# Python import/configuration injection. The original SHA and cmp below remain
+# mandatory: an unexpected compressor or any tar change still fails closed.
+python3 -I - "$repacked" <<'PYTHON'
+import gzip
+from pathlib import Path
+import sys
+
+archive = Path(sys.argv[1])
+tar_bytes = gzip.decompress(archive.read_bytes())
+compressed = bytearray(gzip.compress(tar_bytes, compresslevel=9, mtime=0))
+compressed[9] = 255  # npm portable gzip OS marker; no tar bytes are changed.
+archive.write_bytes(compressed)
+PYTHON
 actual_repack_sha256="$(shasum -a 256 "$repacked" | awk '{print $1}')"
 [[ "$actual_repack_sha256" == "$EXPECTED_TAR_SHA256" ]] ||
   fail "exact replay tar digest mismatch: expected $EXPECTED_TAR_SHA256, got $actual_repack_sha256"

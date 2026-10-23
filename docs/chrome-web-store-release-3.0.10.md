@@ -57,7 +57,14 @@ upgrade notice, privacy notice and metadata corrections).
   least that recent, still has no trace of the signature. Answers from different
   nodes are never combined, a node that has seen the signature or has not caught
   up keeps the send open, and a confirmed status from any node ends it as
-  landed. Until then the wallet will not sign another Solana send.
+  landed. Until then the wallet will not sign another Solana send. A custom
+  node that has stalled therefore keeps an unconfirmed send open until it is
+  removed under **Switch node**.
+- Any JSON-RPC error other than the few a node gives before relaying a
+  transaction (a failed preflight, a bad signature, an undecodable request) is
+  treated as a post that may have been relayed: the same bytes go to the next
+  node, and if none accepts them the send stays unconfirmed instead of being
+  released as "nothing sent".
 - Solana sends ship enabled. A veto-only, sticky remote switch can stop them in
   an emergency and can never enable anything; see `docs/send-kill-switch.md`.
 
@@ -69,6 +76,10 @@ upgrade notice, privacy notice and metadata corrections).
 - The signing-queue ownership and site-grant revalidation changes planned for
   the next major extension release are not part of this release; Solana dApp
   requests keep the behavior they have in 3.0.9.
+- An unconfirmed send is resolved by the next send. Nodes keep about two days of
+  history (PublicNode), so a record older than that is treated as expired
+  without a message: check the explorer for an old unconfirmed send before
+  repeating it.
 - Wallet reset during an in-flight Solana send is not fenced (the 3.0.x keyring
   keeps no reset revision). The send finishes as the user asked, and its
   recorded transaction survives for the next send to resolve.

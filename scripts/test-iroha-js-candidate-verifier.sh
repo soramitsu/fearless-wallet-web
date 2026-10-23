@@ -398,12 +398,17 @@ expect_failure "NODE_PATH injection" "unsafe runtime environment variable is set
 fake_bin="$TMP_DIR/fake-bin"
 path_marker="$TMP_DIR/path-hijack-executed"
 mkdir -p "$fake_bin"
-for tool in node npm git tar shasum; do
+for tool in node npm git tar shasum python3; do
   printf '#!/bin/sh\nprintf invoked > "$IROHA_PATH_MARKER"\nexit 99\n' > "$fake_bin/$tool"
   chmod +x "$fake_bin/$tool"
 done
-expect_success "caller PATH hijack is ignored" env IROHA_PATH_MARKER="$path_marker" \
-  PATH="$fake_bin:$PATH" bash "$VERIFIER"
+python_modules="$TMP_DIR/fake-python-modules"
+mkdir -p "$python_modules"
+printf 'raise RuntimeError("ambient Python module injection executed")\n' > "$python_modules/gzip.py"
+expect_success "caller PATH hijack is ignored during exact repack with isolated Python" \
+  env IROHA_PATH_MARKER="$path_marker" PATH="$fake_bin:$PATH" \
+  PYTHONPATH="$python_modules" PYTHONHOME="$TMP_DIR/nonexistent-python-home" \
+  bash "$VERIFIER" --replay-source
 [[ ! -e "$path_marker" ]] || fail "caller PATH replacement executed"
 passed=$((passed + 1))
 

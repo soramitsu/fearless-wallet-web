@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 
 import {
   BoundedOutput,
+  VERIFIED_FIREFOX_ARCHIVE_SHA256,
   VERIFIED_FIREFOX_VERSION,
   assertCspState,
   assertFirefoxVersionResult,
@@ -27,7 +28,7 @@ function expectFailure(label, operation, expected) {
 }
 
 const ciWorkflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-const configuredFirefoxVersions = [...ciWorkflow.matchAll(/^\s*firefox-version:\s*([^\s#]+)\s*(?:#.*)?$/gmu)].map(
+const configuredFirefoxVersions = [...ciWorkflow.matchAll(/^\s*FIREFOX_VERSION:\s*([^\s#]+)\s*(?:#.*)?$/gmu)].map(
   (match) => match[1]
 );
 assert.deepEqual(configuredFirefoxVersions, [VERIFIED_FIREFOX_VERSION]);
@@ -44,6 +45,12 @@ for (const [label, mutation] of [
     'wrong setup output binding',
     (value) => value.replace('steps.setup-firefox.outputs.firefox-path', 'steps.other.outputs.firefox-path'),
   ],
+  ['unreviewed archive checksum', (value) => value.replace(VERIFIED_FIREFOX_ARCHIVE_SHA256, '0'.repeat(64))],
+  ['untrusted archive origin', (value) => value.replace('https://archive.mozilla.org/', 'https://example.invalid/')],
+  ['insecure download redirect', (value) => value.replace("--proto-redir '=https'", "--proto-redir '=all'")],
+  ['missing checksum verification', (value) => value.replace('sha256sum --check --strict -', 'cat')],
+  ['ignored checksum failure', (value) => value.replace('sha256sum --check --strict -', 'sha256sum --check --strict - || true')],
+  ['disabled fail-closed shell', (value) => value.replace('set -euo pipefail', 'set -uo pipefail')],
 ]) {
   expectFailure(label, () => assertFirefoxWorkflowContract(mutation(ciWorkflow)), /exact contiguous CI block/);
 }

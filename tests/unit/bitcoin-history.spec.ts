@@ -103,21 +103,7 @@ describe('Bitcoin history fetching', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_761_166_800_500);
 
     await expect(fetchHistory('https://blockstream.info/api', WALLET, 'bitcoin', 'Bitcoin', 'BTC', true)).resolves.toEqual([
-      {
-        address: WALLET,
-        blockHash: BLOCK_HASH,
-        blockHeight: 100,
-        extrinsicHash: TXID_1,
-        id: TXID_1,
-        success: true,
-        timestamp: '1710000000',
-        transfer: {
-          amount: '60000',
-          fee: '141',
-          from: WALLET,
-          to: COUNTERPARTY,
-        },
-      },
+      // The unconfirmed receipt is the newest, so it comes first.
       {
         address: WALLET,
         blockHash: undefined,
@@ -131,6 +117,21 @@ describe('Bitcoin history fetching', () => {
           fee: '0',
           from: COUNTERPARTY,
           to: WALLET,
+        },
+      },
+      {
+        address: WALLET,
+        blockHash: BLOCK_HASH,
+        blockHeight: 100,
+        extrinsicHash: TXID_1,
+        id: TXID_1,
+        success: true,
+        timestamp: '1710000000',
+        transfer: {
+          amount: '60000',
+          fee: '141',
+          from: WALLET,
+          to: COUNTERPARTY,
         },
       },
     ]);

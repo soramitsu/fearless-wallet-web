@@ -328,6 +328,8 @@ async function fetchBitcoinHistory(
 
   const client = new BitcoinEsploraClient({ baseUrl: url, network });
   const transactionPages = await fetchBitcoinAddressTransactionPages(client, normalizedAddresses);
+  // Unconfirmed transactions have no block time yet but are the newest, so they lead the list.
+  const sortTime = (transaction: BitcoinEsploraTransaction) => transaction.status.block_time ?? Number.MAX_SAFE_INTEGER;
   const transactions = Array.from(
     transactionPages
       .reduce<Map<string, BitcoinEsploraTransaction>>((result, page) => {
@@ -344,7 +346,7 @@ async function fetchBitcoinHistory(
         return result;
       }, new Map())
       .values()
-  ).sort((left, right) => (right.status.block_time ?? 0) - (left.status.block_time ?? 0));
+  ).sort((left, right) => sortTime(right) - sortTime(left));
 
   return transactions.reduce<HistoryElement[]>((result, transaction) => {
     const historyElement = toBitcoinHistoryElement(transaction, normalizedAddresses);

@@ -4,6 +4,8 @@ This security update limits existing local wallets to recovery actions: backup e
 
 Bitcoin support covers viewing addresses, balances and transaction history, and sending BTC.
 
+Solana support covers viewing your address and SOL balance, sending SOL, and connecting to compatible Solana apps, where you approve each request. Balances and sends use public Solana nodes with automatic failover, and history links to a block explorer. Token balances and token transfers need a Solana node that accepts extension requests, which you can add under Switch node.
+
 SORA Nexus Taira testnet supports account balances, transaction history, sending testnet XOR, and connections to compatible decentralized apps, with signing approval for eligible new wallets. Mainnet is disabled by default.
 
 You can export password-encrypted backups and optionally store them in your private Google Drive application-data folder. See the linked privacy notice for local storage, network requests, app permissions and backup details.

@@ -46,6 +46,7 @@
     "test:upgrade:snapshot": "node scripts/upgrade-e2e/build-legacy.mjs && node scripts/upgrade-e2e/build-head.mjs && node scripts/upgrade-e2e/run.mjs --snapshot S1 S2 S3 S4 S5 S6 S7 S8",
     "audit:bundle-hosts": "node scripts/audit-bundle-hosts.mjs",
     "test:smoke:portfolio-screenshots": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs --portfolio-screenshots",
+    "audit:portfolio-dashboard-absent": "node scripts/check-portfolio-dashboard-absent.mjs dist/extension/chrome",
     "audit:chrome-release": "node scripts/audit-chrome-release.mjs",
     "audit:chrome-release:artifact": "node scripts/audit-chrome-release.mjs --release",
     "audit:chrome-release:source": "node scripts/audit-release-source.mjs",

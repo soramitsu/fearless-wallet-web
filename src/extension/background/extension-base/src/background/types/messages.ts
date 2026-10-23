@@ -126,6 +126,8 @@ import type {
   RequestUpdateMeta,
   RequestTotalBalances,
   ResponseTotalBalances,
+  RequestPortfolioHoldings,
+  ResponsePortfolioHoldings,
   RequestSigningSubscribe,
   FetchBalanceRequest,
   ResponseNftTransfer,
@@ -236,6 +238,7 @@ export interface RequestSignatures {
   'pri(accounts.update.current)': [RequestUpdateCurrentAccount, boolean];
   'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.totalBalances)': [RequestTotalBalances | null, ResponseTotalBalances[]];
+  'pri(accounts.portfolioHoldings)': [RequestPortfolioHoldings | null, ResponsePortfolioHoldings[]];
   'pri(accounts.getHistory)': [RequestGetHistory, TonEventTokens];
 
   // App Management - networks

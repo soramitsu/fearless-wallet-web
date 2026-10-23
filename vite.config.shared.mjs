@@ -159,6 +159,20 @@ export function resolveFwPalette(env = process.env) {
   return palette;
 }
 
+/**
+ * Whether this build carries the portfolio dashboard (src/portfolio/dashboard/dashboardFlag.ts), as the string 'true' or
+ * 'false'. It is on only for a build that sets `VUE_APP_PORTFOLIO_DASHBOARD=true` and is not in `production` mode, so a
+ * release can never carry it. The decision is made here, once, and reaches the bundle as a literal: a build without the
+ * dashboard folds away every branch that tests it, dynamic imports included, and ships none of its code or strings.
+ * `mode` is the bundler's own (`--mode production` for a release); `NODE_ENV` is no use here, it is 'production' for
+ * every build.
+ */
+export function portfolioDashboardBuildFlag(mode, env = process.env) {
+  return env.VUE_APP_PORTFOLIO_DASHBOARD === 'true' && typeof mode === 'string' && mode !== '' && mode !== 'production'
+    ? 'true'
+    : 'false';
+}
+
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
   const nodeEnv = mode === 'production' ? 'production' : 'development';
@@ -166,6 +180,7 @@ export function makeDefine(mode, extraEnv = {}) {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
     'process.env.VITE_FW_PALETTE': JSON.stringify(resolveFwPalette(env)),
+    'process.env.FW_PORTFOLIO_DASHBOARD': JSON.stringify(portfolioDashboardBuildFlag(mode, env)),
   };
 
   for (const key of ENV_KEYS) {

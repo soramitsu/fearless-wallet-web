@@ -9,6 +9,8 @@ import type {
   ResponseRestoreDeletedWallet,
   RequestTotalBalances,
   ResponseTotalBalances,
+  RequestPortfolioHoldings,
+  ResponsePortfolioHoldings,
   ResponseAccountExport,
   ResponseExportSeed,
   TonImportCandidateInfo,
@@ -119,6 +121,11 @@ export function updatePairMeta(address: string, meta: Partial<FWKeyringMeta>): P
 
 export function getTotalBalances(request: RequestTotalBalances | null = null): Promise<ResponseTotalBalances[]> {
   return sendMessage('pri(accounts.totalBalances)', request);
+}
+
+/** Every wallet's counted holdings in one read, for the portfolio dashboard. It never moves or signs anything. */
+export function getPortfolioHoldings(request: RequestPortfolioHoldings | null = null): Promise<ResponsePortfolioHoldings[]> {
+  return sendMessage('pri(accounts.portfolioHoldings)', request);
 }
 
 export function getHistory(address: string, network: NetworkName): Promise<TonEventTokens> {

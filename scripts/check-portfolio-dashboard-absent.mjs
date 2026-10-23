@@ -1,0 +1,53 @@
+/* global console, process */
+// Fails when a build carries any part of the portfolio dashboard. The dashboard is behind a build flag that is never on in
+// production (src/portfolio/dashboard/dashboardFlag.ts); this is the check that a production extension really has none of
+// it, so a stray static import cannot ship it unnoticed. Usage: node scripts/check-portfolio-dashboard-absent.mjs <dir>
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** Text that exists only in the dashboard's screens, styles and storage. */
+export const DASHBOARD_MARKERS = ['How we count your balance', 'Winged sun with your allocation', '--fw-chart-1', 'dashboard-v1', 'allWalletsPanel'];
+/** File names of its screens and of the four layers of the winged sun it draws. */
+export const DASHBOARD_FILE_PATTERNS = [
+  /Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet)/,
+  /(^|\/)(wings|uraeus-left|uraeus-right|sun-disc)(-[\w-]+)?\.svg$/,
+];
+
+async function* files(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const full = path.join(directory, entry.name);
+
+    if (entry.isDirectory()) yield* files(full);
+    else if (entry.isFile()) yield full;
+  }
+}
+
+/** Every way the build at `directory` carries the dashboard; empty when it does not. */
+export async function findDashboardInBuild(directory) {
+  const problems = [];
+
+  for await (const file of files(directory)) {
+    const relative = path.relative(directory, file).split(path.sep).join('/');
+
+    if (DASHBOARD_FILE_PATTERNS.some((pattern) => pattern.test(relative))) problems.push(`${relative}: a dashboard file`);
+    if (!/\.(js|mjs|css|html|json|svg)$/.test(relative)) continue;
+
+    const text = await readFile(file, 'utf8');
+
+    for (const marker of DASHBOARD_MARKERS) if (text.includes(marker)) problems.push(`${relative}: contains "${marker}"`);
+  }
+
+  return problems;
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const directory = path.resolve(process.argv[2] ?? 'dist/extension/chrome');
+  const problems = await findDashboardInBuild(directory);
+
+  if (problems.length) {
+    console.error(`The build at ${directory} carries the portfolio dashboard:\n${problems.map((problem) => `- ${problem}`).join('\n')}`);
+    process.exit(1);
+  }
+  console.info(`The build at ${directory} carries no part of the portfolio dashboard.`);
+}

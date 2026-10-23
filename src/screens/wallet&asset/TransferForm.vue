@@ -156,11 +156,31 @@
                 :value="`${crossChainRuntimeMinimum} ${sendAssetName?.toUpperCase()}`"
               />
 
+              <template v-if="isTransfer">
+                <InfoRow
+                  v-if="solanaAccountCreationDeposit"
+                  text="assets.solanaAccountCreation"
+                  :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+                  data-testid="solanaAccountCreation"
+                />
+                <p v-if="solanaAccountCreationDeposit" class="send-note">
+                  {{ $t('assets.solanaAccountCreationHint', { asset: sendAssetName?.toUpperCase() }) }}
+                </p>
+              </template>
+
               <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot name="step2" v-else-if="step === 2"></slot>
+            <template v-else-if="step === 2">
+              <slot name="step2"></slot>
+
+              <InfoRow
+                v-if="isTransfer && solanaAccountCreationDeposit"
+                text="assets.solanaAccountCreation"
+                :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+              />
+            </template>
           </div>
 
           <FButton
@@ -229,7 +249,12 @@ import { Reasons } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
-import type { AccountJson, RequestCheckTransfer, RequestCheckCrossChain } from '@extension-base/background/types/types';
+import type {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  ResponseSolanaTransferQuote,
+} from '@extension-base/background/types/types';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
@@ -263,6 +288,7 @@ import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
 const VALID_BITCOIN_ADDRESS = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4';
 const VALID_BITCOIN_TESTNET_ADDRESS = 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx';
@@ -297,6 +323,7 @@ export default defineComponent({
   data() {
     return {
       networksStore: useNetworksStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
       accountsStore: useAccountsStore(),
       timeoutSubscription: undefined as ReturnType<typeof setTimeout> | undefined,
       timeoutSetMax: undefined as ReturnType<typeof setTimeout> | undefined,
@@ -316,6 +343,7 @@ export default defineComponent({
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
       crossChainRuntimeMinimum: '',
+      solanaQuote: null as ResponseSolanaTransferQuote | null,
       isScamAddress: false,
       scamInfo: null,
       step: 1,
@@ -449,7 +477,9 @@ export default defineComponent({
     buttonText() {
       if (!navigator.onLine) return 'common.offlineStatus';
 
-      if (this.isBitcoinTransferDisabled) return 'assets.bitcoinTransfersDisabled';
+      if (this.isBitcoinTransferDisabled) {
+        return BaseApi.isSolanaNetwork(this.syncedNetwork) ? 'common.featureOff' : 'assets.bitcoinTransfersDisabled';
+      }
 
       if (!this.currency) return '';
 
@@ -518,7 +548,7 @@ export default defineComponent({
     isBitcoinTransferDisabled() {
       if (!this.isTransfer) return false;
 
-      return !isNetworkTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork));
+      return !isNetworkTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork), this.sendKillSwitchStore.vetoes);
     },
     isValidRecipientAddress() {
       if (this.isSameAddress) return false;
@@ -582,7 +612,7 @@ export default defineComponent({
         return prepBalances.some(({ name }) => {
           const { active, rank, favorite } = this.networksStore.getNetwork(name);
 
-          if (!active || !isNetworkTransferEnabled(this.networksStore.getNetwork(name))) return false;
+          if (!active || !isNetworkTransferEnabled(this.networksStore.getNetwork(name), this.sendKillSwitchStore.vetoes)) return false;
 
           if (this.isSelectedNetworkGroup) {
             if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
@@ -608,7 +638,9 @@ export default defineComponent({
 
       if (this.isTransfer) {
         const balances = this.accountsStore.balances.filter(({ balances: networkBalances }) =>
-          networkBalances.some(({ name }) => isNetworkTransferEnabled(this.networksStore.getNetwork(name)))
+          networkBalances.some(({ name }) =>
+            isNetworkTransferEnabled(this.networksStore.getNetwork(name), this.sendKillSwitchStore.vetoes)
+          )
         );
 
         return getCurrencyOptions(balances);
@@ -633,7 +665,7 @@ export default defineComponent({
       return walletBalance.flatMap(({ name, icon }) => {
         const network = this.networksStore.getNetwork(name);
 
-        if (!network.active || !isNetworkTransferEnabled(network)) return [];
+        if (!network.active || !isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes)) return [];
 
         return [
           {
@@ -703,6 +735,11 @@ export default defineComponent({
       // проверяем, что utility balance достаточно на оплату fee и ED
       return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
     },
+    solanaAccountCreationDeposit() {
+      const deposit = this.solanaQuote?.accountCreationDeposit;
+
+      return deposit && +deposit > 0 ? deposit : '';
+    },
     transactionAddress() {
       return getTransactionAddress(this.accountsStore.selectedWallet, this.syncedNetwork);
     },
@@ -720,6 +757,8 @@ export default defineComponent({
           ...baseRequest,
           networkKey: this.syncedNetwork,
           approvedMaxFee: this.syncedFee,
+          // The send pays the priority fee the user reviewed.
+          solanaComputeUnitPriceMicroLamports: this.solanaQuote?.computeUnitPriceMicroLamports,
         } as RequestCheckTransfer;
 
       return {
@@ -866,6 +905,7 @@ export default defineComponent({
       this.syncedFee = '';
       this.syncedDestNetFee = '';
       this.crossChainExecutionFingerprint = '';
+      this.solanaQuote = null;
       this.isFetchingFees = true;
       if (!this.currency || this.isBitcoinTransferDisabled) return;
 
@@ -884,9 +924,11 @@ export default defineComponent({
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
-        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors } = await this.verifyTx();
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, solana } = await this.verifyTx();
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         const transferError = errors?.[0];
+
+        this.solanaQuote = solana ?? null;
 
         if (transferError) {
           this.estimateFeeError = true;
@@ -904,6 +946,7 @@ export default defineComponent({
         this.syncedDestNetFee = '';
         this.crossChainExecutionFingerprint = '';
         this.crossChainRuntimeMinimum = '';
+        this.solanaQuote = null;
         this.$emit('update:runtimeMinimum', '');
       } finally {
         if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
@@ -1017,6 +1060,7 @@ export default defineComponent({
           : this.calcTransferableSendMinusFee(quote.estimateFee);
 
         this.syncedFee = quote.estimateFee;
+        this.solanaQuote = ('solana' in quote ? quote.solana : undefined) ?? null;
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
@@ -1038,7 +1082,9 @@ export default defineComponent({
           ? this.syncedRecipient
           : this.getFeeEstimateRecipient();
 
-      const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0' ? this.syncedAmount : '1');
+      const hasAmount = this.syncedAmount !== '' && this.syncedAmount !== '0';
+      // Without an amount a Solana quote prices only the fee and the maximum, so it never reports a balance shortfall.
+      const amount = _amount ?? (hasAmount ? this.syncedAmount : this.isTransfer && BaseApi.isSolanaNetwork(this.syncedNetwork) ? '0' : '1');
 
       if (this.isTransfer) {
         const ex = await checkTransfer({
@@ -1074,6 +1120,11 @@ export default defineComponent({
         return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.targetNetwork)
           ? VALID_BITCOIN_TESTNET_ADDRESS
           : VALID_BITCOIN_ADDRESS;
+      }
+
+      // Until a recipient is entered, a Solana quote prices a transfer to the wallet's own Solana address.
+      if (BaseApi.isSolanaNetwork(this.targetNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.targetNetwork);
       }
 
       return BaseApi.formatAddress(
@@ -1185,6 +1236,14 @@ export default defineComponent({
 </style>
 
 <style lang="scss" scoped>
+.send-note {
+  margin: 6px 0 0;
+  color: $gray-color;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .network-transfer-link {
   display: block;
   color: $pink-lavender-color;

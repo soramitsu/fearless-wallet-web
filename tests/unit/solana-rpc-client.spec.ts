@@ -203,6 +203,16 @@ describe('SolanaRpcClient', () => {
     expect(fetchFn.mock.calls[0][0]).toBe('https://rpc.example/solana/?api-key=secret-key');
   });
 
+  it('trims trailing slashes from an address without a query, never from a key that ends in one', () => {
+    const fetchFn = vi.fn();
+
+    expect(new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example/solana//' }).rpcUrls).toEqual(['https://rpc.example/solana']);
+    expect(new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example' }).rpcUrls).toEqual(['https://rpc.example']);
+    expect(new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example/?api-key=ab/' }).rpcUrls).toEqual([
+      'https://rpc.example/?api-key=ab/',
+    ]);
+  });
+
   it('throws typed errors for HTTP failures, JSON-RPC errors, malformed JSON, and bad shapes', async () => {
     const httpFailure = new SolanaRpcClient({
       fetchFn: vi.fn(async () => jsonResponse({ error: 'down' }, 503)),

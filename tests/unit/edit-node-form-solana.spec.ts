@@ -1,6 +1,7 @@
 vi.mock('@/extension/messaging', () => ({ upsertNetworkMap: vi.fn() }));
 
 import EditNodeForm from '@/screens/accounts/EditNodeForm.vue';
+import { upsertNetworkMap } from '@/extension/messaging';
 
 type FormMethod = (this: Record<string, unknown>) => unknown;
 const component = EditNodeForm as unknown as { methods: Record<string, FormMethod> };
@@ -50,6 +51,33 @@ describe('Adding a custom node', () => {
     expect(hasError('https://rpc.example', substrate)).toBe(true);
     expect(hasError('https://api.example', etherscan)).toBe(false);
     expect(hasError('wss://api.example', etherscan)).toBe(true);
+  });
+
+  it('saves a new Solana node and selects it', () => {
+    const emit = vi.fn();
+    const networkJson = { customNodes: [{ name: 'OLD', url: 'https://old.example/rpc' }], ecosystem: 'solana', key: 'Solana' };
+    const form: Record<string, unknown> = {
+      $emit: emit,
+      name: 'KEYED',
+      networkJson,
+      nodeName: '',
+      nodeUrl: '',
+      url: 'https://mainnet.helius-rpc.com/?api-key=0123456789',
+      urlLength: 52,
+    };
+
+    component.methods.updateNodes.call(form);
+
+    expect(upsertNetworkMap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentProvider: 'https://mainnet.helius-rpc.com/?api-key=0123456789',
+        customNodes: [
+          { name: 'OLD', url: 'https://old.example/rpc' },
+          { name: 'KEYED', url: 'https://mainnet.helius-rpc.com/?api-key=0123456789' },
+        ],
+      })
+    );
+    expect(emit).toHaveBeenCalledWith('closeForm', true);
   });
 
   it('flags a node the network already has before looking at its address', () => {

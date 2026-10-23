@@ -341,35 +341,51 @@ class SolanaRpcClient {
     const lastValidHeights = queries.map(({ lastValidBlockHeight }) =>
       requireSafeInteger(lastValidBlockHeight, 'invalid_block_height')
     );
+    // Every endpoint is asked at once, so a node that hangs costs one timeout, not one in turn.
+    const answers = await Promise.all(
+      this.endpoints.endpoints.map(async (rpcUrl) => {
+        try {
+          // Asked in this order, so the lookup is at least as recent as the progress it is judged against.
+          const finalized = await this.requestOnce(
+            rpcUrl,
+            'getEpochInfo',
+            [{ commitment: 'finalized' }],
+            normalizeFinalizedProgress
+          );
+          const observed = await this.requestOnce(
+            rpcUrl,
+            'getSignatureStatuses',
+            [signatures, { searchTransactionHistory: true }],
+            (value) => normalizeSignatureStatusesWithContext(value, signatures.length)
+          );
+
+          return { finalized, observed };
+        } catch (error) {
+          return { error };
+        }
+      })
+    );
     const verdicts: Array<SolanaSignatureResolution | undefined> = queries.map(() => undefined);
     let lastError: unknown;
 
-    for (const rpcUrl of this.endpoints.endpoints) {
-      try {
-        // Asked in this order, so the lookup is at least as recent as the progress it is judged against.
-        const finalized = await this.requestOnce(
-          rpcUrl,
-          'getEpochInfo',
-          [{ commitment: 'finalized' }],
-          normalizeFinalizedProgress
-        );
-        const observed = await this.requestOnce(
-          rpcUrl,
-          'getSignatureStatuses',
-          [signatures, { searchTransactionHistory: true }],
-          (value) => normalizeSignatureStatusesWithContext(value, signatures.length)
-        );
+    for (const answer of answers) {
+      if ('error' in answer) {
+        lastError = answer.error;
 
-        verdicts.forEach((previous, index) => {
-          const next = judgeSignature(observed.statuses[index], lastValidHeights[index], finalized, observed.slot);
-
-          verdicts[index] = previous === undefined || VERDICT_STRENGTH[next.state] > VERDICT_STRENGTH[previous.state] ? next : previous;
-        });
-      } catch (error) {
-        lastError = error;
+        continue;
       }
 
-      if (verdicts.every((verdict) => verdict?.state === 'landed')) break;
+      verdicts.forEach((previous, index) => {
+        const next = judgeSignature(
+          answer.observed.statuses[index],
+          lastValidHeights[index],
+          answer.finalized,
+          answer.observed.slot
+        );
+
+        verdicts[index] =
+          previous === undefined || VERDICT_STRENGTH[next.state] > VERDICT_STRENGTH[previous.state] ? next : previous;
+      });
     }
 
     if (verdicts.some((verdict) => verdict === undefined)) {
@@ -752,7 +768,11 @@ function normalizeParsedAccount(value: unknown): SolanaParsedAccount {
 }
 
 function normalizeSignatureStatus(value: unknown): SolanaSignatureStatus {
-  if (!isRecord(value)) throw new SolanaRpcError('invalid_signature_status_response');
+  // `confirmations: null` is how a node reports a rooted transaction, so the field must be there: a status that omits
+  // it would otherwise read as rooted.
+  if (!isRecord(value) || !('confirmations' in value) || !('err' in value)) {
+    throw new SolanaRpcError('invalid_signature_status_response');
+  }
 
   const confirmationStatus = value.confirmationStatus;
 
@@ -797,10 +817,11 @@ function normalizeRpcUrl(rpcUrl: string): string {
     throw new SolanaRpcError('invalid_rpc_url');
   }
 
-  // A provider's key may sit in the query string, so only the fragment is dropped.
+  // A provider's key may sit in the query string, so only the fragment is dropped, and trailing slashes are trimmed
+  // only from an address that has no query (a slash there can belong to the key).
   url.hash = '';
 
-  return url.toString().replace(/\/+$/, '');
+  return url.search === '' ? url.toString().replace(/\/+$/, '') : url.toString();
 }
 
 function normalizeNetwork(network: SolanaRpcNetwork): SolanaRpcNetwork {

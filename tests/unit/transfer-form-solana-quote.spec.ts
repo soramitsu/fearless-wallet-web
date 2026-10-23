@@ -147,8 +147,10 @@ describe('Solana quote on the send form', () => {
 
       checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
       await component.methods.setMax.call(form);
-      // The amount watcher then quotes the entered amount again.
+      // The amount watcher then clears the quote and schedules a new one, which quotes the entered amount.
       form.syncedAmount = '12.5';
+      component.methods.calculateFee.call(form);
+      clearTimeout(form.timeoutSubscription as ReturnType<typeof setTimeout>);
       checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
       await component.methods.verifyTx.call(form);
 
@@ -168,13 +170,16 @@ describe('Solana quote on the send form', () => {
       expect(lastPin()).toBeUndefined();
     });
 
-    it("does not carry Max's price to another asset or network", async () => {
+    it.each([
+      ['asset', { syncedAssetId: 'SOL' }],
+      ['network', { syncedNetwork: 'Solana Devnet' }],
+    ])("does not carry Max's price to another %s", async (_label, change) => {
       const form = context();
 
       checkTransfer.mockResolvedValueOnce(maxQuote(1_000));
       await component.methods.setMax.call(form);
       form.syncedAmount = '12.5';
-      form.syncedAssetId = 'SOL';
+      Object.assign(form, change);
       checkTransfer.mockResolvedValueOnce({ estimateFee: '0.000006', destEstimateFee: '0', solana: quote() });
       await component.methods.verifyTx.call(form);
 

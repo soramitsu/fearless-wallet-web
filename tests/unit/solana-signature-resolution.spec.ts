@@ -32,13 +32,13 @@ const json = (body: unknown, status = 200) =>
 const answer = (request: Request, result: unknown) => json({ id: request.id, jsonrpc: '2.0', result });
 
 function serve(nodes: Record<string, Node>) {
-  const calls: Array<{ method: string; url: string }> = [];
+  const calls: Array<{ method: string; params?: unknown[]; url: string }> = [];
   const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
     const url = String(input);
     const request = JSON.parse(String(init?.body)) as Request;
     const node = nodes[url];
 
-    calls.push({ method: request.method, url });
+    calls.push({ method: request.method, params: request.params, url });
     if (!node) throw new Error(`unexpected request to ${url}`);
 
     if (request.method === 'getGenesisHash') return answer(request, node.genesis ?? MAINNET);
@@ -101,6 +101,9 @@ describe('Solana signature resolution', () => {
     ]);
     // Finality is read first, so the lookup is at least as recent as the progress it is judged against.
     expect(calls.map(({ method }) => method)).toEqual(['getEpochInfo', 'getSignatureStatuses']);
+    // The progress must be finalized, not merely confirmed, and the lookup must reach the node's history.
+    expect(calls[0].params).toEqual([{ commitment: 'finalized' }]);
+    expect(calls[1].params).toEqual([[SIGNATURE], { searchTransactionHistory: true }]);
   });
 
   it('does not call a transaction expired until the node has finalized past its last valid block', async () => {
@@ -228,17 +231,54 @@ describe('Solana signature resolution', () => {
       await expect(client.resolveSignatures(query)).resolves.toEqual([{ state: 'landed', status: confirmed }]);
     });
 
-    it('does not ask the remaining nodes once every transaction has landed', async () => {
+    it('asks every node at once, so a node that hangs costs one timeout and does not delay the others', async () => {
+      vi.useFakeTimers();
+
+      try {
+        const hung = uniqueUrl('hung');
+        const fast = uniqueUrl('fast');
+        const { calls, fetchFn } = serve({ [hung]: proof(), [fast]: proof() });
+        const client = new SolanaRpcClient({
+          failover: { rounds: 1, sleep: async () => undefined },
+          fetchFn: (input, init) => (String(input) === hung ? new Promise<Response>(() => undefined) : fetchFn(input, init)),
+          requestTimeoutMs: 30_000,
+          rpcUrls: [hung, fast],
+        });
+        const resolved = client.resolveSignatures(query);
+
+        await vi.advanceTimersByTimeAsync(10);
+        // The fast node has already been asked both questions while the other is still silent.
+        expect(calls.filter(({ url }) => url === fast).map(({ method }) => method)).toEqual([
+          'getEpochInfo',
+          'getSignatureStatuses',
+        ]);
+
+        await vi.advanceTimersByTimeAsync(30_000);
+        await expect(resolved).resolves.toEqual([{ state: 'expired' }]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('judges every transaction on its own across the nodes', async () => {
       const first = uniqueUrl('first');
       const second = uniqueUrl('second');
-      const { calls, client } = clientFor({
-        [first]: { finalized: { blockHeight: 5, slot: 10 }, lookup: { slot: 11, value: [confirmed] } },
-        [second]: proof(),
+      const processed = { confirmationStatus: 'processed', confirmations: 0, err: null, slot: 995 };
+      const { client } = clientFor({
+        [first]: { finalized: { blockHeight: LAST_VALID + 10, slot: 1_000 }, lookup: { slot: 1_001, value: [null, null, null] } },
+        [second]: {
+          finalized: { blockHeight: LAST_VALID + 10, slot: 1_000 },
+          lookup: { slot: 1_001, value: [null, processed, confirmed] },
+        },
       });
+      const resolutions = await client.resolveSignatures([
+        { lastValidBlockHeight: LAST_VALID, signature: SIGNATURE },
+        { lastValidBlockHeight: LAST_VALID, signature: OTHER_SIGNATURE },
+        { lastValidBlockHeight: LAST_VALID, signature: THIRD_SIGNATURE },
+      ]);
 
-      await client.resolveSignatures(query);
-
-      expect(calls.some(({ url }) => url === second)).toBe(false);
+      // Both nodes prove the first expired; the second has seen the next; the last is confirmed on one of them.
+      expect(state(resolutions)).toEqual(['expired', 'pending', 'landed']);
     });
 
     it('stands on one node when the others cannot answer', async () => {
@@ -287,7 +327,18 @@ describe('Solana signature resolution', () => {
       expect(calls).toEqual([]);
     });
 
+    it('refuses more than 256 signatures at once, before asking anyone', async () => {
+      const node = uniqueUrl('node');
+      const { calls, client } = clientFor({ [node]: {} });
+      const many = Array.from({ length: 257 }, () => ({ lastValidBlockHeight: LAST_VALID, signature: SIGNATURE }));
+
+      await expect(client.resolveSignatures(many)).rejects.toThrow('invalid_signatures');
+      expect(calls).toEqual([]);
+    });
+
     it.each<[string, NonNullable<Node['lookup']>]>([
+      ['with a status that omits confirmations, which would read as rooted', { slot: 1_001, value: [{ err: null, slot: 900 }] }],
+      ['with a status that omits err', { slot: 1_001, value: [{ confirmations: null, confirmationStatus: 'finalized', slot: 900 }] }],
       ['without a context slot', { raw: { value: [null] } }],
       ['for a different number of signatures', { slot: 1_001, value: [null, null] }],
     ])('treats a lookup answered %s as no answer', async (_label, lookup) => {

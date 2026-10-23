@@ -463,6 +463,82 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
 
     await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_transaction_expired');
     expect(store.records).toEqual([]);
+    // Judged against the blockhash's own last valid height, as quoted.
+    expect(client.resolveSignatures).toHaveBeenCalledWith([{ lastValidBlockHeight: 456, signature: expect.any(String) }]);
+  });
+
+  it('reports a transfer the network ran and failed as failed, not as sent', async () => {
+    const store = memoryPendingStore();
+    const client = createClient({
+      blockHeights: [100],
+      statuses: [
+        null,
+        null,
+        null,
+        { confirmationStatus: 'confirmed', confirmations: 1, err: { InstructionError: [0, 'Custom'] }, slot: 4 },
+      ],
+    });
+    const params = solParams();
+
+    await expect(makeSolanaTransfer(params, client, sendOptions(store))).rejects.toThrow('solana_transaction_failed');
+    expect(params.callback).not.toHaveBeenCalled();
+    expect(store.records).toEqual([]);
+  });
+
+  describe('against the real signature resolution', () => {
+    // Epoch info and the signature lookup answered by one node, through the real client.
+    const withNode = (answer: { blockHeight: number; lookup: { slot: number; value: unknown[] }; slot: number }) => {
+      const fetchFn = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+        const result =
+          body.method === 'getEpochInfo'
+            ? { absoluteSlot: answer.slot, blockHeight: answer.blockHeight, epoch: 1, slotIndex: 1, slotsInEpoch: 432_000 }
+            : { context: { slot: answer.lookup.slot }, value: answer.lookup.value };
+
+        return new Response(JSON.stringify({ id: body.id, jsonrpc: '2.0', result }), { status: 200 });
+      });
+      const rpc = new SolanaRpcClient({ fetchFn: fetchFn as never, rpcUrls: ['https://resolution.example'] });
+      // Plain status polls say "no trace"; only the expiry check reaches the node.
+      const client = { ...createClient({ statuses: [null] }), resolveSignatures: rpc.resolveSignatures.bind(rpc) };
+
+      return { client, fetchFn };
+    };
+
+    it('reports a send expired once a node finalized past the last valid block and still has no trace', async () => {
+      const store = memoryPendingStore();
+      const { client } = withNode({ blockHeight: 457, lookup: { slot: 1_001, value: [null] }, slot: 1_000 });
+
+      await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_transaction_expired');
+      expect(store.records).toEqual([]);
+    });
+
+    it('keeps the send open when the lookup came from a backend older than the finalized progress', async () => {
+      const store = memoryPendingStore();
+      const { client } = withNode({ blockHeight: 457, lookup: { slot: 999, value: [null] }, slot: 1_000 });
+      const error = await makeSolanaTransfer(solParams(), client, sendOptions(store)).catch((reason: unknown) => reason);
+
+      expect(error).toBeInstanceOf(SolanaTransactionStatusUnknownError);
+      expect(store.records).toHaveLength(1);
+    });
+
+    it('does not release the record of an earlier send while the node has not finalized past it', async () => {
+      const record: SolanaPendingSend = { accountAddress: 'stored-account', createdAt: 1, lastValidBlockHeight: 456,
+        network: 'mainnet', signature: '5'.repeat(88), transactionBase64: 'AQID' };
+      const { client } = withNode({ blockHeight: 456, lookup: { slot: 1_001, value: [null] }, slot: 1_000 });
+      const { resolved, unresolved } = await resolveSolanaPendingSends([record], client, undefined, false);
+
+      expect(resolved).toEqual([]);
+      expect(unresolved).toEqual([record]);
+    });
+
+    it('releases the record of an earlier send once the node proves it expired', async () => {
+      const record: SolanaPendingSend = { accountAddress: 'stored-account', createdAt: 1, lastValidBlockHeight: 456,
+        network: 'mainnet', signature: '5'.repeat(88), transactionBase64: 'AQID' };
+      const { client } = withNode({ blockHeight: 457, lookup: { slot: 1_001, value: [null] }, slot: 1_000 });
+      const { resolved } = await resolveSolanaPendingSends([record], client, undefined, false);
+
+      expect(resolved).toEqual([record]);
+    });
   });
 
   it('keeps polling after a lost broadcast response and rebroadcasts the same bytes', async () => {

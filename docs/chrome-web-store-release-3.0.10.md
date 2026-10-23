@@ -19,18 +19,26 @@ upgrade notice, privacy notice and metadata corrections).
 - A send whose outcome the network has not settled is shown as unconfirmed with
   its signature, and the wallet will not start another Solana send until the
   first is resolved, so a lost reply can never be paid twice.
+- Max keeps the priority fee it quoted for the amount it fills in, so a fee that
+  moves in between can neither turn the exact maximum into a shortfall nor leave
+  less than the network's minimum balance behind.
 - SOL balances now show a fiat value and count toward totals. The price lookup
   asked for `sol`, which the price service does not know; it now asks for
   `solana`.
 - History links to Solscan, so the list is never an empty dead end.
 - Compatible Solana apps can connect and request signatures, as before; you
   approve each request, and a dApp's send-and-sign uses the same safe broadcast.
+  When a broadcast may already have reached the network, the app is handed the
+  transaction's id (its first signature, the fee payer's), not an error, so it
+  follows the transaction instead of asking for a second one.
 - Token (SPL) balances and token sends need a Solana node that accepts requests
   from browser extensions. The public nodes currently refuse them, so SOL works
   out of the box and tokens appear after you add such a node: open an asset on
-  the Solana network, choose **Switch node**, then **Add custom nodes**. Saving a
-  custom Solana node previously failed with an error after storing it; that is
-  fixed.
+  the Solana network, choose **Switch node**, then **Add custom nodes**. A node
+  address is an `https://` JSON-RPC address (a provider key in the path or the
+  query string is kept); the node you pick is tried first. Saving a custom
+  Solana node previously failed with an error after storing it, and the form
+  accepted only `wss://` addresses; both are fixed.
 
 ## How it reads and sends
 
@@ -44,6 +52,12 @@ upgrade notice, privacy notice and metadata corrections).
   one. The signed transaction is recorded before it is broadcast and is only
   rebroadcast unchanged; a send settles on a confirmed status or after its
   blockhash expires.
+- A blockhash counts as expired only when one node, on its own, reports that it
+  has finalized past the transaction's last valid block and, from a state at
+  least that recent, still has no trace of the signature. Answers from different
+  nodes are never combined, a node that has seen the signature or has not caught
+  up keeps the send open, and a confirmed status from any node ends it as
+  landed. Until then the wallet will not sign another Solana send.
 - Solana sends ship enabled. A veto-only, sticky remote switch can stop them in
   an emergency and can never enable anything; see `docs/send-kill-switch.md`.
 

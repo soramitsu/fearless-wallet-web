@@ -13,6 +13,7 @@ import {
   type ReviewedExecutionApi,
 } from '@/cross-chain/reviewedExecution';
 import { assertReviewedRuntimeAuthority } from '@/cross-chain/reviewedRuntimeAuthority';
+import { assertOriginExecutes, type DryRunApi } from '@/cross-chain/originDryRun';
 import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidation';
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
 
@@ -88,6 +89,7 @@ function assertReviewedRouteAndAccount(props: MakeCrossChainProps, state: State)
     destination: state.networkService.networkMap[props.destinationNet],
     tokenBalance,
     amount: props.amount,
+    to: props.to,
     requireAmount: true,
   });
   if (!state.actionCapabilityService.isActionEnabled(validation.action)) {
@@ -172,6 +174,7 @@ export async function estimateCrossChainQuote(props: CrossChainProps, state: Sta
     api: originApi,
   });
   if (!resolved.extrinsic) throw new Error('cross_chain_runtime_execution_drift');
+  await assertOriginExecutes(execution, originApi as unknown as DryRunApi, resolved.extrinsic, substrateAddress);
 
   const paymentInfo = await resolved.extrinsic.paymentInfo(substrateAddress);
   const utility = getUtilityProps(originNet, state);

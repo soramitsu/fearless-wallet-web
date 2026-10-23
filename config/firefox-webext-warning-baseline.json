@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "webExtVersion": "10.6.0",
   "sourceDir": "dist/extension/firefox",
-  "warningCount": 41,
+  "warningCount": 42,
   "warningCodes": {
-    "DANGEROUS_EVAL": 40,
+    "DANGEROUS_EVAL": 41,
     "UNSAFE_VAR_ASSIGNMENT": 1
   },
   "warningFiles": {
@@ -16,9 +16,10 @@
     "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js": 2,
     "chunks/background-vendor/lodash-Ba9bIE_F.js": 1,
     "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
+    "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "2090a8e4a5b04b8aea94e7b620bdc6cfa1018bb946945e42082c07c1430e606c",
+  "warningSetSha256": "bf322f7605bff7f5d7cb940f52474ca712851cec0241dffc3ce316336224d04c",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
@@ -26,7 +27,7 @@
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "279f7f5bc8b5951ddb68df0fd90b71d3f5efe8d7ed197d388611cea6def3a24d"
+      "sha256": "bb1415b175ae8b8de70569c6c77a817f6ca2f027e8d3575cff9693899cc7bba2"
     },
     {
       "file": "chunks/background-vendor/assert-Blv9rAXX.js",
@@ -51,6 +52,10 @@
     {
       "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
       "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js",
+      "sha256": "3ab057a93b06cfa961758ac2a24f1fd17652871f155e3695885b4f6d9da3cc87"
     },
     {
       "file": "chunks/soramitsuUI.js",

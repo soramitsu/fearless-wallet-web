@@ -83,6 +83,10 @@ upgrade notice, privacy notice and metadata corrections).
 - Wallet reset during an in-flight Solana send is not fenced (the 3.0.x keyring
   keeps no reset revision). The send finishes as the user asked, and its
   recorded transaction survives for the next send to resolve.
+- `zod` is resolved to 4.6.6 because a newly flagged advisory
+  (GHSA-mrhx-c7xc-m3w5) covers every earlier version and failed both dependency
+  audits on a clean install; the wallet imports only the TON wallet contract, not
+  the TON HTTP clients that use it (`docs/dependency-audit-exceptions.md`).
 - Bitcoin and Taira sends are unchanged. Their evidence manifests still verify:
   no file listed as a covered transfer path changed.
 
@@ -117,12 +121,14 @@ Per the release plan, a small funded mainnet canary (SOL to a fresh address and
 back) is a team task before staged rollout; no mainnet transaction was made while
 preparing this release.
 
-The Firefox production build at source `e6a39d16` was compared with the
-previously approved warning artifacts (the 3.0.9 build). All 41 warning
-expressions are unchanged (40 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`),
-with zero errors or notices; one `DANGEROUS_EVAL` in `chunks/accounts.js` moved
-51 columns along its line. Only the `chunks/accounts.js` artifact hash changed,
-and the reviewed baseline records it.
+The Firefox production build at source `75dbfaec` was compared with the
+previously approved warning artifacts (the 3.0.9 build). All 41 earlier warning
+expressions are unchanged at the same file, line and column, with zero errors or
+notices. One `DANGEROUS_EVAL` is new: the `Function("")` capability probe in
+`zod` 4.6.6, wrapped in try/catch and never run under the extension CSP, now in
+the `subwallet-keyring` vendor chunk (see the dependency note above). The
+baseline records 42 warnings (41 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`)
+and the new hashes of `chunks/accounts.js` and `chunks/soramitsuUI.js`.
 
 Submit the verified ZIP to the existing Chrome Web Store item with automatic
 publication after approval. If 3.0.9 is still pending review, replace that draft

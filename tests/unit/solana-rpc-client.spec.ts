@@ -403,6 +403,49 @@ describe('SolanaRpcClient broadcast', () => {
     expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, false]);
   });
 
+  it.each([-32603, -32000, -32001, -32007, -32403, -32429])(
+    'does not take JSON-RPC error %i for proof that nothing was relayed: it moves on with preflight skipped',
+    async (code) => {
+      const { client, posts } = nodes({
+        'a.example': (id) => rpcError(id, code, 'gateway failure'),
+        'b.example': (id) => rpcResponse(id, SIGNATURE),
+      });
+
+      // The gateway may have forwarded the transaction before it failed, so the same bytes go to the next node.
+      await expect(client.sendRawTransaction(SIGNED, { skipPreflight: false })).resolves.toBe(SIGNATURE);
+      expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, true]);
+    }
+  );
+
+  it.each([-32603, -32000, -32429])('reports JSON-RPC error %i everywhere as ambiguous, never as nothing sent', async (code) => {
+    const { client, fetchFn } = nodes({
+      'a.example': (id) => rpcError(id, code, 'gateway failure'),
+      'b.example': (id) => rpcError(id, code, 'gateway failure'),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'solana_broadcast_ambiguous',
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([-32002, -32003, -32602, -32600])(
+    'takes JSON-RPC error %i for a verdict given before relaying: nothing was sent and no other node is asked',
+    async (code) => {
+      const { client, fetchFn } = nodes({
+        'a.example': (id) => rpcError(id, code, 'rejected'),
+        'b.example': (id) => rpcResponse(id, SIGNATURE),
+      });
+
+      await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({
+        ambiguous: false,
+        message: 'solana_broadcast_rejected',
+      });
+      expect(fetchFn).toHaveBeenCalledOnce();
+    }
+  );
+
   it('posts to each node once and reports throttling everywhere as ambiguous', async () => {
     const { client, fetchFn } = nodes({
       'a.example': () => new Response('slow down', { status: 429 }),

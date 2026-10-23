@@ -1,6 +1,6 @@
 import type { NetworkJson } from '@extension-base/types';
 import type { UniversalWalletChainRegistry } from '@/util/universalWalletRegistryContract';
-import { UNIVERSAL_WALLET_INDEXERS } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_INDEXERS, UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
 import {
   createUniversalWalletRegistryNetworks,
@@ -37,23 +37,29 @@ describe('Universal Wallet registry network mapping', () => {
       externalApi: { history: { type: 'ton', url: UNIVERSAL_WALLET_INDEXERS.ton } },
     });
     expect(byName['Taira Testnet']).toMatchObject({
-      chainId: 'iroha3-taira',
+      chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId,
       ecosystem: WalletEcosystem.Iroha,
-      externalApi: { history: { type: 'iroha', url: 'https://taira.sora.org/v1/mcp' } },
+      externalApi: { history: { type: 'iroha', url: 'https://taira.sora.org' } },
+    });
+    expect(byName['Taira Testnet'].assets[0]).toMatchObject({
+      id: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.id,
+      precision: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.decimals,
+      symbol: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.symbol,
     });
     expect(byName['SORA Nexus']).toMatchObject({
       active: false,
       disabled: true,
-      externalApi: { history: { type: 'iroha', url: 'https://minamoto.sora.org/v1/mcp' } },
+      externalApi: { history: { type: 'iroha', url: 'https://minamoto.sora.org' } },
     });
     expect(byName['SORA Nexus'].nodes[0]).toMatchObject({
-      name: 'sora-nexus-mainnet-torii-mcp',
-      url: 'https://minamoto.sora.org/v1/mcp',
+      name: 'sora-nexus-mainnet-torii',
+      url: 'https://minamoto.sora.org',
     });
   });
 
   it('supplements missing networks and corrects stale registry-backed history endpoints', () => {
     const solana = createUniversalWalletRegistryNetworks().find(({ name }) => name === 'Solana')!;
+    const taira = createUniversalWalletRegistryNetworks().find(({ name }) => name === 'Taira Testnet')!;
     const networkMap: Record<string, NetworkJson> = {
       Solana: {
         ...solana,
@@ -66,6 +72,10 @@ describe('Universal Wallet registry network mapping', () => {
           },
         } as NetworkJson['externalApi'],
         favorite: ['old-address'],
+      },
+      'Taira Testnet': {
+        ...taira,
+        chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId.toUpperCase(),
       },
     };
 
@@ -81,7 +91,64 @@ describe('Universal Wallet registry network mapping', () => {
     expect(networkMap.Solana.customNodes).toEqual([{ name: 'custom', url: 'https://custom.solana.example' }]);
     expect(networkMap.Solana.favorite).toEqual(['stored-address']);
     expect(networkMap.Bitcoin.chainId).toBe('bitcoin:mainnet');
-    expect(networkMap['Taira Testnet'].chainId).toBe('iroha3-taira');
+    expect(networkMap['Taira Testnet'].chainId).toBe(UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId);
+  });
+
+  it('never prices test-network coins as their mainnet namesakes', () => {
+    const networks = createUniversalWalletRegistryNetworks();
+    const byName = Object.fromEntries(networks.map((network) => [network.name, network]));
+
+    expect(byName.Bitcoin.assets[0].priceId).toBe('btc');
+    expect(byName['Bitcoin Testnet'].assets[0].priceId).toBe('');
+    expect(byName['Taira Testnet'].assets[0].priceId).toBe('');
+
+    const taira = byName['Taira Testnet'];
+    const networkMap: Record<string, NetworkJson> = {
+      'Taira Testnet': { ...taira, assets: [{ ...taira.assets[0], priceId: 'xor' }] },
+    };
+
+    mergeUniversalWalletRegistryNetworks(networkMap, {});
+
+    expect(networkMap['Taira Testnet'].assets[0].priceId).toBe('');
+  });
+
+  it('gives registry coins published icons and upgrades bare stored icons only', () => {
+    const icons = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons';
+    const networks = createUniversalWalletRegistryNetworks();
+    const byName = Object.fromEntries(networks.map((network) => [network.name, network]));
+
+    expect(byName['Taira Testnet'].icon).toBe(`${icons}/chains/white/SORA.svg`);
+    expect(byName['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
+    expect(byName['Bitcoin Testnet'].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
+    expect(byName['Bitcoin Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
+    // shared-features-utils publishes no SOL icon, so the extension bundles one.
+    expect(byName.Solana.icon).toBe('/icons/tokens/coloured/SOL.svg');
+    expect(byName.Solana.assets[0].icon).toBe('/icons/tokens/coloured/SOL.svg');
+
+    const taira = byName['Taira Testnet'];
+    const bitcoin = byName.Bitcoin;
+    const customIcon = 'https://example.org/btc.svg';
+    const networkMap: Record<string, NetworkJson> = {
+      Bitcoin: { ...bitcoin, icon: customIcon, assets: [{ ...bitcoin.assets[0], icon: customIcon }] },
+      'Taira Testnet': { ...taira, icon: 'xor', assets: [{ ...taira.assets[0], icon: 'xor' }] },
+    };
+
+    mergeUniversalWalletRegistryNetworks(networkMap, {});
+
+    expect(networkMap['Taira Testnet'].icon).toBe(`${icons}/chains/white/SORA.svg`);
+    expect(networkMap['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
+    expect(networkMap.Bitcoin.icon).toBe(customIcon);
+    expect(networkMap.Bitcoin.assets[0].icon).toBe(customIcon);
+
+    const solana = byName.Solana;
+    const solanaMap: Record<string, NetworkJson> = {
+      Solana: { ...solana, icon: 'sol', assets: [{ ...solana.assets[0], icon: 'sol' }] },
+    };
+
+    mergeUniversalWalletRegistryNetworks(solanaMap, {});
+
+    expect(solanaMap.Solana.icon).toBe('/icons/tokens/coloured/SOL.svg');
+    expect(solanaMap.Solana.assets[0].icon).toBe('/icons/tokens/coloured/SOL.svg');
   });
 
   it('fails closed when registry validation fails', () => {
@@ -106,8 +173,6 @@ describe('Universal Wallet registry network mapping', () => {
       ],
     } as UniversalWalletChainRegistry;
 
-    expect(() => createUniversalWalletRegistryNetworks(invalidRegistry)).toThrow(
-      'invalid_universal_wallet_registry'
-    );
+    expect(() => createUniversalWalletRegistryNetworks(invalidRegistry)).toThrow('invalid_universal_wallet_registry');
   });
 });

@@ -3,7 +3,7 @@
     <div class="row">
       <div class="row-content" @click="emits('openAuthDetails', stripedUrl)">
         <div class="col">
-          <ExternalLogo :name="faviconURl" alt="favicon" />
+          <ExternalLogo :name="faviconURl" :alt="t('common.favicon')" />
 
           <span class="auth-item-name">{{ stripedUrl }}</span>
         </div>
@@ -19,12 +19,14 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
+import { useI18n } from '@/locales/useI18n';
 
 const { authorizedAccounts, url } = defineProps<{
   url: string;
   authorizedAccounts: string[];
 }>();
 const emits = defineEmits(['openAuthDetails', 'remove']);
+const { t, tc } = useI18n();
 
 const stripedUrl = computed(() => stripUrl(url));
 
@@ -37,7 +39,7 @@ const faviconURl = computed(() => {
 const authAccounts = computed(() => {
   const authListLength = authorizedAccounts.length;
 
-  return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
+  return tc('authorize.accountCount', authListLength, { count: authListLength });
 });
 
 const onRemoveAuth = () => emits('remove', stripedUrl.value);

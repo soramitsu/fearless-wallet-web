@@ -1,4 +1,4 @@
-import { api as apiSora } from '@sora-substrate/util';
+import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
@@ -7,7 +7,6 @@ import { ethers, formatUnits, Wallet } from 'ethers';
 import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
   estimateBitcoinTransferFee,
-  getBitcoinNetworkKind,
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
 } from '@extension-base/api/bitcoin/transfer';
@@ -17,6 +16,10 @@ import {
   makeIrohaTransfer,
 } from '@extension-base/api/iroha/transfer';
 import {
+  getIrohaTransferFrameBytes,
+  requireProductionIrohaTransferCodec,
+} from '@extension-base/api/iroha/productionTransferCodec';
+import {
   estimateSolanaTransferFee,
   isSolanaTransferNetwork,
   makeSolanaTransfer,
@@ -25,7 +28,12 @@ import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfe
 import { createSwap } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
-import { makeCrossChain, estimateCrossChainFee } from '@extension-base/api/substrate/crossChain';
+import {
+  makeCrossChain,
+  estimateCrossChainQuote,
+  refreshCrossChainOriginBalance,
+  assertCrossChainSignerCapability,
+} from '@extension-base/api/substrate/crossChain';
 import {
   isProposalExpired,
   isSupportWalletConnectNamespace,
@@ -34,7 +42,7 @@ import {
   getEip155MessageAddress,
 } from '@extension-base/services/wallet-connect-service/utils';
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { TransferErrorCode } from '@extension-base/background/types/types';
+import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
 import {
   type RequestConnectWalletConnect,
   type WalletConnectSessionRequest,
@@ -59,10 +67,19 @@ import {
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
+import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
+import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
+import type {
+  IrohaConnectAccountRequest,
+  IrohaConnectPendingRequest,
+  IrohaConnectSnapshot,
+  IrohaConnectStartRequest,
+} from '@extension-base/services/iroha-connect-service/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type {
   EvmRequests,
@@ -135,6 +152,7 @@ import type {
   MakePoolsRequest,
   GetShareOfPoolRequest,
   DefaultParams as DefaultPoolParams,
+  DemeterMutationRequest,
 } from '@extension-base/services/pools-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
 import type {
@@ -160,16 +178,39 @@ import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
+import type {
+  PolkamarktMutationRequest,
+  PolkamarktQuoteRequest,
+} from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import { BitcoinTransactionStatusUnknownError } from '@/util/bitcoinSend';
+import {
+  isCapturedSoraPairStillSelected,
+  isLocallySignableSelectedSoraPair,
+} from '@/defi/soraAccountBinding';
 import { WalletEcosystem } from '@/interfaces';
-import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import {
   isNativeEVMNetwork,
   uniqueStringArray,
   getBalanceItem,
 } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { IS_EXTENSION, IS_EXTENSION_SMOKE } from '@/consts/global';
+import {
+  assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isRecoveryPoolAction,
+  isRecoveryDemeterAction, isRecoveryPolkamarktAction,
+} from '@/util/walletRecoveryActions';
 import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import {
+  validateReviewedCrossChainRequest,
+  type ValidatedCrossChainRoute,
+} from '@/cross-chain/requestValidation';
+import {
+  validateAuthoritativePolkaswapExecution,
+  validatePolkaswapExecution,
+} from '@/defi/polkaswapExecutionGuard';
 import { isSameString, isTonNetwork } from '@/helpers';
 
 function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is SignerPayloadJSON {
@@ -188,7 +229,19 @@ function isSolanaSignRequest(
   return 'ecosystem' in value && value.ecosystem === 'solana';
 }
 
+function formatSoraAddress(address: string): string {
+  return apiSora.formatAddress(address);
+}
+
 export default class Extension extends FWExtensionBase {
+  private assertNormalWalletUse(address: string, recoveryAction = false): void {
+    if (!IS_EXTENSION) return;
+    assertWalletAllowsRecoveryAction([
+      ...this.state.keyringService.getAllAccounts(),
+      ...this.state.keyringService.tonKeyring.getAccounts(),
+    ], address, recoveryAction);
+  }
+
   constructor(state: State) {
     super(state);
   }
@@ -227,9 +280,9 @@ export default class Extension extends FWExtensionBase {
     if (type === 'native') {
       this.state.walletConnectService.removeSessions(address, ethereumAddress);
 
-      if (ethereumAddress) this.state.keyringService.forgetAccount(ethereumAddress);
+      if (ethereumAddress) await this.state.keyringService.forgetAccount(ethereumAddress);
 
-      this.state.keyringService.forgetAccount(address);
+      await this.state.keyringService.forgetAccount(address);
     } else {
       const account = this.state.keyringService.getAddress(address);
 
@@ -255,15 +308,18 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async accountsCreate({ suri, type, meta, walletEcosystem }: RequestAccountCreateSuri): Promise<string> {
+  async accountsCreate({ suri, type, meta, walletEcosystem, requireFreshGeneration }: RequestAccountCreateSuri): Promise<string> {
     const address = await this.state.keyringService.addAccount(
       suri,
       { ...meta, isMobile: false },
       walletEcosystem,
-      type
+      type,
+      requireFreshGeneration
     );
 
-    if (!isEthereumAddress(address)) this.state.updateCurrentAccount({ address, walletEcosystem });
+    if (!isEthereumAddress(address) && !IS_EXTENSION_SMOKE) {
+      this.state.updateCurrentAccount({ address, walletEcosystem });
+    }
 
     return address;
   }
@@ -273,8 +329,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   convertAccounts(accounts: SubjectInfo, walletEcosystem = WalletEcosystem.Substrate): AccountJson[] {
+    const linkedEthereumAddresses = new Set(Object.values(accounts)
+      .filter(({ json: { address } }) => !isEthereumAddress(address))
+      .map(({ json: { meta } }) => (meta.ethereumAddress as string | undefined)?.toLowerCase())
+      .filter(Boolean));
     return Object.values(accounts).flatMap<AccountJson>(({ json: { address, meta }, type }) => {
-      if (isEthereumAddress(address)) return [];
+      const isEvm = isEthereumAddress(address);
+      if (isEvm && linkedEthereumAddresses.has(address.toLowerCase())) return [];
 
       const pair = this.state.keyringService.getPair(address);
       const haveEntropy = pair?.haveEntropy;
@@ -289,6 +350,7 @@ export default class Extension extends FWExtensionBase {
         network: this.state.networkService.selectedNetworks[address] ?? ALL_NETWORKS,
         walletEcosystem,
         ...meta,
+        ...(isEvm ? { walletEcosystem: WalletEcosystem.Evm, ethereumAddress: address } : {}),
       };
     });
   }
@@ -330,10 +392,21 @@ export default class Extension extends FWExtensionBase {
       }
     );
 
+    // Restoring the selected account is asynchronous in the web store. Publish
+    // that selection even when the account collection itself has not changed.
+    const currentAccountSubscription = this.state.keyringService.currentAccountSubject.subscribe(() => {
+      cb([
+        ...this.convertAccounts(this.state.keyringService.addressSubject.value),
+        ...this.convertAccounts(this.state.keyringService.accountSubject.value),
+        ...this.convertAccounts(this.state.keyringService.tonKeyring.accountSubject.value, WalletEcosystem.Ton),
+      ]);
+    });
+
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
       substrateAddressesSubscription.unsubscribe();
       substrateAccountsSubscription.unsubscribe();
       tonSubscription.unsubscribe();
+      currentAccountSubscription.unsubscribe();
     });
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
@@ -342,6 +415,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
+    authorizedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     const authRequest = this.state.requestService.getAuthRequest(id);
 
     assert(authRequest, 'Unable to find request');
@@ -352,6 +426,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeUpdate({ authorizedAccounts, url, authType }: RequestUpdateAuthorizedAccounts): Promise<void> {
+    authorizedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 
@@ -392,7 +467,8 @@ export default class Extension extends FWExtensionBase {
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 
-    if (!tab || !tab.url) {
+    const target = getTabAuthorizationTarget(tab?.url);
+    if (!target) {
       return {
         isAuthorize: false,
         authorizeAccountsCount: 0,
@@ -400,16 +476,16 @@ export default class Extension extends FWExtensionBase {
       };
     }
 
-    const tabHostName = new URL(tab.url).hostname;
+    const { hostname: tabHostName, key: tabAuthKey } = target;
 
     return new Promise((resolve) => {
       this.state.requestService.getAuthorize((authUrls) => {
-        const authorizeUrl = Object.keys(authUrls).filter((url) => url === tabHostName);
-        const isAuthorize = authorizeUrl.length !== 0;
+        const auth = authUrls[tabAuthKey];
+        const isAuthorize = auth?.isAllowed === true;
 
         resolve({
           isAuthorize,
-          authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+          authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
           dAppName: tabHostName,
         });
       });
@@ -558,9 +634,11 @@ export default class Extension extends FWExtensionBase {
     const { data } = request;
 
     const address = getEip155MessageAddress(request.method, data);
+    this.assertNormalWalletUse(address);
 
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+    this.assertNormalWalletUse(ethereumAddress);
     const isMobile = this.state.keyringService.isMobileAccount(substrateAddress);
 
     if (isMobile) {
@@ -649,6 +727,8 @@ export default class Extension extends FWExtensionBase {
 
     assert(request, 'Unable to find request');
 
+    this.assertNormalWalletUse(request.account.publicKey);
+
     try {
       const accounts = this.state.keyringService.getAllAccounts();
       const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) =>
@@ -689,6 +769,8 @@ export default class Extension extends FWExtensionBase {
 
     if (isSolanaSignRequest(queued)) return this.signSolanaApprove({ id });
     if (isEvmSignRequest(queued)) return this.signEvmApprove({ id }); // sign evm requests
+
+    this.assertNormalWalletUse(queued.account.address);
 
     const account = this.state.keyringService
       .getAllAccounts()
@@ -740,6 +822,10 @@ export default class Extension extends FWExtensionBase {
     const queued = this.state.requestService.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
+
+    this.assertNormalWalletUse(isEvmSignRequest(queued)
+      ? getEip155MessageAddress(queued.method, queued.data)
+      : isSolanaSignRequest(queued) ? queued.account.publicKey : queued.account.address);
 
     if (isSolanaSignRequest(queued)) {
       queued.reject(new Error('External signature approval is not supported for Solana'));
@@ -922,31 +1008,282 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
-    const { swapOptions } = await createSwap(options, apiSora, this.state);
+    this.assertNormalWalletUse(this.state.getAccountAddress());
+    if (!this.state.actionCapabilityService.isActionEnabled('polkaswap')) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Polkaswap actions are temporarily unavailable.' }],
+      };
+    }
+
+    if (!this.state.soraDisclaimerService.isAccepted()) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Accept the Polkaswap risk disclaimer first.' }],
+      };
+    }
+
+    const soraRoot = apiSora as unknown as {
+      account?: { pair?: { address?: string; meta?: Record<string, unknown> } };
+    };
+    const pair = soraRoot.account?.pair;
+    const selectedAddress = (() => {
+      try {
+        return this.state.getAccountAddress();
+      } catch {
+        return '';
+      }
+    })();
+    if (options.isMobile || !isLocallySignableSelectedSoraPair(pair, selectedAddress, formatSoraAddress)) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'A locally signable SORA account is required.' }],
+      };
+    }
+
+    const soraNetwork = this.state.networkService.networkValues.find(({ name }) =>
+      name.toLowerCase() === SORA_NETWORK_NAME
+    );
+    const apiProps = this.state.getSubstrateApiMap[SORA_NETWORK_NAME];
+    let runtimeReady: boolean;
+    try {
+      runtimeReady = Boolean(soraNetwork?.active && !soraNetwork.disabled && (await apiProps?.api?.isReady) && apiSora.connected);
+    } catch {
+      runtimeReady = false;
+    }
+    if (!runtimeReady) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'The SORA runtime is unavailable.' }],
+      };
+    }
+
+    let swapOptions;
+    try {
+      ({ swapOptions } = await createSwap(options, apiSora, this.state));
+    } catch {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.SWAP_ERROR, message: 'Refresh the SORA quote before confirming.' }],
+      };
+    }
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = swapOptions!;
-    const errors: Array<BasicTxError> = [];
     const address = this.state.getAccountAddress();
     const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
+    const balanceError = validatePolkaswapExecution({
+      balances: this.state.balanceService.getAccountBalance(address) ?? [],
+      networkFee: this.state.soraFees.value[Operation.Swap] ?? '',
+      request: { ...options, amountA },
+    });
+    if (balanceError) return { status: false, errors: [balanceError] };
 
-    this.state.keyringService.unlockPair(address);
+    let authoritativeError: BasicTxError | null;
+    try {
+      await apiSora.calcStaticNetworkFees();
+      const networkFee = FPNumber.fromCodecValue(apiSora.NetworkFee[Operation.Swap]).toString();
+      const [source, destination, xor] = await Promise.all([
+        apiSora.assets.getAccountAsset(assetA.address),
+        apiSora.assets.getAccountAsset(assetB.address),
+        apiSora.assets.getAccountAsset(SORA_XOR_ASSET_ID),
+      ]);
+      this.state.soraFees.next({ ...this.state.soraFees.value, [Operation.Swap]: networkFee });
+      authoritativeError = validateAuthoritativePolkaswapExecution({
+        source,
+        destination,
+        xor,
+        sourceAddress: assetA.address,
+        destinationAddress: assetB.address,
+        sourceAmount: amountA,
+        networkFee,
+      });
+    } catch {
+      authoritativeError = {
+        code: BasicTxErrorCode.INVALID_PARAM,
+        message: 'Refresh the authoritative SORA balances and current network fee.',
+      };
+    }
+    if (authoritativeError) return { status: false, errors: [authoritativeError] };
+
+    const finalSoraNetwork = this.state.networkService.networkValues.find(({ name }) =>
+      name.toLowerCase() === SORA_NETWORK_NAME
+    );
+    const finalApiProps = this.state.getSubstrateApiMap[SORA_NETWORK_NAME];
+    let finalRuntimeReady: boolean;
+    try {
+      finalRuntimeReady = Boolean(
+        finalSoraNetwork?.active &&
+          !finalSoraNetwork.disabled &&
+          (await finalApiProps?.api?.isReady) &&
+          apiSora.connected
+      );
+    } catch {
+      finalRuntimeReady = false;
+    }
+
+    const currentSelectedAddress = (() => {
+      try {
+        return this.state.getAccountAddress();
+      } catch {
+        return '';
+      }
+    })();
+    if (
+      !finalRuntimeReady ||
+      !this.state.actionCapabilityService.isActionEnabled('polkaswap') ||
+      !this.state.soraDisclaimerService.isAccepted() ||
+      !isCapturedSoraPairStillSelected(pair, soraRoot.account?.pair, currentSelectedAddress, formatSoraAddress)
+    ) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'The SORA account, policy, or runtime changed. Review the swap again.' }],
+      };
+    }
+
+    if (
+      !this.state.keyringService.unlockPair(currentSelectedAddress) ||
+      !this.state.actionCapabilityService.isActionEnabled('polkaswap') ||
+      !this.state.soraDisclaimerService.isAccepted() ||
+      !isCapturedSoraPairStillSelected(pair, soraRoot.account?.pair, currentSelectedAddress, formatSoraAddress)
+    ) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Unlock the selected SORA account and review the swap again.' }],
+      };
+    }
 
     apiSora.shouldPairBeLocked = false;
 
     try {
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
-      errors.push({
-        code: TransferErrorCode.SWAP_ERROR,
-        message: '',
-      });
-
       console.info(`Swap transaction failed ${ex}`);
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.SWAP_ERROR, message: 'The SORA swap was not submitted.' }],
+      };
     }
 
-    return {
-      status: true,
-      errors,
+    return { status: true, errors: [] };
+  }
+
+  private createPolkamarktService(): PolkamarktService {
+    const network = Object.values(this.state.networkService.networkMap).find(
+      ({ name }) => name.toLowerCase() === SORA_NETWORK_NAME
+    );
+    const soraRoot = apiSora as unknown as {
+      api?: unknown;
+      account?: { pair?: { address?: string; meta?: Record<string, unknown>; isLocked?: boolean } };
+      shouldPairBeLocked?: boolean;
+      submitExtrinsic?: (extrinsic: unknown, pair: unknown) => Promise<unknown>;
+      getTransactionFee?: (extrinsic: unknown) => Promise<string>;
     };
+    const pair = soraRoot.account?.pair;
+    const getSelectedAddress = () => {
+      try {
+        return this.state.getAccountAddress();
+      } catch {
+        return '';
+      }
+    };
+    const selectedAddress = getSelectedAddress();
+    const accountAddress = pair?.address || '';
+    const signable = isLocallySignableSelectedSoraPair(pair, selectedAddress, formatSoraAddress);
+    const capturedRuntime = soraRoot.api;
+    const capturedSubmitExtrinsic = soraRoot.submitExtrinsic;
+    const capturedNetwork = network
+      ? {
+        key: network.key,
+        genesisHash: network.genesisHash,
+        currentProvider: network.currentProvider,
+      }
+      : undefined;
+    const isRuntimeReady = async () => {
+      const currentNetwork = Object.values(this.state.networkService.networkMap).find(
+        ({ name }) => name.toLowerCase() === SORA_NETWORK_NAME
+      );
+      const apiProps = this.state.getSubstrateApiMap[SORA_NETWORK_NAME];
+
+      try {
+        return Boolean(
+          capturedNetwork &&
+          currentNetwork?.key === capturedNetwork.key &&
+          currentNetwork.genesisHash === capturedNetwork.genesisHash &&
+          currentNetwork.currentProvider === capturedNetwork.currentProvider &&
+          currentNetwork.active &&
+          !currentNetwork.disabled &&
+          capturedRuntime &&
+          soraRoot.api === capturedRuntime &&
+          (await apiProps?.api?.isReady) &&
+          apiSora.connected
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    return new PolkamarktService({
+      apiRoot: soraRoot as unknown as Record<string, unknown>,
+      endpoint: network?.currentProvider ?? network?.nodes?.[0]?.url,
+      indexerUrl: network?.externalApi?.history?.url,
+      accountAddress: accountAddress || undefined,
+      signable,
+      isDisclaimerAccepted: () => this.state.soraDisclaimerService.isAccepted(),
+      authorizeBeforeSubmit: createPolkamarktFinalAuthorizationGuard({
+        capturedAccountAddress: accountAddress,
+        capturedPair: pair,
+        capturedRuntime,
+        isActionEnabled: () => this.state.actionCapabilityService.isActionEnabled('polkamarkt'),
+        isDisclaimerAccepted: () => this.state.soraDisclaimerService.isAccepted(),
+        assertWalletAction: ({ accountAddress, request }) =>
+          this.assertNormalWalletUse(accountAddress, isRecoveryPolkamarktAction(request.action)),
+        isRuntimeReady,
+        getCurrentPair: () => soraRoot.account?.pair,
+        getCurrentRuntime: () => soraRoot.api,
+        getSelectedAddress,
+        isSubmitAvailable: () => Boolean(
+          capturedSubmitExtrinsic && soraRoot.submitExtrinsic === capturedSubmitExtrinsic
+        ),
+        unlockPair: (address) => this.state.keyringService.unlockPair(address),
+        formatAddress: formatSoraAddress,
+        onAuthorized: () => {
+          soraRoot.shouldPairBeLocked = false;
+        },
+      }),
+      estimateFee: async (extrinsic) => {
+        if (!soraRoot.getTransactionFee) throw new Error('SORA network fee estimation is unavailable.');
+        return soraRoot.getTransactionFee(extrinsic);
+      },
+      submit: async (extrinsic) => {
+        if (!pair || !capturedSubmitExtrinsic) throw new Error('Add a signable SORA account.');
+        const txHash = (extrinsic as { hash?: { toHex?: () => string; toString?: () => string } }).hash;
+        await capturedSubmitExtrinsic.call(soraRoot, extrinsic, pair);
+        return { hash: txHash?.toHex?.() ?? txHash?.toString?.() };
+      },
+    });
+  }
+
+  private async getPolkamarktSnapshot(request: { marketId?: string }) {
+    const snapshot = await this.createPolkamarktService().snapshot(request.marketId);
+    if (!this.state.actionCapabilityService.isActionEnabled('polkamarkt')) {
+      snapshot.capabilities.buy = false;
+      snapshot.capabilities.sell = false;
+      snapshot.capabilities.claimMarket = false;
+      snapshot.capabilities.claimCreatorFees = false;
+      snapshot.warnings.push('Polkamarkt actions are temporarily paused; browsing remains available.');
+    }
+    return snapshot;
+  }
+
+  private getPolkamarktQuote(request: PolkamarktQuoteRequest) {
+    return this.createPolkamarktService().quote(request);
+  }
+
+  private mutatePolkamarkt(request: PolkamarktMutationRequest) {
+    this.assertNormalWalletUse(this.state.getAccountAddress(), isRecoveryPolkamarktAction(request.action));
+    if (!this.state.actionCapabilityService.isActionEnabled('polkamarkt')) {
+      return Promise.resolve({ status: false, error: 'Polkamarkt actions are temporarily paused.' });
+    }
+    return this.createPolkamarktService().mutate(request);
   }
 
   private async checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
@@ -958,7 +1295,9 @@ export default class Extension extends FWExtensionBase {
 
     if (isBitcoinTransferNetwork(network)) {
       try {
-        fee = await estimateBitcoinTransferFee({ network: getBitcoinNetworkKind(network) });
+        const quote = await estimateBitcoinTransferFee({ ...request, amount: amount ?? '0', state: this.state });
+
+        return { destEstimateFee: '0', estimateFee: quote.fee, maxAmount: quote.maxAmount, errors };
       } catch (e) {
         console.info(e);
         errors.push({
@@ -976,14 +1315,17 @@ export default class Extension extends FWExtensionBase {
 
     if (isIrohaTransferNetwork(network)) {
       try {
-        fee = await estimateIrohaTransferFee({
-          amount: amount ?? '0',
-          assetId,
-          from,
-          networkKey,
-          state: this.state,
-          to,
-        });
+        fee = await estimateIrohaTransferFee(
+          {
+            amount: amount ?? '0',
+            assetId,
+            from,
+            networkKey,
+            state: this.state,
+            to,
+          },
+          getIrohaTransferFrameBytes
+        );
       } catch (e) {
         console.info(e);
         errors.push({
@@ -1100,6 +1442,7 @@ export default class Extension extends FWExtensionBase {
     if (isBitcoinTransferNetwork(network)) {
       transferProm = makeBitcoinTransfer({
         amount,
+        approvedMaxFee: request.approvedMaxFee,
         bitcoinFeeRateSatPerVbyte: request.bitcoinFeeRateSatPerVbyte,
         bitcoinFeeTargetBlocks: request.bitcoinFeeTargetBlocks,
         bitcoinIncludeUnconfirmed: request.bitcoinIncludeUnconfirmed,
@@ -1112,15 +1455,22 @@ export default class Extension extends FWExtensionBase {
         to,
       });
     } else if (isIrohaTransferNetwork(network)) {
-      transferProm = makeIrohaTransfer({
-        amount,
-        assetId,
-        callback,
-        from,
-        networkKey,
-        state: this.state,
-        to,
-      });
+      transferProm = requireProductionIrohaTransferCodec().then((codec) =>
+        makeIrohaTransfer(
+          {
+            amount,
+            approvedMaxFee: request.approvedMaxFee,
+            assetId,
+            callback,
+            from,
+            networkKey,
+            state: this.state,
+            to,
+          },
+          codec,
+          getIrohaTransferFrameBytes
+        )
+      );
     } else if (isSolanaTransferNetwork(network)) {
       transferProm = makeSolanaTransfer({
         amount,
@@ -1166,6 +1516,9 @@ export default class Extension extends FWExtensionBase {
 
       callback({
         status: false,
+        ...(ex instanceof IrohaTransactionStatusUnknownError || ex instanceof BitcoinTransactionStatusUnknownError
+          ? { outcome: 'unknown' as const, transactionHash: ex.transactionHash }
+          : {}),
         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
       });
 
@@ -1178,44 +1531,127 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async checkCrossChain(request: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const { from, originNet, destinationNet, to, assetId, relayChain, amount } = request;
+    const { from, originNet, destinationNet, to, assetId, assetKey, routeId, routeProviderId, relayChain, amount } = request;
 
-    if (destinationNet === '') return { estimateFee: '0', destEstimateFee: '0' };
-
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
-
-    const [fee, crossChainFee] = await estimateCrossChainFee(
-      {
+    try {
+      await refreshCrossChainOriginBalance({ from, originNet }, this.state);
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
+      const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+      const validation = validateReviewedCrossChainRequest({
+        routeId,
+        providerId: routeProviderId,
+        assetKey,
         assetId,
+        origin: this.state.networkService.networkMap[originNet],
+        destination: this.state.networkService.networkMap[destinationNet],
+        tokenBalance,
+        amount,
+        requireAmount: Boolean(amount?.trim()),
+      });
+      if (!this.state.actionCapabilityService.isActionEnabled(validation.action)) {
+        throw new Error('cross_chain_provider_temporarily_disabled');
+      }
+      if (!amount?.trim()) return { estimateFee: '0', destEstimateFee: '0' };
+
+      const quote = await estimateCrossChainQuote({
+        assetId,
+        assetKey,
+        routeId: validation.routeId,
+        routeProviderId: validation.providerId,
+        xcmAssetId: validation.xcmAssetId,
+        execution: validation.execution,
+        reviewedMinimum: validation.minimum,
         originNet,
         destinationNet,
-        amount: amount!,
+        amount,
         from,
         to,
         tokenBalance,
-      },
-      this.state
-    );
+      }, this.state);
 
-    return {
-      estimateFee: fee.toString(),
-      destEstimateFee: crossChainFee.toString(),
-    };
+      return {
+        estimateFee: quote.originFee.toString(),
+        destEstimateFee: quote.destinationFee.toString(),
+        minimum: quote.minimum.toString(),
+        executionFingerprint: quote.executionFingerprint,
+      };
+    } catch (error) {
+      return {
+        estimateFee: '0',
+        destEstimateFee: '0',
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: (error as Error).message }],
+      };
+    }
   }
 
   private async makeCrossChain(id: string, request: RequestCrossChain, port?: Port): Promise<BasicTxResponse> {
-    const { from, originNet, destinationNet, to, assetId, relayChain, isMobile, amount = '0' } = request;
+    this.assertNormalWalletUse(request.from);
+    const {
+      from,
+      originNet,
+      destinationNet,
+      to,
+      assetId,
+      assetKey,
+      routeId,
+      routeProviderId,
+      relayChain,
+      isMobile,
+      amount = '',
+      expectedOriginFee = '',
+      expectedDestinationFee = '',
+      expectedExecutionFingerprint = '',
+    } = request;
+    let tokenBalance: ReturnType<State['balanceService']['getTokenBalance']>;
+    let xcmAssetId: string;
+    let execution: ValidatedCrossChainRoute['execution'];
+    let reviewedMinimum: string | null;
+    let capturedPair: ReturnType<State['keyringService']['getPair']>;
 
-    this.state.keyringService.unlockPair(from);
-
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
-    const tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+    try {
+      await refreshCrossChainOriginBalance({ from, originNet }, this.state);
+      const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
+      tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);
+      capturedPair = this.state.keyringService.getPair(substrateAddress);
+      const validation = validateReviewedCrossChainRequest({
+        routeId,
+        providerId: routeProviderId,
+        assetKey,
+        assetId,
+        origin: this.state.networkService.networkMap[originNet],
+        destination: this.state.networkService.networkMap[destinationNet],
+        tokenBalance,
+        amount,
+        requireAmount: true,
+      });
+      if (!this.state.actionCapabilityService.isActionEnabled(validation.action)) {
+        throw new Error('cross_chain_provider_temporarily_disabled');
+      }
+      const selectedAddress = this.state.keyringService.getSubstrateAddress(this.state.getAccountAddress());
+      if (!capturedPair || this.state.keyringService.getPair(selectedAddress) !== capturedPair) {
+        throw new Error('cross_chain_selected_account_changed');
+      }
+      assertCrossChainSignerCapability(capturedPair, !!isMobile);
+      if (!expectedOriginFee.trim()) throw new Error('cross_chain_fee_confirmation_required');
+      if (!expectedDestinationFee.trim()) throw new Error('cross_chain_destination_fee_confirmation_required');
+      if (!expectedExecutionFingerprint.trim()) throw new Error('cross_chain_runtime_fingerprint_required');
+      xcmAssetId = validation.xcmAssetId;
+      execution = validation.execution;
+      reviewedMinimum = validation.minimum;
+    } catch (error) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: (error as Error).message }],
+      };
+    }
 
     const callback = this.state.subscriptionService.createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
 
     const params: MakeCrossChainProps = {
       assetId,
+      xcmAssetId,
+      execution,
+      reviewedMinimum,
       originNet,
       destinationNet,
       amount,
@@ -1224,6 +1660,14 @@ export default class Extension extends FWExtensionBase {
       tokenBalance,
       callback,
       isMobile: !!isMobile,
+      assetKey,
+      routeId,
+      routeProviderId,
+      relayChain,
+      expectedOriginFee,
+      expectedDestinationFee,
+      expectedExecutionFingerprint,
+      capturedPair,
     };
 
     try {
@@ -1251,6 +1695,13 @@ export default class Extension extends FWExtensionBase {
       });
 
       setTimeout(() => this.cancelSubscription(id), 500);
+
+      port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
+      };
     }
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
@@ -1320,6 +1771,9 @@ export default class Extension extends FWExtensionBase {
   }
 
   async makeStaking(request: MakeStakingRequest): Promise<BasicTxResponse> {
+    const recoveryAction = isRecoveryStakingAction(request.type);
+    this.assertNormalWalletUse(request.params.from, recoveryAction);
+    this.assertNormalWalletUse(this.state.getAccountAddress(), recoveryAction);
     const { from } = request.params;
 
     this.state.keyringService.unlockPair(from);
@@ -1328,14 +1782,49 @@ export default class Extension extends FWExtensionBase {
   }
 
   async makePool(request: MakePoolsRequest): Promise<BasicTxResponse> {
-    const address = this.state.getAccountAddress();
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
+    this.assertNormalWalletUse(this.state.getAccountAddress(), isRecoveryPoolAction(request.type));
+    if (!this.state.actionCapabilityService.isActionEnabled('polkaswap')) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Polkaswap liquidity actions are temporarily unavailable.' }],
+      };
+    }
+    if (!this.state.soraDisclaimerService.isAccepted()) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Accept the Polkaswap risk disclaimer first.' }],
+      };
+    }
 
-    this.state.keyringService.unlockPair(substrateAddress);
+    const signing = this.state.poolsService.getLiquiditySigningCapability();
+    if (!signing.available) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: signing.reason ?? 'A signable SORA account is required.' }],
+      };
+    }
 
-    const result = await this.state.poolsService.makePool(request);
+    return this.state.poolsService.makePool(request);
+  }
 
-    return result;
+  async mutateDemeter(request: DemeterMutationRequest): Promise<BasicTxResponse> {
+    this.assertNormalWalletUse(this.state.getAccountAddress(), isRecoveryDemeterAction(request.operation));
+    if (!this.state.actionCapabilityService.isActionEnabled('demeter')) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Demeter actions are temporarily unavailable.' }],
+      };
+    }
+
+    const signing = this.state.poolsService.getDemeterSigningCapability();
+    if (!signing.available) {
+      return {
+        status: false,
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: signing.reason ?? 'A signable SORA account is required.' }],
+      };
+    }
+
+    return this.state.poolsService.mutateDemeter(request);
   }
 
   async getShareOfPool(params: GetShareOfPoolRequest): Promise<string> {
@@ -1354,6 +1843,34 @@ export default class Extension extends FWExtensionBase {
     irohaAddress,
     walletEcosystem,
   }: FetchBalanceRequest): Promise<ResponseBalanceRequest[]> {
+    const account = this.state.keyringService.getAllMainAccounts().find(({ address: accountAddress }) =>
+      isSameString(accountAddress, address)
+    );
+    const publicAccounts = account?.meta.universalWallet?.publicAccounts ?? [];
+    const isUniversal = new Set(publicAccounts.map(({ ecosystem }) => ecosystem)).size > 1;
+
+    if (isUniversal) {
+      return this.state.balanceService.fetchBalance({
+        address,
+        bitcoinAddress: bitcoinAddress ?? (account?.meta.bitcoinAddress as string | undefined),
+        bitcoinTestnetAddress:
+          bitcoinTestnetAddress ?? (account?.meta.bitcoinTestnetAddress as string | undefined),
+        bitcoinNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['bitcoin']),
+        ethereumAddress: ethereumAddress ?? account?.meta.ethereumAddress ?? '',
+        evmNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['ethereum']),
+        irohaAddress: irohaAddress ?? (account?.meta.irohaAddress as string | undefined),
+        irohaNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['iroha']),
+        solanaAddress: solanaAddress ?? (account?.meta.solanaAddress as string | undefined),
+        solanaNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['solana']),
+        substrateNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, [
+          'substrate',
+          'ethereumBased',
+        ]),
+        tonNetworks: filterNetworksByEcosystem(this.state.networkService.networkMap, networks, ['ton']),
+        walletEcosystem,
+      });
+    }
+
     if (walletEcosystem === WalletEcosystem.Bitcoin) {
       return await this.state.balanceService.fetchBalance({
         address,
@@ -1451,6 +1968,7 @@ export default class Extension extends FWExtensionBase {
     accounts: selectedAccounts,
     id,
   }: RequestApproveConnectWalletSession): Promise<NotificationResponse> {
+    selectedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     const request = this.state.requestService.getConnectWCRequest(id);
 
     if (isProposalExpired(request.request.params)) {
@@ -1629,8 +2147,10 @@ export default class Extension extends FWExtensionBase {
   }
 
   async wcRequestApprove({ address, topic }: RequestApproveWalletConnect) {
+    this.assertNormalWalletUse(address);
     const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
     const ethereumAddress = this.state.keyringService.getEthereumAddress(substrateAddress);
+    this.assertNormalWalletUse(ethereumAddress);
 
     const request = this.state.requestService.signWcRequest(topic);
 
@@ -1740,7 +2260,17 @@ export default class Extension extends FWExtensionBase {
     return this.state.walletConnectDappService.initPairing();
   }
 
-  changeMasterPassword(request: RequestChangePassword): boolean {
+  private irohaConnectSubscribe(id: string, port?: Port): IrohaConnectSnapshot {
+    const cb = this.state.subscriptionService.createSubscription<'pri(irohaConnect.subscribe)'>(id, port);
+    const subscription = this.state.irohaConnectService.stateSubject.subscribe(cb);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+    return this.state.irohaConnectService.snapshot;
+  }
+
+  changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
@@ -1754,7 +2284,7 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.lockKeyring();
   }
 
-  unlockKeyring(request: RequestUnlockExtension): boolean {
+  unlockKeyring(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
     this.state.keyringLockService.setExtensionAutoLockTimeout();
 
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
@@ -1823,7 +2353,7 @@ export default class Extension extends FWExtensionBase {
         return this.state.keyringService.keyringMigrateMasterPassword(request as RequestMigratePassword);
 
       case 'pri(keyring.export.mnemonic)':
-        return this.state.keyringService.exportMnemonic(request as RequestExportSeed);
+        return this.state.keyringService.exportAccountMnemonic(request as RequestExportSeed);
 
       case 'pri(keyring.export.rowSeed)':
         return this.state.keyringService.accountExportRawSeed(request as RequestExportSeed);
@@ -1930,8 +2460,23 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.makeSwap)':
         return this.makeSwap(request as RequestSwap);
 
+      case 'pri(policy.soraDisclaimer.status)':
+        return this.state.soraDisclaimerService.status;
+
+      case 'pri(policy.soraDisclaimer.accept)':
+        return this.state.soraDisclaimerService.accept((request as { version: number }).version);
+
       case 'pri(accounts.soraFees.subscribe)':
         return this.soraFeesSubscribe(id, port);
+
+      case 'pri(defi.polkamarkt.snapshot)':
+        return this.getPolkamarktSnapshot(request as { marketId?: string });
+
+      case 'pri(defi.polkamarkt.quote)':
+        return this.getPolkamarktQuote(request as PolkamarktQuoteRequest);
+
+      case 'pri(defi.polkamarkt.mutate)':
+        return this.mutatePolkamarkt(request as PolkamarktMutationRequest);
 
       case 'pri(accounts.checkScamAddress)':
         return this.checkScamAddress(request as RequestCheckScam);
@@ -1979,6 +2524,12 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(pools.getAmountValue)':
         return this.state.poolsService.getPoolAmountValue(request as DefaultPoolParams);
+
+      case 'pri(pools.demeter.get)':
+        return this.state.poolsService.getDemeterPools();
+
+      case 'pri(pools.demeter.mutate)':
+        return this.mutateDemeter(request as DemeterMutationRequest);
 
       // price
       case 'pri(price.update.currency)':
@@ -2058,6 +2609,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(fetch.balance)':
         return this.fetchBalance(request as FetchBalanceRequest);
 
+      case 'pri(asset.discovery.sweep)':
+        return this.state.assetDiscoverySweepService.runIfDue({ force: true });
+
       //Wallet Connect
       case 'pri(walletConnect.connect)':
         return this.connectWalletConnect(request as RequestConnectWalletConnect);
@@ -2099,6 +2653,31 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(walletConnect.app.pairing)':
         return this.walletConnectDappPairing();
+
+      // IrohaConnect wallet relay
+      case 'pri(irohaConnect.connect)':
+        return this.state.irohaConnectService.connect((request as IrohaConnectStartRequest).uri);
+
+      case 'pri(irohaConnect.subscribe)':
+        return this.irohaConnectSubscribe(id, port);
+
+      case 'pri(irohaConnect.session.approve)':
+        return this.state.irohaConnectService.approveSession((request as IrohaConnectAccountRequest).accountId);
+
+      case 'pri(irohaConnect.session.reject)':
+        return this.state.irohaConnectService.rejectSession();
+
+      case 'pri(irohaConnect.request.approve)':
+        return this.state.irohaConnectService.approveRequest((request as IrohaConnectPendingRequest).requestId);
+
+      case 'pri(irohaConnect.request.reject)':
+        return this.state.irohaConnectService.rejectRequest((request as IrohaConnectPendingRequest).requestId);
+
+      case 'pri(irohaConnect.disconnect)':
+        return this.state.irohaConnectService.disconnect();
+
+      case 'pri(irohaConnect.error.clear)':
+        return this.state.irohaConnectService.clearError();
 
       // OnBoarding
       case 'pri(onboarding.getStories)':

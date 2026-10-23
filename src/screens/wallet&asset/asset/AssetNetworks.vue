@@ -72,7 +72,7 @@ import { fetchEvmBalance } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
+import { MENU_HEIGHT } from '@/consts/layout';
 
 interface TabsOptions {
   label: string;

@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Authorize" :fullScreen="true" @closeHandler="onReject">
+  <AboveForm header="common.authorize" :fullScreen="true" @closeHandler="onReject">
     <div class="authorize">
       <template v-if="isAccountsExists">
         <div>

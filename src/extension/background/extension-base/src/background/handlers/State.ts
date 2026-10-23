@@ -20,6 +20,12 @@ import {
   ScamService,
   PricesService,
   TimeoutService,
+  AssetDiscoverySweepService,
+  canScanSubstrateBackedDiscoveryNetwork,
+  resolveAssetDiscoveryEvmAddress,
+  ActionCapabilityService,
+  SoraDisclaimerService,
+  IrohaConnectService,
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
@@ -55,8 +61,7 @@ import { isEthereumNetwork } from '@/extension/background/extension-base/src/bac
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
-import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
-import { encodeIrohaI105Address, type IrohaNetworkInput } from '@/util/iroha';
+import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
 
 type Wallet = {
   address: string;
@@ -86,11 +91,38 @@ export default class State {
   eventService = new EventService();
   evmContractService = new EvmContractService();
   keyringService = new KeyringService(this.eventService);
-  networkService = new NetworkService(this.keyringService, this);
+  networkService = new NetworkService(this.keyringService, this, () => {
+    if (this.ready) void this.assetDiscoverySweepService.runIfDue();
+  });
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
   walletConnectDappService = new WalletConnectDAppService(this);
+  irohaConnectService = new IrohaConnectService(this, {
+    onStateChange: (snapshot, previous) => {
+      const isApproval = snapshot.phase === 'session-approval' || snapshot.phase === 'request-approval';
+      const wasApproval = previous.phase === 'session-approval' || previous.phase === 'request-approval';
+
+      if (isApproval !== wasApproval) this.requestService.updateIcon(!isApproval);
+      if (snapshot.phase === 'request-approval' && previous.phase !== 'request-approval') {
+        this.requestService.popupOpen('/fearless/settings/iroha-connect');
+      }
+    },
+  });
   balanceService = new BalanceService(this);
+  assetDiscoverySweepService = new AssetDiscoverySweepService({
+    getRegistryNetworks: () => this.networkService.authoritativeDiscoveryNetworks,
+    scanNetwork: (network) => this.scanDiscoveryNetwork(network),
+    readState: async () => (await storage.get(['assetDiscoverySweep'])).assetDiscoverySweep,
+    writeState: async (assetDiscoverySweep) => storage.set({ assetDiscoverySweep }),
+  });
+  actionCapabilityService = new ActionCapabilityService({
+    read: async () => (await storage.get(['actionCapabilities'])).actionCapabilities,
+    write: async (actionCapabilities) => storage.set({ actionCapabilities }),
+  });
+  soraDisclaimerService = new SoraDisclaimerService({
+    read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
+    write: async (soraDisclaimerAcceptance) => storage.set({ soraDisclaimerAcceptance }),
+  });
   pricesService = new PricesService(this);
   nftService = new NftService(this);
   stakingService = new StakingService(this);
@@ -161,14 +193,15 @@ export default class State {
     const url = new URL(tab.url);
     const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
+    const tabAuthKey = isSelf ? null : stripUrl(tab.url);
 
     const cb = () => (authUrls: AuthUrls) => {
-      const authorizeUrls = Object.keys(authUrls).filter((url) => url === tabHostName);
-      const isAuthorize = authorizeUrls.length !== 0;
+      const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
+      const isAuthorize = auth?.isAllowed === true;
 
       this.currentTabStatus = {
         isAuthorize,
-        authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+        authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
         dAppName: tabHostName,
       };
     };
@@ -416,13 +449,21 @@ export default class State {
 
   async init() {
     await this.eventService.waitCryptoReady;
-    await this.networkService.initNetworkMap();
+    await Promise.all([
+      this.networkService.initNetworkMap(),
+      this.actionCapabilityService.init(),
+      this.soraDisclaimerService.init(),
+    ]);
 
-    this.keyringService.getAllMainAccounts().forEach(({ address, meta }) => {
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    accounts.forEach(({ address, meta }) => {
       const { walletEcosystem } = meta as FWKeyringMeta;
 
       return this.balanceService.generateDefaultBalance(address, walletEcosystem!);
     });
+
+    await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
 
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
     this.fetchXcmInfo();
@@ -431,6 +472,82 @@ export default class State {
     this.networkService.initNetworkApis();
     this.onReady();
     this.updateServiceInfo();
+    void this.assetDiscoverySweepService.runIfDue();
+  }
+
+  private async scanDiscoveryNetwork(registryNetwork: NetworkJson): Promise<void> {
+    const network = this.networkService.networkMap[registryNetwork.name];
+    if (!network) return;
+
+    const ecosystem = network.ecosystem;
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    for (const account of accounts) {
+      const meta = account.meta as FWKeyringMeta;
+      const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
+      const publicAddress = (walletEcosystem: WalletEcosystem) =>
+        publicAccounts.find(
+          (item) =>
+            item.ecosystem === walletEcosystem &&
+            (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
+        )?.address;
+      const supports = (walletEcosystem: WalletEcosystem) =>
+        meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
+      const evmAddress = resolveAssetDiscoveryEvmAddress({
+        primaryAddress: account.address,
+        primaryEcosystem: meta.walletEcosystem,
+        ethereumAddress: meta.ethereumAddress,
+        publicAccounts,
+      });
+      const supportsSubstrate = supports(WalletEcosystem.Substrate);
+
+      if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
+        await this.balanceService.solanaBalanceService.fetchBalance({
+          address: account.address,
+          solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
+        await this.balanceService.bitcoinBalanceService.fetchBalance({
+          address: account.address,
+          bitcoinAddress: meta.bitcoinAddress,
+          bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
+        await this.balanceService.irohaBalanceService.fetchBalance({
+          address: account.address,
+          irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
+        if (!this.getTonApiMap[network.name]) await this.networkService.tonApiHandler.initApi(network);
+        await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
+      } else if (ecosystem === 'ethereum' && evmAddress) {
+        const wasActive = network.active;
+        if (!this.getEvmApi(network.name)) this.networkService.evmApiHandler.initEvmApi(network);
+        await this.balanceService.evmBalanceService.fetchBalance({
+          ethereumAddress: evmAddress,
+          networks: [network.name.toLowerCase()],
+          force: true,
+        });
+        if (!wasActive) this.networkService.evmApiHandler.destroyApi(network.name);
+      } else if (
+        canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
+      ) {
+        const networkKey = network.name.toLowerCase();
+        const wasActive = network.active;
+        if (!this.getSubstrateApiMap[networkKey]?.api) await this.networkService.substrateApiHandler.initApi(network);
+        const api = this.getSubstrateApiMap[networkKey]?.api;
+        if (api) await Promise.race([api.isReady, new Promise((_, reject) => setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000))]);
+        await this.balanceService.substrateBalanceService.fetchBalance({
+          address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
+          ethereumAddress: evmAddress,
+          networks: [network.name],
+        });
+        if (!wasActive) await this.networkService.substrateApiHandler.destroyApi(network.name);
+      }
+    }
   }
 
   updateNetworkForNewWallet(address: string) {
@@ -456,6 +573,7 @@ export default class State {
       if (isNew) this.setActiveNetworks(activeValue);
 
       this.nftService.publishNfts();
+      if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
     });
 
     return true;
@@ -548,11 +666,13 @@ export default class State {
 
   getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
     const currentAccount = _currentAccount ?? this.currentAccount;
-    const ecosystem = this.getNetworkEcosystem(network);
+    const networkProfile = this.networkService.networkValues.find(({ name }) => isSameString(name, network));
+    const irohaNetwork = this.getIrohaExpectedNetwork(networkProfile);
+    const ecosystem = networkProfile?.ecosystem;
 
+    if (irohaNetwork) return this.formatIrohaAddress(currentAccount!, irohaNetwork);
     if (ecosystem === WalletEcosystem.Solana) return currentAccount!.solanaAddress ?? currentAccount!.address;
     if (ecosystem === WalletEcosystem.Bitcoin) return this.formatBitcoinAddress(currentAccount!, network);
-    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress(currentAccount!, network);
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
@@ -567,26 +687,22 @@ export default class State {
     return contract.includes('testnet') ? 'testnet' : 'mainnet';
   }
 
-  private getIrohaExpectedNetwork(networkName: string): IrohaNetworkInput {
-    const network = this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
-    const discriminant =
-      (network as { chainDiscriminant?: unknown; i105Prefix?: unknown } | undefined)?.chainDiscriminant ??
-      (network as { i105Prefix?: unknown } | undefined)?.i105Prefix;
-    const contract = `${network?.chainId ?? ''} ${network?.name ?? ''} ${networkName}`.toLowerCase();
+  private getIrohaExpectedNetwork(network: NetworkJson | undefined): IrohaNetworkInput | null {
+    if (!network) return null;
 
-    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant) return 'taira';
-    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant) return 'nexus';
-    if (typeof discriminant === 'number') return discriminant;
-    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId || contract.includes('taira')) return 'taira';
-    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId || contract.includes('nexus')) return 'nexus';
+    try {
+      return resolveCanonicalIrohaAddressNetwork(network.chainId);
+    } catch (error) {
+      if (network.ecosystem === WalletEcosystem.Iroha) throw error;
 
-    return contract.includes('testnet') ? 'taira' : 'nexus';
+      return null;
+    }
   }
 
-  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, networkName: string): string {
+  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, network: IrohaNetworkInput): string {
     if (irohaPublicKeyHex) {
       try {
-        return encodeIrohaI105Address(irohaPublicKeyHex, this.getIrohaExpectedNetwork(networkName));
+        return encodeIrohaI105Address(irohaPublicKeyHex, network);
       } catch {
         return irohaAddress ?? address;
       }
@@ -613,13 +729,16 @@ export default class State {
     }: Wallet,
     networkName: string = 'westend'
   ): string {
-    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName)) ??
+      this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
+    const irohaNetwork = this.getIrohaExpectedNetwork(network);
     const ecosystem = network?.ecosystem ?? this.getNetworkEcosystem(networkName);
 
+    if (irohaNetwork)
+      return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, irohaNetwork);
     if (ecosystem === WalletEcosystem.Solana) return solanaAddress ?? address;
     if (ecosystem === WalletEcosystem.Bitcoin)
       return this.formatBitcoinAddress({ address, ethereumAddress, bitcoinAddress, bitcoinTestnetAddress }, networkName);
-    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, networkName);
 
     const isEthereumNet = isEthereumNetwork(networkName);
 

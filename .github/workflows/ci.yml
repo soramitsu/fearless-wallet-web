@@ -2,6 +2,15 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      prepare_chrome_release:
+        description: Run the complete production Chrome packaging gate
+        type: boolean
+        default: false
+      public_config_json:
+        description: Public configuration from the shipped extension only; never supply secrets
+        type: string
+        default: ''
   push:
     branches:
       - develop
@@ -19,11 +28,90 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-chrome-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.prepare_chrome_release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+
+      - name: Enable Corepack and install dependencies
+        run: |
+          npm install -g corepack@0.34.1
+          corepack enable
+          yarn install --immutable
+
+      - name: Prepare verified production Chrome package
+        env:
+          RELEASE_PUBLIC_CONFIG_JSON: ${{ inputs.public_config_json }}
+        run: |
+          yarn node --input-type=module <<'JS'
+          import { spawnSync } from 'node:child_process';
+          import { REQUIRED_PUBLIC_CONFIG_KEYS } from './scripts/audit-chrome-release.mjs';
+          const config = JSON.parse(process.env.RELEASE_PUBLIC_CONFIG_JSON);
+          const keys = [...REQUIRED_PUBLIC_CONFIG_KEYS, 'EXTENSION_PUBLIC_KEY'];
+          if (!config || Array.isArray(config) || typeof config !== 'object' ||
+              Object.keys(config).length !== keys.length ||
+              Object.keys(config).some(key => !keys.includes(key))) {
+            throw new Error('Release configuration must contain exactly the approved public fields');
+          }
+          for (const key of keys) {
+            if (typeof config[key] !== 'string' || !config[key] || /[\r\n\0]/.test(config[key])) {
+              throw new Error(`Invalid public configuration field: ${key}`);
+            }
+            console.log(`::add-mask::${config[key].replaceAll('%', '%25')}`);
+          }
+          const env = {
+            ...process.env,
+            ...config,
+            IS_EXTENSION: 'true',
+            NODE_ENV: 'production',
+            VUE_APP_EXTENSION_SMOKE: 'false',
+            VUE_APP_TEST_ONLY: 'false',
+          };
+          delete env.RELEASE_PUBLIC_CONFIG_JSON;
+          const result = spawnSync('corepack', ['yarn', 'prepare:chrome-release'], { env, stdio: 'inherit' });
+          if (result.error) throw result.error;
+          process.exit(result.status ?? 1);
+          JS
+          test -s dist/extension/chrome/fearless-wallet-extension-chrome.zip
+          test -s dist/extension/chrome-release-provenance.json
+
+      - name: Upload verified Chrome package and provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: chrome-release-${{ github.sha }}
+          path: |
+            dist/extension/chrome/fearless-wallet-extension-chrome.zip
+            dist/extension/chrome-release-provenance.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Live transfer evidence binds to ancestor commits and unchanged source files.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+
+      - name: Enable Corepack
+        run: |
+          npm install -g corepack@0.34.1
+          corepack enable
 
       - name: Branch flow audit
         run: |
@@ -40,23 +128,39 @@ jobs:
           bash ./scripts/test-todo-debt-audit.sh
           bash ./scripts/audit-todo-debt.sh
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Enable Corepack
+      - name: Iroha production send readiness gate
         run: |
-          npm install -g corepack@latest
-          corepack enable
+          bash ./scripts/test-iroha-js-candidate-verifier.sh
+          bash ./scripts/verify-iroha-js-candidate.sh
+          bash ./scripts/test-iroha-production-send-readiness-audit.sh
+          bash ./scripts/audit-iroha-production-send-readiness.sh
 
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Validate vendored and installed Iroha browser SDK artifact
+        run: |
+          yarn test:vendored-iroha-sdk-audit
+          yarn audit:vendored-iroha-sdk
+
       - name: Production dependency audit
-        run: yarn npm audit --environment production
+        run: |
+          yarn audit:dependencies
+          yarn audit:dependencies:production
+
+      - name: Fail-closed crypto dependency shims
+        run: yarn test:crypto-dependency-shims
+
+      - name: Iroha native Safari QA contract self-test
+        run: yarn test:iroha-safari-qa
 
       - name: Typecheck
         run: yarn typecheck
+
+      - name: Reject known key-exfiltration code
+        run: |
+          yarn test:key-exfiltration-audit
+          yarn audit:key-exfiltration
 
       - name: Lint
         run: yarn lint:check
@@ -67,14 +171,57 @@ jobs:
       - name: Build web app
         run: yarn build:web
 
+      - name: Deterministic extension package self-test
+        run: |
+          yarn test:extension-package
+          yarn test:extension-build-environment
+          yarn test:import-chrome-release-config
+          yarn test:prepare-chrome-release
+          yarn test:release-source-audit
+
       - name: Build Chrome extension
-        run: yarn build:extension
+        run: yarn build:extension:zip
+
+      - name: Chrome release package audit self-test
+        run: yarn test:chrome-release-audit
+
+      - name: Chrome production popup smoke
+        run: yarn test:smoke:chrome:production
 
       - name: Solana extension e2e smoke
         run: yarn test:e2e:solana
+
+      - name: Bitcoin broadcast smoke and evidence gate
+        run: |
+          yarn test:smoke:bitcoin
+          yarn test:bitcoin-broadcast-evidence-template
+          yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json
+          yarn test:bitcoin-broadcast-evidence-audit
+          yarn audit:bitcoin-broadcast-evidence
 
       - name: Build Firefox extension
         run: yarn build:extension:firefox
 
       - name: Lint Firefox extension package
         run: yarn lint:webext:firefox
+
+      - name: Set up Firefox
+        id: setup-firefox
+        env:
+          FIREFOX_VERSION: 152.0.4
+          FIREFOX_ARCHIVE_SHA256: cfbe0a66269f220c69809210eda55fee72f4798427e78181b7d0da14df44882f
+        run: |
+          set -euo pipefail
+          firefox_dir="$RUNNER_TEMP/firefox-$FIREFOX_VERSION"
+          mkdir -p "$firefox_dir"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 \
+            "https://archive.mozilla.org/pub/firefox/releases/$FIREFOX_VERSION/linux-x86_64/en-US/firefox-$FIREFOX_VERSION.tar.xz" \
+            --output "$firefox_dir/firefox.tar.xz"
+          printf '%s  %s\n' "$FIREFOX_ARCHIVE_SHA256" "$firefox_dir/firefox.tar.xz" | sha256sum --check --strict -
+          tar -xJf "$firefox_dir/firefox.tar.xz" -C "$firefox_dir"
+          printf 'firefox-path=%s\n' "$firefox_dir/firefox/firefox" >> "$GITHUB_OUTPUT"
+
+      - name: Firefox extension runtime and CSP smoke
+        run: yarn test:smoke:firefox
+        env:
+          FIREFOX_BINARY: ${{ steps.setup-firefox.outputs.firefox-path }}

@@ -1,0 +1,9 @@
+{
+  "name": "bip322-js",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Fearless fail-closed compatibility shim for the unused Subwallet BIP-322 signer",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "license": "MIT"
+}

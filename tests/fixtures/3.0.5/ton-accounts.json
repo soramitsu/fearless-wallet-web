@@ -1,0 +1,32 @@
+{
+  "source": {
+    "commit": "129807f0deff4b1cd028b4152084b66d5de77f58",
+    "version": "3.0.5",
+    "writtenBy": "TonKeyringService.createAccount(phrase, name, password): the object it passes to tonStore.set",
+    "generated": "2026-10-10, Node 20.20.2, dependencies from the commit's yarn.lock; see README.md",
+    "note": "Test-only phrases and password. Never use these phrases for a real wallet."
+  },
+  "password": "test-only master password 3.0.5",
+  "accounts": [
+    {
+      "kind": "ton-native-24",
+      "phrase": "claim market desert menu auto average label broken public oval gown cover wash vendor hire lawsuit walk grain chicken illegal dolphin tenant filter top",
+      "stored": {
+        "name": "Fixture ton-native-24",
+        "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+        "cipherSeed": "U2FsdGVkX1/Fy2FBUGhj5oaExdiqruU8LWRnqlHOvOkdgTcGrFckIm+5llYPhSOyCeYmyWBZEnuUA4lCXKtQurDLDUI7vktbLc/8hkydjEt4iHl2S7Gk1xyzdKEE/6XUDiOca0N2fvq0EWEVIpTCZyNruoWmPX6ujzq0g/IDd1Shqi1/wyJoSn6B5thgYprUvAQnpbKwFIFenopjZiLAJwiD6DLWrDNpLgYx5yAByms=",
+        "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+      }
+    },
+    {
+      "kind": "bip39-12",
+      "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      "stored": {
+        "name": "Fixture bip39-12",
+        "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+        "cipherSeed": "U2FsdGVkX1+REWtpCR/nIqCJhadlS+sZ7vVDZlrlmr6RYD9xWwxwbnNELBfQrQjX32N0keKApicW5NMoaW88UIPRpA9C+LZMwryb1aElc6FEuf2chgnyH7I0LPjVg4CWvRJuWgPO/Xn+puNSDOoAAg==",
+        "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+      }
+    }
+  ]
+}

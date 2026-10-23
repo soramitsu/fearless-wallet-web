@@ -8,6 +8,8 @@
     @back="back"
   >
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
+    <p v-if="generationExpired" role="alert" data-testid="generationExpired" :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'">{{ generationExpiredMessage }}</p>
+    <p v-if="flowError" role="alert">{{ $t('ux.accountSetupFailed') }}</p>
 
     <CreateWallet
       v-if="createWalletStep"
@@ -77,8 +79,10 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
 import type { FWKeyringMeta } from '@extension-base/types';
+import { isWalletGenerationExpired } from '@/util/walletSecurity';
+import { walletGenerationExpiredMessage } from '@/locales/walletSecurity';
+
 import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
@@ -88,10 +92,7 @@ import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
-import { deriveBitcoinReceiveAddress } from '@/util/bitcoinKeyring';
-import { deriveIrohaAddress } from '@/util/irohaKeyring';
-import { deriveSolanaAddress } from '@/util/solanaKeyring';
-import { deriveTonAccount } from '@/util/tonKeyring';
+import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
 import BaseApi from '@/util/BaseApi';
 import {
   addAccount,
@@ -129,9 +130,14 @@ export default defineComponent({ name: 'CreateGoogle',
       showNotificationPopup: false,
       warningValueName: '',
       isLoading: false,
+      generationExpired: false,
+      flowError: false,
     };
   },
   computed: {
+    generationExpiredMessage() {
+      return walletGenerationExpiredMessage(this.$i18n.locale);
+    },
     invalidMessages() {
       if (!this.warningValueName) return {};
 
@@ -212,14 +218,24 @@ export default defineComponent({ name: 'CreateGoogle',
     async watchStep() {
       if (this.step === 4) {
             this.isLoading = true;
-
-            const address = await this.saveKeypairFromSeed();
-
-            await this.backupWallet(address);
-
-            updateCurrentAccount(address);
-
-            this.isLoading = false;
+            this.flowError = false;
+            try {
+              const address = await this.saveKeypairFromSeed();
+              await this.backupWallet(address);
+              updateCurrentAccount(address);
+            } catch (error) {
+              if (isWalletGenerationExpired(error)) {
+                this.generationExpired = true;
+                this.mnemonic = '';
+                this.selectedMnemonicElements = [];
+                this.step = 1;
+              } else {
+                this.flowError = true;
+                this.step = 3;
+              }
+            } finally {
+              this.isLoading = false;
+            }
           }
     },
     updateDP(derivationPaths: DerivationPaths) {
@@ -248,7 +264,21 @@ export default defineComponent({ name: 'CreateGoogle',
       if (this.step === 1) this.goBack();
           else this.step -= 1;
     },
-    proceed() {
+    async proceed() {
+      if (this.isLoading) return;
+      if (this.step === 1 && !this.mnemonic) {
+        this.isLoading = true;
+        this.flowError = false;
+        try {
+          this.mnemonic = await generateMnemonic(WalletEcosystem.Substrate, this.mnemonicLength);
+          this.generationExpired = false;
+        } catch {
+          this.flowError = true;
+          return;
+        } finally {
+          this.isLoading = false;
+        }
+      }
       if (this.step === this.countSteps) {
             this.goBack();
 
@@ -316,16 +346,7 @@ export default defineComponent({ name: 'CreateGoogle',
           };
 
           if (this.mnemonic) {
-            meta.bitcoinAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic });
-            meta.bitcoinTestnetAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic, network: 'testnet' });
-            meta.solanaAddress = deriveSolanaAddress({ mnemonic: this.mnemonic });
-            const ton = deriveTonAccount({ mnemonic: this.mnemonic });
-            const iroha = deriveIrohaAddress({ mnemonic: this.mnemonic, network: 'taira' });
-
-            meta.tonAddress = ton.addressNonBounceable;
-            meta.tonPublicKeyHex = ton.publicKeyHex;
-            meta.irohaPublicKeyHex = iroha.publicKeyHex;
-            meta.irohaAddress = iroha.address;
+            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
           }
 
           const {
@@ -334,12 +355,12 @@ export default defineComponent({ name: 'CreateGoogle',
           } = this.derivationPaths;
 
           if (this.suriEthereum !== '') {
-            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
+            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, true);
 
             meta.ethereumAddress = ethereumAddress;
           }
 
-          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta);
+          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, WalletEcosystem.Substrate, true);
 
           return address;
     },

@@ -86,15 +86,16 @@ export default defineComponent({ name: 'ImportWallet',
     modelValue: { type: String },
   },
   data() {
-    return {
-      optionsImport: [
-    { label: 'Mnemonic passphrase', value: 'mnemonic' },
-    { label: 'Raw seed', value: 'rawSeed' },
-    { label: 'Restore JSON', value: 'json' },
-  ],
-    };
+    return {};
   },
   computed: {
+    optionsImport() {
+      return [
+        { label: this.$t('addWallet.importTypes.mnemonicPassphrase'), value: 'mnemonic' },
+        { label: this.$t('addWallet.importTypes.rawSeed'), value: 'rawSeed' },
+        { label: this.$t('addWallet.importTypes.restoreJson'), value: 'json' },
+      ];
+    },
     inputValue: {
       get() {
         return this[this.field];

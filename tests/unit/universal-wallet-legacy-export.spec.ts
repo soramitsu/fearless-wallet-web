@@ -70,6 +70,24 @@ describe('Universal Wallet legacy export target resolution', () => {
     expect(resolveUniversalWalletLegacyExportTarget(vault({ address: 'missing' }), [account()])).toBeNull();
   });
 
+  it('matches Iroha account literals case-sensitively', () => {
+    const irohaAddress = 'testCaseSensitiveI105';
+    const stored = account({ irohaAddress, walletEcosystem: WalletEcosystem.Iroha });
+
+    expect(
+      resolveUniversalWalletLegacyExportTarget(
+        vault({ ecosystem: WalletEcosystem.Iroha, address: irohaAddress.toUpperCase() }),
+        [stored]
+      )
+    ).toBeNull();
+    expect(
+      resolveUniversalWalletLegacyExportTarget(
+        vault({ ecosystem: WalletEcosystem.Iroha, address: irohaAddress }),
+        [stored]
+      )?.account
+    ).toBe(stored);
+  });
+
   it('maps non-substrate ecosystems to export route network names', () => {
     expect(resolveLegacyExportNetwork(vault({ ecosystem: WalletEcosystem.Ton }))).toBe('ton mainnet');
     expect(resolveLegacyExportNetwork(vault({ ecosystem: WalletEcosystem.Solana }))).toBe('Solana');

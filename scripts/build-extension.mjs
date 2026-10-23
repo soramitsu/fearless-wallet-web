@@ -3,9 +3,12 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-import { build } from 'vite';
+import { build, createLogger } from 'vite';
 
 import { commonViteConfig } from '../vite.config.shared.mjs';
+import { createFirefoxBuildLogPolicy, polkadotIifePackageInfoPlugin } from './firefox-build-warning-policy.mjs';
+import { auditKeyExfiltrationDirectory } from './audit-key-exfiltration.mjs';
+import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
 const require = createRequire(import.meta.url);
 const makeManifest = require('../src/extension/makeManifest.cjs');
@@ -20,20 +23,41 @@ const mode = modeIndex === -1 ? 'production' : process.argv[modeIndex + 1];
 const browser = process.env.EXTENSION_TYPE || 'chrome';
 const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
+export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
+  ...readReleaseTransferFlags(root),
+  VUE_APP_EXTENSION_SMOKE: 'false',
+  VUE_APP_TEST_ONLY: 'false',
+});
+
+export function enforceProductionReleaseEnvironment(environment, buildMode) {
+  if (buildMode === 'production') Object.assign(environment, PRODUCTION_RELEASE_FLAGS);
+  return environment;
+}
 
 function withBuild(overrides, configOptions = {}) {
+  const { buildTarget, normalizePolkadotPackageInfo = false, ...sharedConfigOptions } = configOptions;
   const config = commonViteConfig({
     mode,
     outDir,
     emptyOutDir: false,
     publicDir: false,
-    ...configOptions,
+    ...sharedConfigOptions,
   });
+  const gateProductionWarnings = mode === 'production' && !watch;
+
+  if (gateProductionWarnings && !buildTarget) {
+    throw new Error('production extension builds must name a warning-policy target');
+  }
+  const buildLogPolicy = gateProductionWarnings
+    ? createFirefoxBuildLogPolicy({ buildTarget, rootDir: root, baseLogger: createLogger() })
+    : null;
 
   return {
     ...config,
     configFile: false,
+    ...(buildLogPolicy ? { customLogger: buildLogPolicy.logger } : {}),
     base: './',
+    plugins: [...config.plugins, ...(normalizePolkadotPackageInfo ? [polkadotIifePackageInfoPlugin()] : [])],
     build: {
       ...config.build,
       minify: mode === 'production',
@@ -42,6 +66,7 @@ function withBuild(overrides, configOptions = {}) {
       rollupOptions: {
         ...config.build.rollupOptions,
         ...(overrides.rollupOptions || {}),
+        ...(buildLogPolicy ? { onLog: buildLogPolicy.onLog } : {}),
         output: {
           ...config.build.rollupOptions.output,
           ...(overrides.rollupOptions?.output || {}),
@@ -82,6 +107,27 @@ async function writeStaticAssets() {
   await copyRecursive(path.resolve(root, 'public/icons'), path.join(outDir, 'icons'));
   await fs.copyFile(path.resolve(root, 'public/favicon.ico'), path.join(outDir, 'favicon.ico'));
   await fs.writeFile(path.join(outDir, 'manifest.json'), `${JSON.stringify(makeManifest(browser), null, 2)}\n`);
+  await fs.writeFile(
+    path.join(outDir, 'extension-build-metadata.json'),
+    `${JSON.stringify(
+      {
+        browser,
+        mode,
+        releaseFlags: Object.fromEntries(
+          Object.keys(PRODUCTION_RELEASE_FLAGS).map((key) => [key, process.env[key] ?? ''])
+        ),
+        schemaVersion: 1,
+      },
+      null,
+      2
+    )}\n`
+  );
+  if (process.env.VUE_APP_EXTENSION_SMOKE === 'true') {
+    await fs.writeFile(
+      path.join(outDir, 'smoke-control.html'),
+      '<!doctype html><html><head><meta charset="utf-8"><title>Fearless extension smoke control</title></head><body></body></html>\n'
+    );
+  }
 }
 
 async function normalizePopupHtml() {
@@ -93,33 +139,64 @@ async function normalizePopupHtml() {
 }
 
 async function run() {
+  enforceProductionReleaseEnvironment(process.env, mode);
+  await auditKeyExfiltrationDirectory(path.join(root, 'src'));
   if (!watch) await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
 
   await build(
-    withBuild({
-      outDir,
-      rollupOptions: {
-        input: path.resolve(root, 'src/extension/popup.html'),
+    withBuild(
+      {
+        outDir,
+        rollupOptions: {
+          input: path.resolve(root, 'src/extension/popup.html'),
+        },
       },
-    })
+      { buildTarget: 'popup', nativeAsyncModules: true }
+    )
   );
   await normalizePopupHtml();
 
   await build(
-    withBuild({
-      rollupOptions: {
-        input: {
-          background: path.resolve(root, 'src/extension/entry/background.ts'),
-        },
-        output: {
-          entryFileNames: 'background.js',
-          chunkFileNames: 'chunks/background-[name]-[hash].js',
-          manualChunks: manualVendorChunk,
+    withBuild(
+      {
+        rollupOptions: {
+          input: {
+            background: path.resolve(root, 'src/extension/entry/backgroundRuntime.ts'),
+          },
+          preserveEntrySignatures: 'strict',
+          output: {
+            entryFileNames: 'background-runtime.js',
+            chunkFileNames: 'chunks/background-[name]-[hash].js',
+            manualChunks: manualVendorChunk,
+          },
         },
       },
-    })
+      { buildTarget: 'background' }
+    )
   );
+
+  // Keep MV3 wake listeners outside the async WASM dependency transform. Static
+  // imports work in extension workers; dynamic import() is unsupported there.
+  const bootstrapConfig = withBuild(
+    {
+      rollupOptions: {
+        input: path.resolve(root, 'src/extension/entry/background.ts'),
+        output: {
+          entryFileNames: 'background.js',
+        },
+      },
+    },
+    { buildTarget: 'background', asyncWasm: false }
+  );
+  bootstrapConfig.plugins.push({
+    name: 'external-background-runtime',
+    enforce: 'pre',
+    resolveId(source) {
+      if (source === './backgroundRuntime') return { id: './background-runtime.js', external: true };
+    },
+  });
+  await build(bootstrapConfig);
 
   for (const [entryName, globalName] of [
     ['content', 'FearlessContentScript'],
@@ -140,12 +217,17 @@ async function run() {
             },
           },
         },
-        { asyncWasm: false }
+        {
+          asyncWasm: false,
+          buildTarget: entryName,
+          normalizePolkadotPackageInfo: true,
+        }
       )
     );
   }
 
   await writeStaticAssets();
+  if (!watch) await auditKeyExfiltrationDirectory(outDir);
 
   if (watch) {
     console.info(`Watching extension build in ${outDir}`);
@@ -153,7 +235,9 @@ async function run() {
   }
 }
 
-run().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  run().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

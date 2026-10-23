@@ -7,6 +7,8 @@
           backgroundColor="light-black"
           iconName="chevron-left"
           data-testid="backBtn"
+          :disabled="isLoading"
+          :aria-label="$t('ux.back')"
           @click="back"
         />
       </div>
@@ -76,6 +78,9 @@
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
         />
 
+        <p v-if="generationExpired" role="alert" data-testid="generationExpired" :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'">{{ generationExpiredMessage }}</p>
+        <p v-if="flowError" role="alert" data-testid="accountFailure">{{ $t('ux.accountSetupFailed') }}</p>
+        <p v-if="isLoading" role="status">{{ $t('ux.settingUpWallet') }}</p>
         <FinishForm v-if="showFinishForm" />
       </div>
 
@@ -112,7 +117,8 @@
           :iconName="isLoading ? 'loader' : ''"
           :iconType="isLoading ? 'loading' : ''"
           :disabled="disabledProceed"
-          :text="isLoading ? '' : buttonText"
+          :loading="isLoading"
+          :text="isLoading ? 'ux.settingUpWallet' : flowError ? 'ux.retry' : buttonText"
           data-testid="proceedBtn"
           @click="proceed"
         />
@@ -140,9 +146,11 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
 import type { DerivationPaths, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import { isWalletGenerationExpired } from '@/util/walletSecurity';
+import { walletGenerationExpiredMessage } from '@/locales/walletSecurity';
+
 import { WalletEcosystem } from '@/interfaces';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
@@ -154,10 +162,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
-import { deriveBitcoinReceiveAddress } from '@/util/bitcoinKeyring';
-import { deriveIrohaAddress } from '@/util/irohaKeyring';
-import { deriveSolanaAddress } from '@/util/solanaKeyring';
-import { deriveTonAccount } from '@/util/tonKeyring';
+import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
 import {
   forgetAccount,
   isDerivationPathValid,
@@ -206,9 +211,15 @@ export default defineComponent({ name: 'AddWallet',
       derivationPaths: INITIAL_DERIVATION_PATHS,
       address: null,
       isLoading: false,
+      flowError: false,
+      generationExpired: false,
+      savedSuccessfully: false,
     };
   },
   computed: {
+    generationExpiredMessage() {
+      return walletGenerationExpiredMessage(this.$i18n.locale);
+    },
     confirmMnemonicStep() {
       return this.step === 3 && this.isCreateWallet;
     },
@@ -279,10 +290,10 @@ export default defineComponent({ name: 'AddWallet',
       return this.isImportWallet && (this.step === 1 || this.step === 2) && !this.showAdvancedForm;
     },
     showBackIcon() {
-      return this.step !== 4;
+      return this.step !== 4 || this.flowError;
     },
     showFinishForm() {
-      return this.step === 4;
+      return this.step === 4 && this.savedSuccessfully;
     },
     header() {
       if (this.isCreateWallet) {
@@ -405,15 +416,7 @@ export default defineComponent({ name: 'AddWallet',
 
           if (step === 2) this.selectedMnemonicElements = [];
           else if (step === 5) this.$router.push({ name: Components.Wallet });
-          else if (step === 4) {
-            this.isLoading = true;
-
-            await this.saveKeypair();
-
-            this.isLoading = false;
-
-            if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
-          }
+          else if (step === 4) await this.completeSave();
     },
     isLengthZero(value: string | KeyringPair$Json) {
       return Object.keys(value).length === 0;
@@ -515,16 +518,46 @@ export default defineComponent({ name: 'AddWallet',
       this.showAddEthereumAccountPopup = false;
           this.step += 1;
     },
+    async completeSave() {
+      if (this.isLoading || this.savedSuccessfully) return;
+      this.isLoading = true;
+      this.flowError = false;
+      try {
+        await this.saveKeypair();
+        this.savedSuccessfully = true;
+        if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
+      } catch (error) {
+        if (isWalletGenerationExpired(error)) {
+          this.generationExpired = true;
+          this.mnemonic = '';
+          this.selectedMnemonicElements = [];
+          this.step = 1;
+        } else this.flowError = true;
+      } finally {
+        this.isLoading = false;
+      }
+    },
     async proceed() {
-      if (this.isCreateWallet) await this.createFlow();
-          else await this.importFlow();
-
-          // if a invalid popup or add ETH account popup is shown, then the index does not need to be increased
-          this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
+      if (this.isLoading) return;
+      if (this.step === 4 && !this.savedSuccessfully) return this.completeSave();
+      this.isLoading = true;
+      this.flowError = false;
+      try {
+        if (this.isCreateWallet) await this.createFlow();
+        else await this.importFlow();
+        // Keep the current step while validation or the optional account prompt is open.
+        this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
+      } catch {
+        this.flowError = true;
+      } finally {
+        this.isLoading = false;
+      }
     },
     async createFlow() {
       if (this.step === 1 && !this.mnemonic.length) {
-            this.mnemonic = await generateMnemonic(this.walletEcosystem, this.mnemonicLength);
+            // New wallets share the Universal Wallet BIP39 phrase regardless of the first network.
+            this.mnemonic = await generateMnemonic(WalletEcosystem.Substrate, this.mnemonicLength);
+            this.generationExpired = false;
           } else if (this.step === 2) await this.validateSuri();
           else if (this.step === 3) this.validateSequenceMnemonic();
     },
@@ -580,7 +613,7 @@ export default defineComponent({ name: 'AddWallet',
           } = this.derivationPaths;
 
           const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
-          const isValidMnemonic = this.mnemonic ? await mnemonicValidate(this.walletEcosystem, this.mnemonic.trim()) : true;
+          const isValidMnemonic = this.mnemonic ? await mnemonicValidate(WalletEcosystem.Substrate, this.mnemonic.trim()) : true;
           const isValidSubstratePhrase = substrate.value ? await isDerivationPathValid(substrate) : true;
           const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
           const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
@@ -620,16 +653,7 @@ export default defineComponent({ name: 'AddWallet',
           };
 
           if (this.mnemonic) {
-            meta.bitcoinAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic });
-            meta.bitcoinTestnetAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: this.mnemonic, network: 'testnet' });
-            meta.solanaAddress = deriveSolanaAddress({ mnemonic: this.mnemonic });
-            const ton = deriveTonAccount({ mnemonic: this.mnemonic });
-            const iroha = deriveIrohaAddress({ mnemonic: this.mnemonic, network: 'taira' });
-
-            meta.tonAddress = ton.addressNonBounceable;
-            meta.tonPublicKeyHex = ton.publicKeyHex;
-            meta.irohaPublicKeyHex = iroha.publicKeyHex;
-            meta.irohaAddress = iroha.address;
+            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
           }
 
           const {
@@ -640,7 +664,7 @@ export default defineComponent({ name: 'AddWallet',
           if (this.isOnlyEthereumAccount) meta.name = this.accountsStore.selectedWallet.name;
 
           if (this.suriEthereum !== '') {
-            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
+            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, this.isCreateWallet);
 
             if (this.isOnlyEthereumAccount) {
               updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
@@ -651,7 +675,7 @@ export default defineComponent({ name: 'AddWallet',
             meta.ethereumAddress = ethereumAddress;
           }
 
-          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem);
+          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet);
 
           return address;
     },
@@ -688,6 +712,8 @@ export default defineComponent({ name: 'AddWallet',
       if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
     },
     back() {
+      if (this.isLoading) return;
+      this.flowError = false;
       if (this.isOnlyEthereumAccount) this.step -= 1;
           else if (this.isImportWallet) this.backIsImportWallet();
           else if (this.step === 2) {

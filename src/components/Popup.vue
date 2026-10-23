@@ -20,8 +20,8 @@
             </div>
           </template>
 
-          <button v-if="showCloseButton" type="button" class="button-close" data-testid="basicCloseBtn" @click="close">
-            <Icon icon="close" />
+          <button v-if="showCloseButton" type="button" class="button-close" :aria-label="$t('common.close')" data-testid="basicCloseBtn" @click="close">
+            <Icon icon="close" aria-hidden="true" />
           </button>
         </div>
 
@@ -191,6 +191,7 @@ const backgroundClick = (event: CustomEvent) => {
   height: fit-content;
 
   .popup-container {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -243,6 +244,7 @@ const backgroundClick = (event: CustomEvent) => {
   }
 
   .header {
+    box-sizing: border-box;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -283,10 +285,24 @@ const backgroundClick = (event: CustomEvent) => {
   }
 
   .button-close {
+    appearance: none;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: $grayish-white;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
     padding: 0;
-    width: 20px;
-    height: 20px;
+    width: 44px;
+    height: 44px;
     margin: auto 0;
+
+    :deep(svg) {
+      width: 24px;
+      height: 24px;
+    }
   }
 }
 

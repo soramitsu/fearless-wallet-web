@@ -29,13 +29,13 @@
 
           <Icon icon="chevron-right" class="arrow-icon" />
 
-          <FInput
-            :value="formattedAddressTo"
-            placeholder="assets.to"
-            size="big"
-            :readonly="true"
-            data-testid="toAddress"
-          />
+          <div class="recipient-review">
+            <span>{{ $t('assets.to') }}</span>
+            <p class="recipient-address" data-testid="toAddress">{{ recipient }}</p>
+            <span>{{ $t('crossChainPage.destinationNetwork') }}</span>
+            <strong data-testid="reviewNetwork">{{ selectedNetwork }}</strong>
+            <small>{{ $t('ux.verifyRecipient') }}</small>
+          </div>
         </div>
 
         <FCorners size="big" class="row">
@@ -62,7 +62,8 @@ import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-export default defineComponent({ name: 'SendForm',
+export default defineComponent({
+  name: 'SendForm',
   components: { TransferForm },
   data() {
     return {
@@ -79,17 +80,19 @@ export default defineComponent({ name: 'SendForm',
   computed: {
     currency() {
       return this.accountsStore.balances.find(({ balances }) =>
-            balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
-          );
+        balances.some(({ id }) => id.toLowerCase() === this.assetId.toLowerCase())
+      );
     },
     isUtilityAsset() {
-      return this.currency?.balances.some(({ isUtility, name }) => isUtility && isSameString(name, this.selectedNetwork));
+      return this.currency?.balances.some(
+        ({ isUtility, name }) => isUtility && isSameString(name, this.selectedNetwork)
+      );
     },
     partialFeeString() {
       const utilityAsset = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
-          const symbol = utilityAsset ? utilityAsset.symbol : '';
+      const symbol = utilityAsset ? utilityAsset.symbol : '';
 
-          return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
+      return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
     },
     showValue() {
       return this.value !== '0';
@@ -105,11 +108,11 @@ export default defineComponent({ name: 'SendForm',
     },
     feeAssetPrice() {
       const currency = this.accountsStore.balances.find(({ balances }) =>
-            balances.some(({ id }) => id === this.originalUtilityId)
-          );
-          const priceId = currency?.priceId ?? '';
+        balances.some(({ id }) => id === this.originalUtilityId)
+      );
+      const priceId = currency?.priceId ?? '';
 
-          return this.networksStore.getAssetPrice(priceId).price;
+      return this.networksStore.getAssetPrice(priceId).price;
     },
     fiatFeeString() {
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
@@ -120,14 +123,11 @@ export default defineComponent({ name: 'SendForm',
     amountString() {
       return `${+this.amount} ${this.selectedAssetUpper}`;
     },
-    formattedAddressTo() {
-      return `${this.recipient.slice(0, 7)}...${this.recipient.slice(-8)}`;
-    },
     selectedAsset() {
       return this.currency?.balances?.find(
-            (el) =>
-              el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
-          );
+        (el) =>
+          el.symbol.toLowerCase() === this.assetId.toLowerCase() || el.id.toLowerCase() === this.assetId.toLowerCase()
+      );
     },
     selectedAssetUpper() {
       return this.selectedAsset?.symbol.toUpperCase();
@@ -144,7 +144,7 @@ export default defineComponent({ name: 'SendForm',
   },
   created() {
     this.assetId = this.$route.params.assetId;
-        this.selectedNetwork = this.$route.params.network;
+    this.selectedNetwork = this.$route.params.network;
   },
   methods: {
     closeForm() {
@@ -222,5 +222,28 @@ export default defineComponent({ name: 'SendForm',
       }
     }
   }
+}
+</style>
+
+<style lang="scss" scoped>
+.recipient-review {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  text-align: left;
+  background: $secondary-background-color;
+  border-radius: 8px;
+}
+.recipient-review > span,
+.recipient-review > small {
+  color: $default-white;
+  font-size: 0.875rem;
+}
+.recipient-address {
+  margin: 0 0 8px;
+  font: inherit;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 </style>

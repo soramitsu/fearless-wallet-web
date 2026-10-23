@@ -47,7 +47,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 import { isSora } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { MENU_HEIGHT } from '@/screens/main/Menu.vue';
+import { MENU_HEIGHT } from '@/consts/layout';
 
 export default defineComponent({ name: 'History', components: { HistoryItem } ,
   props: {
@@ -96,6 +96,9 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
+      if (BaseApi.isBitcoinNetwork(this.selectedNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
+      }
 
           const network = this.networksStore.getNetwork(this.selectedNetwork);
 

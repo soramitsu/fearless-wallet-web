@@ -16,7 +16,10 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
 import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
-import { mergeUniversalWalletRegistryNetworks } from '@/util/universalWalletRegistryNetworks';
+import {
+  createAuthoritativeDiscoveryRegistryNetworks,
+  mergeUniversalWalletRegistryNetworks,
+} from '@/util/universalWalletRegistryNetworks';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
@@ -31,7 +34,11 @@ export class NetworkService {
   evmApiHandler = new EvmApiHandler(this.networkMap);
   substrateApiHandler: SubstrateApiHandler;
 
-  constructor(readonly keyringService: KeyringService, state: State) {
+  constructor(
+    readonly keyringService: KeyringService,
+    state: State,
+    private readonly onAuthoritativeRegistryUpdated: () => void = () => undefined
+  ) {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
     this.tonApiHandler = new TonApiHandler(state);
 
@@ -42,6 +49,11 @@ export class NetworkService {
 
   get networkValues() {
     return Object.values(this.networkMap);
+  }
+
+  /** Maintained remote + bundled registries, excluding arbitrary custom networks. */
+  get authoritativeDiscoveryNetworks() {
+    return createAuthoritativeDiscoveryRegistryNetworks(this.networksGithub);
   }
 
   get activeNetworkByEcosystem() {
@@ -162,6 +174,7 @@ export class NetworkService {
     });
 
     this.updateNetworkStore();
+    this.onAuthoritativeRegistryUpdated();
   }
 
   destroyApi(network: string) {

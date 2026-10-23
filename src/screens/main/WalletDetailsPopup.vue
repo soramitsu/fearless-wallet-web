@@ -11,15 +11,15 @@
   >
     <div class="wallet-details">
       <div v-if="selectedAccountIsSubstrate" class="row" @click="openWalletDetails">
-        <div class="label" data-testid="walletDetails">Wallet Details</div>
+        <div class="label" data-testid="walletDetails">{{ $t('walletDetailsPopup.details') }}</div>
       </div>
 
       <div v-if="isExportPossible" class="row" @click="exportToGoogleDrive">
-        <div class="label google" data-testid="exportToGoogle">Export to Google</div>
+        <div class="label google" data-testid="exportToGoogle">{{ $t('walletDetailsPopup.exportToGoogle') }}</div>
       </div>
 
       <div class="row" @click="deleteWallet">
-        <div class="label delete" data-testid="deleteWallet">Delete Wallet</div>
+        <div class="label delete" data-testid="deleteWallet">{{ $t('walletDetailsPopup.deleteWallet') }}</div>
       </div>
     </div>
   </Popup>
@@ -33,6 +33,7 @@ import { forgetAccount, initGoogleAuth, updateCurrentAccount } from '@/extension
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
+import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 
 export default defineComponent({ name: 'WalletDetailsPopup' ,
   props: {
@@ -53,7 +54,7 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
       return this.selectedAccount?.walletEcosystem === WalletEcosystem.Substrate;
     },
     isExportPossible() {
-      if (!this.isExtension || this.selectedAccount?.isMobile) return false;
+      if (!this.isExtension || !isGoogleDriveBackupEnabled() || this.selectedAccount?.isMobile) return false;
 
           return this.selectedAccountIsSubstrate;
     },

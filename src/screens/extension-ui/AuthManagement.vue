@@ -30,7 +30,7 @@ const header = computed(() => {
 
 const onBack = () => router.back();
 
-const onClose = () => router.push({ name: Components.Wallet });
+const onClose = () => router.push({ name: Components.Settings });
 </script>
 
 <style lang="scss" scoped>

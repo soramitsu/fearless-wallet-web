@@ -6,7 +6,27 @@
       <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
-        <template v-if="extrinsicType !== 'nft'">
+        <template v-if="isUnknown">
+          <p class="transaction-unknown-message" data-testid="transactionUnknownMessage">
+            {{ $t('assets.transactionStatusUnknownDetails') }}
+          </p>
+          <code class="transaction-hash" data-testid="unknownTransactionHash">{{ unknownTransactionHash }}</code>
+          <FButton
+            text="common.copyHash"
+            class="copy-hash"
+            iconName="copy"
+            type="secondary"
+            size="small"
+            data-testid="copyUnknownHashBtn"
+            @click="copyUnknownHash"
+          />
+          <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+        </template>
+        <p v-if="isFailed" class="transaction-error-message" data-testid="transactionErrorMessage">
+          {{ transactionErrorText }}
+        </p>
+
+        <template v-if="extrinsicType !== 'nft' && !isUnknown">
           <div class="descriptions">
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
@@ -21,7 +41,7 @@
           <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
         </template>
 
-        <template v-else>
+        <template v-else-if="extrinsicType === 'nft'">
           <div class="icon-circle">
             <Icon
               :icon="isFailed ? 'close' : 'check'"
@@ -83,7 +103,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-
 import type { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { NftTx } from '@extension-base/services/nft-service/types';
 import type {
@@ -105,8 +124,14 @@ import { sendNft } from '@/extension/messaging/nfts';
 import { isSameString, isSora, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import {
+  getTransactionFailurePresentation,
+  getUnknownTransactionHash,
+  transactionResponseSucceeded,
+} from '@/helpers/transactionFailure';
 
-export default defineComponent({ name: 'ConfirmationPasswordPopup',
+export default defineComponent({
+  name: 'ConfirmationPasswordPopup',
   components: { SignMobile },
   props: {
     amount: { type: String, default: '0' },
@@ -118,6 +143,7 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
     currency: Object,
     tx: Object,
     extrinsicType: String,
+    disclaimerAccepted: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -127,37 +153,39 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
       hash: undefined,
       signedPayload: null,
       transactionState: null,
-      showUnknownErrorPopup: false,
+      transactionResponse: null as BasicTxResponse | ResponseNftTransfer | null,
     };
   },
   computed: {
     firstIconUrl() {
       if (this.extrinsicType === 'crossChain')
-            return this.networksStore.networks.find(({ name }) => isSameString(name, this.firstIcon))?.icon ?? '';
+        return this.networksStore.networks.find(({ name }) => isSameString(name, this.firstIcon))?.icon ?? '';
 
-          const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.firstIcon);
+      const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.firstIcon);
 
-          if (tokenGroup) return tokenGroup.icon;
+      if (tokenGroup) return tokenGroup.icon;
 
-          return this.firstIcon;
+      return this.firstIcon;
     },
     secondIconUrl() {
       if (this.extrinsicType === 'crossChain')
-            return (
-              this.networksStore.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? ''
-            );
+        return (
+          this.networksStore.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ??
+          ''
+        );
 
-          const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.secondIcon);
+      const tokenGroup = this.accountsStore.balances.find(({ groupId }) => groupId === this.secondIcon);
 
-          if (tokenGroup) return tokenGroup.icon;
+      if (tokenGroup) return tokenGroup.icon;
 
-          return this.secondIcon;
+      return this.secondIcon;
     },
     request() {
       return {
-            ...this.tx,
-            isMobile: this.isSignMobile,
-          };
+        ...this.tx,
+        isMobile: this.isSignMobile,
+        ...(this.extrinsicType === 'swap' ? { disclaimerAccepted: this.disclaimerAccepted } : {}),
+      };
     },
     transactionAddress() {
       return this.accountsStore.selectedWallet.address;
@@ -165,7 +193,7 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
     isSignMobile() {
       const encodedAddress = BaseApi.encodeAddress(this.transactionAddress);
 
-          return this.accountsStore.accounts.some((account) => account.address === encodedAddress && account.isMobile);
+      return this.accountsStore.accounts.some((account) => account.address === encodedAddress && account.isMobile);
     },
     isSuccess() {
       return this.transactionState === 'success';
@@ -173,33 +201,46 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
     isFailed() {
       return this.transactionState === 'failed';
     },
+    isUnknown() {
+      return this.transactionState === 'unknown';
+    },
+    unknownTransactionHash() {
+      return getUnknownTransactionHash(this.transactionResponse);
+    },
+    transactionErrorText() {
+      const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
+
+      return this.$t(presentation.key, presentation.localeProps ?? {});
+    },
     headerType() {
       if (this.isSuccess) return 'success';
 
-          if (this.isFailed) return 'failed';
+      if (this.isFailed) return 'failed';
 
-          return 'pending';
+      return 'pending';
     },
     popupHeader() {
+      if (this.isUnknown) return 'assets.transactionStatusUnknown';
+
       if (this.isSuccess) return 'assets.transactionDone';
 
-          if (this.isFailed) return 'assets.transactionError';
+      if (this.isFailed) return 'assets.transactionError';
 
-          if (this.isTransactionPending) return 'assets.transactionPending';
+      if (this.isTransactionPending) return 'assets.transactionPending';
 
-          return '';
+      return '';
     },
     transferAmountString() {
       const sumValue = +this.amount + +this.fee;
-          const value = this.isSuccess ? sumValue : +this.fee;
+      const value = this.isSuccess ? sumValue : +this.fee;
 
-          return `-${this.$n(value, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
+      return `-${this.$n(value, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
     },
     transferValueString() {
       const sumValue = +this.value + +this.feeValue;
-          const value = this.isSuccess ? sumValue : +this.feeValue;
+      const value = this.isSuccess ? sumValue : +this.feeValue;
 
-          return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
+      return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
     },
     isTransactionInit() {
       return this.transactionState !== null;
@@ -208,7 +249,7 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
       return this.transactionState === 'pending';
     },
     isTransactionFinished() {
-      return this.isSuccess || this.isFailed;
+      return this.isSuccess || this.isFailed || this.isUnknown;
     },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
@@ -218,100 +259,110 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
     },
     isStaking() {
       return (
-            this.extrinsicType === 'bond' ||
-            this.extrinsicType === 'bondExtra' ||
-            this.extrinsicType === 'unbond' ||
-            this.extrinsicType === 'rebond' ||
-            this.extrinsicType === 'redeem' ||
-            this.extrinsicType === 'nominate' ||
-            this.extrinsicType === 'setController' ||
-            this.extrinsicType === 'setPayee' ||
-            this.extrinsicType === 'payoutRewards'
-          );
+        this.extrinsicType === 'bond' ||
+        this.extrinsicType === 'bondExtra' ||
+        this.extrinsicType === 'unbond' ||
+        this.extrinsicType === 'rebond' ||
+        this.extrinsicType === 'redeem' ||
+        this.extrinsicType === 'nominate' ||
+        this.extrinsicType === 'setController' ||
+        this.extrinsicType === 'setPayee' ||
+        this.extrinsicType === 'payoutRewards'
+      );
     },
   },
   async mounted() {
     this.resetTxStatus();
-        this.sendExtrinsic();
+    this.sendExtrinsic();
   },
   methods: {
     resetTxStatus() {
       this.transactionState = null;
+      this.transactionResponse = null;
     },
     close() {
       this.$emit('close', this.isTransactionInit);
 
-          if (this.isTransactionPending || this.isTransactionFinished) this.resetTxStatus();
+      if (this.isTransactionPending || this.isTransactionFinished) this.resetTxStatus();
     },
     copyHash() {
       setClipboard(this.hash ?? '');
     },
+    copyUnknownHash() {
+      setClipboard(this.unknownTransactionHash ?? '');
+    },
     async onSignMobile() {
       if (this.extrinsicType === 'swap') await makeSwap(this.request as RequestSwap);
-          else this.makeExtrinsic();
+      else this.makeExtrinsic();
     },
     async makeExtrinsic() {
       const callback = (data: BasicTxResponse) => {
-            // TODO Выводить юзеру ошибку ???
-            // TODO ошибку balanceTooLow по хорошему нужно обработать и показать
-            console.info('errors:', data.errors ?? []);
+        // транзакция может не пройти даже после отправки в блокчейн
+        this.applyTransactionResponse(data);
+      };
 
-            // транзакция может не пройти даже после отправки в блокчейн
-            this.transactionState = data.status ? 'success' : 'failed';
-          };
+      if (this.extrinsicType === 'transfer') return makeTransfer(this.request as RequestTransfer, callback);
 
-          if (this.extrinsicType === 'transfer') return makeTransfer(this.request as RequestTransfer, callback);
+      if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);
 
-          if (this.extrinsicType === 'crossChain') return makeCrossChain(this.request as RequestCrossChain, callback);
+      if (this.extrinsicType === 'swap') return makeSwap(this.request as RequestSwap);
 
-          if (this.extrinsicType === 'swap') return makeSwap(this.request as RequestSwap);
+      if (this.extrinsicType === 'nft') return sendNft(this.request as NftTx);
 
-          if (this.extrinsicType === 'nft') return sendNft(this.request as NftTx);
+      if (this.isStaking)
+        return makeStaking({
+          type: this.extrinsicType as StakingOperation,
+          params: this.request as RequestStaking,
+        });
 
-          if (this.isStaking)
-            return makeStaking({
-              type: this.extrinsicType as StakingOperation,
-              params: this.request as RequestStaking,
-            });
-
-          if (this.isPool)
-            return makePool({
-              type: this.extrinsicType as PoolsOperation,
-              params: this.request as RequestPool,
-            });
+      if (this.isPool)
+        return makePool({
+          type: this.extrinsicType as PoolsOperation,
+          params: this.request as RequestPool,
+        });
     },
     openExplorer() {
       const network = this.networksStore.getNetwork((this.tx as NftTx).network);
-          const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
+      const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
 
-          const hostname = new URL(explorerUrl).hostname;
+      const hostname = new URL(explorerUrl).hostname;
 
-          window.open(`https://${hostname}/tx/${this.hash}`);
+      window.open(`https://${hostname}/tx/${this.hash}`);
     },
     async sendExtrinsic() {
       this.transactionState = 'pending';
 
-          const results = await this.makeExtrinsic();
+      try {
+        const results = await this.makeExtrinsic();
 
-          if (this.extrinsicType === 'nft') {
-            const result = results as ResponseNftTransfer;
+        if (this.extrinsicType === 'nft') {
+          const result = results as ResponseNftTransfer;
 
-            this.hash = result.hash;
-          }
+          this.hash = result.hash;
+        }
 
-          const txCross = this.tx as RequestCheckCrossChain;
+        const txCross = this.tx as RequestCheckCrossChain;
 
-          // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
-          // аналогично для TON экосистемы
-          if (
-            this.isTon ||
-            this.isStaking ||
-            this.isPool ||
-            this.extrinsicType === 'swap' ||
-            this.extrinsicType === 'nft' ||
-            (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
-          )
-            this.transactionState = results?.status ? 'success' : 'failed';
+        // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
+        // аналогично для TON экосистемы
+        if (
+          this.isTon ||
+          this.isStaking ||
+          this.isPool ||
+          this.extrinsicType === 'swap' ||
+          this.extrinsicType === 'nft' ||
+          (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
+        )
+          this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);
+      } catch {
+        this.applyTransactionResponse(undefined);
+      }
+    },
+    applyTransactionResponse(response: BasicTxResponse | ResponseNftTransfer | undefined) {
+      this.transactionResponse = response ?? null;
+      this.transactionState = getUnknownTransactionHash(response)
+        ? 'unknown'
+        : transactionResponseSucceeded(response) ? 'success' : 'failed';
     },
   },
 });
@@ -326,6 +377,25 @@ export default defineComponent({ name: 'ConfirmationPasswordPopup',
   gap: 5px;
   padding: 0 25px;
   min-height: 175px;
+
+  .transaction-error-message {
+    color: $reject-color;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    margin: 0;
+    max-width: 280px;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .transaction-unknown-message,
+  .transaction-hash {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    max-width: 280px;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
 
   .icon__lock-green {
     width: 30px;

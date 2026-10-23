@@ -12,6 +12,9 @@ export interface Features {
     moonpay: boolean;
     ramp: boolean;
   };
+  actions?: Partial<Record<'polkaswap' | 'demeter' | 'polkamarkt' | 'crossChainXcm' | 'crossChainSoraBridge' | 'crossChainLiberland', boolean>>;
+  assetDiscoveryMode?: 'shadow' | 'visible';
+  portfolio?: { assetDiscoveryMode?: 'shadow' | 'visible' };
 }
 
 export type SignRequests = {

@@ -3,9 +3,10 @@
     <div class="onboarding">
       <template v-if="showStartingScreen">
         <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
-        <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
+        <img class="onboarding__logo" src="@/assets/fearless-logo-animated.gif" :alt="$t('common.fearlessLogo')" />
         <h1 class="onboarding__header">
-          {{ title.first }} <span class="onboarding__header--red">{{ title.last }}</span>
+          {{ $t('onboarding.titleFirst') }}
+          <span class="onboarding__header--red">{{ $t('onboarding.titleLast') }}</span>
         </h1>
       </template>
 
@@ -39,17 +40,14 @@ import StoryCounter from './StoryCounter.vue';
 import { Components } from '@/router/routes';
 import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
-export default defineComponent({ name: 'Onboarding',
+export default defineComponent({
+  name: 'Onboarding',
   components: {
     OnboardingStory,
     StoryCounter,
   },
   data() {
     return {
-      title: {
-    first: 'The DeFi Wallet for the',
-    last: 'Future',
-  },
       stories: [],
       showStartingScreen: true,
       activeStory: 1,
@@ -65,7 +63,7 @@ export default defineComponent({ name: 'Onboarding',
     buttonText() {
       if (this.showStartingScreen) return 'common.start';
 
-          return 'common.next';
+      return 'common.next';
     },
     currentStory() {
       return this.stories[this.activeStory - 1];
@@ -74,9 +72,9 @@ export default defineComponent({ name: 'Onboarding',
   async mounted() {
     const stories = await getOnboardingStories(this.$i18n.locale);
 
-        this.stories = stories;
+    this.stories = stories;
 
-        if (stories.length === 0) this.$router.back();
+    if (stories.length === 0) this.$router.back();
   },
   methods: {
     onSkip() {
@@ -84,13 +82,13 @@ export default defineComponent({ name: 'Onboarding',
     },
     onContinue() {
       if (this.showStartingScreen) this.showStartingScreen = false;
-          else if (this.storiesLength === this.activeStory) this.completeOnboarding();
-          else this.activeStory += 1;
+      else if (this.storiesLength === this.activeStory) this.completeOnboarding();
+      else this.activeStory += 1;
     },
     completeOnboarding() {
       setOnboardingComplete();
 
-          this.$router.push({ name: Components.Wallet });
+      this.$router.push({ name: Components.Wallet });
     },
   },
 });
@@ -109,7 +107,7 @@ export default defineComponent({ name: 'Onboarding',
   }
 
   &__header {
-    font-family: Unbounded, sans-serif;
+    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', sans-serif;
     font-size: 2.875em;
     font-weight: 700;
     letter-spacing: 0.54px;

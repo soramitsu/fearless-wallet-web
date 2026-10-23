@@ -1,6 +1,7 @@
 import { useNetworksStore } from '../networks';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { AssetPreference } from '@/portfolio/assetIdentity';
 import type { GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
 import { WalletEcosystem, type FiatJson } from '@/interfaces';
@@ -13,6 +14,7 @@ type Getters = {
   fiatSymbol(state: State): string;
   getFiatId(state: State): string;
   hiddenAssets(state: State): string[];
+  assetPreferences(state: State): Record<string, AssetPreference>;
   getShowWarningNetwork(state: State): GetShowWarningNetworks;
   getAutoSelectNodesValueByNetwork(state: State): GetAutoSelectNodesValueByNetwork;
   isCustomSort(state: State): (address: string) => boolean;
@@ -39,6 +41,10 @@ export const getters: Getters = {
     const { address } = selectedWallet;
 
     return hiddenAssetsForAllAccounts[address] ?? [];
+  },
+
+  assetPreferences({ selectedWallet, assetPreferencesForAllAccounts }) {
+    return assetPreferencesForAllAccounts[selectedWallet.address] ?? {};
   },
 
   selectedNetwork({ selectedNetworks, selectedWallet: { address } }) {

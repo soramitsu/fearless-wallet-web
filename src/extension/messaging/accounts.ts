@@ -18,9 +18,10 @@ export function addAccount(
   suri: string,
   type: KeypairType,
   meta: FWKeyringMeta,
-  walletEcosystem = WalletEcosystem.Substrate
+  walletEcosystem = WalletEcosystem.Substrate,
+  requireFreshGeneration = false
 ): Promise<string> {
-  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem });
+  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem, requireFreshGeneration });
 }
 
 export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {

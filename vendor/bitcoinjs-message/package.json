@@ -1,0 +1,9 @@
+{
+  "name": "bitcoinjs-message",
+  "version": "2.2.0",
+  "private": true,
+  "description": "Fearless fail-closed compatibility shim for an unused Subwallet legacy Bitcoin message dependency",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "license": "MIT"
+}

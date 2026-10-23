@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -5,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import fg from 'fast-glob';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
+import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
+import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,7 +41,9 @@ const ENV_KEYS = [
   'FL_WEB_OPTIMISTIC_ETHERSCAN_API_KEY',
   'FL_WEB_SNOWTRACE_API_KEY',
   'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY',
+  'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
   'VUE_APP_ENABLE_IROHA_TRANSFERS',
+  'VUE_APP_EXTENSION_SMOKE',
   'VUE_APP_TEST_ONLY',
   'VUE_APP_FL_WEB_X1_TESTNET_API_KEY',
 ];
@@ -52,19 +57,26 @@ const CARDANO_MESSAGE_SIGNING_BROWSER = path.resolve(
 );
 const NOOP_DEVTOOLS_API = path.resolve(__dirname, 'src/util/noopDevtoolsApi.ts');
 const VUEDRAGGABLE_ESM = path.resolve(__dirname, 'node_modules/vuedraggable/src/vuedraggable.js');
+const UNSUPPORTED_NODE_VM = path.resolve(__dirname, 'src/util/unsupportedNodeVm.ts');
+const IROHA_SDK_DIST = path.join('node_modules', '@iroha', 'iroha-js', 'dist') + path.sep;
+const IROHA_SDK_BROWSER_BINDING = path.resolve(__dirname, 'src/util/irohaSdkBrowserBinding.ts');
+
+// The Iroha SDK reaches its Rust binding through `native.js`; browsers get the wallet's
+// I105 address binding instead (see src/util/irohaSdkBrowserBinding.ts).
+function irohaSdkBrowserBindingPlugin() {
+  return {
+    name: 'fearless-iroha-sdk-browser-binding',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!importer || (source !== './native.js' && source !== '../native.js')) return null;
+
+      return path.normalize(importer.split('?')[0]).includes(IROHA_SDK_DIST) ? IROHA_SDK_BROWSER_BINDING : null;
+    },
+  };
+}
 
 function createSymbolId(template, file) {
   return template.replace('[name]', path.basename(file, '.svg'));
-}
-
-function svgToSymbol(svg, id) {
-  const svgMatch = svg.match(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/i);
-  if (!svgMatch) return '';
-
-  const [, attrs, body] = svgMatch;
-  const viewBox = attrs.match(/\bviewBox=(["'])(.*?)\1/i)?.[2] ?? '0 0 24 24';
-
-  return `<symbol id="${id}" viewBox="${viewBox}">${body}</symbol>`;
 }
 
 async function loadSvgSprite(iconDirs, symbolId, pluginContext) {
@@ -82,7 +94,7 @@ async function loadSvgSprite(iconDirs, symbolId, pluginContext) {
     })
   );
 
-  return `<svg xmlns="http://www.w3.org/2000/svg">${symbols.join('')}</svg>`;
+  return wrapSvgSymbols(symbols);
 }
 
 function svgSpritePlugin({ iconDirs, symbolId }) {
@@ -107,6 +119,7 @@ const mountSprite = () => {
   spriteContainer.id = '__fearless_svg_sprite__';
   spriteContainer.style.display = 'none';
   const spriteDocument = new DOMParser().parseFromString(sprite, 'image/svg+xml');
+  if (spriteDocument.querySelector('parsererror')) throw new Error('Wallet artwork could not load.');
   const spriteElement = document.importNode(spriteDocument.documentElement, true);
 
   spriteContainer.appendChild(spriteElement);
@@ -139,12 +152,45 @@ export function makeDefine(mode, extraEnv = {}) {
   return define;
 }
 
-export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true }) {
+// A send flag may only be enabled once its live-network evidence manifest is marked ready.
+// The release audits verify the recorded evidence itself (on-chain status, artifact digest).
+function assertTransferEvidenceReady(flag, manifestPath, errorCode, description) {
+  if (process.env[flag] !== 'true') return;
+
+  let manifest;
+
+  try {
+    manifest = JSON.parse(readFileSync(path.resolve(__dirname, manifestPath), 'utf8'));
+  } catch {
+    manifest = undefined;
+  }
+
+  if (manifest?.status !== 'ready' || manifest.releaseEnabled !== true) {
+    throw new Error(`${errorCode}: ${description} stay disabled until ${manifestPath} records ready release evidence`);
+  }
+}
+
+export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
+  assertTransferEvidenceReady(
+    'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
+    'scripts/bitcoin-testnet-broadcast-evidence.json',
+    'bitcoin_testnet_broadcast_evidence_missing',
+    'Bitcoin transfers'
+  );
+  assertTransferEvidenceReady(
+    'VUE_APP_ENABLE_IROHA_TRANSFERS',
+    'config/iroha-production-send-readiness.json',
+    'iroha_transfer_evidence_missing',
+    'Iroha transfers'
+  );
+
   return {
     publicDir,
     plugins: [
+      irohaSdkBrowserBindingPlugin(),
       vue(),
-      ...(asyncWasm ? [wasm(), topLevelAwait()] : []),
+      subwalletPackageCompatPlugin(),
+      ...(asyncWasm ? [wasm(), ...(nativeAsyncModules ? [] : [topLevelAwait()])] : []),
       nodePolyfills({
         include: ['buffer', 'crypto', 'events', 'http', 'https', 'os', 'stream', 'url', 'util', 'zlib'],
         globals: {
@@ -158,6 +204,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         symbolId: 'icon-[name]',
       }),
     ],
+    optimizeDeps: { exclude: ['@subwallet/keyring', '@subwallet/ui-keyring'] },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
@@ -166,6 +213,8 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         '@extension-base': path.resolve(__dirname, 'src/extension/background/extension-base/src'),
         ...(mode === 'production' ? { '@vue/devtools-api': NOOP_DEVTOOLS_API } : {}),
         store: path.resolve(__dirname, 'src/util/browserStore.ts'),
+        vm: UNSUPPORTED_NODE_VM,
+        'node:vm': UNSUPPORTED_NODE_VM,
         vuedraggable: VUEDRAGGABLE_ESM,
       },
     },
@@ -188,7 +237,9 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       outDir,
       emptyOutDir,
       sourcemap: mode !== 'production',
-      target: 'es2022',
+      // Supported browsers handle top-level await natively. Rewriting it into
+      // exported promises breaks initialization across the popup's cyclic chunks.
+      target: nativeAsyncModules ? 'es2022' : 'es2020',
       cssCodeSplit: true,
       rollupOptions: {
         output: {

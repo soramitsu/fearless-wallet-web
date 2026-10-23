@@ -14,7 +14,7 @@
       </div>
 
       <div class="logo-container">
-        <img class="logo-animated" src="@/assets/fearless-logo-animated.gif" alt="fearless-logo" />
+        <img class="logo-animated" src="@/assets/fearless-logo-animated.gif" :alt="t('common.fearlessLogo')" />
 
         <Logo
           class="description"
@@ -27,7 +27,13 @@
     </div>
 
     <div class="pass-block">
+      <div v-if="tonRecoveryNotice" class="recovery-notice" role="alert">
+        <p>{{ t(tonRecoveryNotice === 'ton-storage-unavailable' ? 'welcome.tonStorageUnavailable' : 'welcome.tonRecoveryRequired') }}</p>
+        <FButton text="common.continue" size="big" @click="continueToWallet" />
+      </div>
+
       <ValidatedInput
+        v-else
         size="big"
         placeholder="common.password"
         errorDescriptions="common.invalidPassword"
@@ -39,6 +45,7 @@
       />
 
       <FButton
+        v-if="!tonRecoveryNotice"
         class="unlock-btn"
         text="welcome.unlock"
         size="big"
@@ -64,33 +71,44 @@
 
 <script lang="ts" setup>
 import { watch, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';
 import { URLS } from '@/consts/urls';
 import ResetPopup from '@/screens/welcome/ResetPopup.vue';
+import { resolveUnlockRedirect } from '@/router/unlockRedirect';
 
 const router = useRouter();
+const route = useRoute();
 const password = ref('');
 const isError = ref(false);
 const showResetPopup = ref(false);
 const isDisabledBtn = ref(false);
 const isPopup = ref(IS_POPUP);
 const { t } = useI18n();
+const tonRecoveryNotice = ref<'ton-recovery-required' | 'ton-storage-unavailable' | ''>('');
 
 watch(password, () => (isError.value = false));
 
 const changeSyncedPassword = (pass: string) => (password.value = pass);
+
+const continueToWallet = () => router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
 
 const unlock = async () => {
   isDisabledBtn.value = true;
 
   const isUnlock = await unlockExtension({ password: password.value });
 
+  if (isUnlock === 'ton-recovery-required' || isUnlock === 'ton-storage-unavailable') {
+    password.value = '';
+    tonRecoveryNotice.value = isUnlock;
+    return;
+  }
+
   if (isUnlock) {
-    router.push({ name: Components.Wallet });
+    continueToWallet();
 
     return;
   }
@@ -100,7 +118,7 @@ const unlock = async () => {
 };
 
 const openFullScreen = () => {
-  windowOpen('/');
+  windowOpen(resolveUnlockRedirect(route.query.redirect) ?? '/');
   window.close();
 };
 
@@ -133,6 +151,12 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
   }
 
   .pass-block {
+    .recovery-notice {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
     .unlock-btn {
       margin: 16px 0;
     }

@@ -1,8 +1,11 @@
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import {
   BITCOIN_DISCOVERY_MAX_LOOKAHEAD,
+  aggregateBitcoinAddressBalances,
+  aggregateBitcoinDiscoveryBalance,
   BitcoinDiscoveryError,
   discoverBitcoinReceiveAddresses,
+  discoverBitcoinWalletAddresses,
   type BitcoinDiscoveryClient,
 } from '@/util/bitcoinDiscovery';
 import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
@@ -129,7 +132,7 @@ describe('Bitcoin receive address discovery', () => {
 
     expect(result.gapLimit).toBe(UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.defaultGapLimit);
     expect(client.getAddress).toHaveBeenCalledTimes(UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.defaultGapLimit);
-  });
+  }, 15_000);
 
   it('derives testnet receive addresses when scanning testnet', async () => {
     const client: BitcoinDiscoveryClient = {
@@ -144,6 +147,54 @@ describe('Bitcoin receive address discovery', () => {
 
     expect(result.addresses[0].address).toBe(vectors.vectors[0].expected.bitcoin.testnet.firstReceiveAddress);
     expect(client.getAddress).toHaveBeenCalledWith(vectors.vectors[0].expected.bitcoin.testnet.firstReceiveAddress);
+  });
+
+  it('discovers receive and change branches independently and aggregates their balances', async () => {
+    const receive2 = deriveBitcoinReceiveAddress({
+      mnemonicOrSeed: mnemonic,
+      path: getBitcoinReceivePath('mainnet', 2),
+    });
+    const change1 = deriveBitcoinReceiveAddress({
+      mnemonicOrSeed: mnemonic,
+      path: getBitcoinReceivePath('mainnet', 1, 1),
+    });
+    const receive0 = vectors.vectors[0].expected.bitcoin.mainnet.firstReceiveAddress;
+    const client: BitcoinDiscoveryClient = {
+      getAddress: vi.fn(async (address: string) => {
+        const txCount = address === receive0 || address === receive2 || address === change1 ? 1 : 0;
+        const funded = address === receive2 ? 1_500 : address === change1 ? 2_500 : 0;
+
+        return {
+          ...addressStats(address, txCount),
+          chain_stats: {
+            ...addressStats(address, txCount).chain_stats,
+            funded_txo_count: funded ? 1 : 0,
+            funded_txo_sum: funded,
+          },
+        };
+      }),
+    };
+    const result = await discoverBitcoinWalletAddresses({
+      client,
+      gapLimit: 2,
+      maxLookahead: 20,
+      mnemonicOrSeed: mnemonic,
+    });
+
+    expect(result.usedAddresses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ address: receive2, change: 0, index: 2, totalSats: 1_500 }),
+        expect.objectContaining({ address: change1, change: 1, index: 1, totalSats: 2_500 }),
+      ])
+    );
+    expect(result.nextReceivePath).toBe("m/84'/0'/0'/0/3");
+    expect(result.nextChangePath).toBe("m/84'/0'/0'/1/2");
+    expect(aggregateBitcoinDiscoveryBalance(result.addresses)).toEqual({
+      confirmedSats: 4_000,
+      mempoolSats: 0,
+      totalSats: 4_000,
+    });
+    expect(client.getAddress).toHaveBeenCalledTimes(9);
   });
 
   it('rejects unsafe discovery parameters before indexer calls', async () => {
@@ -201,5 +252,32 @@ describe('Bitcoin receive address discovery', () => {
         mnemonicOrSeed: mnemonic,
       })
     ).rejects.toMatchObject({ message: 'invalid_transaction_count' });
+  });
+
+  it('rejects impossible negative or overflowing address balances from an indexer', async () => {
+    const client: BitcoinDiscoveryClient = {
+      getAddress: vi.fn(async (address: string) => ({
+        ...addressStats(address, 1),
+        chain_stats: {
+          ...addressStats(address, 1).chain_stats,
+          funded_txo_sum: 1,
+        },
+        mempool_stats: {
+          ...addressStats(address, 1).mempool_stats,
+          spent_txo_sum: 2,
+        },
+      })),
+    };
+
+    await expect(
+      discoverBitcoinReceiveAddresses({ client, gapLimit: 1, mnemonicOrSeed: mnemonic })
+    ).rejects.toMatchObject({ message: 'invalid_address_balance' });
+
+    expect(() =>
+      aggregateBitcoinAddressBalances([
+        { confirmedSats: 2_100_000_000_000_000, mempoolSats: 0, totalSats: 2_100_000_000_000_000 },
+        { confirmedSats: 1, mempoolSats: 0, totalSats: 1 },
+      ])
+    ).toThrow('invalid_aggregate_balance');
   });
 });

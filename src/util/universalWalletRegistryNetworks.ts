@@ -15,6 +15,20 @@ type UniversalWalletNetworkMap = Record<string, NetworkJson>;
 
 const TAIRA_TESTNET_NETWORK_NAME = 'Taira Testnet';
 const DEFAULT_ADDRESS_PREFIX = 42;
+const SHARED_ICONS_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons';
+// shared-features-utils publishes no Solana icon, so the extension bundles one at the same relative path.
+const BUNDLED_ICONS_PATH = '/icons';
+// Icons for registry chains the remote chain catalog does not list yet; other entries keep their symbol.
+const REGISTRY_TOKEN_ICONS: Partial<Record<string, string>> = {
+  BTC: `${SHARED_ICONS_URL}/tokens/coloured/BTC.svg`,
+  SOL: `${BUNDLED_ICONS_PATH}/tokens/coloured/SOL.svg`,
+  XOR: `${SHARED_ICONS_URL}/tokens/coloured/XOR.svg`,
+};
+const REGISTRY_NETWORK_ICONS: Partial<Record<string, string>> = {
+  [WalletEcosystem.Bitcoin]: REGISTRY_TOKEN_ICONS.BTC,
+  [WalletEcosystem.Iroha]: `${SHARED_ICONS_URL}/chains/white/SORA.svg`,
+  [WalletEcosystem.Solana]: REGISTRY_TOKEN_ICONS.SOL,
+};
 
 function createUniversalWalletRegistryNetworks(
   registry: UniversalWalletChainRegistry = UNIVERSAL_WALLET_CHAIN_REGISTRY
@@ -50,6 +64,30 @@ function mergeUniversalWalletRegistryNetworks(
   }
 }
 
+/**
+ * Produces the discovery catalog from maintained sources only. The remote
+ * chain catalog remains authoritative for chains it knows about, while the
+ * bundled universal-wallet registry supplies production ecosystems that are
+ * not published there yet. User-created networkMap entries are deliberately
+ * not an input.
+ */
+function createAuthoritativeDiscoveryRegistryNetworks(
+  remoteNetworks: NetworkJson[],
+  registry: UniversalWalletChainRegistry = UNIVERSAL_WALLET_CHAIN_REGISTRY
+): NetworkJson[] {
+  const authoritativeMap: UniversalWalletNetworkMap = {};
+
+  for (const network of remoteNetworks) {
+    const existingKey = findExistingNetworkKey(authoritativeMap, network);
+
+    if (!existingKey) authoritativeMap[network.name] = network;
+  }
+
+  mergeUniversalWalletRegistryNetworks(authoritativeMap, undefined, registry);
+
+  return Object.values(authoritativeMap);
+}
+
 function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry): NetworkJson {
   const name = getRuntimeNetworkName(entry);
   const nodes = createNodes(entry.endpoints);
@@ -61,7 +99,7 @@ function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry
   return {
     key: name,
     chain: name,
-    icon: entry.nativeAsset?.symbol.toLowerCase() ?? entry.ecosystem,
+    icon: REGISTRY_NETWORK_ICONS[entry.ecosystem] ?? entry.nativeAsset?.symbol.toLowerCase() ?? entry.ecosystem,
     active,
     providers,
     currentProvider,
@@ -91,9 +129,13 @@ function mergeRegistryNetworkDefaults(
 ): NetworkJson {
   return {
     ...existing,
+    icon: pickIcon(existing.icon, registryNetwork.icon),
     key: existing.key || registryNetwork.key,
     chain: existing.chain || registryNetwork.chain,
-    chainId: existing.chainId || registryNetwork.chainId,
+    chainId:
+      registryNetwork.ecosystem === WalletEcosystem.Iroha
+        ? registryNetwork.chainId
+        : existing.chainId || registryNetwork.chainId,
     ecosystem: registryNetwork.ecosystem,
     externalApi: mergeExternalApi(existing.externalApi, registryNetwork.externalApi),
     assets: mergeNativeAssets(existing.assets, registryNetwork.assets),
@@ -122,11 +164,29 @@ function mergeNativeAssets(existingAssets: Asset[], registryAssets: Asset[]): As
 
   if (!nativeAsset) return existingAssets;
 
-  const hasNativeAsset = existingAssets.some(({ id, isNative, isUtility, symbol }) => {
-    return isNative || isUtility || isSameString(id, nativeAsset.id) || isSameString(symbol, nativeAsset.symbol);
-  });
+  const isRegistryNative = ({ id, isNative, isUtility, symbol }: Asset) =>
+    isNative || isUtility || isSameString(id, nativeAsset.id) || isSameString(symbol, nativeAsset.symbol);
 
-  return hasNativeAsset ? existingAssets : [nativeAsset, ...existingAssets];
+  if (!existingAssets.some(isRegistryNative)) return [nativeAsset, ...existingAssets];
+
+  return existingAssets.map((asset) =>
+    isRegistryNative(asset)
+      ? {
+          ...asset,
+          icon: pickIcon(asset.icon, nativeAsset.icon),
+          // Stored test networks may still carry the mainnet price id from earlier releases.
+          priceId: nativeAsset.priceId ? asset.priceId : '',
+        }
+      : asset
+  );
+}
+
+// Earlier releases stored bare symbols that never resolve to an image; a published or bundled icon replaces them.
+function pickIcon(existingIcon: string, registryIcon: string): string {
+  const isIconUrl = (icon: string) =>
+    (icon?.startsWith('https://') || icon?.startsWith(`${BUNDLED_ICONS_PATH}/`)) ?? false;
+
+  return !isIconUrl(existingIcon) && isIconUrl(registryIcon) ? registryIcon : existingIcon;
 }
 
 function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryNetwork: NetworkJson): string | undefined {
@@ -139,7 +199,8 @@ function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryN
   })?.[0];
 }
 
-function createNativeAsset({ ecosystem, nativeAsset }: UniversalWalletChainRegistryEntry): Asset {
+function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
+  const { ecosystem, nativeAsset } = entry;
   const symbol = nativeAsset?.symbol ?? 'UNKNOWN';
 
   return {
@@ -149,8 +210,9 @@ function createNativeAsset({ ecosystem, nativeAsset }: UniversalWalletChainRegis
     symbol,
     currencyId: nativeAsset?.id ?? symbol,
     precision: nativeAsset?.decimals ?? 0,
-    priceId: symbol.toLowerCase(),
-    icon: symbol.toLowerCase(),
+    // Test-network coins share a mainnet symbol but have no market value.
+    priceId: isTestnetEntry(entry) ? '' : symbol.toLowerCase(),
+    icon: REGISTRY_TOKEN_ICONS[symbol] ?? symbol.toLowerCase(),
     color: '',
     staking: '',
     isUtility: true,
@@ -183,7 +245,9 @@ function createExternalApi(entry: UniversalWalletChainRegistryEntry): NetworkJso
 
 function getHistoryEndpoint(entry: UniversalWalletChainRegistryEntry): UniversalWalletRegistryEndpoint | undefined {
   if (entry.ecosystem === WalletEcosystem.Iroha) {
-    return entry.endpoints.find(({ kind }) => kind === 'torii-mcp');
+    return (
+      entry.endpoints.find(({ kind }) => kind === 'torii') ?? entry.endpoints.find(({ kind }) => kind === 'torii-mcp')
+    );
   }
 
   return entry.endpoints.find(({ kind }) => kind === 'indexer');
@@ -205,14 +269,19 @@ function getRuntimeNetworkName(entry: UniversalWalletChainRegistryEntry): string
   return entry.displayName;
 }
 
-function getRuntimeOptions(entry: UniversalWalletChainRegistryEntry): NetworkJson['options'] {
+function isTestnetEntry(entry: UniversalWalletChainRegistryEntry): boolean {
   const descriptor = `${entry.id} ${entry.chainId} ${entry.displayName}`.toLowerCase();
 
-  return descriptor.includes('testnet') || descriptor.includes('devnet') ? ['testnet'] : undefined;
+  return descriptor.includes('testnet') || descriptor.includes('devnet');
+}
+
+function getRuntimeOptions(entry: UniversalWalletChainRegistryEntry): NetworkJson['options'] {
+  return isTestnetEntry(entry) ? ['testnet'] : undefined;
 }
 
 export {
   createUniversalWalletRegistryNetworks,
+  createAuthoritativeDiscoveryRegistryNetworks,
   mergeUniversalWalletRegistryNetworks,
   createNetworkFromRegistryEntry,
 };

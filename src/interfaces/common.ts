@@ -81,8 +81,8 @@ type ComponentText =
     };
 
 interface ChangeWalletBalance {
-  percent: number;
-  amount: number;
+  percent: string | number;
+  amount: string | number;
 }
 
 enum WalletEcosystem {

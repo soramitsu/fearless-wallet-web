@@ -4,7 +4,6 @@ import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { NetworkEcosystem, NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
-import { MAIN_NETWORKS } from '@/consts/networks';
 
 const isSameEcosystem = (networkEcosystem: NetworkEcosystem, walletEcosystem: WalletEcosystem) => {
   if (walletEcosystem === WalletEcosystem.Ton) return networkEcosystem === WalletEcosystem.Ton;
@@ -47,41 +46,7 @@ export function getMockAssets(networkMap: Record<string, NetworkJson>, walletEco
         currencyId,
         priceProvider,
       }) => {
-        const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
-
-        const currencyIndex = result.findIndex(({ groupId, relayChain: _relayChain, symbol: _symbol }) => {
-          const isExistingGroupId = groupId === assetId;
-          const isExistingSymbol = _symbol === symbol;
-          const isExistingAsset = isExistingSymbol && _relayChain === prepRelayChain;
-
-          return isExistingGroupId || isExistingAsset;
-        });
-
-        if (currencyIndex === -1) {
-          const newCurrency: TokenGroup = {
-            mainNetwork,
-            groupId: assetId,
-            priceId: priceId ?? symbol, // для TON токенов не задан priceId
-            symbol,
-            tokenName,
-            relayChain: prepRelayChain,
-            icon: assetIcon,
-            providers: purchaseProviders ?? [],
-            priceProvider,
-            balances: [],
-            color,
-          };
-
-          result.push(newCurrency);
-        } else if (isUtility || isNative) {
-          result[currencyIndex].mainNetwork = mainNetwork;
-          result[currencyIndex].groupId = assetId;
-        }
-
-        // Add mock balances
-        const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
         const balances: BalanceItem[] = [
-          ...result[index].balances,
           {
             state: APIItemState.PENDING,
             name: mainNet.toLowerCase(),
@@ -94,10 +59,25 @@ export function getMockAssets(networkMap: Record<string, NetworkJson>, walletEco
             id: assetId,
             symbol,
             currencyId,
+            assetMetadataTrust: 'verified',
+            assetMetadataSource: 'registry',
+            priceId,
+            scanCoverage: 'catalogOnly',
           },
         ];
-
-        result[index].balances = balances;
+        result.push({
+          mainNetwork: mainNet,
+          groupId: assetId,
+          priceId,
+          symbol,
+          tokenName,
+          relayChain: prepRelayChain,
+          icon: assetIcon,
+          providers: purchaseProviders ?? [],
+          priceProvider,
+          balances,
+          color,
+        });
       }
     );
 

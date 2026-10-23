@@ -7,6 +7,8 @@ import type { FWSolanaProvider, SolanaConnectResponse } from '@extension-base/pa
 import type { TransportRequestMessage } from '@extension-base/background/types/types';
 
 const SOLANA_ADDRESS = 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk';
+const RPC_SIGNATURE =
+  '5NfHnqDyzT9qyfxZDq2sSskAMGuFZ3VRqW4EQxghKqrKYdKq6cZNW1J34w7qE6nGx1eDQe5s2eKxB2ZtE1xU9qgN';
 
 type PostedMessage = TransportRequestMessage<never>;
 
@@ -124,14 +126,197 @@ describe('FearlessWalletSolanaProvider', () => {
       response: {
         publicKey: SOLANA_ADDRESS,
         signatureBase58: '5wYdgrn7fYrqx1zLqYkMF5fhkMTL8pWfTgtmbuS4PV7b',
-        signatureBase64: bytesBase64(new Uint8Array([1, 2, 3, 4])),
+        signatureBase64: bytesBase64(new Uint8Array(64).fill(7)),
       },
     } as never);
 
     await expect(signing).resolves.toMatchObject({
       publicKey: expect.objectContaining({ address: SOLANA_ADDRESS }),
-      signature: new Uint8Array([1, 2, 3, 4]),
+      signature: new Uint8Array(64).fill(7),
     });
+  });
+
+  it('exposes Wallet Standard signing features and batches transaction inputs', async () => {
+    const provider = new FearlessWalletSolanaProvider();
+
+    await connectProvider(provider, postedMessages);
+
+    const account = provider.accounts[0];
+    const features = provider.features as {
+      'solana:signMessage': {
+        version: string;
+        signMessage: (...inputs: Array<{ account: typeof account; message: Uint8Array }>) => Promise<
+          Array<{ signature: Uint8Array; signatureType: string; signedMessage: Uint8Array }>
+        >;
+      };
+      'solana:signTransaction': {
+        supportedTransactionVersions: readonly unknown[];
+        signTransaction: (...inputs: Array<{ account: typeof account; chain?: string; transaction: Uint8Array }>) => Promise<
+          Array<{ signedTransaction: Uint8Array }>
+        >;
+      };
+      'solana:signAndSendTransaction': {
+        signAndSendTransaction: (...inputs: Array<{
+          account: typeof account;
+          chain: string;
+          options?: Record<string, unknown>;
+          transaction: Uint8Array;
+        }>) => Promise<Array<{ signature: Uint8Array }>>;
+        supportedTransactionVersions: readonly unknown[];
+      };
+    };
+
+    expect(account.features).toEqual([
+      'solana:signMessage',
+      'solana:signTransaction',
+      'solana:signAndSendTransaction',
+    ]);
+    expect(features['solana:signMessage'].version).toBe('1.1.0');
+    expect(features['solana:signTransaction'].supportedTransactionVersions).toEqual(['legacy', 0]);
+    expect(features['solana:signAndSendTransaction'].supportedTransactionVersions).toEqual(['legacy', 0]);
+
+    const message = new Uint8Array([1, 2, 3]);
+    const messageSigning = features['solana:signMessage'].signMessage({ account, message });
+    await Promise.resolve();
+    const messageRequest = postedMessages[3];
+
+    expect(messageRequest).toMatchObject({
+      message: 'solana(signMessage)',
+      request: { messageBase64: bytesBase64(message) },
+    });
+    handleResponse({
+      id: messageRequest.id,
+      response: {
+        publicKey: SOLANA_ADDRESS,
+        signatureBase58: 'unused',
+        signatureBase64: bytesBase64(new Uint8Array(64).fill(9)),
+      },
+    } as never);
+    await expect(messageSigning).resolves.toEqual([
+      {
+        signature: new Uint8Array(64).fill(9),
+        signatureType: 'ed25519',
+        signedMessage: message,
+      },
+    ]);
+
+    const first = new Uint8Array([4]);
+    const second = new Uint8Array([5]);
+    const transactionSigning = features['solana:signTransaction'].signTransaction(
+      { account, chain: 'solana:mainnet', transaction: first },
+      { account, transaction: second }
+    );
+    await Promise.resolve();
+    const batchRequest = postedMessages[4];
+
+    expect(batchRequest).toMatchObject({
+      message: 'solana(signAllTransactions)',
+      request: { transactionsBase64: [bytesBase64(first), bytesBase64(second)] },
+    });
+    handleResponse({
+      id: batchRequest.id,
+      response: {
+        publicKey: SOLANA_ADDRESS,
+        signaturesBase58: ['sig-a', 'sig-b'],
+        signedTransactionsBase64: [bytesBase64(new Uint8Array([14])), bytesBase64(new Uint8Array([15]))],
+      },
+    } as never);
+    await expect(transactionSigning).resolves.toEqual([
+      { signedTransaction: new Uint8Array([14]) },
+      { signedTransaction: new Uint8Array([15]) },
+    ]);
+
+    const sending = features['solana:signAndSendTransaction'].signAndSendTransaction({
+      account,
+      chain: 'solana:mainnet',
+      options: {
+        maxRetries: 2,
+        minContextSlot: 123,
+        preflightCommitment: 'confirmed',
+        skipPreflight: true,
+      },
+      transaction: new Uint8Array([16]),
+    });
+    await Promise.resolve();
+    const sendRequest = postedMessages[5];
+
+    expect(sendRequest).toMatchObject({
+      message: 'solana(signAndSendTransaction)',
+      request: {
+        options: {
+          maxRetries: 2,
+          minContextSlot: 123,
+          preflightCommitment: 'confirmed',
+          skipPreflight: true,
+        },
+      },
+    });
+    handleResponse({
+      id: sendRequest.id,
+      response: {
+        publicKey: SOLANA_ADDRESS,
+        signature: RPC_SIGNATURE,
+        signatureBase58: RPC_SIGNATURE,
+        signedTransactionBase64: bytesBase64(new Uint8Array([17])),
+      },
+    } as never);
+    const sendResult = await sending;
+
+    expect(sendResult).toHaveLength(1);
+    expect(sendResult[0].signature).toHaveLength(64);
+  });
+
+  it('rejects empty, foreign-account, malformed, and wrong-chain Wallet Standard batches before prompting', async () => {
+    const provider = new FearlessWalletSolanaProvider();
+
+    await connectProvider(provider, postedMessages);
+
+    const account = provider.accounts[0];
+    const features = provider.features as Record<string, { [method: string]: (...inputs: unknown[]) => Promise<unknown> }>;
+    const signMessage = features['solana:signMessage'].signMessage;
+    const signTransaction = features['solana:signTransaction'].signTransaction;
+    const signAndSendTransaction = features['solana:signAndSendTransaction'].signAndSendTransaction;
+    const requestCount = postedMessages.length;
+
+    await expect(signMessage()).rejects.toThrow('at least one input');
+    await expect(
+      signMessage({ account: { ...account, address: 'foreign' }, message: new Uint8Array([1]) })
+    ).rejects.toThrow('not connected');
+    await expect(
+      signMessage({ account: { address: account.address }, message: new Uint8Array([1]) })
+    ).rejects.toThrow('not connected');
+    await expect(
+      signTransaction(
+        { account, chain: 'solana:mainnet', transaction: new Uint8Array([1]) },
+        { account, chain: 'solana:devnet', transaction: new Uint8Array([2]) }
+      )
+    ).rejects.toThrow('Unsupported Solana Wallet Standard chain');
+    await expect(
+      signAndSendTransaction({ account, transaction: new Uint8Array([1]) })
+    ).rejects.toThrow('chain is required');
+    await expect(
+      signAndSendTransaction(
+        { account, chain: 'solana:mainnet', transaction: new Uint8Array([1]) },
+        {
+          account,
+          chain: 'solana:mainnet',
+          options: { commitment: 'finalized' },
+          transaction: new Uint8Array([2]),
+        }
+      )
+    ).rejects.toThrow('commitment confirmation is not supported');
+    await expect(
+      signAndSendTransaction({
+        account,
+        chain: 'solana:mainnet',
+        options: { minContextSlot: -1 },
+        transaction: new Uint8Array([1]),
+      })
+    ).rejects.toThrow('minimum context slot');
+    await expect(
+      signTransaction({ account, transaction: 'not-bytes' })
+    ).rejects.toThrow('must be a Uint8Array');
+    expect(postedMessages).toHaveLength(requestCount);
   });
 
   it('queues serialized Solana transaction and batch signing requests', async () => {
@@ -186,6 +371,7 @@ describe('FearlessWalletSolanaProvider', () => {
 
     const sent = provider.signAndSendTransaction(new Uint8Array([10, 11]), {
       maxRetries: 2,
+      minContextSlot: 123,
       preflightCommitment: 'processed',
       skipPreflight: true,
     });
@@ -196,6 +382,7 @@ describe('FearlessWalletSolanaProvider', () => {
       request: {
         options: {
           maxRetries: 2,
+          minContextSlot: 123,
           preflightCommitment: 'processed',
           skipPreflight: true,
         },
@@ -217,6 +404,27 @@ describe('FearlessWalletSolanaProvider', () => {
     await expect(sent).resolves.toEqual({
       signature: '5NfHnqDyzT9qyfxZDq2sSskAMGuFZ3VRqW4EQxghKqrKYdKq6cZNW1J34w7qE6nGx1eDQe5s2eKxB2ZtE1xU9qgN',
     });
+
+    const requested = provider.request({
+      method: 'signAndSendTransaction',
+      params: [new Uint8Array([12]), { minContextSlot: 456 }],
+    });
+    await Promise.resolve();
+
+    expect(postedMessages[6]).toMatchObject({
+      message: 'solana(signAndSendTransaction)',
+      request: { options: { minContextSlot: 456 } },
+    });
+    handleResponse({
+      id: postedMessages[6].id,
+      response: {
+        publicKey: SOLANA_ADDRESS,
+        signature: RPC_SIGNATURE,
+        signatureBase58: RPC_SIGNATURE,
+        signedTransactionBase64: bytesBase64(new Uint8Array([13])),
+      },
+    } as never);
+    await expect(requested).resolves.toEqual({ signature: RPC_SIGNATURE });
   });
 
   it('rejects malformed Solana signMessage provider params before posting a signing request', async () => {

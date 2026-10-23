@@ -11,6 +11,7 @@ import type {
 import type { NetworkName } from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { IS_EXTENSION_SMOKE } from '@/consts/global';
 
 type UpdateSub = {
   name: NetworkName;
@@ -86,7 +87,12 @@ export class SubscriptionService {
     return (subscription: unknown): void => {
       if (this.subscriptionsPorts[id]) {
         try {
-          port?.postMessage({ id, subscription });
+          if (port) port.postMessage({ id, subscription });
+          else {
+            const channel = new BroadcastChannel('sw-messages');
+            channel.postMessage({ id, subscription });
+            channel.close();
+          }
         } catch (error) {
           console.info('Error occurred while trying to post message', error);
 
@@ -280,6 +286,8 @@ export class SubscriptionService {
   }
 
   async fetchNetworkBalances(props: GetBalancesProps) {
+    if (IS_EXTENSION_SMOKE) return;
+
     const { address, walletEcosystem, isFirstRun } = props;
 
     if (isFirstRun) {

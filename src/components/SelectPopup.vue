@@ -48,7 +48,7 @@
       <Icon icon="check" v-show="getIconVisible(value)" />
     </div>
 
-    <div v-if="showWarning" class="warning" data-testid="warning">Nothing found</div>
+    <div v-if="showWarning" class="warning" data-testid="warning">{{ $t('common.nothingFound') }}</div>
   </Popup>
 </template>
 

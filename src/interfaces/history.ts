@@ -9,7 +9,7 @@ type Reward = {
 
 type Transfer = {
   amount: string;
-  fee: string;
+  fee: string | null;
   from: string;
   to: string;
 };

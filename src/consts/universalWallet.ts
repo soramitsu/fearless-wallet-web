@@ -36,26 +36,35 @@ const UNIVERSAL_WALLET_DERIVATION_PATHS = {
 const UNIVERSAL_WALLET_IROHA_NETWORKS = {
   taira: {
     id: 'taira-testnet',
-    chainId: 'iroha3-taira',
+    chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
     chainDiscriminant: 369,
     toriiBaseUrl: 'https://taira.sora.org',
-    mcpPath: '/v1/mcp',
+    // Genesis hash of the deployed Taira ledger (2026-10-22 reset). Transfers are signed for this
+    // exact network and refused when the node reports another genesis; update it after a reset.
+    networkId: 'hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774',
     enabledByDefault: true,
+    nativeAsset: {
+      id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
+      symbol: 'XOR',
+      decimals: 9,
+      name: 'XOR',
+    },
   },
   nexus: {
     id: 'sora-nexus-mainnet',
     chainId: 'sora:nexus:global',
     chainDiscriminant: 753,
     toriiBaseUrl: 'https://minamoto.sora.org',
-    mcpPath: '/v1/mcp',
     enabledByDefault: false,
   },
 } as const;
 
-const UNIVERSAL_WALLET_TAIRA_MCP_URL =
-  `${UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl}${UNIVERSAL_WALLET_IROHA_NETWORKS.taira.mcpPath}`;
-const UNIVERSAL_WALLET_NEXUS_MCP_URL =
-  `${UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl}${UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.mcpPath}`;
+// Transaction wire format encoded by the vendored @iroha/iroha-js transaction codec. Transfers are
+// refused when the node advertises a different data model or signed-transaction schema.
+const IROHA_TRANSACTION_WIRE = {
+  dataModelVersion: 4,
+  signedTransactionSchemaHash: '7ab5ff9c572efb316deac478f19209c5',
+} as const;
 
 const UNIVERSAL_WALLET_BITCOIN_NETWORKS = {
   mainnet: {
@@ -261,14 +270,15 @@ const UNIVERSAL_WALLET_TAIRA_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry =
   chainId: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId,
   displayName: 'Taira Testnet',
   enabledByDefault: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.enabledByDefault,
+  nativeAsset: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset,
   derivationPath: UNIVERSAL_WALLET_DERIVATION_PATHS.irohaDefault,
   slip44CoinType: 617,
   features: ['transfer'],
   endpoints: [
     {
-      id: 'taira-testnet-torii-mcp',
-      kind: 'torii-mcp',
-      url: UNIVERSAL_WALLET_TAIRA_MCP_URL,
+      id: 'taira-testnet-torii',
+      kind: 'torii',
+      url: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl,
       readOnly: false,
     },
   ],
@@ -285,9 +295,9 @@ const UNIVERSAL_WALLET_NEXUS_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry =
   features: ['transfer', 'offline-cash', 'sccp', 'governance'],
   endpoints: [
     {
-      id: 'sora-nexus-mainnet-torii-mcp',
-      kind: 'torii-mcp',
-      url: UNIVERSAL_WALLET_NEXUS_MCP_URL,
+      id: 'sora-nexus-mainnet-torii',
+      kind: 'torii',
+      url: UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl,
       readOnly: false,
     },
   ],
@@ -307,6 +317,7 @@ const UNIVERSAL_WALLET_CHAIN_REGISTRY: UniversalWalletChainRegistry = {
 };
 
 export {
+  IROHA_TRANSACTION_WIRE,
   UNIVERSAL_WALLET_CHAIN_REGISTRY,
   UNIVERSAL_WALLET_INDEXERS,
   UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS,

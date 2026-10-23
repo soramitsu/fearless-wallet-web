@@ -5,7 +5,7 @@ import {
   type SolanaTokenBalance,
   type SolanaTokenMetadata,
 } from '@extension-base/services/solana-indexer-service';
-import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { getSolanaNetworkKind, getSolanaRpcUrls } from '@extension-base/api/solana/transfer';
 import { reconcileSuccessfulDynamicScan } from './reconcileSuccessfulScan';
 import { createSolanaRpcBalanceClient } from './solanaRpcBalances';
@@ -41,7 +41,7 @@ export default class SolanaBalanceService {
     return (
       this.injectedClient ??
       createSolanaRpcBalanceClient(
-        new SolanaRpcClient({ network: getSolanaNetworkKind(network), rpcUrls: getSolanaRpcUrls(network) })
+        createClusterBoundSolanaRpcClient({ network: getSolanaNetworkKind(network), rpcUrls: getSolanaRpcUrls(network) })
       )
     );
   }

@@ -78,7 +78,7 @@ import {
   assertEvmExternalSignature,
   assertSubstrateExternalSignature,
 } from '@extension-base/services/request-service/handlers/externalSignature';
-import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
@@ -776,7 +776,7 @@ export default class Extension extends FWExtensionBase {
               accounts,
               broadcastTransaction: (transactionBase64, options) => {
                 this.assertNonEvmSigningAuthorization(request);
-                return new SolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options);
+                return createClusterBoundSolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options);
               },
               exportMnemonic,
               request,

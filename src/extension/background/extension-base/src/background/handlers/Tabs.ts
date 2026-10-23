@@ -16,7 +16,7 @@ import {
   type SolanaSignTransactionRequest,
 } from '@extension-base/page/types';
 import { EipService } from '../../services/eip-service';
-import { SolanaRpcClient } from '../../services/solana-rpc-service';
+import { createClusterBoundSolanaRpcClient } from '../../services/solana-rpc-service';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type {
@@ -275,7 +275,7 @@ export default class Tabs {
   }
 
   async solanaSignAndSendTransaction(url: string, request: SolanaSignAndSendTransactionRequest) {
-    const rpcClient = new SolanaRpcClient({ network: 'mainnet' });
+    const rpcClient = createClusterBoundSolanaRpcClient({ network: 'mainnet' });
     const preflightCommitment = request.options?.preflightCommitment ?? 'confirmed';
 
     return this.state.requestService.solanaRequestHandler.confirmSignAndSendTransaction(

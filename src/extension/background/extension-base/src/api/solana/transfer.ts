@@ -5,9 +5,10 @@ import { sha256 } from '@noble/hashes/sha2';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import {
   SolanaBroadcastError,
-  SolanaRpcClient,
+  createClusterBoundSolanaRpcClient,
   type SolanaLatestBlockhash,
   type SolanaParsedAccount,
+  type SolanaRpcClient,
   type SolanaRpcNetwork,
 } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
@@ -1194,7 +1195,7 @@ function isOnEd25519Curve(publicKey: Uint8Array): boolean {
 function createSolanaTransferClient(network: NetworkJson | undefined): SolanaRpcClient {
   if (!network) throw new Error('unsupported_solana_network');
 
-  return new SolanaRpcClient({
+  return createClusterBoundSolanaRpcClient({
     network: getSolanaNetworkKind(network),
     rpcUrls: getSolanaRpcUrls(network),
   });

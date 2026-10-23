@@ -18,12 +18,17 @@ vi.mock('@extension-base/services/send-kill-switch-service', async (importOrigin
   ...(await importOriginal<typeof import('@extension-base/services/send-kill-switch-service')>()),
   assertSendCapability: mocks.capability,
 }));
-vi.mock('@extension-base/services/solana-rpc-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@extension-base/services/solana-rpc-service')>()),
-  SolanaRpcClient: class {
+vi.mock('@extension-base/services/solana-rpc-service', async (importOriginal) => {
+  class InterceptedRpcClient {
     sendRawTransaction = mocks.broadcast;
-  },
-}));
+  }
+
+  return {
+    ...(await importOriginal<typeof import('@extension-base/services/solana-rpc-service')>()),
+    SolanaRpcClient: InterceptedRpcClient,
+    createClusterBoundSolanaRpcClient: () => new InterceptedRpcClient(),
+  };
+});
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class {
     getAndWait(key: string): Promise<AuthUrls> {

@@ -98,6 +98,11 @@ type SolanaPrioritizationFee = {
 };
 
 type SolanaRpcClientOptions = {
+  /**
+   * Genesis hash of the cluster every endpoint must serve. When set, an endpoint is asked for its genesis hash before
+   * it is used and skipped if it names another cluster (a devnet or testnet node behind a mainnet name).
+   */
+  expectedGenesisHash?: string;
   failover?: EndpointFailoverOptions;
   fetchFn?: FetchLike;
   network?: SolanaRpcNetwork;
@@ -125,6 +130,36 @@ class SolanaRpcError extends Error {
 }
 
 /**
+ * An endpoint could not be shown to serve the expected cluster. Raised before the request that mattered is posted,
+ * so nothing was sent to that endpoint; the next endpoint is tried.
+ */
+class SolanaClusterCheckError extends SolanaRpcError {
+  constructor(
+    message: 'solana_cluster_mismatch' | 'solana_cluster_unverified',
+    cause?: unknown
+  ) {
+    super(
+      message,
+      cause instanceof SolanaRpcError ? cause.status : undefined,
+      cause instanceof SolanaRpcError ? cause.body : undefined,
+      cause instanceof SolanaRpcError ? cause.retryAfterMs : undefined
+    );
+    this.name = 'SolanaClusterCheckError';
+  }
+}
+
+/** Genesis hashes of the clusters the wallet talks to. */
+const SOLANA_GENESIS_HASHES: Readonly<Record<SolanaRpcNetwork, string>> = Object.freeze({
+  devnet: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
+  mainnet: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d',
+});
+
+/** A client whose endpoints are each proven to serve the named cluster before they answer anything else. */
+function createClusterBoundSolanaRpcClient(options: SolanaRpcClientOptions & { network: SolanaRpcNetwork }): SolanaRpcClient {
+  return new SolanaRpcClient({ ...options, expectedGenesisHash: SOLANA_GENESIS_HASHES[normalizeNetwork(options.network)] });
+}
+
+/**
  * `ambiguous` means an attempt may have reached a node (timeout, network
  * error, throttling, a server error or an unreadable answer) and none
  * confirmed the transaction, so it may still land. Otherwise every node that
@@ -148,10 +183,12 @@ class SolanaBroadcastError extends SolanaRpcError {
 class SolanaRpcClient {
   private nextId = 1;
   private readonly endpoints: EndpointFailover;
+  private readonly expectedGenesisHash?: string;
   private readonly fetchFn: FetchLike;
   private readonly requestTimeoutMs: number;
 
   constructor({
+    expectedGenesisHash,
     failover,
     fetchFn = globalThis.fetch.bind(globalThis),
     network = 'mainnet',
@@ -159,6 +196,7 @@ class SolanaRpcClient {
     rpcUrl,
     rpcUrls,
   }: SolanaRpcClientOptions = {}) {
+    this.expectedGenesisHash = expectedGenesisHash === undefined ? undefined : normalizePubkey(expectedGenesisHash, 'invalid_genesis_hash');
     this.fetchFn = fetchFn;
     this.requestTimeoutMs = requestTimeoutMs;
     this.endpoints = new EndpointFailover(
@@ -171,6 +209,10 @@ class SolanaRpcClient {
 
   get rpcUrls(): readonly string[] {
     return this.endpoints.endpoints;
+  }
+
+  getGenesisHash(): Promise<string> {
+    return this.request('getGenesisHash', [], (value) => normalizePubkey(value, 'invalid_genesis_response'));
   }
 
   getBalance(address: string, commitment: SolanaRpcCommitment = 'confirmed'): Promise<number> {
@@ -425,6 +467,40 @@ class SolanaRpcClient {
     );
   }
 
+  /**
+   * Asks the endpoint which cluster it serves, at most once per few minutes, and refuses it when that is not the
+   * expected one. A node that cannot say is treated as unavailable rather than trusted.
+   */
+  private assertEndpointCluster(rpcUrl: string): Promise<void> {
+    const expected = this.expectedGenesisHash;
+
+    if (expected === undefined) return Promise.resolve();
+
+    const key = `${expected}|${rpcUrl}`;
+    const verifiedAt = verifiedClusters.get(key);
+
+    if (verifiedAt !== undefined && Date.now() - verifiedAt < CLUSTER_RECHECK_MS) return Promise.resolve();
+
+    const inFlight = clusterChecks.get(key);
+
+    if (inFlight) return inFlight;
+
+    const check = this.requestOnce(rpcUrl, 'getGenesisHash', [], (value) => normalizePubkey(value, 'invalid_genesis_response'))
+      .catch((error: unknown) => {
+        throw new SolanaClusterCheckError('solana_cluster_unverified', error);
+      })
+      .then((genesisHash) => {
+        if (genesisHash !== expected) throw new SolanaClusterCheckError('solana_cluster_mismatch');
+
+        verifiedClusters.set(key, Date.now());
+      })
+      .finally(() => clusterChecks.delete(key));
+
+    clusterChecks.set(key, check);
+
+    return check;
+  }
+
   private async request<T>(
     method: string,
     params: unknown[],
@@ -452,6 +528,8 @@ class SolanaRpcClient {
     params: unknown[],
     normalizeResult: (value: unknown) => T
   ): Promise<T> {
+    if (method !== 'getGenesisHash') await this.assertEndpointCluster(rpcUrl);
+
     const id = this.nextId++;
     const response = await withTimeout(
       this.fetchFn(rpcUrl, {
@@ -488,6 +566,12 @@ class SolanaRpcClient {
   }
 }
 
+const CLUSTER_RECHECK_MS = 5 * 60_000;
+// Endpoints already proven to serve a cluster, shared by every client of this worker so one balance refresh does
+// not ask each node for its identity again.
+const verifiedClusters = new Map<string, number>();
+const clusterChecks = new Map<string, Promise<void>>();
+
 // Preflight answers -32002 with `AlreadyProcessed` when the node already has
 // this exact transaction.
 function isAlreadyProcessed(error: unknown): boolean {
@@ -502,6 +586,8 @@ function isAlreadyProcessed(error: unknown): boolean {
 // refused request (400, 401, 403, ...) is an answer given before relaying.
 function mayHaveReachedNode(error: unknown): boolean {
   if (!(error instanceof SolanaRpcError)) return true;
+  // Raised before the transaction was posted to that endpoint.
+  if (error instanceof SolanaClusterCheckError) return false;
   if (error.message === 'solana_rpc_error') return false;
   if (error.message.startsWith('solana_rpc_http_')) return isRetryableHttpStatus(error.status);
 
@@ -531,6 +617,7 @@ function isEndpointRefusal(status: number | undefined): boolean {
 
 function isRetryableRpcError(error: unknown): boolean {
   if (!(error instanceof SolanaRpcError)) return true;
+  if (error instanceof SolanaClusterCheckError) return true;
   if (error.message === 'solana_rpc_error') {
     const code = (error.body as SolanaJsonRpcErrorPayload | undefined)?.code;
 
@@ -753,9 +840,12 @@ const BASE58_32_TO_64 = /^[1-9A-HJ-NP-Za-km-z]{32,64}$/;
 const BASE58_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,128}$/;
 
 export {
+  SOLANA_GENESIS_HASHES,
   SolanaBroadcastError,
+  SolanaClusterCheckError,
   SolanaRpcClient,
   SolanaRpcError,
+  createClusterBoundSolanaRpcClient,
   type SolanaBroadcastOptions,
   type SolanaFeeForMessageResponse,
   type SolanaJsonRpcErrorPayload,

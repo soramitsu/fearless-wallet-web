@@ -906,8 +906,12 @@ function getSolanaNetworkKind(network: NetworkJson | undefined): SolanaRpcNetwor
  */
 function getSolanaRpcUrls(network: NetworkJson): string[] {
   const { currentProvider } = network;
-  const selected = network.providers?.[currentProvider] ?? network.customProviders?.[currentProvider] ?? currentProvider;
   const nodes = [...(network.customNodes ?? []), ...(network.nodes ?? [])].map(({ url }) => url);
+  // An address that is no longer listed (a deleted custom node) is not trusted with balances or a signed transaction.
+  const selected =
+    network.providers?.[currentProvider] ??
+    network.customProviders?.[currentProvider] ??
+    (nodes.includes(currentProvider) ? currentProvider : undefined);
   const candidates = [selected, ...nodes, ...UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS[getSolanaNetworkKind(network)]];
 
   return [...new Set(candidates.filter((url): url is string => typeof url === 'string' && isUsableSolanaRpcUrl(url)))];

@@ -376,6 +376,24 @@ describe('background Solana transfer adapter', () => {
     expect(getSolanaRpcUrl(stored)).toBe(chosen);
   });
 
+  it('does not trust a selected address that is no longer one of the listed nodes', () => {
+    // The node screen stores the address of the chosen node; deleting that node leaves the address behind.
+    const deleted = solanaNetwork('Solana', 'solana:mainnet', {
+      currentProvider: 'https://deleted.solana.example/?api-key=key',
+      customNodes: [],
+    });
+    const registry = solanaNetwork('Solana', 'solana:mainnet', { currentProvider: 'https://node.solana.example' });
+
+    expect(getSolanaRpcUrls(deleted)).toEqual([
+      'https://node.solana.example',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://solana.drpc.org',
+    ]);
+    // A registry node the user picked is listed, so it is still tried first.
+    expect(getSolanaRpcUrls(registry)[0]).toBe('https://node.solana.example');
+  });
+
   it('ignores node addresses it cannot use, so the public nodes still serve', () => {
     const network = solanaNetwork('Solana', 'solana:mainnet', {
       currentProvider: 'wss://ws.solana.example',

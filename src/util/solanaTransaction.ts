@@ -85,6 +85,22 @@ export function parseSolanaSerializedTransaction(transaction: string | Uint8Arra
   };
 }
 
+/**
+ * A transaction's id is its first signature, the fee payer's. It is the wallet's own signature only when the wallet
+ * pays; for a sponsored or multi-signer transaction the wallet's signature sits in a later slot. Undefined when that
+ * first slot is still empty, because such a transaction has no id yet and cannot land.
+ */
+export function getSolanaTransactionId(transaction: string | Uint8Array): string | undefined {
+  try {
+    const parsed = parseSolanaSerializedTransaction(transaction);
+    const signature = normalizeTransaction(transaction).slice(parsed.signaturesOffset, parsed.signaturesOffset + SIGNATURE_BYTES);
+
+    return signature.length === SIGNATURE_BYTES && signature.some((byte) => byte !== 0) ? base58Encode(signature) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function getSolanaSerializedMessageBase64(transaction: string | Uint8Array): string {
   return bytesToBase64(parseSolanaSerializedTransaction(transaction).messageBytes);
 }

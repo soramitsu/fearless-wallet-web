@@ -5,7 +5,7 @@ import type {
   SolanaSignAndSendTransactionResponse,
   SolanaSigningResponse,
 } from '@extension-base/page/types';
-import { signSolanaSerializedTransaction } from '@/util/solanaTransaction';
+import { getSolanaTransactionId, signSolanaSerializedTransaction } from '@/util/solanaTransaction';
 import { signSolanaMessage } from '@/util/solanaKeyring';
 
 type SolanaKeyringAccount = {
@@ -131,12 +131,17 @@ export async function resolveSolanaSignAndSendTransaction({
   try {
     signature = await broadcastTransaction(signed.signedTransactionBase64, request.options);
   } catch (error) {
-    // The transaction may already be on its way. Its signature lets the dApp
-    // follow the outcome; an error would invite it to have a second, different
-    // transaction signed.
+    // The transaction may already be on its way. Its id lets the dApp follow the
+    // outcome; an error would invite it to have a second, different transaction
+    // signed. The id is the first signature, which is the wallet's own only when
+    // the wallet pays the fee.
     if (!(error instanceof SolanaBroadcastError && error.ambiguous)) throw error;
 
-    signature = signed.signatureBase58;
+    const transactionId = getSolanaTransactionId(signed.signedTransactionBase64);
+
+    if (transactionId === undefined) throw error;
+
+    signature = transactionId;
   }
 
   return {

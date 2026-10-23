@@ -81,6 +81,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
+// Real scrypt fixture creation can exceed the default hook timeout on busy hosts.
 beforeAll(async () => {
   await cryptoWaitReady();
   const isolated = new Keyring({ type: 'sr25519' });
@@ -98,7 +99,7 @@ beforeAll(async () => {
   pair.lock();
   evmPair.lock();
   isolated.lockALl();
-});
+}, 30_000);
 
 beforeEach(() => {
   vi.clearAllMocks();

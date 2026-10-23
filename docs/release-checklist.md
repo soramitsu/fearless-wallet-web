@@ -3,7 +3,8 @@
 Use this checklist for every browser-extension release PR from `develop` to
 `master`.
 
-For Chrome `3.0.7`, also use the recovery-mode release notes and approved privacy notice in
+For the Chrome `3.0.8` metadata correction, use `docs/chrome-web-store-release-3.0.8.md`.
+For the underlying `3.0.7` recovery changes, also use the recovery-mode release notes and approved privacy notice in
 `docs/chrome-web-store-release-3.0.7.md`. Earlier configuration, permission and credentialed artifact guidance remains in `docs/chrome-web-store-release-3.0.6.md`.
 
 ## Before The Release PR
@@ -19,9 +20,9 @@ For Chrome `3.0.7`, also use the recovery-mode release notes and approved privac
 - Run `bash ./scripts/test-todo-debt-audit.sh && bash ./scripts/audit-todo-debt.sh`
   and confirm no new TODO/FIXME/STOPSHIP debt was introduced.
 - Run `yarn audit:dependencies`, `yarn audit:dependencies:production`, and
-  `yarn test:crypto-dependency-shims`; confirm there are no dependency audit
-  findings outside the two documented `image-size` development-tool
-  exceptions in `docs/dependency-audit-exceptions.md`, and confirm the unused
+  `yarn test:crypto-dependency-shims`; confirm both audits have no findings or
+  advisory ignores. The full audit also checks the installed development-tool
+  guards documented in `docs/dependency-audit-exceptions.md`. Confirm the unused
   generic/BIP-322 crypto paths still fail closed.
 - Confirm public extension builds work without private manifest credentials.
 - Run `yarn test:extension-package`, `yarn test:extension-build-environment`,

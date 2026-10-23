@@ -89,7 +89,7 @@ function baseManifest() {
       extension_pages:
         "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:",
     },
-    description: 'Non-custodial multichain wallet for Polkadot, Ethereum, TON, Bitcoin, Solana, and SORA ecosystems.',
+    description: 'Manage crypto accounts, view balances, and connect to compatible decentralized apps.',
     homepage_url: 'https://fearlesswallet.io/',
     host_permissions: ['<all_urls>'],
     icons: {

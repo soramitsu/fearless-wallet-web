@@ -10,51 +10,51 @@
   "warningFiles": {
     "chunks/_plugin-vue_export-helper.js": 1,
     "chunks/accounts.js": 17,
-    "chunks/background-vendor/assert-B9II5MFb.js": 8,
-    "chunks/background-vendor/bcryptjs-C1334wJP.js": 9,
-    "chunks/background-vendor/core-js-pure-CNQyowns.js": 1,
-    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-BLUyWyoE.js": 2,
-    "chunks/background-vendor/lodash-rSFLjCOa.js": 1,
-    "chunks/background-vendor/lodash.merge-CNVuAApE.js": 1,
+    "chunks/background-vendor/assert-Blv9rAXX.js": 8,
+    "chunks/background-vendor/bcryptjs-DP6KoUS7.js": 9,
+    "chunks/background-vendor/core-js-pure-DilFdaL6.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js": 2,
+    "chunks/background-vendor/lodash-Ba9bIE_F.js": 1,
+    "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "640f4f2a482ee3789b53492f3b214807822c80cee22b351a9b50b990952fbf1f",
+  "warningSetSha256": "406facf35b081d0406c46446fea92e7758bdefc41f6c134f763b1d4cc4d4d400",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "495f853cff89a43bf16cdd4aa4b81e8bd76b064c61c325b48119c7d901d31683"
+      "sha256": "9afcb2188837dd1519b7e87582045e3262475a8fe77bf1b99dae634f5cad50be"
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "b2a016644eb84853b08d4d537bcf5112a5fa438cb8739aabb6ffe65950b07222"
+      "sha256": "b3ea252f55d4bb1af0eec21e779ddaa837db473e77626bd2c2fd8355aa4c8cee"
     },
     {
-      "file": "chunks/background-vendor/assert-B9II5MFb.js",
-      "sha256": "da1e748275cdcd86b2e4237ec45fcf553f99aadf61b13ebc518a02e47932a1d6"
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
     },
     {
-      "file": "chunks/background-vendor/bcryptjs-C1334wJP.js",
-      "sha256": "7081b77e5774f99711fc5f8a4a78b2409b92ab4a7b394e3a7f857a03e5c55556"
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
     },
     {
-      "file": "chunks/background-vendor/core-js-pure-CNQyowns.js",
-      "sha256": "41565eaacb2cd641d8557a991954a3bd4717e0ec6206f964e336365fe5c5a055"
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
     },
     {
-      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-BLUyWyoE.js",
-      "sha256": "4137936a5fae65c92384f944d4201bbc4feb782def00c43e66cb841bfb4ecda3"
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
     },
     {
-      "file": "chunks/background-vendor/lodash-rSFLjCOa.js",
-      "sha256": "aa833782c3a0954a52b8b236b51171e3b109b66045333c20b7e888566633ddbb"
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
     },
     {
-      "file": "chunks/background-vendor/lodash.merge-CNVuAApE.js",
-      "sha256": "2188461bde6214e2cb2d45a61365ff5726bd0526eca6fe43c37762064e5cbe19"
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "f6dd41e530acbdf7ebbc2371fb60cd0cefebb568a1f1d6e3724494997aad03b3"
+      "sha256": "8dcb6554e793c620dd0824c877dd1a5017ae71595674c1f04d2deb0499b28b10"
     }
   ]
 }

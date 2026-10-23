@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
 import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
+import { captureDashboardScreenshots } from './extension-smoke-dashboard.mjs';
 import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
 import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
 import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
@@ -32,6 +33,18 @@ const portfolioScreenshotsDir =
         process.argv[portfolioScreenshotsArg + 1]?.startsWith('--') === false
           ? process.argv[portfolioScreenshotsArg + 1]
           : 'output/portfolio-screenshots'
+      );
+// `--dashboard-screenshots [dir]`: two wallets, then the portfolio dashboard at the popup size, offline. Needs a test
+// build made with VUE_APP_PORTFOLIO_DASHBOARD=true (a development build; the flag is off in production).
+const dashboardScreenshotsArg = process.argv.indexOf('--dashboard-screenshots');
+const dashboardScreenshotsDir =
+  dashboardScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[dashboardScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[dashboardScreenshotsArg + 1]
+          : 'output/dashboard-screenshots'
       );
 // `--effects-screenshots [dir]`: the same offline wallet, once per effects tier and system setting (design-system 2).
 const effectsScreenshotsArg = process.argv.indexOf('--effects-screenshots');
@@ -64,7 +77,7 @@ const walletResetStorageOnly = process.argv.includes('--wallet-reset-storage');
 const accountRemovalStorageOnly = process.argv.includes('--account-removal-storage');
 const currentAccountStorageOnly = process.argv.includes('--current-account-storage');
 const sessionRetirementStorageOnly = process.argv.includes('--session-retirement-storage');
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || dashboardScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -417,6 +430,23 @@ async function main() {
       });
 
       console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (dashboardScreenshotsDir) {
+      const result = await captureDashboardScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: dashboardScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, ...result }, null, 2));
 
       return;
     }

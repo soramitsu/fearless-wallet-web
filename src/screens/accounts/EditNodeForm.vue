@@ -45,6 +45,7 @@ import { defineComponent } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
+import { isUsableSolanaRpcUrl } from '@/util/solanaRpcUrl';
 
 export default defineComponent({ name: 'EditNodeForm' ,
   props: {
@@ -118,6 +119,13 @@ export default defineComponent({ name: 'EditNodeForm' ,
 
           const explorers = this.networkJson.externalApi?.explorers;
           const isTooLengthTooSmall = this.urlLength < 7;
+
+          // Solana nodes speak JSON-RPC over https, not the websocket the other networks use.
+          if (this.networkJson.ecosystem === 'solana') {
+            this.isError = isTooLengthTooSmall || !isUsableSolanaRpcUrl(this.url);
+
+            return;
+          }
 
           if (explorers && explorers[0].type === 'etherscan') {
             this.isError = isTooLengthTooSmall || !this.url.startsWith('https://');

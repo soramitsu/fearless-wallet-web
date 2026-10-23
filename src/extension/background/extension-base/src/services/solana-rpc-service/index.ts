@@ -79,6 +79,17 @@ type SolanaSignatureStatus = {
   slot: number;
 };
 
+/** What an endpoint has shown for a signed transaction whose broadcast outcome is unknown. */
+type SolanaSignatureResolution =
+  | { state: 'expired' }
+  | { state: 'landed'; status: SolanaSignatureStatus }
+  | { state: 'pending' };
+
+type SolanaSignatureQuery = {
+  lastValidBlockHeight: number;
+  signature: string;
+};
+
 type SolanaParsedAccount = {
   data: unknown;
   executable: boolean;
@@ -309,6 +320,63 @@ class SolanaRpcClient {
         return value.value.map((status) => (status === null ? null : normalizeSignatureStatus(status)));
       }
     );
+  }
+
+  /**
+   * What the cluster can prove about signed transactions whose broadcast outcome is unknown, one verdict per query.
+   *
+   * Each endpoint is asked on its own and its answers are never mixed with another's: a node that lags, or sits behind
+   * a load balancer of mixed freshness, can find no trace of a transaction that another node already has. An endpoint
+   * proves a transaction expired only after reporting that it has finalized past the transaction's last valid block
+   * height and then, from a state at least as recent as that, finding no trace of the signature. A confirmed status on
+   * any endpoint means the transaction landed. A trace that is not confirmed yet, or an endpoint that has not
+   * finalized that far, keeps it pending whatever the others say. Fails only when no endpoint answered.
+   */
+  async resolveSignatures(queries: readonly SolanaSignatureQuery[]): Promise<SolanaSignatureResolution[]> {
+    if (!Array.isArray(queries) || queries.length === 0 || queries.length > 256) {
+      throw new SolanaRpcError('invalid_signatures');
+    }
+
+    const signatures = queries.map(({ signature }) => normalizeSignature(signature));
+    const lastValidHeights = queries.map(({ lastValidBlockHeight }) =>
+      requireSafeInteger(lastValidBlockHeight, 'invalid_block_height')
+    );
+    const verdicts: Array<SolanaSignatureResolution | undefined> = queries.map(() => undefined);
+    let lastError: unknown;
+
+    for (const rpcUrl of this.endpoints.endpoints) {
+      try {
+        // Asked in this order, so the lookup is at least as recent as the progress it is judged against.
+        const finalized = await this.requestOnce(
+          rpcUrl,
+          'getEpochInfo',
+          [{ commitment: 'finalized' }],
+          normalizeFinalizedProgress
+        );
+        const observed = await this.requestOnce(
+          rpcUrl,
+          'getSignatureStatuses',
+          [signatures, { searchTransactionHistory: true }],
+          (value) => normalizeSignatureStatusesWithContext(value, signatures.length)
+        );
+
+        verdicts.forEach((previous, index) => {
+          const next = judgeSignature(observed.statuses[index], lastValidHeights[index], finalized, observed.slot);
+
+          verdicts[index] = previous === undefined || VERDICT_STRENGTH[next.state] > VERDICT_STRENGTH[previous.state] ? next : previous;
+        });
+      } catch (error) {
+        lastError = error;
+      }
+
+      if (verdicts.every((verdict) => verdict?.state === 'landed')) break;
+    }
+
+    if (verdicts.some((verdict) => verdict === undefined)) {
+      throw lastError instanceof SolanaRpcError ? lastError : new SolanaRpcError('solana_rpc_unavailable');
+    }
+
+    return verdicts as SolanaSignatureResolution[];
   }
 
   getRecentPrioritizationFees(writableAccounts: string[] = []): Promise<SolanaPrioritizationFee[]> {
@@ -566,6 +634,40 @@ class SolanaRpcClient {
   }
 }
 
+// Landed settles the question, a trace that is not confirmed (or an endpoint that has not caught up) keeps it open, and
+// an endpoint's proof of expiry stands only when no endpoint disagrees.
+const VERDICT_STRENGTH: Readonly<Record<SolanaSignatureResolution['state'], number>> = Object.freeze({
+  expired: 0,
+  pending: 1,
+  landed: 2,
+});
+
+/**
+ * Only a supermajority-confirmed status is an outcome; a `processed` one can
+ * still be rolled back with its fork. Nodes report a rooted transaction with
+ * `confirmations: null`.
+ */
+const isConfirmedSolanaStatus = ({
+  confirmationStatus,
+  confirmations,
+}: Pick<SolanaSignatureStatus, 'confirmationStatus' | 'confirmations'>): boolean =>
+  confirmationStatus === 'confirmed' ||
+  confirmationStatus === 'finalized' ||
+  (confirmationStatus === null && confirmations === null);
+
+function judgeSignature(
+  status: SolanaSignatureStatus | null,
+  lastValidBlockHeight: number,
+  finalized: { blockHeight: number; slot: number },
+  lookupSlot: number
+): SolanaSignatureResolution {
+  if (status) return isConfirmedSolanaStatus(status) ? { state: 'landed', status } : { state: 'pending' };
+
+  // No trace proves nothing until the endpoint has finalized past the last valid block, and then only if the lookup
+  // came from a state that includes everything it had finalized.
+  return finalized.blockHeight > lastValidBlockHeight && lookupSlot >= finalized.slot ? { state: 'expired' } : { state: 'pending' };
+}
+
 const CLUSTER_RECHECK_MS = 5 * 60_000;
 // Endpoints already proven to serve a cluster, shared by every client of this worker so one balance refresh does
 // not ask each node for its identity again.
@@ -665,6 +767,29 @@ function normalizeSignatureStatus(value: unknown): SolanaSignatureStatus {
   };
 }
 
+function normalizeSignatureStatusesWithContext(
+  value: unknown,
+  count: number
+): { slot: number; statuses: Array<SolanaSignatureStatus | null> } {
+  if (!isRecord(value) || !Array.isArray(value.value) || value.value.length !== count) {
+    throw new SolanaRpcError('invalid_signature_status_response');
+  }
+
+  return {
+    slot: normalizeContext(value.context, 'invalid_signature_status_response').slot,
+    statuses: value.value.map((status) => (status === null ? null : normalizeSignatureStatus(status))),
+  };
+}
+
+function normalizeFinalizedProgress(value: unknown): { blockHeight: number; slot: number } {
+  if (!isRecord(value)) throw new SolanaRpcError('invalid_epoch_info_response');
+
+  return {
+    blockHeight: requireSafeInteger(value.blockHeight, 'invalid_epoch_info_response'),
+    slot: requireSafeInteger(value.absoluteSlot, 'invalid_epoch_info_response'),
+  };
+}
+
 function normalizeRpcUrl(rpcUrl: string): string {
   const url = new URL(rpcUrl);
 
@@ -672,7 +797,7 @@ function normalizeRpcUrl(rpcUrl: string): string {
     throw new SolanaRpcError('invalid_rpc_url');
   }
 
-  url.search = '';
+  // A provider's key may sit in the query string, so only the fragment is dropped.
   url.hash = '';
 
   return url.toString().replace(/\/+$/, '');
@@ -846,6 +971,7 @@ export {
   SolanaRpcClient,
   SolanaRpcError,
   createClusterBoundSolanaRpcClient,
+  isConfirmedSolanaStatus,
   type SolanaBroadcastOptions,
   type SolanaFeeForMessageResponse,
   type SolanaJsonRpcErrorPayload,
@@ -859,6 +985,8 @@ export {
   type SolanaSimulationOptions,
   type SolanaSimulationResponse,
   type SolanaSimulationValue,
+  type SolanaSignatureQuery,
+  type SolanaSignatureResolution,
   type SolanaSignatureStatus,
   type SolanaTokenAccountEntry,
 };

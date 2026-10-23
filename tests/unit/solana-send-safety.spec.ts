@@ -12,8 +12,19 @@ import {
   SolanaTransactionStatusUnknownError,
   type SolanaTransferClient,
 } from '@extension-base/api/solana/transfer';
-import { resolveSolanaPendingSends, type SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
-import { SolanaBroadcastError, SolanaRpcClient, SolanaRpcError } from '@extension-base/services/solana-rpc-service';
+import {
+  isConfirmedSolanaStatus,
+  resolveSolanaPendingSends,
+  type SolanaPendingSend,
+} from '@extension-base/api/solana/pendingSends';
+import {
+  SolanaBroadcastError,
+  SolanaRpcClient,
+  SolanaRpcError,
+  type SolanaSignatureQuery,
+  type SolanaSignatureResolution,
+  type SolanaSignatureStatus,
+} from '@extension-base/services/solana-rpc-service';
 import { createSolanaRpcBalanceClient } from '@extension-base/services/balance-service/solanaRpcBalances';
 import { base58Decode } from '@polkadot/util-crypto';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
@@ -105,7 +116,6 @@ function createClient({
   return {
     getAccountInfo: vi.fn(async (address: string) => (accounts[address] ?? null) as never),
     getBalance: vi.fn(async () => balanceLamports),
-    getBlockHeight: vi.fn(async () => blockHeights[Math.min(heightIndex++, blockHeights.length - 1)]),
     getFeeForMessage: vi.fn(async (message: string) => {
       const parsed = parseSolanaSerializedTransaction(
         new Uint8Array([1, ...new Uint8Array(64), ...Uint8Array.from(atob(message), (char) => char.charCodeAt(0))])
@@ -118,6 +128,19 @@ function createClient({
     getMinimumBalanceForRentExemption: vi.fn(async (bytes: number) => (bytes === 0 ? 890_880 : 2_039_280)),
     getRecentPrioritizationFees: vi.fn(async () => fees.map((prioritizationFee, slot) => ({ prioritizationFee, slot }))),
     getSignatureStatuses: vi.fn(async () => [statuses[Math.min(statusIndex++, statuses.length - 1)] as never]),
+    // One honest node whose finalized height is `blockHeights` and whose lookups follow `statuses`; the rule that turns
+    // those into a verdict is tested against the real client in solana-signature-resolution.spec.ts.
+    resolveSignatures: vi.fn(async (queries: readonly SolanaSignatureQuery[]) => {
+      const finalizedHeight = blockHeights[Math.min(heightIndex++, blockHeights.length - 1)];
+
+      return queries.map(({ lastValidBlockHeight }): SolanaSignatureResolution => {
+        const status = statuses[Math.min(statusIndex++, statuses.length - 1)] as SolanaSignatureStatus | null;
+
+        if (status) return isConfirmedSolanaStatus(status) ? { state: 'landed', status } : { state: 'pending' };
+
+        return finalizedHeight > lastValidBlockHeight ? { state: 'expired' } : { state: 'pending' };
+      });
+    }),
     sendRawTransaction: vi.fn(async (transaction: string) => {
       if (sendError) throw sendError;
 
@@ -393,6 +416,47 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(store.records).toEqual([]);
   });
 
+  describe('when the settled record cannot be cleared', () => {
+    const failingStore = () => {
+      const store = memoryPendingStore();
+
+      store.remove.mockRejectedValue(new Error('storage unavailable'));
+
+      return store;
+    };
+
+    it('still reports a confirmed send as confirmed, and keeps the record for the next send to resolve', async () => {
+      const store = failingStore();
+      const params = solParams();
+
+      await makeSolanaTransfer(params, createClient(), sendOptions(store));
+
+      expect(params.callback).toHaveBeenCalledWith({ status: true });
+      expect(store.records).toHaveLength(1);
+    });
+
+    it('still reports an expired blockhash as expired', async () => {
+      const store = failingStore();
+      const client = createClient({ blockHeights: [457], statuses: [null] });
+
+      await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_transaction_expired');
+      expect(store.records).toHaveLength(1);
+    });
+
+    it('still reports a transaction the node refused as refused', async () => {
+      const store = failingStore();
+      const client = createClient({
+        sendError: new SolanaBroadcastError(
+          'solana_broadcast_rejected',
+          false,
+          new SolanaRpcError('solana_rpc_error', 200, { code: -32002, message: 'Transaction simulation failed' })
+        ),
+      });
+
+      await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_simulation_failed');
+    });
+  });
+
   it('reports an expired blockhash as nothing sent, so a retry is safe', async () => {
     const store = memoryPendingStore();
     const client = createClient({ blockHeights: [457], statuses: [null] });
@@ -618,7 +682,7 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(client.getLatestBlockhash).not.toHaveBeenCalled();
   });
 
-  it('resolves pending records from signature status and block height', async () => {
+  describe('pending records', () => {
     const record = (signature: string, lastValidBlockHeight: number): SolanaPendingSend => ({
       accountAddress: 'a',
       createdAt: 1,
@@ -627,51 +691,56 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
       signature,
       transactionBase64: 'AQID',
     });
-    const client = {
-      getBlockHeight: vi.fn(async () => 200),
-      getSignatureStatuses: vi.fn(async () => [{ confirmationStatus: 'finalized', err: null, slot: 1 }, null, null] as never),
-      sendRawTransaction: vi.fn(async () => 'sig'),
-    };
-    const { resolved, unresolved } = await resolveSolanaPendingSends(
-      [record('a'.repeat(88), 300), record('b'.repeat(88), 100), record('c'.repeat(88), 300)],
-      client
-    );
-
-    expect(resolved.map(({ signature }) => signature[0])).toEqual(['a', 'b']);
-    expect(unresolved.map(({ signature }) => signature[0])).toEqual(['c']);
-  });
-
-  it('keeps a processed-only record in flight until it confirms or its blockhash expires', async () => {
-    const record = (signature: string, lastValidBlockHeight: number): SolanaPendingSend => ({
-      accountAddress: 'a',
-      createdAt: 1,
-      lastValidBlockHeight,
-      network: 'mainnet',
-      signature,
-      transactionBase64: 'AQID',
+    const landed = (confirmationStatus: SolanaSignatureStatus['confirmationStatus']): SolanaSignatureResolution => ({
+      state: 'landed',
+      status: { confirmationStatus, confirmations: null, err: null, slot: 1 },
     });
-    const client = {
-      getBlockHeight: vi.fn(async () => 200),
-      getSignatureStatuses: vi.fn(
-        async () =>
-          [
-            { confirmationStatus: 'processed', confirmations: 0, err: { InstructionError: [0, 'Custom'] }, slot: 1 },
-            { confirmationStatus: 'processed', confirmations: 0, err: null, slot: 1 },
-            { confirmationStatus: null, confirmations: null, err: null, slot: 1 },
-          ] as never
-      ),
-      sendRawTransaction: vi.fn(async () => 'sig'),
-    };
-    const { resolved, unresolved } = await resolveSolanaPendingSends(
-      [record('a'.repeat(88), 300), record('b'.repeat(88), 100), record('c'.repeat(88), 300)],
-      client
-    );
 
-    // `a` can still be rolled back and land; `b` is past its last valid block
-    // height, so its outcome is fixed; `c` is rooted.
-    expect(resolved.map(({ signature }) => signature[0])).toEqual(['b', 'c']);
-    expect(unresolved.map(({ signature }) => signature[0])).toEqual(['a']);
-    expect(client.sendRawTransaction).toHaveBeenCalledOnce();
+    it('resolves the records the network settled and keeps the others in flight', async () => {
+      const client = {
+        resolveSignatures: vi.fn(async () => [landed('finalized'), { state: 'expired' }, { state: 'pending' }] as never),
+        sendRawTransaction: vi.fn(async () => 'sig'),
+      };
+      const records = [record('a'.repeat(88), 300), record('b'.repeat(88), 100), record('c'.repeat(88), 300)];
+      const { resolved, unresolved } = await resolveSolanaPendingSends(records, client);
+
+      expect(client.resolveSignatures).toHaveBeenCalledWith([
+        { lastValidBlockHeight: 300, signature: 'a'.repeat(88) },
+        { lastValidBlockHeight: 100, signature: 'b'.repeat(88) },
+        { lastValidBlockHeight: 300, signature: 'c'.repeat(88) },
+      ]);
+      expect(resolved.map(({ signature }) => signature[0])).toEqual(['a', 'b']);
+      expect(unresolved.map(({ signature }) => signature[0])).toEqual(['c']);
+      // Only the record still in flight is rebroadcast, with the same bytes.
+      expect(client.sendRawTransaction).toHaveBeenCalledOnce();
+      expect(client.sendRawTransaction).toHaveBeenCalledWith('AQID', { maxRetries: 0, skipPreflight: true }, undefined);
+    });
+
+    it('keeps every record in flight, and rebroadcasts nothing, when no node could answer', async () => {
+      const client = {
+        resolveSignatures: vi.fn(async () => {
+          throw new SolanaRpcError('solana_rpc_unavailable');
+        }),
+        sendRawTransaction: vi.fn(async () => 'sig'),
+      };
+      const records = [record('a'.repeat(88), 300), record('b'.repeat(88), 100)];
+      const { resolved, unresolved } = await resolveSolanaPendingSends(records, client);
+
+      expect(resolved).toEqual([]);
+      expect(unresolved).toEqual(records);
+      expect(client.sendRawTransaction).not.toHaveBeenCalled();
+    });
+
+    it('does not rebroadcast when asked only to read', async () => {
+      const client = {
+        resolveSignatures: vi.fn(async () => [{ state: 'pending' }] as never),
+        sendRawTransaction: vi.fn(async () => 'sig'),
+      };
+      const { unresolved } = await resolveSolanaPendingSends([record('a'.repeat(88), 300)], client, undefined, false);
+
+      expect(unresolved).toHaveLength(1);
+      expect(client.sendRawTransaction).not.toHaveBeenCalled();
+    });
   });
 });
 

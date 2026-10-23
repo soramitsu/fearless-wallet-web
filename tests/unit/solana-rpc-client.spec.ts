@@ -191,6 +191,18 @@ describe('SolanaRpcClient', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
+  it("keeps a provider's key in the query string and drops only the fragment", async () => {
+    const fetchFn = vi.fn(async (_input: string | URL, init?: RequestInit) =>
+      rpcResponse(JSON.parse(init?.body as string).id, 7)
+    );
+    const client = new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example/solana/?api-key=secret-key#section' });
+
+    await expect(client.getBlockHeight()).resolves.toBe(7);
+
+    expect(client.rpcUrls).toEqual(['https://rpc.example/solana/?api-key=secret-key']);
+    expect(fetchFn.mock.calls[0][0]).toBe('https://rpc.example/solana/?api-key=secret-key');
+  });
+
   it('throws typed errors for HTTP failures, JSON-RPC errors, malformed JSON, and bad shapes', async () => {
     const httpFailure = new SolanaRpcClient({
       fetchFn: vi.fn(async () => jsonResponse({ error: 'down' }, 503)),

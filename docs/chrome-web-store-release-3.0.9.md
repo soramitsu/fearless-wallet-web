@@ -56,3 +56,11 @@ locations are unchanged (40 `DANGEROUS_EVAL`, one `UNSAFE_VAR_ASSIGNMENT`), with
 zero errors or notices. Only the `chunks/accounts.js` artifact hash changed;
 the reviewed baseline records that hash. The complete comparison is retained
 outside the checkout with the release evidence.
+
+Bitcoin evidence uses the actual post-confirmation verification time in UTC
+whole seconds. Miner header timestamps can legitimately lead that time by up
+to two hours, matching Bitcoin Core's `MAX_FUTURE_BLOCK_TIME` and
+`TIMESTAMP_WINDOW` in [chain.h](https://github.com/bitcoin/bitcoin/blob/master/src/chain.h).
+The audit applies that bound separately to the current clock and recorded
+verification time. Operator clock skew, evidence freshness, recording delay,
+confirmation, transaction matching and source ancestry checks remain in force.

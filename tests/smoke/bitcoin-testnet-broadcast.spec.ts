@@ -159,7 +159,7 @@ describe('Bitcoin testnet broadcast smoke', () => {
           amountSat: String(liveConfig.amountSat),
           outpoint: `${liveConfig.outpoint.txid}:${liveConfig.outpoint.vout}`,
           indexerUrl: liveConfig.indexerUrl,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString().replace(/\.\d{3}Z$/u, 'Z'),
         }, null, 2)}\n`);
       }
     },

@@ -105,6 +105,10 @@ const [evidenceFile, requireReadyRaw, rootDir, selftestFixtureRootRaw, selftestI
 const requireReady = requireReadyRaw === 'true';
 const errors = [];
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+// Miner header times may lead real time by two hours. Bitcoin Core uses the same
+// window when comparing external timestamps to block timestamps:
+// https://github.com/bitcoin/bitcoin/blob/master/src/chain.h
+const MAX_FUTURE_BLOCK_TIME_MS = 2 * 60 * 60 * 1000;
 const MAX_EVIDENCE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_RECORDING_DELAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RESPONSE_BODY_BYTES = 1024 * 1024;
@@ -859,11 +863,11 @@ function verifyBroadcastRecord(entry, index) {
 
   const evidenceTimestampMillis = parseIsoUtcSecondMillis(entry.timestamp);
   const blockTimeMillis = status.block_time * 1000;
-  if (blockTimeMillis > auditNowMillis + MAX_CLOCK_SKEW_MS) {
-    fail(`evidence[${index}] confirmed indexer transaction block_time must not be in the future`);
+  if (blockTimeMillis > auditNowMillis + MAX_FUTURE_BLOCK_TIME_MS) {
+    fail(`evidence[${index}] confirmed indexer transaction block_time exceeds the two-hour future header window`);
   }
-  if (evidenceTimestampMillis !== null && evidenceTimestampMillis < blockTimeMillis) {
-    fail(`evidence[${index}] timestamp must be at or after the confirmed transaction block_time`);
+  if (evidenceTimestampMillis !== null && blockTimeMillis > evidenceTimestampMillis + MAX_FUTURE_BLOCK_TIME_MS) {
+    fail(`evidence[${index}] timestamp precedes the confirmed transaction block_time by more than the two-hour header window`);
   } else if (
     evidenceTimestampMillis !== null &&
     evidenceTimestampMillis - blockTimeMillis > MAX_RECORDING_DELAY_MS

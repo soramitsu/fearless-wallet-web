@@ -50,7 +50,7 @@
       "amountSat": "10000",
       "outpoint": "a81eab45efd4faa3bd7a9bf60358983cd3a1625a460ac7eb2aa6106235ba9fb1:1",
       "indexerUrl": "https://blockstream.info/testnet/api",
-      "timestamp": "2026-10-23T04:27:35.641Z",
+      "timestamp": "2026-10-23T04:55:35Z",
       "commit": "7cb4c076819cf5009ecf295b079bba4a759dfce4",
       "operator": "codex (yarn test:smoke:bitcoin)"
     }

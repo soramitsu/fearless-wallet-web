@@ -611,7 +611,7 @@ const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
 fixture.body.status.block_time = 1782604800;
 fs.writeFileSync(file, `${JSON.stringify(fixture, null, 2)}\n`);
 NODE
-indexer_fixture="$timestamp_before_block_fixture" expect_failure "ready evidence timestamp before block" "timestamp must be at or after the confirmed transaction block_time" run_audit "$ready_timestamp_before_block" --require-ready
+indexer_fixture="$timestamp_before_block_fixture" expect_failure "ready evidence timestamp before block" "timestamp precedes the confirmed transaction block_time by more than the two-hour header window" run_audit "$ready_timestamp_before_block" --require-ready
 indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 ready_stale_review_date="$tmp_dir/ready-stale-review-date.json"
@@ -667,10 +667,43 @@ node - "$future_block_response" <<'NODE'
 const fs = require('fs');
 const file = process.argv[2];
 const response = JSON.parse(fs.readFileSync(file, 'utf8'));
-response.body.status.block_time = 1782432601;
+response.body.status.block_time = Date.parse('2026-06-26T02:05:01Z') / 1000;
 fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
 NODE
-indexer_fixture="$future_block_response" expect_failure "future confirmed indexer block time" "confirmed indexer transaction block_time must not be in the future" run_audit "$ready" --require-ready
+future_header_manifest="$tmp_dir/ready-future-header.json"
+cp "$ready" "$future_header_manifest"
+perl -0pi -e 's/2026-06-26T00:00:00Z/2026-06-26T00:10:00Z/' "$future_header_manifest"
+indexer_fixture="$future_block_response" expect_failure "future confirmed indexer block time beyond two hours" "confirmed indexer transaction block_time exceeds the two-hour future header window" run_audit "$future_header_manifest" --require-ready
+
+boundary_header_response="$tmp_dir/response-header-window-boundary.json"
+cp "$tmp_dir/indexer-fixture.json" "$boundary_header_response"
+node - "$boundary_header_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.status.block_time = Date.parse('2026-06-26T02:05:00Z') / 1000;
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+indexer_fixture="$boundary_header_response" expect_success "exact two-hour future header boundary" run_audit "$future_header_manifest" --require-ready
+
+# Check the evidence-to-header bound independently: this header equals the
+# current clock, so both cases pass the separate future-header check.
+record_header_response="$tmp_dir/response-record-header-window.json"
+cp "$tmp_dir/indexer-fixture.json" "$record_header_response"
+node - "$record_header_response" <<'NODE'
+const fs = require('fs');
+const file = process.argv[2];
+const response = JSON.parse(fs.readFileSync(file, 'utf8'));
+response.body.status.block_time = Date.parse('2026-06-26T00:05:00Z') / 1000;
+fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
+NODE
+record_header_manifest="$tmp_dir/ready-record-header-window.json"
+cp "$ready" "$record_header_manifest"
+perl -0pi -e 's/2026-06-26T00:00:00Z/2026-06-25T22:05:00Z/' "$record_header_manifest"
+indexer_fixture="$record_header_response" expect_success "exact two-hour evidence-to-header boundary" run_audit "$record_header_manifest" --require-ready
+perl -0pi -e 's/2026-06-25T22:05:00Z/2026-06-25T22:04:59Z/' "$record_header_manifest"
+indexer_fixture="$record_header_response" expect_failure "evidence-to-header skew exceeds two hours" "timestamp precedes the confirmed transaction block_time by more than the two-hour header window" run_audit "$record_header_manifest" --require-ready
+indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 boundary_timestamp_manifest="$tmp_dir/ready-clock-skew-boundary.json"
 cp "$ready" "$boundary_timestamp_manifest"
@@ -685,6 +718,8 @@ response.body.status.block_time = 1782432600;
 fs.writeFileSync(file, `${JSON.stringify(response, null, 2)}\n`);
 NODE
 indexer_fixture="$boundary_block_response" expect_success "exact future clock-skew boundary" run_audit "$boundary_timestamp_manifest" --require-ready
+perl -0pi -e 's/2026-06-26T00:10:00Z/2026-06-26T00:10:01Z/' "$boundary_timestamp_manifest"
+indexer_fixture="$boundary_block_response" expect_failure "operator clock skew still rejects five minutes plus one second" "timestamp must not be in the future" run_audit "$boundary_timestamp_manifest" --require-ready
 indexer_fixture="$tmp_dir/indexer-fixture.json"
 
 ready_bad_commit="$tmp_dir/ready-bad-commit.json"
@@ -963,6 +998,6 @@ export -n -f curl git
 unset -f curl git
 [[ ! -e "$attack_marker" ]] || fail "exported curl/git function was executed"
 
-[[ "$negative_count" == "103" ]] || fail "expected exactly 103 negative/adversarial cases, found $negative_count"
+[[ "$negative_count" == "105" ]] || fail "expected exactly 105 negative/adversarial cases, found $negative_count"
 
-echo "[bitcoin-broadcast-evidence-test] all assertions passed (103 negative/adversarial cases)"
+echo "[bitcoin-broadcast-evidence-test] all assertions passed (105 negative/adversarial cases)"

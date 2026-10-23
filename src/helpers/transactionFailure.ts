@@ -1,4 +1,5 @@
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
+import { SEND_ERROR_LOCALE_KEYS } from '@/helpers/transferErrors';
 
 type TransactionFailurePresentation = {
   key: string;
@@ -21,6 +22,7 @@ type TransactionResponseLike = {
 type OwnDataProperty = { kind: 'invalid' } | { kind: 'missing' } | { kind: 'value'; value: unknown };
 
 const KNOWN_MESSAGE_KEYS = new Map<string, string>([
+  ...Object.entries(SEND_ERROR_LOCALE_KEYS),
   ['transfer_fee_changed', 'assets.transferFeeChanged'],
   ['transfer_fee_approval_required', 'assets.transferFeeApprovalRequired'],
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
@@ -31,6 +33,8 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
 ]);
 
+const HEX_TRANSACTION_HASH = /^[0-9a-f]{64}$/iu;
+const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{86,88}$/u;
 const SAFE_ASSET_SYMBOL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/u;
 
 function asResponse(value: unknown): TransactionResponseLike | null {
@@ -138,10 +142,13 @@ function getUnknownTransactionHash(value: unknown): string | null {
   if (
     status.kind !== 'value' || status.value !== false ||
     outcome.kind !== 'value' || outcome.value !== 'unknown' ||
-    hash.kind !== 'value' || typeof hash.value !== 'string' || !/^[0-9a-f]{64}$/iu.test(hash.value)
+    hash.kind !== 'value' || typeof hash.value !== 'string'
   ) return null;
 
-  return hash.value.toLowerCase();
+  // A Solana signature is base58 and case-sensitive; Bitcoin and Iroha hashes are hex.
+  if (SOLANA_SIGNATURE.test(hash.value)) return hash.value;
+
+  return HEX_TRANSACTION_HASH.test(hash.value) ? hash.value.toLowerCase() : null;
 }
 
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {

@@ -20,9 +20,10 @@ import {
   requireProductionIrohaTransferCodec,
 } from '@extension-base/api/iroha/productionTransferCodec';
 import {
-  estimateSolanaTransferFee,
   isSolanaTransferNetwork,
   makeSolanaTransfer,
+  quoteSolanaTransfer,
+  SolanaTransactionStatusUnknownError,
 } from '@extension-base/api/solana/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap } from '@extension-base/api/substrate/sora';
@@ -66,7 +67,8 @@ import {
   resolveSolanaSignAndSendTransaction,
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
-import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
@@ -737,12 +739,17 @@ export default class Extension extends FWExtensionBase {
           password: this.state.keyringService.getPassword(),
           walletEcosystem: walletEcosystem as WalletEcosystem,
         });
+
+      // A dApp's sign-and-send moves funds too, so the Solana send kill switch
+      // covers it; sign-only requests are unaffected.
+      if (request.method === 'signAndSendTransaction') await assertSendCapability(this.state, 'solanaSend');
+
       const response =
         request.method === 'signAndSendTransaction'
           ? await resolveSolanaSignAndSendTransaction({
               accounts,
               broadcastTransaction: (transactionBase64, options) =>
-                new SolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options),
+                createClusterBoundSolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options),
               exportMnemonic,
               request,
             })
@@ -1343,7 +1350,7 @@ export default class Extension extends FWExtensionBase {
 
     if (isSolanaTransferNetwork(network)) {
       try {
-        fee = await estimateSolanaTransferFee({
+        const { fee: quotedFee, ...solana } = await quoteSolanaTransfer({
           amount: amount ?? '0',
           assetId,
           from,
@@ -1351,6 +1358,12 @@ export default class Extension extends FWExtensionBase {
           state: this.state,
           to,
         });
+
+        if (solana.unavailableReason) {
+          errors.push({ message: solana.unavailableReason, code: TransferErrorCode.TRANSFER_ERROR });
+        }
+
+        return { destEstimateFee: '0', estimateFee: quotedFee, maxAmount: solana.maxSendable, errors, solana };
       } catch (e) {
         console.info(e);
         errors.push({
@@ -1474,10 +1487,12 @@ export default class Extension extends FWExtensionBase {
     } else if (isSolanaTransferNetwork(network)) {
       transferProm = makeSolanaTransfer({
         amount,
+        approvedMaxFee: request.approvedMaxFee,
         assetId,
         callback,
         from,
         networkKey,
+        solanaComputeUnitPriceMicroLamports: request.solanaComputeUnitPriceMicroLamports,
         state: this.state,
         to,
       });
@@ -1516,7 +1531,9 @@ export default class Extension extends FWExtensionBase {
 
       callback({
         status: false,
-        ...(ex instanceof IrohaTransactionStatusUnknownError || ex instanceof BitcoinTransactionStatusUnknownError
+        ...(ex instanceof IrohaTransactionStatusUnknownError ||
+        ex instanceof BitcoinTransactionStatusUnknownError ||
+        ex instanceof SolanaTransactionStatusUnknownError
           ? { outcome: 'unknown' as const, transactionHash: ex.transactionHash }
           : {}),
         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],

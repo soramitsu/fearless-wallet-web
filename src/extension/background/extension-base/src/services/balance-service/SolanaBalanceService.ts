@@ -1,11 +1,14 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import {
-  SolanaIndexerClient,
+  type SolanaIndexerClient,
   type SolanaNativeBalance,
   type SolanaTokenBalance,
   type SolanaTokenMetadata,
 } from '@extension-base/services/solana-indexer-service';
+import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import { getSolanaNetworkKind, getSolanaRpcUrls } from '@extension-base/api/solana/transfer';
 import { reconcileSuccessfulDynamicScan } from './reconcileSuccessfulScan';
+import { createSolanaRpcBalanceClient } from './solanaRpcBalances';
 import type State from '@extension-base/background/handlers/State';
 import type { ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
@@ -24,10 +27,24 @@ const SOLANA_FALLBACK_ICON = 'solana';
 export default class SolanaBalanceService {
   private serviceInfoVerified = false;
 
+  /**
+   * Without an injected client, balances come from the network's own JSON-RPC
+   * nodes with failover (mainnet or devnet as the network says), never from the
+   * si.soramitsu.io indexer.
+   */
   constructor(
     private readonly state: State,
-    private readonly client: SolanaBalanceClient = new SolanaIndexerClient()
+    private readonly injectedClient?: SolanaBalanceClient
   ) {}
+
+  private clientFor(network: NetworkJson): SolanaBalanceClient {
+    return (
+      this.injectedClient ??
+      createSolanaRpcBalanceClient(
+        createClusterBoundSolanaRpcClient({ network: getSolanaNetworkKind(network), rpcUrls: getSolanaRpcUrls(network) })
+      )
+    );
+  }
 
   async fetchBalance({
     address,
@@ -43,11 +60,26 @@ export default class SolanaBalanceService {
     if (!network) return [];
 
     try {
-      await this.ensureServiceInfoVerified();
+      const client = this.clientFor(network);
 
-      const { native, tokens } = await this.client.getBalances(wallet);
+      await this.ensureServiceInfoVerified(client);
+
+      const { native, tokens, tokensUnavailable } = await client.getBalances(wallet);
       const aggregatedTokens = this.aggregateTokenBalances(tokens);
-      const metadataByMint = await this.getTokenMetadataByMint(aggregatedTokens);
+      const metadataByMint = await this.getTokenMetadataByMint(client, aggregatedTokens);
+      const nativeBalance = {
+        balance: native.uiAmountString,
+        network: network.name,
+        assetId: this.getNativeAsset(network).id,
+      };
+
+      if (tokensUnavailable) {
+        // SOL loaded but the token accounts were not read: the tokens shown last stay, marked as not updated. An
+        // unread list never zeroes a token, and the network is not a complete scan.
+        this.setNativeBalance(address, network, native, APIItemState.READY, 'limited');
+
+        return [nativeBalance, ...this.markCachedBalancesErrored(address, network, ({ isNative }) => !isNative)];
+      }
 
       this.setNativeBalance(address, network, native, APIItemState.READY);
       aggregatedTokens.forEach((token) => this.setTokenBalance(address, network, token, metadataByMint[token.mint]));
@@ -59,7 +91,7 @@ export default class SolanaBalanceService {
       });
 
       return [
-        { balance: native.uiAmountString, network: network.name, assetId: this.getNativeAsset(network).id },
+        nativeBalance,
         ...aggregatedTokens.map(({ mint, uiAmountString }) => ({
           balance: uiAmountString,
           network: network.name,
@@ -83,10 +115,10 @@ export default class SolanaBalanceService {
     }
   }
 
-  private async ensureServiceInfoVerified(): Promise<void> {
-    if (this.serviceInfoVerified || !this.client.verifyServiceInfo) return;
+  private async ensureServiceInfoVerified(client: SolanaBalanceClient): Promise<void> {
+    if (this.serviceInfoVerified || !client.verifyServiceInfo) return;
 
-    await this.client.verifyServiceInfo();
+    await client.verifyServiceInfo();
     this.serviceInfoVerified = true;
   }
 
@@ -123,7 +155,8 @@ export default class SolanaBalanceService {
     address: string,
     network: NetworkJson,
     native: SolanaNativeBalance | undefined,
-    state: APIItemState
+    state: APIItemState,
+    scanCoverage: BalanceItem['scanCoverage'] = /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete'
   ): void {
     const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
     const balance = native?.uiAmountString ?? '0';
@@ -151,7 +184,7 @@ export default class SolanaBalanceService {
       assetMetadataTrust: 'verified',
       assetMetadataSource: 'registry',
       priceId,
-      scanCoverage: /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete',
+      scanCoverage,
     };
     const existingIndex = tokenGroup.balances.findIndex(({ name }) => isSameString(name, network.name));
 
@@ -162,14 +195,20 @@ export default class SolanaBalanceService {
     this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
   }
 
-  private markCachedBalancesErrored(address: string, network: NetworkJson): ResponseBalanceRequest[] {
+  private markCachedBalancesErrored(
+    address: string,
+    network: NetworkJson,
+    includes: (balance: BalanceItem) => boolean = () => true
+  ): ResponseBalanceRequest[] {
     const groups = this.state.balanceService.balanceMap[address] ?? [];
     const balances: ResponseBalanceRequest[] = [];
 
     groups
       .filter(({ relayChain }) => relayChain === 'solana')
       .forEach((group) => {
-        const balanceIndex = group.balances.findIndex(({ name }) => isSameString(name, network.name));
+        const balanceIndex = group.balances.findIndex(
+          (balance) => isSameString(balance.name, network.name) && includes(balance)
+        );
 
         if (balanceIndex < 0) return;
 
@@ -192,13 +231,16 @@ export default class SolanaBalanceService {
     return balances;
   }
 
-  private async getTokenMetadataByMint(tokens: SolanaTokenBalance[]): Promise<SolanaTokenMetadataByMint> {
-    if (!tokens.length || !this.client.getTokenMetadataBatch) return {};
+  private async getTokenMetadataByMint(
+    client: SolanaBalanceClient,
+    tokens: SolanaTokenBalance[]
+  ): Promise<SolanaTokenMetadataByMint> {
+    if (!tokens.length || !client.getTokenMetadataBatch) return {};
 
-    const mints = [...new Set(tokens.map(({ mint }) => mint))];
+    const mints = [...new Set(tokens.map(({ mint }) => mint))].slice(0, 100);
 
     try {
-      const { tokens: metadata } = await this.client.getTokenMetadataBatch(mints);
+      const { tokens: metadata } = await client.getTokenMetadataBatch(mints);
 
       return metadata.reduce<SolanaTokenMetadataByMint>((result, item) => {
         result[item.mint] = item;

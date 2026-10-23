@@ -1,4 +1,27 @@
+// Solana send outcomes the background reports by code, shared by the Send screen (quote errors) and the result
+// screen (send failures).
+export const SEND_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  invalid_solana_recipient: 'assets.incorrectAddress',
+  solana_amount_below_rent: 'assets.solanaAmountBelowRent',
+  solana_broadcast_ambiguous: 'assets.solanaBroadcastUnconfirmed',
+  solana_broadcast_signature_mismatch: 'assets.solanaBroadcastUnconfirmed',
+  solana_insufficient_funds: 'assets.insufficientBalanceGeneric',
+  solana_insufficient_sol_for_fee: 'assets.solanaInsufficientSolForFee',
+  solana_insufficient_token_balance: 'assets.insufficientBalanceGeneric',
+  solana_previous_send_pending: 'assets.solanaPreviousSendPending',
+  solana_recipient_off_curve: 'assets.solanaRecipientOffCurve',
+  solana_recipient_program: 'assets.solanaRecipientProgram',
+  solana_recipient_token_account: 'assets.solanaRecipientTokenAccount',
+  solana_recipient_token_account_frozen: 'assets.solanaRecipientTokenAccountFrozen',
+  solana_sender_below_rent: 'assets.solanaSenderBelowRent',
+  solana_simulation_failed: 'assets.solanaSimulationFailed',
+  solana_transaction_expired: 'assets.solanaTransactionExpired',
+  solana_transaction_failed: 'assets.solanaTransactionFailed',
+  solana_transfer_disabled: 'common.featureOff',
+});
+
 const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
+  ...SEND_ERROR_LOCALE_KEYS,
   transfer_fee_changed: 'assets.transferFeeChanged',
   transfer_fee_approval_required: 'assets.transferFeeApprovalRequired',
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',

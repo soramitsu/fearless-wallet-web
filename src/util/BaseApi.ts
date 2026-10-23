@@ -1,4 +1,4 @@
-import { decodeAddress, encodeAddress, hdValidatePath, isEthereumAddress } from '@polkadot/util-crypto';
+import { base58Decode, decodeAddress, encodeAddress, hdValidatePath, isEthereumAddress } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { KeyringPairs$Json } from '@subwallet/ui-keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
@@ -171,7 +171,13 @@ export default class BaseApi {
   }
 
   public static isSolanaAddress(address: string): boolean {
-    return BASE58_PUBLIC_KEY.test(address);
+    if (!BASE58_PUBLIC_KEY.test(address)) return false;
+
+    try {
+      return base58Decode(address).length === 32;
+    } catch {
+      return false;
+    }
   }
 
   public static isBitcoinAddress(address: string, network?: BitcoinNetworkKind): boolean {

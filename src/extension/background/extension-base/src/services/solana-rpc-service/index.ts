@@ -1,4 +1,13 @@
-import { UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS } from '@/consts/universalWallet';
+import { base58Encode } from '@polkadot/util-crypto';
+import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/solanaRpc';
+import {
+  EndpointFailover,
+  isRetryableHttpStatus,
+  parseRetryAfterMs,
+  withTimeout,
+  type EndpointFailoverOptions,
+} from '@/util/endpointFailover';
+import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -63,35 +72,266 @@ type SolanaBroadcastOptions = {
   skipPreflight?: boolean;
 };
 
+type SolanaSignatureStatus = {
+  confirmationStatus: SolanaRpcCommitment | null;
+  confirmations: number | null;
+  err: unknown | null;
+  slot: number;
+};
+
+type SolanaParsedAccount = {
+  data: unknown;
+  executable: boolean;
+  lamports: number;
+  owner: string;
+  space?: number;
+};
+
+type SolanaTokenAccountEntry = {
+  account: SolanaParsedAccount;
+  pubkey: string;
+};
+
+type SolanaPrioritizationFee = {
+  prioritizationFee: number;
+  slot: number;
+};
+
 type SolanaRpcClientOptions = {
+  /**
+   * Genesis hash of the cluster every endpoint must serve. When set, an endpoint is asked for its genesis hash before
+   * it is used and skipped if it names another cluster (a devnet or testnet node behind a mainnet name).
+   */
+  expectedGenesisHash?: string;
+  failover?: EndpointFailoverOptions;
   fetchFn?: FetchLike;
   network?: SolanaRpcNetwork;
+  requestTimeoutMs?: number;
   rpcUrl?: string;
+  /** Equivalent RPC endpoints tried in order; `rpcUrl` alone means just that one. */
+  rpcUrls?: readonly string[];
 };
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
+// "Node is unhealthy / behind" answers mean try another node, not "your
+// transaction is wrong".
+const RETRYABLE_RPC_ERROR_CODES: ReadonlySet<number> = new Set([-32005, -32004, -32014, -32016]);
 
 class SolanaRpcError extends Error {
   constructor(
     message: string,
     readonly status?: number,
-    readonly body?: unknown
+    readonly body?: unknown,
+    readonly retryAfterMs?: number
   ) {
     super(message);
     this.name = 'SolanaRpcError';
   }
 }
 
+/**
+ * An endpoint could not be shown to serve the expected cluster. Raised before the request that mattered is posted,
+ * so nothing was sent to that endpoint; the next endpoint is tried.
+ */
+class SolanaClusterCheckError extends SolanaRpcError {
+  constructor(
+    message: 'solana_cluster_mismatch' | 'solana_cluster_unverified',
+    cause?: unknown
+  ) {
+    super(
+      message,
+      cause instanceof SolanaRpcError ? cause.status : undefined,
+      cause instanceof SolanaRpcError ? cause.body : undefined,
+      cause instanceof SolanaRpcError ? cause.retryAfterMs : undefined
+    );
+    this.name = 'SolanaClusterCheckError';
+  }
+}
+
+/** Genesis hashes of the clusters the wallet talks to. */
+const SOLANA_GENESIS_HASHES: Readonly<Record<SolanaRpcNetwork, string>> = Object.freeze({
+  devnet: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
+  mainnet: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d',
+});
+
+/** A client whose endpoints are each proven to serve the named cluster before they answer anything else. */
+function createClusterBoundSolanaRpcClient(options: SolanaRpcClientOptions & { network: SolanaRpcNetwork }): SolanaRpcClient {
+  return new SolanaRpcClient({ ...options, expectedGenesisHash: SOLANA_GENESIS_HASHES[normalizeNetwork(options.network)] });
+}
+
+/**
+ * `ambiguous` means an attempt may have reached a node (timeout, network
+ * error, throttling, a server error or an unreadable answer) and none
+ * confirmed the transaction, so it may still land. Otherwise every node that
+ * answered refused it before relaying it, for example in preflight.
+ */
+class SolanaBroadcastError extends SolanaRpcError {
+  constructor(
+    message: 'solana_broadcast_ambiguous' | 'solana_broadcast_rejected',
+    readonly ambiguous: boolean,
+    readonly lastError?: unknown
+  ) {
+    super(
+      message,
+      lastError instanceof SolanaRpcError ? lastError.status : undefined,
+      lastError instanceof SolanaRpcError ? lastError.body : undefined
+    );
+    this.name = 'SolanaBroadcastError';
+  }
+}
+
 class SolanaRpcClient {
   private nextId = 1;
+  private readonly endpoints: EndpointFailover;
+  private readonly expectedGenesisHash?: string;
   private readonly fetchFn: FetchLike;
-  private readonly rpcUrl: string;
+  private readonly requestTimeoutMs: number;
 
   constructor({
+    expectedGenesisHash,
+    failover,
     fetchFn = globalThis.fetch.bind(globalThis),
     network = 'mainnet',
+    requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
     rpcUrl,
+    rpcUrls,
   }: SolanaRpcClientOptions = {}) {
+    this.expectedGenesisHash = expectedGenesisHash === undefined ? undefined : normalizePubkey(expectedGenesisHash, 'invalid_genesis_hash');
     this.fetchFn = fetchFn;
-    this.rpcUrl = normalizeRpcUrl(rpcUrl ?? UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS[normalizeNetwork(network)]);
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.endpoints = new EndpointFailover(
+      (rpcUrls?.length ? rpcUrls : rpcUrl ? [rpcUrl] : UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS[normalizeNetwork(network)]).map(
+        normalizeRpcUrl
+      ),
+      failover
+    );
+  }
+
+  get rpcUrls(): readonly string[] {
+    return this.endpoints.endpoints;
+  }
+
+  getGenesisHash(): Promise<string> {
+    return this.request('getGenesisHash', [], (value) => normalizePubkey(value, 'invalid_genesis_response'));
+  }
+
+  getBalance(address: string, commitment: SolanaRpcCommitment = 'confirmed'): Promise<number> {
+    return this.request(
+      'getBalance',
+      [normalizePubkey(address, 'invalid_address'), { commitment: normalizeCommitment(commitment) }],
+      (value) => requireSafeInteger(isRecord(value) ? value.value : undefined, 'invalid_balance_response')
+    );
+  }
+
+  getBlockHeight(commitment: SolanaRpcCommitment = 'confirmed'): Promise<number> {
+    return this.request('getBlockHeight', [{ commitment: normalizeCommitment(commitment) }], (value) =>
+      requireSafeInteger(value, 'invalid_block_height_response')
+    );
+  }
+
+  /** `null` when the account does not exist. */
+  getAccountInfo(address: string, commitment: SolanaRpcCommitment = 'confirmed'): Promise<SolanaParsedAccount | null> {
+    return this.request(
+      'getAccountInfo',
+      [normalizePubkey(address, 'invalid_address'), { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' }],
+      (value) => {
+        if (!isRecord(value)) throw new SolanaRpcError('invalid_account_response');
+
+        return value.value === null ? null : normalizeParsedAccount(value.value);
+      }
+    );
+  }
+
+  getMultipleAccounts(
+    addresses: string[],
+    commitment: SolanaRpcCommitment = 'confirmed'
+  ): Promise<Array<SolanaParsedAccount | null>> {
+    if (!Array.isArray(addresses) || addresses.length === 0 || addresses.length > 100) {
+      throw new SolanaRpcError('invalid_addresses');
+    }
+
+    return this.request(
+      'getMultipleAccounts',
+      [
+        addresses.map((address) => normalizePubkey(address, 'invalid_address')),
+        { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' },
+      ],
+      (value) => {
+        if (!isRecord(value) || !Array.isArray(value.value) || value.value.length !== addresses.length) {
+          throw new SolanaRpcError('invalid_accounts_response');
+        }
+
+        return value.value.map((account) => (account === null ? null : normalizeParsedAccount(account)));
+      }
+    );
+  }
+
+  getTokenAccountsByOwner(
+    owner: string,
+    programId: string,
+    commitment: SolanaRpcCommitment = 'confirmed'
+  ): Promise<SolanaTokenAccountEntry[]> {
+    return this.request(
+      'getTokenAccountsByOwner',
+      [
+        normalizePubkey(owner, 'invalid_address'),
+        { programId: normalizePubkey(programId, 'invalid_program_id') },
+        { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' },
+      ],
+      (value) => {
+        if (!isRecord(value) || !Array.isArray(value.value)) throw new SolanaRpcError('invalid_token_accounts_response');
+
+        return value.value.map((entry) => {
+          if (!isRecord(entry)) throw new SolanaRpcError('invalid_token_accounts_response');
+
+          return {
+            account: normalizeParsedAccount(entry.account),
+            pubkey: normalizePubkey(entry.pubkey, 'invalid_token_accounts_response'),
+          };
+        });
+      }
+    );
+  }
+
+  getSignatureStatuses(signatures: string[]): Promise<Array<SolanaSignatureStatus | null>> {
+    if (!Array.isArray(signatures) || signatures.length === 0 || signatures.length > 256) {
+      throw new SolanaRpcError('invalid_signatures');
+    }
+
+    return this.request(
+      'getSignatureStatuses',
+      [signatures.map((signature) => normalizeSignature(signature)), { searchTransactionHistory: true }],
+      (value) => {
+        if (!isRecord(value) || !Array.isArray(value.value) || value.value.length !== signatures.length) {
+          throw new SolanaRpcError('invalid_signature_status_response');
+        }
+
+        return value.value.map((status) => (status === null ? null : normalizeSignatureStatus(status)));
+      }
+    );
+  }
+
+  getRecentPrioritizationFees(writableAccounts: string[] = []): Promise<SolanaPrioritizationFee[]> {
+    if (!Array.isArray(writableAccounts) || writableAccounts.length > 128) {
+      throw new SolanaRpcError('invalid_accounts');
+    }
+
+    return this.request(
+      'getRecentPrioritizationFees',
+      [writableAccounts.map((address) => normalizePubkey(address, 'invalid_address'))],
+      (value) => {
+        if (!Array.isArray(value)) throw new SolanaRpcError('invalid_prioritization_fees_response');
+
+        return value.map((entry) => {
+          if (!isRecord(entry)) throw new SolanaRpcError('invalid_prioritization_fees_response');
+
+          return {
+            prioritizationFee: requireSafeInteger(entry.prioritizationFee, 'invalid_prioritization_fees_response'),
+            slot: requireSafeInteger(entry.slot, 'invalid_prioritization_fees_response'),
+          };
+        });
+      }
+    );
   }
 
   getLatestBlockhash(commitment: SolanaRpcCommitment = 'confirmed'): Promise<SolanaLatestBlockhashResponse> {
@@ -152,6 +392,15 @@ class SolanaRpcClient {
     );
   }
 
+  /**
+   * Posts the signed transaction to each endpoint in turn, once, until one
+   * accepts it. Sending the identical signed bytes again is idempotent, but a
+   * node that timed out may already have relayed them: every later post skips
+   * preflight, where a lagging node would answer "Blockhash not found" or
+   * "already processed", and a later refusal is reported as ambiguous, never as
+   * "nothing was sent". "Already processed" always means the transaction is out
+   * there. Fails with a `SolanaBroadcastError`.
+   */
   async sendRawTransaction(
     transactionBase64: string,
     {
@@ -159,7 +408,8 @@ class SolanaRpcClient {
       minContextSlot,
       preflightCommitment = 'confirmed',
       skipPreflight = false,
-    }: SolanaBroadcastOptions = {}
+    }: SolanaBroadcastOptions = {},
+    assertCurrent?: () => void
   ): Promise<string> {
     const options: Record<string, unknown> = {
       encoding: 'base64',
@@ -177,11 +427,78 @@ class SolanaRpcClient {
       options.minContextSlot = requireSafeInteger(minContextSlot, 'invalid_min_context_slot');
     }
 
-    return this.request(
-      'sendTransaction',
-      [normalizeTransactionBase64(transactionBase64), options],
-      normalizeSignature
+    const transaction = normalizeTransactionBase64(transactionBase64);
+    let ambiguous = false;
+    let lastError: unknown;
+
+    for (const rpcUrl of this.endpoints.endpoints) {
+      assertCurrent?.();
+      try {
+        return await this.requestOnce(
+          rpcUrl,
+          'sendTransaction',
+          [transaction, ambiguous ? { ...options, skipPreflight: true } : options],
+          normalizeSignature
+        );
+      } catch (error) {
+        lastError = error;
+
+        if (isAlreadyProcessed(error)) {
+          const signature = firstSignatureOf(transaction);
+
+          if (signature) return signature;
+        }
+        if (isAlreadyProcessed(error) || mayHaveReachedNode(error)) {
+          ambiguous = true;
+          continue;
+        }
+        // A node that is behind, or an endpoint that refuses this client,
+        // refuses before relaying; another may take it.
+        if (isRetryableRpcError(error)) continue;
+
+        break;
+      }
+    }
+
+    throw new SolanaBroadcastError(
+      ambiguous ? 'solana_broadcast_ambiguous' : 'solana_broadcast_rejected',
+      ambiguous,
+      lastError
     );
+  }
+
+  /**
+   * Asks the endpoint which cluster it serves, at most once per few minutes, and refuses it when that is not the
+   * expected one. A node that cannot say is treated as unavailable rather than trusted.
+   */
+  private assertEndpointCluster(rpcUrl: string): Promise<void> {
+    const expected = this.expectedGenesisHash;
+
+    if (expected === undefined) return Promise.resolve();
+
+    const key = `${expected}|${rpcUrl}`;
+    const verifiedAt = verifiedClusters.get(key);
+
+    if (verifiedAt !== undefined && Date.now() - verifiedAt < CLUSTER_RECHECK_MS) return Promise.resolve();
+
+    const inFlight = clusterChecks.get(key);
+
+    if (inFlight) return inFlight;
+
+    const check = this.requestOnce(rpcUrl, 'getGenesisHash', [], (value) => normalizePubkey(value, 'invalid_genesis_response'))
+      .catch((error: unknown) => {
+        throw new SolanaClusterCheckError('solana_cluster_unverified', error);
+      })
+      .then((genesisHash) => {
+        if (genesisHash !== expected) throw new SolanaClusterCheckError('solana_cluster_mismatch');
+
+        verifiedClusters.set(key, Date.now());
+      })
+      .finally(() => clusterChecks.delete(key));
+
+    clusterChecks.set(key, check);
+
+    return check;
   }
 
   private async request<T>(
@@ -189,29 +506,163 @@ class SolanaRpcClient {
     params: unknown[],
     normalizeResult: (value: unknown) => T
   ): Promise<T> {
-    const id = this.nextId++;
-    const response = await this.fetchFn(this.rpcUrl, {
-      body: JSON.stringify({
-        id,
-        jsonrpc: '2.0',
-        method,
-        params,
-      }),
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-      },
-      method: 'POST',
-    });
-    const body = await readJson(response);
+    return this.endpoints
+      .run((rpcUrl) => this.requestOnce(rpcUrl, method, params, normalizeResult), {
+        isRetryable: isRetryableRpcError,
+        retryAfterMs: (error) => (error instanceof SolanaRpcError ? error.retryAfterMs : undefined),
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'EndpointFailoverError') {
+          const lastError = (error as Error & { lastError?: unknown }).lastError;
 
-    if (!response.ok) throw new SolanaRpcError(`solana_rpc_http_${response.status}`, response.status, body);
+          throw lastError instanceof SolanaRpcError ? lastError : new SolanaRpcError('solana_rpc_unavailable');
+        }
+
+        throw error;
+      });
+  }
+
+  private async requestOnce<T>(
+    rpcUrl: string,
+    method: string,
+    params: unknown[],
+    normalizeResult: (value: unknown) => T
+  ): Promise<T> {
+    if (method !== 'getGenesisHash') await this.assertEndpointCluster(rpcUrl);
+
+    const id = this.nextId++;
+    const response = await withTimeout(
+      this.fetchFn(rpcUrl, {
+        body: JSON.stringify({
+          id,
+          jsonrpc: '2.0',
+          method,
+          params,
+        }),
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      }),
+      this.requestTimeoutMs,
+      () => new SolanaRpcError('solana_rpc_timeout')
+    );
+    if (!response.ok) {
+      throw new SolanaRpcError(
+        `solana_rpc_http_${response.status}`,
+        response.status,
+        await readJson(response).catch(() => undefined),
+        parseRetryAfterMs(response.headers.get('retry-after'))
+      );
+    }
+
+    const body = await readJson(response);
     if (!isRecord(body) || body.jsonrpc !== '2.0' || body.id !== id) throw new SolanaRpcError('invalid_rpc_response');
     if (body.error !== undefined) throw new SolanaRpcError('solana_rpc_error', response.status, normalizeRpcError(body.error));
     if (!('result' in body)) throw new SolanaRpcError('invalid_rpc_response');
 
     return normalizeResult(body.result);
   }
+}
+
+const CLUSTER_RECHECK_MS = 5 * 60_000;
+// Endpoints already proven to serve a cluster, shared by every client of this worker so one balance refresh does
+// not ask each node for its identity again.
+const verifiedClusters = new Map<string, number>();
+const clusterChecks = new Map<string, Promise<void>>();
+
+// Preflight answers -32002 with `AlreadyProcessed` when the node already has
+// this exact transaction.
+function isAlreadyProcessed(error: unknown): boolean {
+  if (!(error instanceof SolanaRpcError) || error.message !== 'solana_rpc_error') return false;
+
+  const { data, message } = (error.body ?? {}) as Partial<SolanaJsonRpcErrorPayload>;
+
+  return (isRecord(data) && data.err === 'AlreadyProcessed') || /already been processed/iu.test(message ?? '');
+}
+
+// A failed post the node may still have acted on. A JSON-RPC error or a
+// refused request (400, 401, 403, ...) is an answer given before relaying.
+function mayHaveReachedNode(error: unknown): boolean {
+  if (!(error instanceof SolanaRpcError)) return true;
+  // Raised before the transaction was posted to that endpoint.
+  if (error instanceof SolanaClusterCheckError) return false;
+  if (error.message === 'solana_rpc_error') return false;
+  if (error.message.startsWith('solana_rpc_http_')) return isRetryableHttpStatus(error.status);
+
+  return true;
+}
+
+// The transaction id is its first signature.
+function firstSignatureOf(transactionBase64: string): string | undefined {
+  try {
+    const { signaturesOffset } = parseSolanaSerializedTransaction(transactionBase64);
+    const bytes = Uint8Array.from(atob(transactionBase64), (char) => char.charCodeAt(0));
+
+    return base58Encode(bytes.slice(signaturesOffset, signaturesOffset + 64));
+  } catch {
+    return undefined;
+  }
+}
+
+// A JSON-RPC node answers a call, errors included, in a 200 body. A 4xx is the
+// endpoint refusing this client before the call reaches a node: a key, a paid
+// plan or an allowed origin is required. The public mainnet node answers 403 to
+// every request that carries an Origin header, as an extension's requests do,
+// and free plans answer 400 or 401. Another endpoint may serve the call.
+function isEndpointRefusal(status: number | undefined): boolean {
+  return status !== undefined && status >= 400 && status < 500;
+}
+
+function isRetryableRpcError(error: unknown): boolean {
+  if (!(error instanceof SolanaRpcError)) return true;
+  if (error instanceof SolanaClusterCheckError) return true;
+  if (error.message === 'solana_rpc_error') {
+    const code = (error.body as SolanaJsonRpcErrorPayload | undefined)?.code;
+
+    return code !== undefined && RETRYABLE_RPC_ERROR_CODES.has(code);
+  }
+  if (error.message === 'invalid_json' || error.message === 'solana_rpc_timeout') return true;
+
+  return (
+    error.message.startsWith('solana_rpc_http_') &&
+    (isRetryableHttpStatus(error.status) || isEndpointRefusal(error.status))
+  );
+}
+
+function normalizePubkey(value: unknown, errorCode: string): string {
+  if (typeof value !== 'string' || !BASE58_PUBKEY.test(value)) throw new SolanaRpcError(errorCode);
+
+  return value;
+}
+
+function normalizeParsedAccount(value: unknown): SolanaParsedAccount {
+  if (!isRecord(value) || typeof value.executable !== 'boolean') throw new SolanaRpcError('invalid_account_response');
+
+  return {
+    data: value.data,
+    executable: value.executable,
+    lamports: requireSafeInteger(value.lamports, 'invalid_account_response'),
+    owner: normalizePubkey(value.owner, 'invalid_account_response'),
+    space: optionalSafeInteger(value.space, 'invalid_account_response'),
+  };
+}
+
+function normalizeSignatureStatus(value: unknown): SolanaSignatureStatus {
+  if (!isRecord(value)) throw new SolanaRpcError('invalid_signature_status_response');
+
+  const confirmationStatus = value.confirmationStatus;
+
+  return {
+    confirmationStatus:
+      confirmationStatus === 'processed' || confirmationStatus === 'confirmed' || confirmationStatus === 'finalized'
+        ? confirmationStatus
+        : null,
+    confirmations: value.confirmations === null ? null : optionalSafeInteger(value.confirmations, 'invalid_signature_status_response') ?? null,
+    err: value.err ?? null,
+    slot: requireSafeInteger(value.slot, 'invalid_signature_status_response'),
+  };
 }
 
 function normalizeRpcUrl(rpcUrl: string): string {
@@ -289,7 +740,8 @@ function normalizeSimulationResponse(value: unknown): SolanaSimulationResponse {
       accounts: value.value.accounts,
       err: value.value.err ?? null,
       logs: normalizedLogs,
-      replacementBlockhash: value.value.replacementBlockhash === undefined
+      // Nodes send `null` when the blockhash was not replaced.
+      replacementBlockhash: value.value.replacementBlockhash == null
         ? undefined
         : normalizeLatestBlockhash(value.value.replacementBlockhash, 'invalid_simulation_response'),
       returnData: value.value.returnData,
@@ -383,21 +835,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const BASE58_PUBKEY = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const BASE58_32_TO_64 = /^[1-9A-HJ-NP-Za-km-z]{32,64}$/;
 const BASE58_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,128}$/;
 
 export {
+  SOLANA_GENESIS_HASHES,
+  SolanaBroadcastError,
+  SolanaClusterCheckError,
   SolanaRpcClient,
   SolanaRpcError,
+  createClusterBoundSolanaRpcClient,
   type SolanaBroadcastOptions,
   type SolanaFeeForMessageResponse,
   type SolanaJsonRpcErrorPayload,
   type SolanaLatestBlockhash,
   type SolanaLatestBlockhashResponse,
+  type SolanaParsedAccount,
+  type SolanaPrioritizationFee,
   type SolanaRpcCommitment,
   type SolanaRpcContext,
   type SolanaRpcNetwork,
   type SolanaSimulationOptions,
   type SolanaSimulationResponse,
   type SolanaSimulationValue,
+  type SolanaSignatureStatus,
+  type SolanaTokenAccountEntry,
 };

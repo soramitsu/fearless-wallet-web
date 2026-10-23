@@ -1,3 +1,4 @@
+import { base58Encode } from '@polkadot/util-crypto';
 import { SolanaRpcClient, SolanaRpcError } from '@extension-base/services/solana-rpc-service';
 
 const TRANSACTION = 'AQIDBA==';
@@ -278,12 +279,115 @@ describe('SolanaRpcClient', () => {
       name: 'SolanaRpcError',
     });
 
+    // A node that took the transaction but answered nonsense may have relayed it.
     const badSignature = new SolanaRpcClient({
-      fetchFn: vi.fn(async () => rpcResponse(1, 'not-a-signature')),
+      fetchFn: vi.fn(async (_input: string | URL, init?: RequestInit) =>
+        rpcResponse(JSON.parse(init?.body as string).id, 'not-a-signature')
+      ),
     });
     await expect(badSignature.sendRawTransaction(TRANSACTION)).rejects.toMatchObject({
-      message: 'invalid_signature_response',
-      name: 'SolanaRpcError',
+      ambiguous: true,
+      lastError: { message: 'invalid_signature_response' },
+      message: 'solana_broadcast_ambiguous',
+      name: 'SolanaBroadcastError',
     });
+    await expect(badSignature.sendRawTransaction(TRANSACTION)).rejects.toBeInstanceOf(SolanaRpcError);
+  });
+});
+
+describe('SolanaRpcClient broadcast', () => {
+  const signatureBytes = new Uint8Array(64).fill(7);
+  // A signed legacy transaction: one signature, a fee payer and the System program.
+  const SIGNED = Buffer.from([
+    1,
+    ...signatureBytes,
+    ...[1, 0, 1, 2],
+    ...new Uint8Array(32).fill(1),
+    ...new Uint8Array(32),
+    ...new Uint8Array(32).fill(9),
+    ...[1, 1, 1, 0, 0],
+  ]).toString('base64');
+  const rpcError = (id: number, code: number, message: string, data?: unknown) =>
+    jsonResponse({ error: { code, data, message }, id, jsonrpc: '2.0' });
+  type Answer = (id: number) => Response | Promise<Response>;
+  const nodes = (answers: Record<string, Answer>) => {
+    const posts: Array<{ options: Record<string, unknown>; url: string }> = [];
+    const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string);
+
+      posts.push({ options: body.params[1], url: input.toString() });
+
+      return answers[new URL(input.toString()).hostname](body.id);
+    });
+    const client = new SolanaRpcClient({
+      fetchFn,
+      requestTimeoutMs: 5,
+      rpcUrls: ['https://a.example', 'https://b.example'],
+    });
+
+    return { client, fetchFn, posts };
+  };
+  const hang: Answer = () => new Promise<Response>(() => {});
+
+  it('treats a preflight refusal of the first post as nothing sent and asks no other node', async () => {
+    const { client, fetchFn } = nodes({
+      'a.example': (id) => rpcError(id, -32002, 'Transaction simulation failed: Blockhash not found'),
+      'b.example': (id) => rpcResponse(id, SIGNATURE),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({
+      ambiguous: false,
+      body: { code: -32002 },
+      message: 'solana_broadcast_rejected',
+      name: 'SolanaBroadcastError',
+    });
+    expect(fetchFn).toHaveBeenCalledOnce();
+  });
+
+  it('counts "already processed" after a timed-out post as sent, with the transaction signature', async () => {
+    const { client, posts } = nodes({
+      'a.example': hang,
+      'b.example': (id) =>
+        rpcError(id, -32002, 'Transaction simulation failed: This transaction has already been processed', {
+          err: 'AlreadyProcessed',
+          logs: [],
+        }),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).resolves.toBe(base58Encode(signatureBytes));
+    expect(posts.map(({ url }) => url)).toEqual(['https://a.example', 'https://b.example']);
+  });
+
+  it('skips preflight after a post that may have been relayed and never calls a later refusal "nothing sent"', async () => {
+    const { client, posts } = nodes({
+      'a.example': () => new Response('upstream error', { status: 503 }),
+      'b.example': (id) => rpcError(id, -32002, 'Transaction simulation failed: Blockhash not found'),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED, { skipPreflight: false })).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'solana_broadcast_ambiguous',
+    });
+    expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, true]);
+  });
+
+  it('moves on from a node that is behind without giving up preflight', async () => {
+    const { client, posts } = nodes({
+      'a.example': (id) => rpcError(id, -32005, 'Node is unhealthy'),
+      'b.example': (id) => rpcResponse(id, SIGNATURE),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).resolves.toBe(SIGNATURE);
+    expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, false]);
+  });
+
+  it('posts to each node once and reports throttling everywhere as ambiguous', async () => {
+    const { client, fetchFn } = nodes({
+      'a.example': () => new Response('slow down', { status: 429 }),
+      'b.example': () => new Response('slow down', { status: 429 }),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({ ambiguous: true });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 });

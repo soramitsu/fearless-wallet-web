@@ -22,6 +22,27 @@ describe('transaction failure presentation', () => {
     expect(getter).not.toHaveBeenCalled();
   });
 
+  it('accepts a Solana signature, case preserved, as the hash of an unknown outcome', () => {
+    const signature = '5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
+    const response = { status: false, outcome: 'unknown', transactionHash: signature };
+
+    expect(getUnknownTransactionHash(response)).toBe(signature);
+    expect(transactionResponseSucceeded(response)).toBe(false);
+    expect(getUnknownTransactionHash({ ...response, transactionHash: signature.slice(0, 60) })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `${signature}11` })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `${signature.slice(0, -1)}0` })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `${signature.slice(0, -1)}l` })).toBeNull();
+  });
+
+  it('presents Solana send failures with specific messages', () => {
+    expect(
+      getTransactionFailurePresentation({
+        status: false,
+        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'solana_transaction_expired' }],
+      })
+    ).toEqual({ key: 'assets.solanaTransactionExpired' });
+  });
+
   it('surfaces insufficient balance with a bounded normalized asset symbol', () => {
     const response = {
       status: false,

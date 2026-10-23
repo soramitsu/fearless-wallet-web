@@ -350,6 +350,8 @@ export class NetworkService {
     else if (ecosystem === 'ton') this.tonApiHandler.initApi(networkJson);
     else if (ecosystem === 'bitcoin') return;
     else if (ecosystem === 'iroha') return;
+    // Solana nodes are plain JSON-RPC URLs read per request; there is no connection to open or close.
+    else if (ecosystem === 'solana') return;
     else {
       this.substrateApiHandler.api[name].api?.disconnect();
       this.substrateApiHandler.api[name].provider?.disconnect();

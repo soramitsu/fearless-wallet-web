@@ -1,6 +1,7 @@
 import { keyPairFromSeed } from '@ton/crypto';
 import { beginCell, type Address, Cell, contractAddress } from '@ton/core';
-import { WalletContractV4 } from '@ton/ton';
+// The wallet contract alone: the package index also pulls in the HTTP clients (and zod), which the wallet does not use.
+import { WalletContractV4 } from '@ton/ton/dist/wallets/WalletContractV4';
 import { mnemonicToSeedSync, validateMnemonic } from 'bip39';
 import * as tonWebMnemonic from 'tonweb-mnemonic';
 

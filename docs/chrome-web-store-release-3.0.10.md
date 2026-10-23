@@ -52,9 +52,9 @@ upgrade notice, privacy notice and metadata corrections).
 - Token-2022 tokens can be held and received but not sent. Standard SPL tokens
   without extensions can be sent.
 - Solana staking, the NFT gallery and Solana Pay stay out of scope.
-- The signing-queue ownership and site-grant revalidation changes of the 4.2.0
-  extension line are not part of this release; Solana dApp requests keep the
-  behavior they have in 3.0.9.
+- The signing-queue ownership and site-grant revalidation changes planned for
+  the next major extension release are not part of this release; Solana dApp
+  requests keep the behavior they have in 3.0.9.
 - Wallet reset during an in-flight Solana send is not fenced (the 3.0.x keyring
   keeps no reset revision). The send finishes as the user asked, and its
   recorded transaction survives for the next send to resolve.

@@ -127,6 +127,19 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
 // "Node is unhealthy / behind" answers mean try another node, not "your
 // transaction is wrong".
 const RETRYABLE_RPC_ERROR_CODES: ReadonlySet<number> = new Set([-32005, -32004, -32014, -32016]);
+// JSON-RPC errors a node gives only before it relays a transaction: it judged the transaction invalid (-32002
+// preflight failure, -32003 bad signature, -32600/-32602/-32700 undecodable) or could not take it at all (-32601 and
+// the retryable codes). Any other code, such as a gateway's quota, auth or internal error, proves nothing: the
+// gateway may have relayed the transaction before it failed.
+const PRE_RELAY_RPC_ERROR_CODES: ReadonlySet<number> = new Set([
+  ...RETRYABLE_RPC_ERROR_CODES,
+  -32002,
+  -32003,
+  -32600,
+  -32601,
+  -32602,
+  -32700,
+]);
 
 class SolanaRpcError extends Error {
   constructor(
@@ -700,13 +713,17 @@ function isAlreadyProcessed(error: unknown): boolean {
   return (isRecord(data) && data.err === 'AlreadyProcessed') || /already been processed/iu.test(message ?? '');
 }
 
-// A failed post the node may still have acted on. A JSON-RPC error or a
-// refused request (400, 401, 403, ...) is an answer given before relaying.
+// A failed post the node may still have acted on. A refused request (400, 401, 403, ...) and a JSON-RPC error that
+// only a node gives before relaying are answers given before relaying; any other JSON-RPC error is not.
 function mayHaveReachedNode(error: unknown): boolean {
   if (!(error instanceof SolanaRpcError)) return true;
   // Raised before the transaction was posted to that endpoint.
   if (error instanceof SolanaClusterCheckError) return false;
-  if (error.message === 'solana_rpc_error') return false;
+  if (error.message === 'solana_rpc_error') {
+    const code = (error.body as Partial<SolanaJsonRpcErrorPayload> | undefined)?.code;
+
+    return code === undefined || !PRE_RELAY_RPC_ERROR_CODES.has(code);
+  }
   if (error.message.startsWith('solana_rpc_http_')) return isRetryableHttpStatus(error.status);
 
   return true;

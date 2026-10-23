@@ -675,6 +675,24 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(client.getSignatureStatuses).not.toHaveBeenCalled();
   });
 
+  it('keeps the record and reports an unknown outcome when a gateway failed after it may have relayed', async () => {
+    const store = memoryPendingStore();
+    const client = createClient({
+      sendError: new SolanaBroadcastError(
+        'solana_broadcast_ambiguous',
+        true,
+        new SolanaRpcError('solana_rpc_error', 200, { code: -32603, message: 'Internal error' })
+      ),
+      statuses: [null],
+      blockHeights: [100],
+    });
+
+    await expect(makeSolanaTransfer(solParams(), client, sendOptions(store, 1_000))).rejects.toThrow(
+      'solana_broadcast_ambiguous'
+    );
+    expect(store.records).toHaveLength(1);
+  });
+
   it('keeps polling when an error does not prove the transaction was refused', async () => {
     const store = memoryPendingStore();
     const client = createClient({

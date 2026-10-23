@@ -19,6 +19,9 @@ upgrade notice, privacy notice and metadata corrections).
 - A send whose outcome the network has not settled is shown as unconfirmed with
   its signature, and the wallet will not start another Solana send until the
   first is resolved, so a lost reply can never be paid twice.
+- SOL balances now show a fiat value and count toward totals. The price lookup
+  asked for `sol`, which the price service does not know; it now asks for
+  `solana`.
 - History links to Solscan, so the list is never an empty dead end.
 - Compatible Solana apps can connect and request signatures, as before; you
   approve each request, and a dApp's send-and-sign uses the same safe broadcast.

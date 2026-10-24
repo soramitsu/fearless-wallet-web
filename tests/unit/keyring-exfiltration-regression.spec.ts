@@ -63,7 +63,12 @@ afterEach(() => {
 });
 
 describe('unlock must not upload wallet secrets', () => {
-  it.each([true, false])('returns %s without invoking legacy collection or upload hooks', async (unlocked) => {
+  it.each([
+    [true, false, true],
+    [false, false, false],
+    [true, true, 'ton-storage-unavailable'],
+    [false, true, false],
+  ] as const)('unlock %s, storage issue %s returns %s without collection or upload hooks', async (unlocked, hasStorageIssues, expected) => {
     const forbiddenSecretAccess = vi.fn(() => {
       throw new Error('Unlock must not export wallet secrets');
     });
@@ -76,6 +81,7 @@ describe('unlock must not upload wallet secrets', () => {
       keyringLockService: { setExtensionAutoLockTimeout },
       keyringService: {
         unlockKeyring,
+        tonKeyring: { hasStorageIssues },
         getDataAccounts: forbiddenSecretAccess,
         exportMnemonic: forbiddenSecretAccess,
         accountExportPrivateKey: forbiddenSecretAccess,
@@ -86,7 +92,7 @@ describe('unlock must not upload wallet secrets', () => {
     } as unknown as State;
     const request = { password: TEST_PASSWORD };
 
-    expect(await new Extension(state).unlockKeyring(request)).toBe(unlocked);
+    expect(await new Extension(state).unlockKeyring(request)).toBe(expected);
     // The removed upload waited ten seconds after reading its remote switch.
     await vi.advanceTimersByTimeAsync(30_000);
 

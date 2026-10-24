@@ -379,11 +379,23 @@ describe('zero-balance networks', () => {
 
     await wrapper.setProps({ filterValue: 'kusama' });
     expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('true');
-    expect(rows(wrapper)).toEqual(['Kusama:KSM']);
+    // Search exposes every verified catalog match, including KSM on other mainnets and assets on a named
+    // Kusama network. It is not restricted to the utility tokens that the normal zero-balance rule shows.
+    expect(rows(wrapper).sort()).toEqual([
+      'SORA Mainnet:KSM', 'Kusama:KSM', 'Moonriver:XCKSM', 'Amplitude:KSM', 'Basilisk:KSM', 'Bifrost:KSM',
+      'Calamari:KSM', 'Encointer on Kusama:KSM', 'Karura:KSM', 'Kintsugi:KSM', 'Kusama AssetHub:KSM',
+      'Kusama AssetHub:RMRK', 'Kusama AssetHub:USDT', 'Kusama BridgeHub:KSM', 'Kusama People:KSM',
+      'Parallel Heiko:KSM', 'Robonomics:KSM', 'Shiden:KSM', 'Turing Network:KSM', 'Bajun Kusama:BAJU',
+      'SORA Kusama parachain:XOR',
+    ].sort());
     expect(accountsStore.portfolioView.zeroNetworksExpanded).toBe(false);
 
     await wrapper.setProps({ filterValue: 'no-such-asset' });
     expect(wrapper.get('[data-testid="infoText"]').text()).toContain('portfolioPage.noMatchingAssets');
+
+    await wrapper.setProps({ filterValue: '' });
+    expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('false');
+    expect(rows(wrapper)).toEqual(['Polkadot:DOT']);
 
     wrapper.unmount();
     scope.stop();

@@ -8,7 +8,6 @@
     "UNSAFE_VAR_ASSIGNMENT": 1
   },
   "warningFiles": {
-    "chunks/_plugin-vue_export-helper.js": 1,
     "chunks/accounts.js": 17,
     "chunks/background-vendor/assert-Blv9rAXX.js": 8,
     "chunks/background-vendor/bcryptjs-DP6KoUS7.js": 9,
@@ -16,18 +15,15 @@
     "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js": 2,
     "chunks/background-vendor/lodash-Ba9bIE_F.js": 1,
     "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
-    "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js": 1,
-    "chunks/soramitsuUI.js": 1
+    "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js": 1,
+    "chunks/soramitsuUI.js": 1,
+    "chunks/usePortfolioPreferences.js": 1
   },
-  "warningSetSha256": "bf322f7605bff7f5d7cb940f52474ca712851cec0241dffc3ce316336224d04c",
+  "warningSetSha256": "5391a4d320c2c36e48147264ac1ccb48078629c19b8ef882acc93f671377342a",
   "artifacts": [
     {
-      "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "9afcb2188837dd1519b7e87582045e3262475a8fe77bf1b99dae634f5cad50be"
-    },
-    {
       "file": "chunks/accounts.js",
-      "sha256": "bb1415b175ae8b8de70569c6c77a817f6ca2f027e8d3575cff9693899cc7bba2"
+      "sha256": "86fd4d74948c9df92e848e9cd4e69420be31ee5bc6a32f98ea5c2a5fb4ba7525"
     },
     {
       "file": "chunks/background-vendor/assert-Blv9rAXX.js",
@@ -54,16 +50,16 @@
       "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
     },
     {
-      "file": "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js",
-      "sha256": "3ab057a93b06cfa961758ac2a24f1fd17652871f155e3695885b4f6d9da3cc87"
+      "file": "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js",
+      "sha256": "baa0bea291c51fd9d534b4eaa2b812283e077204dfb78ec336f66d60a83e9f75"
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "8dcb6554e793c620dd0824c877dd1a5017ae71595674c1f04d2deb0499b28b10"
+      "sha256": "09605c5a25df4db60d317b748b5c00ed0a290ce17ea4b06da3ad1c73b3e23ed4"
     },
     {
-      "file": "chunks/universalWalletKeyringFields.js",
-      "sha256": "5b1da659b78e769ce620db4238ce18ca55f2f2aa15bc94bb046c47a4a6e09b67"
+      "file": "chunks/usePortfolioPreferences.js",
+      "sha256": "cf811c12d2c9cf74f5f75b161e6f774a7263ae5dfac3e6b5f66320c7273edcaf"
     }
   ]
 }

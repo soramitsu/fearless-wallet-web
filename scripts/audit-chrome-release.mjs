@@ -5,6 +5,7 @@ import { createHash, createPublicKey } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync, inflateSync } from 'node:zlib';
@@ -711,10 +712,27 @@ function validatePngIcon(bytes, size, label) {
   }
 }
 
+const PERSONAL_LOCATION = /^file:\/\/\/(Users\/(?!Shared\/)|home\/|root\/|(private\/)?var\/folders\/)/;
+const REVEALING_WORD = /hotfix|incident|security|audit|exfil|release-3\.0\.6|scratchpad|claude|codex/i;
+
+function findRevealingPaths(content, username = os.userInfo().username) {
+  const user = username && username.length >= 3 ? username.toLowerCase() : null;
+  const buildPaths = new Set(content.match(/file:\/\/\/[^"'`\s)]+/g) ?? []);
+
+  return [...buildPaths].filter(
+    (buildPath) =>
+      PERSONAL_LOCATION.test(buildPath) ||
+      REVEALING_WORD.test(buildPath) ||
+      (user !== null && buildPath.toLowerCase().includes(user))
+  );
+}
+
 function validateNoProductionDebugOutput(files, label) {
   for (const [name, content] of files) {
     validateSafeRelativePath(name, `${label} path ${JSON.stringify(name)}`, false);
     if (/\.(?:js|mjs|cjs|css|html)$/iu.test(name)) {
+      requireCondition(findRevealingPaths(content.toString('utf8')).length === 0,
+        `${label} file ${JSON.stringify(name)} embeds a private build path`);
       requireCondition(
         !/[@#]\s*sourceMappingURL\s*=/iu.test(content.toString('utf8')),
         `${label} file ${JSON.stringify(name)} embeds a source map reference`

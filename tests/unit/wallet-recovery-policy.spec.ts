@@ -44,7 +44,7 @@ describe('wallet recovery security policy', () => {
     expect(() => assertWalletAllowsNormalUse([{ address: 'ledger', meta: { isHardware: true } }], 'ledger')).not.toThrow();
   });
 
-  it.each(['SendForm', 'NftSendForm', 'Export', 'Wallet', 'Currencies', 'Asset', 'Settings', 'AddWallet', 'Unlock', 'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt'])(
+  it.each(['SendForm', 'NftSendForm', 'Export', 'Wallet', 'Currencies', 'Asset', 'Settings', 'AddWallet', 'Unlock', 'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt', 'AccountAccessRecovery', 'StorageRecovery'])(
     'keeps %s accessible for recovery', (route) => { expect(isWalletRecoveryRoute(route)).toBe(true); }
   );
 

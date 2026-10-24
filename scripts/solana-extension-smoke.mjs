@@ -352,6 +352,7 @@ async function main() {
     const transactionBase64 = validTransactionBase64(solanaAddress);
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture, legacyAddress);
+    await assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, substrateAddress, legacyAddress);
     console.info('[extension-smoke] wallet seeded');
 
     if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly) {
@@ -1238,6 +1239,40 @@ async function assertLegacyRecoveryPopup(cdp, extensionId, extensionSession, leg
     await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade[open]"))',
       'legacy wallet security popup after reopening');
     console.info('[extension-smoke] legacy popup, recovery banner, DeFi recovery access, blocked swaps, and reopening verified');
+  } catch (error) {
+    const state = await evaluate(cdp, sessionId,
+      '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);
+    throw new Error(`${error.message}; popup state=${JSON.stringify(state)}`, { cause: error });
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
+async function assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, freshAddress, legacyAddress) {
+  await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+    address: freshAddress, walletEcosystem: 'substrate',
+  });
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: `chrome-extension://${extensionId}/popup.html#/fearless/portfolio/tokens`,
+  });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    // The old wallet stays stored; only the wallet being viewed decides the warning.
+    await waitForExpression(cdp, sessionId,
+      'document.querySelector("[data-testid=walletNameHeader]")?.textContent.trim() === "Fresh Solana Smoke"',
+      'fresh wallet portfolio');
+    await sleep(1_000);
+    const notice = await evaluate(cdp, sessionId,
+      '({ dialog: Boolean(document.querySelector("dialog.wallet-upgrade")), banner: Boolean(document.querySelector(".wallet-recovery-banner")) })');
+    assert(!notice.dialog && !notice.banner, `Fresh wallet showed the old-wallet warning: ${JSON.stringify(notice)}`);
+    await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+      address: legacyAddress, walletEcosystem: 'substrate',
+    });
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'recovery banner after switching to the old wallet');
+    console.info('[extension-smoke] fresh wallet shows no old-wallet warning; the old wallet still does');
   } catch (error) {
     const state = await evaluate(cdp, sessionId,
       '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);

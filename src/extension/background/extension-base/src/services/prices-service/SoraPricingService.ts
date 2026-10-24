@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { computedSQPricingSora } from './subquery';
+import { SORA_PRICING_QUERY } from './subquery';
 import type { BasePriceJson } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { isSoraMainnet } from '@/helpers';
@@ -46,14 +46,11 @@ interface SubqueryFiatPriceQuery {
       edges: Edges[];
       pageInfo: {
         hasNextPage?: boolean;
+        endCursor?: string;
       };
     };
   };
 }
-
-type PageInfoParams = SubqueryFiatPriceQuery['data']['data']['pageInfo'] & {
-  endCursor?: string;
-};
 
 const XOR_ASSET_ID = '0x0200000000000000000000000000000000000000000000000000000000000000';
 // Substrate registry balances use `sora`, SORA assets use `xor`, and Iroha-discovered balances use `XOR`.
@@ -63,6 +60,9 @@ const XOR_CACHE_KEYS = ['xor', 'XOR'] as const;
 const SORA_METRICS_XOR_URL = 'https://sorametrics.org/tokens?symbols=XOR&limit=1&sparkline=false';
 const PI_PRICING_URL = 'https://pi.soramitsu.io/graphql';
 const PRICE_REQUEST_TIMEOUT_MS = 10_000;
+const PRICE_PAGE_SIZE = 100;
+const MAX_PRICE_PAGES = 20;
+const MAX_PRICE_CURSOR_LENGTH = 1024;
 
 const PI_XOR_PRICE_QUERY = `
   query XorUsd($id: String!) {
@@ -91,32 +91,47 @@ function finiteNumber(value: unknown): number | undefined {
 export class SoraPricingService {
   constructor(private state: State) {}
 
-  async fetchSQSora(pricingUrl: string, pageInfoParams?: PageInfoParams): Promise<Edges[]> {
+  async fetchSQSora(pricingUrl: string): Promise<Edges[]> {
     if (this.state.pricesService.fiatSymbol !== 'usd') return [];
 
     try {
-      const {
-        data: {
-          data: {
-            data: { edges, pageInfo },
+      const url = new URL(pricingUrl);
+      if (url.protocol !== 'https:' || url.username || url.password || url.hash) return [];
+
+      const result: Edges[] = [];
+      const seen = new Set<string>();
+      const deadline = Date.now() + PRICE_REQUEST_TIMEOUT_MS;
+      let cursor: string | null = null;
+
+      // Upstream cursors are opaque data, never GraphQL source. Bound both
+      // cursor cycles and distinct pages so a hostile API cannot poll forever.
+      for (let page = 0; page < MAX_PRICE_PAGES; page++) {
+        const timeout = deadline - Date.now();
+        if (timeout <= 0) return [];
+        const response = await axios.post<SubqueryFiatPriceQuery>(
+          pricingUrl,
+          {
+            operationName: 'SubqueryFiatPriceQuery',
+            query: SORA_PRICING_QUERY,
+            variables: { after: cursor, first: PRICE_PAGE_SIZE },
           },
-        },
-      } = await axios.post<SubqueryFiatPriceQuery>(
-        `${pricingUrl}`,
-        {
-          operationName: 'SubqueryFiatPriceQuery',
-          query: computedSQPricingSora(pageInfoParams?.endCursor),
-        },
-        { timeout: PRICE_REQUEST_TIMEOUT_MS }
-      );
+          { timeout, adapter: 'fetch', fetchOptions: { redirect: 'error', credentials: 'omit' } }
+        );
+        const { edges, pageInfo } = response.data?.data?.data ?? {};
+        if (!Array.isArray(edges) || edges.length > PRICE_PAGE_SIZE ||
+          !edges.every((edge) => typeof edge?.node?.id === 'string' && typeof edge.node.priceUSD === 'string') ||
+          typeof pageInfo?.hasNextPage !== 'boolean') return [];
 
-      if (pageInfo?.hasNextPage) {
-        const subRequest = await this.fetchSQSora(pricingUrl, pageInfo);
+        result.push(...edges);
+        if (!pageInfo.hasNextPage) return result;
 
-        return [...edges, ...subRequest];
+        const next = pageInfo.endCursor;
+        if (!edges.length || typeof next !== 'string' || !next.length ||
+          next.length > MAX_PRICE_CURSOR_LENGTH || seen.has(next)) return [];
+        seen.add(next);
+        cursor = next;
       }
-
-      return edges;
+      return [];
     } catch {
       return [];
     }

@@ -799,6 +799,16 @@ async function run() {
       },
       /release flag VUE_APP_TEST_ONLY must be false/u
     );
+    for (const [index, buildPath] of [
+      'file:///Users/someone/dev/wallet/',
+      'file:///home/someone/wallet/',
+      'file:///private/var/folders/xy/T/wallet/',
+      'file:///private/tmp/codex/scratchpad/build/',
+    ].entries()) {
+      await expectFailure(tempRoot, `private-build-path-${index}`, {
+        extraFiles: [['chunks/path.js', `const path = new URL(${JSON.stringify(buildPath + 'packageInfo.js')}).pathname;`]],
+      }, /embeds a private build path/u);
+    }
     await expectFailure(
       tempRoot,
       'inline-source-map',

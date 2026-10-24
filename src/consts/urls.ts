@@ -40,7 +40,7 @@ const TWITTER = 'https://twitter.com/fearlesswallet';
 const YOUTUBE = 'https://www.youtube.com/fearlesswallet';
 const ANNOUNCEMENTS = 'https://t.me/fearless_announcements';
 const FEARLESS_HAPPINESS = 'https://t.me/fearlesshappiness';
-const EMAIL = 'fearless@soramitsu.co.jp';
+const HELP_SUPPORT = 'https://fearlesswallet.io/support/';
 const POLKASWAP_FAQ = 'https://wiki.sora.org/polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/polkaswap/terms';
 const POLKASWAP_POLICY = 'https://wiki.sora.org/polkaswap/privacy';
@@ -63,7 +63,7 @@ const URLS = {
   YOUTUBE,
   ANNOUNCEMENTS,
   FEARLESS_HAPPINESS,
-  EMAIL,
+  HELP_SUPPORT,
   POLKASWAP_FAQ,
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,

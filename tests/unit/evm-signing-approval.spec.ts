@@ -17,6 +17,7 @@ import Extension from '@extension-base/background/handlers/Extension';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import type { RequestService } from '@extension-base/services/request-service';
 import type State from '@extension-base/background/handlers/State';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 // Public, unfunded test key. All network and mobile transport calls are stubs.
 const wallet = new Wallet(`0x${'11'.repeat(32)}`);
@@ -59,11 +60,12 @@ beforeEach(() => {
     getEvmApi: vi.fn(() => undefined),
     networkService: { networkMap: { Ethereum: network } },
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getSubstrateAddress: vi.fn(() => 'substrate-root'),
       getEthereumAddress: vi.fn(() => address),
       isMobileAccount: vi.fn(() => mobile),
       getAllAccounts: vi.fn(() => [
-        { address: 'substrate-root', meta: { name: 'Public fixture', ethereumAddress: address } },
+        { address: 'substrate-root', meta: { name: 'Public fixture', ethereumAddress: address, walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } },
       ]),
       getAddresses: vi.fn(() => []),
       getAddress: vi.fn(() => ({ address: 'substrate-root', meta: { wcTopic: 'public-fixture-topic' } })),

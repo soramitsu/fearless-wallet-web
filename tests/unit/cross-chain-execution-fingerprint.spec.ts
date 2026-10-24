@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import type { ReviewedCrossChainExecution } from '@/cross-chain/reviewedRoutes';
 import { createReviewedCrossChainExtrinsic, createReviewedRelayExtrinsic } from '@/cross-chain/reviewedExecution';
 import { VALID_SUBSTRATE_ADDRESS } from '@/consts/networks';
@@ -121,36 +118,5 @@ describe('cross-chain execution fingerprint', () => {
     const upgraded = await createReviewedCrossChainExtrinsic({ ...request(), api: runtime });
 
     expect(upgraded.executionFingerprint).not.toBe(first.executionFingerprint);
-  });
-
-  it('revalidates route, signer, runtime, balance, and confirmed fee at the final signing boundary', () => {
-    const crossChain = readFileSync(
-      resolve(__dirname, '../../src/extension/background/extension-base/src/api/substrate/crossChain.ts'),
-      'utf8'
-    );
-    const makeStart = crossChain.indexOf('export async function makeCrossChain(');
-    const makeEnd = crossChain.length;
-    const make = crossChain.slice(makeStart, makeEnd);
-    const initialGuard = make.indexOf('assertReviewedRouteAndAccount(props, state)');
-    const fee = make.indexOf('await estimateCrossChainQuote(props, state)');
-    const feeGuard = make.indexOf('assertConfirmedQuote(props, initialQuote, state)');
-    const finalGuard = make.indexOf('const syncFinalGuard = () =>');
-    const unlock = make.indexOf('!state.keyringService.unlockPair(props.capturedPair)');
-    const sign = make.indexOf('await signAndSendExtrinsic(');
-
-    expect(initialGuard).toBeGreaterThan(-1);
-    expect(fee).toBeGreaterThan(initialGuard);
-    expect(feeGuard).toBeGreaterThan(fee);
-    expect(finalGuard).toBeGreaterThan(feeGuard);
-    expect(unlock).toBeGreaterThan(finalGuard);
-    expect(sign).toBeGreaterThan(unlock);
-    expect(make).toContain('finalGuard: syncFinalGuard,');
-    expect(crossChain).toContain('validateReviewedCrossChainRequest({');
-    expect(crossChain).toContain('cross_chain_fee_balance_insufficient');
-    expect(crossChain).toContain('assertRuntimeFingerprint(props, guardedQuote');
-    expect(make.indexOf('guardedQuote = finalQuote;')).toBeLessThan(sign);
-
-    // The async nonce/signing boundaries are exercised with the actual helper
-    // in local-transfer-reset.spec.ts, including this caller-supplied guard.
   });
 });

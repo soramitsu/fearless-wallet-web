@@ -1,9 +1,10 @@
 import { FPNumber } from '@sora-substrate/util';
-import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
+import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { getPrecisionValue } from '@extension-base/api/substrate';
+import { BasicTxErrorCode, TransferErrorCode, type BasicTxResponse } from '@extension-base/background/types/types';
+import { storage } from '@extension-base/stores/Storage';
 import type { CrossChainProps, MakeCrossChainProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
-import type { BasicTxResponse } from '@extension-base/background/types/types';
 import type { KeyringPair } from '@subwallet/keyring/types';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import {
@@ -16,6 +17,18 @@ import { assertReviewedRuntimeAuthority } from '@/cross-chain/reviewedRuntimeAut
 import { assertOriginExecutes, type DryRunApi } from '@/cross-chain/originDryRun';
 import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidation';
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
+import {
+  normalizeExtrinsicHash,
+  sendAndTrackExtrinsic,
+  type TrackableExtrinsic,
+  type TrackedSendOutcome,
+} from '@/cross-chain/trackedSend';
+import {
+  CrossChainPreviousSendUnresolvedError,
+  CrossChainSendLedger,
+  type CrossChainSendRecord,
+  type CrossChainSendResolutionApi,
+} from '@/cross-chain/sendLedger';
 
 export type CrossChainQuote = {
   originFee: FPNumber;
@@ -25,6 +38,12 @@ export type CrossChainQuote = {
   executionFingerprint: string;
   extrinsic: NonNullable<Awaited<ReturnType<typeof createReviewedCrossChainExtrinsic>>['extrinsic']>;
 };
+
+/** Cross-chain sends whose outcome is not known yet, kept in wallet storage across background restarts. */
+export const crossChainSendLedger = new CrossChainSendLedger({
+  load: async () => (await storage.get(['crossChainSendsInDoubt'])).crossChainSendsInDoubt,
+  save: (records) => storage.set({ crossChainSendsInDoubt: records }),
+});
 
 function maximum(left: FPNumber, right: FPNumber): FPNumber {
   return left.gte(right) ? left : right;
@@ -210,13 +229,128 @@ export async function estimateCrossChainFee(props: CrossChainProps, state: State
   return [quote.originFee, quote.destinationFee];
 }
 
-export async function makeCrossChain(props: MakeCrossChainProps, state: State): Promise<void> {
-  const { from, isMobile, callback } = props;
-  const txState: BasicTxResponse = {};
+/**
+ * Refuses a send while an earlier send of the same route from the same account may still be included. A previous send
+ * whose nonce was used is reported once, with its hash, and then forgotten: it is final, and the user must check it
+ * before sending again.
+ */
+export async function assertNoUnresolvedCrossChainSend(
+  { address, routeId }: { address: string; routeId: string },
+  api: unknown,
+  ledger: CrossChainSendLedger = crossChainSendLedger
+): Promise<void> {
+  const previous = await ledger.inspect(address, routeId, api as CrossChainSendResolutionApi);
+  if (previous.state === 'none') return;
+  if (previous.state === 'consumed') await ledger.clear(address, routeId, previous.record.hash);
+
+  throw new CrossChainPreviousSendUnresolvedError(previous.record.hash);
+}
+
+/**
+ * What the transfer form checks before it offers to send: no send of this account is running and no earlier send of
+ * this route may still be included. A previous send that is already final is reported by the send itself.
+ */
+export async function assertCrossChainSendAvailable(
+  { address, routeId }: { address: string; routeId: string },
+  api: unknown,
+  ledger: CrossChainSendLedger = crossChainSendLedger
+): Promise<void> {
+  if (ledger.isSending(address)) throw new Error('cross_chain_send_in_progress');
+
+  const previous = await ledger.inspect(address, routeId, api as CrossChainSendResolutionApi);
+  if (previous.state === 'pending') throw new Error('cross_chain_previous_send_unresolved');
+}
+
+type SignedExtrinsic = CrossChainQuote['extrinsic'];
+
+async function sendRecordFor(
+  props: MakeCrossChainProps,
+  address: string,
+  extrinsic: SignedExtrinsic,
+  api: CrossChainSendResolutionApi
+): Promise<CrossChainSendRecord> {
+  let expiresAtBlock: number | null = null;
+
+  if (extrinsic.era.isMortalEra) {
+    try {
+      // The signing header is at or before this head, so the extrinsic dies no later than one period after it.
+      const head = (await api.rpc.chain.getHeader()).number.toNumber();
+      expiresAtBlock = head + extrinsic.era.asMortalEra.period.toNumber();
+    } catch {
+      // Without a head the record is resolved by the nonce alone.
+    }
+  }
+
+  return {
+    address,
+    routeId: props.routeId,
+    originNet: props.originNet,
+    nonce: extrinsic.nonce.toNumber(),
+    hash: normalizeExtrinsicHash(extrinsic.hash.toHex()),
+    expiresAtBlock,
+    recordedAt: Date.now(),
+  };
+}
+
+export function crossChainSendResponse(outcome: TrackedSendOutcome): BasicTxResponse {
+  if (outcome.kind === 'included') return { status: true, transactionHash: outcome.hash };
+
+  if (outcome.kind === 'failed') {
+    return {
+      status: false,
+      // Only an extrinsic that reached a block has a hash worth looking up.
+      ...(outcome.included ? { transactionHash: outcome.hash } : {}),
+      errors: [
+        {
+          code: outcome.reason.includes('Inability to pay some fees')
+            ? BasicTxErrorCode.BALANCE_TO_LOW
+            : TransferErrorCode.CROSSCHAIN_ERROR,
+          message: outcome.reason,
+        },
+      ],
+    };
+  }
+
+  return {
+    status: false,
+    outcome: 'unknown',
+    transactionHash: outcome.hash,
+    errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: outcome.reason }],
+  };
+}
+
+/**
+ * Signs and sends one reviewed cross-chain transfer and resolves with its outcome, which is also passed to the
+ * callback: included (with the hash), failed, or unknown (with the hash) when it may still be included. One send runs
+ * per account at a time, and a route whose previous send is unresolved is refused.
+ */
+export async function makeCrossChain(
+  props: MakeCrossChainProps,
+  state: State,
+  ledger: CrossChainSendLedger = crossChainSendLedger
+): Promise<BasicTxResponse> {
+  const address = state.keyringService.getSubstrateAddress(props.from);
+  const release = ledger.beginSend(address);
+
+  try {
+    return await signAndTrackCrossChain(props, state, address, ledger);
+  } finally {
+    release();
+  }
+}
+
+async function signAndTrackCrossChain(
+  props: MakeCrossChainProps,
+  state: State,
+  address: string,
+  ledger: CrossChainSendLedger
+): Promise<BasicTxResponse> {
+  const { isMobile, callback } = props;
 
   await refreshCrossChainOriginBalance(props, state);
   const initial = assertReviewedRouteAndAccount(props, state);
   await initial.apiProps.api?.isReady;
+  await assertNoUnresolvedCrossChainSend({ address, routeId: props.routeId }, initial.apiProps.api, ledger);
   const initialQuote = await estimateCrossChainQuote(props, state);
   assertConfirmedQuote(props, initialQuote, state);
   let guardedQuote = initialQuote;
@@ -244,17 +378,23 @@ export async function makeCrossChain(props: MakeCrossChainProps, state: State): 
   guardedQuote = finalQuote;
   syncFinalGuard();
 
-  await signAndSendExtrinsic(
-    {
-      isMobile,
-      apiProps: initial.apiProps,
-      callback,
-      extrinsic: finalQuote.extrinsic,
-      txState,
-      address: state.keyringService.getSubstrateAddress(from),
-      errorMessage: 'CrossChain error',
-      finalGuard: syncFinalGuard,
-    },
-    state
-  );
+  const { extrinsic } = finalQuote;
+  await signExtrinsic({ address, apiProps: initial.apiProps, extrinsic, isMobile, finalGuard: syncFinalGuard }, state);
+
+  // Written before the extrinsic leaves the wallet; without it the send does not happen.
+  const record = await sendRecordFor(props, address, extrinsic, initial.apiProps.api as unknown as CrossChainSendResolutionApi);
+  await ledger.record(record);
+
+  const outcome = await sendAndTrackExtrinsic(extrinsic as unknown as TrackableExtrinsic);
+  if (outcome.kind !== 'unknown') {
+    await ledger.clear(address, props.routeId, record.hash).catch((error: unknown) => {
+      // The record stays and is resolved from the chain on the next send of this route.
+      console.warn('Unable to clear a resolved cross-chain send record', error);
+    });
+  }
+
+  const response = crossChainSendResponse(outcome);
+  callback?.(response);
+
+  return response;
 }

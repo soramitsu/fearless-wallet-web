@@ -33,6 +33,7 @@ import {
   estimateCrossChainQuote,
   refreshCrossChainOriginBalance,
   assertCrossChainSignerCapability,
+  assertCrossChainSendAvailable,
 } from '@extension-base/api/substrate/crossChain';
 import {
   isProposalExpired,
@@ -202,6 +203,7 @@ import type { HexString } from '@polkadot/util/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import { CrossChainPreviousSendUnresolvedError } from '@/cross-chain/sendLedger';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTransaction } from '@/util/evmTransaction';
 import { evmTypedData } from '@/util/evmTypedData';
@@ -1629,6 +1631,10 @@ export default class Extension extends FWExtensionBase {
       if (!this.state.actionCapabilityService.isActionEnabled(validation.action)) {
         throw new Error('cross_chain_provider_temporarily_disabled');
       }
+      await assertCrossChainSendAvailable(
+        { address: substrateAddress, routeId: validation.routeId },
+        this.state.getSubstrateApiMap[originNet.toLowerCase()]?.api
+      );
       if (!amount?.trim()) return { estimateFee: '0', destEstimateFee: '0' };
 
       const quote = await estimateCrossChainQuote(
@@ -1660,7 +1666,7 @@ export default class Extension extends FWExtensionBase {
       return {
         estimateFee: '0',
         destEstimateFee: '0',
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: (error as Error).message }],
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: error instanceof Error ? error.message : String(error) }],
       };
     }
   }
@@ -1722,11 +1728,19 @@ export default class Extension extends FWExtensionBase {
     } catch (error) {
       return {
         status: false,
-        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: (error as Error).message }],
+        errors: [{ code: TransferErrorCode.UNSUPPORTED, message: error instanceof Error ? error.message : String(error) }],
       };
     }
 
     const callback = this.state.subscriptionService.createSubscription<'pri(accounts.makeCrossChain)'>(id, port);
+    let subscribed = true;
+    const closeSubscription = () => {
+      if (!subscribed) return;
+      subscribed = false;
+      this.cancelSubscription(id);
+    };
+    // Closing the popup stops the updates, not the send: the outcome is still tracked and recorded.
+    port?.onDisconnect.addListener(closeSubscription);
 
     const params: MakeCrossChainProps = {
       assetId,
@@ -1751,43 +1765,43 @@ export default class Extension extends FWExtensionBase {
       capturedPair,
     };
 
+    let response: BasicTxResponse;
+
     try {
-      await makeCrossChain(params, this.state);
+      response = await makeCrossChain(params, this.state);
 
       console.info(
         `
-        Start crossChain: ${amount} ${tokenBalance.symbol}
+        CrossChain ${response.status ? 'included' : response.outcome ?? 'failed'}: ${amount} ${tokenBalance.symbol}
         [${originNet}] => [${destinationNet}]
         from ${from}
         to ${to}
       `
       );
     } catch (ex) {
+      const message = ex instanceof Error ? ex.message : String(ex);
+
       console.error(
         `
         CrossChain error:
-        ${ex}
+        ${message}
       `
       );
 
-      callback({
+      response = {
         status: false,
-        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
-      });
-
-      setTimeout(() => this.cancelSubscription(id), 500);
-
-      port?.onDisconnect.addListener(() => this.cancelSubscription(id));
-
-      return {
-        status: false,
-        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: (ex as Error).message }],
+        // A refused resend shows the earlier extrinsic, which may already have moved the funds.
+        ...(ex instanceof CrossChainPreviousSendUnresolvedError
+          ? { outcome: 'unknown' as const, transactionHash: ex.transactionHash }
+          : {}),
+        errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message }],
       };
+      callback(response);
     }
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    setTimeout(closeSubscription, 500);
 
-    return { status: true };
+    return response;
   }
 
   public checkScamAddress(request: RequestCheckScam) {

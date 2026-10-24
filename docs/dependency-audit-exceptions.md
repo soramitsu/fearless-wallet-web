@@ -30,10 +30,14 @@ release resolves `zod` to the patched 4.6.6. `@ton/ton` uses `zod` only in its
 HTTP clients (`TonClient4` and `HttpApi`), which the wallet does not use: it
 derives TON wallet contracts and addresses, so its own code imports the contract
 module directly (`@ton/ton/dist/wallets/WalletContractV4`) and no longer loads
-`@ton/ton` 16's clients. The package still loads and derives wallets with 4.6.6,
-and the TON specs pass. Reassess when `@ton/ton` and
-`@subwallet/keyring` publish releases that depend on `zod` 4, and remove the
-resolution then.
+`@ton/ton` 16's clients. `zod` 4 still reaches the bundle through
+`@subwallet/keyring`'s own `@ton/ton` 15, which loads `zod` through CommonJS, so
+the keyring vendor chunk carries all of `zod` 4 (about 0.5 MB more than `zod` 3).
+There its `Function("")` capability probe, wrapped in try/catch, is the one new
+Firefox lint finding recorded in `config/firefox-webext-warning-baseline.json`.
+The package still loads and derives wallets with 4.6.6, and the TON specs pass.
+Reassess when `@ton/ton` and `@subwallet/keyring` publish releases that depend on
+`zod` 4, and remove the resolution then.
 
 ## Unpatched development dependency
 

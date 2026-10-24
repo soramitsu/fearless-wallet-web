@@ -2,59 +2,64 @@
   "schemaVersion": 1,
   "webExtVersion": "10.6.0",
   "sourceDir": "dist/extension/firefox",
-  "warningCount": 41,
+  "warningCount": 42,
   "warningCodes": {
-    "DANGEROUS_EVAL": 40,
+    "DANGEROUS_EVAL": 41,
     "UNSAFE_VAR_ASSIGNMENT": 1
   },
   "warningFiles": {
     "chunks/_plugin-vue_export-helper.js": 1,
     "chunks/accounts.js": 17,
-    "chunks/background-vendor/assert-B9II5MFb.js": 8,
-    "chunks/background-vendor/bcryptjs-D92nEwNN.js": 9,
-    "chunks/background-vendor/core-js-pure-CNQyowns.js": 1,
-    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js": 2,
-    "chunks/background-vendor/lodash-rSFLjCOa.js": 1,
-    "chunks/background-vendor/lodash.merge-CNVuAApE.js": 1,
+    "chunks/background-vendor/assert-Blv9rAXX.js": 8,
+    "chunks/background-vendor/bcryptjs-CbKTxxD9.js": 9,
+    "chunks/background-vendor/core-js-pure-DilFdaL6.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CBAOHHw-.js": 2,
+    "chunks/background-vendor/lodash-Ba9bIE_F.js": 1,
+    "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
+    "chunks/background-vendor/subwallet-keyring-DOCTqw-S.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "f6969219663e2268a4603f11d9ef2530ed153dd07f706678b0eba9631246437e",
+  "warningSetSha256": "854f25b927e244f305a4dcce1a54fd82a297deb996b8af0570470286501bb209",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "26f902f5d07a09c08c8cbe72869b648d456ab7de3b0626a4376201f404862172"
+      "sha256": "9c0fb7171a2050946ffd06458da907d71bdc94f37b04b4c0be859eefc26afcb3"
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "ad349d0b18e169bf99084c66195aa2b3ee312ff1a73d7b6daf979a6ed0d80bd4"
+      "sha256": "8309ec8c9e4683ca6884255cadb81b6ea97471a6b00f02a5bc28e8d10f86c065"
     },
     {
-      "file": "chunks/background-vendor/assert-B9II5MFb.js",
-      "sha256": "da1e748275cdcd86b2e4237ec45fcf553f99aadf61b13ebc518a02e47932a1d6"
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
     },
     {
-      "file": "chunks/background-vendor/bcryptjs-D92nEwNN.js",
-      "sha256": "221cba4f4e4a4ceca2e0bf4b134d3ecdde8a531c43683fc34cb7f6db21bc4c54"
+      "file": "chunks/background-vendor/bcryptjs-CbKTxxD9.js",
+      "sha256": "0c2b58f29ff7245495f31daca13cb378c8456b63ec917c1972a1d4428efac370"
     },
     {
-      "file": "chunks/background-vendor/core-js-pure-CNQyowns.js",
-      "sha256": "41565eaacb2cd641d8557a991954a3bd4717e0ec6206f964e336365fe5c5a055"
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
     },
     {
-      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js",
-      "sha256": "913f4c68014032b75b320a3ed688bcd655570e80868a4a0e935db2e1322574f1"
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CBAOHHw-.js",
+      "sha256": "4304d4e4682afd1eb0fd4d6bcd51f8444e571810f43db93e3dbeb28a097355c5"
     },
     {
-      "file": "chunks/background-vendor/lodash-rSFLjCOa.js",
-      "sha256": "aa833782c3a0954a52b8b236b51171e3b109b66045333c20b7e888566633ddbb"
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
     },
     {
-      "file": "chunks/background-vendor/lodash.merge-CNVuAApE.js",
-      "sha256": "2188461bde6214e2cb2d45a61365ff5726bd0526eca6fe43c37762064e5cbe19"
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-DOCTqw-S.js",
+      "sha256": "e48fb2f4d16d7d0346b437072c1f1a62752f659b685db77a1eb57e6e90c0a3e5"
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "17df7435937b956ed862c2c69dc7e45030cfda159569575535258a598aad44c2"
+      "sha256": "eb4c51de5948db9268fefd299dc5c6d5a6d274175c67d43c656687ba21b91ea8"
     }
   ]
 }

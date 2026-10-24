@@ -134,10 +134,12 @@ export function createSolanaRpcBalanceClient(rpc: SolanaRpcBalanceSource) {
     async getBalances(wallet: string): Promise<SolanaWalletBalancesResponse> {
       const [lamports, tokenAccounts] = await Promise.all([
         rpc.getBalance(wallet),
-        Promise.all([
-          rpc.getTokenAccountsByOwner(wallet, SPL_TOKEN_PROGRAM_ADDRESS),
-          rpc.getTokenAccountsByOwner(wallet, TOKEN_2022_PROGRAM_ADDRESS),
-        ]).catch((error: unknown) => {
+        // One program after the other: the public node that serves token accounts throttles requests that arrive
+        // together.
+        (async () => [
+          await rpc.getTokenAccountsByOwner(wallet, SPL_TOKEN_PROGRAM_ADDRESS),
+          await rpc.getTokenAccountsByOwner(wallet, TOKEN_2022_PROGRAM_ADDRESS),
+        ])().catch((error: unknown) => {
           console.warn('Failed to read Solana token accounts', error);
 
           return undefined;

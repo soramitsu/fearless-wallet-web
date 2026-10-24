@@ -94,6 +94,46 @@ describe('Universal Wallet registry network mapping', () => {
     expect(networkMap['Taira Testnet'].chainId).toBe(UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId);
   });
 
+  it('names, prices and pictures USDC and USDT on Solana mainnet, and on no test network', () => {
+    const byName = Object.fromEntries(createUniversalWalletRegistryNetworks().map((network) => [network.name, network]));
+    const [sol, ...tokens] = byName.Solana.assets;
+
+    expect(sol).toMatchObject({ isNative: true, symbol: 'SOL' });
+    expect(tokens).toEqual([
+      expect.objectContaining({
+        currencyId: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+        id: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+        name: 'USD Coin',
+        precision: 6,
+        priceId: 'usd-coin',
+        symbol: 'USDC',
+      }),
+      expect.objectContaining({
+        currencyId: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+        id: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+        name: 'Tether USD',
+        precision: 6,
+        priceId: 'tether',
+        symbol: 'USDT',
+      }),
+    ]);
+    expect(tokens.every(({ icon, isNative, isUtility }) => icon.startsWith('https://') && !isNative && !isUtility)).toBe(true);
+    expect((byName['Solana Devnet']?.assets ?? []).map(({ symbol }) => symbol)).not.toContain('USDC');
+  });
+
+  it('adds the Solana registry tokens to a stored network once and keeps an entry it already has', () => {
+    const solana = createUniversalWalletRegistryNetworks().find(({ name }) => name === 'Solana')!;
+    const [sol, , usdt] = solana.assets;
+    const stored: NetworkJson = { ...solana, assets: [sol, { ...usdt, name: 'Stored Tether' }] };
+    const networkMap: Record<string, NetworkJson> = { Solana: stored };
+
+    mergeUniversalWalletRegistryNetworks(networkMap, { Solana: stored });
+    mergeUniversalWalletRegistryNetworks(networkMap, { Solana: networkMap.Solana });
+
+    expect(networkMap.Solana.assets.map(({ symbol }) => symbol)).toEqual(['SOL', 'USDT', 'USDC']);
+    expect(networkMap.Solana.assets.find(({ symbol }) => symbol === 'USDT')?.name).toBe('Stored Tether');
+  });
+
   it('never prices test-network coins as their mainnet namesakes', () => {
     const networks = createUniversalWalletRegistryNetworks();
     const byName = Object.fromEntries(networks.map((network) => [network.name, network]));

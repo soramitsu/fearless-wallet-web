@@ -2,6 +2,8 @@ import axios from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ActionCapabilityService,
+  ACTION_CAPABILITY_MAX_AGE_MS,
+  ACTION_CAPABILITY_REFRESH_MS,
   RELEASE_DEFAULT_ACTIONS,
   failClosedActionCapabilities,
   parseActionCapabilityConfig,
@@ -109,7 +111,7 @@ describe('ActionCapabilityService', () => {
     expect(lifted.actions.polkaswap).toBe(true);
   });
 
-  it('first run while offline uses the release defaults', async () => {
+  it('first run while offline leaves mutation permissions disabled', async () => {
     fetchesFail();
     const storage = memoryStorage();
     const service = new ActionCapabilityService(storage);
@@ -117,8 +119,8 @@ describe('ActionCapabilityService', () => {
     expect(service.isActionEnabled('polkaswap')).toBe(false);
     await service.init();
 
-    expect(service.snapshot.actions).toEqual(releaseDefaults);
-    expect(service.isActionEnabled('polkaswap')).toBe(true);
+    expect(service.snapshot.actions).toEqual(failClosedActionCapabilities().actions);
+    expect(service.isActionEnabled('polkaswap')).toBe(false);
     expect(service.isActionEnabled('crossChainXcm')).toBe(false);
     expect(storage.write).not.toHaveBeenCalled();
   });
@@ -128,7 +130,7 @@ describe('ActionCapabilityService', () => {
     const service = new ActionCapabilityService(
       memoryStorage({
         schemaVersion: 1,
-        updatedAt: 5,
+        updatedAt: Date.now(),
         actions: { ...releaseDefaults, polkaswap: false },
         assetDiscoveryMode: 'visible',
       })
@@ -148,7 +150,7 @@ describe('ActionCapabilityService', () => {
 
     await service.init();
 
-    expect(service.snapshot.actions).toEqual(releaseDefaults);
+    expect(service.snapshot.actions).toEqual(failClosedActionCapabilities().actions);
   });
 
   it('a schema 2 snapshot keeps a remote veto offline', async () => {
@@ -220,5 +222,55 @@ describe('ActionCapabilityService', () => {
     const lifted = new ActionCapabilityService(storage);
     await lifted.init();
     expect(lifted.isActionEnabled('polkaswap')).toBe(true);
+  });
+});
+
+
+describe('capability freshness and remote veto refresh', () => {
+  afterEach(() => { vi.mocked(axios.get).mockReset(); });
+
+  it('expires a cached grant without restarting, even when every refresh fails', async () => {
+    let now = 1_800_000_000_000;
+    const storage = memoryStorage(resolveActionCapabilities({}, now));
+    fetchesFail();
+    const service = new ActionCapabilityService(storage, () => now);
+    await service.init();
+    expect(service.isActionEnabled('polkaswap')).toBe(true);
+    now += ACTION_CAPABILITY_MAX_AGE_MS + 1;
+    expect(service.isActionEnabled('polkaswap')).toBe(false);
+    await service.refresh();
+    expect(service.isActionEnabled('polkaswap')).toBe(false);
+  });
+
+  it('refreshes a running wallet and applies a newly published veto', async () => {
+    let now = 1_800_000_000_000;
+    fetchReturns({});
+    const service = new ActionCapabilityService(memoryStorage(), () => now);
+    await service.init();
+    expect(service.isActionEnabled('polkaswap')).toBe(true);
+    fetchReturns({ actions: { polkaswap: false } });
+    now += ACTION_CAPABILITY_REFRESH_MS;
+    service.isActionEnabled('polkaswap');
+    await service.refresh();
+    expect(service.isActionEnabled('polkaswap')).toBe(false);
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps an expired veto when a new configuration omits it', async () => {
+    const now = 1_800_000_000_000;
+    const storage = memoryStorage(resolveActionCapabilities({ actions: { polkaswap: false } }, now - ACTION_CAPABILITY_MAX_AGE_MS - 1));
+    fetchReturns({});
+    const service = new ActionCapabilityService(storage, () => now);
+    await service.init();
+    expect(service.isActionEnabled('polkaswap')).toBe(false);
+    expect(storage.value).toMatchObject({ remoteActions: { polkaswap: false } });
+  });
+
+  it('does not accept a future-dated cached permission', async () => {
+    const now = 1_800_000_000_000;
+    fetchesFail();
+    const service = new ActionCapabilityService(memoryStorage(resolveActionCapabilities({}, now + 1)), () => now);
+    await service.init();
+    expect(service.isActionEnabled('polkaswap')).toBe(false);
   });
 });

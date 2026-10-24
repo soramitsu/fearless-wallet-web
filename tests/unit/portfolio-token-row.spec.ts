@@ -182,6 +182,24 @@ describe('a By token row', () => {
     wrapper.unmount();
   });
 
+  it.each([false, true])('restores only the hidden network opened from a token search (grouped %s)', async (grouped) => {
+    const hidden = asset('Polkadot', 'relay-dot', '0', { hidden: true, preference: 'hidden' });
+    const other = asset('Polkadot AssetHub', 'hub-dot', '0', { hidden: true, preference: 'hidden' });
+    const accounts = useAccountsStore();
+    accounts.setAssetPreferences({ entries: [hidden, other].map(({ key }) => ({ key, preference: 'hidden' })) });
+    const row: PortfolioTokenRow = {
+      ...dotRow(), groupId: grouped ? 'dot' : undefined,
+      children: grouped ? [child(hidden), child(other)] : [child(hidden)], zeroChildren: [], networkCount: grouped ? 2 : 1,
+    };
+    const wrapper = mountRow(row, { search: 'DOT', forceExpanded: true });
+    expect(accounts.assetPreferences[hidden.key]).toBe('hidden');
+    await wrapper.get(grouped ? '.network-row' : '[data-testid="tokenRowHeader"]').trigger('click');
+    expect(accounts.assetPreferences[hidden.key] ?? 'auto').toBe('auto');
+    expect(accounts.assetPreferences[other.key]).toBe('hidden');
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'AssetHistory', params: { assetId: 'relay-dot', selectedNetwork: 'Polkadot' } });
+    wrapper.unmount();
+  });
+
   it('says a balance nobody could load failed, never "0", in the row, its networks and its label', async () => {
     const unavailable = asset('TON Mainnet', 'ton', '0', { symbol: 'TON', balanceUnavailable: true, balanceFailed: true });
     const ton: PortfolioTokenRow = {

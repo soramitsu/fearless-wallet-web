@@ -369,26 +369,162 @@ describe('the guide to a new wallet', () => {
 });
 
 describe('the reminder in the wallet', () => {
-  it('counts old wallets still to move and opens the guide', async () => {
+  // The wallets whose reminder was closed on this device.
+  const CLOSED = 'fearless:legacy-exposure-reminder-closed:v1';
+  const IMPORTED = '5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw';
+  const EVM = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94';
+
+  const reminder = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="legacyExposureBanner"]');
+  // Every popup window mounts the reminder afresh; only what the device stored carries over.
+  const openWindow = async () => {
+    const wrapper = mount(LegacyExposureBanner, { global: { stubs } });
+    await flushPromises();
+    return wrapper;
+  };
+  const select = async (address: string) => {
+    store.selectedWallet = { address };
+    await flushPromises();
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    route.fullPath = '/fearless/portfolio';
+    store.selectedWallet = { address: MAIN };
+    mocks.status.mockResolvedValue(
+      status({
+        wallets: [
+          ...status().wallets,
+          // Its key was imported in 3.0.x, so it was here before the update like the others.
+          { address: IMPORTED, walletEcosystem: 'substrate', name: 'Imported', present: true },
+        ],
+        newWallets: [
+          { address: NEW, walletEcosystem: 'substrate', name: 'New' },
+          { address: NEW_TON, walletEcosystem: 'ton', name: 'New TON' },
+        ],
+      } as never)
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('never shows on a wallet created in this version, while old wallets remain', async () => {
+    await select(NEW);
+
+    expect(reminder(await openWindow()).exists()).toBe(false);
+  });
+
+  it('shows on an old wallet, counts every old wallet still to move and opens the guide', async () => {
     mocks.status.mockResolvedValue(
       status({ wallets: [...status().wallets, { address: NEW_2, walletEcosystem: 'substrate', name: 'Moved', present: true, movedAt: 1 }] } as never)
     );
-    const wrapper = mount(LegacyExposureBanner, { global: { stubs } });
-    await flushPromises();
+    const wrapper = await openWindow();
 
     expect(wrapper.text()).toContain('exposureNotice.reminder #2');
     await click(wrapper, 'legacyExposureBannerOpen');
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'SecurityNoticeGuide' });
+  });
+
+  it('shows on a wallet imported before the update', async () => {
+    await select(IMPORTED);
+
+    expect(reminder(await openWindow()).exists()).toBe(true);
+  });
+
+  it('follows the selected wallet', async () => {
+    await select(NEW);
+    const wrapper = await openWindow();
+    expect(reminder(wrapper).exists()).toBe(false);
+
+    await select(MAIN);
+    expect(reminder(wrapper).exists()).toBe(true);
+
+    await select(NEW_TON);
+    expect(reminder(wrapper).exists()).toBe(false);
+
+    await select(TON);
+    expect(reminder(wrapper).exists()).toBe(true);
+  });
+
+  it('stays away from an old wallet the user marked as moved', async () => {
+    mocks.status.mockResolvedValue(
+      status({ wallets: [{ address: MAIN, walletEcosystem: 'substrate', name: 'Main', present: true, movedAt: 1 }, status().wallets[1]] } as never)
+    );
+
+    expect(reminder(await openWindow()).exists()).toBe(false);
+  });
+
+  it('stays closed for that wallet when the wallet window opens again', async () => {
+    const first = await openWindow();
+    await click(first, 'legacyExposureBannerDismiss');
+
+    expect(reminder(first).exists()).toBe(false);
+    expect(JSON.parse(localStorage.getItem(CLOSED)!)).toEqual([MAIN]);
+    first.unmount();
+
+    expect(reminder(await openWindow()).exists()).toBe(false);
+  });
+
+  it('closes for one wallet only: every other old wallet still shows it once', async () => {
+    const wrapper = await openWindow();
+    await click(wrapper, 'legacyExposureBannerDismiss');
+
+    await select(IMPORTED);
+    expect(reminder(wrapper).exists()).toBe(true);
+    await click(wrapper, 'legacyExposureBannerDismiss');
+
+    await select(MAIN);
+    expect(reminder(wrapper).exists()).toBe(false);
+    expect(JSON.parse(localStorage.getItem(CLOSED)!)).toEqual([MAIN, IMPORTED]);
+  });
+
+  it('reads the wallets closed in earlier windows', async () => {
+    localStorage.setItem(CLOSED, JSON.stringify([MAIN, 42]));
+    const wrapper = await openWindow();
+    expect(reminder(wrapper).exists()).toBe(false);
+
+    await select(TON);
+    expect(reminder(wrapper).exists()).toBe(true);
+  });
+
+  it('matches an EVM wallet whatever the letter case', async () => {
+    mocks.status.mockResolvedValue(
+      status({ wallets: [{ address: EVM.toLowerCase(), walletEcosystem: 'evm', name: 'EVM', present: true }] } as never)
+    );
+    await select(EVM);
+    const first = await openWindow();
+    expect(reminder(first).exists()).toBe(true);
+
+    await click(first, 'legacyExposureBannerDismiss');
+    first.unmount();
+    expect(reminder(await openWindow()).exists()).toBe(false);
+  });
+
+  it('keeps a closed reminder closed in this window when the device cannot store it', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    const wrapper = await openWindow();
+    expect(reminder(wrapper).exists()).toBe(true);
 
     await click(wrapper, 'legacyExposureBannerDismiss');
-    expect(wrapper.find('[data-testid="legacyExposureBanner"]').exists()).toBe(false);
+    await select(NEW);
+    await select(MAIN);
+    route.fullPath = '/fearless/settings';
+    await flushPromises();
+
+    expect(reminder(wrapper).exists()).toBe(false);
   });
 
   it('stays away when there is nothing to tell, and stops asking', async () => {
     mocks.status.mockResolvedValue(status({ state: 'not_exposed', wallets: [] }));
     const wrapper = mount(LegacyExposureBanner, { global: { stubs } });
     await flushPromises();
-    route.fullPath = '/fearless/portfolio';
+    route.fullPath = '/fearless/settings';
     await flushPromises();
 
     expect(wrapper.find('[data-testid="legacyExposureBanner"]').exists()).toBe(false);

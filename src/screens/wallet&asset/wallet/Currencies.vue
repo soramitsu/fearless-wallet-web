@@ -156,6 +156,7 @@ import PortfolioHiddenFundsNotice from './PortfolioHiddenFundsNotice.vue';
 import PortfolioLayoutNote from './PortfolioLayoutNote.vue';
 import PortfolioTokenRow from './PortfolioTokenRow.vue';
 import PortfolioGroupNetworkPicker from './PortfolioGroupNetworkPicker.vue';
+import type { NetworkJson } from '@extension-base/types';
 import SearchResultStatus from '@/components/SearchResultStatus.vue';
 import {
   buildPortfolioSections,

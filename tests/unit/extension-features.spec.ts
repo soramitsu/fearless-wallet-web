@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { createPinia, setActivePinia } from 'pinia';
-import { RELEASE_DEFAULT_ACTIONS, resolveActionCapabilities } from '@extension-base/services/action-capability-service';
+import { RELEASE_DEFAULT_ACTIONS, failClosedActionCapabilities, resolveActionCapabilities } from '@extension-base/services/action-capability-service';
 import { useExtensionStore } from '@/stores/extension';
 
 vi.mock('axios', () => ({ default: { get: vi.fn() } }));
@@ -66,7 +66,7 @@ describe('extension store features', () => {
     expect(store.features?.fiat).toEqual({ moonpay: true, ramp: true });
   });
 
-  it('starts from the release defaults on a first offline run', async () => {
+  it('starts with mutation permissions disabled on a first offline run', async () => {
     fetchesFail();
     const store = useExtensionStore();
 
@@ -74,7 +74,7 @@ describe('extension store features', () => {
 
     expect(store.features).toEqual({
       fiat: { moonpay: false, ramp: false },
-      actions: { ...RELEASE_DEFAULT_ACTIONS },
+      actions: failClosedActionCapabilities().actions,
       assetDiscoveryMode: 'shadow',
     });
   });
@@ -84,7 +84,7 @@ describe('extension store features', () => {
     await useExtensionStore().fetchFeatures();
 
     expect(JSON.parse(localStorage.getItem('feature_action-capabilities-v2')!)).toEqual({
-      value: { fiat: { moonpay: true }, actions: { polkaswap: false }, assetDiscoveryMode: 'shadow' },
+      value: { fetchedAt: expect.any(Number), fiat: { moonpay: true }, actions: { polkaswap: false }, assetDiscoveryMode: 'shadow' },
     });
 
     setActivePinia(createPinia());
@@ -129,7 +129,7 @@ describe('extension store features', () => {
 
     await store.fetchFeatures();
 
-    expect(store.features?.actions).toEqual(RELEASE_DEFAULT_ACTIONS);
+    expect(store.features?.actions).toEqual(failClosedActionCapabilities().actions);
     expect(localStorage.getItem('feature_action-capabilities')).toBe(legacy);
   });
 
@@ -140,7 +140,7 @@ describe('extension store features', () => {
 
     await store.fetchFeatures();
 
-    expect(store.features?.actions).toEqual(RELEASE_DEFAULT_ACTIONS);
+    expect(store.features?.actions).toEqual(failClosedActionCapabilities().actions);
     expect(localStorage.getItem('feature_action-capabilities-v2')).toBe('{not json');
   });
 });

@@ -70,3 +70,24 @@ export function remainingBalances(
       left.symbol.localeCompare(right.symbol)
   );
 }
+
+// The wallets whose reminder was closed on this device, by the address the background gives them.
+const CLOSED_REMINDERS_KEY = 'fearless:legacy-exposure-reminder-closed:v1';
+
+export function readClosedReminders(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(CLOSED_REMINDERS_KEY) ?? '[]');
+
+    return Array.isArray(stored) ? stored.filter((address): address is string => typeof address === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberClosedReminders(addresses: string[]): void {
+  try {
+    localStorage.setItem(CLOSED_REMINDERS_KEY, JSON.stringify(addresses));
+  } catch {
+    // The caller keeps the list for this window.
+  }
+}

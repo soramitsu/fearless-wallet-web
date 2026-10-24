@@ -1,4 +1,5 @@
 import { getTransferErrorLocaleKey } from '@/helpers/transferErrors';
+import en from '@/locales/en/translation.json';
 
 describe('transfer error locale mapping', () => {
   it('maps known fail-closed transfer errors to specific UI messages', () => {
@@ -17,7 +18,11 @@ describe('transfer error locale mapping', () => {
   });
 
   it('falls back to the generic fee error for unknown or missing transfer errors', () => {
-    expect(getTransferErrorLocaleKey(undefined)).toBe('estimateFeeError');
-    expect(getTransferErrorLocaleKey('invalid_iroha_amount')).toBe('estimateFeeError');
+    expect(getTransferErrorLocaleKey(undefined)).toBe('common.estimateFeeError');
+    expect(getTransferErrorLocaleKey('invalid_iroha_amount')).toBe('common.estimateFeeError');
+    // The EVM and Bitcoin quotes report this key themselves.
+    expect(getTransferErrorLocaleKey('common.estimateFeeError')).toBe('common.estimateFeeError');
+    // A key without a translation would be shown to the user as the key itself.
+    expect(en.common.estimateFeeError).toBe("Couldn't estimate fee");
   });
 });

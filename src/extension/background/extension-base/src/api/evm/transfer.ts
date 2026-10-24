@@ -3,6 +3,7 @@ import { type BasicTxResponse, TransferErrorCode } from '@extension-base/backgro
 import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
+import { withTimeout } from '@/util/endpointFailover';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 
@@ -149,6 +150,34 @@ export function getEVMTransactionObject(params: TransferParams, state: State): P
   if (params.balance.isUtility) return getUtilityTransactionObject(params);
 
   return getERC20TransactionObject(params, state);
+}
+
+// How long a fee quote waits for the node before its provider is rebuilt and the quote asked once more.
+export const EVM_QUOTE_TIMEOUT_MS = 10_000;
+
+export class EvmQuoteTimeoutError extends Error {
+  constructor() {
+    super('evm_quote_timeout');
+  }
+}
+
+const quoteWithin = (params: TransferParams, state: State) =>
+  withTimeout(getEVMTransactionObject(params, state), EVM_QUOTE_TIMEOUT_MS, () => new EvmQuoteTimeoutError());
+
+/**
+ * Prices a transfer within a bounded time. A node that does not answer is asked once more through a rebuilt provider:
+ * a request written to a socket the node has closed is never answered, and the Send screen would wait on it forever.
+ */
+export async function quoteEVMTransfer(params: TransferParams, state: State): Promise<TransactionObject> {
+  try {
+    return await quoteWithin(params, state);
+  } catch (error) {
+    if (!(error instanceof EvmQuoteTimeoutError)) throw error;
+
+    state.networkService.evmApiHandler.rebuildApi(params.networkKey);
+
+    return quoteWithin(params, state);
+  }
 }
 
 export async function makeEVMTransfer(params: MakeTransferParams, state: State): Promise<void> {

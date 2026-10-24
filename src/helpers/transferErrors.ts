@@ -46,10 +46,15 @@ const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   cross_chain_runtime_registration_missing: 'assets.crossChainRouteUnavailable',
 };
 
-function getTransferErrorLocaleKey(message: string | undefined): string {
-  if (!message) return 'estimateFeeError';
+// The generic message; a fee quote that fails with it can simply be asked again.
+const ESTIMATE_FEE_ERROR = 'common.estimateFeeError';
 
-  return TRANSFER_ERROR_LOCALE_KEYS[message] ?? 'estimateFeeError';
+function getTransferErrorLocaleKey(message: string | undefined): string {
+  if (!message) return ESTIMATE_FEE_ERROR;
+
+  return TRANSFER_ERROR_LOCALE_KEYS[message] ?? ESTIMATE_FEE_ERROR;
 }
+
+export { ESTIMATE_FEE_ERROR };
 
 export { getTransferErrorLocaleKey };

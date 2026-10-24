@@ -111,7 +111,7 @@ if [[ "$ADVERSARIAL_CORRUPT_REPACK_SIDECAR" == true ]]; then
     fail "adversarial repack corruption is forbidden for the canonical bundle"
 fi
 
-for command in node git tar shasum wc cmp mktemp npm awk; do
+for command in node git tar shasum wc cmp mktemp npm awk python3; do
   command -v "$command" >/dev/null 2>&1 || fail "required command not found: $command"
 done
 

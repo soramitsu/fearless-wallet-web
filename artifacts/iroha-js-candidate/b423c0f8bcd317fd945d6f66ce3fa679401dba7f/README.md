@@ -26,9 +26,13 @@ offline and require no Iroha checkout or Git/network access.
 The package tar contains a generated 134-byte Darwin arm64 native checksum
 sidecar while intentionally containing no `.node` addon. The patch deletes the
 formerly tracked sidecar; exact repacking therefore restores the stored sidecar
-from the stored tar before running `npm pack --ignore-scripts`. That proves the
-durable evidence is internally reproducible without pretending the generated
-native addon is part of the browser package.
+from the stored tar before running `npm pack --ignore-scripts`. The verifier then
+recompresses npm's unchanged tar bytes with Python 3's standard-library system
+zlib (level 9, zero timestamp, portable OS marker). This removes differences
+from Node's bundled compression implementation; the original compressed SHA-256
+and byte-for-byte comparison remain mandatory and reject unexpected output.
+That proves the durable evidence is internally reproducible without pretending
+the generated native addon is part of the browser package.
 
 Run the offline integrity and package-surface verification:
 

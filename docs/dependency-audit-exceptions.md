@@ -34,3 +34,22 @@ module directly (`@ton/ton/dist/wallets/WalletContractV4`) and no longer loads
 and the TON specs pass. Reassess when `@ton/ton` and
 `@subwallet/keyring` publish releases that depend on `zod` 4, and remove the
 resolution then.
+
+## Unpatched development dependency
+
+`node-forge` has no published fix for
+[GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv)
+(1.4.0, its latest release, is affected). It reaches the tree only through
+`@devicefarmer/adbkit`, the Android ADB client of the desktop `web-ext`
+toolchain, so it is replaced with reviewed local code rather than ignored by the
+audit: a fail-closed shim for the unused Android ADB authentication path. It
+cannot parse RSA keys or verify signatures. Android ADB extension testing is
+unavailable; desktop Firefox tooling remains supported. Wallet cryptography and
+Node TLS do not use this shim. See `vendor/node-forge`.
+
+`scripts/test-development-dependency-guards.mjs` verifies that the installed
+package matches the reviewed vendor source and that every ADB cryptography entry
+point fails closed, including through the actual ADB key parser. The full audit
+runs this check first. Reassess the replacement when a patched upstream version
+becomes available; do not restore the affected implementation to silence
+compatibility errors.

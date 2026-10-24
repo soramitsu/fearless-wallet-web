@@ -39,8 +39,9 @@ listed there are not release sources.
   and confirm no new TODO/FIXME/STOPSHIP debt was introduced.
 - Run `yarn audit:dependencies`, `yarn audit:dependencies:production`, and
   `yarn test:crypto-dependency-shims`; confirm both audits have no findings or
-  advisory ignores (`docs/dependency-audit-exceptions.md`), and confirm the
-  unused generic/BIP-322 crypto paths still fail closed.
+  advisory ignores. The full audit also checks the installed development-tool
+  guard documented in `docs/dependency-audit-exceptions.md`. Confirm the unused
+  generic/BIP-322 crypto paths still fail closed.
 - Confirm public extension builds work without private manifest credentials.
 - Run `yarn test:extension-package`, `yarn test:extension-build-environment`,
   `yarn test:import-chrome-release-config`,

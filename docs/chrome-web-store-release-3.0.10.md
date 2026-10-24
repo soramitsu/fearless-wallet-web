@@ -50,6 +50,10 @@ upgrade notice, privacy notice and metadata corrections).
   `api.mainnet-beta.solana.com`, PublicNode, Solana Vibe Station and dRPC. Any
   refusal moves to the next node (the public Solana mainnet node answers 403 to
   every browser extension).
+- Token-account lookups keep their own order. A node that refused one in the
+  last ten minutes is asked last, never skipped, so a balance refresh does not
+  wait for PublicNode's refusal (about three seconds), and the throttling node
+  that serves the lookups is not made the first node for other requests.
 - Each node first names its cluster by genesis hash and is skipped unless it is
   the expected one, so a devnet or testnet node behind a mainnet name is never
   used. The check is repeated every few minutes.

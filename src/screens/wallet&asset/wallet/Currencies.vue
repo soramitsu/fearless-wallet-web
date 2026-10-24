@@ -28,7 +28,7 @@
         :key="section.key"
         :section="section"
         :manage="showAssetsManagementForm"
-        :search="filterValue"
+        :search="searchQuery"
       />
     </div>
   </Scroll>
@@ -73,6 +73,10 @@ export default defineComponent({
     showLoader() {
       return this.accountsStore.isBalanceLoading;
     },
+    // Manage has no search field, so text typed before never narrows it.
+    searchQuery(): string {
+      return this.showAssetsManagementForm ? '' : this.filterValue?.trim() ?? '';
+    },
     portfolioSections(): PortfolioSection[] {
       return buildPortfolioSections({
         groups: this.accountsStore.balances,
@@ -85,11 +89,12 @@ export default defineComponent({
             this.extensionStore.features?.portfolio?.assetDiscoveryMode ??
             'shadow') === 'visible',
         addressForNetwork: this.addressForNetwork,
+        search: this.searchQuery,
+        isSelectedNetwork: (network: NetworkJson) => isSameString(network.name, this.accountsStore.selectedNetwork),
       });
     },
     filteredSections(): PortfolioSection[] {
       const selected = this.accountsStore.selectedNetwork;
-      const search = this.filterValue?.trim().toLowerCase() ?? '';
       let sections = this.portfolioSections;
 
       if (selected === POPULAR_NETWORKS) {
@@ -102,26 +107,19 @@ export default defineComponent({
         sections = sections.filter((section) => isSameString(section.name, selected));
       }
 
-      if (!search) return sections;
-      return sections.filter(
-        (section) =>
-          section.name.toLowerCase().includes(search) ||
-          [...section.assets, ...section.detectedAssets].some((asset) =>
-            `${asset.symbol} ${asset.name}`.toLowerCase().includes(search)
-          )
-      );
+      return sections;
     },
     showEmptyState() {
       return !this.showLoader && this.filteredSections.length === 0;
     },
     emptyTitle() {
       if (!navigator.onLine) return this.$t('portfolioPage.offline');
-      if (this.filterValue?.trim()) return this.$t('portfolioPage.noMatchingAssets');
+      if (this.searchQuery) return this.$t('portfolioPage.noMatchingAssets');
       return this.$t('portfolioPage.noAssetsDetected');
     },
     emptyDescription() {
       if (!navigator.onLine) return this.$t('portfolioPage.offlineDescription');
-      if (this.filterValue?.trim()) return this.$t('portfolioPage.searchDescription');
+      if (this.searchQuery) return this.$t('portfolioPage.searchDescription');
       return this.$t('portfolioPage.scanDescription');
     },
     preferenceMigrationAssets() {

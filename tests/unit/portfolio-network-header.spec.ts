@@ -67,6 +67,47 @@ describe('Portfolio network header', () => {
     wrapper.unmount();
   });
 
+  it('shows a zero as 0 and says when it was never read', () => {
+    const zero: PortfolioAsset = { ...asset, balanceText: '0', fiatValue: '0' };
+    const wrapper = render(section({
+      assets: [
+        zero,
+        { ...zero, key: 'pending', isReady: false },
+        { ...zero, key: 'failed', isReady: false, balanceFailed: true },
+        { ...asset, key: 'held', isReady: false },
+      ],
+    }));
+
+    expect(wrapper.findAll('.asset-balance').map((row) => row.text())).toEqual([
+      '0 ETH$0.00',
+      '0 ETHBalances not loaded',
+      '0 ETHBalance update failed',
+      '2.0000 ETH$1,234.50',
+    ]);
+    wrapper.unmount();
+  });
+
+  it('takes a token found by search out of hiding when it is opened', async () => {
+    const hidden: PortfolioAsset = { ...asset, preference: 'hidden' };
+    const open = async (search?: string) => {
+      const wrapper = mount(PortfolioNetworkSection, {
+        props: { section: section({ assets: [hidden] }), search },
+        global: { stubs: { ExternalLogo: true, Icon: true, Switcher: true } },
+      });
+      await wrapper.get('.asset-row').trigger('click');
+      wrapper.unmount();
+    };
+
+    await open('eth');
+    expect(mocks.setAssetPreference).toHaveBeenCalledWith({ key: 'evm:1:eth', preference: 'auto' });
+    expect(mocks.push).toHaveBeenCalledWith({ name: 'AssetHistory', params: { assetId: 'eth', selectedNetwork: 'Ethereum' } });
+
+    vi.clearAllMocks();
+    await open();
+    expect(mocks.setAssetPreference).not.toHaveBeenCalled();
+    expect(mocks.push).toHaveBeenCalledTimes(1);
+  });
+
   it('preserves collapse, asset navigation and detected-asset review', async () => {
     const detected: PortfolioAsset = { ...asset, key: 'detected', assetId: 'other', trust: 'unverified', source: 'chain' };
     const wrapper = render(section({ detectedAssets: [detected] }));

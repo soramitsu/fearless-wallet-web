@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const productionPopupOnly = process.argv.includes('--production-popup');
+// `--search-screenshots <dir>`: check the portfolio search in the real popup, save screenshots there, and stop.
+const searchScreenshotsArg = process.argv.indexOf('--search-screenshots');
+const searchScreenshotsDir = searchScreenshotsArg === -1 ? undefined : process.argv[searchScreenshotsArg + 1];
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -283,6 +286,10 @@ async function main() {
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture, legacyAddress);
     await assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, substrateAddress, legacyAddress);
     console.info('[extension-smoke] wallet seeded');
+    if (searchScreenshotsDir) {
+      await assertPortfolioSearch(cdp, extensionId, extensionSession, substrateAddress);
+      return;
+    }
     const dappSession = await openDappPage(cdp, solanaServer.url);
 
     await waitForExpression(
@@ -1086,6 +1093,100 @@ async function assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionS
     const state = await evaluate(cdp, sessionId,
       '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);
     throw new Error(`${error.message}; popup state=${JSON.stringify(state)}`, { cause: error });
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
+// A fresh wallet holds nothing, so every search answer is a token at zero: none may read "No matching assets".
+async function assertPortfolioSearch(cdp, extensionId, extensionSession, address) {
+  assert(searchScreenshotsDir, 'Pass a directory after --search-screenshots');
+  await fs.mkdir(searchScreenshotsDir, { recursive: true });
+  await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', { address, walletEcosystem: 'substrate' });
+  // A fresh universal wallet gets the rows of its other ecosystems with its first balance fetch; a failed read is fine.
+  await extensionSend(cdp, extensionSession, 'pri(fetch.balance)', {
+    address, networks: ['Bitcoin', 'Solana'], walletEcosystem: 'substrate',
+  }).catch(() => undefined);
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: `chrome-extension://${extensionId}/popup.html#/fearless/portfolio/tokens`,
+  });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  // Typed as a person would: replace the field's text with trusted input events.
+  const search = async (query) => {
+    await evaluate(cdp, sessionId, `(() => {
+      const input = document.querySelector('[data-testid="searchInput"] input');
+      input.focus();
+      input.select();
+      return true;
+    })()`);
+    await cdp.send('Input.insertText', { text: query }, sessionId);
+  };
+  const state = () => evaluate(cdp, sessionId, `({
+    empty: document.querySelector('[data-testid="infoText"]')?.innerText.replace(/\\s+/g, ' ').trim() ?? '',
+    networks: Array.from(document.querySelectorAll('.network-section')).map((section) => ({
+      name: section.querySelector('.network-title')?.textContent.trim(),
+      rows: Array.from(section.querySelectorAll('.asset-row')).map((row) => row.innerText.replace(/\\s+/g, ' ').trim()),
+    })),
+  })`);
+
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 561, height: 900, deviceScaleFactor: 2, mobile: false }, sessionId);
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="searchInput"] input\'))',
+      'portfolio search field');
+    await waitForExpression(cdp, sessionId,
+      'Boolean(document.querySelector(\'[data-testid="portfolioNetworkList"], [data-testid="infoText"]\'))', 'portfolio list');
+    await evaluate(cdp, sessionId, 'document.querySelector("dialog[open] .wallet-upgrade__later")?.click(); true');
+    await waitForExpression(cdp, sessionId, `(document.querySelector('#app').__vue_app__.config.globalProperties.$pinia
+      .state.value.accounts?.balances ?? []).some(({ balances }) =>
+        balances.some(({ name, state }) => name.toLowerCase() === 'bitcoin' && state === 'ready'))`,
+    'Bitcoin rows of the universal wallet');
+
+    const results = {};
+    // The test build lists test networks and the universal wallet's own chains, so no USDT: SOL stands in.
+    for (const query of ['btc', 'sol', 'zzz']) {
+      await search(query);
+      await sleep(800);
+      results[query] = await state();
+      const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+      await fs.writeFile(path.join(searchScreenshotsDir, `search-${query}.png`), Buffer.from(data, 'base64'));
+    }
+
+    // The zero row opens the token's own page, where it can be received.
+    await search('btc');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".network-section .asset-row"))', 'BTC row');
+    await evaluate(cdp, sessionId, 'document.querySelector(".network-section .asset-row").click(); true');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="receiveBtn"]\'))',
+      'BTC page with Receive');
+    const opened = await evaluate(cdp, sessionId, '({ route: decodeURIComponent(location.hash) })');
+    const { data: assetPage } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+    await fs.writeFile(path.join(searchScreenshotsDir, 'open-btc.png'), Buffer.from(assetPage, 'base64'));
+    assert(/BTC\/Bitcoin$/.test(opened.route), `The BTC row opened ${opened.route}`);
+
+    console.info(`[extension-smoke] portfolio search ${JSON.stringify({ ...results, opened }, null, 2)}`);
+    const btcRows = results.btc.networks.flatMap(({ rows }) => rows);
+    assert(btcRows.some((row) => /^BTC\b.*\b0 BTC\b/.test(row)), 'Searching btc did not list BTC at 0');
+    assert(!results.btc.empty && !results.sol.empty, 'A search for a supported token said nothing matches');
+    assert(results.sol.networks.filter(({ name }) => name === 'Solana').flatMap(({ rows }) => rows).length === 3,
+      'Searching sol did not list SOL, USDC and USDT once each on Solana');
+    assert(!results.sol.networks.some(({ name }) => /devnet/i.test(name)), 'Searching sol listed a test-network zero');
+    assert(results.zzz.empty.startsWith('No matching assets'), 'A search for no token did not say nothing matches');
+    console.info(`[extension-smoke] portfolio search verified; screenshots in ${searchScreenshotsDir}`);
+  } catch (error) {
+    // What the popup holds: its networks and the balance rows of the selected wallet.
+    const popup = await evaluate(cdp, sessionId, `(() => {
+      const stores = document.querySelector('#app')?.__vue_app__?.config.globalProperties.$pinia?.state.value ?? {};
+      return {
+        route: location.hash,
+        networks: (stores.networks?.allNetworks ?? []).map(({ name, ecosystem, options }) =>
+          [name, ecosystem, ...(options ?? [])].join('/')),
+        balances: (stores.accounts?.balances ?? []).flatMap(({ balances }) =>
+          balances.map(({ name, symbol, state, total }) => [name, symbol, state, total ?? '-'].join('/'))),
+        wallet: Object.keys(stores.accounts?.selectedWallet ?? {}).filter((key) => stores.accounts.selectedWallet[key]),
+      };
+    })()`).catch(() => undefined);
+    throw new Error(`${error.message}; popup state=${JSON.stringify(popup)}`, { cause: error });
   } finally {
     await cdp.send('Target.closeTarget', { targetId });
   }

@@ -399,3 +399,197 @@ describe('portfolio canonical asset identity', () => {
     })).toEqual([]);
   });
 });
+
+describe('portfolio search', () => {
+  type RegistryAsset = Partial<NetworkJson['assets'][number]> & { id: string; symbol: string; name: string };
+
+  const chain = (name: string, chainId: string, ecosystem: string, assets: RegistryAsset[], extra = {}): NetworkJson =>
+    ({ assets, chainId, ecosystem, favorite: [], icon: name, name, ...extra }) as unknown as NetworkJson;
+
+  const bitcoin = chain('Bitcoin', 'bitcoin-mainnet', 'bitcoin', [
+    { id: 'BTC', isNative: true, name: 'Bitcoin', priceId: 'bitcoin', symbol: 'BTC' },
+  ]);
+  const bitcoinTestnet = chain('Bitcoin Testnet', 'bitcoin-testnet', 'bitcoin', bitcoin.assets as RegistryAsset[], {
+    options: ['testnet'],
+  });
+  const polygon = chain('Polygon', '137', 'ethereum', [
+    { id: 'pol', isNative: true, isUtility: true, name: 'Polygon Ecosystem Token', priceId: 'pol', symbol: 'pol' },
+    { id: '0xWbtcPolygon', name: 'wrapped btc', priceId: 'wbtc', symbol: 'wbtc' },
+  ], { rank: 3 });
+  const arbitrum = chain('Arbitrum One', '42161', 'ethereum', [
+    { id: '0xWbtcArbitrum', name: 'wrapped btc', priceId: 'wbtc', symbol: 'wbtc' },
+  ], { rank: 4 });
+  const avalanche = chain('Avalanche C-Chain', '43114', 'ethereum', [
+    { id: '0xBtcb', name: 'bitcoin', symbol: 'btc.b' },
+  ], { rank: 6 });
+  const kintsugi = chain('Kintsugi', '0xkintsugi', 'substrate', [{ id: 'kbtc', name: 'kintsugi ibtc', symbol: 'kbtc' }]);
+  const networks = [bitcoin, bitcoinTestnet, polygon, arbitrum, avalanche, kintsugi];
+
+  // The background seeds one verified placeholder per registry asset; a scan then marks it READY with its amount.
+  const holding = (
+    network: NetworkJson,
+    assetId: string,
+    total?: string,
+    state = APIItemState.READY,
+    trust: BalanceItem['assetMetadataTrust'] = 'verified'
+  ): TokenGroup => {
+    const asset: RegistryAsset = (network.assets.find(({ id }) => id === assetId) as RegistryAsset | undefined) ??
+      { id: assetId, name: assetId, symbol: assetId };
+
+    return {
+      balances: [{
+        assetMetadataSource: trust === 'verified' ? 'registry' : 'indexer',
+        assetMetadataTrust: trust,
+        icon: network.icon,
+        id: assetId,
+        isNative: asset.isNative,
+        isUtility: asset.isUtility,
+        name: network.name.toLowerCase(),
+        precision: 8,
+        priceId: asset.priceId,
+        state,
+        symbol: asset.symbol,
+        total,
+        transferable: total,
+      } as BalanceItem],
+      groupId: assetId,
+      icon: network.icon,
+      mainNetwork: network.name,
+      priceId: asset.priceId,
+      providers: [],
+      relayChain: network.ecosystem as never,
+      symbol: asset.symbol,
+      tokenName: asset.name,
+    } as TokenGroup;
+  };
+  const wallet = ({ wbtc = '0', testBtc }: { wbtc?: string; testBtc?: string } = {}): TokenGroup[] => [
+    holding(bitcoin, 'BTC', '0'),
+    holding(bitcoinTestnet, 'BTC', testBtc, testBtc ? APIItemState.READY : APIItemState.PENDING),
+    holding(polygon, 'pol', '10'),
+    holding(polygon, '0xWbtcPolygon', wbtc),
+    holding(arbitrum, '0xWbtcArbitrum', '0'),
+    holding(avalanche, '0xBtcb', '0'),
+    holding(kintsugi, 'kbtc'),
+  ];
+  const wbtcOnPolygon = createAssetKey({ ecosystem: 'ethereum', chainId: '137', assetId: '0xWbtcPolygon' });
+  const build = (
+    search: string,
+    { groups = wallet(), ...options }: Partial<Parameters<typeof buildPortfolioSections>[0]> = {}
+  ) =>
+    buildPortfolioSections({
+      addressForNetwork: ({ name }) => `${name} address`,
+      groups,
+      networks,
+      preferences: {},
+      prices: { bitcoin: 60_000, pol: 5, wbtc: 60_000 },
+      search,
+      ...options,
+    });
+  const rows = (sections: ReturnType<typeof buildPortfolioSections>): string[] =>
+    sections.map(({ assets, name }) => `${name}: ${assets.map(({ balanceText, symbol }) => `${symbol} ${balanceText}`).join(', ')}`);
+
+  it('answers with tokens the wallet holds none of instead of no match', () => {
+    expect(rows(build(''))).toEqual(['Polygon: POL 10']);
+    expect(rows(build('btc'))).toEqual([
+      'Bitcoin: BTC 0',
+      'Avalanche C-Chain: BTC.B 0',
+      'Polygon: WBTC 0',
+      'Arbitrum One: WBTC 0',
+      'Kintsugi: KBTC 0',
+    ]);
+    expect(rows(build('  BTC  '))).toEqual(rows(build('btc')));
+    expect(build('btc').find(({ name }) => name === 'Kintsugi')?.assets[0].isReady).toBe(true);
+    expect(build('zzz')).toEqual([]);
+  });
+
+  it('puts holdings first and totals only the rows the search lists', () => {
+    const results = build('btc', { groups: wallet({ wbtc: '0.5' }) });
+
+    expect(rows(results)[0]).toBe('Polygon: WBTC 0.5');
+    expect(results[0]).toMatchObject({ hasPricedAssets: true, subtotal: '30000' });
+    expect(build('btc')[2]).toMatchObject({ hasPricedAssets: false, name: 'Polygon', subtotal: '0' });
+    expect(build('', { groups: wallet({ wbtc: '0.5' }) })[0].subtotal).toBe('30050');
+  });
+
+  it('lists a holding before a closer match on the same network', () => {
+    const avalancheWithWbtc = chain('Avalanche C-Chain', '43114', 'ethereum', [
+      { id: '0xBtcb', name: 'bitcoin', symbol: 'btc.b' },
+      { id: '0xWbtcE', name: 'wrapped btc', priceId: 'wbtc', symbol: 'wbtc.e' },
+    ], { rank: 6 });
+    const groups = [holding(avalancheWithWbtc, '0xWbtcE', '0.5'), holding(avalancheWithWbtc, '0xBtcb', '0')];
+
+    expect(rows(build('btc', { groups, networks: [avalancheWithWbtc] }))).toEqual([
+      'Avalanche C-Chain: WBTC.E 0.5, BTC.B 0',
+    ]);
+  });
+
+  it('answers with the loaded row, not the placeholder the background keeps beside it', () => {
+    const solana = chain('Solana', 'solana-mainnet', 'solana', [{ id: 'SOL', isNative: true, name: 'Solana', symbol: 'SOL' }]);
+    const placeholder = holding(solana, 'SOL', undefined, APIItemState.PENDING);
+    const loaded = holding(solana, 'SOL', '0');
+    // The scan writes the network's own spelling, the placeholder a lowercase one.
+    loaded.balances[0].name = 'Solana';
+    const search = (groups: TokenGroup[]) => build('sol', { groups, networks: [solana] });
+
+    expect(rows(search([placeholder, loaded]))).toEqual(['Solana: SOL 0']);
+    expect(search([placeholder, loaded])[0].assets[0].isReady).toBe(true);
+    expect(rows(search([placeholder, holding(solana, 'SOL', undefined, APIItemState.PENDING)]))).toEqual(['Solana: SOL 0']);
+    // Two rows that were both read may be two assets sharing an id: both stay.
+    expect(rows(search([loaded, holding(solana, 'SOL', '0')]))).toEqual(['Solana: SOL 0, SOL 0']);
+  });
+
+  it('finds hidden tokens, which the list leaves out', () => {
+    const preferences = { [wbtcOnPolygon]: 'hidden' as const };
+    const groups = wallet({ wbtc: '0.5' });
+
+    expect(rows(build('', { groups, preferences }))).toEqual(['Polygon: POL 10']);
+    expect(build('wbtc', { groups, preferences })[0].assets[0]).toMatchObject({
+      balanceText: '0.5',
+      key: wbtcOnPolygon,
+      preference: 'hidden',
+    });
+  });
+
+  it('lists test-network zeros only when that network is named or selected', () => {
+    const named = (search: string, options = {}) =>
+      rows(build(search, options)).filter((row) => row.startsWith('Bitcoin Testnet'));
+
+    expect(named('btc')).toEqual([]);
+    // "bitcoin" names the main network first; its test network has to be named on its own.
+    expect(named('bitcoin')).toEqual([]);
+    expect(named('testnet')).toEqual(['Bitcoin Testnet: BTC 0']);
+    expect(named('bitcoin test')).toEqual(['Bitcoin Testnet: BTC 0']);
+    expect(named('btc', { isSelectedNetwork: ({ name }: NetworkJson) => name === 'Bitcoin Testnet' })).toEqual([
+      'Bitcoin Testnet: BTC 0',
+    ]);
+    expect(named('btc', { groups: wallet({ testBtc: '0.1' }) })).toEqual(['Bitcoin Testnet: BTC 0.1']);
+  });
+
+  it('offers a zero only where the wallet has an address to receive it', () => {
+    const noEvmAccount = ({ ecosystem, name }: NetworkJson) => (ecosystem === 'ethereum' ? '' : `${name} address`);
+
+    expect(rows(build('btc', { addressForNetwork: noEvmAccount }))).toEqual(['Bitcoin: BTC 0', 'Kintsugi: KBTC 0']);
+    expect(rows(build('btc', { addressForNetwork: noEvmAccount, groups: wallet({ wbtc: '0.5' }) }))[0]).toBe(
+      'Polygon: WBTC 0.5'
+    );
+  });
+
+  it('matches a network name from the start of a word', () => {
+    expect(rows(build('poly'))).toEqual(['Polygon: POL 10, WBTC 0']);
+    expect(rows(build('lygon'))).toEqual(['Polygon: POL 10']);
+    expect(rows(build('c-chain'))).toEqual(['Avalanche C-Chain: BTC.B 0']);
+  });
+
+  it('never surfaces an unverified token at zero and keeps a funded one in review', () => {
+    const unverified = (id: string, symbol: string, total: string): TokenGroup => {
+      const group = holding(polygon, id, total, APIItemState.READY, 'unverified');
+
+      return { ...group, balances: [{ ...group.balances[0], symbol }], symbol, tokenName: symbol };
+    };
+    const groups = [...wallet(), unverified('0xFakeBtc', 'BTC', '0'), unverified('0xAirdropBtc', 'XBTC', '5')];
+    const polygonResult = build('btc', { groups }).find(({ name }) => name === 'Polygon');
+
+    expect(polygonResult?.assets.map(({ assetId }) => assetId)).toEqual(['0xWbtcPolygon']);
+    expect(polygonResult?.detectedAssets.map(({ assetId }) => assetId)).toEqual(['0xAirdropBtc']);
+  });
+});

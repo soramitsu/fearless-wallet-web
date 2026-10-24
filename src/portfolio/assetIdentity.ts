@@ -36,6 +36,8 @@ export interface PortfolioAsset {
   preference: AssetPreference;
   isNative: boolean;
   isReady: boolean;
+  /** The last balance request failed (`isReady` is then false too). */
+  balanceFailed?: boolean;
   timestamp?: number;
 }
 
@@ -125,6 +127,67 @@ function scanCoverage(ecosystem: string, network: NetworkJson, balance: BalanceI
 
 const coverageRank: Record<NetworkScanCoverage, number> = { complete: 2, catalogOnly: 1, limited: 0 };
 
+// The asset discovery sweep's rule: these networks are not swept, so a zero there is a placeholder, not a reading.
+function isTestNetwork(network: NetworkJson): boolean {
+  return (
+    Boolean(network.options?.some((option) => String(option).toLowerCase() === 'testnet')) ||
+    /(?:^|\s)(?:testnet|test|dev)(?:\s|$)/iu.test(`${network.name} ${network.chainId}`)
+  );
+}
+
+const searchText = ({ symbol, name }: Pick<PortfolioAsset, 'symbol' | 'name'>): string => `${symbol} ${name}`.toLowerCase();
+
+// From the start of a word, so "dot" finds DOT but not every token on Polkadot Asset Hub.
+const namesNetwork = ({ name }: NetworkJson, query: string): boolean => ` ${name.toLowerCase()}`.includes(` ${query}`);
+
+/** Best first: the exact symbol, a symbol prefix, a word of the name, any part of either, then its network only. */
+function searchRank(asset: Pick<PortfolioAsset, 'symbol' | 'name'>, query: string): number {
+  const symbol = asset.symbol.toLowerCase();
+
+  if (symbol === query) return 0;
+  if (symbol.startsWith(query)) return 1;
+  if (asset.name.toLowerCase().split(/\s+/u).some((word) => word.startsWith(query))) return 2;
+  if (searchText(asset).includes(query)) return 3;
+  return 4;
+}
+
+const isHeld = ({ balanceText }: PortfolioAsset): boolean => new FPNumber(balanceText).isGreaterThan(FPNumber.ZERO);
+
+const wasRead = ({ isReady, balanceFailed }: PortfolioAsset): boolean => isReady || Boolean(balanceFailed);
+
+/**
+ * The background can keep its never-read placeholder beside the row a scan loaded under another name spelling
+ * ("solana" and "Solana"): the loaded row answers. Rows that were both read stay, as they may be different assets.
+ */
+function withoutPlaceholderTwins(assets: PortfolioAsset[]): PortfolioAsset[] {
+  const readKeys = new Set(assets.filter(wasRead).map(({ key }) => key));
+  const placeholderKeys = new Set<string>();
+
+  return assets.filter((asset) => {
+    if (wasRead(asset)) return true;
+    if (readKeys.has(asset.key) || placeholderKeys.has(asset.key)) return false;
+    placeholderKeys.add(asset.key);
+    return true;
+  });
+}
+
+function compareByValue(left: PortfolioAsset, right: PortfolioAsset): number {
+  if (left.fiatValue !== null || right.fiatValue !== null) {
+    const leftValue = new FPNumber(left.fiatValue ?? '-1');
+    const rightValue = new FPNumber(right.fiatValue ?? '-1');
+    if (!leftValue.eq(rightValue)) return rightValue.gt(leftValue) ? 1 : -1;
+  }
+  return left.symbol.localeCompare(right.symbol) || left.key.localeCompare(right.key);
+}
+
+function compareSectionsByValue(left: PortfolioNetworkSection, right: PortfolioNetworkSection): number {
+  if (left.hasPricedAssets !== right.hasPricedAssets) return left.hasPricedAssets ? -1 : 1;
+  if (left.hasPricedAssets && right.hasPricedAssets && left.subtotal !== right.subtotal) {
+    return new FPNumber(right.subtotal).gt(new FPNumber(left.subtotal)) ? 1 : -1;
+  }
+  return left.name.localeCompare(right.name);
+}
+
 function decimalBalance(balance: BalanceItem): string {
   const value = String(balance.transferable ?? balance.total ?? balance.free ?? '0').trim();
 
@@ -201,6 +264,8 @@ export function buildPortfolioSections({
   addressForNetwork,
   scanStates = {},
   surfaceDiscoveredAssets = true,
+  search = '',
+  isSelectedNetwork = () => false,
 }: {
   groups: TokenGroup[];
   networks: NetworkJson[];
@@ -210,9 +275,19 @@ export function buildPortfolioSections({
   addressForNetwork: (network: NetworkJson) => string;
   scanStates?: Record<string, NetworkScanState>;
   surfaceDiscoveredAssets?: boolean;
+  /**
+   * Lists only matching assets, but every verified one the wallet can hold, at zero or hidden too: a token the
+   * wallet supports must never look unsupported because it holds none.
+   */
+  search?: string;
+  /** The network the list is filtered to: its test-network zero rows also answer a search. */
+  isSelectedNetwork?: (network: NetworkJson) => boolean;
 }): PortfolioNetworkSection[] {
   const networkByName = new Map(networks.map((network) => [network.name.toLowerCase(), network]));
   const sections = new Map<string, PortfolioNetworkSection>();
+  const query = search.trim().toLowerCase();
+  // "devnet" names a test network, "sol" names Solana first: a test network shares in a search only by its own name.
+  const namesNoMainnet = !networks.some((network) => !isTestNetwork(network) && namesNetwork(network, query));
 
   groups.forEach((group) => {
     group.balances.forEach((balance) => {
@@ -266,6 +341,7 @@ export function buildPortfolioSections({
         preference,
         isNative: Boolean(balance.isNative || balance.isUtility),
         isReady: balance.state === APIItemState.READY,
+        balanceFailed: balance.state === APIItemState.ERROR,
         timestamp: balance.timestamp,
       };
       const sectionKey = `${ecosystem}:${chainId}`;
@@ -302,37 +378,78 @@ export function buildPortfolioSections({
       const keepsDefaultNative =
         Number.isFinite(network.rank) || Boolean(section.address && network.favorite?.includes(section.address));
       const shouldShowZero = asset.isNative && keepsDefaultNative;
-      if (preference !== 'hidden' && trust === 'verified' && (hasBalance || shouldShowZero)) section.assets.push(asset);
-      if (preference === 'shown' && trust !== 'verified' && hasBalance) section.assets.push(asset);
-      if (surfaceDiscoveredAssets && preference === 'auto' && trust !== 'verified' && hasBalance) {
-        section.detectedAssets.push(asset);
+      const networkMatches = Boolean(query) && namesNetwork(network, query);
+      const answersSearch = !query || networkMatches || searchText(asset).includes(query);
+
+      if (query && trust === 'verified') {
+        // A zero needs an address to receive on; test networks are not swept, so their zeros wait until named.
+        const listsZero =
+          Boolean(section.address) &&
+          (!isTestNetwork(network) || isSelectedNetwork(network) || (networkMatches && namesNoMainnet));
+        if (answersSearch && (hasBalance || listsZero)) section.assets.push(asset);
+      } else if (answersSearch) {
+        if (preference !== 'hidden' && trust === 'verified' && (hasBalance || shouldShowZero)) section.assets.push(asset);
+        if (preference === 'shown' && trust !== 'verified' && hasBalance) section.assets.push(asset);
+        if (surfaceDiscoveredAssets && preference === 'auto' && trust !== 'verified' && hasBalance) {
+          section.detectedAssets.push(asset);
+        }
       }
 
       sections.set(sectionKey, section);
     });
   });
 
+  // Search results: holdings first, by value; then the closest matches, on popular networks first.
+  const compareSearchAssets = (left: PortfolioAsset, right: PortfolioAsset): number => {
+    if (isHeld(left) !== isHeld(right)) return isHeld(left) ? -1 : 1;
+    if (isHeld(left)) return compareByValue(left, right);
+    return (
+      searchRank(left, query) - searchRank(right, query) ||
+      Number(right.isNative) - Number(left.isNative) ||
+      left.symbol.localeCompare(right.symbol) ||
+      left.key.localeCompare(right.key)
+    );
+  };
+  const holds = (section: PortfolioNetworkSection): boolean =>
+    section.assets.some(isHeld) || section.detectedAssets.some(isHeld);
+  const bestRank = (section: PortfolioNetworkSection): number =>
+    Math.min(...section.assets.map((asset) => searchRank(asset, query)));
+  const networkRank = (section: PortfolioNetworkSection): number => {
+    const rank = networkByName.get(section.name.toLowerCase())?.rank;
+    return Number.isFinite(rank) ? Number(rank) : Number.POSITIVE_INFINITY;
+  };
+  const compareSearchSections = (left: PortfolioNetworkSection, right: PortfolioNetworkSection): number => {
+    if (holds(left) !== holds(right)) return holds(left) ? -1 : 1;
+    if (holds(left)) return compareSectionsByValue(left, right);
+    return (
+      bestRank(left) - bestRank(right) ||
+      // Two unranked networks give NaN, which falls through to the name.
+      networkRank(left) - networkRank(right) ||
+      left.name.localeCompare(right.name)
+    );
+  };
+
   return [...sections.values()]
     .filter((section) => section.assets.length > 0 || section.detectedAssets.length > 0)
-    .map((section) => ({
-      ...section,
-      assets: [...section.assets].sort((left, right) => {
-        if (left.fiatValue !== null || right.fiatValue !== null) {
-          const leftValue = new FPNumber(left.fiatValue ?? '-1');
-          const rightValue = new FPNumber(right.fiatValue ?? '-1');
-          if (!leftValue.eq(rightValue)) return rightValue.gt(leftValue) ? 1 : -1;
-        }
-        return left.symbol.localeCompare(right.symbol) || left.key.localeCompare(right.key);
-      }),
-      detectedAssets: [...section.detectedAssets].sort((left, right) => left.symbol.localeCompare(right.symbol)),
-    }))
-    .sort((left, right) => {
-      if (left.hasPricedAssets !== right.hasPricedAssets) return left.hasPricedAssets ? -1 : 1;
-      if (left.hasPricedAssets && right.hasPricedAssets && left.subtotal !== right.subtotal) {
-        return new FPNumber(right.subtotal).gt(new FPNumber(left.subtotal)) ? 1 : -1;
-      }
-      return left.name.localeCompare(right.name);
-    });
+    .map((section) => {
+      const sorted = {
+        ...section,
+        assets: withoutPlaceholderTwins(section.assets).sort(query ? compareSearchAssets : compareByValue),
+        detectedAssets: [...section.detectedAssets].sort((left, right) => left.symbol.localeCompare(right.symbol)),
+      };
+      if (!query) return sorted;
+
+      // A search header totals the rows it lists, not the rest of the network.
+      const priced = [...sorted.assets, ...sorted.detectedAssets].filter(
+        (asset) => isHeld(asset) && asset.fiatValue !== null
+      );
+      return {
+        ...sorted,
+        subtotal: priced.reduce((sum, asset) => sum.add(new FPNumber(asset.fiatValue ?? '0')), FPNumber.ZERO).toString(),
+        hasPricedAssets: priced.length > 0,
+      };
+    })
+    .sort(query ? compareSearchSections : compareSectionsByValue);
 }
 
 export function buildPortfolioSummary(

@@ -53,13 +53,10 @@ describe('extension manifest generation', () => {
     expect(manifest.browser_specific_settings).toEqual({
       gecko: {
         id: '{23b9f52e-e9d7-4180-9126-fc9063e57c1a}',
-        strict_min_version: '140.0',
+        strict_min_version: '142.0',
         data_collection_permissions: {
           required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
         },
-      },
-      gecko_android: {
-        strict_min_version: '142.0',
       },
     });
     expect(manifest).not.toHaveProperty('key');

@@ -85,6 +85,22 @@ describe('cross-chain execution fingerprint', () => {
     );
   });
 
+  it('refuses to encode a relay execution toward the same para id on another relay', async () => {
+    const reviewedCall = teleport();
+    const kusamaAssetHub = '48239ef607d7928874027a43a67689209727dfb3d3dc5e5b03a39bdc2eda771a';
+    const crossRelay = { ...execution, destinationChainId: kusamaAssetHub };
+
+    await expect(
+      createReviewedCrossChainExtrinsic({
+        ...request(),
+        execution: crossRelay,
+        destinationChainId: kusamaAssetHub,
+        api: runtime({ xcmPallet: { limitedTeleportAssets: reviewedCall } }),
+      })
+    ).rejects.toThrow('cross_chain_execution_definition_mismatch');
+    expect(reviewedCall).not.toHaveBeenCalled();
+  });
+
   it('refuses to build on an upgraded runtime until that version is reviewed', async () => {
     const reviewedCall = teleport();
 

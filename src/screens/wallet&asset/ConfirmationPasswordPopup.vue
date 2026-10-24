@@ -20,12 +20,27 @@
           @click="openAccountAccess"
         />
 
-        <p v-if="isUnconfirmed" class="transaction-unconfirmed-message" data-testid="transactionUnconfirmedMessage">
+        <p v-if="isUnconfirmed && !unknownTransactionHash" class="transaction-unconfirmed-message" data-testid="transactionUnconfirmedMessage">
           {{ transactionErrorText }}
         </p>
-        <p v-if="unknownTransactionHash" class="transaction-hash" data-testid="transactionHash">
-          {{ unknownTransactionHash }}
-        </p>
+        <template v-if="unknownTransactionHash">
+          <p class="transaction-unconfirmed-message" data-testid="transactionUnknownMessage">
+            {{ $t('assets.transactionStatusUnknownDetails') }}
+          </p>
+          <code class="transaction-hash" data-testid="unknownTransactionHash">
+            <span data-testid="transactionHash">{{ unknownTransactionHash }}</span>
+          </code>
+          <FButton
+            text="common.copyHash"
+            class="copy-hash"
+            iconName="copy"
+            type="secondary"
+            size="small"
+            data-testid="copyUnknownHashBtn"
+            @click="copyUnknownHash"
+          />
+          <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+        </template>
 
         <template v-if="extrinsicType !== 'nft'">
           <div class="descriptions">
@@ -57,6 +72,19 @@
             :border="false"
             @click="openHistory"
           />
+          <template v-if="settledTransactionHash">
+            <code class="transaction-hash" data-testid="settledTransactionHash">{{ settledTransactionHash }}</code>
+            <FButton
+              text="common.copyHash"
+              class="copy-hash"
+              iconName="copy"
+              type="secondary"
+              size="small"
+              data-testid="copySettledHashBtn"
+              @click="copySettledHash"
+            />
+            <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+          </template>
         </template>
 
         <template v-else>
@@ -124,7 +152,6 @@ import { defineComponent } from 'vue';
 import type { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { NftTx } from '@extension-base/services/nft-service/types';
 import type {
-  RequestCheckCrossChain,
   RequestCheckTransfer,
   RequestTransfer,
   RequestCrossChain,
@@ -140,10 +167,11 @@ import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
-import { isSameString, isSora, setClipboard } from '@/helpers';
+import { isSameString, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import {
+  getSettledTransactionHash,
   getTransactionFailurePresentation,
   getTransactionOutcome,
   getUnknownTransactionHash,
@@ -252,6 +280,9 @@ export default defineComponent({
     showsUnlockAccount() {
       return this.isFailed && isAccountAccessFailure(this.transactionResponse);
     },
+    settledTransactionHash() {
+      return this.extrinsicType === 'crossChain' ? getSettledTransactionHash(this.transactionResponse) : null;
+    },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
 
@@ -338,6 +369,12 @@ export default defineComponent({
     copyHash() {
       setClipboard(this.hash ?? '');
     },
+    copyUnknownHash() {
+      setClipboard(this.unknownTransactionHash ?? '');
+    },
+    copySettledHash() {
+      setClipboard(this.settledTransactionHash ?? '');
+    },
     async onSignMobile() {
       if (this.extrinsicType === 'swap') await makeSwap(this.request as RequestSwap);
       else this.makeExtrinsic();
@@ -398,19 +435,15 @@ export default defineComponent({
           this.hash = result.hash;
         }
 
-        const txCross = this.tx as RequestCheckCrossChain;
-
         // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
         // аналогично для TON экосистемы
-        if (
-          this.isTon ||
-          this.isStaking ||
-          this.isPool ||
-          this.extrinsicType === 'swap' ||
-          this.extrinsicType === 'nft' ||
-          (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
-        )
+        if (this.isTon || this.isStaking || this.isPool || this.extrinsicType === 'swap' || this.extrinsicType === 'nft')
           this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);
+        // A cross-chain send reports its outcome through the subscription callback, then answers with the same
+        // outcome. The response only matters while nothing has settled the state yet: an early rejection (nothing
+        // was subscribed) arrives only here, and it must not leave the popup pending forever.
+        else if (this.extrinsicType === 'crossChain' && this.transactionState === 'pending')
+          this.applyTransactionResponse(results as BasicTxResponse | undefined);
       } catch (error) {
         // A key that waits for its password fails before anything is signed; say so instead of "failed".
         this.applyTransactionResponse(
@@ -437,6 +470,10 @@ export default defineComponent({
   gap: 5px;
   padding: 0 25px;
   min-height: 175px;
+
+  .transaction-hash {
+    overflow-wrap: anywhere;
+  }
 
   .transaction-error-message,
   .transaction-unconfirmed-message {

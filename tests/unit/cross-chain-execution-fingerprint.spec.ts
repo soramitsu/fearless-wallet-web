@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-
 import type { ReviewedCrossChainExecution } from '@/cross-chain/reviewedRoutes';
 import { createReviewedCrossChainExtrinsic, createReviewedRelayExtrinsic } from '@/cross-chain/reviewedExecution';
 import { VALID_SUBSTRATE_ADDRESS } from '@/consts/networks';
@@ -136,7 +135,7 @@ describe('cross-chain execution fingerprint', () => {
     const feeGuard = make.indexOf('assertConfirmedQuote(props, initialQuote, state)');
     const finalGuard = make.indexOf('const syncFinalGuard = () =>');
     const unlock = make.indexOf('!state.keyringService.unlockPair(props.capturedPair)');
-    const sign = make.indexOf('await signAndSendExtrinsic(');
+    const sign = make.indexOf('await signExtrinsic(');
 
     expect(initialGuard).toBeGreaterThan(-1);
     expect(fee).toBeGreaterThan(initialGuard);
@@ -144,7 +143,7 @@ describe('cross-chain execution fingerprint', () => {
     expect(finalGuard).toBeGreaterThan(feeGuard);
     expect(unlock).toBeGreaterThan(finalGuard);
     expect(sign).toBeGreaterThan(unlock);
-    expect(make).toContain('finalGuard: syncFinalGuard,');
+    expect(make).toContain('finalGuard: syncFinalGuard');
     expect(crossChain).toContain('validateReviewedCrossChainRequest({');
     expect(crossChain).toContain('cross_chain_fee_balance_insufficient');
     expect(crossChain).toContain('assertRuntimeFingerprint(props, guardedQuote');

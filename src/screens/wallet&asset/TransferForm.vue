@@ -376,6 +376,7 @@ export default defineComponent({
       estimateFeeError: false,
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
+      crossChainQuoteToken: '',
       crossChainRuntimeMinimum: '',
       bitcoinQuote: null as ResponseBitcoinTransferQuote | null,
       solanaQuote: null as ResponseSolanaTransferQuote | null,
@@ -912,6 +913,7 @@ export default defineComponent({
         expectedOriginFee: this.syncedFee,
         expectedDestinationFee: this.syncedDestNetFee,
         expectedExecutionFingerprint: this.crossChainExecutionFingerprint,
+        quoteToken: this.crossChainQuoteToken,
       } as RequestCheckCrossChain;
     },
     syncedRecipient: {
@@ -1055,6 +1057,7 @@ export default defineComponent({
       this.syncedDestNetFee = '';
       this.crossChainExecutionFingerprint = '';
       this.solanaQuote = null;
+      this.crossChainQuoteToken = '';
       this.isFetchingFees = true;
       if (!this.currency || this.isBitcoinTransferDisabled) return;
 
@@ -1073,7 +1076,7 @@ export default defineComponent({
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
-        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, bitcoin, solana } = await this.verifyTx();
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, quoteToken, errors, bitcoin, solana } = await this.verifyTx();
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         const transferError = errors?.[0];
 
@@ -1088,6 +1091,7 @@ export default defineComponent({
         this.syncedFee = estimateFee ?? '';
         this.syncedDestNetFee = destEstimateFee ?? '';
         this.crossChainExecutionFingerprint = executionFingerprint ?? '';
+        this.crossChainQuoteToken = quoteToken ?? '';
         this.crossChainRuntimeMinimum = minimum ?? '';
         this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);
       } catch {
@@ -1097,8 +1101,8 @@ export default defineComponent({
         this.bitcoinQuote = null;
         this.solanaQuote = null;
         this.crossChainExecutionFingerprint = '';
+        this.crossChainQuoteToken = '';
         this.crossChainRuntimeMinimum = '';
-        this.solanaQuote = null;
         this.$emit('update:runtimeMinimum', '');
       } finally {
         if (revision === this.feeQuoteRevision) this.isFetchingFees = false;

@@ -4,6 +4,7 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { MutableAction } from '@extension-base/services/action-capability-service';
 import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { assertReviewedRecipient } from '@/cross-chain/recipient';
 import {
   BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES,
   findBundledReviewedCrossChainRoute,
@@ -24,7 +25,16 @@ export interface ValidatedCrossChainRoute {
   execution: Readonly<ReviewedCrossChainExecution>;
 }
 
-function validateAmount(amount: string | undefined, minimum: string | null, requireAmount: boolean): FPNumber | null {
+// Plain decimal digits with at most one dot. FPNumber would also accept 0x10, 1e3, 1,5 and 1.2.3 and read them as
+// other numbers, and the background must not depend on the popup having filtered them out.
+const DECIMAL_AMOUNT = /^\d+(\.\d*)?$/;
+
+function validateAmount(
+  amount: string | undefined,
+  minimum: string | null,
+  requireAmount: boolean,
+  precision: number
+): FPNumber | null {
   const value = amount?.trim();
 
   if (!value) {
@@ -32,6 +42,10 @@ function validateAmount(amount: string | undefined, minimum: string | null, requ
 
     return null;
   }
+
+  if (!DECIMAL_AMOUNT.test(value)) throw new Error('cross_chain_amount_invalid');
+  // More decimals than the asset has would be cut off silently when the amount is scaled to planck.
+  if ((value.split('.')[1] ?? '').length > precision) throw new Error('cross_chain_amount_precision_exceeded');
 
   let parsed: FPNumber;
   try {
@@ -59,6 +73,7 @@ export function validateReviewedCrossChainRequest({
   destination,
   tokenBalance,
   amount,
+  to,
   requireAmount = false,
   reviewedRoutes = BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES,
 }: {
@@ -70,6 +85,8 @@ export function validateReviewedCrossChainRequest({
   destination: NetworkJson | undefined;
   tokenBalance: TokenGroup | undefined;
   amount?: string;
+  /** Recipient account; mandatory whenever an amount is required, because that is a send or a priced quote. */
+  to?: string;
   requireAmount?: boolean;
   reviewedRoutes?: readonly Readonly<ReviewedCrossChainRouteDefinition>[];
 }): ValidatedCrossChainRoute {
@@ -109,7 +126,7 @@ export function validateReviewedCrossChainRequest({
   });
   if (balanceAssetKey !== expectedAssetKey) throw new Error('cross_chain_asset_key_mismatch');
 
-  const parsedAmount = validateAmount(amount, route.minimum, requireAmount);
+  const parsedAmount = validateAmount(amount, route.minimum, requireAmount, route.precision);
   if (requireAmount && parsedAmount) {
     let transferable: FPNumber;
     try {
@@ -122,6 +139,7 @@ export function validateReviewedCrossChainRequest({
     }
     if (parsedAmount.gt(transferable)) throw new Error('cross_chain_origin_balance_insufficient');
   }
+  if (requireAmount) assertReviewedRecipient(route.execution, to);
 
   return {
     routeId: route.id,

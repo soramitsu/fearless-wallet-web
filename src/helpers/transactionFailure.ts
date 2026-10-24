@@ -34,6 +34,14 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['iroha_network_identity_unavailable', 'assets.irohaTransfersDisabled'],
   ['iroha_node_protocol_unsupported', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
+  ['cross_chain_send_in_progress', 'assets.transactionPending'],
+  // Nothing was sent; the quote must be confirmed again.
+  ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_token_required', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_token_unknown', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_expired', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_mismatch', 'assets.transferFeeApprovalRequired'],
 ]);
 
 const HEX_TRANSACTION_HASH = /^[0-9a-f]{64}$/iu;
@@ -179,6 +187,24 @@ function getTransactionOutcome(value: unknown): TransactionOutcome {
     : 'failed';
 }
 
+// The hash of an extrinsic whose outcome the background settled, failed at dispatch or included.
+function getSettledTransactionHash(value: unknown): string | null {
+  const response = asResponse(value);
+  if (!response) return null;
+
+  const status = ownDataProperty(response, 'status');
+  const outcome = ownDataProperty(response, 'outcome');
+  const hash = ownDataProperty(response, 'transactionHash');
+
+  if (
+    status.kind !== 'value' || typeof status.value !== 'boolean' ||
+    !(outcome.kind === 'missing' || (outcome.kind === 'value' && outcome.value === undefined)) ||
+    hash.kind !== 'value' || typeof hash.value !== 'string' || !/^[0-9a-f]{64}$/iu.test(hash.value)
+  ) return null;
+
+  return hash.value.toLowerCase();
+}
+
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {
   const response = asResponse(value);
   const errors = errorsFrom(response);
@@ -225,6 +251,7 @@ function isAccountAccessFailure(value: unknown): boolean {
 }
 
 export {
+  getSettledTransactionHash,
   getTransactionFailurePresentation,
   getTransactionOutcome,
   getUnknownTransactionHash,

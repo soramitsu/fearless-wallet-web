@@ -34,6 +34,7 @@ import type {
 import type { WarningValueName } from '@/consts/messages';
 import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
+import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import type { SendKillSwitchState } from '@/util/sendKillSwitch';
 import type { TonImportChoice } from '@/util/tonKeyring';
@@ -397,6 +398,8 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   expectedOriginFee?: string;
   expectedDestinationFee?: string;
   expectedExecutionFingerprint?: string;
+  /** Single-use token from the quote being confirmed; required to send. */
+  quoteToken?: string;
 }
 
 export interface ResponseBitcoinTransferQuote {
@@ -451,6 +454,7 @@ export interface ResponseCheckCrossChain {
   destEstimateFee?: string;
   minimum?: string;
   executionFingerprint?: string;
+  quoteToken?: string;
   errors?: BasicTxError[];
 }
 
@@ -918,6 +922,7 @@ export type IState = {
   sendKillSwitch: SendKillSwitchState;
   bitcoinPendingSends: BitcoinPendingSend[];
   solanaPendingSends: SolanaPendingSend[];
+  crossChainSendsInDoubt: CrossChainSendRecords;
   soraDisclaimerAcceptance: SoraDisclaimerAcceptance;
   legacyExposure: LegacyExposureRecord;
   /** Written by 3.0.3-3.0.5 only. Read once for the security notice and never written. */

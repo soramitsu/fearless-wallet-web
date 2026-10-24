@@ -2,6 +2,7 @@ import { FPNumber } from '@sora-substrate/util';
 import type State from '@extension-base/background/handlers/State';
 import type { ReviewedExecutionApi } from '@/cross-chain/reviewedExecution';
 import type { ReviewedCrossChainExecution, ReviewedDestinationMinimum } from '@/cross-chain/reviewedRoutes';
+import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
 
 type Codec = {
   isEmpty?: boolean;
@@ -53,24 +54,7 @@ async function runtimeForChain(state: State, chainId: string): Promise<BridgeRun
 
   if (matches.length !== 1) throw new Error('cross_chain_network_unavailable');
 
-  const network = matches[0];
-  const networkKey = network.name.toLowerCase();
-  let api = state.getSubstrateApiMap[networkKey]?.api as unknown as BridgeRuntimeApi | undefined;
-
-  if (!api || api.isConnected === false) {
-    state.networkService.substrateApiHandler.initApi(network);
-    const deadline = Date.now() + 15_000;
-
-    while (Date.now() < deadline) {
-      api = state.getSubstrateApiMap[networkKey]?.api as unknown as BridgeRuntimeApi | undefined;
-      if (api && api.isConnected !== false) break;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-
-  if (!api || api.isConnected === false) throw new Error('cross_chain_runtime_unavailable');
-
-  return api;
+  return (await connectedSubstrateApi(state, matches[0])) as BridgeRuntimeApi;
 }
 
 function assertGenesis(api: BridgeRuntimeApi, expectedChainId: string): void {
@@ -153,19 +137,40 @@ async function assertParachainRegistration(
   });
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** The single variant of a decoded enum value, keyed case-insensitively, or undefined. */
+function singleVariant(value: unknown): { name: string; inner: unknown } | undefined {
+  if (!isRecord(value)) return undefined;
+  const keys = Object.keys(value);
+
+  return keys.length === 1 ? { name: keys[0].toLowerCase(), inner: value[keys[0]] } : undefined;
+}
+
+/**
+ * `substrateBridgeApp.sidechainAssetId` holds a `GenericAssetId`. For Liberland it is the `Liberland` variant around a
+ * `LiberlandAssetId`, which is `LLD` or `Asset(u32)`. Read from SORA spec 134 on 2026-10-24:
+ * LLD → `{"liberland":{"lld":null}}`, LLM → `{"liberland":{"asset":1}}`, XOR → `{"liberland":{"asset":774441749}}`.
+ * Any other variant or id is registration drift.
+ */
 function matchesExternalAsset(value: Codec, expected: 'LLD' | number): boolean {
   const unwrapped = unwrap(value);
-  const encoded = JSON.stringify(unwrapped.toJSON?.() ?? unwrapped.toString())
-    .replace(/\s/g, '')
-    .toLowerCase();
+  const outer = singleVariant(unwrapped.toJSON?.());
+  if (outer?.name !== 'liberland') return false;
 
-  if (expected === 'LLD') {
-    return ['"lld"', '{"lld":null}'].includes(encoded);
-  }
+  const inner = singleVariant(outer.inner);
+  if (expected === 'LLD') return inner?.name === 'lld' && inner.inner === null;
+  if (inner?.name !== 'asset') return false;
 
-  const id = String(expected);
+  const id =
+    typeof inner.inner === 'number'
+      ? inner.inner
+      : typeof inner.inner === 'string' && /^\d+$/.test(inner.inner)
+        ? Number(inner.inner)
+        : Number.NaN;
 
-  return [id, `"${id}"`, `{"asset":${id}}`, `{"asset":"${id}"}`, `"asset(${id})"`].includes(encoded);
+  return Number.isSafeInteger(id) && id === expected;
 }
 
 async function assertLiberlandRegistration(

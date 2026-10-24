@@ -61,6 +61,8 @@
     "test:bundle-host-audit": "node scripts/test-bundle-host-audit.mjs",
     "test:chrome-release-audit": "node scripts/test-chrome-release-audit.mjs",
     "test:extension-package": "node scripts/test-package-extension.mjs",
+    "verified:crx": "node scripts/verified-crx.mjs",
+    "test:verified-crx": "node --test scripts/test-verified-crx.mjs",
     "test:extension-build-environment": "node scripts/test-extension-build-environment.mjs",
     "test:import-chrome-release-config": "node scripts/test-import-chrome-release-config.mjs",
     "test:prepare-chrome-release": "node scripts/test-prepare-chrome-release.mjs",

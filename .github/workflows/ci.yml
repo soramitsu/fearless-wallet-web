@@ -197,6 +197,7 @@ jobs:
       - name: Deterministic extension package self-test
         run: |
           yarn test:extension-package
+          yarn test:verified-crx
           yarn test:extension-build-environment
           yarn test:import-chrome-release-config
           yarn test:prepare-chrome-release

@@ -18,7 +18,7 @@ For the underlying `3.0.7` recovery changes, also use the recovery-mode release 
   policy refuses).
 - Confirm extension version, changelog, and release notes are final. The
   version in `package.json` feeds both the Chrome and Firefox manifests and
-  must be above the published Chrome Web Store `3.0.5`.
+  must be above the published Chrome Web Store `3.0.9` (confirmed 24 October 2026).
 - Run `yarn test:package-manager-audit && yarn audit:package-manager` and
   `yarn test:github-actions-audit && yarn audit:github-actions`; confirm
   `yarn.lock` is the only lockfile, Node `24.19.0` / Yarn `4.17.0` pins agree,

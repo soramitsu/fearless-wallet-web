@@ -103,6 +103,27 @@ await (async () => {
       assert.ok(!FORBIDDEN_BUNDLE_STRINGS.some((forbidden) => host.includes(forbidden)), host);
     }
   });
+
+  check('reviewed history credential boundaries and Vue error links pass without allowing related hosts', () => {
+    const hosts = [
+      'api.etherscan.io', 'api.bscscan.com', 'api.polygonscan.com', 'api.arbiscan.io',
+      'api.snowtrace.io', 'api-zkevm.polygonscan.com', 'api-moonriver.moonscan.io',
+      'api-moonbeam.moonscan.io', 'www.oklink.com', 'vuejs.org',
+    ];
+    const found = auditBundleHosts(files({
+      'chunks/accounts.js': JSON.stringify(hosts.map((host) => `https://${host}/`)),
+    }), reviewed);
+    assert.equal(found.size, hosts.length);
+
+    for (const host of hosts) {
+      for (const lookalike of [`${host}.unreviewed.example`, `unreviewed.${host}`]) {
+        assert.throws(
+          () => auditBundleHosts(files({ 'chunks/accounts.js': `fetch("https://${lookalike}/")` }), reviewed),
+          /outside scripts\/release-network-hosts\.json/u
+        );
+      }
+    }
+  });
 })();
 
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-bundle-host-audit-'));

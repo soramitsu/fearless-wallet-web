@@ -201,7 +201,8 @@ export class AccountAccessService {
   }
 
   /** After unlock or a password change: opens every TON phrase with `password` (about 100 ms each),
-   * after the response was delivered. Only the vault's own repairs write. Lock cancels it. */
+   * after the response was delivered. Only the vault's own repairs write, including the move of 3.0.x
+   * ciphertext to the current formats. Lock cancels it. */
   scheduleScan(password: string): void {
     if (!password) return;
     const epoch = this.scanEpoch + 1;

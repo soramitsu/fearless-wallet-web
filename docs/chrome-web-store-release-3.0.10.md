@@ -47,6 +47,9 @@ upgrade notice, privacy notice and metadata corrections).
   imported keys; a wallet created in the extension shows no warning. Its dialog
   opens once per wallet instead of every time the extension opens, and the
   recovery-only banner stays on those older wallets.
+- Searching the portfolio finds every token the wallet supports, not only the
+  ones it holds: a token you have none of is listed at 0 instead of "No
+  matching assets". Your holdings come first, then the closest matches.
 
 ## How it reads and sends
 

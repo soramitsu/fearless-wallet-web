@@ -119,6 +119,9 @@ function assertReviewedRouteAndAccount(props: MakeCrossChainProps, state: State)
 }
 
 function parseExpected(value: string, error: string): FPNumber {
+  // FPNumber reads an empty string as zero; a missing confirmation is not a confirmed zero fee.
+  if (typeof value !== 'string' || !value.trim()) throw new Error(error);
+
   try {
     const parsed = new FPNumber(value);
     if (!parsed.isFinity() || !parsed.isGteZero()) throw new Error(error);

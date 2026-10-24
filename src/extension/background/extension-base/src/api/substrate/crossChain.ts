@@ -17,6 +17,7 @@ import { assertReviewedRuntimeAuthority } from '@/cross-chain/reviewedRuntimeAut
 import { assertOriginExecutes, type DryRunApi } from '@/cross-chain/originDryRun';
 import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidation';
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
+import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
 import {
   normalizeExtrinsicHash,
   sendAndTrackExtrinsic,
@@ -68,18 +69,7 @@ export async function refreshCrossChainOriginBalance(
   const network = state.networkService.networkMap[originNet];
   if (!network) throw new Error('cross_chain_network_unavailable');
 
-  let api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
-  if (!api || api.isConnected === false) {
-    state.networkService.substrateApiHandler.initApi(network);
-    const deadline = Date.now() + 15_000;
-
-    while (Date.now() < deadline) {
-      api = state.getSubstrateApiMap[originNet.toLowerCase()]?.api;
-      if (api && api.isConnected !== false) break;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-  if (!api || api.isConnected === false) throw new Error('cross_chain_runtime_unavailable');
+  const api = (await connectedSubstrateApi(state, network)) as { isReadyOrError: Promise<unknown> };
   await api.isReadyOrError;
 
   await state.balanceService.substrateBalanceService.fetchBalance({

@@ -106,7 +106,10 @@ function harness({ send = included, head = 1_000, nonce = 7 }: { send?: Send; he
     keyringService: { getSubstrateAddress: (address: string) => address, getPair: () => pair, unlockPair },
     getAccountAddress: () => selected,
     networkService: {
-      networkMap: { Polkadot: { chainId: 'polkadot' }, 'Polkadot Asset Hub': { chainId: 'asset-hub' } },
+      networkMap: {
+        Polkadot: { name: 'Polkadot', chainId: 'polkadot' },
+        'Polkadot Asset Hub': { name: 'Polkadot Asset Hub', chainId: 'asset-hub' },
+      },
       substrateApiHandler: { initApi: vi.fn() },
     },
     getSubstrateApiMap: { polkadot: { api } },

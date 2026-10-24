@@ -59,6 +59,7 @@ import {
   type LegacyCrowdloanAssetContext,
 } from '@/portfolio/legacyCrowdloan';
 import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { findAssetGroup } from '@/helpers/currencies';
 
 export default defineComponent({
   name: 'Asset',
@@ -111,27 +112,28 @@ export default defineComponent({
     },
     currentCurrency() {
       return (
-        this.accountsStore.balances.find(({ balances, groupId }) =>
-          balances.some(
-            (balance) =>
-              (groupId === this.selectedAssetId ||
-                balance.id === this.selectedAssetId ||
-                getCanonicalAssetId(balance) === this.selectedAssetId) &&
-              (!this.selectedLocalNetwork ||
-                balance.name.toLowerCase() === String(this.selectedLocalNetwork).toLowerCase())
-          )
+        findAssetGroup(
+          this.accountsStore.balances,
+          String(this.selectedAssetId),
+          String(this.selectedLocalNetwork)
         )! ?? {}
       );
     },
     selectedNetworkAsset() {
+      const onNetwork = (balance) =>
+        balance.name.toLowerCase() === String(this.selectedLocalNetwork).toLowerCase();
+      const balances = this.currentCurrency.balances ?? [];
+
+      // The registry id names one asset; a group or on-chain id is only the fallback of older links.
       return (
-        this.currentCurrency.balances?.find(
+        balances.find((balance) => onNetwork(balance) && balance.id === this.selectedAssetId) ??
+        balances.find(
           (balance) =>
+            onNetwork(balance) &&
             (this.currentCurrency.groupId === this.selectedAssetId ||
-              balance.id === this.selectedAssetId ||
-              getCanonicalAssetId(balance) === this.selectedAssetId) &&
-            balance.name.toLowerCase() === String(this.selectedLocalNetwork).toLowerCase()
-        ) ?? {}
+              getCanonicalAssetId(balance) === this.selectedAssetId)
+        ) ??
+        {}
       );
     },
     legacyCrowdloanContext(): LegacyCrowdloanAssetContext {
@@ -249,7 +251,7 @@ export default defineComponent({
   .legacy-crowdloan {
     min-height: 48px;
     padding: 8px 14px;
-    border: 1px solid rgba($gray-color, 0.28);
+    border: 1px solid $fw-asset-detail-edge;
     border-radius: 12px;
     background: $secondary-background-color;
     display: flex;

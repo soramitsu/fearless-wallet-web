@@ -1,9 +1,7 @@
 # Existing TODO/FIXME/STOPSHIP baseline. Remove entries when debt is resolved.
-src/App.vue	// TODO send message to SW, dont use import state, MigrationService
 src/extension/background/extension-base/src/api/evm/types.ts	// TODO: unify specialOption, assetId, assetIndex
 src/extension/background/extension-base/src/api/evm/types.ts	name: string; // is Network Name, TODO name -> networkName
 src/extension/background/extension-base/src/api/substrate/index.ts	// TODO AUSD
-src/extension/background/extension-base/src/api/ton/transfer.ts	// TODO ton add init options for new accounts
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This now could happen with re-subscriptions. The issue is that with a re-sub
 src/extension/background/extension-base/src/page/PostMessageProvider.ts	// FIXME This should see if the extension's state's provider has subscriptions
 src/extension/background/extension-base/src/services/balance-service/EquilibriumBalanceService.ts	// TODO
@@ -16,7 +14,6 @@ src/extension/background/extension-base/src/services/pools-service/index.ts	cons
 src/extension/background/extension-base/src/services/pools-service/index.ts	const groupId2 = this.state.balanceService.getTokenBalance(address, asset2.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
 src/extension/background/extension-base/src/services/staking-service/index.ts	// TODO use networks
 src/extension/background/extension-base/src/services/subscription-service/index.ts	// TODO возможно нужно перенести данные отписки в функцию которая отключает API сети
-src/extension/background/extension-base/src/services/wallet-connect-service/storage.ts	//TODO: make it work on both platforms
 src/extension/background/extension-base/src/services/wallet-connect-service/types.ts	//TODO refactoring types
 src/extension/entry/page.ts	provider: FWEvmProvider | undefined = undefined; // TODO ???
 src/helpers/common/index.ts	// TODO: нужна проверка на то, входит ли сеть в группу

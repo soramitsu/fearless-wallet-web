@@ -91,7 +91,7 @@ const top = computed(() => {
     }
 
     .delete {
-      color: $pink-color;
+      color: palette($pink-color, var(--fw-danger));
       opacity: 0.8;
     }
   }

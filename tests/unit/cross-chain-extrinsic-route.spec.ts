@@ -5,6 +5,9 @@ import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidati
 import { createAssetKey } from '@/portfolio/assetIdentity';
 import { defineReviewedCrossChainRoute } from '@/cross-chain/reviewedRoutes';
 
+// Polkadot SS58 form of the well-known development account //Alice.
+const ALICE = '15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5';
+
 const execution = (originChainId: string, destinationChainId: string, assetId: string) => ({
   kind: 'relay-native-xcm-v3' as const,
   originChainId,
@@ -186,6 +189,7 @@ describe('cross-chain extrinsic route resolution', () => {
       requireAmount: true,
       reviewedRoutes: [route],
       routeId: route.id,
+      to: ALICE,
       tokenBalance: token,
     };
 

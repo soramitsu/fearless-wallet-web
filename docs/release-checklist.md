@@ -3,13 +3,34 @@
 Use this checklist for every browser-extension release PR from `develop` to
 `master`.
 
-For Chrome `3.0.6`, also use the store copy, permission/privacy handoff, and
-credentialed artifact gates in `docs/chrome-web-store-release-3.0.6.md`.
+For Chrome `3.0.10` Solana, use `docs/chrome-web-store-release-3.0.10.md` and `docs/send-kill-switch.md`.
+For Chrome `3.0.9` Bitcoin and Taira sends, use `docs/chrome-web-store-release-3.0.9.md`.
+For signed uploads after Verified CRX enrollment, follow `docs/verified-crx-uploads.md` using the unchanged, fully verified release ZIP.
+For the Chrome `3.0.8` metadata correction, use `docs/chrome-web-store-release-3.0.8.md`.
+For the underlying `3.0.7` recovery changes, also use the recovery-mode release notes and approved privacy notice in
+`docs/chrome-web-store-release-3.0.7.md`. Earlier configuration, permission and credentialed artifact guidance remains in `docs/chrome-web-store-release-3.0.6.md`.
 
 ## Before The Release PR
 
-- Confirm all release work has landed on `develop`.
-- Confirm extension version, changelog, and release notes are final.
+- Confirm all release work has landed on `develop` through reviewed PRs with
+  green CI, and that the CI `verify` job actually started (a
+  `startup_failure` means a workflow references an action the repository
+  policy refuses).
+- Confirm extension version, changelog, and release notes are final. The
+  version in `package.json` feeds both the Chrome and Firefox manifests and
+  must be above the published Chrome Web Store `3.0.9` (confirmed 24 October 2026).
+- Run `yarn test:package-manager-audit && yarn audit:package-manager` and
+  `yarn test:github-actions-audit && yarn audit:github-actions`; confirm
+  `yarn.lock` is the only lockfile, Node `24.19.0` / Yarn `4.17.0` pins agree,
+  and every workflow action is a SHA-pinned GitHub-owned action or allowlisted
+  under the repository Actions policy.
+- From the workspace root, run
+  `node scripts/sync-canonical-asset-groups.mjs --check --require-pins --apps web --target web=<this checkout>`
+  and confirm it prints "app copies match the root files". The shared portfolio
+  files in `src/portfolio/data` (token groups with `untrustedAssets`, testnet
+  ids, zero defaults) must be byte-identical to the root copies; the pin test
+  in `tests/unit/shared-portfolio-config.spec.ts` only hashes the bundled
+  bytes, so it cannot see a copy that is behind the root.
 - Confirm no private extension keys, OAuth client IDs, analytics tokens, store
   credentials, or local environment files are committed.
 - Run `bash ./scripts/test-branch-flow-audit.sh && bash ./scripts/audit-branch-flow.sh`
@@ -19,9 +40,9 @@ credentialed artifact gates in `docs/chrome-web-store-release-3.0.6.md`.
 - Run `bash ./scripts/test-todo-debt-audit.sh && bash ./scripts/audit-todo-debt.sh`
   and confirm no new TODO/FIXME/STOPSHIP debt was introduced.
 - Run `yarn audit:dependencies`, `yarn audit:dependencies:production`, and
-  `yarn test:crypto-dependency-shims`; confirm there are no dependency audit
-  findings outside the two documented `image-size` development-tool
-  exceptions in `docs/dependency-audit-exceptions.md`, and confirm the unused
+  `yarn test:crypto-dependency-shims`; confirm both audits have no findings or
+  advisory ignores. The full audit also checks the installed development-tool
+  guards documented in `docs/dependency-audit-exceptions.md`. Confirm the unused
   generic/BIP-322 crypto paths still fail closed.
 - Confirm public extension builds work without private manifest credentials.
 - Run `yarn test:extension-package`, `yarn test:extension-build-environment`,
@@ -38,7 +59,10 @@ credentialed artifact gates in `docs/chrome-web-store-release-3.0.6.md`.
   and public service configuration are available without being committed.
 - From a fresh, clean reviewed checkout, run
   `yarn env-cmd -f .env.chrome-release.local -- yarn prepare:chrome-release` to
-  produce the untagged candidate provenance. After the reviewed merge commit is
+  produce the untagged candidate provenance. The release audit rejects any ZIP
+  whose `extension-build-metadata.json` does not name the checked-out commit,
+  a clean source tree, and the checked-out `yarn.lock` digest; never upload a
+  ZIP from an older checkout or another branch. After the reviewed merge commit is
   tagged, rerun with `--require-tag`; diagnostic `--skip-automated-gates` runs
   are not release evidence and never write provenance.
 - Run `IROHA_JS_SDK_RELEASE_REPO=<repo> IROHA_JS_SDK_RELEASE_TAG=<tag>
@@ -50,20 +74,17 @@ IROHA_JS_SDK_RELEASE_ASSET=<asset> IROHA_JS_SDK_RELEASE_SHA256=<sha256>
 - Run
   `bash ./scripts/test-iroha-js-candidate-verifier.sh && bash ./scripts/verify-iroha-js-candidate.sh --replay-source &&
 bash ./scripts/test-iroha-production-send-readiness-audit.sh && bash ./scripts/audit-iroha-production-send-readiness.sh`.
-  Keep `VUE_APP_ENABLE_IROHA_TRANSFERS=false` while
-  `config/iroha-production-send-readiness.json` is `blocked`. The pinned SDK
-  vendored-artifact audit proves that the installed package is byte-for-byte
-  identical to the reviewed 0.0.2 tarball (1,843,179 bytes, 141 files,
-  SHA-256 `68def75061c3842cd2fddbd4629b1ceaf80b2b1ff3069a477596ada9bae61339`).
-  The original upstream JavaScript asset is no longer downloadable, so the
-  exact tarball is retained at `vendor/iroha-js/iroha-iroha-js-0.0.2.tgz` for
-  durable fresh installs. The latest browser-codec security hardening is only
-  in the unpublished local `0.0.3` candidate built from
-  `b423c0f8bcd317fd945d6f66ce3fa679401dba7f` plus the frozen candidate patch;
-  the pinned immutable `0.0.2` artifact still lacks it. Do not enable send until
-  a reviewed `0.0.3` artifact and digest are published, checksum-pinned, bundled
-  without the global test seam, the pinned native Safari QA remains green, and the documented live
-  asset/fee/node/funded gates pass.
+  Production builds enable Iroha (Taira) sends exactly when
+  `config/iroha-production-send-readiness.json` is ready and release-enabled;
+  the environment cannot override it. The gate requires the vendored
+  `@iroha/iroha-js` 0.0.3 archive (1,082,778 bytes, 259 files, SHA-256
+  `1fefeae587873fed45821f4a59f7b5722eab72dcc161561ffa7ecdb97049dd41`, packed
+  from Hyperledger Iroha `581c49d95995b57b2b0ef3245a6f11b01248ad08`), the
+  pinned Taira network ID and wire constants, direct Torii REST transport, and
+  live `yarn test:smoke:taira` evidence from an ancestor commit with unchanged
+  transfer-path files. `prepare:chrome-release` reruns it with
+  `--require-ready --live`. After a Taira reset, follow
+  `docs/iroha-production-send-readiness.md` before releasing.
 - Preserve the 2026-07-12 final-candidate evidence exactly. The exact tar and
   frozen patch are durably stored only as non-production evidence under
   `artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f`;
@@ -98,6 +119,14 @@ bash ./scripts/test-iroha-production-send-readiness-audit.sh && bash ./scripts/a
   vector, and cross-language raw-hasher checks remain green. This evidence does
   not replace publication, pinning, bundle integration, live preflight, or
   funded broadcast gates.
+- Run `yarn test:e2e:local-chains` (needs `bitcoind` and
+  `solana-test-validator` on `PATH`, or `FEARLESS_BITCOIND` /
+  `FEARLESS_SOLANA_TEST_VALIDATOR`). It drives the real Bitcoin and Solana send
+  code against `bitcoind -regtest` (through the Esplora-compatible shim in
+  `scripts/local-chains/`) and `solana-test-validator`, and checks amounts,
+  change, fees, confirmations, maximum sends, recipient checks, account
+  deposits, and that an ambiguous or lost broadcast can never pay twice. These
+  local chains hold no value; nothing contacts mainnet or testnet.
 - Run `yarn test:smoke:bitcoin`,
   `yarn test:bitcoin-broadcast-evidence-template`,
   `yarn generate:bitcoin-broadcast-evidence-template -- --output
@@ -111,12 +140,44 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
   `https://blockstream.info/testnet/api` indexer URL, operator, timestamp, and
   commit in `scripts/bitcoin-testnet-broadcast-evidence.json`,
   set `status: ready` and `releaseEnabled: true`, then rerun
-  `yarn audit:bitcoin-broadcast-evidence --require-ready`.
+  `yarn audit:bitcoin-broadcast-evidence --require-ready`. Production builds
+  enable Bitcoin sends exactly when that manifest is ready and release-enabled,
+  and `prepare:chrome-release` then requires the ready audit to pass.
+- Bitcoin and Solana sends ship enabled; the remote kill switch is veto-only
+  (see `docs/send-kill-switch.md`). Do not publish the emergency veto template
+  as part of the release.
+- TON provider: with the candidate open on a funded TON wallet, the service
+  worker console shows either `[TON] TON Mainnet: using https://ti.soramitsu.io
+  (verified ton:mainnet)` or the explicit `using the registry node ... instead
+  of TI (...)` line, and the TON row shows the real balance in the By token
+  and By network lenses and on the TON asset page (never 0, never "Balance
+  update failed" while either provider answers). Keep
+  `UNIVERSAL_WALLET_TON_PROVIDER.registryNodeFallback` on until
+  `https://ti.soramitsu.io/api/indexer/v1/service-info` reports
+  `"chainId": "ton:mainnet"` and its balance/state/txs routes answer
+  `"network": "mainnet"`; TON sends need TI `readOnly: false` or the fallback.
+  The `ton` key of the remote web config must stay absent.
+- Team task during the staged rollout: from a team-owned wallet holding a small
+  amount, make one mainnet canary send per platform with the release candidate
+  (BTC to a Taproot or SegWit address with change; SOL to a new account; one
+  SPL token to a recipient without a token account). Record the txids and
+  signatures in the release notes before widening the rollout.
 - Run or confirm green CI for branch-flow audit, public artifact audit,
   TODO-debt audit, production dependency audit, typecheck, lint, unit tests,
   extension build, Solana extension e2e smoke, and Bitcoin broadcast smoke.
 - Confirm Universal Wallet migrations, preserved legacy signing/export access, and supported
   network registry changes are documented in the PR.
+- Run `yarn test:upgrade:e2e` (Node 20 for the released builds, Chrome for Testing; see
+  `tests/upgrade/README.md`) on the release commit and confirm every scenario passes: S1-S8, the
+  ECDSA cohorts and the rollback rehearsal R1 to the clean `3.0.6` (never a `3.0.5` build).
+  `yarn prepare:chrome-release` runs it as a gate; `--skip-upgrade-e2e` is recorded in the
+  provenance and is refused with `--require-tag`. Attach `output/upgrade-e2e/<run>/report.json`
+  to the PR.
+- Firefox (no automated in-place upgrade): in a new Firefox profile, install the AMO 3.0.x listing
+  with the phrase-collection host blocked (a published 3.0.x may contain the unlock-time upload),
+  create wallets with public test phrases only (never a funded wallet), update to the signed 4.2.0
+  XPI and confirm unlock, phrase/JSON export and a dApp signature; or attach the owner's written
+  risk acceptance for skipping it.
 - Confirm rollback owner, monitoring owner, and release communication channel.
 
 ## Release PR To `master`
@@ -127,10 +188,19 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 - Require review and green CI before merge.
 - Merge with a merge commit so the release boundary is visible.
 - Create the release tag only after the merge commit is on `master`.
+- Check the Chrome Web Store developer dashboard for a pending draft built from
+  an unreviewed candidate (for example the unpublished `3.0.6`) and cancel it
+  before submitting.
 
 ## After Release
 
-- Verify the packed extension artifact matches the tagged commit.
+- Verify the packed Chrome artifact matches the tagged commit: its
+  `extension-build-metadata.json` `sourceCommit` is the tagged commit and
+  `sourceDirty` is `false`.
+- Firefox packages carry no Git provenance, so AMO reviewers can rebuild them
+  from a source archive. Verify the uploaded Firefox ZIP by rebuilding
+  `yarn build:extension:firefox:zip` from `git archive <tag>` (the AMO source
+  upload) and confirming the ZIP is byte-identical.
 - Monitor install/update failures, wallet creation/import, dApp provider
   requests, signing errors, and indexer error rates.
 - Keep the hotfix path ready from `master` until rollout completes.

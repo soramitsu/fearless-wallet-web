@@ -1,21 +1,90 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { flushPromises, mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ copy: vi.fn(), wallet: { address: 'public-wallet', name: 'Test wallet' } }));
-vi.mock('@/helpers', () => ({ setClipboard: mocks.copy, isSameString: (a: string, b: string) => a === b }));
-vi.mock('@/helpers/numbers', () => ({ addNumbers: () => '1.1' }));
-vi.mock('@/helpers/currencies', () => ({ getUtilityAsset: () => ({ symbol: 'DOT' }) }));
-vi.mock('@/util/BaseApi', () => ({ default: { isBitcoinNetwork: () => false, formatAddress: (_: unknown, network: string) => `${network}-complete-public-address-0123456789abcdef` } }));
-vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ selectedWallet: mocks.wallet, balances: [], fiatSymbol: '$' }) }));
-vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ getNetwork: () => ({ assets: [] }), getAssetPrice: () => ({ price: 0 }) }) }));
-vi.mock('@/consts/global', () => ({ IS_EXTENSION: false }));
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import akkadian from '@/locales/akk/translation.json';
+import egyptian from '@/locales/egy/translation.json';
+import english from '@/locales/en/translation.json';
+import russian from '@/locales/ru/translation.json';
+const mocks = vi.hoisted(() => ({
+  copy: vi.fn(),
+  wallet: { address: 'public-wallet', name: 'Test wallet' },
+  balances: [] as unknown[],
+  networks: [] as { name: string; assets: { symbol: string; id?: string; precision?: number }[]; ecosystem?: string; chainId?: string }[],
+}));
+vi.mock('@/helpers', async (importOriginal) => ({ ...(await importOriginal<object>()), setClipboard: mocks.copy }));
+vi.mock('@/helpers/numbers', async (importOriginal) => ({ ...(await importOriginal<object>()), addNumbers: () => '1.1' }));
+vi.mock('@/helpers/currencies', async (importOriginal) => ({ ...(await importOriginal<object>()), getUtilityAsset: () => ({ symbol: 'DOT' }) }));
+vi.mock('@/util/BaseApi', () => ({
+  default: {
+    isBitcoinNetwork: () => false,
+    isEthereumNetwork: (network: string) => ['ethereum', 'polygon', 'moonbeam'].includes(network.toLowerCase()),
+    formatAddress: (_: unknown, network: string) => `${network}-complete-public-address-0123456789abcdef`,
+  },
+}));
+vi.mock('@/stores/accounts', () => ({
+  useAccountsStore: () => ({
+    selectedWallet: mocks.wallet,
+    get balances() {
+      return mocks.balances;
+    },
+    fiatSymbol: '$',
+  }),
+}));
+vi.mock('@/stores/networks', () => ({
+  useNetworksStore: () => ({
+    getNetwork: (name: string) =>
+      mocks.networks.find((network) => network.name.toLowerCase() === name.toLowerCase()) ?? { assets: [] },
+    get allNetworks() {
+      return mocks.networks;
+    },
+    getAssetPrice: () => ({ price: 0 }),
+  }),
+}));
+vi.mock('@/consts/global', async (importOriginal) => ({ ...(await importOriginal<object>()), IS_EXTENSION: false }));
 vi.mock('@/screens/wallet&asset/TransferForm.vue', () => ({ default: { template: '<section><slot name="step2" /></section>' } }));
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
-const global = {
-  mocks: { $t: (key: string) => key, $n: (n: number) => String(n), $route: { params: { network: 'Polkadot', assetId: 'dot' } }, $router: { back: vi.fn() } },
-  stubs: { AboveForm: { template: '<main><slot /></main>' }, QR: { props: ['payload'], template: '<div data-qr :data-payload="payload" />' }, InputWithIcon: true, Icon: true, Tooltip: true, BorderButton: true, FButton: true, FInput: true, InfoRow: true, FCorners: { template: '<div><slot /></div>' } },
-};
+
+const translate = (key: string, params?: Record<string, unknown>) => (params ? `${key} ${JSON.stringify(params)}` : key);
+const globalFor = (params: Record<string, string>) => ({
+  mocks: { $t: translate, $n: (n: number) => String(n), $route: { params }, $router: { back: vi.fn() } },
+  stubs: {
+    AboveForm: { name: 'AboveForm', props: ['header'], template: '<main><slot /></main>' },
+    QR: { props: ['payload'], template: '<div data-qr :data-payload="payload" />' },
+    Alert: { template: '<div data-alert><slot /></div>' },
+    InputWithIcon: true,
+    SelectPopup: true,
+    Icon: true,
+    Tooltip: true,
+    BorderButton: true,
+    FButton: true,
+    FInput: true,
+    InfoRow: true,
+    FCorners: { template: '<div><slot /></div>' },
+  },
+});
+const global = globalFor({ network: 'Polkadot', assetId: 'dot' });
+
+const DOT = '887a17c7-1370-4de0-97dd-5422e294fa75';
+const KSM = '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b';
+const DAI = '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1';
+
+const group = (id: string, network: string, symbol: string, currencyId?: string) => ({
+  groupId: id,
+  symbol,
+  tokenName: symbol,
+  icon: symbol,
+  priceId: symbol,
+  balances: [{ id, currencyId, name: network.toLowerCase(), symbol, icon: network, isUtility: false, precision: 10 }],
+});
+
 describe('public transfer review data', () => {
+  beforeEach(() => {
+    mocks.balances = [];
+    mocks.networks = [];
+  });
+
   it('uses the same full selected-network address for text, copy and QR', async () => {
     const wrapper = mount(ReceiveForm, { global });
     await flushPromises();
@@ -38,5 +107,257 @@ describe('public transfer review data', () => {
     expect(wrapper.get('[data-testid="toAddress"]').text()).toBe(recipient);
     expect(wrapper.get('[data-testid="reviewNetwork"]').text()).toBe('Destination network with a long name');
     wrapper.unmount();
+  });
+});
+
+describe('network-explicit Receive', () => {
+  beforeEach(() => {
+    mocks.networks = [
+      { name: 'Ethereum', assets: [{ symbol: 'eth' }] },
+      { name: 'Polkadot', assets: [{ symbol: 'dot' }] },
+      { name: 'Polkadot AssetHub', assets: [{ symbol: 'dot' }] },
+      { name: 'Kusama', assets: [{ symbol: 'ksm' }] },
+      { name: 'Kusama AssetHub', assets: [{ symbol: 'ksm' }] },
+      { name: 'Encointer on Kusama', assets: [{ symbol: 'ksm' }] },
+      { name: 'Moonbeam', assets: [{ symbol: 'glmr' }] },
+      { name: 'SORA Nexus', assets: [{ symbol: 'xor' }], ecosystem: 'iroha' },
+      { name: 'Bitcoin', assets: [{ symbol: 'btc' }], ecosystem: 'bitcoin' },
+      { name: 'Solana', assets: [{ symbol: 'sol' }], ecosystem: 'solana' },
+    ];
+    mocks.balances = [
+      group('usdt-eth', 'Ethereum', 'usdt'),
+      group(DOT, 'Polkadot', 'dot'),
+      group(DOT, 'Polkadot AssetHub', 'dot'),
+      group('usdt-assethub', 'Polkadot AssetHub', 'usdt', '1984'),
+      group(KSM, 'Kusama', 'ksm'),
+      group(KSM, 'Kusama AssetHub', 'ksm'),
+      group(KSM, 'Encointer on Kusama', 'ksm'),
+      group('xcdot-moonbeam', 'Moonbeam', 'xcDOT'),
+      group('xor-nexus', 'SORA Nexus', 'xor'),
+      group('btc', 'Bitcoin', 'btc'),
+      group('sol', 'Solana', 'sol'),
+    ];
+  });
+
+  it('names the asset and network in the title, chip and warning, with the EVM note', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: 'usdt-eth', network: 'Ethereum' }) });
+    await flushPromises();
+
+    expect(wrapper.getComponent({ name: 'AboveForm' }).props('header')).toEqual({
+      text: 'assets.receiveTokenTitle',
+      localeProps: { symbol: 'USDT' },
+    });
+    expect(wrapper.get('[data-testid="receiveNetworkChip"]').text()).toBe('assets.onNetwork {"network":"Ethereum"}');
+
+    const warning = wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text();
+    expect(warning).toContain('assets.receiveOnlyOnNetwork');
+    expect(warning).toContain('"symbol":"USDT"');
+    expect(warning).toContain('"network":"Ethereum"');
+    expect(wrapper.find('[data-testid="receiveEvmSameAddress"]').exists()).toBe(true);
+    // The warning sits under the QR code.
+    expect(wrapper.get('[data-qr]').element.compareDocumentPosition(wrapper.get('[data-alert]').element)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    wrapper.unmount();
+  });
+
+  it('drops the EVM note on Substrate networks and recomputes on a network switch', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: DOT, network: 'Polkadot AssetHub' }) });
+    await flushPromises();
+    await wrapper.setData({ selectedNetwork: 'Polkadot' });
+
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"network":"Polkadot"');
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"DOT"');
+    expect(wrapper.find('[data-testid="receiveEvmSameAddress"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('lists every network holding the same registry asset, also when opened from AssetHub', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: KSM, network: 'Kusama AssetHub' }) });
+    await flushPromises();
+
+    const names = (wrapper.vm as unknown as { assetNetworks: { name: string }[] }).assetNetworks.map(({ name }) => name);
+    expect(names).toEqual(['Kusama', 'Kusama AssetHub', 'Encointer on Kusama']);
+    wrapper.unmount();
+  });
+
+  it('resolves the canonical id from the portfolio without offering unrelated networks', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: '1984', network: 'Polkadot AssetHub' }) });
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as { receiveSymbol: string; assetNetworks: { name: string }[] };
+    expect(vm.receiveSymbol).toBe('USDT');
+    expect(vm.assetNetworks.map(({ name }) => name)).toEqual(['Polkadot AssetHub']);
+    wrapper.unmount();
+  });
+
+  it('names the network utility token when the asset is not on the selected network', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: 'usdt-eth', network: 'Ethereum' }) });
+    await flushPromises();
+    await wrapper.setData({ selectedNetwork: 'Kusama' });
+
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"KSM"');
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"network":"Kusama"');
+    wrapper.unmount();
+  });
+
+  it('says before the QR code that this version cannot send from an Iroha network', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: 'xor-nexus', network: 'SORA Nexus' }) });
+    await flushPromises();
+
+    const note = wrapper.get('[data-testid="receiveSendUnavailable"]');
+    expect(note.text()).toContain('assets.receiveSendUnavailable');
+    expect(note.text()).toContain('"symbol":"XOR"');
+    expect(note.text()).toContain('"network":"SORA Nexus"');
+    expect(note.element.compareDocumentPosition(wrapper.get('[data-qr]').element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // The usual network warning still follows the QR code.
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"network":"SORA Nexus"');
+
+    await wrapper.setData({ selectedNetwork: 'Polkadot' });
+    expect(wrapper.find('[data-testid="receiveSendUnavailable"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it.each([
+    ['btc', 'Bitcoin'],
+    ['sol', 'Solana'],
+  ])('never shows paused copy on %s Receive, whose send ships enabled', async (assetId, network) => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId, network }) });
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="receiveSendUnavailable"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain(`"network":"${network}"`);
+    wrapper.unmount();
+  });
+
+  it('shows the native ticker for xc assets on Substrate EVM networks', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: 'xcdot-moonbeam', network: 'Moonbeam' }) });
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"DOT"');
+    expect(wrapper.find('[data-testid="receiveEvmSameAddress"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+});
+
+describe('Receive within an approved token group', () => {
+  // Registry chain ids and assets as the reviewed snapshot (and the bundled DOT group) has them.
+  const PEOPLE_DOT = 'bb56f037-6f96-45e6-9b3c-c9059bf0f731';
+  const HYDRATION_DOT = '4697396b-37c4-426f-a36a-fda1935f365a';
+
+  beforeEach(() => {
+    mocks.networks = [
+      { name: 'Polkadot', chainId: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3', ecosystem: 'substrate', assets: [{ id: DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Polkadot AssetHub', chainId: '68d56f15f85d3136970ec16946040bc1752654e906147f7e43e9d539d7c3de2f', ecosystem: 'substrate', assets: [{ id: DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Polkadot People', chainId: '67fa177a097bfa18f77ea95ab56e9bcdfeb0e5b8a40e46298bb93e16b6fc5008', ecosystem: 'substrate', assets: [{ id: PEOPLE_DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Hydration', chainId: 'afdc188f45c71dacbaa0b62e16a91f726c7b8699a9748cdf715459de6b7f366d', ecosystem: 'substrate', assets: [{ id: 'hdx', symbol: 'hdx', precision: 12 }, { id: HYDRATION_DOT, symbol: 'dot', precision: 10 }] },
+      { name: 'Bifrost', chainId: '9f28c6a68e0fc9646eff64935684f6eeeece527e37bbe1f213d22caa1d9d6bed', ecosystem: 'substrate', assets: [{ id: 'vdot', symbol: 'vdot', precision: 10 }] },
+    ];
+    mocks.balances = [
+      group(DOT, 'Polkadot', 'dot'),
+      group(DOT, 'Polkadot AssetHub', 'dot'),
+      group(PEOPLE_DOT, 'Polkadot People', 'dot'),
+      group(HYDRATION_DOT, 'Hydration', 'dot'),
+      group('vdot', 'Bifrost', 'vdot'),
+    ];
+  });
+
+  it('lists every DOT network of the group, never a derivative, and moves to that network’s DOT', async () => {
+    const wrapper = mount(ReceiveForm, { global: globalFor({ assetId: DOT, network: 'Polkadot' }) });
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      assetNetworks: { name: string }[];
+      selectedAssetId: string;
+      toggleSelectedNetwork: (value: string) => void;
+    };
+    expect(vm.assetNetworks.map(({ name }) => name)).toEqual(['Polkadot', 'Polkadot AssetHub', 'Polkadot People', 'Hydration']);
+
+    vm.toggleSelectedNetwork('Hydration');
+    await flushPromises();
+
+    expect(vm.selectedAssetId).toBe(HYDRATION_DOT);
+    const warning = wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text();
+    expect(warning).toContain('"symbol":"DOT"');
+    expect(warning).toContain('"network":"Hydration"');
+    expect(wrapper.get('[data-qr]').attributes('data-payload')).toBe('Hydration-complete-public-address-0123456789abcdef');
+    wrapper.unmount();
+  });
+});
+
+describe('network-explicit Send confirmation', () => {
+  beforeEach(() => {
+    mocks.networks = [
+      { name: 'Arbitrum One', assets: [{ symbol: 'eth' }] },
+      { name: 'OP Mainnet', assets: [{ symbol: 'eth' }] },
+      { name: 'Polkadot AssetHub', assets: [{ symbol: 'dot' }] },
+    ];
+    mocks.balances = [
+      group(DAI, 'Arbitrum One', 'dai'),
+      group(DAI, 'OP Mainnet', 'dai'),
+      group('usdt-assethub', 'Polkadot AssetHub', 'usdt', '1984'),
+    ];
+  });
+
+  it('puts the Network row first and resolves the asset on that network', async () => {
+    const wrapper = mount(SendForm, { global: globalFor({ assetId: DAI, network: 'op mainnet' }) });
+    await flushPromises();
+
+    const rows = wrapper.findAll('.row');
+    expect(rows[0].attributes('data-testid')).toBe('reviewNetworkRow');
+    expect(rows[0].text()).toContain('common.network');
+    expect(wrapper.get('[data-testid="reviewNetwork"]').text()).toBe('OP Mainnet');
+    expect((wrapper.vm as unknown as { currency: { balances: { name: string }[] } }).currency.balances[0].name).toBe(
+      'op mainnet'
+    );
+    wrapper.unmount();
+  });
+
+  it('shows the asset symbol when opened with the portfolio canonical id', async () => {
+    const wrapper = mount(SendForm, { global: globalFor({ assetId: '1984', network: 'Polkadot AssetHub' }) });
+    await flushPromises();
+
+    expect((wrapper.vm as unknown as { selectedAssetUpper: string }).selectedAssetUpper).toBe('USDT');
+    wrapper.unmount();
+  });
+});
+
+describe('Send flow strings in every shipped locale', () => {
+  // Keys named in the Send screens and their result messages, read from the sources so a new
+  // key cannot silently fall back to English (common.network once did in Russian).
+  const sources = [
+    'src/screens/wallet&asset/SendForm.vue',
+    'src/screens/wallet&asset/TransferForm.vue',
+    'src/screens/wallet&asset/ConfirmationPasswordPopup.vue',
+    'src/helpers/transferErrors.ts',
+    'src/helpers/transactionFailure.ts',
+  ];
+  const keys = [
+    ...new Set(
+      sources.flatMap((path) => {
+        const source = readFileSync(resolve(__dirname, '../..', path), 'utf8');
+
+        return [
+          ...source.matchAll(/\$t\(\s*'([A-Za-z]+\.[\w.]+)'/gu),
+          ...source.matchAll(/(?:text|placeholder|header|headerText)="([A-Za-z]+\.[A-Za-z][\w.]*)"/gu),
+          ...source.matchAll(/'((?:assets|common|ux|crossChainPage|accounts)\.[A-Za-z][\w.]*)'/gu),
+        ].map(([, key]) => key);
+      })
+    ),
+  ].sort();
+  const lookup = (messages: Record<string, unknown>, key: string) =>
+    key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], messages);
+
+  it('finds the keys it checks', () => {
+    expect(keys).toEqual(expect.arrayContaining(['common.network', 'assets.transactionUnconfirmed', 'assets.bitcoinPreviousSendOnNetwork']));
+  });
+
+  it.each([
+    ['en', english],
+    ['ru', russian],
+    ['egy', egyptian],
+    ['akk', akkadian],
+  ])('translates every Send flow key in %s', (_, messages) => {
+    expect(keys.filter((key) => typeof lookup(messages, key) !== 'string')).toEqual([]);
   });
 });

@@ -1,5 +1,13 @@
 <template>
-  <div :class="backgroundClasses">
+  <div
+    ref="sheet"
+    :class="backgroundClasses"
+    :role="contained ? undefined : 'dialog'"
+    :aria-modal="contained ? undefined : true"
+    :aria-label="contained ? undefined : tHeader || t('common.select')"
+    tabindex="-1"
+    @keydown="sheetKeydown"
+  >
     <div :class="aboveFormClasses">
       <slot v-if="$slots.header" name="header"></slot>
 
@@ -17,7 +25,7 @@
           </button>
 
           <div v-else class="icon">
-            <Icon icon="fw-logo" :hover="false" className="logo" />
+            <img :src="sunBadge" class="logo" alt="" />
           </div>
         </div>
 
@@ -54,9 +62,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { useModalFocus } from './useModalFocus';
 import type { ComponentText } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
+import sunBadge from '@/assets/brand/winged-sun-badge-lines.svg';
 
 type Props = {
   header?: ComponentText;
@@ -83,6 +93,17 @@ const props = withDefaults(defineProps<Props>(), {
   showCloseIcon: true,
   showAnimation: true,
 });
+
+const sheet = ref<HTMLElement | null>(null);
+const sheetKeydown = useModalFocus(
+  sheet,
+  () => !props.contained,
+  () => {
+    if (props.contained || !props.showCloseIcon) return false;
+    emit('closeHandler');
+    return true;
+  }
+);
 
 const tHeader = computed(() => {
   if (typeof props.header === 'string') return t(props.header);
@@ -135,7 +156,8 @@ const aboveFormClasses = computed(() => {
     width: $extension-width;
     min-height: $extension-height - 80px;
     height: calc(100% - 80px);
-    background-color: #111111;
+    // Sheets are opaque raised paint, and Calm screens open in them (design-system 2.1, 3.2).
+    background-color: $fw-panel-surface;
     clip-path: $big-clip-path-left-top;
 
     @keyframes transform {
@@ -241,6 +263,7 @@ const aboveFormClasses = computed(() => {
 .background-blur {
   background: rgba(51, 51, 51, 0.5);
   backdrop-filter: blur(5px);
+  @include fw-scrim-tiers(#333);
 }
 
 .form-animation {
@@ -278,6 +301,9 @@ const aboveFormClasses = computed(() => {
   width: 48px;
   flex-shrink: 0;
 }
+.form-background .form .activity > .icon {
+  margin: 0;
+}
 .form-background .form .content {
   flex: 1;
   min-height: 0;
@@ -296,7 +322,18 @@ const aboveFormClasses = computed(() => {
   color: inherit;
 }
 .form-background .form button.icon:focus-visible {
-  outline: 2px solid $pink-color;
+  outline: 2px solid palette($pink-color, var(--fw-focus));
+}
+@include v1-palette {
+  .form-background .form {
+    border-radius: 24px 24px 0 0;
+    clip-path: none;
+    border-top: 1px solid var(--fw-stroke-strong);
+  }
+  .form-background .fullscreen {
+    border-radius: 0;
+    border: 0;
+  }
 }
 </style>
 
@@ -317,5 +354,29 @@ const aboveFormClasses = computed(() => {
   top: 0;
   min-height: 0;
   height: 100%;
+}
+</style>
+
+<style lang="scss" scoped>
+// At narrow widths the decorative logo must not force a large accessibility
+// heading into single-syllable lines and consume the entire review viewport.
+@media (max-width: 360px) {
+  .form-background .form .align-left:has(.logo) {
+    display: none;
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+// A short landscape/zoomed viewport must be able to scroll past the header.
+// Keeping an arbitrarily tall translated title pinned can hide the review.
+@media (max-height: 400px) {
+  .form-background .form {
+    overflow-y: auto;
+  }
+  .form-background .form .content {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
 }
 </style>

@@ -8,6 +8,11 @@ import type State from '@extension-base/background/handlers/State';
 import type { MakePoolsRequest } from '@extension-base/services/pools-service/types';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 
+const freshWalletState = () => ({
+  getAccountAddress: () => 'selected-sora-account',
+  keyringService: { getAllAccounts: () => [{ address: 'selected-sora-account', meta: { walletSecurityGeneration: 1 } }] },
+});
+
 const request = {
   params: {
     amount1: '1',
@@ -27,6 +32,7 @@ describe('PoolsService mutation boundary', () => {
   it('fails closed before touching the runtime when Polkaswap actions are disabled', async () => {
     const isActionEnabled = vi.fn().mockReturnValue(false);
     const state = {
+      ...freshWalletState(),
       actionCapabilityService: { isActionEnabled },
       soraDisclaimerService: { isAccepted: vi.fn().mockReturnValue(false) },
       getSubstrateApiMap: new Proxy({}, { get: () => { throw new Error('runtime must not be read'); } }),
@@ -45,6 +51,7 @@ describe('PoolsService mutation boundary', () => {
     const address = 'selected-sora-account';
     soraRoot.account = { pair: { address, meta: {} } };
     const state = {
+      ...freshWalletState(),
       actionCapabilityService: { isActionEnabled: vi.fn().mockReturnValue(true) },
       getSubstrateApiMap: {},
       getAccountAddress: vi.fn().mockReturnValue(address),
@@ -63,6 +70,7 @@ describe('PoolsService mutation boundary', () => {
 
   it('requires the background-owned disclaimer record before reading the runtime', async () => {
     const state = {
+      ...freshWalletState(),
       actionCapabilityService: { isActionEnabled: vi.fn().mockReturnValue(true) },
       getSubstrateApiMap: new Proxy({}, { get: () => { throw new Error('runtime must not be read'); } }),
       soraDisclaimerService: { isAccepted: vi.fn().mockReturnValue(false) },
@@ -76,6 +84,7 @@ describe('PoolsService mutation boundary', () => {
 
   it('applies the same kill-switch boundary to direct add and remove calls', async () => {
     const state = {
+      ...freshWalletState(),
       actionCapabilityService: { isActionEnabled: vi.fn().mockReturnValue(false) },
       soraDisclaimerService: { isAccepted: vi.fn().mockReturnValue(true) },
       getSubstrateApiMap: new Proxy({}, { get: () => { throw new Error('runtime must not be read'); } }),
@@ -94,6 +103,7 @@ describe('PoolsService mutation boundary', () => {
 
   it('fails closed on a stale or absent SORA signer before consulting the runtime', async () => {
     const state = {
+      ...freshWalletState(),
       actionCapabilityService: { isActionEnabled: vi.fn().mockReturnValue(true) },
       soraDisclaimerService: { isAccepted: vi.fn().mockReturnValue(true) },
       getAccountAddress: vi.fn().mockReturnValue('selected-sora-account'),

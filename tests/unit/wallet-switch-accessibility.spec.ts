@@ -1,6 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { expect, it, vi } from 'vitest';
 vi.mock('@/extension/messaging', () => ({ getTotalBalances: async () => [] }));
+vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ assetPreferencesForAllAccounts: {} }) }));
+vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ allNetworks: [] }) }));
+vi.mock('@/portfolio/usePortfolioPreferences', () => ({ hiddenKeysForWallet: () => [] }));
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 it('offers distinct native wallet selection and details controls without selecting from details', async () => {
   const wrapper = mount(WalletInfo, { props: { name: 'Wallet fixture', address: 'public-address', isSelected: true }, global: { mocks: { $t: (key: string) => key }, stubs: { Icon: true, WalletBalance: true, FCorners: { template: '<div><slot /></div>' } } } });

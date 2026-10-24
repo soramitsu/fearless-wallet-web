@@ -14,29 +14,48 @@ import {
   type ReviewedCrossChainExecution,
   type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
+import { REVIEWED_RUNTIMES } from '@/cross-chain/reviewedRuntimes';
 import { VALID_SUBSTRATE_ADDRESS } from '@/consts/networks';
 
-const runtimeMethod = (descriptor: ReviewedRuntimeCall) =>
-  Object.assign(
+const reviewedRuntime = (chainId: string) => {
+  const runtime = REVIEWED_RUNTIMES.find((candidate) => candidate.chainId === chainId);
+  if (!runtime) throw new Error(`No reviewed runtime for ${chainId}`);
+
+  return runtime;
+};
+
+/** The identity a node of a reviewed runtime reports. */
+const reviewedIdentity = (chainId: string) => ({
+  genesisHash: { toHex: () => `0x${chainId}` },
+  runtimeVersion: {
+    specName: { toString: () => reviewedRuntime(chainId).specName },
+    specVersion: { toString: () => String(reviewedRuntime(chainId).specVersions.max) },
+  },
+});
+
+const runtimeMethod = (descriptor: ReviewedRuntimeCall, chainId: string) => {
+  const reviewed = reviewedRuntime(chainId).calls.find(
+    ({ pallet, call }) => pallet === descriptor.pallet && call === descriptor.call
+  );
+
+  return Object.assign(
     vi.fn(() => ({ paymentInfo: vi.fn() })),
     {
+      callIndex: reviewed ? Uint8Array.from([reviewed.palletIndex, reviewed.callIndex]) : undefined,
       meta: {
         args: descriptor.args.map((name) => ({ name: { toString: () => name } })),
       },
     }
   );
+};
 
 const executionRuntime = (execution: Readonly<ReviewedCrossChainExecution>) => {
-  const method = runtimeMethod(execution.callCandidates[0]);
+  const method = runtimeMethod(execution.callCandidates[0], execution.originChainId);
   const descriptor = execution.callCandidates[0];
   const api = {
     createType: vi.fn((_type: string, value: unknown) => ({ toHex: () => `hex:${String(value)}` })),
-    genesisHash: { toHex: () => `0x${execution.originChainId}` },
     isReadyOrError: Promise.resolve(),
-    runtimeVersion: {
-      specName: { toString: () => 'reviewed-runtime' },
-      specVersion: { toString: () => '1' },
-    },
+    ...reviewedIdentity(execution.originChainId),
     tx: { [descriptor.pallet]: { [descriptor.call]: method } },
   } satisfies ReviewedExecutionApi;
 
@@ -53,6 +72,27 @@ const bundledExecution = (
   if (!execution) throw new Error('Missing bundled execution fixture');
 
   return execution;
+};
+
+/**
+ * SORA to Liberland is no longer bundled (its latest transfers stay pending), but the burn builder and the
+ * registration authority check stay reachable for a requalified route, so they keep being exercised here.
+ */
+const soraToLiberlandBurn: Readonly<ReviewedCrossChainExecution> = {
+  kind: 'sora-bridge-proxy-burn-v3',
+  originChainId: '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5',
+  destinationChainId: '6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6',
+  assetXcmId: '0ef3afdc-cdd3-47cc-bd52-817c54ae65b5',
+  assetPrecision: 18,
+  bridgeNetwork: 'Liberland',
+  recipientKind: 'liberland',
+  soraAssetId: '0x00073edd278e1bd6a7f9d0b27d4f3e93b73c8f0832b58a4df13c69611a99f156',
+  soraAssetKind: 'Sidechain',
+  sidechainPrecision: 12,
+  externalAsset: 1,
+  callCandidates: [{ pallet: 'bridgeProxy', call: 'burn', args: ['networkId', 'assetId', 'recipient', 'amount'] }],
+  destinationFee: '0',
+  destinationMinimum: { kind: 'assets-min-balance', assetId: 1, precision: 12 },
 };
 
 const codec = (value: string | number, json: unknown = value) => ({
@@ -90,13 +130,22 @@ const authorityState = (entries: Array<{ chainId: string; name: string; api: Bri
   }) as unknown as State;
 
 describe('reviewed cross-chain providers and runtime authority', () => {
-  it('matches every executable descriptor to the current audited metadata fixture', () => {
+  it('matches every executable descriptor and reviewed runtime to the live metadata fixture', () => {
     const fixture = JSON.parse(
       readFileSync(resolve(__dirname, '../fixtures/contracts/cross-chain-runtime-calls-v1.json'), 'utf8')
     ) as {
       runtimes: Array<{
         chainId: string;
-        calls: Array<{ pallet: string; call: string; args: string[]; status?: string }>;
+        specName: string;
+        specVersion: string;
+        calls: Array<{
+          pallet: string;
+          call: string;
+          palletIndex: number;
+          callIndex: number;
+          args: string[];
+          status?: string;
+        }>;
       }>;
     };
     const runtimes = new Map(fixture.runtimes.map((runtime) => [runtime.chainId, runtime]));
@@ -105,12 +154,31 @@ describe('reviewed cross-chain providers and runtime authority', () => {
     executions.forEach((execution) => {
       const runtime = runtimes.get(execution.originChainId);
       expect(runtime, execution.originChainId).toBeDefined();
+      const reviewed = reviewedRuntime(execution.originChainId);
       execution.callCandidates.forEach((candidate) => {
+        const pinned = reviewed.calls.find(({ pallet, call }) => pallet === candidate.pallet && call === candidate.call);
+        expect(pinned, `${candidate.pallet}.${candidate.call}`).toBeDefined();
         expect(runtime?.calls).toContainEqual({
           pallet: candidate.pallet,
           call: candidate.call,
+          palletIndex: pinned?.palletIndex,
+          callIndex: pinned?.callIndex,
           args: [...candidate.args],
         });
+      });
+    });
+
+    // Every pin describes what the live metadata showed: same chain, spec name, version and indices.
+    REVIEWED_RUNTIMES.forEach((reviewed) => {
+      const runtime = runtimes.get(reviewed.chainId);
+      expect(runtime, reviewed.name).toBeDefined();
+      expect(runtime?.specName).toBe(reviewed.specName);
+      expect(Number(runtime?.specVersion)).toBeGreaterThanOrEqual(reviewed.specVersions.min);
+      expect(Number(runtime?.specVersion)).toBeLessThanOrEqual(reviewed.specVersions.max);
+      reviewed.calls.forEach(({ pallet, call, palletIndex, callIndex }) => {
+        const live = runtime?.calls.find((candidate) => candidate.pallet === pallet && candidate.call === call);
+        expect(live, `${reviewed.name} ${pallet}.${call}`).toMatchObject({ palletIndex, callIndex });
+        expect(live?.status).toBeUndefined();
       });
     });
 
@@ -126,16 +194,16 @@ describe('reviewed cross-chain providers and runtime authority', () => {
 
     expect(bridgeRoutes.length).toBeGreaterThan(0);
     expect(bridgeRoutes.every(({ execution }) => Boolean(execution))).toBe(true);
-    expect(new Set(bridgeRoutes.map(({ execution }) => execution?.kind))).toEqual(
-      new Set(['external-to-sora-xcm-v3', 'sora-bridge-proxy-burn-v3', 'liberland-to-sora-burn'])
-    );
+    // Only Liberland to SORA still delivers; every other bridge route is retired (see cross-chain-retired-routes.spec.ts).
+    expect(new Set(bridgeRoutes.map(({ execution }) => execution?.kind))).toEqual(new Set(['liberland-to-sora-burn']));
   });
 
   it('negotiates only an exact allowlisted pallet, call, and metadata argument signature', () => {
     const execution = bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3');
     const current = execution.callCandidates[0];
-    const currentMethod = runtimeMethod(current);
+    const currentMethod = runtimeMethod(current, execution.originChainId);
     const driftedFallback = Object.assign(vi.fn(), {
+      callIndex: currentMethod.callIndex,
       meta: {
         args: [...current.args.slice(0, -1), 'injectedWeight'].map((name) => ({
           name: { toString: () => name },
@@ -145,6 +213,7 @@ describe('reviewed cross-chain providers and runtime authority', () => {
     const api = {
       createType: vi.fn(),
       isReadyOrError: Promise.resolve(),
+      ...reviewedIdentity(execution.originChainId),
       tx: {
         [current.pallet]: { [current.call]: currentMethod },
         polkadotXcm: { [current.call]: driftedFallback },
@@ -157,10 +226,40 @@ describe('reviewed cross-chain providers and runtime authority', () => {
     expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_execution_drift');
   });
 
+  it('refuses a runtime outside the reviewed versions or with the call at another index', () => {
+    const execution = bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3');
+    const reviewed = reviewedRuntime(execution.originChainId);
+    const { api, method } = executionRuntime(execution);
+
+    expect(() => resolveReviewedRuntimeCall(execution, api)).not.toThrow();
+
+    // A runtime upgrade keeps the argument names but is not reviewed yet.
+    const upgraded = { ...api, runtimeVersion: { ...api.runtimeVersion, specVersion: { toString: () => String(reviewed.specVersions.max + 1) } } };
+    expect(() => resolveReviewedRuntimeCall(execution, upgraded)).toThrow('cross_chain_runtime_not_reviewed');
+
+    const renamed = { ...api, runtimeVersion: { ...api.runtimeVersion, specName: { toString: () => 'westend' } } };
+    expect(() => resolveReviewedRuntimeCall(execution, renamed)).toThrow('cross_chain_runtime_not_reviewed');
+
+    const otherChain = { ...api, genesisHash: { toHex: () => `0x${'11'.repeat(32)}` } };
+    expect(() => resolveReviewedRuntimeCall(execution, otherChain)).toThrow('cross_chain_runtime_genesis_mismatch');
+
+    // Metadata from the node puts another call at the reviewed name.
+    method.callIndex = Uint8Array.from([reviewed.calls[0].palletIndex, reviewed.calls[0].callIndex - 1]);
+    expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_call_index_mismatch');
+
+    method.callIndex = undefined;
+    expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_call_index_mismatch');
+  });
+
+  it('has no reviewed runtime for a chain outside the bundle', () => {
+    const execution = { ...bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3'), originChainId: 'ab'.repeat(32) };
+    const { api } = executionRuntime(bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3'));
+
+    expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_not_reviewed');
+  });
+
   it('constructs SORA and Liberland burns only from their reviewed descriptors', async () => {
-    const sora = bundledExecution(
-      (execution) => execution.kind === 'sora-bridge-proxy-burn-v3' && execution.bridgeNetwork === 'Liberland'
-    );
+    const sora = soraToLiberlandBurn;
     const liberland = bundledExecution(
       (execution) => execution.kind === 'liberland-to-sora-burn' && execution.externalAsset === 1
     );
@@ -224,18 +323,14 @@ describe('reviewed cross-chain providers and runtime authority', () => {
   });
 
   it('reads the destination minimum and rejects exact Liberland registration drift', async () => {
-    const execution = bundledExecution(
-      (candidate) =>
-        candidate.kind === 'sora-bridge-proxy-burn-v3' &&
-        candidate.bridgeNetwork === 'Liberland' &&
-        candidate.externalAsset === 1
-    );
+    const execution = soraToLiberlandBurn;
     if (execution.kind !== 'sora-bridge-proxy-burn-v3') throw new Error('Unexpected execution fixture');
 
+    // Live shape on SORA spec 134: a GenericAssetId whose Liberland variant wraps Asset(1).
     const soraQuery = {
       substrateBridgeApp: {
         assetKinds: vi.fn(async () => codec(execution.soraAssetKind)),
-        sidechainAssetId: vi.fn(async () => codec('Asset(1)', { asset: 1 })),
+        sidechainAssetId: vi.fn(async () => codec('Liberland(Asset(1))', { liberland: { asset: 1 } })),
         sidechainPrecision: vi.fn(async () => codec(execution.sidechainPrecision)),
       },
     };
@@ -257,19 +352,104 @@ describe('reviewed cross-chain providers and runtime authority', () => {
 
     await expect(assertReviewedRuntimeAuthority(execution, state)).resolves.toMatchObject({ runtimeMinimum: '1' });
 
-    soraQuery.substrateBridgeApp.sidechainAssetId.mockResolvedValue(codec('Asset(10)', { asset: 10 }));
+    soraQuery.substrateBridgeApp.sidechainAssetId.mockResolvedValue(
+      codec('Liberland(Asset(10))', { liberland: { asset: 10 } })
+    );
     await expect(assertReviewedRuntimeAuthority(execution, state)).rejects.toThrow(
       'cross_chain_runtime_registration_drift'
     );
   });
 
+  describe('registration of the bundled Liberland to SORA routes', () => {
+    // Values read from SORA spec 134 (substrateBridgeApp, network Liberland) on 2026-10-24.
+    const live: Record<string, { kind: string; precision: number; sidechainAssetId: unknown }> = {
+      LLD: { kind: 'Sidechain', precision: 12, sidechainAssetId: { liberland: { lld: null } } },
+      LLM: { kind: 'Sidechain', precision: 12, sidechainAssetId: { liberland: { asset: 1 } } },
+      XOR: { kind: 'Thischain', precision: 18, sidechainAssetId: { liberland: { asset: 774441749 } } },
+    };
+    const liberlandRoutes = BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.filter(
+      ({ execution }) => execution?.kind === 'liberland-to-sora-burn'
+    );
+
+    const runAuthority = async (symbol: string, sidechainAssetId: unknown, kind = live[symbol].kind) => {
+      const route = liberlandRoutes.find((candidate) => candidate.symbol === symbol)!;
+      const execution = route.execution!;
+      const soraApi = authorityApi(execution.destinationChainId, {
+        substrateBridgeApp: {
+          assetKinds: vi.fn(async () => codec(kind)),
+          sidechainAssetId: vi.fn(async () => codec(JSON.stringify(sidechainAssetId), sidechainAssetId)),
+          sidechainPrecision: vi.fn(async () => codec(live[symbol].precision)),
+        },
+      });
+      const liberlandApi = authorityApi(execution.originChainId);
+      const state = authorityState([
+        { api: liberlandApi, chainId: execution.originChainId, name: 'Liberland' },
+        { api: soraApi, chainId: execution.destinationChainId, name: 'SORA Mainnet' },
+      ]);
+
+      return assertReviewedRuntimeAuthority(execution, state);
+    };
+
+    it('bundles exactly the LLD, LLM and XOR directions', () => {
+      expect(liberlandRoutes.map(({ symbol }) => symbol).sort()).toEqual(['LLD', 'LLM', 'XOR']);
+    });
+
+    it.each(['LLD', 'LLM', 'XOR'])('accepts the live registration of %s', async (symbol) => {
+      await expect(runAuthority(symbol, live[symbol].sidechainAssetId)).resolves.toMatchObject({ runtimeMinimum: '0' });
+    });
+
+    it.each([
+      ['LLD', { liberland: { asset: 0 } }],
+      ['LLD', { lld: null }],
+      ['LLM', { liberland: { asset: 2 } }],
+      ['LLM', { asset: 1 }],
+      ['LLM', { liberland: { lld: null } }],
+      ['XOR', { liberland: { asset: 774441750 } }],
+      ['XOR', { sora: '0x0200000000000000000000000000000000000000000000000000000000000000' }],
+      ['XOR', { liberland: { asset: '774441749x' } }],
+    ])('rejects a drifted registration of %s: %j', async (symbol, sidechainAssetId) => {
+      await expect(runAuthority(symbol, sidechainAssetId)).rejects.toThrow('cross_chain_runtime_registration_drift');
+    });
+
+    it('rejects a changed asset kind', async () => {
+      await expect(runAuthority('XOR', live.XOR.sidechainAssetId, 'Sidechain')).rejects.toThrow(
+        'cross_chain_runtime_registration_drift'
+      );
+    });
+  });
+
   it('fails closed when an authoritative intermediate SORA parachain runtime is unavailable', async () => {
-    const execution = bundledExecution(({ kind }) => kind === 'external-to-sora-xcm-v3');
+    // No external-to-SORA route is bundled any more, so the execution shape is built here.
+    const execution: Readonly<ReviewedCrossChainExecution> = {
+      kind: 'external-to-sora-xcm-v3',
+      originChainId: 'fc41b9bd8ef8fe53d58c7ea67c794c7ec9a73daf05e6d54b14ff6342c99ba64c',
+      destinationChainId: '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5',
+      assetXcmId: 'aca',
+      assetPrecision: 12,
+      source: 'acala-native',
+      relayNetwork: 'Polkadot',
+      soraParachainId: 2025,
+      soraParachainChainId: 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738',
+      soraAssetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
+      soraAssetKind: 'Sidechain',
+      bridgeNetwork: 'Polkadot',
+      bridgeParachainId: 2000,
+      callCandidates: [],
+      destinationFee: '0',
+      destinationMinimum: {
+        kind: 'sora-parachain-asset-minimum',
+        chainId: 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738',
+        assetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
+        precision: 12,
+      },
+    };
     const originApi = authorityApi(execution.originChainId);
+    const soraAssetId = (execution as never as { soraAssetId: string }).soraAssetId;
     const destinationApi = authorityApi(execution.destinationChainId, {
       parachainBridgeApp: {
+        allowedParachainAssets: vi.fn(async () => [codec(soraAssetId)] as never),
         assetKinds: vi.fn(async () => codec('Sidechain')),
-        relaychainAsset: vi.fn(async () => codec((execution as never as { soraAssetId: string }).soraAssetId)),
+        relaychainAsset: vi.fn(async () => codec(soraAssetId)),
         sidechainPrecision: vi.fn(async () => codec(execution.assetPrecision)),
       },
     });

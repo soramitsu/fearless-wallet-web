@@ -64,6 +64,19 @@ export class RequestService {
     this.popupHandler.updateIcon(shouldClose);
   }
 
+  public async resetWallet(): Promise<void> {
+    // Revocation vetoes existing grants synchronously, then acknowledges its
+    // durable write. Pending signing promises are settled before keys disappear.
+    const revoked = this.authRequestHandler.resetWallet();
+    this.substrateRequestHandler.resetWallet();
+    this.evmRequestHandler.resetWallet();
+    this.solanaRequestHandler.resetWallet();
+    this.metadataRequestHandler.resetWallet();
+    this.connectWCRequestHandler.resetWallet();
+    this.notSupportWCRequestHandler.resetWallet();
+    await revoked;
+  }
+
   // Popup
   public popupOpen(path?: string): void {
     // Not open new popup and use existed
@@ -96,6 +109,7 @@ export class RequestService {
   }
 
   public injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
+    if (this.keyringService.isResetting) return Promise.reject(new Error('Wallet reset is in progress'));
     return this.metadataRequestHandler.injectMetadata(url, request);
   }
 
@@ -116,16 +130,20 @@ export class RequestService {
     return this.authRequestHandler.numAuthRequests;
   }
 
-  public setAuthorize(data: AuthUrls, callback?: () => void): void {
-    this.authRequestHandler.setAuthorize(data, callback);
+  public setAuthorize(data: AuthUrls, callback?: () => void): Promise<void> {
+    return this.authRequestHandler.setAuthorize(data, callback);
   }
 
-  public getAuthorize(update: (value: AuthUrls) => void): void {
-    this.authRequestHandler.getAuthorize(update);
+  public getAuthorize(update: (value: AuthUrls) => void): Promise<void> {
+    return this.authRequestHandler.getAuthorize(update);
   }
 
   public getAuthList(): Promise<AuthUrls> {
     return this.authRequestHandler.getAuthList();
+  }
+
+  public mutateAuthorizations(update: (entries: AuthUrls) => void): Promise<AuthUrls> {
+    return this.authRequestHandler.mutateAuthorizations(update);
   }
 
   public authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
@@ -161,6 +179,12 @@ export class RequestService {
     return this.substrateRequestHandler.sign(url, request, account, id);
   }
 
+  public signWalletConnect(
+    context: import('@extension-base/services/wallet-connect-service/polkadotSigningContext').PolkadotSigningContext
+  ) {
+    return this.substrateRequestHandler.signWalletConnect(context);
+  }
+
   public get numSubstrateRequests(): number {
     return this.substrateRequestHandler.numSubstrateRequests;
   }
@@ -185,8 +209,8 @@ export class RequestService {
     return this.solanaRequestHandler.signSolanaSubject;
   }
 
-  public signWcRequest(topic: string): WCSignRequest {
-    return this.evmRequestHandler.getSignWCRequest(topic);
+  public signWcRequest(approvalId: string): WCSignRequest | undefined {
+    return this.evmRequestHandler.getSignWCRequest(approvalId);
   }
 
   public getEvmNetworkInfo(options: DAppChainInfoPayload): NetworkJson | undefined {
@@ -214,11 +238,16 @@ export class RequestService {
     return this.evmRequestHandler.numWcSignRequest;
   }
 
+  public get numEvmSignRequests(): number {
+    return this.evmRequestHandler.numEvmSignRequest;
+  }
+
   public get numSolanaSignRequests(): number {
     return this.solanaRequestHandler.numSolanaSignRequest;
   }
 
   public addConnectWCRequest(request: WalletConnectSessionRequest): void {
+    if (this.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     return this.connectWCRequestHandler.addConnectWCRequest(request);
   }
 
@@ -240,6 +269,7 @@ export class RequestService {
   }
 
   public addNotSupportWCRequest(request: WalletConnectNotSupportRequest): void {
+    if (this.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     return this.notSupportWCRequestHandler.addNotSupportWCRequest(request);
   }
 
@@ -258,6 +288,7 @@ export class RequestService {
       this.numConnectWCRequests +
       this.numNotSupportWCRequests +
       this.numSignWCRequests +
+      this.numEvmSignRequests +
       this.numSolanaSignRequests
     );
   }
@@ -267,16 +298,16 @@ export class RequestService {
   }
 
   async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
-    const entries = await this.getAuthList();
-
-    authorizedAccountDiff.forEach(([url, authorizedAccounts, authType]) => {
-      if (authType === 'substrate') entries[url].authorizedAccounts = authorizedAccounts;
-      else if (authType === 'evm') entries[url].evmAuthorizedAccount = authorizedAccounts[0] ?? '';
-      else if (authType === 'solana') entries[url].solanaAuthorizedAccount = authorizedAccounts[0] ?? '';
-      else if (authType === 'iroha') entries[url].irohaAuthorizedAccount = authorizedAccounts[0] ?? '';
+    await this.mutateAuthorizations((entries) => {
+      authorizedAccountDiff.forEach(([url, authorizedAccounts, authType]) => {
+        const entry = entries[url];
+        if (!entry) return;
+        if (authType === 'substrate') entry.authorizedAccounts = authorizedAccounts;
+        else if (authType === 'evm') entry.evmAuthorizedAccount = authorizedAccounts[0] ?? '';
+        else if (authType === 'solana') entry.solanaAuthorizedAccount = authorizedAccounts[0] ?? '';
+        else if (authType === 'iroha') entry.irohaAuthorizedAccount = authorizedAccounts[0] ?? '';
+      });
     });
-
-    return this.setAuthorize(entries);
   }
 
   authorizeCancel({ id }: RequestAuthorizeCancel): boolean {

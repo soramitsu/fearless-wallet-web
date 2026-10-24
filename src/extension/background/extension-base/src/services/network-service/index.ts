@@ -6,6 +6,7 @@ import { EvmApiHandler } from '@extension-base/services/network-service/handlers
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { logger as createLogger } from '@polkadot/util';
 import { TonApiHandler } from './handlers/TonApiHandler';
+import { nodePreferences, sameNodePreferences, type NodePreferences } from './preferences';
 import type { KeyringService } from '@extension-base/services';
 import type { ApiMap } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -20,10 +21,52 @@ import {
   createAuthoritativeDiscoveryRegistryNetworks,
   mergeUniversalWalletRegistryNetworks,
 } from '@/util/universalWalletRegistryNetworks';
+import { withoutUntrustedPrices } from '@/portfolio/untrustedAssets';
+import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 export type NetworkMap = Record<string, NetworkJson>;
 
+type NetworkPreferences = Pick<NetworkJson, 'favorite' | 'currentProvider' | 'customNodes' | 'customProviders' | 'isManual'>;
+
+function preferences(network: NetworkJson): NetworkPreferences {
+  return { favorite: network.favorite, currentProvider: network.currentProvider, customNodes: network.customNodes,
+    customProviders: network.customProviders, isManual: network.isManual };
+}
+
+function readableSettings(stored: NetworkMap | undefined): NetworkMap {
+  if (stored !== undefined && (!stored || typeof stored !== 'object' || Array.isArray(stored))) {
+    throw new Error('Network settings are unavailable');
+  }
+  return stored ?? {};
+}
+
+// Registry/cache rows are rebuildable data. One malformed row must not stop wallets opening.
+function usableNetwork(value: unknown): value is NetworkJson {
+  if (!value || typeof value !== 'object') return false;
+  const row = value as NetworkJson;
+  return typeof row.name === 'string' && !!row.name && typeof row.chainId === 'string' && !!row.chainId &&
+    (row.options === undefined || (Array.isArray(row.options) && row.options.every((option) => typeof option === 'string'))) &&
+    ['substrate', 'ethereumBased', 'ethereum', 'ton', 'bitcoin', 'solana', 'iroha'].includes(row.ecosystem) &&
+    Array.isArray(row.assets) && row.assets.every((asset) => asset && typeof asset.id === 'string' &&
+      typeof asset.symbol === 'string' && Number.isFinite(asset.precision)) &&
+    Array.isArray(row.nodes) && (row.nodes.length > 0 || ['bitcoin', 'solana', 'iroha'].includes(row.ecosystem)) &&
+    row.nodes.every((node) => node &&
+      typeof node.name === 'string' && typeof node.url === 'string' && !!node.url);
+}
+
+/** Remote discovery requires a usable node as well as the validated cached-network shape. */
+export function isUsableRegistryNetwork(value: unknown): value is NetworkJson {
+  return usableNetwork(value) && value.nodes.length > 0;
+}
+
 export class NetworkService {
+  private registryAvailable = false;
+  private cacheReadable = false;
+  private registryAttemptAt = 0;
+  private registryInitialization?: Promise<void>;
+  private registryRetry?: Promise<boolean>;
+  private preferenceRevision = 0;
+  private readonly networkPreferenceRevision: Record<string, number> = {};
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   readonly selectedNetworksStore = new SelectedNetworkStore(null);
@@ -114,16 +157,52 @@ export class NetworkService {
     };
   }
 
-  public async initNetworkMap() {
+  public initNetworkMap(): Promise<void> {
+    this.registryInitialization ??= this.loadNetworkMap().finally(() => { this.registryInitialization = undefined; });
+    return this.registryInitialization;
+  }
+
+  retryRegistryIfNeeded(): Promise<boolean> {
+    if (this.registryRetry) return this.registryRetry;
+    if ((this.registryAvailable && this.cacheReadable) || Date.now() - this.registryAttemptAt < 60000) return Promise.resolve(false);
+    this.registryRetry = this.initNetworkMap().then(() => {
+      if (this.registryAvailable) this.initNetworkApis();
+      return this.registryAvailable;
+    }).finally(() => { this.registryRetry = undefined; });
+    return this.registryRetry;
+  }
+
+  private async loadNetworkMap() {
+    const hadReadableCache = this.cacheReadable;
+    const preferenceRevision = this.preferenceRevision;
+    this.registryAttemptAt = Date.now();
     this.logger.log('Init Network Map');
 
-    const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
-
     const networksFromStorage = await this.getStoredNetworks();
+    let remote = false;
+    let networks: NetworkJson[];
+    try {
+      const { data } = await axios.get<unknown>(URLS.CHAINS, { timeout: 10000 });
+      if (!Array.isArray(data)) throw new Error('The network registry is not a list');
+      const rows = data.filter((network, index): network is NetworkJson => {
+        if (isUsableRegistryNetwork(network)) return true;
+        const name = network && typeof network.name === 'string' ? network.name : `#${index}`;
+        this.logger.warn(`Skipping malformed network registry entry ${name}`);
+        return false;
+      });
+      if (!rows.length) throw new Error('No usable registry networks');
+      networks = rows.map((network) => withoutUntrustedPrices(network));
+      this.networksGithub = networks;
+      remote = true;
+    } catch (error) {
+      console.warn('Network registry unavailable; using cached and bundled networks', error);
+      // Cached custom networks are usable locally but never become an authoritative discovery registry.
+      networks = Object.values({ ...networksFromStorage, ...this.networkMap }).filter(usableNetwork)
+        .map((network) => withoutUntrustedPrices(network));
+    }
+    this.registryAvailable = remote;
 
-    this.networksGithub = networks;
-
-    this.networksGithub
+    networks
       .filter((el) => {
         if (el.disabled) return false;
 
@@ -136,13 +215,16 @@ export class NetworkService {
         return true;
       })
       .forEach((network) => {
-        const [{ url: currentProvider }] = network.nodes;
+        const currentProvider = network.nodes[0]?.url ?? '';
         const providers: Record<string, string> = {};
 
         network.nodes.forEach(({ name, url }) => (providers[name] = url));
 
         const isEthereum = isEthereumNetwork(network.name);
-        const favorite = networksFromStorage?.[network.name]?.favorite ?? [];
+        // A refresh must not roll back settings edited while its HTTP request was pending.
+        const useCurrent = hadReadableCache || this.networkPreferenceRevision[network.name] > preferenceRevision;
+        const saved = (useCurrent ? this.networkMap[network.name] : undefined) ?? networksFromStorage?.[network.name];
+        const favorite = Array.isArray(saved?.favorite) ? saved.favorite.filter((value) => typeof value === 'string') : [];
 
         this.networkMap[network.name] = {
           ...network,
@@ -151,14 +233,33 @@ export class NetworkService {
           isEthereum,
           genesisHash: `0x${network.chainId}`,
           active: true,
-          customNodes: [],
+          customNodes: saved?.customNodes ?? [],
+          customProviders: saved?.customProviders ?? {},
+          isManual: saved?.isManual,
           favorite,
           providers,
-          currentProvider,
+          currentProvider: saved?.currentProvider || currentProvider,
         };
       });
 
-    mergeUniversalWalletRegistryNetworks(this.networkMap, networksFromStorage);
+    if (!hadReadableCache) {
+      // A recovered cache may contain settings for bundled chains absent from the remote response.
+      for (const [name, saved] of Object.entries(networksFromStorage ?? {})) {
+        if (this.networkPreferenceRevision[name] > preferenceRevision) continue;
+        const existing = this.networkMap[name];
+        if (!existing) continue;
+        existing.favorite = saved.favorite ?? existing.favorite;
+        existing.currentProvider = saved.currentProvider || existing.currentProvider;
+        existing.customNodes = saved.customNodes ?? existing.customNodes;
+        existing.customProviders = saved.customProviders ?? existing.customProviders;
+        existing.isManual = saved.isManual ?? existing.isManual;
+      }
+    }
+    const registryPreferences = { ...networksFromStorage };
+    for (const [name, network] of Object.entries(this.networkMap)) {
+      if (hadReadableCache || this.networkPreferenceRevision[name] > preferenceRevision) registryPreferences[name] = network;
+    }
+    mergeUniversalWalletRegistryNetworks(this.networkMap, registryPreferences);
 
     const activeNetworks = this.getActiveNetworks();
 
@@ -173,7 +274,10 @@ export class NetworkService {
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
 
-    this.updateNetworkStore();
+    // Re-enable writes only after saved preferences have been rebased into the active map.
+    this.cacheReadable = networksFromStorage !== undefined;
+    // A remote failure must not replace a previously useful cache with a partial/offline catalog.
+    if (remote && networksFromStorage !== undefined) this.updateNetworkStore();
     this.onAuthoritativeRegistryUpdated();
   }
 
@@ -186,14 +290,30 @@ export class NetworkService {
     else this.substrateApiHandler.destroyApi(name);
   }
 
-  getStoredNetworks(): Promise<Record<string, NetworkJson> | undefined> {
-    return new Promise((resolve) =>
-      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => resolve(accountsFromStorage))
-    );
+  async getStoredNetworks(): Promise<Record<string, NetworkJson> | undefined> {
+    try {
+      const stored = await withDeadline(this.networkMapStore.getAndWait('NetworkMap'), 5000, 'Network cache read timed out');
+      return Object.fromEntries(Object.values(stored ?? {}).filter(usableNetwork).map((network) => [network.name, network]));
+    } catch (error) {
+      this.cacheReadable = false;
+      console.warn('Network cache unavailable; rebuilding network catalog', error);
+      return undefined;
+    }
   }
 
   updateNetworkStore() {
-    this.networkMapStore.set('NetworkMap', this.networkMap);
+    // Status polling and connection callbacks also reach here. None may erase unread personal settings.
+    if (!this.cacheReadable) return;
+    // Background status/catalog writes never replace preferences committed by a concurrent user action.
+    void this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
+      // A queued explicit edit may reactivate a network before this operation starts.
+      const catalog = structuredClone(this.networkMap);
+      const current = readableSettings(stored);
+      return { ...current, ...Object.fromEntries(Object.entries(catalog).map(([name, network]) => [name,
+        { ...network, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) },
+      ])) };
+    }, () => this.networkMapStore.getSubject().next(this.networkMap), false)
+      .catch((error) => console.warn('Network catalog could not be saved', error));
   }
 
   saveSelectedNetworks() {
@@ -319,7 +439,8 @@ export class NetworkService {
     });
 
     this.activeNetworkByEcosystem.ton.forEach((network) => {
-      if (!this.tonApiHandler.api[network.name]) this.tonApiHandler.initApi(network);
+      // Kept across calls: a provider proves its network once, not on every refresh.
+      if (!this.tonApiHandler.api[network.name.toLowerCase()]) this.tonApiHandler.initApi(network);
     });
 
     this.activeNetworkByEcosystem.substrate.forEach((network) => {
@@ -331,31 +452,59 @@ export class NetworkService {
     });
   }
 
-  upsertNetworkMap(networkJson: NetworkJson) {
-    const { name, currentProvider, customNodes, ecosystem } = networkJson;
+  async upsertNetworkMap(networkJson: NetworkJson, expected?: NodePreferences): Promise<void> {
+    const requested = structuredClone(networkJson);
+    if (!usableNetwork(requested)) throw new Error('Invalid network settings');
+    const { name, currentProvider, customNodes, customProviders, isManual } = requested;
+    const patch = { currentProvider, customNodes, customProviders, isManual };
+    const previous = structuredClone(nodePreferences(expected ?? this.networkMap[name] ?? requested));
+    const catalog = { ...requested, ...nodePreferences(this.networkMap[name] ?? requested) };
+    await this.persistPreferences(name, catalog, (saved) => {
+      if (!sameNodePreferences(saved, previous)) throw new Error('Network settings changed. Retry the edit.');
+      return patch;
+    }, true);
+    const network = this.networkMap[name];
+    // Connection setup is best effort after the preference commit; it cannot undo the saved choice.
+    try {
+      if (network.ecosystem === 'ethereum') this.evmApiHandler.initEvmApi(network);
+      else if (network.ecosystem === 'ton') this.tonApiHandler.initApi(network);
+      else if (network.ecosystem === 'substrate' || network.ecosystem === 'ethereumBased') {
+        const previous = this.substrateApiHandler.api[name.toLowerCase()];
+        void previous?.api?.disconnect().catch(console.warn);
+        void previous?.provider?.disconnect().catch(console.warn);
+        await this.substrateApiHandler.initApi(network);
+      }
+    } catch (error) { console.warn('Saved network connection is unavailable', error); }
+  }
 
-    if (name in this.networkMap) {
-      this.networkMap[name].active = true;
-      this.networkMap[name].customNodes = customNodes;
+  async toggleFavoriteNetwork(name: string, address: string, desired?: boolean): Promise<void> {
+    const network = this.networkMap[name];
+    if (!network) throw new Error('Network unavailable');
+    await this.persistPreferences(name, network, (saved) => {
+      const favorite = Array.isArray(saved.favorite) ? saved.favorite : [];
+      const include = desired ?? !favorite.includes(address);
+      return { favorite: include ? (favorite.includes(address) ? favorite : [...favorite, address]) : favorite.filter((item) => item !== address) };
+    });
+  }
 
-      if (currentProvider !== this.networkMap[name].currentProvider && currentProvider)
-        this.networkMap[name].currentProvider = currentProvider;
-    } else this.networkMap[name] = networkJson;
-
-    this.updateNetworkStore();
-
-    if (!this.networkMap[name].active) return;
-
-    if (ecosystem === 'ethereum') this.evmApiHandler.initEvmApi(networkJson);
-    else if (ecosystem === 'ton') this.tonApiHandler.initApi(networkJson);
-    else if (ecosystem === 'bitcoin') return;
-    else if (ecosystem === 'iroha') return;
-    else {
-      this.substrateApiHandler.api[name].api?.disconnect();
-      this.substrateApiHandler.api[name].provider?.disconnect();
-
-      this.substrateApiHandler.initApi(networkJson);
-    }
+  private async persistPreferences(
+    name: string,
+    catalog: NetworkJson,
+    update: (saved: NetworkJson) => Partial<NetworkPreferences>,
+    activate = false
+  ): Promise<void> {
+    await this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
+      const current = readableSettings(stored);
+      const saved = { ...catalog, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}),
+        ...(activate ? { active: true } : {}) };
+      return { ...current, [name]: { ...current[name], ...saved, ...update(saved) } };
+    }, (committed) => {
+      const saved = committed[name];
+      this.networkMap[name] = { ...(this.networkMap[name] ?? saved), ...preferences(saved),
+        ...(activate ? { active: true } : {}) };
+      this.networkPreferenceRevision[name] = ++this.preferenceRevision;
+      this.networkMapStore.getSubject().next(this.networkMap);
+    }, false);
   }
 
   disableNetworkMap(networkKey: string) {

@@ -102,7 +102,7 @@
 <script lang="ts" setup>
 import { computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { useI18n } from '@/locales/useI18n';
 import { cut, getClipboard } from '@/helpers';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';

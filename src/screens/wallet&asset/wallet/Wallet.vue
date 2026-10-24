@@ -1,37 +1,63 @@
 <template>
-  <div class="wallet">
-    <header class="wallet-header">
+  <div class="wallet" :class="{ 'wallet--dashboard': dashboardEnabled }">
+    <!-- Behind a build flag (src/portfolio/dashboard): the winged-sun hero in place of the plain total. -->
+    <PortfolioDashboard
+      v-if="dashboardEnabled"
+      :summary="portfolioSummary"
+      :summaryInput="summaryInput"
+      :hiddenKeys="hiddenKeys"
+      :caption="filteredCaption"
+      :loading="balancesLoading"
+      @openFiats="$emit('openFiatsPopup', true)"
+    />
+
+    <header v-else class="wallet-header">
       <WalletBalance
         class="wallet-balance"
-        :balance="summaryTransferableBalance"
+        :balance="summaryTotalBalance"
         :changeWalletBalance="changeWalletBalance"
+        :caption="filteredCaption"
         :staticWidth="false"
+        :loading="balancesLoading"
+        :loadingLabel="$t('portfolioPage.loadingBalances')"
         @click="$emit('openFiatsPopup', true)"
       />
 
       <Loading v-if="showLoadingBalance" :width="28" class="balance-loading" />
     </header>
 
-    <ContentForm :height="contentFormHeight">
+    <ContentForm v-if="!allWalletsScope" :height="dashboardEnabled ? undefined : contentFormHeight">
       <div class="content">
         <WalletSettings
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
           :tokenGroups="filteredTokenGroups"
-          :allAssetsHidden="allAssetsHidden"
+          :hideZero="accountsStore.portfolioView.hideZero"
+          :showTestnets="accountsStore.portfolioView.showTestnets"
+          :lens="accountsStore.portfolioView.lens"
+          :sort="portfolioSort"
+          :showSortControl="legacyOrderIndex.size > 0"
+          :hiddenAssetCount="hiddenAssetCount"
+          :manageHiddenOnly="manageHiddenOnly"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementForm"
-          @toggleCurrenciesVisible="toggleCurrenciesVisible"
+          @update:hideZero="setHideZero"
+          @update:showTestnets="setShowTestnets"
+          @update:manageHiddenOnly="setManageHiddenOnly"
+          @update:lens="setLens"
+          @update:sort="setSort"
         />
 
         <router-view
           :balances="filteredTokenGroups"
           :showAssetsManagementForm="showAssetsManagementForm"
+          :manageHiddenOnly="manageHiddenOnly"
           :filterValue="filterValue"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           @toggleAssetsManagementForm="toggleAssetsManagementForm"
+          @update:manageHiddenOnly="setManageHiddenOnly"
         />
       </div>
     </ContentForm>
@@ -52,16 +78,15 @@
 
     <GoogleExportPopup v-if="showGoogleExportPopup" @closePopup="closeGoogleExportPopup" />
 
-    <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
+    <Tooltip v-if="!dashboardEnabled" text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineAsyncComponent, defineComponent } from 'vue';
 
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
 import type { TabWallet } from '@/interfaces';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -71,10 +96,14 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-import { ALL_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
-import { buildAssetPreferenceSnapshot, buildPortfolioSummary } from '@/portfolio/assetIdentity';
+import { usePortfolio } from '@/portfolio/usePortfolio';
+import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
+import { effectiveScope } from '@/portfolio/dashboard/preferences';
+import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
+import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
@@ -82,6 +111,7 @@ import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
 
 export default defineComponent({ name: 'Wallet',
   components: {
@@ -92,12 +122,22 @@ export default defineComponent({ name: 'Wallet',
     NetworkManagement,
     NetworkUnavailablePopup,
     GoogleExportPopup,
+    // A build without the dashboard folds this away, import included (src/portfolio/dashboard/dashboardFlag.ts).
+    ...(process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+      ? { PortfolioDashboard: defineAsyncComponent(() => import('@/screens/portfolio/PortfolioDashboard.vue')) }
+      : {}),
+  },
+  setup() {
+    const { summary: portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex, summaryInput, hiddenKeys } = usePortfolio();
+
+    return { portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex, summaryInput, hiddenKeys };
   },
   data() {
     return {
       networksStore: useNetworksStore(),
       showNetworkManagement: false,
       showAssetsManagementForm: false,
+      manageHiddenOnly: false,
       networkUnavailable: '',
       filterValue: '',
       selectedCurrency: {} as {
@@ -105,9 +145,18 @@ export default defineComponent({ name: 'Wallet',
         assetId?: string;
       },
       accountsStore: useAccountsStore(),
+      dashboardEnabled: PORTFOLIO_DASHBOARD_ENABLED,
+      dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
     };
   },
   computed: {
+    // All wallets lists every wallet's holdings read-only, in place of the selected wallet's own list.
+    allWalletsScope(): boolean {
+      return (
+        this.dashboardStore !== undefined &&
+        effectiveScope(this.dashboardStore.preferences.scope, this.accountsStore.accounts.length) === 'all'
+      );
+    },
     activeTabName() {
       return this.$route.name;
     },
@@ -134,38 +183,52 @@ export default defineComponent({ name: 'Wallet',
     networksWithWarning() {
       return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
     },
-    portfolioSummary() {
-      return buildPortfolioSummary({
-        groups: this.accountsStore.balances,
-        networks: this.networksStore.allNetworks,
-        prices: this.networksStore.assetsPrice.tokenPriceMap,
-        priceChanges: this.networksStore.assetsPrice.tokenPriceChange,
-        addressForNetwork: (network) => {
-          try {
-            return BaseApi.formatAddress(this.accountsStore.selectedWallet, network.name);
-          } catch {
-            return this.accountsStore.selectedWallet.address;
-          }
-        },
-      });
+    // The "Hidden (N)" filter lists hidden testnet assets only while testnets are shown.
+    hiddenAssetCount() {
+      const { hiddenAssetCount, hiddenTestnetAssetCount } = this.portfolioSummary;
+
+      return hiddenAssetCount + (this.accountsStore.portfolioView.showTestnets ? hiddenTestnetAssetCount : 0);
     },
-    summaryTransferableBalance() {
+    portfolioSort(): PortfolioSort {
+      return resolvePortfolioSort(this.accountsStore.portfolioView, this.legacyOrderIndex.size > 0);
+    },
+    // Wallet-wide under every filter: hidden, unpriced and testnet assets are excluded and labelled in the list.
+    summaryTotalBalance() {
       return this.portfolioSummary.total;
+    },
+    // Until something the wallet holds has arrived, the total is not known: no $0.00 after an update or a switch.
+    balancesLoading(): boolean {
+      return this.accountsStore.isBalanceLoading || this.loadStatus.state === 'loading';
+    },
+    filteredCaption() {
+      if (this.balancesLoading) return '';
+
+      // A balance nobody could load is not in the total, so the total is only a part and says so.
+      const failed = this.portfolioSummary.unavailableCount ? this.$t('portfolioPage.balanceStatus.failed') : '';
+
+      if (this.filteredTotal === null) return failed;
+
+      const selected = this.accountsStore.selectedNetwork;
+      const network =
+        selected === POPULAR_NETWORKS
+          ? this.$t('header.networkManagement.tabs.popular')
+          : selected === FAVORITE_NETWORKS
+            ? this.$t('header.networkManagement.tabs.favorites')
+            : selected;
+      const value = `${this.accountsStore.fiatSymbol}${formatDecimalString(this.filteredTotal, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+
+      const filtered = this.$t('portfolioPage.showingFiltered', { network, value });
+
+      return failed ? `${filtered} · ${failed}` : filtered;
     },
     changeWalletBalance() {
       return {
         percent: this.portfolioSummary.changePercent,
         amount: this.portfolioSummary.changeAmount,
       };
-    },
-    assetPreferenceSnapshot() {
-      return buildAssetPreferenceSnapshot(this.accountsStore.balances, this.networksStore.allNetworks);
-    },
-    allAssetsHidden() {
-      return (
-        this.assetPreferenceSnapshot.length > 0 &&
-        this.assetPreferenceSnapshot.every(({ key }) => this.accountsStore.assetPreferences[key] === 'hidden')
-      );
     },
     sortedTokenGroups() {
       const balances = this.accountsStore.selectedWallet.hasEthereum
@@ -250,12 +313,17 @@ export default defineComponent({ name: 'Wallet',
   watch: {
     "networksWithWarning": 'connect',
     "selectedWallet": 'updateEvmBalance',
+    'accountsStore.selectedWallet.address'() {
+      this.showAssetsManagementForm = false;
+      this.manageHiddenOnly = false;
+    },
   },
   activated() {
     fetchEvmBalance(undefined, this.accountsStore.selectedWallet.ethereumAddress);
   },
   deactivated() {
     this.showAssetsManagementForm = false;
+        this.manageHiddenOnly = false;
         this.showNetworkManagement = false;
         this.filterValue = '';
 
@@ -281,21 +349,23 @@ export default defineComponent({ name: 'Wallet',
     },
     toggleAssetsManagementForm(value = true) {
       this.showAssetsManagementForm = value;
+      if (!value) this.manageHiddenOnly = false;
     },
-    toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
-      if (allCurrenciesHidden) {
-            this.assetPreferenceSnapshot.forEach(({ key }) =>
-              this.accountsStore.setAssetPreference({ key, preference: 'shown' })
-            );
-
-            return;
-          }
-
-          this.assetPreferenceSnapshot.forEach(({ key, balanceText }) => {
-            if (new FPNumber(balanceText).isZero()) {
-              this.accountsStore.setAssetPreference({ key, preference: 'hidden' });
-            }
-          });
+    // "Hide zero balances" is a view filter: it never writes an asset preference, so a later deposit shows up.
+    setHideZero(value: boolean) {
+      this.accountsStore.updatePortfolioView({ hideZero: value });
+    },
+    setShowTestnets(value: boolean) {
+      this.accountsStore.updatePortfolioView({ showTestnets: value });
+    },
+    setLens(lens: PortfolioLens) {
+      this.accountsStore.updatePortfolioView({ lens });
+    },
+    setSort(sort: PortfolioSort) {
+      this.accountsStore.updatePortfolioView({ sort });
+    },
+    setManageHiddenOnly(value: boolean) {
+      this.manageHiddenOnly = value;
     },
     updateFilterValue(value: string) {
       this.filterValue = value;
@@ -313,6 +383,30 @@ export default defineComponent({ name: 'Wallet',
 .wallet {
   display: flex;
   flex-direction: column;
+
+  // The hero and the list scroll together, so the list keeps the room the hero would otherwise take. The chain is
+  // .main-child (overflow hidden) above and the lists' own scroll areas below, which grow to their content here.
+  &.wallet--dashboard.main-child {
+    overflow-x: hidden;
+    overflow-y: auto;
+    // The scrollbar sits in the page gutter, as the portfolio list's own does, not over the hero card.
+    width: calc(100% + #{$default-padding});
+    margin-right: -$default-padding;
+    padding-right: $default-padding;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--fw-stroke-strong);
+      border-radius: $default-border-radius;
+    }
+  }
 
   .content {
     padding: $default-padding 0 $default-padding $default-padding;

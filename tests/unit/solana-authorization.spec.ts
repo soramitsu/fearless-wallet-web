@@ -13,6 +13,12 @@ const storeState = vi.hoisted(() => ({
 
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class MockAuthorizeStore {
+    getAndWait(key: string): Promise<AuthUrls> {
+      return new Promise((resolve) => this.get(key, resolve));
+    }
+    setAndWait(key: string, value: AuthUrls): Promise<void> {
+      return new Promise((resolve) => this.set(key, value, resolve));
+    }
     get(_key: string, update: (value: AuthUrls) => void): void {
       storeState.getCalls += 1;
       update(storeState.authUrls);
@@ -125,10 +131,10 @@ describe('Solana origin-scoped authorization', () => {
       popupOpen: vi.fn(),
       updateIcon: vi.fn(),
     } as unknown as RequestService;
-    const handler = new SubstrateRequestHandler(requestService, {} as State);
+    const handler = new SubstrateRequestHandler(requestService, { keyringService: {} } as State);
 
     await expect(
-      handler.sign(URL, {} as never, { address: 'another-account' } as never)
+      handler.sign(URL, { snapshot: () => ({}) } as never, { address: 'another-account' } as never)
     ).rejects.toThrow('account scope rejected');
     expect(handler.numSubstrateRequests).toBe(0);
     expect(requestService.popupOpen).not.toHaveBeenCalled();

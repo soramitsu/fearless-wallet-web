@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +8,7 @@ import fg from 'fast-glob';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { keystoreScryptParamsPlugin } from './scripts/keystore-scrypt-params.mjs';
 import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
 import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
 
@@ -41,7 +43,9 @@ const ENV_KEYS = [
   'FL_WEB_SNOWTRACE_API_KEY',
   'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY',
   'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
+  'VUE_APP_ENABLE_IROHA_CONNECT',
   'VUE_APP_ENABLE_IROHA_TRANSFERS',
+  'VUE_APP_ENABLE_SOLANA_TRANSFERS',
   'VUE_APP_EXTENSION_SMOKE',
   'VUE_APP_TEST_ONLY',
   'VUE_APP_FL_WEB_X1_TESTNET_API_KEY',
@@ -57,6 +61,22 @@ const CARDANO_MESSAGE_SIGNING_BROWSER = path.resolve(
 const NOOP_DEVTOOLS_API = path.resolve(__dirname, 'src/util/noopDevtoolsApi.ts');
 const VUEDRAGGABLE_ESM = path.resolve(__dirname, 'node_modules/vuedraggable/src/vuedraggable.js');
 const UNSUPPORTED_NODE_VM = path.resolve(__dirname, 'src/util/unsupportedNodeVm.ts');
+const IROHA_SDK_DIST = path.join('node_modules', '@iroha', 'iroha-js', 'dist') + path.sep;
+const IROHA_SDK_BROWSER_BINDING = path.resolve(__dirname, 'src/util/irohaSdkBrowserBinding.ts');
+
+// The Iroha SDK reaches its Rust binding through `native.js`; browsers get the wallet's
+// I105 address binding instead (see src/util/irohaSdkBrowserBinding.ts).
+function irohaSdkBrowserBindingPlugin() {
+  return {
+    name: 'fearless-iroha-sdk-browser-binding',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!importer || (source !== './native.js' && source !== '../native.js')) return null;
+
+      return path.normalize(importer.split('?')[0]).includes(IROHA_SDK_DIST) ? IROHA_SDK_BROWSER_BINDING : null;
+    },
+  };
+}
 
 function createSymbolId(template, file) {
   return template.replace('[name]', path.basename(file, '.svg'));
@@ -120,12 +140,62 @@ export default sprite;
   };
 }
 
+// The SIL Open Font License asks for its text beside the fonts, so every build that bundles font files ships these.
+export const FONT_LICENSES = Object.freeze({
+  'licenses/fonts/Inter-OFL.txt': 'src/assets/fonts/inter/OFL.txt',
+  'licenses/fonts/JetBrainsMono-OFL.txt': 'node_modules/@fontsource/jetbrains-mono/LICENSE',
+  'licenses/fonts/NotoSansCuneiform-OFL.txt': 'node_modules/@fontsource/noto-sans-cuneiform/LICENSE',
+  'licenses/fonts/NotoSansEgyptianHieroglyphs-OFL.txt': 'node_modules/@fontsource/noto-sans-egyptian-hieroglyphs/LICENSE',
+  'licenses/fonts/Sora-OFL.txt': 'node_modules/@fontsource-variable/sora/LICENSE',
+});
+
+export function fontLicensesPlugin() {
+  return {
+    name: 'fearless-font-licenses',
+    async generateBundle(_options, bundle) {
+      if (!Object.keys(bundle).some((file) => /\.(?:woff2?|ttf|otf)$/u.test(file))) return;
+
+      for (const [fileName, source] of Object.entries(FONT_LICENSES)) {
+        this.emitFile({ type: 'asset', fileName, source: await fs.readFile(path.resolve(__dirname, source)) });
+      }
+    },
+  };
+}
+
+export const FW_PALETTES = Object.freeze(['v1', 'legacy']);
+
+// Build-time look (design-system 14.0 item 5): `v1` is Neon Glass, `legacy` the look this release replaced, kept so a
+// hotfix can revert paint without touching data. It is not remote configuration.
+export function resolveFwPalette(env = process.env) {
+  const palette = env.VITE_FW_PALETTE || 'v1';
+
+  if (!FW_PALETTES.includes(palette)) {
+    throw new Error(`VITE_FW_PALETTE must be one of ${FW_PALETTES.join(', ')}; received ${JSON.stringify(palette)}`);
+  }
+
+  return palette;
+}
+
+/**
+ * Whether this build carries the portfolio dashboard (src/portfolio/dashboard/dashboardFlag.ts), as the string 'true' or
+ * 'false'. It ships: a release pins it on through `PRODUCTION_RELEASE_FLAGS` (scripts/build-extension.mjs), and every
+ * other build carries it as well, so the smokes exercise what people get. Only `VUE_APP_PORTFOLIO_DASHBOARD=false` leaves
+ * it out, of a development or test build. The decision is made here, once, and reaches the bundle as a literal: a build
+ * without the dashboard folds away every branch that tests it, dynamic imports included, and ships none of its code or
+ * strings.
+ */
+export function portfolioDashboardBuildFlag(env = process.env) {
+  return env.VUE_APP_PORTFOLIO_DASHBOARD === 'false' ? 'false' : 'true';
+}
+
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
   const nodeEnv = mode === 'production' ? 'production' : 'development';
   const define = {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
+    'process.env.VITE_FW_PALETTE': JSON.stringify(resolveFwPalette(env)),
+    'process.env.FW_PORTFOLIO_DASHBOARD': JSON.stringify(portfolioDashboardBuildFlag(env)),
   };
 
   for (const key of ENV_KEYS) {
@@ -135,24 +205,48 @@ export function makeDefine(mode, extraEnv = {}) {
   return define;
 }
 
-export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
-  if (process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
-    throw new Error(
-      'bitcoin_testnet_broadcast_evidence_missing: Bitcoin transfers must remain disabled until the funded testnet release evidence is ready'
-    );
+// A send flag may only be enabled once its live-network evidence manifest is marked ready.
+// The release audits verify the recorded evidence itself (on-chain status, artifact digest).
+function assertTransferEvidenceReady(flag, manifestPath, errorCode, description) {
+  if (process.env[flag] !== 'true') return;
+
+  let manifest;
+
+  try {
+    manifest = JSON.parse(readFileSync(path.resolve(__dirname, manifestPath), 'utf8'));
+  } catch {
+    manifest = undefined;
   }
 
-  if (process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true') {
-    throw new Error(
-      'browser_transaction_codec_unpublished_source_only: local browser codec source is not a reviewed immutable release artifact; Iroha transfers must remain disabled in every build mode'
-    );
+  if (manifest?.status !== 'ready' || manifest.releaseEnabled !== true) {
+    throw new Error(`${errorCode}: ${description} stay disabled until ${manifestPath} records ready release evidence`);
   }
+}
+
+export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
+  if (process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true' && mode === 'production') {
+    throw new Error('iroha_connect_blind_signing_unreviewed: IrohaConnect must stay disabled until decoded-payload signing ships');
+  }
+  assertTransferEvidenceReady(
+    'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
+    'scripts/bitcoin-testnet-broadcast-evidence.json',
+    'bitcoin_testnet_broadcast_evidence_missing',
+    'Bitcoin transfers'
+  );
+  assertTransferEvidenceReady(
+    'VUE_APP_ENABLE_IROHA_TRANSFERS',
+    'config/iroha-production-send-readiness.json',
+    'iroha_transfer_evidence_missing',
+    'Iroha transfers'
+  );
 
   return {
     publicDir,
     plugins: [
+      irohaSdkBrowserBindingPlugin(),
       vue(),
       subwalletPackageCompatPlugin(),
+      keystoreScryptParamsPlugin(),
       ...(asyncWasm ? [wasm(), ...(nativeAsyncModules ? [] : [topLevelAwait()])] : []),
       nodePolyfills({
         include: ['buffer', 'crypto', 'events', 'http', 'https', 'os', 'stream', 'url', 'util', 'zlib'],
@@ -166,6 +260,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         iconDirs: [path.resolve(__dirname, 'src/assets/icons'), path.resolve(__dirname, 'src/assets/services')],
         symbolId: 'icon-[name]',
       }),
+      fontLicensesPlugin(),
     ],
     optimizeDeps: { exclude: ['@subwallet/keyring', '@subwallet/ui-keyring'] },
     resolve: {
@@ -188,7 +283,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
           additionalData: `
             @use "@/styles/_layout.scss" as *;
             @use "@/styles/_mixins.scss" as *;
-            @use "@/styles/common.scss" as *;
+            @use "@/styles/common.scss" as * with ($fw-palette: "${resolveFwPalette()}");
           `,
         },
       },
@@ -204,6 +299,8 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       // exported promises breaks initialization across the popup's cyclic chunks.
       target: nativeAsyncModules ? 'es2022' : 'es2020',
       cssCodeSplit: true,
+      // Extension CSP permits packaged fonts only, including tiny language subsets.
+      assetsInlineLimit: (filePath) => /\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined,
       rollupOptions: {
         output: {
           entryFileNames: '[name].js',

@@ -5,6 +5,14 @@
       <strong>{{ $t('crossChainPage.noSupportedRoute') }}</strong>
       <span>{{ $t('crossChainPage.routeMissing') }}</span>
       <FButton size="big" text="common.back" width="100%" @click="closeForm" />
+      <FButton
+        size="big"
+        type="secondary"
+        text="crossChainPage.chooseRoute"
+        width="100%"
+        data-testid="chooseCrossChainRoute"
+        @click="chooseRoute"
+      />
     </div>
   </AboveForm>
 
@@ -110,9 +118,11 @@ import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
+import { Components } from '@/router/routes';
 import {
   buildOwnedCrossChainAssets,
   findReviewedCrossChainRoute,
+  isRoutePausedByCapability,
   type CrossChainOwnedAsset,
   type ReviewedCrossChainRoute,
 } from '@/cross-chain/routeRegistry';
@@ -156,7 +166,11 @@ export default defineComponent({ name: 'CrossChainForm',
       );
     },
     disabledRouteKey() {
-      if (this.reviewedRoute?.providerId !== 'sora-evm-bridge') return 'crossChainPage.route.disabled';
+      if (!this.reviewedRoute) return 'crossChainPage.route.disabled';
+      if (isRoutePausedByCapability(this.reviewedRoute, this.extensionStore.features?.actions ?? {})) {
+        return 'crossChainPage.pausedBody';
+      }
+      if (this.reviewedRoute.providerId !== 'sora-evm-bridge') return 'crossChainPage.route.disabled';
 
       return this.reviewedRoute.originChainId === '1'
         ? 'crossChainPage.route.ethereumToSoraUnavailable'
@@ -262,6 +276,9 @@ export default defineComponent({ name: 'CrossChainForm',
     closeForm() {
       this.$router.back();
     },
+    chooseRoute() {
+      this.$router.push({ name: Components.CrossChain });
+    },
     cut(value: string) {
       return cut(value);
     },
@@ -319,7 +336,7 @@ export default defineComponent({ name: 'CrossChainForm',
 
 .summary {
   background-color: $secondary-background-color !important;
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-divider)) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   margin-bottom: 15px;

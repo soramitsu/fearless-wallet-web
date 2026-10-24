@@ -2,15 +2,37 @@ import { type BasicTxResponse } from '@extension-base/background/types/types';
 import { IrohaToriiWalletClient } from '@extension-base/services/iroha-torii-service';
 import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
-import { UNIVERSAL_WALLET_DERIVATION_PATHS, UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
+import {
+  IROHA_TRANSACTION_WIRE,
+  UNIVERSAL_WALLET_DERIVATION_PATHS,
+  UNIVERSAL_WALLET_IROHA_NETWORKS,
+} from '@/consts/universalWallet';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
 import { encodeIrohaI105Address, parseIrohaI105Address } from '@/util/iroha';
+import {
+  addIrohaQuantities,
+  canonicalizeIrohaQuantity,
+  compareIrohaQuantities,
+  getIrohaQuantityScale,
+  multiplyIrohaQuantity,
+} from '@/util/irohaQuantity';
 
 type HandleBasicTx = (data: BasicTxResponse) => void;
 type IrohaNetworkKey = 'taira' | 'nexus';
 
+// A transaction that has not applied by creation time + TTL can never apply, so waiting
+// past the TTL gives a definitive answer instead of an ambiguous one.
+const IROHA_TRANSFER_TTL_MS = 60_000;
+const IROHA_TRANSFER_WAIT_MS = IROHA_TRANSFER_TTL_MS + 30_000;
+// Fixed native gas for one asset transfer (iroha_core `gas::BASE_TRANSFER`).
+const IROHA_TRANSFER_GAS_UNITS = 180;
+const IROHA_TRANSFER_INSTRUCTIONS = 1;
+const MAX_FEE_REFINEMENTS = 4;
+const MAX_BALANCE_PAGES = 10;
+
 type IrohaTransferParams = {
   amount: string;
+  approvedMaxFee?: string;
   assetId: string;
   callback?: HandleBasicTx;
   from: string;
@@ -28,41 +50,37 @@ type IrohaTransferSource = {
   walletEcosystem?: WalletEcosystem;
 };
 
-type IrohaWalletSmokeMetadata = Readonly<{
-  evidence_role: 'wallet-smoke';
-  route_governance_action_hash: string;
-  wallet_platform: 'web';
-  wallet_commit: string;
-}>;
-
 type IrohaTransferCodecInput = {
   amount: string;
-  assetDefinitionId: string;
   authority: string;
-  chainId: string;
+  creationTimeMs: number;
   derivationPath: string;
   destinationAccountId: string;
-  metadata?: IrohaWalletSmokeMetadata;
+  feeAssetDefinitionId: string;
+  maxFee: string;
   mnemonicOrSeed: string;
-  network: IrohaNetworkKey;
+  networkId: string;
+  networkPrefix: number;
   signingPublicKeyHex: string;
-  sourceAccountId: string;
   sourceAssetId: string;
+  ttlMs: number;
 };
 
 type IrohaSignedTransaction = {
-  signedTransaction: ArrayBuffer | ArrayBufferView | string;
-  signedTransactionHashHex?: string;
+  signedTransaction: Uint8Array;
+  signedTransactionHashHex: string;
 };
 
 type IrohaTransferCodec = {
   buildAndSignTransfer(input: IrohaTransferCodecInput): Promise<IrohaSignedTransaction>;
 };
 
+// Counts the bytes Torii charges per-byte fees on for an unsigned transfer.
+type IrohaTransferFrameSizer = (input: Omit<IrohaTransferCodecInput, 'derivationPath' | 'mnemonicOrSeed'>) => number;
+
 type PreparedIrohaTransfer = {
   amount: string;
   assetDefinitionId: string;
-  chainId: string;
   destinationAccountId: string;
   network: IrohaNetworkKey;
   networkKey: NetworkName;
@@ -71,8 +89,19 @@ type PreparedIrohaTransfer = {
   toriiBaseUrl: string;
 };
 
-type IrohaTransferRoute = Pick<PreparedIrohaTransfer, 'chainId' | 'network' | 'toriiBaseUrl'> & {
-  configuredToriiBaseUrl: string;
+type IrohaFeeSchedule = {
+  assetDefinitionId: string;
+  baseFee: string;
+  perByteFee: string;
+  perGasUnitFee: string;
+  perInstructionFee: string;
+};
+
+type IrohaTransferQuote = {
+  fee: string;
+  feeAssetDefinitionId: string;
+  networkId: string;
+  networkPrefix: number;
 };
 
 function isIrohaTransferNetwork(network: NetworkJson | undefined): boolean {
@@ -83,75 +112,86 @@ function isIrohaTransferEnabled(): boolean {
   return process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true';
 }
 
-async function estimateIrohaTransferFee(params: IrohaTransferParams): Promise<string> {
+async function estimateIrohaTransferFee(
+  params: IrohaTransferParams,
+  frameSizer: IrohaTransferFrameSizer,
+  client?: IrohaToriiWalletClient
+): Promise<string> {
   if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
 
-  prepareIrohaTransfer(params);
+  const prepared = prepareIrohaFeeEstimate(params);
+  const torii = client ?? createTransferClient(prepared);
+  const quote = await quoteIrohaTransfer(torii, prepared, frameSizer, Date.now());
 
-  throw new Error('iroha_fee_estimation_unavailable');
+  return quote.fee;
 }
 
-async function makeIrohaTransfer(params: IrohaTransferParams, codec?: IrohaTransferCodec): Promise<void> {
+// The send form asks for the fee before the recipient and amount are complete. The fee does not
+// depend on either, so an incomplete form is priced as a transfer of 1 unit to the sender.
+function prepareIrohaFeeEstimate(params: IrohaTransferParams): PreparedIrohaTransfer {
+  const network = getIrohaNetworkKey(params.state.networkService.networkMap[params.networkKey]);
+  const source = resolveIrohaTransferSource(params.state, params.from, network);
+  const amount = isValidIrohaAmount(params.amount) ? params.amount : '1';
+  const to = isIrohaRecipientFor(params.to, network) ? params.to : source.irohaAddress;
+
+  return prepareIrohaTransfer({ ...params, amount, to });
+}
+
+function isValidIrohaAmount(amount: string | undefined): amount is string {
+  try {
+    normalizeIrohaTransferAmount(amount ?? '');
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isIrohaRecipientFor(address: string | undefined, network: IrohaNetworkKey): address is string {
+  try {
+    normalizeIrohaRecipient(address ?? '', network);
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function makeIrohaTransfer(
+  params: IrohaTransferParams,
+  codec: IrohaTransferCodec | undefined,
+  frameSizer: IrohaTransferFrameSizer,
+  client?: IrohaToriiWalletClient
+): Promise<void> {
   if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
 
   const prepared = prepareIrohaTransfer(params);
 
   if (!codec) throw new Error('iroha_transfer_codec_unavailable');
 
-  return submitPreparedIrohaTransfer(params, prepared, codec);
-}
+  const torii = client ?? createTransferClient(prepared);
+  const creationTimeMs = Date.now();
+  const quote = await quoteIrohaTransfer(torii, prepared, frameSizer, creationTimeMs);
 
-async function makeIrohaWalletSmokeTransfer(
-  params: IrohaTransferParams,
-  routeGovernanceActionHash: string,
-  walletCommit: string,
-  codec?: IrohaTransferCodec
-): Promise<void> {
-  if (!isIrohaTransferEnabled()) throw new Error('iroha_transfer_disabled');
+  if (typeof params.approvedMaxFee !== 'string') throw new Error('transfer_fee_approval_required');
+  const approvedMaxFee = canonicalizeIrohaQuantity(params.approvedMaxFee);
 
-  const metadata = createIrohaWalletSmokeMetadata(routeGovernanceActionHash, walletCommit);
-  const route = resolveIrohaTransferRoute(params);
+  if (compareIrohaQuantities(quote.fee, approvedMaxFee) > 0) throw new Error('transfer_fee_changed');
 
-  if (route.network !== 'nexus') throw new Error('iroha_wallet_smoke_requires_nexus');
-  if (route.chainId !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId) {
-    throw new Error('iroha_wallet_smoke_requires_canonical_nexus_chain');
-  }
-  if (route.configuredToriiBaseUrl !== UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl) {
-    throw new Error('iroha_wallet_smoke_requires_canonical_nexus_torii');
-  }
-  if (!codec) throw new Error('iroha_transfer_codec_unavailable');
-
-  const prepared = prepareIrohaTransferForRoute(params, route);
-
-  return submitPreparedIrohaTransfer(params, prepared, codec, metadata);
-}
-
-async function submitPreparedIrohaTransfer(
-  params: IrohaTransferParams,
-  prepared: PreparedIrohaTransfer,
-  codec: IrohaTransferCodec,
-  metadata?: IrohaWalletSmokeMetadata
-): Promise<void> {
+  await assertIrohaTransferFunded(torii, prepared, quote);
 
   const result = await codec.buildAndSignTransfer({
-    amount: prepared.amount,
-    assetDefinitionId: prepared.assetDefinitionId,
-    authority: prepared.source.irohaAddress,
-    chainId: prepared.chainId,
+    ...transferPayloadInput(prepared, quote, creationTimeMs),
     derivationPath: prepared.source.derivationPath,
-    destinationAccountId: prepared.destinationAccountId,
-    ...(metadata ? { metadata } : {}),
     mnemonicOrSeed: prepared.source.mnemonicOrSeed,
-    network: prepared.network,
-    signingPublicKeyHex: prepared.source.publicKeyHex,
-    sourceAccountId: prepared.source.irohaAddress,
-    sourceAssetId: prepared.sourceAssetId,
   });
-  const signedTransaction = normalizeSignedTransactionPayload(result.signedTransaction);
-  const signedTransactionHash = normalizeSignedTransactionHash(result.signedTransactionHashHex);
-  const client = new IrohaToriiWalletClient({ baseUrl: prepared.toriiBaseUrl, network: prepared.network });
+  const hash = normalizeSignedTransactionHash(result.signedTransactionHashHex);
 
-  await client.submitTransactionAndWait(signedTransaction, signedTransactionHash);
+  if (!(result.signedTransaction instanceof Uint8Array) || result.signedTransaction.byteLength === 0) {
+    throw new Error('invalid_iroha_signed_transaction');
+  }
+
+  await torii.submitTransactionAndWait(result.signedTransaction, hash, { timeoutMs: IROHA_TRANSFER_WAIT_MS });
 
   params.callback?.({ status: true });
 
@@ -165,123 +205,192 @@ async function submitPreparedIrohaTransfer(
     })
     .catch((error) => console.warn('Failed to refresh Iroha balance after transfer', error));
 
-  console.info(`Iroha transfer applied: ${signedTransactionHash}`);
+  console.info(`Iroha transfer applied: ${hash}`);
 }
 
-function createIrohaWalletSmokeMetadata(
-  routeGovernanceActionHash: string,
-  walletCommit: string
-): IrohaWalletSmokeMetadata {
-  return normalizeIrohaWalletSmokeMetadata({
-    evidence_role: 'wallet-smoke',
-    route_governance_action_hash: routeGovernanceActionHash,
-    wallet_platform: 'web',
-    wallet_commit: walletCommit,
-  });
+function createTransferClient(prepared: PreparedIrohaTransfer): IrohaToriiWalletClient {
+  return new IrohaToriiWalletClient({ baseUrl: prepared.toriiBaseUrl, network: prepared.network });
 }
 
-function normalizeIrohaWalletSmokeMetadata(metadata: unknown): IrohaWalletSmokeMetadata {
-  if (metadata === null || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    throw new Error('invalid_iroha_wallet_smoke_metadata');
+function transferPayloadInput(
+  prepared: PreparedIrohaTransfer,
+  quote: IrohaTransferQuote,
+  creationTimeMs: number
+): Omit<IrohaTransferCodecInput, 'derivationPath' | 'mnemonicOrSeed'> {
+  return {
+    amount: prepared.amount,
+    authority: prepared.source.irohaAddress,
+    creationTimeMs,
+    destinationAccountId: prepared.destinationAccountId,
+    feeAssetDefinitionId: quote.feeAssetDefinitionId,
+    maxFee: quote.fee,
+    networkId: quote.networkId,
+    networkPrefix: quote.networkPrefix,
+    signingPublicKeyHex: prepared.source.publicKeyHex,
+    sourceAssetId: prepared.sourceAssetId,
+    ttlMs: IROHA_TRANSFER_TTL_MS,
+  };
+}
+
+// Confirms the node is the pinned network on the wire format the codec encodes, checks the
+// amount against the asset's precision, and prices the exact transfer from the live fee schedule.
+async function quoteIrohaTransfer(
+  client: IrohaToriiWalletClient,
+  prepared: PreparedIrohaTransfer,
+  frameSizer: IrohaTransferFrameSizer,
+  creationTimeMs: number
+): Promise<IrohaTransferQuote> {
+  const profile = UNIVERSAL_WALLET_IROHA_NETWORKS[prepared.network];
+  const pinnedNetworkId = 'networkId' in profile ? profile.networkId : undefined;
+
+  if (!pinnedNetworkId) throw new Error('iroha_network_identity_unavailable');
+
+  const [networkId, capabilities, parameters, definition] = await Promise.all([
+    client.getNetworkId(),
+    client.getNodeCapabilities<unknown>(),
+    client.getParameters<unknown>(),
+    client.getAssetDefinition<unknown>(prepared.assetDefinitionId),
+  ]);
+
+  if (networkId !== pinnedNetworkId) throw new Error('iroha_network_reset');
+  assertSupportedWire(capabilities.body);
+  assertAmountPrecision(prepared, definition.body);
+
+  const schedule = parseFeeSchedule(parameters.body);
+  if (schedule.assetDefinitionId !== UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.id) {
+    throw new Error('iroha_fee_estimation_unavailable');
+  }
+  let quote: IrohaTransferQuote = {
+    fee: computeIrohaTransferFee(schedule, 0),
+    feeAssetDefinitionId: schedule.assetDefinitionId,
+    networkId,
+    networkPrefix: profile.chainDiscriminant,
+  };
+
+  // The fee cap is part of the signed bytes, so a per-byte fee needs a stable fixed point.
+  for (let attempt = 0; attempt < MAX_FEE_REFINEMENTS; attempt += 1) {
+    const frameBytes = frameSizer(transferPayloadInput(prepared, quote, creationTimeMs));
+    const fee = computeIrohaTransferFee(schedule, frameBytes);
+
+    if (fee === quote.fee) return quote;
+    quote = { ...quote, fee };
   }
 
-  const prototype = Object.getPrototypeOf(metadata);
+  throw new Error('iroha_fee_estimation_unavailable');
+}
 
-  if (prototype !== Object.prototype && prototype !== null) {
-    throw new Error('invalid_iroha_wallet_smoke_metadata');
+function computeIrohaTransferFee(schedule: IrohaFeeSchedule, frameBytes: number): string {
+  return addIrohaQuantities(
+    schedule.baseFee,
+    multiplyIrohaQuantity(schedule.perByteFee, frameBytes),
+    multiplyIrohaQuantity(schedule.perInstructionFee, IROHA_TRANSFER_INSTRUCTIONS),
+    multiplyIrohaQuantity(schedule.perGasUnitFee, IROHA_TRANSFER_GAS_UNITS)
+  );
+}
+
+function parseFeeSchedule(parameters: unknown): IrohaFeeSchedule {
+  const custom = isRecord(parameters) && isRecord(parameters.custom) ? parameters.custom : undefined;
+  const entry = custom && isRecord(custom.root_fees_v1) ? custom.root_fees_v1 : undefined;
+  const fees = entry && isRecord(entry.payload) ? entry.payload : undefined;
+
+  if (!fees || typeof fees.fee_asset_id !== 'string' || !fees.fee_asset_id) {
+    throw new Error('iroha_fee_estimation_unavailable');
   }
 
-  const expectedKeys = [
-    'evidence_role',
-    'route_governance_action_hash',
-    'wallet_platform',
-    'wallet_commit',
-  ] as const;
-  const ownKeys = Reflect.ownKeys(metadata);
+  try {
+    return {
+      assetDefinitionId: normalizeIrohaAssetDefinitionId(fees.fee_asset_id),
+      baseFee: canonicalizeIrohaQuantity(String(fees.base_fee)),
+      perByteFee: canonicalizeIrohaQuantity(String(fees.per_byte_fee)),
+      perGasUnitFee: canonicalizeIrohaQuantity(String(fees.per_gas_unit_fee)),
+      perInstructionFee: canonicalizeIrohaQuantity(String(fees.per_instruction_fee)),
+    };
+  } catch {
+    throw new Error('iroha_fee_estimation_unavailable');
+  }
+}
+
+function assertSupportedWire(capabilities: unknown): void {
+  if (
+    !isRecord(capabilities) ||
+    capabilities.data_model_version !== IROHA_TRANSACTION_WIRE.dataModelVersion ||
+    capabilities.signed_transaction_schema_hash_hex !== IROHA_TRANSACTION_WIRE.signedTransactionSchemaHash
+  ) {
+    throw new Error('iroha_node_protocol_unsupported');
+  }
+}
+
+function assertAmountPrecision(prepared: PreparedIrohaTransfer, definition: unknown): void {
+  const spec = isRecord(definition) && isRecord(definition.spec) ? definition.spec : undefined;
+  const scale = spec?.scale;
 
   if (
-    ownKeys.length !== expectedKeys.length ||
-    ownKeys.some((key) => typeof key !== 'string' || !expectedKeys.includes(key as typeof expectedKeys[number]))
+    !isRecord(definition) ||
+    definition.id !== prepared.assetDefinitionId ||
+    typeof scale !== 'number' ||
+    !Number.isInteger(scale) ||
+    scale < 0 ||
+    scale > 28
   ) {
-    throw new Error('invalid_iroha_wallet_smoke_metadata');
+    throw new Error('iroha_asset_definition_unavailable');
   }
+  if (getIrohaQuantityScale(prepared.amount) > scale) throw new Error('invalid_iroha_amount_precision');
+}
 
-  const snapshot = Object.create(null) as Record<typeof expectedKeys[number], unknown>;
+async function assertIrohaTransferFunded(
+  client: IrohaToriiWalletClient,
+  prepared: PreparedIrohaTransfer,
+  quote: IrohaTransferQuote
+): Promise<void> {
+  const balances = new Map<string, string>();
+  let cursor: string | undefined;
 
-  for (const key of expectedKeys) {
-    const descriptor = Object.getOwnPropertyDescriptor(metadata, key);
+  for (let page = 0; page < MAX_BALANCE_PAGES; page += 1) {
+    const { body } = await client.getAccountAssets<Record<string, unknown>>(prepared.source.irohaAddress, { cursor });
 
-    if (!descriptor || !descriptor.enumerable || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) {
-      throw new Error('invalid_iroha_wallet_smoke_metadata');
+    for (const item of body.items) {
+      if (item.account_id !== prepared.source.irohaAddress || item.scope !== 'global') continue;
+      if (typeof item.asset !== 'string' || typeof item.quantity !== 'string') continue;
+
+      balances.set(item.asset, addIrohaQuantities(balances.get(item.asset) ?? '0', item.quantity));
     }
-    snapshot[key] = descriptor.value;
+    if (!body.next_cursor) break;
+    cursor = body.next_cursor;
   }
 
-  if (
-    snapshot.evidence_role !== 'wallet-smoke' ||
-    snapshot.wallet_platform !== 'web' ||
-    typeof snapshot.route_governance_action_hash !== 'string' ||
-    !/^sha256:[0-9a-f]{64}$/u.test(snapshot.route_governance_action_hash) ||
-    /^sha256:0{64}$/u.test(snapshot.route_governance_action_hash) ||
-    typeof snapshot.wallet_commit !== 'string' ||
-    !/^[0-9a-f]{40}$/u.test(snapshot.wallet_commit) ||
-    /^0{40}$/u.test(snapshot.wallet_commit)
-  ) {
-    throw new Error('invalid_iroha_wallet_smoke_metadata');
+  const required = new Map<string, string>([[prepared.assetDefinitionId, prepared.amount]]);
+
+  required.set(quote.feeAssetDefinitionId, addIrohaQuantities(required.get(quote.feeAssetDefinitionId) ?? '0', quote.fee));
+
+  for (const [assetId, amount] of required) {
+    if (compareIrohaQuantities(balances.get(assetId) ?? '0', amount) < 0) {
+      throw new Error(assetId === prepared.assetDefinitionId ? 'iroha_insufficient_balance' : 'iroha_insufficient_fee_balance');
+    }
   }
-
-  return Object.freeze({
-    evidence_role: snapshot.evidence_role,
-    route_governance_action_hash: snapshot.route_governance_action_hash,
-    wallet_platform: snapshot.wallet_platform,
-    wallet_commit: snapshot.wallet_commit,
-  });
 }
 
-function prepareIrohaTransfer(params: IrohaTransferParams): PreparedIrohaTransfer {
-  return prepareIrohaTransferForRoute(params, resolveIrohaTransferRoute(params));
-}
-
-function resolveIrohaTransferRoute({ networkKey, state }: IrohaTransferParams): IrohaTransferRoute {
+function prepareIrohaTransfer({ amount, assetId, from, networkKey, state, to }: IrohaTransferParams): PreparedIrohaTransfer {
   const networkJson = state.networkService.networkMap[networkKey];
 
   if (!isIrohaTransferNetwork(networkJson)) throw new Error('unsupported_iroha_network');
 
   const network = getIrohaNetworkKey(networkJson);
   const configuredToriiBaseUrl = getConfiguredIrohaToriiBaseUrl(networkJson, network);
-  const chainId = networkJson.chainId;
 
   if (!configuredToriiBaseUrl) throw new Error('iroha_network_unavailable');
 
-  return {
-    chainId,
-    configuredToriiBaseUrl,
-    network,
-    toriiBaseUrl: normalizeIrohaToriiBaseUrl(configuredToriiBaseUrl),
-  };
-}
-
-function prepareIrohaTransferForRoute(
-  { amount, assetId, from, networkKey, state, to }: IrohaTransferParams,
-  route: IrohaTransferRoute
-): PreparedIrohaTransfer {
-  const { chainId, network, toriiBaseUrl } = route;
-
   const source = resolveIrohaTransferSource(state, from, network);
-  const destinationAccountId = normalizeIrohaRecipient(to, network);
-  const normalizedAmount = normalizeIrohaTransferAmount(amount);
   const assetDefinitionId = normalizeIrohaAssetDefinitionId(assetId, network);
 
   return {
-    amount: normalizedAmount,
+    amount: normalizeIrohaTransferAmount(amount),
     assetDefinitionId,
-    chainId,
-    destinationAccountId,
+    destinationAccountId: normalizeIrohaRecipient(to, network),
     network,
     networkKey,
     source,
     sourceAssetId: `${assetDefinitionId}#${source.irohaAddress}`,
-    toriiBaseUrl,
+    toriiBaseUrl: normalizeIrohaToriiBaseUrl(configuredToriiBaseUrl),
   };
 }
 
@@ -375,6 +484,7 @@ function getConfiguredIrohaToriiBaseUrl(network: NetworkJson, key: IrohaNetworkK
   return urls.find((url): url is string => typeof url === 'string' && url.length > 0) ?? null;
 }
 
+// Torii routes live at the origin root; older network records stored the MCP endpoint.
 function normalizeIrohaToriiBaseUrl(value: string): string {
   if (!value || value !== value.trim()) throw new Error('invalid_iroha_torii_url');
 
@@ -398,6 +508,8 @@ function normalizeIrohaToriiBaseUrl(value: string): string {
     throw new Error('invalid_iroha_torii_url');
   }
 
+  url.pathname = url.pathname.replace(/\/+$/u, '').replace(/\/v1\/mcp$/u, '');
+
   return url.toString().replace(/\/+$/u, '');
 }
 
@@ -406,14 +518,14 @@ function normalizeIrohaRecipient(address: string, network: IrohaNetworkKey): str
 }
 
 function normalizeIrohaTransferAmount(amount: string): string {
-  if (amount !== amount.trim()) throw new Error('invalid_iroha_amount');
+  if (typeof amount !== 'string' || amount !== amount.trim()) throw new Error('invalid_iroha_amount');
   if (!/^(?:0|[1-9]\d*)(?:\.\d{1,28})?$/u.test(amount)) throw new Error('invalid_iroha_amount');
 
-  const [whole, fraction = ''] = amount.split('.');
+  const canonical = canonicalizeIrohaQuantity(amount);
 
-  if (BigInt(whole) === 0n && /^0*$/u.test(fraction)) throw new Error('invalid_iroha_amount');
+  if (canonical === '0') throw new Error('invalid_iroha_amount');
 
-  return amount;
+  return canonical;
 }
 
 function normalizeIrohaAssetDefinitionId(assetId: string, network: IrohaNetworkKey = 'taira'): string {
@@ -428,31 +540,6 @@ function normalizeIrohaAssetDefinitionId(assetId: string, network: IrohaNetworkK
   return assetId;
 }
 
-function normalizeSignedTransactionPayload(payload: ArrayBuffer | ArrayBufferView | string): BodyInit {
-  if (typeof payload === 'string') return hexToArrayBuffer(payload);
-  if (payload instanceof ArrayBuffer && payload.byteLength > 0) return payload;
-  if (ArrayBuffer.isView(payload) && payload.byteLength > 0) return payload as BodyInit;
-
-  throw new Error('invalid_iroha_signed_transaction');
-}
-
-function hexToArrayBuffer(value: string): ArrayBuffer {
-  const normalized = value.startsWith('0x') ? value.slice(2) : value;
-
-  if (!/^[0-9a-fA-F]+$/u.test(normalized) || normalized.length % 2 !== 0) {
-    throw new Error('invalid_iroha_signed_transaction');
-  }
-
-  const buffer = new ArrayBuffer(normalized.length / 2);
-  const bytes = new Uint8Array(buffer);
-
-  for (let i = 0; i < normalized.length; i += 2) {
-    bytes[i / 2] = Number.parseInt(normalized.slice(i, i + 2), 16);
-  }
-
-  return buffer;
-}
-
 function normalizeSignedTransactionHash(value: string | undefined): string {
   if (typeof value !== 'string' || !/^[0-9a-f]{63}[13579bdf]$/u.test(value)) {
     throw new Error('invalid_iroha_transaction_hash');
@@ -461,27 +548,34 @@ function normalizeSignedTransactionHash(value: string | undefined): string {
   return value;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export {
-  createIrohaWalletSmokeMetadata,
+  IROHA_TRANSFER_GAS_UNITS,
+  IROHA_TRANSFER_TTL_MS,
+  computeIrohaTransferFee,
   estimateIrohaTransferFee,
   getIrohaNetworkKey,
   getIrohaToriiBaseUrl,
   isIrohaTransferEnabled,
   isIrohaTransferNetwork,
   makeIrohaTransfer,
-  makeIrohaWalletSmokeTransfer,
   normalizeIrohaAssetDefinitionId,
   normalizeIrohaToriiBaseUrl,
-  normalizeIrohaWalletSmokeMetadata,
   normalizeIrohaTransferAmount,
   prepareIrohaTransfer,
+  quoteIrohaTransfer,
   resolveIrohaTransferSource,
+  type IrohaFeeSchedule,
   type IrohaNetworkKey,
   type IrohaSignedTransaction,
   type IrohaTransferCodec,
   type IrohaTransferCodecInput,
+  type IrohaTransferFrameSizer,
   type IrohaTransferParams,
+  type IrohaTransferQuote,
   type IrohaTransferSource,
-  type IrohaWalletSmokeMetadata,
   type PreparedIrohaTransfer,
 };

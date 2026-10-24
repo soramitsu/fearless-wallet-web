@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-12",
+  "source_commit": "3fabd977b66c048ee2be077338df492f5f49bd11",
+  "source_sha256": {
+    "src/screens/accounts/Nodes.vue": "8355965f49afc1eb8b711a928bbdade5a281a5fee278c5c2a78f5ba46b0eef49",
+    "src/screens/main/SelectWalletPopup.vue": "70f39f1d3b76693cd286e38b8f7c1fe9322ad7004c026f72a3bc5b636c150730",
+    "src/screens/staking/myStake/History.vue": "fb84f56d6241535044a7503f01688229ab01ef78ff128511a7c832f3a360930b",
+    "tests/unit/screen-event-payloads.spec.ts": "3e9557ec2bbcaddafa3529566b28d2664cda6cf9eace89c8ad68acf6a1ba0bd5"
+  },
+  "result": "Four event/selection regressions pass; all three new payload regressions failed before the corrections. TypeScript and changed-file lint pass.",
+  "evidence_root": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "logs_sha256": {
+    "wa6-screen-events-before-3.log": "cb6465d76e8fa223af0a42550502cbd5ba7fd62d3038c25d93d1f9c687ec18c0",
+    "wa6-screen-events-after.log": "7bd66cfc923f39517c640ebcce285ad4478cf1ecfb82bc8885934b1af88451e4",
+    "wa6-screen-events-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-screen-events-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "coverage": [
+    "Real WalletInfo menu button preserves menu position and exact wallet address.",
+    "Custom-node event forwards both position and active state together with exact network/name/URL.",
+    "Staking history event forwards the selected record only."
+  ],
+  "limitations": [
+    "First two development attempts failed test setup due unrelated route imports; preserved in before and before-2 logs.",
+    "No broad-suite or browser qualification of this commit claimed; run with the next screen integration gate."
+  ]
+}

@@ -333,7 +333,7 @@ write_fixture_repo() {
   mkdir -p "$repo/scripts" "$repo/src"
   cp "$CHECK_IROHA_JS_SDK_SCRIPT" "$repo/scripts/check-iroha-js-sdk-artifact.sh"
   chmod +x "$repo/scripts/check-iroha-js-sdk-artifact.sh"
-  printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=false\nVUE_APP_ENABLE_BITCOIN_TRANSFERS=false\n' > "$repo/.env.example"
+  printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=false\nVUE_APP_ENABLE_IROHA_CONNECT=false\nVUE_APP_ENABLE_BITCOIN_TRANSFERS=false\nVUE_APP_ENABLE_SOLANA_TRANSFERS=true\n' > "$repo/.env.example"
   printf 'export const clean = true;\n' > "$repo/src/index.ts"
 
   (
@@ -606,16 +606,66 @@ expect_failure \
   env IROHA_JS_SDK_PACKAGE_DIR="$AGGREGATE_BASELINE_DRIFT_REPO/iroha-js-package"
 
 expect_failure \
-  "env transfer enablement without reviewed codec artifact" \
+  "Iroha transfer enablement without Taira transfer evidence" \
   "$VALID_REPO" \
-  "browser_transaction_codec_unpublished_source_only" \
+  "iroha_transfer_evidence_missing" \
   env VUE_APP_ENABLE_IROHA_TRANSFERS=true
 
+# Bitcoin retains its release evidence gate; Solana ships enabled.
+expect_failure "Bitcoin enablement without evidence" "$VALID_REPO" "bitcoin_testnet_broadcast_evidence_missing" env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true
+run_audit "$VALID_REPO" env VUE_APP_ENABLE_SOLANA_TRANSFERS=true >/dev/null
+
 expect_failure \
-  "Bitcoin transfer enablement without funded broadcast evidence" \
+  "IrohaConnect enablement while signing is unreviewed" \
   "$VALID_REPO" \
+  "iroha_connect_blind_signing_unreviewed" \
+  env VUE_APP_ENABLE_IROHA_CONNECT=true
+
+IROHA_CONNECT_FILE_REPO="$TMP_DIR/iroha-connect-file"
+write_fixture_repo "$IROHA_CONNECT_FILE_REPO"
+printf 'VUE_APP_ENABLE_IROHA_CONNECT=true\n' > "$IROHA_CONNECT_FILE_REPO/.env.example"
+(
+  cd "$IROHA_CONNECT_FILE_REPO"
+  git add .env.example
+)
+expect_failure \
+  "IrohaConnect enablement in a tracked env file" \
+  "$IROHA_CONNECT_FILE_REPO" \
+  "iroha_connect_blind_signing_unreviewed" \
+  env
+
+write_transfer_manifests() {
+  local repo="$1"
+  local status="$2"
+  local enabled="$3"
+
+  mkdir -p "$repo/config" "$repo/scripts"
+  printf '{"status":"%s","releaseEnabled":%s}\n' "$status" "$enabled" > "$repo/config/iroha-production-send-readiness.json"
+  printf '{"status":"%s","releaseEnabled":%s}\n' "$status" "$enabled" > "$repo/scripts/bitcoin-testnet-broadcast-evidence.json"
+}
+
+BLOCKED_EVIDENCE_REPO="$TMP_DIR/blocked-evidence"
+write_fixture_repo "$BLOCKED_EVIDENCE_REPO"
+write_transfer_manifests "$BLOCKED_EVIDENCE_REPO" blocked false
+expect_failure \
+  "Iroha transfer enablement against a blocked manifest" \
+  "$BLOCKED_EVIDENCE_REPO" \
+  "iroha_transfer_evidence_missing" \
+  env VUE_APP_ENABLE_IROHA_TRANSFERS=true
+
+UNRELEASED_EVIDENCE_REPO="$TMP_DIR/ready-but-unreleased-evidence"
+write_fixture_repo "$UNRELEASED_EVIDENCE_REPO"
+write_transfer_manifests "$UNRELEASED_EVIDENCE_REPO" ready false
+expect_failure \
+  "Bitcoin transfer enablement against a ready manifest that is not release-enabled" \
+  "$UNRELEASED_EVIDENCE_REPO" \
   "bitcoin_testnet_broadcast_evidence_missing" \
   env VUE_APP_ENABLE_BITCOIN_TRANSFERS=true
+
+READY_EVIDENCE_REPO="$TMP_DIR/ready-evidence"
+write_fixture_repo "$READY_EVIDENCE_REPO"
+write_transfer_manifests "$READY_EVIDENCE_REPO" ready true
+run_audit "$READY_EVIDENCE_REPO" env VUE_APP_ENABLE_IROHA_TRANSFERS=true VUE_APP_ENABLE_BITCOIN_TRANSFERS=true >/dev/null
 
 INVALID_VALUE_REPO="$TMP_DIR/invalid-value"
 write_fixture_repo "$INVALID_VALUE_REPO"
@@ -643,6 +693,19 @@ expect_failure \
   "invalid VUE_APP_ENABLE_BITCOIN_TRANSFERS=yes" \
   env
 
+INVALID_SOLANA_VALUE_REPO="$TMP_DIR/invalid-solana-value"
+write_fixture_repo "$INVALID_SOLANA_VALUE_REPO"
+printf 'VUE_APP_ENABLE_SOLANA_TRANSFERS=1\n' > "$INVALID_SOLANA_VALUE_REPO/.env.example"
+(
+  cd "$INVALID_SOLANA_VALUE_REPO"
+  git add .env.example
+)
+expect_failure \
+  "invalid Solana transfer enablement value" \
+  "$INVALID_SOLANA_VALUE_REPO" \
+  "invalid VUE_APP_ENABLE_SOLANA_TRANSFERS=1" \
+  env
+
 ENABLED_REPO="$TMP_DIR/enabled-with-sdk"
 write_fixture_repo "$ENABLED_REPO"
 printf 'VUE_APP_ENABLE_IROHA_TRANSFERS=true\n' > "$ENABLED_REPO/.env.example"
@@ -652,9 +715,9 @@ write_fixture_package "$ENABLED_REPO/iroha-js-package"
   git add .env.example
 )
 expect_failure \
-  "transfer enablement with pinned old package still blocked without reviewed codec artifact" \
+  "transfer enablement in an env file still requires Taira transfer evidence" \
   "$ENABLED_REPO" \
-  "browser_transaction_codec_unpublished_source_only" \
+  "iroha_transfer_evidence_missing" \
   env IROHA_JS_SDK_PACKAGE_DIR="$ENABLED_REPO/iroha-js-package"
 
 GITHUB_RELEASE_REPO="$TMP_DIR/enabled-with-github-release-sdk"
@@ -684,4 +747,4 @@ expect_failure \
   "IROHA_JS_SDK_RELEASE_REPO, IROHA_JS_SDK_RELEASE_TAG, IROHA_JS_SDK_RELEASE_ASSET, and IROHA_JS_SDK_RELEASE_SHA256 are required together" \
   env IROHA_JS_SDK_RELEASE_REPO="hyperledger-iroha/iroha"
 
-echo "[public-artifacts-audit-test] 19 modes passed (2 positive, 17 adversarial): clean-baseline,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,bitcoin-transfer-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"
+echo "[public-artifacts-audit-test] 22 modes passed (3 positive, 19 adversarial): clean-baseline,bitcoin-solana-send-enabled,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,iroha-connect-enablement-blocked,iroha-connect-file-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,invalid-solana-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"

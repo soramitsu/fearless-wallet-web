@@ -37,12 +37,21 @@
           </span>
         </div>
 
+        <div v-if="snapshot.actionsPaused" class="capability-state" role="status" data-testid="polkamarkt-paused">
+          <strong>{{ t('polkamarktPage.pausedTitle') }}</strong>
+          <span>{{ t('polkamarktPage.pausedBody') }}</span>
+        </div>
+
         <div v-if="uniqueWarnings.length" class="capability-state" data-testid="polkamarkt-capability-state">
           <strong>{{ t('polkamarktPage.capabilityStatus') }}</strong>
           <span>{{ t('polkamarktPage.fallback.dataError') }}</span>
         </div>
 
-        <div v-if="accountsStore.showPolkaswapAlert" class="risk-gate" data-testid="polkamarkt-disclaimer-gate">
+        <div
+          v-if="accountsStore.showPolkaswapAlert && !snapshot.actionsPaused"
+          class="risk-gate"
+          data-testid="polkamarkt-disclaimer-gate"
+        >
           <strong>{{ t('polkamarktPage.risk.title') }}</strong>
           <p>{{ t('polkamarktPage.risk.description') }}</p>
           <label>
@@ -108,7 +117,7 @@
               <span>{{ t('polkamarktPage.authoritativeQuote') }}</span>
             </div>
             <div class="segmented">
-              <button type="button" :class="{ selected: mode === 'buy' }" @click="setMode('buy')">
+              <button v-if="!recoveryOnly" type="button" :class="{ selected: mode === 'buy' }" @click="setMode('buy')">
                 {{ t('polkamarktPage.buy') }}
               </button>
               <button type="button" :class="{ selected: mode === 'sell' }" @click="setMode('sell')">
@@ -160,6 +169,7 @@
               <h2>{{ t('polkamarktPage.claims') }}</h2>
               <span>{{ t('polkamarktPage.authoritativeState') }}</span>
             </div>
+            <p v-if="snapshot.actionsPaused" class="inline-reason">{{ t('polkamarktPage.actionReason.paused') }}</p>
             <div v-if="positive(selectedClaim.claimablePayout ?? selectedClaim.traderPayout)">
               <span>{{ t('polkamarktPage.traderPayout') }}</span>
               <strong>{{ codecMoney(selectedClaim.claimablePayout ?? selectedClaim.traderPayout) }} KUSD</strong>
@@ -289,20 +299,23 @@ import { Components } from '@/router/routes';
 import { getPolkamarktQuote, getPolkamarktSnapshot, mutatePolkamarkt } from '@/extension/messaging';
 import { useI18n } from '@/locales/useI18n';
 import { useAccountsStore } from '@/stores/accounts';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { isRecoveryPolkamarktAction } from '@/util/walletRecoveryActions';
 
 const route = useRoute();
 const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
+const recoveryOnly = useWalletRecovery();
 const contentHeight = CONTENT_FORM_HEIGHT;
 const views = ['Markets', 'Positions', 'Activity'] as const;
-const view = ref<(typeof views)[number]>('Markets');
+const view = ref<(typeof views)[number]>(recoveryOnly.value ? 'Positions' : 'Markets');
 const snapshot = ref<PolkamarktSnapshot | null>(null);
 const loading = ref(false);
 const fatalError = ref('');
 const search = ref('');
 const statusFilter = ref<'active' | 'finalized' | 'all'>('active');
-const mode = ref<PolkamarktTradeMode>('buy');
+const mode = ref<PolkamarktTradeMode>(recoveryOnly.value ? 'sell' : 'buy');
 const selectedOutcome = ref<PolkamarktOutcome>('Yes');
 const amount = ref('');
 const quote = ref<PolkamarktQuote | null>(null);
@@ -335,6 +348,7 @@ const filteredMarkets = computed(() => {
 const actionReason = computed(() => {
   const state = snapshot.value;
   if (!state) return t('polkamarktPage.actionReason.loading');
+  if (state.actionsPaused) return t('polkamarktPage.actionReason.paused');
   if (selectedMarket.value?.displayStatus !== 'open') return t('polkamarktPage.actionReason.closed');
   if (!state.account.signable) {
     return state.account.address
@@ -353,8 +367,8 @@ const actionReason = computed(() => {
 const confirmTradeLabel = computed(() =>
   mode.value === 'buy' ? t('polkamarktPage.confirmBuy') : t('polkamarktPage.confirmSell')
 );
-const quoteDisabled = computed(() => Boolean(actionReason.value || !/^\d+(\.\d+)?$/.test(amount.value) || amount.value === '0'));
-const mutationDisabled = computed(() => Boolean(actionReason.value || !quote.value));
+const quoteDisabled = computed(() => Boolean((recoveryOnly.value && !isRecoveryPolkamarktAction(mode.value)) || actionReason.value || !/^\d+(\.\d+)?$/.test(amount.value) || amount.value === '0'));
+const mutationDisabled = computed(() => Boolean((recoveryOnly.value && !isRecoveryPolkamarktAction(mode.value)) || actionReason.value || !quote.value));
 const canClaimMarket = computed(() => Boolean(snapshot.value?.account.signable && snapshot.value?.account.hasXorForFees && snapshot.value?.capabilities.claimMarket && !accountsStore.showPolkaswapAlert));
 const canClaimCreator = computed(() => Boolean(snapshot.value?.account.signable && snapshot.value?.account.hasXorForFees && snapshot.value?.capabilities.claimCreatorFees && !accountsStore.showPolkaswapAlert));
 const historyPolyline = computed(() => {
@@ -429,10 +443,12 @@ function clearQuote() {
   quoteError.value = '';
 }
 async function acceptRisk() {
-  if (!riskAccepted.value) return;
+  // The disclaimer also covers live Polkaswap swaps, so never record it from a page with trading paused.
+  if (!riskAccepted.value || snapshot.value?.actionsPaused) return;
   await accountsStore.hidePolkaswapAlert();
 }
 function setMode(value: PolkamarktTradeMode) {
+  if (recoveryOnly.value && !isRecoveryPolkamarktAction(value)) return;
   mode.value = value;
   clearQuote();
 }
@@ -479,6 +495,7 @@ async function requestQuote() {
   }
 }
 async function runMutation(request: PolkamarktMutationRequest) {
+  if (recoveryOnly.value && !isRecoveryPolkamarktAction(request.action)) return;
   mutating.value = true;
   mutationMessage.value = '';
   try {
@@ -499,7 +516,7 @@ async function runMutation(request: PolkamarktMutationRequest) {
   }
 }
 function submitTrade() {
-  if (!selectedMarket.value || !quote.value) return;
+  if (!selectedMarket.value || !quote.value || mutationDisabled.value) return;
   runMutation({
     action: mode.value,
     marketId: selectedMarket.value.id,
@@ -526,6 +543,12 @@ watch(routeMarketId, () => {
   clearQuote();
   load();
 });
+watch(recoveryOnly, (restricted) => {
+  if (restricted) {
+    setMode('sell');
+    view.value = 'Positions';
+  }
+});
 onMounted(load);
 </script>
 
@@ -534,11 +557,11 @@ onMounted(load);
 .workspace-header { min-height: 56px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 10px; margin-bottom: 8px; text-align: left; }
 .workspace-header h1 { margin: 0; max-width: 270px; overflow: hidden; font-size: 1.18rem; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-header p { margin: 4px 0 0; color: $gray-color; font-size: 0.7rem; }
-.back, .refresh { border: 0; background: transparent; color: $pink-color; cursor: pointer; }
+.back, .refresh { border: 0; background: transparent; color: palette($pink-color, var(--fw-link)); cursor: pointer; }
 .back { padding: 2px 0; font-size: 1.3rem; }
 .refresh { padding: 4px 0; font-size: 0.7rem; }
 .center-state { height: 100%; display: grid; place-content: center; gap: 8px; padding: 24px; color: $gray-color; text-align: center; }
-.center-state button, .empty-state button { border: 0; background: transparent; color: $pink-color; cursor: pointer; }
+.center-state button, .empty-state button { border: 0; background: transparent; color: palette($pink-color, var(--fw-link)); cursor: pointer; }
 .network-strip { display: flex; justify-content: space-between; gap: 8px; padding: 12px 16px; border-bottom: $default-border; color: $gray-color; font-size: 0.68rem; }
 .fresh { color: $success-color; } .warning { color: $simple-orange-color; } .error { color: $reject-color; }
 .capability-state { display: flex; flex-direction: column; gap: 3px; margin: 12px 16px 0; padding: 10px 12px; border-left: 2px solid $simple-orange-color; background: rgba(247, 151, 30, 0.06); color: $gray-color; font-size: 0.68rem; text-align: left; }
@@ -546,7 +569,7 @@ onMounted(load);
 .risk-gate { margin: 12px 16px 0; padding: 12px; border: $default-border; border-radius: 9px; color: $gray-color; font-size: 0.69rem; text-align: left; }
 .risk-gate p { margin: 6px 0 9px; line-height: 1.35; }
 .risk-gate label { display: flex; align-items: flex-start; gap: 7px; }
-.risk-gate button { width: 100%; min-height: 34px; margin-top: 9px; border: 0; border-radius: 8px; background: $pink-color; color: white; cursor: pointer; }
+.risk-gate button { width: 100%; min-height: 34px; margin-top: 9px; border: 0; border-radius: 8px; background: palette($pink-color, var(--fw-fill)); color: palette(white, var(--fw-on-accent)); cursor: pointer; }
 .view-tabs, .segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; margin: 14px 16px 10px; padding: 3px; border-radius: 9px; background: rgba(127, 127, 127, 0.09); }
 .view-tabs button, .segmented button { min-height: 30px; border: 0; border-radius: 7px; background: transparent; color: $gray-color; cursor: pointer; font: inherit; font-size: 0.72rem; }
 .view-tabs button.selected, .segmented button.selected { background: $plain-white; color: #111; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); font-weight: 600; }
@@ -575,7 +598,7 @@ onMounted(load);
 .oracle { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; border-top: $default-border; color: $gray-color; font-size: 0.7rem; }
 .oracle strong { color: inherit; font-size: 0.62rem; text-transform: uppercase; }
 .share-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: $gray-color; font-size: 0.65rem; }
-.share-row button, .claim-card button { border: 0; background: transparent; color: $pink-color; cursor: pointer; }
+.share-row button, .claim-card button { border: 0; background: transparent; color: palette($pink-color, var(--fw-link)); cursor: pointer; }
 .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .section-heading h2 { margin: 0; font-size: 0.8rem; }
 .section-heading span { color: $gray-color; font-size: 0.62rem; }
@@ -585,7 +608,7 @@ onMounted(load);
 .trade-ticket .segmented { margin: 10px 0; }
 .trade-ticket .outcome { margin-top: 6px; }
 .trade-ticket label { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; color: $gray-color; font-size: 0.68rem; }
-.primary { width: 100%; min-height: 38px; margin-top: 10px; border: 0; border-radius: 9px; background: $pink-color; color: $plain-white; cursor: pointer; font-weight: 700; }
+.primary { width: 100%; min-height: 38px; margin-top: 10px; border: 0; border-radius: 9px; background: palette($pink-color, var(--fw-fill)); color: palette($plain-white, var(--fw-on-accent)); cursor: pointer; font-weight: 700; }
 button:disabled { cursor: default; opacity: 0.45; }
 .inline-reason { margin: 8px 0 0; color: $gray-color; font-size: 0.67rem; }
 .quote-preview { margin-top: 12px; padding-top: 10px; border-top: $default-border; }
@@ -593,6 +616,6 @@ button:disabled { cursor: default; opacity: 0.45; }
 .quote-preview strong { color: inherit; }
 .claim-card > div:not(.section-heading) { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; padding-top: 10px; font-size: 0.7rem; }
 .claim-card button { grid-column: 2; grid-row: 1 / span 2; }
-.mutation-message { position: sticky; bottom: 0; padding: 10px 16px; background: $success-color; color: white; font-size: 0.7rem; text-align: center; }
+.mutation-message { position: sticky; bottom: 0; padding: 10px 16px; background: $success-color; color: palette(white, var(--fw-bg-base)); font-size: 0.7rem; text-align: center; }
 .mutation-message.error { background: $reject-color; }
 </style>

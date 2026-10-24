@@ -1,14 +1,19 @@
 import { BN, isFunction } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import type { Extrinsic } from '@extension-base/api/substrate/types';
-import type {
-  ReviewedCrossChainExecution,
-  ReviewedRelayExecution,
-  ReviewedRuntimeCall,
+import {
+  relayExecutionSharesRelay,
+  type ReviewedCrossChainExecution,
+  type ReviewedRelayExecution,
+  type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
+import { assertReviewedRecipient } from '@/cross-chain/recipient';
+import { assertReviewedCallIndex, assertReviewedRuntimeVersion } from '@/cross-chain/reviewedRuntimes';
 
 type RuntimeMethod = ((...args: unknown[]) => Extrinsic) & {
   meta?: { args?: Array<{ name: { toString(): string } }> };
+  /** [pallet index, call index] from the runtime metadata. */
+  callIndex?: ArrayLike<number>;
 };
 
 export type ReviewedExecutionApi = {
@@ -52,12 +57,18 @@ function xcmAccountId32(api: ReviewedExecutionApi, address: string) {
   };
 }
 
+// Every reviewed execution is encoded as XCM V3 on purpose. The reviewed runtimes still accept VersionedLocation and
+// VersionedAssets V3, V4 and V5, and the bytes are what was reviewed: the golden encoding test pins them per runtime.
+// Moving to V4 or V5 changes the encoded call and needs a fresh review of every route, not a type bump.
 function getReviewedRelayParams(
   execution: Readonly<ReviewedRelayExecution>,
   to: string,
   precisionAmount: string,
   api: ReviewedExecutionApi
 ) {
+  // The destination is a para id under the origin relay; the same id on another relay is a different chain.
+  if (!relayExecutionSharesRelay(execution)) throw new Error('cross_chain_execution_definition_mismatch');
+
   const network = { network: { [execution.relayNetwork]: '' } };
   const receiverLocation =
     execution.receiverKind === 'AccountKey20'
@@ -185,10 +196,17 @@ function metadataArgs(method: RuntimeMethod): string[] {
   return method.meta?.args?.map(({ name }) => name.toString()) ?? [];
 }
 
+/**
+ * Finds the reviewed call on the connected runtime. The runtime must be a reviewed spec version of the origin chain and
+ * the call must keep its reviewed argument names and pallet and call indices; anything else fails closed, with no
+ * fallback to another call.
+ */
 export function resolveReviewedRuntimeCall(
   execution: Readonly<ReviewedCrossChainExecution>,
   api: ReviewedExecutionApi
 ): { descriptor: ReviewedRuntimeCall; method: RuntimeMethod } {
+  const runtime = assertReviewedRuntimeVersion(execution.originChainId, api);
+
   for (const descriptor of execution.callCandidates) {
     const method = api.tx[descriptor.pallet]?.[descriptor.call];
 
@@ -201,6 +219,8 @@ export function resolveReviewedRuntimeCall(
     ) {
       continue;
     }
+
+    assertReviewedCallIndex(runtime, descriptor, (method as RuntimeMethod).callIndex);
 
     return { descriptor, method: method as RuntimeMethod };
   }
@@ -248,6 +268,7 @@ export async function createReviewedCrossChainExtrinsic({
   ) {
     throw new Error('cross_chain_execution_fingerprint_mismatch');
   }
+  assertReviewedRecipient(execution, to);
 
   await api.isReadyOrError;
 

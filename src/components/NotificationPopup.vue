@@ -5,6 +5,7 @@
     :showBorder="true"
     :closeByBackground="closeByBackground"
     :zIndex="zIndex"
+    :ariaLabel="$t(text)"
     @handlerClose="emit('handlerClose')"
   >
     <div class="notification-popup-content">
@@ -19,6 +20,7 @@
         v-if="showAcceptButton"
         class="button"
         :text="acceptButtonText"
+        :disabled="acceptDisabled"
         data-testid="acceptBtn"
         @click="$emit('handlerAccept')"
       />
@@ -49,6 +51,7 @@ interface Props {
   sizeWidth?: Size;
   rejectButtonText?: string;
   acceptButtonText?: string;
+  acceptDisabled?: boolean;
   zIndex?: number;
 }
 
@@ -62,6 +65,7 @@ const props = withDefaults(defineProps<Props>(), {
   sizeWidth: 'medium',
   rejectButtonText: 'common.cancel',
   acceptButtonText: 'common.proceed',
+  acceptDisabled: false,
   zIndex: 299,
 });
 
@@ -104,6 +108,8 @@ const classesSubtext = computed(() => ['subtext', `subtext-${props.sizeWidth}`])
 }
 
 .subtext {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: $gray-color;
   line-height: 150%;
 }

@@ -72,7 +72,13 @@ $s-transition-default: all 0.125s ease-in-out;
 :root {
   --s-color-brand-day: #{$s-color-brand-day};
   --s-transition-default: #{$s-transition-default};
-  --s-font-family-default: 'Sora Variable', 'Noto Sans Egyptian Hieroglyphs', sans-serif;
+  // Neon Glass sets UI text and every number in Inter (fw-fonts.scss); the bundled Noto faces render the akk and egy
+  // locales without system fonts.
+  @if $fw-palette == 'v1' {
+    --s-font-family-default: 'Inter', 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', system-ui, sans-serif;
+  } @else {
+    --s-font-family-default: 'Sora Variable', 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
+  }
   --s-font-family-mono: 'JetBrains Mono', monospace;
   --s-font-feature-settings-common: #{$s-font-feature-settings-common};
   --s-font-feature-settings-heading: #{$s-font-feature-settings-heading};
@@ -88,6 +94,13 @@ $s-transition-default: all 0.125s ease-in-out;
 
 body {
   font-family: var(--s-font-family-default);
+}
+
+// Sora sets titles in Latin locales only: it has no Cyrillic, ≈, ▲ or ▼ (design-system 7.1).
+@include v1-palette {
+  :lang(en) :is(h1, h2) {
+    font-family: var(--fw-font-display);
+  }
 }
 
 .s-flex {

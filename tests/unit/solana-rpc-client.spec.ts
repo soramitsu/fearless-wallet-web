@@ -1,3 +1,4 @@
+import { base58Encode } from '@polkadot/util-crypto';
 import { SolanaRpcClient, SolanaRpcError } from '@extension-base/services/solana-rpc-service';
 
 const TRANSACTION = 'AQIDBA==';
@@ -190,6 +191,28 @@ describe('SolanaRpcClient', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
+  it("keeps a provider's key in the query string and drops only the fragment", async () => {
+    const fetchFn = vi.fn(async (_input: string | URL, init?: RequestInit) =>
+      rpcResponse(JSON.parse(init?.body as string).id, 7)
+    );
+    const client = new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example/solana/?api-key=secret-key#section' });
+
+    await expect(client.getBlockHeight()).resolves.toBe(7);
+
+    expect(client.rpcUrls).toEqual(['https://rpc.example/solana/?api-key=secret-key']);
+    expect(fetchFn.mock.calls[0][0]).toBe('https://rpc.example/solana/?api-key=secret-key');
+  });
+
+  it('trims trailing slashes from an address without a query, never from a key that ends in one', () => {
+    const fetchFn = vi.fn();
+
+    expect(new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example/solana//' }).rpcUrls).toEqual(['https://rpc.example/solana']);
+    expect(new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example' }).rpcUrls).toEqual(['https://rpc.example']);
+    expect(new SolanaRpcClient({ fetchFn, rpcUrl: 'https://rpc.example/?api-key=ab/' }).rpcUrls).toEqual([
+      'https://rpc.example/?api-key=ab/',
+    ]);
+  });
+
   it('throws typed errors for HTTP failures, JSON-RPC errors, malformed JSON, and bad shapes', async () => {
     const httpFailure = new SolanaRpcClient({
       fetchFn: vi.fn(async () => jsonResponse({ error: 'down' }, 503)),
@@ -278,12 +301,158 @@ describe('SolanaRpcClient', () => {
       name: 'SolanaRpcError',
     });
 
+    // A node that took the transaction but answered nonsense may have relayed it.
     const badSignature = new SolanaRpcClient({
-      fetchFn: vi.fn(async () => rpcResponse(1, 'not-a-signature')),
+      fetchFn: vi.fn(async (_input: string | URL, init?: RequestInit) =>
+        rpcResponse(JSON.parse(init?.body as string).id, 'not-a-signature')
+      ),
     });
     await expect(badSignature.sendRawTransaction(TRANSACTION)).rejects.toMatchObject({
-      message: 'invalid_signature_response',
-      name: 'SolanaRpcError',
+      ambiguous: true,
+      lastError: { message: 'invalid_signature_response' },
+      message: 'solana_broadcast_ambiguous',
+      name: 'SolanaBroadcastError',
     });
+    await expect(badSignature.sendRawTransaction(TRANSACTION)).rejects.toBeInstanceOf(SolanaRpcError);
+  });
+});
+
+describe('SolanaRpcClient broadcast', () => {
+  const signatureBytes = new Uint8Array(64).fill(7);
+  // A signed legacy transaction: one signature, a fee payer and the System program.
+  const SIGNED = Buffer.from([
+    1,
+    ...signatureBytes,
+    ...[1, 0, 1, 2],
+    ...new Uint8Array(32).fill(1),
+    ...new Uint8Array(32),
+    ...new Uint8Array(32).fill(9),
+    ...[1, 1, 1, 0, 0],
+  ]).toString('base64');
+  const rpcError = (id: number, code: number, message: string, data?: unknown) =>
+    jsonResponse({ error: { code, data, message }, id, jsonrpc: '2.0' });
+  type Answer = (id: number) => Response | Promise<Response>;
+  const nodes = (answers: Record<string, Answer>) => {
+    const posts: Array<{ options: Record<string, unknown>; url: string }> = [];
+    const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string);
+
+      posts.push({ options: body.params[1], url: input.toString() });
+
+      return answers[new URL(input.toString()).hostname](body.id);
+    });
+    const client = new SolanaRpcClient({
+      fetchFn,
+      requestTimeoutMs: 5,
+      rpcUrls: ['https://a.example', 'https://b.example'],
+    });
+
+    return { client, fetchFn, posts };
+  };
+  const hang: Answer = () => new Promise<Response>(() => {});
+
+  it('treats a preflight refusal of the first post as nothing sent and asks no other node', async () => {
+    const { client, fetchFn } = nodes({
+      'a.example': (id) => rpcError(id, -32002, 'Transaction simulation failed: Blockhash not found'),
+      'b.example': (id) => rpcResponse(id, SIGNATURE),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({
+      ambiguous: false,
+      body: { code: -32002 },
+      message: 'solana_broadcast_rejected',
+      name: 'SolanaBroadcastError',
+    });
+    expect(fetchFn).toHaveBeenCalledOnce();
+  });
+
+  it('counts "already processed" after a timed-out post as sent, with the transaction signature', async () => {
+    const { client, posts } = nodes({
+      'a.example': hang,
+      'b.example': (id) =>
+        rpcError(id, -32002, 'Transaction simulation failed: This transaction has already been processed', {
+          err: 'AlreadyProcessed',
+          logs: [],
+        }),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).resolves.toBe(base58Encode(signatureBytes));
+    expect(posts.map(({ url }) => url)).toEqual(['https://a.example', 'https://b.example']);
+  });
+
+  it('skips preflight after a post that may have been relayed and never calls a later refusal "nothing sent"', async () => {
+    const { client, posts } = nodes({
+      'a.example': () => new Response('upstream error', { status: 503 }),
+      'b.example': (id) => rpcError(id, -32002, 'Transaction simulation failed: Blockhash not found'),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED, { skipPreflight: false })).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'solana_broadcast_ambiguous',
+    });
+    expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, true]);
+  });
+
+  it('moves on from a node that is behind without giving up preflight', async () => {
+    const { client, posts } = nodes({
+      'a.example': (id) => rpcError(id, -32005, 'Node is unhealthy'),
+      'b.example': (id) => rpcResponse(id, SIGNATURE),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).resolves.toBe(SIGNATURE);
+    expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, false]);
+  });
+
+  it.each([-32603, -32000, -32001, -32007, -32403, -32429])(
+    'does not take JSON-RPC error %i for proof that nothing was relayed: it moves on with preflight skipped',
+    async (code) => {
+      const { client, posts } = nodes({
+        'a.example': (id) => rpcError(id, code, 'gateway failure'),
+        'b.example': (id) => rpcResponse(id, SIGNATURE),
+      });
+
+      // The gateway may have forwarded the transaction before it failed, so the same bytes go to the next node.
+      await expect(client.sendRawTransaction(SIGNED, { skipPreflight: false })).resolves.toBe(SIGNATURE);
+      expect(posts.map(({ options }) => options.skipPreflight)).toEqual([false, true]);
+    }
+  );
+
+  it.each([-32603, -32000, -32429])('reports JSON-RPC error %i everywhere as ambiguous, never as nothing sent', async (code) => {
+    const { client, fetchFn } = nodes({
+      'a.example': (id) => rpcError(id, code, 'gateway failure'),
+      'b.example': (id) => rpcError(id, code, 'gateway failure'),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'solana_broadcast_ambiguous',
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([-32002, -32003, -32602, -32600])(
+    'takes JSON-RPC error %i for a verdict given before relaying: nothing was sent and no other node is asked',
+    async (code) => {
+      const { client, fetchFn } = nodes({
+        'a.example': (id) => rpcError(id, code, 'rejected'),
+        'b.example': (id) => rpcResponse(id, SIGNATURE),
+      });
+
+      await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({
+        ambiguous: false,
+        message: 'solana_broadcast_rejected',
+      });
+      expect(fetchFn).toHaveBeenCalledOnce();
+    }
+  );
+
+  it('posts to each node once and reports throttling everywhere as ambiguous', async () => {
+    const { client, fetchFn } = nodes({
+      'a.example': () => new Response('slow down', { status: 429 }),
+      'b.example': () => new Response('slow down', { status: 429 }),
+    });
+
+    await expect(client.sendRawTransaction(SIGNED)).rejects.toMatchObject({ ambiguous: true });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 });

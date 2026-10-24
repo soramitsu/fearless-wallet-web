@@ -1,6 +1,7 @@
-import { type RouteRecordRaw } from 'vue-router';
+import { type LocationQueryValue, type RouteRecordRaw } from 'vue-router';
 import { ADD_WALLET_PATH, PASSWORD_SETUP_PATH } from './accountFlowPaths';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
+import { createIrohaConnectRouteGuard } from './irohaConnectGate';
 import type { NetworkName } from '@/interfaces';
 import { keyringIsLocked } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -8,6 +9,8 @@ import { useExtensionStore } from '@/stores/extension';
 import { useStakingStore } from '@/stores/staking';
 import Unlock from '@/screens/welcome/Unlock.vue';
 import { initialAccountsReady } from '@/bootstrap/accountsReady';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -68,9 +71,13 @@ const DeFi = () => import('@/screens/defi/DeFiHub.vue');
 const CrossChain = () => import('@/screens/cross-chain/CrossChainRoot.vue');
 const Settings = () => import('@/screens/settings/SettingsPage.vue');
 const NetworksAssetsSettings = () => import('@/screens/settings/NetworksAssetsSettings.vue');
+const AccountAccessRecovery = () => import('@/screens/settings/AccountAccessRecovery.vue');
 const IrohaConnect = () => import('@/screens/irohaConnect/IrohaConnectPage.vue');
 const Farming = () => import('@/screens/defi/FarmingPage.vue');
 const Polkamarkt = () => import('@/screens/defi/polkamarkt/PolkamarktPage.vue');
+
+const firstQueryValue = (value: LocationQueryValue | LocationQueryValue[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) ?? '';
 
 const MigrationDescription = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/keyringMigration/MigrationDescription.vue');
@@ -81,10 +88,15 @@ const MigrationAccounts = (/* webpackChunkName: "migration */) =>
 const UniversalWalletMigration = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/universalWalletMigration/UniversalWalletMigration.vue');
 
+const SecurityNotice = () => import('@/screens/securityNotice/SecurityNotice.vue');
+const SecurityNoticeGuide = () => import('@/screens/securityNotice/SecurityNoticeGuide.vue');
+
 export enum Components {
   MigrationDescription = 'MigrationDescription',
   MigrationAccounts = 'MigrationAccounts',
   UniversalWalletMigration = 'UniversalWalletMigration',
+  SecurityNotice = 'SecurityNotice',
+  SecurityNoticeGuide = 'SecurityNoticeGuide',
   Unlock = 'Unlock',
   ResetWallet = 'ResetWallet',
   ChangePassword = 'ChangePassword',
@@ -108,6 +120,7 @@ export enum Components {
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
   Polkaswap = 'Polkaswap',
+  TokenLocations = 'TokenLocations',
   Polkamarkt = 'Polkamarkt',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
@@ -123,6 +136,8 @@ export enum Components {
   Settings = 'Settings',
   SettingsNetworksAssets = 'SettingsNetworksAssets',
   SettingsChangePassword = 'SettingsChangePassword',
+  AccountAccessRecovery = 'AccountAccessRecovery',
+  StorageRecovery = 'StorageRecovery',
   IrohaConnect = 'IrohaConnect',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
@@ -143,13 +158,38 @@ export enum Components {
   NftSendForm = 'NftSendForm',
 }
 
+// Behind a build flag (src/portfolio/dashboard/dashboardFlag.ts): a build without the dashboard folds this away, import
+// included. Where it lives for one token, opened from the portfolio dashboard.
+const portfolioDashboardRoutes: RouteRecordRaw[] =
+  process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+    ? [
+        {
+          path: 'portfolio/where',
+          name: Components.TokenLocations,
+          component: () => import('@/screens/portfolio/TokenLocations.vue'),
+          props: (route) => ({
+            token: firstQueryValue(route.query.token),
+            holding: firstQueryValue(route.query.holding),
+          }),
+          meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+        },
+      ]
+    : [];
+
 const routes: Array<RouteRecordRaw> = [
+  {
+    path: '/storage-recovery',
+    name: Components.StorageRecovery,
+    component: () => import('@/screens/settings/StorageRecovery.vue'),
+    meta: { title: 'export', calm: true },
+  },
   {
     path: '/migration-description',
     name: Components.MigrationDescription,
     component: MigrationDescription,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -158,6 +198,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MigrationAccounts,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -166,6 +207,25 @@ const routes: Array<RouteRecordRaw> = [
     component: UniversalWalletMigration,
     meta: {
       title: 'migration',
+      calm: true,
+    },
+  },
+  {
+    path: '/security-notice',
+    name: Components.SecurityNotice,
+    component: SecurityNotice,
+    meta: {
+      title: 'securityNotice',
+      calm: true,
+    },
+  },
+  {
+    path: '/security-notice/guide',
+    name: Components.SecurityNoticeGuide,
+    component: SecurityNoticeGuide,
+    meta: {
+      title: 'securityNotice',
+      calm: true,
     },
   },
 
@@ -175,6 +235,7 @@ const routes: Array<RouteRecordRaw> = [
     component: ChangePassword,
     meta: {
       title: 'changePassword',
+      calm: true,
     },
   },
   {
@@ -183,6 +244,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Unlock,
     meta: {
       title: 'unlock',
+      calm: true,
     },
   },
   {
@@ -191,6 +253,7 @@ const routes: Array<RouteRecordRaw> = [
     component: ResetWallet,
     meta: {
       title: 'reset',
+      calm: true,
     },
   },
   {
@@ -228,6 +291,7 @@ const routes: Array<RouteRecordRaw> = [
     component: AddWallet,
     meta: {
       title: 'addWallet',
+      calm: true,
     },
   },
   {
@@ -244,17 +308,24 @@ const routes: Array<RouteRecordRaw> = [
     component: Authorize,
     meta: {
       title: 'authorize',
+      calm: true,
     },
   },
   {
     path: '/wc-authorize',
     name: Components.WalletConnectAuthConfirmation,
     component: WalletConnectAuthConfirmation,
+    meta: {
+      calm: true,
+    },
   },
   {
     path: '/wc-transaction',
     name: Components.WalletConnectSignConfirmation,
     component: WalletConnectSignConfirmation,
+    meta: {
+      calm: true,
+    },
   },
   {
     path: '/wc-not-supported',
@@ -288,6 +359,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MetaRequest,
     meta: {
       title: 'meta',
+      calm: true,
     },
   },
   {
@@ -296,6 +368,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Transaction,
     meta: {
       title: 'transaction',
+      calm: true,
     },
     beforeEnter: (to, from, next) => {
       const extensionStore = useExtensionStore();
@@ -383,7 +456,15 @@ const routes: Array<RouteRecordRaw> = [
         name: Components.Wallet,
         component: Wallet,
         redirect: { name: Components.Currencies },
-        beforeEnter: (to, from, next) => {
+        beforeEnter: async (to, from, next) => {
+          if (IS_EXTENSION) {
+            await initialAccountsReady;
+            const accounts = useAccountsStore();
+            if (isSelectedWalletRecoveryOnly(accounts.accounts, accounts.selectedWallet.address)) {
+              next();
+              return;
+            }
+          }
           const extensionStore = useExtensionStore();
 
           if (haveAuthRequests(extensionStore)) next({ name: Components.Authorize });
@@ -454,6 +535,7 @@ const routes: Array<RouteRecordRaw> = [
         component: ReceiveForm,
         meta: { title: 'receive', primaryNavigation: 'portfolio' },
       },
+      ...portfolioDashboardRoutes,
       {
         path: 'asset/:assetId',
         component: Asset,
@@ -493,8 +575,10 @@ const routes: Array<RouteRecordRaw> = [
           const network = (Array.isArray(to.params.network) ? to.params.network[0] : to.params.network) as NetworkName;
           const stakingStore = useStakingStore();
           const stakingParams = await getStakingNetwork(stakingStore, network);
+          const accountsStore = useAccountsStore();
+          const recoveryOnly = IS_EXTENSION && isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address);
 
-          if (stakingParams.totalStake === '0') next({ name: Components.Staking });
+          if (stakingParams.totalStake === '0' && !recoveryOnly) next({ name: Components.Staking });
           else next();
         },
         meta: { title: 'myStake', primaryNavigation: 'defi' },
@@ -539,6 +623,10 @@ const routes: Array<RouteRecordRaw> = [
         path: 'cross-chain',
         name: Components.CrossChain,
         component: CrossChain,
+        props: (route) => ({
+          requestedOriginChainId: firstQueryValue(route.query.originChainId),
+          requestedAssetKey: firstQueryValue(route.query.assetKey),
+        }),
         meta: { title: 'crossChain', primaryNavigation: 'cross-chain' },
       },
       {
@@ -563,13 +651,24 @@ const routes: Array<RouteRecordRaw> = [
         path: 'settings/change-password',
         name: Components.SettingsChangePassword,
         component: ChangePassword,
-        meta: { title: 'changePassword', primaryNavigation: 'settings' },
+        meta: { title: 'changePassword', primaryNavigation: 'settings', calm: true },
+      },
+      {
+        path: 'settings/account-access',
+        name: Components.AccountAccessRecovery,
+        component: AccountAccessRecovery,
+        props: (route) => ({
+          address: firstQueryValue(route.query.address),
+          mode: firstQueryValue(route.query.mode),
+        }),
+        meta: { title: 'settings', primaryNavigation: 'settings', calm: true },
       },
       {
         path: 'settings/iroha-connect',
         name: Components.IrohaConnect,
         component: IrohaConnect,
         meta: { title: 'settings', primaryNavigation: 'settings' },
+        beforeEnter: createIrohaConnectRouteGuard(Components.Settings),
       },
       {
         path: 'settings/wallet-connect',
@@ -592,7 +691,7 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'dapps/:type',
                 name: Components.DAppsAuths,
                 component: DAppsAuths,
-                meta: { primaryNavigation: 'settings' },
+                meta: { primaryNavigation: 'settings', calm: true },
               },
               {
                 path: 'wallet-connect',
@@ -606,7 +705,7 @@ const routes: Array<RouteRecordRaw> = [
             path: 'dapp/:type/:id',
             name: Components.DAppDetails,
             component: DAppDetails,
-            meta: { primaryNavigation: 'settings' },
+            meta: { primaryNavigation: 'settings', calm: true },
           },
           {
             path: 'wallet-connect/:topic',
@@ -643,7 +742,7 @@ const routes: Array<RouteRecordRaw> = [
             path: 'network/:network/export',
             name: Components.Export,
             component: Export,
-            meta: { title: 'export', primaryNavigation: 'settings' },
+            meta: { title: 'export', primaryNavigation: 'settings', calm: true },
           },
         ],
       },

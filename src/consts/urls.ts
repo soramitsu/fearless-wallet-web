@@ -12,12 +12,6 @@ const FEATURES = IS_PRODUCTION
   ? `${BASE_URL}/master/appConfigs/web_config.json`
   : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
-const XCM_LOCATIONS = `${BASE_URL}/master/xcm/v2/xcm_token_locations.json`;
-
-const XCM_FEES = IS_PRODUCTION
-  ? `${BASE_URL}/master/xcm/v2/xcm_fees.json`
-  : `${BASE_URL}/develop-free/xcm/v2/xcm_fees.json`;
-
 const ONBOARDING_URL = `${BASE_URL}/master/appConfigs/onboarding/web.json`;
 
 const SCAM = `${BASE_URL}/master/scamDetection/Polkadot_Hot_Wallet_Attributions.csv`;
@@ -29,7 +23,7 @@ const BASE_URLS_PREFIX = {
 };
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
-const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
+const FEARLESS_PRIVACY = 'https://github.com/soramitsu/fearless-wallet-web/blob/52c54b90febe08742f5f41fe318f84cc3a8fe62a/docs/browser-extension-privacy.md';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
 const GITHUB = 'https://github.com/soramitsu/shared-features-utils';
@@ -40,7 +34,7 @@ const TWITTER = 'https://twitter.com/fearlesswallet';
 const YOUTUBE = 'https://www.youtube.com/fearlesswallet';
 const ANNOUNCEMENTS = 'https://t.me/fearless_announcements';
 const FEARLESS_HAPPINESS = 'https://t.me/fearlesshappiness';
-const EMAIL = 'fearless@soramitsu.co.jp';
+const HELP_SUPPORT = 'https://fearlesswallet.io/support/';
 const POLKASWAP_FAQ = 'https://wiki.sora.org/polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/polkaswap/terms';
 const POLKASWAP_POLICY = 'https://wiki.sora.org/polkaswap/privacy';
@@ -63,13 +57,11 @@ const URLS = {
   YOUTUBE,
   ANNOUNCEMENTS,
   FEARLESS_HAPPINESS,
-  EMAIL,
+  HELP_SUPPORT,
   POLKASWAP_FAQ,
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,
   POLKASWAP,
-  XCM_LOCATIONS,
-  XCM_FEES,
   ONBOARDING_URL,
   SCAM,
 };

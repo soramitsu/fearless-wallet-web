@@ -14,8 +14,14 @@ import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type { BitcoinEsploraUtxo } from '@extension-base/services/bitcoin-indexer-service';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
+import * as bitcoinTransaction from '@/util/bitcoinTransaction';
 import { WalletEcosystem } from '@/interfaces';
 import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
+
+vi.mock('@extension-base/api/bitcoin/pendingSends', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@extension-base/api/bitcoin/pendingSends')>(),
+  getDefaultBitcoinPendingSendStore: () => memoryPendingStore(),
+}));
 
 const mnemonic = vectors.vectors[0].mnemonic;
 const mainnetAddress = vectors.vectors[0].expected.bitcoin.mainnet.firstReceiveAddress;
@@ -105,6 +111,20 @@ const createState = ({
     },
   }) as unknown as State;
 
+const memoryPendingStore = () => {
+  let records: Array<{ txid: string }> = [];
+
+  return {
+    list: vi.fn(async () => records as never[]),
+    remove: vi.fn(async (txids: string[]) => {
+      records = records.filter(({ txid }) => !txids.includes(txid));
+    }),
+    save: vi.fn(async (record: { txid: string }) => {
+      records = [...records, record];
+    }),
+  };
+};
+
 describe('background Bitcoin transfer adapter', () => {
   beforeEach(() => {
     process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
@@ -125,7 +145,7 @@ describe('background Bitcoin transfer adapter', () => {
       getUtxos: vi.fn(),
     };
 
-    await expect(estimateBitcoinTransferFee({ client, network: 'mainnet' })).rejects.toThrow(
+    await expect(estimateBitcoinTransferFee({ amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() }, client)).rejects.toThrow(
       'bitcoin_transfer_disabled'
     );
     await expect(
@@ -192,13 +212,120 @@ describe('background Bitcoin transfer adapter', () => {
     expect(() => normalizeRecipient(testnetAddress, 'mainnet')).toThrow('invalid_bitcoin_recipient');
   });
 
-  it('estimates fees through Esplora fee estimates without fetching UTXOs', async () => {
+  it('estimates fees from the actual multi-input spend without signing or broadcasting', async () => {
     const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
       getFeeEstimates: vi.fn(async () => ({ 1: 5, 3: 2 })),
+      getUtxos: vi.fn(async () => [confirmedUtxo(30_000), confirmedUtxo(30_000, '33'.repeat(32))]),
     };
 
-    await expect(estimateBitcoinTransferFee({ client, network: 'mainnet' })).resolves.toBe('0.00000282');
+    await expect(estimateBitcoinTransferFee(
+      { amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() },
+      client,
+      { gapLimit: 2, maxLookahead: 20 }
+    )).resolves.toEqual({ fee: '0.00000418' });
     expect(client.getFeeEstimates).toHaveBeenCalledTimes(1);
+    expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+  });
+
+  it('shares in-flight public discovery while always refreshing fees and UTXOs, then expires it', async () => {
+    vi.useFakeTimers();
+    const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
+      getFeeEstimates: vi.fn(async () => ({ 2: 2 })),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const params = { amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() };
+    const options = { gapLimit: 2, maxLookahead: 20 };
+
+    await Promise.all([estimateBitcoinTransferFee(params, client, options), estimateBitcoinTransferFee(params, client, options)]);
+    const discoveredRequests = client.getAddress.mock.calls.length;
+
+    expect(discoveredRequests).toBeGreaterThan(0);
+    await estimateBitcoinTransferFee(params, client, options);
+    expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests);
+    expect(client.getFeeEstimates).toHaveBeenCalledTimes(3);
+    expect(client.getUtxos).toHaveBeenCalledTimes(3);
+
+    await vi.advanceTimersByTimeAsync(30_001);
+    await estimateBitcoinTransferFee(params, client, options);
+    expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests * 2);
+  });
+
+  // Three fresh BIP84 discoveries plus real signing can exceed five seconds on CI.
+  it('drops quote discovery before and after an ambiguous broadcast', async () => {
+    const client = {
+      broadcastTransaction: vi.fn(async () => { throw new TypeError('Failed to fetch'); }),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
+      getFeeEstimates: vi.fn(async () => ({ 2: 2 })),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const params = { amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() };
+    const options = { gapLimit: 2, maxLookahead: 20 };
+
+    await estimateBitcoinTransferFee(params, client, options);
+    const discoveredRequests = client.getAddress.mock.calls.length;
+
+    await expect(makeBitcoinTransfer({ ...params, approvedMaxFee: '0.00000282' }, client, options)).rejects.toThrow();
+    expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests * 2);
+    await estimateBitcoinTransferFee(params, client, options);
+    expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests * 3);
+  }, 15_000);
+
+  it('retries discovery after a failed quote instead of caching its rejection', async () => {
+    const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(async (address: string) => addressStats(address)).mockRejectedValueOnce(new Error('indexer offline')),
+      getFeeEstimates: vi.fn(async () => ({ 2: 2 })),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const params = { amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() };
+    const options = { gapLimit: 2, maxLookahead: 20 };
+
+    await expect(estimateBitcoinTransferFee(params, client, options)).rejects.toThrow('indexer offline');
+    await expect(estimateBitcoinTransferFee(params, client, options)).resolves.toEqual({ fee: '0.00000282' });
+  });
+
+  it('expires an in-flight discovery so a hung request cannot poison later quotes', async () => {
+    vi.useFakeTimers();
+    const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(async (address: string) => addressStats(address))
+        .mockImplementationOnce(() => new Promise(() => undefined)),
+      getFeeEstimates: vi.fn(async () => ({ 2: 2 })),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const params = { amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() };
+    const options = { gapLimit: 2, maxLookahead: 20 };
+
+    void estimateBitcoinTransferFee(params, client, options);
+    await vi.advanceTimersByTimeAsync(30_001);
+    await expect(estimateBitcoinTransferFee(params, client, options)).resolves.toEqual({ fee: '0.00000282' });
+  });
+
+  it.each(['fee lookup', 'pending save'])('does not broadcast after reset during %s', async boundary => {
+    const sign = vi.spyOn(bitcoinTransaction, 'buildBitcoinP2wpkhTransaction');
+    const state = createState();
+    const reset = () => Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
+    const client = {
+      broadcastTransaction: vi.fn(async (txHex: string) => bitcoin.Transaction.fromHex(txHex).getId()),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
+      getFeeEstimates: vi.fn(async () => { if (boundary === 'fee lookup') reset(); return { 1: 2 }; }),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const pendingStore = memoryPendingStore();
+    if (boundary === 'pending save') pendingStore.save.mockImplementation(async () => { reset(); });
+    await expect(makeBitcoinTransfer({ amount: '0.0005', approvedMaxFee: '1', from: 'stored-substrate-account', networkKey: 'Bitcoin', state, to: recipient },
+      client, { gapLimit: 2, maxLookahead: 20 }, pendingStore)).rejects.toThrow('Wallet changed during transfer');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+    if (boundary === 'fee lookup') {
+      expect(sign).not.toHaveBeenCalled();
+      expect(pendingStore.save).not.toHaveBeenCalled();
+    } else expect(pendingStore.remove).not.toHaveBeenCalled();
+    sign.mockRestore();
   });
 
   it('prepares, signs, broadcasts, and schedules a Bitcoin balance refresh', async () => {
@@ -229,6 +356,7 @@ describe('background Bitcoin transfer adapter', () => {
     await makeBitcoinTransfer(
       {
         amount: '0.0005',
+        approvedMaxFee: '0.00000282',
         callback,
         from: 'stored-substrate-account',
         networkKey: 'Bitcoin',
@@ -236,12 +364,13 @@ describe('background Bitcoin transfer adapter', () => {
         to: recipient,
       },
       client,
-      { gapLimit: 2, maxLookahead: 20 }
+      { gapLimit: 2, maxLookahead: 20 },
+      memoryPendingStore()
     );
 
     expect(prepared.txid).toBe(bitcoin.Transaction.fromHex(prepared.txHex).getId());
     expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
-    expect(client.broadcastTransaction).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/u));
+    expect(client.broadcastTransaction).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/u), prepared.txid, expect.any(Function));
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);
@@ -253,6 +382,21 @@ describe('background Bitcoin transfer adapter', () => {
       ethereumAddress: '',
       walletEcosystem: WalletEcosystem.Bitcoin,
     });
+  });
+
+  it('requires explicit fee approval and rejects a fee increase without broadcasting', async () => {
+    const client = {
+      broadcastTransaction: vi.fn(),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
+      getFeeEstimates: vi.fn(async () => ({ 2: 20 })),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const params = { amount: '0.0005', from: mainnetAddress, to: recipient, networkKey: 'Bitcoin', state: createState() };
+
+    await expect(makeBitcoinTransfer(params, client)).rejects.toThrow('transfer_fee_approval_required');
+    await expect(makeBitcoinTransfer({ ...params, approvedMaxFee: '0.00000282' }, client, { gapLimit: 2, maxLookahead: 20 }))
+      .rejects.toThrow('transfer_fee_changed');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
   });
 
   it('passes explicit Bitcoin fee and coin-control options into send preparation', async () => {

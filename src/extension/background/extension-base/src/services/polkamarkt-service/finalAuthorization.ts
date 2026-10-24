@@ -9,6 +9,7 @@ export interface PolkamarktFinalAuthorizationGuardOptions {
   capturedRuntime: unknown;
   isActionEnabled: () => boolean;
   isDisclaimerAccepted: () => boolean;
+  assertWalletAction?: (context: PolkamarktFinalAuthorizationContext) => void;
   isRuntimeReady: () => Promise<boolean>;
   getCurrentPair: () => SoraPairBinding | undefined;
   getCurrentRuntime: () => unknown;
@@ -51,6 +52,8 @@ function assertCurrentBackgroundState(
   ) {
     throw new Error('The selected SORA account changed. Review the action again.');
   }
+
+  options.assertWalletAction?.(context);
 
   return selectedAddress;
 }

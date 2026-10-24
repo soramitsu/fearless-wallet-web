@@ -70,6 +70,8 @@
           @update:passwordJson="setPasswordJson"
         />
 
+        <TonAddressChoice v-if="showTonAddressChoice" v-model="tonDerivation" :candidates="tonCandidates" />
+
         <AdvancedForm
           v-if="showAdvancedForm"
           :derivationPaths="derivationPaths"
@@ -78,6 +80,7 @@
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
         />
 
+        <p v-if="generationExpired" role="alert" data-testid="generationExpired" :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'">{{ generationExpiredMessage }}</p>
         <p v-if="flowError" role="alert" data-testid="accountFailure">{{ $t('ux.accountSetupFailed') }}</p>
         <p v-if="isLoading" role="status">{{ $t('ux.settingUpWallet') }}</p>
         <FinishForm v-if="showFinishForm" />
@@ -145,14 +148,19 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
 import type { DerivationPaths, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
+import type { TonImportCandidateInfo } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import { isWalletGenerationExpired } from '@/util/walletSecurity';
+import { walletGenerationExpiredMessage } from '@/locales/walletSecurity';
+
 import { WalletEcosystem } from '@/interfaces';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import ImportWallet from '@/screens/addWallet/ImportWallet.vue';
 import NicknameForm from '@/screens/addWallet/NicknameForm.vue';
+import TonAddressChoice from '@/screens/addWallet/TonAddressChoice.vue';
+import { preselectTonImportCandidate } from '@/screens/addWallet/tonImportChoice';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import BaseApi from '@/util/BaseApi';
@@ -160,6 +168,7 @@ import { Components } from '@/router/routes';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
+import { normalizeTonImportPhrase, type TonImportChoice, type TonImportDerivation } from '@/util/tonKeyring';
 import {
   forgetAccount,
   isDerivationPathValid,
@@ -170,6 +179,7 @@ import {
   updatePairMeta,
   generateMnemonic,
   mnemonicValidate,
+  tonImportCandidates,
 } from '@/extension/messaging';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useAccountsStore } from '@/stores/accounts';
@@ -183,6 +193,7 @@ export default defineComponent({ name: 'AddWallet',
     CreateWallet,
     ImportWallet,
     NicknameForm,
+    TonAddressChoice,
     AdvancedForm,
     AddEthereumAccountPopup,
   },
@@ -209,10 +220,19 @@ export default defineComponent({ name: 'AddWallet',
       address: null,
       isLoading: false,
       flowError: false,
+      generationExpired: false,
       savedSuccessfully: false,
+      // TON import: every address the typed text opens, the text they were derived from, and the pick.
+      tonCandidates: [] as TonImportCandidateInfo[],
+      tonCandidatesText: '',
+      tonDerivation: '' as TonImportDerivation | '',
+      showTonAddressChoice: false,
     };
   },
   computed: {
+    generationExpiredMessage() {
+      return walletGenerationExpiredMessage(this.$i18n.locale);
+    },
     confirmMnemonicStep() {
       return this.step === 3 && this.isCreateWallet;
     },
@@ -227,6 +247,17 @@ export default defineComponent({ name: 'AddWallet',
     },
     isSubstrate() {
       return this.walletEcosystem === 'substrate';
+    },
+    isTonImport() {
+      return this.isImportWallet && this.walletEcosystem === 'ton';
+    },
+    tonPhrase() {
+      return normalizeTonImportPhrase(this.mnemonic);
+    },
+    tonImportChoice(): TonImportChoice | undefined {
+      const candidate = this.tonCandidates.find(({ derivation }) => derivation === this.tonDerivation);
+
+      return candidate && { derivation: candidate.derivation, address: candidate.address };
     },
     mnemonicLength() {
       return this.isCreateWallet || this.walletEcosystem === 'ton' ? UNIVERSAL_WALLET_DEFAULT_WORD_COUNT : 12;
@@ -280,7 +311,9 @@ export default defineComponent({ name: 'AddWallet',
       return this.isCreateWallet && (this.step === 2 || this.step === 3) && !this.showAdvancedForm;
     },
     showImportForm() {
-      return this.isImportWallet && (this.step === 1 || this.step === 2) && !this.showAdvancedForm;
+      return (
+        this.isImportWallet && (this.step === 1 || this.step === 2) && !this.showAdvancedForm && !this.showTonAddressChoice
+      );
     },
     showBackIcon() {
       return this.step !== 4 || this.flowError;
@@ -299,6 +332,8 @@ export default defineComponent({ name: 'AddWallet',
 
           if (this.step === 1) {
             if (this.isOnlyEthereumAccount) return this.t('addEthereumAccount');
+
+            if (this.showTonAddressChoice) return this.$t('ux.tonAddressChoiceTitle');
 
             return this.typeImport === 'mnemonic' ? this.t('importWallet') : this.t('importAccount', { type: 'substrate' });
           }
@@ -321,6 +356,8 @@ export default defineComponent({ name: 'AddWallet',
 
           if (this.isImportWallet) {
             if (this.step === 1) {
+              if (this.showTonAddressChoice) return !this.tonImportChoice;
+
               if (this.isOnlyEthereumAccount)
                 return !this.ethereumRawSeed && this.isLengthZero(this.ethereumJson) && !this.passwordEthereumJson;
 
@@ -460,6 +497,10 @@ export default defineComponent({ name: 'AddWallet',
           this.nickname = '';
           this.address = null;
           this.derivationPaths = INITIAL_DERIVATION_PATHS;
+          this.tonCandidates = [];
+          this.tonCandidatesText = '';
+          this.tonDerivation = '';
+          this.showTonAddressChoice = false;
     },
     setImportValue(value: string & (KeyringPair$Json | Record<string, never>), field: AddWalletField) {
       this[field] = value;
@@ -519,8 +560,13 @@ export default defineComponent({ name: 'AddWallet',
         await this.saveKeypair();
         this.savedSuccessfully = true;
         if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
-      } catch {
-        this.flowError = true;
+      } catch (error) {
+        if (isWalletGenerationExpired(error)) {
+          this.generationExpired = true;
+          this.mnemonic = '';
+          this.selectedMnemonicElements = [];
+          this.step = 1;
+        } else this.flowError = true;
       } finally {
         this.isLoading = false;
       }
@@ -533,8 +579,8 @@ export default defineComponent({ name: 'AddWallet',
       try {
         if (this.isCreateWallet) await this.createFlow();
         else await this.importFlow();
-        // Keep the current step while validation or the optional account prompt is open.
-        this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
+        // Keep the current step while validation, the optional account prompt or the TON address choice is open.
+        this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup || this.showTonAddressChoice ? 0 : 1;
       } catch {
         this.flowError = true;
       } finally {
@@ -545,11 +591,20 @@ export default defineComponent({ name: 'AddWallet',
       if (this.step === 1 && !this.mnemonic.length) {
             // New wallets share the Universal Wallet BIP39 phrase regardless of the first network.
             this.mnemonic = await generateMnemonic(WalletEcosystem.Substrate, this.mnemonicLength);
+            this.generationExpired = false;
           } else if (this.step === 2) await this.validateSuri();
           else if (this.step === 3) this.validateSequenceMnemonic();
     },
     async importFlow() {
       if (this.step === 1) {
+            // The address was chosen on the previous press of Continue.
+            if (this.showTonAddressChoice) {
+              this.showTonAddressChoice = false;
+              this.step += 1;
+
+              return;
+            }
+
             await this.validateSuri();
 
             if (this.warningValueName !== '') return;
@@ -559,10 +614,31 @@ export default defineComponent({ name: 'AddWallet',
               return;
             }
 
+            // A phrase that opens more than one TON address: the user picks before going on.
+            if (this.isTonImport && this.tonCandidates.length > 1) {
+              this.showTonAddressChoice = true;
+
+              return;
+            }
+
             // if import type is raw seed or json, show a window with a question about adding an ETH account
             if (this.typeImport === 'mnemonic') this.step += 1;
             else this.showAddEthereumAccountPopup = true;
           } else if (this.step === 2) await this.validateSuri();
+    },
+    // A TON import accepts native TON phrases as well as BIP39 ones, so it is valid when it opens an address.
+    // The text goes to the background as typed: spacing and capitals can be part of a TON key.
+    async loadTonCandidates() {
+      const text = this.mnemonic;
+      const previous = this.tonCandidatesText === text ? this.tonDerivation : '';
+
+      this.tonCandidates = this.tonPhrase ? await tonImportCandidates(text) : [];
+      this.tonCandidatesText = text;
+      this.tonDerivation = this.tonCandidates.some(({ derivation }) => derivation === previous)
+        ? previous
+        : preselectTonImportCandidate(this.tonCandidates)?.derivation ?? '';
+
+      return this.tonCandidates.length !== 0;
     },
     validateAddressForDubMobileWallet(address: string) {
       const substrate = BaseApi.encodeAddress(address);
@@ -600,7 +676,11 @@ export default defineComponent({ name: 'AddWallet',
           } = this.derivationPaths;
 
           const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
-          const isValidMnemonic = this.mnemonic ? await mnemonicValidate(WalletEcosystem.Substrate, this.mnemonic.trim()) : true;
+          const isValidMnemonic = this.isTonImport
+            ? await this.loadTonCandidates()
+            : this.mnemonic
+            ? await mnemonicValidate(WalletEcosystem.Substrate, this.mnemonic.trim())
+            : true;
           const isValidSubstratePhrase = substrate.value ? await isDerivationPathValid(substrate) : true;
           const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
           const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
@@ -639,6 +719,8 @@ export default defineComponent({ name: 'AddWallet',
             walletEcosystem: this.walletEcosystem,
           };
 
+          if (this.isTonImport) return this.saveTonImport(meta);
+
           if (this.mnemonic) {
             Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
           }
@@ -651,7 +733,7 @@ export default defineComponent({ name: 'AddWallet',
           if (this.isOnlyEthereumAccount) meta.name = this.accountsStore.selectedWallet.name;
 
           if (this.suriEthereum !== '') {
-            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
+            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, this.isCreateWallet);
 
             if (this.isOnlyEthereumAccount) {
               updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
@@ -662,12 +744,25 @@ export default defineComponent({ name: 'AddWallet',
             meta.ethereumAddress = ethereumAddress;
           }
 
-          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem);
+          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet);
 
           return address;
     },
+    // Saves the address picked on the import screen; the background refuses any other.
+    async saveTonImport(meta: FWKeyringMeta) {
+          const choice = this.tonImportChoice;
+
+          if (!choice || this.tonCandidatesText !== this.mnemonic) throw new Error('ton_import_choice_missing');
+
+          // Only the universal key shares the phrase's Universal Wallet accounts; a native TON phrase has none.
+          if (choice.derivation === 'universal') Object.assign(meta, deriveUniversalWalletKeyringFields(this.tonPhrase));
+
+          // The background stores the phrase that opens the chosen address, tidied or exactly as typed.
+          return addAccount(this.mnemonic, this.derivationPaths.substrate.keypairType, meta, this.walletEcosystem, choice);
+    },
     async saveKeypairFromJson() {
       const substrateJSON = { ...this.substrateJSON };
+      let linkedEthereumAddress: string | undefined;
 
           if (this.ethereumJson) {
             const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
@@ -681,10 +776,10 @@ export default defineComponent({ name: 'AddWallet',
               return '';
             }
 
-            substrateJSON.meta.ethereumAddress = ethereumAddress;
+            linkedEthereumAddress = ethereumAddress;
           }
 
-          const address = await jsonRestore(substrateJSON, this.passwordSubstrateJson);
+          const address = await jsonRestore(substrateJSON, this.passwordSubstrateJson, linkedEthereumAddress);
 
           return address;
     },
@@ -701,6 +796,12 @@ export default defineComponent({ name: 'AddWallet',
     back() {
       if (this.isLoading) return;
       this.flowError = false;
+      // From the TON address choice, Back returns to the phrase.
+      if (this.showTonAddressChoice) {
+        this.showTonAddressChoice = false;
+
+        return;
+      }
       if (this.isOnlyEthereumAccount) this.step -= 1;
           else if (this.isImportWallet) this.backIsImportWallet();
           else if (this.step === 2) {
@@ -709,6 +810,9 @@ export default defineComponent({ name: 'AddWallet',
           }
 
           this.step -= 1;
+
+          // Back from the nickname returns to the TON address choice it came from.
+          if (this.step === 1 && this.isTonImport && this.tonCandidates.length > 1) this.showTonAddressChoice = true;
     },
   },
 });

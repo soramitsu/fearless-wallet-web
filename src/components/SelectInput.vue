@@ -36,11 +36,28 @@
           </button>
         </FCorners>
 
-        <div v-if="showBalance" class="balance" data-testid="balance">
+        <!-- A balance no provider could load is unknown, not 0, and offers no Max. -->
+        <div v-if="showBalance && balanceUnavailable" class="balance balance--failed" data-testid="balanceUnavailable">
+          {{ $t('assets.balance') }}&nbsp;{{ $t('portfolioPage.balanceStatus.failed') }}
+        </div>
+
+        <div v-else-if="showBalance" class="balance" data-testid="balance">
           {{ $t('assets.balance') }}
 
           <button type="button" :class="balanceValueClasses" data-testid="balanceValue" :disabled="readonly" :aria-label="`${$t('common.max')}: ${$n(+totalAmount, 'decimal')} ${asset}`" @click="setMax">
             &nbsp;{{ $n(+totalAmount, 'decimal') }}
+          </button>
+
+          <button
+            v-if="showMax"
+            type="button"
+            :class="maxButtonClasses"
+            data-testid="maxBtn"
+            :disabled="readonly"
+            :aria-pressed="maxActive"
+            @click="setMax"
+          >
+            {{ $t('common.max') }}
           </button>
         </div>
       </div>
@@ -61,7 +78,12 @@ export default defineComponent({ name: 'SelectInput' ,
     assetId: { default: '' },
     value: { default: '' },
     totalAmount: { default: 0 },
+    /** No provider could load the balance: `totalAmount` is not known and is not shown. */
+    balanceUnavailable: { type: Boolean, default: false },
     showBalance: { default: true },
+    // A visible Max button next to the balance, for forms that handle setMax.
+    showMax: { type: Boolean, default: false },
+    maxActive: { type: Boolean, default: false },
     readonly: { default: false },
     disableSelection: { type: Boolean, default: false },
     showIcon: { default: true },
@@ -149,6 +171,9 @@ export default defineComponent({ name: 'SelectInput' ,
             },
           ];
     },
+    maxButtonClasses() {
+      return ['max-button', { 'max-button-active': this.maxActive }];
+    },
     selectButtonClasses() {
       return [
             'select-button',
@@ -211,7 +236,7 @@ export default defineComponent({ name: 'SelectInput' ,
 
 <style lang="scss" scoped>
 .select-focused {
-  border: 1px solid #7700ee !important;
+  border: 1px solid $fw-focus-ring !important;
 }
 
 .select {
@@ -341,6 +366,10 @@ export default defineComponent({ name: 'SelectInput' ,
       .balance-value-readonly {
         cursor: default;
       }
+
+      &.balance--failed {
+        color: $simple-orange-color;
+      }
     }
   }
 }
@@ -370,10 +399,52 @@ export default defineComponent({ name: 'SelectInput' ,
 .select .right-column .balance { white-space: normal; overflow: visible; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
 .select .right-column .balance-value { background: transparent; border: 0; padding: 4px 0; font: inherit; min-height: 44px; overflow-wrap: anywhere; }
 .select .right-column .select-button:disabled { cursor: default; }
+.select .right-column .max-button {
+  margin-left: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid $pink-lavender-color;
+  border-radius: 30px;
+  background: transparent;
+  color: $pink-lavender-color;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: $pink-purple-color; }
+  &:disabled { cursor: default; border-color: $gray-color; color: $gray-color; }
+}
+.select .right-column .max-button-active { background: $pink-purple-color; color: $plain-white; }
 @media (max-width: 620px) {
   .select { flex-direction: column; }
   .select .column { max-width: none; }
   .select .right-column { flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
   .select .right-column .balance { margin-top: 0; }
+}
+@include v1-palette {
+  .select {
+    background: var(--fw-sunken);
+    border-color: var(--fw-stroke-control);
+    border-radius: 12px;
+  }
+  .select-focused {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
+  }
+  .select .left-column input {
+    font-variant-numeric: tabular-nums;
+    color: var(--fw-text-1);
+  }
+  .select .right-column .select-button {
+    clip-path: none;
+    border-radius: 12px;
+    border-color: var(--fw-stroke-control);
+  }
+  .select .right-column .select-button:focus-visible,
+  .select .right-column .balance-value:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
+  }
 }
 </style>

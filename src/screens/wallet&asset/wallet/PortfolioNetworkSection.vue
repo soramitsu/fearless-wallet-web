@@ -1,10 +1,13 @@
 <template>
   <section class="network-section" :data-network="section.name">
-    <button class="network-header" type="button" :aria-expanded="expanded" @click="expanded = !expanded">
+    <button class="network-header" type="button" :aria-expanded="expanded" @click="toggleExpanded">
       <ExternalLogo :name="section.icon" :width="34" class="network-icon" />
 
       <span class="network-identity">
-        <span class="network-title">{{ section.name }}</span>
+        <span class="network-title"
+          >{{ section.name
+          }}<span v-if="section.isTestnet" class="row-badge" data-testid="testnetBadge">{{ t('portfolioPage.testnetBadge') }}</span></span
+        >
         <span v-if="syncLabel" class="sync-state">{{ syncLabel }}</span>
       </span>
 
@@ -16,11 +19,15 @@
     </button>
 
     <div v-if="expanded" class="network-assets">
-      <button
-        v-for="asset in visibleAssets"
+      <!-- In Manage the row only holds the switch: a button around it would hide the switch from keyboards. -->
+      <component
+        :is="manage ? 'div' : 'button'"
+        v-for="asset in section.assets"
         :key="asset.key"
         class="asset-row"
-        type="button"
+        :class="{ 'asset-row--hidden': asset.hidden, 'asset-row--manage': manage }"
+        :type="manage ? undefined : 'button'"
+        :data-asset-key="asset.key"
         @click="openAsset(asset)"
       >
         <ExternalLogo :name="asset.icon" :width="38" class="asset-icon" />
@@ -31,21 +38,34 @@
             <span v-if="asset.trust !== 'verified'" class="trust-badge">{{ t('portfolioPage.unverified') }}</span>
           </span>
           <span class="asset-name">{{ asset.name || t('portfolioPage.unknownAsset') }}</span>
+          <span v-if="asset.hidden" class="asset-badges">
+            <span class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
+            <span v-if="asset.preferenceSource === 'legacy305'" class="row-badge legacy" data-testid="hiddenPreviousVersion">
+              {{ t('portfolioPage.hiddenPreviousVersion') }}
+            </span>
+          </span>
         </span>
 
-        <span class="asset-balance">
+        <span v-if="asset.balanceUnavailable" class="asset-balance" data-testid="balanceUnavailable">
+          <span>{{ t('portfolioPage.balanceStatus.failed') }}</span>
+        </span>
+        <span v-else class="asset-balance">
           <span>{{ formatAmount(asset.balanceText) }} {{ asset.symbol }}</span>
-          <span class="asset-fiat">{{ formatFiat(asset.fiatValue) }}</span>
+          <span class="asset-fiat">{{ balanceNote(asset) }}</span>
+          <span v-if="showsTransferable(asset)" class="asset-transferable" data-testid="transferable">
+            {{ t('portfolioPage.transferable', { amount: `${formatAmount(asset.transferableText)} ${asset.symbol}` }) }}
+          </span>
         </span>
 
         <Switcher
           v-if="manage"
-          :value="asset.preference !== 'hidden'"
+          :value="!asset.hidden"
+          :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: asset.symbol, network: section.name })"
           @click.stop
           @change="setPreference(asset, $event ? 'shown' : 'hidden')"
         />
         <Icon v-else icon="chevron-right" className="asset-chevron" :hover="false" />
-      </button>
+      </component>
 
       <div v-if="section.detectedAssets.length && !manage" class="detected-assets">
         <button class="detected-header" type="button" @click="showDetected = !showDetected">
@@ -73,7 +93,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { FPNumber } from '@sora-substrate/util';
 import type { AssetPreference, PortfolioAsset, PortfolioNetworkSection } from '@/portfolio/assetIdentity';
+import { toggleListEntry } from '@/portfolio/portfolioViewSettings';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 import { formatDecimalString } from '@/helpers/numbers';
@@ -84,13 +106,24 @@ const props = defineProps<{
   section: PortfolioNetworkSection;
   manage?: boolean;
   search?: string;
+  /** Keeps a collapsed network open while a search shows its matching rows. */
+  forceExpanded?: boolean;
 }>();
 
 const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
-const expanded = ref(true);
 const showDetected = ref(false);
+
+// Collapse is remembered per wallet, so it survives reopening the popup.
+const collapsed = computed(() => accountsStore.portfolioView.collapsedSections.includes(props.section.key));
+const expanded = computed(() => props.forceExpanded || !collapsed.value);
+
+function toggleExpanded(): void {
+  accountsStore.updatePortfolioView({
+    collapsedSections: toggleListEntry(accountsStore.portfolioView.collapsedSections, props.section.key, expanded.value),
+  });
+}
 
 const formattedSubtotal = computed(() => {
   if (!props.section.hasPricedAssets) return '';
@@ -112,21 +145,27 @@ const syncLabel = computed(() =>
   )
 );
 
-const visibleAssets = computed(() => {
-  const search = props.search?.trim().toLowerCase() ?? '';
-  const assets = props.manage
-    ? [...props.section.assets, ...props.section.detectedAssets]
-    : props.section.assets;
-  if (!search) return assets;
-  return assets.filter((asset) => `${asset.symbol} ${asset.name}`.toLowerCase().includes(search));
-});
+function isZero(value: string): boolean {
+  try { return new FPNumber(value).isZero(); } catch { return false; }
+}
 
 function formatAmount(value: string): string {
+  if (isZero(value)) return '0';
+
   return formatDecimalString(value, {
     minimumFractionDigits: 4,
     maximumFractionDigits: 4,
     preserveSmallValue: true,
   });
+}
+
+// A zero nobody has read yet is a placeholder: say so instead of valuing it.
+function balanceNote(asset: PortfolioAsset): string {
+  if (!asset.isReady && isZero(asset.balanceText)) {
+    return t(asset.balanceFailed ? 'portfolioPage.balanceStatus.failed' : 'portfolioPage.sync.pending');
+  }
+
+  return formatFiat(asset.fiatValue);
 }
 
 function formatFiat(value: string | null): string {
@@ -136,6 +175,11 @@ function formatFiat(value: string | null): string {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`;
+}
+
+/** Rows show the total balance; the transferable part is a secondary line when staking or locks hold some of it. */
+function showsTransferable(asset: PortfolioAsset): boolean {
+  return asset.hasBalance && formatAmount(asset.transferableText) !== formatAmount(asset.balanceText);
 }
 
 function sourceLabel(source: PortfolioAsset['source']): string {
@@ -148,6 +192,8 @@ function setPreference(asset: PortfolioAsset, preference: AssetPreference): void
 
 function openAsset(asset: PortfolioAsset): void {
   if (props.manage) return;
+  // Opening a token found by search takes it out of hiding, so a deposit made from its page shows in the list.
+  if (props.search?.trim() && asset.preference === 'hidden') setPreference(asset, 'auto');
   router.push({
     name: Components.AssetHistory,
     params: { assetId: asset.assetId, selectedNetwork: asset.networkName },
@@ -241,9 +287,58 @@ function openAsset(asset: PortfolioAsset): void {
   text-align: left;
 }
 
+.asset-row--manage {
+  cursor: default;
+}
+
 .asset-icon,
 .network-icon {
   border-radius: 50%;
+}
+
+// Hidden rows are listed in Manage so they can be shown again; dimmed, with the badges at full contrast.
+.asset-row--hidden {
+  .asset-icon,
+  .asset-symbol,
+  .asset-name,
+  .asset-balance {
+    opacity: 0.5;
+  }
+}
+
+.asset-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.row-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border: $default-border;
+  border-radius: 8px;
+  color: $grayish-white;
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-transform: uppercase;
+
+  &.legacy {
+    color: $pink-lavender-color;
+    text-transform: none;
+  }
+}
+
+.network-title .row-badge {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.asset-transferable {
+  margin-top: 2px;
+  color: $gray-color;
+  font-size: 0.66rem;
 }
 
 .trust-badge {
@@ -325,7 +420,8 @@ function openAsset(asset: PortfolioAsset): void {
   .network-icon,
   .asset-icon { grid-row: 1 / 3; }
   .asset-name,
-  .asset-fiat {
+  .asset-fiat,
+  .asset-transferable {
     font-size: 0.75rem;
     white-space: normal;
     overflow-wrap: anywhere;

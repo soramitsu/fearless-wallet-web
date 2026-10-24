@@ -12,17 +12,19 @@ import {
   REQUIRED_PUBLIC_CONFIG_KEYS,
 } from './audit-chrome-release.mjs';
 import { auditReleaseSource } from './audit-release-source.mjs';
+import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
 const EXPECTED_NODE_VERSION = 'v24.19.0';
 const EXPECTED_YARN_VERSION = '4.17.0';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const provenancePath = path.join(rootDir, 'dist/extension/chrome-release-provenance.json');
 const provenanceTemporaryPath = `${provenancePath}.tmp`;
+// Send flags are derived from the evidence manifests by the build, not taken from this environment.
 const EXPECTED_RELEASE_ENVIRONMENT = {
   IS_EXTENSION: 'true',
   NODE_ENV: 'production',
-  VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-  VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+  VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 };
@@ -104,23 +106,27 @@ function verifyReleaseEnvironment() {
   }
 }
 
-function parseArguments(argv) {
+export function parseArguments(argv) {
   let requireTag = false;
   let runAutomatedGates = true;
+  let runUpgradeE2E = true;
 
   for (const argument of argv) {
     if (argument === '--help' || argument === '-h') return { help: true };
     if (argument === '--require-tag') requireTag = true;
     else if (argument === '--skip-automated-gates') runAutomatedGates = false;
+    else if (argument === '--skip-upgrade-e2e') runUpgradeE2E = false;
     else fail(`unknown argument ${argument}`);
   }
 
   if (requireTag && !runAutomatedGates) fail('--require-tag cannot be combined with --skip-automated-gates');
-  return { requireTag, runAutomatedGates };
+  // The tagged artifact is the one users upgrade to: its upgrade from every released build is never skipped.
+  if (requireTag && !runUpgradeE2E) fail('--require-tag cannot be combined with --skip-upgrade-e2e');
+  return { requireTag, runAutomatedGates, runUpgradeE2E };
 }
 
 function usage() {
-  return `Usage: yarn prepare:chrome-release [--require-tag] [--skip-automated-gates]\n\nFrom a clean checkout, runs the automated release gates, builds the credentialed Chrome artifact twice, requires identical hashes, performs the real Chrome smoke and artifact audit, rechecks source cleanliness, and writes non-secret candidate provenance. Use --require-tag for the final tagged-commit verification. A skipped-gate diagnostic run never writes provenance.`;
+  return `Usage: yarn prepare:chrome-release [--require-tag] [--skip-automated-gates] [--skip-upgrade-e2e]\n\nFrom a clean checkout, runs the automated release gates, builds the credentialed Chrome artifact twice, requires identical hashes, performs the real Chrome smoke and artifact audit, runs the upgrade from every released build (yarn test:upgrade:e2e, tests/upgrade/README.md), rechecks source cleanliness, and writes non-secret candidate provenance. Use --require-tag for the final tagged-commit verification. A skipped-gate diagnostic run never writes provenance; --skip-upgrade-e2e is recorded in it and cannot be combined with --require-tag.`;
 }
 
 function runAutomatedReleaseGates(yarnPath) {
@@ -130,7 +136,7 @@ function runAutomatedReleaseGates(yarnPath) {
 
   const debtMarker = ['to', 'do'].join('');
 
-  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin']);
+  const testEnvironmentScripts = new Set(['test:all', 'test:e2e:extension', 'test:smoke:bitcoin', 'test:e2e:local-chains']);
   for (const [script, ...arguments_] of [
     ['scripts/test-branch-flow-audit.sh'],
     ['scripts/audit-branch-flow.sh'],
@@ -155,6 +161,8 @@ function runAutomatedReleaseGates(yarnPath) {
     ['build:web'],
     ['test:e2e:extension'],
     ['test:smoke:bitcoin'],
+    // Bitcoin and Solana sends against bitcoind -regtest and solana-test-validator.
+    ['test:e2e:local-chains'],
     ['test:bitcoin-broadcast-evidence-template'],
     [
       'generate:bitcoin-broadcast-evidence-template',
@@ -171,6 +179,20 @@ function runAutomatedReleaseGates(yarnPath) {
       ...arguments_
     );
   }
+
+  // An enabled send ships only with evidence that still verifies against the live network.
+  const transferFlags = readReleaseTransferFlags(rootDir);
+
+  if (transferFlags.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true') {
+    runYarn(yarnPath, 'audit:bitcoin-broadcast-evidence', '--require-ready');
+  }
+  if (transferFlags.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true') {
+    runCommand(
+      'bash',
+      ['scripts/audit-iroha-production-send-readiness.sh', '--require-ready', '--live'],
+      'bash scripts/audit-iroha-production-send-readiness.sh --require-ready --live'
+    );
+  }
 }
 
 async function invalidateReleaseProvenance() {
@@ -178,7 +200,7 @@ async function invalidateReleaseProvenance() {
   await fs.rm(provenanceTemporaryPath, { force: true });
 }
 
-async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
+async function prepareChromeRelease({ requireTag, runAutomatedGates, runUpgradeE2E }) {
   await invalidateReleaseProvenance();
   const yarnPath = resolveYarnPath();
   const yarnVersion = verifyToolchain(yarnPath);
@@ -189,9 +211,11 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
   for (const script of [
     'test:extension-build-environment',
     'test:extension-package',
+    'test:verified-crx',
     'test:import-chrome-release-config',
     'test:prepare-chrome-release',
     'test:release-source-audit',
+    'test:bundle-host-audit',
     'test:vendored-iroha-sdk-audit',
     'test:chrome-release-audit',
   ]) {
@@ -212,6 +236,8 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
   }
 
   runYarn(yarnPath, 'test:smoke:chrome:production');
+  // Every released build writes its profile and this source replaces it in place (tests/upgrade/README.md).
+  if (runAutomatedGates && runUpgradeE2E) runYarn(yarnPath, 'test:upgrade:e2e');
   const sourceAfter = await auditReleaseSource({ requireTag, rootDir });
   if (sourceBefore.commit !== sourceAfter.commit) fail('source commit changed during release preparation');
 
@@ -254,6 +280,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates }) {
       tagRequired: requireTag,
       tagVerified: sourceAfter.tag !== null,
       testEnvironmentIsolated: true,
+      upgradeE2E: runUpgradeE2E ? 'passed' : 'skipped by --skip-upgrade-e2e',
       vendoredIrohaSdkAudit: true,
     },
   };

@@ -7,13 +7,14 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import {
-  CURRENT_PUBLISHED_VERSION,
   deriveChromeExtensionId,
   EXPECTED_CHROME_EXTENSION_ID,
   readZipEntries,
   REQUIRED_PUBLIC_CONFIG_KEYS,
 } from './audit-chrome-release.mjs';
 
+// This pinned config reference is independent of the latest store release.
+export const CONFIG_REFERENCE_VERSION = '3.0.5';
 export const CURRENT_PUBLISHED_CRX_SHA256 = 'be6e2d4c4cb8072ced8e3813f470db914ef657d2c301425d4a7979f936b31704';
 export { REQUIRED_PUBLIC_CONFIG_KEYS };
 
@@ -103,8 +104,8 @@ export async function importChromeReleaseConfig({
 
   const files = readZipEntries(parseCrx3(crx), 'Published Chrome Web Store CRX');
   const manifest = parseManifest(files);
-  if (manifest.version !== CURRENT_PUBLISHED_VERSION) {
-    fail(`reference CRX version ${manifest.version} is not expected published version ${CURRENT_PUBLISHED_VERSION}`);
+  if (manifest.version !== CONFIG_REFERENCE_VERSION) {
+    fail(`reference CRX version ${manifest.version} is not expected published version ${CONFIG_REFERENCE_VERSION}`);
   }
   if (typeof manifest.key !== 'string' || !manifest.key.trim()) fail('reference manifest has no public key');
   const extensionId = deriveChromeExtensionId(manifest.key);
@@ -130,8 +131,9 @@ export async function importChromeReleaseConfig({
     EXTENSION_PUBLIC_KEY: manifest.key,
     IS_EXTENSION: 'true',
     NODE_ENV: 'production',
-    VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-    VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+    // Send flags come from the evidence manifests at build time (scripts/release-transfer-flags.mjs).
+    VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+    VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
     VUE_APP_EXTENSION_SMOKE: 'false',
     VUE_APP_TEST_ONLY: 'false',
   };

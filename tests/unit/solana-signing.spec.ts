@@ -4,7 +4,8 @@ import {
   resolveSolanaSignAndSendTransaction,
   type SolanaKeyringAccount,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
-import { base58Decode } from '@polkadot/util-crypto';
+import { base58Decode, base58Encode } from '@polkadot/util-crypto';
+import { SolanaBroadcastError } from '@extension-base/services/solana-rpc-service';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type { SolanaRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type { SolanaSignAndSendTransactionOptions } from '@extension-base/page/types';
@@ -19,6 +20,7 @@ const expected = vector.expected.solana;
 const MESSAGE_BASE64 = 'RmVhcmxlc3MgU29sYW5hIGNoYWxsZW5nZQ==';
 const RPC_SIGNATURE = '5NfHnqDyzT9qyfxZDq2sSskAMGuFZ3VRqW4EQxghKqrKYdKq6cZNW1J34w7qE6nGx1eDQe5s2eKxB2ZtE1xU9qgN';
 const SYSTEM_PROGRAM = '11111111111111111111111111111111';
+const SPONSOR = vectors.vectors[1].expected.solana.address;
 
 const account: SolanaKeyringAccount = {
   address: 'substrate-address',
@@ -129,6 +131,62 @@ describe('Solana signing approval helpers', () => {
       signedTransactionBase64,
     });
     expect(response.signatureBase58).toMatch(/^[1-9A-HJ-NP-Za-km-z]{64,128}$/);
+  });
+
+  it('hands the dApp the signature when the broadcast may already have reached the network', async () => {
+    const response = await resolveSolanaSignAndSendTransaction({
+      accounts: [account],
+      broadcastTransaction: vi.fn<BroadcastTransaction>(async () => {
+        throw new SolanaBroadcastError('solana_broadcast_ambiguous', true);
+      }),
+      exportMnemonic: vi.fn(() => ({ seed: vector.mnemonic })),
+      request: signAndSendRequest(),
+    });
+
+    expect(response.signature).toBe(response.signatureBase58);
+  });
+
+  it("hands the dApp the fee payer's signature, which is the transaction id, when a sponsor pays the fee", async () => {
+    const sponsorSignature = new Uint8Array(64).fill(7);
+    const ambiguous = vi.fn<BroadcastTransaction>(async () => {
+      throw new SolanaBroadcastError('solana_broadcast_ambiguous', true);
+    });
+    const response = await resolveSolanaSignAndSendTransaction({
+      accounts: [account],
+      broadcastTransaction: ambiguous,
+      exportMnemonic: vi.fn(() => ({ seed: vector.mnemonic })),
+      request: signAndSendRequest(sponsoredTransactionBase64(sponsorSignature)),
+    });
+
+    // The wallet signs the second slot; the network knows the transaction by the first.
+    expect(response.signature).toBe(base58Encode(sponsorSignature));
+    expect(response.signature).not.toBe(response.signatureBase58);
+  });
+
+  it('refuses to invent an id when the fee payer has not signed, so the dApp is not given one that cannot land', async () => {
+    await expect(
+      resolveSolanaSignAndSendTransaction({
+        accounts: [account],
+        broadcastTransaction: vi.fn<BroadcastTransaction>(async () => {
+          throw new SolanaBroadcastError('solana_broadcast_ambiguous', true);
+        }),
+        exportMnemonic: vi.fn(() => ({ seed: vector.mnemonic })),
+        request: signAndSendRequest(sponsoredTransactionBase64(new Uint8Array(64))),
+      })
+    ).rejects.toThrow('solana_broadcast_ambiguous');
+  });
+
+  it('passes a definite refusal on to the dApp', async () => {
+    await expect(
+      resolveSolanaSignAndSendTransaction({
+        accounts: [account],
+        broadcastTransaction: vi.fn<BroadcastTransaction>(async () => {
+          throw new SolanaBroadcastError('solana_broadcast_rejected', false);
+        }),
+        exportMnemonic: vi.fn(() => ({ seed: vector.mnemonic })),
+        request: signAndSendRequest(),
+      })
+    ).rejects.toThrow('solana_broadcast_rejected');
   });
 
   it('rejects invalid Solana sign-and-send approval payloads before broadcasting', async () => {
@@ -254,4 +312,25 @@ function transaction(message: Uint8Array): Uint8Array {
 
 function validTransactionBase64(): string {
   return Buffer.from(transaction(legacyMessage())).toString('base64');
+}
+
+// The sponsor pays the fee and signs first; the wallet is the second signer.
+function sponsoredMessage(): Uint8Array {
+  return bytes(
+    [2, 0, 1],
+    compact(3),
+    key(SPONSOR),
+    key(expected.address),
+    key(SYSTEM_PROGRAM),
+    new Uint8Array(32).fill(9),
+    compact(1),
+    [2],
+    compact(2),
+    [0, 1],
+    compact(0)
+  );
+}
+
+function sponsoredTransactionBase64(sponsorSignature: Uint8Array): string {
+  return Buffer.from(bytes(compact(2), sponsorSignature, new Uint8Array(64), sponsoredMessage())).toString('base64');
 }

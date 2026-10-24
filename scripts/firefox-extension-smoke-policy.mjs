@@ -6,11 +6,11 @@ export class SmokeTimeoutError extends Error {
 }
 
 export const VERIFIED_FIREFOX_VERSION = '152.0.4';
+// Mozilla's release SHA256SUMS, linux-x86_64/en-US/firefox-152.0.4.tar.xz.
+export const VERIFIED_FIREFOX_ARCHIVE_SHA256 = 'cfbe0a66269f220c69809210eda55fee72f4798427e78181b7d0da14df44882f';
 export const FIREFOX_CI_WORKFLOW_BLOCK = `      - name: Set up Firefox
         id: setup-firefox
-        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1.7.2
-        with:
-          firefox-version: ${VERIFIED_FIREFOX_VERSION}
+        run: bash ./scripts/ci-install-firefox.sh ${VERIFIED_FIREFOX_VERSION}
 
       - name: Firefox extension runtime and CSP smoke
         run: yarn test:smoke:firefox
@@ -42,7 +42,7 @@ export function requireCiFirefoxBinary(environment) {
     !candidate.startsWith('/') ||
     /[\0\r\n]/u.test(candidate)
   ) {
-    throw new Error('GitHub Actions must provide one absolute FIREFOX_BINARY from the pinned setup-firefox step');
+    throw new Error('GitHub Actions must provide one absolute FIREFOX_BINARY from the pinned Firefox setup step');
   }
   return candidate;
 }

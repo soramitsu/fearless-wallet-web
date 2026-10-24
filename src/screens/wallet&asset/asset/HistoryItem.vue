@@ -47,7 +47,7 @@ export default defineComponent({ name: 'HistoryItem' ,
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
-      if (BaseApi.isBitcoinNetwork(this.network)) {
+      if (BaseApi.isBitcoinNetwork(this.network) || BaseApi.isIrohaNetwork(this.network)) {
         return this.historyElement.address ?? BaseApi.formatAddress(this.accountsStore.selectedWallet, this.network);
       }
 

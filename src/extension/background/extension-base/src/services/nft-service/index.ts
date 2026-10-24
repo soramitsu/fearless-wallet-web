@@ -186,14 +186,13 @@ export class NftService {
 
     const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
     const signer = new Wallet(privateKey, api);
-    const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
     const contractMaster = contract.connect(signer) as Contract;
 
     try {
       let txResponse;
 
-      if (!isApproved) await contractMaster.setApprovalForAll(tx.to, true);
-
+      // The owner signs this transfer; granting the recipient operator rights
+      // would let them drain the rest of the collection without another prompt.
       if (tx.type === 'ERC721')
         txResponse = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
       else if (tx.type === 'ERC1155')
@@ -214,8 +213,6 @@ export class NftService {
       };
     } catch (e) {
       console.info(e);
-      await contractMaster.setApprovalForAll(tx.to, false);
-
       return {
         errors: [],
         status: false,

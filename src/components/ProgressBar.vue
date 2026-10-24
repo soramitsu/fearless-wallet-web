@@ -42,11 +42,12 @@ const classesProgress = computed(() => [
 }
 
 .full {
-  background-color: $default-white;
+  background-color: palette($default-white, var(--fw-pressed));
 }
 
+// Cyan is progress in Neon Glass (design-system 3.1).
 .progress {
-  background-color: $pink-color;
+  background-color: palette($pink-color, var(--fw-info));
   position: relative;
   top: -5px;
 }

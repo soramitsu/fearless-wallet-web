@@ -1,5 +1,9 @@
 {
   "welcome": {
+    "passwordChangeFailed": "Could not confirm the password change. Unlock the wallet and try again. If a TON account needs recovery, recover it with its earlier password first.",
+    "walletResetFailed": "Could not confirm the wallet reset. Please try again before setting up another wallet.",
+    "tonStorageUnavailable": "Some TON accounts could not be loaded or updated. Their stored records have been preserved, and your other wallets remain available. Reopen the wallet or lock and unlock it to retry. Do not reset the wallet or remove affected accounts.",
+    "tonRecoveryRequired": "Some TON accounts need the password used before an earlier wallet update. Your other accounts are available. To restore access to an affected TON account, open Export for that account and enter its earlier password. Do not reset the wallet or remove the account before recovery.",
     "importWallet": "Import wallet",
     "ecosystemEvmSubstrate": "Create or import Substrate or EVM accounts",
     "ecosystemTon": "Connect to the fastest growing ecosystem ever",
@@ -19,10 +23,18 @@
     "needHelp": "Do you need help? Сontact",
     "resetWallet": "Reset wallet",
     "wantReset": "Are you sure you want to reset your wallet?",
-    "walletWillBeDeleted": "Your current wallet, accounts, and assets will be deleted from Fearless Wallet. You will need to re-import your original account using the recovery phrase or private key.",
+    "walletWillBeDeleted": "Reset removes your password and active wallet list from this browser. Encrypted recovery copies and TON keys stay on this device. After creating a new password, use Account access to recover them with their previous passwords. Funds remain on their networks.",
     "enterReset": "To proceed, enter '{phrase}'",
     "resetWarning": "Resetting the wallet will delete your current data and assets. We cannot recover your password as it is stored only on your device. Try other passwords. If you want to reset the wallet, import your original recovery phrase. Proceed only if you have the recovery phrase.",
-    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers."
+    "passwordWarning": "Your password is used to unlock the wallet and is securely stored on your device. We recommend using 12 characters, including uppercase and lowercase letters, symbols, and numbers.",
+    "resetFailed": "Reset could not be completed. Try again.",
+    "resetHaveBackups": "I have the recovery phrase or a backup for each of these accounts",
+    "resetBackupTitle": "Download backups first",
+    "changePasswordFailed": "Could not confirm the password change. Try unlocking with your new password. If that fails, try your previous password.",
+    "createPasswordFailed": "Could not confirm that your password was saved. Try unlocking with the password you entered.",
+    "resetBackupsDownloaded": "The backup files were sent to your downloads. Check that they are there before you continue.",
+    "resetDownloadBackups": "Download encrypted backups",
+    "resetBackupDescription": "1 account still opens only with the password it had in an earlier version of Fearless. Reset removes it too. Its encrypted backup file opens with that same password. | {count} accounts still open only with the passwords they had in an earlier version of Fearless. Reset removes them too. Each encrypted backup file opens with the password its account had."
   },
   "onboarding": {
     "titleFirst": "The DeFi Wallet for the",
@@ -134,7 +146,10 @@
       "saved": "Saved",
       "dataWillStoreOnGDrive": "By clicking “Confirm”, you agree to upload a password-encrypted wallet backup and its wallet label and address to your private Google Drive app data storage for backup and restore.",
       "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
-      "noWallets": "No saved wallets have been found on the Google Drive"
+      "noWallets": "No saved wallets have been found on the Google Drive",
+      "importFileOnly": "Import this file only",
+      "importFileOnlyHint": "This imports the account in this file. Restore its linked Ethereum backup separately.",
+      "importFileOnlyDone": "This file was imported. Its linked Ethereum backup was not imported by this action."
     }
   },
   "mobileConnector": {
@@ -222,7 +237,8 @@
       "connections": "Connections",
       "security": "Security",
       "preferences": "Preferences",
-      "about": "About"
+      "about": "About",
+      "appearance": "Appearance"
     },
     "walletDetails": "Wallet details & backup",
     "walletDetailsDescription": "Accounts, keys, and export",
@@ -243,7 +259,20 @@
     "language": "Language",
     "languageDescription": "App display language",
     "aboutFearless": "About Fearless",
-    "aboutFearlessDescription": "Version, support, and legal"
+    "aboutFearlessDescription": "Version, support, and legal",
+    "visualEffects": {
+      "title": "Visual effects",
+      "auto": "Automatic",
+      "autoDescription": "Follows your device's transparency, contrast and performance settings.",
+      "lite": "Lite",
+      "liteDescription": "No blur. Easier on older computers.",
+      "reduced": "Reduced",
+      "reducedDescription": "Solid, flat surfaces with no glow, glass or blur.",
+      "full": "Full",
+      "inUse": "In use: {mode}",
+      "contrastNote": "Your system's contrast settings keep effects reduced."
+    },
+    "irohaConnectUnavailable": "IrohaConnect is not available in this version. Nothing was signed."
   },
   "irohaConnectPage": {
     "backToSettings": "Back to settings",
@@ -363,7 +392,11 @@
       "soraSubstrate": "5–20 minutes",
       "soraEvm": "10–60 minutes plus claim",
       "liberland": "5–20 minutes"
-    }
+    },
+    "chooseRoute": "Choose a route",
+    "pausedTitle": "Transfers between networks are paused",
+    "pausedBody": "This version keeps cross-network transfers off while each route is re-verified. No funds are moved. You can still send and receive on every network.",
+    "sendOnNetwork": "Send on {network}"
   },
   "farmingPage": {
     "title": "Demeter farming",
@@ -404,7 +437,10 @@
       "catalog": "Demeter is unavailable today. Reconnect to SORA and try again.",
       "signing": "This wallet cannot sign SORA actions.",
       "transaction": "The transaction was not submitted. Check your balance and recent network history before trying again."
-    }
+    },
+    "pausedTitle": "Farming actions are paused",
+    "pausedBody": "This version shows your Demeter pools, positions and rewards but keeps deposits, withdrawals and claims off while they are verified. Nothing is moved: your positions and rewards stay on SORA.",
+    "openPools": "Open liquidity pools"
   },
   "defiHub": {
     "title": "Earn",
@@ -426,7 +462,8 @@
     "polkamarktDescription": "Prediction markets collateralized in KUSD",
     "soraXorFees": "SORA · XOR fees",
     "availableNetworks": "Available networks",
-    "addSubstrateAccount": "Add a Substrate account"
+    "addSubstrateAccount": "Add a Substrate account",
+    "browseOnly": "Browse only"
   },
   "portfolioPage": {
     "balanceStatus": {
@@ -474,6 +511,73 @@
       "stale": "Stale",
       "syncedAge": "Synced {age}",
       "synced": "Synced"
+    },
+    "loadingBalances": "Loading your balances",
+    "checkingNetworks": "Checking 1 network… | Checking {count} networks…",
+    "zeroNetworks": "1 network · no balance | {count} networks · no balance",
+    "popularNoBalance": "Popular networks · no balance yet",
+    "hiddenNotIncluded": "1 hidden asset not included · Manage | {count} hidden assets not included · Manage",
+    "unpricedNotIncluded": "1 asset without price not included | {count} assets without price not included",
+    "poolStakesNotIncluded": "Pool stakes not included",
+    "hiddenFundsNotice": "1 hidden asset holds funds | {count} hidden assets hold funds",
+    "hiddenFundsDescription": "Hidden assets are not included in your total. Review them, or keep them hidden.",
+    "review": "Review",
+    "keepHidden": "Keep hidden",
+    "hiddenBadge": "Hidden",
+    "hiddenPreviousVersion": "Hidden in previous version",
+    "filterHidden": "Hidden ({count})",
+    "testnets": "Testnets",
+    "testnetBadge": "Testnet",
+    "showingFiltered": "Showing {network} · {value}",
+    "transferable": "Transferable {amount}",
+    "inclHidden": "incl. hidden",
+    "noHiddenAssets": "No hidden assets",
+    "noHiddenAssetsDescription": "Assets you hide appear here, so you can show them again.",
+    "testnetsNotShown": "1 testnet asset not shown · Show testnets | {count} testnet assets not shown · Show testnets",
+    "showAssetOnNetwork": "Show {symbol} on {network}",
+    "showTokenOnNetworks": "Show {symbol} on 1 network | Show {symbol} on all {count} networks",
+    "emptyWalletTitle": "No assets yet",
+    "emptyWalletDescription": "Receive or buy crypto to get started. Balances appear here as soon as they arrive.",
+    "noBalanceInView": "No balance in this view",
+    "networkCount": "1 network | {count} networks",
+    "priceUnavailableOn": "Price unavailable on 1 network | Price unavailable on {count} networks",
+    "moreZeroNetworks": "+1 network · no balance | +{count} networks · no balance",
+    "zeroTokens": "1 token · no balance | {count} tokens · no balance",
+    "tokenGroupLabel": "{symbol} on 1 network: {amount}, {value} | {symbol} on {count} networks: {amount}, {value}",
+    "tokenSingleLabel": "{symbol} on {network}: {amount}, {value}",
+    "tokenGroupFailedLabel": "{symbol} on 1 network: {status} | {symbol} on {count} networks: {status}",
+    "tokenSingleFailedLabel": "{symbol} on {network}: {status}",
+    "role": {
+      "native": "Native",
+      "systemParachain": "System parachain",
+      "xcmReserve": "XCM reserve",
+      "rollup": "Rollup",
+      "issuerNative": "Issuer native"
+    },
+    "lens": {
+      "label": "View",
+      "tokens": "By token",
+      "networks": "By network"
+    },
+    "sort": {
+      "label": "Sort",
+      "value": "Value",
+      "custom": "Your order"
+    },
+    "layoutNote": {
+      "title": "Your assets, now by token",
+      "description": "Each token shows once, with its total across networks. Tap it to see every network.",
+      "networks": "Bridged and wrapped versions keep their own rows, labelled with their network, and you always choose the network when you send or receive.",
+      "customOrderKept": "Your order from the previous version is kept. Switch to Value anytime.",
+      "gotIt": "Got it",
+      "byNetwork": "View by network"
+    },
+    "groupPicker": {
+      "sendTitle": "Send {symbol}: choose a network",
+      "receiveTitle": "Receive {symbol}: choose a network",
+      "sendWarning": "{symbol} is on several networks. Send it on the network the recipient uses: tokens sent on another network may be lost.",
+      "receiveWarning": "Choose the network the sender will use. Only send {symbol} on that network to this wallet: tokens sent from other networks may be lost.",
+      "noSendNetwork": "No network can send {symbol} right now."
     }
   },
   "polkamarktPage": {
@@ -568,7 +672,8 @@
       "unsupportedSigner": "Use a locally signable SORA account.",
       "acceptRisk": "Accept the Polkaswap and SORA risk acknowledgement before trading.",
       "addXor": "Add XOR for network fees.",
-      "addKusd": "Add KUSD collateral to buy shares."
+      "addKusd": "Add KUSD collateral to buy shares.",
+      "paused": "Buying, selling and claims are paused in this version."
     },
     "fallback": {
       "dataError": "Market data is unavailable right now. No assets were submitted. Try again.",
@@ -592,7 +697,9 @@
       "claimed": "Claimed",
       "pending": "Pending",
       "indexed": "Indexed"
-    }
+    },
+    "pausedTitle": "Trading is paused in this version",
+    "pausedBody": "Polkamarkt stays browse-only while buying, selling and claims are verified. Markets, prices and your positions are shown here; nothing is submitted."
   },
   "historyDetails": {
     "details": "Details",
@@ -728,6 +835,10 @@
     "transactionDone": "Transaction Done",
     "transactionError": "Transaction Error",
     "transactionFailedDetails": "The transaction failed. Review the transaction details and try again.",
+    "transferFeeChanged": "The network fee increased. Nothing was sent. Go back and review the updated fee before sending.",
+    "transferFeeApprovalRequired": "Nothing was sent. Go back and approve the current network fee before sending.",
+    "transactionStatusUnknown": "Transaction status unknown",
+    "transactionStatusUnknownDetails": "This transfer may already have been sent. Check the transaction hash and account history before sending again. A new send could transfer the funds twice.",
     "transactionPending": "Transaction is pending",
     "saveQR": "Save QR-code",
     "copyQR": "Copy QR-code",
@@ -758,9 +869,47 @@
     "isDonationAddress": "This address has been flagged as suspicious. We strongly recommend that you don't send %s to this account.",
     "networkFeeSora": "Network fee is used to ensure SORA system's growth and stable performance.",
     "minMaxReceiveInfo": "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.",
-    "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
+    "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;",
+    "solanaAccountCreation": "Recipient account setup",
+    "solanaAccountCreationHint": "Included in the network fee: a one-time deposit that opens the recipient's {asset} account.",
+    "solanaAmountBelowRent": "The recipient's account is new, and the network needs a larger first deposit to open it. Send a larger amount.",
+    "solanaSenderBelowRent": "This would leave less SOL than the network's minimum account balance. Send a little less, or use Max to send everything.",
+    "solanaInsufficientSolForFee": "Not enough SOL to pay the network fee for this transfer.",
+    "solanaPreviousSendPending": "Your previous Solana transfer is still being confirmed. Nothing new was sent. Try again in a minute.",
+    "solanaRecipientOffCurve": "This address cannot sign transactions, so funds sent to it could be lost. Check the address.",
+    "solanaRecipientProgram": "This address belongs to a program, not a wallet. Sending to it could lose your funds.",
+    "solanaRecipientTokenAccount": "This is a token account, not a wallet address. Paste the recipient's wallet address instead.",
+    "solanaRecipientTokenAccountFrozen": "The recipient's token account is frozen and cannot receive this token.",
+    "solanaSimulationFailed": "The network rejected this transfer in a test run, so nothing was sent. Check the amount and the address.",
+    "solanaTransactionExpired": "The network did not confirm this transfer in time, so nothing was sent. You can try again.",
+    "solanaTransactionFailed": "The network processed this transfer, but it failed, so the amount was not sent. Only the network fee was charged.",
+    "solanaBroadcastUnconfirmed": "This transfer is not confirmed yet. Check your history before sending again. The wallet will not start another Solana transfer until this one is settled.",
+    "viewSolanaHistoryOnExplorer": "See your full Solana history on Solscan",
+    "receiveTokenTitle": "Receive {symbol}",
+    "bitcoinPreviousSendPending": "Your previous Bitcoin transfer is still being checked. Nothing new was sent. Try again in a few minutes.",
+    "bitcoinFeeRateValue": "{rate} sat/vB",
+    "bitcoinPreviousSendOnNetwork": "Your earlier transfer of {amount} to {recipient} is on the network and waiting for confirmation (transaction {txid}). So that it cannot be paid twice, you can send Bitcoin again once it is confirmed.",
+    "bitcoinPreviousSendUnconfirmed": "Your previous Bitcoin transfer is on the network and waiting for confirmation. Nothing new was sent. You can send again once it is confirmed.",
+    "receiveEvmSameAddress": "This address is the same on all EVM networks, but tokens only arrive on the network they were sent on.",
+    "bitcoinSupportedAddresses": "Bitcoin sends support addresses starting with {prefixes}.",
+    "balanceNotLoaded": "Balance couldn't be loaded. Try again shortly",
+    "bitcoinBroadcastUnconfirmed": "The network has not confirmed that it received this transfer, so it may still go through. Check your history before sending again. Until it is settled, a new Bitcoin transfer from this wallet either reuses the same coins, so only one of the two can go through, or waits until this one is confirmed.",
+    "transactionUnconfirmed": "Not confirmed yet",
+    "bitcoinPreviousSendReused": "The wallet does not know yet whether your earlier transfer of {amount} to {recipient} went through. This transfer reuses its coins, so only one of the two can go through.",
+    "bitcoinAwaitingConfirmation": "{amount} is waiting for network confirmation and can be sent once it confirms.",
+    "bitcoinBroadcastRejected": "The Bitcoin network rejected this transfer, so nothing was sent. Try again in a moment.",
+    "bitcoinInsufficientSpendable": "Not enough confirmed BTC to cover this amount and the network fee.",
+    "bitcoinFeeRate": "Fee rate",
+    "receiveSendUnavailable": "Sending from {network} is not available in this version of Fearless. You can receive {symbol} here and see it in your balance.",
+    "bitcoinAmountBelowDust": "This amount is too small for the Bitcoin network to relay. Send a larger amount.",
+    "sendGroupNetworkWarning": "{symbol} is on several networks. This send uses {network}: check that the recipient accepts {symbol} on {network}.",
+    "onNetwork": "on {network}",
+    "receiveOnlyOnNetwork": "Only send {symbol} on {network} to this address. Tokens sent from other networks may be lost.",
+    "bitcoinTooManyInputs": "This amount needs too many small coins for one transaction. Send a smaller amount.",
+    "solanaPreviousSendUnverified": "The network has not confirmed that it received your previous Solana transfer, so it may have gone through. Check your history before sending again. Nothing new was sent."
   },
   "accounts": {
+    "tonEarlierPassword": "If this TON account stopped working after a password change, enter its earlier password here to restore access.",
     "invalidAccountAddress": "Invalid account address",
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",
@@ -798,7 +947,9 @@
     "rawSeed": "Raw Seed",
     "json": "JSON",
     "backupKeyPair": "Backup Key Pair",
-    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
+    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?",
+    "jsonBackupOnly": "Mnemonic: Unverified. Download encrypted backup (JSON).",
+    "exportFailed": "The export could not be completed. Nothing was changed. Go back and try again."
   },
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
@@ -1076,9 +1227,8 @@
     "actionRequired": "Upgrade Key Storage: Action Required",
     "upgradingSecure": "We are upgrading to a more secure key storage method. Please follow these steps:",
     "createMasterPass": "Create a master password. This master password will be used for all your wallets.",
-    "enterPass": "Enter the passwords for your current wallets. If you don’t remember a wallet password, it will be reset. You can re-import the wallet later.",
-    "accessLost": "Access to this wallet will be lost. You can re-import the wallet later. You will need a mnemonic phrase or a JSON backup.",
-    "skipWarning": "If you skip a wallet password step, wallet will be reset. You can re-import the wallet later with Mnemonic passphrase",
+    "enterPass": "Enter the password each account had before. If you don’t remember one, skip it: the account stays in Fearless, and you can unlock it later with its password or recovery phrase.",
+    "skipWarning": "Accounts you skip stay in Fearless. Their balances and receiving keep working; sending and export wait until you unlock them in Settings, under Account access.",
     "universalWalletRequired": "Universal Wallet Required",
     "universalWalletActionRequired": "Create or import a Universal Wallet",
     "universalWalletLegacyText": "Normal wallet access is locked until a Universal Wallet is available. Existing legacy wallets remain export-only for recovery.",
@@ -1086,7 +1236,21 @@
     "exportLegacyVault": "Export legacy wallet",
     "exportLegacyVaultUnavailable": "This legacy wallet is not available for export on this device.",
     "createUniversalWallet": "Create Universal Wallet",
-    "importUniversalWallet": "Import Universal Wallet"
+    "importUniversalWallet": "Import Universal Wallet",
+    "pending": "Pending",
+    "completed": "Completed",
+    "legacyPasswordRequired": "This account still uses the password it had in an earlier version of Fearless. Unlock it to send or export.",
+    "skipForNow": "Skip for now",
+    "skipConfirmTitle": "Skip these accounts for now?",
+    "skipFailed": "Your choice could not be saved, so nothing was changed. Try again.",
+    "later": "Later",
+    "enterPassRow": "Select an account and enter the password it had before the master password.",
+    "downloadBackup": "Download encrypted backup",
+    "downloadBackupFailed": "The backup could not be downloaded. Nothing was changed. Try again.",
+    "usePhrase": "Forgot this password? Use the recovery phrase",
+    "loadFailed": "Your accounts could not be loaded. Nothing was changed.",
+    "moreOptions": "More options",
+    "resetHint": "Reset wallet removes every account from Fearless on this device. Skip for now keeps them all."
   },
   "common": {
     "lockApp": "Lock extension",
@@ -1157,7 +1321,6 @@
     "readMedium": "Read on Medium",
     "learnWiki": "Learn on Wiki",
     "githubCode": "Github Source Code",
-    "contactEmail": "Contact Email",
     "askSupport": "Ask for Support",
     "likeInstagram": "Like on Instagram",
     "subscribeYouTube": "Subscribe on YouTube",
@@ -1196,7 +1359,8 @@
     "externalWidget": "External widget",
     "favicon": "Website icon",
     "fearlessLogo": "Fearless logo",
-    "nftImage": "NFT image"
+    "nftImage": "NFT image",
+    "helpSupport": "Help & Support"
   },
   "ux": {
     "refresh": "Refresh",
@@ -1236,6 +1400,148 @@
     "startingWallet": "Starting your wallet…",
     "startupUnavailable": "Your wallet could not start. Check your connection and try again.",
     "settingUpWallet": "Setting up your wallet…",
-    "accountSetupFailed": "Your wallet could not be set up. Your input is still here. Try again or go back to review it."
+    "accountSetupFailed": "Your wallet could not be set up. Your input is still here. Try again or go back to review it.",
+    "tonAddressChoiceTitle": "Choose your TON address",
+    "tonAddressChoiceDescription": "This recovery phrase opens more than one TON address, because earlier Fearless apps made TON addresses differently from this version. Choose the one that holds your TON.",
+    "tonAddressUniversal": "Standard address",
+    "tonAddressUniversalDescription": "Used by this version of Fearless and by most other wallets.",
+    "tonAddressLegacy": "Earlier Fearless address",
+    "tonAddressLegacyDescription": "Where Fearless 3.0 for Chrome and the Fearless Android app kept TON for this phrase.",
+    "tonAddressNative": "TON-only wallet address",
+    "tonAddressNativeDescription": "Used by earlier Fearless apps and by wallets whose phrases are made for TON alone.",
+    "tonAddressBalance": "Balance: {amount} TON",
+    "tonAddressEmpty": "No funds or history found",
+    "tonAddressUnknown": "Balance could not be checked",
+    "tonAddressAsTyped": "Exactly as typed",
+    "tonAddressAsTypedDescription": "The Fearless Android app kept a typed TON phrase with its spacing and capital letters. Choose this if your phrase comes from there.",
+    "tonAddressInWallet": "Already in your wallet",
+    "tonPhraseAsTyped": "This TON phrase works only when entered exactly as it was saved, with the same spacing and capital letters. Use Copy to clipboard to keep it exactly.",
+    "tonAddressUnchecked": "We could not check these addresses right now, so the first one is selected. If this phrase comes from an earlier Fearless app, choose the address that app used.",
+    "tonAddressBothHint": "Not sure? Nothing is lost by choosing any of them. You can import this phrase again later to add another address.",
+    "storageUnavailable": "Your wallet data could not be read. Nothing was changed. Please try again."
+  },
+  "signingReview": {
+    "blindWarning": "Fearless can’t read this request. Signing it could authorize transfers from this account. Only continue if you started this on {origin} and trust it.",
+    "signAnyway": "Sign anyway",
+    "acknowledge": "I understand this may move funds.",
+    "reviewFirst": "Expand the raw data and acknowledge the risk before signing.",
+    "rawData": "Show raw data",
+    "feeUnavailable": "Fee unavailable",
+    "signOnlyFee": "No network submission for this signature. It may authorize later transfers.",
+    "maximumFee": "Requested execution fee limit",
+    "estimateFee": "Estimated fee",
+    "invalidRequest": "This request cannot be signed. Reject it and ask the app to try again.",
+    "unknownAction": "Unreadable instruction",
+    "typedData": "Structured message",
+    "flagged": "Flagged as phishing",
+    "checking": "Checking requester…",
+    "signed": "Signed for {origin}",
+    "submitted": "Submitted for {origin}"
+  },
+  "accountAccess": {
+    "title": "Account access",
+    "description": "These accounts stay in Fearless and nothing is deleted. Balances and receiving keep working; sending and export are paused for an account until you unlock it.",
+    "settingsDescription": "1 account needs a password to unlock | {count} accounts need a password to unlock",
+    "previousPasswordRequired": "This account still opens only with a password you used before. Unlock it to send or export.",
+    "unlockAccount": "Unlock this account",
+    "legacyPasswordHint": "Enter the password this account had in an earlier version of Fearless, before the master password.",
+    "previousPasswordHint": "Enter a password you used before, for example before you changed your password.",
+    "phraseHint": "Enter this account's recovery phrase. It is checked against the account before anything is saved.",
+    "passwordPlaceholder": "Earlier password",
+    "phrasePlaceholder": "Recovery phrase",
+    "unlock": "Unlock",
+    "usePhrase": "Use the recovery phrase instead",
+    "usePassword": "Use a password instead",
+    "wrongPassword": "This password does not unlock the account. Nothing was changed.",
+    "phraseMismatch": "This phrase belongs to a different account. Nothing was changed.",
+    "unlockFailed": "The account could not be unlocked. Nothing was changed. Try again.",
+    "unlocked": "{name} is unlocked",
+    "allUnlocked": "Every account opens with your password. Nothing needs to be unlocked.",
+    "keepLocked": "Keep locked for now",
+    "loadFailed": "The list of accounts could not be loaded. Nothing was changed.",
+    "evmAccountOf": "Ethereum account of {name}",
+    "derivationPathPlaceholder": "Derivation path (optional)",
+    "changePasswordPending": "1 account still waits for a password you used before. Unlock it in Settings, under Account access. | {count} accounts still wait for a password you used before. Unlock them in Settings, under Account access.",
+    "deletedTitle": "Deleted wallets",
+    "deletedHint": "Deleted on {date}. Restoring brings the wallet back as it was, with the same keys.",
+    "restore": "Restore",
+    "restored": "{name} is back in your wallet list",
+    "restoreFailed": "The wallet could not be restored. Try again.",
+    "alreadyRestored": "This wallet is already in your wallet list."
+  },
+  "storageRecovery": {
+    "title": "Wallet recovery",
+    "description": "Wallet storage could not be updated. Sending and changes are unavailable. You can back up the accounts below, then reload to retry.",
+    "reload": "Reload wallet",
+    "empty": "No active account keys were loaded. Retained recovery copies remain on this device. Reload to retry.",
+    "tonPassword": "Enter the password that protects this TON account. It may be an earlier wallet password.",
+    "showPhrase": "Show recovery phrase",
+    "hidePhrase": "Hide recovery phrase",
+    "phraseHint": "Keep this phrase private. Anyone with it can control the account.",
+    "backupHint": "This backup keeps the account encrypted. Keep the password that was used for this account; you will need it to restore the backup.",
+    "exportFailed": "The phrase could not be exported. Check the account password and try again.",
+    "recordsTitle": "Retained wallet records",
+    "recordsHint": "This recovery data file includes stored account records, including archived records and records that could not be loaded. Keep it private and keep the original account passwords. Some records may need repair before they can be restored.",
+    "recordsDownload": "Download retained wallet data"
+  },
+  "deleteWallet": {
+    "title": "Delete {name}?",
+    "balance": "Balance of this wallet",
+    "description": "Fearless removes this wallet from this browser. Its funds stay on the networks. To use them on another device you need its recovery phrase or backup file.",
+    "archived": "The encrypted keys stay on this device, so you can bring the wallet back in Settings, under Account access.",
+    "mobileDescription": "Fearless removes this wallet from the list in this browser. Its keys stay in the Fearless mobile app.",
+    "exportFirst": "Export recovery phrase first",
+    "passwordHint": "Enter your password to delete this wallet.",
+    "failed": "The wallet was not deleted. Try again."
+  },
+  "exposureNotice": {
+    "draftAwaitingOwnerSignOff": "",
+    "title": "Security notice",
+    "heading": "Your recovery phrases may have been exposed",
+    "whatHappened": "Earlier versions of Fearless Wallet for browsers ({first} and {from} to {to}) contained code that sent wallet recovery phrases, the passphrase words that restore a wallet, to an outside server when the wallet was unlocked. For wallets added from a JSON file or a raw seed, it sent the encrypted key together with the wallet password.",
+    "thisVersion": "This version does not contain that code.",
+    "whatWeKnow": "The wallets listed here were already in this app before this update. The app cannot tell whether their phrases were sent, received or used, so treat each of them as possibly exposed.",
+    "whatItMeans": "Whoever holds a recovery phrase can move the funds on every address made from it, at any time. Changing your password does not protect an exposed phrase.",
+    "passwordAdvice": "If you use this wallet's password anywhere else, change it there.",
+    "whatToDo": "Create a new wallet in this version, back up its new recovery phrase, and move your funds to it one network at a time. The next screen guides you through it.",
+    "enrollmentHold": "Until you confirm below, no new network addresses (Bitcoin, Solana, TON, Iroha) are added to these wallets.",
+    "walletsTitle": "Wallets from before this update",
+    "walletRemoved": "No longer in this app",
+    "walletRemovedHint": "If it still holds funds, add it again with its recovery phrase and move them.",
+    "confirm": "I understand that these wallets may be exposed and that a new password does not protect them.",
+    "continue": "Continue to the guide",
+    "openGuide": "Open the guide",
+    "readNotice": "Read the notice",
+    "acknowledgeFailed": "Your confirmation could not be saved. Try again.",
+    "reminder": "{count} wallet from before this update may be exposed. Move its funds to a new wallet. | {count} wallets from before this update may be exposed. Move their funds to a new wallet.",
+    "receiveWarning": "This wallet may be exposed. Receive funds in a wallet created in this version instead.",
+    "guide": {
+      "title": "Move to a new wallet",
+      "intro": "Do these steps in order. Your old wallets stay in the list and keep working. Nothing is deleted.",
+      "createTitle": "Create a new wallet",
+      "createText": "Create it here, in this version, so that it gets a new recovery phrase. Do not import an old phrase, key or JSON file: the exposure would come with it.",
+      "createTonText": "TON wallets are separate. Funds in an old TON wallet need a new TON wallet.",
+      "createTonButton": "Create a new TON wallet",
+      "newWallets": "New wallets",
+      "backupTitle": "Back up the new wallet",
+      "backupText": "Write its recovery phrase on paper and keep it offline. Without it the new wallet cannot be restored.",
+      "backupConfirm": "I have written down the new recovery phrase",
+      "moveTitle": "Move your funds, one network at a time",
+      "moveText": "Open each old wallet and send every balance it still holds to your new wallet. Each network charges its own fee, so send a network's own coin last.",
+      "moveNotListed": "Staked funds, liquidity pools and NFTs are not listed here. Unstake or withdraw them first, then send them the same way.",
+      "sendTo": "Send to",
+      "noDestination": "Create a new wallet first",
+      "open": "Open this wallet",
+      "remainingTitle": "Still in this wallet",
+      "checking": "Checking balances…",
+      "nothingFound": "No balance found on the networks shown for this wallet. Check hidden and switched-off networks before you mark it as moved.",
+      "markMoved": "Mark as moved",
+      "undoMoved": "Not moved yet",
+      "statusPending": "Still to move",
+      "statusMoved": "Marked as moved",
+      "remaining": "{count} old wallet still to move | {count} old wallets still to move",
+      "allMoved": "Every old wallet is marked as moved. Keep them in the list until you are sure nothing is left: late payments can still arrive at the old addresses.",
+      "later": "Continue to wallet"
+    }
   }
 }

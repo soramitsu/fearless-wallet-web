@@ -1,4 +1,5 @@
 import { FPNumber, api as apiSora } from '@sora-substrate/util';
+import { decodeAddress } from '@polkadot/util-crypto';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
@@ -28,10 +29,32 @@ import { getUtilityProps } from '@/extension/background/extension-base/src/backg
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
 import { cut, isSameString } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
+import { assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isStoredWalletRecoveryOnly } from '@/util/walletRecoveryActions';
+import { isCapturedSoraPairStillSelected, isLocallySignableSelectedSoraPair } from '@/defi/soraAccountBinding';
 export * from '@sora-substrate/util/build/staking/types';
 
 export class StakingService {
   constructor(private state: State) {}
+
+  private async recoveryPayoutDestination(selectedAddress: string): Promise<{ payee?: string }> {
+    if (!IS_EXTENSION || !isStoredWalletRecoveryOnly(this.state.keyringService.getAllAccounts(), selectedAddress)) return {};
+
+    const address = apiSora.formatAddress(selectedAddress);
+    // Only a controller with a live ledger may set the stash's destination.
+    // A stash using a separate controller must retain its existing safe payee.
+    if (await apiSora.staking.getStashByController(address)) return { payee: 'Stash' };
+
+    const { payee, controller } = await apiSora.staking.getMyStakingInfo(address);
+    if (payee === 'Staked') {
+      throw new Error('Select the staking controller wallet to claim rewards without restaking.');
+    }
+    if (payee === 'Stash' || (payee === 'Controller' && controller)) return {};
+    if (payee && payee !== 'None' && payee !== 'Controller') {
+      try { decodeAddress(payee); return {}; } catch { /* Unknown destinations are not safe to claim. */ }
+    }
+    throw new Error('This staking account has no payable reward destination. Refresh staking details and check whether rewards remain claimable.');
+  }
 
   public async getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
     const { networks } = params;
@@ -335,7 +358,12 @@ export class StakingService {
 
   public async getPayoutsFee({ payouts, network }: GetPayoutsFeeRequest) {
     const precision = getUtilityProps(network, this.state).precision;
-    const fee = await apiSora.staking.getPayoutNetworkFee({ payouts });
+    const selectedAddress = IS_EXTENSION ? this.state.getAccountAddress() : '';
+    const destination = await this.recoveryPayoutDestination(selectedAddress);
+    if (IS_EXTENSION && this.state.getAccountAddress() !== selectedAddress) {
+      throw new Error('The staking account changed. Select the wallet and review the request again.');
+    }
+    const fee = await apiSora.staking.getPayoutNetworkFee({ payouts, ...destination });
 
     return FPNumber.fromCodecValue(fee, precision).toString();
   }
@@ -362,12 +390,29 @@ export class StakingService {
   }
 
   public async makeStaking({ params, type }: MakeStakingRequest): Promise<BasicTxResponse> {
+    // Staking signs with the SORA SDK's active pair, not params.from. Bind both
+    // to the selected account and keep that binding across runtime readiness.
+    const pair = apiSora.account?.pair;
+    const assertSigningAccount = () => {
+      if (!IS_EXTENSION) return;
+      const selectedAddress = this.state.getAccountAddress();
+      const formatAddress = (address: string) => apiSora.formatAddress(address);
+      const recoveryAction = isRecoveryStakingAction(type);
+      assertWalletAllowsRecoveryAction(this.state.keyringService.getAllAccounts(), selectedAddress, recoveryAction);
+      assertWalletAllowsRecoveryAction(this.state.keyringService.getAllAccounts(), params.from, recoveryAction);
+      if (!isCapturedSoraPairStillSelected(pair, apiSora.account?.pair, selectedAddress, formatAddress) ||
+        !isLocallySignableSelectedSoraPair(pair, params.from, formatAddress)) {
+        throw new Error('The staking account changed. Select the wallet and review the request again.');
+      }
+    };
+    assertSigningAccount();
     const { networkName } = params;
     const apiProps = this.state.getSubstrateApiMap[networkName.toLowerCase()];
     const isReady = await apiProps.api?.isReady;
 
     if (!isReady) return { status: false };
 
+    assertSigningAccount();
     apiSora.shouldPairBeLocked = false;
 
     if (type === 'bond') return this.bondAndNominate(params as RequestBond);
@@ -386,7 +431,7 @@ export class StakingService {
 
     if (type === 'setPayee') return this.setPayee(params as RequestSetPayee);
 
-    if (type === 'payoutRewards') return this.payoutRewards(params as RequestPayoutRewards);
+    if (type === 'payoutRewards') return this.payoutRewards(params as RequestPayoutRewards, assertSigningAccount);
 
     return {
       status: false,
@@ -588,9 +633,13 @@ export class StakingService {
     return { status: true };
   }
 
-  public async payoutRewards({ payouts }: RequestPayoutRewards): Promise<BasicTxResponse> {
+  private async payoutRewards({ payouts, from }: RequestPayoutRewards, assertSigningAccount: () => void): Promise<BasicTxResponse> {
     try {
-      await apiSora.staking.payout({ payouts });
+      const destination = await this.recoveryPayoutDestination(from);
+      // Resolving live ledger/payee state adds awaits; bind the actual SDK
+      // signer again before constructing the atomic set-payee/claim batch.
+      assertSigningAccount();
+      await apiSora.staking.payout({ payouts, ...destination });
     } catch (ex) {
       const message = `[STAKING] Payout rewards: ${ex}`;
 

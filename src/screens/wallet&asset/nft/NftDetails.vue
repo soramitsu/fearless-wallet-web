@@ -57,7 +57,7 @@
 import { useRouter, useRoute } from 'vue-router';
 import { computed, onMounted } from 'vue';
 import type { FearlessNft, NftCollection } from '@extension-base/services/nft-service/types';
-import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { cut, setClipboard } from '@/helpers';
 import { Components } from '@/router/routes';
 import { buildAvailableNftKey, findNftCollection } from '@/portfolio/nftIdentity';

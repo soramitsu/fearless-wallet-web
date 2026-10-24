@@ -1,4 +1,4 @@
-import { sendMessage } from '.';
+import { sendMessage, subscribeMessage } from '.';
 import type {
   RequestConnectWalletConnect,
   WalletConnectSessionRequest,
@@ -63,21 +63,22 @@ export function subscribeWalletConnectRequest(
   return sendMessage('pri(walletConnect.signing.requests.subscribe)', null, cb);
 }
 
-export function walletConnectRequestApprove(address: string, topic: string): Promise<boolean> {
-  return sendMessage('pri(walletConnect.request.approve)', { address, topic });
+export function walletConnectRequestApprove(address: string, approvalId: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.approve)', { address, approvalId });
 }
 
-export function walletConnectRequestReject(topic: string): Promise<boolean> {
-  return sendMessage('pri(walletConnect.request.reject)', { topic });
+export function walletConnectRequestReject(approvalId: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.request.reject)', { approvalId });
 }
 
-export function walletConnectDappSubscribeSession(
-  uri: string,
-  callback: (data: PairingSubjectType) => void
-): Promise<PairingSubjectType> {
-  return sendMessage('pri(walletConnect.app.subscribePairing)', uri, callback);
+export function walletConnectDappSubscribeSession(uri: string, callback: (data: PairingSubjectType) => void) {
+  return subscribeMessage('pri(walletConnect.app.subscribePairing)', uri, callback);
 }
 
-export function walletConnectDappInitSession(): Promise<string> {
-  return sendMessage('pri(walletConnect.app.pairing)');
+export function walletConnectDappInitSession(attemptId: string): Promise<string> {
+  return sendMessage('pri(walletConnect.app.pairing)', attemptId);
+}
+
+export function walletConnectDappCancelSession(attemptId: string): Promise<boolean> {
+  return sendMessage('pri(walletConnect.app.cancelPairing)', attemptId);
 }

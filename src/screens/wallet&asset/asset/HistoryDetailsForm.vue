@@ -156,7 +156,7 @@ export default defineComponent({
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
-      if (BaseApi.isBitcoinNetwork(this.selectedNetwork)) {
+      if (BaseApi.isBitcoinNetwork(this.selectedNetwork) || BaseApi.isIrohaNetwork(this.selectedNetwork)) {
         return (
           this.historyElement.address ?? BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork)
         );
@@ -191,7 +191,9 @@ export default defineComponent({
     showFee() {
       if (this.isSora) return this.historyElementSoraType.method !== 'rewarded';
 
-      if (this.isTon) return this.signTransfer === '-';
+      if (this.isTon) {
+        return this.signTransfer === '-' && getHumanTransferFee(this.historyElement, this.selectedNetwork) !== null;
+      }
 
       return (
         this.isTransfer &&

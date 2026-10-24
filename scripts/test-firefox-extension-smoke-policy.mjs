@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
 
 import {
   BoundedOutput,
+  VERIFIED_FIREFOX_ARCHIVE_SHA256,
   VERIFIED_FIREFOX_VERSION,
   assertCspState,
   assertFirefoxVersionResult,
@@ -27,15 +30,34 @@ function expectFailure(label, operation, expected) {
 }
 
 const ciWorkflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-const configuredFirefoxVersions = [...ciWorkflow.matchAll(/^\s*firefox-version:\s*([^\s#]+)\s*(?:#.*)?$/gmu)].map(
-  (match) => match[1]
-);
+const configuredFirefoxVersions = [
+  ...ciWorkflow.matchAll(/^\s*run:\s*bash \.\/scripts\/ci-install-firefox\.sh\s+([^\s#]+)\s*(?:#.*)?$/gmu),
+].map((match) => match[1]);
 assert.deepEqual(configuredFirefoxVersions, [VERIFIED_FIREFOX_VERSION]);
 assert.equal(assertPinnedFirefoxVersion(configuredFirefoxVersions[0]), VERIFIED_FIREFOX_VERSION);
 assertFirefoxWorkflowContract(ciWorkflow);
 assertions += 3;
+const firefoxInstaller = await readFile(new URL('./ci-install-firefox.sh', import.meta.url), 'utf8');
+const installerVersions = [...firefoxInstaller.matchAll(/^FIREFOX_VERSION="([^"]*)"$/gmu)].map((match) => match[1]);
+assert.deepEqual(installerVersions, [VERIFIED_FIREFOX_VERSION]);
+assert.ok(firefoxInstaller.includes(`FIREFOX_SHA256="${VERIFIED_FIREFOX_ARCHIVE_SHA256}"`));
+execFileSync('bash', [fileURLToPath(new URL('./ci-install-firefox.sh', import.meta.url)), '--self-test'], { stdio: 'pipe' });
+assert.doesNotMatch(ciWorkflow, /setup-firefox@|firefox-version:/u);
+assertions += 3;
 for (const [label, mutation] of [
   ['missing setup step id', (value) => value.replace('id: setup-firefox', 'id: unbound-firefox')],
+  [
+    'third-party setup action',
+    (value) =>
+      value.replace(
+        'run: bash ./scripts/ci-install-firefox.sh 152.0.4',
+        'uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1.7.2\n        with:\n          firefox-version: 152.0.4'
+      ),
+  ],
+  [
+    'unpinned installer version',
+    (value) => value.replace('ci-install-firefox.sh 152.0.4', 'ci-install-firefox.sh latest'),
+  ],
   [
     'detached setup and runtime steps',
     (value) => value.replace('\n\n      - name: Firefox extension runtime', '\n\n      - name: Interposed unpinned step\n        run: true\n\n      - name: Firefox extension runtime'),
@@ -44,6 +66,7 @@ for (const [label, mutation] of [
     'wrong setup output binding',
     (value) => value.replace('steps.setup-firefox.outputs.firefox-path', 'steps.other.outputs.firefox-path'),
   ],
+
 ]) {
   expectFailure(label, () => assertFirefoxWorkflowContract(mutation(ciWorkflow)), /exact contiguous CI block/);
 }

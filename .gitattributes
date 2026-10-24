@@ -5,3 +5,5 @@ artifacts/iroha-js-candidate/**/*.patch whitespace=-blank-at-eol,-blank-at-eof,-
 artifacts/iroha-js-candidate/**/*.tar.gz -diff
 artifacts/iroha-js-candidate/**/*.tgz -diff
 vendor/iroha-js/**/*.tgz -text -diff
+# The 3.0.5 registry snapshot is pinned by sha256 in tests/unit/legacy-preferences-305.spec.ts.
+tests/fixtures/legacy-305/chains-v13.snapshot.json -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

@@ -76,6 +76,17 @@ export type CrossChainProviderCapability = CrossChainRouteProvider & {
   reviewedRouteCount: number;
 };
 
+const unavailableProviderReason = (providerId: CrossChainRouteProvider['id']): string => {
+  if (providerId === 'sora-evm-bridge') {
+    return 'No reviewed executable claim and recovery flow is bundled. SORA ↔ Ethereum transfers remain unavailable.';
+  }
+  if (providerId === 'sora-substrate-bridge') {
+    return 'SORA ↔ Polkadot and Kusama transfers are paused: the SORA parachains have stopped producing blocks, so a transfer could not be delivered.';
+  }
+
+  return 'No reviewed executable route is bundled for this provider.';
+};
+
 /**
  * Provider coverage is derived from bundled execution authority and release policy only.
  * It deliberately has no wallet, balance, selected-asset, or registry input so the complete
@@ -94,10 +105,7 @@ export function buildCrossChainProviderCapabilities(
       return {
         ...provider,
         availability: 'unavailable',
-        reason:
-          provider.id === 'sora-evm-bridge'
-            ? 'No reviewed executable claim and recovery flow is bundled. SORA ↔ Ethereum transfers remain unavailable.'
-            : 'No reviewed executable route is bundled for this provider.',
+        reason: unavailableProviderReason(provider.id),
         reviewedRouteCount,
       };
     }
@@ -387,6 +395,18 @@ export function buildUnavailableCrossChainRoutes({
       },
     ];
   });
+}
+
+/**
+ * True when release policy, not network data, keeps this route closed: its
+ * reviewed authority is bundled but the provider's capability is switched off.
+ * Catalogued legacy bridges that are unavailable by design are never "paused".
+ */
+export function isRoutePausedByCapability(
+  route: Pick<ReviewedCrossChainRoute, 'action' | 'enabled' | 'providerId'>,
+  actions: Partial<Record<MutableAction, boolean>>
+): boolean {
+  return !route.enabled && route.providerId !== 'sora-evm-bridge' && actions[route.action] !== true;
 }
 
 export function findReviewedCrossChainRoute(

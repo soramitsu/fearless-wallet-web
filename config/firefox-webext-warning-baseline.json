@@ -2,59 +2,64 @@
   "schemaVersion": 1,
   "webExtVersion": "10.6.0",
   "sourceDir": "dist/extension/firefox",
-  "warningCount": 41,
+  "warningCount": 42,
   "warningCodes": {
-    "DANGEROUS_EVAL": 40,
+    "DANGEROUS_EVAL": 41,
     "UNSAFE_VAR_ASSIGNMENT": 1
   },
   "warningFiles": {
-    "chunks/_plugin-vue_export-helper.js": 1,
     "chunks/accounts.js": 17,
-    "chunks/background-vendor/assert-B9II5MFb.js": 8,
-    "chunks/background-vendor/bcryptjs-D92nEwNN.js": 9,
-    "chunks/background-vendor/core-js-pure-CNQyowns.js": 1,
-    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js": 2,
-    "chunks/background-vendor/lodash-rSFLjCOa.js": 1,
-    "chunks/background-vendor/lodash.merge-CNVuAApE.js": 1,
-    "chunks/soramitsuUI.js": 1
+    "chunks/background-vendor/assert-Blv9rAXX.js": 8,
+    "chunks/background-vendor/bcryptjs-DP6KoUS7.js": 9,
+    "chunks/background-vendor/core-js-pure-DilFdaL6.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js": 2,
+    "chunks/background-vendor/lodash-Ba9bIE_F.js": 1,
+    "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
+    "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js": 1,
+    "chunks/soramitsuUI.js": 1,
+    "chunks/usePortfolioPreferences.js": 1
   },
-  "warningSetSha256": "86a5af4b021bdabfb23feda601dc25b362607e1a7845cd70f3aba3f894e7462c",
+  "warningSetSha256": "5391a4d320c2c36e48147264ac1ccb48078629c19b8ef882acc93f671377342a",
   "artifacts": [
     {
-      "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "42c39b85a2db4866a25d6366db122abaa17f35a79c3205ae4070a78a4902f73b"
-    },
-    {
       "file": "chunks/accounts.js",
-      "sha256": "26f73e0d7fb60cef931b0c0756d1fa0d0e9a09932fdb96946fd3729ccf818299"
+      "sha256": "86fd4d74948c9df92e848e9cd4e69420be31ee5bc6a32f98ea5c2a5fb4ba7525"
     },
     {
-      "file": "chunks/background-vendor/assert-B9II5MFb.js",
-      "sha256": "da1e748275cdcd86b2e4237ec45fcf553f99aadf61b13ebc518a02e47932a1d6"
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
     },
     {
-      "file": "chunks/background-vendor/bcryptjs-D92nEwNN.js",
-      "sha256": "221cba4f4e4a4ceca2e0bf4b134d3ecdde8a531c43683fc34cb7f6db21bc4c54"
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
     },
     {
-      "file": "chunks/background-vendor/core-js-pure-CNQyowns.js",
-      "sha256": "41565eaacb2cd641d8557a991954a3bd4717e0ec6206f964e336365fe5c5a055"
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
     },
     {
-      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-DLWN9rtj.js",
-      "sha256": "913f4c68014032b75b320a3ed688bcd655570e80868a4a0e935db2e1322574f1"
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
     },
     {
-      "file": "chunks/background-vendor/lodash-rSFLjCOa.js",
-      "sha256": "aa833782c3a0954a52b8b236b51171e3b109b66045333c20b7e888566633ddbb"
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
     },
     {
-      "file": "chunks/background-vendor/lodash.merge-CNVuAApE.js",
-      "sha256": "2188461bde6214e2cb2d45a61365ff5726bd0526eca6fe43c37762064e5cbe19"
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js",
+      "sha256": "baa0bea291c51fd9d534b4eaa2b812283e077204dfb78ec336f66d60a83e9f75"
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "27e8b7b1e83a414fa22eb0376809a39ef90142519361d1948bc4f0f9e8378214"
+      "sha256": "09605c5a25df4db60d317b748b5c00ed0a290ce17ea4b06da3ad1c73b3e23ed4"
+    },
+    {
+      "file": "chunks/usePortfolioPreferences.js",
+      "sha256": "cf811c12d2c9cf74f5f75b161e6f774a7263ae5dfac3e6b5f66320c7273edcaf"
     }
   ]
 }

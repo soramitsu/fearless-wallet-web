@@ -5,6 +5,7 @@
       :key="item.id"
       :name="item.label"
       :icon="item.icon"
+      :data-destination="item.id"
       :isActive="activeDestination === item.id"
       :emphasized="item.id === 'polkaswap'"
       :aria-label="item.id === 'polkaswap' ? 'Polkaswap' : item.label"
@@ -26,6 +27,9 @@ import {
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { useAccountsStore } from '@/stores/accounts';
 import { useI18n } from '@/locales/useI18n';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
+import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
 type MenuDefinition = {
   id: PrimaryDestination;
@@ -37,14 +41,18 @@ type MenuDefinition = {
 const route = useRoute();
 const router = useRouter();
 const accountsStore = useAccountsStore();
-const { t } = useI18n();
-const menuItems = computed<MenuDefinition[]>(() => [
+const { t, locale } = useI18n();
+const recoveryOnly = computed(() => IS_EXTENSION &&
+  isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address));
+const recoveryLabel = computed(() => legacyWalletUpgradeMessages[locale.value === 'ru-RU' ? 'ru-RU' : 'en-EN'].recoveryNavigation);
+const menuItems = computed<MenuDefinition[]>(() => ([
   { id: 'portfolio', label: t('primaryMenu.portfolio'), icon: 'wallet', route: Components.Wallet },
-  { id: 'defi', label: t('primaryMenu.defi'), icon: 'pools', route: Components.Defi },
+  { id: 'defi', label: recoveryOnly.value ? recoveryLabel.value : t('primaryMenu.defi'), icon: 'pools', route: Components.Defi },
   { id: 'polkaswap', label: t('primaryMenu.polkaswap'), icon: 'polkaswap', route: Components.Polkaswap },
   { id: 'cross-chain', label: t('primaryMenu.crossChain'), icon: 'cross-chain', route: Components.CrossChain },
   { id: 'settings', label: t('primaryMenu.settings'), icon: 'settings', route: Components.Settings },
-]);
+] as MenuDefinition[]).filter(({ id }) => !recoveryOnly.value ||
+  id === 'portfolio' || id === 'defi' || id === 'settings'));
 
 const activeDestination = computed(
   () => (route.meta.primaryNavigation as PrimaryDestination | undefined) ?? 'portfolio'
@@ -73,12 +81,14 @@ function open(item: MenuDefinition): void {
 .menu {
   min-height: 82px;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   align-items: end;
   margin: 0 -16px -16px;
   padding: 8px 8px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(17, 17, 17, 0.96);
+  // The dock is chrome; without blur it takes the solid chrome tint (design-system 3.2).
+  background: $fw-chrome-surface;
   user-select: none;
   z-index: 199;
 }

@@ -3,7 +3,7 @@
     <header class="workspace-header">
       <div>
         <h1>{{ t('defiHub.title') }}</h1>
-        <p>{{ t('defiHub.subtitle') }}</p>
+        <p>{{ recoveryOnly ? recoveryCopy.defiDescription : t('defiHub.subtitle') }}</p>
       </div>
       <span class="network-context">{{ t('defiHub.multiNetwork') }}</span>
     </header>
@@ -42,12 +42,12 @@
         </section>
 
         <section class="hub-section">
-          <h2>{{ t('defiHub.earn') }}</h2>
+          <h2>{{ recoveryOnly ? recoveryCopy.recoveryActions : t('defiHub.earn') }}</h2>
           <button class="hub-row" type="button" @click="open(Components.Staking)">
             <Icon icon="staking" className="hub-icon" :hover="false" />
             <span
               ><strong>{{ t('defiHub.staking') }}</strong
-              ><small>{{ t('defiHub.stakingDescription') }}</small></span
+              ><small v-if="!recoveryOnly">{{ t('defiHub.stakingDescription') }}</small></span
             >
             <span class="capability">{{ stakingCapability }}</span>
             <Icon icon="chevron-right" :hover="false" />
@@ -56,7 +56,7 @@
             <Icon icon="pools" className="hub-icon" :hover="false" />
             <span
               ><strong>{{ t('defiHub.liquidityPools') }}</strong
-              ><small>{{ t('defiHub.liquidityDescription') }}</small></span
+              ><small v-if="!recoveryOnly">{{ t('defiHub.liquidityDescription') }}</small></span
             >
             <span class="capability">SORA</span>
             <Icon icon="chevron-right" :hover="false" />
@@ -65,9 +65,9 @@
             <Icon icon="stake" className="hub-icon" :hover="false" />
             <span
               ><strong>{{ t('defiHub.farming') }}</strong
-              ><small>{{ t('defiHub.farmingDescription') }}</small></span
+              ><small v-if="!recoveryOnly">{{ t('defiHub.farmingDescription') }}</small></span
             >
-            <span class="capability">SORA</span>
+            <span class="capability" data-testid="farmingCapability">{{ farmingCapability }}</span>
             <Icon icon="chevron-right" :hover="false" />
           </button>
         </section>
@@ -77,9 +77,9 @@
           <button class="hub-row" type="button" @click="open(Components.Polkamarkt)">
             <Icon icon="controller" className="hub-icon" :hover="false" />
             <span
-              ><strong>Polkamarkt</strong><small>{{ t('defiHub.polkamarktDescription') }}</small></span
+              ><strong>Polkamarkt</strong><small v-if="!recoveryOnly">{{ t('defiHub.polkamarktDescription') }}</small></span
             >
-            <span class="capability">{{ t('defiHub.soraXorFees') }}</span>
+            <span class="capability" data-testid="polkamarktCapability">{{ polkamarktCapability }}</span>
             <Icon icon="chevron-right" :hover="false" />
           </button>
         </section>
@@ -96,16 +96,22 @@ import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { useStakingStore } from '@/stores/staking';
 import { usePoolsStore } from '@/stores/pools';
 import { useAccountsStore } from '@/stores/accounts';
+import { useExtensionStore } from '@/stores/extension';
 import { getDemeterPools, getPoolsParams } from '@/extension/messaging/pools';
 import { getStakingParams } from '@/extension/messaging/staking';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 import { getPolkamarktSnapshot } from '@/extension/messaging/polkamarkt';
 import { loadPositionDashboard, type PositionDashboard } from '@/defi/positionDashboard';
 import { useI18n } from '@/locales/useI18n';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
 const router = useRouter();
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const recoveryOnly = useWalletRecovery();
+const recoveryCopy = computed(() => legacyWalletUpgradeMessages[locale.value === 'ru-RU' ? 'ru-RU' : 'en-EN']);
 const accountsStore = useAccountsStore();
+const extensionStore = useExtensionStore();
 const stakingStore = useStakingStore();
 const poolsStore = usePoolsStore();
 const contentHeight = CONTENT_FORM_HEIGHT;
@@ -115,6 +121,14 @@ let requestId = 0;
 let loadedWallet = '';
 const stakingCapability = computed(() =>
   accountsStore.selectedWallet.isSubstrate ? t('defiHub.availableNetworks') : t('defiHub.addSubstrateAccount')
+);
+// Entries stay open while release policy keeps their actions off; the label
+// says what to expect before the page explains why.
+const farmingCapability = computed(() =>
+  extensionStore.features?.actions?.demeter === false ? t('defiHub.browseOnly') : 'SORA'
+);
+const polkamarktCapability = computed(() =>
+  extensionStore.features?.actions?.polkamarkt === false ? t('defiHub.browseOnly') : t('defiHub.soraXorFees')
 );
 const open = (name: Components) => router.push({ name });
 

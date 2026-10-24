@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { registerBackgroundListeners, type BackgroundRuntime } from '@/extension/entry/backgroundBootstrap';
+import {
+  registerBackgroundListeners,
+  WALLET_STORAGE_UNAVAILABLE,
+  type BackgroundRuntime,
+} from '@/extension/entry/backgroundBootstrap';
 
 function event() {
   const listeners: ((...args: unknown[]) => void)[] = [];
@@ -79,6 +83,15 @@ describe('synchronous extension background wake listeners', () => {
     } finally {
       log.mockRestore();
     }
+  });
+
+  it('answers a request with the storage error when the runtime cannot read the wallet', async () => {
+    const f = fixture();
+    f.runtime.handleMessage.mockRejectedValue(new Error(WALLET_STORAGE_UNAVAILABLE));
+    f.api.runtime.onConnect.emit(f.port);
+    f.port.onMessage.emit({ id: 'storage' });
+    f.resolve(f.runtime);
+    await vi.waitFor(() => expect(f.port.postMessage).toHaveBeenCalledWith({ id: 'storage', error: WALLET_STORAGE_UNAVAILABLE }));
   });
 
   it('handles an update notification synchronously while the runtime is loading', () => {

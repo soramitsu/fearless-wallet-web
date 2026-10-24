@@ -1,3 +1,4 @@
+import { TonProviderError } from '@extension-base/services/ton-provider';
 import { type RequestGetHistory } from '../../background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { type TonEventTokens } from '@/interfaces';
@@ -21,23 +22,23 @@ export class HistoryService {
     const cacheKey = this.getTonHistoryCacheKey(network, address);
 
     try {
-      const api = this.state.getTonApiMap[network.toLowerCase()];
+      const provider = this.state.getTonApiMap[network.toLowerCase()]?.api;
+
+      if (!provider) throw new TonProviderError('ton_provider_unavailable', `no TON provider for ${network}`);
 
       const { walletContract } = this.state.keyringService.tonKeyring.accountSubject.value[address];
       const contactAddress = walletContract.address.toString();
 
-      const history = await api.api.accounts.getAccountEvents(walletContract.address, { limit: 100 });
+      const history = await provider.getHistory(walletContract.address, 100);
 
-      const events = history.events.reduce<TonEventTokens>(
-        (result, { actions, eventId, timestamp, extra }) => {
+      const events = history.reduce<TonEventTokens>(
+        (result, { actions, eventId, timestamp, fee }) => {
+          // TI's transactions carry no fee: it stays unknown and is not shown, rather than shown as 0.
+          const networkFee = fee;
+
           actions.forEach((item) => {
-            const { type, status } = item;
-
-            if (type === 'TonTransfer') {
-              const amount = item[type]?.amount.toString();
-              const to = item[type]?.recipient?.address;
-              const from = item[type]?.sender?.address;
-              const comment = item[type]?.comment;
+            if (item.type === 'ton-transfer') {
+              const { amount, recipient: to, sender: from, comment } = item;
 
               const isOutEvent = isSameString(from?.toString(), contactAddress);
 
@@ -49,23 +50,22 @@ export class HistoryService {
                 eventId,
                 timestamp,
                 method: 'transfer',
-                success: status === 'ok',
+                success: item.success,
                 symbol: 'ton',
                 isOutEvent: isOutEvent,
-                networkFee: extra.toString(),
+                networkFee,
               });
 
               return;
             }
 
-            if (type === 'JettonTransfer') {
-              const amount = item[type]?.amount.toString();
-              const to = item[type]?.recipient?.address.toString();
-              const from = item[type]?.sender?.address.toString();
-              const comment = item[type]?.comment;
-              const symbol = item[type]?.jetton.symbol.toLowerCase() ?? '';
+            if (item.type === 'jetton-transfer') {
+              const { amount, comment } = item;
+              const to = item.recipient?.toString();
+              const from = item.sender?.toString();
+              const symbol = item.jetton.symbol.toLowerCase();
               const isOutEvent = isSameString(from, contactAddress);
-              const groupId = item[type]?.jetton.address.toString() ?? '';
+              const groupId = item.jetton.master.toString();
 
               if (!result[groupId]) result[groupId] = [];
 
@@ -77,23 +77,21 @@ export class HistoryService {
                 eventId,
                 timestamp,
                 method: 'transfer',
-                success: status === 'ok',
+                success: item.success,
                 symbol,
                 isOutEvent,
-                networkFee: extra.toString(),
+                networkFee,
               });
 
               return;
             }
 
-            if (type === 'JettonSwap') {
-              const amountIn = item[type]?.amountIn.toString();
-              const amountOut = item[type]?.amountOut.toString();
-              const dex = item[type]?.dex;
-              const userWallet = item[type]?.userWallet.address.toString();
-              const symbol = item[type]?.jettonMasterOut?.symbol.toLowerCase() ?? '';
-              const symbolIn = item[type]?.jettonMasterIn?.symbol.toLowerCase() ?? '';
-              const groupId = item[type]?.jettonMasterOut?.address.toString() ?? '';
+            if (item.type === 'jetton-swap') {
+              const { amountIn, amountOut, dex } = item;
+              const userWallet = item.userWallet?.toString();
+              const symbol = item.jettonOut?.symbol.toLowerCase() ?? '';
+              const symbolIn = item.jettonIn?.symbol.toLowerCase() ?? '';
+              const groupId = item.jettonOut?.master.toString() ?? '';
 
               if (!result[groupId]) result[groupId] = [];
 
@@ -108,14 +106,10 @@ export class HistoryService {
                 symbol,
                 symbolIn,
                 isOutEvent: true,
-                success: status === 'ok',
-                networkFee: extra.toString(),
+                success: item.success,
+                networkFee,
               });
-
-              return;
             }
-
-            return;
           });
 
           return result;

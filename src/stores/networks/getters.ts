@@ -9,6 +9,7 @@ import { isSameString } from '@/helpers';
 
 type Getters = {
   networks(state: State): NetworkJson[];
+  selectableNetworks(state: State): NetworkJson[];
   activeNetworkForSelectedWallet(state: State): NetworkJson[];
   favoriteNetworksNames(state: State): { name: string; favorite: string[] }[];
   getNetwork(state: State): GetNetwork;
@@ -48,6 +49,26 @@ export const getters: Getters = {
     );
 
     return accountsStore.selectedWallet.hasEthereum ? substrateAndEvmNetworks : substrateNetworks;
+  },
+
+  // Universal wallets keep a Substrate primary account plus Bitcoin, Iroha and Solana accounts. Their
+  // networks are selectable as well, including test networks that stay inactive until chosen.
+  selectableNetworks(state): NetworkJson[] {
+    const { selectedWallet } = useAccountsStore();
+    const networks = getters.networks(state);
+
+    if (selectedWallet.walletEcosystem !== WalletEcosystem.Substrate) return networks;
+
+    const universalEcosystems = [
+      (selectedWallet.bitcoinAddress || selectedWallet.bitcoinTestnetAddress) && WalletEcosystem.Bitcoin,
+      selectedWallet.irohaAddress && WalletEcosystem.Iroha,
+      selectedWallet.solanaAddress && WalletEcosystem.Solana,
+    ].filter((ecosystem): ecosystem is WalletEcosystem => Boolean(ecosystem));
+
+    return [
+      ...networks,
+      ...state.allNetworks.filter(({ ecosystem }) => universalEcosystems.some((item) => isSameString(ecosystem, item))),
+    ];
   },
 
   activeNetworkForSelectedWallet({ allNetworks }): NetworkJson[] {

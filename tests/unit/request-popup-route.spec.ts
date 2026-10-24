@@ -33,6 +33,7 @@ vi.mock('@/consts/global', async (importOriginal) => ({
 }));
 
 import { PopupHandler } from '@extension-base/services/request-service/handlers/PopupHandler';
+import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
 import { RequestService } from '@extension-base/services/request-service';
 
 const REVIEW_PATH = '/fearless/settings/iroha-connect';
@@ -48,6 +49,7 @@ const requestCount = (phase: string): number => {
     numConnectWCRequests: 0,
     numNotSupportWCRequests: 0,
     numSignWCRequests: 0,
+    numEvmSignRequests: 0,
     numSolanaSignRequests: 0,
   };
   const numStandardRequests = Object.getOwnPropertyDescriptor(
@@ -79,6 +81,52 @@ describe('request popup routes', () => {
     chromeMocks.updateWindow.mockResolvedValue({ id: 17 });
   });
 
+  it('keeps the popup and badge for pending EVM requests after another request completes', async () => {
+    const requests = Object.create(RequestService.prototype) as RequestService;
+    for (const key of [
+      'numMetaRequests',
+      'numAuthRequests',
+      'numSubstrateRequests',
+      'numConnectWCRequests',
+      'numNotSupportWCRequests',
+      'numSignWCRequests',
+      'numSolanaSignRequests',
+      'numIrohaConnectRequests',
+    ]) {
+      Object.defineProperty(requests, key, { value: 0 });
+    }
+    const popup = new PopupHandler({ requestService: requests } as never);
+    const evm = new EvmRequestHandler(requests);
+    Object.assign(requests, { popupHandler: popup, evmRequestHandler: evm });
+    popup.popupOpen();
+    const context = {
+      account: { address: '0x1111111111111111111111111111111111111111', isMobile: false },
+      network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1' },
+    };
+    const first = evm.confirmSign(
+      'first',
+      'https://public.example',
+      'personal_sign',
+      ['0x1234', context.account.address],
+      context
+    );
+    const second = evm.confirmSign(
+      'second',
+      'https://public.example',
+      'personal_sign',
+      ['0x1234', context.account.address],
+      context
+    );
+    expect(requests.numStandardRequests).toBe(2);
+    evm.getEvmSignRequest('first').resolve({ id: 'first', payload: '0x1234' });
+    await first;
+    expect(chromeMocks.removeWindow).not.toHaveBeenCalled();
+    expect(chromeMocks.setBadgeText).toHaveBeenLastCalledWith({ text: '1' });
+    evm.getEvmSignRequest('second').resolve({ id: 'second', payload: '0x1234' });
+    await second;
+    expect(chromeMocks.setBadgeText).toHaveBeenLastCalledWith({ text: '' });
+    expect(chromeMocks.removeWindow).toHaveBeenCalledWith(17);
+  });
   it('opens a new review popup at the requested internal route', () => {
     const handler = new PopupHandler({ requestService: { numRequests: 0 } } as never);
 

@@ -1,26 +1,24 @@
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { type NetworkJson } from '@extension-base/types';
-import { TonApiClient } from '@ton-api/client';
+import { TonProviderRouter, type TonProviderOptions } from '@extension-base/services/ton-provider';
 import type { TonApiProps } from './../../../background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
-import { UNIVERSAL_WALLET_INDEXERS } from '@/consts/universalWallet';
-import { isTonMainnet } from '@/helpers';
 
 export class TonApiHandler {
   api: Record<NetworkName, TonApiProps> = {};
 
-  constructor(private state: State) {}
+  constructor(
+    private state: State,
+    private readonly providerOptions: TonProviderOptions = {}
+  ) {}
 
+  // The provider proves its network on first use (see TonProviderRouter); nothing is fetched here.
   async initApi(network: NetworkJson) {
-    const apiKey = process.env.FL_WEB_TON_API_KEY;
-
     this.destroyApi(network.name);
 
     try {
-      const baseUrl = getTonApiBaseUrl(network);
-
-      const api = new TonApiClient({ baseUrl, apiKey });
+      const api = new TonProviderRouter(network, { apiKey: process.env.FL_WEB_TON_API_KEY, ...this.providerOptions });
 
       this.api[network.name.toLowerCase()] = {
         api,
@@ -30,7 +28,7 @@ export class TonApiHandler {
 
       return true;
     } catch (error) {
-      console.error('[TON] Failed to initialize TonApiClient:', error);
+      console.error('[TON] Failed to set up the TON provider:', error);
 
       return false;
     }
@@ -42,15 +40,3 @@ export class TonApiHandler {
     delete this.api[networkLower];
   }
 }
-
-function getTonApiBaseUrl(network: Pick<NetworkJson, 'name' | 'nodes'>): string {
-  if (isTonMainnet(network.name)) return UNIVERSAL_WALLET_INDEXERS.ton;
-
-  const configuredUrl = network.nodes[0]?.url?.trim();
-
-  if (!configuredUrl) throw new Error('missing_ton_api_base_url');
-
-  return configuredUrl;
-}
-
-export { getTonApiBaseUrl };

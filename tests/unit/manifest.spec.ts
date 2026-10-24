@@ -42,7 +42,7 @@ describe('extension manifest generation', () => {
     expect(csp).not.toContain("'unsafe-eval'");
   });
 
-  it('generates firefox mv3 shape without chromium-only keys', () => {
+  it('requires Firefox built-in data consent support without chromium-only keys', () => {
     const manifest = makeManifest('firefox');
 
     expect(manifest.manifest_version).toBe(3);
@@ -52,7 +52,8 @@ describe('extension manifest generation', () => {
     expect(manifest.permissions).not.toContain('*://www.googleapis.com/*');
     expect(manifest.browser_specific_settings).toEqual({
       gecko: {
-        id: '{6a9332b9-e864-4d0a-a591-140fe75a29ba}',
+        id: '{23b9f52e-e9d7-4180-9126-fc9063e57c1a}',
+        strict_min_version: '142.0',
         data_collection_permissions: {
           required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
         },
@@ -61,6 +62,14 @@ describe('extension manifest generation', () => {
     expect(manifest).not.toHaveProperty('key');
     expect(manifest).not.toHaveProperty('oauth2');
     expect(manifest).not.toHaveProperty('minimum_chrome_version');
+  });
+
+  it('ships the 4.2.0 release version to Chrome and Firefox', () => {
+    // Chrome only offers the update when the version is above the published
+    // 3.0.5 item; both stores must receive the same release number.
+    expect(packageJson.version).toBe('4.2.0');
+    expect(makeManifest('chrome').version).toBe('4.2.0');
+    expect(makeManifest('firefox').version).toBe('4.2.0');
   });
 
   it('omits private chromium credentials for local open-source builds', () => {

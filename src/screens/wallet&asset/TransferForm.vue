@@ -74,12 +74,15 @@
                 class="row"
                 text="assets.amount"
                 :totalAmount="transferableAmount"
+                :balanceUnavailable="balanceUnavailable"
                 :value="syncedValue"
                 :asset="sendAssetName"
-                :assetId="syncedAssetId"
+                :assetId="transferAssetId"
                 :amount="syncedAmount"
                 :isRotate="showSelectedAssetPopup"
                 :disableSelection="lockRouteSelection"
+                :showMax="true"
+                :maxActive="isMaxAmount"
                 @update:amount="updateAmount"
                 @setMax="setMax"
                 @togglePopupVisibility="toggleValue('showSelectedAssetPopup')"
@@ -106,13 +109,11 @@
                 @click="toggleValue('showDestNetPopup')"
               />
 
-              <InputWithIcon
-                :value="recipientCut"
+              <RecipientInput
                 class="row"
-                icon="close"
-                placeholder="assets.sendTo"
-                data-testid="sendToInput"
-                @click="setRecipient"
+                :value="syncedRecipient"
+                :isError="isRecipientError"
+                @update="updateRecipient"
               />
 
               <div class="activity-buttons row">
@@ -128,14 +129,22 @@
                 />
               </div>
 
+              <p v-if="showGroupNetworkWarning" class="send-note" data-testid="sendGroupNetworkWarning">
+                {{ $t('assets.sendGroupNetworkWarning', { symbol: sendAssetName?.toUpperCase(), network: originNet?.name ?? syncedNetwork }) }}
+              </p>
+
+              <p v-if="bitcoinRecipientHint" class="send-note" data-testid="bitcoinRecipientTypes">
+                {{ $t('assets.bitcoinSupportedAddresses', { prefixes: bitcoinRecipientHint }) }}
+              </p>
+
               <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
 
               <slot name="step1Warning"></slot>
 
               <InfoRow
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
-                :value="syncedFeeCut"
-                :price="fiatFeeCut"
+                :value="canRetryFeeQuote ? $t('common.estimateFeeError') : syncedFeeCut"
+                :price="canRetryFeeQuote ? '' : fiatFeeCut"
                 :iconClasses="['origin-fee']"
                 :isLoading="isFetchingFees"
                 icon="info"
@@ -156,11 +165,48 @@
                 :value="`${crossChainRuntimeMinimum} ${sendAssetName?.toUpperCase()}`"
               />
 
+              <template v-if="isTransfer">
+                <InfoRow
+                  v-if="bitcoinQuote"
+                  text="assets.bitcoinFeeRate"
+                  :value="$t('assets.bitcoinFeeRateValue', { rate: $n(bitcoinQuote.feeRateSatPerVbyte, 'decimalPrecise') })"
+                  data-testid="bitcoinFeeRate"
+                />
+                <InfoRow
+                  v-if="solanaAccountCreationDeposit"
+                  text="assets.solanaAccountCreation"
+                  :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+                  data-testid="solanaAccountCreation"
+                />
+                <p v-if="solanaAccountCreationDeposit" class="send-note">
+                  {{ $t('assets.solanaAccountCreationHint', { asset: sendAssetName?.toUpperCase() }) }}
+                </p>
+                <p v-if="bitcoinAwaitingConfirmation" class="send-note" data-testid="bitcoinAwaitingConfirmation">
+                  {{ $t('assets.bitcoinAwaitingConfirmation', { amount: bitcoinAwaitingConfirmation }) }}
+                </p>
+                <p v-if="bitcoinPreviousSendNote" class="send-note" data-testid="bitcoinPreviousSend">
+                  {{ bitcoinPreviousSendNote }}
+                </p>
+              </template>
+
               <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot name="step2" v-else-if="step === 2"></slot>
+            <template v-else-if="step === 2">
+              <slot name="step2"></slot>
+
+              <InfoRow
+                v-if="isTransfer && bitcoinQuote"
+                text="assets.bitcoinFeeRate"
+                :value="$t('assets.bitcoinFeeRateValue', { rate: $n(bitcoinQuote.feeRateSatPerVbyte, 'decimalPrecise') })"
+              />
+              <InfoRow
+                v-if="isTransfer && solanaAccountCreationDeposit"
+                text="assets.solanaAccountCreation"
+                :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+              />
+            </template>
           </div>
 
           <FButton
@@ -224,22 +270,33 @@
 import { defineComponent } from 'vue';
 
 import { FPNumber } from '@sora-substrate/util';
+import { APIItemState } from '@extension-base/api/types/networks';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { Reasons } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
-import type { AccountJson, RequestCheckTransfer, RequestCheckCrossChain } from '@extension-base/background/types/types';
+import type {
+  AccountJson,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  ResponseBitcoinTransferQuote,
+  ResponseSolanaTransferQuote,
+} from '@extension-base/background/types/types';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
+import RecipientInput from '@/screens/wallet&asset/RecipientInput.vue';
 import BaseApi from '@/util/BaseApi';
 import {
-  getCurrencyOptions,
   calcTransferableSendMinusFee,
+  findTransferAssetGroup,
+  getTransferAssetOptions,
+  getTransferAssetOptionValue,
   isValidAmountAsset,
   getUtilityAsset,
+  parseTransferAssetOptionValue,
 } from '@/helpers/currencies';
-import { cut, getClipboard, isSameString, isTonNetwork } from '@/helpers';
+import { isSameString, isTonNetwork, readClipboard } from '@/helpers';
 import {
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
@@ -253,7 +310,8 @@ import {
   getTransferWalletRecipient,
   isTransferWalletRecipient,
 } from '@/helpers/transfers';
-import { getTransferErrorLocaleKey } from '@/helpers/transferErrors';
+import { ESTIMATE_FEE_ERROR, getTransferErrorLocaleKey } from '@/helpers/transferErrors';
+import { withTimeout } from '@/util/endpointFailover';
 import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
@@ -261,8 +319,19 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { canonicalGroupIndexFor, canonicalGroupOf } from '@/portfolio/tokenGroups';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+
+// How long the priority fee that Max quoted is kept for pricing the amount it produced.
+const SOLANA_PRICE_HINT_MS = 60_000;
+// The longest the form waits for a fee quote before it offers to ask again; past every limit the background applies.
+const FEE_QUOTE_TIMEOUT_MS = 45_000;
+
+function quoteWithin<T>(quote: Promise<T>): Promise<T> {
+  return withTimeout(quote, FEE_QUOTE_TIMEOUT_MS, () => new Error('fee_quote_timeout'));
+}
 
 const VALID_BITCOIN_ADDRESS = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4';
 const VALID_BITCOIN_TESTNET_ADDRESS = 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx';
@@ -272,6 +341,7 @@ export default defineComponent({
   components: {
     WalletInfo,
     HistoryBook,
+    RecipientInput,
     EditAddressBook,
     ExistentialPopup,
     WarningAddressPopup,
@@ -297,6 +367,7 @@ export default defineComponent({
   data() {
     return {
       networksStore: useNetworksStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
       accountsStore: useAccountsStore(),
       timeoutSubscription: undefined as ReturnType<typeof setTimeout> | undefined,
       timeoutSetMax: undefined as ReturnType<typeof setTimeout> | undefined,
@@ -311,10 +382,19 @@ export default defineComponent({
       newAddress: '',
       filterValue: '',
       isFetchingFees: false,
+      feeQuoteRevision: 0,
       estimateFeeError: false,
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
+      crossChainQuoteToken: '',
       crossChainRuntimeMinimum: '',
+      bitcoinQuote: null as ResponseBitcoinTransferQuote | null,
+      solanaQuote: null as ResponseSolanaTransferQuote | null,
+      solanaPriceHint: null as { amount: string; assetId: string; at: number; network: string; price: number } | null,
+      // Max stays on until the amount is edited. Where Max is the balance less the fee, the amount follows each new
+      // fee; an exact maximum the quote returned (Bitcoin, Solana) is kept as quoted.
+      isMaxAmount: false,
+      maxFollowsFee: false,
       isScamAddress: false,
       scamInfo: null,
       step: 1,
@@ -336,8 +416,12 @@ export default defineComponent({
         localeProps: { asset: this.sendAssetName.toUpperCase() },
       };
     },
-    recipientCut() {
-      return cut(this.syncedRecipient);
+    isRecipientError() {
+      return this.syncedRecipient !== '' && !this.isValidRecipientAddress;
+    },
+    // A quote that failed for no specific reason (a node that did not answer, a lost background) can be asked again.
+    canRetryFeeQuote() {
+      return this.step === 1 && this.estimateFeeError && this.estimateFeeErrorMessage === ESTIMATE_FEE_ERROR;
     },
     acountsEcosystem() {
       if (this.isCrossChain) return this.accountsStore.accounts;
@@ -397,6 +481,26 @@ export default defineComponent({
     firstIcon() {
       return this.isTransfer ? this.syncedAssetId : this.syncedNetwork;
     },
+    // An earlier Bitcoin send whose outcome is not settled: waiting in the mempool, so
+    // nothing new is sent until it confirms, or unknown, so its coins are reused.
+    bitcoinPreviousSendNote() {
+      const previous = this.bitcoinQuote?.previousSend;
+
+      if (!previous) return '';
+
+      const shorten = (value: string | undefined, tail: number) =>
+        value && value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-tail)}` : value ?? '—';
+      const details = {
+        amount: previous.amount ? `${previous.amount} BTC` : '—',
+        recipient: shorten(previous.recipient, 6),
+        txid: shorten(previous.txid, 8),
+      };
+
+      if (previous.inMempool) return this.$t('assets.bitcoinPreviousSendOnNetwork', details);
+      if (this.bitcoinQuote?.pendingPreviousSend) return this.$t('assets.bitcoinPreviousSendReused', details);
+
+      return '';
+    },
     placeholderSelectPopup() {
       return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
     },
@@ -436,7 +540,11 @@ export default defineComponent({
       return -160;
     },
     selectPopupValue() {
-      if (this.showSelectedAssetPopup) return this.syncedAssetId;
+      if (this.showSelectedAssetPopup) {
+        const network = this.networksStore.getNetwork(this.syncedNetwork)?.name ?? this.syncedNetwork;
+
+        return getTransferAssetOptionValue(this.transferAssetId, network);
+      }
 
       if (this.showSelectNetworkPopup) return this.syncedNetwork;
 
@@ -448,7 +556,9 @@ export default defineComponent({
     buttonText() {
       if (!navigator.onLine) return 'common.offlineStatus';
 
-      if (this.isBitcoinTransferDisabled) return 'assets.bitcoinTransfersDisabled';
+      if (this.isBitcoinTransferDisabled) {
+        return BaseApi.isSolanaNetwork(this.syncedNetwork) ? 'common.featureOff' : this.originNet?.ecosystem === 'iroha' ? 'assets.irohaTransfersDisabled' : 'assets.bitcoinTransfersDisabled';
+      }
 
       if (!this.currency) return '';
 
@@ -458,11 +568,16 @@ export default defineComponent({
         return 'common.confirm';
       }
 
-      if (this.estimateFeeError) return this.estimateFeeErrorMessage || 'estimateFeeError';
+      if (this.canRetryFeeQuote) return 'ux.retry';
+
+      if (this.estimateFeeError) return this.estimateFeeErrorMessage || ESTIMATE_FEE_ERROR;
 
       if (this.isSameAddress) return 'assets.isSameAddress';
 
       if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
+
+      // An unknown balance is not an insufficient one: the amount check below would read it as 0.
+      if (this.balanceUnavailable) return 'assets.balanceNotLoaded';
 
       if (!this.isValidSendAsset)
         return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
@@ -486,11 +601,13 @@ export default defineComponent({
 
       if (this.isBitcoinTransferDisabled) return true;
 
-      if (this.isFetchingFees || this.estimateFeeError) return true;
+      if (this.isFetchingFees || !navigator.onLine) return true;
 
-      if (!navigator.onLine) return true;
+      if (this.estimateFeeError) return !this.canRetryFeeQuote;
 
       if (this.step === 2) return false;
+
+      if (this.balanceUnavailable) return true;
 
       return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedFee === '';
     },
@@ -517,7 +634,7 @@ export default defineComponent({
     isBitcoinTransferDisabled() {
       if (!this.isTransfer) return false;
 
-      return !isNetworkTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork));
+      return !this.isTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork));
     },
     isValidRecipientAddress() {
       if (this.isSameAddress) return false;
@@ -550,15 +667,44 @@ export default defineComponent({
         );
       }
 
-      return this.accountsStore.balances?.find(({ balances }) =>
-        balances.some((el) => isSameString(el.id, this.syncedAssetId))
-      );
+      return findTransferAssetGroup(this.accountsStore.balances, this.syncedAssetId, this.syncedNetwork);
     },
     currencyBalance() {
       return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
     },
+    transferAssetId() {
+      // The route may carry a group or canonical id; the background resolves registry ids.
+      return this.currencyBalance?.id ?? this.syncedAssetId;
+    },
     transferableAmount() {
+      // Bitcoin can send only confirmed coins worth more than their fee.
+      if (this.isTransfer && this.bitcoinQuote) return +this.bitcoinQuote.spendable;
+
       return +(this.currencyBalance?.transferable ?? 0);
+    },
+    // The last update failed with no amount confirmed before: what can be sent is unknown, not 0.
+    balanceUnavailable(): boolean {
+      const balance = this.currencyBalance;
+
+      return (
+        balance?.state === APIItemState.ERROR &&
+        [balance.transferable, balance.total, balance.free].every((value) => value === undefined || value === null)
+      );
+    },
+    isQuotedTransferNetwork() {
+      return this.isTransfer && (BaseApi.isBitcoinNetwork(this.syncedNetwork) || BaseApi.isSolanaNetwork(this.syncedNetwork));
+    },
+    bitcoinRecipientHint() {
+      if (!this.isTransfer || !BaseApi.isBitcoinNetwork(this.syncedNetwork)) return '';
+
+      return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.syncedNetwork)
+        ? 'm, n, 2, tb1q, tb1p'
+        : '1, 3, bc1q, bc1p';
+    },
+    bitcoinAwaitingConfirmation() {
+      const amount = this.bitcoinQuote?.awaitingConfirmation;
+
+      return amount && +amount > 0 ? `${this.$n(+amount, 'decimalPrecise')} BTC` : '';
     },
     options() {
       const filter = this.filterValue.trim().toLowerCase();
@@ -581,7 +727,7 @@ export default defineComponent({
         return prepBalances.some(({ name }) => {
           const { active, rank, favorite } = this.networksStore.getNetwork(name);
 
-          if (!active || !isNetworkTransferEnabled(this.networksStore.getNetwork(name))) return false;
+          if (!active || !this.isTransferEnabled(this.networksStore.getNetwork(name))) return false;
 
           if (this.isSelectedNetworkGroup) {
             if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
@@ -598,20 +744,27 @@ export default defineComponent({
       return result;
     },
     optionsAssets() {
-      if (this.lockRouteSelection) return this.currency ? getCurrencyOptions([this.currency]) : [];
+      if (this.lockRouteSelection) {
+        return this.currency
+          ? getTransferAssetOptions([this.currency], this.networksStore.getNetwork, {
+              isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
+            })
+          : [];
+      }
+
+      const getPrice = (priceId: string) => this.networksStore.getAssetPrice(priceId).price;
+
+      if (this.isTransfer) {
+        return getTransferAssetOptions(this.accountsStore.balances, this.networksStore.getNetwork, {
+          getPrice,
+          isNetworkAvailable: (network) => network.active && this.isTransferEnabled(network),
+        });
+      }
 
       const { xcm, parentId } = this.networksStore.networks.find(
         ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
       )!;
       const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
-
-      if (this.isTransfer) {
-        const balances = this.accountsStore.balances.filter(({ balances: networkBalances }) =>
-          networkBalances.some(({ name }) => isNetworkTransferEnabled(this.networksStore.getNetwork(name)))
-        );
-
-        return getCurrencyOptions(balances);
-      }
 
       const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
         if (relayChain.toLowerCase() !== relay) return false;
@@ -623,25 +776,66 @@ export default defineComponent({
         });
       });
 
-      return getCurrencyOptions(balances);
+      // The origin network is chosen separately, so a cross-chain asset option never switches it.
+      return getTransferAssetOptions(balances, this.networksStore.getNetwork, {
+        getPrice,
+        isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
+      });
+    },
+    // The approved token group of the asset being sent (portfolio contract §7), matched by (chainId, assetId).
+    canonicalGroup() {
+      const index = canonicalGroupIndexFor(this.networksStore.allNetworks ?? []);
+
+      return canonicalGroupOf(index, this.originNet, this.currencyBalance?.id ?? this.syncedAssetId);
+    },
+    // Each network of the group as `network name → registry id there`, for the networks this wallet can send on.
+    groupNetworkAssets() {
+      const members = new Map<string, string>();
+      const group = this.canonicalGroup?.group;
+      if (!group) return members;
+
+      group.members.forEach(({ networkName, assetId }) => {
+        const holds = this.accountsStore.balances.some(({ balances }) =>
+          balances.some((balance) => isSameString(balance.name, networkName) && isSameString(balance.id, assetId))
+        );
+
+        if (holds && !members.has(networkName)) members.set(networkName, assetId);
+      });
+
+      return members;
     },
     optionsNetworks() {
       // used only for transfer
-      const walletBalance = this.currency?.balances ?? [];
+      // The asset's own network, plus the other networks of its approved token group: DOT on Polkadot, Polkadot
+      // AssetHub and the parachains that hold reserve-backed DOT. Never by symbol, and never a bridged look-alike.
+      const currentId = this.currencyBalance?.id ?? this.currency?.balances[0]?.id ?? this.syncedAssetId;
+      const candidates = [
+        ...this.accountsStore.balances.flatMap(({ balances }) =>
+          balances.filter(({ id, name }) => isSameString(id, currentId) && isSameString(name, this.syncedNetwork))
+        ),
+        ...this.accountsStore.balances.flatMap(({ balances }) =>
+          balances.filter(({ id, name }) =>
+            [...this.groupNetworkAssets].some(
+              ([networkName, assetId]) => isSameString(name, networkName) && isSameString(id, assetId)
+            )
+          )
+        ),
+      ];
+      const networkNames = new Set<string>();
 
-      return walletBalance.flatMap(({ name, icon }) => {
+      return candidates.flatMap(({ name, icon }) => {
         const network = this.networksStore.getNetwork(name);
 
-        if (!network.active || !isNetworkTransferEnabled(network)) return [];
+        if (!network?.active || !this.isTransferEnabled(network) || networkNames.has(network.name)) return [];
 
-        return [
-          {
-            name: network.name,
-            value: network.name,
-            icon,
-          },
-        ];
+        networkNames.add(network.name);
+
+        return [{ name: network.name, value: network.name, icon }];
       });
+    },
+    // Several networks carry this token: say which one this send uses, before the recipient is checked.
+    showGroupNetworkWarning() {
+      return this.isTransfer && this.groupNetworkAssets.size > 1 && this.syncedNetwork !== '';
     },
     originNet() {
       return this.networksStore.getNetwork(this.syncedNetwork);
@@ -702,6 +896,11 @@ export default defineComponent({
       // проверяем, что utility balance достаточно на оплату fee и ED
       return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
     },
+    solanaAccountCreationDeposit() {
+      const deposit = this.solanaQuote?.accountCreationDeposit;
+
+      return deposit && +deposit > 0 ? deposit : '';
+    },
     transactionAddress() {
       return getTransactionAddress(this.accountsStore.selectedWallet, this.syncedNetwork);
     },
@@ -710,7 +909,7 @@ export default defineComponent({
         to: this.syncedRecipient,
         from: this.transactionAddress,
         relayChain: this.currency?.relayChain,
-        assetId: this.syncedAssetId,
+        assetId: this.transferAssetId,
         amount: this.syncedAmount,
       };
 
@@ -718,6 +917,10 @@ export default defineComponent({
         return {
           ...baseRequest,
           networkKey: this.syncedNetwork,
+          approvedMaxFee: this.syncedFee,
+          // The send pays the fee rate and priority fee the user reviewed.
+          bitcoinFeeRateSatPerVbyte: this.bitcoinQuote?.feeRateSatPerVbyte,
+          solanaComputeUnitPriceMicroLamports: this.solanaQuote?.computeUnitPriceMicroLamports,
         } as RequestCheckTransfer;
 
       return {
@@ -730,6 +933,7 @@ export default defineComponent({
         expectedOriginFee: this.syncedFee,
         expectedDestinationFee: this.syncedDestNetFee,
         expectedExecutionFingerprint: this.crossChainExecutionFingerprint,
+        quoteToken: this.crossChainQuoteToken,
       } as RequestCheckCrossChain;
     },
     syncedRecipient: {
@@ -798,6 +1002,7 @@ export default defineComponent({
     },
   },
   watch: {
+    transactionAddress: 'calculateFee',
     syncedRecipient: ['checkScam', 'calculateFee'],
     showSelectedAssetPopup: 'resetAssetPopupVisible',
     showSelectNetworkPopup: 'resetOriginPopupVisible',
@@ -806,11 +1011,15 @@ export default defineComponent({
     syncedAssetId: ['updateSelectedNetwork', 'calculateFee'],
     syncedDestNet: ['clearRecipient', 'calculateFee'],
     syncedAmount: 'calculateFee',
+    transferableAmount: 'onTransferableChange',
   },
   created() {
     this.calculateEstimates();
   },
   methods: {
+    isTransferEnabled(network: Parameters<typeof isNetworkTransferEnabled>[0]) {
+      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
+    },
     async checkScam() {
       if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
         const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
@@ -847,11 +1056,17 @@ export default defineComponent({
       if (newValue.toLowerCase() === this.syncedDestNet.toLowerCase()) this.syncedDestNet = prevValue;
     },
     updateSelectedNetwork() {
+      this.clearMaxAmount();
       this.syncedAmount = '';
       this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
       this.syncedValue = '';
 
-      if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
+      if (!this.isTransfer) return;
+
+      // An asset option already names its network; keep it while that network still offers the asset.
+      if (this.optionsNetworks.some(({ value }) => isSameString(value, this.syncedNetwork))) return;
+
+      this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     },
     async clearRecipient() {
       this.$nextTick(() => {
@@ -859,21 +1074,63 @@ export default defineComponent({
       });
     },
     calculateFee() {
-      if (!this.currency || this.isBitcoinTransferDisabled) return;
-
+      this.feeQuoteRevision += 1;
+      this.syncedFee = '';
+      this.syncedDestNetFee = '';
+      this.crossChainExecutionFingerprint = '';
+      this.solanaQuote = null;
+      this.crossChainQuoteToken = '';
       clearTimeout(this.timeoutSubscription);
 
+      // Nothing is quoted without an asset or while sends are off, so nothing may show as loading.
+      if (!this.currency || this.isBitcoinTransferDisabled) {
+        this.isFetchingFees = false;
+
+        return;
+      }
+
+      this.isFetchingFees = true;
       this.timeoutSubscription = setTimeout(() => this.calculateEstimates(), 2000);
     },
+    onTransferableChange() {
+      if (this.isMaxAmount && this.maxFollowsFee && this.syncedFee !== '') this.followMaxAmount(this.syncedFee);
+    },
+    /**
+     * Keeps a Max amount at the whole balance less the latest fee, so a fee that moved between quotes never turns it
+     * into a shortfall. A changed amount is quoted again, like any other amount.
+     */
+    followMaxAmount(fee: string) {
+      const amount = this.calcTransferableSendMinusFee(fee).toString();
+
+      if (amount === this.syncedAmount) return;
+
+      this.syncedAmount = amount;
+      this.syncedValue = getCostOfAssets(amount, this.assetPrice).toString();
+    },
+    clearMaxAmount() {
+      this.isMaxAmount = false;
+      this.maxFollowsFee = false;
+    },
     async calculateEstimates() {
-      if (!this.currency || this.isBitcoinTransferDisabled) return;
+      if (!this.currency || this.isBitcoinTransferDisabled) {
+        this.isFetchingFees = false;
+
+        return;
+      }
+      const revision = ++this.feeQuoteRevision;
+      const requestKey = this.feeQuoteRequestKey();
+
+      this.isFetchingFees = true;
+      this.estimateFeeError = false;
+      this.estimateFeeErrorMessage = '';
 
       try {
-        this.estimateFeeError = false;
-        this.estimateFeeErrorMessage = '';
-
-        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors } = await this.verifyTx();
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, quoteToken, errors, bitcoin, solana } = await this.verifyTx();
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         const transferError = errors?.[0];
+
+        this.bitcoinQuote = bitcoin ?? null;
+        this.solanaQuote = solana ?? null;
 
         if (transferError) {
           this.estimateFeeError = true;
@@ -883,15 +1140,37 @@ export default defineComponent({
         this.syncedFee = estimateFee ?? '';
         this.syncedDestNetFee = destEstimateFee ?? '';
         this.crossChainExecutionFingerprint = executionFingerprint ?? '';
+        this.crossChainQuoteToken = quoteToken ?? '';
         this.crossChainRuntimeMinimum = minimum ?? '';
         this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);
+
+        if (!transferError && this.isMaxAmount && this.maxFollowsFee && estimateFee) this.followMaxAmount(estimateFee);
       } catch {
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         this.syncedFee = '';
         this.syncedDestNetFee = '';
+        this.bitcoinQuote = null;
+        this.solanaQuote = null;
         this.crossChainExecutionFingerprint = '';
+        this.crossChainQuoteToken = '';
         this.crossChainRuntimeMinimum = '';
         this.$emit('update:runtimeMinimum', '');
+        // The quote failed or never answered: say so and offer to ask again rather than show a blank fee.
+        this.estimateFeeError = true;
+        this.estimateFeeErrorMessage = ESTIMATE_FEE_ERROR;
+      } finally {
+        if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
       }
+    },
+    retryFeeQuote() {
+      if (this.isMaxAmount) this.setMax();
+      else this.calculateEstimates();
+    },
+    feeQuoteRequestKey() {
+      return JSON.stringify([
+        this.transactionAddress, this.syncedNetwork, this.syncedDestNet, this.syncedAssetId,
+        this.syncedRecipient, this.syncedAmount, this.reviewedRouteId, this.reviewedRouteProviderId,
+      ]);
     },
     toggleEditBook(address: string = '') {
       this.showEditAddressBook = !this.showEditAddressBook;
@@ -915,11 +1194,21 @@ export default defineComponent({
     },
     toggleSelectedNetwork(value: string) {
       if (this.showSelectedAssetPopup) {
-        this.syncedAssetId = value;
+        const { assetId, network } = parseTransferAssetOptionValue(value);
+
+        // The network goes first so the asset watcher sees the pair the user picked.
+        if (network) this.syncedNetwork = network;
+
+        this.syncedAssetId = assetId;
 
         this.toggleValue('showSelectedAssetPopup');
       } else if (this.showSelectNetworkPopup) {
+        // A group member on another network can have its own registry id: switch the network and that id
+        // together, so the asset is never replaced silently (the asset watcher then clears the amount).
+        const assetId = this.groupNetworkAssets.get(this.networksStore.getNetwork(value)?.name ?? value);
+
         this.syncedNetwork = value;
+        if (assetId && !isSameString(assetId, this.transferAssetId)) this.syncedAssetId = assetId;
 
         this.toggleValue('showSelectNetworkPopup');
       } else {
@@ -931,6 +1220,7 @@ export default defineComponent({
     updateAmount(amount: string) {
       const value = getCostOfAssets(+amount, this.assetPrice).toString() ?? '';
 
+      this.clearMaxAmount();
       this.syncedAmount = amount;
       this.syncedValue = value;
     },
@@ -972,62 +1262,120 @@ export default defineComponent({
     },
     async setMax() {
       if (!this.currency) return;
+      clearTimeout(this.timeoutSubscription);
+      clearTimeout(this.timeoutSetMax);
+      const revision = ++this.feeQuoteRevision;
+      const requestKey = this.feeQuoteRequestKey();
 
-      const setMax = async () => {
-        const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
-        const transferable = this.calcTransferableSendMinusFee(estimateFee!);
+      this.isMaxAmount = true;
+      this.maxFollowsFee = false;
+      this.syncedFee = '';
+      this.isFetchingFees = true;
+      try {
+        // A Solana quote without an amount returns the exact maximum; quoting the whole balance as the amount would
+        // report a shortfall, because the fee and any account deposit come out of it.
+        const quotedAmount =
+          this.isQuotedTransferNetwork ? '0' : this.transferableAmount.toString();
+        const quote = await this.verifyTx(quotedAmount, true);
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
 
+        if (quote.errors?.length || quote.estimateFee === undefined) {
+          this.clearMaxAmount();
+          this.estimateFeeError = true;
+          this.estimateFeeErrorMessage = getTransferErrorLocaleKey(quote.errors?.[0]?.message);
+
+          return;
+        }
+        const maxAmount = ('maxAmount' in quote ? quote.maxAmount : undefined) ?? ('bitcoin' in quote ? quote.bitcoin?.maxSendable : undefined) ?? ('solana' in quote ? quote.solana?.maxSendable : undefined);
+        const transferable = typeof maxAmount === 'string'
+          ? new FPNumber(maxAmount, this.currencyBalance?.precision)
+          : this.calcTransferableSendMinusFee(quote.estimateFee);
+
+        this.maxFollowsFee = typeof maxAmount !== 'string';
+        this.syncedFee = quote.estimateFee;
+        this.bitcoinQuote = ('bitcoin' in quote ? quote.bitcoin : undefined) ?? null;
+        this.solanaQuote = ('solana' in quote ? quote.solana : undefined) ?? null;
+        this.estimateFeeError = false;
+        this.estimateFeeErrorMessage = '';
+
+        // Setting the amount quotes it again. That quote must use the priority fee Max just quoted: a price that moved
+        // meanwhile would turn the exact maximum into a shortfall, or leave a remainder below the rent minimum.
+        this.solanaPriceHint = this.solanaQuote
+          ? {
+              amount: transferable.toString(),
+              assetId: this.transferAssetId,
+              at: Date.now(),
+              network: this.syncedNetwork,
+              price: this.solanaQuote.computeUnitPriceMicroLamports,
+            }
+          : null;
         this.syncedAmount = transferable.toString();
         this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
-      };
-
-      if (this.syncedFee === '' || this.syncedFee === '0') {
-        clearTimeout(this.timeoutSetMax);
-
-        this.timeoutSetMax = setTimeout(setMax, 2000);
-      } else setMax();
+      } catch {
+        if (revision === this.feeQuoteRevision) {
+          this.clearMaxAmount();
+          this.estimateFeeError = true;
+          this.estimateFeeErrorMessage = ESTIMATE_FEE_ERROR;
+        }
+      } finally {
+        if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
+      }
     },
     toggleLoading(value = true) {
       this.isFetchingFees = value;
     },
-    async verifyTx(_amount?: string) {
-      this.toggleLoading();
+    /** Only the amount Max produced is priced at Max's priority fee, and only for a minute; any other edit reprices. */
+    getSolanaPriceHint(amount: string): number | undefined {
+      const hint = this.solanaPriceHint;
 
-      // A cross-chain quote is intentionally bound to the confirmed recipient.
+      if (!hint || Date.now() - hint.at >= SOLANA_PRICE_HINT_MS) return undefined;
+
+      return hint.amount === amount && hint.assetId === this.transferAssetId && hint.network === this.syncedNetwork
+        ? hint.price
+        : undefined;
+    },
+    async verifyTx(_amount?: string, sendMax = false) {
+      // Price the entered recipient whenever it is valid for the selected network.
       const to =
-        !this.isTransfer && this.isValidRecipientAddress ? this.syncedRecipient : this.getFeeEstimateRecipient();
+        this.isValidRecipientAddress && (!this.isTransfer || this.isValidAddressByNetwork)
+          ? this.syncedRecipient
+          : this.getFeeEstimateRecipient();
 
-      const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0' ? this.syncedAmount : '1');
+      const hasAmount = this.syncedAmount !== '' && this.syncedAmount !== '0';
+      // Without an amount a Solana quote prices only the fee and the maximum, so it never reports a balance shortfall.
+      const amount = _amount ?? (hasAmount ? this.syncedAmount : this.isQuotedTransferNetwork ? '0' : '1');
 
       if (this.isTransfer) {
-        const ex = await checkTransfer({
-          networkKey: this.syncedNetwork,
-          from: this.transactionAddress,
-          to,
-          relayChain: this.currency?.relayChain,
-          amount,
-          assetId: this.syncedAssetId,
-        });
-
-        this.toggleLoading(false);
+        const ex = await quoteWithin(
+          checkTransfer({
+            networkKey: this.syncedNetwork,
+            from: this.transactionAddress,
+            to,
+            relayChain: this.currency?.relayChain,
+            amount,
+            assetId: this.transferAssetId,
+            sendMax,
+            solanaComputeUnitPriceMicroLamports: this.getSolanaPriceHint(amount),
+          })
+        );
 
         return ex;
       }
 
-      const ex = await checkCrossChain({
-        originNet: this.syncedNetwork,
-        destinationNet: this.syncedDestNet,
-        from: this.transactionAddress,
-        to,
-        relayChain: this.currency?.relayChain,
-        amount,
-        assetId: this.syncedAssetId,
-        assetKey: this.canonicalAssetKey,
-        routeId: this.reviewedRouteId,
-        routeProviderId: this.reviewedRouteProviderId,
-      });
-
-      this.toggleLoading(false);
+      const ex = await quoteWithin(
+        checkCrossChain({
+          originNet: this.syncedNetwork,
+          destinationNet: this.syncedDestNet,
+          from: this.transactionAddress,
+          to,
+          relayChain: this.currency?.relayChain,
+          amount,
+          assetId: this.transferAssetId,
+          assetKey: this.canonicalAssetKey,
+          routeId: this.reviewedRouteId,
+          routeProviderId: this.reviewedRouteProviderId,
+        })
+      );
 
       return ex;
     },
@@ -1037,6 +1385,16 @@ export default defineComponent({
           ? VALID_BITCOIN_TESTNET_ADDRESS
           : VALID_BITCOIN_ADDRESS;
       }
+      // Until a recipient is entered, a Solana quote prices a transfer to the
+      // wallet's own Solana address.
+      if (BaseApi.isSolanaNetwork(this.targetNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.targetNetwork);
+      }
+
+      // Until a recipient is entered, a Solana quote prices a transfer to the wallet's own Solana address.
+      if (BaseApi.isSolanaNetwork(this.targetNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.targetNetwork);
+      }
 
       return BaseApi.formatAddress(
         { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
@@ -1045,6 +1403,12 @@ export default defineComponent({
     },
     async handlerContinueButton() {
       if (this.isBitcoinTransferDisabled) return;
+
+      if (this.canRetryFeeQuote) {
+        this.retryFeeQuote();
+
+        return;
+      }
 
       if (this.step === 2) {
         this.showConfirmationPasswordPopup = true;
@@ -1081,8 +1445,12 @@ export default defineComponent({
         this.targetNetwork
       );
     },
-    paste() {
-      this.syncedRecipient = getClipboard();
+    updateRecipient(address: string) {
+      this.syncedRecipient = address;
+    },
+    async paste() {
+      // Addresses never contain whitespace, and a copied one often brings a space or a line break along.
+      this.syncedRecipient = (await readClipboard()).replace(/\s+/g, '');
     },
     setWallet(wallet: AccountJson) {
       this.syncedRecipient = getTransferWalletRecipient(wallet, this.getRecipientNetwork());
@@ -1147,6 +1515,14 @@ export default defineComponent({
 </style>
 
 <style lang="scss" scoped>
+.send-note {
+  margin: 6px 0 0;
+  color: $gray-color;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .network-transfer-link {
   display: block;
   color: $pink-lavender-color;

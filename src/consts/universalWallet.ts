@@ -14,9 +14,33 @@ const UNIVERSAL_WALLET_INDEXERS = {
   solana: 'https://si.soramitsu.io',
 } as const;
 
+// TON is read from, and sent through, the TONSWAP indexer (TI) only while it proves it serves the network asked
+// for: its service-info names `ton:mainnet` and every balance, state and history answer says `mainnet`. Until it
+// does, the registry's own TON node is used instead, and every switch to it is logged. Set `registryNodeFallback`
+// to false once TI serves TON mainnet. Remote config never chooses a TON host.
+const UNIVERSAL_WALLET_TON_PROVIDER = {
+  indexerUrl: UNIVERSAL_WALLET_INDEXERS.ton,
+  registryNodeFallback: true,
+} as const;
+
+// Esplora-compatible indexers used with failover for Bitcoin balances, UTXOs,
+// fee estimates and broadcast. The first entry stays the canonical indexer.
+const UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS = {
+  mainnet: [UNIVERSAL_WALLET_INDEXERS.bitcoin.mainnet, 'https://mempool.space/api'],
+  testnet: [UNIVERSAL_WALLET_INDEXERS.bitcoin.testnet, 'https://mempool.space/testnet/api'],
+} as const;
+
 const UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS = {
   mainnet: 'https://api.mainnet-beta.solana.com',
   devnet: 'https://api.devnet.solana.com',
+} as const;
+
+// Public JSON-RPC nodes tried in order after the user's selected or custom
+// node. Balances, blockhashes, simulation and broadcast all come from these;
+// nothing on the send path depends on the si.soramitsu.io indexer.
+const UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS = {
+  mainnet: [UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS.mainnet, 'https://solana-rpc.publicnode.com', 'https://solana.drpc.org'],
+  devnet: [UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS.devnet],
 } as const;
 
 const UNIVERSAL_WALLET_DEFAULT_WORD_COUNT = 24;
@@ -39,7 +63,9 @@ const UNIVERSAL_WALLET_IROHA_NETWORKS = {
     chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
     chainDiscriminant: 369,
     toriiBaseUrl: 'https://taira.sora.org',
-    mcpPath: '/v1/mcp',
+    // Genesis hash of the deployed Taira ledger (2026-10-22 reset). Transfers are signed for this
+    // exact network and refused when the node reports another genesis; update it after a reset.
+    networkId: 'hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774',
     enabledByDefault: true,
     nativeAsset: {
       id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
@@ -53,15 +79,16 @@ const UNIVERSAL_WALLET_IROHA_NETWORKS = {
     chainId: 'sora:nexus:global',
     chainDiscriminant: 753,
     toriiBaseUrl: 'https://minamoto.sora.org',
-    mcpPath: '/v1/mcp',
     enabledByDefault: false,
   },
 } as const;
 
-const UNIVERSAL_WALLET_TAIRA_MCP_URL =
-  `${UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl}${UNIVERSAL_WALLET_IROHA_NETWORKS.taira.mcpPath}`;
-const UNIVERSAL_WALLET_NEXUS_MCP_URL =
-  `${UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl}${UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.mcpPath}`;
+// Transaction wire format encoded by the vendored @iroha/iroha-js transaction codec. Transfers are
+// refused when the node advertises a different data model or signed-transaction schema.
+const IROHA_TRANSACTION_WIRE = {
+  dataModelVersion: 4,
+  signedTransactionSchemaHash: '7ab5ff9c572efb316deac478f19209c5',
+} as const;
 
 const UNIVERSAL_WALLET_BITCOIN_NETWORKS = {
   mainnet: {
@@ -134,6 +161,16 @@ const UNIVERSAL_WALLET_SOLANA_NETWORKS = {
     },
   },
 } as const;
+
+// The price id (the CoinGecko coin id the price service asks for) of each app-owned native asset, by chain id.
+// A network without an entry has no price: its balance says "Price unavailable" and is never counted. Test
+// networks have none on purpose. Keep in step with config/portfolio/app-owned-chains.v1.json in the workspace root.
+const UNIVERSAL_WALLET_NATIVE_PRICE_IDS: Readonly<Record<string, string>> = {
+  [UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.chainId]: 'bitcoin',
+  [UNIVERSAL_WALLET_SOLANA_NETWORKS.mainnet.chainId]: 'solana',
+  // Only used while the remote registry, which lists Toncoin itself, is not loaded.
+  'ton:mainnet': 'the-open-network',
+};
 
 const UNIVERSAL_WALLET_BITCOIN_MAINNET_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry = {
   id: UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.id,
@@ -273,9 +310,9 @@ const UNIVERSAL_WALLET_TAIRA_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry =
   features: ['transfer'],
   endpoints: [
     {
-      id: 'taira-testnet-torii-mcp',
-      kind: 'torii-mcp',
-      url: UNIVERSAL_WALLET_TAIRA_MCP_URL,
+      id: 'taira-testnet-torii',
+      kind: 'torii',
+      url: UNIVERSAL_WALLET_IROHA_NETWORKS.taira.toriiBaseUrl,
       readOnly: false,
     },
   ],
@@ -292,9 +329,9 @@ const UNIVERSAL_WALLET_NEXUS_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry =
   features: ['transfer', 'offline-cash', 'sccp', 'governance'],
   endpoints: [
     {
-      id: 'sora-nexus-mainnet-torii-mcp',
-      kind: 'torii-mcp',
-      url: UNIVERSAL_WALLET_NEXUS_MCP_URL,
+      id: 'sora-nexus-mainnet-torii',
+      kind: 'torii',
+      url: UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.toriiBaseUrl,
       readOnly: false,
     },
   ],
@@ -314,12 +351,17 @@ const UNIVERSAL_WALLET_CHAIN_REGISTRY: UniversalWalletChainRegistry = {
 };
 
 export {
+  IROHA_TRANSACTION_WIRE,
+  UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS,
   UNIVERSAL_WALLET_CHAIN_REGISTRY,
   UNIVERSAL_WALLET_INDEXERS,
   UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS,
+  UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS,
+  UNIVERSAL_WALLET_TON_PROVIDER,
   UNIVERSAL_WALLET_DEFAULT_WORD_COUNT,
   UNIVERSAL_WALLET_DERIVATION_PATHS,
   UNIVERSAL_WALLET_BITCOIN_NETWORKS,
   UNIVERSAL_WALLET_IROHA_NETWORKS,
+  UNIVERSAL_WALLET_NATIVE_PRICE_IDS,
   UNIVERSAL_WALLET_SOLANA_NETWORKS,
 };

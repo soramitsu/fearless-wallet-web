@@ -1,6 +1,8 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import {
   createIrohaToriiWalletClient,
+  type IrohaToriiPage,
+  type IrohaToriiPageOptions,
   type IrohaToriiRouteResponse,
 } from '@extension-base/services/iroha-torii-service';
 import { reconcileSuccessfulDynamicScan } from './reconcileSuccessfulScan';
@@ -17,9 +19,7 @@ type IrohaNetworkKey = keyof typeof UNIVERSAL_WALLET_IROHA_NETWORKS;
 
 type IrohaAccountAssetListResponse = {
   items?: IrohaAccountAssetListItem[];
-  has_more?: boolean;
-  count_mode?: string;
-  total?: number | string;
+  next_cursor?: string | null;
 };
 
 type IrohaAccountAssetListItem = {
@@ -39,9 +39,7 @@ type IrohaAccountAssetListItem = {
 
 type IrohaAssetDefinitionListResponse = {
   items?: IrohaAssetDefinitionListItem[];
-  has_more?: boolean;
-  count_mode?: string;
-  total?: number | string;
+  next_cursor?: string | null;
 };
 
 type IrohaAssetDefinitionListItem = {
@@ -55,16 +53,13 @@ type IrohaAssetDefinitionListItem = {
 };
 
 type IrohaBalanceClient = {
-  getAccountAssets<TBody = unknown>(
+  getAccountAssets<TItem = unknown>(
     accountId: string,
-    options?: { countMode?: 'bounded' | 'exact'; limit?: number; offset?: number }
-  ): Promise<IrohaToriiRouteResponse<TBody>>;
-  getAssetDefinitions<TBody = unknown>(options?: {
-    assetId?: string;
-    countMode?: 'bounded' | 'exact';
-    limit?: number;
-    offset?: number;
-  }): Promise<IrohaToriiRouteResponse<TBody>>;
+    options?: IrohaToriiPageOptions
+  ): Promise<IrohaToriiRouteResponse<IrohaToriiPage<TItem>>>;
+  getAssetDefinitions<TItem = unknown>(
+    options?: IrohaToriiPageOptions
+  ): Promise<IrohaToriiRouteResponse<IrohaToriiPage<TItem>>>;
 };
 
 type IrohaBalanceClientFactory = (network: NetworkJson, irohaNetwork: IrohaNetworkKey) => IrohaBalanceClient;
@@ -73,8 +68,10 @@ const IROHA_FALLBACK_NETWORK = 'Taira';
 const IROHA_NEXUS_FALLBACK_ASSET_ID = 'xor#sora';
 const IROHA_FALLBACK_ICON = 'iroha';
 const IROHA_FALLBACK_SYMBOL = 'XOR';
-const IROHA_BALANCE_PAGE_SIZE = 500;
-const IROHA_DEFINITION_PAGE_SIZE = 500;
+const IROHA_PAGE_SIZE = 100;
+// Torii pages are keyset cursors; refuse unbounded walks instead of showing partial balances.
+const MAX_IROHA_BALANCE_PAGES = 10;
+const MAX_IROHA_DEFINITION_PAGES = 20;
 const MAX_IROHA_NUMERIC_SCALE = 28;
 const MAX_IROHA_NUMERIC_DIGITS = 154;
 const MAX_IROHA_NUMERIC = (1n << 511n) - 1n;
@@ -230,15 +227,20 @@ export default class IrohaBalanceService {
     accountId: string,
     network: IrohaNetworkKey
   ): Promise<IrohaAccountAssetListItem[]> {
-    const response = await client.getAccountAssets<IrohaAccountAssetListResponse>(accountId, {
-      countMode: 'bounded',
-      limit: IROHA_BALANCE_PAGE_SIZE,
-      offset: 0,
-    });
-    const page = this.normalizeAssetItems(response.body, accountId, network);
+    const page: IrohaAccountAssetListItem[] = [];
+    let cursor: string | undefined;
 
-    if (response.body?.has_more !== false || response.body?.count_mode !== 'bounded') {
-      throw new Error('iroha_incomplete_account_asset_snapshot');
+    for (let pageIndex = 0; ; pageIndex += 1) {
+      if (pageIndex >= MAX_IROHA_BALANCE_PAGES) throw new Error('iroha_incomplete_account_asset_snapshot');
+
+      const response = await client.getAccountAssets<IrohaAccountAssetListItem>(accountId, {
+        cursor,
+        limit: IROHA_PAGE_SIZE,
+      });
+
+      page.push(...this.normalizeAssetItems(response.body, accountId, network));
+      if (!response.body.next_cursor) break;
+      cursor = response.body.next_cursor;
     }
 
     const assets = new Map<string, { item: IrohaAccountAssetListItem; quantities: string[] }>();
@@ -268,15 +270,20 @@ export default class IrohaBalanceService {
     heldAssetIds: Set<string>,
     network: IrohaNetworkKey
   ): Promise<IrohaAssetDefinitionListResponse> {
-    const response = await client.getAssetDefinitions<IrohaAssetDefinitionListResponse>({
-      countMode: 'bounded',
-      limit: IROHA_DEFINITION_PAGE_SIZE,
-      offset: 0,
-    });
-    const page = this.normalizeDefinitionItems(response.body, network);
+    const page: IrohaAssetDefinitionListItem[] = [];
+    let cursor: string | undefined;
 
-    if (response.body?.has_more !== false || response.body?.count_mode !== 'bounded') {
-      throw new Error('iroha_incomplete_asset_definition_snapshot');
+    for (let pageIndex = 0; ; pageIndex += 1) {
+      if (pageIndex >= MAX_IROHA_DEFINITION_PAGES) throw new Error('iroha_incomplete_asset_definition_snapshot');
+
+      const response = await client.getAssetDefinitions<IrohaAssetDefinitionListItem>({
+        cursor,
+        limit: IROHA_PAGE_SIZE,
+      });
+
+      page.push(...this.normalizeDefinitionItems(response.body, network));
+      if (!response.body.next_cursor) break;
+      cursor = response.body.next_cursor;
     }
 
     const definitions = new Map<string, IrohaAssetDefinitionListItem>();
@@ -290,7 +297,7 @@ export default class IrohaBalanceService {
       throw new Error('iroha_required_asset_definition_missing');
     }
 
-    return { items: [...definitions.values()], has_more: false, count_mode: 'bounded' };
+    return { items: [...definitions.values()], next_cursor: null };
   }
 
   private getIrohaNetworks(networks: string[]): NetworkJson[] {
@@ -636,7 +643,10 @@ export default class IrohaBalanceService {
     if (existing) {
       existing.mainNetwork = network.name;
       existing.relayChain = 'iroha' as RelayChainName;
-      if (priceId) existing.priceId = priceId;
+      // Follow the network asset: groups restored from the balance cache may carry an outdated icon,
+      // or a price the asset no longer has (test networks).
+      existing.icon = assetIcon;
+      existing.priceId = priceId || undefined;
 
       return existing;
     }

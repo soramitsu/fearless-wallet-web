@@ -217,7 +217,7 @@ describe('Universal Wallet V2 vectors', () => {
       chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
       chainDiscriminant: 369,
       toriiBaseUrl: 'https://taira.sora.org',
-      mcpPath: '/v1/mcp',
+      networkId: 'hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774',
       enabledByDefault: true,
       nativeAsset: {
         id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
@@ -231,7 +231,6 @@ describe('Universal Wallet V2 vectors', () => {
       chainId: 'sora:nexus:global',
       chainDiscriminant: 753,
       toriiBaseUrl: 'https://minamoto.sora.org',
-      mcpPath: '/v1/mcp',
       enabledByDefault: false,
     });
   });

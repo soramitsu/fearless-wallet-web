@@ -10,6 +10,38 @@
           {{ transactionErrorText }}
         </p>
 
+        <FButton
+          v-if="showsUnlockAccount"
+          text="accountAccess.unlockAccount"
+          width="100%"
+          size="small"
+          fontSize="small"
+          data-testid="unlockAccountBtn"
+          @click="openAccountAccess"
+        />
+
+        <p v-if="isUnconfirmed && !unknownTransactionHash" class="transaction-unconfirmed-message" data-testid="transactionUnconfirmedMessage">
+          {{ transactionErrorText }}
+        </p>
+        <template v-if="unknownTransactionHash">
+          <p class="transaction-unconfirmed-message" data-testid="transactionUnknownMessage">
+            {{ $t('assets.transactionStatusUnknownDetails') }}
+          </p>
+          <code class="transaction-hash" data-testid="unknownTransactionHash">
+            <span data-testid="transactionHash">{{ unknownTransactionHash }}</span>
+          </code>
+          <FButton
+            text="common.copyHash"
+            class="copy-hash"
+            iconName="copy"
+            type="secondary"
+            size="small"
+            data-testid="copyUnknownHashBtn"
+            @click="copyUnknownHash"
+          />
+          <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+        </template>
+
         <template v-if="extrinsicType !== 'nft'">
           <div class="descriptions">
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
@@ -20,9 +52,39 @@
               <ExternalLogo :name="secondIconUrl" :width="30" class="asset-icon" />
             </template>
           </div>
-          <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
 
-          <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+          <template v-if="showsAmount">
+            <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
+
+            <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+          </template>
+
+          <FButton
+            v-if="isUnconfirmed && historyRoute"
+            text="assets.history"
+            iconName="arrow-link"
+            iconColor="pink"
+            width="100%"
+            size="small"
+            fontSize="small"
+            type="secondary"
+            data-testid="viewHistoryBtn"
+            :border="false"
+            @click="openHistory"
+          />
+          <template v-if="settledTransactionHash">
+            <code class="transaction-hash" data-testid="settledTransactionHash">{{ settledTransactionHash }}</code>
+            <FButton
+              text="common.copyHash"
+              class="copy-hash"
+              iconName="copy"
+              type="secondary"
+              size="small"
+              data-testid="copySettledHashBtn"
+              @click="copySettledHash"
+            />
+            <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+          </template>
         </template>
 
         <template v-else>
@@ -90,7 +152,7 @@ import { defineComponent } from 'vue';
 import type { RequestStaking } from '@extension-base/services/staking-service/types';
 import type { NftTx } from '@extension-base/services/nft-service/types';
 import type {
-  RequestCheckCrossChain,
+  RequestCheckTransfer,
   RequestTransfer,
   RequestCrossChain,
   RequestSwap,
@@ -105,10 +167,22 @@ import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
-import { isSameString, isSora, setClipboard } from '@/helpers';
+import { isSameString, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { getTransactionFailurePresentation, transactionResponseSucceeded } from '@/helpers/transactionFailure';
+import {
+  getSettledTransactionHash,
+  getTransactionFailurePresentation,
+  getTransactionOutcome,
+  getUnknownTransactionHash,
+  isAccountAccessFailure,
+} from '@/helpers/transactionFailure';
+import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
+
+// Components.AssetHistory and Components.AccountAccessRecovery. The route table is not imported
+// here: it imports screens that embed this popup.
+const ASSET_HISTORY_ROUTE = 'AssetHistory';
+const ACCOUNT_ACCESS_ROUTE = 'AccountAccessRecovery';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
@@ -181,6 +255,34 @@ export default defineComponent({
     isFailed() {
       return this.transactionState === 'failed';
     },
+    // The transfer may already be on the network: it can still go through.
+    isUnconfirmed() {
+      return this.transactionState === 'unconfirmed';
+    },
+    unknownTransactionHash() {
+      return getUnknownTransactionHash(this.transactionResponse);
+    },
+    // A failure with no fee to show would read "-0"; nothing left the wallet worth showing.
+    showsAmount() {
+      return !this.unknownTransactionHash && (this.isSuccess || this.isUnconfirmed || +this.fee > 0);
+    },
+    historyRoute() {
+      const { networkKey } = (this.tx ?? {}) as Partial<RequestCheckTransfer>;
+      const assetId = this.currency?.groupId;
+
+      if (this.extrinsicType !== 'transfer' || !networkKey || !assetId) return null;
+
+      const selectedNetwork = this.networksStore.getNetwork(networkKey)?.name ?? networkKey;
+
+      return { name: ASSET_HISTORY_ROUTE, params: { assetId, selectedNetwork } };
+    },
+    // The account's key waits for a password: nothing was signed, and the next step is to unlock it.
+    showsUnlockAccount() {
+      return this.isFailed && isAccountAccessFailure(this.transactionResponse);
+    },
+    settledTransactionHash() {
+      return this.extrinsicType === 'crossChain' ? getSettledTransactionHash(this.transactionResponse) : null;
+    },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
 
@@ -198,19 +300,26 @@ export default defineComponent({
 
       if (this.isFailed) return 'assets.transactionError';
 
+      if (this.isUnconfirmed) return 'assets.transactionUnconfirmed';
+
       if (this.isTransactionPending) return 'assets.transactionPending';
 
       return '';
     },
     transferAmountString() {
+      const symbol = this.currency?.symbol.toUpperCase();
+
+      // Not known to have left the wallet yet, so no minus sign.
+      if (this.isUnconfirmed) return `${this.$n(+this.amount + +this.fee, 'decimal')} ${symbol}`;
+
       const sumValue = +this.amount + +this.fee;
       const value = this.isSuccess ? sumValue : +this.fee;
 
-      return `-${this.$n(value, 'decimal')} ${this.currency?.symbol.toUpperCase()}`;
+      return `-${this.$n(value, 'decimal')} ${symbol}`;
     },
     transferValueString() {
       const sumValue = +this.value + +this.feeValue;
-      const value = this.isSuccess ? sumValue : +this.feeValue;
+      const value = this.isSuccess || this.isUnconfirmed ? sumValue : +this.feeValue;
 
       return `${this.accountsStore.fiatSymbol}${this.$n(value, 'price')}`;
     },
@@ -221,7 +330,7 @@ export default defineComponent({
       return this.transactionState === 'pending';
     },
     isTransactionFinished() {
-      return this.isSuccess || this.isFailed;
+      return this.isSuccess || this.isFailed || this.isUnconfirmed;
     },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
@@ -260,6 +369,12 @@ export default defineComponent({
     copyHash() {
       setClipboard(this.hash ?? '');
     },
+    copyUnknownHash() {
+      setClipboard(this.unknownTransactionHash ?? '');
+    },
+    copySettledHash() {
+      setClipboard(this.settledTransactionHash ?? '');
+    },
     async onSignMobile() {
       if (this.extrinsicType === 'swap') await makeSwap(this.request as RequestSwap);
       else this.makeExtrinsic();
@@ -290,6 +405,16 @@ export default defineComponent({
           params: this.request as RequestPool,
         });
     },
+    openHistory() {
+      if (this.historyRoute) this.$router.push(this.historyRoute);
+    },
+    openAccountAccess() {
+      const from = (this.tx as { from?: unknown } | undefined)?.from;
+      const address = typeof from === 'string' && from ? from : this.transactionAddress;
+
+      // Leaving the screen closes the popup; its own close would also close the form and navigate.
+      this.$router.push({ name: ACCOUNT_ACCESS_ROUTE, query: { address } });
+    },
     openExplorer() {
       const network = this.networksStore.getNetwork((this.tx as NftTx).network);
       const explorerUrl = network.externalApi?.explorers ? network?.externalApi?.explorers[0].url : '';
@@ -310,26 +435,27 @@ export default defineComponent({
           this.hash = result.hash;
         }
 
-        const txCross = this.tx as RequestCheckCrossChain;
-
         // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
         // аналогично для TON экосистемы
-        if (
-          this.isTon ||
-          this.isStaking ||
-          this.isPool ||
-          this.extrinsicType === 'swap' ||
-          this.extrinsicType === 'nft' ||
-          (this.extrinsicType === 'crossChain' && isSora(txCross.originNet))
-        )
+        if (this.isTon || this.isStaking || this.isPool || this.extrinsicType === 'swap' || this.extrinsicType === 'nft')
           this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);
-      } catch {
-        this.applyTransactionResponse(undefined);
+        // A cross-chain send reports its outcome through the subscription callback, then answers with the same
+        // outcome. The response only matters while nothing has settled the state yet: an early rejection (nothing
+        // was subscribed) arrives only here, and it must not leave the popup pending forever.
+        else if (this.extrinsicType === 'crossChain' && this.transactionState === 'pending')
+          this.applyTransactionResponse(results as BasicTxResponse | undefined);
+      } catch (error) {
+        // A key that waits for its password fails before anything is signed; say so instead of "failed".
+        this.applyTransactionResponse(
+          getAccountAccessErrorLocaleKey(error)
+            ? { status: false, errors: [{ message: (error as Error).message }] }
+            : undefined
+        );
       }
     },
     applyTransactionResponse(response: BasicTxResponse | ResponseNftTransfer | undefined) {
       this.transactionResponse = response ?? null;
-      this.transactionState = transactionResponseSucceeded(response) ? 'success' : 'failed';
+      this.transactionState = getTransactionOutcome(response);
     },
   },
 });
@@ -345,7 +471,12 @@ export default defineComponent({
   padding: 0 25px;
   min-height: 175px;
 
-  .transaction-error-message {
+  .transaction-hash {
+    overflow-wrap: anywhere;
+  }
+
+  .transaction-error-message,
+  .transaction-unconfirmed-message {
     color: $reject-color;
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -353,6 +484,10 @@ export default defineComponent({
     max-width: 280px;
     overflow-wrap: anywhere;
     text-align: center;
+  }
+
+  .transaction-unconfirmed-message {
+    color: $simple-orange-color;
   }
 
   .icon__lock-green {

@@ -1,16 +1,25 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
+import { Address } from '@ton/core';
 import { reconcileSuccessfulDynamicScan } from '@extension-base/services/balance-service/reconcileSuccessfulScan';
-import { DEFAULT_PRICES } from '../prices-service';
-import { type ResponseBalanceRequest } from '../../background/types/types';
+import { TonProviderError, type TonProviderRouter } from '@extension-base/services/ton-provider';
+import { type ResponseBalanceRequest, type TonImportCandidateInfo } from '../../background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
+import type { BasePriceJson } from '@extension-base/background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
-import { isSameString } from '@/helpers';
+import { TON_MAINNET } from '@/consts/networks';
+import { isSameString, isTonMainnet } from '@/helpers';
 import { createAssetKey } from '@/portfolio/assetIdentity';
 
+// How long the import screen waits for an address lookup before it shows the balance as unavailable.
+const ADDRESS_ACTIVITY_TIMEOUT_MS = 6_000;
+
+type TonAddressActivityResult = Pick<TonImportCandidateInfo, 'activity' | 'balance'>;
+
 type TonBalanceResult = {
-  balance: string;
+  /** Undefined when no provider answered and nothing was ever loaded: shown as unavailable, never as zero. */
+  balance?: string;
   state: APIItemState;
 };
 
@@ -31,7 +40,10 @@ type TonJettonBalanceResult = {
 
 type TonJettonScanResult = {
   balances: TonJettonBalanceResult[];
-  successful: boolean;
+  /** The provider answered and listed every jetton the address holds. */
+  complete: boolean;
+  /** The provider answered, but lists only the jettons it indexes (TI). */
+  partial: boolean;
 };
 
 export class TonBalance {
@@ -51,6 +63,10 @@ export class TonBalance {
 
       const tonBalance = await this.fetchUtilityAsset(address, networkKey, precision, tonId);
 
+      const jettonScan = await this.fetchJettonsAsset(address, networkKey);
+      const jettonsBalance = jettonScan.balances;
+      const scanCoverage = jettonScan.partial ? 'limited' : 'complete';
+
       this.state.balanceService.setBalanceItem(
         networkName,
         {
@@ -69,15 +85,12 @@ export class TonBalance {
             : undefined,
           assetMetadataTrust: 'verified',
           assetMetadataSource: 'registry',
-          scanCoverage: 'complete',
+          scanCoverage,
           total: tonBalance.balance,
           transferable: tonBalance.balance,
         },
         address
       );
-
-      const jettonScan = await this.fetchJettonsAsset(address, networkKey);
-      const jettonsBalance = jettonScan.balances;
 
       jettonsBalance.forEach(({
         balance,
@@ -108,7 +121,7 @@ export class TonBalance {
             symbol,
             assetMetadataTrust,
             assetMetadataSource,
-            scanCoverage: 'complete',
+            scanCoverage,
             total: balance,
             transferable: balance,
             walletAddress,
@@ -117,7 +130,8 @@ export class TonBalance {
         );
       });
 
-      if (jettonScan.successful) {
+      // Only a complete list proves a jetton is gone; after a failure or from TI's partial list it keeps its balance.
+      if (jettonScan.complete) {
         reconcileSuccessfulDynamicScan(this.state, {
           address,
           network: networkName,
@@ -127,11 +141,15 @@ export class TonBalance {
       }
 
       return [
-        {
-          balance: tonBalance.balance,
-          network: networkName,
-          assetId: tonId,
-        },
+        ...(tonBalance.balance === undefined
+          ? []
+          : [
+              {
+                balance: tonBalance.balance,
+                network: networkName,
+                assetId: tonId,
+              },
+            ]),
         ...jettonsBalance.map(({ balance, assetId }) => ({
           balance,
           network: networkName,
@@ -143,6 +161,59 @@ export class TonBalance {
     return (await Promise.all(promises)).flat();
   }
 
+  /** What TON mainnet reports for addresses that are not in the wallet yet (the import chooser).
+   * Read-only and best effort: a failed, slow or unavailable lookup is `unknown`, never a guess,
+   * and nothing is written to the balance cache. The answer comes from the same verified provider
+   * as balances (TI once it proves TON mainnet, the registry node until then). */
+  async fetchAddressActivity(addresses: string[]): Promise<Record<string, TonAddressActivityResult>> {
+    const unknown = (): Record<string, TonAddressActivityResult> =>
+      Object.fromEntries(addresses.map((address) => [address, { activity: 'unknown' }]));
+    const network = this.state.networkService.networksGithub.find(({ name }) => isTonMainnet(name));
+
+    if (!network) return unknown();
+
+    // A wallet without a TON account has no TON client yet; one made for this lookup is removed again.
+    const hadApi = !!this.state.getTonApiMap[TON_MAINNET];
+
+    try {
+      if (!hadApi) await this.state.networkService.tonApiHandler.initApi(network);
+
+      const api = this.state.getTonApiMap[TON_MAINNET]?.api;
+
+      if (!api) return unknown();
+
+      const precision = network.assets[0].precision;
+      const lookups = addresses.map(async (address): Promise<[string, TonAddressActivityResult]> => {
+        try {
+          const { balance, hasActivity } = await withTimeout(
+            api.getAccountBalance(Address.parse(address)),
+            ADDRESS_ACTIVITY_TIMEOUT_MS
+          );
+
+          return [
+            address,
+            {
+              activity: hasActivity ? 'active' : 'empty',
+              balance: FPNumber.fromCodecValue(balance.toString(), precision).toString(),
+            },
+          ];
+        } catch (error) {
+          console.warn('[TON][fetchAddressActivity] Lookup failed', error);
+
+          return [address, { activity: 'unknown' }];
+        }
+      });
+
+      return Object.fromEntries(await Promise.all(lookups));
+    } catch (error) {
+      console.warn('[TON][fetchAddressActivity] Lookup failed', error);
+
+      return unknown();
+    } finally {
+      if (!hadApi) this.state.networkService.tonApiHandler.destroyApi(network.name);
+    }
+  }
+
   async fetchUtilityAsset(
     address: string,
     networkName: NetworkName,
@@ -150,14 +221,10 @@ export class TonBalance {
     assetId: string
   ): Promise<TonBalanceResult> {
     try {
-      const api = this.state.getTonApiMap[networkName];
       const walletContract = this.getWalletContract(address);
+      const { balance } = await this.provider(networkName).getAccountBalance(walletContract.address);
 
-      const account = await api.api?.accounts.getAccount(walletContract.address);
-
-      const { balance } = account;
-
-      const balanceFP = FPNumber.fromCodecValue(balance, precision);
+      const balanceFP = FPNumber.fromCodecValue(balance.toString(), precision);
 
       console.info(`[TON] TON ${address}: `, balanceFP.toString());
 
@@ -165,8 +232,9 @@ export class TonBalance {
     } catch (error) {
       console.error('[TON][fetchUtilityAsset] Error', error);
 
+      // The last balance a provider confirmed, marked as failed; without one the balance is unknown, not zero.
       return {
-        balance: this.getCachedBalance(address, networkName, assetId) ?? '0',
+        balance: this.getCachedBalance(address, networkName, assetId),
         state: APIItemState.ERROR,
       };
     }
@@ -174,39 +242,32 @@ export class TonBalance {
 
   async fetchJettonsAsset(address: string, networkName: NetworkName): Promise<TonJettonScanResult> {
     try {
-      const api = this.state.getTonApiMap[networkName];
       const network = this.state.networkService.networksGithub.find(({ name }) =>
         isSameString(name, networkName)
       );
 
       const walletContract = this.getWalletContract(address);
 
-      const response = await api.api?.accounts.getAccountJettonsBalances(walletContract.address, {
-        currencies: [this.state.pricesService.fiatSymbol],
-      });
+      const { holdings, complete } = await this.provider(networkName).getJettonBalances(
+        walletContract.address,
+        this.state.pricesService.fiatSymbol
+      );
 
-      const { balances } = response;
+      const prices: BasePriceJson = { tokenPriceMap: {}, tokenPriceChange: {} };
 
-      const prices = DEFAULT_PRICES;
-
-      const prepareBalances = balances.map<TonJettonBalanceResult>((props) => {
-        const {
-          balance,
-          jetton: { address: masterAddressValue, decimals, image, symbol, name, verification },
-          walletAddress: { address: walletAddress },
-        } = props;
+      const prepareBalances = holdings.map<TonJettonBalanceResult>((holding) => {
+        const { balance, master, decimals, image, symbol, name, verified, wallet: walletAddress } = holding;
 
         const symbolLower = symbol.toLowerCase();
-        const masterAddress = masterAddressValue.toString();
-        const isVerified = String(verification).toLowerCase() === 'whitelist';
+        const masterAddress = master.toString();
 
-        if (isVerified && props.price) {
-          const { price, diff24 } = this.state.pricesService.tonPricingService.tonParseRates(props.price);
-          prices.tokenPriceChange = { ...prices.tokenPriceChange, [masterAddress]: diff24 };
-          prices.tokenPriceMap = { ...prices.tokenPriceMap, [masterAddress]: price };
+        if (verified && holding.price) {
+          const { price, diff24 } = this.state.pricesService.tonPricingService.tonParseRates(holding.price);
+          prices.tokenPriceChange[masterAddress] = diff24;
+          prices.tokenPriceMap[masterAddress] = price;
         }
 
-        const balanceFP = FPNumber.fromCodecValue(balance, decimals);
+        const balanceFP = FPNumber.fromCodecValue(balance.toString(), decimals);
 
         return {
           balance: balanceFP.toString(),
@@ -216,15 +277,15 @@ export class TonBalance {
           image,
           name,
           assetId: masterAddress,
-          priceId: isVerified ? masterAddress : undefined,
-          priceAssetKey: isVerified && network
+          priceId: verified ? masterAddress : undefined,
+          priceAssetKey: verified && network
             ? createAssetKey({
                 ecosystem: String(network.ecosystem),
                 chainId: String(network.chainId || network.name),
                 assetId: masterAddress,
               })
             : undefined,
-          assetMetadataTrust: isVerified ? 'verified' : 'unverified',
+          assetMetadataTrust: verified ? 'verified' : 'unverified',
           assetMetadataSource: 'indexer',
           state: APIItemState.READY,
         };
@@ -232,12 +293,20 @@ export class TonBalance {
 
       this.state.pricesService.setPriceValue(prices);
 
-      return { balances: prepareBalances, successful: true };
+      return { balances: prepareBalances, complete, partial: !complete };
     } catch (error) {
       console.error('[TON][fetchJettonsAsset] Error', error);
 
-      return { balances: this.getCachedJettonBalances(address, networkName), successful: false };
+      return { balances: this.getCachedJettonBalances(address, networkName), complete: false, partial: false };
     }
+  }
+
+  private provider(networkName: NetworkName): TonProviderRouter {
+    const provider = this.state.getTonApiMap[networkName.toLowerCase()]?.api;
+
+    if (!provider) throw new TonProviderError('ton_provider_unavailable', `no TON provider for ${networkName}`);
+
+    return provider;
   }
 
   private getCachedBalance(address: string, networkName: NetworkName, assetId: string): string | undefined {
@@ -313,4 +382,13 @@ export class TonBalance {
       Uint8Array.from(Buffer.from(publicKeyHex, 'hex'))
     );
   }
+}
+
+function withTimeout<T>(request: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('ton_address_lookup_timeout')), timeoutMs);
+  });
+
+  return Promise.race([request, timeout]).finally(() => clearTimeout(timer));
 }

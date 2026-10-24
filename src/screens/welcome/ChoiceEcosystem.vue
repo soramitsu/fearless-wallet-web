@@ -49,6 +49,6 @@ const setEcosystem = (ecosystem: WalletEcosystem) => emit('setEcosystem', ecosys
   margin-top: 8px;
 }
 .ecosystem-option:hover {
-  border-color: $pink-lavender-color;
+  border-color: palette($pink-lavender-color, var(--fw-select-edge));
 }
 </style>

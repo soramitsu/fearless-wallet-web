@@ -164,7 +164,6 @@ const reviewedCall = (
 ): ReviewedRuntimeCall => Object.freeze({ pallet, call, args: Object.freeze([...args]) });
 
 const XCM_LIMITED_ARGS = Object.freeze(['dest', 'beneficiary', 'assets', 'feeAssetItem', 'weightLimit']);
-const XCM_RESERVE_ARGS = Object.freeze(['dest', 'beneficiary', 'assets', 'feeAssetItem']);
 const BRIDGE_BURN_ARGS = Object.freeze(['networkId', 'assetId', 'recipient', 'amount']);
 
 export function getReviewedRouteProvider(providerId: CrossChainRouteProviderId): ReviewedCrossChainRouteProvider {
@@ -191,6 +190,7 @@ export function createReviewedCrossChainRouteId(
 
 export function defineReviewedCrossChainRoute(input: DefinitionInput): Readonly<ReviewedCrossChainRouteDefinition> {
   const provider = getReviewedRouteProvider(input.providerId);
+  if (retiredCrossChainRouteReason(input)) throw new Error('cross_chain_route_retired');
   if (
     input.execution &&
     (input.execution.originChainId !== input.originChainId ||
@@ -291,30 +291,144 @@ const chain = Object.freeze({
   liberland: '6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6',
 });
 
-const soraParachain = Object.freeze({
-  polkadot: {
-    chainId: 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738',
-    paraId: 2025,
-  },
-  kusama: {
-    chainId: '6d8d9f145c2177fa83512492cdd80a71e29f22473f4a8943a6292149ac319fb9',
-    paraId: 2011,
-  },
+type RelayNetwork = ReviewedRelayExecution['relayNetwork'];
+
+const RELAY_CHAIN_IDS: Readonly<Record<RelayNetwork, string>> = Object.freeze({
+  Polkadot: chain.polkadot,
+  Kusama: chain.kusama,
 });
+
+/**
+ * The relay network of each parachain a bundled execution can address. Relay executions encode the destination by
+ * para id alone, and para ids repeat across relays (Asset Hub is 1000 on both, Acala and Karura are both 2000), so a
+ * relay execution is only bundled, and only encoded, when its origin is the relay chain its destination belongs to.
+ */
+const PARACHAIN_RELAY: Readonly<Record<string, RelayNetwork>> = Object.freeze({
+  [chain.polkadotAssetHub]: 'Polkadot',
+  [chain.kusamaAssetHub]: 'Kusama',
+  [chain.acala]: 'Polkadot',
+  [chain.astar]: 'Polkadot',
+  [chain.moonbeam]: 'Polkadot',
+  [chain.parallel]: 'Polkadot',
+  [chain.karura]: 'Kusama',
+  [chain.bifrost]: 'Kusama',
+  [chain.moonriver]: 'Kusama',
+});
+
+export function relayExecutionSharesRelay(
+  execution: Pick<ReviewedRelayExecution, 'relayNetwork' | 'originChainId' | 'destinationChainId'>
+): boolean {
+  return (
+    RELAY_CHAIN_IDS[execution.relayNetwork] === execution.originChainId &&
+    PARACHAIN_RELAY[execution.destinationChainId] === execution.relayNetwork
+  );
+}
+
+/**
+ * Chains that must never be an origin or destination of a reviewed route. Checked on 2026-10-23
+ * against the relay chains' parachain registrars: none of these para ids is registered any more, and
+ * the operators announced the shutdowns (Moonbeam and Moonriver in July 2026, Parallel abandoned).
+ * A route into a halted or unregistered chain can strand funds.
+ */
+export const RETIRED_CROSS_CHAIN_CHAINS: Readonly<Record<string, string>> = Object.freeze({
+  [chain.moonbeam]: 'Moonbeam was shut down in July 2026 and its parachain is no longer registered on Polkadot.',
+  [chain.moonriver]: 'Moonriver was shut down in July 2026 and its parachain is no longer registered on Kusama.',
+  [chain.parallel]: 'Parallel Finance stopped operating and its parachain is no longer registered on Polkadot.',
+});
+
+/**
+ * Since the Asset Hub Migration (Kusama 2025-10-07, Polkadot 2025-11-04) DOT and KSM balances live on
+ * Asset Hub, and parachains move their DOT/KSM reserve from the relay chain to Asset Hub on their own
+ * schedule. Verified on 2026-10-23 with the runtimes' dry-run API: relay ↔ Asset Hub teleports still
+ * execute, while every limitedReserveTransferAssets shape from or to a relay chain is rejected
+ * (Filtered / InvalidAssetUnknownReserve). The SORA parachains also keep their DOT/KSM backing on Asset
+ * Hub now. Relay routes other than the Asset Hub teleport pairs below stay retired until they are
+ * re-qualified against Asset Hub with funded evidence.
+ */
+const relayAssetHubTeleportPairs: ReadonlyMap<string, string> = new Map([
+  [chain.polkadot, chain.polkadotAssetHub],
+  [chain.kusama, chain.kusamaAssetHub],
+]);
+
+const relayChainIds: ReadonlySet<string> = new Set([chain.polkadot, chain.kusama]);
+
+/**
+ * SORA's bridges to the Polkadot and Kusama networks run through the SORA parachains (para 2025 on Polkadot,
+ * para 2011 on Kusama), and both have stopped producing blocks. Read from the relay chains' `paras.heads` on
+ * 2026-10-24: the Polkadot one has been at parachain block 4,850,969 since relay block 29,053,378 (2025-12-13) and
+ * the Kusama one at 6,535,527 since 2025-11-11, while Acala, Astar and Asset Hub advance normally. SORA's own
+ * bridge records agree: no inbound transfer from either network completed after those dates, and every outbound
+ * burn since then toward a relay account (5 DOT, 9 KSM) is still "Committed". A transfer toward or from the SORA
+ * parachains can therefore be burned or reserved without ever being credited.
+ *
+ * SORA to Liberland is retired for a different reason: its last three outbound transfers (2081 LLD, 1 LLD and
+ * 4 LLD, May and June 2026) are still pending after 502 earlier ones completed, so the SORA-to-Liberland
+ * direction is not being delivered. Liberland to SORA still completes (the latest on 2026-10-21) and stays.
+ *
+ * Every route that touches SORA other than Liberland to SORA is therefore retired until the operators confirm
+ * delivery and funded evidence exists.
+ */
+const SORA_PARACHAIN_HALTED =
+  'The SORA parachains for Polkadot and Kusama have stopped producing blocks, so SORA bridge transfers to or from those networks cannot be delivered.';
+const SORA_TO_LIBERLAND_STALLED =
+  'SORA to Liberland transfers are not being delivered: the latest ones are still pending after several months.';
+
+export function retiredCrossChainRouteReason(
+  input: Pick<DefinitionInput, 'originChainId' | 'destinationChainId' | 'symbol' | 'execution'>
+): string | undefined {
+  const retiredChain =
+    RETIRED_CROSS_CHAIN_CHAINS[input.originChainId] ?? RETIRED_CROSS_CHAIN_CHAINS[input.destinationChainId];
+  if (retiredChain) return retiredChain;
+
+  if (input.originChainId === chain.sora && input.destinationChainId === chain.liberland) {
+    return SORA_TO_LIBERLAND_STALLED;
+  }
+  const touchesSora = input.originChainId === chain.sora || input.destinationChainId === chain.sora;
+  const isLiberlandToSora = input.originChainId === chain.liberland && input.destinationChainId === chain.sora;
+  if (touchesSora && !isLiberlandToSora) return SORA_PARACHAIN_HALTED;
+
+  const movesRelayAsset = input.symbol === 'DOT' || input.symbol === 'KSM';
+  const touchesRelay = relayChainIds.has(input.originChainId) || relayChainIds.has(input.destinationChainId);
+  const isAssetHubTeleport =
+    input.execution?.kind === 'relay-native-xcm-v3' &&
+    input.execution.call === 'limitedTeleportAssets' &&
+    relayAssetHubTeleportPairs.get(input.originChainId) === input.destinationChainId;
+
+  if (movesRelayAsset && touchesRelay && !isAssetHubTeleport) {
+    return 'DOT and KSM moved to Asset Hub in the Asset Hub Migration; this relay-chain route is retired until it is re-qualified.';
+  }
+
+  return undefined;
+}
 
 const xcmAsset = Object.freeze({
   dot: '99e66d4f-00cd-4d73-bd1b-3adadcacffb2',
   ksm: '0ceffe96-8090-404e-815c-91118ee5dd65',
 });
 
+// Relay-chain origins may only teleport to their own Asset Hub; see retiredCrossChainRouteReason.
 const relayDestination = Object.freeze({
   [chain.polkadotAssetHub]: { paraId: 1000, native: true, receiverKind: 'AccountId32' as const },
-  [chain.moonbeam]: { paraId: 2004, native: false, receiverKind: 'AccountKey20' as const },
-  [chain.acala]: { paraId: 2000, native: false, receiverKind: 'AccountId32' as const },
-  [chain.parallel]: { paraId: 2012, native: false, receiverKind: 'AccountId32' as const },
   [chain.kusamaAssetHub]: { paraId: 1000, native: true, receiverKind: 'AccountId32' as const },
-  [chain.moonriver]: { paraId: 2023, native: false, receiverKind: 'AccountKey20' as const },
-  [chain.karura]: { paraId: 2000, native: false, receiverKind: 'AccountId32' as const },
+});
+
+/**
+ * Reviewed upper estimates of the fee Asset Hub deducts from a relay teleport (measured 2026-10-23 with the
+ * destination dry-run API: 0.00082 DOT and 0.0000554 KSM, rounded up).
+ */
+const relayTeleportDestinationFee: Readonly<Record<'Polkadot' | 'Kusama', string>> = Object.freeze({
+  Polkadot: '0.001',
+  Kusama: '0.0001',
+});
+
+/**
+ * Reviewed floors for a relay teleport to a new account: Asset Hub's existential deposit (0.01 DOT, 0.0000033 KSM)
+ * plus its fee, with a margin. Dry runs on 2026-10-23 against the live runtimes: 0.0005 DOT, 0.005 DOT and
+ * 0.0108 DOT are trapped on arrival and 0.0112 DOT completes; 0.00005 KSM is trapped and 0.0001 KSM completes.
+ */
+const relayTeleportMinimum: Readonly<Record<'DOT' | 'KSM', string>> = Object.freeze({
+  DOT: '0.02',
+  KSM: '0.0002',
 });
 
 const reviewedRelayExecution = (
@@ -326,7 +440,7 @@ const reviewedRelayExecution = (
   const destination = relayDestination[destinationChainId as keyof typeof relayDestination];
   const relayNetwork =
     originChainId === chain.polkadot ? 'Polkadot' : originChainId === chain.kusama ? 'Kusama' : undefined;
-  if (!destination || !relayNetwork) return undefined;
+  if (!destination || !relayNetwork || PARACHAIN_RELAY[destinationChainId] !== relayNetwork) return undefined;
 
   return {
     kind: 'relay-native-xcm-v3',
@@ -343,7 +457,10 @@ const reviewedRelayExecution = (
         XCM_LIMITED_ARGS
       ),
     ],
-    destinationFee: '0',
+    // Asset Hub charges its execution fee out of the teleported amount, so the recipient receives less
+    // than was sent, and an amount that arrives below Asset Hub's existential deposit is trapped.
+    destinationFee: relayTeleportDestinationFee[relayNetwork],
+    destinationMinimum: { kind: 'balances-existential-deposit', precision: assetPrecision },
     relayNetwork,
     destinationParaId: destination.paraId,
     receiverKind: destination.receiverKind,
@@ -376,7 +493,7 @@ const walletXcmRoute = (
     destinationXcmAssetId: routeXcmAssetId,
     symbol,
     precision,
-    minimum: null,
+    minimum: relayTeleportMinimum[symbol],
     execution: reviewedRelayExecution(originChainId, destinationChainId, routeXcmAssetId, precision),
   });
 };
@@ -387,100 +504,6 @@ const bridgeRoute = (input: Omit<DefinitionInput, 'originEcosystem' | 'destinati
     originEcosystem: 'substrate',
     destinationEcosystem: 'substrate',
   });
-
-const externalToSoraExecution = ({
-  originChainId,
-  assetXcmId,
-  assetPrecision,
-  source,
-  relayNetwork,
-  soraParachainId,
-  soraParachainChainId,
-  soraAssetId,
-  bridgeParachainId,
-  currencyId,
-}: {
-  originChainId: string;
-  assetXcmId: string;
-  assetPrecision: number;
-  source: ReviewedExternalToSoraExecution['source'];
-  relayNetwork: ReviewedExternalToSoraExecution['relayNetwork'];
-  soraParachainId: number;
-  soraParachainChainId: string;
-  soraAssetId: string;
-  bridgeParachainId?: number;
-  currencyId?: Readonly<{ Token: 'ACA' }>;
-}): ReviewedExternalToSoraExecution => ({
-  kind: 'external-to-sora-xcm-v3',
-  originChainId,
-  destinationChainId: chain.sora,
-  assetXcmId,
-  assetPrecision,
-  source,
-  relayNetwork,
-  soraParachainId,
-  soraParachainChainId,
-  soraAssetId,
-  soraAssetKind: 'Sidechain',
-  bridgeNetwork: relayNetwork,
-  bridgeParachainId,
-  currencyId,
-  callCandidates:
-    source === 'relay-native'
-      ? [reviewedCall('xcmPallet', 'reserveTransferAssets', XCM_RESERVE_ARGS)]
-      : source === 'acala-native'
-        ? [reviewedCall('xTokens', 'transfer', ['currencyId', 'amount', 'dest', 'destWeightLimit'])]
-        : [reviewedCall('polkadotXcm', 'reserveTransferAssets', XCM_RESERVE_ARGS)],
-  destinationFee: '0',
-  destinationMinimum: {
-    kind: 'sora-parachain-asset-minimum',
-    chainId: soraParachainChainId,
-    assetId: soraAssetId,
-    precision: assetPrecision,
-  },
-});
-
-const soraBridgeExecution = ({
-  destinationChainId,
-  assetXcmId,
-  bridgeNetwork,
-  recipientKind,
-  destinationParaId,
-  soraAssetId,
-  soraAssetKind,
-  sidechainPrecision,
-  externalAsset,
-  destinationFee,
-  destinationMinimum,
-}: {
-  destinationChainId: string;
-  assetXcmId: string;
-  bridgeNetwork: ReviewedSoraBridgeExecution['bridgeNetwork'];
-  recipientKind: ReviewedSoraBridgeExecution['recipientKind'];
-  destinationParaId?: number;
-  soraAssetId: string;
-  soraAssetKind: ReviewedSoraBridgeExecution['soraAssetKind'];
-  sidechainPrecision: number;
-  externalAsset: ReviewedSoraBridgeExecution['externalAsset'];
-  destinationFee: string;
-  destinationMinimum?: ReviewedDestinationMinimum;
-}): ReviewedSoraBridgeExecution => ({
-  kind: 'sora-bridge-proxy-burn-v3',
-  originChainId: chain.sora,
-  destinationChainId,
-  assetXcmId,
-  assetPrecision: 18,
-  bridgeNetwork,
-  recipientKind,
-  destinationParaId,
-  soraAssetId,
-  soraAssetKind,
-  sidechainPrecision,
-  externalAsset,
-  callCandidates: [reviewedCall('bridgeProxy', 'burn', BRIDGE_BURN_ARGS)],
-  destinationFee,
-  destinationMinimum,
-});
 
 const liberlandToSoraExecution = ({
   assetXcmId,
@@ -508,400 +531,71 @@ const liberlandToSoraExecution = ({
   destinationFee: '0',
 });
 
-/**
- * Transaction authority shipped with the extension. Remote network JSON can make one of these
- * routes unavailable, but it cannot add a route, change its provider, substitute an AssetKey, or
- * lower its reviewed minimum.
- */
-export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCrossChainRouteDefinition>[] =
-  Object.freeze([
-    walletXcmRoute(
-      chain.polkadot,
-      chain.polkadotAssetHub,
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      'DOT',
-      10
-    ),
-    walletXcmRoute(
-      chain.polkadot,
-      chain.moonbeam,
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      'DOT',
-      10,
-      'substrate',
-      'evm'
-    ),
-    walletXcmRoute(
-      chain.polkadot,
-      chain.acala,
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      'DOT',
-      10
-    ),
-    walletXcmRoute(
-      chain.polkadot,
-      chain.parallel,
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      'DOT',
-      10
-    ),
-    walletXcmRoute(
-      chain.kusama,
-      chain.kusamaAssetHub,
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      'KSM',
-      12
-    ),
-    walletXcmRoute(
-      chain.kusama,
-      chain.moonriver,
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      'KSM',
-      12,
-      'substrate',
-      'evm'
-    ),
-    walletXcmRoute(
-      chain.kusama,
-      chain.karura,
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      'KSM',
-      12
-    ),
-    walletXcmRoute(
-      chain.polkadotAssetHub,
-      chain.polkadot,
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      '887a17c7-1370-4de0-97dd-5422e294fa75',
-      'DOT',
-      10
-    ),
-    walletXcmRoute(
-      chain.acala,
-      chain.polkadot,
-      'ed98bee1-34ce-4aa2-896e-508380dea1c2',
-      'ed98bee1-34ce-4aa2-896e-508380dea1c2',
-      'DOT',
-      10
-    ),
-    walletXcmRoute(chain.parallel, chain.polkadot, '769ffb89-fd2f-4add-94a1-d2f9f716c143', '101', 'DOT', 10),
-    walletXcmRoute(
-      chain.moonbeam,
-      chain.polkadot,
-      '7e4e064e-2b23-4eb5-96db-e6491c4031e5',
-      '42259045809535163221576417993425387648',
-      'DOT',
-      10,
-      'evm'
-    ),
-    walletXcmRoute(
-      chain.kusamaAssetHub,
-      chain.kusama,
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      'KSM',
-      12
-    ),
-    walletXcmRoute(
-      chain.karura,
-      chain.kusama,
-      '223b0282-b5c9-48ed-87e3-5e9ef6714ac8',
-      '223b0282-b5c9-48ed-87e3-5e9ef6714ac8',
-      'KSM',
-      12
-    ),
-    walletXcmRoute(
-      chain.moonriver,
-      chain.kusama,
-      '980af72c-d1b8-46c7-9793-fa87912652ec',
-      '42259045809535163221576417993425387648',
-      'KSM',
-      12,
-      'evm'
-    ),
-    walletXcmRoute(
-      chain.bifrost,
-      chain.kusama,
-      '922c191c-4cb8-407e-8b81-2cfc52170c3b',
-      '922c191c-4cb8-407e-8b81-2cfc52170c3b',
-      'KSM',
-      12
-    ),
+type RouteDefinition = () => Readonly<ReviewedCrossChainRouteDefinition>;
 
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.polkadot,
-      destinationChainId: chain.sora,
-      originAssetId: '887a17c7-1370-4de0-97dd-5422e294fa75',
-      assetKeyAssetId: '887a17c7-1370-4de0-97dd-5422e294fa75',
-      originXcmAssetId: xcmAsset.dot,
-      destinationXcmAssetId: xcmAsset.dot,
-      symbol: 'DOT',
-      precision: 10,
-      minimum: '1.1',
-      execution: externalToSoraExecution({
-        originChainId: chain.polkadot,
-        assetXcmId: xcmAsset.dot,
-        assetPrecision: 10,
-        source: 'relay-native',
-        relayNetwork: 'Polkadot',
-        soraParachainId: soraParachain.polkadot.paraId,
-        soraParachainChainId: soraParachain.polkadot.chainId,
-        soraAssetId: '0x0003b1dbee890acfb1b3bc12d1bb3b4295f52755423f84d1751b2545cebf000b',
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.kusama,
-      destinationChainId: chain.sora,
-      originAssetId: '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      assetKeyAssetId: '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
-      originXcmAssetId: xcmAsset.ksm,
-      destinationXcmAssetId: xcmAsset.ksm,
-      symbol: 'KSM',
-      precision: 12,
-      minimum: '0.05',
-      execution: externalToSoraExecution({
-        originChainId: chain.kusama,
-        assetXcmId: xcmAsset.ksm,
-        assetPrecision: 12,
-        source: 'relay-native',
-        relayNetwork: 'Kusama',
-        soraParachainId: soraParachain.kusama.paraId,
-        soraParachainChainId: soraParachain.kusama.chainId,
-        soraAssetId: '0x00117b0fa73c4672e03a7d9d774e3b3f91beb893e93d9a8d0430295f44225db8',
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.acala,
-      destinationChainId: chain.sora,
-      originAssetId: 'c801d6c1-3edf-41a9-9aea-da705eab249b',
-      assetKeyAssetId: 'c801d6c1-3edf-41a9-9aea-da705eab249b',
-      originXcmAssetId: '7528bb5b-2aa9-4a70-a4ed-3476aec0f87d',
-      destinationXcmAssetId: '7528bb5b-2aa9-4a70-a4ed-3476aec0f87d',
-      symbol: 'ACA',
-      precision: 12,
-      minimum: '56',
-      execution: externalToSoraExecution({
-        originChainId: chain.acala,
-        assetXcmId: '7528bb5b-2aa9-4a70-a4ed-3476aec0f87d',
-        assetPrecision: 12,
-        source: 'acala-native',
-        relayNetwork: 'Polkadot',
-        soraParachainId: soraParachain.polkadot.paraId,
-        soraParachainChainId: soraParachain.polkadot.chainId,
-        soraAssetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
-        bridgeParachainId: 2000,
-        currencyId: { Token: 'ACA' },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.astar,
-      destinationChainId: chain.sora,
-      originAssetId: '5ab1e8d-81ed-4130-9d29-55b549cc6bab',
-      assetKeyAssetId: '5ab1e8d-81ed-4130-9d29-55b549cc6bab',
-      originXcmAssetId: '5ab1e8d-81ed-4130-9d29-55b549cc6bab',
-      destinationXcmAssetId: '5ab1e8d-81ed-4130-9d29-55b549cc6bab',
-      symbol: 'ASTR',
-      precision: 18,
-      minimum: '73',
-      execution: externalToSoraExecution({
-        originChainId: chain.astar,
-        assetXcmId: '5ab1e8d-81ed-4130-9d29-55b549cc6bab',
-        assetPrecision: 18,
-        source: 'astar-native',
-        relayNetwork: 'Polkadot',
-        soraParachainId: soraParachain.polkadot.paraId,
-        soraParachainChainId: soraParachain.polkadot.chainId,
-        soraAssetId: '0x009dd037fcb32f4fe17c513abd4641a2ece844d106e30788124f0c0acc6e748e',
-        bridgeParachainId: 2006,
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.kusama,
-      originAssetId: '5416b261-a759-4ba6-bc83-ea79a83c5101',
-      assetKeyAssetId: '0x00117b0fa73c4672e03a7d9d774e3b3f91beb893e93d9a8d0430295f44225db8',
-      originXcmAssetId: '5416b261-a759-4ba6-bc83-ea79a83c5101',
-      destinationXcmAssetId: '5416b261-a759-4ba6-bc83-ea79a83c5101',
-      symbol: 'KSM',
-      precision: 18,
-      minimum: null,
-      execution: soraBridgeExecution({
-        destinationChainId: chain.kusama,
-        assetXcmId: '5416b261-a759-4ba6-bc83-ea79a83c5101',
-        bridgeNetwork: 'Kusama',
-        recipientKind: 'relay',
-        soraAssetId: '0x00117b0fa73c4672e03a7d9d774e3b3f91beb893e93d9a8d0430295f44225db8',
-        soraAssetKind: 'Sidechain',
-        sidechainPrecision: 12,
-        externalAsset: null,
-        destinationFee: '0.0000900058',
-        destinationMinimum: { kind: 'balances-existential-deposit', precision: 12 },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.polkadot,
-      originAssetId: 'cd092a5a-4eb6-4318-9f11-4bf8454d67a2',
-      assetKeyAssetId: '0x0003b1dbee890acfb1b3bc12d1bb3b4295f52755423f84d1751b2545cebf000b',
-      originXcmAssetId: 'cd092a5a-4eb6-4318-9f11-4bf8454d67a2',
-      destinationXcmAssetId: xcmAsset.dot,
-      symbol: 'DOT',
-      precision: 18,
-      minimum: '1.1',
-      execution: soraBridgeExecution({
-        destinationChainId: chain.polkadot,
-        assetXcmId: 'cd092a5a-4eb6-4318-9f11-4bf8454d67a2',
-        bridgeNetwork: 'Polkadot',
-        recipientKind: 'relay',
-        soraAssetId: '0x0003b1dbee890acfb1b3bc12d1bb3b4295f52755423f84d1751b2545cebf000b',
-        soraAssetKind: 'Sidechain',
-        sidechainPrecision: 10,
-        externalAsset: null,
-        destinationFee: '0.0364421524',
-        destinationMinimum: { kind: 'balances-existential-deposit', precision: 10 },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.acala,
-      originAssetId: 'fb88fa55-b8c8-4ff1-afa8-f72a86a238a4',
-      assetKeyAssetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
-      originXcmAssetId: 'fb88fa55-b8c8-4ff1-afa8-f72a86a238a4',
-      destinationXcmAssetId: 'fb88fa55-b8c8-4ff1-afa8-f72a86a238a4',
-      symbol: 'ACA',
-      precision: 18,
-      minimum: '1.1',
-      execution: soraBridgeExecution({
-        destinationChainId: chain.acala,
-        assetXcmId: 'fb88fa55-b8c8-4ff1-afa8-f72a86a238a4',
-        bridgeNetwork: 'Polkadot',
-        recipientKind: 'parachain',
-        destinationParaId: 2000,
-        soraAssetId: '0x001ddbe1a880031da72f7ea421260bec635fa7d1aa72593d5412795408b6b2ba',
-        soraAssetKind: 'Sidechain',
-        sidechainPrecision: 12,
-        externalAsset: null,
-        destinationFee: '0.0064296',
-        destinationMinimum: { kind: 'acala-token-minimum', token: 'ACA', precision: 12 },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'sora-substrate-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.astar,
-      originAssetId: 'acc32ee0-8fdc-4743-91e1-f70cc4f3069b',
-      assetKeyAssetId: '0x009dd037fcb32f4fe17c513abd4641a2ece844d106e30788124f0c0acc6e748e',
-      originXcmAssetId: 'acc32ee0-8fdc-4743-91e1-f70cc4f3069b',
-      destinationXcmAssetId: 'acc32ee0-8fdc-4743-91e1-f70cc4f3069b',
-      symbol: 'ASTR',
-      precision: 18,
-      minimum: null,
-      execution: soraBridgeExecution({
-        destinationChainId: chain.astar,
-        assetXcmId: 'acc32ee0-8fdc-4743-91e1-f70cc4f3069b',
-        bridgeNetwork: 'Polkadot',
-        recipientKind: 'parachain',
-        destinationParaId: 2006,
-        soraAssetId: '0x009dd037fcb32f4fe17c513abd4641a2ece844d106e30788124f0c0acc6e748e',
-        soraAssetKind: 'Sidechain',
-        sidechainPrecision: 18,
-        externalAsset: null,
-        destinationFee: '0.150481591364315913',
-        destinationMinimum: { kind: 'balances-existential-deposit', precision: 18 },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'liberland-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.liberland,
-      originAssetId: '1c3b4fcb-5a5f-4319-9dce-d178006eb9bf',
-      assetKeyAssetId: '0x00513be65493a7fc3e2128d4230061a530acf40478a4affa20bbba27a310673e',
-      originXcmAssetId: 'a6b83d39-a488-4b34-8352-280705a792ea',
-      destinationXcmAssetId: 'a6b83d39-a488-4b34-8352-280705a792ea',
-      symbol: 'LLD',
-      precision: 18,
-      minimum: '1.1',
-      execution: soraBridgeExecution({
-        destinationChainId: chain.liberland,
-        assetXcmId: 'a6b83d39-a488-4b34-8352-280705a792ea',
-        bridgeNetwork: 'Liberland',
-        recipientKind: 'liberland',
-        soraAssetId: '0x00513be65493a7fc3e2128d4230061a530acf40478a4affa20bbba27a310673e',
-        soraAssetKind: 'Sidechain',
-        sidechainPrecision: 12,
-        externalAsset: 'LLD',
-        destinationFee: '0',
-        destinationMinimum: { kind: 'balances-existential-deposit', precision: 12 },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'liberland-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.liberland,
-      originAssetId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-      assetKeyAssetId: '0x0200000000000000000000000000000000000000000000000000000000000000',
-      originXcmAssetId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-      destinationXcmAssetId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-      symbol: 'XOR',
-      precision: 18,
-      minimum: null,
-      execution: soraBridgeExecution({
-        destinationChainId: chain.liberland,
-        assetXcmId: 'b774c386-5cce-454a-a845-1ec0381538ec',
-        bridgeNetwork: 'Liberland',
-        recipientKind: 'liberland',
-        soraAssetId: '0x0200000000000000000000000000000000000000000000000000000000000000',
-        soraAssetKind: 'Thischain',
-        sidechainPrecision: 18,
-        externalAsset: 774441749,
-        destinationFee: '0',
-        destinationMinimum: { kind: 'assets-min-balance', assetId: 774441749, precision: 18 },
-      }),
-    }),
-    bridgeRoute({
-      providerId: 'liberland-bridge',
-      originChainId: chain.sora,
-      destinationChainId: chain.liberland,
-      originAssetId: '0ef3afdc-cdd3-47cc-bd52-817c54ae65b5',
-      assetKeyAssetId: '0x00073edd278e1bd6a7f9d0b27d4f3e93b73c8f0832b58a4df13c69611a99f156',
-      originXcmAssetId: '0ef3afdc-cdd3-47cc-bd52-817c54ae65b5',
-      destinationXcmAssetId: '0ef3afdc-cdd3-47cc-bd52-817c54ae65b5',
-      symbol: 'LLM',
-      precision: 18,
-      minimum: null,
-      execution: soraBridgeExecution({
-        destinationChainId: chain.liberland,
-        assetXcmId: '0ef3afdc-cdd3-47cc-bd52-817c54ae65b5',
-        bridgeNetwork: 'Liberland',
-        recipientKind: 'liberland',
-        soraAssetId: '0x00073edd278e1bd6a7f9d0b27d4f3e93b73c8f0832b58a4df13c69611a99f156',
-        soraAssetKind: 'Sidechain',
-        sidechainPrecision: 12,
-        externalAsset: 1,
-        destinationFee: '0',
-        destinationMinimum: { kind: 'assets-min-balance', assetId: 1, precision: 12 },
-      }),
-    }),
+/**
+ * Builds the bundled route table without letting one bad definition take the background down at import: a definition
+ * that throws is left out, every route sharing a duplicated id is left out, and each problem is reported. The bundle
+ * test requires the list of problems to be empty, so a bad definition fails the build instead.
+ */
+export function buildBundledReviewedRoutes(definitions: readonly RouteDefinition[]): {
+  routes: readonly Readonly<ReviewedCrossChainRouteDefinition>[];
+  errors: readonly string[];
+} {
+  const errors: string[] = [];
+  const routes: Readonly<ReviewedCrossChainRouteDefinition>[] = [];
+
+  definitions.forEach((define, index) => {
+    try {
+      routes.push(define());
+    } catch (error) {
+      errors.push(`route definition ${index}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+  const counts = new Map<string, number>();
+  routes.forEach(({ id }) => counts.set(id, (counts.get(id) ?? 0) + 1));
+  counts.forEach((count, id) => {
+    if (count > 1) errors.push(`route ${id}: duplicate id`);
+  });
+
+  if (errors.length) console.error('Bundled cross-chain routes left out', errors);
+
+  return {
+    routes: Object.freeze(routes.filter(({ id }) => counts.get(id) === 1)),
+    errors: Object.freeze(errors),
+  };
+}
+
+const bundledRoutes = buildBundledReviewedRoutes([
+  () =>
+    walletXcmRoute(
+      chain.polkadot,
+      chain.polkadotAssetHub,
+      '887a17c7-1370-4de0-97dd-5422e294fa75',
+      '887a17c7-1370-4de0-97dd-5422e294fa75',
+      'DOT',
+      10
+    ),
+  () =>
+    walletXcmRoute(
+      chain.kusama,
+      chain.kusamaAssetHub,
+      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
+      '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b',
+      'KSM',
+      12
+    ),
+  () =>
     bridgeRoute({
       providerId: 'liberland-bridge',
       originChainId: chain.liberland,
       destinationChainId: chain.sora,
       originAssetId: 'a6b83d39-a488-4b34-8352-280705a792ea',
       assetKeyAssetId: 'a6b83d39-a488-4b34-8352-280705a792ea',
+      // The registry's XCM id for LLD is one character short of a UUID. It is copied as is on purpose: the catalog
+      // match needs the registry's exact id, so if the registry corrects it this route stops matching and fails
+      // closed until the bundle follows.
       originXcmAssetId: 'a6b83d39-a488-4b34-8352-280705a792e',
       destinationXcmAssetId: 'a6b83d39-a488-4b34-8352-280705a792e',
       symbol: 'LLD',
@@ -915,6 +609,7 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
         soraAssetKind: 'Sidechain',
       }),
     }),
+  () =>
     bridgeRoute({
       providerId: 'liberland-bridge',
       originChainId: chain.liberland,
@@ -934,6 +629,7 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
         soraAssetKind: 'Sidechain',
       }),
     }),
+  () =>
     bridgeRoute({
       providerId: 'liberland-bridge',
       originChainId: chain.liberland,
@@ -953,13 +649,18 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
         soraAssetKind: 'Thischain',
       }),
     }),
-  ]);
+]);
 
-const routeIds = new Set(BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.map(({ id }) => id));
+/**
+ * Transaction authority shipped with the extension. Remote network JSON can make one of these
+ * routes unavailable, but it cannot add a route, change its provider, substitute an AssetKey, or
+ * lower its reviewed minimum.
+ */
+export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCrossChainRouteDefinition>[] =
+  bundledRoutes.routes;
 
-if (routeIds.size !== BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.length) {
-  throw new Error('Bundled reviewed cross-chain route ids must be unique.');
-}
+/** Problems found while building the bundled routes; a correct bundle has none. */
+export const BUNDLED_REVIEWED_ROUTE_ERRORS: readonly string[] = bundledRoutes.errors;
 
 export function findBundledReviewedCrossChainRoute(
   routeId: string,

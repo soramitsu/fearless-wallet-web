@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 VERIFIER="$ROOT_DIR/scripts/verify-iroha-js-candidate.sh"
 BASE_ARCHIVE_VERIFIER="$ROOT_DIR/scripts/verify-iroha-js-base-source-archive.mjs"
+REPACK_VERIFIER="$ROOT_DIR/scripts/verify-iroha-js-candidate-repack.mjs"
 CANONICAL_BUNDLE="$ROOT_DIR/artifacts/iroha-js-candidate/b423c0f8bcd317fd945d6f66ce3fa679401dba7f"
 BASE_ARCHIVE_NAME="b423c0f8-iroha-js-candidate-replay-base.tar.gz"
 BASE_INVENTORY_NAME="b423c0f8-iroha-js-candidate-replay-base.inventory.tsv"
@@ -223,6 +224,7 @@ NODE
 }
 
 expect_success "canonical historical evidence and current-policy rejection verification" bash "$VERIFIER"
+expect_success "gzip portability rejects every TAR mutation" node "$ROOT_DIR/scripts/test-iroha-js-candidate-repack.mjs"
 expect_success "canonical historical source replay and exact repack" bash "$VERIFIER" --replay-source
 
 fixture="$(fresh_fixture missing-base-archive)"
@@ -398,12 +400,17 @@ expect_failure "NODE_PATH injection" "unsafe runtime environment variable is set
 fake_bin="$TMP_DIR/fake-bin"
 path_marker="$TMP_DIR/path-hijack-executed"
 mkdir -p "$fake_bin"
-for tool in node npm git tar shasum; do
+for tool in node npm git tar shasum python3; do
   printf '#!/bin/sh\nprintf invoked > "$IROHA_PATH_MARKER"\nexit 99\n' > "$fake_bin/$tool"
   chmod +x "$fake_bin/$tool"
 done
-expect_success "caller PATH hijack is ignored" env IROHA_PATH_MARKER="$path_marker" \
-  PATH="$fake_bin:$PATH" bash "$VERIFIER"
+python_modules="$TMP_DIR/fake-python-modules"
+mkdir -p "$python_modules"
+printf 'raise RuntimeError("ambient Python module injection executed")\n' > "$python_modules/gzip.py"
+expect_success "caller PATH hijack is ignored during exact repack with isolated Python" \
+  env IROHA_PATH_MARKER="$path_marker" PATH="$fake_bin:$PATH" \
+  PYTHONPATH="$python_modules" PYTHONHOME="$TMP_DIR/nonexistent-python-home" \
+  bash "$VERIFIER" --replay-source
 [[ ! -e "$path_marker" ]] || fail "caller PATH replacement executed"
 passed=$((passed + 1))
 
@@ -416,7 +423,7 @@ expect_failure "legacy live source argument is rejected" "unknown argument: --so
   bash "$VERIFIER" --replay-source --source-repo /tmp/should-never-be-read
 
 fixture="$(fresh_fixture repack-negative)"
-expect_failure "corrupted generated sidecar changes exact offline repack" "exact replay tar digest mismatch" \
+expect_failure "corrupted generated sidecar changes exact offline repack" "Exact replay TAR" \
   bash "$VERIFIER" --bundle-dir "$fixture" --replay-source --adversarial-corrupt-repack-sidecar
 
 expect_success "verifier contains no live checkout or fetch dependency" bash -c \
@@ -424,7 +431,7 @@ expect_success "verifier contains no live checkout or fetch dependency" bash -c 
 
 portable="$TMP_DIR/portable-replay-repository"
 mkdir -p "$portable/scripts" "$portable/artifacts/iroha-js-candidate" "$portable/home"
-cp "$VERIFIER" "$BASE_ARCHIVE_VERIFIER" "$ROOT_DIR/scripts/check-iroha-js-sdk-artifact.sh" "$portable/scripts/"
+cp "$VERIFIER" "$BASE_ARCHIVE_VERIFIER" "$REPACK_VERIFIER" "$ROOT_DIR/scripts/check-iroha-js-sdk-artifact.sh" "$portable/scripts/"
 cp -R "$CANONICAL_BUNDLE" "$portable/artifacts/iroha-js-candidate/"
 git -C "$portable" init --quiet
 git -C "$portable" add -f scripts artifacts
@@ -432,7 +439,7 @@ expect_success "offline replay is portable outside both working repositories" \
   env HOME="$portable/home" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
   bash -c 'cd "$1" && bash scripts/verify-iroha-js-candidate.sh --replay-source' _ "$portable"
 
-expected_passed=40
+expected_passed=41
 
 [[ "$passed" -eq "$expected_passed" ]] ||
   fail "internal check inventory changed: expected $expected_passed, found $passed"

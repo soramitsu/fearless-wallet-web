@@ -1,22 +1,17 @@
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
-import { storage } from '@extension-base/stores/Storage';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
-import {
-  EIP155_SIGNING_METHODS,
-  POLKADOT_SIGNING_METHODS,
-  type ResultApproveWalletConnectSession,
-  type WalletConnectSigningMethod,
-} from '@extension-base/services/wallet-connect-service/types';
+import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import {
-  ALL_WALLET_CONNECT_EVENT,
   DEFAULT_WALLET_CONNECT_OPTIONS,
-  WALLET_CONNECT_EIP155_NAMESPACE,
-  WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
+import { isSameAddress } from '@extension-base/utils';
+import { sessionAuthority } from './sessionAuthority';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';
@@ -25,16 +20,49 @@ import { Eip155RequestHandler } from '@/extension/background/extension-base/src/
 import { isSameString } from '@/helpers';
 
 const namespaceAccounts = (namespace: SessionTypes.Namespace | unknown[]): string[] =>
-  Array.isArray(namespace) ? [] : namespace.accounts ?? [];
+  Array.isArray(namespace) ? [] : (namespace.accounts ?? []);
 
 export class WalletConnectService {
   private client?: WalletConnect;
+  private initialization?: Promise<void>;
+  private readonly sessionRevisions = new Map<string, number>();
+  private readonly retiredTopics = new Set<string>();
+  private readonly expiredRequestIds = new Set<number>();
+
+  isRequestExpired(id: number): boolean {
+    return this.expiredRequestIds.has(id);
+  }
+
+  private get authority() { return sessionAuthority(this.state); }
+
+  getSessionRevision(topic: string): number {
+    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision;
+  }
+
+  private sessionChanged(topic: string, retired = false): void {
+    if (retired) this.retiredTopics.add(topic);
+    this.sessionRevisions.set(topic, (this.sessionRevisions.get(topic) ?? 0) + 1);
+    this.updateSessions();
+  }
+
+  invalidateSession(topic: string): void {
+    this.sessionChanged(topic, true);
+  }
+
+  private async retireSession(topic: string): Promise<void> {
+    this.invalidateSession(topic);
+    this.state?.walletConnectDappService?.invalidateSession(topic);
+    await new WalletConnectRetiredSessions().retire(topic);
+  }
 
   readonly eip155RequestHandler: Eip155RequestHandler;
   readonly polkadotRequestHandler: PolkadotHandler;
   readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>([]);
 
-  constructor(private state: State, private readonly requestService: RequestService) {
+  constructor(
+    private state: State,
+    private readonly requestService: RequestService
+  ) {
     this.eip155RequestHandler = new Eip155RequestHandler(this.state, this);
     this.polkadotRequestHandler = new PolkadotHandler(this.state, this);
 
@@ -42,17 +70,19 @@ export class WalletConnectService {
   }
 
   get sessions() {
-    return this.client?.session.values || [];
+    return (this.client?.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
 
   private async haveData(): Promise<boolean> {
-    const data = await storage.get([
+    const keys = [
       'wc@2:client:0.3//session',
       'wc@2:client:0.3//proposal',
       'wc@2:core:0.3//pairing',
       'wc@2:core:0.3//subscription',
       'wc@2:core:0.3//history',
-    ]);
+    ];
+    const sdkStorage = new WalletConnectStorage();
+    const data = Object.fromEntries(await Promise.all(keys.map(async (key) => [key, await sdkStorage.getItem(key)])));
 
     const sessions = data['wc@2:client:0.3//session'] ?? [];
     const pairings = data['wc@2:core:0.3//pairing'] ?? [];
@@ -63,18 +93,17 @@ export class WalletConnectService {
     return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
   }
 
-  addConnection(uri: string) {
-    console.info(uri);
-  }
+
 
   private updateSessions() {
     this.sessionSubject.next(this.sessions);
   }
 
   getSession(key: string): SessionTypes.Struct {
+    if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.client?.session.get(key);
 
-    if (!session) {
+    if (!session || this.retiredTopics.has(key) || !this.authority.allows(key)) {
       throw new Error(getInternalError('MISMATCHED_TOPIC').message);
     } else {
       return session;
@@ -82,19 +111,29 @@ export class WalletConnectService {
   }
 
   async initClient(force?: boolean) {
-    this.removeListener();
-
-    const isInit = force || (await this.haveData());
-
-    if (!isInit) return;
-
-    this.client = await WalletConnect.init({
-      ...DEFAULT_WALLET_CONNECT_OPTIONS,
-      storage: new WalletConnectStorage(),
-    });
-
-    this.updateSessions();
-    this.createListener();
+    if (this.client) return;
+    if (!force && !(await this.haveData())) return;
+    // The storage read above may yield while another caller initializes.
+    if (this.client) return;
+    if (!this.initialization) {
+      this.initialization = this.authority.load()
+        .then(() => {
+          return WalletConnect.init({
+            ...DEFAULT_WALLET_CONNECT_OPTIONS,
+            storage: new WalletConnectStorage(),
+          });
+        })
+        .then(async (client) => {
+          await this.authority.load();
+          this.client = client;
+          this.updateSessions();
+          this.createListener();
+        })
+        .finally(() => {
+          this.initialization = undefined;
+        });
+    }
+    await this.initialization;
   }
 
   public async responseRequest(response: EngineTypes.RespondParams) {
@@ -104,29 +143,38 @@ export class WalletConnectService {
   }
 
   async connect(uri: string) {
+    const resetRevision = this.state.keyringService.walletResetRevision;
+    if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     if (!isValidUrl(uri)) throw Error(getInternalError('MISSING_OR_INVALID').message);
 
     if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
 
-    const haveData = await this.haveData();
-
-    if (!haveData) await this.initClient(true);
+    await this.initClient(true);
+    if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision)
+      throw new Error('Wallet changed during connection');
 
     this.checkClient();
 
     return this.client?.pair({ uri });
   }
 
-  updateExpiry(topic: string) {
-    this.client?.extend({ topic }).catch((e) => {
-      console.info(e);
-    });
-  }
-
   async approveSession(result: ResultApproveWalletConnectSession) {
+    const resetRevision = this.state.keyringService.walletResetRevision;
+    if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     this.checkClient();
-
-    await this.client?.approve(result);
+    const authorityRevision = this.authority.revision;
+    const assertCurrent = () => {
+      if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision ||
+        this.authority.revision !== authorityRevision) throw new Error('Wallet changed during session approval');
+    };
+    const approved = await this.client!.approve(result);
+    try {
+      await this.authority.approve(approved.topic, assertCurrent);
+    } catch (error) {
+      await this.retireSession(approved.topic);
+      void this.client!.disconnect({ topic: approved.topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
+      throw error;
+    }
 
     this.updateSessions();
   }
@@ -138,37 +186,55 @@ export class WalletConnectService {
   }
 
   async disconnect(topic: string) {
-    await this.client?.disconnect({
-      topic: topic,
+    await this.retireSession(topic);
+    // Local retirement is already durable; an offline relay cannot delay reset
+    // or removal of the account that owned this session.
+    void Promise.resolve().then(() => this.client?.disconnect({
+      topic,
       reason: getSdkError('USER_DISCONNECTED'),
-    });
+    })).catch(console.error);
 
     this.updateSessions();
   }
 
-  removeSessions(address: string, ethereumAddress?: string) {
-    this.sessions.forEach((session) => {
-      const evm = session.namespaces[WALLET_CONNECT_EIP155_NAMESPACE] ?? [];
-      const polkadot = session.namespaces[WALLET_CONNECT_POLKADOT_NAMESPACE] ?? [];
-      const evmAccounts = namespaceAccounts(evm);
-      const polkadotAccounts = namespaceAccounts(polkadot);
+  async resetWallet(): Promise<void> {
+    const topics = (this.client?.session.values ?? []).map((session) => session.topic);
+    const retirement = this.authority.reset(topics);
+    for (const topic of topics) {
+      this.invalidateSession(topic);
+      this.state?.walletConnectDappService?.invalidateSession(topic);
+    }
+    await retirement;
+    for (const topic of topics)
+      void this.client?.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
+    this.updateSessions();
+  }
 
-      if (ethereumAddress && evmAccounts.length) {
-        const [, , evmAddress] = evmAccounts[0].split(':');
-
-        if (isSameString(ethereumAddress, evmAddress)) return this.disconnect(session.topic);
-      }
-
-      if (polkadotAccounts.length) {
-        const [, , substrateAddress] = polkadotAccounts[0].split(':');
-
-        if (isSameString(address, substrateAddress)) this.disconnect(session.topic);
-      }
-    });
+  async removeSessions(address: string, ethereumAddress?: string): Promise<void> {
+    await this.initClient();
+    // Include locally retired SDK records: a prior failed storage write still
+    // needs acknowledgement on retry before the account can be removed.
+    const sessions = this.client?.session.values ?? [];
+    await Promise.all(sessions.map(async (session) => {
+      const ownsAccount = Object.entries(session.namespaces).some(([key, namespace]) =>
+        namespaceAccounts(namespace).some((account) => {
+          const [kind, , candidate] = account.split(':');
+          if (!candidate || kind !== key.split(':')[0]) return false;
+          if (kind === 'eip155') return (isEthereumAddress(address) && isSameString(address, candidate)) ||
+            (!!ethereumAddress && isSameString(ethereumAddress, candidate));
+          return kind === 'polkadot' && isSameAddress(address, candidate);
+        })
+      );
+      if (ownsAccount) await this.disconnect(session.topic);
+    }));
   }
 
   private onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
     this.checkClient();
+    if (this.state.keyringService.isResetting) {
+      void this.rejectSession(proposal.id).catch(console.error);
+      return;
+    }
 
     this.requestService.addConnectWCRequest(convertConnectRequest(proposal));
   }
@@ -177,46 +243,13 @@ export class WalletConnectService {
     this.checkClient();
 
     const { id, params, topic } = requestEvent;
-    const { chainId, request } = params;
-    const method = request.method as WalletConnectSigningMethod;
-
+    const { chainId } = params;
     try {
-      const { requiredNamespaces, optionalNamespaces } = this.getSession(topic);
-
-      const namespaces = Object.keys({ ...requiredNamespaces, ...optionalNamespaces });
-      const chains = Object.values(requiredNamespaces).flatMap((namespace) => namespace.chains ?? []);
-      const optionalChains = Object.values(optionalNamespaces).flatMap((namespace) => namespace.chains ?? []);
-
-      chains.push(...optionalChains);
-
-      const [requestNamespace] = chainId.split(':');
-
-      if (namespaces.length && !namespaces.includes(requestNamespace)) {
-        throw Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message);
-      }
-
-      if (chainId.length && !chains.includes(chainId)) {
-        throw Error(getSdkError('UNSUPPORTED_CHAINS').message + ' ' + chainId);
-      }
-
-      switch (method) {
-        case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE:
-        case POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION:
-          this.polkadotRequestHandler.handleRequest(requestEvent);
-
-          break;
-        case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
-        case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
-        case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
-        case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
-        case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
-        case EIP155_SIGNING_METHODS.ETH_SIGN:
-          this.eip155RequestHandler.handleRequest(requestEvent);
-
-          break;
-        default:
-          throw Error(getSdkError('INVALID_METHOD').message + ' ' + method);
-      }
+      // Each handler authorizes the current approved namespace. Proposal fields
+      // cannot authorize signing, and receipt must not silently extend expiry.
+      if (chainId.startsWith('eip155:')) this.eip155RequestHandler.handleRequest(requestEvent);
+      else if (chainId.startsWith('polkadot:')) this.polkadotRequestHandler.handleRequest(requestEvent);
+      else throw Error(getSdkError('UNSUPPORTED_NAMESPACE_KEY').message);
     } catch (e) {
       console.info(e);
 
@@ -234,8 +267,6 @@ export class WalletConnectService {
         response: formatJsonRpcError(id, (e as Error).message),
       }).catch(console.error);
     }
-
-    this.updateExpiry(topic);
   }
 
   private checkClient() {
@@ -247,16 +278,12 @@ export class WalletConnectService {
   private createListener() {
     this.client?.on('session_proposal', (event) => this.onSessionProposal(event));
     this.client?.on('session_request', (event) => this.onSessionRequest(event));
-    this.client?.on('session_delete', () => this.updateSessions());
+    this.client?.on('session_request_expire', ({ id }) => this.expiredRequestIds.add(id));
+    this.client?.on('session_delete', ({ topic }) => this.retireSession(topic).catch(console.error));
+    this.client?.on('session_expire', ({ topic }) => this.retireSession(topic).catch(console.error));
     this.client?.on('session_ping', (data: unknown) => console.info('ping', data));
     this.client?.on('session_event', (data: unknown) => console.info('event', data));
-    this.client?.on('session_update', (data: unknown) => console.info('update', data));
-  }
-
-  // Remove old listener
-  private removeListener() {
-    ALL_WALLET_CONNECT_EVENT.forEach((event) => {
-      this.client?.removeAllListeners(event);
-    });
+    this.client?.on('session_update', ({ topic }) => this.sessionChanged(topic));
+    this.client?.on('session_extend', ({ topic }) => this.sessionChanged(topic));
   }
 }

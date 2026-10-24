@@ -1,4 +1,5 @@
-import { type KeyringAddress } from '@subwallet/ui-keyring/types';
+import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
+import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
@@ -123,7 +124,10 @@ import type {
   ResponseCheckSwap,
   ResponseMakeSwap,
   RequestUpdateMeta,
+  RequestTotalBalances,
   ResponseTotalBalances,
+  RequestPortfolioHoldings,
+  ResponsePortfolioHoldings,
   RequestSigningSubscribe,
   FetchBalanceRequest,
   ResponseNftTransfer,
@@ -135,8 +139,19 @@ import type {
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
+  LegacyPasswordAccountSummary,
+  AccountAccessStatus,
+  RequestRecoverAccountWithPassword,
+  ResponseRecoverAccountWithPassword,
+  RequestRecoverAccountWithPhrase,
+  ResponseRecoverAccountWithPhrase,
+  DeletedWalletSummary,
+  RequestRestoreDeletedWallet,
+  ResponseRestoreDeletedWallet,
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
+  RequestTonImportCandidates,
+  TonImportCandidateInfo,
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
   RequestGetHistory,
@@ -161,6 +176,10 @@ import type {
   PolkamarktQuoteRequest,
   PolkamarktSnapshot,
 } from '@/defi/polkamarkt/types';
+import type {
+  LegacyExposureStatus,
+  RequestUpdateLegacyExposure,
+} from '@extension-base/services/legacy-exposure-service';
 import type { SoraDisclaimerStatus } from '@/defi/soraDisclaimer';
 import type {
   DerivationPath,
@@ -181,14 +200,18 @@ export interface RequestSignatures {
   'pri(keyring.hasAccounts)': [null, boolean];
   'pri(keyring.keyringIsLocked)': [null, boolean];
   'pri(keyring.changePassword)': [RequestChangePassword, boolean];
-  'pri(keyring.unlock)': [RequestUnlockExtension, boolean];
+  'pri(keyring.unlock)': [RequestUnlockExtension, boolean | 'ton-recovery-required' | 'ton-storage-unavailable'];
   'pri(keyring.lock)': [boolean, boolean];
   'pri(keyring.getPassword)': [null, string];
   'pri(keyring.reset)': [null, boolean];
-  'pri(keyring.getMigrationAccounts)': [null, KeyringAddress[]];
+  'pri(keyring.getAccessStatus)': [null, AccountAccessStatus];
+  'pri(keyring.getMigrationAccounts)': [null, LegacyPasswordAccountSummary[]];
   'pri(keyring.isNeedMigration)': [null, boolean];
   'pri(keyring.getUniversalWalletMigrationSnapshot)': [null, UniversalWalletMigrationSnapshot];
   'pri(keyring.migrateMasterPassword)': [RequestMigratePassword, boolean];
+  'pri(keyring.deferLegacyPasswordMigration)': [null, boolean];
+  'pri(keyring.recoverAccountWithPassword)': [RequestRecoverAccountWithPassword, ResponseRecoverAccountWithPassword];
+  'pri(keyring.recoverAccountWithPhrase)': [RequestRecoverAccountWithPhrase, ResponseRecoverAccountWithPhrase];
 
   // Account Management
   'pri(accounts.validate.path)': [DerivationPath, boolean];
@@ -202,24 +225,30 @@ export interface RequestSignatures {
   'pri(keyring.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
   'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
+  'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
+  'pri(accounts.recovery.list)': [null, RecoveryRecordSummary[]];
+  'pri(accounts.recovery.export)': [null, { json: string }];
+  'pri(accounts.deleted.list)': [null, DeletedWalletSummary[]];
+  'pri(accounts.deleted.restore)': [RequestRestoreDeletedWallet, ResponseRestoreDeletedWallet];
   'pri(accounts.list)': [null, InjectedAccount[]];
   'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [null, AccountJson[], AccountJson[]];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.update.current)': [RequestUpdateCurrentAccount, boolean];
   'pri(accounts.update.currentNetwork)': [string, boolean];
-  'pri(accounts.totalBalances)': [null, ResponseTotalBalances[]];
+  'pri(accounts.totalBalances)': [RequestTotalBalances | null, ResponseTotalBalances[]];
+  'pri(accounts.portfolioHoldings)': [RequestPortfolioHoldings | null, ResponsePortfolioHoldings[]];
   'pri(accounts.getHistory)': [RequestGetHistory, TonEventTokens];
 
   // App Management - networks
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
   'pri(app.isReady)': [null, boolean];
-  'pri(networkMap.upsert)': [NetworkJson, void];
+  'pri(networkMap.upsert)': [NetworkMapEdit, void];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   'pri(selectedNetworks.getSubscription)': [null, string, string];
-  'pri(networkMap.toggle.favorite)': [string, void];
+  'pri(networkMap.toggle.favorite)': [string | { networkName: string; address: string; favorite?: boolean }, void];
 
   // Authorize
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
@@ -262,6 +291,10 @@ export interface RequestSignatures {
 
   'pri(policy.soraDisclaimer.status)': [null, SoraDisclaimerStatus];
   'pri(policy.soraDisclaimer.accept)': [{ version: number }, SoraDisclaimerStatus];
+
+  'pri(security.legacyExposure.status)': [null, LegacyExposureStatus];
+  'pri(security.legacyExposure.acknowledge)': [null, LegacyExposureStatus];
+  'pri(security.legacyExposure.update)': [RequestUpdateLegacyExposure, LegacyExposureStatus];
 
   'pri(accounts.soraFees.subscribe)': [null, SoraFees, SoraFees];
   'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
@@ -371,13 +404,14 @@ export interface RequestSignatures {
     WalletConnectTransactionRequest[]
   ];
   'pri(walletConnect.request.approve)': [RequestApproveWalletConnect, boolean];
-  'pri(walletConnect.request.reject)': [{ topic: string }, boolean];
+  'pri(walletConnect.request.reject)': [{ approvalId: string }, boolean];
 
   // Wallet Connect dApp
   'pri(walletConnect.app.connect)': [null, string];
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
-  'pri(walletConnect.app.pairing)': [null, string];
+  'pri(walletConnect.app.pairing)': [string, string];
+  'pri(walletConnect.app.cancelPairing)': [string, boolean];
 
   // IrohaConnect wallet relay (Uranai-compatible v1)
   'pri(irohaConnect.connect)': [IrohaConnectStartRequest, IrohaConnectSnapshot];

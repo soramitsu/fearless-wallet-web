@@ -7,13 +7,13 @@ import { syncDocumentLanguage, type Lang } from './languages';
 import { accountController } from '@/controllers';
 
 const messages = {
-  'akk-Latn-x-old': akk,
+  'akk-Xsux-x-old': akk,
   'egy-Egyp': egy,
   'en-EN': en,
   'ru-RU': ru,
 } satisfies Record<Lang, unknown>;
 
-export { isLang, languageOptions, syncDocumentLanguage, type Lang } from './languages';
+export { isLang, languageOptions, resolveLang, syncDocumentLanguage, type Lang } from './languages';
 
 const initialLocale = accountController.getLang();
 
@@ -26,7 +26,7 @@ export const i18n = createI18n({
   fallbackLocale: 'en-EN',
   messages,
   numberFormats: {
-    'akk-Latn-x-old': {
+    'akk-Xsux-x-old': {
       currency: {
         style: 'currency',
         currency: 'USD',

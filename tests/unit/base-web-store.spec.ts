@@ -223,3 +223,128 @@ describe('BaseWebStore atomic metadata updates', () => {
     expect(publish).not.toHaveBeenCalled();
   });
 });
+
+// The ECDSA record a 2.x or 3.0.x build left under its old key is removed only together with the writes that keep
+// it (EcdsaAccountRecords.ts): one transaction, so an abort leaves the old key in place.
+describe('BaseWebStore replaceAndWait', () => {
+  function harness() {
+    const put = vi.fn();
+    const remove = vi.fn();
+    const transaction = {
+      error: null as Error | null, oncomplete: null as (() => void) | null,
+      onabort: null as (() => void) | null, onerror: null as (() => void) | null,
+      objectStore: vi.fn(() => ({ put, delete: remove })),
+    };
+    const database = { transaction: vi.fn(() => transaction) } as unknown as IDBDatabase;
+    return { database, transaction, put, remove };
+  }
+
+  it('stores the entries and removes the keys in one transaction', async () => {
+    const store = new TestWebStore('fw');
+    const { database, transaction, put, remove } = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(database);
+    const settled = vi.fn();
+    const pending = store.replaceAndWait(
+      { 'account:0xnew': { encoded: 'kept' }, 'archivedAccount:0xold': { records: [] } },
+      ['account:0xold'],
+      false
+    ).then(settled);
+    await vi.waitFor(() => expect(database.transaction).toHaveBeenCalledExactlyOnceWith('fw-wallet', 'readwrite'));
+    expect(put.mock.calls).toEqual([
+      [{ encoded: 'kept' }, 'fw:account:0xnew'],
+      [{ records: [] }, 'fw:archivedAccount:0xold'],
+    ]);
+    expect(remove).toHaveBeenCalledExactlyOnceWith('fw:account:0xold');
+    expect(settled).not.toHaveBeenCalled();
+    transaction.oncomplete?.();
+    await pending;
+    expect(settled).toHaveBeenCalledOnce();
+  });
+
+  it('rejects when the transaction aborts, without poisoning the next flush', async () => {
+    const store = new TestWebStore('fw');
+    const { database, transaction } = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(database);
+    const pending = store.replaceAndWait({ 'account:0xnew': {} }, ['account:0xold'], false);
+    await vi.waitFor(() => expect(database.transaction).toHaveBeenCalled());
+    transaction.error = new Error('QuotaExceededError');
+    transaction.onabort?.();
+    await expect(pending).rejects.toThrow('QuotaExceededError');
+    await expect(BaseWebStore.flush()).resolves.toBeUndefined();
+  });
+});
+
+describe('BaseWebStore recovery snapshot and removal', () => {
+  function harness() {
+    const reads = new Map<string, { result: unknown; onsuccess?: () => void }>();
+    const put = vi.fn();
+    const remove = vi.fn();
+    const transaction = {
+      error: null as Error | null, oncomplete: null as (() => void) | null,
+      onabort: null as (() => void) | null, onerror: null as (() => void) | null,
+      abort: vi.fn(),
+      objectStore: () => ({ put, delete: remove, get: (key: string) => {
+        const request = { result: { encrypted: key } };
+        reads.set(key, request);
+        return request;
+      } }),
+    };
+    const database = { transaction: vi.fn(() => transaction) } as unknown as IDBDatabase;
+    return { database, transaction, reads, put, remove };
+  }
+
+  it('reads all latest records, archives and removes in one transaction, then publishes after commit', async () => {
+    const store = new TestWebStore('fw');
+    const h = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(h.database);
+    const publish = vi.fn();
+    const transform = vi.fn((current) => ({ entries: { recovery: current }, remove: ['primary', 'linked'] }));
+    let settled = false;
+    const pending = store.mutateRecordsAndWait(['primary', 'linked', 'primary'], transform, publish).then(() => { settled = true; });
+    await vi.waitFor(() => expect(h.database.transaction).toHaveBeenCalledExactlyOnceWith('fw-wallet', 'readwrite'));
+    h.reads.get('fw:linked')!.onsuccess?.();
+    expect(transform).not.toHaveBeenCalled();
+    h.reads.get('fw:primary')!.result = { encrypted: 'latest ciphertext', future: true };
+    h.reads.get('fw:primary')!.onsuccess?.();
+    expect(h.put).toHaveBeenCalledExactlyOnceWith({ primary: { encrypted: 'latest ciphertext', future: true },
+      linked: { encrypted: 'fw:linked' } }, 'fw:recovery');
+    expect(h.remove.mock.calls).toEqual([['fw:primary'], ['fw:linked']]);
+    expect(settled).toBe(false);
+    expect(publish).not.toHaveBeenCalled();
+    h.transaction.oncomplete?.();
+    await pending;
+    expect(publish).toHaveBeenCalledOnce();
+  });
+
+  it('rejects transaction abort without publication or poisoning later writes', async () => {
+    const store = new TestWebStore('fw');
+    const h = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(h.database);
+    const publish = vi.fn();
+    const pending = store.mutateRecordsAndWait(['primary'], (current) => ({ entries: { recovery: current }, remove: ['primary'] }), publish);
+    const rejection = expect(pending).rejects.toThrow('QuotaExceededError');
+    await vi.waitFor(() => expect(h.reads.size).toBe(1));
+    h.reads.get('fw:primary')!.onsuccess?.();
+    h.transaction.error = new Error('QuotaExceededError');
+    h.transaction.onabort?.();
+    await rejection;
+    expect(publish).not.toHaveBeenCalled();
+    await expect(BaseWebStore.flush()).resolves.toBeUndefined();
+  });
+
+  it('aborts before writing when recovery validation rejects', async () => {
+    const store = new TestWebStore('fw');
+    const h = harness();
+    vi.spyOn(store, 'openDatabase').mockResolvedValue(h.database);
+    const publish = vi.fn();
+    const pending = store.mutateRecordsAndWait(['primary'], () => { throw new Error('Invalid wallet'); }, publish);
+    const rejection = expect(pending).rejects.toThrow('Invalid wallet');
+    await vi.waitFor(() => expect(h.reads.size).toBe(1));
+    h.reads.get('fw:primary')!.onsuccess?.();
+    await rejection;
+    expect(h.transaction.abort).toHaveBeenCalledOnce();
+    expect(h.put).not.toHaveBeenCalled();
+    expect(h.remove).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
+  });
+});

@@ -1,5 +1,9 @@
 {
   "welcome": {
+    "tonRecoveryRequired": "TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 𓂧𓃀𓎛 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏 𓁹 𓅓𓄿𓅱 𓉒 · 𓎡𓇌 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 𓃹𓈖 · 𓂋 𓅱𓎛𓅓 · 𓃹𓈖 𓉔𓄿𓃀 𓅓𓆓𓄿𓏏 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎛𓈖𓂝 𓂝𓎡 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 · 𓅓 𓅱𓎛𓅓 𓄂 𓉒 𓂋𓊪𓅱 𓋴𓎡 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓 𓎛𓄿𓏏 𓅱𓎛𓅓 ·",
+    "tonStorageUnavailable": "𓈖𓈖 𓇋𓈖 𓂋𓊪𓅱 𓁹 𓅓𓄿𓅱 TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 · 𓅓𓆓𓄿𓏏𓏥 𓋴𓄿𓅱 · 𓎡𓇌 𓉒 𓏥 𓃹𓈖 · 𓃹𓈖 𓉒 𓋴𓊪 𓎡𓇌 𓂋𓊪𓅱 𓐍𓏏𓅓 𓎛𓈖𓂝 𓃹𓈖 𓊪𓅱 · 𓅓 𓅱𓎛𓅓 𓄂 𓉒 · 𓅓 𓋴𓎡 𓊪𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 ·",
+    "walletResetFailed": "𓈖𓈖 𓅓𓄿𓂝 𓐙 𓅱𓎛𓅓 𓄂 𓉒 · 𓁹 𓋴𓊪 𓎡𓇌 𓅓 𓎛𓄿𓏏 𓁹 𓎡𓇌 𓉒 ·",
+    "passwordChangeFailed": "𓈖𓈖 𓅓𓄿𓂝 𓐙 𓎡𓇌 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 · 𓃹𓈖 𓐍𓏏𓅓 𓉒 𓎛𓈖𓂝 𓁹 𓋴𓊪 𓎡𓇌 · 𓇋𓂋 TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓂧𓃀𓎛 𓅱𓎛𓅓 · 𓅱𓎛𓅓 𓊪𓅱 𓁹 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓎛𓄿𓏏 ·",
     "importWallet": "𓇋𓈖 𓉒",
     "ecosystemEvmSubstrate": "𓁹 𓂋𓊪𓅱 𓇋𓈖 Substrate 𓂋𓊪𓅱 EVM 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥",
     "ecosystemTon": "𓄡𓈖𓅓 𓂋 𓅓𓂧𓅱 𓋹 𓄡𓈖𓅓𓏥 𓅓𓂧𓅱",
@@ -19,10 +23,18 @@
     "needHelp": "𓁹 𓈖𓏏𓎡 𓂧𓃀𓎛 𓈖𓂧 · 𓅓𓂧𓅱",
     "resetWallet": "𓅱𓎛𓅓 𓄂 𓉒",
     "wantReset": "𓈖𓏏𓎡 𓐙 𓈖𓏏𓎡 𓅓𓂋𓇋 𓂋 𓅱𓎛𓅓 𓄂 𓈖 𓈖𓏏𓎡 𓉒 ·",
-    "walletWillBeDeleted": "𓈖 𓈖𓏏𓎡 𓅓𓇋𓈖 𓉒 · 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 · 𓎛𓈖𓂝 𓐍𓏏𓏥 𓂋 𓋴𓎡 𓅓 Fearless Wallet · 𓈖𓏏𓎡 𓂋 𓂧𓃀𓎛 𓂋 𓅓𓂧𓅱 𓈖 𓈖𓏏𓎡 𓄂 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁹 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓂋𓊪𓅱 𓄋𓊪 𓈙𓇾𓍔𓄿𓏴𓏛 ·",
+    "walletWillBeDeleted": "𓇋𓅱 𓄋𓊪𓏥 𓐍𓏏𓅓𓅱𓏥 𓅓𓈖𓅱𓏥 𓅓 𓐍𓏏 𓈖 𓂓𓏏 𓏏𓈖. 𓐍𓂋 𓂋𓐍𓎡 𓅱𓎛𓅓 𓉒 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏 𓅓𓂋𓂝. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓂋 𓂞 𓉔𓄿𓃀 𓂋𓊪𓅱 𓂞 𓉐𓂻.",
     "enterReset": "𓂋 𓈙𓅓𓂻 · 𓂝𓎡 ' {phrase} '",
     "resetWarning": "𓅓𓂧𓅱 𓉒 𓂋 𓋴𓎡 𓈖 𓈖𓏏𓎡 𓅓𓇋𓈖 𓅓𓆓𓄿𓏏 𓎛𓈖𓂝 𓐍𓏏𓏥 · 𓇋𓈖𓈖 𓅓𓂧𓅱 𓈖 𓈖𓏏𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓊪𓅱 𓋴𓄿𓅱 𓏤 𓁷 𓈖 𓈖𓏏𓎡 𓐍𓏏 𓈖 𓂓𓏏 · 𓁹 𓋴𓊪 𓎡𓇌 𓅓𓂧𓅱 · 𓇋𓂋 𓈖𓏏𓎡 𓅓𓂋𓇋 𓂋 𓅱𓎛𓅓 𓄂 𓉒 · 𓇋𓈖 𓈖 𓈖𓏏𓎡 𓄂 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 · 𓈙𓅓𓂻 𓏤 𓇋𓂋 𓈖𓏏𓎡 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 ·",
-    "passwordWarning": "𓈖 𓈖𓏏𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹 𓂋 𓃹𓈖 𓐍𓏏𓅓 𓉒 𓎛𓈖𓂝 𓅓𓂧𓅱 𓋴𓄿𓅱 𓁷 𓈖 𓈖𓏏𓎡 𓐍𓏏 𓈖 𓂓𓏏 · 𓇋𓈖𓈖 𓅓𓂧𓅱 𓁹 12 𓅓𓂧𓅱 · 𓅓𓂧𓅱 𓎛𓈖𓂝 𓅓𓂧𓅱 · 𓋴𓈙𓏥 · 𓎛𓈖𓂝 𓅓𓂧𓅱 ·"
+    "passwordWarning": "𓈖 𓈖𓏏𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹 𓂋 𓃹𓈖 𓐍𓏏𓅓 𓉒 𓎛𓈖𓂝 𓅓𓂧𓅱 𓋴𓄿𓅱 𓁷 𓈖 𓈖𓏏𓎡 𓐍𓏏 𓈖 𓂓𓏏 · 𓇋𓈖𓈖 𓅓𓂧𓅱 𓁹 12 𓅓𓂧𓅱 · 𓅓𓂧𓅱 𓎛𓈖𓂝 𓅓𓂧𓅱 · 𓋴𓈙𓏥 · 𓎛𓈖𓂝 𓅓𓂧𓅱 ·",
+    "resetFailed": "𓂜 𓋴𓎡𓏏𓅱 𓉒. 𓇋𓂋𓇋 𓎡𓇌.",
+    "resetHaveBackups": "𓇋𓅓 𓈖𓇋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓂋𓊪𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓎟",
+    "resetBackupTitle": "𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓏥 𓂋 𓐍𓈖𓅱 𓅓 𓎛𓄿𓏏",
+    "changePasswordFailed": "𓈖 𓋴𓅓𓈖𓏏𓅱 𓎘𓃀𓄲𓏛 𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡. 𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓𓄿𓅱 𓂋 𓃹𓈖 𓐍𓏏𓅓. 𓇋𓂋 𓈖 𓃹𓈖𓏏𓅱 𓐍𓏏𓅓, 𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏.",
+    "createPasswordFailed": "𓈖 𓋴𓅓𓈖𓏏𓅱 𓋴𓄿𓅱 𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡. 𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂋𓂧𓇋𓈖𓎡 𓂋 𓃹𓈖 𓐍𓏏𓅓.",
+    "resetBackupsDownloaded": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓏥 𓉔𓄿𓃀𓏏𓅱 𓂋 𓐍𓈖𓅱 𓈖 𓈖𓏏𓎡. 𓅓𓄿𓄿 𓇋𓅓 𓋴𓈖 𓇋𓅓 𓈖 𓎛𓄿𓏏 𓈙𓅓𓎡.",
+    "resetDownloadBackups": "𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓏥 𓐍𓏏𓅓 𓂋 𓐍𓈖𓅱",
+    "resetBackupDescription": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓆑 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless 𓅓𓂋𓂝. 𓅱𓎛𓅓 𓄂 𓉒 𓋴𓎡 𓋴𓏏 𓎛𓈖𓂝. 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓆑 𓐍𓏏𓅓 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖 𓇋𓅱𓆑. | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓋴𓈖 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless 𓅓𓂋𓂝. 𓅱𓎛𓅓 𓄂 𓉒 𓋴𓎡 𓋴𓈖 𓎛𓈖𓂝. 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓎟 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖𓏏𓆑."
   },
   "addWallet": {
     "createWallet": "𓁹 𓅓𓄿𓅱 𓉒",
@@ -114,7 +126,10 @@
       "saved": "𓋴𓄿𓅱 𓅓𓄿𓂝",
       "dataWillStoreOnGDrive": "𓅓 𓈙𓊪𓏏 “𓅓𓄿𓂝”, 𓈙𓋴𓊪𓎡 𓉔𓄿𓃀 𓅓𓆓𓄿𓏏 𓈖 𓉒 𓐍𓏏𓅓 𓅓 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛, 𓎛𓈖𓂝 𓂋𓈖𓆑 𓎛𓈖𓂝 𓊨 𓈖 𓂋𓈖𓆑, 𓂋 Google Drive 𓈖𓏏𓎡 𓉐 𓈖 𓅓𓆓𓄿𓏏, 𓂋 𓋴𓄿𓅱 𓎛𓈖𓂝 𓅱𓎛𓅓 ·",
       "passphraseSaved": "𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓𓂧𓅱 𓋴𓄿𓅱 𓁷 Google Drive",
-      "noWallets": "𓈖𓈖 𓋴𓄿𓅱 𓉒 𓏥 𓅓𓂧𓅱 𓁷 Google Drive"
+      "noWallets": "𓈖𓈖 𓋴𓄿𓅱 𓉒 𓏥 𓅓𓂧𓅱 𓁷 Google Drive",
+      "importFileOnly": "𓇋𓈖 𓅓𓆓𓄿𓏏 𓏏𓈖 𓅱𓂝𓏏𓋴",
+      "importFileOnlyHint": "𓇋𓅱 𓇋𓂋𓏏 𓏏𓈖 𓁷 𓇋𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓇋𓅓𓇌𓅱 𓅓𓆓𓄿𓏏 𓏏𓈖. 𓅱𓎛𓅓 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓈖𓏏 Ethereum 𓄡𓈖𓅓𓏏 𓂋𓋴𓈖 𓅓 𓇋𓂋𓏏 𓎡𓏏.",
+      "importFileOnlyDone": "𓇋𓅱 𓅓𓆓𓄿𓏏 𓏏𓈖 𓇋𓈖𓏏𓇋. 𓈖 𓇋𓈖𓏏𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓈖𓏏 Ethereum 𓄡𓈖𓅓𓏏 𓂋𓋴 𓅓 𓇋𓂋𓏏 𓏏𓈖."
     },
     "recommended": "𓋴𓏏𓊪 𓅓𓂋𓇌",
     "alternative": "𓅱𓄿𓏏 𓎡𓇌",
@@ -205,7 +220,8 @@
       "connections": "𓄡𓈖𓅓𓏥",
       "security": "𓋴𓄿𓅱 𓂝𓄿",
       "preferences": "𓅓𓂋𓇌𓏥",
-      "about": "𓂋𓐍"
+      "about": "𓂋𓐍",
+      "appearance": "𓇋𓂋𓅱"
     },
     "walletDetails": "𓉒 𓐍𓏏 𓎟 & 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏",
     "walletDetailsDescription": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 · 𓄋𓊪 𓏥 · 𓎛𓈖𓂝 𓂞 𓉐𓂻",
@@ -226,7 +242,20 @@
     "language": "𓂋 𓈖 𓆎𓅓𓏏",
     "languageDescription": "𓉐 𓈖 𓂓𓏏 𓁹 𓂋 𓈖 𓆎𓅓𓏏",
     "aboutFearless": "𓂋𓐍 Fearless",
-    "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪"
+    "aboutFearlessDescription": "𓇋𓂋𓅱 𓈖 · 𓅓𓂧𓅱 · 𓎛𓈖𓂝 𓉔𓊪",
+    "visualEffects": {
+      "title": "𓄡𓎡𓂋𓅱𓏥 𓈖 𓅓𓄿𓄿",
+      "auto": "𓆓𓋴𓆑",
+      "autoDescription": "𓈙𓅓𓋴𓆑 𓋴𓅓𓈖𓏥 𓈖 𓐍𓏏𓎡 𓈖 𓂓𓏏: 𓅱𓂝𓃀 𓈖 𓅓𓄿𓄿, 𓄋𓊪 𓎛𓆓 𓎛𓈖𓂝 𓎡𓎡𓅱, 𓄿𓐍 𓈖 𓂓𓏏.",
+      "lite": "𓇋𓋴",
+      "liteDescription": "𓈖𓈖 𓇋𓄿𓂧𓏏𓇲 𓁷 𓅓𓄿𓄿. 𓇋𓋴 𓁷 𓐍𓏏 𓈖 𓎛𓋴𓃀 𓈖 𓇋𓋴𓆓𓏏.",
+      "reduced": "𓈖𓆓𓋴",
+      "reducedDescription": "𓁷𓅱𓏥 𓅓𓈖𓅱 𓈖𓂝𓂝𓅱; 𓈖𓈖 𓊪𓋴𓆓 𓈖 𓎛𓆓, 𓇋𓈖𓂋 𓅱𓂝𓃀, 𓇋𓄿𓂧𓏏𓇲.",
+      "full": "𓅓𓎛",
+      "inUse": "𓅓 𓂓𓏏: {mode}",
+      "contrastNote": "𓋴𓄿𓅱 𓋴𓅓𓈖𓏥 𓈖 𓋴𓐍𓂋𓎡 𓈖 𓄋𓊪 𓎛𓆓 𓎛𓈖𓂝 𓎡𓎡𓅱 𓄡𓎡𓂋𓅱𓏥 𓅓 «𓈖𓆓𓋴»."
+    },
+    "irohaConnectUnavailable": "𓈖𓈖 IrohaConnect 𓅓 𓋴𓈙 𓊪𓈖 · 𓈖 𓐍𓏏𓅓𓏏𓅱 𓐍𓏏 ·"
   },
   "menu": {
     "wallet": "𓉒",
@@ -334,6 +363,10 @@
     "transactionDone": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓊪𓎛 𓄤",
     "transactionError": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓃀𓇋𓈖",
     "transactionFailedDetails": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓃀𓇋𓈖 · 𓁹 𓐙 𓁹𓏏 𓈖 𓋴𓍿𓄿 𓐍𓏏 𓎟 𓎛𓈖𓂝 𓁹 𓋴𓊪 𓅱𓎛𓅓 ·",
+    "transferFeeChanged": "𓂝𓄿 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 · 𓈖 𓉔𓄿𓃀 𓐍𓏏 · 𓇋𓅱 𓂋 𓅱𓎛𓅓 𓎛𓈖𓂝 𓅓𓄿𓄿 𓇋𓋴𓅱 𓅓𓄿𓅱 𓐍𓂋 𓉔𓄿𓃀 ·",
+    "transferFeeApprovalRequired": "𓈖 𓉔𓄿𓃀 𓐍𓏏 · 𓇋𓅱 𓂋 𓅱𓎛𓅓 𓎛𓈖𓂝 𓅓𓄿𓂝 𓐙 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓐍𓂋 𓉔𓄿𓃀 ·",
+    "transactionStatusUnknown": "𓈖 𓂋𓐍 𓏏𓅱 𓁹𓏏 𓈖 𓋴𓍿𓄿",
+    "transactionStatusUnknownDetails": "𓂋𓐍 𓉔𓄿𓃀 𓁹𓏏 𓈖 𓋴𓍿𓄿 𓈖𓈖 · 𓅓𓄿𓄿 𓂋𓈖 𓐍𓏏𓅓 𓎛𓈖𓂝 𓋴𓈙 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓐍𓂋 𓉔𓄿𓃀 𓅱𓎛𓅓 · 𓅓 𓉔𓄿𓃀 𓅱𓎛𓅓 𓈖 𓂋𓐍 · 𓂋𓐍 𓋴𓍿𓄿 𓎛𓆓 𓋴𓊪𓅱𓇌 ·",
     "transactionPending": "𓁹𓏏 𓈖 𓋴𓍿𓄿 𓁷 𓅱𓄿𓎛",
     "saveQR": "𓋴𓄿𓅱 QR-code",
     "copyQR": "𓋴𓈙𓏛 𓅓 𓅓𓇋𓏏𓏏 QR-code",
@@ -373,9 +406,47 @@
       "assets": "𓂋𓂧𓇋 SORA 𓇋𓐍𓏏 𓎛𓈖𓂝 XOR 𓂋 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥",
       "disclaimer": "𓈙𓂋𓇌 𓎛𓈖𓂝 𓈙𓋴𓊪 𓋴𓂧𓄿 𓈖 Polkaswap",
       "disabled": "Polkaswap 𓇋𓂋𓏏𓏥 𓐍𓏏𓅓 𓅓 𓉔𓂋𓅱 𓊪𓈖"
-    }
+    },
+    "solanaAccountCreation": "𓎼𓂋𓎼 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈙𓋴𓊪",
+    "solanaAccountCreationHint": "𓅓 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥: 𓎛𓆓 𓅱𓄿𓎛𓅱 𓋴𓊪 𓅱𓂝 𓂋 𓅱𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈙𓋴𓊪 𓈖 {asset} ·",
+    "solanaAmountBelowRent": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈙𓋴𓊪 𓅓𓄿𓅱 · 𓅓𓂋 𓄡𓈖𓅓𓏥 𓎛𓆓 𓅱𓄿𓎛𓅱 𓏏𓊪𓇋 𓂝𓄿 𓂋𓆑 𓂋 𓅱𓈖𓆑 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓂝𓄿 𓂋𓆑 ·",
+    "solanaSenderBelowRent": "𓇋𓂋 𓁹𓏏𓅱 𓈖𓈖 · Solana 𓎛𓆓 𓅓𓈖𓅱 𓈖𓆓𓋴 𓂋 𓆓𓂋 𓌨𓂋𓇋 𓈖 𓎛𓆓 𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓋴𓅓𓈖𓅱 𓇋𓈖 𓄡𓈖𓅓𓏥 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓈖𓆓𓋴 𓂋𓆑 𓅓 𓈖𓆓𓋴 · 𓂋 𓊪𓅱 𓋴𓏏𓊪 «𓏏𓅓» 𓂋 𓉔𓄿𓃀 𓐍𓏏 𓎟𓏏 ·",
+    "solanaInsufficientSolForFee": "Solana 𓎛𓆓 𓈖𓈖 𓅓𓎛 𓂋 𓂞𓏏 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓍿𓄿 𓊪𓈖 ·",
+    "solanaPreviousSendPending": "𓋴𓍿𓄿𓎡 𓈖 Solana 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓁷 𓋴𓅓𓈖 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏 ·",
+    "solanaRecipientOffCurve": "𓈖 𓂋𓐍 𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓐍𓏏𓅓 𓁹𓏏𓏥 𓈖 𓋴𓍿𓄿 · 𓂋𓐍 𓎛𓆓 𓉔𓄿𓃀𓅱 𓂋𓋴 𓎛𓏏𓅓 · 𓇋𓊪 𓊨 𓈖 𓂋𓈖 ·",
+    "solanaRecipientProgram": "𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓈖 𓋴𓈙 𓈖 𓅱𓆓𓅱𓏥 · 𓈖𓈖 𓈖 𓉒 · 𓂋𓐍 𓉔𓄿𓃀 𓂋𓋴 𓋴𓎛𓏏𓅓 𓎛𓆓𓎡 ·",
+    "solanaRecipientTokenAccount": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓐍𓏏 𓊪𓅱 · 𓈖𓈖 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 · 𓂞 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 𓈖 𓈙𓋴𓊪 𓅓 𓊨𓋴 ·",
+    "solanaRecipientTokenAccountFrozen": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓐍𓏏 𓈖 𓈙𓋴𓊪 𓈙𓈖𓂝𓅱 · 𓈖 𓂋𓐍𓆑 𓈙𓋴𓊪 𓐍𓏏 𓏏𓈖 ·",
+    "solanaSimulationFailed": "𓐍𓋴𓆑𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓇋𓊪 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓇋𓊪 𓂝𓈙𓄿 𓎛𓈖𓂝 𓊨 𓈖 𓂋𓈖 ·",
+    "solanaTransactionExpired": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓂝𓏏𓆑 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓂋𓐍𓎡 𓁹𓏏 𓋴𓊪 𓅱𓎛𓅓 ·",
+    "solanaTransactionFailed": "𓁹𓈖 𓄡𓈖𓅓𓏥 𓋴𓍿𓄿 𓊪𓈖 · 𓈖 𓅓𓈖𓐍𓆑 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓂝𓈙𓄿 · 𓈙𓋴𓊪𓏏𓅱 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓅱𓂝𓆑 ·",
+    "solanaBroadcastUnconfirmed": "𓈖 𓋴𓅓𓈖𓏏𓅱 𓋴𓍿𓄿 𓊪𓈖 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓈖𓈖 𓈙𓄿𓂝 𓉒 𓋴𓍿𓄿 𓎡𓇋 𓈖 Solana 𓂋 𓊪𓎛𓅱𓇋 𓈖 𓊪𓈖 ·",
+    "viewSolanaHistoryOnExplorer": "𓅓𓄿𓄿 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓎟𓅱 𓈖 Solana 𓅓 𓅓𓄿𓄿 𓋴𓈙𓅱 𓈖 Solana",
+    "receiveTokenTitle": "𓈙𓋴𓊪 {symbol}",
+    "bitcoinPreviousSendPending": "𓋴𓍿𓄿𓎡 𓈖 Bitcoin 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓁷 𓇋𓊪 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏𓏥 𓈖𓆓𓋴𓏏 ·",
+    "bitcoinFeeRateValue": "{rate} 𓊪𓋴𓈙𓏥 𓈖 𓎛𓆓 𓈖𓆓𓋴𓅱 𓈖 𓈖𓆓𓋴𓅱 𓂋 𓎛𓋴𓃀 𓈖 𓋴𓈙",
+    "bitcoinPreviousSendOnNetwork": "𓇋𓅱 𓋴𓍿𓄿𓎡 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓈖 {amount} 𓂋 {recipient} 𓅓 𓄡𓈖𓅓𓏥 𓁷 𓅱𓄿𓎛 𓂋 𓋴𓅓𓈖 · 𓁹𓏏 𓈖 𓋴𓍿𓄿 {txid} · 𓂋 𓏏𓅓 𓁹𓏏𓆑 𓅓 𓋴𓊪 𓋴𓈖𓅱𓇋 𓂋𓐍𓎡 𓉔𓄿𓃀 Bitcoin 𓅓 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓋴𓅓𓈖𓆑 ·",
+    "bitcoinPreviousSendUnconfirmed": "𓇋𓅱 𓋴𓍿𓄿𓎡 𓈖 Bitcoin 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓅓 𓄡𓈖𓅓𓏥 𓁷 𓅱𓄿𓎛 𓂋 𓋴𓅓𓈖 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 · 𓂋𓐍𓎡 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓋴𓅓𓈖𓆑 ·",
+    "receiveEvmSameAddress": "𓅓𓇋𓏏𓏏 𓊪𓅱 𓊨 𓏏𓈖 𓈖 𓂋𓈖 𓅓 𓄡𓈖𓅓𓏥 𓎟𓅱 𓈖 EVM · 𓈖𓈖 𓋴𓅱𓏏 𓋴𓊪𓂋 𓈖 𓇋𓐍𓏏𓏥 𓄋𓊪𓅱𓁷 𓅓 𓄡𓈖𓅓𓏥 𓉔𓄿𓃀𓈖𓏏𓅱𓋴𓈖 𓇋𓅓 ·",
+    "bitcoinSupportedAddresses": "𓂋𓐍𓏏𓅱 𓉔𓄿𓃀 Bitcoin 𓂋 𓊨𓏥 𓈖 𓂋𓈖 𓈖𓏏𓅱 𓎛𓄿𓏏𓋴𓈖 𓅓 {prefixes} ·",
+    "balanceNotLoaded": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥. 𓇋𓂋𓇋 𓎡𓇌 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏.",
+    "bitcoinBroadcastUnconfirmed": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓈖𓏏𓏏 𓈙𓋴𓊪𓈖𓆑 𓋴𓍿𓄿 𓊪𓈖 · 𓂋𓐍𓆑 𓋴𓊪𓂋 𓅓 𓐍𓏏 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓂋 𓊪𓎛𓅱𓇋 𓈖 𓋴𓍿𓄿 𓊪𓈖 𓁹𓏏𓅱 𓋴𓍿𓄿 𓅓𓄿𓅱 𓈖 Bitcoin 𓅓 𓉒 𓊪𓈖 𓅓 𓊪𓋴𓈙𓏥 𓈖 𓎛𓆓 𓇋𓊪𓅱 𓅓 𓅱𓎛𓅓 𓅱𓄿𓎛𓆑 𓂋 𓋴𓅓𓈖 𓋴𓍿𓄿 𓊪𓈖 𓂋𓊪𓅱 · 𓇋𓂋 𓁹𓏏𓅱𓆑 𓅓 𓊪𓋴𓈙𓏥 𓇋𓊪𓅱 𓅓 𓅱𓎛𓅓 𓂋𓐍 𓋴𓍿𓄿 𓅱𓂝 𓅓 𓋴𓈖𓅱𓇋 𓋴𓊪𓂋 𓅱𓂝𓆑 ·",
+    "transactionUnconfirmed": "𓈖 𓋴𓅓𓈖𓏏𓅱 ·",
+    "bitcoinPreviousSendReused": "𓈖 𓂋𓐍𓏏 𓉒 𓇋𓈖 𓋴𓊪𓂋𓈖 𓋴𓍿𓄿𓎡 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓈖 {amount} 𓂋 {recipient} · 𓁹𓏏𓅱 𓋴𓍿𓄿 𓊪𓈖 𓅓 𓊪𓋴𓈙𓏥𓆑 𓈖 𓎛𓆓 𓅓 𓅱𓎛𓅓 · 𓂋𓐍 𓋴𓍿𓄿 𓅱𓂝 𓅓 𓋴𓈖𓅱𓇋 𓋴𓊪𓂋 𓅱𓂝𓆑 ·",
+    "bitcoinAwaitingConfirmation": "{amount} 𓁷 𓋴𓄿 𓋴𓅓𓈖 𓈖 𓄡𓈖𓅓𓏥 · 𓂋𓐍𓏏𓅱 𓉔𓄿𓃀𓆑 𓅓 𓐍𓏏 𓋴𓅓𓈖𓆑 ·",
+    "bitcoinBroadcastRejected": "𓐍𓋴𓆑𓈖 𓄡𓈖𓅓𓏥 𓈖 Bitcoin 𓋴𓍿𓄿 𓊪𓈖 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏 ·",
+    "bitcoinInsufficientSpendable": "𓈖𓈖 𓅓𓎛 BTC 𓋴𓅓𓈖𓅱 𓂋 𓂝𓈙𓄿 𓊪𓈖 𓎛𓈖𓂝 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 ·",
+    "bitcoinFeeRate": "𓎛𓋴𓃀 𓈖 𓇋𓋴𓅱",
+    "receiveSendUnavailable": "𓈖𓈖 𓂞 𓉔𓄿𓃀 𓅓 {network} 𓅓 𓅓𓂧𓅱 𓊪𓈖 𓈖 Fearless · 𓇋𓅱 𓋴𓐍𓅓𓎡 𓅓 𓈙𓋴𓊪 {symbol} 𓅓 𓊨 𓏏𓈖 𓎛𓈖𓂝 𓅓𓄿𓄿𓆑 𓅓 𓇋𓊪𓏥𓎡 𓈖 𓐍𓏏𓏥 ·",
+    "bitcoinAmountBelowDust": "𓈖𓆓𓋴 𓅱𓂋𓏏 𓂝𓈙𓄿 𓊪𓈖 𓂋 𓋴𓍿𓄿𓆑 𓇋𓈖 𓄡𓈖𓅓𓏥 𓈖 Bitcoin · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓂝𓄿 𓂋𓆑 ·",
+    "sendGroupNetworkWarning": "𓇋𓅱 {symbol} 𓅓 𓄡𓈖𓅓𓏥 𓂝𓈙𓄿. 𓇋𓅱 𓉔𓄿𓃀 𓊪𓈖 𓅓 {network}: 𓅓𓄿𓄿 𓈖𓏏𓏏 𓈙𓋴𓊪 𓋴 𓈙𓋴𓊪 {symbol} 𓅓 {network}.",
+    "onNetwork": "𓅓 {network}",
+    "receiveOnlyOnNetwork": "𓅓 𓉔𓄿𓃀 {symbol} 𓂋 𓊨 𓏏𓈖 𓈖 𓂋𓈖 𓄋𓊪𓅱𓁷 𓅓 {network} · 𓋴𓅓𓅱𓈖 𓋴𓎡 𓇋𓐍𓏏𓏥 𓉔𓄿𓃀𓅱𓏏 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌𓏥 ·",
+    "bitcoinTooManyInputs": "𓅓𓂋 𓂝𓈙𓄿 𓊪𓈖 𓊪𓋴𓈙𓏥 𓈖 𓎛𓆓 𓈖𓆓𓋴𓅱 𓂝𓈙𓄿𓅱 𓅱𓂋𓏏 𓈖 𓁹𓏏 𓈖 𓋴𓍿𓄿 𓅱𓂝𓏏 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓈖𓆓𓋴 𓂋𓆑 ·",
+    "solanaPreviousSendUnverified": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓈖𓏏𓏏 𓈙𓋴𓊪𓈖𓆑 𓋴𓍿𓄿𓎡 𓈖 Solana 𓈖 𓐍𓂋 𓎛𓄿𓏏 · 𓂋𓐍𓆑 𓋴𓊪𓂋 𓅓 𓐍𓏏 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 ·"
   },
   "accounts": {
+    "tonEarlierPassword": "𓇋𓂋 TON 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖𓈖 𓁹 𓅓 𓐍𓏏 𓎡𓇌 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 · 𓂝𓎡 𓄂 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓊨 𓏏𓈖 𓂋 𓅱𓎛𓅓 ·",
     "invalidAccountAddress": "𓈖 𓐙 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊨 𓈖 𓂋𓈖",
     "walletName": "𓉒 𓂋𓈖",
     "createNewAccount": "𓁹 𓅓𓄿𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖",
@@ -413,7 +484,9 @@
     "rawSeed": "𓊪𓂋𓏏 𓄂",
     "json": "JSON",
     "backupKeyPair": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓄋𓊪 𓄡𓈖𓅓",
-    "addEthereumAccounts": "𓅱𓄿𓎛 Moonbeam 𓎛𓈖𓂝 Moonriver 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 ·"
+    "addEthereumAccounts": "𓅱𓄿𓎛 Moonbeam 𓎛𓈖𓂝 Moonriver 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓏥 ·",
+    "jsonBackupOnly": "𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿: 𓈖𓈖 𓋴𓅓𓈖 𓅓𓄿𓂝. 𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓂋 𓐍𓈖𓅱 (JSON).",
+    "exportFailed": "𓂜 𓊪𓎛𓏏𓅱 𓂞 𓉐𓂻. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓈙𓅓 𓂋 𓐍𓏏 𓎛𓈖𓂝 𓇋𓂋𓇋 𓎡𓇌."
   },
   "onboarding": {
     "titleFirst": "DeFi 𓉒 𓈖",
@@ -550,7 +623,11 @@
       "soraSubstrate": "5 – 20 𓏏𓂋𓏥",
       "soraEvm": "10 – 60 𓏏𓂋𓏥 𓅓𓂧𓅱 𓂧𓃀𓎛",
       "liberland": "5 – 20 𓏏𓂋𓏥"
-    }
+    },
+    "chooseRoute": "𓋴𓏏𓊪 𓅱𓄿𓏏",
+    "pausedTitle": "𓇋𓅱 𓋴𓍿𓄿𓏥 𓅓 𓄡𓈖𓅓𓏥 𓂋 𓄡𓈖𓅓𓏥 𓊵𓏏𓊪𓅱 𓂋 𓄿𓏏𓇳 ·",
+    "pausedBody": "𓇋𓅱 𓋴𓍿𓄿𓏥 𓅓 𓄡𓈖𓅓𓏥 𓂋 𓄡𓈖𓅓𓏥 𓊵𓏏𓊪𓅱 𓅓 𓐪𓂧𓏛 𓊪𓈖 𓐍𓆑𓏏 𓄙𓅓 𓆓𓂝𓂋 𓅱𓄿𓏏 𓎟𓏏 · 𓈖𓈖 𓋴𓍿𓄿𓏏𓅱 𓐍𓏏𓏥 𓎟𓏏 𓅓 𓃀𓅱 𓊪𓈖 · 𓇋𓅱 𓉔𓄿𓃀 𓎛𓈖𓂝 𓈙𓋴𓊪 𓏠𓈖 𓈖𓎡 𓅓 𓄡𓈖𓅓 𓎟 ·",
+    "sendOnNetwork": "𓉔𓄿𓃀 𓅓 {network}"
   },
   "auth": {
     "noAccounts": "𓈖𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓇋𓂋𓇋 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓 𓅓𓄿𓅱𓏏, 𓅱𓎼𓃀 𓎡𓄿𓏏 𓅓 𓅱𓎛𓅓"
@@ -828,9 +905,8 @@
     "actionRequired": "𓋴𓐍𓂋 𓋴𓏏 𓈖 𓅱𓈖: 𓇋𓂋𓏏 𓂧𓃀𓎛",
     "upgradingSecure": "𓈖𓏏𓈖 𓋴𓐍𓂋 𓋴𓏏 𓈖 𓅱𓈖 𓂋 𓋴𓄿𓅱 𓂝𓄿. 𓈙𓅓 𓅓 𓅓𓏏𓈖𓏥 𓊪𓈖:",
     "createMasterPass": "𓇋𓂋𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂝𓄿. 𓂋𓈖 𓊪𓈖 𓂋𓐍 𓇋𓂋𓇋 𓈖 𓉒𓏥𓎡 𓈖𓃀",
-    "enterPass": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓉒𓏥𓎡 𓈖 𓏏𓂋 𓊪𓈖. 𓇋𓂋 𓈖𓈖 𓋴𓐍𓄿𓎡 𓂋𓈖 𓈖 𓉒, 𓋴𓐍𓂋𓋴𓅱. 𓂋𓐍 𓇋𓈖𓇋𓎡 𓉒 𓅓 𓏏𓂋 𓎡𓇌",
-    "accessLost": "𓂋𓐍 𓇋𓏏𓏏 𓅱𓈖 𓈖 𓉒 𓊪𓈖. 𓂋𓐍 𓇋𓈖𓇋𓎡𓋴𓅱 𓅓 𓏏𓂋 𓎡𓇌. 𓂧𓃀𓎛 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓇋𓅱𓏏𓇌 JSON 𓈖 𓋴𓄿𓅱",
-    "skipWarning": "𓇋𓂋 𓂧𓄿𓇋𓎡 𓅓𓏏𓈖 𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛, 𓉒 𓂋𓐍 𓋴𓐍𓂋. 𓂋𓐍 𓇋𓈖𓇋𓎡𓋴𓅱 𓅓 𓏏𓂋 𓎡𓇌 𓅓 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "enterPass": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟 𓈖 𓎛𓄿𓏏. 𓇋𓂋 𓈖 𓋴𓐍𓄿𓎡 𓅱𓂝, 𓂧𓄿𓇋 𓋴𓏏: 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓𓈖 𓅓 Fearless, 𓇋𓅱 𓋴𓐍𓅓𓎡 𓅓 𓃹𓈖 𓐍𓏏𓅓𓆑 𓅓 𓐍𓏏 𓅓 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛𓆑 𓂋𓊪𓅱 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿.",
+    "skipWarning": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓂧𓄿𓇋𓎡 𓅓𓈖 𓅓 Fearless. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥𓋴𓈖 𓎛𓈖𓂝 𓈙𓋴𓊪 𓁷 𓃹𓈖; 𓉔𓄿𓃀 𓎛𓈖𓂝 𓂞 𓉐𓂻 𓁷 𓅱𓄿𓎛 𓂋 𓃹𓈖𓎡 𓐍𓏏𓅓𓋴𓈖 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
     "universalWalletRequired": "𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀 𓂧𓃀𓎛",
     "universalWalletActionRequired": "𓇋𓂋𓇋 𓇋𓅱𓏏𓇌 𓇋𓈖𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀",
     "universalWalletLegacyText": "𓅱𓈖 𓈖 𓉒 𓈖𓈖 𓅱𓈖 𓅓 𓉔𓄿𓏏 𓅱𓈖 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀. 𓉒𓏥 𓇋𓋴𓆓𓏏 𓅱𓈖 𓈖 𓊪𓂋𓏏 𓈖 𓋴𓐍𓄿 𓅱𓂝",
@@ -838,7 +914,21 @@
     "exportLegacyVault": "𓊪𓂋𓏏 𓉒 𓇋𓋴𓆓𓏏",
     "exportLegacyVaultUnavailable": "𓉒 𓇋𓋴𓆓𓏏 𓊪𓈖 𓈖𓈖 𓅱𓈖 𓈖 𓊪𓂋𓏏 𓉔𓂋 𓎡𓄿𓏏 𓊪𓈖",
     "createUniversalWallet": "𓇋𓂋𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀",
-    "importUniversalWallet": "𓇋𓈖𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀"
+    "importUniversalWallet": "𓇋𓈖𓇋 𓉒 𓈖 𓏏𓄿𓏥 𓈖𓃀",
+    "pending": "𓁷 𓅱𓄿𓎛",
+    "completed": "𓅓𓎛",
+    "legacyPasswordRequired": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓁷 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓆑 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless 𓅓𓇋𓈖. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓂋 𓂞 𓉔𓄿𓃀 𓂋𓊪𓅱 𓂞 𓉐𓂻.",
+    "skipForNow": "𓂧𓄿𓇋 𓅓 𓏏𓂋 𓊪𓈖",
+    "skipConfirmTitle": "𓇋𓈖 𓂧𓄿𓇋𓎡 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓅓 𓏏𓂋 𓊪𓈖 ·",
+    "skipFailed": "𓂜 𓋴𓄿𓅱𓏏𓅱 𓋴𓏏𓊪𓎡, 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "later": "𓅓 𓐍𓏏",
+    "enterPassRow": "𓋴𓏏𓊪 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎛𓈖𓂝 𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓏏𓆑 𓈖 𓎛𓄿𓏏 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂝𓄿.",
+    "downloadBackup": "𓇋𓈖𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓐍𓏏𓅓 𓂋 𓐍𓈖𓅱",
+    "downloadBackupFailed": "𓂜 𓇋𓈖𓏏𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓂋 𓐍𓈖𓅱. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "usePhrase": "𓇋𓈖 𓋴𓅓𓐍𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖 · 𓁹 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "loadFailed": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓈖𓏏𓎡. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "moreOptions": "𓋴𓏏𓊪𓏥 𓂝𓈙𓄿",
+    "resetHint": "𓅱𓎛𓅓 𓄂 𓉒 𓋴𓎡 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟 𓅓 Fearless 𓉔𓂋 𓎡𓄿𓏏 𓊪𓈖. 𓂧𓄿𓇋 𓅓 𓏏𓂋 𓊪𓈖 𓋴𓄿𓅱 𓋴𓈖 𓈖𓃀."
   },
   "common": {
     "lockApp": "𓐍𓏏𓅓 𓎡𓄿𓏏",
@@ -909,7 +999,6 @@
     "readMedium": "𓈙𓂧𓇋 𓉔𓂋 Medium",
     "learnWiki": "𓂋𓐍 𓉔𓂋 Wiki",
     "githubCode": "𓅓𓆓𓄿𓏏 𓈖 𓉔𓄿𓏏 𓉔𓂋 Github",
-    "contactEmail": "𓄡𓈖𓅓 𓅓 𓅓𓆓𓄿𓏏 𓉔𓄿𓃀",
     "askSupport": "𓂧𓃀𓎛 𓋴𓄿𓅱",
     "likeInstagram": "𓅓𓂋𓇋 𓉔𓂋 Instagram",
     "subscribeYouTube": "𓄡𓈖𓅓 𓅓 YouTube",
@@ -948,7 +1037,8 @@
     "externalWidget": "𓐍𓏏 𓈖 𓃀𓈖𓂋",
     "favicon": "𓏏𓅱𓏏 𓈖 𓋴𓏏 𓈖 𓄡𓈖𓅓",
     "fearlessLogo": "Fearless 𓏏𓅱𓏏",
-    "nftImage": "NFT 𓏏𓅱𓏏"
+    "nftImage": "NFT 𓏏𓅱𓏏",
+    "helpSupport": "𓋴𓄿𓅱"
   },
   "farmingPage": {
     "title": "Demeter 𓋴𓂓𓄿",
@@ -989,7 +1079,10 @@
       "catalog": "Demeter 𓈖𓈖 𓅱𓈖 𓅓 𓉔𓂋𓅱 𓊪𓈖. 𓄡𓈖𓅓 𓎡𓇌 𓈖 SORA, 𓇋𓂋𓇋 𓎡𓇌",
       "signing": "𓉒 𓊪𓈖 𓈖𓈖 𓂋𓐍 𓐍𓏏𓅓 𓇋𓂋𓏏𓏥 𓈖 SORA",
       "transaction": "𓇋𓂋𓏏 𓈖 𓉔𓄿𓃀 𓈖𓈖. 𓅓𓄿𓄿 𓎛𓋴𓃀𓎡 𓎛𓈖𓂝 𓋴𓈙𓅱 𓈖 𓄡𓈖𓅓𓏥 𓅓𓇋𓈖 𓅓 𓉔𓄿𓏏 𓇋𓂋𓇋 𓎡𓇌"
-    }
+    },
+    "pausedTitle": "𓇋𓅱 𓇋𓂋𓏏𓏥 𓈖 𓋴𓂓𓄿 𓊵𓏏𓊪𓅱 𓂋 𓄿𓏏𓇳 ·",
+    "pausedBody": "𓇋𓅱 𓅓𓄿𓄿𓏏𓅱 𓈙𓏥𓎡 𓈖 Demeter 𓎛𓈖𓂝 𓋴𓏏𓏥𓎡 𓎛𓈖𓂝 𓆑𓈎𓄿𓏥𓎡 𓅓 𓐪𓂧𓏛 𓊪𓈖 · 𓇋𓅱 𓂋𓂧𓇋 𓅓 𓋴𓏏 𓎛𓈖𓂝 𓈙𓂧 𓎛𓈖𓂝 𓈙𓋴𓊪𓏥 𓊵𓏏𓊪𓅱 𓐍𓆑𓏏 𓆓𓂝𓂋 𓇋𓂋𓏏 𓎟𓏏 · 𓈖𓈖 𓋴𓍿𓄿𓏏𓅱 𓐍𓏏𓏥 𓎟𓏏 𓅓 𓃀𓅱 𓊪𓈖 · 𓇋𓅱 𓋴𓏏𓏥𓎡 𓎛𓈖𓂝 𓆑𓈎𓄿𓏥𓎡 𓏠𓈖𓅱 𓅓 𓄡𓈖𓅓𓏥 𓈖 SORA ·",
+    "openPools": "𓅱𓈖 𓈙𓏥 𓈖 𓈗 𓈖 𓎛𓂧"
   },
   "defiHub": {
     "title": "𓈙𓋴𓊪 𓆑𓈎𓄿𓏥",
@@ -1011,7 +1104,8 @@
     "polkamarktDescription": "𓋴𓅱𓏏𓏥 𓈖 𓅓𓂧𓅱 𓈖 𓐍𓏏 𓋴𓄿𓅱 𓅓 KUSD",
     "soraXorFees": "SORA · XOR 𓇋𓋴𓅱𓏥",
     "availableNetworks": "𓄡𓈖𓅓𓏥 𓅱𓈖",
-    "addSubstrateAccount": "𓂋𓂧𓇋 Substrate 𓇋𓊪𓏥 𓈖 𓂋𓈖"
+    "addSubstrateAccount": "𓂋𓂧𓇋 Substrate 𓇋𓊪𓏥 𓈖 𓂋𓈖",
+    "browseOnly": "𓅓𓄿𓄿 𓏤"
   },
   "portfolioPage": {
     "balanceStatus": {
@@ -1059,6 +1153,73 @@
       "stale": "𓇋𓋴𓆓𓏏",
       "syncedAge": "𓋴𓅓𓄿𓂝 {age}",
       "synced": "𓋴𓅓𓄿𓂝"
+    },
+    "loadingBalances": "𓉔𓄿𓃀 𓎛𓋴𓃀𓏥𓎡",
+    "checkingNetworks": "𓅓𓄿𓄿 1 𓄡𓈖𓅓𓏥… | 𓅓𓄿𓄿 {count} 𓄡𓈖𓅓𓏥…",
+    "zeroNetworks": "1 𓄡𓈖𓅓𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥 | {count} 𓄡𓈖𓅓𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥",
+    "popularNoBalance": "𓄡𓈖𓅓𓏥 𓅓𓂋𓇌 𓈖 𓂋𓅓𓏏𓏥 𓂝𓈙𓄿 · 𓈖𓈖 𓎛𓋴𓃀𓏥 𓅓𓇋𓈖",
+    "hiddenNotIncluded": "1 𓇋𓐍𓏏 𓇋𓅓𓈖 𓈖𓈖 𓅓 𓂧𓅓𓆓 · 𓋾 | {count} 𓇋𓐍𓏏𓏥 𓇋𓅓𓈖 𓈖𓈖 𓅓 𓂧𓅓𓆓 · 𓋾",
+    "unpricedNotIncluded": "1 𓇋𓐍𓏏 𓇋𓅱𓏏𓇌 𓇋𓋴𓅱 𓈖𓈖 𓅓 𓂧𓅓𓆓 | {count} 𓇋𓐍𓏏𓏥 𓇋𓅱𓏏𓇌 𓇋𓋴𓅱 𓈖𓈖 𓅓 𓂧𓅓𓆓",
+    "poolStakesNotIncluded": "𓇋𓐍𓏏𓏥 𓂋𓂧𓇋 𓅓 𓈙𓏥 𓈖 𓂋𓈖𓅱 𓊃𓄿𓅱𓏥 𓈖𓈖 𓅓 𓂧𓅓𓆓",
+    "hiddenFundsNotice": "1 𓇋𓐍𓏏 𓇋𓅓𓈖 · 𓅱𓈖 𓈖𓋴 𓎛𓋴𓃀 | {count} 𓇋𓐍𓏏𓏥 𓇋𓅓𓈖 · 𓅱𓈖 𓈖𓋴𓈖 𓎛𓋴𓃀𓏥",
+    "hiddenFundsDescription": "𓇋𓐍𓏏𓏥 𓇋𓅓𓈖 𓈖𓈖 𓅓 𓂧𓅓𓆓𓎡. 𓋴𓇋𓊪 𓋴𓈖, 𓂋 𓊪𓅱 𓋴𓅓𓈖 𓋴𓈖 𓅓 𓇋𓅓𓈖.",
+    "review": "𓋴𓇋𓊪",
+    "keepHidden": "𓋴𓅓𓈖 𓇋𓅓𓈖",
+    "hiddenBadge": "𓇋𓅓𓈖",
+    "hiddenPreviousVersion": "𓇋𓅓𓈖 𓅓 𓐍𓏏 𓈖 𓎛𓄿𓏏",
+    "filterHidden": "𓇋𓅓𓈖 ({count})",
+    "testnets": "𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪",
+    "testnetBadge": "𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪",
+    "showingFiltered": "𓅓𓄿𓄿 {network} · {value}",
+    "transferable": "𓂋𓐍 𓉔𓄿𓃀 {amount}",
+    "inclHidden": "𓎛𓈖𓂝 𓇋𓐍𓏏𓏥 𓇋𓅓𓈖",
+    "noHiddenAssets": "𓈖𓈖 𓇋𓐍𓏏𓏥 𓇋𓅓𓈖",
+    "noHiddenAssetsDescription": "𓇋𓐍𓏏𓏥 𓇋𓅓𓈖𓎡 𓅓𓄿𓄿 𓅓 𓋴𓏏 𓏏𓈖, 𓂋 𓅓𓄿𓄿 𓋴𓈖 𓅓 𓅱𓎛𓅓.",
+    "testnetsNotShown": "1 𓇋𓐍𓏏 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 𓈖𓈖 𓅓𓄿𓄿 · 𓁹 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 | {count} 𓇋𓐍𓏏𓏥 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪 𓈖𓈖 𓅓𓄿𓄿 · 𓁹 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓈖 𓋴𓇋𓊪",
+    "showAssetOnNetwork": "𓁹 𓅓𓄿𓄿 {symbol} 𓅓 𓄡𓈖𓅓𓏥 {network}",
+    "showTokenOnNetworks": "𓁹 𓅓𓄿𓄿 {symbol} 𓅓 1 𓄡𓈖𓅓𓏥 | 𓁹 𓅓𓄿𓄿 {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥 𓎟𓏥",
+    "emptyWalletTitle": "𓈖𓈖 𓇋𓐍𓏏𓏥 𓅓 𓏏𓂋 𓊪𓈖",
+    "emptyWalletDescription": "𓈙𓋴𓊪 𓂋𓊪𓅱 𓇋𓈖 𓐍𓏏𓏥 𓂋 𓈙𓄿𓂝. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓𓄿𓄿𓏏𓅱 𓅓 𓊨 𓏏𓈖 𓅓 𓐍𓏏 𓇋𓇋𓋴𓈖.",
+    "noBalanceInView": "𓈖𓈖 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓅓 𓅓𓄿𓄿 𓊪𓈖",
+    "networkCount": "1 𓄡𓈖𓅓𓏥 | {count} 𓄡𓈖𓅓𓏥",
+    "priceUnavailableOn": "𓇋𓋴𓅱 𓈖𓈖 𓅱𓈖 𓅓 1 𓄡𓈖𓅓𓏥 | 𓇋𓋴𓅱 𓈖𓈖 𓅱𓈖 𓅓 {count} 𓄡𓈖𓅓𓏥",
+    "moreZeroNetworks": "+1 𓄡𓈖𓅓𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥 | +{count} 𓄡𓈖𓅓𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥",
+    "zeroTokens": "1 𓇋𓐍𓏏 · 𓈖𓈖 𓎛𓋴𓃀𓏥 | {count} 𓇋𓐍𓏏𓏥 · 𓈖𓈖 𓎛𓋴𓃀𓏥",
+    "tokenGroupLabel": "{symbol} 𓅓 1 𓄡𓈖𓅓𓏥: {amount}, {value} | {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥: {amount}, {value}",
+    "tokenSingleLabel": "{symbol} 𓅓 {network}: {amount}, {value}",
+    "tokenGroupFailedLabel": "{symbol} 𓅓 1 𓄡𓈖𓅓𓏥: {status} | {symbol} 𓅓 {count} 𓄡𓈖𓅓𓏥: {status}",
+    "tokenSingleFailedLabel": "{symbol} 𓅓 {network}: {status}",
+    "role": {
+      "native": "𓈖 𓐍𓈖𓅱",
+      "systemParachain": "𓈙𓈖𓏥 𓄡𓈖𓅓 𓈖 𓋴𓐍𓂋",
+      "xcmReserve": "𓋴𓄿𓅱 𓅓 𓋴𓏏 𓈖 XCM",
+      "rollup": "𓂧𓅓𓆓 𓈖 𓅓𓆓𓄿𓏏𓏥",
+      "issuerNative": "𓈖 𓐍𓈖𓅱 𓈖 𓇋𓂋𓇋"
+    },
+    "lens": {
+      "label": "𓅓𓄿𓄿",
+      "tokens": "𓅓 𓇋𓐍𓏏",
+      "networks": "𓅓 𓄡𓈖𓅓𓏥"
+    },
+    "sort": {
+      "label": "𓋴𓐍𓂋",
+      "value": "𓇋𓋴𓅱",
+      "custom": "𓋴𓐍𓂋𓎡"
+    },
+    "layoutNote": {
+      "title": "𓇋𓐍𓏏𓏥𓎡, 𓅓𓇋𓈖 𓅓 𓇋𓐍𓏏",
+      "description": "𓅓𓄿𓄿𓏏𓅱 𓇋𓐍𓏏 𓎟𓏏 𓋴𓊪 𓅱𓂝, 𓎛𓈖𓂝 𓂧𓅓𓆓𓋴 𓅓 𓄡𓈖𓅓𓏥. 𓂧𓅓𓇋 𓋴𓇋 𓂋 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓎟𓅱.",
+      "networks": "𓇋𓅱 𓇋𓂋𓅱𓏥 𓋴𓍿𓄿𓅱 𓅓 𓅱𓄿𓏏 𓅓 𓇋𓂧𓃀𓅱𓇌 𓎛𓈖𓂝 𓇋𓂋𓅱𓏥 𓅱𓏏𓅱 𓅓𓈖𓅱 𓅓 𓋴𓏏𓏥𓋴𓈖 𓅓 𓋴𓈙 𓅓 𓅱𓂝, 𓋴𓈙𓅱 𓅓 𓂋𓈖 𓈖 𓄡𓈖𓅓𓏥𓋴𓈖, 𓎛𓈖𓂝 𓋴𓏏𓊪𓎡 𓄡𓈖𓅓𓏥 𓅓 𓋴𓊪 𓎟 𓈖 𓉔𓄿𓃀 𓂋 𓊪𓅱 𓈙𓋴𓊪.",
+      "customOrderKept": "𓇋𓅱 𓋴𓐍𓂋𓎡 𓈖 𓐍𓏏 𓈖 𓎛𓄿𓏏 𓋴𓄿𓅱. 𓋴𓏏𓊪 «𓇋𓋴𓅱» 𓅓 𓏏𓂋 𓎟.",
+      "gotIt": "𓂋𓐍",
+      "byNetwork": "𓅓𓄿𓄿 𓅓 𓄡𓈖𓅓𓏥"
+    },
+    "groupPicker": {
+      "sendTitle": "𓉔𓄿𓃀 {symbol}: 𓋴𓏏𓊪 𓄡𓈖𓅓𓏥",
+      "receiveTitle": "𓈙𓋴𓊪 {symbol}: 𓋴𓏏𓊪 𓄡𓈖𓅓𓏥",
+      "sendWarning": "𓇋𓅱 {symbol} 𓅓 𓄡𓈖𓅓𓏥 𓂝𓈙𓄿. 𓉔𓄿𓃀 𓋴𓇋 𓅓 𓄡𓈖𓅓𓏥 𓈖 𓋴 𓈙𓋴𓊪: 𓋴𓅓𓅱𓈖 𓋴𓎡 𓇋𓐍𓏏𓏥 𓉔𓄿𓃀𓅱𓏏 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌.",
+      "receiveWarning": "𓋴𓏏𓊪 𓄡𓈖𓅓𓏥 𓈖𓏏𓅱 𓋴 𓉔𓄿𓃀 𓂋 𓉔𓄿𓃀 𓇋𓅓. 𓅓 𓉔𓄿𓃀 {symbol} 𓂋 𓉒 𓊪𓈖 𓄋𓊪𓅱𓁷 𓅓 𓄡𓈖𓅓𓏥 𓋴𓏏𓊪𓅱: 𓋴𓅓𓅱𓈖 𓋴𓎡 𓇋𓐍𓏏𓏥 𓉔𓄿𓃀𓅱𓏏 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌𓏥.",
+      "noSendNetwork": "𓈖𓈖 𓄡𓈖𓅓𓏥 𓂋𓐍 𓉔𓄿𓃀 {symbol} 𓅓𓇋𓈖."
     }
   },
   "polkamarktPage": {
@@ -1153,7 +1314,8 @@
       "unsupportedSigner": "𓐍𓏏𓅓 𓇋𓂋𓏏 𓅓 SORA 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓋴𓏏 𓊪𓈖",
       "acceptRisk": "𓈙𓋴𓊪 𓋴𓂧𓄿 𓈖 Polkaswap 𓎛𓈖𓂝 SORA 𓅓 𓐍𓏏 𓈖 𓋴𓅱𓏏",
       "addXor": "𓂋𓂧𓇋 XOR 𓂋 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥",
-      "addKusd": "𓂋𓂧𓇋 KUSD 𓋴𓄿𓅱 𓂋 𓇋𓈖 𓊪𓋴𓈙𓏏𓏥"
+      "addKusd": "𓂋𓂧𓇋 KUSD 𓋴𓄿𓅱 𓂋 𓇋𓈖 𓊪𓋴𓈙𓏏𓏥",
+      "paused": "𓇋𓅱 𓇋𓈖 𓎛𓈖𓂝 𓂋𓂧𓇋 𓈖 𓇋𓋴𓅱 𓎛𓈖𓂝 𓈙𓋴𓊪𓏥 𓊵𓏏𓊪𓅱 𓅓 𓐪𓂧𓏛 𓊪𓈖 ·"
     },
     "fallback": {
       "dataError": "𓅓𓆓𓄿𓏏𓏥 𓈖 𓋴𓅱𓏏 𓈖𓈖 𓅱𓈖 𓅓𓇋𓈖. 𓈖𓈖 𓇋𓐍𓏏 𓉔𓄿𓃀. 𓇋𓂋𓇋 𓎡𓇌",
@@ -1177,7 +1339,9 @@
       "claimed": "𓈙𓋴𓊪 𓅓𓄿𓂝",
       "pending": "𓁷 𓅱𓄿𓎛",
       "indexed": "𓋴𓈙 𓅓 𓇋𓊪𓏥"
-    }
+    },
+    "pausedTitle": "𓇋𓅱 𓋴𓅱𓏏 𓊵𓏏𓊪𓅱 𓅓 𓐪𓂧𓏛 𓊪𓈖 ·",
+    "pausedBody": "𓇋𓅱 Polkamarkt 𓏠𓈖 𓈖 𓅓𓄿𓄿 𓏤 𓐍𓆑𓏏 𓆓𓂝𓂋 𓇋𓈖 𓎛𓈖𓂝 𓂋𓂧𓇋 𓈖 𓇋𓋴𓅱 𓎛𓈖𓂝 𓈙𓋴𓊪𓏥 · 𓇋𓅱 𓅓𓄿𓄿𓏏𓅱 𓋴𓅱𓏏𓏥 𓎛𓈖𓂝 𓇋𓋴𓅱𓏥 𓎛𓈖𓂝 𓋴𓏏𓏥𓎡 𓅓 𓃀𓅱 𓊪𓈖 · 𓈖𓈖 𓇋𓐍𓏏 𓉔𓄿𓃀 ·"
   },
   "historyDetails": {
     "details": "𓅓𓂧𓅱𓏥 𓈖𓃀",
@@ -1236,6 +1400,148 @@
     "startingWallet": "𓈙𓅓𓂻 𓉒𓎡…",
     "startupUnavailable": "𓉒𓎡 𓈖𓈖 𓈙𓅓𓂻. 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥𓎡 𓎛𓈖𓂝 𓇋𓂋𓇋 𓎡𓇌.",
     "settingUpWallet": "𓁹 𓉒𓎡…",
-    "accountSetupFailed": "𓉒𓎡 𓈖𓈖 𓁹. 𓅓𓂧𓅱𓏥𓎡 𓅓 𓋴𓏏 𓊪𓈖. 𓇋𓂋𓇋 𓎡𓇌 𓂋𓊪𓅱 𓂋 𓐍𓏏 𓂋 𓅓𓄿𓄿."
+    "accountSetupFailed": "𓉒𓎡 𓈖𓈖 𓁹. 𓅓𓂧𓅱𓏥𓎡 𓅓 𓋴𓏏 𓊪𓈖. 𓇋𓂋𓇋 𓎡𓇌 𓂋𓊪𓅱 𓂋 𓐍𓏏 𓂋 𓅓𓄿𓄿.",
+    "tonAddressChoiceTitle": "𓋴𓏏𓊪 𓊨 𓈖 𓂋𓈖 𓈖 TON 𓈖𓎡",
+    "tonAddressChoiceDescription": "𓇋𓅱 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓈖 𓁷 𓅱𓈖 𓊨𓏥 𓈖 𓂋𓈖 𓈖 TON 𓂝𓈙𓄿 𓂋 𓅱𓂝𓏏, 𓈖 𓈖𓏏𓏏 𓁹𓈖 𓉐 𓈖 𓂓𓏏 𓏥 𓈖 Fearless 𓈖 𓎛𓄿𓏏 𓊨𓏥 𓈖 𓂋𓈖 𓈖 TON 𓅓 𓋴𓐍𓂋 𓎡𓇌 𓂋 𓐍𓏏 𓏏𓈖. 𓋴𓏏𓊪 𓊨 𓈖 𓂋𓈖 𓈖𓏏𓏏 TON𓎡 𓇋𓅓𓋴.",
+    "tonAddressUniversal": "𓊨 𓈖 𓂋𓈖 𓈖 𓈖𓏏𓂝",
+    "tonAddressUniversalDescription": "𓇋𓅱 𓐍𓏏 𓏏𓈖 𓈖 Fearless 𓎛𓈖𓂝 𓊪𓋴𓈙𓏏 𓅱𓂋𓏏 𓈖 𓉒𓏥 𓎡𓇌𓅱 𓁷 𓁹 𓊨 𓈖 𓂋𓈖 𓏏𓈖.",
+    "tonAddressLegacy": "𓊨 𓈖 𓂋𓈖 𓈖 Fearless 𓈖 𓎛𓄿𓏏",
+    "tonAddressLegacyDescription": "𓋴𓄿𓅱𓈖 Fearless 3.0 𓈖 Chrome 𓎛𓈖𓂝 𓉐 𓈖 𓂓𓏏 𓈖 Fearless 𓈖 Android TON 𓅓 𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓈖 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓈖.",
+    "tonAddressNative": "𓊨 𓈖 𓂋𓈖 𓈖 𓉒 𓈖 TON 𓅱𓂝𓆑",
+    "tonAddressNativeDescription": "𓇋𓅱 𓉐 𓈖 𓂓𓏏 𓏥 𓈖 Fearless 𓈖 𓎛𓄿𓏏 𓎛𓈖𓂝 𓉒𓏥 𓈖𓏏𓅱 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓋴𓈖 𓇋𓂋𓅱 𓈖 TON 𓅱𓂝𓆑 𓁷 𓁹 𓊨 𓈖 𓂋𓈖 𓏏𓈖.",
+    "tonAddressBalance": "𓎛𓋴𓃀𓏥: {amount} TON",
+    "tonAddressEmpty": "𓈖 𓎼𓅓𓇋𓏏𓅱 𓐍𓏏𓏥 · 𓈖 𓎼𓅓𓇋𓏏𓅱 𓋴𓈙𓅱 𓈖 𓄂",
+    "tonAddressUnknown": "𓈖 𓂋𓐍𓏏𓅱 𓋴𓇋𓊪 𓎛𓋴𓃀𓏥",
+    "tonAddressAsTyped": "𓅓𓇋 𓋴𓈙𓈖𓎡 𓅓 𓅓𓄿𓂝",
+    "tonAddressAsTypedDescription": "𓋴𓄿𓅱𓈖 𓉐 𓈖 𓂓𓏏 𓈖 Fearless 𓈖 Android 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖 TON 𓅓𓇋 𓋴𓈙𓈖𓏏𓅱𓋴𓈖, 𓎛𓈖𓂝 𓊨𓏥 𓈙𓅱𓏏 𓇋𓅓𓇌𓏏𓅱𓋴𓈖 𓎛𓈖𓂝 𓋴𓈙𓏥 𓂝𓄿𓅱. 𓋴𓏏𓊪 𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓇋𓂋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓎡 𓅓 𓉐 𓈖 𓂓𓏏 𓊪𓈖.",
+    "tonAddressInWallet": "𓇋𓅱𓋴 𓅓 𓉒𓎡 𓆓𓂋 𓎛𓄿𓏏",
+    "tonPhraseAsTyped": "𓈖 𓄿𓐍 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖 TON 𓈖𓈖 𓅱𓊪𓅱 𓎛𓂋 𓂝𓎡𓋴𓈖 𓅓𓇋 𓋴𓄿𓅱𓈖𓏏𓅱𓋴𓈖, 𓈖𓈖 𓋴𓐍𓂋 𓊨𓏥 𓈙𓅱𓏏 𓇋𓅓𓇌𓏏𓅱𓋴𓈖 𓎛𓈖𓂝 𓋴𓈙𓏥 𓂝𓄿𓅱. 𓋴𓏏𓊪 «𓊃𓐍𓄿 𓂋 𓅓𓆓𓄿𓏏 𓈖 𓂧𓂋𓏤» 𓂋 𓋴𓄿𓅱𓋴𓈖 𓅓 𓅓𓇋𓏏𓏏.",
+    "tonAddressUnchecked": "𓈖 𓂋𓐍𓈖 𓋴𓇋𓊪 𓊨𓏥 𓈖 𓂋𓈖 𓈖𓈖 𓅓𓇋𓈖, 𓐍𓂋 𓋴𓏏𓊪𓈖𓈖 𓊨 𓈖 𓂋𓈖 𓏏𓊪𓏏. 𓇋𓂋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓈖 𓅓 𓉐 𓈖 𓂓𓏏 𓈖 Fearless 𓈖 𓎛𓄿𓏏, 𓋴𓏏𓊪 𓊨 𓈖 𓂋𓈖 𓈖 𓉐 𓈖 𓂓𓏏 𓊪𓆑.",
+    "tonAddressBothHint": "𓈖 𓂋𓐍𓎡? 𓈖𓈖 𓋴𓎡 𓐍𓏏 𓎟𓏏 𓅓 𓋴𓏏𓊪 𓊨 𓎟𓏏 𓇋𓅓𓋴𓈖. 𓂋𓐍𓎡 𓇋𓈖 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓈖 𓅓 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂋 𓅱𓄿𓎛 𓊨 𓈖 𓂋𓈖 𓎡𓏏.",
+    "storageUnavailable": "𓂜 𓄞𓂧𓀁𓏏𓅱 𓏞𓏛 𓈖 𓉒𓎡. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌."
+  },
+  "signingReview": {
+    "blindWarning": "𓈖 𓂋𓐍 Fearless 𓈙𓂧 𓂧𓃀𓎛 𓊪𓈖. 𓋴𓅓𓅱𓈖 𓅱𓆓 𓐍𓏏𓅓𓆑 𓋴𓍿𓄿𓏥 𓈖 𓇋𓐍𓏏𓏥 𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖. 𓅓 𓈙𓅓 𓄋𓊪𓅱𓁷 𓇋𓂋 𓈙𓄿𓂝𓈖𓎡 𓋴𓅱 𓆓𓋴𓎡 𓅓 {origin} 𓎛𓈖𓂝 𓅓𓎛 𓇋𓃀𓎡 𓅓 𓃀𓅱 𓊪𓆑.",
+    "signAnyway": "𓂞 𓋴𓈙 𓈖 𓂋𓈖 𓇋𓋴𓏏 𓅱𓈖 𓋴𓈖𓆓",
+    "acknowledge": "𓇋𓅱𓇋 𓂋𓐍: 𓋴𓅓𓅱𓈖 𓋴𓍿𓄿 𓊪𓈖 𓇋𓐍𓏏𓏥.",
+    "reviewFirst": "𓃹𓈖 𓅓𓆓𓄿𓏏 𓅓 𓇋𓂋𓅱𓋴 𓈖 𓎛𓄿𓏏 𓎛𓈖𓂝 𓆓𓂧 𓂋𓐍𓎡 𓋴𓈖𓆓 𓈖 𓎛𓄿𓏏 𓂞 𓋴𓈙 𓈖 𓂋𓈖.",
+    "rawData": "𓋴𓅓𓄿𓄿 𓅓𓆓𓄿𓏏 𓅓 𓇋𓂋𓅱𓋴 𓈖 𓎛𓄿𓏏",
+    "feeUnavailable": "𓅓𓂧𓅱𓏥 𓈖 𓇋𓋴𓅱 𓈖𓈖 𓅱𓈖",
+    "signOnlyFee": "𓈖𓈖 𓉔𓄿𓃀 𓂋 𓄡𓈖𓅓𓏥 𓈖 𓐍𓏏𓅓 𓊪𓈖. 𓋴𓅓𓅱𓈖 𓅱𓆓𓆑 𓋴𓍿𓄿𓏥 𓅓𓐍𓏏.",
+    "maximumFee": "𓇋𓋴𓅱 𓈖 𓁹 𓂝𓄿 𓂋 𓎟 𓂧𓃀𓎛𓅱",
+    "estimateFee": "𓎛𓋴𓃀 𓈖 𓇋𓋴𓅱",
+    "invalidRequest": "𓈖 𓂋𓐍𓏏𓅱 𓐍𓏏𓅓 𓂧𓃀𓎛 𓊪𓈖. 𓐍𓋴𓆑 𓋴𓅱 𓎛𓈖𓂝 𓂧𓃀𓎛 𓉐 𓈖 𓂓𓏏 𓂋 𓁹 𓋴𓊪 𓅱𓎛𓅓.",
+    "unknownAction": "𓅱𓆓 𓈖 𓂋𓐍𓏏𓅱 𓈙𓂧𓆑",
+    "typedData": "𓅓𓂧𓅱 𓋴𓐍𓂋𓅱",
+    "flagged": "𓋴𓈙𓅱 𓅓 𓈖𓅱 𓅓 𓎼𓂋𓎼",
+    "checking": "𓋴𓇋𓊪 𓋴 𓂧𓃀𓎛…",
+    "signed": "𓐍𓏏𓅓𓏏𓅱 𓈖 {origin}",
+    "submitted": "𓉔𓄿𓃀𓏏𓅱 𓈖 {origin}"
+  },
+  "accountAccess": {
+    "title": "𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖",
+    "description": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓅓𓈖 𓅓 Fearless, 𓂜 𓋴𓎡𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓎛𓈖𓂝 𓈙𓋴𓊪 𓁷 𓃹𓈖; 𓉔𓄿𓃀 𓎛𓈖𓂝 𓂞 𓉐𓂻 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓐍𓏏𓅓 𓂋 𓃹𓈖𓎡 𓐍𓏏𓅓𓆑.",
+    "settingsDescription": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂋 𓃹𓈖 | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂋 𓃹𓈖",
+    "previousPasswordRequired": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏 𓅓𓂋𓂝. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓂋 𓂞 𓉔𓄿𓃀 𓂋𓊪𓅱 𓂞 𓉐𓂻.",
+    "unlockAccount": "𓃹𓈖 𓐍𓏏𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖",
+    "legacyPasswordHint": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖 𓈖 𓇋𓂋𓅱 𓈖 𓎛𓄿𓏏 𓈖 Fearless, 𓈖 𓎛𓄿𓏏 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓂝𓄿.",
+    "previousPasswordHint": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏, 𓅓𓇋 𓈖 𓎛𓄿𓏏 𓎘𓃀𓄲𓎡 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛.",
+    "phraseHint": "𓂋𓂧𓇋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖. 𓋴𓇋𓊪𓏏𓅱 𓋴𓈖 𓎛𓈖𓂝 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓎛𓄿𓏏 𓋴𓄿𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "passwordPlaceholder": "𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏",
+    "phrasePlaceholder": "𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "unlock": "𓃹𓈖 𓐍𓏏𓅓",
+    "usePhrase": "𓁹 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓 𓋴𓏏",
+    "usePassword": "𓁹 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓 𓋴𓏏",
+    "wrongPassword": "𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖 𓈖 𓃹𓈖𓆑 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "phraseMismatch": "𓅓𓂧𓅱𓏥 𓊪𓈖 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎡𓇌. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "unlockFailed": "𓂜 𓃹𓈖𓏏𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏. 𓇋𓂋𓇋 𓎡𓇌.",
+    "unlocked": "{name} 𓃹𓈖𓏏𓅱",
+    "allUnlocked": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓈖𓏏𓎡. 𓈖𓈖 𓐍𓏏 𓁷 𓅱𓄿𓎛 𓃹𓈖.",
+    "keepLocked": "𓋴𓅓𓈖 𓐍𓏏𓅓 𓅓 𓏏𓂋 𓊪𓈖",
+    "loadFailed": "𓂜 𓉔𓄿𓃀𓏏𓅱 𓋴𓈙 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. 𓂜 𓎘𓃀𓄲𓏛𓏏𓅱 𓐍𓏏𓏛 𓎟𓏏.",
+    "evmAccountOf": "Ethereum 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 {name}",
+    "derivationPathPlaceholder": "𓊪𓂋 𓅱𓄿𓏏 (𓅓 𓅓𓂋𓇋𓎡)",
+    "changePasswordPending": "1 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓆑 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖. | {count} 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓁷 𓅱𓄿𓎛 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓎛𓄿𓏏. 𓃹𓈖 𓐍𓏏𓅓𓋴𓈖 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
+    "deletedTitle": "𓉒𓏥 𓋴𓎡𓅱𓏥",
+    "deletedHint": "𓋴𓎡𓏏𓅱𓆑 𓅓 {date}. 𓅓 𓅱𓎛𓅓, 𓇋𓅱 𓉒 𓅓 𓋴𓏏𓆑 𓅓𓇋 𓅱𓈖𓆑 𓈖 𓎛𓄿𓏏, 𓎛𓈖𓂝 𓄋𓊪𓏥𓆑 𓈖𓅱 𓎛𓄿𓏏.",
+    "restore": "𓅱𓎛𓅓",
+    "restored": "𓇋𓅱 {name} 𓅓 𓋴𓈙𓏛𓎡 𓈖 𓉒𓏥 𓅓 𓅱𓎛𓅓",
+    "restoreFailed": "𓂜 𓅱𓎛𓅓𓏏𓅱 𓉒. 𓇋𓂋𓇋 𓎡𓇌.",
+    "alreadyRestored": "𓇋𓅱 𓉒 𓊪𓈖 𓅓 𓋴𓈙𓏛𓎡 𓈖 𓉒𓏥 𓆓𓂋 𓎛𓄿𓏏."
+  },
+  "storageRecovery": {
+    "title": "𓅱𓎛𓅓 𓉒",
+    "description": "𓂜 𓋴𓅓𓄿𓅱𓏏𓅱 𓅓𓆓𓄿𓅱𓏏𓏥 𓈖 𓉒. 𓉔𓄿𓃀 𓎛𓈖𓂝 𓎘𓃀𓄲𓏛 𓐍𓏏𓅓. 𓇋𓂋𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓅱𓏏𓏥 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖𓈖. 𓃹𓈖 𓉒 𓅓 𓅱𓎛𓅓 𓂋 𓇋𓂋𓇋 𓎡𓇌.",
+    "reload": "𓃹𓈖 𓉒 𓅓 𓅱𓎛𓅓",
+    "empty": "𓂜 𓇋𓈖𓏏𓅱 𓄋𓊪𓏥 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓋹𓅱𓏥 𓂋 𓐍𓈖𓅱. 𓇋𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓅱𓏏𓏥 𓈖 𓅱𓎛𓅓 𓅓𓈖𓅱𓏥 𓅓 𓐍𓏏 𓈖 𓂓𓏏 𓏏𓈖. 𓃹𓈖 𓉒 𓅓 𓅱𓎛𓅓 𓂋 𓇋𓂋𓇋 𓎡𓇌.",
+    "tonPassword": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓋴𓄿𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖 TON 𓊪𓈖. 𓇋𓂋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏 𓋴𓄿𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖, 𓂋𓂧𓇋 𓋴𓅱.",
+    "showPhrase": "𓋴𓅓𓄿𓄿 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "hidePhrase": "𓇋𓅓𓈖 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
+    "phraseHint": "𓋴𓄿𓅱 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓈖 𓅓 𓈙𓇾𓍔𓄿𓏴𓏛. 𓋴 𓎟 𓈖𓏏𓇋 𓅓𓂧𓅱𓏥 𓈖𓈖 𓅓 𓂝𓆑, 𓂋𓐍𓆑 𓎛𓈎𓄿 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
+    "backupHint": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓏏𓈖 𓋴𓄿𓅱 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓 𓐍𓏏𓅓. 𓋴𓄿𓅱 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓁹𓈖𓎡 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖; 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓏏𓈖 𓃹𓈖 𓇋𓈖 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓊪𓈖.",
+    "exportFailed": "𓂜 𓂋𓂧𓇋𓏏𓅱 𓉐𓂻 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿. 𓋴𓇋𓊪 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖, 𓇋𓂋𓇋 𓎡𓇌.",
+    "recordsTitle": "𓅓𓆓𓄿𓅱𓏏𓏥 𓈖 𓉒 𓅓𓈖𓅱𓏥",
+    "recordsHint": "𓇋𓅱 𓅓𓆓𓄿𓅱𓏏𓏥 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓅓𓈖𓅱𓏥 𓅓 𓅓𓆓𓄿𓏏 𓏏𓈖 𓈖 𓅱𓎛𓅓, 𓎛𓈖𓂝 𓅓𓆓𓄿𓅱𓏏𓏥 𓂋𓂧𓇋𓅱𓏥 𓂋 𓋴𓄿𓅱 𓎛𓈖𓂝 𓅓𓆓𓄿𓅱𓏏𓏥 𓂜 𓇋𓈖𓏏𓅱 𓂋 𓐍𓈖𓅱. 𓋴𓄿𓅱 𓋴𓇌 𓅓 𓈙𓇾𓍔𓄿𓏴𓏛, 𓋴𓄿𓅱 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓎛𓄿𓏏 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓎟. 𓇋𓂋 𓅓𓆓𓄿𓅱𓏏𓏥 𓁷 𓅱𓄿𓎛 𓋴𓅓𓈖, 𓋴𓅓𓈖 𓋴𓏏 𓈖 𓎛𓄿𓏏 𓅱𓎛𓅓𓋴𓈖.",
+    "recordsDownload": "𓇋𓈖𓇋 𓅓𓆓𓄿𓅱𓏏𓏥 𓈖 𓉒 𓅓𓈖𓅱𓏥 𓂋 𓐍𓈖𓅱"
+  },
+  "deleteWallet": {
+    "title": "𓋴𓎡 {name}?",
+    "balance": "𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓈖 𓉒 𓊪𓈖",
+    "description": "𓇋𓅱 Fearless 𓁷 𓋴𓎡 𓉒 𓊪𓈖 𓅓 𓐍𓏏 𓈖 𓅓𓄿𓄿 𓅓𓆓𓄿𓏏𓏥 𓏏𓈖. 𓇋𓅱 𓐍𓏏𓏥𓆑 𓅓𓈖𓅱𓏥 𓅓 𓄡𓈖𓅓𓏥. 𓂋 𓁹 𓂓𓏏 𓇋𓅓𓋴𓈖 𓅓 𓐍𓏏 𓈖 𓂓𓏏 𓎡𓏏, 𓂧𓃀𓎛𓎡 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓆑 𓂋𓊪𓅱 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏𓆑.",
+    "archived": "𓇋𓅱 𓄋𓊪𓏥 𓐍𓏏𓅓𓅱𓏥 𓅓𓈖𓅱𓏥 𓅓 𓐍𓏏 𓈖 𓂓𓏏 𓏏𓈖. 𓐍𓂋 𓂋𓐍𓎡 𓅱𓎛𓅓 𓉒 𓅓 𓋴𓅓𓈖𓏥, 𓅓 𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖.",
+    "mobileDescription": "𓇋𓅱 Fearless 𓁷 𓋴𓎡 𓉒 𓊪𓈖 𓅓 𓋴𓈙𓏛 𓈖 𓂋𓈖𓏥 𓅓 𓐍𓏏 𓈖 𓅓𓄿𓄿 𓅓𓆓𓄿𓏏𓏥 𓏏𓈖. 𓇋𓅱 𓄋𓊪𓏥𓆑 𓅓𓈖𓅱𓏥 𓅓 𓉐 𓈖 𓂓𓏏 𓈖 Fearless 𓈖 𓐍𓏏 𓁷 𓂝.",
+    "exportFirst": "𓂞 𓉐𓂻 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓 𓎛𓄿𓏏",
+    "passwordHint": "𓂋𓂧𓇋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛𓎡 𓂋 𓋴𓎡 𓉒 𓊪𓈖.",
+    "failed": "𓂜 𓋴𓎡𓏏𓅱 𓉒. 𓇋𓂋𓇋 𓎡𓇌."
+  },
+  "exposureNotice": {
+    "draftAwaitingOwnerSignOff": "",
+    "title": "𓋴𓅓𓇋𓏛 𓈖 𓋴𓄿𓅱",
+    "heading": "𓇋𓅱 𓋴𓅓𓅱𓈖 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓎡 𓎡𓆑𓄿𓅱𓏥",
+    "whatHappened": "𓅱𓈖 𓋴𓈙𓏛 𓈖 𓅱𓂧𓏥 𓅓 𓇋𓂋𓅱𓏥 𓇋𓋴𓆓𓏏 𓈖 Fearless Wallet 𓈖 𓐍𓏏𓏥 𓈖𓅱 𓅓𓄿𓄿 𓅓𓆓𓄿𓏏𓏥 ({first} 𓎛𓈖𓂝 {from} 𓂋 {to}) 𓁷 𓉔𓄿𓃀 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖 𓉒, 𓅓𓂧𓅱𓏥 𓈖𓏏𓅱 𓅱𓎛𓅓𓏏𓅱 𓉒 𓇋𓅓𓋴𓈖, 𓂋 𓉐 𓈖 𓅓𓆓𓄿𓏏𓏥 𓅓 𓂋𓅱𓏏𓇌 𓅓 𓃹𓈖 𓐍𓏏𓅓 𓈖 𓉒 · 𓇋𓂋 𓉒𓏥 𓅱𓄿𓎛𓅱𓏥 𓅓 𓅓𓆓𓄿𓏏 JSON 𓂋𓊪𓅱 𓊪𓂋𓏏 𓄂, 𓉔𓄿𓃀𓈖𓆑 𓄋𓊪 𓐍𓏏𓅓𓅱 𓎛𓈖𓂝 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓉒 ·",
+    "thisVersion": "𓈖𓈖 𓋴𓈙𓏛 𓈖 𓅱𓂧𓏥 𓊪𓆑 𓅓 𓇋𓂋𓅱 𓊪𓈖 ·",
+    "whatWeKnow": "𓅱𓈖 𓉒𓏥 𓋴𓈙𓅱𓏥 𓅓 𓊨 𓊪𓈖 𓅓 𓉐 𓈖 𓂓𓏏 𓊪𓈖 𓅓 𓎛𓄿𓏏 𓋴𓅓𓄿𓅱 𓊪𓈖 · 𓈖𓈖 𓂋𓐍 𓉐 𓈖 𓂓𓏏 𓊪𓈖 𓇋𓈖 𓉔𓄿𓃀𓏏𓅱 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓋴𓈖 𓂋𓊪𓅱 𓈙𓋴𓊪𓏏𓅱𓋴𓈖 𓂋𓊪𓅱 𓁹𓏏𓅱 𓂓𓏏 𓇋𓅓𓋴𓈖 · 𓐍𓂋 𓁹 𓉒 𓈖𓃀 𓇋𓅓𓋴𓈖 𓅓 𓉒 𓋴𓅓𓅱𓈖 𓎡𓆑𓄿𓅱 ·",
+    "whatItMeans": "𓈖𓏏𓇌 𓐍𓂋𓆑 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿, 𓂋𓐍𓆑 𓋴𓍿𓄿 𓐍𓏏𓏥 𓁷 𓊨 𓈖 𓂋𓈖 𓈖𓃀 𓁹𓅱 𓇋𓅓𓋴𓈖 𓅓 𓏏𓂋 𓈖𓃀 · 𓋴𓐍𓂋 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖𓎡, 𓈖𓈖 𓋴𓄿𓅱𓆑 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓎡𓆑𓄿𓅱𓏥 ·",
+    "passwordAdvice": "𓇋𓂋 𓁹𓎡 𓂓𓏏 𓅓 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓈖 𓉒 𓊪𓈖 𓅓 𓊨 𓎡𓇌 𓈖𓃀, 𓋴𓐍𓂋 𓋴𓅱 𓇋𓅓 ·",
+    "whatToDo": "𓁹 𓅓𓄿𓅱 𓉒 𓅓 𓇋𓂋𓅱 𓊪𓈖 𓎛𓈖𓂝 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓈖 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓𓄿𓅱𓏥 𓈖𓆑 𓎛𓈖𓂝 𓋴𓍿𓄿 𓐍𓏏𓏥𓎡 𓂋𓆑 𓅓 𓄡𓈖𓅓𓏥 𓅱𓂝 𓅱𓂝 · 𓋴𓏏 𓈖𓏏 𓅓𓄿𓄿 𓈖𓏏 𓅓 𓐍𓏏, 𓋴𓃀𓄿𓋴 𓍿𓅱 𓅓 𓈖𓈖 ·",
+    "enrollmentHold": "𓂋 𓋴𓅓𓈖𓎡 𓅓 𓐍𓂋, 𓈖𓈖 𓅱𓄿𓎛𓏏𓅱 𓊨 𓈖 𓂋𓈖 𓏥 𓅓𓄿𓅱𓏥 𓈖 𓄡𓈖𓅓𓏥 (Bitcoin, Solana, TON, Iroha) 𓂋 𓉒𓏥 𓇋𓊪𓈖 ·",
+    "walletsTitle": "𓉒𓏥 𓅱𓈖𓅱 𓅓 𓎛𓄿𓏏 𓋴𓅓𓄿𓅱 𓊪𓈖",
+    "walletRemoved": "𓈖𓈖 𓋴𓅱 𓅓 𓉐 𓈖 𓂓𓏏 𓊪𓈖 𓅓 𓏏𓂋 𓊪𓈖",
+    "walletRemovedHint": "𓇋𓂋 𓅓𓈖 𓐍𓏏𓏥 𓅓𓆑, 𓅱𓄿𓎛 𓋴𓅱 𓅓 𓅱𓎛𓅓 𓅓 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓆑 𓎛𓈖𓂝 𓋴𓍿𓄿 𓋴𓈖 ·",
+    "confirm": "𓂋𓐍𓇋 𓈖𓏏𓏏 𓇋𓅱 𓋴𓅓𓅱𓈖 𓉒𓏥 𓇋𓊪𓈖 𓎡𓆑𓄿𓅱𓏥 𓎛𓈖𓂝 𓈖𓏏𓏏 𓈖𓈖 𓋴𓄿𓅱 𓂋𓈖 𓈙𓇾𓍔𓄿𓏴𓏛 𓅓𓄿𓅱 𓋴𓈖 ·",
+    "continue": "𓈙𓅓𓂻 𓂋 𓅓𓆓𓄿𓏏 𓈖𓏏 𓋴𓃀𓄿𓇌𓏏",
+    "openGuide": "𓃹𓈖 𓅓𓆓𓄿𓏏 𓈖𓏏 𓋴𓃀𓄿𓇌𓏏",
+    "readNotice": "𓈙𓂧 𓋴𓅓𓇋𓏛",
+    "acknowledgeFailed": "𓈖 𓂋𓐍𓏏𓅱 𓋴𓄿𓅱 𓋴𓅓𓈖𓎡 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 ·",
+    "reminder": "𓇋𓅱 𓋴𓅓𓅱𓈖 {count} 𓉒 𓅱𓈖 𓅓 𓎛𓄿𓏏 𓋴𓅓𓄿𓅱 𓊪𓈖 𓎡𓆑𓄿𓅱 · 𓋴𓍿𓄿 𓐍𓏏𓏥𓆑 𓂋 𓉒 𓅓𓄿𓅱 · | 𓇋𓅱 𓋴𓅓𓅱𓈖 {count} 𓉒𓏥 𓅱𓈖𓅱 𓅓 𓎛𓄿𓏏 𓋴𓅓𓄿𓅱 𓊪𓈖 𓎡𓆑𓄿𓅱𓏥 · 𓋴𓍿𓄿 𓐍𓏏𓏥𓋴𓈖 𓂋 𓉒 𓅓𓄿𓅱 ·",
+    "receiveWarning": "𓇋𓅱 𓋴𓅓𓅱𓈖 𓉒 𓊪𓈖 𓎡𓆑𓄿𓅱 · 𓈙𓋴𓊪 𓐍𓏏𓏥 𓅓 𓉒 𓁹𓅱 𓅓 𓇋𓂋𓅱 𓊪𓈖 𓅓 𓇋𓋴𓅱𓆑 ·",
+    "guide": {
+      "title": "𓋴𓍿𓄿 𓂋 𓉒 𓅓𓄿𓅱",
+      "intro": "𓁹 𓅓𓏏𓈖𓏥 𓇋𓊪𓈖 𓅱𓂝 𓅓 𓐍𓏏 𓅱𓂝 · 𓇋𓅱 𓉒𓏥𓎡 𓇋𓋴𓆓𓏏 𓅓𓈖𓅱𓏥 𓅓 𓋴𓈙𓏛 𓈖 𓂋𓈖𓏥 𓎛𓈖𓂝 𓁷 𓁹 𓂓𓏏 · 𓈖𓈖 𓋴𓎡𓏏𓅱 𓐍𓏏 𓈖𓃀𓏏 ·",
+      "createTitle": "𓁹 𓅓𓄿𓅱 𓉒",
+      "createText": "𓁹 𓋴𓅱 𓅓 𓊨 𓊪𓈖 𓅓 𓇋𓂋𓅱 𓊪𓈖 𓂋 𓈙𓋴𓊪𓆑 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓𓄿𓅱𓏥 · 𓅓 𓇋𓈖 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓇋𓋴𓆓𓏏 𓂋𓊪𓅱 𓄋𓊪 𓇋𓋴𓆓𓏏 𓂋𓊪𓅱 𓅓𓆓𓄿𓏏 JSON 𓇋𓋴𓆓𓏏 · 𓎡𓄿 𓇋𓇋 𓎡𓆑𓄿 𓎛𓈖𓂝𓋴𓈖 ·",
+      "createTonText": "𓇋𓅱 𓉒𓏥 𓈖 TON 𓅱𓊪𓅱𓏥 · 𓐍𓏏𓏥 𓅓 𓉒 𓇋𓋴𓆓𓏏 𓈖 TON, 𓂧𓃀𓎛𓋴𓈖 𓉒 𓅓𓄿𓅱 𓈖 TON ·",
+      "createTonButton": "𓁹 𓅓𓄿𓅱 𓉒 𓈖 TON",
+      "newWallets": "𓉒𓏥 𓅓𓄿𓅱𓏥",
+      "backupTitle": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓈖 𓉒 𓅓𓄿𓅱",
+      "backupText": "𓋴𓈙𓏛 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖𓆑 𓁷 𓅓𓆓𓄿𓏏 𓎛𓈖𓂝 𓋴𓄿𓅱 𓋴𓈖 𓅓 𓂋𓅱𓏏𓇌 𓈖 𓄡𓈖𓅓𓏥 · 𓇋𓂋 𓈖𓈖 𓋴𓈖, 𓈖𓈖 𓂋𓐍𓏏𓅱 𓅱𓎛𓅓 𓉒 𓅓𓄿𓅱 ·",
+      "backupConfirm": "𓋴𓈙𓈖𓇋 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓𓄿𓅱𓏥",
+      "moveTitle": "𓋴𓍿𓄿 𓐍𓏏𓏥𓎡 𓅓 𓄡𓈖𓅓𓏥 𓅱𓂝 𓅱𓂝",
+      "moveText": "𓃹𓈖 𓉒 𓇋𓋴𓆓𓏏 𓈖𓃀 𓎛𓈖𓂝 𓉔𓄿𓃀 𓂧𓅓𓆓 𓈖𓃀 𓈖 𓐍𓏏𓏥 𓅓𓈖𓏏 𓅓𓆑 𓂋 𓉒𓎡 𓅓𓄿𓅱 · 𓇋𓅱 𓄡𓈖𓅓𓏥 𓈖𓃀 𓁷 𓈙𓋴𓊪 𓇋𓋴𓅱𓆑 𓆓𓋴𓆑 · 𓐍𓂋 𓉔𓄿𓃀 𓎛𓆓 𓈖 𓄡𓈖𓅓𓏥 𓆓𓋴𓆑 𓅓 𓊪𓎛𓅱𓇌 ·",
+      "moveNotListed": "𓈖𓈖 𓋴𓈙𓏏𓅱 𓐍𓏏𓏥 𓐍𓏏𓅓𓅱𓏥 𓂋 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓎛𓈖𓂝 𓈙𓏥 𓈖𓅱 𓐍𓏏𓏥 𓈖 𓋴𓅱𓈖𓏏 𓎛𓈖𓂝 NFTs 𓅓 𓊨 𓊪𓈖 · 𓃹𓈖 𓐍𓏏𓅓𓋴𓈖 𓂋𓊪𓅱 𓇋𓈖 𓋴𓈖 𓂋 𓂋𓅱𓏏𓇌 𓅓 𓎛𓄿𓏏 · 𓅓 𓐍𓏏 𓉔𓄿𓃀 𓋴𓈖 𓅓𓇋𓏏𓏏 ·",
+      "sendTo": "𓉔𓄿𓃀 𓂋",
+      "noDestination": "𓁹 𓅓𓄿𓅱 𓉒 𓅓 𓎛𓄿𓏏",
+      "open": "𓃹𓈖 𓉒 𓊪𓈖",
+      "remainingTitle": "𓈖𓏏𓏏 𓅓𓈖𓏏 𓅓 𓉒 𓊪𓈖",
+      "checking": "𓅓𓄿𓄿 𓂧𓅓𓆓𓏥 𓈖𓅱 𓐍𓏏𓏥…",
+      "nothingFound": "𓈖 𓎼𓅓𓇋𓏏𓅱 𓂧𓅓𓆓 𓈖 𓐍𓏏𓏥 𓁷 𓄡𓈖𓅓𓏥 𓋴𓅓𓄿𓄿𓅱𓏥 𓈖 𓉒 𓊪𓈖 · 𓅓𓄿𓄿 𓄡𓈖𓅓𓏥 𓇋𓅓𓈖𓅱𓏥 𓎛𓈖𓂝 𓋴𓎛𓏏𓊪𓅱𓏥 𓅓 𓎛𓄿𓏏 𓋴𓈙𓎡 𓋴𓅱 𓅓 𓋴𓍿𓄿𓅱 ·",
+      "markMoved": "𓋴𓈙𓏛 𓋴𓅱 𓅓 𓋴𓍿𓄿𓅱",
+      "undoMoved": "𓈖 𓋴𓍿𓄿𓏏𓅱 𓂋 𓏏𓂋 𓊪𓈖",
+      "statusPending": "𓅓𓈖 𓂋 𓋴𓍿𓄿",
+      "statusMoved": "𓋴𓈙𓅱 𓅓 𓋴𓍿𓄿𓅱",
+      "remaining": "{count} 𓉒 𓇋𓋴𓆓𓏏 𓅓𓈖 𓂋 𓋴𓍿𓄿 | {count} 𓉒𓏥 𓇋𓋴𓆓𓏏 𓅓𓈖𓅱𓏥 𓂋 𓋴𓍿𓄿",
+      "allMoved": "𓇋𓅱 𓉒 𓇋𓋴𓆓𓏏 𓈖𓃀 𓋴𓈙𓅱 𓅓 𓋴𓍿𓄿𓅱 · 𓋴𓄿𓅱 𓋴𓈖 𓅓 𓋴𓈙𓏛 𓈖 𓂋𓈖𓏥 𓂋 𓂋𓐍𓎡 𓈖𓏏𓏏 𓈖𓈖 𓐍𓏏 𓅓𓈖𓏏 · 𓂋𓐍 𓐍𓏏𓏥 𓂞𓅱𓏥 𓅓 𓐍𓏏 𓏏𓂋𓋴𓈖 𓇋𓇋𓏏 𓂋 𓊨 𓈖 𓂋𓈖 𓏥 𓇋𓋴𓆓𓏏 ·",
+      "later": "𓈙𓅓𓂻 𓂋 𓉒"
+    }
   }
 }

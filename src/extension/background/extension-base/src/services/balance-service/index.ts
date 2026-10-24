@@ -14,14 +14,34 @@ import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/type
 import type {
   BalanceMap,
   BalanceJson,
+  RequestTotalBalances,
   ResponseTotalBalances,
+  RequestPortfolioHoldings,
+  ResponsePortfolioHoldings,
   ResponseBalanceRequest,
   TokenGroup,
 } from '@extension-base/background/types/types';
 import { getMockAssets } from '@/extension/background/extension-base/src/background/helpers/assets';
 import { isSameString, isTonNetwork } from '@/helpers';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
-import { buildPortfolioSummary, createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { buildPortfolioSummary, createAssetKey, getPortfolioAssetId } from '@/portfolio/assetIdentity';
+import { buildWalletHoldings } from '@/portfolio/dashboard/holdings';
+
+const MAX_HIDDEN_KEYS_PER_WALLET = 5000;
+
+/** Keeps only string keys, per string address; the request only labels a total and never moves value. */
+function sanitizeHiddenKeysByAddress(value: unknown): Record<string, string[]> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, unknown[]] => Array.isArray(entry[1]))
+      .map(([address, keys]) => [
+        address,
+        keys.filter((key): key is string => typeof key === 'string').slice(0, MAX_HIDDEN_KEYS_PER_WALLET),
+      ])
+  );
+}
 
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
@@ -53,10 +73,11 @@ export default class BalanceService {
       if (!cached) return;
       if (!this.balanceMap[address]) this.balanceMap[address] = [];
 
-      Object.entries(cached).forEach(([storedKey, item]) => {
-        if (!item?.id || !item.chain || item.state !== APIItemState.READY) return;
-        if (storedKey !== this.getStorageAssetKey(item.chain, item)) return;
+      Object.entries(cached).forEach(([storedKey, cachedItem]) => {
+        if (!cachedItem?.id || !cachedItem.chain || cachedItem.state !== APIItemState.READY) return;
+        if (storedKey !== this.getStorageAssetKey(cachedItem.chain, cachedItem)) return;
 
+        const item = this.withRegistryPriceId(cachedItem);
         const group = this.balanceMap[address].find(({ balances }) =>
           balances.some(
             (balance) =>
@@ -72,7 +93,14 @@ export default class BalanceService {
 
         if (group && existing >= 0) {
           group.balances[existing] = { ...group.balances[existing], ...item };
-          if (item.priceId) group.priceId = item.priceId;
+          if ('priceId' in item) group.priceId = item.priceId;
+          return;
+        }
+
+        const sameAssetGroup = this.findIndexerAssetGroup(address, item.id, item.relayChain);
+
+        if (sameAssetGroup) {
+          sameAssetGroup.balances.push({ ...item });
           return;
         }
 
@@ -190,6 +218,10 @@ export default class BalanceService {
     await storage.set({ assetBalances: copyAssetBalances, networkScanStates: copyScanStates });
   }
 
+  /**
+   * The cache key of one balance: its network and registry asset id. Two assets of one network may share a
+   * `currencyId` (Bifrost vKSM and vsKSM), so that id would let one asset's cached amount overwrite the other's.
+   */
   private getStorageAssetKey(
     chain: string,
     item: Pick<BalanceItem, 'id'> & Partial<BalanceItem>
@@ -197,9 +229,20 @@ export default class BalanceService {
     const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, chain));
     const ecosystem = String(network?.ecosystem ?? item.relayChain ?? 'unknown');
     const chainId = String(network?.chainId ?? chain);
-    const assetId = getCanonicalAssetId(item as BalanceItem);
+    const assetId = getPortfolioAssetId(item);
 
     return createAssetKey({ ecosystem, chainId, assetId });
+  }
+
+  /**
+   * A cached balance of a registry asset takes the registry's price id of today, not the one it was cached with:
+   * the registry may have corrected it since, and an asset on the untrusted list has none.
+   */
+  private withRegistryPriceId<T extends BalanceItem & { chain: string }>(item: T): T {
+    const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, item.chain));
+    const registryAsset = network?.assets?.find(({ id }) => id === item.id);
+
+    return registryAsset ? { ...item, priceId: registryAsset.priceId || undefined } : item;
   }
 
   public async updateUtilityED(networkName: NetworkName): Promise<void> {
@@ -326,29 +369,84 @@ export default class BalanceService {
     return this.balanceSubject.next(balance);
   }
 
-  async getTotalBalances(): Promise<ResponseTotalBalances[]> {
+  /**
+   * Every wallet's total for the wallet list. `total` includes hidden assets, so a wallet whose funds are all
+   * hidden never looks empty there; the hidden keys the popup sends only split out `hiddenValue` for the label and
+   * `visibleTotal`, which equals the portfolio header. Testnet holdings are never counted.
+   */
+  async getTotalBalances(request?: RequestTotalBalances | null): Promise<ResponseTotalBalances[]> {
+    const hiddenKeysByAddress = sanitizeHiddenKeysByAddress(request?.hiddenKeysByAddress);
+
     return new Promise<ResponseTotalBalances[]>((res) =>
       this.state.pricesService.getPrice((prices) => {
+        // The remote registry plus the bundled Bitcoin, Solana and Iroha networks, as in the popup header.
         const registryNetworks = this.state.networkService.networksGithub?.length
-          ? this.state.networkService.networksGithub
+          ? this.state.networkService.authoritativeDiscoveryNetworks
           : this.state.networkService.networkValues ?? [];
         const totalBalances = Object.keys(this.balanceMap).map((address) => {
-          const summary = buildPortfolioSummary({
+          const input = {
             groups: this.balanceMap[address],
             networks: registryNetworks,
             prices: prices.tokenPriceMap,
             priceChanges: prices.tokenPriceChange,
             addressForNetwork: () => address,
-          });
+          };
+          const summary = buildPortfolioSummary(input);
+          const hiddenKeys = hiddenKeysByAddress[address] ?? [];
+          const visible = hiddenKeys.length
+            ? buildPortfolioSummary({
+                ...input,
+                preferences: Object.fromEntries(hiddenKeys.map((key) => [key, 'hidden' as const])),
+              })
+            : summary;
 
           return {
             address,
             total: summary.total,
             change: { amount: summary.changeAmount, percent: summary.changePercent },
+            visibleTotal: visible.total,
+            hiddenValue: visible.hiddenValue,
+            hiddenCount: visible.hiddenCount,
+            // Counted like `total`, hidden assets included: a hidden balance that failed is missing from it too.
+            unavailableCount: summary.unavailableCount,
           };
         });
 
         res(totalBalances);
+      })
+    );
+  }
+
+  /**
+   * Every wallet's counted holdings, for the portfolio dashboard's All wallets scope. It reads the same balance maps,
+   * registry networks and prices as `getTotalBalances`, so each wallet's `total` equals that wallet's `visibleTotal`
+   * for the same hidden keys. Nothing here writes, signs or moves value.
+   */
+  async getPortfolioHoldings(request?: RequestPortfolioHoldings | null): Promise<ResponsePortfolioHoldings[]> {
+    const hiddenKeysByAddress = sanitizeHiddenKeysByAddress(request?.hiddenKeysByAddress);
+
+    return new Promise<ResponsePortfolioHoldings[]>((res) =>
+      this.state.pricesService.getPrice((prices) => {
+        const registryNetworks = this.state.networkService.networksGithub?.length
+          ? this.state.networkService.authoritativeDiscoveryNetworks
+          : this.state.networkService.networkValues ?? [];
+
+        res(
+          Object.keys(this.balanceMap).map((address) =>
+            buildWalletHoldings(
+              address,
+              {
+                groups: this.balanceMap[address],
+                networks: registryNetworks,
+                prices: prices.tokenPriceMap,
+                priceChanges: prices.tokenPriceChange,
+                addressForNetwork: () => address,
+                scanStates: this.networkScanStates[address] ?? {},
+              },
+              hiddenKeysByAddress[address] ?? []
+            )
+          )
+        );
       })
     );
   }
@@ -387,12 +485,37 @@ export default class BalanceService {
             )
         );
 
-        if (missingBalances.length) this.balanceMap[address].push({ ...candidate, balances: missingBalances });
+        if (!missingBalances.length) return;
+
+        const sameAssetGroup = this.findIndexerAssetGroup(address, candidate.groupId, candidate.relayChain);
+
+        if (sameAssetGroup) sameAssetGroup.balances.push(...missingBalances);
+        else this.balanceMap[address].push({ ...candidate, balances: missingBalances });
       });
     });
   }
 
-  getTokenBalance(address: string, assetId: string, relayChain?: string) {
+  // Bitcoin, Iroha and Solana services keep one group per asset across networks (Bitcoin and Bitcoin Testnet both
+  // hold BTC); restoring or seeding balances must not split those into duplicate groups.
+  private findIndexerAssetGroup(address: string, groupId: string, relayChain?: string): TokenGroup | undefined {
+    if (!['bitcoin', 'iroha', 'solana'].some((indexerChain) => isSameString(relayChain, indexerChain))) return undefined;
+
+    return this.balanceMap[address]?.find(
+      (group) => group.groupId === groupId && isSameString(group.relayChain, relayChain)
+    );
+  }
+
+  getTokenBalance(address: string, assetId: string, relayChain?: string, networkKey?: string) {
+    // The same registry id can live on several networks (DOT on Polkadot and Polkadot AssetHub,
+    // DAI on Arbitrum One and OP Mainnet), so a known network selects that network's group first.
+    const networkGroup = networkKey
+      ? this.balanceMap[address].find(({ balances }) =>
+          balances.some(({ id, name }) => id === assetId && isSameString(name, networkKey))
+        )
+      : undefined;
+
+    if (networkGroup) return networkGroup;
+
     // TODO проверить будет ли корректно работать если заменить на поиск по groupId
     return this.balanceMap[address].find((tokenGroup) => {
       const existId = tokenGroup.balances.some(({ id }) => id === assetId);

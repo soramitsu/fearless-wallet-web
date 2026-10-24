@@ -1,0 +1,137 @@
+{
+  "provenance": {
+    "scenario": "3.0.5 with TON wallets, Reset wallet, a new password and a new wallet (orphan TON phrases) → 4.2.0",
+    "writtenBy": "Fearless Wallet 3.0.5, built from its own source and lockfile and driven in Chrome for Testing",
+    "commit": "600a64d51365a40de646925e4b591ca06ff63643",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "node": "v20.20.2",
+    "deviations": [],
+    "chrome": "Google Chrome for Testing 147.0.7727.15",
+    "harness": "scripts/upgrade-e2e/run.mjs --snapshot",
+    "extensionId": "plnlnnlkcnkiokjgpefakfhgngpbnaec (test key)",
+    "syntheticSecretsOnly": true,
+    "omittedKeys": [
+      "wc@2:core:0.3//keychain",
+      "fwnetworkMap:NetworkMap"
+    ]
+  },
+  "profile": {
+    "master": "Set after Reset wallet in 3.0.5",
+    "wallets": [
+      {
+        "name": "After the reset",
+        "kind": "mnemonic",
+        "type": "sr25519",
+        "address": "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp",
+        "ethereumAddress": "0xc70eC8094CCE52B6574A5a2b7bf0c7D8288d77cC",
+        "phrase": "scheme spot photo card baby mountain device kick cradle pact join borrow",
+        "path": "",
+        "phraseStored": true
+      }
+    ],
+    "standalone": [],
+    "ton": [
+      {
+        "name": "TON native import",
+        "kind": "ton",
+        "walletEcosystem": "ton",
+        "address": "UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH",
+        "phrase": "motor robot hidden process lady summer apart iron educate pool call spy mad dog awful twice wrong pair sign vacuum convince web trade develop"
+      },
+      {
+        "name": "TON from a BIP39 phrase",
+        "kind": "ton",
+        "walletEcosystem": "ton",
+        "address": "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_",
+        "phrase": "letter advice cage absurd amount doctor acoustic avoid letter advice cage above"
+      }
+    ]
+  },
+  "storage": {
+    "accountSubs": {},
+    "addressBook": {},
+    "addresses": {},
+    "authUrls": {},
+    "defaultAuthAccountSelection": [],
+    "fw:account:0xb083ab3f7b484433e03dba76d739fad353c796e86e6a35ee0dde4372ebedaa29": {
+      "address": "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp",
+      "encoded": "qn1kxsle5F6A+caiI9p5uFxnmth2TLmIM2Od0LsrY+AAgAAAAQAAAAgAAADk5al5o479DbD0g5SXpr/wi9wt5QtgRN4hZOub7oGZ0H4yGWM/iRbtzuQYA2CdUSgWHF+H6FJYwL1/Gi7MbvUKrT4SJz1IFW4NQs3o+OgqKKOr38tmsTaGO4b5IsBoyJSTx70fwJfjLUKVSUOgeOp9loOyaYaZxCXmMqdCoHuU7Xmx/STS2NftbyVVA11DWDNLQF8xoQwI962gk/cYtOyRgDePDCIqpSPSEwhDkgh744KH",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "sr25519"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0xc70eC8094CCE52B6574A5a2b7bf0c7D8288d77cC",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "After the reset",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791736877065
+      }
+    },
+    "fw:account:0xc70ec8094cce52b6574a5a2b7bf0c7d8288d77cc": {
+      "address": "0x02f98ce818e35ba0a094e99eca0845ca19bed0f557161fd4f791e8152cca92696d",
+      "encoded": "M7KQaaX/k+G/VQFXIQaKSi41QBNW2z3Q7CjRMMpQy68AgAAAAQAAAAgAAABnC7wJbvQhUnAgjcbzb9Yyr+WJkQECmu2Ckk3BNijVIgpTn4+KW8cDXsHjVmjKM45y1Mh9nyYgsQZ906oOEmq/A72aHMKj7MkmRurjG/z3eU3/tppROqgpCoDsssJB6/zFGZK4a+Am/kDLrFAkmBG+8bVd6Dna2V62kv1yyG9bZ+vP0zlUpgTf3WmgU/nOzpQ26LE=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "After the reset",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791736876939
+      }
+    },
+    "fw:keyring": {
+      "passwordHash": "$2a$06$9wN7cd3XUVhN/owOe4ssYefvSdJydmc4g1.qjxiXVGIcWik7kMhii"
+    },
+    "fw:ton:UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_": {
+      "address": "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_",
+      "cipherSeed": "U2FsdGVkX1+FuESTuPGjPqRkJj0dVcYvFHkjpcIiENq277v0pl7YlDWdo2wLRrj9FZKyB6gPFafW7RtWJthqd8dwOXXCHopkBkGEZO+AynQlXpdQnZvPYE758Bs9C/w4",
+      "name": "TON from a BIP39 phrase",
+      "publicKeyHex": "7cebef183673dacb926eabb559aa2806902b1ae8398531b71ebabd16208bd446"
+    },
+    "fw:ton:UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH": {
+      "address": "UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH",
+      "cipherSeed": "U2FsdGVkX1/RsQ8mHfISSsm7IvCetMTpYGXZ9p+2+oqMlGL2G5/DQpjuKizz2wgwIWWjnwFfbwr3FpUhUStgimz8yNJXSj2HBwpt/NV+PvE9ONpYkKJWi8r8vp6cOrWSk1mU0qZD45Lkv9XnvCszQW7i3oZGfKr1PgfTlvsLVdUIjjYO+2o3UVnIJgGl0NGrsqiCyMILxTioGdmwH2vKcQ==",
+      "name": "TON native import",
+      "publicKeyHex": "6d645f085c1d03347b5bcba0dcbc4b3a4def9a2cfb42ba3c98253cf2e9af5491"
+    },
+    "fwauthorize:authUrls": {},
+    "fwcurrent_account:CurrentAccountInfo": {
+      "address": "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp",
+      "ethereumAddress": "0xc70eC8094CCE52B6574A5a2b7bf0c7D8288d77cC",
+      "isMobile": false,
+      "name": "After the reset",
+      "walletEcosystem": "substrate"
+    },
+    "providers": {},
+    "selectedNetworks": {
+      "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe": "popular",
+      "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp": "popular",
+      "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_": "Ton Mainnet",
+      "UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH": "Ton Mainnet"
+    }
+  }
+}

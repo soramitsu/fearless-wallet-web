@@ -5,10 +5,79 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
+import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
+import { captureDashboardScreenshots } from './extension-smoke-dashboard.mjs';
+import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
+import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
+import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
+import { checkJsonImportStorage } from './extension-smoke-json-import.mjs';
+import { checkMobileAddressStorage } from './extension-smoke-mobile-address.mjs';
+import { checkMasterPasswordStorage } from './extension-smoke-master-password.mjs';
+import { checkWalletResetStorage } from './extension-smoke-wallet-reset.mjs';
+import { checkAccountRemovalStorage } from './extension-smoke-account-removal.mjs';
+import { checkCurrentAccountStorage } from './extension-smoke-current-account.mjs';
+import { checkSessionRetirementStorage } from './extension-smoke-session-retirement.mjs';
+import { captureJsonRecoveryNotice } from './extension-smoke-json-notice.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const productionPopupOnly = process.argv.includes('--production-popup');
+// `--portfolio-screenshots [dir]`: seed the test wallet, then capture the portfolio at the popup size, offline.
+const portfolioScreenshotsArg = process.argv.indexOf('--portfolio-screenshots');
+const portfolioScreenshotsDir =
+  portfolioScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[portfolioScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[portfolioScreenshotsArg + 1]
+          : 'output/portfolio-screenshots'
+      );
+// `--dashboard-screenshots [dir]`: two wallets, then the portfolio dashboard at the popup size, offline. Needs a test
+// build that carries the dashboard (every build does unless made with VUE_APP_PORTFOLIO_DASHBOARD=false).
+const dashboardScreenshotsArg = process.argv.indexOf('--dashboard-screenshots');
+const dashboardScreenshotsDir =
+  dashboardScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[dashboardScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[dashboardScreenshotsArg + 1]
+          : 'output/dashboard-screenshots'
+      );
+// `--effects-screenshots [dir]`: the same offline wallet, once per effects tier and system setting (design-system 2).
+const effectsScreenshotsArg = process.argv.indexOf('--effects-screenshots');
+const effectsScreenshotsDir =
+  effectsScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[effectsScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[effectsScreenshotsArg + 1]
+          : 'output/effects-screenshots'
+      );
+// `--primitives-screenshots [dir]`: the same offline wallet, on the screens that draw the shared primitives.
+const primitivesScreenshotsArg = process.argv.indexOf('--primitives-screenshots');
+const primitivesScreenshotsDir =
+  primitivesScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[primitivesScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[primitivesScreenshotsArg + 1]
+          : 'output/primitives-screenshots'
+      );
+const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
+const localImportStorageOnly = process.argv.includes('--local-account-import-storage');
+const jsonImportStorageOnly = process.argv.includes('--json-account-import-storage');
+const mobileAddressStorageOnly = process.argv.includes('--mobile-address-storage');
+const masterPasswordStorageOnly = process.argv.includes('--master-password-storage');
+const walletResetStorageOnly = process.argv.includes('--wallet-reset-storage');
+const accountRemovalStorageOnly = process.argv.includes('--account-removal-storage');
+const currentAccountStorageOnly = process.argv.includes('--current-account-storage');
+const sessionRetirementStorageOnly = process.argv.includes('--session-retirement-storage');
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || dashboardScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -31,8 +100,7 @@ assert(
 
 const PORT_EXTENSION = 'fw-fearless-extension';
 const TEST_PASSWORD = 'fearless-solana-smoke-password';
-const TEST_MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
-const SOLANA_ADDRESS = 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk';
+const LEGACY_TEST_MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const SYSTEM_PROGRAM = '11111111111111111111111111111111';
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
@@ -210,9 +278,8 @@ async function main() {
   }
   chromeBinary = await resolveExecutable(chromeBinary, 'Set CHROME_BIN to a Chrome/Chromium executable.');
 
-  const universalWalletFixture = productionPopupOnly ? undefined : await loadUniversalWalletFixture();
-  const transactionBase64 = productionPopupOnly ? undefined : validTransactionBase64();
-  const [solanaServer, irohaServer] = productionPopupOnly
+  const deriveWalletFixture = productionPopupOnly ? undefined : await loadWalletFixtureDerivation();
+  const [solanaServer, irohaServer] = productionPopupOnly || offlineScreenshots
     ? [undefined, undefined]
     : await Promise.all([startDappServer(), startDappServer()]);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-solana-extension-smoke-'));
@@ -271,9 +338,144 @@ async function main() {
     await eventually(() => extensionSend(cdp, extensionSession, 'pri(app.isReady)', null), 'extension app readiness');
     console.info('[extension-smoke] extension ready');
 
+    await initializeKeyring(cdp, extensionSession);
+    const legacyFixture = deriveWalletFixture(LEGACY_TEST_MNEMONIC);
+    const legacyAddress = await createSeededWallet(cdp, extensionSession, legacyFixture, false);
+    await assertLegacyRecoveryPopup(cdp, extensionId, extensionSession, legacyAddress);
+    const mnemonic = await extensionSend(cdp, extensionSession, 'pri(keyring.generateMnemonic)', {
+      walletEcosystem: 'substrate', wordCount: 24,
+    });
+    const universalWalletFixture = deriveWalletFixture(mnemonic);
+    const solanaAddress = universalWalletFixture.expected.solana.address;
+    const transactionBase64 = validTransactionBase64(solanaAddress);
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
-    await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
+    await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture, legacyAddress);
+    await assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, substrateAddress, legacyAddress);
     console.info('[extension-smoke] wallet seeded');
+
+    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly) {
+      let controlSession = extensionSession;
+      let liveBackgroundSession = backgroundSession;
+      const checkImport = masterPasswordStorageOnly ? checkMasterPasswordStorage : walletResetStorageOnly ? checkWalletResetStorage : accountRemovalStorageOnly ? checkAccountRemovalStorage : currentAccountStorageOnly ? checkCurrentAccountStorage : sessionRetirementStorageOnly ? checkSessionRetirementStorage : mobileAddressStorageOnly ? checkMobileAddressStorage : jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
+      const result = await checkImport({
+        eventually,
+        inspectUI: ({ address, password }) => captureJsonRecoveryNotice({ cdp, extensionId,
+          send: (message, request) => extensionSend(cdp, controlSession, message, request),
+          address, password, outputDir: process.env.JSON_IMPORT_SCREENSHOTS_DIR || path.resolve(root, 'build/reports/json-import-notice'),
+          evaluate, waitForExpression }),
+        storageFault: (mode) => evaluate(cdp, liveBackgroundSession, `(() => {
+          let fault = globalThis.publicPasswordFault;
+          if (!fault) {
+            const original = chrome.storage.local.set.bind(chrome.storage.local);
+            fault = globalThis.publicPasswordFault = { original, mode: 'normal', pending: [], calls: [] };
+            chrome.storage.local.set = (items, callback) => {
+              if (!Object.hasOwn(items, 'fw:keyring')) return original(items, callback);
+              fault.calls.push(Object.keys(items));
+              if (fault.mode === 'fail') throw new Error('Public password storage rejection');
+              if (fault.mode === 'hold') { fault.pending.push(() => original(items, callback)); return; }
+              return original(items, callback);
+            };
+          }
+          const mode = ${JSON.stringify(mode)};
+          if (mode === 'restore') { chrome.storage.local.set = fault.original; delete globalThis.publicPasswordFault; }
+          else if (mode === 'release') { fault.mode = 'normal'; fault.pending.splice(0).forEach(finish => finish()); }
+          else if (mode !== 'inspect') fault.mode = mode;
+          return { calls: fault.calls, pending: fault.pending.length };
+        })()`),
+        fixture: universalWalletFixture,
+        password: TEST_PASSWORD,
+        assert,
+        send: (message, request) => extensionSend(cdp, controlSession, message, request),
+        read: (key) => evaluate(cdp, controlSession, `chrome.storage.local.get(${JSON.stringify(key)}).then((data) => data[${JSON.stringify(key)}])`),
+        remove: (keys) => evaluate(cdp, controlSession, `chrome.storage.local.remove(${JSON.stringify(keys)})`),
+        restart: async () => {
+          await stopExtensionKeepAlive();
+          const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, liveBackgroundSession);
+          await evaluate(cdp, liveBackgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
+          const restartedTarget = await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
+            && ['background_page', 'service_worker'].includes(target.type)
+            && target.url.startsWith(`chrome-extension://${extensionId}/`), 'restarted extension worker', chrome);
+          // The retiring worker may still be listed. Attach the new target we just
+          // observed, rather than choosing the first matching (possibly old) worker.
+          console.info(`[extension-smoke] worker restart ${targetInfo.targetId} -> ${restartedTarget.targetId}`);
+          liveBackgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome, restartedTarget.targetId);
+          controlSession = await openExtensionControlPage(cdp, extensionId);
+          await setupExtensionMessaging(cdp, controlSession);
+          stopExtensionKeepAlive = startExtensionKeepAlive(cdp, controlSession, liveBackgroundSession);
+          await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
+        },
+      });
+      console.info(JSON.stringify({ extensionId, [masterPasswordStorageOnly ? 'masterPasswordStorage' : walletResetStorageOnly ? 'walletResetStorage' : accountRemovalStorageOnly ? 'accountRemovalStorage' : currentAccountStorageOnly ? 'currentAccountStorage' : sessionRetirementStorageOnly ? 'sessionRetirementStorage' : mobileAddressStorageOnly ? 'mobileAddressStorage' : jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
+      return;
+    }
+
+    if (effectsScreenshotsDir) {
+      const { shots, results } = await captureEffectsScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: effectsScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (primitivesScreenshotsDir) {
+      const { shots, results } = await capturePrimitivesScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: primitivesScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (dashboardScreenshotsDir) {
+      const result = await captureDashboardScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: dashboardScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, ...result }, null, 2));
+
+      return;
+    }
+
+    if (portfolioScreenshotsDir) {
+      const shots = await capturePortfolioScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: portfolioScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots }, null, 2));
+
+      return;
+    }
     const dappSession = await openDappPage(cdp, solanaServer.url);
 
     await waitForExpression(
@@ -318,8 +520,15 @@ async function main() {
       authRequest.accountAuthType === 'solana',
       `Expected Solana auth request, got ${authRequest.accountAuthType}`
     );
+    const legacyAuthorizationError = await evaluate(cdp, extensionSession,
+      `globalThis.__fearlessExtensionSmoke.send('pri(authorize.approve)', ${JSON.stringify({
+        authorizedAccounts: [legacyFixture.expected.solana.address], id: authRequest.id,
+      })}).then(() => '', (error) => error.message)`,
+      { awaitPromise: true });
+    assert(legacyAuthorizationError.includes('recovery-only'), 'Imported wallet was allowed to authorize a dApp');
+    console.info('[extension-smoke] legacy wallet authorization rejected');
     await extensionSend(cdp, extensionSession, 'pri(authorize.approve)', {
-      authorizedAccounts: [SOLANA_ADDRESS],
+      authorizedAccounts: [solanaAddress],
       id: authRequest.id,
     });
 
@@ -329,8 +538,8 @@ async function main() {
     console.info('[extension-smoke] Solana authorized');
 
     assert(connectResult.connected === true, 'Provider did not report a connected state');
-    assert(connectResult.publicKey === SOLANA_ADDRESS, `Unexpected connected public key ${connectResult.publicKey}`);
-    assert(connectResult.accounts?.[0]?.address === SOLANA_ADDRESS, 'Connected account did not use the Solana address');
+    assert(connectResult.publicKey === solanaAddress, `Unexpected connected public key ${connectResult.publicKey}`);
+    assert(connectResult.accounts?.[0]?.address === solanaAddress, 'Connected account did not use the Solana address');
     assert(
       ['solana:signMessage', 'solana:signTransaction', 'solana:signAndSendTransaction'].every((feature) =>
         connectResult.accountFeatures?.includes(feature)
@@ -338,7 +547,7 @@ async function main() {
       `Connected Wallet Standard account features are incomplete: ${JSON.stringify(connectResult.accountFeatures)}`
     );
 
-    const signMessage = await runSignFlow(cdp, extensionSession, dappSession, {
+    const signMessage = await runSignFlow(cdp, extensionSession, dappSession, solanaAddress, {
       method: 'signMessage',
       startExpression: `
         window.__fearlessSolanaSmoke.signMessage = window.fearlessSolana
@@ -353,11 +562,11 @@ async function main() {
       resultExpression: 'window.__fearlessSolanaSmoke.signMessage',
     });
 
-    assert(signMessage.publicKey === SOLANA_ADDRESS, `Unexpected signing public key ${signMessage.publicKey}`);
+    assert(signMessage.publicKey === solanaAddress, `Unexpected signing public key ${signMessage.publicKey}`);
     assert(signMessage.signatureLength === 64, `Unexpected Solana signature length ${signMessage.signatureLength}`);
     assert(signMessage.signatureNonZero === true, 'Solana message signature was all zeros');
 
-    const signTransaction = await runSignFlow(cdp, extensionSession, dappSession, {
+    const signTransaction = await runSignFlow(cdp, extensionSession, dappSession, solanaAddress, {
       method: 'signTransaction',
       startExpression: `
         {
@@ -379,7 +588,7 @@ async function main() {
     assert(signTransaction.changed === true, 'Signed transaction bytes did not change');
     assert(signTransaction.signatureNonZero === true, 'Signed transaction signature slot was all zeros');
 
-    const signAllTransactions = await runSignFlow(cdp, extensionSession, dappSession, {
+    const signAllTransactions = await runSignFlow(cdp, extensionSession, dappSession, solanaAddress, {
       method: 'signAllTransactions',
       startExpression: `
         {
@@ -440,7 +649,7 @@ async function main() {
           irohaNexusAddress: irohaSmoke.nexusAddress,
           irohaTairaAddress: irohaSmoke.tairaAddress,
           signedBatchTransactions: signAllTransactions.count,
-          solanaAddress: SOLANA_ADDRESS,
+          solanaAddress,
           substrateAddress,
         },
         null,
@@ -460,89 +669,99 @@ async function main() {
   }
 }
 
-async function loadUniversalWalletFixture() {
-  const raw = await fs.readFile(path.join(root, 'docs/universal-wallet-v2-vectors.json'), 'utf8');
-  const payload = JSON.parse(raw);
-  const fixture = payload?.vectors?.[0];
-
-  assert(fixture?.expected?.iroha?.nexus?.i105, 'Universal Wallet fixture does not include a Nexus Iroha address');
-  assert(fixture?.expected?.iroha?.taira?.i105, 'Universal Wallet fixture does not include a Taira Iroha address');
-
-  return fixture;
+// Load the application's derivation helpers in Node, without adding a test-only
+// trust marker or generation path to the extension build.
+async function loadWalletFixtureDerivation() {
+  const { createServer } = await import('vite');
+  const { HDNodeWallet } = await import('ethers');
+  const server = await createServer({
+    configFile: false,
+    root,
+    server: { middlewareMode: true },
+    optimizeDeps: { noDiscovery: true, include: [] },
+    resolve: { alias: { '@': path.join(root, 'src') } },
+  });
+  try {
+    const { deriveUniversalWalletKeyringFields } = await server.ssrLoadModule('/src/util/universalWalletKeyringFields.ts');
+    const { encodeIrohaI105Address } = await server.ssrLoadModule('/src/util/iroha.ts');
+    return (mnemonic) => {
+      const fields = deriveUniversalWalletKeyringFields(mnemonic);
+      const irohaAccount = (network) => ({
+        i105: encodeIrohaI105Address(fields.irohaPublicKeyHex, network),
+        publicKeyHex: fields.irohaPublicKeyHex,
+      });
+      return {
+        mnemonic,
+        fields: { ...fields, ethereumAddress: HDNodeWallet.fromPhrase(mnemonic).address },
+        expected: {
+          solana: { address: fields.solanaAddress },
+          iroha: { nexus: irohaAccount('nexus'), taira: irohaAccount('taira') },
+        },
+      };
+    };
+  } finally {
+    await server.close();
+  }
 }
 
-async function assertSeededUniversalWalletMetadata(cdp, sessionId, fixture) {
+async function assertSeededUniversalWalletMetadata(cdp, sessionId, fixture, legacyAddress) {
   const accounts = await extensionSend(cdp, sessionId, 'pri(accounts.subscribe)', null);
-  const account = accounts.find((candidate) => candidate.solanaAddress === SOLANA_ADDRESS);
+  const account = accounts.find((candidate) => candidate.solanaAddress === fixture.expected.solana.address);
+  const legacy = accounts.find((candidate) => candidate.address === legacyAddress);
 
-  assert(account, `Seeded account did not appear in the extension account list: ${JSON.stringify(accounts)}`);
+  assert(account, 'Fresh account did not appear in the extension account list');
+  assert(account.walletSecurityGeneration === 1, 'Backend-generated wallet did not retain its security provenance');
+  assert(legacy && legacy.walletSecurityGeneration === undefined, 'Imported wallet retained an untrusted security marker');
+  assert(!legacy.isHardware, 'Imported local secret retained a hardware-wallet exemption');
   assert(
     account.irohaPublicKeyHex === fixture.expected.iroha.nexus.publicKeyHex,
-    `Seeded account lost Iroha metadata: ${JSON.stringify(account)}`
+    'Fresh account lost its derived Iroha metadata'
   );
 }
 
-async function seedWallet(cdp, sessionId, fixture) {
+async function initializeKeyring(cdp, sessionId) {
   await extensionSend(cdp, sessionId, 'pri(keyring.reset)', null).catch(() => undefined);
   const passwordChanged = await extensionSend(cdp, sessionId, 'pri(keyring.changePassword)', {
     newPassword: TEST_PASSWORD,
     oldPassword: '',
   });
-
   assert(passwordChanged === true, 'Unable to set test keyring password');
+}
 
-  const substrateAddress = await extensionSend(cdp, sessionId, 'pri(accounts.create)', {
+async function createSeededWallet(cdp, sessionId, fixture, fresh) {
+  return extensionSend(cdp, sessionId, 'pri(accounts.create)', {
     meta: {
-      bitcoinAddress: fixture.expected.bitcoin.mainnet.firstReceiveAddress,
-      bitcoinTestnetAddress: fixture.expected.bitcoin.testnet.firstReceiveAddress,
-      ethereumAddress: fixture.expected.evm.address,
-      irohaPublicKeyHex: fixture.expected.iroha.nexus.publicKeyHex,
-      name: 'Solana Smoke',
-      solanaAddress: SOLANA_ADDRESS,
-      tonAddress: fixture.expected.ton.addressNonBounceable,
-      tonPublicKeyHex: fixture.expected.ton.publicKeyHex,
+      ...fixture.fields,
+      name: fresh ? 'Fresh Solana Smoke' : 'Legacy Solana Smoke',
       whenCreated: 1,
+      // An import must not become trusted just because its metadata claims so.
+      ...(!fresh ? { walletSecurityGeneration: 1, isHardware: true } : {}),
     },
-    suri: TEST_MNEMONIC,
+    suri: fixture.mnemonic,
     type: 'sr25519',
     walletEcosystem: 'substrate',
+    requireFreshGeneration: fresh,
   });
+}
 
+async function seedWallet(cdp, sessionId, fixture) {
+  const substrateAddress = await createSeededWallet(cdp, sessionId, fixture, true);
   const hasAccounts = await extensionSend(cdp, sessionId, 'pri(keyring.hasAccounts)', null);
-
   assert(hasAccounts === true, 'Extension keyring did not retain the seeded account');
-  const exportedJson = await extensionSend(cdp, sessionId, 'pri(accounts.export.json)', {
+  await extensionSend(cdp, sessionId, 'pri(accounts.export.json)', {
     address: substrateAddress,
     password: TEST_PASSWORD,
-  }).catch((error) => ({ error: error.message }));
+  });
   assert(
     (await extensionSend(cdp, sessionId, 'pri(keyring.unlock)', { password: TEST_PASSWORD })) === true,
     'Unable to unlock seeded keyring'
   );
-
   const exported = await extensionSend(cdp, sessionId, 'pri(keyring.export.mnemonic)', {
     address: substrateAddress,
     password: TEST_PASSWORD,
     walletEcosystem: 'substrate',
   });
-  const exportedWithEmptyPassword =
-    exported?.seed === TEST_MNEMONIC
-      ? undefined
-      : await extensionSend(cdp, sessionId, 'pri(keyring.export.mnemonic)', {
-          address: substrateAddress,
-          password: '',
-          walletEcosystem: 'substrate',
-        });
-
-  assert(
-    exported?.seed === TEST_MNEMONIC,
-    `Seeded account mnemonic export did not match the vector mnemonic: ${JSON.stringify({
-      exported,
-      exportedWithEmptyPassword,
-      exportedJson,
-    })}`
-  );
-
+  assert(exported?.seed === fixture.mnemonic, 'Fresh account mnemonic export did not match its generated phrase');
   return substrateAddress;
 }
 
@@ -729,11 +948,11 @@ async function startConnect(cdp, sessionId) {
   );
 }
 
-async function runSignFlow(cdp, extensionSession, dappSession, { method, resultExpression, startExpression }) {
+async function runSignFlow(cdp, extensionSession, dappSession, solanaAddress, { method, resultExpression, startExpression }) {
   await evaluate(cdp, dappSession, startExpression);
   const request = await waitForSolanaSigningRequest(cdp, extensionSession, method);
 
-  assert(request.account?.address === SOLANA_ADDRESS, `${method} request used unexpected account`);
+  assert(request.account?.address === solanaAddress, `${method} request used unexpected account`);
   await extensionSend(cdp, extensionSession, 'pri(signing.approve)', { id: request.id });
 
   return evaluate(cdp, dappSession, resultExpression, { awaitPromise: true });
@@ -984,6 +1203,102 @@ async function openExtensionControlPage(cdp, extensionId) {
   return sessionId;
 }
 
+async function assertLegacyRecoveryPopup(cdp, extensionId, extensionSession, legacyAddress) {
+  await extensionSend(cdp, extensionSession, 'pri(onboarding.setComplete)', null);
+  await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+    address: legacyAddress, walletEcosystem: 'substrate',
+  });
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: `chrome-extension://${extensionId}/popup.html#/fearless/portfolio/tokens`,
+  });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade[open]"))',
+      'legacy wallet security popup');
+    const description = await evaluate(cdp, sessionId, 'document.querySelector("#wallet-upgrade-description").textContent');
+    assert(description.includes('may be compromised'), 'Legacy popup did not explain the security issue');
+    await evaluate(cdp, sessionId, 'document.querySelector(".wallet-upgrade__later").click(); true');
+    await waitForExpression(cdp, sessionId,
+      '!document.querySelector("dialog.wallet-upgrade[open]") && Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'persistent recovery banner after dismissal');
+    const recoveryMenu = await evaluate(cdp, sessionId,
+      'Array.from(document.querySelectorAll("nav.menu button")).map(button => button.dataset.destination)');
+    assert(recoveryMenu.includes('defi'), 'Old wallet cannot reach DeFi recovery actions');
+    assert(!recoveryMenu.includes('polkaswap'), 'Old wallet still offers normal swaps');
+    await evaluate(cdp, sessionId,
+      'document.querySelector("nav.menu [data-destination=defi]").click(); true');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".defi-hub"))', 'DeFi recovery access');
+    await evaluate(cdp, sessionId, 'location.hash = "#/fearless/polkaswap"; true');
+    await waitForExpression(cdp, sessionId,
+      'location.hash.includes("portfolio") && !document.querySelector(".defi-hub")', 'normal swap route remains blocked');
+    await cdp.send('Page.reload', {}, sessionId);
+    // A closed dialog stays closed when the extension is opened again.
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'recovery banner after reopening');
+    await sleep(1_000);
+    assert(!(await evaluate(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade"))')),
+      'Closed security popup opened again when the extension was reopened');
+    console.info('[extension-smoke] legacy popup, recovery banner, DeFi recovery access, blocked swaps, and reopening verified');
+  } catch (error) {
+    const state = await evaluate(cdp, sessionId,
+      '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);
+    throw new Error(`${error.message}; popup state=${JSON.stringify(state)}`, { cause: error });
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
+async function assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, freshAddress, legacyAddress) {
+  await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+    address: freshAddress, walletEcosystem: 'substrate',
+  });
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: `chrome-extension://${extensionId}/popup.html#/fearless/portfolio/tokens`,
+  });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector("[data-testid=portfolioDashboard]"))',
+      'portfolio dashboard');
+    // The dashboard opens in All wallets. Select the fresh wallet through the
+    // picker before checking the per-wallet notice and the selected header.
+    await evaluate(cdp, sessionId,
+      'document.querySelector("[data-testid=walletNameHeader]").closest("button").click(); true');
+    await waitForExpression(cdp, sessionId,
+      'Array.from(document.querySelectorAll("[data-testid=walletContent]")).some(row => row.querySelector("[data-testid=name]")?.textContent.trim() === "Fresh Solana Smoke")',
+      'fresh wallet in the picker');
+    await evaluate(cdp, sessionId, `(() => {
+      const row = Array.from(document.querySelectorAll('[data-testid=walletContent]'))
+        .find(candidate => candidate.querySelector('[data-testid=name]')?.textContent.trim() === 'Fresh Solana Smoke');
+      row.querySelector('[data-testid=content]').click();
+      return true;
+    })()`);
+    // The old wallet stays stored; only the wallet being viewed decides the warning.
+    await waitForExpression(cdp, sessionId,
+      'document.querySelector("[data-testid=walletNameHeader]")?.textContent.trim() === "Fresh Solana Smoke"',
+      'fresh wallet portfolio');
+    await sleep(1_000);
+    const notice = await evaluate(cdp, sessionId,
+      '({ dialog: Boolean(document.querySelector("dialog.wallet-upgrade")), banner: Boolean(document.querySelector(".wallet-recovery-banner")) })');
+    assert(!notice.dialog && !notice.banner, `Fresh wallet showed the old-wallet warning: ${JSON.stringify(notice)}`);
+    await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+      address: legacyAddress, walletEcosystem: 'substrate',
+    });
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'recovery banner after switching to the old wallet');
+    console.info('[extension-smoke] fresh wallet shows no old-wallet warning; the old wallet still does');
+  } catch (error) {
+    const state = await evaluate(cdp, sessionId,
+      '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);
+    throw new Error(`${error.message}; popup state=${JSON.stringify(state)}`, { cause: error });
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
 async function assertProductionPopup(cdp, extensionId, backgroundSession) {
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
   const popupPath = manifest.action?.default_popup;
@@ -1089,11 +1404,12 @@ async function assertProductionPopup(cdp, extensionId, backgroundSession) {
   }
 }
 
-async function openExtensionBackgroundSession(cdp, extensionId, chrome) {
+async function openExtensionBackgroundSession(cdp, extensionId, chrome, targetId) {
   const target = await waitForTarget(
     cdp,
     (candidate) =>
       ['background_page', 'service_worker'].includes(candidate.type) &&
+      (!targetId || candidate.targetId === targetId) &&
       candidate.url.startsWith(`chrome-extension://${extensionId}/`),
     'extension background target',
     chrome
@@ -1177,6 +1493,9 @@ async function waitForExpression(cdp, sessionId, expression, description) {
 }
 
 async function evaluate(cdp, sessionId, expression, options = {}) {
+  // Keep the call site when a delayed protocol timeout loses its async caller.
+  // Do not log the expression: other harness calls can contain signing inputs.
+  const callSite = new Error('Runtime.evaluate call site').stack;
   const result = await cdp.send(
     'Runtime.evaluate',
     {
@@ -1186,7 +1505,10 @@ async function evaluate(cdp, sessionId, expression, options = {}) {
       userGesture: true,
     },
     sessionId
-  );
+  ).catch((error) => {
+    error.stack += `\n${callSite}`;
+    throw error;
+  });
 
   if (result.exceptionDetails) {
     const exception = result.exceptionDetails.exception;
@@ -1237,6 +1559,11 @@ function launchChrome(userDataDir) {
     'about:blank',
   ];
 
+  // Screenshots render fixture data. The background still needs the public registry to start, so only that host
+  // resolves: no node, indexer or price service is reached, and nothing can be broadcast.
+  if (offlineScreenshots) {
+    args.unshift('--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE localhost , EXCLUDE raw.githubusercontent.com');
+  }
   if (usePipeTransport) args.unshift('--enable-unsafe-extension-debugging', '--remote-debugging-pipe');
   else
     args.unshift(
@@ -1246,6 +1573,8 @@ function launchChrome(userDataDir) {
     );
 
   if (headless) args.unshift('--headless=new');
+  if (process.env.SOLANA_EXTENSION_SMOKE_DISABLE_GPU === 'true')
+    args.unshift('--disable-gpu', '--disable-gpu-vsync', '--disable-frame-rate-limit');
 
   const child = spawn(chromeBinary, args, {
     env: {
@@ -1389,15 +1718,15 @@ async function resolveExecutable(executable, message) {
   throw new Error(`${executable} is not available. ${message}`);
 }
 
-function validTransactionBase64() {
-  return Buffer.from(transaction(legacyMessage())).toString('base64');
+function validTransactionBase64(solanaAddress) {
+  return Buffer.from(transaction(legacyMessage(solanaAddress))).toString('base64');
 }
 
-function legacyMessage() {
+function legacyMessage(solanaAddress) {
   return bytes(
     [1, 0, 1],
     compact(2),
-    base58Decode(SOLANA_ADDRESS),
+    base58Decode(solanaAddress),
     base58Decode(SYSTEM_PROGRAM),
     new Uint8Array(32).fill(9),
     compact(1),

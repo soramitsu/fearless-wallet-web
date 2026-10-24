@@ -5,7 +5,7 @@ import type { HexString } from '@polkadot/util/types';
 import type MetadataStore from '@extension-base/stores/Metadata';
 
 export const extractMetadata = (store: MetadataStore): void => {
-  store.allMap((map): void => {
+  void store.allMap((map): void => {
     const knownEntries = Object.entries(knownGenesis);
     const defs: Record<string, { def: MetadataDef; index: number; key: string }> = {};
     const removals: string[] = [];
@@ -34,5 +34,5 @@ export const extractMetadata = (store: MetadataStore): void => {
     removals.forEach((key) => store.remove(key));
 
     Object.values(defs).forEach(({ def }) => addMetadata(def));
-  });
+  }).catch((error) => console.error('Stored chain metadata could not be read', error));
 };

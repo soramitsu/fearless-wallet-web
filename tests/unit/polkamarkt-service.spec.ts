@@ -433,6 +433,38 @@ describe('PolkamarktService', () => {
     expect(submit).toHaveBeenCalledOnce();
   });
 
+  it.each([{ account: 'another-account' }, { marketId: '99' }, { noShares: '0' }])(
+    'cannot sell a missing or mismatched existing position: %j', async (claim) => {
+      const submit = vi.fn();
+      const service = new PolkamarktService({
+        apiRoot: baseApi({}, { claim }), accountAddress: 'cnTrader', signable: true,
+        authorizeBeforeSubmit: allowFinalAuthorization, isDisclaimerAccepted: () => true,
+        submit, estimateFee: vi.fn().mockResolvedValue('1000000000000000'),
+      });
+      await expect(service.mutate({
+        action: 'sell', mode: 'sell', marketId: '7', outcome: 'No', amount: '1', minimumResult: '0.99', disclaimerAccepted: true,
+      })).resolves.toEqual({ status: false, error: 'The order exceeds the available market shares.' });
+      expect(submit).not.toHaveBeenCalled();
+    }
+  );
+
+  it('rechecks owned shares at the final boundary before a recovery sale', async () => {
+    const apiRoot = baseApi();
+    apiRoot.api.rpc.polkamarkt.claimable
+      .mockReturnValueOnce({ ...fixture.accountActivity.runtimeClaimable, account: 'cnTrader', marketId: '7', noShares: '2000000000000000000' } as never)
+      .mockReturnValue({ ...fixture.accountActivity.runtimeClaimable, account: 'cnTrader', marketId: '7', noShares: '0' } as never);
+    const submit = vi.fn();
+    const service = new PolkamarktService({
+      apiRoot, accountAddress: 'cnTrader', signable: true,
+      authorizeBeforeSubmit: allowFinalAuthorization, isDisclaimerAccepted: () => true,
+      submit, estimateFee: vi.fn().mockResolvedValue('1000000000000000'),
+    });
+    await expect(service.mutate({
+      action: 'sell', mode: 'sell', marketId: '7', outcome: 'No', amount: '1', minimumResult: '0.99', disclaimerAccepted: true,
+    })).resolves.toEqual({ status: false, error: 'The order exceeds the available market shares.' });
+    expect(submit).not.toHaveBeenCalled();
+  });
+
   it('rejects a stale caller minimum and a market that closed after the UI snapshot', async () => {
     const submit = vi.fn();
     const common = {

@@ -40,6 +40,8 @@ import {
   type SoraPairBinding,
 } from '@/defi/soraAccountBinding';
 import { createAssetKey } from '@/portfolio/assetIdentity';
+import { IS_EXTENSION } from '@/consts/global';
+import { assertWalletAllowsRecoveryAction, isRecoveryDemeterAction } from '@/util/walletRecoveryActions';
 
 const toReserve = (value: u128): string => new FPNumber(value).toString();
 const toKey = (address: { code: { toString(): string } }) => address.code.toString();
@@ -105,6 +107,12 @@ export class PoolsService {
   ceresLockedPools: AccountLockedPool[] = [];
 
   constructor(private state: State) {}
+
+  private assertRecoveryAction(recoveryAction: boolean, address?: string): void {
+    if (IS_EXTENSION) assertWalletAllowsRecoveryAction(
+      this.state.keyringService.getAllAccounts(), address ?? this.state.getAccountAddress(), recoveryAction
+    );
+  }
 
   private getSoraPair(): SoraPairBinding | undefined {
     return (apiSora as unknown as { account?: { pair?: SoraPairBinding } }).account?.pair;
@@ -257,6 +265,9 @@ export class PoolsService {
   public async getDemeterPools(): Promise<DemeterPoolsResponse> {
     const fees = this.getDemeterFees();
     const signing = this.getDemeterSigningCapability();
+    // Release policy, not the runtime: the page stays browse-only and says so
+    // instead of letting a deposit, withdrawal or claim fail at submit.
+    const actionsPaused = !this.state.actionCapabilityService?.isActionEnabled('demeter');
     const module = apiSora.demeterFarming;
 
     if (
@@ -269,6 +280,7 @@ export class PoolsService {
         reason: 'Demeter farming is not available in the connected SORA runtime.',
         canSign: signing.available,
         signReason: signing.reason,
+        actionsPaused,
         fees,
         pools: [],
       };
@@ -327,6 +339,7 @@ export class PoolsService {
         available: true,
         canSign: signing.available,
         signReason: signing.reason,
+        actionsPaused,
         fees,
         pools: result,
       };
@@ -338,6 +351,7 @@ export class PoolsService {
         reason: 'The Demeter catalog is temporarily unavailable. Existing positions are preserved on-chain.',
         canSign: signing.available,
         signReason: signing.reason,
+        actionsPaused,
         fees,
         pools: [],
       };
@@ -345,6 +359,7 @@ export class PoolsService {
   }
 
   public async mutateDemeter(request: DemeterMutationRequest): Promise<BasicTxResponse> {
+    this.assertRecoveryAction(isRecoveryDemeterAction(request.operation));
     if (!this.state.actionCapabilityService?.isActionEnabled('demeter')) {
       return {
         status: false,
@@ -511,6 +526,7 @@ export class PoolsService {
           errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Unlock the selected SORA account and try again.' }],
         };
       }
+      this.assertRecoveryAction(isRecoveryDemeterAction(request.operation), signingContext.selectedAddress);
       apiSora.shouldPairBeLocked = false;
 
       if (request.operation === 'deposit') {
@@ -1162,6 +1178,7 @@ export class PoolsService {
   }
 
   public async addLiquidity(params: RequestAddLiquidity): Promise<BasicTxResponse> {
+    this.assertRecoveryAction(false);
     const prepared = await this.prepareLiquidityMutation(params, Operation.AddLiquidity);
     if ('response' in prepared) return prepared.response;
 
@@ -1206,6 +1223,7 @@ export class PoolsService {
           errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Unlock the selected SORA account and try again.' }],
         };
       }
+      this.assertRecoveryAction(false, signingContext.selectedAddress);
       apiSora.shouldPairBeLocked = false;
       await apiSora.poolXyk.add(asset1, asset2, amount1, amount2, slippage);
     } catch (ex) {
@@ -1228,6 +1246,7 @@ export class PoolsService {
   }
 
   public async removeLiquidity(params: RequestRemoveLiquidity): Promise<BasicTxResponse> {
+    this.assertRecoveryAction(true);
     const prepared = await this.prepareLiquidityMutation(params, Operation.RemoveLiquidity);
     if ('response' in prepared) return prepared.response;
 
@@ -1282,6 +1301,7 @@ export class PoolsService {
           errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'Unlock the selected SORA account and try again.' }],
         };
       }
+      this.assertRecoveryAction(true, signingContext.selectedAddress);
       apiSora.shouldPairBeLocked = false;
       await apiSora.poolXyk.remove(
         asset1,

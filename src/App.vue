@@ -1,5 +1,6 @@
 <template>
-  <div id="app" :class="appMainClass">
+  <div id="app" :class="[appMainClass, { 'fw-calm': isCalm }]">
+    <div class="fw-backdrop" aria-hidden="true" data-testid="fwBackdrop"></div>
     <keep-alive :include="includeKeepAlive">
       <router-view />
     </keep-alive>
@@ -18,6 +19,7 @@ import { Components } from './router/routes';
 import type { AccountJson, BalanceJson, PriceJson } from '@extension-base/background/types/types';
 import { setTitle } from '@/helpers/only-web';
 import {
+  getAccessStatus,
   soraFeesSubscribe,
   pingServiceWorker,
   subscribeAccounts,
@@ -54,9 +56,21 @@ export default defineComponent({
     appMainClass() {
       return IS_EXTENSION ? 'fw-extension' : 'fw-web';
     },
+    // Keys, passwords, signing and recovery screens stay flat and opaque at every effects tier.
+    isCalm() {
+      return this.$route.matched.some(({ meta }) => meta.calm === true);
+    },
   },
   async created() {
+    if (!IS_EXTENSION && (await getAccessStatus()).storageRecoveryOnly) {
+      // The recovery screen reads its own inventory; normal startup requests can
+      // mutate selection or settings and are deliberately unavailable here.
+      this.setupSWPing();
+      return;
+    }
     lockExtension();
+    // Before onboarding can create a wallet: the By token layout note is only for wallets older than this.
+    this.accountsStore.recordPortfolioLayoutFirstRun();
 
     this.setupWallet();
 
@@ -135,14 +149,14 @@ export default defineComponent({
     onAccountUpdate(accounts: AccountJson[]) {
       const selectedAccount = accounts.find((account) => account.active);
 
-      // если новый аккаунт отличается и мы не нахоимся на форме добавления аккаунта, тогда делаем редирект
-      // это любой кейс смены аккаунта за исключением выше описанного
+      // Creation and cloud recovery own their completion screens, including
+      // partial imports. Account publication must not dismiss them mid-request.
       if (
         this.accountsStore.selectedWallet.address &&
         selectedAccount?.address !== this.accountsStore.selectedWallet.address &&
-        this.$route.name !== Components.AddWallet
+        ![Components.AddWallet, Components.AddFromGoogle, Components.CreateGoogle].includes(this.$route.name as Components)
       ) {
-        this.$router.push({ name: Components.Wallet }).catch(() => {});
+        this.$router.push({ name: Components.Wallet, params: { access_token: '' } }).catch(() => {});
       }
 
       this.accountsStore.setAccounts({ accounts });
@@ -165,8 +179,8 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
+// The page colour is on <html> (styles/_fw-effects.scss); a body background would cover the backdrop.
 body {
-  background-color: rgb(54, 49, 52);
   min-height: 100%;
 }
 </style>
@@ -183,9 +197,6 @@ body {
   color: white;
   text-align: center;
   padding: $default-padding;
-  background-image: url('@/assets/background.png');
-  background-position: center;
-  background-size: cover;
 }
 
 .fw-web {
@@ -264,12 +275,6 @@ body {
     }
   }
 }
-button:focus-visible,
-summary:focus-visible,
-select:focus-visible {
-  outline: 2px solid #ee0077;
-  outline-offset: 3px;
-}
 summary {
   cursor: pointer;
   padding-block: 12px;
@@ -279,6 +284,7 @@ summary {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

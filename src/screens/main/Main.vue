@@ -7,6 +7,8 @@
       @toggleSettingsVisible="toggleSettingsVisible"
     />
 
+    <LegacyWalletUpgradeNotice />
+
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
       @close="setSelectWalletPopupVisible"
@@ -26,6 +28,12 @@
     <LanguagePopup v-if="showLanguagePopup" @handlerClose="toggleLanguagePopupVisible" />
 
     <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
+
+    <LegacyExposureBanner />
+    <AccountAccessBanner />
+    <p v-if="accountsStore.selectedWallet.isMnemonicUnverified" class="json-backup-notice" role="status" tabindex="0">
+      {{ $t('accounts.jsonBackupOnly') }}
+    </p>
 
     <main class="main-content">
       <router-view v-slot="{ Component, route }">
@@ -57,11 +65,16 @@ import WalletDetailsPopup from './WalletDetailsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
+import LegacyWalletUpgradeNotice from './LegacyWalletUpgradeNotice.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
+import AccountAccessBanner from '@/components/AccountAccessBanner.vue';
+import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'Main',
   components: {
+    AccountAccessBanner,
+    LegacyExposureBanner,
     Menu,
     Header,
     FiatsPopup,
@@ -70,6 +83,7 @@ export default defineComponent({ name: 'Main',
     LanguagePopup,
     SelectWalletPopup,
     WalletDetailsPopup,
+    LegacyWalletUpgradeNotice,
   },
   data() {
     return {
@@ -149,6 +163,19 @@ export default defineComponent({ name: 'Main',
 </script>
 
 <style lang="scss" scoped>
+.json-backup-notice {
+  margin: 0 $default-padding 8px;
+  padding: 8px 10px;
+  max-height: 25vh;
+  overflow: auto;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+  color: $default-white;
+  background: $secondary-background-color;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
 .main {
   display: flex;
   flex-direction: column;

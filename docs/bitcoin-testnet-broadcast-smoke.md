@@ -36,6 +36,9 @@ derivation path before it creates the testnet client.
 
 Release evidence is tracked in `scripts/bitcoin-testnet-broadcast-evidence.json`.
 The default manifest remains blocked until a funded testnet broadcast succeeds.
+It is optional extra evidence: since `4.2.0` the release gate for Bitcoin send
+is `yarn test:e2e:local-chains` (real send code against `bitcoind -regtest`)
+plus the staged-rollout mainnet canary in `docs/release-checklist.md`.
 Generate a fill-in-ready manifest template before recording the live result:
 
 ```sh

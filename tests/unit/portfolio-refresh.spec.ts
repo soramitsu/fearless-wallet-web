@@ -7,8 +7,9 @@ const mocks = vi.hoisted(() => ({
     assetPreferences: {},
     balances: [],
     isBalanceLoading: false,
-    migrateLegacyAssetPreferences: vi.fn(),
     networkScanStates: {},
+    portfolioView: { hideZero: false, showHidden: false, showTestnets: false, zeroNetworksExpanded: false },
+    updatePortfolioView: vi.fn(),
     selectedNetwork: 'All networks',
     selectedWallet: {
       address: 'substrate-address',
@@ -19,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     allNetworks: [],
     assetsPrice: { tokenPriceMap: {} },
     getNetwork: vi.fn(),
+    loadIndexerNetworkBalance: vi.fn(),
   },
   extensionStore: {
     features: { assetDiscoveryMode: 'visible' },
@@ -33,21 +35,38 @@ vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accountsStor
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => mocks.networksStore }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.extensionStore }));
 vi.mock('@/portfolio/assetIdentity', () => ({
-  buildAssetPreferenceSnapshot: () => [],
   buildPortfolioSections: () => [],
+  filterSectionAssets: (sections: unknown[]) => sections,
+  filterSectionsBySearch: (sections: unknown[]) => sections,
+  splitZeroSections: () => ({ funded: [], zeroOnly: [] }),
 }));
-vi.mock('@/consts/networks', () => ({
-  ALL_NETWORKS: 'All networks',
-  FAVORITE_NETWORKS: 'Favorite networks',
-  POPULAR_NETWORKS: 'Popular networks',
-}));
-vi.mock('@/helpers', () => ({ isSameString: (left: string, right: string) => left === right }));
-vi.mock('@/util/BaseApi', () => ({
-  default: {
-    formatAddress: (_wallet: unknown, network: string) => network,
-  },
-}));
+vi.mock('@/portfolio/usePortfolio', () => {
+  const summary = {
+    total: '0',
+    hiddenCount: 0,
+    hiddenFundedKeys: [],
+    unpricedCount: 0,
+    poolStakesExcluded: false,
+    testnetFundedCount: 0,
+  };
+
+  return {
+    usePortfolio: () => ({
+      effectivePreferences: {},
+      preferenceSource: () => 'auto',
+      addressForNetwork: () => '',
+      walletScope: () => true,
+      networkFilter: () => true,
+      isFiltered: false,
+      zeroRule: () => false,
+      summary,
+      filteredSummary: summary,
+      loadStatus: { state: 'settled', pendingCount: 0 },
+    }),
+  };
+});
 vi.mock('@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue', () => ({ default: {} }));
+vi.mock('@/router/routes', () => ({ Components: { SendForm: 'SendForm', ReceiveForm: 'ReceiveForm' } }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 
@@ -70,6 +89,9 @@ const mountPortfolio = () =>
         Icon: { template: '<span />' },
         Loader: { template: '<span />' },
         PortfolioNetworkSection: { template: '<section />' },
+        PortfolioExclusions: true,
+        PortfolioHiddenFundsNotice: true,
+        PortfolioZeroNetworks: true,
         Scroll: { template: '<main><slot /></main>' },
       },
     },
@@ -85,6 +107,7 @@ describe('Portfolio manual refresh', () => {
       () => new Promise<void>((resolve) => (completeSweep = resolve))
     );
     mocks.fetchNfts.mockResolvedValue(undefined);
+    mocks.networksStore.loadIndexerNetworkBalance.mockResolvedValue(undefined);
 
     const wrapper = mountPortfolio();
     const refresh = wrapper.get('[data-testid="portfolioRefresh"]');
@@ -93,6 +116,8 @@ describe('Portfolio manual refresh', () => {
     await (wrapper.vm as InstanceType<typeof Currencies>).refreshPortfolio();
 
     expect(mocks.forceAssetDiscoverySweep).toHaveBeenCalledTimes(1);
+    // The sweep skips test networks, so the selected network is also reloaded directly.
+    expect(mocks.networksStore.loadIndexerNetworkBalance).toHaveBeenCalledWith('All networks');
     expect(mocks.fetchNfts).toHaveBeenCalledWith('0x0000000000000000000000000000000000000001');
     expect(refresh.attributes('aria-busy')).toBe('true');
     expect(refresh.text()).toBe('Syncing');

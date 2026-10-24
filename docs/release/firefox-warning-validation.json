@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-13",
+  "source": "8e4f1d3f",
+  "status": "Warning baseline reviewed; Firefox runtime smoke remains open",
+  "review": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/standalone-evm-firefox-warning-review-v2.json",
+    "sha256": "d7e72af40d8418919a2615844537b4668873467f45b71ca6d4b938080c3a9e95"
+  },
+  "baselineSha256": "e8ac1bccc06cdb0909a89f920920818d15144bf7dfefa850b39ba66ec77fd079",
+  "findings": {
+    "errors": 0,
+    "notices": 0,
+    "warnings": 41,
+    "warningCodes": {
+      "DANGEROUS_EVAL": 40,
+      "UNSAFE_VAR_ASSIGNMENT": 1
+    }
+  },
+  "changes": "Exact warning fingerprint and three mixed UI chunk hashes changed after application changes; six warning-bearing vendor chunks remain byte-identical. All41 current sites inspected; warning counts, codes and files are unchanged. No lint gate or CSP relaxation.",
+  "runtime": "Pinned Mozilla152.0.4 mac/en-US DMG SHA b7391215608c8f0171c29200bb7add9328d186a60c10386b67acfa5f757a42b8 verified against official SHA256SUMS; signed app verifies. Headless RDP startup timed out. This review does not accept the runtime or store release gate."
+}

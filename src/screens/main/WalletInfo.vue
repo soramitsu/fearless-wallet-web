@@ -4,7 +4,7 @@
       <button type="button" class="content" data-testid="content" :aria-label="name" :aria-pressed="isSelected" @click="$emit('setWallet')">
         <div class="name" data-testid="name">{{ name }}</div>
 
-        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
+        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" :caption="balanceCaption" />
       </button>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
@@ -18,11 +18,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
-
-
+import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
-import { getTotalBalances } from '@/extension/messaging';
+import { fetchWalletTotals, walletBalanceCaption } from '@/screens/main/walletTotals';
 
 export default defineComponent({ name: 'WalletInfo',
   components: { WalletBalance },
@@ -37,7 +35,7 @@ export default defineComponent({ name: 'WalletInfo',
     return {
       dotsHorizontalRef: 'dotsHorizontal',
       showWalletMenu: false,
-      totalBalances: [],
+      totalBalances: [] as ResponseTotalBalances[],
       interval: undefined as ReturnType<typeof setInterval> | undefined,
     };
   },
@@ -51,6 +49,9 @@ export default defineComponent({ name: 'WalletInfo',
     changeWalletBalance() {
       return this.totalBalance?.change ?? { percent: 0, amount: 0 };
     },
+    balanceCaption(): string {
+      return walletBalanceCaption(this.totalBalance, (key) => this.$t(key));
+    },
     contentClasses() {
       return [
             'wallet-info',
@@ -61,14 +62,17 @@ export default defineComponent({ name: 'WalletInfo',
     },
   },
   async created() {
-    this.totalBalances = await getTotalBalances();
+    this.totalBalances = await this.fetchTotalBalances();
 
-        this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
+        this.interval = setInterval(async () => (this.totalBalances = await this.fetchTotalBalances()), 5000);
   },
   beforeUnmount() {
     clearInterval(this.interval);
   },
   methods: {
+    fetchTotalBalances(): Promise<ResponseTotalBalances[]> {
+      return fetchWalletTotals(this.address);
+    },
     showWalletDetails() {
       const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLButtonElement).getBoundingClientRect().top;
       this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
@@ -105,7 +109,7 @@ export default defineComponent({ name: 'WalletInfo',
     border: 0;
     padding: 0;
     cursor: pointer;
-    &:focus-visible { outline: 2px solid $pink-lavender-color; outline-offset: 2px; }
+    &:focus-visible { outline: 2px solid palette($pink-lavender-color, var(--fw-focus)); outline-offset: 2px; }
   }
 
   .content {

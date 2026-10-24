@@ -44,9 +44,23 @@ function connectCallback(data: Message['data']) {
   else handler.resolve(data.response);
 }
 
+// A request is answered on the port it was sent on. Once that port is gone (the extension's service worker was
+// stopped or restarted) no answer can come, so the caller is told instead of waiting forever.
+function rejectPendingRequests() {
+  Object.entries(handlers).forEach(([id, handler]) => {
+    if (handler.subscriber) return;
+
+    delete handlers[id];
+    handler.reject(new Error('Wallet background disconnected'));
+  });
+}
+
 function connectExtension() {
   port = chrome.runtime?.connect({ name: PORT_EXTENSION });
-  port?.onDisconnect.addListener(connect);
+  port?.onDisconnect.addListener(() => {
+    rejectPendingRequests();
+    connect();
+  });
 
   port?.onMessage.addListener((data: Message['data']): void => connectCallback(data));
 }
@@ -82,11 +96,19 @@ function sendMessage<TMessageType extends MessageTypes>(
   request?: RequestTypes[TMessageType],
   subscriber?: (data: unknown) => void
 ): Promise<ResponseTypes[TMessageType]> {
-  return new Promise((resolve, reject): void => {
-    const id = getId(message);
+  return createMessage(message, request, subscriber).response;
+}
 
+// Callers must separately cancel the corresponding background operation. This
+// releases only this window's callback, including after component unmount.
+function createMessage<TMessageType extends MessageTypes>(
+  message: TMessageType,
+  request?: RequestTypes[TMessageType],
+  subscriber?: (data: unknown) => void
+): { response: Promise<ResponseTypes[TMessageType]>; unsubscribe: () => void } {
+  const id = getId(message);
+  const response = new Promise<ResponseTypes[TMessageType]>((resolve, reject) => {
     handlers[id] = { reject, resolve, subscriber };
-
     if (IS_EXTENSION) port?.postMessage({ id, message, request: request ?? {} });
     else {
       navigator.serviceWorker?.ready.then((registration) =>
@@ -94,6 +116,20 @@ function sendMessage<TMessageType extends MessageTypes>(
       );
     }
   });
+  return {
+    response,
+    unsubscribe: () => {
+      delete handlers[id];
+    },
+  };
+}
+
+export function subscribeMessage<TMessageType extends MessageTypesWithSubscriptions>(
+  message: TMessageType,
+  request: RequestTypes[TMessageType],
+  subscriber: (data: SubscriptionMessageTypes[TMessageType]) => void
+) {
+  return createMessage(message, request, subscriber);
 }
 
 connect();
@@ -112,6 +148,7 @@ export * from '@/extension/messaging/networks';
 export * from '@/extension/messaging/balance';
 export * from '@/extension/messaging/asset-discovery';
 export * from '@/extension/messaging/sora-policy';
+export * from '@/extension/messaging/legacy-exposure';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
 export * from '@/extension/messaging/iroha-connect-requests';

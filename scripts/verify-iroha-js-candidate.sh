@@ -54,6 +54,7 @@ EXPECTED_TAR_SHA256="15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334c
 EXPECTED_REPLAY_SUBSET_TREE="04fbf3b60512c7daf734d3f72c6a60ceb79316af"
 CURRENT_POLICY_REJECTION_MARKER="index.d.ts must declare the exact 49-byte IVM V1 program header"
 BASE_ARCHIVE_VERIFIER="$ROOT_DIR/scripts/verify-iroha-js-base-source-archive.mjs"
+REPACK_VERIFIER="$ROOT_DIR/scripts/verify-iroha-js-candidate-repack.mjs"
 
 fail() {
   printf 'Iroha JS candidate verification failed: %s\n' "$1" >&2
@@ -73,7 +74,8 @@ rejected by the current package policy; current-policy acceptance would be a
 verification failure. --replay-source safely reconstructs the bounded
 exact-base source set from the stored archive, applies the patch, verifies every
 changed path, restores the stored generated checksum sidecar, and proves that
-npm pack reproduces the exact stored tarball. It never consults a source
+npm pack reproduces the exact TAR bytes and canonical gzip envelope. The
+original stored gzip digest remains pinned. It never consults a source
 checkout or network service.
 EOF
 }
@@ -109,7 +111,7 @@ if [[ "$ADVERSARIAL_CORRUPT_REPACK_SIDECAR" == true ]]; then
     fail "adversarial repack corruption is forbidden for the canonical bundle"
 fi
 
-for command in node git tar shasum wc cmp mktemp npm awk; do
+for command in node git tar shasum wc cmp mktemp npm awk python3; do
   command -v "$command" >/dev/null 2>&1 || fail "required command not found: $command"
 done
 
@@ -151,6 +153,9 @@ done
 assert_no_symlink_components "$BASE_ARCHIVE_VERIFIER"
 [[ -f "$BASE_ARCHIVE_VERIFIER" && ! -L "$BASE_ARCHIVE_VERIFIER" ]] ||
   fail "base source archive verifier is missing, non-regular, or symlinked: $BASE_ARCHIVE_VERIFIER"
+assert_no_symlink_components "$REPACK_VERIFIER"
+[[ -f "$REPACK_VERIFIER" && ! -L "$REPACK_VERIFIER" ]] ||
+  fail "repack verifier is missing, non-regular, or symlinked: $REPACK_VERIFIER"
 
 node - "$MANIFEST" "$PATCH" "$TARBALL" "$BASE_ARCHIVE" "$BASE_INVENTORY" \
   "$EXPECTED_MANIFEST_SHA256" "$EXPECTED_PATCH_SHA256" "$EXPECTED_TAR_SHA256" <<'NODE'
@@ -556,9 +561,6 @@ run_bounded 60 env \
 
 repacked="$repack_dir/iroha-iroha-js-0.0.3.tgz"
 [[ -f "$repacked" && ! -L "$repacked" ]] || fail "replay did not produce the expected tarball"
-actual_repack_sha256="$(shasum -a 256 "$repacked" | awk '{print $1}')"
-[[ "$actual_repack_sha256" == "$EXPECTED_TAR_SHA256" ]] ||
-  fail "exact replay tar digest mismatch: expected $EXPECTED_TAR_SHA256, got $actual_repack_sha256"
-cmp -s "$repacked" "$TARBALL" || fail "exact replay tar is not byte-identical"
+node "$REPACK_VERIFIER" "$TARBALL" "$repacked"
 
-printf '[iroha-js-candidate] exact source replay and byte-identical repack passed.\n'
+printf '[iroha-js-candidate] exact source replay and byte-identical TAR/canonical gzip repack passed.\n'

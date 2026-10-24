@@ -61,6 +61,8 @@ try {
   const output = await fs.readFile(outputPath, 'utf8');
   assert.match(output, /OAUTH_CLIENT_ID=fixture\.apps\.googleusercontent\.com/u);
   assert.match(output, /EXTENSION_PUBLIC_KEY=MIIB/u);
+  // Send flags are derived from the evidence manifests at build time, never imported.
+  assert.doesNotMatch(output, /VUE_APP_ENABLE_(?:BITCOIN|IROHA)_TRANSFERS/u);
   assert.equal((await fs.stat(outputPath)).mode & 0o777, 0o600);
 
   const overrideAttempt = spawnSync(

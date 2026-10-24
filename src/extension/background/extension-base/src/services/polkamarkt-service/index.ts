@@ -1,3 +1,5 @@
+import { decodeAddress } from '@polkadot/util-crypto';
+import { u8aEq } from '@polkadot/util';
 import type {
   PolkamarktClaimable,
   PolkamarktMarket,
@@ -372,7 +374,14 @@ export class PolkamarktService {
           const result = decorated
             ? await decorated(account, runtimeId(marketId))
             : await this.rawRpc('polkamarkt_claimable', [account, runtimeId(marketId)]);
-          return parseClaimable(result, account, marketId);
+          const claim = parseClaimable(result, account, marketId);
+          if (!claim || claim.marketId !== marketId) return null;
+          if (claim.account !== account) {
+            try {
+              if (!u8aEq(decodeAddress(claim.account), decodeAddress(account))) return null;
+            } catch { return null; }
+          }
+          return claim;
         } catch {
           return null;
         }

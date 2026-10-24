@@ -1,12 +1,10 @@
 {
   "schemaVersion": 1,
   "scope": "web-bitcoin-testnet-broadcast-readiness",
-  "status": "blocked",
-  "releaseEnabled": false,
-  "lastReviewed": "2026-06-26",
-  "blockers": [
-    "funded-testnet-broadcast-evidence-missing"
-  ],
+  "status": "ready",
+  "releaseEnabled": true,
+  "lastReviewed": "2026-10-23",
+  "blockers": [],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
     "yarn test:bitcoin-broadcast-evidence-template",
@@ -35,5 +33,26 @@
     "operator",
     "commit"
   ],
-  "evidence": []
+  "transferPathFiles": [
+    "src/extension/background/extension-base/src/api/bitcoin/transfer.ts",
+    "src/extension/background/extension-base/src/services/bitcoin-indexer-service/index.ts",
+    "src/util/bitcoin.ts",
+    "src/util/bitcoinDiscovery.ts",
+    "src/util/bitcoinKeyring.ts",
+    "src/util/bitcoinSend.ts",
+    "src/util/bitcoinTransaction.ts"
+  ],
+  "evidence": [
+    {
+      "txid": "b84ca02e89e73c3d4bfa41a14c63511e4ac9312be39cb4174950ecaab465422d",
+      "sourceAddress": "tb1q77es2gt0mkz32yxser2w3t78r2y20f7s3xqptf",
+      "recipientAddress": "tb1q9x084ta6myvtcy697px3axazyhm6hpkp2dxze9",
+      "amountSat": "10000",
+      "outpoint": "a81eab45efd4faa3bd7a9bf60358983cd3a1625a460ac7eb2aa6106235ba9fb1:1",
+      "indexerUrl": "https://blockstream.info/testnet/api",
+      "timestamp": "2026-10-23T04:55:35Z",
+      "commit": "7cb4c076819cf5009ecf295b079bba4a759dfce4",
+      "operator": "codex (yarn test:smoke:bitcoin)"
+    }
+  ]
 }

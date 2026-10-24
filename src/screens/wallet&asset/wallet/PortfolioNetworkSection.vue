@@ -35,7 +35,7 @@
 
         <span class="asset-balance">
           <span>{{ formatAmount(asset.balanceText) }} {{ asset.symbol }}</span>
-          <span class="asset-fiat">{{ formatFiat(asset.fiatValue) }}</span>
+          <span class="asset-fiat">{{ balanceNote(asset) }}</span>
         </span>
 
         <Switcher
@@ -73,6 +73,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { FPNumber } from '@sora-substrate/util';
 import type { AssetPreference, PortfolioAsset, PortfolioNetworkSection } from '@/portfolio/assetIdentity';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
@@ -112,21 +113,36 @@ const syncLabel = computed(() =>
   )
 );
 
-const visibleAssets = computed(() => {
-  const search = props.search?.trim().toLowerCase() ?? '';
-  const assets = props.manage
-    ? [...props.section.assets, ...props.section.detectedAssets]
-    : props.section.assets;
-  if (!search) return assets;
-  return assets.filter((asset) => `${asset.symbol} ${asset.name}`.toLowerCase().includes(search));
-});
+// A search is already applied to the section's rows.
+const visibleAssets = computed(() =>
+  props.manage ? [...props.section.assets, ...props.section.detectedAssets] : props.section.assets
+);
+
+function isZero(value: string): boolean {
+  try {
+    return new FPNumber(value).isZero();
+  } catch {
+    return false;
+  }
+}
 
 function formatAmount(value: string): string {
+  if (isZero(value)) return '0';
+
   return formatDecimalString(value, {
     minimumFractionDigits: 4,
     maximumFractionDigits: 4,
     preserveSmallValue: true,
   });
+}
+
+// A zero nobody has read yet is a placeholder: say so instead of valuing it.
+function balanceNote(asset: PortfolioAsset): string {
+  if (!asset.isReady && isZero(asset.balanceText)) {
+    return t(asset.balanceFailed ? 'portfolioPage.balanceStatus.failed' : 'portfolioPage.sync.pending');
+  }
+
+  return formatFiat(asset.fiatValue);
 }
 
 function formatFiat(value: string | null): string {
@@ -148,6 +164,8 @@ function setPreference(asset: PortfolioAsset, preference: AssetPreference): void
 
 function openAsset(asset: PortfolioAsset): void {
   if (props.manage) return;
+  // Opening a token found by search takes it out of hiding, so a deposit made from its page shows in the list.
+  if (props.search?.trim() && asset.preference === 'hidden') setPreference(asset, 'auto');
   router.push({
     name: Components.AssetHistory,
     params: { assetId: asset.assetId, selectedNetwork: asset.networkName },

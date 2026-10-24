@@ -110,9 +110,9 @@ export class CronService {
   recoverApiMap() {
     if (!navigator.onLine) return;
 
-    const { evm, substrate } = this.state.networkService.getApiMap;
+    const { substrate } = this.state.networkService.getApiMap;
 
-    Object.keys(evm).forEach((network) => this.state.networkService.evmApiHandler.refreshEvmApi(network));
+    this.state.networkService.evmApiHandler.recoverClosedApis();
 
     Object.entries(substrate).forEach(([network, apiProp]) => {
       if (!apiProp?.api?.isConnected) {

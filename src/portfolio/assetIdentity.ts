@@ -172,14 +172,6 @@ function scanCoverage(ecosystem: string, network: NetworkJson, balance: BalanceI
 
 const coverageRank: Record<NetworkScanCoverage, number> = { complete: 2, catalogOnly: 1, limited: 0 };
 
-// The asset discovery sweep's rule: these networks are not swept, so a zero there is a placeholder, not a reading.
-function isTestNetwork(network: NetworkJson): boolean {
-  return (
-    Boolean(network.options?.some((option) => String(option).toLowerCase() === 'testnet')) ||
-    /(?:^|\s)(?:testnet|test|dev)(?:\s|$)/iu.test(`${network.name} ${network.chainId}`)
-  );
-}
-
 const searchText = ({ symbol, name }: Pick<PortfolioAsset, 'symbol' | 'name'>): string => `${symbol} ${name}`.toLowerCase();
 
 // From the start of a word, so "dot" finds DOT but not every token on Polkadot Asset Hub.
@@ -453,7 +445,7 @@ export function buildPortfolioSections({
       if (!answersSearch) return;
 
       if (query && trust === 'verified') {
-        const listsZero = Boolean(section.address) && (networkMatches || isSelectedNetwork(network) || !isTestNetwork(network));
+        const listsZero = Boolean(section.address) && (networkMatches || isSelectedNetwork(network) || !testnet);
         if (hasBalance || asset.balanceUnavailable || listsZero) placeRow(section.assets, asset);
       } else if (mode === 'manage') {
         // Every verified asset, every holding, and every asset with an explicit choice, so any hide can be undone.

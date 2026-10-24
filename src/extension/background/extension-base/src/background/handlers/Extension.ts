@@ -11,7 +11,7 @@ import {
   validateSubstrateSigningAccount,
 } from '@extension-base/services/request-service/handlers/substrateSigningAccount';
 import { ethers, formatUnits, VoidSigner, Wallet } from 'ethers';
-import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
+import { makeEVMTransfer, quoteEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
@@ -1504,7 +1504,7 @@ export default class Extension extends FWExtensionBase {
     // Estimate with EVM API
     if (isNativeEVMNetwork(networkKey)) {
       try {
-        const { fee: feeValue } = await getEVMTransactionObject(
+        const { fee: feeValue } = await quoteEVMTransfer(
           {
             balance,
             networkKey,

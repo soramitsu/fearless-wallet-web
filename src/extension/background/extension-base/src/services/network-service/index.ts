@@ -140,12 +140,10 @@ export class NetworkService {
   public async initNetworkMap() {
     this.logger.log('Init Network Map');
 
-    const { data: networks } = await axios.get<unknown>(URLS.CHAINS);
-    if (!Array.isArray(networks)) throw new Error('The network registry is not a list');
+    const { data: registry } = await axios.get<unknown>(URLS.CHAINS);
+    if (!Array.isArray(registry)) throw new Error('The network registry is not a list');
 
-    const networksFromStorage = await this.getStoredNetworks();
-
-    this.networksGithub = networks.filter((network, index): network is NetworkJson => {
+    const networks = registry.filter((network, index): network is NetworkJson => {
       if (isUsableRegistryNetwork(network)) return true;
 
       const name = isRecord(network) && typeof network.name === 'string' ? network.name : `#${index}`;
@@ -153,6 +151,9 @@ export class NetworkService {
 
       return false;
     });
+    const networksFromStorage = await this.getStoredNetworks();
+
+    this.networksGithub = networks;
 
     this.networksGithub
       .filter((el) => {

@@ -31,20 +31,25 @@ upgrade notice, privacy notice and metadata corrections).
   When a broadcast may already have reached the network, the app is handed the
   transaction's id (its first signature, the fee payer's), not an error, so it
   follows the transaction instead of asking for a second one.
-- Token (SPL) balances and token sends need a Solana node that accepts requests
-  from browser extensions. The public nodes currently refuse them, so SOL works
-  out of the box and tokens appear after you add such a node: open an asset on
-  the Solana network, choose **Switch node**, then **Add custom nodes**. A node
-  address is an `https://` JSON-RPC address (a provider key in the path or the
-  query string is kept); the node you pick is tried first. Saving a custom
-  Solana node previously failed with an error after storing it, and the form
-  accepted only `wss://` addresses; both are fixed.
+- Token (SPL) balances load out of the box. PublicNode refuses token-account
+  lookups, so they are read from Solana Vibe Station's public node, which takes
+  them from browser extensions. USDC and USDT show with their names, icons and
+  fiat values; any other token shows under its mint address. That node throttles
+  requests that arrive together, so the wallet asks for the two token programs
+  one after the other.
+- You can add your own Solana node: open an asset on the Solana network, choose
+  **Switch node**, then **Add custom nodes**. A node address is an `https://`
+  JSON-RPC address (a provider key in the path or the query string is kept);
+  the node you pick is tried first. Saving a custom Solana node previously
+  failed with an error after storing it, and the form accepted only `wss://`
+  addresses; both are fixed.
 
 ## How it reads and sends
 
 - Nodes are tried in order: your selected or custom node, then
-  `api.mainnet-beta.solana.com`, PublicNode and dRPC. Any refusal moves to the
-  next node (the public Solana mainnet node answers 403 to every browser extension).
+  `api.mainnet-beta.solana.com`, PublicNode, Solana Vibe Station and dRPC. Any
+  refusal moves to the next node (the public Solana mainnet node answers 403 to
+  every browser extension).
 - Each node first names its cluster by genesis hash and is skipped unless it is
   the expected one, so a devnet or testnet node behind a mainnet name is never
   used. The check is repeated every few minutes.
@@ -101,7 +106,9 @@ describes Solana. Keep the existing item ID `nhlnehondigmgckngjomcpcefcdplmgc`,
 production public configuration, permissions, privacy disclosures and upgrade
 behavior. The privacy notice already says the extension contacts blockchain RPC
 nodes; for Solana those are `api.mainnet-beta.solana.com`,
-`solana-rpc.publicnode.com` and `solana.drpc.org`, plus any node the user adds.
+`solana-rpc.publicnode.com`, `public.rpc.solanavibestation.com` and
+`solana.drpc.org`, plus any node the user adds. Each receives the wallet's
+public Solana address with the requests it serves.
 
 ## Verification and submission
 

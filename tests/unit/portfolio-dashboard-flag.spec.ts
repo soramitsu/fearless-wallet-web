@@ -2,27 +2,15 @@ import { commonViteConfig, makeDefine, portfolioDashboardBuildFlag } from '../..
 import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
 
 describe('portfolio dashboard flag', () => {
-  it('is on only for a non-production build that sets the flag to exactly true', () => {
-    for (const mode of ['development', 'test', 'staging']) {
-      expect(portfolioDashboardBuildFlag(mode, { VUE_APP_PORTFOLIO_DASHBOARD: 'true' })).toBe('true');
+  it('is on in every build unless the build says exactly false', () => {
+    for (const flag of [undefined, '', 'true', '1', 'TRUE', 'yes', ' false', 'False']) {
+      expect(portfolioDashboardBuildFlag({ VUE_APP_PORTFOLIO_DASHBOARD: flag })).toBe('true');
     }
-    for (const flag of [undefined, '', 'false', '1', 'TRUE', 'yes', ' true']) {
-      expect(portfolioDashboardBuildFlag('development', { VUE_APP_PORTFOLIO_DASHBOARD: flag })).toBe('false');
-    }
+    expect(portfolioDashboardBuildFlag({})).toBe('true');
+    expect(portfolioDashboardBuildFlag({ VUE_APP_PORTFOLIO_DASHBOARD: 'false' })).toBe('false');
   });
 
-  it('never enables a production build, whatever the environment says', () => {
-    expect(portfolioDashboardBuildFlag('production', { VUE_APP_PORTFOLIO_DASHBOARD: 'true' })).toBe('false');
-    expect(portfolioDashboardBuildFlag('production', {})).toBe('false');
-  });
-
-  it('is off when the bundler did not say which mode it ran in', () => {
-    for (const mode of [undefined, '', null, 7]) {
-      expect(portfolioDashboardBuildFlag(mode as never, { VUE_APP_PORTFOLIO_DASHBOARD: 'true' })).toBe('false');
-    }
-  });
-
-  it('reaches the bundle as one literal, decided by the mode and the variable together', () => {
+  it('reaches the bundle as one literal, in a release as in any other build', () => {
     const defineFor = (mode: string, flag: string | undefined) => {
       const previous = process.env.VUE_APP_PORTFOLIO_DASHBOARD;
 
@@ -36,10 +24,11 @@ describe('portfolio dashboard flag', () => {
       }
     };
 
-    expect(defineFor('development', 'true')).toBe(JSON.stringify('true'));
-    expect(defineFor('production', 'true')).toBe(JSON.stringify('false'));
-    expect(defineFor('development', undefined)).toBe(JSON.stringify('false'));
-    expect(makeDefine('production', { VUE_APP_PORTFOLIO_DASHBOARD: 'true' })['process.env.FW_PORTFOLIO_DASHBOARD']).toBe(JSON.stringify('false'));
+    expect(defineFor('production', undefined)).toBe(JSON.stringify('true'));
+    expect(defineFor('production', 'true')).toBe(JSON.stringify('true'));
+    expect(defineFor('development', undefined)).toBe(JSON.stringify('true'));
+    expect(defineFor('development', 'false')).toBe(JSON.stringify('false'));
+    expect(makeDefine('development', { VUE_APP_PORTFOLIO_DASHBOARD: 'false' })['process.env.FW_PORTFOLIO_DASHBOARD']).toBe(JSON.stringify('false'));
   });
 
   it('does not leave the raw variable or the mode in the bundle for anyone to test instead', () => {
@@ -49,7 +38,7 @@ describe('portfolio dashboard flag', () => {
     expect(define).not.toHaveProperty('process.env.VITE_BUILD_MODE');
   });
 
-  it('is off in the unit-test build, where the variable is not set', () => {
+  it('is off in unit tests, which are not bundled with the build define', () => {
     expect(PORTFOLIO_DASHBOARD_ENABLED).toBe(false);
   });
 });

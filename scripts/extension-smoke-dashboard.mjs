@@ -1,7 +1,8 @@
 /* global Buffer, console */
 // Portfolio dashboard screenshots for the DevTools-protocol extension smoke
-// (`solana-extension-smoke.mjs --dashboard-screenshots`). Needs a test build made with the dashboard flag:
-//   VUE_APP_PORTFOLIO_DASHBOARD=true yarn build:extension-test   (a development build; the flag is off in production)
+// (`solana-extension-smoke.mjs --dashboard-screenshots`). Needs a test build, which carries the dashboard unless it was
+// made with VUE_APP_PORTFOLIO_DASHBOARD=false:
+//   yarn build:extension-test
 //
 // Same method as the portfolio screenshots: the popup is opened at the real popup size (561 x 600), offline, and the
 // registry, prices and balances are injected into the popup's own stores, so every run renders the same screens through

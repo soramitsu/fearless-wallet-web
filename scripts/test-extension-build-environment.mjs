@@ -22,6 +22,7 @@ const productionEnvironment = {
   VUE_APP_ENABLE_IROHA_TRANSFERS: 'true',
   VUE_APP_ENABLE_SOLANA_TRANSFERS: 'false',
   VUE_APP_EXTENSION_SMOKE: 'true',
+  VUE_APP_PORTFOLIO_DASHBOARD: 'false',
   VUE_APP_TEST_ONLY: 'true',
 };
 enforceProductionReleaseEnvironment(productionEnvironment, 'production');
@@ -40,6 +41,8 @@ assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_BITCOIN_TRANSFERS, 'true');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_SOLANA_TRANSFERS, 'true');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_CONNECT, 'false');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_TRANSFERS, 'false');
+// The portfolio dashboard ships; a release cannot leave it out by its environment.
+assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_PORTFOLIO_DASHBOARD, 'true');
 
 const withEnvironment = (overrides, run) => {
   const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));

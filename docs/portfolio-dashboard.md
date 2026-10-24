@@ -2,39 +2,40 @@
 
 A winged-sun hero over the portfolio, an **All wallets** scope and a calm, honest sync state (P0), and **Where it lives**:
 for any token, where it is held across wallets and networks, how each holding stands to a swap on Polkaswap, and a hand
-over to the screens the extension already has for moving, swapping, sending and receiving (P1). It is behind a build
-flag and **cannot reach a production build**. Design spec, renders and the prototype live outside this repository
+over to the screens the extension already has for moving, swapping, sending and receiving (P1). It **ships**: Chrome and
+Firefox releases carry it from 4.2.0. Design spec, renders and the prototype live outside this repository
 (`design/portfolio-dashboard/` in the workspace); this page records what the extension implements and how to check it.
 
-## Turning it on
+## The build flag
 
-The dashboard exists only in development and test builds, and only when asked for:
+Every build carries the dashboard. A release pins it on: `VUE_APP_PORTFOLIO_DASHBOARD` is `true` in
+`PRODUCTION_RELEASE_FLAGS` (`scripts/build-extension.mjs`), the build records it in `extension-build-metadata.json`, and
+the Chrome release audit requires it (`EXPECTED_RELEASE_FLAGS` in `scripts/audit-chrome-release.mjs`). Development and
+test builds carry it too, so every smoke exercises what people get; `VUE_APP_PORTFOLIO_DASHBOARD=false` leaves it out of
+one of those:
 
 ```bash
-VUE_APP_PORTFOLIO_DASHBOARD=true yarn build-watch:extension
-VUE_APP_PORTFOLIO_DASHBOARD=true yarn build:extension-test
+VUE_APP_PORTFOLIO_DASHBOARD=false yarn build-watch:extension
 ```
 
-The decision is made once, in `portfolioDashboardBuildFlag` (`vite.config.shared.mjs`): on only when
-`VUE_APP_PORTFOLIO_DASHBOARD` is `true` **and** the bundler's mode is not `production` (`NODE_ENV` is no use here, the
-build sets it to `production` for every mode). It reaches the bundle as the literal `process.env.FW_PORTFOLIO_DASHBOARD`,
-so a build without the dashboard ships none of its code, strings, styles or artwork. The variable is not in
-`PRODUCTION_RELEASE_FLAGS`, so release audit metadata is unchanged, and `tests/unit/portfolio-dashboard-flag.spec.ts`
-covers the rule. Two rules in `src/portfolio/dashboard/dashboardFlag.ts` keep the dashboard out of a release: a dynamic
+The decision is made once, in `portfolioDashboardBuildFlag` (`vite.config.shared.mjs`), and reaches the bundle as the
+literal `process.env.FW_PORTFOLIO_DASHBOARD`, so a build without the dashboard ships none of its code, strings, styles or
+artwork. `tests/unit/portfolio-dashboard-flag.spec.ts` covers the rule and `scripts/test-extension-build-environment.mjs`
+the release pin. Two rules in `src/portfolio/dashboard/dashboardFlag.ts` keep a build without it clean: a dynamic
 `import()` of a dashboard screen is guarded by the literal test written in place, and everything else may test
 `PORTFOLIO_DASHBOARD_ENABLED`. The background answers the new message only in a build that carries the dashboard.
 
-Check a production build with the flag asked for anyway; it must carry nothing:
+To ship a release without it, set the flag to `false` in `PRODUCTION_RELEASE_FLAGS` and `EXPECTED_RELEASE_FLAGS`, build,
+and check the build carries nothing:
 
 ```bash
-VUE_APP_PORTFOLIO_DASHBOARD=true yarn build:extension
+yarn build:extension
 yarn audit:portfolio-dashboard-absent
 ```
 
-P1 touches three files that exist in a release build. The route table (`src/router/routes.ts`) adds the `TokenLocations`
-route name, which is only a string in a build without the dashboard, and spreads in the flagged route behind the literal
-flag test. `Header.vue` shows its back button on that route name, which never matches without the route. `SwapForm.vue`
-has a block that reads the pair a hand-off chose, behind the same literal test, so the bundler drops it and its import.
+Three files outside the dashboard know about it. The route table (`src/router/routes.ts`) adds the `TokenLocations`
+route name and spreads in the route behind the literal flag test. `Header.vue` shows its back button on that route name.
+`SwapForm.vue` has a block that reads the pair a hand-off chose, behind the same literal test.
 `scripts/check-portfolio-dashboard-absent.mjs` looks for the P1 markers too.
 
 ## What P0 contains
@@ -147,7 +148,7 @@ price, the total counts visible, non-testnet, priced assets, and hidden, unprice
   `src/portfolio/dashboard/preferences.ts`, which falls back to defaults for anything unreadable.
 - Strings are in `src/portfolio/dashboard/messages.ts` (English and Russian, as data), registered by `locales.ts` when
   the dashboard first mounts. They are not in `translation.json` yet because the Akkadian and Egyptian locales must cover
-  every key there; both fall back to English for these strings until the flag graduates.
+  every key there. Every locale but Russian shows these strings in English for now.
 
 ## Not in these phases
 
@@ -159,8 +160,8 @@ popular SORA assets the Swap sheet offers (XOR, VAL, PSWAP, XSTUSD, from the reg
 
 ```bash
 yarn vitest run tests/unit/portfolio-dashboard-*.spec.ts
-VUE_APP_PORTFOLIO_DASHBOARD=true EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true \
-  OUTPUT_DIR=chrome-test IS_EXTENSION=true yarn env-cmd -f .env.extension node scripts/build-extension.mjs --mode development
+EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true \
+  yarn env-cmd -f .env.extension node scripts/build-extension.mjs --mode development
 node scripts/solana-extension-smoke.mjs --dashboard-screenshots output/dashboard-screenshots
 ```
 
@@ -181,9 +182,9 @@ On a machine whose Node is not the one `.nvmrc` pins, 45 tests in six files (`vi
 `export-form-access-errors`, `json-backup-export-options`) fail because `localStorage` is not defined; they fail the same
 on the untouched base commit.
 
-## Before the flag graduates
+## Still to do
 
-1. Move the strings into `translation.json` with Akkadian and Egyptian text.
+1. Move the strings into `translation.json` with Akkadian and Egyptian text, and translate them for the other locales.
 2. Move the chart slots into `config/design/fw.tokens.json` and regenerate, with the iOS and Android parity.
 3. Decide the chart slot Other: it is slate by design and sits about 14.9 from slot 5 (OKLab x 100), just under the
    floor of 15 the five hues keep among themselves; names in the legend carry identity either way.
@@ -192,7 +193,7 @@ on the untouched base commit.
 5. Decide whether All wallets should be the default scope for people with several wallets.
 6. Readiness reads this extension's bundled reviewed routes. iOS and Android list different routes today, so the same chips
    there need an evaluator over their own registry; the screens' words and states are the shared part.
-7. The `SwapForm.vue` block that reads the hand-off's pair is flag-gated: graduating it means making it unconditional,
-   with its own test in the swap form's spec.
+7. The `SwapForm.vue` block that reads the hand-off's pair is flag-gated: once a release without the dashboard is no
+   longer wanted, make it unconditional, with its own test in the swap form's spec.
 8. Replace the dock and back-button workarounds if the router's per-primary history changes (`router.back` pops the current
    primary destination's own stack, so Where it lives is reached again through the Wallet tab).

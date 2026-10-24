@@ -1,7 +1,8 @@
 /* global console, process */
-// Fails when a build carries any part of the portfolio dashboard. The dashboard is behind a build flag that is never on in
-// production (src/portfolio/dashboard/dashboardFlag.ts); this is the check that a production extension really has none of
-// it, so a stray static import cannot ship it unnoticed. Usage: node scripts/check-portfolio-dashboard-absent.mjs <dir>
+// Fails when a build carries any part of the portfolio dashboard. The dashboard ships by default; a build made without it
+// (VUE_APP_PORTFOLIO_DASHBOARD=false, or a release whose flag is turned off in PRODUCTION_RELEASE_FLAGS) must really have
+// none of it, so a stray static import cannot leave part of it behind (src/portfolio/dashboard/dashboardFlag.ts).
+// Usage: node scripts/check-portfolio-dashboard-absent.mjs <dir>
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

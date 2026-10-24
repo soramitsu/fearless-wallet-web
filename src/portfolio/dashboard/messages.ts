@@ -1,8 +1,7 @@
 // The dashboard's own message bundle, in English and Russian. It is registered by ./locales.ts when the dashboard first mounts.
 // It lives apart from the translation.json files for now: the Akkadian and Egyptian locales must cover every key of the
-// English one (tests/unit/akkadian-locale.spec.ts, egyptian-hieroglyph-locale.spec.ts), and the dashboard is still behind
-// a build flag. Those two locales fall back to English here; the keys move into translation.json, with cuneiform and
-// hieroglyph text, when the flag graduates.
+// English one (tests/unit/akkadian-locale.spec.ts, egyptian-hieroglyph-locale.spec.ts). Every locale but Russian falls
+// back to English here; the keys move into translation.json, with cuneiform and hieroglyph text, once they are written.
 const en = {
   allWallets: 'All wallets',
   walletsCount: '1 wallet | {count} wallets',

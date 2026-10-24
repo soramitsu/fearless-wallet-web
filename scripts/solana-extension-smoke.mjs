@@ -35,7 +35,7 @@ const portfolioScreenshotsDir =
           : 'output/portfolio-screenshots'
       );
 // `--dashboard-screenshots [dir]`: two wallets, then the portfolio dashboard at the popup size, offline. Needs a test
-// build made with VUE_APP_PORTFOLIO_DASHBOARD=true (a development build; the flag is off in production).
+// build that carries the dashboard (every build does unless made with VUE_APP_PORTFOLIO_DASHBOARD=false).
 const dashboardScreenshotsArg = process.argv.indexOf('--dashboard-screenshots');
 const dashboardScreenshotsDir =
   dashboardScreenshotsArg === -1

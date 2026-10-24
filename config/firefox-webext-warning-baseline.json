@@ -19,15 +19,15 @@
     "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "bf322f7605bff7f5d7cb940f52474ca712851cec0241dffc3ce316336224d04c",
+  "warningSetSha256": "a346839a66743ddb1aedd37e2834630efd78ff3285f950f625ece85c6feffb79",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "9afcb2188837dd1519b7e87582045e3262475a8fe77bf1b99dae634f5cad50be"
+      "sha256": "26981f52e6e3bed061e91144583e4a9ffe7f1dd76cc9b806c974750963e66a05"
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "bb1415b175ae8b8de70569c6c77a817f6ca2f027e8d3575cff9693899cc7bba2"
+      "sha256": "667d4845ca333d85bdb7ca500760b241158e2eb43eb41a151d26249fdfd2596c"
     },
     {
       "file": "chunks/background-vendor/assert-Blv9rAXX.js",
@@ -59,7 +59,7 @@
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "8dcb6554e793c620dd0824c877dd1a5017ae71595674c1f04d2deb0499b28b10"
+      "sha256": "a5278cb2b8f004fc1d98ec02f90d65ef5f224a23539cf7ed85a01a6a0b203ec2"
     }
   ]
 }

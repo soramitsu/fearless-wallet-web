@@ -44,7 +44,9 @@ brings) depends on `zod` `^3.21.4`. The advisory
 4.6.6 and has no fix for 3.x, so both audits failed on a clean install. The
 release resolves `zod` to the patched 4.6.6. `@ton/ton` uses `zod` only in its
 HTTP clients (`TonClient4` and `HttpApi`), which the wallet does not use: it
-derives TON wallet contracts and addresses. The package still loads and derives
-wallets with 4.6.6, and the TON specs pass. Reassess when `@ton/ton` and
+derives TON wallet contracts and addresses, so its own code imports the contract
+module directly (`@ton/ton/dist/wallets/WalletContractV4`) and no longer loads
+`@ton/ton` 16's clients. The package still loads and derives wallets with 4.6.6,
+and the TON specs pass. Reassess when `@ton/ton` and
 `@subwallet/keyring` publish releases that depend on `zod` 4, and remove the
 resolution then.

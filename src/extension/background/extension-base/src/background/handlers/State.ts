@@ -166,7 +166,7 @@ export default class State {
   }
 
   getEvmApi(key: string) {
-    return this.getEvmApiMap[key.toLowerCase()];
+    return this.networkService.evmApiHandler.getApi(key);
   }
 
   getFromStorage(key: (keyof IState)[]) {

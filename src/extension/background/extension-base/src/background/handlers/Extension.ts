@@ -4,7 +4,7 @@ import { hexToU8a, isHex, assert } from '@polkadot/util';
 import { isEthereumAddress, base64Decode } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { ethers, formatUnits, Wallet } from 'ethers';
-import { getEVMTransactionObject, makeEVMTransfer } from '@extension-base/api/evm/transfer';
+import { makeEVMTransfer, quoteEVMTransfer } from '@extension-base/api/evm/transfer';
 import {
   estimateBitcoinTransferFee,
   isBitcoinTransferNetwork,
@@ -1388,7 +1388,7 @@ export default class Extension extends FWExtensionBase {
     // Estimate with EVM API
     if (isNativeEVMNetwork(networkKey)) {
       try {
-        const { fee: feeValue } = await getEVMTransactionObject(
+        const { fee: feeValue } = await quoteEVMTransfer(
           {
             balance,
             networkKey,

@@ -60,6 +60,25 @@
       ]
     },
     {
+      "reason": "Exact HTTPS explorer origins in src/history/dataApiPolicy.ts. History requests to a registry-configured explorer carry a public wallet address, optional token contract and the corresponding explorer API key. This origin map prevents forwarding that key to another host or port; redirects are rejected and ambient cookies omitted. These literals are credential boundaries, not an additional endpoint discovery mechanism.",
+      "hosts": [
+        "api.etherscan.io",
+        "api.bscscan.com",
+        "api.polygonscan.com",
+        "api.arbiscan.io",
+        "api.snowtrace.io",
+        "api-zkevm.polygonscan.com",
+        "api-moonriver.moonscan.io",
+        "api-moonbeam.moonscan.io"
+      ]
+    },
+    {
+      "reason": "OKLink explorer history selected by network registry data. src/history/dataApiPolicy.ts restricts its API key to the exact HTTPS origin and /api/v5/explorer/ path; requests contain public wallet addresses, reject redirects and omit ambient cookies.",
+      "hosts": [
+        "www.oklink.com"
+      ]
+    },
+    {
       "reason": "Google sign-in and the Google Drive app-data backup.",
       "hosts": [
         "accounts.google.com",
@@ -104,6 +123,7 @@
     {
       "reason": "Documentation links in library comments and error messages (Vue, Vue Router, Pinia, Vue I18n, Element Plus, Tippy, ox, Rolldown, MDN). Never requested.",
       "hosts": [
+        "vuejs.org",
         "cli.vuejs.org",
         "link.vuejs.org",
         "devtools.vuejs.org",

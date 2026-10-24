@@ -1,7 +1,7 @@
 # Chrome Web Store release 4.2.0
 
 This is the release handoff for the production Chrome artifact. The live Chrome
-Web Store version is still `3.0.5` (`600a64d5`), so the next upload is `4.2.0`,
+Web Store version was confirmed as `3.0.9` in the developer dashboard on 24 October 2026, so the next upload is `4.2.0`,
 the same release number as the Android and iOS apps. The Firefox build ships
 the same `4.2.0` version from the same `package.json`.
 
@@ -27,8 +27,7 @@ They predate the upgrade-safety fixes for existing 2.x and 3.0.x profiles
 (legacy migration, TON phrase derivation and re-encryption, background start-up
 ordering). Release owner step (manual, no upload): open the Chrome Web Store
 developer dashboard, check for a pending `3.0.6` draft or submission built from
-these candidates, and cancel it before submitting `4.2.0`. This effort deletes
-no branches and pushes nothing.
+these candidates, and cancel it before submitting `4.2.0`. The combined integration preserves these branch histories while using the reviewed, reconciled source; see `docs/extension-integration-review-2026-10-24.md`.
 
 ## Release scope
 
@@ -39,7 +38,7 @@ before submission; do not reuse the `3.0.6` copy.
   and passwords keep working, and any recovery is guided and scoped to the
   affected account.
 - Universal Wallet v2 account derivation and migration, with legacy wallets
-  retaining their original keys, normal functionality and export access.
+  retaining their original keys and export access. Old or imported wallets remain recovery-only: transfers out, withdrawals, claims and backups stay available while users move to a newly created wallet.
 - Restoring a TON wallet from its phrase finds the address earlier Fearless
   versions used (3.0.x for Chrome, the Android app), including native TON
   phrases, which the release candidate had refused.
@@ -63,8 +62,11 @@ before submission; do not reuse the `3.0.6` copy.
   history before sending again, so sends are never blocked for good.
 - Cross-chain transfers are paused with an in-app explanation and a
   same-network send alternative; IrohaConnect is off in release builds.
+- TON jetton transfers use each token's decimals; failed TON transfers remain failures in the send UI.
+- Approval queues remove the completed request by identity, so concurrent updates cannot discard the next request. EVM RPC rejection, malformed responses and valid falsy results settle correctly.
 - Reliability and fail-closed handling across network, signing, and transfer
-  flows.
+  flows, including bounded fee quotes and live EVM chain verification.
+- Portfolio dashboard and zero-balance search retain hidden-asset preferences, verified-only totals and explicit testnet filtering.
 - A security notice for profiles that ran 3.0.x (WK-9, below).
 
 ## Security notice for profiles from 3.0.x (WK-9)

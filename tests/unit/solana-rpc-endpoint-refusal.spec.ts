@@ -4,7 +4,7 @@ import BalanceService from '@extension-base/services/balance-service';
 import SolanaBalanceService from '@extension-base/services/balance-service/SolanaBalanceService';
 import { createSolanaRpcBalanceClient } from '@extension-base/services/balance-service/solanaRpcBalances';
 import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import type {
@@ -92,6 +92,17 @@ function endpoints(answers: Record<string, Answer>) {
 }
 
 describe('Solana JSON-RPC endpoints that refuse the extension', () => {
+  // Each case starts after the wallet has forgotten which nodes refused token accounts in the case before.
+  let clock = Date.parse('2026-10-24T00:00:00Z');
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime((clock += 11 * 60_000));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('reads the balance from the next endpoint after a 403, instead of giving up', async () => {
     const { client, posts } = endpoints(PRODUCTION_FROM_AN_EXTENSION);
 
@@ -232,6 +243,45 @@ describe('Solana JSON-RPC endpoints that refuse the extension', () => {
 
     expect(balances.tokensUnavailable).toBeUndefined();
     expect(tokenCalls).toBe(3);
+  });
+
+  it('keeps other requests on the node that served them after the token accounts came from another node', async () => {
+    const { client, posts } = endpoints(PRODUCTION_FROM_AN_EXTENSION);
+
+    await createSolanaRpcBalanceClient(client).getBalances(WALLET);
+    expect(posts.filter(({ method }) => method === 'getTokenAccountsByOwner').at(-1)?.url).toBe(VIBE_STATION);
+    posts.length = 0;
+
+    await client.getBalance(WALLET);
+    expect(posts.map(({ url }) => url)).toEqual([PUBLICNODE]);
+  });
+
+  it('asks a node that refused token accounts last on the next refresh, but still asks it', async () => {
+    const tokenPosts = (posts: Array<{ method: string; url: string }>) =>
+      posts.filter(({ method }) => method === 'getTokenAccountsByOwner').map(({ url }) => url);
+    const first = endpoints(PRODUCTION_FROM_AN_EXTENSION);
+
+    await createSolanaRpcBalanceClient(first.client).getBalances(WALLET);
+    expect(tokenPosts(first.posts)).toEqual([MAINNET_BETA, PUBLICNODE, VIBE_STATION, VIBE_STATION]);
+
+    // The next refresh builds a new client and goes straight to the node that serves token accounts.
+    const next = endpoints(PRODUCTION_FROM_AN_EXTENSION);
+
+    await createSolanaRpcBalanceClient(next.client).getBalances(WALLET);
+    expect(tokenPosts(next.posts)).toEqual([VIBE_STATION, VIBE_STATION]);
+
+    // A node asked last is still asked when nothing ahead of it serves.
+    const throttled = endpoints(NO_NODE_SERVES_TOKEN_ACCOUNTS);
+
+    await expect(throttled.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM)).rejects.toThrow();
+    expect(tokenPosts(throttled.posts).slice(0, 4)).toEqual([VIBE_STATION, DRPC, MAINNET_BETA, PUBLICNODE]);
+
+    // After a while every node is asked in the usual order again.
+    vi.setSystemTime(Date.now() + 11 * 60_000);
+    const later = endpoints(PRODUCTION_FROM_AN_EXTENSION);
+
+    await later.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM);
+    expect(tokenPosts(later.posts)).toEqual([MAINNET_BETA, PUBLICNODE, VIBE_STATION]);
   });
 });
 

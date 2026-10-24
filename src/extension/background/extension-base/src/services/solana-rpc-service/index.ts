@@ -208,6 +208,7 @@ class SolanaRpcClient {
   private nextId = 1;
   private readonly endpoints: EndpointFailover;
   private readonly expectedGenesisHash?: string;
+  private readonly failoverOptions?: EndpointFailoverOptions;
   private readonly fetchFn: FetchLike;
   private readonly requestTimeoutMs: number;
 
@@ -221,6 +222,7 @@ class SolanaRpcClient {
     rpcUrls,
   }: SolanaRpcClientOptions = {}) {
     this.expectedGenesisHash = expectedGenesisHash === undefined ? undefined : normalizePubkey(expectedGenesisHash, 'invalid_genesis_hash');
+    this.failoverOptions = failover;
     this.fetchFn = fetchFn;
     this.requestTimeoutMs = requestTimeoutMs;
     this.endpoints = new EndpointFailover(
@@ -295,25 +297,34 @@ class SolanaRpcClient {
     programId: string,
     commitment: SolanaRpcCommitment = 'confirmed'
   ): Promise<SolanaTokenAccountEntry[]> {
-    return this.request(
-      'getTokenAccountsByOwner',
-      [
-        normalizePubkey(owner, 'invalid_address'),
-        { programId: normalizePubkey(programId, 'invalid_program_id') },
-        { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' },
-      ],
-      (value) => {
-        if (!isRecord(value) || !Array.isArray(value.value)) throw new SolanaRpcError('invalid_token_accounts_response');
+    const params = [
+      normalizePubkey(owner, 'invalid_address'),
+      { programId: normalizePubkey(programId, 'invalid_program_id') },
+      { commitment: normalizeCommitment(commitment), encoding: 'jsonParsed' },
+    ];
+    const normalizeResult = (value: unknown): SolanaTokenAccountEntry[] => {
+      if (!isRecord(value) || !Array.isArray(value.value)) throw new SolanaRpcError('invalid_token_accounts_response');
 
-        return value.value.map((entry) => {
-          if (!isRecord(entry)) throw new SolanaRpcError('invalid_token_accounts_response');
+      return value.value.map((entry) => {
+        if (!isRecord(entry)) throw new SolanaRpcError('invalid_token_accounts_response');
 
-          return {
-            account: normalizeParsedAccount(entry.account),
-            pubkey: normalizePubkey(entry.pubkey, 'invalid_token_accounts_response'),
-          };
-        });
-      }
+        return {
+          account: normalizeParsedAccount(entry.account),
+          pubkey: normalizePubkey(entry.pubkey, 'invalid_token_accounts_response'),
+        };
+      });
+    };
+    // Token accounts get their own failover, so the node that serves them (Solana Vibe Station's public node, which
+    // throttles) does not become the first node asked for everything else, and a node that refused them lately
+    // (PublicNode answers 403 after about three seconds) is asked last.
+    const endpoints = new EndpointFailover(askTokenAccountRefusersLast(this.endpoints.endpoints), this.failoverOptions);
+
+    return this.runWithFailover(endpoints, (rpcUrl) =>
+      this.requestOnce(rpcUrl, 'getTokenAccountsByOwner', params, normalizeResult).catch((error: unknown) => {
+        if (isEndpointRefusalError(error)) tokenAccountRefusals.set(rpcUrl, Date.now());
+
+        throw error;
+      })
     );
   }
 
@@ -598,13 +609,17 @@ class SolanaRpcClient {
     return check;
   }
 
-  private async request<T>(
+  private request<T>(
     method: string,
     params: unknown[],
     normalizeResult: (value: unknown) => T
   ): Promise<T> {
-    return this.endpoints
-      .run((rpcUrl) => this.requestOnce(rpcUrl, method, params, normalizeResult), {
+    return this.runWithFailover(this.endpoints, (rpcUrl) => this.requestOnce(rpcUrl, method, params, normalizeResult));
+  }
+
+  private async runWithFailover<T>(endpoints: EndpointFailover, attempt: (rpcUrl: string) => Promise<T>): Promise<T> {
+    return endpoints
+      .run(attempt, {
         isRetryable: isRetryableRpcError,
         retryAfterMs: (error) => (error instanceof SolanaRpcError ? error.retryAfterMs : undefined),
       })
@@ -702,6 +717,26 @@ const CLUSTER_RECHECK_MS = 5 * 60_000;
 // not ask each node for its identity again.
 const verifiedClusters = new Map<string, number>();
 const clusterChecks = new Map<string, Promise<void>>();
+
+// Nodes that answered a token-account lookup (or the cluster check before it) with 401 or 403, and when. Every
+// balance refresh builds a new client, so this is kept for the whole worker. Such a node is asked last for a while,
+// never skipped.
+const TOKEN_ACCOUNT_REFUSAL_MEMORY_MS = 10 * 60_000;
+const tokenAccountRefusals = new Map<string, number>();
+
+function askTokenAccountRefusersLast(rpcUrls: readonly string[], now = Date.now()): string[] {
+  const refusedLately = (rpcUrl: string) => {
+    const refusedAt = tokenAccountRefusals.get(rpcUrl);
+
+    return refusedAt !== undefined && now - refusedAt < TOKEN_ACCOUNT_REFUSAL_MEMORY_MS;
+  };
+
+  return [...rpcUrls.filter((rpcUrl) => !refusedLately(rpcUrl)), ...rpcUrls.filter(refusedLately)];
+}
+
+function isEndpointRefusalError(error: unknown): boolean {
+  return error instanceof SolanaRpcError && (error.status === 401 || error.status === 403);
+}
 
 // Preflight answers -32002 with `AlreadyProcessed` when the node already has
 // this exact transaction.

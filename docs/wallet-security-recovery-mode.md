@@ -10,7 +10,9 @@ Mnemonic and JSON imports do not establish fresh-key provenance. Imported securi
 
 ## User experience
 
-When existing accounts finish loading, the portfolio shows a security dialog if any affected wallets remain. It explains how to create a fresh wallet, back up its phrase, and send funds on matching networks. Closing the dialog permits recovery for that visit; it never permanently acknowledges away the warning. A persistent banner reopens the guidance, and the dialog returns on the next extension visit.
+Only the selected wallet decides whether a warning appears. While an affected wallet (an older or imported one) is selected, its portfolio shows a security dialog that explains how to create a fresh wallet, back up its phrase, and send funds on matching networks. A newly created wallet shows neither the dialog nor the banner, even while older wallets remain stored.
+
+The dialog opens once for each affected wallet. Closing it, or starting wallet creation from it, is remembered on that device for every affected wallet then stored, so it does not return each time the extension opens; a key imported later gets the dialog once. The closure never upgrades a wallet: a persistent banner stays on the pages of every affected wallet and reopens the guidance.
 
 The create action uses the existing wallet-creation flow. No account is deleted and no funds are moved automatically. Standalone EVM accounts and TON accounts are included; linked EVM children are represented by their parent wallet.
 

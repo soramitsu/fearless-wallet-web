@@ -1,5 +1,5 @@
 <template>
-  <div v-if="IS_EXTENSION && candidates.length" class="wallet-recovery-banner" :lang="noticeLocale === 'ru-RU' ? 'ru' : 'en'" role="status">
+  <div v-if="recoveryOnly" class="wallet-recovery-banner" :lang="noticeLocale === 'ru-RU' ? 'ru' : 'en'" role="status">
     <span>{{ t('banner') }}</span>
     <button type="button" @click="reviewNotice">{{ t('review') }}</button>
   </div>
@@ -21,7 +21,11 @@ import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
-import { getLegacyWalletUpgradeAccounts } from '@/util/legacyWalletUpgradeNotice';
+import {
+  getLegacyWalletUpgradeAccounts,
+  readClosedLegacyWalletNotices,
+  rememberClosedLegacyWalletNotices,
+} from '@/util/legacyWalletUpgradeNotice';
 import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 import { isSelectedWalletRecoveryOnly, isWalletRecoveryRoute } from '@/util/walletRecoveryPolicy';
 
@@ -39,26 +43,31 @@ const active = ref(true);
 const opening = ref(false);
 const navigationError = ref(false);
 let navigationAttempt = 0;
-// Reviewing the notice only enters recovery mode for this visit. It never
-// upgrades a wallet, and it cannot permanently suppress a security warning.
-const reviewed = ref<string[]>([]);
+// Closing the dialog is remembered for each wallet on this device, so it opens
+// once per old or imported wallet rather than every time the extension opens.
+// It never upgrades a wallet, and the recovery banner stays on its pages.
+const reviewed = ref<string[]>(readClosedLegacyWalletNotices());
+// The banner reopens the guidance on request.
+const reviewing = ref(false);
 const candidates = computed(() => getLegacyWalletUpgradeAccounts(accountsStore.accounts));
+// Only the wallet being viewed decides whether to warn: a newly created wallet
+// shows neither the banner nor the dialog, even while older wallets remain.
+const recoveryOnly = computed(() => IS_EXTENSION &&
+  isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address));
 // Wallet redirects to Currencies; only portfolio roots may interrupt browsing.
 const portfolioRoutes = new Set<string>([Components.Wallet, Components.Currencies, Components.Nfts]);
-const visible = computed(() => IS_EXTENSION && active.value && portfolioRoutes.has(String(route.name)) &&
-  candidates.value.some(({ address }) => !reviewed.value.includes(address)));
+const visible = computed(() => recoveryOnly.value && active.value && portfolioRoutes.has(String(route.name)) &&
+  (reviewing.value || candidates.value.some(({ address }) => !reviewed.value.includes(address))));
 
 // Switching accounts does not itself navigate. Leave any normal-use screen
 // immediately when its selected signer becomes a recovery-only wallet.
-const recoveryOnly = computed(() => IS_EXTENSION &&
-  isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address));
 watch([recoveryOnly, () => route.name, active], ([restricted, name, isActive]) => {
   if (restricted && isActive && !isWalletRecoveryRoute(name)) {
     void router.replace({ name: Components.Wallet, query: { security: 'recovery-only' } });
   }
 }, { immediate: true });
 
-onActivated(() => { reviewed.value = []; active.value = true; });
+onActivated(() => { active.value = true; });
 onDeactivated(() => { active.value = false; });
 
 const resetNavigation = () => {
@@ -71,7 +80,9 @@ watch([visible, () => route.name], resetNavigation, { flush: 'sync' });
 onBeforeUnmount(resetNavigation);
 
 const acknowledge = (addresses: string[]) => {
+  reviewing.value = false;
   reviewed.value = [...new Set([...reviewed.value, ...addresses])];
+  rememberClosedLegacyWalletNotices(reviewed.value);
 };
 
 const dismiss = () => {
@@ -80,7 +91,7 @@ const dismiss = () => {
 };
 
 const reviewNotice = () => {
-  reviewed.value = [];
+  reviewing.value = true;
   void router.push({ name: Components.Wallet });
 };
 

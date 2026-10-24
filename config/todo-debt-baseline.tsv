@@ -14,7 +14,6 @@ src/extension/background/extension-base/src/services/pools-service/index.ts	cons
 src/extension/background/extension-base/src/services/pools-service/index.ts	const groupId2 = this.state.balanceService.getTokenBalance(address, asset2.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
 src/extension/background/extension-base/src/services/staking-service/index.ts	// TODO use networks
 src/extension/background/extension-base/src/services/subscription-service/index.ts	// TODO возможно нужно перенести данные отписки в функцию которая отключает API сети
-src/extension/background/extension-base/src/services/wallet-connect-service/storage.ts	//TODO: make it work on both platforms
 src/extension/background/extension-base/src/services/wallet-connect-service/types.ts	//TODO refactoring types
 src/extension/entry/page.ts	provider: FWEvmProvider | undefined = undefined; // TODO ???
 src/helpers/common/index.ts	// TODO: нужна проверка на то, входит ли сеть в группу

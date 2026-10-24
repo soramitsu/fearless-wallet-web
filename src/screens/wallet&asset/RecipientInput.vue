@@ -68,8 +68,11 @@ const onInput = (event: Event) => {
   position: relative;
 }
 
-.recipient-value {
-  padding-right: 48px !important;
+// More specific than the shared field rules, which also use !important: the text must stop short of the clear
+// button, and a whole EVM or Substrate address fits on one line at this size.
+.recipient-input .input .recipient-value {
+  padding-right: 44px !important;
+  font-size: 0.875em !important;
   text-overflow: ellipsis;
 
   &:focus {
@@ -77,22 +80,22 @@ const onInput = (event: Event) => {
   }
 }
 
+// Spans the text line under the label, so the button sits level with the address.
 .recipient-clear {
   position: absolute;
-  top: 50%;
-  right: 8px;
+  top: 15px;
+  right: 4px;
+  bottom: 0;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
-  height: 36px;
   padding: 0;
   border: 0;
   background: transparent;
   color: $gray-color;
   cursor: pointer;
-  transform: translateY(-50%);
 
   &:hover {
     color: $plain-white;

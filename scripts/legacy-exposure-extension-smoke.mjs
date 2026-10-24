@@ -250,11 +250,12 @@ async function main() {
     await eventually(async () => (await route()).startsWith('#/security-notice/guide'), 'the guide');
     await shot('02-guide');
 
+    // The wallets get their networks one after the other, so wait for both before comparing.
     const enrolled = await eventually(async () => {
       const state = await accountState(browser, page, master305.storage);
 
-      return state.enrolled > 0 ? state : undefined;
-    }, 'networks attached after the confirmation');
+      return state.enrolled >= 2 ? state : undefined;
+    }, 'networks attached to both wallets after the confirmation');
     assert.deepEqual(enrolled, { enrolled: 2, keysUnchanged: true });
     assert.ok((await storedRecord(browser, page)).acknowledgedAt > 0);
     log('confirmed; networks attached afterwards; keys unchanged');

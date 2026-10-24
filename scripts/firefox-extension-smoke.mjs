@@ -31,7 +31,7 @@ const CONNECT_TIMEOUT_MS = 30_000;
 const PAGE_TIMEOUT_MS = 20_000;
 const EVALUATION_TIMEOUT_MS = 5_000;
 const RDP_REQUEST_TIMEOUT_MS = 5_000;
-const EXPECTED_EXTENSION_ID = '{6a9332b9-e864-4d0a-a591-140fe75a29ba}';
+const EXPECTED_EXTENSION_ID = '{23b9f52e-e9d7-4180-9126-fc9063e57c1a}';
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 

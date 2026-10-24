@@ -22,3 +22,24 @@ export function getLegacyWalletUpgradeAccounts(accounts: AccountJson[]): Account
     return isRecoveryOnlyWallet(account);
   });
 }
+
+// The security dialog opens once for each affected wallet on this device. Its
+// recovery banner stays on that wallet's pages and can reopen the guidance.
+const CLOSED_NOTICES_STORAGE_KEY = 'fearless:legacy-wallet-upgrade-notice:v2';
+
+export function readClosedLegacyWalletNotices(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(CLOSED_NOTICES_STORAGE_KEY) ?? '[]');
+    return Array.isArray(stored) ? stored.filter((address): address is string => typeof address === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberClosedLegacyWalletNotices(addresses: string[]): void {
+  try {
+    localStorage.setItem(CLOSED_NOTICES_STORAGE_KEY, JSON.stringify(addresses));
+  } catch {
+    // Without storage the dialog still stays closed until the extension reopens.
+  }
+}

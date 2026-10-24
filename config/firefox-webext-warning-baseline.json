@@ -60,6 +60,10 @@
     {
       "file": "chunks/soramitsuUI.js",
       "sha256": "8dcb6554e793c620dd0824c877dd1a5017ae71595674c1f04d2deb0499b28b10"
+    },
+    {
+      "file": "chunks/universalWalletKeyringFields.js",
+      "sha256": "5b1da659b78e769ce620db4238ce18ca55f2f2aa15bc94bb046c47a4a6e09b67"
     }
   ]
 }

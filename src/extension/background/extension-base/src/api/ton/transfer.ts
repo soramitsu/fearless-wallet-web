@@ -21,9 +21,10 @@ interface TransferParams {
 export const MAX_TON_FEE = '0.02';
 
 function jettonUnits(amount: string, precision: number): bigint {
-  if (!Number.isInteger(precision) || precision < 0 || precision > 255 || !/^\d+(?:\.\d+)?$/.test(amount)) {
-    throw new Error('Invalid jetton amount or precision');
+  if (!Number.isInteger(precision) || precision < 0 || precision > 255) {
+    throw new Error('ton_jetton_decimals_unknown');
   }
+  if (!/^\d+(?:\.\d+)?$/.test(amount)) throw new Error('Invalid jetton amount');
 
   const [whole, fraction = ''] = amount.split('.');
   const significantFraction = fraction.replace(/0+$/, '');

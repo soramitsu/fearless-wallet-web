@@ -1004,7 +1004,8 @@
     "insufficientBalanceGeneric": "Insufficient balance",
     "version": "Version",
     "transactionStatusUnknownDetails": "This transfer may already have been sent. Check the transaction hash and account history before sending again. A new send could transfer the funds twice.",
-    "invalidNetworkSubtext": "The address doesn't match the destination network. You should select another network"
+    "invalidNetworkSubtext": "The address doesn't match the destination network. You should select another network",
+    "solanaPreviousSendUnverified": "The network has not confirmed that it received your previous Solana transfer, so it may have gone through. Check your history before sending again. Nothing new was sent."
   },
   "mobileConnector": {
     "connectionSet": "Connection is set",

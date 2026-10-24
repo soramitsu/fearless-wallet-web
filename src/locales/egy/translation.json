@@ -1004,7 +1004,8 @@
     "insufficientBalanceGeneric": "𓇋𓊪𓏥 𓈖 𓐍𓏏𓏥 𓈖𓈖 𓅓𓎛",
     "version": "𓇋𓂋𓅱 𓈖",
     "transactionStatusUnknownDetails": "𓂋𓐍 𓉔𓄿𓃀 𓁹𓏏 𓈖 𓋴𓍿𓄿 𓈖𓈖 · 𓅓𓄿𓄿 𓂋𓈖 𓐍𓏏𓅓 𓎛𓈖𓂝 𓋴𓈙 𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓐍𓂋 𓉔𓄿𓃀 𓅱𓎛𓅓 · 𓅓 𓉔𓄿𓃀 𓅱𓎛𓅓 𓈖 𓂋𓐍 · 𓂋𓐍 𓋴𓍿𓄿 𓎛𓆓 𓋴𓊪𓅱𓇌 ·",
-    "invalidNetworkSubtext": "𓊨 𓈖 𓂋𓈖 𓅓𓂧𓅱 𓐙 𓊪𓎛𓅱𓇌 𓄡𓈖𓅓𓏥 · 𓈖𓏏𓎡 𓅓𓂧𓅱 𓋴𓏏𓊪 𓎡𓇌 𓄡𓈖𓅓𓏥"
+    "invalidNetworkSubtext": "𓊨 𓈖 𓂋𓈖 𓅓𓂧𓅱 𓐙 𓊪𓎛𓅱𓇌 𓄡𓈖𓅓𓏥 · 𓈖𓏏𓎡 𓅓𓂧𓅱 𓋴𓏏𓊪 𓎡𓇌 𓄡𓈖𓅓𓏥",
+    "solanaPreviousSendUnverified": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓈖𓏏𓏏 𓈙𓋴𓊪𓈖𓆑 𓋴𓍿𓄿𓎡 𓈖 Solana 𓈖 𓐍𓂋 𓎛𓄿𓏏 · 𓂋𓐍𓆑 𓋴𓊪𓂋 𓅓 𓐍𓏏 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 ·"
   },
   "mobileConnector": {
     "connectionSet": "𓄡𓈖𓅓𓏥 𓋴𓅓𓈖",

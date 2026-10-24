@@ -637,7 +637,7 @@ export interface RequestRecoverAccountWithPassword {
 
 export interface ResponseRecoverAccountWithPassword {
   ok: boolean;
-  code?: 'wrong_password' | 'locked' | 'not_found' | 'storage_failed';
+  code?: 'wrong_password' | 'locked' | 'not_found' | 'storage_failed' | 'previous_password_required';
 }
 
 export interface RequestRecoverAccountWithPhrase {

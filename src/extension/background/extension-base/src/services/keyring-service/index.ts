@@ -1040,6 +1040,7 @@ export class KeyringService {
       this.resetting = true;
       this.resetRevision = (this.resetRevision ?? 0) + 1;
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
+      let committed = false;
       try {
         await beforeReset?.();
         // The handler clears State/Sora too. Direct callers still acknowledge
@@ -1057,20 +1058,27 @@ export class KeyringService {
           if (!IS_EXTENSION) mutation.entries[WEB_PASSWORD_RECORD_KEY] = { version: 1, serialized: null };
           return mutation;
         }, () => {
+          committed = true;
           // Memory changes only after storage acknowledges every archive/removal.
-          for (const pair of pairs) { pair.lock(); keyring.keyring.removePair(pair.address); }
-          for (const subject of [keyring.accounts, keyring.addresses, keyring.contracts]) {
-            Object.keys(subject.subject.value).forEach((address) => subject.removeSubjectOnly(address));
+          try {
+            for (const pair of pairs) { pair.lock(); keyring.keyring.removePair(pair.address); }
+            for (const subject of [keyring.accounts, keyring.addresses, keyring.contracts]) {
+              Object.keys(subject.subject.value).forEach((address) => subject.removeSubjectOnly(address));
+            }
+            keyring.keyring.resetPassword();
+            if (!IS_EXTENSION) KeyringStoreWeb.commitReset();
+          } finally {
+            this.password = '';
+            this.access.reset();
           }
-          keyring.keyring.resetPassword();
-          if (!IS_EXTENSION) KeyringStoreWeb.commitReset();
-          this.password = '';
-          this.access.reset();
         });
         return true;
       } catch (error) {
         console.error(error);
-        return false;
+        // Once storage has archived and removed the wallet the reset is done, whatever failed in memory after it.
+        // Reported with the wallet locked, as in 3.0.6: a retry would find no stored record for the keys still in
+        // memory, and a restart reads the stored state.
+        return committed;
       } finally {
         this.resetting = false;
       }
@@ -1185,9 +1193,9 @@ export class KeyringService {
       if (!this.tonKeyring.accountSubject.value[address]) return { ok: false, code: 'not_found' };
 
       try {
-        const recovered = await this.tonKeyring.vault.recoverWithPassword(address, password, () => this.password);
+        const result = await this.tonKeyring.vault.recoverWithPassword(address, password, () => this.password);
 
-        return recovered ? { ok: true } : { ok: false, code: 'wrong_password' };
+        return result === 'recovered' ? { ok: true } : { ok: false, code: result };
       } catch (e) {
         console.error(e);
 

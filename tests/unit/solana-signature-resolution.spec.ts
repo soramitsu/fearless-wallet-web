@@ -90,14 +90,14 @@ const noTrace = (slot: number) => ({ slot, value: [null] });
 const state = (resolutions: SolanaSignatureResolution[]) => resolutions.map(({ state: value }) => value);
 
 describe('Solana signature resolution', () => {
-  it('proves expiry from one node that finalized past the last valid block and still has no trace', async () => {
+  it('counts one proving host when a node finalized past the last valid block and still has no trace', async () => {
     const node = uniqueUrl('node');
     const { calls, client } = clientFor({
       [node]: { finalized: { blockHeight: LAST_VALID + 1, slot: 1_000 }, lookup: noTrace(1_001) },
     });
 
     await expect(client.resolveSignatures([{ lastValidBlockHeight: LAST_VALID, signature: SIGNATURE }])).resolves.toEqual([
-      { state: 'expired' },
+      { provingHosts: 1, state: 'expired' },
     ]);
     // Finality is read first, so the lookup is at least as recent as the progress it is judged against.
     expect(calls.map(({ method }) => method)).toEqual(['getEpochInfo', 'getSignatureStatuses']);
@@ -254,7 +254,8 @@ describe('Solana signature resolution', () => {
         ]);
 
         await vi.advanceTimersByTimeAsync(30_000);
-        await expect(resolved).resolves.toEqual([{ state: 'expired' }]);
+        // The node that hung proved nothing.
+        await expect(resolved).resolves.toEqual([{ provingHosts: 1, state: 'expired' }]);
       } finally {
         vi.useRealTimers();
       }
@@ -279,15 +280,33 @@ describe('Solana signature resolution', () => {
 
       // Both nodes prove the first expired; the second has seen the next; the last is confirmed on one of them.
       expect(state(resolutions)).toEqual(['expired', 'pending', 'landed']);
+      expect(resolutions[0]).toEqual({ provingHosts: 2, state: 'expired' });
     });
 
-    it('stands on one node when the others cannot answer', async () => {
+    it('counts two spellings of one host as one proof', async () => {
+      // Another path, a trailing dot or letter case reach the same operator; its answers are not two proofs.
+      const { client } = clientFor({
+        'https://same-host.example/rpc': proof(),
+        'https://same-host.example./other': proof(),
+        [uniqueUrl('down')]: {},
+      });
+
+      await expect(client.resolveSignatures(query)).resolves.toEqual([{ provingHosts: 1, state: 'expired' }]);
+    });
+
+    it('counts each host that proved expiry on its own', async () => {
+      const { client } = clientFor({ [uniqueUrl('first')]: proof(), [uniqueUrl('second')]: proof(), [uniqueUrl('third')]: proof() });
+
+      await expect(client.resolveSignatures(query)).resolves.toEqual([{ provingHosts: 3, state: 'expired' }]);
+    });
+
+    it('reports a single proving host when the others cannot answer', async () => {
       const ahead = uniqueUrl('ahead');
       const down = uniqueUrl('down');
       const throttled = uniqueUrl('throttled');
       const { client } = clientFor({ [down]: {}, [throttled]: { finalized: { blockHeight: 1, slot: 1 }, lookup: 429 }, [ahead]: proof() });
 
-      await expect(client.resolveSignatures(query)).resolves.toEqual([{ state: 'expired' }]);
+      await expect(client.resolveSignatures(query)).resolves.toEqual([{ provingHosts: 1, state: 'expired' }]);
     });
 
     it('fails when no node answers, so the caller keeps the record', async () => {

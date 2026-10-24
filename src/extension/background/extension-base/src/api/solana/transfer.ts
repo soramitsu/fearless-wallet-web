@@ -7,8 +7,8 @@ import {
   SolanaBroadcastError,
   createClusterBoundSolanaRpcClient,
   type SolanaLatestBlockhash,
-  type SolanaRpcClient,
   type SolanaParsedAccount,
+  type SolanaRpcClient,
   type SolanaRpcNetwork,
 } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
@@ -19,6 +19,7 @@ import {
   isConfirmedSolanaStatus,
   legacySolanaPendingSender,
   resolveSolanaPendingSends,
+  SOLANA_EXPIRY_PROOF_HOSTS,
   type SolanaPendingSendStore,
   type SolanaPendingSend,
 } from './pendingSends';
@@ -304,16 +305,21 @@ async function makeSolanaTransfer(
     const unknown = records.filter(record => senders.get(record) === undefined);
     // Unknown legacy ownership may be resolved by reads, never by rebroadcast
     // from a different selected account. An unresolved record blocks new sends.
-    const unknownOutcome = await resolveSolanaPendingSends(unknown, transferClient, assertCurrent, false);
-    if (unknownOutcome.resolved.length) await pendingStore.remove(unknownOutcome.resolved.map(({ signature }) => signature), network);
+    const unknownOutcome = await resolveSolanaPendingSends(unknown, transferClient, assertCurrent, false, now);
+    const releasedUnknown = [...unknownOutcome.resolved, ...unknownOutcome.unverified];
+    if (releasedUnknown.length) await pendingStore.remove(releasedUnknown.map(({ signature }) => signature), network);
     if (unknownOutcome.unresolved.length) throw new Error('solana_previous_send_pending');
     const pending = records.filter(record => senders.get(record) === source.solanaAddress);
-    const { resolved, unresolved } = await resolveSolanaPendingSends(pending, transferClient, assertCurrent);
+    const { resolved, unresolved, unverified } = await resolveSolanaPendingSends(pending, transferClient, assertCurrent, true, now);
+    const released = [...resolved, ...unverified];
 
-    if (resolved.length) await pendingStore.remove(resolved.map(({ signature }) => signature), network);
+    if (released.length) await pendingStore.remove(released.map(({ signature }) => signature), network);
     // A Solana transaction cannot conflict with an earlier one, so a new send waits
     // until the previous one has landed or expired.
     if (unresolved.length) throw new Error('solana_previous_send_pending');
+    // An earlier send whose expiry is not corroborated may have landed. Its record is released so sends are never
+    // blocked for good, but this send stops: the user checks the history before sending again.
+    if (unknownOutcome.unverified.length || unverified.length) throw new Error('solana_previous_send_unverified');
 
     assertCurrent();
     const prepared = await prepareSolanaTransfer(params, transferClient, assertCurrent);
@@ -449,11 +455,12 @@ async function waitForSolanaSignature({
       // fork and the same bytes land elsewhere, so only a confirmed one counts.
       if (status && isConfirmedSolanaStatus(status)) return status.err ? 'failed' : 'confirmed';
       if (!status && poll % EXPIRY_CHECK_EVERY_POLLS === EXPIRY_CHECK_EVERY_POLLS - 1) {
-        // Expired only when one node has finalized past the last valid block and, from a state at least that recent,
-        // still has no trace of it. A trace that is not confirmed yet is followed by the next polls.
+        // Expired only when two distinct hosts have each finalized past the last valid block and, from a state at
+        // least that recent, still have no trace of it. With one host's proof the send stays open, and the next send
+        // releases it with a warning. A trace that is not confirmed yet is followed by the next polls.
         const [resolution] = await client.resolveSignatures([{ lastValidBlockHeight, signature }]);
 
-        if (resolution?.state === 'expired') return 'expired';
+        if (resolution?.state === 'expired' && resolution.provingHosts >= SOLANA_EXPIRY_PROOF_HOSTS) return 'expired';
         if (resolution?.state === 'landed') return resolution.status.err ? 'failed' : 'confirmed';
       }
       if (!status && poll % REBROADCAST_EVERY_POLLS === REBROADCAST_EVERY_POLLS - 1) {

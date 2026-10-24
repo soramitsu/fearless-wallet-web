@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
 
@@ -52,13 +52,24 @@ vi.mock('@extension-base/background/handlers/ExtensionBase', () => ({
 
 const WALLET = 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk';
 
+const originalSolanaFlag = process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = 'true';
+});
+
+afterEach(() => {
+  if (originalSolanaFlag === undefined) delete process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS;
+  else process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = originalSolanaFlag;
 });
 
 describe('Solana quote request', () => {
   const quoteWith = async (extra: Record<string, unknown>) => {
-    const state = { networkService: { networkMap: { Solana: { ecosystem: 'solana' } } } } as unknown as State;
+    const state = {
+      keyringService: { isResetting: false },
+      networkService: { networkMap: { Solana: { ecosystem: 'solana' } } },
+    } as unknown as State;
 
     quoteSolanaTransfer.mockResolvedValue({ fee: '0.000006', maxSendable: '12.5' });
     await new Extension(state).handle('test', 'pri(accounts.checkTransfer)', {
@@ -99,12 +110,16 @@ describe('dApp sign-and-send under the send kill switch', () => {
     });
     const exportMnemonic = vi.fn();
     const state = {
-      keyringService: { exportMnemonic, getAllAccounts: () => [], getPassword: () => 'password' },
+      keyringService: { exportMnemonic, getAllAccounts: () => [], getPassword: () => 'password', isResetting: false },
       requestService: { getSignRequest: () => request },
       sendKillSwitchService: { assertSendEnabled },
     } as unknown as State;
+    const extension = new Extension(state);
 
-    return { assertSendEnabled, exportMnemonic, extension: new Extension(state), request };
+    // Site-grant and wallet-reset revalidation have their own tests; this one is about the send kill switch.
+    Object.assign(extension, { assertNonEvmSigningAuthorization: vi.fn(), assertSigningSiteAllowed: vi.fn(async () => undefined) });
+
+    return { assertSendEnabled, exportMnemonic, extension, request };
   };
 
   it('refuses to sign or broadcast when Solana sends are vetoed, before any key is read', async () => {

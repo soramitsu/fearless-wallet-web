@@ -1236,7 +1236,7 @@ export default defineComponent({
         this.solanaPriceHint = this.solanaQuote
           ? {
               amount: transferable.toString(),
-              assetId: this.syncedAssetId,
+              assetId: this.transferAssetId,
               at: Date.now(),
               network: this.syncedNetwork,
               price: this.solanaQuote.computeUnitPriceMicroLamports,
@@ -1259,7 +1259,7 @@ export default defineComponent({
 
       if (!hint || Date.now() - hint.at >= SOLANA_PRICE_HINT_MS) return undefined;
 
-      return hint.amount === amount && hint.assetId === this.syncedAssetId && hint.network === this.syncedNetwork
+      return hint.amount === amount && hint.assetId === this.transferAssetId && hint.network === this.syncedNetwork
         ? hint.price
         : undefined;
     },

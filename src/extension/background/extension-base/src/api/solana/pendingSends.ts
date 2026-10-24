@@ -36,6 +36,22 @@ export type SolanaPendingSendClient = Pick<SolanaRpcClient, 'resolveSignatures' 
 
 export { isConfirmedSolanaStatus };
 
+// An expiry means "nothing was sent" only when two distinct hosts each proved it, and only while the record is young
+// enough for the public nodes to still hold its history (about 9 h on api.mainnet-beta, 22 h on Solana Vibe Station,
+// 50 h on PublicNode, measured 2026-10-24). One host's "no trace" can come from a backend that lacks the history.
+export const SOLANA_EXPIRY_PROOF_HOSTS = 2;
+export const SOLANA_EXPIRY_TRUST_MS = 6 * 60 * 60_000;
+
+export function isCorroboratedSolanaExpiry(provingHosts: number, createdAt: unknown, now: number): boolean {
+  return (
+    provingHosts >= SOLANA_EXPIRY_PROOF_HOSTS &&
+    typeof createdAt === 'number' &&
+    Number.isSafeInteger(createdAt) &&
+    createdAt <= now &&
+    now - createdAt < SOLANA_EXPIRY_TRUST_MS
+  );
+}
+
 const isPendingSend = (value: unknown): value is SolanaPendingSend => {
   if (typeof value !== 'object' || value === null) return false;
 
@@ -90,24 +106,28 @@ export const getDefaultSolanaPendingSendStore = (): SolanaPendingSendStore =>
   (defaultStore ??= createStorageSolanaPendingSendStore());
 
 /**
- * Splits pending sends into resolved and still in flight. A record is resolved
- * once its outcome can no longer change: the signature is confirmed
- * (successfully or not), or one node has finalized past its last valid block
- * height and still has no trace of it, after which the bytes can never be
- * included again (`SolanaRpcClient.resolveSignatures` holds the rule). A
- * signature seen only at `processed` before then may still be dropped with its
- * fork and land later, so it stays in flight. Lookup failures keep a record in
- * flight. In-flight transactions are rebroadcast unchanged, which is idempotent
- * and helps them land before they expire.
+ * Splits pending sends into resolved, unverified and still in flight. A record
+ * is resolved once its outcome can no longer change: the signature is confirmed
+ * (successfully or not), or two distinct hosts have each finalized past its
+ * last valid block height and still have no trace of it, after which the bytes
+ * can never be included again (`SolanaRpcClient.resolveSignatures` holds the
+ * per-node rule), and the record is young enough to trust that (see
+ * `isCorroboratedSolanaExpiry`). An expiry with less proof is unverified: the
+ * record can be released so sends are never blocked for good, but the
+ * transaction may have landed. A signature seen only at `processed` may still
+ * be dropped with its fork and land later, so it stays in flight. Lookup
+ * failures keep a record in flight. In-flight transactions are rebroadcast
+ * unchanged, which is idempotent and helps them land before they expire.
  */
 export async function resolveSolanaPendingSends(
   records: SolanaPendingSend[],
   client: SolanaPendingSendClient,
   assertCurrent?: () => void,
-  rebroadcast = true
-): Promise<{ resolved: SolanaPendingSend[]; unresolved: SolanaPendingSend[] }> {
+  rebroadcast = true,
+  now: () => number = Date.now
+): Promise<{ resolved: SolanaPendingSend[]; unresolved: SolanaPendingSend[]; unverified: SolanaPendingSend[] }> {
   assertCurrent?.();
-  if (!records.length) return { resolved: [], unresolved: [] };
+  if (!records.length) return { resolved: [], unresolved: [], unverified: [] };
 
   try {
     const resolutions = await client.resolveSignatures(
@@ -116,11 +136,15 @@ export async function resolveSolanaPendingSends(
     assertCurrent?.();
     const resolved: SolanaPendingSend[] = [];
     const unresolved: SolanaPendingSend[] = [];
+    const unverified: SolanaPendingSend[] = [];
+    const judgedAt = now();
 
     records.forEach((record, index) => {
-      const state = resolutions[index]?.state;
+      const resolution = resolutions[index];
 
-      if (state === 'landed' || state === 'expired') resolved.push(record);
+      if (resolution?.state === 'landed') resolved.push(record);
+      else if (resolution?.state === 'expired')
+        (isCorroboratedSolanaExpiry(resolution.provingHosts, record.createdAt, judgedAt) ? resolved : unverified).push(record);
       else unresolved.push(record);
     });
 
@@ -135,11 +159,11 @@ export async function resolveSolanaPendingSends(
       })
     );
 
-    return { resolved, unresolved };
+    return { resolved, unresolved, unverified };
   } catch {
     // A lookup/broadcast failure preserves evidence, but must not hide reset.
     assertCurrent?.();
-    return { resolved: [], unresolved: records };
+    return { resolved: [], unresolved: records, unverified: [] };
   }
 }
 

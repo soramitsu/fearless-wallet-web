@@ -45,6 +45,22 @@ before submission; do not reuse the `3.0.6` copy.
   phrases, which the release candidate had refused.
 - Solana and Bitcoin accounts, balances, history, and sending, on by default
   (remote kill switch is veto-only; see `docs/send-kill-switch.md`).
+- Solana token (SPL) balances load out of the box, with no custom node.
+  PublicNode refuses token-account lookups, so they are read from Solana Vibe
+  Station's public node, which serves them to browser extensions without a key.
+  That node throttles requests that arrive together, so the wallet asks for the
+  two token programs one after the other. Token-account lookups keep their own
+  node order: a node that refused one in the last ten minutes is asked last,
+  never skipped, so a balance refresh does not wait for PublicNode's refusal
+  (about three seconds), and the throttling node is not made the first node for
+  other requests. USDC and USDT show with their names, icons and fiat values;
+  any other token shows under its mint address.
+- A Solana send is reported as "nothing was sent" only when two distinct hosts
+  have each finalized past its last valid block and still have no trace of it,
+  and the transfer was signed less than six hours ago (public nodes keep about
+  9 to 50 hours of history). With less proof, a send that is under way stays
+  unconfirmed, and an earlier one is released with a warning to check the
+  history before sending again, so sends are never blocked for good.
 - Cross-chain transfers are paused with an in-app explanation and a
   same-network send alternative; IrohaConnect is off in release builds.
 - Reliability and fail-closed handling across network, signing, and transfer
@@ -203,6 +219,12 @@ minimum, review these handled data categories:
   history fetched from chain services;
 - website activity: the origin of a dApp requesting connection/signing;
 - optional Google Drive backup data described above.
+
+For Solana, the RPC nodes the extension contacts are
+`api.mainnet-beta.solana.com`, `solana-rpc.publicnode.com`,
+`public.rpc.solanavibestation.com` and `solana.drpc.org`, plus any node the user
+adds. Each receives the wallet's public Solana address with the requests it
+serves.
 
 Document that private keys and seed phrases stay under user control, approved
 dApps receive only the approved public account, and data is not sold or used

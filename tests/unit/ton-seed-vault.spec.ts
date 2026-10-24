@@ -4,7 +4,7 @@ import * as tonWebMnemonic from 'tonweb-mnemonic';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tonStore } from '@extension-base/stores/TonStore';
 import { KeyringService } from '@extension-base/services/keyring-service';
-import { decryptTonSeed } from '@extension-base/services/keyring-service/TonSeedVault';
+import { decryptTonSeed, readTonRecoveryRecord } from '@extension-base/services/keyring-service/TonSeedVault';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import legacyVectors from '../fixtures/ton/ton-bip39-3.0.5-vectors.json';
 import type { KeyringPasswordJson } from '@subwallet/keyring/types';
@@ -30,7 +30,7 @@ vi.mock('@extension-base/stores/TonStore', () => {
 
   return {
     tonStore: {
-      readAll: async () => copy([...mocks.records.values()]),
+      readAll: async () => [...mocks.records.values()].map((record) => structuredClone(record)),
       // Like chrome.storage, the records arrive after the keyring service is constructed.
       all: async (update: (address: string, record: TonStoreAccount) => void) => {
         await Promise.resolve();
@@ -161,6 +161,10 @@ const exportTon = (service: KeyringService, address: string, password?: string) 
 
 const stored = (address: string) => mocks.records.get(address)!;
 const publicKey = (source: Fixture) => Buffer.from(source.publicKeyHex, 'hex');
+const version = (address: string) => (stored(address).cipherSeed.startsWith('{') ? JSON.parse(stored(address).cipherSeed).version : 1);
+// The 3.0.x ciphertext a version 3 record keeps for recovery, when `password` opens that record.
+const keptForRecovery = (source: Fixture, password: string) =>
+  readTonRecoveryRecord(stored(source.address).cipherSeed, password, { address: source.address, publicKey: publicKey(source) });
 
 beforeEach(() => {
   vi.mocked(tonStore.updateAndWait).mockClear();
@@ -372,9 +376,19 @@ describe('TON seed vault', PBKDF2_SUITE, () => {
     const spacedKey = await tonWebMnemonic.mnemonicToKeyPair(spaced.split(' '));
     const SPACED = fixture('Spaced 3.0.5 import', spaced, Buffer.from(spacedKey.publicKey).toString('hex'));
     const service = await wallet(P1, [...ALL, SPACED].map((source) => record(source, P1)));
+
+    // The 3.0.x ciphertext, before the check after unlock moves it to version 2.
+    for (const source of [...ALL, SPACED]) {
+      await expect(service.tonKeyring.vault.decryptVerified(source.address, () => P1)).resolves.toBe(source.phrase);
+    }
+    expect(tonStore.updateAndWait).not.toHaveBeenCalled();
+
     expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    await service.waitForAccessScan();
+    vi.mocked(tonStore.updateAndWait).mockClear();
 
     for (const source of [...ALL, SPACED]) {
+      expect(version(source.address)).toBe(2);
       await expect(exportTon(service, source.address, P1)).resolves.toEqual({ seed: source.phrase });
     }
     expect(tonStore.updateAndWait).not.toHaveBeenCalled();
@@ -382,10 +396,10 @@ describe('TON seed vault', PBKDF2_SUITE, () => {
 
   it('never returns an empty or garbled phrase when the password does not open it', async () => {
     const service = await wallet(P1, [record(NATIVE, P0), record(UNIVERSAL, P1, { cipherSeed: CryptoJS.AES.encrypt('not a recovery phrase', P1).toString() })]);
-    expect(service.unlockKeyring({ password: P1 })).toBe(true);
     // CryptoJS has no integrity check: a wrong password either throws 'Malformed UTF-8 data' or
     // decodes to '' (or to garbage). Find a password for each outcome on this very ciphertext.
     const { cipherSeed } = stored(NATIVE.address);
+    const unverified = stored(UNIVERSAL.address).cipherSeed;
     const outcome = (password: string) => {
       try {
         return CryptoJS.AES.decrypt(cipherSeed, password).toString(CryptoJS.enc.Utf8) === '' ? 'empty' : 'garbage';
@@ -403,11 +417,20 @@ describe('TON seed vault', PBKDF2_SUITE, () => {
         code: 'ton_seed_needs_previous_password',
       });
     }
-    await expect(exportTon(service, NATIVE.address, P1)).rejects.toMatchObject({ code: 'ton_seed_needs_previous_password' });
     // Decrypts with the current password, but to text that is not this account's phrase.
-    await expect(exportTon(service, UNIVERSAL.address, P1)).rejects.toMatchObject({ code: 'ton_seed_needs_previous_password' });
+    await expect(service.tonKeyring.vault.decryptVerified(UNIVERSAL.address, () => P1)).rejects.toMatchObject({
+      code: 'ton_seed_needs_previous_password',
+    });
     expect(tonStore.updateAndWait).not.toHaveBeenCalled();
     expect(stored(NATIVE.address).cipherSeed).toBe(cipherSeed);
+
+    // At unlock both are kept, exactly as they were, inside version 3 under the master password.
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    await service.waitForAccessScan();
+    expect(keptForRecovery(NATIVE, P1)).toBe(cipherSeed);
+    expect(keptForRecovery(UNIVERSAL, P1)).toBe(unverified);
+    await expect(exportTon(service, NATIVE.address, P1)).rejects.toMatchObject({ code: 'ton_seed_needs_previous_password' });
+    await expect(exportTon(service, UNIVERSAL.address, P1)).rejects.toMatchObject({ code: 'ton_seed_needs_previous_password' });
   });
 
   it('refuses an export password other than the current one, and a locked keyring, without flagging the account', async () => {
@@ -484,7 +507,6 @@ describe('changing the master password with TON accounts', PBKDF2_SUITE, () => {
 
   it('keeps the old password working when interrupted after staging, and drops the stale copy', async () => {
     const before = await wallet(P1, ALL.map((source) => record(source, P1)));
-    const originals = ALL.map((source) => stored(source.address).cipherSeed);
     const staged = await before.tonKeyring.vault.exclusive(() => before.tonKeyring.vault.stage(P1, P2));
     expect(staged).toHaveLength(ALL.length);
     expect(ALL.every((source) => stored(source.address).pendingCipherSeed)).toBe(true);
@@ -494,10 +516,12 @@ describe('changing the master password with TON accounts', PBKDF2_SUITE, () => {
     expect(restarted.unlockKeyring({ password: P1 })).toBe(true);
     await restarted.waitForAccessScan();
 
-    ALL.forEach((source, index) => {
-      expect(stored(source.address).cipherSeed).toBe(originals[index]);
+    for (const source of ALL) {
+      // The copy the old password opens is kept, now as version 2; the staged one is gone.
+      expect(version(source.address)).toBe(2);
+      expect(await decryptTonSeed(stored(source.address).cipherSeed, P1, publicKey(source))).toBe(source.phrase);
       expect(stored(source.address).pendingCipherSeed).toBeUndefined();
-    });
+    }
     for (const source of ALL) await expect(exportTon(restarted, source.address, P1)).resolves.toEqual({ seed: source.phrase });
   });
 
@@ -524,7 +548,10 @@ describe('changing the master password with TON accounts', PBKDF2_SUITE, () => {
     expect(await service.changeMasterPassword({ oldPassword: P1, newPassword: P2 })).toBe(true);
     await service.waitForAccessScan();
 
-    expect(stored(LEGACY.address)).toEqual(broken);
+    // The check after the change keeps the 3.0.x ciphertext, unchanged, inside version 3 under the new password.
+    const kept = structuredClone(stored(LEGACY.address));
+    expect(kept).toEqual({ ...broken, cipherSeed: kept.cipherSeed });
+    expect(keptForRecovery(LEGACY, P2)).toBe(broken.cipherSeed);
     const status = await service.getAccessStatus();
     expect(status.scanComplete).toBe(true);
     expect(status.issues).toEqual([{
@@ -540,9 +567,10 @@ describe('changing the master password with TON accounts', PBKDF2_SUITE, () => {
     const request = { address: LEGACY.address, walletEcosystem: WalletEcosystem.Ton };
     expect(await service.recoverAccountWithPassword({ ...request, password: P1 })).toEqual({ ok: false, code: 'wrong_password' });
     expect(tonStore.updateAndWait).not.toHaveBeenCalled();
-    expect(stored(LEGACY.address)).toEqual(broken);
+    expect(stored(LEGACY.address)).toEqual(kept);
 
     expect(await service.recoverAccountWithPassword({ ...request, password: P0 })).toEqual({ ok: true });
+    expect(version(LEGACY.address)).toBe(2);
     expect(await decryptTonSeed(stored(LEGACY.address).cipherSeed, P2, publicKey(LEGACY))).toBe(LEGACY.phrase);
     await expect(exportTon(service, LEGACY.address, P2)).resolves.toEqual({ seed: LEGACY.phrase });
     expect((await service.getAccessStatus()).issues).toEqual([]);
@@ -585,8 +613,9 @@ describe('TON phrase recovery', PBKDF2_SUITE, () => {
 });
 
 describe('TON access scan', PBKDF2_SUITE, () => {
-  it('runs after the unlock answer and lists phrases that need a previous password', async () => {
+  it('runs after the unlock answer, lists phrases that need a previous password and moves 3.0.x ciphertext', async () => {
     const service = await wallet(P1, [record(NATIVE, P1), record(UNIVERSAL, P0)]);
+    const earlier = stored(UNIVERSAL.address).cipherSeed;
     const decrypt = vi.spyOn(service.tonKeyring.vault, 'decryptVerified');
 
     expect(service.unlockKeyring({ password: P1 })).toBe(true);
@@ -598,7 +627,19 @@ describe('TON access scan', PBKDF2_SUITE, () => {
     const status = await service.getAccessStatus();
     expect(status.scanComplete).toBe(true);
     expect(status.issues.map(({ address }) => address)).toEqual([UNIVERSAL.address]);
+    // As 3.0.6 does at unlock: version 2 for the phrase the password opens, version 3 around the other.
+    expect(tonStore.updateAndWait).toHaveBeenCalledTimes(2);
+    expect(await decryptTonSeed(stored(NATIVE.address).cipherSeed, P1, publicKey(NATIVE))).toBe(NATIVE.phrase);
+    expect(version(NATIVE.address)).toBe(2);
+    expect(keptForRecovery(UNIVERSAL, P1)).toBe(earlier);
+
+    // The next unlock finds nothing left to move.
+    vi.mocked(tonStore.updateAndWait).mockClear();
+    expect(service.lockKeyring()).toBe(true);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    await service.waitForAccessScan();
     expect(tonStore.updateAndWait).not.toHaveBeenCalled();
+    expect((await service.getAccessStatus()).issues.map(({ address }) => address)).toEqual([UNIVERSAL.address]);
   });
 
   it('is cancelled by lock', async () => {

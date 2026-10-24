@@ -214,7 +214,7 @@ export class AccountAccessService {
       for (const address of Object.keys(tonKeyring.accountSubject.value)) {
         if (!isCurrent()) return;
         // A phrase that does not open is recorded by the vault as needing a previous password.
-        await tonKeyring.vault.decryptVerified(address, () => password, isCurrent).catch(() => {});
+        await tonKeyring.vault.decryptVerified(address, () => password, isCurrent, true).catch(() => {});
       }
       if (isCurrent()) this.scanComplete = true;
     }).catch(() => {});

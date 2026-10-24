@@ -79,9 +79,18 @@ type SolanaSignatureStatus = {
   slot: number;
 };
 
-/** What an endpoint has shown for a signed transaction whose broadcast outcome is unknown. */
-type SolanaSignatureResolution =
+/** What one endpoint has shown for a signed transaction whose broadcast outcome is unknown. */
+type SolanaEndpointVerdict =
   | { state: 'expired' }
+  | { state: 'landed'; status: SolanaSignatureStatus }
+  | { state: 'pending' };
+
+/**
+ * What the endpoints together have shown. An expiry carries how many distinct hosts each proved it on their own:
+ * one host's "no trace" can come from a backend that lacks the transaction's history.
+ */
+type SolanaSignatureResolution =
+  | { provingHosts: number; state: 'expired' }
   | { state: 'landed'; status: SolanaSignatureStatus }
   | { state: 'pending' };
 
@@ -383,13 +392,14 @@ class SolanaRpcClient {
             (value) => normalizeSignatureStatusesWithContext(value, signatures.length)
           );
 
-          return { finalized, observed };
+          return { finalized, observed, rpcUrl };
         } catch (error) {
           return { error };
         }
       })
     );
-    const verdicts: Array<SolanaSignatureResolution | undefined> = queries.map(() => undefined);
+    const verdicts: Array<SolanaEndpointVerdict | undefined> = queries.map(() => undefined);
+    const provingHosts = queries.map(() => new Set<string>());
     let lastError: unknown;
 
     for (const answer of answers) {
@@ -407,6 +417,7 @@ class SolanaRpcClient {
           answer.observed.slot
         );
 
+        if (next.state === 'expired') provingHosts[index].add(endpointHost(answer.rpcUrl));
         verdicts[index] =
           previous === undefined || VERDICT_STRENGTH[next.state] > VERDICT_STRENGTH[previous.state] ? next : previous;
       });
@@ -416,7 +427,9 @@ class SolanaRpcClient {
       throw lastError instanceof SolanaRpcError ? lastError : new SolanaRpcError('solana_rpc_unavailable');
     }
 
-    return verdicts as SolanaSignatureResolution[];
+    return (verdicts as SolanaEndpointVerdict[]).map((verdict, index) =>
+      verdict.state === 'expired' ? { provingHosts: provingHosts[index].size, state: 'expired' } : verdict
+    );
   }
 
   getRecentPrioritizationFees(writableAccounts: string[] = []): Promise<SolanaPrioritizationFee[]> {
@@ -680,7 +693,7 @@ class SolanaRpcClient {
 
 // Landed settles the question, a trace that is not confirmed (or an endpoint that has not caught up) keeps it open, and
 // an endpoint's proof of expiry stands only when no endpoint disagrees.
-const VERDICT_STRENGTH: Readonly<Record<SolanaSignatureResolution['state'], number>> = Object.freeze({
+const VERDICT_STRENGTH: Readonly<Record<SolanaEndpointVerdict['state'], number>> = Object.freeze({
   expired: 0,
   pending: 1,
   landed: 2,
@@ -704,12 +717,21 @@ function judgeSignature(
   lastValidBlockHeight: number,
   finalized: { blockHeight: number; slot: number },
   lookupSlot: number
-): SolanaSignatureResolution {
+): SolanaEndpointVerdict {
   if (status) return isConfirmedSolanaStatus(status) ? { state: 'landed', status } : { state: 'pending' };
 
   // No trace proves nothing until the endpoint has finalized past the last valid block, and then only if the lookup
   // came from a state that includes everything it had finalized.
   return finalized.blockHeight > lastValidBlockHeight && lookupSlot >= finalized.slot ? { state: 'expired' } : { state: 'pending' };
+}
+
+// Two spellings of one host (case, a trailing dot, another path or key) are one operator's answer, not two proofs.
+function endpointHost(rpcUrl: string): string {
+  try {
+    return new URL(rpcUrl).hostname.toLowerCase().replace(/\.$/u, '');
+  } catch {
+    return rpcUrl;
+  }
 }
 
 const CLUSTER_RECHECK_MS = 5 * 60_000;

@@ -279,6 +279,38 @@ describe('Send screen Solana quote', () => {
       solanaComputeUnitPriceMicroLamports: 50_000,
     });
   });
+
+  it('prices the amount Max filled in at the priority fee Max quoted, and any other amount afresh', async () => {
+    const wrapper = mountForm({ assetId: 'SOL', recipient: '', selectedNetwork: 'Solana' });
+    const vm = wrapper.vm as unknown as { setMax: () => Promise<void>; verifyTx: () => Promise<unknown> };
+    const lastRequest = () => mocks.checkTransfer.mock.lastCall?.[0] as Record<string, unknown>;
+
+    await flushPromises();
+    mocks.checkTransfer.mockResolvedValue({
+      destEstimateFee: '0',
+      errors: [],
+      estimateFee: '0.00204428',
+      solana: {
+        accountCreationDeposit: '0',
+        baseFee: '0.000005',
+        computeUnitLimit: 20_000,
+        computeUnitPriceMicroLamports: 1_000,
+        maxSendable: '12',
+        priorityFee: '0.000001',
+        recipientIsTokenAccount: false,
+      },
+    });
+    await vm.setMax();
+
+    // The parent applies the amount Max emitted; setting it quotes it again, and the market may have moved meanwhile.
+    await wrapper.setProps({ amount: '12' });
+    await vm.verifyTx();
+    expect(lastRequest()).toMatchObject({ amount: '12', solanaComputeUnitPriceMicroLamports: 1_000 });
+
+    await wrapper.setProps({ amount: '3' });
+    await vm.verifyTx();
+    expect(lastRequest().solanaComputeUnitPriceMicroLamports).toBeUndefined();
+  });
 });
 
 describe('Send screen balance that no provider could load', () => {

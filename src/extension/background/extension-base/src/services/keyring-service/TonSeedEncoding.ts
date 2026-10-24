@@ -1,6 +1,3 @@
-import { jsonDecrypt, jsonEncrypt } from '@polkadot/util-crypto';
-import { stringToU8a, u8aToString } from '@polkadot/util';
-import CryptoJS from 'crypto-js';
 import type { EncryptedJson } from '@polkadot/util-crypto/types';
 
 // How a TON phrase is stored in `cipherSeed`:
@@ -60,41 +57,4 @@ export function parseStoredSeed(cipherSeed: string): StoredSeed | null {
 
 export function isLegacyTonSeed(cipherSeed: string) {
   return parseStoredSeed(cipherSeed) === null;
-}
-
-
-export function encryptTonSeedValue(seed: string, password: string): string {
-  if (!password) throw new Error('A password is required to store a TON phrase');
-  const { encoded, encoding } = jsonEncrypt(stringToU8a(seed), ['ton-mnemonic'], password);
-  return JSON.stringify({ version: TON_SEED_VERSION, encoded, encoding });
-}
-
-export function decryptTonSeedValue(cipherSeed: string, password: string): string {
-  if (!password) throw new Error('Unlock the wallet first');
-  const stored = parseStoredSeed(cipherSeed);
-  if (stored?.version === TON_RECOVERY_VERSION) throw new Error('This TON account requires its earlier password');
-  return stored ? u8aToString(jsonDecrypt(stored, password)) : CryptoJS.AES.decrypt(cipherSeed, password).toString(CryptoJS.enc.Utf8);
-}
-
-export function protectTonRecoverySeed(cipherSeed: string, password: string, address: string, publicKeyHex: string): string {
-  if (!password || !isLegacyTonSeed(cipherSeed)) throw new Error('Invalid TON recovery record');
-  const archive = JSON.stringify({ address, publicKeyHex, cipherSeed });
-  const encrypted = jsonEncrypt(stringToU8a(archive), ['ton-legacy-recovery'], password);
-  if (u8aToString(jsonDecrypt(encrypted, password)) !== archive) throw new Error('TON recovery verification failed');
-  return JSON.stringify({ version: TON_RECOVERY_VERSION, ...encrypted });
-}
-
-/** Rotate the protective wrapper while preserving an account that still needs its older password. */
-export function rotateTonRecoverySeed(cipherSeed: string, oldPassword: string, newPassword: string,
-  address: string, publicKeyHex: string): string | undefined {
-  const stored = parseStoredSeed(cipherSeed);
-  if (stored?.version !== TON_RECOVERY_VERSION) return undefined;
-  const archive = u8aToString(jsonDecrypt(stored, oldPassword));
-  const record = JSON.parse(archive) as { address?: string; publicKeyHex?: string; cipherSeed: string };
-  if (record.address !== address || record.publicKeyHex !== publicKeyHex || !isLegacyTonSeed(record.cipherSeed))
-    throw new Error('Invalid TON recovery record');
-  if (!newPassword) throw new Error('A password is required to store a TON phrase');
-  const encrypted = jsonEncrypt(stringToU8a(archive), ['ton-legacy-recovery'], newPassword);
-  if (u8aToString(jsonDecrypt(encrypted, newPassword)) !== archive) throw new Error('TON recovery verification failed');
-  return JSON.stringify({ version: TON_RECOVERY_VERSION, ...encrypted });
 }

@@ -161,6 +161,7 @@ const props = defineProps<{
 
 const RESULT_ERROR_KEYS: Record<string, string> = {
   wrong_password: 'accountAccess.wrongPassword',
+  previous_password_required: 'accountAccess.previousPasswordRequired',
   phrase_mismatch: 'accountAccess.phraseMismatch',
 };
 

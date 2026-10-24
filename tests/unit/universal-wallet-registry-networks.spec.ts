@@ -107,6 +107,7 @@ describe('Universal Wallet registry network mapping', () => {
         precision: 6,
         priceId: 'usd-coin',
         symbol: 'USDC',
+        type: WalletEcosystem.Solana,
       }),
       expect.objectContaining({
         currencyId: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
@@ -192,6 +193,15 @@ describe('Universal Wallet registry network mapping', () => {
 
     expect(solanaMap.Solana.icon).toBe('/icons/tokens/coloured/SOL.svg');
     expect(solanaMap.Solana.assets[0].icon).toBe('/icons/tokens/coloured/SOL.svg');
+  });
+
+  it('gives every network built from the registry its own token objects', () => {
+    const solana = () => createUniversalWalletRegistryNetworks().find(({ name }) => name === 'Solana')!;
+    const [, usdc] = solana().assets;
+
+    usdc.name = 'Edited elsewhere';
+
+    expect(solana().assets[1].name).toBe('USD Coin');
   });
 
   it('fails closed when registry validation fails', () => {

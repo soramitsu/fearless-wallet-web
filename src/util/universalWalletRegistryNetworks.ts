@@ -106,7 +106,8 @@ function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry
   const providers = Object.fromEntries(nodes.map(({ name, url }) => [name, url]));
   const currentProvider = nodes[0]?.name ?? '';
   const nativeAsset = entry.nativeAsset ? [createNativeAsset(entry)] : [];
-  const tokenAssets = REGISTRY_TOKEN_ASSETS[entry.chainId] ?? [];
+  // A copy per network, as the native asset is, so no network shares an asset object with another.
+  const tokenAssets = (REGISTRY_TOKEN_ASSETS[entry.chainId] ?? []).map((asset) => ({ ...asset }));
   const active = entry.enabledByDefault && nodes.length > 0;
 
   return {
@@ -196,6 +197,14 @@ function mergeNativeAssets(existingAssets: Asset[], registryAssets: Asset[]): As
   );
 }
 
+// Earlier releases stored bare symbols that never resolve to an image; a published or bundled icon replaces them.
+function pickIcon(existingIcon: string, registryIcon: string): string {
+  const isIconUrl = (icon: string) =>
+    (icon?.startsWith('https://') || icon?.startsWith(`${BUNDLED_ICONS_PATH}/`)) ?? false;
+
+  return !isIconUrl(existingIcon) && isIconUrl(registryIcon) ? registryIcon : existingIcon;
+}
+
 // A stored network gains the registry tokens it does not list yet; an entry it already has for a mint is kept.
 // Mints are case-sensitive base58, so they are compared exactly.
 function mergeRegistryTokenAssets(existingAssets: Asset[], registryAssets: Asset[]): Asset[] {
@@ -204,14 +213,6 @@ function mergeRegistryTokenAssets(existingAssets: Asset[], registryAssets: Asset
   );
 
   return missing.length ? [...existingAssets, ...missing] : existingAssets;
-}
-
-// Earlier releases stored bare symbols that never resolve to an image; a published or bundled icon replaces them.
-function pickIcon(existingIcon: string, registryIcon: string): string {
-  const isIconUrl = (icon: string) =>
-    (icon?.startsWith('https://') || icon?.startsWith(`${BUNDLED_ICONS_PATH}/`)) ?? false;
-
-  return !isIconUrl(existingIcon) && isIconUrl(registryIcon) ? registryIcon : existingIcon;
 }
 
 function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryNetwork: NetworkJson): string | undefined {

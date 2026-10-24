@@ -157,6 +157,19 @@ describe('Account access screen', () => {
     expect(mocks.go).not.toHaveBeenCalled();
   });
 
+  // A TON phrase 3.0.6 kept for its earlier password, under a master password used before a reset: that master
+  // password moves the record under the current one, and the phrase's own password is still to come.
+  it('keeps a TON row waiting when the password entered opened only the protection around its phrase', async () => {
+    mocks.recoverAccountWithPassword.mockResolvedValue({ ok: false, code: 'previous_password_required' });
+    const wrapper = await open(TON);
+
+    await enter(rowOf(wrapper, TON), 'master password before the reset');
+
+    expect(rowOf(wrapper, TON).get('.input-error').text()).toBe('accountAccess.previousPasswordRequired');
+    expect(accessRows(wrapper).map((row) => row.attributes('data-address'))).toEqual([TON]);
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
   it('removes an unlocked account and keeps what was typed in the other rows', async () => {
     mocks.recoverAccountWithPassword.mockResolvedValue({ ok: true });
     const wrapper = await open();

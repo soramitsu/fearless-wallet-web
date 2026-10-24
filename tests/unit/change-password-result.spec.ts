@@ -87,6 +87,8 @@ describe('changing the master password', () => {
   it.each([
     ['answers false', () => mocks.extensionChangePassword.mockResolvedValue(false)],
     ['fails', () => mocks.extensionChangePassword.mockRejectedValue(new Error('Could not establish connection'))],
+    // As 3.0.6's runWalletAction (src/util/walletAction.ts): only an answer of success counts.
+    ['answers nothing', () => mocks.extensionChangePassword.mockResolvedValue(undefined)],
   ])('stays on the screen with an error when the background %s', async (_, arrange) => {
     arrange();
     const wrapper = await openWithPasswords();

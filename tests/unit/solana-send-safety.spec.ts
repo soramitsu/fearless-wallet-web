@@ -99,6 +99,7 @@ function createClient({
   accounts = { [recipient]: SYSTEM_ACCOUNT },
   balanceLamports = 2_000_000_000,
   blockHeights = [400],
+  expiryProvingHosts = 2,
   fees = [0, 10_000, 20_000, 30_000],
   sendError,
   statuses = [{ confirmationStatus: 'confirmed', confirmations: 1, err: null, slot: 130 }],
@@ -106,6 +107,7 @@ function createClient({
   accounts?: Record<string, unknown>;
   balanceLamports?: number;
   blockHeights?: number[];
+  expiryProvingHosts?: number;
   fees?: number[];
   sendError?: Error;
   statuses?: unknown[];
@@ -128,8 +130,9 @@ function createClient({
     getMinimumBalanceForRentExemption: vi.fn(async (bytes: number) => (bytes === 0 ? 890_880 : 2_039_280)),
     getRecentPrioritizationFees: vi.fn(async () => fees.map((prioritizationFee, slot) => ({ prioritizationFee, slot }))),
     getSignatureStatuses: vi.fn(async () => [statuses[Math.min(statusIndex++, statuses.length - 1)] as never]),
-    // One honest node whose finalized height is `blockHeights` and whose lookups follow `statuses`; the rule that turns
-    // those into a verdict is tested against the real client in solana-signature-resolution.spec.ts.
+    // Honest nodes on `expiryProvingHosts` distinct hosts whose finalized height is `blockHeights` and whose lookups
+    // follow `statuses`; the rule that turns those into a verdict is tested against the real client in
+    // solana-signature-resolution.spec.ts.
     resolveSignatures: vi.fn(async (queries: readonly SolanaSignatureQuery[]) => {
       const finalizedHeight = blockHeights[Math.min(heightIndex++, blockHeights.length - 1)];
 
@@ -138,7 +141,7 @@ function createClient({
 
         if (status) return isConfirmedSolanaStatus(status) ? { state: 'landed', status } : { state: 'pending' };
 
-        return finalizedHeight > lastValidBlockHeight ? { state: 'expired' } : { state: 'pending' };
+        return finalizedHeight > lastValidBlockHeight ? { provingHosts: expiryProvingHosts, state: 'expired' } : { state: 'pending' };
       });
     }),
     sendRawTransaction: vi.fn(async (transaction: string) => {
@@ -467,6 +470,30 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(client.resolveSignatures).toHaveBeenCalledWith([{ lastValidBlockHeight: 456, signature: expect.any(String) }]);
   });
 
+  it('keeps the send open when only one host proves expiry, then releases it with a warning and sends nothing', async () => {
+    const store = memoryPendingStore();
+    const lone = createClient({ blockHeights: [457], expiryProvingHosts: 1, statuses: [null] });
+
+    await expect(makeSolanaTransfer(solParams(), lone, sendOptions(store))).rejects.toThrow('solana_broadcast_ambiguous');
+    expect(store.records).toHaveLength(1);
+
+    // The next send finds the same lone proof: the record is released, but this send stops so the user checks first.
+    const next = createClient({ blockHeights: [457], expiryProvingHosts: 1, statuses: [null] });
+
+    await expect(makeSolanaTransfer(solParams({ amount: '0.1' }), next, sendOptions(store))).rejects.toThrow(
+      'solana_previous_send_unverified'
+    );
+    expect(store.records).toEqual([]);
+    expect(next.getLatestBlockhash).not.toHaveBeenCalled();
+    expect(next.sendRawTransaction).not.toHaveBeenCalled();
+
+    // The send after that goes through.
+    const after = createClient();
+
+    await makeSolanaTransfer(solParams({ amount: '0.1' }), after, sendOptions(store));
+    expect(after.sendRawTransaction).toHaveBeenCalledOnce();
+  });
+
   it('reports a transfer the network ran and failed as failed, not as sent', async () => {
     const store = memoryPendingStore();
     const client = createClient({
@@ -487,7 +514,10 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
 
   describe('against the real signature resolution', () => {
     // Epoch info and the signature lookup answered by one node, through the real client.
-    const withNode = (answer: { blockHeight: number; lookup: { slot: number; value: unknown[] }; slot: number }) => {
+    const withNode = (
+      answer: { blockHeight: number; lookup: { slot: number; value: unknown[] }; slot: number },
+      rpcUrls = ['https://resolution.example', 'https://second-resolution.example']
+    ) => {
       const fetchFn = vi.fn(async (_url: string | URL, init?: RequestInit) => {
         const body = JSON.parse(String(init?.body));
         const result =
@@ -497,14 +527,14 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
 
         return new Response(JSON.stringify({ id: body.id, jsonrpc: '2.0', result }), { status: 200 });
       });
-      const rpc = new SolanaRpcClient({ fetchFn: fetchFn as never, rpcUrls: ['https://resolution.example'] });
+      const rpc = new SolanaRpcClient({ fetchFn: fetchFn as never, rpcUrls });
       // Plain status polls say "no trace"; only the expiry check reaches the node.
       const client = { ...createClient({ statuses: [null] }), resolveSignatures: rpc.resolveSignatures.bind(rpc) };
 
       return { client, fetchFn };
     };
 
-    it('reports a send expired once a node finalized past the last valid block and still has no trace', async () => {
+    it('reports a send expired once two hosts finalized past the last valid block and still have no trace', async () => {
       const store = memoryPendingStore();
       const { client } = withNode({ blockHeight: 457, lookup: { slot: 1_001, value: [null] }, slot: 1_000 });
 
@@ -512,12 +542,21 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
       expect(store.records).toEqual([]);
     });
 
+    it('keeps the send open when only one host could prove expiry', async () => {
+      const store = memoryPendingStore();
+      const { client } = withNode({ blockHeight: 457, lookup: { slot: 1_001, value: [null] }, slot: 1_000 }, [
+        'https://resolution.example',
+      ]);
+
+      await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_broadcast_ambiguous');
+      expect(store.records).toHaveLength(1);
+    });
+
     it('keeps the send open when the lookup came from a backend older than the finalized progress', async () => {
       const store = memoryPendingStore();
       const { client } = withNode({ blockHeight: 457, lookup: { slot: 999, value: [null] }, slot: 1_000 });
-      const error = await makeSolanaTransfer(solParams(), client, sendOptions(store)).catch((reason: unknown) => reason);
 
-      expect(error).toBeInstanceOf(SolanaTransactionStatusUnknownError);
+      await expect(makeSolanaTransfer(solParams(), client, sendOptions(store))).rejects.toThrow('solana_broadcast_ambiguous');
       expect(store.records).toHaveLength(1);
     });
 
@@ -531,13 +570,27 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
       expect(unresolved).toEqual([record]);
     });
 
-    it('releases the record of an earlier send once the node proves it expired', async () => {
+    it('releases the record of an earlier send once two hosts prove it expired', async () => {
       const record: SolanaPendingSend = { accountAddress: 'stored-account', createdAt: 1, lastValidBlockHeight: 456,
         network: 'mainnet', signature: '5'.repeat(88), transactionBase64: 'AQID' };
       const { client } = withNode({ blockHeight: 457, lookup: { slot: 1_001, value: [null] }, slot: 1_000 });
-      const { resolved } = await resolveSolanaPendingSends([record], client, undefined, false);
+      const outcome = await resolveSolanaPendingSends([record], client, undefined, false, () => 1_000);
 
-      expect(resolved).toEqual([record]);
+      expect(outcome).toEqual({ resolved: [record], unresolved: [], unverified: [] });
+    });
+
+    it.each<[string, string[], number]>([
+      ['only one host proves it expired', ['https://resolution.example'], 1_000],
+      ['two spellings of one host prove it', ['https://resolution.example/a', 'https://resolution.example./b'], 1_000],
+      ['the record is older than six hours', ['https://resolution.example', 'https://second-resolution.example'], 1 + 6 * 60 * 60_000],
+      ['the record is dated after the clock', ['https://resolution.example', 'https://second-resolution.example'], 0],
+    ])('marks an earlier send unverified, not expired, when %s', async (_case, rpcUrls, judgedAt) => {
+      const record: SolanaPendingSend = { accountAddress: 'stored-account', createdAt: 1, lastValidBlockHeight: 456,
+        network: 'mainnet', signature: '5'.repeat(88), transactionBase64: 'AQID' };
+      const { client } = withNode({ blockHeight: 457, lookup: { slot: 1_001, value: [null] }, slot: 1_000 }, rpcUrls);
+      const outcome = await resolveSolanaPendingSends([record], client, undefined, false, () => judgedAt);
+
+      expect(outcome).toEqual({ resolved: [], unresolved: [], unverified: [record] });
     });
   });
 
@@ -590,7 +643,7 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
   });
 
   it('keeps unknown legacy ownership read-only until the old bytes have a proven outcome', async () => {
-    const record: SolanaPendingSend = { accountAddress: 'removed primary', createdAt: 1, network: 'mainnet',
+    const record: SolanaPendingSend = { accountAddress: 'removed primary', createdAt: 0, network: 'mainnet',
       lastValidBlockHeight: 456, signature: 'unresolved public signature', transactionBase64: 'AQID' };
     const store = memoryPendingStore([record]);
     const unavailable = createClient({ statuses: [null], blockHeights: [100] });
@@ -633,7 +686,7 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     else client.resolveSignatures.mockImplementation(async () => {
       reset();
       if (boundary === 'failed lookup') throw new Error('public offline');
-      return [null] as never;
+      return [{ state: 'pending' }] as never;
     });
     await expect(makeSolanaTransfer(solParams({ state }), client, sendOptions(store)))
       .rejects.toThrow('Wallet changed during transfer');
@@ -677,6 +730,27 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     ]);
 
     await makeSolanaTransfer(solParams(), createClient({ blockHeights: [400] }), sendOptions(store));
+    expect(store.records).toEqual([]);
+  });
+
+  it('lets a new send through once two hosts prove the earlier one expired', async () => {
+    const store = memoryPendingStore([
+      {
+        accountAddress: 'stored-account',
+        createdAt: 0,
+        lastValidBlockHeight: 300,
+        network: 'mainnet',
+        signature: '5'.repeat(88),
+        transactionBase64: 'AQID',
+      },
+    ]);
+    const client = createClient({
+      blockHeights: [400],
+      statuses: [null, { confirmationStatus: 'confirmed', confirmations: 1, err: null, slot: 130 }],
+    });
+
+    await makeSolanaTransfer(solParams(), client, sendOptions(store));
+    expect(client.sendRawTransaction).toHaveBeenCalledOnce();
     expect(store.records).toEqual([]);
   });
 
@@ -812,11 +886,11 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
 
     it('resolves the records the network settled and keeps the others in flight', async () => {
       const client = {
-        resolveSignatures: vi.fn(async () => [landed('finalized'), { state: 'expired' }, { state: 'pending' }] as never),
+        resolveSignatures: vi.fn(async () => [landed('finalized'), { provingHosts: 2, state: 'expired' }, { state: 'pending' }] as never),
         sendRawTransaction: vi.fn(async () => 'sig'),
       };
       const records = [record('a'.repeat(88), 300), record('b'.repeat(88), 100), record('c'.repeat(88), 300)];
-      const { resolved, unresolved } = await resolveSolanaPendingSends(records, client);
+      const { resolved, unresolved, unverified } = await resolveSolanaPendingSends(records, client, undefined, true, () => 1_000);
 
       expect(client.resolveSignatures).toHaveBeenCalledWith([
         { lastValidBlockHeight: 300, signature: 'a'.repeat(88) },
@@ -825,9 +899,32 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
       ]);
       expect(resolved.map(({ signature }) => signature[0])).toEqual(['a', 'b']);
       expect(unresolved.map(({ signature }) => signature[0])).toEqual(['c']);
+      expect(unverified).toEqual([]);
       // Only the record still in flight is rebroadcast, with the same bytes.
       expect(client.sendRawTransaction).toHaveBeenCalledOnce();
       expect(client.sendRawTransaction).toHaveBeenCalledWith('AQID', { maxRetries: 0, skipPreflight: true }, undefined);
+    });
+
+    it('marks an expiry with too little proof unverified, and rebroadcasts nothing for it', async () => {
+      const client = {
+        resolveSignatures: vi.fn(async () => [
+          { provingHosts: 1, state: 'expired' },
+          { provingHosts: 2, state: 'expired' },
+          { provingHosts: 2, state: 'expired' },
+        ] as never),
+        sendRawTransaction: vi.fn(async () => 'sig'),
+      };
+      const young = record('a'.repeat(88), 100);
+      const old = { ...record('b'.repeat(88), 100), createdAt: 1_000 - 6 * 60 * 60_000 };
+      const legacy = { ...record('c'.repeat(88), 100) } as Partial<SolanaPendingSend>;
+
+      delete legacy.createdAt;
+
+      const outcome = await resolveSolanaPendingSends([young, old, legacy as SolanaPendingSend], client, undefined, true, () => 1_000);
+
+      // One host, a record older than six hours, and a record with no time are each unverified.
+      expect(outcome).toEqual({ resolved: [], unresolved: [], unverified: [young, old, legacy] });
+      expect(client.sendRawTransaction).not.toHaveBeenCalled();
     });
 
     it('keeps every record in flight, and rebroadcasts nothing, when no node could answer', async () => {

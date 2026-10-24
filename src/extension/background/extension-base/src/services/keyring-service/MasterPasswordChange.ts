@@ -6,15 +6,15 @@ import KeyringStoreWeb from '../../stores/KeyringStoreWeb';
 import { decodeWebPassword, WEB_PASSWORD_RECORD_KEY, validateWebPasswordRecord } from '../../stores/WebPasswordRecord';
 import { accountStorageKey, alreadyPersistedAccountStore, isCurrentAccountPair } from './AccountMetadata';
 import { isMasterPasswordPair } from './AccountAccess';
-import { decryptTonSeed, encryptTonSeed } from './TonSeedVault';
-import { rotateTonRecoverySeed } from './TonSeedEncoding';
+import { decryptTonSeed, encryptTonSeed, protectTonRecoveryRecord, readTonRecoveryRecord } from './TonSeedVault';
 import type { TonKeyringService } from './TonKeyring';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import type { KeyringPair, KeyringPair$Json, KeyringPasswordJson } from '@subwallet/keyring/types';
 import { IS_EXTENSION } from '@/consts/global';
 
 type NativeChange = { original: KeyringPair; before: KeyringPair$Json; json: KeyringPair$Json };
-type TonChange = { before: TonStoreAccount; cipherSeed: string };
+// `keepsPending`: a version 3 record moves as it is; a pending copy next to it was not opened and stays.
+type TonChange = { before: TonStoreAccount; cipherSeed: string; keepsPending?: boolean };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const assertPairKey = (pair: KeyringPair, original: KeyringPair) => {
   const proof = stringToU8a('Fearless password change key verification');
@@ -69,14 +69,17 @@ export async function commitMasterPasswordChange(
     const before = snapshot[`ton:${address}`] as TonStoreAccount | undefined;
     if (!before || before.publicKeyHex?.toLowerCase() !== Buffer.from(account.publicKey).toString('hex'))
       throw new Error('TON account changed during password preparation.');
-    const recovery = rotateTonRecoverySeed(before.cipherSeed, oldPassword, newPassword, address, before.publicKeyHex);
-    if (recovery) {
-      tonChanges.set(`ton:${address}`, { before, cipherSeed: recovery });
-      continue;
-    }
     const seed = await decryptTonSeed(before.cipherSeed, oldPassword, account.publicKey)
       ?? await decryptTonSeed(before.pendingCipherSeed, oldPassword, account.publicKey);
-    if (seed === undefined) continue;
+    if (seed === undefined) {
+      // A phrase kept for recovery with an earlier password (version 3) moves under the new password unchanged,
+      // so that earlier password still recovers it.
+      const owner = { address, publicKey: account.publicKey };
+      const legacy = readTonRecoveryRecord(before.cipherSeed, oldPassword, owner);
+      if (legacy !== undefined)
+        tonChanges.set(`ton:${address}`, { before, cipherSeed: protectTonRecoveryRecord(legacy, newPassword, owner), keepsPending: true });
+      continue;
+    }
     const cipherSeed = encryptTonSeed(seed, newPassword);
     if (await decryptTonSeed(cipherSeed, newPassword, account.publicKey) !== seed)
       throw new Error('TON password change verification failed.');
@@ -100,28 +103,36 @@ export async function commitMasterPasswordChange(
       entries[storageKey] = saved;
       committedNative.push(saved);
     }
-    for (const [storageKey, { before, cipherSeed }] of tonChanges) {
+    for (const [storageKey, { before, cipherSeed, keepsPending }] of tonChanges) {
       const latest = current[storageKey] as TonStoreAccount | undefined;
       if (!latest || latest.address !== before.address || latest.publicKeyHex !== before.publicKeyHex ||
         latest.cipherSeed !== before.cipherSeed || latest.pendingCipherSeed !== before.pendingCipherSeed)
         throw new Error('TON account changed during password preparation.');
       const { pendingCipherSeed: _pending, ...fields } = latest;
-      const saved = { ...fields, cipherSeed };
+      const saved = keepsPending ? { ...latest, cipherSeed } : { ...fields, cipherSeed };
       entries[storageKey] = saved;
       committedTon.push(saved);
     }
     return { entries, remove: [] };
   }, () => {
-    keyring.keyring.setupMasterPassword(nextPassword.passwordHash);
-    keyring.lockAll();
-    if (!IS_EXTENSION) KeyringStoreWeb.commitPassword(nextPassword);
-    for (const json of committedNative) {
-      const pair = keyring.keyring.addFromJson(json);
-      keyring.accounts.add(alreadyPersistedAccountStore, pair.address, pair.publicKey, json, pair.type);
+    try {
+      keyring.keyring.setupMasterPassword(nextPassword.passwordHash);
+      keyring.lockAll();
+      if (!IS_EXTENSION) KeyringStoreWeb.commitPassword(nextPassword);
+      for (const json of committedNative) {
+        const pair = keyring.keyring.addFromJson(json);
+        keyring.accounts.add(alreadyPersistedAccountStore, pair.address, pair.publicKey, json, pair.type);
+      }
+      for (const record of committedTon) ton.setAccounts(record);
+      // A lock after submission does not undo the durable change or unlock the user.
+      if (publishPassword(newPassword)) keyring.unlockKeyring(newPassword);
+    } catch (error) {
+      // Stored, so the new password is in force; memory could not follow. Nothing stays open under the old one:
+      // the wallet locks, and unlocking or a restart reads the stored records (as in 3.0.6).
+      publishPassword('');
+      keyring.lockAll();
+      throw error;
     }
-    for (const record of committedTon) ton.setAccounts(record);
-    // A lock after submission does not undo the durable change or unlock the user.
-    if (publishPassword(newPassword)) keyring.unlockKeyring(newPassword);
   });
   assertCurrent();
   return retained;

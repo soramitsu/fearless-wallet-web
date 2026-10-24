@@ -17,6 +17,7 @@ export const SEND_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.f
   solana_insufficient_sol_for_fee: 'assets.solanaInsufficientSolForFee',
   solana_insufficient_token_balance: 'assets.insufficientBalanceGeneric',
   solana_previous_send_pending: 'assets.solanaPreviousSendPending',
+  solana_previous_send_unverified: 'assets.solanaPreviousSendUnverified',
   solana_recipient_off_curve: 'assets.solanaRecipientOffCurve',
   solana_recipient_program: 'assets.solanaRecipientProgram',
   solana_recipient_token_account: 'assets.solanaRecipientTokenAccount',

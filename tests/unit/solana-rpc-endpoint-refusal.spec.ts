@@ -3,7 +3,11 @@ import { getMockAssets } from '@extension-base/background/helpers/assets';
 import BalanceService from '@extension-base/services/balance-service';
 import SolanaBalanceService from '@extension-base/services/balance-service/SolanaBalanceService';
 import { createSolanaRpcBalanceClient } from '@extension-base/services/balance-service/solanaRpcBalances';
-import { SolanaRpcClient } from '@extension-base/services/solana-rpc-service';
+import {
+  createClusterBoundSolanaRpcClient,
+  SOLANA_GENESIS_HASHES,
+  SolanaRpcClient,
+} from '@extension-base/services/solana-rpc-service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
@@ -33,10 +37,10 @@ const rpcResult = (id: number, result: unknown) => jsonResponse({ id, jsonrpc: '
 type Answer = (body: { id: number; method: string }) => Response;
 
 /**
- * The production endpoints as they answered an extension origin on 2026-10-10 and 2026-10-24: the public mainnet
- * node refuses every request carrying an Origin header with 403, publicnode serves balances but refuses token
- * accounts with 403, Solana Vibe Station's public node serves token accounts (and answers 429 to requests that arrive
- * together), and drpc's free plan answers 400 for Solana.
+ * The production endpoints as they answered an extension origin on 2026-10-10 (audit EXT-R2) and 2026-10-24: the
+ * public mainnet node refuses every request carrying an Origin header with 403, publicnode serves balances but refuses
+ * token accounts with 403, Solana Vibe Station's public node serves token accounts (and answers 429 to requests that
+ * arrive together), and drpc's free plan answers 400 for Solana.
  */
 const THROTTLED: Answer = () =>
   new Response('<html><head><title>429 Too Many Requests</title></head></html>', {
@@ -77,7 +81,7 @@ const PRODUCTION_FROM_AN_EXTENSION: Record<string, Answer> = {
 // Every node refuses the token accounts: the throttling node is mid-burst.
 const NO_NODE_SERVES_TOKEN_ACCOUNTS: Record<string, Answer> = { ...PRODUCTION_FROM_AN_EXTENSION, [VIBE_STATION]: THROTTLED };
 
-function endpoints(answers: Record<string, Answer>) {
+function endpoints(answers: Record<string, Answer>, { clusterBound = false } = {}) {
   const posts: Array<{ method: string; url: string }> = [];
   const fetchFn = vi.fn(async (input: string | URL, init?: RequestInit) => {
     const body = JSON.parse(init?.body as string);
@@ -87,17 +91,19 @@ function endpoints(answers: Record<string, Answer>) {
 
     return answers[url](body);
   });
+  const options = { fetchFn, network: 'mainnet' as const, failover: noWait };
 
-  return { client: new SolanaRpcClient({ fetchFn, network: 'mainnet', failover: noWait }), posts };
+  return { client: clusterBound ? createClusterBoundSolanaRpcClient(options) : new SolanaRpcClient(options), posts };
 }
 
 describe('Solana JSON-RPC endpoints that refuse the extension', () => {
-  // Each case starts after the wallet has forgotten which nodes refused token accounts in the case before.
+  // Each case starts after the wallet has forgotten which nodes refused token accounts in the case before, an hour
+  // later, so a case that moves the clock on by itself cannot carry its refusals into the next.
   let clock = Date.parse('2026-10-24T00:00:00Z');
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime((clock += 11 * 60_000));
+    vi.setSystemTime((clock += 60 * 60_000));
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -282,6 +288,64 @@ describe('Solana JSON-RPC endpoints that refuse the extension', () => {
 
     await later.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM);
     expect(tokenPosts(later.posts)).toEqual([MAINNET_BETA, PUBLICNODE, VIBE_STATION]);
+  });
+
+  it('asks a node that answered 401 last too, for ten minutes, but never one that only throttled', async () => {
+    let throttledOnce = false;
+    const answers: Record<string, Answer> = {
+      ...PRODUCTION_FROM_AN_EXTENSION,
+      [MAINNET_BETA]: () => new Response('Unauthorized', { status: 401 }),
+      [VIBE_STATION]: (body) => {
+        if (body.method === 'getTokenAccountsByOwner' && !throttledOnce) {
+          throttledOnce = true;
+
+          return THROTTLED(body);
+        }
+
+        return PRODUCTION_FROM_AN_EXTENSION[VIBE_STATION](body);
+      },
+    };
+    const first = endpoints(answers);
+
+    await expect(first.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM)).resolves.toEqual([]);
+    expect(first.posts.map(({ url }) => url)).toEqual([MAINNET_BETA, PUBLICNODE, VIBE_STATION, DRPC, MAINNET_BETA, PUBLICNODE, VIBE_STATION]);
+
+    // The 401 is remembered like the 403; the throttling node keeps its place ahead of both.
+    vi.setSystemTime(Date.now() + 9 * 60_000);
+    const next = endpoints(answers);
+
+    await next.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM);
+    expect(next.posts.map(({ url }) => url)).toEqual([VIBE_STATION]);
+  });
+
+  it('asks a node whose cluster check refused the extension last too', async () => {
+    const withGenesis =
+      (answer: Answer): Answer =>
+      (body) =>
+        body.method === 'getGenesisHash' ? rpcResult(body.id, SOLANA_GENESIS_HASHES.mainnet) : answer(body);
+    // The public mainnet node refuses the genesis lookup as it refuses every other request from an extension.
+    const answers: Record<string, Answer> = {
+      ...PRODUCTION_FROM_AN_EXTENSION,
+      [PUBLICNODE]: withGenesis(PRODUCTION_FROM_AN_EXTENSION[PUBLICNODE]),
+      [VIBE_STATION]: withGenesis(PRODUCTION_FROM_AN_EXTENSION[VIBE_STATION]),
+    };
+    const calls = (posts: Array<{ method: string; url: string }>) => posts.map(({ method, url }) => `${url} ${method}`);
+    const first = endpoints(answers, { clusterBound: true });
+
+    await expect(first.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM)).resolves.toEqual([]);
+    expect(calls(first.posts)).toEqual([
+      `${MAINNET_BETA} getGenesisHash`,
+      `${PUBLICNODE} getGenesisHash`,
+      `${PUBLICNODE} getTokenAccountsByOwner`,
+      `${VIBE_STATION} getGenesisHash`,
+      `${VIBE_STATION} getTokenAccountsByOwner`,
+    ]);
+
+    // The next refresh goes straight to the node that served, whose cluster is already proven.
+    const next = endpoints(answers, { clusterBound: true });
+
+    await next.client.getTokenAccountsByOwner(WALLET, SPL_TOKEN_PROGRAM);
+    expect(calls(next.posts)).toEqual([`${VIBE_STATION} getTokenAccountsByOwner`]);
   });
 });
 

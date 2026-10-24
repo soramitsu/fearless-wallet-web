@@ -9,7 +9,7 @@
     :showFullScreenIcon="false"
     @back="back"
   >
-    <p v-if="generationExpired" role="alert" class="backup-error">{{ generationExpiredMessage }}</p>
+    <p v-if="generationExpired" data-testid="generationExpired" :lang="$i18n.locale" role="alert" class="backup-error">{{ generationExpiredMessage }}</p>
     <p v-else-if="creationError" role="alert" class="backup-error">{{ $t('addWallet.google.somethingWrong') }}</p>
     <p v-if="confirmMnemonicStep" class="backup-consent">{{ $t('addWallet.google.dataWillStoreOnGDrive') }}</p>
     <p v-if="isFinished" role="status">{{ $t('addWallet.google.saved') }}</p>

@@ -1,12 +1,12 @@
 import * as tonWebMnemonic from 'tonweb-mnemonic';
 import CryptoJS from 'crypto-js';
 import { BehaviorSubject } from 'rxjs';
-import { stringToU8a, u8aToString } from '@polkadot/util';
-import { jsonDecrypt, jsonEncrypt } from '@polkadot/util-crypto';
+import { u8aToString } from '@polkadot/util';
+import { jsonDecrypt } from '@polkadot/util-crypto';
 import { tonStore } from './../../stores/TonStore';
 import { validateBip39Mnemonic } from './Bip39';
-import { TonSeedVault } from './TonSeedVault';
-import { TON_SEED_VERSION, TON_RECOVERY_VERSION, parseStoredSeed, isLegacyTonSeed } from './TonSeedEncoding';
+import { TonSeedVault, encryptTonSeed, protectTonRecoveryRecord } from './TonSeedVault';
+import { TON_RECOVERY_VERSION, parseStoredSeed, isLegacyTonSeed } from './TonSeedEncoding';
 import { type KeyringService } from '.';
 export { TON_SEED_VERSION, isLegacyTonSeed } from './TonSeedEncoding';
 import type { Address, WalletContractV4 } from '@ton/ton';
@@ -281,12 +281,7 @@ export class TonKeyringService {
   }
 
   encodeMnemonic(mnemonicArray: string[], password: string) {
-    // jsonEncrypt keeps the data unencrypted when there is no passphrase; a phrase must never be stored that way.
-    if (!password) throw new Error('A password is required to store a TON phrase');
-
-    const { encoded, encoding } = jsonEncrypt(stringToU8a(mnemonicArray.join(' ')), ['ton-mnemonic'], password);
-
-    return JSON.stringify({ version: TON_SEED_VERSION, encoded, encoding });
+    return encryptTonSeed(mnemonicArray.join(' '), password);
   }
 
   decodeMnemonic(cipherMnemonic: string, password: string = this.keyringService.getPassword()) {
@@ -348,13 +343,10 @@ export class TonKeyringService {
     // 3.0.5 did not rotate TON passwords. Preserve those unreadable ciphertexts
     // inside strong encryption instead of exposing the old password verifier or
     // blocking access to all the user's other accounts.
-    const archive = JSON.stringify({
-      address: record.address,
-      publicKeyHex: record.publicKeyHex,
-      cipherSeed: record.cipherSeed,
+    const cipherSeed = protectTonRecoveryRecord(record.cipherSeed, password, {
+      address: record.address, publicKey: hexToBytes(record.publicKeyHex),
     });
-    const encrypted = jsonEncrypt(stringToU8a(archive), ['ton-legacy-recovery'], password);
-    const replacement = { ...record, cipherSeed: JSON.stringify({ version: TON_RECOVERY_VERSION, ...encrypted }) };
+    const replacement = { ...record, cipherSeed };
     const recovered = this.readRecoveryRecord(replacement, password);
 
     if (recovered.cipherSeed !== record.cipherSeed) throw new Error('TON recovery verification failed');

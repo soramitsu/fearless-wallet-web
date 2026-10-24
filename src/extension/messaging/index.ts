@@ -44,9 +44,23 @@ function connectCallback(data: Message['data']) {
   else handler.resolve(data.response);
 }
 
+// A request is answered on the port it was sent on. Once that port is gone (the extension's service worker was
+// stopped or restarted) no answer can come, so the caller is told instead of waiting forever.
+function rejectPendingRequests() {
+  Object.entries(handlers).forEach(([id, handler]) => {
+    if (handler.subscriber) return;
+
+    delete handlers[id];
+    handler.reject(new Error('Wallet background disconnected'));
+  });
+}
+
 function connectExtension() {
   port = chrome.runtime?.connect({ name: PORT_EXTENSION });
-  port?.onDisconnect.addListener(connect);
+  port?.onDisconnect.addListener(() => {
+    rejectPendingRequests();
+    connect();
+  });
 
   port?.onMessage.addListener((data: Message['data']): void => connectCallback(data));
 }

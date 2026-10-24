@@ -63,13 +63,13 @@ describe('EVM providers', () => {
     // Nothing listens on the discard port, so nothing here can reach a real node.
     const down = ethereum({ currentProvider: 'http://127.0.0.1:9', nodes: [{ name: 'Down', url: 'http://127.0.0.1:9' }] });
 
-    it('knows the configured chain without asking the node', async () => {
+    it('does not claim the configured chain when its node cannot be verified', async () => {
       const handler = new EvmApiHandler({ Ethereum: down });
 
       handler.initEvmApi(down);
 
       expect(handler.api.ethereum.api).toBeInstanceOf(JsonRpcProvider);
-      await expect(handler.api.ethereum.api!.getNetwork()).resolves.toMatchObject({ chainId: 1n });
+      await expect(handler.api.ethereum.api!.getNetwork()).rejects.toThrow();
       handler.destroyApi('Ethereum');
     });
 
@@ -81,6 +81,38 @@ describe('EVM providers', () => {
       await expect(handler.api.ethereum.api!.getFeeData()).rejects.toThrow();
       handler.destroyApi('Ethereum');
     }, 15_000);
+  });
+
+  it.each(['0x2', '0x89'])('rejects a node reporting chain %s instead of its configured Ethereum chain', async (rpcChainId) => {
+    const network = ethereum();
+    const handler = new EvmApiHandler({ Ethereum: network });
+    handler.initEvmApi(network);
+    const provider = handler.api.ethereum.api as JsonRpcProvider;
+    // Exercise ethers' actual getNetwork validation with only the HTTP transport replaced.
+    const send = vi.spyOn(provider, '_send').mockImplementation(async (payload) =>
+      (Array.isArray(payload) ? payload : [payload]).map((request) => ({ jsonrpc: '2.0', id: request.id, result: rpcChainId }))
+    );
+    try {
+      await expect(provider.getNetwork()).rejects.toThrow('network changed');
+      expect(send).toHaveBeenCalledWith(expect.objectContaining({ method: 'eth_chainId' }));
+    } finally { handler.destroyApi('Ethereum'); }
+  });
+
+  it('checks the live chain again when a previously valid endpoint changes networks', async () => {
+    const network = ethereum();
+    const handler = new EvmApiHandler({ Ethereum: network });
+    handler.initEvmApi(network);
+    const provider = handler.api.ethereum.api as JsonRpcProvider;
+    let rpcChainId = '0x1';
+    const send = vi.spyOn(provider, '_send').mockImplementation(async (payload) =>
+      (Array.isArray(payload) ? payload : [payload]).map((request) => ({ jsonrpc: '2.0', id: request.id, result: rpcChainId }))
+    );
+    try {
+      await expect(provider.getNetwork()).resolves.toMatchObject({ chainId: 1n });
+      rpcChainId = '0x2';
+      await expect(provider.getNetwork()).rejects.toThrow('network changed');
+      expect(send).toHaveBeenCalledTimes(2);
+    } finally { handler.destroyApi('Ethereum'); }
   });
 
   it('treats a closing, closed or destroyed socket as closed, and an open one or HTTPS as live', async () => {

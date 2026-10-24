@@ -1,7 +1,10 @@
 import {
   BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES,
+  BUNDLED_REVIEWED_ROUTE_ERRORS,
   RETIRED_CROSS_CHAIN_CHAINS,
+  buildBundledReviewedRoutes,
   defineReviewedCrossChainRoute,
+  relayExecutionSharesRelay,
   retiredCrossChainRouteReason,
   type ReviewedCrossChainRouteDefinition,
 } from '@/cross-chain/reviewedRoutes';
@@ -196,5 +199,54 @@ describe('retired cross-chain routes', () => {
     BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.forEach((route: Readonly<ReviewedCrossChainRouteDefinition>) =>
       expect(route.execution, route.id).toBeDefined()
     );
+  });
+});
+
+describe('bundled route table integrity', () => {
+  it('builds every bundled definition without a problem', () => {
+    expect(BUNDLED_REVIEWED_ROUTE_ERRORS).toEqual([]);
+  });
+
+  it('bundles relay executions only toward a parachain of the same relay', () => {
+    const relayExecutions = BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.flatMap(({ execution }) =>
+      execution?.kind === 'relay-native-xcm-v3' ? [execution] : []
+    );
+
+    expect(relayExecutions).toHaveLength(2);
+    relayExecutions.forEach((execution) => expect(relayExecutionSharesRelay(execution)).toBe(true));
+  });
+
+  it.each([
+    ['Polkadot to Polkadot Asset Hub', 'Polkadot', POLKADOT, POLKADOT_ASSET_HUB, true],
+    ['Kusama to Kusama Asset Hub', 'Kusama', KUSAMA, KUSAMA_ASSET_HUB, true],
+    ['Polkadot to the Kusama Asset Hub para id', 'Polkadot', POLKADOT, KUSAMA_ASSET_HUB, false],
+    ['Kusama to Acala, which shares a para id with Karura', 'Kusama', KUSAMA, ACALA, false],
+    ['a parachain origin', 'Polkadot', POLKADOT_ASSET_HUB, ACALA, false],
+    ['an unknown destination', 'Polkadot', POLKADOT, LIBERLAND, false],
+  ] as const)('decides whether %s shares a relay', (_label, relayNetwork, originChainId, destinationChainId, shared) => {
+    expect(relayExecutionSharesRelay({ relayNetwork, originChainId, destinationChainId })).toBe(shared);
+  });
+
+  it('leaves out a definition that throws or a duplicated id instead of failing at import', () => {
+    const route = BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES[0];
+    const other = BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES[1];
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const built = buildBundledReviewedRoutes([
+      () => route,
+      () => {
+        throw new Error('cross_chain_execution_definition_mismatch');
+      },
+      () => other,
+      () => other,
+    ]);
+
+    expect(built.routes).toEqual([route]);
+    expect(built.errors).toEqual([
+      'route definition 1: cross_chain_execution_definition_mismatch',
+      `route ${other.id}: duplicate id`,
+    ]);
+    expect(error).toHaveBeenCalledOnce();
+    error.mockRestore();
   });
 });

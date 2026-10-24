@@ -1,10 +1,11 @@
 import { BN, isFunction } from '@polkadot/util';
 import { blake2AsHex } from '@polkadot/util-crypto';
 import type { Extrinsic } from '@extension-base/api/substrate/types';
-import type {
-  ReviewedCrossChainExecution,
-  ReviewedRelayExecution,
-  ReviewedRuntimeCall,
+import {
+  relayExecutionSharesRelay,
+  type ReviewedCrossChainExecution,
+  type ReviewedRelayExecution,
+  type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
 import { assertReviewedRecipient } from '@/cross-chain/recipient';
 import { assertReviewedCallIndex, assertReviewedRuntimeVersion } from '@/cross-chain/reviewedRuntimes';
@@ -56,12 +57,18 @@ function xcmAccountId32(api: ReviewedExecutionApi, address: string) {
   };
 }
 
+// Every reviewed execution is encoded as XCM V3 on purpose. The reviewed runtimes still accept VersionedLocation and
+// VersionedAssets V3, V4 and V5, and the bytes are what was reviewed: the golden encoding test pins them per runtime.
+// Moving to V4 or V5 changes the encoded call and needs a fresh review of every route, not a type bump.
 function getReviewedRelayParams(
   execution: Readonly<ReviewedRelayExecution>,
   to: string,
   precisionAmount: string,
   api: ReviewedExecutionApi
 ) {
+  // The destination is a para id under the origin relay; the same id on another relay is a different chain.
+  if (!relayExecutionSharesRelay(execution)) throw new Error('cross_chain_execution_definition_mismatch');
+
   const network = { network: { [execution.relayNetwork]: '' } };
   const receiverLocation =
     execution.receiverKind === 'AccountKey20'

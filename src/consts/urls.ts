@@ -12,12 +12,6 @@ const FEATURES = IS_PRODUCTION
   ? `${BASE_URL}/master/appConfigs/web_config.json`
   : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
 
-const XCM_LOCATIONS = `${BASE_URL}/master/xcm/v2/xcm_token_locations.json`;
-
-const XCM_FEES = IS_PRODUCTION
-  ? `${BASE_URL}/master/xcm/v2/xcm_fees.json`
-  : `${BASE_URL}/develop-free/xcm/v2/xcm_fees.json`;
-
 const ONBOARDING_URL = `${BASE_URL}/master/appConfigs/onboarding/web.json`;
 
 const SCAM = `${BASE_URL}/master/scamDetection/Polkadot_Hot_Wallet_Attributions.csv`;
@@ -68,8 +62,6 @@ const URLS = {
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,
   POLKASWAP,
-  XCM_LOCATIONS,
-  XCM_FEES,
   ONBOARDING_URL,
   SCAM,
 };

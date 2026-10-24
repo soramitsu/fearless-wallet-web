@@ -38,6 +38,10 @@ export const RELEASE_DEFAULT_ACTIONS: Readonly<Record<MutableAction, boolean>> =
 
 const MUTABLE_ACTIONS = Object.keys(RELEASE_DEFAULT_ACTIONS) as MutableAction[];
 
+/** Cached permissions expire even when a remote veto cannot be fetched. */
+export const ACTION_CAPABILITY_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+export const ACTION_CAPABILITY_REFRESH_MS = 15 * 60 * 1000;
+
 const disabledActions = (): Record<MutableAction, boolean> => ({
   polkaswap: false,
   demeter: false,
@@ -128,6 +132,13 @@ export function restoreActionCapabilities(stored: unknown): ActionCapabilityConf
   );
 }
 
+export const parseStoredActionCapabilityConfig = restoreActionCapabilities;
+
+export function isActionCapabilityConfigFresh(updatedAt: number, now: number): boolean {
+  const age = now - updatedAt;
+  return updatedAt > 0 && Number.isFinite(age) && age >= 0 && age <= ACTION_CAPABILITY_MAX_AGE_MS;
+}
+
 type ActionCapabilityStorage = {
   read: () => Promise<unknown>;
   write: (config: ActionCapabilityConfig) => Promise<void>;
@@ -135,33 +146,60 @@ type ActionCapabilityStorage = {
 
 export class ActionCapabilityService {
   private config = failClosedActionCapabilities();
+  private lastAttempt = Number.NEGATIVE_INFINITY;
+  private refreshing: Promise<void> | undefined;
+  private initialized = false;
 
-  constructor(private readonly storage: ActionCapabilityStorage) {}
+  constructor(
+    private readonly storage: ActionCapabilityStorage,
+    private readonly now: () => number = () => Date.now()
+  ) {}
 
   async init(): Promise<ActionCapabilityConfig> {
-    this.config = restoreActionCapabilities(await this.storage.read());
+    this.config = parseStoredActionCapabilityConfig(await this.storage.read());
+    this.initialized = true;
+    await this.refresh();
 
-    try {
-      const { data } = await axios.get<unknown>(URLS.FEATURES);
-      this.config = resolveActionCapabilities(data, Date.now(), this.config.remoteActions);
-      await this.storage.write(this.config);
-    } catch {
-      // The remembered vetoes stay in force offline; without any, the release
-      // defaults apply. Mutations are fail-closed only until storage is read.
-    }
+    return this.snapshot;
+  }
 
-    return this.config;
+  /** Fetches the remote configuration. A failure keeps the cached one, which still expires on its own. */
+  refresh(): Promise<void> {
+    if (this.refreshing) return this.refreshing;
+
+    this.lastAttempt = this.now();
+    this.refreshing = (async () => {
+      try {
+        const { data } = await axios.get<unknown>(URLS.FEATURES);
+        this.config = resolveActionCapabilities(data, this.now(), this.config.remoteActions);
+        await this.storage.write(this.config);
+      } catch {
+        // A recent last-known configuration stays usable until it expires; first-run failure is
+        // deliberately fail-closed for mutations and discovered-asset surfacing.
+      } finally {
+        this.refreshing = undefined;
+      }
+    })();
+
+    return this.refreshing;
   }
 
   isActionEnabled(action: MutableAction): boolean {
-    return this.config.actions[action] === true;
+    return this.current().actions[action] === true;
   }
 
   shouldSurfaceDiscoveredAssets(): boolean {
-    return this.config.assetDiscoveryMode === 'visible';
+    return this.current().assetDiscoveryMode === 'visible';
   }
 
   get snapshot(): ActionCapabilityConfig {
-    return this.config;
+    return this.current();
+  }
+
+  private current(): ActionCapabilityConfig {
+    const now = this.now();
+    if (this.initialized && !this.refreshing && now - this.lastAttempt >= ACTION_CAPABILITY_REFRESH_MS) void this.refresh();
+
+    return isActionCapabilityConfigFresh(this.config.updatedAt, now) ? this.config : failClosedActionCapabilities();
   }
 }

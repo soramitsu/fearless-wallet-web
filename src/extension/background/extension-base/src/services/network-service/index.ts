@@ -54,6 +54,11 @@ function usableNetwork(value: unknown): value is NetworkJson {
       typeof node.name === 'string' && typeof node.url === 'string' && !!node.url);
 }
 
+/** Remote discovery requires a usable node as well as the validated cached-network shape. */
+export function isUsableRegistryNetwork(value: unknown): value is NetworkJson {
+  return usableNetwork(value) && value.nodes.length > 0;
+}
+
 export class NetworkService {
   private registryAvailable = false;
   private cacheReadable = false;
@@ -178,7 +183,13 @@ export class NetworkService {
     let networks: NetworkJson[];
     try {
       const { data } = await axios.get<unknown>(URLS.CHAINS, { timeout: 10000 });
-      const rows = Array.isArray(data) ? data.filter(usableNetwork).filter((network) => network.nodes.length > 0) : [];
+      if (!Array.isArray(data)) throw new Error('The network registry is not a list');
+      const rows = data.filter((network, index): network is NetworkJson => {
+        if (isUsableRegistryNetwork(network)) return true;
+        const name = network && typeof network.name === 'string' ? network.name : `#${index}`;
+        this.logger.warn(`Skipping malformed network registry entry ${name}`);
+        return false;
+      });
       if (!rows.length) throw new Error('No usable registry networks');
       networks = rows.map((network) => withoutUntrustedPrices(network));
       this.networksGithub = networks;

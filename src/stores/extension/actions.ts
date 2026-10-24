@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { resolveActionCapabilities, type MutableAction } from '@extension-base/services/action-capability-service';
+import { resolveActionCapabilities, failClosedActionCapabilities, isActionCapabilityConfigFresh, type MutableAction } from '@extension-base/services/action-capability-service';
 import type { HexString } from '@polkadot/util/types';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { RequestsPayload } from './types';
@@ -58,6 +58,7 @@ const featureStorage = new LocalStorage('feature_');
 const FEATURES_CACHE_KEY = 'action-capabilities-v2';
 
 type CachedFeatures = {
+  fetchedAt?: number;
   fiat?: Record<string, unknown>;
   actions?: Partial<Record<MutableAction, boolean>>;
   assetDiscoveryMode?: Features['assetDiscoveryMode'];
@@ -75,10 +76,11 @@ const readCachedFeatures = (): CachedFeatures | undefined => {
 };
 
 const toFeatures = (remote: CachedFeatures | undefined): Features => {
-  const capabilities = resolveActionCapabilities(remote ?? {});
+  const fresh = typeof remote?.fetchedAt === 'number' && isActionCapabilityConfigFresh(remote.fetchedAt, Date.now());
+  const capabilities = fresh ? resolveActionCapabilities(remote) : failClosedActionCapabilities();
 
   return {
-    fiat: { moonpay: false, ramp: false, ...record(remote?.fiat) },
+    fiat: { moonpay: false, ramp: false, ...(fresh ? record(remote?.fiat) : {}) },
     actions: capabilities.actions,
     assetDiscoveryMode: capabilities.assetDiscoveryMode,
   };
@@ -367,6 +369,7 @@ export const actions: Actions = {
 
       const capabilities = resolveActionCapabilities(data, Date.now(), cached?.actions);
       const remote: CachedFeatures = {
+        fetchedAt: Date.now(),
         fiat: record(record(data).fiat),
         actions: capabilities.remoteActions,
         assetDiscoveryMode: capabilities.assetDiscoveryMode,
@@ -376,7 +379,7 @@ export const actions: Actions = {
       featureStorage.set(FEATURES_CACHE_KEY, remote);
     } catch {
       // Keep the cached remote config: a remembered veto stays in force offline,
-      // and without one the release defaults apply.
+      // and stale permissions remain disabled until a successful fetch.
     }
   },
 

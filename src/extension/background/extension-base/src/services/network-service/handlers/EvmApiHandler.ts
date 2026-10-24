@@ -36,8 +36,8 @@ export function getEvmRpcUrl(network: NetworkJson): string | undefined {
 }
 
 /**
- * The configured chain id. A provider given it never asks the node which chain it serves: no chain-id round trip before
- * each fee lookup, no detection retried every second while a node is down, and transactions are signed for this chain.
+ * The configured chain id is the expected chain, not evidence of the node's actual identity.
+ * Providers retain live network detection so signing guards reject nodes serving another chain.
  */
 export function getEvmChainId(network: NetworkJson): bigint | undefined {
   const chainId = String(network.chainId ?? '').trim();
@@ -113,7 +113,6 @@ export class EvmApiHandler {
       ? new JsonRpcProvider(providerUrl, network, {
           batchStallTime: 10,
           batchMaxCount: 30,
-          staticNetwork: network !== undefined,
         })
       : new WebSocketProvider(providerUrl, network);
 

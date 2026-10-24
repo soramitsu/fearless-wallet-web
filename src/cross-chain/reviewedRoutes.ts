@@ -291,6 +291,39 @@ const chain = Object.freeze({
   liberland: '6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6',
 });
 
+type RelayNetwork = ReviewedRelayExecution['relayNetwork'];
+
+const RELAY_CHAIN_IDS: Readonly<Record<RelayNetwork, string>> = Object.freeze({
+  Polkadot: chain.polkadot,
+  Kusama: chain.kusama,
+});
+
+/**
+ * The relay network of each parachain a bundled execution can address. Relay executions encode the destination by
+ * para id alone, and para ids repeat across relays (Asset Hub is 1000 on both, Acala and Karura are both 2000), so a
+ * relay execution is only bundled, and only encoded, when its origin is the relay chain its destination belongs to.
+ */
+const PARACHAIN_RELAY: Readonly<Record<string, RelayNetwork>> = Object.freeze({
+  [chain.polkadotAssetHub]: 'Polkadot',
+  [chain.kusamaAssetHub]: 'Kusama',
+  [chain.acala]: 'Polkadot',
+  [chain.astar]: 'Polkadot',
+  [chain.moonbeam]: 'Polkadot',
+  [chain.parallel]: 'Polkadot',
+  [chain.karura]: 'Kusama',
+  [chain.bifrost]: 'Kusama',
+  [chain.moonriver]: 'Kusama',
+});
+
+export function relayExecutionSharesRelay(
+  execution: Pick<ReviewedRelayExecution, 'relayNetwork' | 'originChainId' | 'destinationChainId'>
+): boolean {
+  return (
+    RELAY_CHAIN_IDS[execution.relayNetwork] === execution.originChainId &&
+    PARACHAIN_RELAY[execution.destinationChainId] === execution.relayNetwork
+  );
+}
+
 /**
  * Chains that must never be an origin or destination of a reviewed route. Checked on 2026-10-23
  * against the relay chains' parachain registrars: none of these para ids is registered any more, and
@@ -407,7 +440,7 @@ const reviewedRelayExecution = (
   const destination = relayDestination[destinationChainId as keyof typeof relayDestination];
   const relayNetwork =
     originChainId === chain.polkadot ? 'Polkadot' : originChainId === chain.kusama ? 'Kusama' : undefined;
-  if (!destination || !relayNetwork) return undefined;
+  if (!destination || !relayNetwork || PARACHAIN_RELAY[destinationChainId] !== relayNetwork) return undefined;
 
   return {
     kind: 'relay-native-xcm-v3',
@@ -498,13 +531,44 @@ const liberlandToSoraExecution = ({
   destinationFee: '0',
 });
 
+type RouteDefinition = () => Readonly<ReviewedCrossChainRouteDefinition>;
+
 /**
- * Transaction authority shipped with the extension. Remote network JSON can make one of these
- * routes unavailable, but it cannot add a route, change its provider, substitute an AssetKey, or
- * lower its reviewed minimum.
+ * Builds the bundled route table without letting one bad definition take the background down at import: a definition
+ * that throws is left out, every route sharing a duplicated id is left out, and each problem is reported. The bundle
+ * test requires the list of problems to be empty, so a bad definition fails the build instead.
  */
-export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCrossChainRouteDefinition>[] =
-  Object.freeze([
+export function buildBundledReviewedRoutes(definitions: readonly RouteDefinition[]): {
+  routes: readonly Readonly<ReviewedCrossChainRouteDefinition>[];
+  errors: readonly string[];
+} {
+  const errors: string[] = [];
+  const routes: Readonly<ReviewedCrossChainRouteDefinition>[] = [];
+
+  definitions.forEach((define, index) => {
+    try {
+      routes.push(define());
+    } catch (error) {
+      errors.push(`route definition ${index}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
+  const counts = new Map<string, number>();
+  routes.forEach(({ id }) => counts.set(id, (counts.get(id) ?? 0) + 1));
+  counts.forEach((count, id) => {
+    if (count > 1) errors.push(`route ${id}: duplicate id`);
+  });
+
+  if (errors.length) console.error('Bundled cross-chain routes left out', errors);
+
+  return {
+    routes: Object.freeze(routes.filter(({ id }) => counts.get(id) === 1)),
+    errors: Object.freeze(errors),
+  };
+}
+
+const bundledRoutes = buildBundledReviewedRoutes([
+  () =>
     walletXcmRoute(
       chain.polkadot,
       chain.polkadotAssetHub,
@@ -513,6 +577,7 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
       'DOT',
       10
     ),
+  () =>
     walletXcmRoute(
       chain.kusama,
       chain.kusamaAssetHub,
@@ -521,12 +586,16 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
       'KSM',
       12
     ),
+  () =>
     bridgeRoute({
       providerId: 'liberland-bridge',
       originChainId: chain.liberland,
       destinationChainId: chain.sora,
       originAssetId: 'a6b83d39-a488-4b34-8352-280705a792ea',
       assetKeyAssetId: 'a6b83d39-a488-4b34-8352-280705a792ea',
+      // The registry's XCM id for LLD is one character short of a UUID. It is copied as is on purpose: the catalog
+      // match needs the registry's exact id, so if the registry corrects it this route stops matching and fails
+      // closed until the bundle follows.
       originXcmAssetId: 'a6b83d39-a488-4b34-8352-280705a792e',
       destinationXcmAssetId: 'a6b83d39-a488-4b34-8352-280705a792e',
       symbol: 'LLD',
@@ -540,6 +609,7 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
         soraAssetKind: 'Sidechain',
       }),
     }),
+  () =>
     bridgeRoute({
       providerId: 'liberland-bridge',
       originChainId: chain.liberland,
@@ -559,6 +629,7 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
         soraAssetKind: 'Sidechain',
       }),
     }),
+  () =>
     bridgeRoute({
       providerId: 'liberland-bridge',
       originChainId: chain.liberland,
@@ -578,13 +649,18 @@ export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCros
         soraAssetKind: 'Thischain',
       }),
     }),
-  ]);
+]);
 
-const routeIds = new Set(BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.map(({ id }) => id));
+/**
+ * Transaction authority shipped with the extension. Remote network JSON can make one of these
+ * routes unavailable, but it cannot add a route, change its provider, substitute an AssetKey, or
+ * lower its reviewed minimum.
+ */
+export const BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES: readonly Readonly<ReviewedCrossChainRouteDefinition>[] =
+  bundledRoutes.routes;
 
-if (routeIds.size !== BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.length) {
-  throw new Error('Bundled reviewed cross-chain route ids must be unique.');
-}
+/** Problems found while building the bundled routes; a correct bundle has none. */
+export const BUNDLED_REVIEWED_ROUTE_ERRORS: readonly string[] = bundledRoutes.errors;
 
 export function findBundledReviewedCrossChainRoute(
   routeId: string,

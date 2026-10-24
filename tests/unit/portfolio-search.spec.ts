@@ -15,7 +15,7 @@ const ethereum = {
 const sepolia = { ...ethereum, name: 'Sepolia', chainId: '11155111', options: ['testnet'] } as NetworkJson;
 const key = (id: string, network = ethereum) => createAssetKey({ ecosystem: network.ecosystem!, chainId: network.chainId, assetId: id });
 const balance = (id = '0xAaAa', overrides: Partial<BalanceItem> = {}): BalanceItem => ({
-  id, name: ethereum.name, symbol: 'USD', icon: 'usd', precision: 18, total: '0', transferable: '0',
+  id, name: ethereum.name, symbol: 'USD', icon: 'usd', type: 'erc20', precision: 18, total: '0', transferable: '0',
   state: APIItemState.READY, assetMetadataTrust: 'verified', assetMetadataSource: 'registry', ...overrides,
 });
 const group = (balances: BalanceItem[], groupId = 'dollar'): TokenGroup => ({

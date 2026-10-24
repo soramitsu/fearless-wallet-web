@@ -58,6 +58,7 @@
             :row="row"
             :manage="showAssetsManagementForm"
             :forceExpanded="searching || hiddenOnly"
+            :search="searchQuery"
             :canSend="canSendFrom(row)"
             @send="openGroupPicker($event, 'send')"
             @receive="openGroupPicker($event, 'receive')"
@@ -75,6 +76,7 @@
               :row="row"
               :manage="showAssetsManagementForm"
               :forceExpanded="searching || hiddenOnly"
+            :search="searchQuery"
               :canSend="canSendFrom(row)"
               @send="openGroupPicker($event, 'send')"
               @receive="openGroupPicker($event, 'receive')"
@@ -90,6 +92,7 @@
             :section="section"
             :manage="showAssetsManagementForm"
             :forceExpanded="searching || hiddenOnly"
+            :search="searchQuery"
           />
         </div>
       </template>
@@ -101,6 +104,7 @@
           :section="section"
           :manage="showAssetsManagementForm"
           :forceExpanded="searching || hiddenOnly"
+            :search="searchQuery"
         />
 
         <PortfolioZeroNetworks
@@ -115,6 +119,7 @@
             :section="section"
             :manage="showAssetsManagementForm"
             :forceExpanded="searching || hiddenOnly"
+            :search="searchQuery"
           />
         </PortfolioZeroNetworks>
       </div>
@@ -281,6 +286,10 @@ export default defineComponent({
     showsTestnets(): boolean {
       return this.viewSettings.showTestnets || (!this.hiddenOnly && this.selectedTestnet);
     },
+    // Manage has no search field, so text typed before never narrows it.
+    searchQuery(): string {
+      return this.showAssetsManagementForm ? '' : this.filterValue?.trim() ?? '';
+    },
     portfolioSections(): PortfolioSection[] {
       return buildPortfolioSections({
         groups: this.accountsStore.balances,
@@ -294,6 +303,8 @@ export default defineComponent({
             this.extensionStore.features?.portfolio?.assetDiscoveryMode ??
             'shadow') === 'visible',
         addressForNetwork: this.addressForNetwork,
+        search: this.searchQuery,
+        isSelectedNetwork: (network: NetworkJson) => isSameString(network.name, this.accountsStore.selectedNetwork),
         mode: this.showAssetsManagementForm ? 'manage' : 'view',
         hideZero: this.viewSettings.hideZero,
         showHidden: this.viewSettings.showHidden,

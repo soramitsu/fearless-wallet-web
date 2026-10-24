@@ -30,6 +30,13 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['iroha_node_protocol_unsupported', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
   ['cross_chain_send_in_progress', 'assets.transactionPending'],
+  // Nothing was sent; the quote must be confirmed again.
+  ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_token_required', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_token_unknown', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_expired', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_mismatch', 'assets.transferFeeApprovalRequired'],
 ]);
 
 const SAFE_ASSET_SYMBOL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/u;

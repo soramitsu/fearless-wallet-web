@@ -184,6 +184,7 @@ import type {
   PolkamarktQuoteRequest,
 } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import { crossChainQuoteTokens } from '@/cross-chain/quoteTokens';
 import { CrossChainPreviousSendUnresolvedError } from '@/cross-chain/sendLedger';
 import { BitcoinTransactionStatusUnknownError } from '@/util/bitcoinSend';
 import {
@@ -1576,11 +1577,29 @@ export default class Extension extends FWExtensionBase {
         tokenBalance,
       }, this.state);
 
+      const estimateFee = quote.originFee.toString();
+      const destEstimateFee = quote.destinationFee.toString();
+
       return {
-        estimateFee: quote.originFee.toString(),
-        destEstimateFee: quote.destinationFee.toString(),
+        estimateFee,
+        destEstimateFee,
         minimum: quote.minimum.toString(),
         executionFingerprint: quote.executionFingerprint,
+        // Only a send that presents this token, unchanged and in time, can use this quote.
+        quoteToken: crossChainQuoteTokens.issue({
+          from,
+          to,
+          amount,
+          originNet,
+          destinationNet,
+          assetId,
+          assetKey,
+          routeId,
+          routeProviderId,
+          originFee: estimateFee,
+          destinationFee: destEstimateFee,
+          executionFingerprint: quote.executionFingerprint,
+        }),
       };
     } catch (error) {
       return {
@@ -1608,6 +1627,7 @@ export default class Extension extends FWExtensionBase {
       expectedOriginFee = '',
       expectedDestinationFee = '',
       expectedExecutionFingerprint = '',
+      quoteToken,
     } = request;
     let tokenBalance: ReturnType<State['balanceService']['getTokenBalance']>;
     let xcmAssetId: string;
@@ -1616,6 +1636,21 @@ export default class Extension extends FWExtensionBase {
     let capturedPair: ReturnType<State['keyringService']['getPair']>;
 
     try {
+      // Spent before any other work: one quote the background issued allows one send of exactly that quote.
+      crossChainQuoteTokens.consume(quoteToken, {
+        from,
+        to,
+        amount,
+        originNet,
+        destinationNet,
+        assetId,
+        assetKey,
+        routeId,
+        routeProviderId,
+        originFee: expectedOriginFee,
+        destinationFee: expectedDestinationFee,
+        executionFingerprint: expectedExecutionFingerprint,
+      });
       await refreshCrossChainOriginBalance({ from, originNet }, this.state);
       const substrateAddress = this.state.keyringService.getSubstrateAddress(from);
       tokenBalance = this.state.balanceService.getTokenBalance(substrateAddress, assetId, relayChain);

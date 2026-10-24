@@ -369,6 +369,8 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   expectedOriginFee?: string;
   expectedDestinationFee?: string;
   expectedExecutionFingerprint?: string;
+  /** Single-use token from the quote being confirmed; required to send. */
+  quoteToken?: string;
 }
 
 export interface ResponseCheckTransfer {
@@ -383,6 +385,7 @@ export interface ResponseCheckCrossChain {
   destEstimateFee?: string;
   minimum?: string;
   executionFingerprint?: string;
+  quoteToken?: string;
   errors?: BasicTxError[];
 }
 

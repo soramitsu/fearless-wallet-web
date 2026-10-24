@@ -87,4 +87,37 @@ describe('transfer fee approval and max amount', () => {
     expect(form.isFetchingFees).toBe(true);
     vi.clearAllTimers();
   });
+
+  it('sends the token of the cross-chain quote being confirmed and drops it as soon as the form changes', async () => {
+    const form = context();
+    Object.assign(form, {
+      isTransfer: false,
+      syncedNetwork: 'Polkadot',
+      syncedDestNet: 'Polkadot Asset Hub',
+      syncedAssetId: 'polkadot-dot',
+      canonicalAssetKey: 'asset-key',
+      reviewedRouteId: 'reviewed-route',
+      reviewedRouteProviderId: 'wallet-xcm',
+    });
+    checkCrossChain.mockResolvedValue({
+      estimateFee: '0.01',
+      destEstimateFee: '0.001',
+      minimum: '0.01',
+      executionFingerprint: 'quote-fingerprint',
+      quoteToken: 'quote-token',
+    });
+
+    await component.methods.calculateEstimates.call(form);
+    expect(component.computed.tx.call(form)).toMatchObject({
+      expectedOriginFee: '0.01',
+      expectedDestinationFee: '0.001',
+      expectedExecutionFingerprint: 'quote-fingerprint',
+      quoteToken: 'quote-token',
+    });
+
+    vi.useFakeTimers();
+    component.methods.calculateFee.call(form);
+    expect(component.computed.tx.call(form)).toMatchObject({ expectedExecutionFingerprint: '', quoteToken: '' });
+    vi.clearAllTimers();
+  });
 });

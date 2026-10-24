@@ -6,6 +6,7 @@ import {
   type RequestTypes,
 } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
+import { crossChainQuoteTokens } from '@/cross-chain/quoteTokens';
 import { CrossChainPreviousSendUnresolvedError } from '@/cross-chain/sendLedger';
 
 const crossChain = vi.hoisted(() => ({
@@ -56,7 +57,9 @@ const ADDRESS = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
 const HASH = 'ab'.repeat(32);
 const ROUTE = 'reviewed-v1:wallet-xcm:polkadot:asset-hub:polkadot-dot';
 
-const request = (): RequestTypes['pri(accounts.makeCrossChain)'] =>
+type MakeRequest = RequestTypes['pri(accounts.makeCrossChain)'];
+
+const unsignedRequest = (): MakeRequest =>
   ({
     from: ADDRESS,
     to: '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
@@ -71,7 +74,30 @@ const request = (): RequestTypes['pri(accounts.makeCrossChain)'] =>
     expectedDestinationFee: '0.001',
     expectedExecutionFingerprint: 'quote-fingerprint',
     isMobile: false,
-  }) as unknown as RequestTypes['pri(accounts.makeCrossChain)'];
+  }) as unknown as MakeRequest;
+
+const issueToken = (quoted: MakeRequest) =>
+  crossChainQuoteTokens.issue({
+    from: quoted.from,
+    to: quoted.to,
+    amount: quoted.amount ?? '',
+    originNet: quoted.originNet,
+    destinationNet: quoted.destinationNet,
+    assetId: quoted.assetId,
+    assetKey: quoted.assetKey,
+    routeId: quoted.routeId,
+    routeProviderId: quoted.routeProviderId,
+    originFee: quoted.expectedOriginFee ?? '',
+    destinationFee: quoted.expectedDestinationFee ?? '',
+    executionFingerprint: quoted.expectedExecutionFingerprint ?? '',
+  });
+
+/** A send request carrying a token the background issued for exactly this quote. */
+const request = (): MakeRequest => {
+  const quoted = unsignedRequest();
+
+  return { ...quoted, quoteToken: issueToken(quoted) } as MakeRequest;
+};
 
 function setup() {
   const pair = { meta: {} };
@@ -170,12 +196,58 @@ describe('cross-chain background handler', () => {
     expect(cancelSubscription).toHaveBeenCalledOnce();
   });
 
+  it('issues a quote token that allows exactly one send of exactly that quote', async () => {
+    const { extension } = setup();
+    crossChain.estimateCrossChainQuote.mockResolvedValue({
+      originFee: { toString: () => '0.01' },
+      destinationFee: { toString: () => '0.001' },
+      minimum: { toString: () => '0.01' },
+      executionFingerprint: 'quote-fingerprint',
+    });
+    crossChain.makeCrossChain.mockResolvedValue({ status: true, transactionHash: HASH });
+
+    const quote = await extension.handle(
+      'check',
+      'pri(accounts.checkCrossChain)',
+      unsignedRequest() as RequestTypes['pri(accounts.checkCrossChain)']
+    );
+    expect(quote).toMatchObject({ estimateFee: '0.01', destEstimateFee: '0.001', executionFingerprint: 'quote-fingerprint' });
+    expect(quote.quoteToken).toMatch(/^[0-9a-f]{64}$/);
+
+    const send = { ...unsignedRequest(), quoteToken: quote.quoteToken } as MakeRequest;
+    await expect(extension.handle('send', 'pri(accounts.makeCrossChain)', send)).resolves.toMatchObject({ status: true });
+    await expect(extension.handle('again', 'pri(accounts.makeCrossChain)', send)).resolves.toEqual({
+      status: false,
+      errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'cross_chain_quote_token_unknown' }],
+    });
+    expect(crossChain.makeCrossChain).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['without a token', () => unsignedRequest(), 'cross_chain_quote_token_required'],
+    ['with a token for another amount', () => ({ ...request(), amount: '100' }) as MakeRequest, 'cross_chain_quote_mismatch'],
+    ['with a token for another recipient', () => ({ ...request(), to: ADDRESS }) as MakeRequest, 'cross_chain_quote_mismatch'],
+  ])('refuses a send %s before touching the network or the signer', async (_label, build, message) => {
+    const { extension } = setup();
+
+    await expect(extension.handle('send', 'pri(accounts.makeCrossChain)', build())).resolves.toEqual({
+      status: false,
+      errors: [{ code: TransferErrorCode.UNSUPPORTED, message }],
+    });
+    expect(crossChain.refreshCrossChainOriginBalance).not.toHaveBeenCalled();
+    expect(crossChain.makeCrossChain).not.toHaveBeenCalled();
+  });
+
   it('keeps the transfer form from offering a route whose earlier send is unresolved', async () => {
     const { extension } = setup();
     crossChain.assertCrossChainSendAvailable.mockRejectedValue(new Error('cross_chain_previous_send_unresolved'));
 
     await expect(
-      extension.handle('check', 'pri(accounts.checkCrossChain)', request() as RequestTypes['pri(accounts.checkCrossChain)'])
+      extension.handle(
+        'check',
+        'pri(accounts.checkCrossChain)',
+        unsignedRequest() as RequestTypes['pri(accounts.checkCrossChain)']
+      )
     ).resolves.toEqual({
       estimateFee: '0',
       destEstimateFee: '0',

@@ -2,6 +2,7 @@ import { networkMap305, readSnapshot } from '../fixtures/legacy-305/generate';
 import type { NetworkJson } from '@extension-base/types';
 import {
   BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES,
+  createReviewedCrossChainRouteId,
   defineReviewedCrossChainRoute,
   type CrossChainRouteProviderId,
 } from '@/cross-chain/reviewedRoutes';
@@ -80,6 +81,19 @@ const move = (from: string, to: string, symbol: string, providerId: CrossChainRo
     },
   });
 
+// Only Liberland -> SORA still delivers, so the route definition refuses every other route into SORA. This file tests the
+// walk itself, so its invented hops into SORA are assembled the way the definition assembles a route, past that check.
+const intoSora = (from: string, symbol: string) => {
+  const draft = move(from, `${from}-placeholder`, symbol, 'sora-substrate-bridge');
+  const route = {
+    ...draft,
+    destinationChainId: SORA_CHAIN_ID,
+    execution: draft.execution && Object.freeze({ ...draft.execution, destinationChainId: SORA_CHAIN_ID }),
+  };
+
+  return Object.freeze({ ...route, id: createReviewedCrossChainRouteId(route) });
+};
+
 const KEY = (chainId: string, symbol: string) => createAssetKey({ ecosystem: 'substrate', chainId, assetId: `${chainId}-${symbol}` });
 const subject = (chainId: string, symbol: string, networkName: string) => ({ key: KEY(chainId, symbol), networkName, symbol });
 
@@ -104,14 +118,14 @@ describe('readiness: the walk to SORA', () => {
     move('hub', 'cycle', 'TOK'),
     move('cycle', 'hub', 'TOK'),
     move('mid', 'hub', 'TOK'),
-    move('mid', SORA_CHAIN_ID, 'TOK', 'sora-substrate-bridge'),
+    intoSora('mid', 'TOK'),
     move('far', 'a', 'TOK'),
     move('a', 'b', 'TOK'),
-    move('b', SORA_CHAIN_ID, 'TOK', 'sora-substrate-bridge'),
+    intoSora('b', 'TOK'),
     move('edge', 'e1', 'TOK'),
     move('e1', 'e2', 'TOK'),
     move('e2', 'e3', 'TOK'),
-    move('e3', SORA_CHAIN_ID, 'TOK', 'sora-substrate-bridge'),
+    intoSora('e3', 'TOK'),
   ];
   type Actions = Record<string, boolean> | undefined;
   const evaluateWith = (actions: Actions, chainId: string, name: string) =>
@@ -212,18 +226,21 @@ describe('readiness: the bundled routes against the registry snapshot', () => {
     expect(String(byName('SORA Mainnet').chainId)).toBe(SORA_CHAIN_ID);
   });
 
-  it('puts every asset with an executable reviewed route to SORA one move away', () => {
+  it('puts every asset with an executable reviewed route to SORA one move away, which leaves Liberland only', () => {
     const oneMove = (networkName: string, symbol: string) => {
       const result = ask(ON)(keyOf(networkName, symbol));
 
       return [result.state, result.hops.map(({ originNetwork, destinationNetwork }) => `${originNetwork}>${destinationNetwork}`)];
     };
 
-    expect(oneMove('Polkadot', 'DOT')).toEqual(['route', ['Polkadot>SORA Mainnet']]);
-    expect(oneMove('Kusama', 'KSM')).toEqual(['route', ['Kusama>SORA Mainnet']]);
-    expect(oneMove('Acala', 'ACA')).toEqual(['route', ['Acala>SORA Mainnet']]);
-    expect(oneMove('Astar', 'ASTR')).toEqual(['route', ['Astar>SORA Mainnet']]);
     expect(oneMove('Liberland', 'LLD')).toEqual(['route', ['Liberland>SORA Mainnet']]);
+    expect(oneMove('Liberland', 'LLM')).toEqual(['route', ['Liberland>SORA Mainnet']]);
+    expect(oneMove('Liberland', 'XOR')).toEqual(['route', ['Liberland>SORA Mainnet']]);
+    // SORA's Polkadot and Kusama parachains stopped producing blocks, so nothing reaches SORA through them.
+    expect(oneMove('Polkadot', 'DOT')).toEqual(['none', []]);
+    expect(oneMove('Kusama', 'KSM')).toEqual(['none', []]);
+    expect(oneMove('Acala', 'ACA')).toEqual(['none', []]);
+    expect(oneMove('Astar', 'ASTR')).toEqual(['none', []]);
   });
 
   it('does not count a move that has no executable authority bundled, such as Asset Hub back to Polkadot', () => {
@@ -234,12 +251,13 @@ describe('readiness: the bundled routes against the registry snapshot', () => {
   it('says what the 4.2.0 policy says: the moves exist and are paused, swaps are on', () => {
     const asked = ask({ polkaswap: true, crossChainXcm: false, crossChainSoraBridge: false, crossChainLiberland: false });
 
-    expect(asked(keyOf('Polkadot', 'DOT'))).toMatchObject({ state: 'off', cause: 'moves-off' });
+    expect(asked(keyOf('Liberland', 'LLD'))).toMatchObject({ state: 'off', cause: 'moves-off' });
     expect(asked(keyOf('SORA Mainnet', 'XOR'))).toEqual({ state: 'ready', hops: [] });
   });
 
   it('names the same asset on SORA, where Receive on SORA points', () => {
-    expect(ask(ON)(keyOf('Polkadot', 'DOT')).soraAssetId).toBe('cd092a5a-4eb6-4318-9f11-4bf8454d67a2');
+    expect(ask(ON)(keyOf('Liberland', 'LLD')).soraAssetId).toBe('1c3b4fcb-5a5f-4319-9dce-d178006eb9bf');
+    expect(ask(ON)(keyOf('Liberland', 'XOR')).soraAssetId).toBe('b774c386-5cce-454a-a845-1ec0381538ec');
   });
 
   it('has no route for a token that has none, and says so for Ethereum, which the registry keeps unavailable', () => {

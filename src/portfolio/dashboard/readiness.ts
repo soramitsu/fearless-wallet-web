@@ -181,14 +181,20 @@ export function createReadinessEvaluator(context: ReadinessContext): (subject: R
     return leftLength - rightLength || leftProvider - rightProvider || leftId.localeCompare(rightId);
   };
 
-  /** The SORA asset a route ends with, found through the reviewed route that leaves SORA with it. */
+  /**
+   * The SORA asset a route ends with: the asset in the live registry's SORA entry whose currency id the last move
+   * delivers. The routes that leave SORA are retired with its parachains, so they can no longer name it.
+   */
   const soraCounterpart = (path: Definition[]): string | undefined => {
     const execution = path[path.length - 1].execution;
     const soraAssetId = execution && 'soraAssetId' in execution ? execution.soraAssetId : undefined;
-
-    return soraAssetId
-      ? routes.find((route) => route.originChainId === SORA_CHAIN_ID && route.assetKeyAssetId === soraAssetId)?.originAssetId
+    const asset = soraAssetId
+      ? networkByChain
+          .get(SORA_CHAIN_ID)
+          ?.assets.find((candidate) => String(candidate.currencyId ?? candidate.id) === soraAssetId)
       : undefined;
+
+    return asset ? String(asset.id) : undefined;
   };
 
   const unavailableRoute = (

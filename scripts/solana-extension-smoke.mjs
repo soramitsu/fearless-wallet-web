@@ -1261,6 +1261,21 @@ async function assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionS
   try {
     await cdp.send('Runtime.enable', {}, sessionId);
     await cdp.send('Page.enable', {}, sessionId);
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector("[data-testid=portfolioDashboard]"))',
+      'portfolio dashboard');
+    // The dashboard opens in All wallets. Select the fresh wallet through the
+    // picker before checking the per-wallet notice and the selected header.
+    await evaluate(cdp, sessionId,
+      'document.querySelector("[data-testid=walletNameHeader]").closest("button").click(); true');
+    await waitForExpression(cdp, sessionId,
+      'Array.from(document.querySelectorAll("[data-testid=walletContent]")).some(row => row.querySelector("[data-testid=name]")?.textContent.trim() === "Fresh Solana Smoke")',
+      'fresh wallet in the picker');
+    await evaluate(cdp, sessionId, `(() => {
+      const row = Array.from(document.querySelectorAll('[data-testid=walletContent]'))
+        .find(candidate => candidate.querySelector('[data-testid=name]')?.textContent.trim() === 'Fresh Solana Smoke');
+      row.querySelector('[data-testid=content]').click();
+      return true;
+    })()`);
     // The old wallet stays stored; only the wallet being viewed decides the warning.
     await waitForExpression(cdp, sessionId,
       'document.querySelector("[data-testid=walletNameHeader]")?.textContent.trim() === "Fresh Solana Smoke"',

@@ -24,6 +24,20 @@
           {{ transactionErrorText }}
         </p>
 
+        <template v-if="isUnconfirmed && unknownTransactionHash">
+          <code class="transaction-hash" data-testid="unknownTransactionHash">{{ unknownTransactionHash }}</code>
+          <FButton
+            text="common.copyHash"
+            class="copy-hash"
+            iconName="copy"
+            type="secondary"
+            size="small"
+            data-testid="copyUnknownHashBtn"
+            @click="copyUnknownHash"
+          />
+          <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+        </template>
+
         <template v-if="extrinsicType !== 'nft'">
           <div class="descriptions">
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
@@ -157,6 +171,7 @@ import {
   getSettledTransactionHash,
   getTransactionFailurePresentation,
   getTransactionOutcome,
+  getUnknownTransactionHash,
   isAccountAccessFailure,
 } from '@/helpers/transactionFailure';
 import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
@@ -262,6 +277,10 @@ export default defineComponent({
     settledTransactionHash() {
       return this.extrinsicType === 'crossChain' ? getSettledTransactionHash(this.transactionResponse) : null;
     },
+    // A cross-chain send that may still be included: its hash is what the user checks before sending again.
+    unknownTransactionHash() {
+      return this.extrinsicType === 'crossChain' ? getUnknownTransactionHash(this.transactionResponse) : null;
+    },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
 
@@ -350,6 +369,9 @@ export default defineComponent({
     },
     copySettledHash() {
       setClipboard(this.settledTransactionHash ?? '');
+    },
+    copyUnknownHash() {
+      setClipboard(this.unknownTransactionHash ?? '');
     },
     async onSignMobile() {
       if (this.extrinsicType === 'swap') await makeSwap(this.request as RequestSwap);
@@ -460,6 +482,14 @@ export default defineComponent({
 
   .transaction-unconfirmed-message {
     color: $simple-orange-color;
+  }
+
+  .transaction-hash {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    max-width: 280px;
+    overflow-wrap: anywhere;
+    text-align: center;
   }
 
   .icon__lock-green {

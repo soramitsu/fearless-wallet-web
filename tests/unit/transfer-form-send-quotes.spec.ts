@@ -331,3 +331,60 @@ describe('Send screen balance that no provider could load', () => {
     expect(computed.buttonDisabled.call({ ...form, syncedAmount: '', isValidSendAsset: true, isAllFieldsCorrect: true })).toBe(true);
   });
 });
+
+describe('Send screen cross-chain quote token', () => {
+  type Form = Record<string, unknown>;
+  const { computed, methods } = TransferForm as unknown as {
+    computed: Record<string, (this: Form) => unknown>;
+    methods: Record<string, (this: Form, ...args: unknown[]) => unknown>;
+  };
+  const crossChainForm = (overrides: Form = {}): Form => ({
+    isTransfer: false,
+    syncedRecipient: 'recipient',
+    transactionAddress: 'sender',
+    currency: { relayChain: 'polkadot' },
+    transferAssetId: 'DOT',
+    syncedAmount: '1',
+    syncedNetwork: 'Polkadot',
+    syncedDestNet: 'Polkadot Asset Hub',
+    canonicalAssetKey: 'DOT',
+    reviewedRouteId: 'route',
+    reviewedRouteProviderId: 'provider',
+    syncedFee: '0.01',
+    syncedDestNetFee: '0',
+    crossChainExecutionFingerprint: 'fingerprint',
+    crossChainQuoteToken: '',
+    ...overrides,
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('sends the token the background issued with the quote being confirmed', async () => {
+    const form = crossChainForm({
+      isBitcoinTransferDisabled: false,
+      $emit: vi.fn(),
+      verifyTx: async () => ({
+        destEstimateFee: '0',
+        errors: [],
+        estimateFee: '0.01',
+        executionFingerprint: 'fingerprint',
+        minimum: '0',
+        quoteToken: 'token-1',
+      }),
+    });
+
+    await methods.calculateEstimates.call(form);
+
+    expect(form.crossChainQuoteToken).toBe('token-1');
+    expect(computed.tx.call(form)).toMatchObject({ expectedExecutionFingerprint: 'fingerprint', quoteToken: 'token-1' });
+  });
+
+  it('drops the token as soon as the form asks for a new quote', () => {
+    vi.useFakeTimers();
+    const form = crossChainForm({ crossChainQuoteToken: 'token-1', isBitcoinTransferDisabled: false, calculateEstimates: vi.fn() });
+
+    methods.calculateFee.call(form);
+
+    expect(computed.tx.call(form)).toMatchObject({ quoteToken: '' });
+  });
+});

@@ -124,12 +124,15 @@ function transactionResponseSucceeded(value: unknown): boolean {
   if (!response) return false;
 
   const status = ownDataProperty(response, 'status');
+  const outcome = ownDataProperty(response, 'outcome');
   const errors = errorsFrom(response);
   const passwordError = passwordErrorState(response);
 
   return (
     status.kind === 'value' &&
     status.value === true &&
+    // A response that also names an outcome contradicts itself and is not a success.
+    (outcome.kind === 'missing' || (outcome.kind === 'value' && outcome.value === undefined)) &&
     errors !== null &&
     errors.length === 0 &&
     passwordError.valid &&
@@ -139,6 +142,8 @@ function transactionResponseSucceeded(value: unknown): boolean {
 
 function getTransactionOutcome(value: unknown): TransactionOutcome {
   if (transactionResponseSucceeded(value)) return 'success';
+  // A cross-chain send that may still be included reports an unknown outcome with its extrinsic hash.
+  if (getUnknownTransactionHash(value) !== null) return 'unconfirmed';
 
   const response = asResponse(value);
   const errors = errorsFrom(response);
@@ -188,6 +193,8 @@ function getSettledTransactionHash(value: unknown): string | null {
 }
 
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {
+  if (getUnknownTransactionHash(value) !== null) return { key: 'assets.transactionStatusUnknownDetails' };
+
   const response = asResponse(value);
   const errors = errorsFrom(response);
   const passwordError = passwordErrorState(response);

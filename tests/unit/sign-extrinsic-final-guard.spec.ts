@@ -55,7 +55,8 @@ describe('signing boundary', () => {
 
     await run();
 
-    expect(order).toEqual(['nonce', 'guard', 'sign']);
+    // The guard also runs before the nonce is read and after signing; the one that matters sits between the two.
+    expect(order).toEqual(['guard', 'nonce', 'guard', 'sign', 'guard']);
     expect(extrinsic.signAsync).toHaveBeenCalledWith(ADDRESS, { signer: expect.anything(), nonce: 7 });
   });
 

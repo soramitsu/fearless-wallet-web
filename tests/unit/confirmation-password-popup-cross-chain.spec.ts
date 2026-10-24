@@ -157,7 +157,7 @@ describe.each([
     expect(wrapper.find('[data-testid="settledTransactionHash"]').exists()).toBe(false);
   });
 
-  it('shows a send that may already have gone out, or a refused resend, as unknown with the earlier hash', async () => {
+  it('shows a send that may already have gone out, or a refused resend, as unconfirmed with the earlier hash', async () => {
     const wrapper = await mountPopup(originNet, async (callback) => {
       const response: BasicTxResponse = {
         status: false,
@@ -170,9 +170,11 @@ describe.each([
       return response;
     });
 
-    expect(stateOf(wrapper)).toBe('unknown');
+    expect(stateOf(wrapper)).toBe('unconfirmed');
     expect(wrapper.find('[data-testid="unknownTransactionHash"]').text()).toBe(HASH);
-    expect(wrapper.find('[data-testid="transactionUnknownMessage"]').text()).toBe('assets.transactionStatusUnknownDetails');
+    expect(wrapper.find('[data-testid="transactionUnconfirmedMessage"]').text()).toBe(
+      'assets.transactionStatusUnknownDetails'
+    );
     expect(wrapper.find('[data-testid="settledTransactionHash"]').exists()).toBe(false);
   });
 });

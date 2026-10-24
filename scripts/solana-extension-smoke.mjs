@@ -1236,8 +1236,12 @@ async function assertLegacyRecoveryPopup(cdp, extensionId, extensionSession, leg
     await waitForExpression(cdp, sessionId,
       'location.hash.includes("portfolio") && !document.querySelector(".defi-hub")', 'normal swap route remains blocked');
     await cdp.send('Page.reload', {}, sessionId);
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade[open]"))',
-      'legacy wallet security popup after reopening');
+    // A closed dialog stays closed when the extension is opened again.
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'recovery banner after reopening');
+    await sleep(1_000);
+    assert(!(await evaluate(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade"))')),
+      'Closed security popup opened again when the extension was reopened');
     console.info('[extension-smoke] legacy popup, recovery banner, DeFi recovery access, blocked swaps, and reopening verified');
   } catch (error) {
     const state = await evaluate(cdp, sessionId,

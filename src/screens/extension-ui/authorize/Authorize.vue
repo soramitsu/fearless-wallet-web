@@ -49,15 +49,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { type AuthorizeMessagePart, splitAuthorizeMessage } from './messageParts';
-import type { AuthorizeRequest, AccountJson } from '@extension-base/background/types/types';
+import type { AccountJson } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
 import { useI18n } from '@/locales/useI18n';
 import { Components } from '@/router/routes';
 import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
-import { IS_POPUP } from '@/consts/globalClient';
 import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
@@ -98,7 +97,8 @@ const isAccountsExists = computed(() => accounts.value.length > 0);
 
 const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
 
-onMounted(() => {
+const resetAccountSelection = () => {
+  state.value = {};
   const active = showSelectAll.value;
 
   accounts.value.forEach((account) => {
@@ -124,11 +124,14 @@ onMounted(() => {
   });
 
   selectAll.value = isAllSelected();
-});
+};
 
-watch(requests, (value: AuthorizeRequest[]) => {
-  if (value.length === 0) router.push({ name: Components.Wallet });
-});
+watch(
+  () => requests.value.length,
+  (length) => {
+    if (length === 0) router.push({ name: Components.Wallet });
+  }
+);
 
 const onSelect = (value: boolean, address: string) => {
   if (!showSelectAll.value) Object.keys(state.value).forEach((key) => (state.value[key].active = false));
@@ -174,18 +177,12 @@ const getMessagePartText = (part: AuthorizeMessagePart) => {
   return part.text;
 };
 
-const redirect = () => {
-  if (IS_POPUP) setTimeout(() => router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
-};
-
 const onApprove = () => {
   const accounts = Object.values(state.value)
     .filter(({ active }) => active)
     .map(({ address }) => address);
 
   extensionStore.approveAuthRequests({ id: request.value.id, accounts });
-
-  redirect();
 };
 
 const onReject = () => extensionStore.rejectAuthRequests(request.value.id);
@@ -214,6 +211,8 @@ const deriveIrohaAddresses = (publicKeyHex?: string): string[] => {
     return [];
   }
 };
+
+watch(() => request.value?.id, resetAccountSelection, { immediate: true });
 </script>
 
 <style lang="scss">

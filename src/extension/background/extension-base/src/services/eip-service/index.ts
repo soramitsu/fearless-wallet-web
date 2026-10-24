@@ -33,17 +33,18 @@ export class EipService {
   ) {
     const provider = await this.getEvmProvider(url);
 
-    return new Promise((resolve, reject) => {
-      provider?._send({ jsonrpc: '2.0', method, params, id: id as unknown as number }).then((result) => {
-        if ('error' in result[0]) return reject(result[0].error);
+    if (!provider) throw new Error('EVM provider is unavailable');
 
-        const rs = 'result' in result[0] ? result[0].result : undefined;
+    const result = await provider._send({ jsonrpc: '2.0', method, params, id: id as unknown as number });
+    const response = Array.isArray(result) ? result[0] : undefined;
 
-        callback?.(rs);
+    if (!response || typeof response !== 'object') throw new Error('Invalid EVM RPC response');
+    if ('error' in response) throw response.error;
+    if (!('result' in response)) throw new Error('Invalid EVM RPC response');
 
-        resolve(rs);
-      });
-    });
+    callback?.(response.result);
+
+    return response.result;
   }
 
   async getEvmState(url: string): Promise<EvmAppState> {
@@ -60,7 +61,7 @@ export class EipService {
       url,
     });
 
-    const api = this.state.networkService.evmApiHandler.api[currentEvmNetwork?.name.toLowerCase() ?? ''].api;
+    const api = this.state.networkService.evmApiHandler.api[currentEvmNetwork?.name.toLowerCase() ?? '']?.api;
 
     return {
       networkKey: currentEvmNetwork?.name,

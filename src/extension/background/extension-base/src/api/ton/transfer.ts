@@ -13,15 +13,28 @@ interface TransferParams {
 
 export const MAX_TON_FEE = '0.02';
 
+function jettonUnits(amount: string, precision: number): bigint {
+  if (!Number.isInteger(precision) || precision < 0 || precision > 255 || !/^\d+(?:\.\d+)?$/.test(amount)) {
+    throw new Error('Invalid jetton amount or precision');
+  }
+
+  const [whole, fraction = ''] = amount.split('.');
+  const significantFraction = fraction.replace(/0+$/, '');
+  if (significantFraction.length > precision) throw new Error('Jetton amount exceeds token precision');
+
+  return BigInt(whole) * 10n ** BigInt(precision) + BigInt(significantFraction.padEnd(precision, '0') || '0');
+}
+
 export async function makeTonTransfer(params: TransferParams, state: State): Promise<void> {
   const {
     networkKey,
     from,
     to,
-    balance: { walletAddress },
+    balance: { walletAddress, precision },
     amount,
   } = params;
 
+  const tokenAmount = walletAddress ? jettonUnits(amount, precision) : undefined;
   const api = state.getTonApiMap[networkKey.toLowerCase()];
 
   const { walletContract, publicKey } = state.keyringService.tonKeyring.accountSubject.value[from];
@@ -31,10 +44,10 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
   const { secretKey } = await state.keyringService.tonKeyring.mnemonicToKeyPair(seed.split(' '), undefined, publicKey);
   const destinationAddress = Address.parse(to);
 
-  const messageBody = beginCell()
+  const messageBody = tokenAmount === undefined ? undefined : beginCell()
     .storeUint(0x0f8a7ea5, 32) // opcode for jetton transfer
     .storeUint(0, 64) // query id
-    .storeCoins(toNano(amount)) // jetton amount, amount * 10^9
+    .storeCoins(tokenAmount)
     .storeAddress(destinationAddress)
     .storeAddress(walletContract.address) // response destination
     .storeBit(0) // no custom payload

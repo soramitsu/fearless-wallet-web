@@ -1531,7 +1531,7 @@ export default class Extension extends FWExtensionBase {
       `
       );
 
-      callback({
+      const response: BasicTxResponse = {
         status: false,
         ...(ex instanceof IrohaTransactionStatusUnknownError ||
         ex instanceof BitcoinTransactionStatusUnknownError ||
@@ -1539,9 +1539,11 @@ export default class Extension extends FWExtensionBase {
           ? { outcome: 'unknown' as const, transactionHash: ex.transactionHash }
           : {}),
         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (ex as Error).message }],
-      });
+      };
+      callback(response);
 
       setTimeout(() => this.cancelSubscription(id), 500);
+      return response;
     }
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));

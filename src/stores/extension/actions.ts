@@ -98,7 +98,8 @@ type Actions = {
 
   deleteRequest(
     this: ExtensionStore,
-    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests'
+    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests',
+    id: string
   ): void;
   setRequest(this: ExtensionStore, props: RequestsPayload): void;
   setTabStatus(this: ExtensionStore, props: ActiveTabAuthorizeStatus): void;
@@ -127,8 +128,11 @@ export const actions: Actions = {
     if (type === 'wcSessions') this.wcSessions = requests;
   },
 
-  deleteRequest(type) {
-    this[type].shift();
+  deleteRequest(type, id) {
+    // The subscription may already have removed this request before its response arrives.
+    const index = this[type].findIndex((request) => request.id === id);
+
+    if (index !== -1) this[type].splice(index, 1);
   },
 
   setTabStatus(payload) {
@@ -159,7 +163,7 @@ export const actions: Actions = {
   async approveAuthRequests({ id, accounts }) {
     await approveAuthRequest(id, accounts);
 
-    this.deleteRequest('authRequests');
+    this.deleteRequest('authRequests', id);
 
     this.fetchTabStatus();
   },
@@ -167,7 +171,7 @@ export const actions: Actions = {
   async rejectAuthRequests(payload) {
     await deleteAuthRequest(payload);
 
-    this.deleteRequest('authRequests');
+    this.deleteRequest('authRequests', payload);
 
     this.fetchTabStatus();
   },
@@ -205,7 +209,7 @@ export const actions: Actions = {
   async approveMetaRequests(payload) {
     await approveMetaRequest(payload.id);
 
-    this.deleteRequest('metaRequests');
+    this.deleteRequest('metaRequests', payload.id);
 
     this.fetchTabStatus();
   },
@@ -213,7 +217,7 @@ export const actions: Actions = {
   async rejectMetaRequests(payload) {
     await rejectMetaRequest(payload.id);
 
-    this.deleteRequest('metaRequests');
+    this.deleteRequest('metaRequests', payload.id);
     this.fetchTabStatus();
   },
 
@@ -264,9 +268,9 @@ export const actions: Actions = {
   async approveSign({ id }) {
     await approveSign(id);
 
-    this.deleteRequest('signRequests');
+    this.deleteRequest('signRequests', id);
 
-    router.push({ name: Components.Wallet });
+    if (!this.signRequests.length) router.push({ name: Components.Wallet });
 
     this.fetchTabStatus();
   },
@@ -274,19 +278,19 @@ export const actions: Actions = {
   async signSignature({ payload, id }) {
     await approveSignSignature(id, payload.signature);
 
-    this.deleteRequest('signRequests');
+    this.deleteRequest('signRequests', id);
 
     this.fetchTabStatus();
 
-    router.push({ name: Components.Wallet });
+    if (!this.signRequests.length) router.push({ name: Components.Wallet });
   },
 
   async signCancel(id) {
     await cancelSignRequest(id);
 
-    this.deleteRequest('signRequests');
+    this.deleteRequest('signRequests', id);
 
-    router.push({ name: Components.Wallet });
+    if (!this.signRequests.length) router.push({ name: Components.Wallet });
   },
 
   async subscribeExtensionRequests() {

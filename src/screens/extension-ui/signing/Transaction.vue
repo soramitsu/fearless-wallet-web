@@ -42,7 +42,7 @@
 
 <script lang="ts" setup>
 import registry from '@extension-base/api/substrate/typeRegistry';
-import { reactive, computed, onMounted } from 'vue';
+import { reactive, computed, watch } from 'vue';
 import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
 import { formatUnits } from 'ethers';
 import { type EvmRequestPayload, type SolanaRequestPayload } from '@extension-base/services/request-service/types';
@@ -142,9 +142,14 @@ const accountName = computed(() => {
 
 const onSignApprove = (data: ApprovePayload) => extensionStore.approveSign(data);
 
-onMounted(async () => {
-  if (isSignMobile.value && request.value && !isSolanaRequest(request.value)) onSignApprove({ id: request.value.id });
-});
+watch(
+  () => request.value?.id,
+  () => {
+    state.isDisabled = false;
+    if (isSignMobile.value && request.value && !isSolanaRequest(request.value)) onSignApprove({ id: request.value.id });
+  },
+  { immediate: true }
+);
 
 const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
   if (!era) return;
@@ -281,9 +286,14 @@ const onReject = async () => {
 const sendExtrinsic = async () => {
   if (!request.value) return;
 
+  const id = request.value.id;
   state.isDisabled = true;
 
-  onSignApprove({ id: request.value.id });
+  try {
+    await onSignApprove({ id });
+  } finally {
+    if (request.value?.id === id) state.isDisabled = false;
+  }
 };
 </script>
 

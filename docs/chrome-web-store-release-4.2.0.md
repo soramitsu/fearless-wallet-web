@@ -55,6 +55,12 @@ before submission; do not reuse the `3.0.6` copy.
   (about three seconds), and the throttling node is not made the first node for
   other requests. USDC and USDT show with their names, icons and fiat values;
   any other token shows under its mint address.
+- A Solana send is reported as "nothing was sent" only when two distinct hosts
+  have each finalized past its last valid block and still have no trace of it,
+  and the transfer was signed less than six hours ago (public nodes keep about
+  9 to 50 hours of history). With less proof, a send that is under way stays
+  unconfirmed, and an earlier one is released with a warning to check the
+  history before sending again, so sends are never blocked for good.
 - Cross-chain transfers are paused with an in-app explanation and a
   same-network send alternative; IrohaConnect is off in release builds.
 - Reliability and fail-closed handling across network, signing, and transfer

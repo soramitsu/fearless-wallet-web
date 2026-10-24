@@ -898,6 +898,7 @@
     "solanaSenderBelowRent": "This would leave less SOL than the network's minimum account balance. Send a little less, or use Max to send everything.",
     "solanaInsufficientSolForFee": "Not enough SOL to pay the network fee for this transfer.",
     "solanaPreviousSendPending": "Your previous Solana transfer is still being confirmed. Nothing new was sent. Try again in a minute.",
+    "solanaPreviousSendUnverified": "The network has not confirmed that it received your previous Solana transfer, so it may have gone through. Check your history before sending again. Nothing new was sent.",
     "solanaRecipientOffCurve": "This address cannot sign transactions, so funds sent to it could be lost. Check the address.",
     "solanaRecipientProgram": "This address belongs to a program, not a wallet. Sending to it could lose your funds.",
     "solanaRecipientTokenAccount": "This is a token account, not a wallet address. Paste the recipient's wallet address instead.",

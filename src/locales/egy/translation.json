@@ -425,6 +425,7 @@
     "solanaSenderBelowRent": "𓇋𓂋 𓁹𓏏𓅱 𓈖𓈖 · Solana 𓎛𓆓 𓅓𓈖𓅱 𓈖𓆓𓋴 𓂋 𓆓𓂋 𓌨𓂋𓇋 𓈖 𓎛𓆓 𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓋴𓅓𓈖𓅱 𓇋𓈖 𓄡𓈖𓅓𓏥 · 𓉔𓄿𓃀 𓂝𓈙𓄿 𓈖𓆓𓋴 𓂋𓆑 𓅓 𓈖𓆓𓋴 · 𓂋 𓊪𓅱 𓋴𓏏𓊪 «𓏏𓅓» 𓂋 𓉔𓄿𓃀 𓐍𓏏 𓎟𓏏 ·",
     "solanaInsufficientSolForFee": "Solana 𓎛𓆓 𓈖𓈖 𓅓𓎛 𓂋 𓂞𓏏 𓇋𓋴𓅱 𓈖 𓄡𓈖𓅓𓏥 𓈖 𓋴𓍿𓄿 𓊪𓈖 ·",
     "solanaPreviousSendPending": "𓋴𓍿𓄿𓎡 𓈖 Solana 𓈖 𓐍𓂋 𓎛𓄿𓏏 𓁷 𓋴𓅓𓈖 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 · 𓁹 𓋴𓊪 𓅱𓎛𓅓 𓅓 𓐍𓏏 𓂝𓏏 𓈖𓆓𓋴𓏏 ·",
+    "solanaPreviousSendUnverified": "𓈖 𓋴𓅓𓈖 𓄡𓈖𓅓𓏥 𓈖𓏏𓏏 𓈙𓋴𓊪𓈖𓆑 𓋴𓍿𓄿𓎡 𓈖 Solana 𓈖 𓐍𓂋 𓎛𓄿𓏏 · 𓂋𓐍𓆑 𓋴𓊪𓂋 𓅓 𓐍𓏏 · 𓇋𓊪 𓋴𓈙𓅱𓎡 𓈖 𓄂 𓏏𓊪 𓂝 𓉔𓄿𓃀 𓅓 𓅱𓎛𓅓 · 𓈖 𓉔𓄿𓃀𓏏𓅱 𓐍𓏏 𓅓𓄿𓅱𓏏 ·",
     "solanaRecipientOffCurve": "𓈖 𓂋𓐍 𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓐍𓏏𓅓 𓁹𓏏𓏥 𓈖 𓋴𓍿𓄿 · 𓂋𓐍 𓎛𓆓 𓉔𓄿𓃀𓅱 𓂋𓋴 𓎛𓏏𓅓 · 𓇋𓊪 𓊨 𓈖 𓂋𓈖 ·",
     "solanaRecipientProgram": "𓊨 𓈖 𓂋𓈖 𓏏𓈖 𓈖 𓋴𓈙 𓈖 𓅱𓆓𓅱𓏥 · 𓈖𓈖 𓈖 𓉒 · 𓂋𓐍 𓉔𓄿𓃀 𓂋𓋴 𓋴𓎛𓏏𓅓 𓎛𓆓𓎡 ·",
     "solanaRecipientTokenAccount": "𓇋𓊪𓏥 𓈖 𓂋𓈖 𓈖 𓐍𓏏 𓊪𓅱 · 𓈖𓈖 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 · 𓂞 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 𓈖 𓈙𓋴𓊪 𓅓 𓊨𓋴 ·",

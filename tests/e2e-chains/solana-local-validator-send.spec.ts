@@ -243,8 +243,10 @@ describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
 
   // The blockhash expires after 150 blocks, about a minute on an idle machine.
   // A loaded machine slows the validator's block production, so this case waits
-  // for the real expiry instead of a wall-clock guess.
-  it('reports a transaction that never reached the network as expired, with nothing sent', async () => {
+  // for the real expiry instead of a wall-clock guess. One local node can never
+  // corroborate an expiry (that takes two hosts), so the send stays open and the
+  // next send releases it with a warning instead of reporting "nothing sent".
+  it('keeps a transaction that never reached the network open, then releases it with a warning, with nothing sent', async () => {
     const recipient = randomSolanaAddress();
     const before = await lamports(walletAddress);
     const silent = new SolanaRpcClient({ rpcUrls: [RPC_URL!] });
@@ -254,8 +256,21 @@ describe.skipIf(!RPC_URL)('Solana send on a local test validator', () => {
     };
 
     await expect(
-      makeSolanaTransfer(params(recipient, '0.3'), silent, { ...options, maxConfirmationWaitMs: EXPIRY_WAIT_MS })
-    ).rejects.toThrow('solana_transaction_expired');
+      makeSolanaTransfer(params(recipient, '0.3'), silent, { ...options, maxConfirmationWaitMs: 5_000 })
+    ).rejects.toThrow('solana_broadcast_ambiguous');
+    expect(pendingRecords).toHaveLength(1);
+
+    const [{ lastValidBlockHeight }] = pendingRecords;
+    const deadline = Date.now() + EXPIRY_WAIT_MS;
+
+    while ((await rpc.getBlockHeight('finalized')) <= lastValidBlockHeight) {
+      if (Date.now() > deadline) throw new Error('The blockhash did not expire in time');
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
+
+    await expect(makeSolanaTransfer(params(recipient, '0.3'), silent, options)).rejects.toThrow(
+      'solana_previous_send_unverified'
+    );
     expect(await rpc.getAccountInfo(recipient)).toBeNull();
     expect(await lamports(walletAddress)).toBe(before);
     expect(pendingRecords).toEqual([]);

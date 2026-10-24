@@ -12,8 +12,8 @@ import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 
 const STORAGE_KEY = 'feature_send-kill-switch-v1';
-const FLAG = 'VUE_APP_ENABLE_SOLANA_TRANSFERS';
-const originalFlag = process.env[FLAG];
+const FLAGS = ['VUE_APP_ENABLE_BITCOIN_TRANSFERS', 'VUE_APP_ENABLE_SOLANA_TRANSFERS'] as const;
+const originalFlags = Object.fromEntries(FLAGS.map((flag) => [flag, process.env[flag]]));
 
 const createLocalStorageStub = () => {
   const storage = new Map<string, string>();
@@ -35,21 +35,25 @@ describe('popup send kill switch', () => {
     vi.stubGlobal('localStorage', createLocalStorageStub());
     setActivePinia(createPinia());
     vi.mocked(axios.get).mockReset();
-    delete process.env[FLAG];
+    process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS = 'true';
+    process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = 'true';
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    if (originalFlag === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = originalFlag;
+    FLAGS.forEach((flag) => {
+      if (originalFlags[flag] === undefined) delete process.env[flag];
+      else process.env[flag] = originalFlags[flag];
+    });
   });
 
-  it('keeps the Solana send available when the remote config says nothing', async () => {
+  it('keeps Bitcoin and Solana sends available when the remote config says nothing', async () => {
     vi.mocked(axios.get).mockResolvedValueOnce({ data: { fiat: { moonpay: true } } });
     const store = useExtensionStore();
 
     await store.fetchFeatures();
 
+    expect(isNetworkTransferEnabled({ ecosystem: 'bitcoin' }, useSendKillSwitchStore().vetoes)).toBe(true);
     expect(isNetworkTransferEnabled({ ecosystem: 'solana' }, useSendKillSwitchStore().vetoes)).toBe(true);
   });
 
@@ -69,23 +73,23 @@ describe('popup send kill switch', () => {
     await restarted.fetchFeatures();
 
     expect(isNetworkTransferEnabled({ ecosystem: 'solana' }, useSendKillSwitchStore().vetoes)).toBe(false);
-    expect(isNetworkTransferEnabled({ ecosystem: 'substrate' }, useSendKillSwitchStore().vetoes)).toBe(true);
+    expect(isNetworkTransferEnabled({ ecosystem: 'bitcoin' }, useSendKillSwitchStore().vetoes)).toBe(true);
   });
 
   it('lifts a veto only on an explicit true', async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ value: { schemaVersion: 1, updatedAt: 1, vetoes: { solanaSend: true } } })
+      JSON.stringify({ value: { schemaVersion: 1, updatedAt: 1, vetoes: { bitcoinSend: true, solanaSend: false } } })
     );
     vi.mocked(axios.get).mockResolvedValueOnce({ data: { actions: {} } });
     const store = useExtensionStore();
 
     await store.fetchFeatures();
-    expect(useSendKillSwitchStore().vetoes.solanaSend).toBe(true);
+    expect(useSendKillSwitchStore().vetoes.bitcoinSend).toBe(true);
 
-    vi.mocked(axios.get).mockResolvedValueOnce({ data: { feature_toggle: { solana_send_enabled: true } } });
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { feature_toggle: { bitcoin_send_enabled: true } } });
     await store.fetchFeatures();
-    expect(useSendKillSwitchStore().vetoes.solanaSend).toBe(false);
+    expect(useSendKillSwitchStore().vetoes.bitcoinSend).toBe(false);
   });
 
   it('treats an unreadable remembered state as no veto', async () => {
@@ -95,6 +99,6 @@ describe('popup send kill switch', () => {
 
     await store.fetchFeatures();
 
-    expect(useSendKillSwitchStore().vetoes).toEqual({ solanaSend: false });
+    expect(useSendKillSwitchStore().vetoes).toEqual({ bitcoinSend: false, solanaSend: false });
   });
 });

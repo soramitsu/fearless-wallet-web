@@ -88,15 +88,8 @@ export async function writeWalletRecords(records: Record<string, unknown>): Prom
     }
   });
 
-  if (Object.prototype.hasOwnProperty.call(records, PASSWORD_STORAGE_KEY)) {
-    // Cleanup is optional: a committed IndexedDB value is already authoritative.
-    try {
-      if (typeof localStorage === 'undefined') await requestWebPasswordStorage('remove');
-      else localStorage.removeItem(PASSWORD_STORAGE_KEY);
-    } catch {
-      // A storage policy may prevent cleanup without affecting the committed data.
-    }
-  }
+  // Historical localStorage bytes stay intact for recovery; new password records are authoritative.
+
 }
 
 // Removes records as one storage operation: all of them or, on failure, none. On the web the verifier is replaced
@@ -134,12 +127,6 @@ export async function removeWalletRecords(keys: string[]): Promise<void> {
     }
   });
 
-  if (keys.includes(PASSWORD_STORAGE_KEY)) {
-    try {
-      if (typeof localStorage === 'undefined') await requestWebPasswordStorage('remove');
-      else localStorage.removeItem(PASSWORD_STORAGE_KEY);
-    } catch {
-      // The committed tombstone is authoritative.
-    }
-  }
+  // Preserve the historical localStorage recovery record; the committed tombstone is authoritative.
+
 }

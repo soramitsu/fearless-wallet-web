@@ -8,17 +8,19 @@ function setup(precision = 6, jetton = true) {
   const jettonWallet = new Address(0, Buffer.alloc(32, 3));
   const createTransfer = vi.fn((_params: { messages: MessageRelaxed[] }) => beginCell().endCell());
   const broadcast = vi.fn().mockResolvedValue(undefined);
-  const decodeAccountMnemonic = vi.fn().mockResolvedValue('fixture mnemonic');
+  const decodeMnemonicVerified = vi.fn().mockResolvedValue('fixture mnemonic');
   const state = {
     getTonApiMap: { ton: { api: {
-      wallet: { getAccountSeqno: async () => ({ seqno: 1 }) },
-      blockchain: { sendBlockchainMessage: broadcast },
+      broadcaster: async () => ({
+        getWalletState: async () => ({ seqno: 1, deployed: true }),
+        sendMessage: broadcast,
+      }),
     } } },
     keyringService: { tonKeyring: {
       accountSubject: { value: { [owner.toString()]: {
         walletContract: { address: owner, createTransfer }, publicKey: Buffer.alloc(32),
       } } },
-      decodeAccountMnemonic,
+      decodeMnemonicVerified,
       mnemonicToKeyPair: async () => ({ secretKey: Buffer.alloc(64) }),
     } },
   };
@@ -27,7 +29,7 @@ function setup(precision = 6, jetton = true) {
     balance: { ...(jetton ? { walletAddress: jettonWallet } : {}), precision } as never,
   }, state as never);
 
-  return { broadcast, createTransfer, decodeAccountMnemonic, jettonWallet, recipient, send };
+  return { broadcast, createTransfer, decodeMnemonicVerified, jettonWallet, recipient, send };
 }
 
 describe('TON transfer amounts', () => {
@@ -59,9 +61,9 @@ describe('TON transfer amounts', () => {
     [6, '0.0000001'], [0, '1.1'], [6, '-1'], [6, '1e3'], [6, 'NaN'],
     [-1, '1'], [1.5, '1'], [256, '1'], [Number.NaN, '1'],
   ])('rejects invalid precision %s or amount %s before unlocking or signing', async (precision, amount) => {
-    const { broadcast, createTransfer, decodeAccountMnemonic, send } = setup(precision);
+    const { broadcast, createTransfer, decodeMnemonicVerified, send } = setup(precision);
     await expect(send(amount)).rejects.toThrow();
-    expect(decodeAccountMnemonic).not.toHaveBeenCalled();
+    expect(decodeMnemonicVerified).not.toHaveBeenCalled();
     expect(createTransfer).not.toHaveBeenCalled();
     expect(broadcast).not.toHaveBeenCalled();
   });

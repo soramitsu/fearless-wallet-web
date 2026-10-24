@@ -16,7 +16,7 @@ import type { FWKeyringMeta } from '@extension-base/types';
 import type { TonStoreAccount } from '../../src/extension/background/extension-base/src/stores/TonStore';
 
 vi.mock('../../src/extension/background/extension-base/src/stores/TonStore', () => ({
-  tonStore: { readAll: vi.fn(), saveMany: vi.fn(), removeAccount: vi.fn() },
+  tonStore: { readAll: vi.fn(), saveMany: vi.fn(), removeAccount: vi.fn(), getAndWait: vi.fn(), updateAndWait: vi.fn() },
 }));
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -27,6 +27,10 @@ function start(password = fixture.password) {
   const provenance = new WalletSecurityProvenance();
   const keyringService = { getPassword: () => password, getAccountCreationMeta: (suri: string, meta: FWKeyringMeta) => provenance.accountMetadata(suri, meta) } as KeyringService;
   const keyring = new TonKeyringService(keyringService);
+  keyringService.forgetAccount = (address: string) => keyring.withStoreLock(async () => {
+    await tonStore.removeAccount(address);
+    keyring.removeAccountFromMemory(address);
+  });
 
 
   return keyring;
@@ -56,6 +60,14 @@ describe('TON storage encryption and durable upgrade', () => {
 
       records.forEach((record) => next.set(record.address, clone(record)));
       disk = [...next.values()];
+    });
+    (tonStore.getAndWait as Mock).mockImplementation(async (address: string) => clone(disk.find((record) => record.address === address) ?? null));
+    (tonStore.updateAndWait as Mock).mockImplementation(async (address: string, update, publish) => {
+      const next = update(clone(disk.find((record) => record.address === address) ?? null));
+      if (!next) return;
+      await tonStore.saveMany([next]);
+      publish?.(clone(next));
+      return next;
     });
     (tonStore.removeAccount as Mock).mockImplementation(async (address: string) => {
       disk = disk.filter((record) => record.address !== address);

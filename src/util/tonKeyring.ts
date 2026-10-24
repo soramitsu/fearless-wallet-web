@@ -106,20 +106,148 @@ export async function deriveCompatibleTonKeyPair(
 ): Promise<{ publicKey: Uint8Array; secretKey: Uint8Array }> {
   const matches = (publicKey: Uint8Array) => !expectedPublicKey ||
     (publicKey.length === expectedPublicKey.length && publicKey.every((byte, index) => byte === expectedPublicKey[index]));
-  const isBip39 = !password && validateMnemonic(mnemonic.join(' '));
-  if (isBip39) {
+  // A wrong-password decrypt can yield ''. tonweb's HMAC rejects an empty phrase with a
+  // WebCrypto DataError, so answer as for any other phrase that is not this account's.
+  if (!mnemonic.some(Boolean)) throw new TonKeyringError(expectedPublicKey ? 'account_key_mismatch' : 'invalid_mnemonic');
+  if (!password && validateMnemonic(mnemonic.join(' '))) {
     const universal = deriveTonAccount({ mnemonic: mnemonic.join(' ') });
     if (matches(universal.publicKey)) return universal;
     universal.secretKey.fill(0);
   }
-  // Older releases persisted native derivations without validating phrase
-  // shape. Only a stored matching public key authorizes that legacy path.
-  if (expectedPublicKey || await tonWebMnemonic.validateMnemonic(mnemonic, password)) {
+  let nativeTried = false;
+  if (await tonWebMnemonic.validateMnemonic(mnemonic, password)) {
+    nativeTried = true;
     const native = await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
     if (matches(native.publicKey)) return native;
     native.secretKey.fill(0);
   }
+  // Fearless 3.0.1-3.0.5 applied tonweb's KDF to every accepted phrase, including BIP39
+  // phrases that fail TON's own validity check. Existing accounts only, exact key match only:
+  // the words are replayed exactly as stored because tonweb hashes words.join(' ').
+  if (expectedPublicKey && !nativeTried) {
+    const legacy = await tonWebMnemonic.mnemonicToKeyPair(mnemonic, password);
+    if (matches(legacy.publicKey)) return legacy;
+    legacy.secretKey.fill(0);
+  }
   throw new TonKeyringError(expectedPublicKey ? 'account_key_mismatch' : 'invalid_mnemonic');
+}
+
+// True when the words derive the stored public key under any derivation Fearless has shipped
+// (universal, native TON or the 3.0.x legacy KDF). The words are used exactly as given, so
+// callers decide which spacing/case candidates to try.
+export async function verifyTonPhrase(words: string[], publicKey: Uint8Array): Promise<boolean> {
+  try {
+    const pair = await deriveCompatibleTonKeyPair(words, publicKey);
+    pair.secretKey.fill(0);
+
+    return true;
+  } catch (error) {
+    if (error instanceof TonKeyringError) return false;
+
+    throw error;
+  }
+}
+
+// How a typed phrase becomes a TON key. `universal` is the Universal Wallet path for BIP39 phrases,
+// `native` is TON's own KDF for phrases that pass TON's validity check, `fearless-legacy` is that
+// same KDF applied to a BIP39 phrase that fails the check, as Fearless 3.0.1-3.0.5 for Chrome and the
+// Android app did, and `as-typed` is that KDF over the text exactly as typed, spacing and capitals
+// included, as the Android app derived and stored every TON phrase.
+export const TON_IMPORT_DERIVATIONS = ['universal', 'native', 'fearless-legacy', 'as-typed'] as const;
+
+export type TonImportDerivation = (typeof TON_IMPORT_DERIVATIONS)[number];
+
+export type TonImportCandidate = {
+  derivation: TonImportDerivation;
+  address: string;
+  /** The text stored for this address: the tidied phrase, or for `as-typed` the text as typed. */
+  phrase: string;
+  publicKey: Uint8Array;
+  secretKey: Uint8Array;
+};
+
+// The address the user picked on the import screen, and the derivation that opens it.
+export type TonImportChoice = Pick<TonImportCandidate, 'derivation' | 'address'>;
+
+// A pasted phrase may carry line breaks, repeated spaces or capitals. Fearless for Chrome never accepted
+// such input, so the tidied phrase is the one 3.0.x stored; text the Android app stored as typed is
+// offered separately as `as-typed`.
+export function normalizeTonImportPhrase(phrase: string): string {
+  return phrase.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+// The typed text as the Android app would have stored it: only the line breaks a copy and paste adds
+// at either end are dropped.
+export function tonImportTextAsTyped(text: string): string {
+  return text.replace(/^[\r\n]+|[\r\n]+$/g, '');
+}
+
+// True for a stored TON phrase that only opens when typed exactly, with its own spacing and capitals.
+export function isTonPhraseIrregular(phrase: string): boolean {
+  return normalizeTonImportPhrase(phrase) !== phrase;
+}
+
+// Every TON address a newly typed phrase can open, the address new wallets get first. Fearless
+// 3.0.1-3.0.5 and the Android app ran tonweb's KDF over every phrase they accepted, so a BIP39 phrase
+// opens the universal address and the one they stored for it, and a phrase only TON accepts opens
+// the native address. Text that differs from the tidied phrase also opens the address the Android app
+// derived from it as typed. Empty when the tidied phrase is neither BIP39 nor TON.
+export async function deriveTonImportCandidates(text: string): Promise<TonImportCandidate[]> {
+  const phrase = normalizeTonImportPhrase(text);
+
+  if (!phrase) return [];
+
+  const words = phrase.split(' ');
+  const isBip39 = validateMnemonic(phrase);
+  const isNative = await tonWebMnemonic.validateMnemonic(words);
+
+  if (!isBip39 && !isNative) return [];
+
+  const candidates: TonImportCandidate[] = [];
+  const add = (
+    derivation: TonImportDerivation,
+    stored: string,
+    { publicKey, secretKey }: { publicKey: Uint8Array; secretKey: Uint8Array }
+  ) => {
+    const address = toTonImportAddress(publicKey);
+
+    if (!candidates.some((candidate) => candidate.address === address)) {
+      candidates.push({
+        derivation,
+        address,
+        phrase: stored,
+        publicKey: Uint8Array.from(publicKey),
+        secretKey: Uint8Array.from(secretKey),
+      });
+    }
+  };
+  const asTyped = tonImportTextAsTyped(text);
+
+  if (isBip39) add('universal', phrase, deriveTonAccount({ mnemonic: phrase }));
+  add(isNative ? 'native' : 'fearless-legacy', phrase, await tonWebMnemonic.mnemonicToKeyPair(words));
+  if (asTyped !== phrase) add('as-typed', asTyped, await tonWebMnemonic.mnemonicToKeyPair(asTyped.split(' ')));
+
+  return candidates;
+}
+
+// The key for the address the user picked. Refuses a derivation the phrase does not have and an
+// address the derivation does not open, so the account that is saved is the one that was shown.
+export async function deriveTonImportChoice(text: string, choice: TonImportChoice): Promise<TonImportCandidate> {
+  const candidates = await deriveTonImportCandidates(text);
+  const candidate = candidates.find(({ derivation }) => derivation === choice.derivation);
+
+  if (!candidate) throw new TonKeyringError(candidates.length ? 'unsupported_ton_derivation' : 'invalid_mnemonic');
+  if (candidate.address !== choice.address) throw new TonKeyringError('account_key_mismatch');
+
+  return candidate;
+}
+
+function toTonImportAddress(publicKey: Uint8Array): string {
+  return createTonWalletV4R2StateInit(publicKey, TON_DEFAULT_WORKCHAIN).address.toString({
+    bounceable: false,
+    testOnly: false,
+    urlSafe: true,
+  });
 }
 
 export function createTonWalletContractV4R2(

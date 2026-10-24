@@ -1,10 +1,14 @@
 import type { MessageTypes, Port, TransportRequestMessage } from '@extension-base/background/types/types';
 
+// The error a request receives while the wallet's stored records cannot be read. The
+// popup shows its storage message for it, and its retry sends the request that reads again.
+export const WALLET_STORAGE_UNAVAILABLE = 'Wallet storage could not be read.';
+
 export interface BackgroundRuntime {
   handleMessage(data: TransportRequestMessage<MessageTypes>, port: Port): Promise<void>;
   onInstalled(details: chrome.runtime.InstalledDetails): Promise<void>;
   getActiveTabs(): void;
-  onAlarm(alarm: chrome.alarms.Alarm): void;
+  onAlarm(alarm: chrome.alarms.Alarm): void | Promise<void>;
 }
 
 export function registerBackgroundListeners(api: typeof chrome, ready: Promise<BackgroundRuntime>): void {
@@ -34,6 +38,7 @@ export function registerBackgroundListeners(api: typeof chrome, ready: Promise<B
   api.runtime.onInstalled.addListener((details) => dispatch((runtime) => runtime.onInstalled(details)));
   api.runtime.onUpdateAvailable.addListener(() => api.runtime.reload());
   api.alarms.create('fearless-asset-discovery-sweep', { periodInMinutes: 60 });
+  api.alarms.create('fearless-network-registry-retry', { periodInMinutes: 1 });
   api.alarms.onAlarm.addListener((alarm) => dispatch((runtime) => runtime.onAlarm(alarm)));
   api.tabs.onUpdated.addListener((_, changeInfo) => {
     if (changeInfo.url) dispatch((runtime) => runtime.getActiveTabs());

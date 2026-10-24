@@ -53,11 +53,14 @@ export default class SubstrateBalanceService {
     const promises = networks.map(async (networkKey) => {
       const api = this.state.getSubstrateApiMap[networkKey.toLowerCase()]?.api;
 
+      const network = Object.values(this.state.networkService.networkMap)
+        .find(({ name }) => isSameString(name, networkKey));
+      if (!network) return [];
       const {
         parentId,
         name: networkName,
         assets,
-      } = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, networkKey))!;
+      } = network;
 
       const assetsPromises = assets.map(async ({ precision, symbol, id, type }) => {
         const options = getAssetOptions(id, this.state.networkService.assetsMap);
@@ -66,7 +69,7 @@ export default class SubstrateBalanceService {
 
         const query = api?.query;
 
-        if (!query) return { balance: '0', network: networkKey, assetId: id };
+        if (!query) return undefined;
 
         let response;
 
@@ -74,10 +77,13 @@ export default class SubstrateBalanceService {
           symbol === SORA_UTILITY_ASSET &&
           (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
 
-        if (type === 'normal' || isSoraXOR) response = query.system.account(addressByNetwork);
+        if (type === 'normal' || isSoraXOR) response = query.system?.account?.(addressByNetwork);
         else if (type === 'assets')
-          response = (query.assets as unknown as AssetsQuery).account(options, addressByNetwork);
-        else response = query.tokens.accounts(addressByNetwork, options);
+          response = (query.assets as unknown as AssetsQuery | undefined)?.account?.(options, addressByNetwork);
+        else response = query.tokens?.accounts?.(addressByNetwork, options);
+
+        // ApiPromise exposes an empty query object before metadata is available. It proves no balance.
+        if (response === undefined) return undefined;
 
         const balances = await response;
         const balanceResponse = balances as AssetBalanceResponse;
@@ -117,18 +123,20 @@ export default class SubstrateBalanceService {
         };
       });
 
-      return await Promise.all(assetsPromises);
+      return (await Promise.all(assetsPromises)).filter((balance) => balance !== undefined);
     });
 
     return (await Promise.all(promises)).flat();
   }
 
   subscribeSubstrateAssetsBalances(address: string, networkKey: NetworkName, api: ApiPromise, state: State) {
+    const network = Object.values(state.networkService.networkMap).find(({ name }) => isSameString(name, networkKey));
+    if (!network) return mockUnsubFn;
     const {
       parentId,
       assets,
       name: networkName,
-    } = state.networkService.networksGithub.find(({ name }) => isSameString(name, networkKey))!;
+    } = network;
 
     const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 

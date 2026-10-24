@@ -62,12 +62,16 @@
               iconName="googleManage"
               text="welcome.manageGoogle"
               data-testid="googleManageBtn"
+              :disabled="isAuthFlowInit"
+              :loading="isAuthFlowInit"
               @click="manageGoogle"
             />
+            <p v-if="googleAuthError" role="alert" class="google-auth-error">{{ $t('addWallet.google.somethingWrong') }}</p>
           </details>
         </div>
       </div>
 
+      <RecoveryDataLink />
       <div class="privacy-policy" data-testid="infoPolicyText">
         {{ $t('welcome.agreeWith') }}
 
@@ -96,10 +100,11 @@ import { IS_EXTENSION } from '@/consts/global';
 import { type WalletEcosystem } from '@/interfaces';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
+import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 
 export default defineComponent({
   name: 'Welcome',
-  components: { ChoiceEcosystem },
+  components: { ChoiceEcosystem, RecoveryDataLink },
   data() {
     return {
       isExtension: IS_EXTENSION,
@@ -107,6 +112,8 @@ export default defineComponent({
       accountsStore: useAccountsStore(),
       showGoogleAuthPopup: false,
       isAuthFlowInit: false,
+      googleAuthError: false,
+      isActive: true,
       hasMasterPassword: false,
       walletEcosystem: null,
       walletTask: '' as '' | 'create' | 'import',
@@ -127,10 +134,13 @@ export default defineComponent({
     },
   },
   async created() {
-    this.hasMasterPassword = await hasMasterPassword();
+    const exists = await hasMasterPassword();
+    if (!this.isActive) return;
+    this.hasMasterPassword = exists;
 
     if (this.accessToken) this.showGoogleAuthPopup = true;
   },
+  beforeUnmount() { this.isActive = false; },
   methods: {
     setEcosystem(value: WalletEcosystem) {
       this.walletEcosystem = value;
@@ -156,17 +166,15 @@ export default defineComponent({
       this.$router.push({ name: Components.Wallet });
     },
     async manageGoogle() {
-      if (!this.hasMasterPassword) {
-        this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
-
-        return;
-      }
-
-      if (!this.isAuthFlowInit) {
-        this.isAuthFlowInit = true;
-
-        initGoogleAuth().finally(() => (this.isAuthFlowInit = false));
-      }
+      if (!this.isActive || this.isAuthFlowInit) return;
+      this.isAuthFlowInit = true;
+      this.googleAuthError = false;
+      try {
+        if (!this.hasMasterPassword)
+          await this.$router.push({ name: Components.ChangePassword, params: { name: 'GoogleAuth' } });
+        else await initGoogleAuth();
+      } catch { if (this.isActive) this.googleAuthError = true; }
+      finally { if (this.isActive) this.isAuthFlowInit = false; }
     },
     async openAddWalletComponent(type: string) {
       if (this.hasMasterPassword)
@@ -201,6 +209,12 @@ export default defineComponent({
   min-height: 0;
   gap: 24px;
   overflow-y: auto;
+  overflow-wrap: anywhere;
+
+  > div {
+    flex-shrink: 0;
+    min-width: 0;
+  }
 
   .back-wallet-container {
     height: 32px;
@@ -214,7 +228,7 @@ export default defineComponent({
     margin-top: 17px;
     font-size: 0.75rem;
     font-weight: 400;
-    line-height: 16px;
+    line-height: 1.5;
     color: $grayish-white;
 
     .important-text {
@@ -289,5 +303,12 @@ export default defineComponent({
 }
 .other-wallet-options :deep(.button-size-big) {
   margin-block: 8px;
+}
+</style>
+
+<style lang="scss" scoped>
+.google-auth-error {
+  color: var(--fw-danger);
+  overflow-wrap: anywhere;
 }
 </style>

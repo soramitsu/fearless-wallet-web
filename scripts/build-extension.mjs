@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -25,6 +28,8 @@ const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
 export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
   ...readReleaseTransferFlags(root),
+  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+  VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
 });
@@ -32,6 +37,66 @@ export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
 export function enforceProductionReleaseEnvironment(environment, buildMode) {
   if (buildMode === 'production') Object.assign(environment, PRODUCTION_RELEASE_FLAGS);
   return environment;
+}
+
+// Records which source the artifact was built from so the release audit can
+// reject stale or foreign ZIPs. A tree without its own Git metadata is recorded
+// as unknown and can never pass the release audit.
+export function readSourceProvenance(sourceRoot) {
+  const git = (args) =>
+    execFileSync('git', ['-C', sourceRoot, ...args], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+
+  try {
+    if (realpathSync(git(['rev-parse', '--show-toplevel'])) !== realpathSync(sourceRoot)) {
+      return { sourceCommit: null, sourceDirty: null };
+    }
+    return {
+      sourceCommit: git(['rev-parse', 'HEAD']),
+      sourceDirty: git(['status', '--porcelain=v1', '--untracked-files=all']).length > 0,
+    };
+  } catch {
+    return { sourceCommit: null, sourceDirty: null };
+  }
+}
+
+// A commit or file change while the build runs means the artifact matches
+// neither snapshot exactly, so it is recorded as dirty.
+export function combineSourceProvenance(before, after) {
+  if (before.sourceCommit === null) return before;
+  return {
+    sourceCommit: before.sourceCommit,
+    sourceDirty: before.sourceDirty || after.sourceDirty !== false || after.sourceCommit !== before.sourceCommit,
+  };
+}
+
+async function sha256File(file) {
+  return createHash('sha256')
+    .update(await fs.readFile(file))
+    .digest('hex');
+}
+
+// Only Chrome packages carry Git provenance, because only the Chrome release
+// audit binds a package to its source commit. AMO reviewers rebuild a Firefox
+// package from a source archive that has no Git metadata and diff it against
+// the uploaded XPI, so nothing in a Firefox package may depend on Git.
+export async function createExtensionBuildMetadata({ browser, mode, environment, sourceRoot, sourceBefore }) {
+  const sourceProvenance =
+    browser === 'chrome' ? combineSourceProvenance(sourceBefore, readSourceProvenance(sourceRoot)) : null;
+
+  return {
+    browser,
+    mode,
+    releaseFlags: Object.fromEntries(Object.keys(PRODUCTION_RELEASE_FLAGS).map((key) => [key, environment[key] ?? ''])),
+    schemaVersion: 2,
+    ...(sourceProvenance && {
+      sourceCommit: sourceProvenance.sourceCommit,
+      sourceDirty: sourceProvenance.sourceDirty,
+    }),
+    yarnLockSha256: await sha256File(path.resolve(sourceRoot, 'yarn.lock')),
+  };
 }
 
 function withBuild(overrides, configOptions = {}) {
@@ -103,25 +168,18 @@ async function copyRecursive(from, to) {
   }
 }
 
-async function writeStaticAssets() {
+async function writeStaticAssets(sourceBefore) {
   await copyRecursive(path.resolve(root, 'public/icons'), path.join(outDir, 'icons'));
   await fs.copyFile(path.resolve(root, 'public/favicon.ico'), path.join(outDir, 'favicon.ico'));
   await fs.writeFile(path.join(outDir, 'manifest.json'), `${JSON.stringify(makeManifest(browser), null, 2)}\n`);
-  await fs.writeFile(
-    path.join(outDir, 'extension-build-metadata.json'),
-    `${JSON.stringify(
-      {
-        browser,
-        mode,
-        releaseFlags: Object.fromEntries(
-          Object.keys(PRODUCTION_RELEASE_FLAGS).map((key) => [key, process.env[key] ?? ''])
-        ),
-        schemaVersion: 1,
-      },
-      null,
-      2
-    )}\n`
-  );
+  const metadata = await createExtensionBuildMetadata({
+    browser,
+    mode,
+    environment: process.env,
+    sourceRoot: root,
+    sourceBefore,
+  });
+  await fs.writeFile(path.join(outDir, 'extension-build-metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`);
   if (process.env.VUE_APP_EXTENSION_SMOKE === 'true') {
     await fs.writeFile(
       path.join(outDir, 'smoke-control.html'),
@@ -141,6 +199,7 @@ async function normalizePopupHtml() {
 async function run() {
   enforceProductionReleaseEnvironment(process.env, mode);
   await auditKeyExfiltrationDirectory(path.join(root, 'src'));
+  const sourceBefore = readSourceProvenance(root);
   if (!watch) await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
 
@@ -226,7 +285,7 @@ async function run() {
     );
   }
 
-  await writeStaticAssets();
+  await writeStaticAssets(sourceBefore);
   if (!watch) await auditKeyExfiltrationDirectory(outDir);
 
   if (watch) {

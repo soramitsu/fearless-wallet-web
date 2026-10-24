@@ -150,11 +150,7 @@ describe('cross-chain execution fingerprint', () => {
     expect(crossChain).toContain('assertRuntimeFingerprint(props, guardedQuote');
     expect(make.indexOf('guardedQuote = finalQuote;')).toBeLessThan(sign);
 
-    const signer = readFileSync(
-      resolve(__dirname, '../../src/extension/background/extension-base/src/api/substrate/shared/signExtrinsic.ts'),
-      'utf8'
-    );
-    expect(signer.indexOf('finalGuard?.();')).toBeGreaterThan(signer.indexOf('accountNextIndex(address)'));
-    expect(signer.indexOf('extrinsic.signAsync(')).toBeGreaterThan(signer.indexOf('finalGuard?.();'));
+    // The async nonce/signing boundaries are exercised with the actual helper
+    // in local-transfer-reset.spec.ts, including this caller-supplied guard.
   });
 });

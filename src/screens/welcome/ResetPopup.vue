@@ -1,7 +1,7 @@
 <template>
   <NotificationPopup
     sizeWidth="big"
-    rejectButtonText="Cancel"
+    rejectButtonText="common.cancel"
     acceptButtonText="welcome.resetWallet"
     :showAcceptButton="true"
     :showRejectButton="true"

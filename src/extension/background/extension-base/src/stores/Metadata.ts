@@ -21,11 +21,11 @@ export default class MetadataStore extends (IS_EXTENSION ? BaseExtensionStore : 
     super.remove(key, update);
   }
 
-  public all(update: (key: string, value: MetadataDef) => void): void {
-    super.all(update);
+  public all(update: (key: string, value: MetadataDef) => void): Promise<void> {
+    return super.all(update);
   }
 
-  public allMap(update: (value: Record<string, MetadataDef>) => void): void {
-    super.allMap(update);
+  public allMap(update: (value: Record<string, MetadataDef>) => void): Promise<void> {
+    return super.allMap(update);
   }
 }

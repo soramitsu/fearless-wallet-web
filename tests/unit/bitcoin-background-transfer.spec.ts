@@ -14,8 +14,14 @@ import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type { BitcoinEsploraUtxo } from '@extension-base/services/bitcoin-indexer-service';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
+import * as bitcoinTransaction from '@/util/bitcoinTransaction';
 import { WalletEcosystem } from '@/interfaces';
 import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
+
+vi.mock('@extension-base/api/bitcoin/pendingSends', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@extension-base/api/bitcoin/pendingSends')>(),
+  getDefaultBitcoinPendingSendStore: () => memoryPendingStore(),
+}));
 
 const mnemonic = vectors.vectors[0].mnemonic;
 const mainnetAddress = vectors.vectors[0].expected.bitcoin.mainnet.firstReceiveAddress;
@@ -104,6 +110,20 @@ const createState = ({
       },
     },
   }) as unknown as State;
+
+const memoryPendingStore = () => {
+  let records: Array<{ txid: string }> = [];
+
+  return {
+    list: vi.fn(async () => records as never[]),
+    remove: vi.fn(async (txids: string[]) => {
+      records = records.filter(({ txid }) => !txids.includes(txid));
+    }),
+    save: vi.fn(async (record: { txid: string }) => {
+      records = [...records, record];
+    }),
+  };
+};
 
 describe('background Bitcoin transfer adapter', () => {
   beforeEach(() => {
@@ -286,6 +306,28 @@ describe('background Bitcoin transfer adapter', () => {
     await expect(estimateBitcoinTransferFee(params, client, options)).resolves.toEqual({ fee: '0.00000282' });
   });
 
+  it.each(['fee lookup', 'pending save'])('does not broadcast after reset during %s', async boundary => {
+    const sign = vi.spyOn(bitcoinTransaction, 'buildBitcoinP2wpkhTransaction');
+    const state = createState();
+    const reset = () => Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
+    const client = {
+      broadcastTransaction: vi.fn(async (txHex: string) => bitcoin.Transaction.fromHex(txHex).getId()),
+      getAddress: vi.fn(async (address: string) => addressStats(address)),
+      getFeeEstimates: vi.fn(async () => { if (boundary === 'fee lookup') reset(); return { 1: 2 }; }),
+      getUtxos: vi.fn(async () => [confirmedUtxo(100_000)]),
+    };
+    const pendingStore = memoryPendingStore();
+    if (boundary === 'pending save') pendingStore.save.mockImplementation(async () => { reset(); });
+    await expect(makeBitcoinTransfer({ amount: '0.0005', approvedMaxFee: '1', from: 'stored-substrate-account', networkKey: 'Bitcoin', state, to: recipient },
+      client, { gapLimit: 2, maxLookahead: 20 }, pendingStore)).rejects.toThrow('Wallet changed during transfer');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+    if (boundary === 'fee lookup') {
+      expect(sign).not.toHaveBeenCalled();
+      expect(pendingStore.save).not.toHaveBeenCalled();
+    } else expect(pendingStore.remove).not.toHaveBeenCalled();
+    sign.mockRestore();
+  });
+
   it('prepares, signs, broadcasts, and schedules a Bitcoin balance refresh', async () => {
     vi.useFakeTimers();
 
@@ -322,12 +364,13 @@ describe('background Bitcoin transfer adapter', () => {
         to: recipient,
       },
       client,
-      { gapLimit: 2, maxLookahead: 20 }
+      { gapLimit: 2, maxLookahead: 20 },
+      memoryPendingStore()
     );
 
     expect(prepared.txid).toBe(bitcoin.Transaction.fromHex(prepared.txHex).getId());
     expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
-    expect(client.broadcastTransaction).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/u));
+    expect(client.broadcastTransaction).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]+$/u), prepared.txid, expect.any(Function));
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);

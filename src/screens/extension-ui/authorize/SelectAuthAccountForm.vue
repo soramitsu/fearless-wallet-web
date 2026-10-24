@@ -3,6 +3,7 @@
     <Checkbox
       v-if="showAllCheckbox"
       :value="props.selectAll"
+      :disabled="props.disabled"
       size="big"
       :label="$t('common.selectAll')"
       @change="emit('onSelectAll', $event)"
@@ -10,21 +11,22 @@
 
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in props.accounts" class="auth-account" :key="account.address">
+        <li v-for="account in props.accounts" class="auth-account" :key="account.address">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
               size="big"
-              :label="$t(account.name)"
+              :label="account.name"
               :value="account.active"
+              :disabled="props.disabled"
               @change="emit('onSelect', $event, account.address)"
             />
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
           </div>
 
-          <span :ref="index" class="account__address">
-            {{ cutAddress(account) }}
+          <span class="account__address">
+            {{ fullAddress(account) }}
           </span>
         </li>
       </ul>
@@ -36,10 +38,10 @@
 import { computed } from 'vue';
 import type { WalletInfo } from '@/stores';
 import type { AccountAuthType } from '@extension-base/background/types/types';
-import { cut } from '@/helpers';
 
 type Props = {
   selectAll?: boolean;
+  disabled?: boolean;
   accounts: Record<string, WalletInfo>;
   authType?: AccountAuthType;
   showSelectAll?: boolean;
@@ -51,17 +53,17 @@ const emit = defineEmits(['onSelectAll', 'onSelect']);
 
 const showAllCheckbox = computed(() => Object.keys(props.accounts).length > 1 && props.showSelectAll);
 
-const cutAddress = (account: WalletInfo) => {
+const fullAddress = (account: WalletInfo) => {
   const address =
     props.authType === 'evm'
       ? account.ethereumAddress
       : props.authType === 'solana'
-      ? account.solanaAddress ?? account.address
-      : props.authType === 'iroha'
-      ? account.irohaAddress ?? account.address
-      : account.address;
+        ? (account.solanaAddress ?? account.address)
+        : props.authType === 'iroha'
+          ? (account.irohaAddress ?? account.address)
+          : account.address;
 
-  return cut(address);
+  return address ?? '';
 };
 </script>
 
@@ -76,22 +78,28 @@ const cutAddress = (account: WalletInfo) => {
 
 .auth-account {
   display: flex;
-  flex-flow: row nowrap;
-  align-items: center;
-  justify-content: space-between;
-  align-items: center;
+  flex-flow: column;
+  gap: 4px;
+  padding-block: 8px;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid transparent;
-  border-bottom-color: $default-background-color;
+  border-bottom-color: palette($default-background-color, var(--fw-divider));
 }
 
 .account__checkbox {
   flex-shrink: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .account__checkbox--mobile-icon {
@@ -107,8 +115,11 @@ const cutAddress = (account: WalletInfo) => {
 }
 
 .account__address {
-  overflow-x: hidden;
-  text-overflow: ellipsis;
+  text-align: left;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-family: var(--fw-font-mono);
   line-height: 25.2px;
 }
 
@@ -128,6 +139,8 @@ const cutAddress = (account: WalletInfo) => {
 .account__list {
   padding: 0;
   width: 100%;
+  margin: 0;
+  list-style: none;
 }
 
 .account__checkbox .el-checkbox__label {

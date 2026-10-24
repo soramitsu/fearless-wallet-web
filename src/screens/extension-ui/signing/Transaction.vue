@@ -1,334 +1,504 @@
 <template>
-  <AboveForm :fullScreen="true" header="assets.transaction" @closeHandler="onReject">
-    <div v-if="isSignMobile" class="transaction-mobile">
-      <Loader />
-
-      <FButton
-        text="common.cancel"
-        width="100%"
-        size="medium"
-        fontSize="big"
-        type="secondary"
-        :border="false"
-        @click="onReject"
-      />
-    </div>
-
-    <div v-else class="transaction-content">
-      <div>
-        <WalletInfo class="wallet-info" :name="accountName" :address="address" />
-
-        <InfoList>
-          <InfoItem v-for="(value, key) in txInfo" :name="key" :value="value" :key="key" />
-        </InfoList>
-      </div>
-
-      <div class="control-form">
-        <FButton
-          size="big"
-          type="secondary"
-          class="button"
-          :disabled="state.isDisabled"
-          :border="false"
-          text="common.cancel"
-          @click="onReject"
-        />
-
-        <FButton size="big" :disabled="state.isDisabled" class="button" text="common.accept" @click="sendExtrinsic" />
-      </div>
+  <AboveForm
+    :fullScreen="true"
+    header="walletConnect.signRequestTitle"
+    :showCloseIcon="!pending"
+    @closeHandler="onReject"
+  >
+    <div class="signing-review" :aria-busy="!!pending">
+      <p v-if="actionError && !request" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
+      <p v-if="!request" role="status">{{ t('irohaConnectPage.waitingForRequest') }}</p>
+      <template v-else-if="review">
+        <section class="signing-requester">
+          <img
+            v-if="siteStatus === 'unverified' && faviconUrl && !faviconFailed"
+            :key="requestKey"
+            class="signing-favicon"
+            :src="faviconUrl"
+            width="40"
+            height="40"
+            alt=""
+            referrerpolicy="no-referrer"
+            @error="faviconFailed = true"
+          />
+          <Icon v-else class="signing-fallback" icon="globus" width="40px" height="40px" :hover="false" />
+          <div>
+            <p class="signing-origin" dir="ltr">
+              <span>{{ requester.before }}</span
+              ><strong>{{ requester.domain }}</strong
+              ><span>{{ requester.after }}</span>
+            </p>
+            <p class="signing-status" :class="{ 'signing-status--flagged': siteStatus === 'flagged' }" role="status">
+              {{
+                t(
+                  siteStatus === 'checking'
+                    ? 'signingReview.checking'
+                    : siteStatus === 'flagged'
+                      ? 'signingReview.flagged'
+                      : 'portfolioPage.unverified'
+                )
+              }}
+            </p>
+            <p class="signing-method">
+              <template v-if="walletConnect">WalletConnect · </template>{{ review.protocol }} · {{ review.method }}
+            </p>
+          </div>
+        </section>
+        <template v-if="siteStatus !== 'flagged'">
+          <div v-for="(action, index) in review.actions" :key="index" class="signing-action">
+            <p v-if="action.transactionIndex" class="signing-method">
+              {{ t('assets.transaction') }} {{ action.transactionIndex }}
+            </p>
+            <h2>
+              {{
+                t(
+                  action.kind === 'transfer'
+                    ? 'assets.transfer'
+                    : action.kind === 'message'
+                      ? 'walletConnect.requestFields.message'
+                      : action.kind === 'typedData'
+                        ? 'signingReview.typedData'
+                        : 'signingReview.unknownAction'
+                )
+              }}
+            </h2>
+            <p v-if="action.amount" class="signing-amount">{{ action.amount }}</p>
+            <dl v-if="action.from || action.to || action.asset" class="signing-fields">
+              <template v-if="action.from"
+                ><dt>{{ t('historyDetails.from') }}</dt>
+                <dd dir="ltr">{{ action.from }}</dd></template
+              >
+              <template v-if="action.to"
+                ><dt>{{ t('historyDetails.to') }}</dt>
+                <dd dir="ltr">{{ action.to }}</dd></template
+              >
+              <template v-if="action.asset"
+                ><dt>{{ t('crossChainPage.asset') }}</dt>
+                <dd dir="ltr">{{ action.asset }}</dd></template
+              >
+            </dl>
+            <pre v-if="action.text" class="signing-message" dir="auto">{{ action.text }}</pre>
+          </div>
+          <dl class="signing-fields signing-context">
+            <dt>{{ t('common.network') }}</dt>
+            <dd>
+              <span class="signing-network"
+                ><Icon icon="all-networks" width="32px" height="32px" :hover="false" />{{
+                  review.network || t('portfolioPage.unknownNetwork')
+                }}</span
+              >
+              <span v-if="review.networkIdentity" class="signing-identifier" dir="ltr">{{
+                review.networkIdentity
+              }}</span>
+            </dd>
+            <dt>{{ t('irohaConnectPage.account') }}</dt>
+            <dd><WalletInfo :name="request.account.name || ''" :address="request.account.address" /></dd>
+            <dt>
+              {{
+                t(
+                  review.feeKind === 'maximum'
+                    ? 'signingReview.maximumFee'
+                    : review.feeKind === 'estimate'
+                      ? 'signingReview.estimateFee'
+                      : 'common.networkFees'
+                )
+              }}
+            </dt>
+            <dd>
+              {{
+                review.fee ||
+                t(review.feeKind === 'signOnly' ? 'signingReview.signOnlyFee' : 'signingReview.feeUnavailable')
+              }}
+            </dd>
+          </dl>
+          <p v-if="review.blocked" role="alert" class="signing-warning">{{ t('signingReview.invalidRequest') }}</p>
+          <p v-else-if="review.blind" role="alert" class="signing-warning">
+            {{ t('signingReview.blindWarning', { origin }) }}
+          </p>
+          <p v-else class="signing-caution">{{ t('walletConnect.txHint') }}</p>
+          <details ref="rawDetails" :key="requestKey" class="signing-raw" @toggle="onRawToggle">
+            <summary>{{ t('signingReview.rawData') }}</summary>
+            <pre v-if="rawExpanded" dir="ltr">{{ review.raw }}</pre>
+          </details>
+          <Checkbox
+            v-if="review.blind && !review.blocked"
+            :label="t('signingReview.acknowledge')"
+            :value="acknowledged"
+            :disabled="!!pending"
+            @change="onAcknowledge"
+          />
+          <p v-if="pending === 'approve'" role="status">
+            {{ t(isMobile ? 'mobileConnector.signMobile' : 'irohaConnectPage.signing') }}
+          </p>
+        </template>
+        <p v-if="actionError" ref="actionErrorElement" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
+        <div ref="controls" class="signing-controls">
+          <FButton
+            :data-testid="rejectTestId"
+            :text="siteStatus === 'flagged' ? 'common.close' : 'common.reject'"
+            :type="review.blind || siteStatus === 'flagged' ? 'primary' : 'secondary'"
+            size="big"
+            fontSize="big"
+            :disabled="!!pending"
+            :loading="pending === 'reject'"
+            @click="onReject"
+          />
+          <FButton
+            v-if="siteStatus !== 'flagged' && !review.blocked"
+            :data-testid="approveTestId"
+            :text="review.blind ? 'signingReview.signAnyway' : 'common.approve'"
+            :type="review.blind ? 'secondary' : 'primary'"
+            size="big"
+            fontSize="big"
+            :disabled="cannotApprove"
+            :loading="pending === 'approve'"
+            :focusableWhenDisabled="true"
+            :disabledReason="
+              pending
+                ? 'migration.pending'
+                : siteStatus === 'checking'
+                  ? 'signingReview.checking'
+                  : 'signingReview.reviewFirst'
+            "
+            @click="onApprove"
+          />
+        </div>
+      </template>
     </div>
   </AboveForm>
 </template>
 
 <script lang="ts" setup>
-import registry from '@extension-base/api/substrate/typeRegistry';
-import { reactive, computed, watch } from 'vue';
-import { type GenericExtrinsicPayload } from '@polkadot/types/extrinsic/ExtrinsicPayload';
-import { formatUnits } from 'ethers';
-import { type EvmRequestPayload, type SolanaRequestPayload } from '@extension-base/services/request-service/types';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { SigningRequest } from '@extension-base/background/types/types';
-import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import type { ApprovePayload } from '@/stores/extension/actions';
-import BaseApi from '@/util/BaseApi';
-import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
-import InfoList from '@/screens/extension-ui/InfoList.vue';
-import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import { cut } from '@/helpers';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { checkIfDenied } from '@polkadot/phishing';
+import { signingRequester } from './requester';
+import { signingReview, type ReviewRequest } from './review';
+import { walletConnectReview } from './walletConnectReview';
+import WalletInfo from './WalletInfo.vue';
+import { useI18n } from '@/locales/useI18n';
+import { useNotify } from '@/plugins/soramitsuUI';
+import { Components } from '@/router/routes';
 import { useExtensionStore } from '@/stores/extension';
-import { useAccountsStore } from '@/stores/accounts';
+import { useNetworksStore } from '@/stores/networks';
 
-const state = reactive({
-  isDisabled: false,
-});
-
+const props = defineProps<{
+  walletConnect?: boolean;
+  approveWalletConnect?: (address: string, approvalId: string) => Promise<boolean>;
+  rejectWalletConnect?: (approvalId: string) => Promise<boolean>;
+}>();
 const extensionStore = useExtensionStore();
-const accountsStore = useAccountsStore();
-
-const payload = computed(() => extensionStore.signRequestPayload);
-const requests = computed(() => extensionStore.signAllRequests);
-const accounts = computed(() => accountsStore.accounts);
-const selectedWallet = computed(() => accountsStore.selectedWallet);
-
-type SubstratePayload = SignerPayloadJSON | SignerPayloadRaw;
-
-const isEvmRequest = (value: unknown): value is EvmRequestPayload =>
-  !!value && typeof value === 'object' && 'data' in value;
-
-const isSolanaRequest = (value: unknown): value is SolanaRequestPayload =>
-  !!value && typeof value === 'object' && 'ecosystem' in value && value.ecosystem === 'solana';
-
-const isSubstrateRequest = (value: unknown): value is SigningRequest =>
-  !!value && typeof value === 'object' && 'account' in value && 'request' in value;
-
-const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object';
-
-const getEvmRequestData = (value: EvmRequestPayload): unknown[] => (Array.isArray(value.data) ? value.data : [value.data]);
-
-const substratePayload = computed<SubstratePayload | undefined>(() =>
-  payload.value && !isEvmRequest(payload.value) && !isSolanaRequest(payload.value) ? payload.value : undefined
+const networksStore = useNetworksStore();
+const router = useRouter();
+const notify = useNotify();
+const { t } = useI18n();
+const wcRequest = computed(() => (props.walletConnect ? extensionStore.wcRequests[0] : undefined));
+const wcReview = computed(() => (wcRequest.value ? walletConnectReview(wcRequest.value) : undefined));
+const rejectTestId = computed(() => (props.walletConnect ? 'rejectWalletConnectSigning' : 'rejectSigning'));
+const approveTestId = computed(() => (props.walletConnect ? 'approveWalletConnectSigning' : 'approveSigning'));
+const request = computed<ReviewRequest | undefined>(() => {
+  if (props.walletConnect) return wcReview.value?.request;
+  const queues = extensionStore.signAllRequests;
+  return queues.substrate[0] ?? Object.values(queues.evm)[0] ?? Object.values(queues.solana)[0];
+});
+const review = computed(() =>
+  props.walletConnect
+    ? wcReview.value?.review
+    : request.value
+      ? signingReview(request.value, networksStore.allNetworks)
+      : undefined
 );
-
-const transactionAddress = computed(() => substratePayload.value?.address ?? selectedWallet.value.address);
-const request = computed<SigningRequest | EvmRequestPayload | SolanaRequestPayload | undefined>(
-  () => requests.value.substrate[0] ?? Object.values(requests.value.evm)[0] ?? Object.values(requests.value.solana)[0]
+const requestKey = computed(() =>
+  request.value ? JSON.stringify([wcRequest.value, request.value, review.value]) : ''
 );
-
-const isSignMobile = computed(() => {
-  const encodedAddress = BaseApi.encodeAddress(transactionAddress.value);
-
-  return accounts.value.some((account) => account.address === encodedAddress && account.isMobile);
-});
-
-const address = computed(() => {
-  if (isEvmRequest(request.value)) {
-    const data = getEvmRequestData(request.value);
-    const first = data[0];
-
-    if (isRecord(first) && first.from !== undefined) return String(first.from);
-
-    return data[1] !== undefined ? String(data[1]) : '';
-  }
-
-  if (isSolanaRequest(request.value)) return request.value.account.address;
-
-  return isSubstrateRequest(request.value) ? request.value.account.address : '';
-});
-
-const typedPayload = computed<GenericExtrinsicPayload | undefined>(() => {
-  if (!substratePayload.value) return;
-
-  if ('signedExtensions' in substratePayload.value) registry.setSignedExtensions(substratePayload.value.signedExtensions);
-
-  const version = 'version' in substratePayload.value ? substratePayload.value.version : 4;
-
-  return registry.createType('ExtrinsicPayload', substratePayload.value, { version });
-});
-
-const accountName = computed(() => {
-  if (!request.value) return '';
-
-  if (isSolanaRequest(request.value)) return request.value.account.name ?? request.value.account.address;
-
-  if ('account' in request.value) return request.value.account.name;
-
-  const data = getEvmRequestData(request.value);
-  const first = data[0];
-
-  if (isRecord(first) && first.from !== undefined) return String(first.from);
-
-  return first !== undefined ? String(first) : '';
-});
-
-const onSignApprove = (data: ApprovePayload) => extensionStore.approveSign(data);
-
-watch(
-  () => request.value?.id,
-  () => {
-    state.isDisabled = false;
-    if (isSignMobile.value && request.value && !isSolanaRequest(request.value)) onSignApprove({ id: request.value.id });
-  },
-  { immediate: true }
-);
-
-const mortalityAsString = (era: ExtrinsicEra | undefined, hexBlockNumber: string): string | undefined => {
-  if (!era) return;
-
-  if (era.isImmortalEra) return 'immortal';
-
-  const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
-
-  return `mortal, valid from ${birth} to ${death}`;
-};
-
-const blockNumber = computed(() =>
-  substratePayload.value && 'blockNumber' in substratePayload.value ? substratePayload.value.blockNumber : ''
-);
-
-const mortality = computed(() => mortalityAsString(typedPayload.value?.era, blockNumber.value));
-
-const txInfo = computed(() => {
-  if (!request.value) return {};
-
-  const info: Record<string, string | number> = {
-    url: request.value.url,
-  };
-
-  if (isEvmRequest(request.value)) {
-    const requestData = getEvmRequestData(request.value);
-
-    const [payload] = requestData;
-
-    if (isRecord(payload)) {
-      if (payload.gas !== undefined) info.gas = formatUnits(String(payload.gas), 'gwei');
-      if (payload.value !== undefined) info.value = formatUnits(String(payload.value));
-      if (payload.to !== undefined) info.to = cut(String(payload.to), 15);
-      if (payload.from !== undefined) info.from = cut(String(payload.from), 15);
-      if (payload.data !== undefined) info.data = cut(String(payload.data), 15);
-    } else {
-      info.data = payload !== undefined ? String(payload) : '';
-    }
-  } else if (isSolanaRequest(request.value)) {
-    info.ecosystem = 'solana';
-    info.method = request.value.method;
-    info.address = cut(request.value.account.address, 15);
-
-    if (request.value.method === 'signMessage' && request.value.messageBase64) {
-      info.messageBytes = getBase64ByteLength(request.value.messageBase64);
-      info.display = request.value.display ?? 'utf8';
-      info.message = cut(request.value.messageBase64, 24);
-    } else if (
-      (request.value.method === 'signTransaction' || request.value.method === 'signAndSendTransaction') &&
-      request.value.transactionBase64
-    ) {
-      const preview = request.value.transactionPreview;
-
-      info.transactionBytes = preview?.transactionBytes ?? getBase64ByteLength(request.value.transactionBase64);
-      info.transaction = cut(request.value.transactionBase64, 24);
-
-      if (preview?.parseError) {
-        info.previewError = preview.parseError;
-      } else if (preview) {
-        info.version = preview.version ?? '';
-        info.requiredSignatures = preview.requiredSignatures ?? 0;
-        info.signatureSlots = preview.signatureCount ?? 0;
-        info.accountKeys = preview.accountCount ?? 0;
-        info.instructions = preview.instructionCount ?? 0;
-        info.addressTableLookups = preview.addressTableLookupCount ?? 0;
-        if (preview.firstSigner) info.firstSigner = cut(preview.firstSigner, 15);
-        if (preview.recentBlockhash) info.recentBlockhash = cut(preview.recentBlockhash, 15);
-      }
-
-      if (request.value.method === 'signAndSendTransaction') {
-        info.preflightCommitment = request.value.options?.preflightCommitment ?? 'confirmed';
-        info.skipPreflight = String(request.value.options?.skipPreflight ?? false);
-        if (request.value.options?.maxRetries !== undefined) info.maxRetries = request.value.options.maxRetries;
-
-        if (request.value.fee) {
-          info.fee = request.value.fee.status;
-          if (request.value.fee.slot !== undefined) info.feeSlot = request.value.fee.slot;
-          if (request.value.fee.lamports !== undefined) info.feeLamports = request.value.fee.lamports;
-          if (request.value.fee.error) info.feeError = cut(request.value.fee.error, 36);
-        }
-
-        if (request.value.simulation) {
-          info.simulation = request.value.simulation.status;
-          if (request.value.simulation.slot !== undefined) info.simulationSlot = request.value.simulation.slot;
-          if (request.value.simulation.unitsConsumed !== undefined)
-            info.simulationUnits = request.value.simulation.unitsConsumed;
-          if (request.value.simulation.logCount !== undefined) info.simulationLogs = request.value.simulation.logCount;
-          if (request.value.simulation.error) info.simulationError = cut(request.value.simulation.error, 36);
-        }
-      }
-    } else if (request.value.transactionsBase64) {
-      info.transactions = request.value.transactionsBase64.length;
-      info.totalBytes = request.value.transactionsBase64.reduce((total, value) => total + getBase64ByteLength(value), 0);
-
-      if (request.value.transactionPreviews) {
-        const previewErrors = request.value.transactionPreviews.filter(({ parseError }) => parseError).length;
-
-        info.parsedTransactions = request.value.transactionPreviews.length - previewErrors;
-        if (previewErrors > 0) info.previewErrors = previewErrors;
-      }
-    }
-  } else if (isSubstrateRequest(request.value)) {
-    const substrateRequest = request.value;
-    const data: Record<string, string | number | undefined> = {
-      nonce: typedPayload.value?.nonce.toString(),
-      wallet: substrateRequest.account.name,
-      address: substrateRequest.account.address,
-      genesisHash: typedPayload.value?.genesisHash.toString(),
-      specVersion: typedPayload.value?.specVersion.toString(),
-      method: typedPayload.value?.method.toString(),
-      mortality: mortality.value,
-    };
-
-    for (const [key, value] of Object.entries(data)) {
-      if (value) {
-        info[key] = value;
-      }
-    }
-  }
-
-  return info;
-});
-
-const getBase64ByteLength = (value: string): number => {
-  const normalized = value.replace(/=+$/, '');
-
-  return Math.floor((normalized.length * 3) / 4);
-};
-
-const onReject = async () => {
-  if (request.value) await extensionStore.signCancel(request.value.id);
-};
-
-const sendExtrinsic = async () => {
-  if (!request.value) return;
-
-  const id = request.value.id;
-  state.isDisabled = true;
-
+const requester = computed(() => signingRequester(request.value?.url ?? ''));
+const origin = computed(() => requester.value.origin);
+const faviconUrl = computed(() => {
   try {
-    await onSignApprove({ id });
+    const url = new URL(origin.value);
+    return url.protocol === 'https:' ? `${url.origin}/favicon.ico` : '';
+  } catch {
+    return '';
+  }
+});
+const faviconFailed = ref(false);
+const isMobile = computed(() => request.value && 'isMobile' in request.value.account && request.value.account.isMobile);
+const pending = ref<'approve' | 'reject' | null>(null);
+const siteStatus = ref<'checking' | 'flagged' | 'unverified'>('checking');
+const actionError = ref(false);
+const actionErrorElement = ref<HTMLElement | null>(null);
+const rawExpanded = ref(false);
+const acknowledged = ref(false);
+const rawDetails = ref<HTMLDetailsElement | null>(null);
+const controls = ref<HTMLElement | null>(null);
+let active = true;
+let renderedRequestKey = '';
+let checkGeneration = 0;
+const cannotApprove = computed(
+  () =>
+    !!pending.value ||
+    siteStatus.value !== 'unverified' ||
+    !review.value ||
+    review.value.blocked ||
+    (review.value.blind && (!rawExpanded.value || !acknowledged.value))
+);
+const isRendered = () => active && !!request.value && renderedRequestKey === requestKey.value;
+const onAcknowledge = (value: boolean) => {
+  if (isRendered() && !pending.value) acknowledged.value = value;
+};
+const onRawToggle = (event: Event) => {
+  if (isRendered() && event.target === rawDetails.value) rawExpanded.value = rawDetails.value?.open ?? false;
+};
+const focusReject = async () => {
+  const key = requestKey.value;
+  await nextTick();
+  if (active && key === requestKey.value)
+    controls.value
+      ?.querySelector<HTMLButtonElement>(`[data-testid="${rejectTestId.value}"] button`)
+      ?.focus({ preventScroll: true });
+};
+const leaveEmpty = () => {
+  const route = props.walletConnect ? Components.WalletConnectSignConfirmation : Components.Transaction;
+  if (active && !request.value && router.currentRoute.value.name === route)
+    void router.push({ name: Components.Wallet }).catch(() => {
+      if (active) actionError.value = true;
+    });
+};
+const checkSite = async () => {
+  const generation = ++checkGeneration;
+  const captured = request.value;
+  siteStatus.value = 'checking';
+  if (!captured) return;
+  const verification = wcRequest.value?.verifyContext?.verified;
+  if (verification?.isScam || verification?.validation === 'INVALID') {
+    siteStatus.value = 'flagged';
+    return;
+  }
+  let denied = false;
+  try {
+    denied = await checkIfDenied(captured.url);
+  } catch {
+    /* Unverified is not an assurance of trust. */
+  }
+  if (active && generation === checkGeneration) siteStatus.value = denied ? 'flagged' : 'unverified';
+};
+const act = async (action: 'approve' | 'reject') => {
+  if (!isRendered() || pending.value || !request.value || (action === 'approve' && cannotApprove.value)) return;
+  const { id } = request.value;
+  const signer = request.value.account.address;
+  const key = requestKey.value;
+  const site = origin.value;
+  const submits = review.value?.method === 'eth_sendTransaction' || review.value?.method === 'signAndSendTransaction';
+  pending.value = action;
+  actionError.value = false;
+  try {
+    if (action === 'reject') {
+      if (props.walletConnect) {
+        if (!(await props.rejectWalletConnect?.(id))) throw new Error('WalletConnect request was not rejected');
+      } else await extensionStore.signCancel(id);
+    } else {
+      const signed = props.walletConnect
+        ? await props.approveWalletConnect?.(signer, id)
+        : await extensionStore.approveSign({ id });
+      if (props.walletConnect && !signed) throw new Error('WalletConnect request was not approved');
+      if (signed)
+        notify({
+          title: t(submits ? 'signingReview.submitted' : 'signingReview.signed', { origin: site }),
+          message: '',
+          type: 'info',
+        });
+      else notify({ title: t('addWallet.google.somethingWrong'), message: '', type: 'error' });
+    }
+  } catch {
+    if (active && key === requestKey.value) {
+      actionError.value = true;
+      await nextTick();
+      if (active && key === requestKey.value) actionErrorElement.value?.scrollIntoView?.({ block: 'nearest' });
+    }
   } finally {
-    if (request.value?.id === id) state.isDisabled = false;
+    if (active) {
+      pending.value = null;
+      if (key !== requestKey.value) void focusReject();
+    }
   }
 };
+const onApprove = () => act('approve');
+const onReject = () => act('reject');
+watch(
+  requestKey,
+  () => {
+    faviconFailed.value = false;
+    rawExpanded.value = false;
+    acknowledged.value = false;
+    actionError.value = false;
+    void checkSite();
+    leaveEmpty();
+    void focusReject();
+  },
+  { flush: 'sync' }
+);
+watch(
+  requestKey,
+  (key) => {
+    renderedRequestKey = key;
+  },
+  { flush: 'post' }
+);
+onMounted(() => {
+  renderedRequestKey = requestKey.value;
+  void checkSite();
+  leaveEmpty();
+  void focusReject();
+});
+onBeforeUnmount(() => {
+  active = false;
+  checkGeneration += 1;
+});
 </script>
 
 <style lang="scss" scoped>
-.transaction-content {
-  height: 100%;
+.signing-review {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-
-  .wallet-info {
-    margin-bottom: 14px;
+  gap: 16px;
+  min-height: 100%;
+  text-align: left;
+}
+.signing-requester {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  background: var(--fw-raised);
+  border-radius: 16px;
+  border: 1px solid var(--fw-stroke-control);
+  > div {
+    min-width: 0;
+  }
+  > svg {
+    flex-shrink: 0;
+  }
+  p {
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
   }
 }
-
-.transaction-mobile {
-  height: 100%;
+.signing-origin,
+.signing-method,
+.signing-identifier,
+.signing-fields dd[dir] {
+  font-family: var(--fw-font-mono);
+  unicode-bidi: isolate;
+}
+.signing-fallback {
+  fill: none;
+}
+.signing-favicon {
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.signing-origin {
+  color: var(--fw-text-2);
+  strong {
+    color: var(--fw-text-1);
+    font-weight: 500;
+  }
+}
+.signing-status {
+  color: var(--fw-text-2);
+}
+.signing-status--flagged {
+  color: var(--fw-danger);
+}
+.signing-action h2 {
+  font-size: 1.125rem;
+  margin: 0 0 12px;
+}
+.signing-action,
+.signing-context {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--fw-raised);
+  border: 1px solid var(--fw-stroke-control);
+}
+.signing-fields {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  dt {
+    color: var(--fw-text-2);
+    font-weight: 700;
+  }
+  dd {
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+}
+.signing-network {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-flow: column;
+  gap: 8px;
+  > svg {
+    flex-shrink: 0;
+  }
 }
-
-.row {
-  margin-top: 15px;
+.signing-identifier {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
 }
-
-.control-form {
+.signing-amount {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.signing-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  margin: 0;
+  unicode-bidi: plaintext;
+}
+.signing-warning {
+  border: 1px solid var(--fw-warning);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--fw-text-1);
+}
+.signing-caution {
+  color: var(--fw-text-2);
+}
+.signing-raw {
+  min-width: 0;
+  summary {
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 12px;
+    cursor: pointer;
+  }
+  summary:focus-visible {
+    outline: 2px solid var(--fw-focus);
+  }
+  pre {
+    max-height: 260px;
+    overflow: auto;
+    padding: 12px;
+    margin: 0;
+    font-family: var(--fw-font-mono);
+    background: var(--fw-sunken);
+    border-radius: 12px;
+  }
+}
+.signing-controls {
   display: flex;
-  flex-flow: row;
-  width: 100%;
-  gap: 6px;
-
-  .button {
-    width: 100%;
+  flex-flow: row wrap;
+  gap: 12px;
+  margin-top: auto;
+  > * {
+    flex: 1 1 200px;
+    min-width: 0;
   }
 }
 </style>

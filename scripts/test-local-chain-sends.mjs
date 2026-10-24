@@ -1,24 +1,32 @@
 #!/usr/bin/env node
-// End-to-end Solana send tests against a local private chain only:
-// `solana-test-validator`. The tests drive the wallet's real send code. The
-// chain holds no value, and nothing here contacts mainnet, testnet or devnet.
+// End-to-end Bitcoin and Solana send tests against local private chains only:
+// `bitcoind -regtest` behind a small Esplora-compatible shim, and
+// `solana-test-validator`. The tests drive the wallet's real send code. These
+// chains hold no value, and nothing here contacts mainnet or testnet.
 //
-//   node scripts/test-local-chain-sends.mjs
+//   node scripts/test-local-chain-sends.mjs [--bitcoin-only | --solana-only]
 //
 // Environment:
+//   FEARLESS_BITCOIND             bitcoind binary (default: bitcoind on PATH)
 //   FEARLESS_SOLANA_TEST_VALIDATOR solana-test-validator binary (default: on PATH)
 //   FEARLESS_LOCAL_CHAINS_DIR     data directory (default: a fresh temp dir)
 
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { createBitcoindRpc, waitForBitcoind } from './local-chains/bitcoind-rpc.mjs';
+import { startEsploraShim } from './local-chains/esplora-regtest-shim.mjs';
 import { writeSolanaGenesisAccounts } from './local-chains/solana-genesis-accounts.mjs';
 import { spawnLocalProcess } from './local-chains/process-lifecycle.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const args = new Set(process.argv.slice(2));
+const runBitcoin = !args.has('--solana-only');
+const runSolana = !args.has('--bitcoin-only');
 const vectors = JSON.parse(await fs.readFile(path.join(rootDir, 'docs/universal-wallet-v2-vectors.json'), 'utf8'));
 const walletSolanaAddress = vectors.vectors[0].expected.solana.address;
 
@@ -57,6 +65,43 @@ async function freePortRange(size) {
 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function startBitcoind(dataDir) {
+  await fs.mkdir(dataDir, { recursive: true });
+
+  const rpcPort = await freePort();
+  const p2pPort = await freePort();
+  const user = 'fearless';
+  const password = randomBytes(16).toString('hex');
+  const owned = spawnOwned(
+    process.env.FEARLESS_BITCOIND || 'bitcoind',
+    [
+      '-regtest',
+      `-datadir=${dataDir}`,
+      `-rpcport=${rpcPort}`,
+      `-port=${p2pPort}`,
+      '-rpcbind=127.0.0.1',
+      '-rpcallowip=127.0.0.1',
+      `-rpcuser=${user}`,
+      `-rpcpassword=${password}`,
+      '-listen=0',
+      '-dnsseed=0',
+      '-fixedseeds=0',
+      '-txindex=1',
+      '-fallbackfee=0.0002',
+      '-printtoconsole=0',
+    ],
+    { stdio: ['ignore', 'ignore', 'pipe'] },
+    cleanup
+  );
+
+  const rpcUrl = `http://127.0.0.1:${rpcPort}`;
+  const rpc = createBitcoindRpc({ password, url: rpcUrl, user });
+
+  await waitForBitcoind(rpc, { checkRunning: owned.assertRunning });
+
+  return { password, rpc, rpcUrl, user };
+}
 
 async function startSolanaValidator(dataDir) {
   const rpcPort = await freePort();
@@ -146,15 +191,37 @@ try {
   const env = { ...process.env, FEARLESS_LOCAL_CHAINS: '1' };
   const specs = [];
 
-  const solana = await startSolanaValidator(path.join(runDir, 'solana'));
+  if (runBitcoin) {
+    const bitcoin = await startBitcoind(path.join(runDir, 'bitcoin'));
 
-  Object.assign(env, {
-    FEARLESS_E2E_SOLANA_MINT: solana.mint,
-    FEARLESS_E2E_SOLANA_RPC_URL: solana.rpcUrl,
-    FEARLESS_E2E_SOLANA_WALLET_TOKEN_ACCOUNT: solana.walletTokenAccount,
-  });
-  specs.push('tests/e2e-chains/solana-local-validator-send.spec.ts');
-  console.info(`solana-test-validator ready at ${solana.rpcUrl}`);
+    cleanup.push(async () => {
+      await bitcoin.rpc.call('stop').catch(() => undefined);
+    });
+
+    const shim = await startEsploraShim({ rpc: bitcoin.rpc });
+
+    cleanup.push(() => shim.close());
+    Object.assign(env, {
+      FEARLESS_E2E_BITCOIND_PASSWORD: bitcoin.password,
+      FEARLESS_E2E_BITCOIND_RPC_URL: bitcoin.rpcUrl,
+      FEARLESS_E2E_BITCOIND_USER: bitcoin.user,
+      FEARLESS_E2E_ESPLORA_URL: shim.url,
+    });
+    specs.push('tests/e2e-chains/bitcoin-regtest-send.spec.ts');
+    console.info(`bitcoind -regtest ready; Esplora shim at ${shim.url}`);
+  }
+
+  if (runSolana) {
+    const solana = await startSolanaValidator(path.join(runDir, 'solana'));
+
+    Object.assign(env, {
+      FEARLESS_E2E_SOLANA_MINT: solana.mint,
+      FEARLESS_E2E_SOLANA_RPC_URL: solana.rpcUrl,
+      FEARLESS_E2E_SOLANA_WALLET_TOKEN_ACCOUNT: solana.walletTokenAccount,
+    });
+    specs.push('tests/e2e-chains/solana-local-validator-send.spec.ts');
+    console.info(`solana-test-validator ready at ${solana.rpcUrl}`);
+  }
 
   const vitest = spawnOwned(
     process.execPath,

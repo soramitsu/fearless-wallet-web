@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   back: vi.fn(),
   push: vi.fn(),
   resetWallet: vi.fn(),
+  // No account waits for an earlier per-account password, so there is no backup step before the phrase.
+  getMigrationAccounts: vi.fn(async () => []),
   t: vi.fn((key: string, values?: { phrase?: string }) =>
     key === 'welcome.enterReset' ? `To proceed, enter '${values?.phrase}'` : key
   ),
@@ -16,11 +18,13 @@ vi.mock('vue-router', () => ({
 }));
 
 vi.mock('@/extension/messaging', () => ({
+  getMigrationAccounts: mocks.getMigrationAccounts,
+  migrateExportJSON: vi.fn(),
   resetWallet: mocks.resetWallet,
 }));
 
 vi.mock('@/locales/useI18n', () => ({
-  useI18n: () => ({ t: mocks.t }),
+  useI18n: () => ({ t: mocks.t, tc: mocks.t }),
 }));
 
 vi.mock('@/router/routes', () => ({
@@ -64,6 +68,9 @@ describe('ResetWallet confirmation phrase', () => {
         },
       },
     });
+    await flushPromises();
+
+    expect(mocks.getMigrationAccounts).toHaveBeenCalledOnce();
 
     const input = wrapper.get('input');
     const button = wrapper.get('button');

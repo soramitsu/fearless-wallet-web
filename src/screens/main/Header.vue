@@ -73,7 +73,7 @@
       <Tooltip :text="accountsStore.selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
-        :ref="settingsNameRef"
+        :class="{ 'settings-highlighted': highlightSettingsIcon }"
         iconName="settings"
         size="big"
         backgroundColor="none"
@@ -122,7 +122,6 @@ export default defineComponent({ name: 'Header',
   data() {
     return {
       walletNameRef: 'walletName',
-      settingsNameRef: 'settingsName',
       isPopup: IS_POPUP,
       allNetworksIcon: 'all-networks',
       networksStore: useNetworksStore(),
@@ -235,7 +234,6 @@ export default defineComponent({ name: 'Header',
   },
   watch: {
     "syncedShowSelectWalletPopup": 'updateZIndexSelectWalletPopup',
-    "highlightSettingsIcon": 'updateZIndexShowSettings',
   },
   async mounted() {
     if (this.isPopup) await this.extensionStore.fetchTabStatus();
@@ -251,11 +249,6 @@ export default defineComponent({ name: 'Header',
       const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
 
           targetElement.style.zIndex = this.syncedShowSelectWalletPopup ? '200' : '0';
-    },
-    updateZIndexShowSettings(value: boolean) {
-      const targetElement = (this.$refs[this.settingsNameRef] as { $el: HTMLElement }).$el;
-
-          targetElement.style.zIndex = value ? '300' : '0';
     },
     toggleConnectionPopup() {
       if (!this.extensionStore.tabStatus) return;
@@ -278,6 +271,12 @@ export default defineComponent({ name: 'Header',
   },
 });
 </script>
+
+<style lang="scss" scoped>
+.settings-highlighted :deep(button) {
+  background: palette($secondary-background-color, var(--fw-select-fill));
+}
+</style>
 
 <style lang="scss" scoped>
 .name,

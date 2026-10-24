@@ -7,41 +7,50 @@
 
     <ContentForm :height="contentHeight">
       <Scroll>
-        <section v-for="group in groups" :key="group.title" class="settings-group">
-          <h2>{{ group.title }}</h2>
-          <button
-            v-for="item in group.items"
-            :key="item.id"
-            class="settings-row"
-            :class="{ unavailable: item.disabled }"
-            :data-testid="`settings-${item.id}`"
-            type="button"
-            :disabled="item.disabled"
-            @click="item.open"
-          >
-            <Icon :icon="item.icon" className="settings-icon" :hover="false" />
-            <span class="settings-row__copy">
-              <strong>{{ item.label }}</strong>
-              <small>{{ item.description }}</small>
-            </span>
-            <span v-if="item.status" class="settings-status">{{ item.status }}</span>
-            <Icon v-else icon="chevron-right" className="settings-chevron" :hover="false" />
-          </button>
-        </section>
+        <p v-if="showIrohaConnectUnavailable" class="settings-notice" role="status" data-testid="iroha-connect-unavailable">
+          {{ t('settingsPage.irohaConnectUnavailable') }}
+        </p>
+        <template v-for="group in groups" :key="group.title">
+          <section class="settings-group">
+            <h2>{{ group.title }}</h2>
+            <button
+              v-for="item in group.items"
+              :key="item.id"
+              class="settings-row"
+              :class="{ unavailable: item.disabled }"
+              :data-testid="`settings-${item.id}`"
+              type="button"
+              :disabled="item.disabled"
+              @click="item.open"
+            >
+              <Icon :icon="item.icon" className="settings-icon" :hover="false" />
+              <span class="settings-row__copy">
+                <strong>{{ item.label }}</strong>
+                <small>{{ item.description }}</small>
+              </span>
+              <span v-if="item.status" class="settings-status">{{ item.status }}</span>
+              <Icon v-else icon="chevron-right" className="settings-chevron" :hover="false" />
+            </button>
+          </section>
+          <VisualEffectsSetting v-if="group.id === 'preferences'" />
+        </template>
       </Scroll>
     </ContentForm>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onActivated, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import VisualEffectsSetting from './VisualEffectsSetting.vue';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { Components } from '@/router/routes';
-import { lockExtension } from '@/extension/messaging';
+import { getAccessStatus, lockExtension } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
+import { isIrohaConnectEnabled } from '@/util/releaseFeatures';
+import { IROHA_CONNECT_UNAVAILABLE_NOTICE } from '@/router/irohaConnectGate';
 
 type SettingsItem = {
   id: string;
@@ -54,20 +63,37 @@ type SettingsItem = {
 };
 
 type SettingsGroup = {
+  id?: string;
   title: string;
   items: SettingsItem[];
 };
 
 const emit = defineEmits(['openFiatsPopup', 'openLanguagePopup', 'openAboutPopup']);
 const router = useRouter();
+const route = useRoute();
 const accountsStore = useAccountsStore();
-const { t } = useI18n();
+const { t, tc } = useI18n();
 const contentHeight = CONTENT_FORM_HEIGHT;
+// Accounts whose key waits for a password; listed here so they stay reachable after "Skip for now".
+const accessIssueCount = ref(0);
+
+const refreshAccessIssues = async () => {
+  try {
+    accessIssueCount.value = (await getAccessStatus()).issues.length;
+  } catch {
+    // Unknown: the entry stays as it was.
+  }
+};
+
+onMounted(refreshAccessIssues);
+// Settings is kept alive, so coming back from Account access has to count again.
+onActivated(refreshAccessIssues);
 const open = (name: Components, params?: Record<string, string>) => () => router.push({ name, params });
 const lock = () => {
   lockExtension(true);
   router.push({ name: Components.Unlock });
 };
+const showIrohaConnectUnavailable = computed(() => route.query?.notice === IROHA_CONNECT_UNAVAILABLE_NOTICE);
 const hasTonAccount = computed(() => {
   const account = accountsStore.accounts.find(({ address }) => address === accountsStore.selectedWallet.address);
 
@@ -106,13 +132,17 @@ const groups = computed<SettingsGroup[]>(() => [
   {
     title: t('settingsPage.groups.connections'),
     items: [
-      {
-        id: 'iroha-connect',
-        label: 'IrohaConnect',
-        description: t('settingsPage.irohaConnectDescription'),
-        icon: 'iroha-connect',
-        open: open(Components.IrohaConnect),
-      },
+      ...(isIrohaConnectEnabled()
+        ? [
+            {
+              id: 'iroha-connect',
+              label: 'IrohaConnect',
+              description: t('settingsPage.irohaConnectDescription'),
+              icon: 'iroha-connect',
+              open: open(Components.IrohaConnect),
+            },
+          ]
+        : []),
       {
         id: 'wallet-connect',
         label: 'WalletConnect',
@@ -149,6 +179,26 @@ const groups = computed<SettingsGroup[]>(() => [
   {
     title: t('settingsPage.groups.security'),
     items: [
+      ...(!IS_EXTENSION ? [{
+        id: 'recovery-data',
+        label: t('storageRecovery.title'),
+        description: t('storageRecovery.recordsTitle'),
+        icon: 'key',
+        open: open(Components.StorageRecovery),
+      }] : []),
+      ...(accessIssueCount.value
+        ? [
+            {
+              id: 'account-access',
+              label: t('accountAccess.title'),
+              description: tc('accountAccess.settingsDescription', accessIssueCount.value, {
+                count: accessIssueCount.value,
+              }),
+              icon: 'lock',
+              open: open(Components.AccountAccessRecovery),
+            },
+          ]
+        : []),
       {
         id: 'change-password',
         label: t('settingsPage.changePassword'),
@@ -166,6 +216,7 @@ const groups = computed<SettingsGroup[]>(() => [
     ],
   },
   {
+    id: 'preferences',
     title: t('settingsPage.groups.preferences'),
     items: [
       {
@@ -220,6 +271,16 @@ const groups = computed<SettingsGroup[]>(() => [
     color: $gray-color;
     font-size: 0.72rem;
   }
+}
+
+.settings-notice {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border: $default-border;
+  border-radius: 8px;
+  color: $grayish-white;
+  font-size: 0.72rem;
+  text-align: left;
 }
 
 .settings-group {

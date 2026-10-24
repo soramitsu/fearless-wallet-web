@@ -23,6 +23,7 @@ const response: SolanaSignMessageResponse = {
 describe('SolanaRequestHandler', () => {
   const createHandler = () => {
     const requestService = {
+      authRequestHandler: { getSigningAuthorizationRevision: vi.fn(() => 0) },
       popupOpen: vi.fn(),
       updateIcon: vi.fn(),
     } as unknown as RequestService;
@@ -66,6 +67,18 @@ describe('SolanaRequestHandler', () => {
     await expect(signing).resolves.toEqual(response);
     expect(handler.signSolanaSubject.value).toEqual({});
     expect(requestService.updateIcon).toHaveBeenLastCalledWith(true);
+  });
+
+  it('rejects a pending request on reset and ignores its late result', async () => {
+    const { handler } = createHandler();
+    const signing = handler.confirmSignMessage('https://dapp.example',
+      { messageBase64: 'AQID', origin: 'Public dApp' }, account, 'reset-pending');
+    const result = signing.then(() => 'resolved', () => 'rejected');
+    const queued = handler.getSolanaSignRequest('reset-pending')!;
+    handler.resetWallet();
+    queued.resolve(response);
+    expect(await result).toBe('rejected');
+    expect(handler.signSolanaSubject.value).toEqual({});
   });
 
   it('publishes Solana transaction and batch signing requests', async () => {

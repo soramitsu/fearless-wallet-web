@@ -16,7 +16,7 @@
 import { useRouter } from 'vue-router';
 import { computed } from 'vue';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
-import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { Components } from '@/router/routes';
 
 type Props = {

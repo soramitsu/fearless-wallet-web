@@ -1,7 +1,7 @@
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { NetworkJson, Asset, NetworkEcosystem } from '@extension-base/types';
 import { TON_MAINNET } from '@/consts/networks';
-import { UNIVERSAL_WALLET_CHAIN_REGISTRY } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_CHAIN_REGISTRY, UNIVERSAL_WALLET_NATIVE_PRICE_IDS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import {
@@ -62,6 +62,10 @@ function mergeUniversalWalletRegistryNetworks(
     if (!existingKey) {
       networkMap[registryNetwork.name] = {
         ...registryNetwork,
+        currentProvider: storedNetwork?.currentProvider || registryNetwork.currentProvider,
+        customNodes: storedNetwork?.customNodes ?? registryNetwork.customNodes,
+        customProviders: storedNetwork?.customProviders ?? registryNetwork.customProviders,
+        isManual: storedNetwork?.isManual,
         favorite: storedNetwork?.favorite ?? registryNetwork.favorite,
       };
 
@@ -152,6 +156,8 @@ function mergeRegistryNetworkDefaults(
     providers: Object.keys(existing.providers ?? {}).length ? existing.providers : registryNetwork.providers,
     currentProvider: existing.currentProvider || registryNetwork.currentProvider,
     customNodes: existing.customNodes ?? registryNetwork.customNodes,
+    customProviders: existing.customProviders ?? registryNetwork.customProviders,
+    isManual: existing.isManual,
     favorite: storedNetwork?.favorite ?? existing.favorite ?? registryNetwork.favorite,
   };
 }
@@ -218,10 +224,6 @@ function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryN
   })?.[0];
 }
 
-// CoinGecko knows SOL as `solana`; the lower-cased ticker `sol` is not an id it serves, so a Solana balance would
-// otherwise have no fiat price and be left out of every total.
-const NATIVE_PRICE_IDS: Readonly<Record<string, string>> = Object.freeze({ 'solana:mainnet': 'solana' });
-
 function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
   const { ecosystem, nativeAsset } = entry;
   const symbol = nativeAsset?.symbol ?? 'UNKNOWN';
@@ -234,7 +236,7 @@ function createNativeAsset(entry: UniversalWalletChainRegistryEntry): Asset {
     currencyId: nativeAsset?.id ?? symbol,
     precision: nativeAsset?.decimals ?? 0,
     // Test-network coins share a mainnet symbol but have no market value.
-    priceId: isTestnetEntry(entry) ? '' : NATIVE_PRICE_IDS[entry.chainId] ?? symbol.toLowerCase(),
+    priceId: isTestnetEntry(entry) ? '' : UNIVERSAL_WALLET_NATIVE_PRICE_IDS[entry.chainId] ?? '',
     icon: REGISTRY_TOKEN_ICONS[symbol] ?? symbol.toLowerCase(),
     color: '',
     staking: '',

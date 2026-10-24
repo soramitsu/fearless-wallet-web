@@ -769,6 +769,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource/noto-sans-cuneiform@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/noto-sans-cuneiform@npm:5.3.0"
+  checksum: 10/da5fcb70c6490021b8cd85acd849b2667b8538c6bb72f5fa3f71900e04fe36b178ed4674ab11f6b352a630b19a88d51caa2bcd5cafa631d2b5a86fcfdf6f9a98
+  languageName: node
+  linkType: hard
+
 "@fontsource/noto-sans-egyptian-hieroglyphs@npm:^5.3.0":
   version: 5.3.0
   resolution: "@fontsource/noto-sans-egyptian-hieroglyphs@npm:5.3.0"
@@ -4832,7 +4839,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bitcoinjs-lib@npm:^6.1.5":
+"bitcoinjs-lib@npm:6.1.7, bitcoinjs-lib@npm:^6.1.5":
   version: 6.1.7
   resolution: "bitcoinjs-lib@npm:6.1.7"
   dependencies:
@@ -7055,6 +7062,7 @@ __metadata:
     "@eslint/js": "npm:^10.0.1"
     "@fontsource-variable/sora": "npm:^5.2.8"
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
+    "@fontsource/noto-sans-cuneiform": "npm:^5.3.0"
     "@fontsource/noto-sans-egyptian-hieroglyphs": "npm:^5.3.0"
     "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz"
     "@metamask/safe-event-emitter": "npm:^3.1.2"
@@ -7076,6 +7084,8 @@ __metadata:
     "@scure/base": "npm:^1.2.6"
     "@scure/bip32": "npm:^1.4.0"
     "@scure/bip39": "npm:2.2.0"
+    "@sora-substrate/api": "npm:1.40.2"
+    "@sora-substrate/connection": "npm:1.40.2"
     "@sora-substrate/sdk": "npm:1.43.0-betaMST-1.0.21"
     "@sora-substrate/util": "npm:1.40.2"
     "@stylistic/eslint-plugin": "npm:^5.10.0"
@@ -7107,6 +7117,7 @@ __metadata:
     axios: "npm:^1.20.0"
     bignumber.js: "npm:^11.1.4"
     bip39: "npm:3.1.0"
+    bitcoinjs-lib: "npm:6.1.7"
     country-code-emoji: "npm:^2.3.0"
     crypto-js: "npm:^4.2.0"
     date-fns: "npm:^4.4.0"
@@ -7141,6 +7152,7 @@ __metadata:
     rxjs: "npm:^7.8.2"
     sass: "npm:^1.101.0"
     tippy.js: "npm:^6.3.7"
+    tldts: "npm:7.4.3"
     tonweb-mnemonic: "npm:1.0.1"
     typescript: "npm:6.0.3"
     typescript-eslint: "npm:^8.62.0"
@@ -11117,7 +11129,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tldts@npm:^7.0.8":
+"tldts@npm:7.4.3, tldts@npm:^7.0.8":
   version: 7.4.3
   resolution: "tldts@npm:7.4.3"
   dependencies:

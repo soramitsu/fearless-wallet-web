@@ -20,7 +20,7 @@
         :address="address"
         class="wallet"
         data-testid="walletContent"
-        @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
+        @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible($event, address)"
         @setWallet="updateSelectedWallet(address, walletEcosystem)"
       />
 

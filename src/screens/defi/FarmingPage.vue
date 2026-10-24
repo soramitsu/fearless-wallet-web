@@ -21,7 +21,19 @@
         </div>
 
         <template v-else>
-          <div v-if="!catalog.canSign" class="signing-state">
+          <section v-if="catalog.actionsPaused" class="paused-state" role="status" data-testid="farmingPaused">
+            <Icon icon="info" className="state-icon" :hover="false" />
+            <strong>{{ t('farmingPage.pausedTitle') }}</strong>
+            <span>{{ t('farmingPage.pausedBody') }}</span>
+            <FButton
+              type="secondary"
+              width="100%"
+              text="farmingPage.openPools"
+              data-testid="farmingOpenPools"
+              @click="router.push({ name: Components.Pools })"
+            />
+          </section>
+          <div v-else-if="!catalog.canSign" class="signing-state">
             <strong>{{ t('farmingPage.browseOnly') }}</strong>
             <span>{{ t('farmingPage.fallback.signing') }}</span>
           </div>
@@ -113,7 +125,7 @@
 
 <script setup lang="ts">
 import { computed, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import BigNumber from 'bignumber.js';
 import type {
   DemeterOperation,
@@ -125,10 +137,12 @@ import { getDemeterPools, mutateDemeter } from '@/extension/messaging';
 import { useI18n } from '@/locales/useI18n';
 import { useWalletRecovery } from '@/util/useWalletRecovery';
 import { isRecoveryDemeterAction } from '@/util/walletRecoveryActions';
+import { Components } from '@/router/routes';
 
 const { t } = useI18n();
 const recoveryOnly = useWalletRecovery();
 const route = useRoute();
+const router = useRouter();
 const positionElements = new Map<string, HTMLElement>();
 const contentHeight = CONTENT_FORM_HEIGHT;
 const loading = ref(true);
@@ -147,6 +161,8 @@ const positions = computed(
     ) ?? []
 );
 const activePools = computed(() => catalog.value?.pools.filter((pool) => !pool.isRemoved) ?? []);
+// Positions stay visible while release policy keeps Demeter actions off.
+const canAct = computed(() => Boolean(catalog.value?.canSign && !catalog.value.actionsPaused));
 const actionTitleKey = computed(() => {
   if (selectedOperation.value === 'deposit') return 'farmingPage.actionTitle.depositLp';
   if (selectedOperation.value === 'withdraw') return 'farmingPage.actionTitle.withdrawLp';
@@ -157,7 +173,7 @@ const selectedFee = computed(() =>
 );
 const depositFee = computed(() => `${Number(selectedPool.value?.depositFee ?? 0) * 100}%`);
 const canReview = computed(() => {
-  if (!catalog.value?.canSign || !selectedOperation.value) return false;
+  if (!canAct.value || !selectedOperation.value) return false;
   if (recoveryOnly.value && !isRecoveryDemeterAction(selectedOperation.value)) return false;
   if (selectedOperation.value === 'claim') return selectedPool.value?.earnedRewards !== '0';
   return /^(?:0|[1-9]\d*)(?:\.\d+)?$/u.test(amount.value) && Number(amount.value) > 0;
@@ -208,7 +224,7 @@ const PoolCard = defineComponent({
               'button',
               {
                 type: 'button',
-                disabled: !catalog.value?.canSign || props.pool.isRemoved,
+                disabled: !canAct.value || props.pool.isRemoved,
                 onClick: () => openAction(props.pool, 'deposit'),
               },
               t('farmingPage.deposit')
@@ -218,7 +234,7 @@ const PoolCard = defineComponent({
                   'button',
                   {
                     type: 'button',
-                    disabled: !catalog.value?.canSign || props.pool.pooledTokens === '0',
+                    disabled: !canAct.value || props.pool.pooledTokens === '0',
                     onClick: () => openAction(props.pool, 'withdraw'),
                   },
                   t('farmingPage.withdraw')
@@ -229,7 +245,7 @@ const PoolCard = defineComponent({
                   'button',
                   {
                     type: 'button',
-                    disabled: !catalog.value?.canSign || props.pool.earnedRewards === '0',
+                    disabled: !canAct.value || props.pool.earnedRewards === '0',
                     onClick: () => openAction(props.pool, 'claim'),
                   },
                   t('farmingPage.claim')
@@ -382,6 +398,18 @@ onMounted(loadPools);
   border-radius: 8px;
   text-align: left;
 }
+.paused-state {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 16px 0;
+  padding: 14px 16px;
+  border: $default-border;
+  border-left: 2px solid $orange-color;
+  border-radius: 10px;
+  text-align: left;
+}
+.paused-state span,
 .signing-state span,
 .empty-copy {
   color: $gray-color;
@@ -409,7 +437,7 @@ onMounted(loadPools);
   border-top: $default-border;
 }
 .pool-card:focus {
-  outline: 2px solid $pink-color;
+  outline: 2px solid palette($pink-color, var(--fw-focus));
   outline-offset: 4px;
 }
 .pool-card.removed {

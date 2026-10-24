@@ -67,7 +67,7 @@
               ><strong>{{ t('defiHub.farming') }}</strong
               ><small v-if="!recoveryOnly">{{ t('defiHub.farmingDescription') }}</small></span
             >
-            <span class="capability">SORA</span>
+            <span class="capability" data-testid="farmingCapability">{{ farmingCapability }}</span>
             <Icon icon="chevron-right" :hover="false" />
           </button>
         </section>
@@ -79,7 +79,7 @@
             <span
               ><strong>Polkamarkt</strong><small v-if="!recoveryOnly">{{ t('defiHub.polkamarktDescription') }}</small></span
             >
-            <span class="capability">{{ t('defiHub.soraXorFees') }}</span>
+            <span class="capability" data-testid="polkamarktCapability">{{ polkamarktCapability }}</span>
             <Icon icon="chevron-right" :hover="false" />
           </button>
         </section>
@@ -96,6 +96,7 @@ import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { useStakingStore } from '@/stores/staking';
 import { usePoolsStore } from '@/stores/pools';
 import { useAccountsStore } from '@/stores/accounts';
+import { useExtensionStore } from '@/stores/extension';
 import { getDemeterPools, getPoolsParams } from '@/extension/messaging/pools';
 import { getStakingParams } from '@/extension/messaging/staking';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
@@ -110,6 +111,7 @@ const { t, locale } = useI18n();
 const recoveryOnly = useWalletRecovery();
 const recoveryCopy = computed(() => legacyWalletUpgradeMessages[locale.value === 'ru-RU' ? 'ru-RU' : 'en-EN']);
 const accountsStore = useAccountsStore();
+const extensionStore = useExtensionStore();
 const stakingStore = useStakingStore();
 const poolsStore = usePoolsStore();
 const contentHeight = CONTENT_FORM_HEIGHT;
@@ -119,6 +121,14 @@ let requestId = 0;
 let loadedWallet = '';
 const stakingCapability = computed(() =>
   accountsStore.selectedWallet.isSubstrate ? t('defiHub.availableNetworks') : t('defiHub.addSubstrateAccount')
+);
+// Entries stay open while release policy keeps their actions off; the label
+// says what to expect before the page explains why.
+const farmingCapability = computed(() =>
+  extensionStore.features?.actions?.demeter === false ? t('defiHub.browseOnly') : 'SORA'
+);
+const polkamarktCapability = computed(() =>
+  extensionStore.features?.actions?.polkamarkt === false ? t('defiHub.browseOnly') : t('defiHub.soraXorFees')
 );
 const open = (name: Components) => router.push({ name });
 

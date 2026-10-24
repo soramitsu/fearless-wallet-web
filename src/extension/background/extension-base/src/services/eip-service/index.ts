@@ -1,6 +1,7 @@
 import { toBeHex, type JsonRpcPayload } from 'ethers';
 import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
+import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
@@ -246,33 +247,23 @@ export class EipService {
   }
 
   private async revokeEvmPermission(url: string) {
-    const authList = await this.state.requestService.getAuthList();
-
     const idStr = stripUrl(url);
-
-    this.state.requestService.setAuthorize({
-      ...authList,
-      [idStr]: {
-        ...authList[idStr],
-        evmAuthorizedAccount: '',
-      },
+    await this.state.requestService.mutateAuthorizations((entries) => {
+      if (entries[idStr]) entries[idStr].evmAuthorizedAccount = '';
     });
   }
 
   private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
-    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
+    const data = structuredClone(params);
+    const context = await captureEvmSigningContext(this.state, url, method, data);
+    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, data, context);
 
     if (signResult) return signResult.payload;
     else throw new Error('Failed to sign message');
   }
 
   async evmSendTransaction(id: string, url: string, payload: RequestArguments): Promise<string> {
-    const { method, params } = payload;
-
-    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, params);
-
-    if (signResult) return signResult.payload;
-    else throw new Error('Failed to sign message');
+    return this.evmSign(id, url, payload);
   }
 
   async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {

@@ -1,11 +1,10 @@
-// The web wallet keeps its existing encrypted password record in localStorage.
-// A service worker cannot access that API, so the owning window performs only
-// these three fixed-key operations. Account data and its format are unchanged.
+// Read the historical record for migration. All new password writes and reset
+// tombstones live with account records in IndexedDB; legacy bytes remain intact.
 const channelName = 'fearless.web.password-store';
 const storageKey = 'fw:keyring';
 let installed = false;
 
-type Operation = 'get' | 'set' | 'remove';
+type Operation = 'get';
 type BridgeOperation = Operation | 'ready';
 export function installWebPasswordStorage(): void {
   if (installed) return;
@@ -24,9 +23,6 @@ export function installWebPasswordStorage(): void {
       let value: string | null = null;
       if (operation === 'ready') value = channelName;
       else if (operation === 'get') value = localStorage.getItem(storageKey);
-      else if (operation === 'set' && typeof event.data.value === 'string') {
-        localStorage.setItem(storageKey, event.data.value);
-      } else if (operation === 'remove') localStorage.removeItem(storageKey);
       else throw new Error('Unsupported storage operation');
       port.postMessage({ value });
     } catch {
@@ -37,7 +33,7 @@ export function installWebPasswordStorage(): void {
   });
 }
 
-export async function requestWebPasswordStorage(operation: Operation, value?: string): Promise<string | null> {
+export async function requestWebPasswordStorage(operation: Operation): Promise<string | null> {
   type WalletWindow = { url: string; focused: boolean; postMessage: (data: unknown, ports: MessagePort[]) => void };
   const scope = globalThis as unknown as {
     clients: {
@@ -70,14 +66,13 @@ export async function requestWebPasswordStorage(operation: Operation, value?: st
       else resolve(data.value);
     };
     try {
-      client.postMessage({ channel: channelName, operation: action, value }, [channel.port2]);
+      client.postMessage({ channel: channelName, operation: action }, [channel.port2]);
     } catch (error) {
       finish();
       reject(error);
     }
   });
-  // A focused same-origin page may not be a wallet. Discover a live listener
-  // before sending a mutation, and never duplicate a write across windows.
+  // A focused same-origin page may not be a wallet. Discover a live listener.
   const discovery = new AbortController();
   let client: WalletWindow;
   try {

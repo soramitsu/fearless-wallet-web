@@ -74,9 +74,10 @@
                 class="row"
                 text="assets.amount"
                 :totalAmount="transferableAmount"
+                :balanceUnavailable="balanceUnavailable"
                 :value="syncedValue"
                 :asset="sendAssetName"
-                :assetId="syncedAssetId"
+                :assetId="transferAssetId"
                 :amount="syncedAmount"
                 :isRotate="showSelectedAssetPopup"
                 :disableSelection="lockRouteSelection"
@@ -128,6 +129,14 @@
                 />
               </div>
 
+              <p v-if="showGroupNetworkWarning" class="send-note" data-testid="sendGroupNetworkWarning">
+                {{ $t('assets.sendGroupNetworkWarning', { symbol: sendAssetName?.toUpperCase(), network: originNet?.name ?? syncedNetwork }) }}
+              </p>
+
+              <p v-if="bitcoinRecipientHint" class="send-note" data-testid="bitcoinRecipientTypes">
+                {{ $t('assets.bitcoinSupportedAddresses', { prefixes: bitcoinRecipientHint }) }}
+              </p>
+
               <Alert v-if="isScamAddress" :message="scamMessage" headerText="common.warning" />
 
               <slot name="step1Warning"></slot>
@@ -158,6 +167,12 @@
 
               <template v-if="isTransfer">
                 <InfoRow
+                  v-if="bitcoinQuote"
+                  text="assets.bitcoinFeeRate"
+                  :value="$t('assets.bitcoinFeeRateValue', { rate: $n(bitcoinQuote.feeRateSatPerVbyte, 'decimalPrecise') })"
+                  data-testid="bitcoinFeeRate"
+                />
+                <InfoRow
                   v-if="solanaAccountCreationDeposit"
                   text="assets.solanaAccountCreation"
                   :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
@@ -165,6 +180,12 @@
                 />
                 <p v-if="solanaAccountCreationDeposit" class="send-note">
                   {{ $t('assets.solanaAccountCreationHint', { asset: sendAssetName?.toUpperCase() }) }}
+                </p>
+                <p v-if="bitcoinAwaitingConfirmation" class="send-note" data-testid="bitcoinAwaitingConfirmation">
+                  {{ $t('assets.bitcoinAwaitingConfirmation', { amount: bitcoinAwaitingConfirmation }) }}
+                </p>
+                <p v-if="bitcoinPreviousSendNote" class="send-note" data-testid="bitcoinPreviousSend">
+                  {{ bitcoinPreviousSendNote }}
                 </p>
               </template>
 
@@ -175,6 +196,11 @@
             <template v-else-if="step === 2">
               <slot name="step2"></slot>
 
+              <InfoRow
+                v-if="isTransfer && bitcoinQuote"
+                text="assets.bitcoinFeeRate"
+                :value="$t('assets.bitcoinFeeRateValue', { rate: $n(bitcoinQuote.feeRateSatPerVbyte, 'decimalPrecise') })"
+              />
               <InfoRow
                 v-if="isTransfer && solanaAccountCreationDeposit"
                 text="assets.solanaAccountCreation"
@@ -244,6 +270,7 @@
 import { defineComponent } from 'vue';
 
 import { FPNumber } from '@sora-substrate/util';
+import { APIItemState } from '@extension-base/api/types/networks';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { Reasons } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
@@ -253,16 +280,20 @@ import type {
   AccountJson,
   RequestCheckTransfer,
   RequestCheckCrossChain,
+  ResponseBitcoinTransferQuote,
   ResponseSolanaTransferQuote,
 } from '@extension-base/background/types/types';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import BaseApi from '@/util/BaseApi';
 import {
-  getCurrencyOptions,
   calcTransferableSendMinusFee,
+  findTransferAssetGroup,
+  getTransferAssetOptions,
+  getTransferAssetOptionValue,
   isValidAmountAsset,
   getUtilityAsset,
+  parseTransferAssetOptionValue,
 } from '@/helpers/currencies';
 import { cut, getClipboard, isSameString, isTonNetwork } from '@/helpers';
 import {
@@ -286,9 +317,10 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
-import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
+import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { canonicalGroupIndexFor, canonicalGroupOf } from '@/portfolio/tokenGroups';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 
 // How long the priority fee that Max quoted is kept for pricing the amount it produced.
 const SOLANA_PRICE_HINT_MS = 60_000;
@@ -345,6 +377,7 @@ export default defineComponent({
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
       crossChainRuntimeMinimum: '',
+      bitcoinQuote: null as ResponseBitcoinTransferQuote | null,
       solanaQuote: null as ResponseSolanaTransferQuote | null,
       solanaPriceHint: null as { amount: string; assetId: string; at: number; network: string; price: number } | null,
       isScamAddress: false,
@@ -429,6 +462,26 @@ export default defineComponent({
     firstIcon() {
       return this.isTransfer ? this.syncedAssetId : this.syncedNetwork;
     },
+    // An earlier Bitcoin send whose outcome is not settled: waiting in the mempool, so
+    // nothing new is sent until it confirms, or unknown, so its coins are reused.
+    bitcoinPreviousSendNote() {
+      const previous = this.bitcoinQuote?.previousSend;
+
+      if (!previous) return '';
+
+      const shorten = (value: string | undefined, tail: number) =>
+        value && value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-tail)}` : value ?? '—';
+      const details = {
+        amount: previous.amount ? `${previous.amount} BTC` : '—',
+        recipient: shorten(previous.recipient, 6),
+        txid: shorten(previous.txid, 8),
+      };
+
+      if (previous.inMempool) return this.$t('assets.bitcoinPreviousSendOnNetwork', details);
+      if (this.bitcoinQuote?.pendingPreviousSend) return this.$t('assets.bitcoinPreviousSendReused', details);
+
+      return '';
+    },
     placeholderSelectPopup() {
       return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
     },
@@ -468,7 +521,11 @@ export default defineComponent({
       return -160;
     },
     selectPopupValue() {
-      if (this.showSelectedAssetPopup) return this.syncedAssetId;
+      if (this.showSelectedAssetPopup) {
+        const network = this.networksStore.getNetwork(this.syncedNetwork)?.name ?? this.syncedNetwork;
+
+        return getTransferAssetOptionValue(this.transferAssetId, network);
+      }
 
       if (this.showSelectNetworkPopup) return this.syncedNetwork;
 
@@ -481,7 +538,7 @@ export default defineComponent({
       if (!navigator.onLine) return 'common.offlineStatus';
 
       if (this.isBitcoinTransferDisabled) {
-        return BaseApi.isSolanaNetwork(this.syncedNetwork) ? 'common.featureOff' : 'assets.bitcoinTransfersDisabled';
+        return BaseApi.isSolanaNetwork(this.syncedNetwork) ? 'common.featureOff' : this.originNet?.ecosystem === 'iroha' ? 'assets.irohaTransfersDisabled' : 'assets.bitcoinTransfersDisabled';
       }
 
       if (!this.currency) return '';
@@ -497,6 +554,9 @@ export default defineComponent({
       if (this.isSameAddress) return 'assets.isSameAddress';
 
       if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
+
+      // An unknown balance is not an insufficient one: the amount check below would read it as 0.
+      if (this.balanceUnavailable) return 'assets.balanceNotLoaded';
 
       if (!this.isValidSendAsset)
         return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
@@ -526,6 +586,8 @@ export default defineComponent({
 
       if (this.step === 2) return false;
 
+      if (this.balanceUnavailable) return true;
+
       return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedFee === '';
     },
     isAllFieldsCorrect() {
@@ -551,7 +613,7 @@ export default defineComponent({
     isBitcoinTransferDisabled() {
       if (!this.isTransfer) return false;
 
-      return !isNetworkTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork), this.sendKillSwitchStore.vetoes);
+      return !this.isTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork));
     },
     isValidRecipientAddress() {
       if (this.isSameAddress) return false;
@@ -584,15 +646,44 @@ export default defineComponent({
         );
       }
 
-      return this.accountsStore.balances?.find(({ balances }) =>
-        balances.some((el) => isSameString(el.id, this.syncedAssetId))
-      );
+      return findTransferAssetGroup(this.accountsStore.balances, this.syncedAssetId, this.syncedNetwork);
     },
     currencyBalance() {
       return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
     },
+    transferAssetId() {
+      // The route may carry a group or canonical id; the background resolves registry ids.
+      return this.currencyBalance?.id ?? this.syncedAssetId;
+    },
     transferableAmount() {
+      // Bitcoin can send only confirmed coins worth more than their fee.
+      if (this.isTransfer && this.bitcoinQuote) return +this.bitcoinQuote.spendable;
+
       return +(this.currencyBalance?.transferable ?? 0);
+    },
+    // The last update failed with no amount confirmed before: what can be sent is unknown, not 0.
+    balanceUnavailable(): boolean {
+      const balance = this.currencyBalance;
+
+      return (
+        balance?.state === APIItemState.ERROR &&
+        [balance.transferable, balance.total, balance.free].every((value) => value === undefined || value === null)
+      );
+    },
+    isQuotedTransferNetwork() {
+      return this.isTransfer && (BaseApi.isBitcoinNetwork(this.syncedNetwork) || BaseApi.isSolanaNetwork(this.syncedNetwork));
+    },
+    bitcoinRecipientHint() {
+      if (!this.isTransfer || !BaseApi.isBitcoinNetwork(this.syncedNetwork)) return '';
+
+      return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.syncedNetwork)
+        ? 'm, n, 2, tb1q, tb1p'
+        : '1, 3, bc1q, bc1p';
+    },
+    bitcoinAwaitingConfirmation() {
+      const amount = this.bitcoinQuote?.awaitingConfirmation;
+
+      return amount && +amount > 0 ? `${this.$n(+amount, 'decimalPrecise')} BTC` : '';
     },
     options() {
       const filter = this.filterValue.trim().toLowerCase();
@@ -615,7 +706,7 @@ export default defineComponent({
         return prepBalances.some(({ name }) => {
           const { active, rank, favorite } = this.networksStore.getNetwork(name);
 
-          if (!active || !isNetworkTransferEnabled(this.networksStore.getNetwork(name), this.sendKillSwitchStore.vetoes)) return false;
+          if (!active || !this.isTransferEnabled(this.networksStore.getNetwork(name))) return false;
 
           if (this.isSelectedNetworkGroup) {
             if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
@@ -632,22 +723,27 @@ export default defineComponent({
       return result;
     },
     optionsAssets() {
-      if (this.lockRouteSelection) return this.currency ? getCurrencyOptions([this.currency]) : [];
+      if (this.lockRouteSelection) {
+        return this.currency
+          ? getTransferAssetOptions([this.currency], this.networksStore.getNetwork, {
+              isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
+            })
+          : [];
+      }
+
+      const getPrice = (priceId: string) => this.networksStore.getAssetPrice(priceId).price;
+
+      if (this.isTransfer) {
+        return getTransferAssetOptions(this.accountsStore.balances, this.networksStore.getNetwork, {
+          getPrice,
+          isNetworkAvailable: (network) => network.active && this.isTransferEnabled(network),
+        });
+      }
 
       const { xcm, parentId } = this.networksStore.networks.find(
         ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
       )!;
       const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
-
-      if (this.isTransfer) {
-        const balances = this.accountsStore.balances.filter(({ balances: networkBalances }) =>
-          networkBalances.some(({ name }) =>
-            isNetworkTransferEnabled(this.networksStore.getNetwork(name), this.sendKillSwitchStore.vetoes)
-          )
-        );
-
-        return getCurrencyOptions(balances);
-      }
 
       const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
         if (relayChain.toLowerCase() !== relay) return false;
@@ -659,25 +755,66 @@ export default defineComponent({
         });
       });
 
-      return getCurrencyOptions(balances);
+      // The origin network is chosen separately, so a cross-chain asset option never switches it.
+      return getTransferAssetOptions(balances, this.networksStore.getNetwork, {
+        getPrice,
+        isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
+      });
+    },
+    // The approved token group of the asset being sent (portfolio contract §7), matched by (chainId, assetId).
+    canonicalGroup() {
+      const index = canonicalGroupIndexFor(this.networksStore.allNetworks ?? []);
+
+      return canonicalGroupOf(index, this.originNet, this.currencyBalance?.id ?? this.syncedAssetId);
+    },
+    // Each network of the group as `network name → registry id there`, for the networks this wallet can send on.
+    groupNetworkAssets() {
+      const members = new Map<string, string>();
+      const group = this.canonicalGroup?.group;
+      if (!group) return members;
+
+      group.members.forEach(({ networkName, assetId }) => {
+        const holds = this.accountsStore.balances.some(({ balances }) =>
+          balances.some((balance) => isSameString(balance.name, networkName) && isSameString(balance.id, assetId))
+        );
+
+        if (holds && !members.has(networkName)) members.set(networkName, assetId);
+      });
+
+      return members;
     },
     optionsNetworks() {
       // used only for transfer
-      const walletBalance = this.currency?.balances ?? [];
+      // The asset's own network, plus the other networks of its approved token group: DOT on Polkadot, Polkadot
+      // AssetHub and the parachains that hold reserve-backed DOT. Never by symbol, and never a bridged look-alike.
+      const currentId = this.currencyBalance?.id ?? this.currency?.balances[0]?.id ?? this.syncedAssetId;
+      const candidates = [
+        ...this.accountsStore.balances.flatMap(({ balances }) =>
+          balances.filter(({ id, name }) => isSameString(id, currentId) && isSameString(name, this.syncedNetwork))
+        ),
+        ...this.accountsStore.balances.flatMap(({ balances }) =>
+          balances.filter(({ id, name }) =>
+            [...this.groupNetworkAssets].some(
+              ([networkName, assetId]) => isSameString(name, networkName) && isSameString(id, assetId)
+            )
+          )
+        ),
+      ];
+      const networkNames = new Set<string>();
 
-      return walletBalance.flatMap(({ name, icon }) => {
+      return candidates.flatMap(({ name, icon }) => {
         const network = this.networksStore.getNetwork(name);
 
-        if (!network.active || !isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes)) return [];
+        if (!network?.active || !this.isTransferEnabled(network) || networkNames.has(network.name)) return [];
 
-        return [
-          {
-            name: network.name,
-            value: network.name,
-            icon,
-          },
-        ];
+        networkNames.add(network.name);
+
+        return [{ name: network.name, value: network.name, icon }];
       });
+    },
+    // Several networks carry this token: say which one this send uses, before the recipient is checked.
+    showGroupNetworkWarning() {
+      return this.isTransfer && this.groupNetworkAssets.size > 1 && this.syncedNetwork !== '';
     },
     originNet() {
       return this.networksStore.getNetwork(this.syncedNetwork);
@@ -751,7 +888,7 @@ export default defineComponent({
         to: this.syncedRecipient,
         from: this.transactionAddress,
         relayChain: this.currency?.relayChain,
-        assetId: this.syncedAssetId,
+        assetId: this.transferAssetId,
         amount: this.syncedAmount,
       };
 
@@ -760,7 +897,8 @@ export default defineComponent({
           ...baseRequest,
           networkKey: this.syncedNetwork,
           approvedMaxFee: this.syncedFee,
-          // The send pays the priority fee the user reviewed.
+          // The send pays the fee rate and priority fee the user reviewed.
+          bitcoinFeeRateSatPerVbyte: this.bitcoinQuote?.feeRateSatPerVbyte,
           solanaComputeUnitPriceMicroLamports: this.solanaQuote?.computeUnitPriceMicroLamports,
         } as RequestCheckTransfer;
 
@@ -856,6 +994,9 @@ export default defineComponent({
     this.calculateEstimates();
   },
   methods: {
+    isTransferEnabled(network: Parameters<typeof isNetworkTransferEnabled>[0]) {
+      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
+    },
     async checkScam() {
       if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
         const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
@@ -896,7 +1037,12 @@ export default defineComponent({
       this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
       this.syncedValue = '';
 
-      if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
+      if (!this.isTransfer) return;
+
+      // An asset option already names its network; keep it while that network still offers the asset.
+      if (this.optionsNetworks.some(({ value }) => isSameString(value, this.syncedNetwork))) return;
+
+      this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     },
     async clearRecipient() {
       this.$nextTick(() => {
@@ -927,10 +1073,11 @@ export default defineComponent({
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
-        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, solana } = await this.verifyTx();
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, bitcoin, solana } = await this.verifyTx();
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         const transferError = errors?.[0];
 
+        this.bitcoinQuote = bitcoin ?? null;
         this.solanaQuote = solana ?? null;
 
         if (transferError) {
@@ -947,6 +1094,8 @@ export default defineComponent({
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         this.syncedFee = '';
         this.syncedDestNetFee = '';
+        this.bitcoinQuote = null;
+        this.solanaQuote = null;
         this.crossChainExecutionFingerprint = '';
         this.crossChainRuntimeMinimum = '';
         this.solanaQuote = null;
@@ -983,11 +1132,21 @@ export default defineComponent({
     },
     toggleSelectedNetwork(value: string) {
       if (this.showSelectedAssetPopup) {
-        this.syncedAssetId = value;
+        const { assetId, network } = parseTransferAssetOptionValue(value);
+
+        // The network goes first so the asset watcher sees the pair the user picked.
+        if (network) this.syncedNetwork = network;
+
+        this.syncedAssetId = assetId;
 
         this.toggleValue('showSelectedAssetPopup');
       } else if (this.showSelectNetworkPopup) {
+        // A group member on another network can have its own registry id: switch the network and that id
+        // together, so the asset is never replaced silently (the asset watcher then clears the amount).
+        const assetId = this.groupNetworkAssets.get(this.networksStore.getNetwork(value)?.name ?? value);
+
         this.syncedNetwork = value;
+        if (assetId && !isSameString(assetId, this.transferAssetId)) this.syncedAssetId = assetId;
 
         this.toggleValue('showSelectNetworkPopup');
       } else {
@@ -1051,7 +1210,7 @@ export default defineComponent({
         // A Solana quote without an amount returns the exact maximum; quoting the whole balance as the amount would
         // report a shortfall, because the fee and any account deposit come out of it.
         const quotedAmount =
-          this.isTransfer && BaseApi.isSolanaNetwork(this.syncedNetwork) ? '0' : this.transferableAmount.toString();
+          this.isQuotedTransferNetwork ? '0' : this.transferableAmount.toString();
         const quote = await this.verifyTx(quotedAmount, true);
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
 
@@ -1061,12 +1220,13 @@ export default defineComponent({
 
           return;
         }
-        const maxAmount = 'maxAmount' in quote ? quote.maxAmount : undefined;
+        const maxAmount = ('maxAmount' in quote ? quote.maxAmount : undefined) ?? ('bitcoin' in quote ? quote.bitcoin?.maxSendable : undefined) ?? ('solana' in quote ? quote.solana?.maxSendable : undefined);
         const transferable = typeof maxAmount === 'string'
           ? new FPNumber(maxAmount, this.currencyBalance?.precision)
           : this.calcTransferableSendMinusFee(quote.estimateFee);
 
         this.syncedFee = quote.estimateFee;
+        this.bitcoinQuote = ('bitcoin' in quote ? quote.bitcoin : undefined) ?? null;
         this.solanaQuote = ('solana' in quote ? quote.solana : undefined) ?? null;
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
@@ -1112,7 +1272,7 @@ export default defineComponent({
 
       const hasAmount = this.syncedAmount !== '' && this.syncedAmount !== '0';
       // Without an amount a Solana quote prices only the fee and the maximum, so it never reports a balance shortfall.
-      const amount = _amount ?? (hasAmount ? this.syncedAmount : this.isTransfer && BaseApi.isSolanaNetwork(this.syncedNetwork) ? '0' : '1');
+      const amount = _amount ?? (hasAmount ? this.syncedAmount : this.isQuotedTransferNetwork ? '0' : '1');
 
       if (this.isTransfer) {
         const ex = await checkTransfer({
@@ -1121,7 +1281,7 @@ export default defineComponent({
           to,
           relayChain: this.currency?.relayChain,
           amount,
-          assetId: this.syncedAssetId,
+          assetId: this.transferAssetId,
           sendMax,
           solanaComputeUnitPriceMicroLamports: this.getSolanaPriceHint(amount),
         });
@@ -1136,7 +1296,7 @@ export default defineComponent({
         to,
         relayChain: this.currency?.relayChain,
         amount,
-        assetId: this.syncedAssetId,
+        assetId: this.transferAssetId,
         assetKey: this.canonicalAssetKey,
         routeId: this.reviewedRouteId,
         routeProviderId: this.reviewedRouteProviderId,
@@ -1149,6 +1309,11 @@ export default defineComponent({
         return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.targetNetwork)
           ? VALID_BITCOIN_TESTNET_ADDRESS
           : VALID_BITCOIN_ADDRESS;
+      }
+      // Until a recipient is entered, a Solana quote prices a transfer to the
+      // wallet's own Solana address.
+      if (BaseApi.isSolanaNetwork(this.targetNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.targetNetwork);
       }
 
       // Until a recipient is entered, a Solana quote prices a transfer to the wallet's own Solana address.

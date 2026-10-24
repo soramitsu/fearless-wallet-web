@@ -1,97 +1,92 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
-import { nextTick, reactive } from 'vue';
-import type { SigningRequest } from '@extension-base/background/types/types';
+import { flushPromises, mount } from '@vue/test-utils';
+import { reactive } from 'vue';
+import type { EvmRequestPayload } from '@extension-base/services/request-service/types';
+import FButton from '@/components/FButton.vue';
+import Checkbox from '@/components/Checkbox.vue';
 
 const mocks = vi.hoisted(() => ({
   approveSign: vi.fn(),
+  deny: vi.fn(),
+  push: vi.fn(),
+  notify: vi.fn(),
   store: {} as Record<string, unknown>,
-  accounts: { accounts: [{ address: 'account', isMobile: false }], selectedWallet: { address: 'account' } },
 }));
-
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.store }));
-vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accounts }));
-vi.mock('@/util/BaseApi', () => ({ default: { encodeAddress: (address: string) => address } }));
-vi.mock('@/helpers', () => ({ cut: (value: string) => value }));
-vi.mock('@extension-base/api/substrate/typeRegistry', () => ({
-  default: {
-    setSignedExtensions: vi.fn(),
-    createType: () => ({ nonce: 0, genesisHash: '0x00', specVersion: 1, method: '0x01' }),
-  },
-}));
-vi.mock('@/screens/extension-ui/signing/WalletInfo.vue', () => ({ default: { template: '<div />' } }));
-vi.mock('@/screens/extension-ui/InfoList.vue', () => ({ default: { template: '<div><slot /></div>' } }));
-vi.mock('@/screens/extension-ui/InfoItem.vue', () => ({ default: { template: '<div />' } }));
+vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ allNetworks: [] }) }));
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push, currentRoute: { value: { name: 'Transaction' } } }) }));
+vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet', Transaction: 'Transaction' } }));
+vi.mock('@/plugins/soramitsuUI', () => ({ useNotify: () => mocks.notify }));
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: mocks.deny }));
+vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 
 import Transaction from '@/screens/extension-ui/signing/Transaction.vue';
 
-const request = (id: string): SigningRequest =>
-  ({
-    id,
-    url: `https://${id}.example`,
-    account: { address: 'account', name: 'Wallet' },
-    request: { payload: { address: 'account', method: '0x01', signedExtensions: [], version: 4 } },
-  }) as SigningRequest;
-
-function mountTransaction() {
-  return mount(Transaction, {
-    global: {
-      stubs: {
-        AboveForm: { template: '<div><slot /></div>' },
-        Loader: true,
-        FButton: {
-          props: ['disabled', 'text'],
-          emits: ['click'],
-          template: '<button :disabled="disabled" @click="$emit(\'click\')">{{ text }}</button>',
-        },
-      },
-    },
-  });
+const address = '0x1111111111111111111111111111111111111111';
+const request = (id: string, isMobile = false): EvmRequestPayload => ({
+  id, url: `https://${id}.example`, method: 'personal_sign', data: ['0xff', address],
+  account: { address, name: 'Wallet', isMobile },
+  network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },
+});
+const setRequests = (...requests: EvmRequestPayload[]) => {
+  mocks.store.signAllRequests = { substrate: [], evm: Object.fromEntries(requests.map((entry) => [entry.id, entry])), solana: {} };
+};
+function open() {
+  return mount(Transaction, { attachTo: document.body, global: { stubs: {
+    AboveForm: { template: '<main><slot /></main>' }, FButton, Checkbox, Icon: true,
+  } } });
 }
-
+async function consent(wrapper: ReturnType<typeof open>) {
+  const details = wrapper.get('details');
+  (details.element as HTMLDetailsElement).open = true;
+  await details.trigger('toggle');
+  await wrapper.get('input[type="checkbox"]').setValue(true);
+}
+const approve = (wrapper: ReturnType<typeof open>) => wrapper.get('[data-testid="approveSigning"] button');
 beforeEach(() => {
-  vi.clearAllMocks();
-  mocks.accounts.accounts[0].isMobile = false;
-  mocks.store = reactive({
-    approveSign: mocks.approveSign,
-    signRequestPayload: request('first').request.payload,
-    signAllRequests: { substrate: [request('first'), request('second')], evm: {}, solana: {} },
-  });
+  vi.resetAllMocks();
+  mocks.deny.mockResolvedValue(false);
+  mocks.push.mockResolvedValue(undefined);
+  mocks.approveSign.mockResolvedValue(true);
+  mocks.store = reactive({ approveSign: mocks.approveSign, signAllRequests: { substrate: [], evm: {}, solana: {} } });
 });
 
 describe('queued transaction approvals', () => {
-  it('enables approval of the next signing request when the subscription changes requests', async () => {
-    let finishFirst: () => void = () => undefined;
-    mocks.approveSign.mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          finishFirst = resolve;
-        })
-    );
-    const wrapper = mountTransaction();
-    await wrapper.get('button:last-child').trigger('click');
-    expect(wrapper.get('button:last-child').attributes('disabled')).toBeDefined();
+  it('releases the pending control for the next signing request after the first response', async () => {
+    let finishFirst: (value: boolean) => void = () => undefined;
+    mocks.approveSign.mockImplementationOnce(() => new Promise<boolean>((resolve) => { finishFirst = resolve; }));
+    setRequests(request('first'), request('second'));
+    const wrapper = open();
+    await flushPromises();
+    await consent(wrapper);
+    await approve(wrapper).trigger('click');
+    expect(approve(wrapper).attributes('aria-disabled')).toBe('true');
     expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'first' });
 
-    Object.assign(mocks.store, { signAllRequests: { substrate: [request('second')], evm: {}, solana: {} } });
-    await nextTick();
-    finishFirst();
-    await nextTick();
-
-    expect(wrapper.get('button:last-child').attributes('disabled')).toBeUndefined();
-    await wrapper.get('button:last-child').trigger('click');
+    setRequests(request('second'));
+    finishFirst(true);
+    await flushPromises();
+    expect(approve(wrapper).attributes('aria-disabled')).toBe('true');
+    await consent(wrapper);
+    expect(approve(wrapper).attributes('aria-disabled')).toBeUndefined();
+    await approve(wrapper).trigger('click');
     expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'second' });
+    expect(mocks.push).not.toHaveBeenCalledWith({ name: 'Wallet' });
     wrapper.unmount();
   });
 
-  it('starts mobile signing again when the next request becomes active', async () => {
-    mocks.accounts.accounts[0].isMobile = true;
-    const wrapper = mountTransaction();
-    expect(mocks.approveSign).toHaveBeenCalledWith({ id: 'first' });
-
-    Object.assign(mocks.store, { signAllRequests: { substrate: [request('second')], evm: {}, solana: {} } });
-    await nextTick();
-
+  it('keeps the next mobile request available for a separate explicit approval', async () => {
+    setRequests(request('first', true), request('second', true));
+    const wrapper = open();
+    await flushPromises();
+    await consent(wrapper);
+    await approve(wrapper).trigger('click');
+    await flushPromises();
+    setRequests(request('second', true));
+    await flushPromises();
+    expect(mocks.approveSign).toHaveBeenCalledTimes(1);
+    await consent(wrapper);
+    await approve(wrapper).trigger('click');
     expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'second' });
     expect(mocks.approveSign).toHaveBeenCalledTimes(2);
     wrapper.unmount();

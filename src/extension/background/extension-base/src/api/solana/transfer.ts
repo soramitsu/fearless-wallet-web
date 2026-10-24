@@ -1,3 +1,4 @@
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { withLocalTransferLock } from '@extension-base/api/localTransferLock';
 import { ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha2';
@@ -281,10 +282,9 @@ async function makeSolanaTransfer(
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   }: SolanaSendOptions = {}
 ): Promise<void> {
-  // The 3.0.x keyring keeps no wallet-reset revision to fence on. The secret is read inside prepareSolanaTransfer,
-  // which fails once a reset has removed the account; a transfer admitted earlier finishes as the user asked.
-  const assertCurrent = (): void => undefined;
+  const assertCurrent = captureWalletResetGuard(params.state);
   await assertSendCapability(params.state, 'solanaSend');
+  assertCurrent();
   if (typeof params.approvedMaxFee !== 'string') throw new Error('transfer_fee_approval_required');
 
   const approvedMaxFeeLamports = solanaAmountToLamports(params.approvedMaxFee);

@@ -2,6 +2,8 @@ import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/
 import {
   getTransactionFailurePresentation,
   getUnknownTransactionHash,
+  getTransactionOutcome,
+  isAccountAccessFailure,
   transactionResponseSucceeded,
 } from '@/helpers/transactionFailure';
 
@@ -180,5 +182,57 @@ describe('transaction failure presentation', () => {
       expect(transactionResponseSucceeded(response)).toBe(false);
       expect(getTransactionFailurePresentation(response, 'DOT')).toEqual({ key: 'assets.transactionFailedDetails' });
     }
+  });
+});
+
+describe('Bitcoin and Solana send outcomes', () => {
+  const failure = (message: string) => ({
+    status: false,
+    errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message }],
+  });
+
+  it.each([
+    ['bitcoin_broadcast_ambiguous', 'unconfirmed', 'assets.bitcoinBroadcastUnconfirmed'],
+    ['solana_broadcast_ambiguous', 'unconfirmed', 'assets.solanaBroadcastUnconfirmed'],
+    ['solana_broadcast_signature_mismatch', 'unconfirmed', 'assets.solanaBroadcastUnconfirmed'],
+    ['bitcoin_broadcast_rejected', 'failed', 'assets.bitcoinBroadcastRejected'],
+    ['bitcoin_previous_send_pending', 'failed', 'assets.bitcoinPreviousSendPending'],
+    ['bitcoin_previous_send_unconfirmed', 'failed', 'assets.bitcoinPreviousSendUnconfirmed'],
+    ['solana_previous_send_pending', 'failed', 'assets.solanaPreviousSendPending'],
+    ['solana_simulation_failed', 'failed', 'assets.solanaSimulationFailed'],
+    ['solana_transaction_expired', 'failed', 'assets.solanaTransactionExpired'],
+    ['solana_transaction_failed', 'failed', 'assets.solanaTransactionFailed'],
+  ])('presents %s as %s with %s', (message, outcome, key) => {
+    expect(getTransactionOutcome(failure(message))).toBe(outcome);
+    expect(getTransactionFailurePresentation(failure(message))).toEqual({ key });
+  });
+
+  it('never calls a success, a password error or a malformed response unconfirmed', () => {
+    expect(getTransactionOutcome({ status: true, errors: [] })).toBe('success');
+    expect(
+      getTransactionOutcome({
+        status: false,
+        passwordError: 'wrong',
+        errors: [{ message: 'bitcoin_broadcast_ambiguous' }],
+      })
+    ).toBe('failed');
+    expect(getTransactionOutcome({ status: false, errors: 'bitcoin_broadcast_ambiguous' })).toBe('failed');
+    expect(getTransactionOutcome(undefined)).toBe('failed');
+  });
+
+  it('explains a send stopped by a key that waits for a password, and marks it for the unlock action', () => {
+    const legacy = {
+      status: false,
+      errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'legacy_password_required' }],
+    };
+    const ton = { status: false, errors: [{ message: 'ton_seed_needs_previous_password' }] };
+
+    expect(getTransactionFailurePresentation(legacy)).toEqual({ key: 'migration.legacyPasswordRequired' });
+    expect(getTransactionFailurePresentation(ton)).toEqual({ key: 'accountAccess.previousPasswordRequired' });
+    expect(isAccountAccessFailure(legacy)).toBe(true);
+    expect(isAccountAccessFailure(ton)).toBe(true);
+    expect(isAccountAccessFailure({ status: false, errors: [{ message: 'bitcoin_broadcast_rejected' }] })).toBe(false);
+    expect(isAccountAccessFailure({ status: true })).toBe(false);
+    expect(isAccountAccessFailure(undefined)).toBe(false);
   });
 });

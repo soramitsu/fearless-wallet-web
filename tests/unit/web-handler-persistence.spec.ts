@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ handle: vi.fn(), accountsFlush: vi.fn(), passwordFlush: vi.fn() }));
+const mocks = vi.hoisted(() => ({ handle: vi.fn(), accountsFlush: vi.fn(), passwordFlush: vi.fn(), readOnly: false }));
 vi.mock('@/consts/global', () => ({ IS_EXTENSION: false }));
 vi.mock('@extension-base/stores/BaseWeb', () => ({ default: { flush: mocks.accountsFlush } }));
-vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: { flush: mocks.passwordFlush } }));
+vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: {
+  flush: mocks.passwordFlush, get readOnly() { return mocks.readOnly; },
+  assertWritable: () => { if (mocks.readOnly) throw new Error('Wallet storage needs repair.'); },
+} }));
 vi.mock('@extension-base/background/handlers/Extension', () => ({ default: class { handle = mocks.handle; } }));
 vi.mock('@extension-base/background/handlers/Tabs', () => ({ default: class { handle = mocks.handle; } }));
 vi.mock('@extension-base/background/handlers/State', () => ({ default: class {} }));
@@ -24,12 +27,30 @@ describe('web handler persistence boundary', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.readOnly = false;
     mocks.handle.mockResolvedValue('completed');
     mocks.accountsFlush.mockResolvedValue(undefined);
     mocks.passwordFlush.mockResolvedValue(undefined);
     vi.stubGlobal('BroadcastChannel', class { postMessage = postMessage; close = close; });
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it.each(['pri(keyring.changePassword)', 'pri(keyring.reset)', 'pri(accounts.create)', 'pri(accounts.deleted.restore)',
+    'pri(accounts.makeTransfer)', 'pri(signing.approve)', 'pri(authorize.approve)'])(
+    'denies %s before the handler while password storage needs repair', async (message) => {
+      mocks.readOnly = true;
+      await handlers({ ...request, message } as Parameters<typeof handlers>[0]);
+      expect(mocks.handle).not.toHaveBeenCalled();
+      expect(postMessage).toHaveBeenCalledExactlyOnceWith({ id: 'fixture', error: 'Wallet storage needs repair.' });
+    });
+
+  it.each(['pri(accounts.subscribe)', 'pri(keyring.unlock)', 'pri(keyring.export.mnemonic)', 'pri(accounts.export.json)'])(
+    'admits recovery request %s while password storage needs repair', async (message) => {
+      mocks.readOnly = true;
+      await handlers({ ...request, message } as Parameters<typeof handlers>[0]);
+      expect(mocks.handle).toHaveBeenCalledOnce();
+      expect(postMessage).toHaveBeenCalledExactlyOnceWith({ id: 'fixture', response: 'completed' });
+    });
 
   it('replies only after account and password storage have both settled', async () => {
     const accounts = deferred();

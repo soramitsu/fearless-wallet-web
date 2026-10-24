@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ pairs: new Map<string, ReturnType<typeof pair>>(), migrate: vi.fn(), unlock: vi.fn(), lock: vi.fn(), enroll: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  pairs: new Map<string, ReturnType<typeof pair>>(), migrate: vi.fn(), unlock: vi.fn(), lock: vi.fn(), enroll: vi.fn(),
+  master: '',
+}));
 vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
   getPair: (address: string) => {
     const pair = mocks.pairs.get(address);
@@ -8,8 +11,14 @@ vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
     return pair;
   },
   getAccounts: () => [...mocks.pairs.values()],
+  getAddresses: () => [],
   migrateWithMasterPassword: mocks.migrate,
   unlockKeyring: mocks.unlock, lockAll: mocks.lock,
+  // Like @subwallet/keyring unlockPair: decode with the master password held in memory.
+  unlockPair: (address: string) => {
+    if (!mocks.master) throw new Error('Please unlock first');
+    try { mocks.pairs.get(address).decodePkcs8(mocks.master); } catch { throw new Error(`Fail to unlock with address: ${address}`); }
+  },
 } }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: mocks.enroll }));
 vi.mock('@extension-base/services/keyring-service/LegacyPasswordUpgrade', () => ({
@@ -22,9 +31,11 @@ vi.mock('@extension-base/stores/Accounts', () => ({ default: class {} }));
 vi.mock('@extension-base/stores/KeyringStore', () => ({ default: class {} }));
 vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: class {} }));
 vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({ TonKeyringService: class {} }));
+vi.mock('@extension-base/stores/LegacyPasswordPromptStore', () => ({ default: class {} }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 
 import { KeyringService } from '@extension-base/services/keyring-service';
+import { TonSeedVault } from '@extension-base/services/keyring-service/TonSeedVault';
 
 const SUBSTRATE = '5LegacyFixture';
 const EVM = '0x1111111111111111111111111111111111111111';
@@ -46,15 +57,23 @@ function pair(address: string, migrated = false, password = 'legacy-password') {
   return value;
 }
 
-function service() {
+const services: KeyringService[] = [];
+function service(unlocked = false) {
   const value = Object.create(KeyringService.prototype) as KeyringService;
-  Object.assign(value, { unlockGeneration: 0 });
-  Object.defineProperty(value, 'tonKeyring', { value: { getAccounts: () => [], withStoreLock: (fn) => fn(), migrateOnUnlock: async () => {} } });
+  const ton = { getAccounts: () => [], accountSubject: { value: {} }, setAccounts: () => {} };
+  Object.assign(value, { password: unlocked ? 'current-master-password' : '' });
+  Object.defineProperty(value, 'tonKeyring', { value: { ...ton, vault: new TonSeedVault(ton) } });
+  services.push(value);
   return value;
 }
 
+afterEach(async () => {
+  await Promise.all(services.splice(0).map(value => value.waitForLegacyNetworkEnrollment()));
+});
+
 beforeEach(() => {
   mocks.pairs.clear();
+  mocks.master = '';
   mocks.enroll.mockReset().mockResolvedValue(undefined);
   mocks.unlock.mockReset();
   mocks.lock.mockReset();
@@ -68,7 +87,7 @@ describe('legacy encrypted account upgrade', () => {
     'keeps %s accounts available without requiring a nonexistent local password', async (flag) => {
       const external = pair(SUBSTRATE);
       external.meta[flag] = true;
-      const keyring = service();
+      const keyring = service(true);
       expect(keyring.getMigrationAccounts()).toEqual([]);
       expect(await keyring.keyringMigrateMasterPassword({ address: external.address, password: '' })).toBe(true);
       expect(external.decodePkcs8).not.toHaveBeenCalled();
@@ -79,39 +98,106 @@ describe('legacy encrypted account upgrade', () => {
 
   it('retains pending EVM accounts after an older partial parent migration', async () => {
     pair(SUBSTRATE, true);
-    const child = pair(EVM);
-    const keyring = service();
-    expect(keyring.getMigrationAccounts()).toEqual([child]);
+    pair(EVM);
+    const keyring = service(true);
+    expect(keyring.getMigrationAccounts()).toEqual([
+      expect.objectContaining({ address: EVM, isEthereum: true, walletEcosystem: 'evm', linkedParentAddress: SUBSTRATE }),
+    ]);
     expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(true);
     expect(mocks.migrate.mock.calls.map(([address]) => address)).toEqual([EVM]);
     expect(keyring.getMigrationAccounts()).toEqual([]);
     expect(mocks.pairs.size).toBe(2);
   });
 
-  it('validates linked passwords before changing either encrypted account', async () => {
+  // 3.0.5 → HEAD (E14): a JSON-imported EVM child can have its own password. The parent row must not
+  // report "invalid password" when the parent's password is correct.
+  it('migrates the parent when its password is correct and keeps a differently encrypted child as its own row', async () => {
     const parent = pair(SUBSTRATE);
     const child = pair(EVM, false, 'separate-evm-password');
-    expect(await service().keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(false);
+    const keyring = service(true);
+    expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(true);
+    expect(mocks.migrate.mock.calls.map(([address]) => address)).toEqual([SUBSTRATE]);
+    expect(parent.meta.isMasterPassword).toBe(true);
+    expect(child.meta.isMasterPassword).toBe(false);
+    expect(child.isLocked).toBe(true);
+    expect(keyring.getMigrationAccounts()).toEqual([expect.objectContaining({ address: EVM, linkedParentAddress: SUBSTRATE })]);
+
+    expect(await keyring.keyringMigrateMasterPassword({ address: EVM, password: 'separate-evm-password' })).toBe(true);
+    expect(mocks.migrate.mock.calls.map(([address]) => address)).toEqual([SUBSTRATE, EVM]);
+    expect(keyring.getMigrationAccounts()).toEqual([]);
+    expect(mocks.pairs.size).toBe(2);
+  });
+
+  it('writes nothing and re-locks both accounts when the password opens neither', async () => {
+    const parent = pair(SUBSTRATE);
+    const child = pair(EVM, false, 'separate-evm-password');
+    const keyring = service(true);
+    expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'incorrect' })).toBe(false);
+    expect(await keyring.keyringMigrateMasterPassword({ address: EVM, password: 'legacy-password' })).toBe(false);
     expect(mocks.migrate).not.toHaveBeenCalled();
     expect(parent.meta.isMasterPassword).toBe(false);
     expect(child.meta.isMasterPassword).toBe(false);
     expect(parent.isLocked).toBe(true);
     expect(child.isLocked).toBe(true);
+    expect(keyring.getMigrationAccounts().map(({ address }) => address)).toEqual([SUBSTRATE, EVM]);
   });
 
-  it('retries a partial failure without reencrypting an already migrated child', async () => {
+  it('retries a partial failure without reencrypting an already migrated account', async () => {
     const parent = pair(SUBSTRATE);
     const child = pair(EVM);
-    mocks.migrate.mockImplementationOnce(() => { child.meta.isMasterPassword = true; })
+    mocks.migrate.mockImplementationOnce(() => { parent.meta.isMasterPassword = true; })
       .mockImplementationOnce(() => { throw new Error('Injected interruption'); });
-    const keyring = service();
-    expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(false);
-    expect(keyring.getMigrationAccounts()).toEqual([parent]);
+    const keyring = service(true);
     expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(true);
-    expect(mocks.migrate.mock.calls.map(([address]) => address)).toEqual([EVM, SUBSTRATE, SUBSTRATE]);
+    // The requested account was committed; the child that failed stays pending as its own row.
+    expect(keyring.getMigrationAccounts()).toEqual([expect.objectContaining({ address: EVM })]);
+    expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(true);
+    expect(mocks.migrate.mock.calls.map(([address]) => address)).toEqual([SUBSTRATE, EVM, EVM]);
+    expect(keyring.getMigrationAccounts()).toEqual([]);
     expect(mocks.pairs.size).toBe(2);
     expect(parent.publicKey).toEqual(new Uint8Array([1, 2, 3]));
     expect(child.publicKey).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('reports a storage failure of the requested account as not migrated, and a retry succeeds', async () => {
+    const parent = pair(SUBSTRATE);
+    mocks.migrate.mockImplementationOnce(() => { throw new Error('disk unavailable'); });
+    const keyring = service(true);
+    expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(false);
+    expect(parent.meta.isMasterPassword).toBe(false);
+    expect(await keyring.keyringMigrateMasterPassword({ address: SUBSTRATE, password: 'legacy-password' })).toBe(true);
+    expect(parent.meta.isMasterPassword).toBe(true);
+  });
+
+  it('refuses to unlock an account that still needs its legacy password, leaving its linked account locked', () => {
+    const parent = pair(SUBSTRATE);
+    const child = pair(EVM, true, 'master-password');
+    mocks.master = 'master-password';
+    const keyring = service();
+    expect(() => keyring.unlockPair(SUBSTRATE)).toThrow('legacy_password_required');
+    expect(parent.decodePkcs8).not.toHaveBeenCalled();
+    expect(child.decodePkcs8).not.toHaveBeenCalled();
+    expect(parent.isLocked).toBe(true);
+    expect(child.isLocked).toBe(true);
+  });
+
+  it('keeps a migrated account signing while its linked account still waits for its legacy password', () => {
+    const parent = pair(SUBSTRATE, true, 'master-password');
+    const child = pair(EVM, false, 'separate-evm-password');
+    mocks.master = 'master-password';
+    const keyring = service();
+    expect(keyring.unlockPair(SUBSTRATE)).toBe(true);
+    expect(parent.isLocked).toBe(false);
+    expect(child.decodePkcs8).not.toHaveBeenCalled();
+    expect(() => keyring.unlockPair(EVM)).toThrow('legacy_password_required');
+    expect(() => keyring.accountExportPrivateKey({ address: EVM })).toThrow('legacy_password_required');
+  });
+
+  it('answers false without flagging anything while the keyring is locked', () => {
+    const parent = pair(SUBSTRATE, true, 'master-password');
+    const keyring = service();
+    expect(keyring.unlockPair(SUBSTRATE)).toBe(false);
+    expect(parent.isLocked).toBe(true);
   });
 
   it('keeps standalone legacy EVM imports visible while grouping only actually linked children', () => {
@@ -145,7 +231,7 @@ describe('legacy enrollment lifecycle', () => {
     let finish!: () => void;
     mocks.enroll.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve; }));
     const wallet = service();
-    expect(await wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
+    expect(wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
     expect(mocks.enroll).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(mocks.enroll).toHaveBeenCalledOnce());
     const isCurrent = mocks.enroll.mock.calls[0][2];
@@ -161,9 +247,9 @@ describe('legacy enrollment lifecycle', () => {
     pair(SUBSTRATE, true);
     mocks.enroll.mockRejectedValueOnce(new Error('Optional dependency unavailable'));
     const wallet = service();
-    expect(await wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
+    expect(wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
     await wallet.waitForLegacyNetworkEnrollment();
-    expect(await wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
+    expect(wallet.unlockKeyring({ password: 'master-password' })).toBe(true);
     await wallet.waitForLegacyNetworkEnrollment();
     expect(mocks.enroll).toHaveBeenCalledTimes(2);
   });
@@ -172,7 +258,7 @@ describe('legacy enrollment lifecycle', () => {
     pair(SUBSTRATE, true);
     mocks.unlock.mockImplementation(() => { throw new Error('Wrong password'); });
     const wallet = service();
-    expect(await wallet.unlockKeyring({ password: 'incorrect' })).toBe(false);
+    expect(wallet.unlockKeyring({ password: 'incorrect' })).toBe(false);
     expect(wallet.getPassword()).not.toBe('incorrect');
     await wallet.waitForLegacyNetworkEnrollment();
     expect(mocks.enroll).not.toHaveBeenCalled();

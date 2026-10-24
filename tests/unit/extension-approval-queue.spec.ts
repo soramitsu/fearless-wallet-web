@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/extension/messaging', () => mocks);
 vi.mock('@/router', () => ({ default: { push: mocks.push, currentRoute: mocks.currentRoute } }));
-vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push, currentRoute: mocks.currentRoute }) }));
 vi.mock('@/router/routes', () => ({
   Components: { Authorize: 'Authorize', MetaRequest: 'MetaRequest', Transaction: 'Transaction', Wallet: 'Wallet' },
 }));
@@ -124,6 +124,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   setActivePinia(createPinia());
   mocks.currentRoute.value.name = 'Authorize';
+  mocks.push.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -199,11 +200,11 @@ describe('authorization popup queue', () => {
     const selector = wrapper.getComponent({ name: 'SelectAuthAccountForm' });
     selector.vm.$emit('onSelect', true, 'substrate-account');
     await nextTick();
-    expect(wrapper.get('button').attributes('disabled')).toBeUndefined();
+    expect(wrapper.get('[data-testid="approveAuthorization"]').attributes('disabled')).toBeUndefined();
     mocks.approveAuthRequest.mockImplementation(async () => publish([authRequest(second, 'solana')]));
     mocks.push.mockClear();
 
-    await wrapper.get('button').trigger('click');
+    await wrapper.get('[data-testid="approveAuthorization"]').trigger('click');
     await flushPromises();
     await vi.advanceTimersByTimeAsync(200);
 
@@ -213,7 +214,7 @@ describe('authorization popup queue', () => {
     expect(selector.props('accounts')).toEqual({
       'solana-public-key': expect.objectContaining({ active: false, name: 'Solana wallet' }),
     });
-    expect(wrapper.get('button').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[data-testid="approveAuthorization"]').attributes('disabled')).toBeDefined();
     expect(mocks.push).not.toHaveBeenCalledWith({ name: 'Wallet' });
 
     // Also cover completion before the final subscription: removal mutates the queue in place.

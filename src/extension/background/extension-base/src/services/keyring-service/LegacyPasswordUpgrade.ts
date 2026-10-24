@@ -16,6 +16,13 @@ export async function upgradeLegacyAccountPassword(original: KeyringPair, passwo
   } finally {
     if (wasLocked) original.lock();
   }
+  await commitMasterEncryptedCopy(original, copy);
+}
+
+// Stores `copy` (an unlocked pair with the same key as `original`) encrypted with the master password
+// in place of the original record, keeping the record's latest metadata. Shared by the legacy password
+// upgrade and by recovery with a previous password or the recovery phrase.
+export async function commitMasterEncryptedCopy(original: KeyringPair, copy: KeyringPair): Promise<void> {
   const json = keyring.keyring.createJsonPairWithMasterPassword(copy);
   json.meta = { ...json.meta, isMasterPassword: true, isMasterAccount: copy.haveEntropy };
   delete json.meta.pendingMigrate;

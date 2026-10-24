@@ -4,24 +4,39 @@ export function isBitcoinTransfersEnabled(): boolean {
   return process.env.VUE_APP_ENABLE_BITCOIN_TRANSFERS === 'true';
 }
 
-/**
- * Solana sends ship enabled. The flag exists so the compiled-off path stays testable and so the veto-only remote
- * kill switch has something to combine with; the 3.0.x build configuration does not define it, so a release build
- * always reads it as enabled. Nothing remote can turn a compiled-off send on.
- */
 export function isSolanaTransfersEnabled(): boolean {
   return process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS !== 'false';
 }
 
+// Production builds enable Iroha only when reviewed transfer evidence is ready.
+export function isIrohaTransfersEnabled(): boolean {
+  return process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true';
+}
+
+// IrohaConnect signs dApp-supplied bytes without decoding them, so release
+// builds keep it compiled off until decoded-payload signing ships. Only the
+// exact reviewed `true` enables it, and the Vite config refuses that value in
+// production mode.
+export function isIrohaConnectEnabled(): boolean {
+  return process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true';
+}
+
+// Bitcoin and Solana sends are compiled on for this release. The remote kill
+// switch can only veto a compiled-on send; it can never enable one. Iroha sends
+// follow the reviewed release evidence.
 export function isNetworkTransferEnabled(
   network: { ecosystem?: string } | null | undefined,
   vetoes?: SendCapabilityVetoes
 ): boolean {
+  if (network?.ecosystem === 'bitcoin') {
+    return isBitcoinTransfersEnabled() && !isSendCapabilityVetoed('bitcoinSend', vetoes);
+  }
   if (network?.ecosystem === 'solana') {
     return isSolanaTransfersEnabled() && !isSendCapabilityVetoed('solanaSend', vetoes);
   }
+  if (network?.ecosystem === 'iroha') return isIrohaTransfersEnabled();
 
-  return network?.ecosystem !== 'bitcoin' || isBitcoinTransfersEnabled();
+  return true;
 }
 
 export function isGoogleDriveBackupEnabled(): boolean {

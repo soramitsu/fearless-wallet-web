@@ -164,20 +164,9 @@ describe('BalanceService AssetKey persistence', () => {
     const address = '0xowner';
     const ethereum = network('Ethereum', '1', 'ethereumBased');
     const persisted = mockStorage();
-    const first = balance({
-      currencyId: '0xAaAa',
-      id: 'registry-a',
-      name: ethereum.name,
-      symbol: 'USD',
-      total: '1',
-    });
-    const second = balance({
-      currencyId: '0xBbBb',
-      id: 'registry-b',
-      name: ethereum.name,
-      symbol: 'USD',
-      total: '2',
-    });
+    // The registry lists an ERC-20 under its contract address.
+    const first = balance({ id: '0xAaAa', name: ethereum.name, symbol: 'USD', total: '1' });
+    const second = balance({ id: '0xBbBb', name: ethereum.name, symbol: 'USD', total: '2' });
     const service = new BalanceService(stateFor([ethereum]));
 
     await Promise.all([
@@ -194,12 +183,12 @@ describe('BalanceService AssetKey persistence', () => {
     hydrated.balanceMap[address] = [];
     await hydrated.hydrateBalanceStorage([address]);
     expect(hydrated.balanceMap[address].flatMap(({ balances }) => balances)).toEqual([
-      expect.objectContaining({ currencyId: '0xAaAa', total: '1' }),
-      expect.objectContaining({ currencyId: '0xBbBb', total: '2' }),
+      expect.objectContaining({ id: '0xAaAa', total: '1' }),
+      expect.objectContaining({ id: '0xBbBb', total: '2' }),
     ]);
   });
 
-  it('uses the merged full identity for partial updates and preserves Substrate currencyId', async () => {
+  it('keys a partial update by the registry id and preserves the Substrate currencyId', async () => {
     const address = 'substrate-owner';
     const assetHub = network('Polkadot Asset Hub', 'asset-hub', 'substrate');
     const persisted = mockStorage();
@@ -236,11 +225,8 @@ describe('BalanceService AssetKey persistence', () => {
     }, address);
     await vi.waitFor(() => expect(storageMock.set).toHaveBeenCalled());
 
-    const key = createAssetKey({
-      ecosystem: 'substrate',
-      chainId: 'asset-hub',
-      assetId: '{"ForeignAsset":42}',
-    });
+    const key = createAssetKey({ ecosystem: 'substrate', chainId: 'asset-hub', assetId: 'registry-usdt' });
+    expect(Object.keys(persisted.assetBalances[address])).toEqual([key]);
     expect(persisted.assetBalances[address]?.[key]).toMatchObject({
       currencyId: '{"ForeignAsset":42}',
       id: 'registry-usdt',
@@ -262,11 +248,11 @@ describe('BalanceService AssetKey persistence', () => {
 
     await service.updateBalanceStore(
       ethereum.name,
-      balance({ currencyId: '0xCcCc', id: 'registry-c', name: ethereum.name, symbol: 'USD', total: '3' }),
+      balance({ id: '0xCcCc', name: ethereum.name, symbol: 'USD', total: '3' }),
       address
     );
     expect(persisted.assetBalances[address]).toEqual({
-      'ethereumbased:1:0xcccc': expect.objectContaining({ id: 'registry-c', total: '3' }),
+      'ethereumbased:1:0xcccc': expect.objectContaining({ id: '0xCcCc', total: '3' }),
     });
   });
 });

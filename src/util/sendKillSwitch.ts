@@ -1,5 +1,5 @@
 /**
- * Remote kill switch for the Solana send.
+ * Remote kill switch for the Bitcoin and Solana sends.
  *
  * The remote config is veto-only and sticky:
  * - an explicit remote `false` vetoes the send and is remembered;
@@ -8,10 +8,10 @@
  *   remembered, and with nothing remembered the compiled default applies.
  *
  * Nothing here can enable a send that the build compiled off; callers combine
- * the vetoes with the compile-time flag in `releaseFeatures.ts`.
+ * the vetoes with the compile-time flags in `releaseFeatures.ts`.
  */
 
-export type SendCapability = 'solanaSend';
+export type SendCapability = 'bitcoinSend' | 'solanaSend';
 
 export type SendCapabilityVetoes = Partial<Record<SendCapability, boolean>>;
 
@@ -21,12 +21,13 @@ export type SendKillSwitchState = {
   vetoes: Record<SendCapability, boolean>;
 };
 
-export const SEND_CAPABILITIES: readonly SendCapability[] = Object.freeze(['solanaSend']);
+export const SEND_CAPABILITIES: readonly SendCapability[] = Object.freeze(['bitcoinSend', 'solanaSend']);
 
-// `actions.*` is the web_config.json shape; the snake_case name is the key the
+// `actions.*` is the web_config.json shape; the snake_case names are the keys the
 // mobile apps read from appConfigs/feature_toggle, accepted here so one prepared
 // veto payload means the same thing everywhere.
 const REMOTE_KEYS: Readonly<Record<SendCapability, readonly string[]>> = Object.freeze({
+  bitcoinSend: ['bitcoinSend', 'bitcoin_send_enabled'],
   solanaSend: ['solanaSend', 'solana_send_enabled'],
 });
 
@@ -35,7 +36,7 @@ const REMOTE_SECTIONS = ['actions', 'actionCapabilities', 'feature_toggle'] as c
 export const emptySendKillSwitchState = (): SendKillSwitchState => ({
   schemaVersion: 1,
   updatedAt: 0,
-  vetoes: { solanaSend: false },
+  vetoes: { bitcoinSend: false, solanaSend: false },
 });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

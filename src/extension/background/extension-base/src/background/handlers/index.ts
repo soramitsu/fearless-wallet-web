@@ -1,4 +1,5 @@
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import { isWebPasswordRecoveryRequest } from '@extension-base/stores/WebPasswordRecoveryAccess';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import { assert } from '@polkadot/util';
@@ -29,9 +30,11 @@ export function handlers<TMessageType extends MessageTypes>(
 
   // console.info(`[in] ${source}`);
 
-  const promise = isExtension
-    ? extension.handle(id, message, request, port)
-    : tabs.handle(id, message, request, from, port);
+  const promise = Promise.resolve().then(() => {
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly && !isWebPasswordRecoveryRequest(message))
+      KeyringStoreWeb.assertWritable();
+    return isExtension ? extension.handle(id, message, request, port) : tabs.handle(id, message, request, from, port);
+  });
 
   return promise
     .finally(async () => {

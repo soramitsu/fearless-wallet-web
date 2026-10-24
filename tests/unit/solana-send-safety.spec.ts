@@ -622,6 +622,26 @@ describe('Solana confirmation and ambiguous broadcast handling', () => {
     expect(client.sendRawTransaction).toHaveBeenCalledOnce();
   });
 
+  it.each(['pending read', 'status lookup', 'failed lookup'])('does not rebroadcast an earlier Solana send after reset during %s', async boundary => {
+    const state = createState();
+    const record: SolanaPendingSend = { accountAddress: 'stored-account', createdAt: 1, network: 'mainnet',
+      lastValidBlockHeight: 456, signature: 'public previous signature', transactionBase64: 'AQID' };
+    const store = memoryPendingStore([record]);
+    const client = createClient({ statuses: [null] });
+    const reset = () => Object.assign(state.keyringService, { walletResetRevision: 1 });
+    if (boundary === 'pending read') store.list.mockImplementation(async () => { reset(); return [record]; });
+    else client.resolveSignatures.mockImplementation(async () => {
+      reset();
+      if (boundary === 'failed lookup') throw new Error('public offline');
+      return [null] as never;
+    });
+    await expect(makeSolanaTransfer(solParams({ state }), client, sendOptions(store)))
+      .rejects.toThrow('Wallet changed during transfer');
+    expect(client.sendRawTransaction).not.toHaveBeenCalled();
+    expect(client.getLatestBlockhash).not.toHaveBeenCalled();
+    expect(store.records).toEqual([record]);
+  });
+
   it('keeps the record and refuses a new send while the outcome is unknown', async () => {
     const store = memoryPendingStore();
     const client = createClient({ blockHeights: [100], statuses: [null] });

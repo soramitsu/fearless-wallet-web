@@ -10,6 +10,20 @@
     <ContentForm :height="contentHeight">
       <Scroll>
         <div class="route-builder">
+          <section v-if="crossChainPaused" class="paused-state" role="status" data-testid="crossChainPaused">
+            <Icon icon="info" className="state-icon" :hover="false" />
+            <strong>{{ t('crossChainPage.pausedTitle') }}</strong>
+            <span>{{ t('crossChainPage.pausedBody') }}</span>
+            <FButton
+              v-if="sendAlternative"
+              type="secondary"
+              width="100%"
+              :text="{ text: 'crossChainPage.sendOnNetwork', localeProps: { network: sendAlternative.network } }"
+              data-testid="crossChainSendOnNetwork"
+              @click="openSendAlternative"
+            />
+          </section>
+
           <div v-if="!originNetworks.length" class="capability-state" role="status">
             <strong>{{ t('portfolioPage.noAssetsDetected') }}</strong>
             <FButton type="secondary" text="primaryMenu.portfolio" @click="router.push({ name: Components.Wallet })" />
@@ -130,19 +144,29 @@ import {
   buildOwnedCrossChainAssets,
   buildReviewedCrossChainRoutes,
   buildUnavailableCrossChainRoutes,
+  isRoutePausedByCapability,
   type CrossChainProviderCapability,
   type CrossChainProviderAvailability,
 } from '@/cross-chain/routeRegistry';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 import { useI18n } from '@/locales/useI18n';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+
+const props = defineProps<{
+  /** From the asset page: applied only when the wallet owns this exact asset there. */
+  requestedOriginChainId?: string;
+  requestedAssetKey?: string;
+}>();
 
 const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 const extensionStore = useExtensionStore();
 const networksStore = useNetworksStore();
+const sendKillSwitchStore = useSendKillSwitchStore();
 const contentHeight = CONTENT_FORM_HEIGHT;
 const originChainId = ref('');
 const assetKey = ref('');
@@ -256,6 +280,7 @@ const localizedWarnings = computed(() => {
 });
 const localizedDisabledReason = computed(() => {
   if (!selectedRoute.value) return '';
+  if (isRoutePausedByCapability(selectedRoute.value, actions.value)) return t('crossChainPage.pausedTitle');
   if (selectedRoute.value.providerId !== 'sora-evm-bridge') return t('crossChainPage.route.disabled');
 
   return t(
@@ -265,6 +290,25 @@ const localizedDisabledReason = computed(() => {
   );
 });
 const canContinue = computed(() => Boolean(selectedRoute.value?.enabled && accountCapability.value.signable));
+// Paused means release policy, not network data, keeps every route the user
+// could take closed. Nothing is claimed before capabilities have loaded.
+const crossChainPaused = computed(() => {
+  if (!extensionStore.features?.actions) return false;
+
+  const policyRoutes = reviewedRoutes.value.filter(({ providerId }) => providerId !== 'sora-evm-bridge');
+  if (policyRoutes.length) return policyRoutes.every((route) => isRoutePausedByCapability(route, actions.value));
+
+  return (
+    providerCapabilities.value.some(({ availability }) => availability === 'action-disabled') &&
+    !providerCapabilities.value.some(({ availability }) => availability === 'available')
+  );
+});
+const sendAlternative = computed(() => {
+  if (!selectedAsset.value || !network.value) return undefined;
+  if (!isNetworkTransferEnabled(network.value, sendKillSwitchStore.vetoes)) return undefined;
+
+  return { assetId: selectedAsset.value.assetId, network: network.value.name };
+});
 const providerStatus = (availability: CrossChainProviderAvailability): string => {
   if (availability === 'available') return t('crossChainPage.providerStatus.reviewed');
   if (availability === 'action-disabled') return t('crossChainPage.providerStatus.disabled');
@@ -287,13 +331,35 @@ const providerReason = (provider: CrossChainProviderCapability): string => {
 };
 
 watch(originChainId, () => {
-  assetKey.value = '';
+  // Asset keys include the chain id, so only a preselected asset survives.
+  if (!originAssets.value.some(({ key }) => key === assetKey.value)) assetKey.value = '';
   routeId.value = '';
 });
 
 watch(assetKey, () => {
   routeId.value = '';
 });
+
+let pendingRequest = Boolean(props.requestedOriginChainId);
+watch(
+  ownedAssets,
+  (assets) => {
+    if (!pendingRequest || originChainId.value) return;
+
+    const requested = assets.filter(({ networkChainId }) => networkChainId === props.requestedOriginChainId);
+    if (!requested.length) return;
+
+    pendingRequest = false;
+    originChainId.value = props.requestedOriginChainId!;
+    if (requested.some(({ key }) => key === props.requestedAssetKey)) assetKey.value = props.requestedAssetKey!;
+  },
+  { immediate: true }
+);
+
+function openSendAlternative(): void {
+  if (!sendAlternative.value) return;
+  router.push({ name: Components.SendForm, params: sendAlternative.value });
+}
 
 function continueRoute(): void {
   if (!canContinue.value) return;
@@ -468,6 +534,21 @@ select {
   background: $default-background-color;
   color: $plain-white;
   font: inherit;
+}
+
+.paused-state {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: $default-border;
+  border-left: 2px solid $orange-color;
+  border-radius: 10px;
+
+  span {
+    color: $gray-color;
+    line-height: 1.4;
+  }
 }
 
 .capability-state,

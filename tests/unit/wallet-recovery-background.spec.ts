@@ -100,7 +100,7 @@ describe('background recovery-only enforcement', () => {
       getEthereumAddress: () => 'old-evm',
       accountExportPrivateKey,
     });
-    await expect(extension.wcRequestApprove({ address: fresh.address, topic: 'test' })).rejects.toThrow('recovery-only');
+    await expect(extension.wcRequestApprove({ address: fresh.address, approvalId: 'test' })).rejects.toThrow('recovery-only');
     expect(accountExportPrivateKey).not.toHaveBeenCalled();
   });
 

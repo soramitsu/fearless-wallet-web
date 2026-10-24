@@ -1,29 +1,36 @@
 <template>
   <div class="loader" data-testid="loader">
     <div class="circle">
-      <Icon icon="fw-logo" :className="['logo']" />
+      <img :src="sunBadge" class="logo" alt="" />
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import sunBadge from '@/assets/brand/winged-sun-badge-lines.svg';
+</script>
 
 <style lang="scss" scoped>
 .loader {
   margin: auto;
 
   .circle {
+    position: relative;
+    box-sizing: border-box;
     border-radius: 50%;
     width: 96px;
     height: 96px;
     border: 8px solid $default-background-color;
-    display: inline-block;
+    display: grid;
+    place-items: center;
   }
 
   .circle:after {
     content: ' ';
-    top: 0;
-    left: 0;
+    position: absolute;
+    inset: -8px;
+    box-sizing: border-box;
     display: block;
-    margin: -74px -8px 0;
     width: 96px;
     height: 96px;
     border-radius: 50%;
@@ -42,10 +49,19 @@
   }
 
   .logo {
-    height: 44px;
-    width: 70px;
-    margin-top: 20px;
-    color: $pink-color;
+    height: 64px;
+    width: 64px;
+    display: block;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader .circle:after {
+    animation: none;
+  }
+}
+
+html[data-fw-effects='reduced'] .loader .circle:after {
+  animation: none;
 }
 </style>

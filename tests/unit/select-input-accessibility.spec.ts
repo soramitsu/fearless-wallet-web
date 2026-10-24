@@ -18,3 +18,13 @@ it('names the amount and native asset/maximum controls and honors read-only avai
   expect(maximum.attributes('disabled')).toBeDefined();
   wrapper.unmount();
 });
+it('says the balance failed instead of offering 0 as the maximum when no provider could load it', async () => {
+  const wrapper = mount(SelectInput, { props: { text: 'assets.sendButtonText', asset: 'TON', amount: '', value: '', totalAmount: 0, balanceUnavailable: true, isRotate: false }, global: { mocks: { $t: (key: string) => key, $n: (n: number) => String(n) }, stubs: { Icon: true, ExternalLogo: true, Rotate: { template: '<span><slot /></span>' }, FCorners: { template: '<div><slot /></div>' } } } });
+  await flushPromises();
+  expect(wrapper.get('[data-testid="balanceUnavailable"]').text()).toContain('portfolioPage.balanceStatus.failed');
+  expect(wrapper.find('button[data-testid="balanceValue"]').exists()).toBe(false);
+  expect(wrapper.find('[data-testid="balance"]').exists()).toBe(false);
+  await wrapper.setProps({ balanceUnavailable: false });
+  expect(wrapper.get('button[data-testid="balanceValue"]').text()).toBe('0');
+  wrapper.unmount();
+});

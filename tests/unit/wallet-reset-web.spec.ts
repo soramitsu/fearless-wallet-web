@@ -1,0 +1,456 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { keyring } from '@subwallet/ui-keyring';
+import { BehaviorSubject } from 'rxjs';
+import CryptoJS from 'crypto-js';
+
+const fixture = vi.hoisted(() => ({
+  data: {} as Record<string, unknown>, password: null as string | null,
+  commits: [] as Array<{ accountRemoval: () => boolean; finish: () => void }>,
+  failMigration: false, failAccounts: false, failCompensation: false, failPasswordRemove: false,
+  bridge: vi.fn(),
+}));
+vi.mock('@subwallet/keyring/pair/nobody', () => ({ nobody: () => { throw new Error('Unused development pair'); } }));
+vi.mock('@/consts/global', async (original) => ({ ...(await original<Record<string, unknown>>()), IS_EXTENSION: false }));
+vi.mock('@/bootstrap/webPasswordStore', () => ({ requestWebPasswordStorage: fixture.bridge }));
+vi.mock('@extension-base/utils/crossenv', () => ({ chrome: { runtime: { getURL: (path: string) => path } } }));
+vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
+vi.mock('@extension-base/services', () => ({}));
+vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
+
+import { KeyringService } from '@extension-base/services/keyring-service';
+import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
+import { accountStoreKey } from '@extension-base/services/keyring-service/DeletedWallets';
+import AccountsStore from '@extension-base/stores/Accounts';
+import BaseWebStore from '@extension-base/stores/BaseWeb';
+import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
+import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import Extension from '@extension-base/background/handlers/Extension';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
+import { enrollLegacyAccountNetworks } from '@extension-base/services/keyring-service/LegacyNetworkEnrollment';
+import { WEB_PASSWORD_RECORD_KEY, WEB_RESET_PASSWORD_KEY } from '@extension-base/stores/WebPasswordRecord';
+import historical from '../fixtures/upgrade/s1-2.6.3-per-account-passwords.json';
+import vectors from '../../docs/universal-wallet-v2-vectors.json';
+import type WalletRecoveryRecords from '@extension-base/stores/WalletRecoveryRecords';
+import type State from '@extension-base/background/handlers/State';
+import { decodeRecoveryValue } from '@/util/recoveryData';
+import { WalletEcosystem } from '@/interfaces';
+
+const PASSWORD = 'Public web reset password';
+const PHRASE = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk';
+const journalKey = `fw:${WEB_RESET_PASSWORD_KEY}`;
+const passwordKey = `fw:${WEB_PASSWORD_RECORD_KEY}`;
+function passwordRecord(): { version: 1; serialized: string | null } { return fixture.data[passwordKey] as never; }
+let service: KeyringService;
+let pending: Promise<unknown>[];
+function track<T>(promise: Promise<T>) {
+  const result = promise.then((value) => ({ value }), (error) => ({ error }));
+  pending.push(result);
+  return result;
+}
+
+// Controllable IndexedDB transaction model: writes become visible together only
+// at oncomplete, and an abort discards all staged puts/deletes. Real BaseWebStore
+// cursor enumeration and commit publication run unchanged over this adapter.
+function database(): IDBDatabase {
+  return { transaction: () => {
+    const entries: Record<string, unknown> = {};
+    const removed = new Set<string>();
+    let aborted = false;
+    const transaction = {
+      error: null as Error | null, oncomplete: undefined as (() => void) | undefined,
+      onabort: undefined as (() => void) | undefined, onerror: undefined as (() => void) | undefined,
+      abort: () => { aborted = true; transaction.onabort?.(); },
+      objectStore: () => ({
+        get: (key: string) => {
+          const request = { result: structuredClone(fixture.data[key]), onsuccess: undefined as (() => void) | undefined };
+          queueMicrotask(() => request.onsuccess?.());
+          return request;
+        },
+        put: (value: unknown, key: string) => { entries[key] = structuredClone(value); },
+        delete: (key: string) => { removed.add(key); },
+        openCursor: () => {
+          const items = Object.entries(structuredClone(fixture.data));
+          const request = { result: null as unknown, onsuccess: undefined as ((event: unknown) => void) | undefined };
+          const next = () => queueMicrotask(() => {
+            const item = items.shift();
+            request.result = item ? { key: item[0], value: item[1], continue: next } : null;
+            request.onsuccess?.({ target: request });
+          });
+          next();
+          return request;
+        },
+      }),
+    };
+    const accountRemoval = () => [...removed].some((key) => key.startsWith('fw:account:'));
+    fixture.commits.push({ accountRemoval, finish: () => {
+      if (aborted) return;
+      if ((fixture.failAccounts && accountRemoval()) || (fixture.failMigration && Object.hasOwn(entries, passwordKey))) {
+        transaction.error = new Error('Modeled IndexedDB commit failed');
+        transaction.abort();
+      } else {
+        Object.assign(fixture.data, entries);
+        removed.forEach((key) => delete fixture.data[key]);
+        transaction.oncomplete?.();
+      }
+    } });
+    return transaction;
+  } } as unknown as IDBDatabase;
+}
+
+async function drain(includeAccounts = true) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const commits = fixture.commits.splice(0);
+    for (const commit of commits) {
+      if (includeAccounts || !commit.accountRemoval()) commit.finish();
+      else fixture.commits.push(commit);
+    }
+  }
+}
+
+async function native() {
+  const importing = track(service.addAccount(PHRASE, { name: 'Public web key' }, WalletEcosystem.Substrate, 'sr25519'));
+  await drain();
+  const outcome = await importing;
+  if (!('value' in outcome)) throw outcome.error;
+  return outcome.value;
+}
+
+beforeEach(async () => {
+  await cryptoWaitReady();
+  fixture.data = {};
+  fixture.password = null;
+  fixture.commits = [];
+  fixture.failMigration = fixture.failAccounts = fixture.failCompensation = fixture.failPasswordRemove = false;
+  pending = [];
+  fixture.bridge.mockReset().mockImplementation(async (operation: string, value?: string) => {
+    if (operation === 'get') return fixture.password;
+    if (operation === 'remove') {
+      if (fixture.failPasswordRemove) throw new Error('Password removal failed');
+      fixture.password = null;
+    } else if (operation === 'set') {
+      if (fixture.failCompensation) throw new Error('Password restoration failed');
+      fixture.password = value!;
+    }
+    return null;
+  });
+  vi.spyOn(BaseWebStore.prototype, 'openDatabase').mockResolvedValue(database());
+  const ready = track(KeyringStoreWeb.initialize());
+  await drain();
+  expect(await ready).toHaveProperty('value');
+  for (const subject of [keyring.accounts, keyring.addresses, keyring.contracts]) {
+    for (const address of Object.keys(subject.subject.value)) subject.removeSubjectOnly(address);
+  }
+  vi.spyOn(keyring.keyringOption, 'init').mockImplementation(() => {});
+  keyring.loadAll({ type: 'sr25519', isDevelopment: false, store: new AccountsStore(), password_store: new KeyringStoreWeb() });
+  keyring.changeMasterPassword(PASSWORD);
+  await drain();
+  fixture.password = passwordRecord().serialized; // Preserved pre-migration copy, never the new authority.
+  service = Object.create(KeyringService.prototype);
+  Object.assign(service, { password: PASSWORD, tonKeyring: new TonKeyringService(service),
+    currentAccountStore: new CurrentAccountStore(), currentAccountSubject: new BehaviorSubject(null),
+    selectionRevision: 0, selectionRequestRevision: 0,
+    accountAccess: { scheduleScan: vi.fn(), flagPreviousMasterPair: vi.fn(), reset: vi.fn(), cancelScan: vi.fn() },
+    scheduleLegacyNetworkEnrollment: vi.fn() });
+});
+afterEach(async () => {
+  fixture.failMigration = fixture.failAccounts = fixture.failCompensation = fixture.failPasswordRemove = false;
+  await drain();
+  await Promise.all(pending);
+  await BaseWebStore.flush().catch(() => undefined);
+  await KeyringStoreWeb.flush().catch(() => undefined);
+  vi.restoreAllMocks();
+});
+
+describe('web reset with one IndexedDB password/account commit', { timeout: 60_000 }, () => {
+  it('loads healthy TON records while preserving malformed records without detached callback failures', async () => {
+    await drain();
+    const malformed = { name: 'Public unreadable TON', cipherSeed: 'original retained ciphertext' };
+    const publicKeyHex = vectors.vectors[0].expected.ton.publicKeyHex;
+    const address = vectors.vectors[0].expected.ton.addressNonBounceable;
+    Object.assign(fixture.data, {
+      'fw:ton:public-malformed': malformed,
+      [`fw:ton:${address}`]: { address, name: 'Public healthy TON', cipherSeed: 'public retained ciphertext', publicKeyHex },
+    });
+    const before = structuredClone(fixture.data);
+    const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const loaded = track(service.tonKeyring.loadAll());
+    await drain();
+    expect(await loaded).toHaveProperty('value');
+    expect(service.tonKeyring.getAccounts().map(account => account.address)).toEqual([address]);
+    expect(report).toHaveBeenCalledExactlyOnceWith('Stored TON account could not be loaded; recovery data is retained.', 'public-malformed');
+    expect(fixture.data).toEqual(before);
+  });
+
+  it('exports exact loaded, unloaded, malformed and archived records through trusted read-only handlers', async () => {
+    const records = Object.fromEntries(Object.entries(historical.storage).filter(([key]) => key.startsWith('fw:account:')));
+    const first = Object.values(records)[0];
+    Object.assign(fixture.data, records, {
+      'fw:archivedAccount:public': { records: [first], original: undefined },
+      'fw:deletedWallet:public': { name: 'Public retained archive', accounts: { 'account:retained': first } },
+      'fw:account:damaged': null,
+      'fw:ton:unloaded': { cipherSeed: 'original cipher', pendingCipherSeed: 'pending cipher', bytes: new Uint8Array([0, 255]) },
+      'fw:unrelated': { password: 'must not export' },
+      'fw:pendingResetPassword': { serialized: 'must not export' },
+      'fwWalletConnectSdk:private': { secret: 'must not export' },
+    });
+    const before = structuredClone(fixture.data);
+    const writes = vi.spyOn(BaseWebStore.prototype, 'writeToDB');
+    const remove = vi.spyOn(BaseWebStore.prototype, 'removeFromDB');
+    KeyringStoreWeb.readOnly = true;
+    const extension = new Extension({ keyringService: service } as State);
+    const inventory = await extension.handle('public-record-inventory', 'pri(accounts.recovery.list)', null) as Awaited<ReturnType<WalletRecoveryRecords['inventory']>>;
+    expect(inventory).toHaveLength(Object.keys(records).length + 4);
+    expect(inventory.some(item => item.key === 'account:damaged')).toBe(true);
+    const result = await extension.handle('public-record-export', 'pri(accounts.recovery.export)', null) as { json: string };
+    const packet = JSON.parse(result.json);
+    expect(packet.format).toBe('fearless-wallet-recovery-data');
+    const restored = decodeRecoveryValue(packet.data) as Record<string, unknown>;
+    const selected = Object.fromEntries(Object.entries(before).filter(([key]) => /^fw:(account|archivedAccount|deletedWallet|ton):/u.test(key)).map(([key, value]) => [key.slice(3), value]));
+    expect(restored).toEqual(selected);
+    expect(result.json).not.toContain('must not export');
+    expect(result.json).not.toContain('passwordHash');
+    for (const wallet of historical.wallets) {
+      const json = Object.values(restored).find(value => value && typeof value === 'object' && (value as { address?: string }).address === wallet.address);
+      const pair = keyring.createFromJson(json as never);
+      pair.decodePkcs8(wallet.password);
+      expect(pair.isLocked).toBe(false);
+      expect(pair.address).toBe(wallet.address);
+      pair.lock();
+    }
+    expect(fixture.data).toEqual(before);
+    expect(writes).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('loads actual ui-keyring accounts without its normal persistence callbacks writing during recovery-only startup', async () => {
+    await native();
+    KeyringStoreWeb.readOnly = true;
+    const write = vi.spyOn(BaseWebStore.prototype, 'writeToDB');
+    const remove = vi.spyOn(BaseWebStore.prototype, 'removeFromDB');
+    const activeStore = Reflect.get(keyring, '_store') as AccountsStore;
+    const loading = track(activeStore.reloadAll());
+    await drain();
+    expect(await loading).toHaveProperty('value');
+    expect(write.mock.calls.length).toBe(0);
+    expect(remove.mock.calls.length).toBe(0);
+  });
+
+  it('rejects a metadata edit before it can replace encrypted storage or publish runtime metadata in recovery-only mode', async () => {
+    const address = await native();
+    const before = structuredClone(fixture.data);
+    const originalName = service.getPair(address)!.meta.name;
+    KeyringStoreWeb.readOnly = true;
+    const editing = track(service.saveAccountMeta(address, { name: 'Must not be saved' }));
+    await drain();
+    expect(await editing).toEqual({ error: expect.objectContaining({ message: expect.stringContaining('storage needs repair') }) });
+    expect(fixture.data).toEqual(before);
+    expect(service.getPair(address)!.meta.name).toBe(originalName);
+  });
+
+  it('reports every native identity for recovery, including linked EVM keys, without changing storage', async () => {
+    const address = await native();
+    const importing = track(service.addAccount(PHRASE, { name: 'Public EVM' }, WalletEcosystem.Evm, 'ethereum'));
+    await drain();
+    const imported = await importing;
+    if (!('value' in imported)) throw imported.error;
+    const linking = track(service.saveAccountMeta(address, { ethereumAddress: imported.value }));
+    await drain();
+    expect(await linking).toHaveProperty('value');
+    const before = structuredClone(fixture.data);
+    KeyringStoreWeb.readOnly = true;
+    Object.assign(Reflect.get(service, 'accountAccess'), { getStatus: async () => ({ issues: [], hasMasterPassword: true }) });
+    const status = await service.getAccessStatus();
+    expect(status.storageRecoveryOnly).toBe(true);
+    expect(status.storageRecoveryAccounts?.map(account => account.address).sort()).toEqual(service.getAccounts().map(account => account.address).sort());
+    expect(status.storageRecoveryAccounts?.some(account => account.walletEcosystem === WalletEcosystem.Evm)).toBe(true);
+    expect(fixture.data).toEqual(before);
+  });
+
+  it.each(['current', 'pending'])('exports a verified TON phrase with its previous %s password without modifying either ciphertext', async which => {
+    const vector = vectors.vectors[0];
+    const address = vector.expected.ton.addressNonBounceable;
+    const previous = 'Public previous TON password';
+    const record = { address, name: 'Public TON', publicKeyHex: vector.expected.ton.publicKeyHex,
+      cipherSeed: CryptoJS.AES.encrypt(vector.mnemonic, which === 'current' ? previous : PASSWORD).toString(),
+      pendingCipherSeed: CryptoJS.AES.encrypt(vector.mnemonic, which === 'pending' ? previous : PASSWORD).toString() };
+    fixture.data['fw:ton:' + address] = structuredClone(record);
+    service.tonKeyring.setAccounts(record);
+    const before = structuredClone(fixture.data);
+    KeyringStoreWeb.readOnly = true;
+    const request = { address, password: previous, walletEcosystem: WalletEcosystem.Ton };
+    const exporting = track(service.exportAccountMnemonic(request));
+    await drain();
+    expect(await exporting).toEqual({ value: { seed: vector.mnemonic } });
+    const wrong = track(service.exportAccountMnemonic({ ...request, password: 'wrong password' }));
+    await drain();
+    expect(await wrong).toHaveProperty('error');
+    expect(fixture.data).toEqual(before);
+  });
+
+  it('does not enroll additional network keys during recovery-only unlock', async () => {
+    await native();
+    KeyringStoreWeb.readOnly = true;
+    vi.mocked(enrollLegacyAccountNetworks).mockClear();
+    Reflect.get(KeyringService.prototype, 'scheduleLegacyNetworkEnrollment').call(service);
+    await drain();
+    expect(vi.mocked(enrollLegacyAccountNetworks).mock.calls.length).toBe(0);
+  });
+
+  it.each(['retired', 'unapproved'])('suppresses a %s saved selection in memory without rewriting it during recovery-only startup', async kind => {
+    KeyringStoreWeb.readOnly = true;
+    const key = 'fwcurrent_account:CurrentAccountInfo';
+    const selection = { address: 'public-retired-mobile', ethereumAddress: '', name: 'Retired mobile',
+      isMobile: true, wcTopic: 'public-retired-topic', walletEcosystem: WalletEcosystem.Substrate };
+    fixture.data[key] = structuredClone(selection);
+    vi.spyOn(WalletConnectRetiredSessions.prototype, 'readPolicy').mockResolvedValue(kind === 'retired'
+      ? { version: 1, topics: [selection.wcTopic] }
+      : { version: 1, topics: [], generation: 1, approvedTopics: [] });
+    const ready = track(service.restoreCurrentAccount());
+    await drain();
+    expect(await ready).toHaveProperty('value');
+    expect(service.currentAccountSubject.value).toBeNull();
+    expect(fixture.data[key]).toEqual(selection);
+  });
+
+  it('keeps password and live accounts until commit, then ignores retained legacy bytes after restart', async () => {
+    const address = await native();
+    const pair = service.getPair(address)!;
+    const key = `fw:${accountStoreKey(pair)}`;
+    const original = structuredClone(fixture.data[key]);
+    const password = fixture.password;
+    const authority = structuredClone(passwordRecord());
+    let settled = false;
+    const resetting = track(service.resetWallet()).then(result => { settled = true; return result; });
+    await drain(false);
+    expect(settled).toBe(false);
+    expect(fixture.password).toBe(password);
+    expect(passwordRecord()).toEqual(authority);
+    expect(fixture.data[journalKey]).toBeUndefined();
+    expect(fixture.data[key]).toEqual(original);
+    expect(service.getPair(address)).toBe(pair);
+    expect(service.hasMasterPassword).toBe(true);
+    await drain();
+    expect(await resetting).toEqual({ value: true });
+    expect(passwordRecord()).toEqual({ version: 1, serialized: null });
+    expect(fixture.data[key]).toBeUndefined();
+    expect(service.getPair(address)).toBeNull();
+    const restart = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await restart).toHaveProperty('value');
+    const read = vi.fn();
+    new KeyringStoreWeb().get(read);
+    expect(read).toHaveBeenCalledWith(null);
+    expect(fixture.password).toBe(password);
+    expect(fixture.bridge.mock.calls.every(([operation]) => operation === 'get')).toBe(true);
+    const recovery = Object.entries(fixture.data).find(([key]) => key.startsWith('fw:deletedWallet:'))![1] as { accounts: Record<string, unknown> };
+    expect(recovery.accounts[key.slice(3)]).toEqual(original);
+  });
+
+  it('aborts password removal and archival together, retains the original pair and retries', async () => {
+    const address = await native();
+    const pair = service.getPair(address)!;
+    const key = `fw:${accountStoreKey(pair)}`;
+    const original = structuredClone(fixture.data[key]);
+    const authority = structuredClone(passwordRecord());
+    fixture.failAccounts = true;
+    const reset = track(service.resetWallet());
+    await drain();
+    expect(await reset).toEqual({ value: false });
+    expect(passwordRecord()).toEqual(authority);
+    expect(fixture.data[key]).toEqual(original);
+    expect(Object.keys(fixture.data).filter(key => key.startsWith('fw:deletedWallet:'))).toEqual([]);
+    expect(service.getPair(address)).toBe(pair);
+    expect(service.hasMasterPassword).toBe(true);
+    fixture.failAccounts = false;
+    const retry = track(service.resetWallet());
+    await drain();
+    expect(await retry).toEqual({ value: true });
+    expect(service.getPair(address)).toBeNull();
+  });
+
+  it('loads the retained interrupted-reset password without any window compensation write', async () => {
+    const address = await native();
+    const key = `fw:${accountStoreKey(service.getPair(address)!)}`;
+    const original = structuredClone(fixture.data[key]);
+    const password = fixture.password!;
+    delete fixture.data[passwordKey];
+    fixture.data[journalKey] = { serialized: password };
+    fixture.password = null;
+    fixture.failCompensation = true;
+    const ready = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await ready).toHaveProperty('value');
+    expect(passwordRecord()).toEqual({ version: 1, serialized: password });
+    expect(fixture.data[journalKey]).toEqual({ serialized: password });
+    expect(fixture.data[key]).toEqual(original);
+    expect(fixture.password).toBeNull();
+    expect(KeyringStoreWeb.readOnly).toBe(false);
+    const read = vi.fn();
+    new KeyringStoreWeb().get(read);
+    expect(read).toHaveBeenCalledWith(JSON.parse(password));
+    expect(fixture.bridge.mock.calls.every(([operation]) => operation === 'get')).toBe(true);
+  });
+
+  it('keeps authenticated export available after failed migration, denies password/reset mutation, and repairs on reload', async () => {
+    const address = await native();
+    const password = fixture.password!;
+    delete fixture.data[passwordKey];
+    fixture.failMigration = true;
+    const ready = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await ready).toHaveProperty('value');
+    expect(KeyringStoreWeb.readOnly).toBe(true);
+    expect(fixture.data[passwordKey]).toBeUndefined();
+    expect(fixture.password).toBe(password);
+    const exported = await service.exportAccountMnemonic({ address, password: PASSWORD, walletEcosystem: WalletEcosystem.Substrate });
+    expect(exported.seed).toBe(PHRASE);
+    new KeyringStoreWeb().set({ passwordHash: 'replacement' });
+    await expect(KeyringStoreWeb.flush()).rejects.toThrow('storage needs repair');
+    const reset = track(service.resetWallet());
+    await drain();
+    expect(await reset).toEqual({ value: false });
+    expect(service.getPair(address)).not.toBeNull();
+    fixture.failMigration = false;
+    const reload = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await reload).toHaveProperty('value');
+    expect(KeyringStoreWeb.readOnly).toBe(false);
+    expect(passwordRecord()).toEqual({ version: 1, serialized: password });
+  });
+
+  it('uses a retained journal only for recovery while the legacy bridge is unavailable', async () => {
+    const password = fixture.password!;
+    delete fixture.data[passwordKey];
+    fixture.data[journalKey] = { serialized: password };
+    fixture.bridge.mockRejectedValue(new Error('Window unavailable'));
+    const ready = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await ready).toHaveProperty('value');
+    expect(KeyringStoreWeb.readOnly).toBe(true);
+    expect(fixture.data[passwordKey]).toBeUndefined();
+    const read = vi.fn();
+    new KeyringStoreWeb().get(read);
+    expect(read).toHaveBeenCalledWith(JSON.parse(password));
+    expect(fixture.data[journalKey]).toEqual({ serialized: password });
+  });
+
+  it('never infers absence from a failed IndexedDB read', async () => {
+    fixture.bridge.mockClear();
+    vi.spyOn(BaseWebStore.prototype, 'getAndWait').mockRejectedValue(new Error('Read unavailable'));
+    await expect(KeyringStoreWeb.initialize()).rejects.toThrow('Read unavailable');
+    expect(fixture.bridge).not.toHaveBeenCalled();
+  });
+
+  it('preserves malformed authoritative storage and does not fall back to a stale legacy password', async () => {
+    fixture.data[passwordKey] = { version: 3, serialized: fixture.password };
+    fixture.bridge.mockClear();
+    const ready = track(KeyringStoreWeb.initialize());
+    await drain();
+    expect(await ready).toHaveProperty('error');
+    expect(fixture.data[passwordKey]).toEqual({ version: 3, serialized: fixture.password });
+    expect(fixture.bridge).not.toHaveBeenCalled();
+  });
+});

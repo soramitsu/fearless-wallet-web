@@ -1,8 +1,11 @@
 # fearless-wallet-web
 
 ## Project setup
+Requires Node 24 (`.nvmrc`: `24.19.0`) and Yarn 4.17.0 through Corepack; see
+[CONTRIBUTING.md](CONTRIBUTING.md#toolchain) for the Homebrew `node@24` setup.
 ```
-yarn install
+corepack enable
+yarn install --immutable
 ```
 
 ### Compiles and hot-reloads for development

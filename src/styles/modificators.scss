@@ -1,7 +1,21 @@
+// Price change. Neon Glass uses aqua and orange, never colour alone: a triangle and a sign come with them
+// (design-system 3.5). The triangle is decoration; its alternative text is empty where the browser supports one.
 .up-price {
-  color: rgba(126, 222, 155, 0.75);
+  color: palette(rgba(126, 222, 155, 0.75), var(--fw-up));
 }
 
 .down-price {
-  color: #d0021b;
+  color: palette(#d0021b, var(--fw-down));
+}
+
+@include v1-palette {
+  .up-price:first-child::before {
+    content: '\25B2\00A0';
+    content: '\25B2\00A0' / '';
+  }
+
+  .down-price:first-child::before {
+    content: '\25BC\00A0';
+    content: '\25BC\00A0' / '';
+  }
 }

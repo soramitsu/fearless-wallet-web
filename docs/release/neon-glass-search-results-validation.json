@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-12",
+  "status": "Search results and event payloads locally qualified; broader W-A6 and release remain in progress.",
+  "source_commit": "887c42a257fef1547932a9c719806c7f299219a6",
+  "source_sha256": {
+    "scripts/extension-smoke-primitives.mjs": "4065043af26fbb40d173cc3407346947028c989db089ea564950c6ccc744881b",
+    "src/components/Popup.vue": "32c01fe01bb92712a63489a10a04885bc71be59124ad013f4c1f66e5a2623e38",
+    "src/components/SearchInput.vue": "8aeac4099ce562d0df14c2dabb6e94c48f77b1ab119ec49e7d0dbeae87e7f964",
+    "src/components/SearchResultStatus.vue": "204217cba6a8e0ec96f5518b436e819c6f26be75bc959af950ffe3340bd1e1e2",
+    "src/components/SelectPopup.vue": "234afe93da8c9ba3cba894625f8febd1399c01811f5ce5076957059cc1778a4c",
+    "src/screens/accounts/Nodes.vue": "8355965f49afc1eb8b711a928bbdade5a281a5fee278c5c2a78f5ba46b0eef49",
+    "src/screens/main/SelectWalletPopup.vue": "70f39f1d3b76693cd286e38b8f7c1fe9322ad7004c026f72a3bc5b636c150730",
+    "src/screens/staking/myStake/History.vue": "fb84f56d6241535044a7503f01688229ab01ef78ff128511a7c832f3a360930b",
+    "src/screens/wallet&asset/NetworkManagement.vue": "5ad6e49392e61e822e0a052b6a6af8c60b113e5b7ec3c01f4cd01b3a8af68dd4",
+    "src/screens/wallet&asset/wallet/Currencies.vue": "ac50e354db94462f729132b4ed8d583eb81d3b7e9ace7c5e959831a5da71d742",
+    "tests/unit/portfolio-hidden-review.spec.ts": "f40d3d8fb02030d637292b622bfdf7928bca15a13e581a759c60bcbec195f457",
+    "tests/unit/screen-event-payloads.spec.ts": "3e9557ec2bbcaddafa3529566b28d2664cda6cf9eace89c8ad68acf6a1ba0bd5",
+    "tests/unit/search-input-recovery.spec.ts": "25ba1c133861411406fefa35677a8b68159047ec7db0d45cc9cc521b0c7bfc2c",
+    "tests/unit/search-result-status.spec.ts": "91a615f8a0698f2ba8cff7f58e5e11ff5e6b6d25e7fefbf59d0a0cd15d96781a"
+  },
+  "unit": {
+    "passed": 1840,
+    "skipped": 18,
+    "failed": 0,
+    "files_passed": 229,
+    "files_skipped": 2
+  },
+  "checks": [
+    "TypeScript and changed-file ESLint pass.",
+    "Development test extension builds.",
+    "24 offline Chrome captures and toolbar bootstrap pass, including actual filtered currency-count assertion.",
+    "Persistent polite status debounces changes, announces zero results, clears inactive or unavailable counts and uses existing localized field labels.",
+    "Both portfolio lenses count the displayed exact-network assets; Manage does not announce the portfolio search result.",
+    "The full suite includes wallet/node/history event payload regressions from 3fabd977."
+  ],
+  "visual_review": [
+    "12b-currency-search-clear.png",
+    "09b-network-search-clear.png",
+    "19-dialog-200-percent.png"
+  ],
+  "evidence_root": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "logs_sha256": {
+    "wa6-search-results-unit-2.log": "06dbe840b11be1469a6d1754648d93b3f5ce9b3b652689b01ebd5a8bbf212536",
+    "wa6-search-results-full-unit.log": "ee2e171df9c696f78b53b8e98fb0e158cd5b14ce4fe6db410336680f1db5cea5",
+    "wa6-search-results-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-search-results-lint-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-search-results-build.log": "de42c17a7104b2d7f1d93df4a78cccf48ba423f233e63a858dc9457c2cbb2561",
+    "wa6-search-results-browser.log": "5ba409b9bd328f7fd990d1d9a024963c2129f321d1a53e3679dae0307bc81483"
+  },
+  "browser_results_sha256": "b0e9f0d92b6b087414f52991a8578143fb3fd09e6ac427ec867b9c71bf5bfdf0",
+  "captures_sha256": {
+    "01-portfolio-controls.png": "b7195a63941d5c1bfaa4a9262c85ff0e3a32c79194ccdd7be2504516e9a93161",
+    "02-manage-switches.png": "b275c0dd0da2246e3c79ac4fa253b5fab87f499ed02f08d957ba0880b4c8f6ea",
+    "03-send-form.png": "c34720275b6693981500e9453d007243e193bb6f9a34a826fa9a659a4710a3ac",
+    "04-send-amount-keyboard-focus.png": "aa82c8e4fb75c6c3412bb85f98d3c5e3b2e84b73da66251a585c66d9e3b65ea6",
+    "05-send-recipient-keyboard-focus.png": "1f39f3c588a15421c0bd0001c838e603530e60724e0483cd15f90d6e7e3149be",
+    "06-receive.png": "2b3a18589766922f8951db46a4ca6dbc1c7dec519fd82b414c378fb15d842004",
+    "07-receive-button-keyboard-focus.png": "dd21d1564a5ebcdb209df75ef7a9699fa9e576933cf01cd7089a8acc537e6a51",
+    "08-settings.png": "552b579f2083fc0bf49e7ffb51c95a6047ff79e97f8fe2f5eca7514e555895de",
+    "09-network-tabs.png": "def4486854190e6ed8b235c75dac9604b6ca59dd6386057a79c4c940f408271d",
+    "09b-network-search-clear.png": "76c5cb5e75055e93f51f696aced8ee04e9f4a33e40c7c6217b30cf3cb339f3de",
+    "10-calm-change-password.png": "2c0dd1bdbbb2a153510d1b897e424084c083fb0077df5bcf1be59a73762f0041",
+    "11-calm-reset-wallet.png": "bb256f66a8b193221b9ee4da1e2ceb6d1afb46d47474d1670225114d80a52f87",
+    "12-currency-dialog.png": "5f2cad42853b3a8f13b74b1c6bf55027527b4be2cbb8c39c5ce57a5e258d8586",
+    "12b-currency-search-clear.png": "13b3c7a1205131b0242109c50cf6d9d1e31f9e9141f7ace22bd0f2045439d08c",
+    "13-dialog-lite.png": "a9e22c2352b9677f5ca73bf93b115785aa29eaf953099d25d23bcaed04ed53c5",
+    "14-dialog-reduced.png": "ed8b56d2abb01627b265f389d926a41ad093f646dba30efefff45bc91ac42c40",
+    "15-dialog-high-contrast.png": "1ed6b69c7822c080cf440f01c4c0c953b92fd448dfeced5eececcbf41b4ebe71",
+    "16-dialog-reduced-motion.png": "31eae435f01002ef8925624eb9c3c87b2d1cfb8b6834b993b4540e89cf9ad6e8",
+    "17-dialog-forced-colors.png": "e9a5fc2dfdbea993e4c5b5f4e4c223e41fc648a94b800272fe0623fc9a55dc99",
+    "18-dialog-narrow.png": "b4bab7b33aacce48e54088daedc70bad2f3664baadaaef16150487282bcc4f52",
+    "19-dialog-200-percent.png": "a75412b0b7d263af719c8cab6faf34f34866ebf4a2f8a713f087148a2da98a02",
+    "20-dialog-russian-search.png": "0456df780a5cf0fd2fa9463c0e79fe03754069592ea2429dae58d9c8ac13e477",
+    "21-dialog-akkadian-search.png": "ad7820a6d6dce50ea0331d2fcfc535afc606904ca16645bdb1b6f75c6d6b0b6e",
+    "22-dialog-egyptian-search.png": "74f4d455d8df623c9ebde3fc4a9ca5095d21c84e97e5b11d7b26de3199da8413"
+  },
+  "build_file_manifest_sha256": "29de17d43a3c748f73fe1aa0fb5ee1d08b8b477ffa8a3a52efea880f5b971dce",
+  "build_files": 493,
+  "preserved_failures": [
+    "Initial changed-file lint rejected import order; reordered import and reran successfully."
+  ],
+  "limitations": [
+    "No operating-system screen-reader session or actual browser toolbar zoom acceptance claimed.",
+    "281x300 CSS layout represents 200%-equivalent space.",
+    "This is a development extension qualification, not a final production/distribution gate.",
+    "Other screen-specific keyboard/disabled states, remaining screen composition, native parity and release gates remain open."
+  ]
+}

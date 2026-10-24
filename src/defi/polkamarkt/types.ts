@@ -112,6 +112,8 @@ export interface PolkamarktSnapshot {
   account: PolkamarktAccountCapability;
   indexerStale: boolean;
   warnings: string[];
+  /** Trading and claims are switched off by the release capability policy; browsing works. */
+  actionsPaused?: boolean;
 }
 
 export interface PolkamarktQuoteRequest {

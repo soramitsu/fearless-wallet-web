@@ -1,5 +1,6 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { BitcoinEsploraClient, type BitcoinAddressBalance } from '@extension-base/services/bitcoin-indexer-service';
+import { isAccountAccessError } from '@extension-base/services/keyring-service/AccountAccessErrors';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload, ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
@@ -184,10 +185,19 @@ export default class BitcoinBalanceService {
 
     if (!account) return null;
 
-    const { seed } = this.state.keyringService.exportMnemonic({
-      address: account.address,
-      walletEcosystem: account.meta.walletEcosystem,
-    });
+    let seed: string;
+
+    try {
+      ({ seed } = this.state.keyringService.exportMnemonic({
+        address: account.address,
+        walletEcosystem: account.meta.walletEcosystem,
+      }));
+    } catch (error) {
+      // An account waiting for its password still shows the balance of its stored addresses.
+      if (isAccountAccessError(error)) return null;
+
+      throw error;
+    }
 
     if (!seed) return null;
 

@@ -10,19 +10,7 @@ export const VERIFIED_FIREFOX_VERSION = '152.0.4';
 export const VERIFIED_FIREFOX_ARCHIVE_SHA256 = 'cfbe0a66269f220c69809210eda55fee72f4798427e78181b7d0da14df44882f';
 export const FIREFOX_CI_WORKFLOW_BLOCK = `      - name: Set up Firefox
         id: setup-firefox
-        env:
-          FIREFOX_VERSION: ${VERIFIED_FIREFOX_VERSION}
-          FIREFOX_ARCHIVE_SHA256: ${VERIFIED_FIREFOX_ARCHIVE_SHA256}
-        run: |
-          set -euo pipefail
-          firefox_dir="$RUNNER_TEMP/firefox-$FIREFOX_VERSION"
-          mkdir -p "$firefox_dir"
-          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 \\
-            "https://archive.mozilla.org/pub/firefox/releases/$FIREFOX_VERSION/linux-x86_64/en-US/firefox-$FIREFOX_VERSION.tar.xz" \\
-            --output "$firefox_dir/firefox.tar.xz"
-          printf '%s  %s\\n' "$FIREFOX_ARCHIVE_SHA256" "$firefox_dir/firefox.tar.xz" | sha256sum --check --strict -
-          tar -xJf "$firefox_dir/firefox.tar.xz" -C "$firefox_dir"
-          printf 'firefox-path=%s\\n' "$firefox_dir/firefox/firefox" >> "$GITHUB_OUTPUT"
+        run: bash ./scripts/ci-install-firefox.sh ${VERIFIED_FIREFOX_VERSION}
 
       - name: Firefox extension runtime and CSP smoke
         run: yarn test:smoke:firefox
@@ -54,7 +42,7 @@ export function requireCiFirefoxBinary(environment) {
     !candidate.startsWith('/') ||
     /[\0\r\n]/u.test(candidate)
   ) {
-    throw new Error('GitHub Actions must provide one absolute FIREFOX_BINARY from the pinned setup-firefox step');
+    throw new Error('GitHub Actions must provide one absolute FIREFOX_BINARY from the pinned Firefox setup step');
   }
   return candidate;
 }

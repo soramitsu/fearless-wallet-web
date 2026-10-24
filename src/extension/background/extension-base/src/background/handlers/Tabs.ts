@@ -65,10 +65,11 @@ export default class Tabs {
   }
 
   async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
-    const stripedUrl = stripUrl(url);
-    const entries = await this.state.requestService.getAuthList();
-
-    const auth = entries[stripedUrl];
+    await this.state.requestService.getAuthList();
+    const { authorization: auth } = this.state.requestService.authRequestHandler.getSigningAuthorizationSnapshot(
+      url, 'substrate'
+    );
+    if (auth?.isAllowed !== true) return [];
 
     return accounts.filter((allAcc) =>
       auth.authorizedAccounts
@@ -117,7 +118,11 @@ export default class Tabs {
   }
 
   async solanaAccountsAuthorized(url: string): Promise<SolanaConnectResponse> {
-    const authInfo = await this.state.getAuthInfo(url);
+    await this.state.getAuthInfo(url);
+    const { authorization: authInfo } = this.state.requestService.authRequestHandler.getSigningAuthorizationSnapshot(
+      url, 'solana'
+    );
+    if (authInfo?.isAllowed !== true) return { accounts: [] };
     const authorizedAddress = authInfo?.solanaAuthorizedAccount;
     const accounts = this.getAllSolanaAccounts().filter(({ address }) => address === authorizedAddress);
 
@@ -138,18 +143,9 @@ export default class Tabs {
 
   async solanaDisconnect(url: string): Promise<SolanaConnectResponse> {
     const idStr = stripUrl(url);
-    const authList = await this.state.requestService.getAuthList();
-    const authInfo = authList[idStr];
-
-    if (authInfo) {
-      this.state.requestService.setAuthorize({
-        ...authList,
-        [idStr]: {
-          ...authInfo,
-          solanaAuthorizedAccount: '',
-        },
-      });
-    }
+    await this.state.requestService.mutateAuthorizations((entries) => {
+      if (entries[idStr]) entries[idStr].solanaAuthorizedAccount = '';
+    });
 
     return { accounts: [] };
   }
@@ -216,18 +212,9 @@ export default class Tabs {
 
   async irohaDisconnect(url: string): Promise<IrohaConnectResponse> {
     const idStr = stripUrl(url);
-    const authList = await this.state.requestService.getAuthList();
-    const authInfo = authList[idStr];
-
-    if (authInfo) {
-      this.state.requestService.setAuthorize({
-        ...authList,
-        [idStr]: {
-          ...authInfo,
-          irohaAuthorizedAccount: '',
-        },
-      });
-    }
+    await this.state.requestService.mutateAuthorizations((entries) => {
+      if (entries[idStr]) entries[idStr].irohaAuthorizedAccount = '';
+    });
 
     return { accounts: [] };
   }
@@ -371,40 +358,22 @@ export default class Tabs {
   }
 
   async bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
-    const address = request.address;
-
-    await this.state.requestService.ensureAccountAuthorized(url, address);
-
-    const pair = this.state.keyringService.getPair(address)!;
-    const signer = new RequestBytesSign(request);
-
-    return this.state.requestService.substrateRequestHandler.sign(url, signer, {
-      address: pair.address,
-      ethereumAddress: pair.meta.ethereumAddress as string,
-      name: (pair.meta.name as string) ?? '',
-      ...pair.meta,
+    const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
+    return this.state.requestService.substrateRequestHandler.sign(url, new RequestBytesSign(request), {
+      ...meta,
+      address: request.address,
+      name: (meta?.name as string) ?? '',
+      ethereumAddress: (meta?.ethereumAddress as string) ?? '',
     });
   }
 
   async extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = this.state.keyringService.encodeAddress(request.address);
-
-    await this.state.requestService.ensureAccountAuthorized(url, address);
-    const isMobile = !!this.state.keyringService.getAddress(address, 'address')?.meta.isMobile;
-    const pair = this.state.keyringService.getPair(address);
-
-    let meta;
-
-    if (pair) meta = pair.meta;
-    else if (isMobile) meta = this.state.keyringService.getAddress(address, 'address')?.meta;
-
-    const signer = new RequestExtrinsicSign(request, isMobile);
-
-    return this.state.requestService.substrateRequestHandler.sign(url, signer, {
-      address: address,
-      ethereumAddress: meta?.ethereumAddress as string,
-      name: (meta?.name as string) ?? '',
+    const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
+    return this.state.requestService.substrateRequestHandler.sign(url, new RequestExtrinsicSign(request), {
       ...meta,
+      address: request.address,
+      name: (meta?.name as string) ?? '',
+      ethereumAddress: (meta?.ethereumAddress as string) ?? '',
     });
   }
 

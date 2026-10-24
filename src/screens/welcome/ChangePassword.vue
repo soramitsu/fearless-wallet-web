@@ -1,8 +1,12 @@
 <template>
   <AboveForm :fullScreen="true" :header="header" @closeHandler="close">
     <Scroll>
-      <div class="password-content">
-        <div>
+      <div class="password-content" :aria-busy="isLoading || isWait">
+        <div v-if="loadFailed" role="alert" data-testid="passwordLoadFailed">
+          <p>{{ t('migration.loadFailed') }}</p>
+          <FButton text="ux.retry" type="secondary" @click="loadStatus" />
+        </div>
+        <div v-if="!passwordSaved">
           <div class="warning">{{ $t('welcome.passwordWarning') }}</div>
 
           <ValidatedInput
@@ -20,13 +24,19 @@
           <PasswordForm :focus="!alreadyHasMasterPassword" @setPassword="setPassword" />
         </div>
 
-        <p v-if="actionError" role="alert" class="action-error">{{ t('welcome.passwordChangeFailed') }}</p>
+        <p v-else role="status">{{ t('welcome.masterPasswordSetUp') }}</p>
+        <p v-if="changeFailed" role="alert" data-testid="passwordChangeFailed">
+          {{ t(`welcome.${alreadyHasMasterPassword ? 'changePasswordFailed' : 'createPasswordFailed'}`) }}
+        </p>
+        <p v-if="continuationFailed" role="alert" data-testid="passwordContinuationFailed">
+          {{ t('mobileConnector.connectionFailed') }}
+        </p>
 
         <FButton
           size="big"
           fontSize="big"
           width="100%"
-          text="common.confirm"
+          :text="passwordSaved ? 'ux.retry' : 'common.confirm'"
           :disabled="isDisabled"
           @click="changePassword"
         />
@@ -37,7 +47,7 @@
 
 <script lang="ts" setup>
 import { useRouter, useRoute } from 'vue-router';
-import { ref, nextTick, computed, watch } from 'vue';
+import { ref, nextTick, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from '@/locales/useI18n';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -48,6 +58,7 @@ import {
   initGoogleAuth,
   hasAccounts,
   isNeedMigration,
+  getAccessStatus,
 } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { useNotify } from '@/plugins/soramitsuUI';
@@ -55,7 +66,7 @@ import { useNotify } from '@/plugins/soramitsuUI';
 const router = useRouter();
 const route = useRoute();
 const notify = useNotify();
-const { t } = useI18n();
+const { t, tc } = useI18n();
 
 const oldPassword = ref('');
 const walletPassword = ref('');
@@ -67,25 +78,50 @@ const alreadyHasMasterPassword = ref(false);
 const needMigration = ref(false);
 const hasAccount = ref(false);
 const isWait = ref(false);
-const actionError = ref(false);
+const passwordSaved = ref(false);
+const changeFailed = ref(false);
+const continuationFailed = ref(false);
 const isAuthFlowInit = ref(false);
+const isLoading = ref(true);
+const loadFailed = ref(false);
+const isValidatingPassword = ref(false);
+let disposed = false;
+let validationRevision = 0;
+let loadingStatus = false;
+onBeforeUnmount(() => { disposed = true; validationRevision++; });
 
 const isDisabled = computed(
   () =>
+    isLoading.value ||
+    loadFailed.value ||
+    isValidatingPassword.value ||
     isWait.value ||
     isAuthFlowInit.value ||
-    isErrorOldPassword.value ||
+    (!passwordSaved.value && (isErrorOldPassword.value ||
     walletPassword.value === '' ||
     oldPassword.value === walletPassword.value ||
-    (oldPassword.value === '' && alreadyHasMasterPassword.value)
+    (oldPassword.value === '' && alreadyHasMasterPassword.value)))
 );
 
-// Update alreadyHasMasterPassword, hasAccount, isNeedMigration
-(async () => {
-  alreadyHasMasterPassword.value = await hasMasterPassword();
-  hasAccount.value = await hasAccounts();
-  needMigration.value = await isNeedMigration();
-})();
+const loadStatus = async () => {
+  if (disposed || loadingStatus) return;
+  loadingStatus = true;
+  isLoading.value = true;
+  loadFailed.value = false;
+  try {
+    const [password, accounts, migration] = await Promise.all([hasMasterPassword(), hasAccounts(), isNeedMigration()]);
+    if (disposed) return;
+    alreadyHasMasterPassword.value = password;
+    hasAccount.value = accounts;
+    needMigration.value = migration;
+  } catch {
+    if (!disposed) loadFailed.value = true;
+  } finally {
+    loadingStatus = false;
+    if (!disposed) isLoading.value = false;
+  }
+};
+void loadStatus();
 
 const header = computed(() => (alreadyHasMasterPassword.value ? 'common.changePassword' : 'common.createPassword'));
 
@@ -96,16 +132,20 @@ watch(alreadyHasMasterPassword, async () => {
 });
 
 const changeOldPass = async (password: string) => {
+  if (disposed || isWait.value) return;
+  const revision = ++validationRevision;
   oldPassword.value = password;
-
-  const isInlock = await unlockExtension({ password: oldPassword.value });
-
-  isErrorOldPassword.value = !isInlock;
+  isValidatingPassword.value = true;
+  const unlocked = await unlockExtension({ password }).catch(() => false);
+  if (disposed || revision !== validationRevision) return;
+  isErrorOldPassword.value = !unlocked;
+  isValidatingPassword.value = false;
 };
 
 const setPassword = (password: string) => (walletPassword.value = password);
 
 const close = (isClose = true) => {
+  if (disposed) return;
   if (isClose) {
     router.back();
 
@@ -134,7 +174,12 @@ const close = (isClose = true) => {
     if (!isAuthFlowInit.value) {
       isAuthFlowInit.value = true;
 
-      initGoogleAuth().finally(() => (isAuthFlowInit.value = false));
+      continuationFailed.value = false;
+      void initGoogleAuth().catch(() => {
+        if (!disposed) continuationFailed.value = true;
+      }).finally(() => {
+        if (!disposed) { isAuthFlowInit.value = false; isWait.value = false; }
+      });
     }
   } else if (componentName)
     router.push({ name: componentName, params: { type, walletEcosystem } });
@@ -146,31 +191,45 @@ const close = (isClose = true) => {
 };
 
 const changePassword = async () => {
-  if (isWait.value) return;
-
+  if (disposed || isDisabled.value) return;
   isWait.value = true;
-  actionError.value = false;
+  if (passwordSaved.value) { close(false); return; }
+  changeFailed.value = false;
 
-  try {
-    const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value });
+  // A transport failure can hide an acknowledged commit. Failure copy must not promise that the old password remains.
+  const changed = await extensionChangePassword({ oldPassword: oldPassword.value, newPassword: walletPassword.value }).catch(
+    () => false
+  );
 
-    if (!changed) {
-      actionError.value = true;
-
-      return;
-    }
-
-    const title = t(
-      `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
-    ).toString();
-
-    notify({ title, message: '', type: 'success' });
-    close(false);
-  } catch {
-    actionError.value = true;
-  } finally {
+  if (disposed) return;
+  if (!changed) {
     isWait.value = false;
+
+    changeFailed.value = true;
+
+    return;
   }
+
+  passwordSaved.value = true;
+  const title = t(
+    `welcome.${alreadyHasMasterPassword.value ? 'successfulChangePassword' : 'masterPasswordSetUp'}`
+  ).toString();
+
+  notify({ title, message: '', type: 'success' });
+
+  // A key or TON phrase that did not open with the old password was left exactly as it is. Say so, and that
+  // Account access unlocks it (the wallet shows the same reminder).
+  const waiting = await getAccessStatus()
+    .then(({ issues }) => issues.filter(({ kind }) => kind === 'previous_master_password').length)
+    .catch(() => 0);
+
+  if (disposed) return;
+  if (waiting) {
+    notify({ title: tc('accountAccess.changePasswordPending', waiting, { count: waiting }), message: '', type: 'info' });
+  }
+
+  // Confirm stays disabled until the screen is left: a second press would check the old password again and fail.
+  close(false);
 };
 </script>
 
@@ -187,11 +246,6 @@ const changePassword = async () => {
   padding: 0 $default-padding;
   text-align: left;
   margin-bottom: 14px;
-}
-
-.action-error {
-  color: $default-white;
-  padding: 0 $default-padding;
 }
 
 .old-pass {

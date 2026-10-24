@@ -1,13 +1,8 @@
-import type {
-  MigrateLegacyAssetPreferences,
-  SetAssetPreference,
-  SetAutoSelectNode,
-  SetAccountsProps,
-  SetHiddenAsset,
-} from './types';
+import type { SetAssetPreference, SetAssetPreferences, SetAutoSelectNode, SetAccountsProps } from './types';
 import type { AccountJson, BalanceJson } from '@extension-base/background/types/types';
 import type { AccountStore } from '@/stores/accounts';
 import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
+import type { PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { accountController } from '@/controllers/accountController';
 import { WalletEcosystem } from '@/interfaces';
 import { acceptSoraDisclaimer, getSoraDisclaimerStatus } from '@/extension/messaging/sora-policy';
@@ -20,9 +15,11 @@ type Actions = {
   setSelectedFiat(this: AccountStore, props: string): void;
   setAccounts(this: AccountStore, props: SetAccountsProps): void;
   setAutoSelectNode(this: AccountStore, props: SetAutoSelectNode): void;
-  setHiddenAssets(this: AccountStore, props: SetHiddenAsset): void;
   setAssetPreference(this: AccountStore, props: SetAssetPreference): void;
-  migrateLegacyAssetPreferences(this: AccountStore, props: MigrateLegacyAssetPreferences): void;
+  setAssetPreferences(this: AccountStore, props: SetAssetPreferences): void;
+  updatePortfolioView(this: AccountStore, patch: Partial<PortfolioViewSettings>): void;
+  recordPortfolioLayoutFirstRun(this: AccountStore): void;
+  dismissPortfolioLayoutNote(this: AccountStore): void;
   setSelectedNetwork(this: AccountStore, network: string): void;
   hidePolkaswapAlert(this: AccountStore): Promise<boolean>;
   syncSoraDisclaimerStatus(this: AccountStore): Promise<boolean>;
@@ -33,7 +30,10 @@ type Actions = {
 
 export const actions: Actions = {
   setSelectedWallet(account) {
-    if (account?.address !== this.selectedWallet.address) this.setIsBalanceLoading(true);
+    if (account?.address !== this.selectedWallet.address) {
+      this.setIsBalanceLoading(true);
+      this.balanceLoadStartedAt = Date.now();
+    }
 
     this.selectedWallet = {
       address: account?.address ?? '',
@@ -47,6 +47,7 @@ export const actions: Actions = {
       name: account?.name ?? '',
       isMobile: account?.isMobile ?? false,
       isMasterAccount: account?.isMasterAccount ?? false,
+      isMnemonicUnverified: account?.isMnemonicUnverified ?? false,
       isMasterPassword: account?.isMasterPassword ?? false,
       haveEntropy: account?.haveEntropy ?? false,
       isSubstrate: account?.walletEcosystem === WalletEcosystem.Substrate,
@@ -59,21 +60,7 @@ export const actions: Actions = {
     this.availableNfts = { ...this.availableNfts, ...nfts };
   },
 
-  setBalance({ details, saveSequence = false, scanStates }) {
-    if (saveSequence) {
-      const address = this.selectedWallet.address;
-      const sequence = details.map(({ groupId }) => groupId);
-
-      accountController.setSequenceAssets(sequence, address);
-
-      accountController.setCustomSort(address);
-
-      this.isCustomSorted = {
-        ...this.isCustomSorted,
-        [address]: true,
-      };
-    }
-
+  setBalance({ details, scanStates }) {
     this.balances = details;
     if (scanStates) this.networkScanStates = scanStates;
   },
@@ -92,60 +79,59 @@ export const actions: Actions = {
     this.isBalanceLoading = value;
   },
 
-  setHiddenAssets({ groupId, value }) {
-    const address = this.selectedWallet.address;
-    const hiddenAssets = this.hiddenAssetsForAllAccounts[address] ?? [];
-
-    if (value) {
-      const index = this.hiddenAssetsForAllAccounts[address].findIndex((id) => id === groupId);
-
-      if (index !== -1) {
-        hiddenAssets.splice(index, 1);
-
-        this.hiddenAssetsForAllAccounts = {
-          ...this.hiddenAssetsForAllAccounts,
-          [address]: hiddenAssets,
-        };
-      }
-    } else {
-      this.hiddenAssetsForAllAccounts = {
-        ...this.hiddenAssetsForAllAccounts,
-        [address]: Array.from(new Set([...hiddenAssets, groupId])),
-      };
-    }
-
-    accountController.setHiddenAssets(this.hiddenAssetsForAllAccounts);
-  },
-
   setAssetPreference({ key, preference }) {
-    const address = this.selectedWallet.address;
-    const current = this.assetPreferencesForAllAccounts[address] ?? {};
-
-    this.assetPreferencesForAllAccounts = {
-      ...this.assetPreferencesForAllAccounts,
-      [address]: { ...current, [key]: preference },
-    };
-
-    accountController.setAssetPreferences(this.assetPreferencesForAllAccounts);
+    this.setAssetPreferences({ entries: [{ key, preference }] });
   },
 
-  migrateLegacyAssetPreferences({ assets, complete }) {
-    const address = this.selectedWallet.address;
-    if (!address || !complete || accountController.getAssetPreferenceMigrationState()[address]) return;
+  // Only explicit choices are stored here. Hides from 3.0.5 are derived on read by usePortfolioPreferences,
+  // and the 3.0.5 keys themselves are never written.
+  setAssetPreferences({ entries }) {
+    if (entries.length === 0) return;
 
-    const legacyHidden = new Set(this.hiddenAssetsForAllAccounts[address] ?? []);
+    const address = this.selectedWallet.address;
     const current = { ...(this.assetPreferencesForAllAccounts[address] ?? {}) };
 
-    assets.forEach(({ key, groupId }) => {
-      if (legacyHidden.has(groupId) && current[key] === undefined) current[key] = 'hidden';
-    });
+    entries.forEach(({ key, preference }) => (current[key] = preference));
 
     this.assetPreferencesForAllAccounts = {
       ...this.assetPreferencesForAllAccounts,
       [address]: current,
     };
+
     accountController.setAssetPreferences(this.assetPreferencesForAllAccounts);
-    accountController.setAssetPreferenceMigrationComplete(address);
+  },
+
+  // View state only (filters, collapse, notice acknowledgement); it never writes an asset preference.
+  updatePortfolioView(patch) {
+    const address = this.selectedWallet.address;
+    if (!address) return;
+
+    this.portfolioViewForAllAccounts = {
+      ...this.portfolioViewForAllAccounts,
+      [address]: { ...this.portfolioView, ...patch },
+    };
+
+    try {
+      accountController.setPortfolioViewSettings(this.portfolioViewForAllAccounts);
+    } catch {
+      // A convenience preference: the in-memory value still applies until the popup closes.
+    }
+  },
+
+  // The app calls this as it starts, before onboarding, so a wallet made on a fresh install is always younger.
+  recordPortfolioLayoutFirstRun() {
+    this.portfolioLayout = accountController.recordPortfolioLayoutFirstRun();
+  },
+
+  // Install-wide: the note explains a layout change once, whichever wallet it was read on.
+  dismissPortfolioLayoutNote() {
+    this.portfolioLayout = { ...this.portfolioLayout, noteDismissed: true };
+
+    try {
+      accountController.setPortfolioLayout(this.portfolioLayout);
+    } catch {
+      // A convenience preference: the in-memory value still applies until the popup closes.
+    }
   },
 
   setSelectedFiat(fiatName) {

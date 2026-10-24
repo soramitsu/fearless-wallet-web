@@ -1,6 +1,14 @@
-// Solana send outcomes the background reports by code, shared by the Send screen (quote errors) and the result
-// screen (send failures).
+// Bitcoin and Solana send outcomes the background reports by code, shared by
+// the Send screen (quote errors) and the result screen (send failures).
 export const SEND_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  bitcoin_amount_below_dust: 'assets.bitcoinAmountBelowDust',
+  bitcoin_broadcast_ambiguous: 'assets.bitcoinBroadcastUnconfirmed',
+  bitcoin_broadcast_rejected: 'assets.bitcoinBroadcastRejected',
+  bitcoin_insufficient_spendable: 'assets.bitcoinInsufficientSpendable',
+  bitcoin_previous_send_pending: 'assets.bitcoinPreviousSendPending',
+  bitcoin_previous_send_unconfirmed: 'assets.bitcoinPreviousSendUnconfirmed',
+  bitcoin_too_many_inputs: 'assets.bitcoinTooManyInputs',
+  invalid_bitcoin_recipient: 'assets.incorrectAddress',
   invalid_solana_recipient: 'assets.incorrectAddress',
   solana_amount_below_rent: 'assets.solanaAmountBelowRent',
   solana_broadcast_ambiguous: 'assets.solanaBroadcastUnconfirmed',
@@ -20,10 +28,26 @@ export const SEND_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.f
   solana_transfer_disabled: 'common.featureOff',
 });
 
+// The account is in the wallet but its key waits for a password or phrase (Account access). Every screen
+// that shows one of these offers "Unlock this account".
+export const ACCOUNT_ACCESS_ERROR_LOCALE_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  legacy_password_required: 'migration.legacyPasswordRequired',
+  previous_password_required: 'accountAccess.previousPasswordRequired',
+  ton_seed_needs_previous_password: 'accountAccess.previousPasswordRequired',
+});
+
+/** The message key for an Account access error, or undefined for any other error. */
+export function getAccountAccessErrorLocaleKey(error: unknown): string | undefined {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
+
+  return message ? ACCOUNT_ACCESS_ERROR_LOCALE_KEYS[message] : undefined;
+}
+
 const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   ...SEND_ERROR_LOCALE_KEYS,
   transfer_fee_changed: 'assets.transferFeeChanged',
   transfer_fee_approval_required: 'assets.transferFeeApprovalRequired',
+  ...ACCOUNT_ACCESS_ERROR_LOCALE_KEYS,
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',
   iroha_transfer_disabled: 'assets.irohaTransfersDisabled',
   // A reset or upgraded Iroha network needs a wallet release pinned to it.

@@ -11,7 +11,7 @@ import { IS_PRODUCTION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSameString } from '@/helpers';
-import { isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
+import { isBitcoinRecipientAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
 import {
   encodeIrohaI105Address,
   isIrohaI105Address,
@@ -180,8 +180,9 @@ export default class BaseApi {
     }
   }
 
+  /** Any Bitcoin address the wallet can pay: P2PKH, P2SH, P2WPKH, P2WSH or Taproot. */
   public static isBitcoinAddress(address: string, network?: BitcoinNetworkKind): boolean {
-    return isBitcoinAddress(address, network);
+    return isBitcoinRecipientAddress(address, network);
   }
 
   public static isSameAddress(wallet: Wallet, address: string, network: string): boolean {

@@ -1,5 +1,6 @@
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { initStorage } from '@extension-base/stores/Storage';
+import { tonStore } from '@extension-base/stores/TonStore';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import MigrationService from '@extension-base/services/migration-service';
@@ -16,10 +17,26 @@ const initialize = retryableInitialization(async () => {
   await initStorage();
   await KeyringStoreWeb.initialize();
   await state.keyringService.loadAll();
+  // A failed read is read again here; a later request retries the whole initialization.
+  await tonStore.loaded.catch(() => state.keyringService.tonKeyring.loadAll());
   state.eventService.emit('crypto.ready', true);
-  await state.keyringService.currentAccountReady;
+  await state.keyringService.currentAccountReady.catch(() => state.keyringService.restoreCurrentAccount());
   await keyring.restoreKeyringPassword();
-  await MigrationService.start();
+  // Before anything can add an account: what is stored now is what earlier builds wrote. The
+  // security notice must never keep the wallet from starting.
+  try {
+    await state.legacyExposureService.init();
+  } catch (error) {
+    console.error('Security notice state could not be prepared', error);
+  }
+  if (!KeyringStoreWeb.readOnly) await MigrationService.start();
+  // The web wallet has no install event, so start-up is where a missing selection is repaired.
+  // A failure here must not keep the wallet from starting.
+  try {
+    if (!KeyringStoreWeb.readOnly) await state.ensureCurrentAccount();
+  } catch (error) {
+    console.error('Default account could not be selected', error);
+  }
 });
 
 addEventListener('message', (event) => {

@@ -1,0 +1,30 @@
+{
+  "baseCommit": "8bc66c1e",
+  "scope": "Local-only test harness lifecycle; shipped application source unchanged",
+  "sourceSha256": {
+    "scripts/local-chains/bitcoind-rpc.mjs": "d3eef93a241afd38b7d97863dc98444ce274cf075ec3c424358af66b545ad635",
+    "scripts/test-local-chain-sends.mjs": "3b9e399fd3c767bdbf6e60841ebfa231f87fcaea50eb76bf54434c5550ed7343",
+    "scripts/local-chains/process-lifecycle.mjs": "f3ac88606df4c64d5986527f3fc8b3dad03d1ea1993c7b0c15a4538100616a55",
+    "scripts/local-chains/process-lifecycle.test.mjs": "500a81b8312bb46b5bc0beff826bb5a1045e184f4d60f802aa608686c3e6d280",
+    "package.json": "1a7a9f55968294f104bde536cdaeec44029e474887a5d7acefad5a1519677a15"
+  },
+  "evidenceSha256": {
+    "local-chain-runner-cleanup.log": "154b440c3a91490bbd978db5ca056d85af838bd1d60a9915255afe4751d99241",
+    "local-chain-process-tests.log": "f76ae0c76758e09391b21c101ffadac3a93b530fb74d1bf2e311ac77a99b3db3",
+    "local-chain-runner-interrupt.log": "6e2e088985fbd08beee9a96759138b01beb70d714a05a26d5255708922ab6488"
+  },
+  "tests": {
+    "processLifecycle": 4,
+    "localChainSends": 17,
+    "failed": 0,
+    "skipped": 0,
+    "nativeRunnerStartupSigterm": "passed: exit143, owned child reaped, run directory removed"
+  },
+  "node": "24.19.0",
+  "bitcoin": "31.1.0 regtest",
+  "solana": "4.3.0 private validator",
+  "limits": [
+    "This qualifies the source send services and local harness, not a signed packaged browser artifact.",
+    "Previous WK-5 evidence still refers to its original source/build pins."
+  ]
+}

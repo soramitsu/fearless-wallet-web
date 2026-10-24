@@ -8,6 +8,7 @@ import fg from 'fast-glob';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { keystoreScryptParamsPlugin } from './scripts/keystore-scrypt-params.mjs';
 import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
 import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
 
@@ -42,7 +43,9 @@ const ENV_KEYS = [
   'FL_WEB_SNOWTRACE_API_KEY',
   'FL_WEB_ZKEVM_POLYGONSCAN_API_KEY',
   'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
+  'VUE_APP_ENABLE_IROHA_CONNECT',
   'VUE_APP_ENABLE_IROHA_TRANSFERS',
+  'VUE_APP_ENABLE_SOLANA_TRANSFERS',
   'VUE_APP_EXTENSION_SMOKE',
   'VUE_APP_TEST_ONLY',
   'VUE_APP_FL_WEB_X1_TESTNET_API_KEY',
@@ -137,12 +140,49 @@ export default sprite;
   };
 }
 
+// The SIL Open Font License asks for its text beside the fonts, so every build that bundles font files ships these.
+export const FONT_LICENSES = Object.freeze({
+  'licenses/fonts/Inter-OFL.txt': 'src/assets/fonts/inter/OFL.txt',
+  'licenses/fonts/JetBrainsMono-OFL.txt': 'node_modules/@fontsource/jetbrains-mono/LICENSE',
+  'licenses/fonts/NotoSansCuneiform-OFL.txt': 'node_modules/@fontsource/noto-sans-cuneiform/LICENSE',
+  'licenses/fonts/NotoSansEgyptianHieroglyphs-OFL.txt': 'node_modules/@fontsource/noto-sans-egyptian-hieroglyphs/LICENSE',
+  'licenses/fonts/Sora-OFL.txt': 'node_modules/@fontsource-variable/sora/LICENSE',
+});
+
+export function fontLicensesPlugin() {
+  return {
+    name: 'fearless-font-licenses',
+    async generateBundle(_options, bundle) {
+      if (!Object.keys(bundle).some((file) => /\.(?:woff2?|ttf|otf)$/u.test(file))) return;
+
+      for (const [fileName, source] of Object.entries(FONT_LICENSES)) {
+        this.emitFile({ type: 'asset', fileName, source: await fs.readFile(path.resolve(__dirname, source)) });
+      }
+    },
+  };
+}
+
+export const FW_PALETTES = Object.freeze(['v1', 'legacy']);
+
+// Build-time look (design-system 14.0 item 5): `v1` is Neon Glass, `legacy` the look this release replaced, kept so a
+// hotfix can revert paint without touching data. It is not remote configuration.
+export function resolveFwPalette(env = process.env) {
+  const palette = env.VITE_FW_PALETTE || 'v1';
+
+  if (!FW_PALETTES.includes(palette)) {
+    throw new Error(`VITE_FW_PALETTE must be one of ${FW_PALETTES.join(', ')}; received ${JSON.stringify(palette)}`);
+  }
+
+  return palette;
+}
+
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
   const nodeEnv = mode === 'production' ? 'production' : 'development';
   const define = {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
+    'process.env.VITE_FW_PALETTE': JSON.stringify(resolveFwPalette(env)),
   };
 
   for (const key of ENV_KEYS) {
@@ -171,6 +211,9 @@ function assertTransferEvidenceReady(flag, manifestPath, errorCode, description)
 }
 
 export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
+  if (process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true' && mode === 'production') {
+    throw new Error('iroha_connect_blind_signing_unreviewed: IrohaConnect must stay disabled until decoded-payload signing ships');
+  }
   assertTransferEvidenceReady(
     'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
     'scripts/bitcoin-testnet-broadcast-evidence.json',
@@ -190,6 +233,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       irohaSdkBrowserBindingPlugin(),
       vue(),
       subwalletPackageCompatPlugin(),
+      keystoreScryptParamsPlugin(),
       ...(asyncWasm ? [wasm(), ...(nativeAsyncModules ? [] : [topLevelAwait()])] : []),
       nodePolyfills({
         include: ['buffer', 'crypto', 'events', 'http', 'https', 'os', 'stream', 'url', 'util', 'zlib'],
@@ -203,6 +247,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         iconDirs: [path.resolve(__dirname, 'src/assets/icons'), path.resolve(__dirname, 'src/assets/services')],
         symbolId: 'icon-[name]',
       }),
+      fontLicensesPlugin(),
     ],
     optimizeDeps: { exclude: ['@subwallet/keyring', '@subwallet/ui-keyring'] },
     resolve: {
@@ -225,7 +270,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
           additionalData: `
             @use "@/styles/_layout.scss" as *;
             @use "@/styles/_mixins.scss" as *;
-            @use "@/styles/common.scss" as *;
+            @use "@/styles/common.scss" as * with ($fw-palette: "${resolveFwPalette()}");
           `,
         },
       },
@@ -241,6 +286,8 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
       // exported promises breaks initialization across the popup's cyclic chunks.
       target: nativeAsyncModules ? 'es2022' : 'es2020',
       cssCodeSplit: true,
+      // Extension CSP permits packaged fonts only, including tiny language subsets.
+      assetsInlineLimit: (filePath) => /\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined,
       rollupOptions: {
         output: {
           entryFileNames: '[name].js',

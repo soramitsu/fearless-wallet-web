@@ -67,9 +67,10 @@
     <NotificationPopup
       v-if="showNotificationPopup"
       sizeWidth="big"
-      rejectButtonText="Cancel"
+      rejectButtonText="common.cancel"
       acceptButtonText="common.delete"
       :showAcceptButton="true"
+      :acceptDisabled="nodeSaving"
       :showRejectButton="true"
       :showWarningIcon="true"
       :headers="headers"
@@ -123,11 +124,15 @@ export default defineComponent({ name: 'AccountsLayout',
       showEditNodeForm: false,
       showNodeSettingsPopup: false,
       showNotificationPopup: false,
+      nodeSaving: false,
+      nodeSaveError: false,
+      nodeRequest: 0,
+      viewActive: true,
     };
   },
   computed: {
     headers() {
-      return { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName };
+      return { text: this.nodeSaveError ? 'addWallet.google.somethingWrong' : 'accounts.deleteCustomNode', subtext: this.selectedNodeName };
     },
     header() {
       if (this.isAccountsRoute) return 'accounts.chainAccounts';
@@ -172,6 +177,7 @@ export default defineComponent({ name: 'AccountsLayout',
       return this.$route.name;
     },
   },
+  beforeUnmount() { this.viewActive = false; this.nodeRequest += 1; },
   methods: {
     setExportType(type: Nullable<ExportType> = null) {
       this.exportType = type;
@@ -182,8 +188,7 @@ export default defineComponent({ name: 'AccountsLayout',
           if (this.accountsStore.selectedWallet.isTon) this.setExportType('mnemonic');
     },
     handlerAccept() {
-      this.deleteNode();
-          this.closeNotificationPopup();
+      void this.deleteNode();
     },
     openExportAccountPage() {
       this.$router.push({
@@ -228,17 +233,26 @@ export default defineComponent({ name: 'AccountsLayout',
 
           if (nodesUpdated) this.childUpdatedNode();
     },
-    deleteNode() {
+    async deleteNode() {
+      if (this.nodeSaving || !this.viewActive) return;
+      const request = ++this.nodeRequest;
       const network = this.networksStore.getNetwork(this.selectedNetwork);
-          const customNodes = network.customNodes.filter((node) => node.url !== this.selectedNodeUrl);
-
-          upsertNetworkMap({
-            ...network,
-            customNodes,
-          });
-
-          this.childUpdatedNode(true);
-          this.closeNotificationPopup();
+      const url = this.selectedNodeUrl;
+      const customNodes = network.customNodes.filter((node) => node.url !== url);
+      const removesActive = network.currentProvider === url;
+      this.nodeSaving = true;
+      this.nodeSaveError = false;
+      try {
+        await upsertNetworkMap({ ...network, customNodes,
+          currentProvider: removesActive ? network.nodes[0]?.url ?? '' : network.currentProvider,
+          isManual: removesActive ? false : network.isManual,
+        }, network);
+        if (this.viewActive && request === this.nodeRequest) this.closeNotificationPopup();
+      } catch {
+        if (this.viewActive && request === this.nodeRequest) this.nodeSaveError = true;
+      } finally {
+        if (this.viewActive && request === this.nodeRequest) this.nodeSaving = false;
+      }
     },
     childUpdatedNode(setAuto = false) {
       const nodesComponent = this.$refs[this.routerViewRef] as InstanceType<typeof Nodes>;
@@ -246,6 +260,9 @@ export default defineComponent({ name: 'AccountsLayout',
           if (setAuto && this.selectedNodeIsActive) nodesComponent.toggleAutoSelectNode(true);
     },
     openNotificationPopup() {
+      this.nodeRequest += 1;
+      this.nodeSaving = false;
+      this.nodeSaveError = false;
       this.showNotificationPopup = true;
 
           this.closeNodeSettings();
@@ -255,6 +272,8 @@ export default defineComponent({ name: 'AccountsLayout',
       this.showAddEthereumAccountPopup = true;
     },
     closeNotificationPopup() {
+      this.nodeRequest += 1;
+      this.nodeSaving = false;
       this.selectedNodeName = '';
           this.selectedNodeUrl = '';
 

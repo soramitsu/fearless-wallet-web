@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { URLS } from '@/consts/urls';
-import { isSolanaTransfersEnabled } from '@/util/releaseFeatures';
+import { isBitcoinTransfersEnabled, isSolanaTransfersEnabled } from '@/util/releaseFeatures';
 import {
   applyRemoteSendFlags,
   emptySendKillSwitchState,
@@ -15,11 +15,12 @@ type SendKillSwitchStorage = {
 };
 
 const DISABLED_ERRORS: Readonly<Record<SendCapability, string>> = Object.freeze({
+  bitcoinSend: 'bitcoin_transfer_disabled',
   solanaSend: 'solana_transfer_disabled',
 });
 
 export const isSendCapabilityCompiledOn = (capability: SendCapability): boolean =>
-  capability === 'solanaSend' && isSolanaTransfersEnabled();
+  capability === 'bitcoinSend' ? isBitcoinTransfersEnabled() : isSolanaTransfersEnabled();
 
 export class SendKillSwitchService {
   private state = emptySendKillSwitchState();

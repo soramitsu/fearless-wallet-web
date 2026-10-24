@@ -23,9 +23,23 @@ export default defineConfig(({ mode }) => {
       globals: true,
       // Real scrypt/HD-key regression tests need bounded CPU and memory contention.
       maxWorkers: Number(workerOverride ?? '4'),
-      // The Iroha SDK must go through Vite so its native import resolves to the browser binding.
-      server: { deps: { inline: ['@subwallet/keyring', '@iroha/iroha-js'] } },
       environment: 'happy-dom',
+      // A test that imports a key encoder module directly gets it with the build's scrypt rewrite
+      // (scripts/keystore-scrypt-params.mjs); Node would load the package file unchanged.
+      server: {
+        deps: {
+          inline: [
+            // Exercise the installed keyring in storage tests through the same compatibility
+            // transforms and scrypt parameters as the extension build.
+            '@iroha/iroha-js',
+            '@subwallet/ui-keyring',
+            '@subwallet/keyring',
+            /\/node_modules\/@(?:subwallet|polkadot)\/keyring\/pair\/encode\.js$/,
+            /\/node_modules\/@polkadot\/util-crypto\/json\/encrypt\.js$/,
+            /\/node_modules\/@polkadot\/util-crypto\/scrypt\/(?:defaults|encode)\.js$/,
+          ],
+        },
+      },
       coverage: {
         provider: 'v8',
         reporter: ['lcov'],

@@ -113,10 +113,33 @@ jobs:
           npm install -g corepack@0.34.1
           corepack enable
 
+      - name: Raw colour baseline may only shrink
+        env:
+          COLOUR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ -z "$COLOUR_BASE_SHA" || "$COLOUR_BASE_SHA" =~ ^0+$ ]]; then
+            COLOUR_BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+          [[ "$COLOUR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          if ! git cat-file -e "$COLOUR_BASE_SHA^{commit}"; then
+            git fetch --no-tags --depth=1 origin "$COLOUR_BASE_SHA"
+          fi
+          node scripts/check-raw-colours.mjs --base-ref "$COLOUR_BASE_SHA"
+
       - name: Branch flow audit
         run: |
           bash ./scripts/test-branch-flow-audit.sh
           bash ./scripts/audit-branch-flow.sh
+
+      - name: Package manager audit
+        run: |
+          node scripts/test-package-manager-audit.mjs
+          node scripts/audit-package-manager.mjs
+
+      - name: GitHub Actions policy audit
+        run: |
+          node scripts/test-github-actions-audit.mjs
+          node scripts/audit-github-actions.mjs
 
       - name: Audit public artifacts
         run: |
@@ -178,6 +201,7 @@ jobs:
           yarn test:import-chrome-release-config
           yarn test:prepare-chrome-release
           yarn test:release-source-audit
+          yarn test:bundle-host-audit
 
       - name: Build Chrome extension
         run: yarn build:extension:zip
@@ -199,6 +223,9 @@ jobs:
           yarn test:bitcoin-broadcast-evidence-audit
           yarn audit:bitcoin-broadcast-evidence
 
+      - name: Firefox installer self-test
+        run: yarn test:ci-install-firefox
+
       - name: Build Firefox extension
         run: yarn build:extension:firefox
 
@@ -207,19 +234,7 @@ jobs:
 
       - name: Set up Firefox
         id: setup-firefox
-        env:
-          FIREFOX_VERSION: 152.0.4
-          FIREFOX_ARCHIVE_SHA256: cfbe0a66269f220c69809210eda55fee72f4798427e78181b7d0da14df44882f
-        run: |
-          set -euo pipefail
-          firefox_dir="$RUNNER_TEMP/firefox-$FIREFOX_VERSION"
-          mkdir -p "$firefox_dir"
-          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 \
-            "https://archive.mozilla.org/pub/firefox/releases/$FIREFOX_VERSION/linux-x86_64/en-US/firefox-$FIREFOX_VERSION.tar.xz" \
-            --output "$firefox_dir/firefox.tar.xz"
-          printf '%s  %s\n' "$FIREFOX_ARCHIVE_SHA256" "$firefox_dir/firefox.tar.xz" | sha256sum --check --strict -
-          tar -xJf "$firefox_dir/firefox.tar.xz" -C "$firefox_dir"
-          printf 'firefox-path=%s\n' "$firefox_dir/firefox/firefox" >> "$GITHUB_OUTPUT"
+        run: bash ./scripts/ci-install-firefox.sh 152.0.4
 
       - name: Firefox extension runtime and CSP smoke
         run: yarn test:smoke:firefox

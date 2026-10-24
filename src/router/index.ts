@@ -2,12 +2,14 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { updateTitle } from './helpers';
 import routes, { Components } from '@/router/routes';
 import { resolveUniversalWalletMigrationRedirect } from '@/router/universalWalletMigrationGuard';
+import { readLegacyExposureState, resolveLegacyExposureRedirect } from '@/router/legacyExposureGuard';
 import {
   keyringIsLocked,
   hasMasterPassword,
   hasAccounts,
   isNeedMigration,
   isOnboardingRequired,
+  getAccessStatus,
 } from '@/extension/messaging';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { resolvePrimaryBackTarget, type PrimaryDestination } from '@/router/primaryNavigation';
@@ -49,6 +51,20 @@ router.beforeEach(async (to, from, next) => {
   // так же, 150ms минимальное время для того, чтобы balances успели подтянуться из SW
   setTimeout(() => updateTitle(to), 150);
 
+  // Recovery must remain reachable even when onboarding/password migration cannot write.
+  if (!IS_EXTENSION && (await getAccessStatus()).storageRecoveryOnly) {
+    if (to.name === Components.StorageRecovery) next();
+    else next({ name: Components.StorageRecovery });
+    return;
+  }
+  if (to.name === Components.StorageRecovery) {
+    // Raw retained data may be the only surviving copy even when the password
+    // store is healthy. Its explicit read-only route precedes onboarding/unlock.
+    if (!IS_EXTENSION) next();
+    else next({ name: Components.Welcome });
+    return;
+  }
+
   const isRequiredOnboarding = await isOnboardingRequired();
 
   if (IS_PRODUCTION || IS_TEST_ONLY) {
@@ -65,14 +81,39 @@ router.beforeEach(async (to, from, next) => {
   // If the extension is locked, skip the migration step.
   // This can happen if the user set a password during migration and then locked the extension.
   if (!isLock && !isRequiredOnboarding) {
+    // The security notice comes first after unlock: before the per-account password prompt and
+    // before any wallet screen or dApp request.
+    const exposureRedirect = resolveLegacyExposureRedirect({
+      state: await readLegacyExposureState(),
+      routeName: to.name,
+      fullPath: to.fullPath,
+    });
+
+    if (exposureRedirect) {
+      if (exposureRedirect === 'allow') next();
+      else next(exposureRedirect);
+
+      return;
+    }
+
     const isKeyringMigrationRoute =
       to.name === Components.MigrationDescription || to.name === Components.MigrationAccounts;
 
     if (needMigration) {
       const isFromMigrationDescriptionToChangePass =
         from.name === Components.MigrationDescription && to.name === Components.ChangePassword;
+      // The prompt's own ways out: "More options" leads to Reset wallet, and "Use the recovery phrase" unlocks
+      // one account in Account access, which needs the master password the prompt creates first.
+      const isPromptEscapeRoute =
+        to.name === Components.ResetWallet ||
+        (to.name === Components.AccountAccessRecovery && (await hasMasterPassword()));
 
-      if (isFromMigrationDescriptionToChangePass || isKeyringMigrationRoute || to.name === Components.Onboarding) {
+      if (
+        isFromMigrationDescriptionToChangePass ||
+        isKeyringMigrationRoute ||
+        isPromptEscapeRoute ||
+        to.name === Components.Onboarding
+      ) {
         next();
 
         return;
@@ -83,8 +124,15 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
 
+    // Accounts that still wait for their legacy password are not prompted when only linked EVM accounts
+    // are left (or after "Skip for now"), but their password rows stay reachable until none is left.
     if (isKeyringMigrationRoute) {
-      next({ name: Components.Welcome });
+      const hasLegacyAccounts = await getAccessStatus()
+        .then(({ issues }) => issues.some(({ kind }) => kind === 'legacy_account_password'))
+        .catch(() => true);
+
+      if (hasLegacyAccounts) next();
+      else next({ name: Components.Welcome });
 
       return;
     }

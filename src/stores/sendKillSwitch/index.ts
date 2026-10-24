@@ -12,7 +12,7 @@ const featureStorage = new LocalStorage('feature_');
 const SEND_KILL_SWITCH_KEY = 'send-kill-switch-v1';
 
 /**
- * The popup's copy of the veto-only Solana send kill switch, used to
+ * The popup's copy of the veto-only Bitcoin/Solana send kill switch, used to
  * hide a vetoed send. The background applies the same rule before it touches
  * keys. Kept apart from the extension store so send screens can read it
  * without pulling in the router.

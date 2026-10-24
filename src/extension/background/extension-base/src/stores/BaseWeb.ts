@@ -1,4 +1,7 @@
+import { EXTENSION_PREFIX } from '../defaults';
 import { openWebDatabase, WEB_STORE_NAME } from './WebDatabase';
+import { assertWebStorageWritable } from './WebStorageMode';
+import type { TransformStoredRecords } from './StoreMutation';
 
 export default abstract class BaseWebStore<T> {
   #prefix: string;
@@ -31,6 +34,16 @@ export default abstract class BaseWebStore<T> {
     this.#prefix = prefix ? `${prefix}:` : '';
   }
 
+  protected assertWritable(): void {
+    if (this.#prefix === `${EXTENSION_PREFIX}:` || this.#prefix.startsWith(`${EXTENSION_PREFIX}:ton:`))
+      assertWebStorageWritable();
+  }
+
+  private enqueueMutation<TResult>(write: () => Promise<TResult>, trackFailure = true): Promise<TResult> {
+    this.assertWritable();
+    return this.enqueueWrite(() => { this.assertWritable(); return write(); }, trackFailure);
+  }
+
   public getPrefix(): string {
     return this.#prefix;
   }
@@ -47,7 +60,7 @@ export default abstract class BaseWebStore<T> {
   }
 
   public writeToDB(key: string, value: T): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -98,7 +111,7 @@ export default abstract class BaseWebStore<T> {
   }
 
   public removeFromDB(key: string): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -147,6 +160,14 @@ export default abstract class BaseWebStore<T> {
     return this.enqueueWrite(() => this.getByKey(`${this.#prefix}${key}`), false);
   }
 
+  public getAllAndWait(): Promise<Record<string, T>> {
+    return this.enqueueWrite(async () => {
+      let records: Record<string, T> = {};
+      await this.allMap((values) => { records = values; });
+      return records;
+    }, false);
+  }
+
   // Keep the read and write in one transaction. The callback publishes only
   // after commit, while the same queue still excludes password/deletion writes.
   public updateAndWait(
@@ -155,7 +176,7 @@ export default abstract class BaseWebStore<T> {
     publish?: (committed: T) => void,
     trackFailure = true
   ): Promise<T | undefined> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueMutation(async () => {
       const db = await this.openDatabase();
       return new Promise<T | undefined>((resolve, reject) => {
         const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
@@ -183,7 +204,74 @@ export default abstract class BaseWebStore<T> {
     }, trackFailure);
   }
 
+  // Read, archive and remove in the same IndexedDB transaction. Publish only
+  // after its commit, while the queue still excludes later metadata writes.
+  public mutateRecordsAndWait(
+    keys: string[] | null,
+    transform: TransformStoredRecords,
+    publish?: () => void
+  ): Promise<void> {
+    const requested = keys && [...new Set(keys)];
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => {
+          try { publish?.(); resolve(); } catch (error) { reject(error); }
+        };
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet removal failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet removal was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        const current: Record<string, unknown> = {};
+        let remaining = requested?.length ?? 0;
+        const apply = () => {
+          try {
+            const { entries, remove } = transform(current);
+            Object.entries(entries).forEach(([key, value]) => store.put(value, `${this.#prefix}${key}`));
+            remove.forEach((key) => store.delete(`${this.#prefix}${key}`));
+          } catch (error) {
+            transaction.abort();
+            reject(error);
+          }
+        };
+        if (requested === null) {
+          const request = store.openCursor();
+          request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) { apply(); return; }
+            if (typeof cursor.key === 'string' && cursor.key.startsWith(this.#prefix))
+              current[cursor.key.slice(this.#prefix.length)] = cursor.value;
+            cursor.continue();
+          };
+        } else if (!remaining) apply();
+        for (const key of requested ?? []) {
+          const request = store.get(`${this.#prefix}${key}`);
+          request.onsuccess = () => {
+            current[key] = request.result;
+            if (--remaining === 0) apply();
+          };
+        }
+      });
+    }, false);
+  }
+
   public setAndWait(key: string, value: T): Promise<void> {
     return this.writeToDB(`${this.#prefix}${key}`, value);
+  }
+
+  // Stores every entry and removes `keys` in one transaction: all of it lands, or none of it.
+  public replaceAndWait(entries: Record<string, unknown>, keys: string[], trackFailure = true): Promise<void> {
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet account write failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account write was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        Object.entries(entries).forEach(([key, value]) => store.put(value, `${this.#prefix}${key}`));
+        keys.forEach((key) => store.delete(`${this.#prefix}${key}`));
+      });
+    }, trackFailure);
   }
 }

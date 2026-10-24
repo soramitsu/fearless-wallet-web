@@ -1,4 +1,4 @@
-import { getTransferErrorLocaleKey } from '@/helpers/transferErrors';
+import { getAccountAccessErrorLocaleKey, getTransferErrorLocaleKey } from '@/helpers/transferErrors';
 
 describe('transfer error locale mapping', () => {
   it('maps known fail-closed transfer errors to specific UI messages', () => {
@@ -14,6 +14,22 @@ describe('transfer error locale mapping', () => {
     expect(getTransferErrorLocaleKey('solana_previous_send_pending')).toBe('assets.solanaPreviousSendPending');
     expect(getTransferErrorLocaleKey('solana_insufficient_sol_for_fee')).toBe('assets.solanaInsufficientSolForFee');
     expect(getTransferErrorLocaleKey('solana_transfer_disabled')).toBe('common.featureOff');
+  });
+
+  it('names a key that waits for a password instead of a generic fee error', () => {
+    expect(getTransferErrorLocaleKey('legacy_password_required')).toBe('migration.legacyPasswordRequired');
+    expect(getTransferErrorLocaleKey('previous_password_required')).toBe('accountAccess.previousPasswordRequired');
+    expect(getTransferErrorLocaleKey('ton_seed_needs_previous_password')).toBe(
+      'accountAccess.previousPasswordRequired'
+    );
+    expect(getAccountAccessErrorLocaleKey(new Error('legacy_password_required'))).toBe(
+      'migration.legacyPasswordRequired'
+    );
+    expect(getAccountAccessErrorLocaleKey(new Error('ton_seed_needs_previous_password'))).toBe(
+      'accountAccess.previousPasswordRequired'
+    );
+    expect(getAccountAccessErrorLocaleKey(new Error('wrong_password'))).toBeUndefined();
+    expect(getAccountAccessErrorLocaleKey(undefined)).toBeUndefined();
   });
 
   it('falls back to the generic fee error for unknown or missing transfer errors', () => {

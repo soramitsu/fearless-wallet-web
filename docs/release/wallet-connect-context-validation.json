@@ -1,0 +1,282 @@
+{
+  "recordedAt": "2026-10-12T16:11:14.828657+00:00",
+  "status": "Scoped WalletConnect EVM live-session authorization accepted locally. Complete WalletConnect review UI, cross-protocol and release qualification remain open.",
+  "baseCommit": "b9d1ff603f8cf87a25416b61ace08fb75192887d",
+  "sourceCommit": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+  "harnessCommit": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+  "changedFiles": [
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/index.ts",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler.ts",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/signingContext.ts",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/types.ts",
+    "src/screens/walletConnect/WalletConnectSignConfirmation.vue",
+    "tests/unit/evm-signing-approval.spec.ts",
+    "tests/unit/wallet-connect-approve.spec.ts",
+    "tests/unit/wallet-connect-context.spec.ts",
+    "tests/unit/wallet-connect-signing-lifecycle.spec.ts"
+  ],
+  "sourceSha256": {
+    "package.json": "4cd9cb62052f55c7d181bfd519d3f4734c4a4b539412f33516e477b3193b02dc",
+    "scripts/build-extension.mjs": "97a0f3084ccd47fae3d478b6ca3324ba8d51980c430df0cac8e0debe86bb682d",
+    "scripts/extension-smoke-portfolio.mjs": "3e136281d97bb964c1e7f8424b6a6389c302319263a36d705fa8adbf86cec173",
+    "scripts/extension-smoke-primitives.mjs": "18516e962066aa42a0cd09b783944b89831c575429da40276e58c5e78ea1d3f6",
+    "scripts/extension-smoke-signing.mjs": "938f8d81e2cb3138dda7b2ee681b1c6560e0276fa3c7e463f31624bcae1cc44f",
+    "scripts/extension-smoke-wallet-connect.mjs": "9189e5b1092ed2227d065df9afbf9128d3164581083ac8084622ee492a29d4e0",
+    "scripts/package-extension.mjs": "427fec7c94bca0ebbc7773c7126cdd53522be51ba66db30e247af06ab21daf64",
+    "scripts/solana-extension-smoke.mjs": "f2f3771ff32a0b6a2decdcb834e26829693194e385d62fe34fa390b3d12726ad",
+    "src/components/AboveForm.vue": "8c98721727ec2c1bc86e0a349a09a7bd017ccefb093ad58d4972aee0494a0f81",
+    "src/components/Checkbox.vue": "dd574236b715fbaacb20cddc705fc307ea16e71c491d04b19339ccc27adec4a4",
+    "src/components/FButton.vue": "ac5a4682d165fde5269dc822e3ed80e79fff2ea0b68d4a248e3c61bba94a2549",
+    "src/components/useModalFocus.ts": "1d6085b7096a52005b93d0807160ed9de75bf9c08361f76709b2f1b8a67c0c1a",
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts": "120a2fd428c745ad797514fff9a1e87d84abe5f3a018bb9855a250042b485de3",
+    "src/extension/background/extension-base/src/background/types/messages.ts": "25b454c63a3827867e1cd5569a2ffbd50f98924ef91cc0725ae78f06d09f7685",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts": "77341f8422e16ad954b2208f3dd7e18f3f08bb30113aa4b2f891834a2ee9a6c7",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts": "9b3220c746a9127d798abd9433613556fd38e267cf356f5ba0857a2c879d16a0",
+    "src/extension/background/extension-base/src/services/request-service/index.ts": "3f1c723f69477f00eae957b0698e13d6e8bbd0ade1c1141f77bdf0406d1091a3",
+    "src/extension/background/extension-base/src/services/request-service/types.ts": "57572080643b0d7fd9146dac8fb239235973726ce9b95dc80171d97eba0e143f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts": "e909e9ab2cd64aa5fe9042c1606ce66dbce131cc4af484e1224055c837e75e0f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/index.ts": "565fdfcf8616479ca60bffc05fb45fcfca3dcc141d36be5812827e4472043762",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler.ts": "57b192fa6ec1bd48c32fac72083f8aced522077d87b049e4a0850fed12abbd75",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler.ts": "0402407918f04bec7fb55b378edb8b853ef3a14000e44f19faea19400922c9e9",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/signingContext.ts": "4de609ba19533e17c5c41a12005accf8729fad7d7b1705f30d5daec78814f56f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/types.ts": "fd47264e33cbe270d3320639821e51392d43d4efb6349d95dede21c4e97ecf3e",
+    "src/extension/messaging/index.ts": "30eb1e779e5c39f8ae448f01ff0f6f7aa71d89b2ec50a9a92095160b32570ef8",
+    "src/extension/messaging/wallet-connect-requests.ts": "d0dd03bdcfb8f6d4ab75f1b2d219465d8c45d125531d6d23928032cdabedfd0a",
+    "src/locales/akk/README.md": "a7409246587e5b0d06452eed038e895cba247c5380b596387aab7ae973689950",
+    "src/locales/akk/translation.json": "ddc7a7db81f296b5039e3d58bc179fc9ff63bfaf644e4934a3ad8ea74ebb2a4d",
+    "src/locales/egy/README.md": "2acf076428512b6d48b3a3753379100b6338680e02e3fa4ba638b2a35453f3e5",
+    "src/locales/egy/translation.json": "8c647d937648e37708cb76510f1ef5d8d30646588a93fc632e1bfbfa816e8821",
+    "src/locales/en/translation.json": "42028633c795e151115e4d8d83e132ddd9dcba20f4e1f3c411f54cd6f531a0c0",
+    "src/locales/ru/translation.json": "cae2c5e3f25772fd1a79ac5327b57291ec6dd67f653154e7b6199363b22779e4",
+    "src/screens/extension-ui/signing/Transaction.vue": "d1783a954fe99e8aad66cdd1a2bd551ac2fa141e078b1381c6a04663bba6aea0",
+    "src/screens/extension-ui/signing/WalletInfo.vue": "cee20ea3a4d5ceb74d659c7379c256b9b217562cc4a94c7ebfa8d18b7e0f39e7",
+    "src/screens/extension-ui/signing/requester.ts": "cfab45395524527b6ad83998e4076b5aa6503a222081fd1a5fd9f03f45de286c",
+    "src/screens/extension-ui/signing/review.ts": "4afb2b1d474ca9bd55f0f5275e00ed0bc411ccf4d9c36ecf98c5de04a4c93f87",
+    "src/screens/walletConnect/WalletConnectHeader.vue": "9ac712220c62054dab369a05172e71098e9de1ec050594760b961b133fec86f8",
+    "src/screens/walletConnect/WalletConnectRequestData.vue": "8b7e70f0967d3b15a971b436bb6594a6d3f6c764a507bfc8a282a2deaae44541",
+    "src/screens/walletConnect/WalletConnectSignConfirmation.vue": "9af50b223a4411aacf1de3ff3f7febde629e2db130b435c951748db2f22de80c",
+    "src/stores/extension/actions.ts": "31a211237693d7036a2d1d6ad573fb5a63e03ebaa8a0df34a553c5e5d6bfdcc3",
+    "src/util/evmMessageBytes.ts": "48f09485a2a98a2ab42414aa4ce0c0b61ec2de4dc4bae95ec9fa593fbde9e770",
+    "src/util/evmTransaction.ts": "ad880af05a184efadca576d72bf85c69c332363bdfaa226135b7edbf79b781b2",
+    "src/util/evmTypedData.ts": "9be8c21b068069db5a7cf55783197aecae01f42d6a69fe2c1f03823aa2efe140",
+    "src/util/solanaTransaction.ts": "3c8c54e088527b9b55a91a1305d23b7cc0f3d54fcd258ea8c073751016f271e5",
+    "tests/fixtures/legacy-305/chains-v13.snapshot.json": "fa6f0e23cd87dfb3e5536980591dd22ae30e49bf59d04dc2a0b31fc53237ea66",
+    "tests/unit/evm-request-handler.spec.ts": "488350eee2d2be4ed7f434d1aee344b8662bf9485d21e32e6c2aa47079c1562a",
+    "tests/unit/evm-signing-approval.spec.ts": "b7061a2432165df4df532c45607486dc11bda4fafb063795816a00d3b056381a",
+    "tests/unit/evm-signing-context.spec.ts": "81ad2b67f01e5ba60bc1672fb6e3521a97ff4bab1cb28bceabde4ba4cf0862a4",
+    "tests/unit/evm-typed-data.spec.ts": "1d43b17874668608b7fb778048f892fe0b285200d1e2e41e94be9ccc36613c57",
+    "tests/unit/extension-request-queue.spec.ts": "5c9f7e1da0da579d6df46c351943f888e678c311ffa2c37f5e5a7f6a6a2d592d",
+    "tests/unit/signing-phishing-approval.spec.ts": "35649e58f3006d18fc86c939271886cdc2a6e9655a367877cb5b767cd681dd66",
+    "tests/unit/signing-request-lifecycle.spec.ts": "1fe5196cea0cbe4e693464e9671bd868aef749ce3b1f01622e691ec87967d385",
+    "tests/unit/signing-review.spec.ts": "ba9f1598c7ce1a13777ad851dfd5b9c07202b8738d3b8ad7bd9f1a2111ae28a1",
+    "tests/unit/solana-transaction.spec.ts": "e6c79abb61049ab72080a756f9573e1f908a49673694f59c059a8b963655815e",
+    "tests/unit/wallet-connect-approve.spec.ts": "90bfd23ade7c9e400908b40540626b1d971adda1d30e853c04382c80d2b4e521",
+    "tests/unit/wallet-connect-context.spec.ts": "29f0095b17303dc76672a503fd272b0728054912f190116cac484458033920a0",
+    "tests/unit/wallet-connect-request-data.spec.ts": "247cbedd9f24022c58561d725304da146d512b8cc7f4dd6f20013e7631f6e67f",
+    "tests/unit/wallet-connect-request-ownership.spec.ts": "bc6055e91a0d7c5429bd4601a9f39948171296bc6e14735520311fedd6dbbacf",
+    "tests/unit/wallet-connect-signing-lifecycle.spec.ts": "1c056a449b2a412b756a4903d15639fbb1ee1a522ab4d6dc41eda3ed1252a6b5",
+    "vite.config.shared.mjs": "6a0d033243e0f4351db390a9dd71665ef436dfe4d27cb36698563cb64afee6c2",
+    "yarn.lock": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+  },
+  "dependencySha256": {
+    "node_modules/ethers/package.json": "d644d7df228197962e4ca19824b06e8d50dce0b5ee2aced63dcfc2a11ec7b90f",
+    "node_modules/ethers/lib.esm/providers/abstract-signer.js": "b2be508623922d8555e56f06730777fd35f362d34766a8248e35c2d7f1e3efd5",
+    "node_modules/ethers/lib.esm/wallet/base-wallet.js": "9bfb412471e5fb83f3fd4d015c0707c6248bc276a4bcb010686cd59a3125eec6"
+  },
+  "behavior": [
+    "Admission uses only current approved session namespaces, with method and complete chain/account tuple from one grant; required/optional proposal namespaces do not grant authority.",
+    "Captures acknowledged, unexpired session topic, peer key, canonical HTTP(S) peer origin, local session revision, available account and one eligible EVM catalog network/provider. Scam/INVALID verification and mismatched VALID origins fail closed.",
+    "Copies the incoming payload before any network activation and copies context into the private UUID queue. Activation completion must still match the captured authorization.",
+    "Approval revalidates the captured context before key access and after each asynchronous deny-list/provider/population boundary. Session updates, deletion, expiry and local disconnect invalidate earlier revisions, including changed-away-and-back sessions.",
+    "Unsigned ethers VoidSigner population precedes key export. Detached Wallet signing is followed by a final context/provider check before broadcast; message and typed signatures are checked again before release.",
+    "Provider chain is checked and the transaction chain is explicitly fixed to the captured network. Actual signed bytes and recovered legacy child signer are verified in tests.",
+    "Transaction submission failures consume the intent as an ambiguous broadcast; failed pre-submission context checks remain rejectable without permitting stale-context signing. A local deny-list block consumes its rejected intent. Canonical peer origin supplies the popup requester input."
+  ],
+  "validation": {
+    "fullSuite": {
+      "sourceCommit": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+      "log": "wc-context-full-v1.log",
+      "passed": 2153,
+      "skipped": 18,
+      "failed": 0,
+      "filesPassed": 245,
+      "filesSkipped": 2,
+      "durationSeconds": 159.28
+    },
+    "focused": {
+      "sourceCommit": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+      "log": "wc-context-focused-v3.log",
+      "passed": 129,
+      "failed": 0,
+      "filesPassed": 6
+    },
+    "checks": [
+      {
+        "log": "wc-context-typecheck-v3.log",
+        "exitCode": 0
+      },
+      {
+        "log": "wc-context-lint-v2.log",
+        "exitCode": 0
+      },
+      {
+        "log": "wc-context-build-v1.log",
+        "exitCode": 0
+      },
+      {
+        "log": "wc-context-package-v1.log",
+        "exitCode": 0
+      }
+    ],
+    "browser": {
+      "log": "wc-context-browser-v1.log",
+      "results": "wc-context-browser-v1/results.json",
+      "applicationSource": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+      "harnessSource": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+      "exitCode": 0,
+      "captures": 8,
+      "locales": [
+        "en-EN",
+        "ru-RU",
+        "akk-Xsux-x-old",
+        "egy-Egyp"
+      ],
+      "assertions": [
+        "Exact signer for an address-shaped message; no automatic approval; default Cancel focus; action targets at least 48 pixels high.",
+        "One intercepted approval only while pending; both actions disabled.",
+        "A same-tick old DOM click is refused; late failure cannot reject or alter the replacement request.",
+        "Failed rejection stays visible and retryable; both attempts address the same next internal ID.",
+        "Empty queue safely exits the approval route."
+      ],
+      "visualReview": [
+        {
+          "path": "wc-context-browser-v1/wc-ownership-ru-RU.png",
+          "sha256": "4b31186925f4bba9634045b2a8a875109b4986b8b5e43d10f93a147c7d2a7d66",
+          "observation": "Compact Russian ownership state retains visible actions and default Cancel focus; legacy truncated/clipped request fields remain a required separate UI correction."
+        },
+        {
+          "path": "wc-context-browser-v1/wc-ownership-replacement.png",
+          "sha256": "cd80bf75e080b65a3d1cb87a7d0baf5b444d4c3d7eb4acfd9a42460d0ccb9947",
+          "observation": "Replacement signer/payload and default Cancel focus retained; legacy truncated request summary remains unqualified."
+        }
+      ],
+      "limits": "Public popup-port fixtures intercept every action before the worker and do not exercise live relay authorization. This run rechecks ownership behavior on the rebuilt artifact. Real backend grant/provider checks and cryptographic callers are separately exercised by unit tests. No full signing-screen or assistive-technology acceptance is claimed."
+    },
+    "build": {
+      "browser": "chrome",
+      "mode": "development",
+      "releaseFlags": {
+        "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+        "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+        "VUE_APP_ENABLE_IROHA_TRANSFERS": "",
+        "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+        "VUE_APP_EXTENSION_SMOKE": "true",
+        "VUE_APP_TEST_ONLY": "true"
+      },
+      "schemaVersion": 2,
+      "sourceCommit": "8cb9cfd4f59d4c713a85913752d1c66e55b482d0",
+      "sourceDirty": false,
+      "yarnLockSha256": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+    },
+    "buildFiles": {
+      "path": "wc-context-build-files.json",
+      "count": 493
+    },
+    "archive": {
+      "path": "wc-context-chrome-test.zip",
+      "sha256": "cbccb08a793255053cb3982bccea5bd1dd4c707847c7a2489dc19c31120460d6",
+      "bytes": 19693331,
+      "archiveEntriesMatchBuildFiles": true
+    },
+    "commands": "wc-context-commands.json"
+  },
+  "independentReview": {
+    "reviewer": "ios_font_qualification",
+    "result": "Reviewed approved namespaces, tuple/method/expiry binding, immutable context, origin, session revisions and provider checks. Found hidden ethers sendTransaction population awaits after the last check. Final unsigned-population and detached-signing refactor plus six failing-before regressions were reviewed with no further actionable scoped blocker.",
+    "scope": "Read-only source review; full WalletConnect UI, Polkadot and corresponding local EVM hidden awaits remain separate work."
+  },
+  "preservedDiagnostics": [
+    {
+      "log": "wc-context-before.log",
+      "applicationBase": "b9d1ff603f8cf87a25416b61ace08fb75192887d",
+      "failed": 18,
+      "note": "New admission and approval regressions reproduce missing approved-grant, expiry, exact-chain, peer/provider and revision checks in the preceding application boundary. This is not a live relay exploit demonstration."
+    },
+    {
+      "logs": [
+        "wc-context-typecheck-v1.log",
+        "wc-context-focused-v1.log"
+      ],
+      "note": "First typecheck passed; 18 new context regressions passed but old approval fixtures lacked mandatory captured context (12 failures and one unhandled rejection). Fixtures were qualified with live sessions/account/network context; no production fallback was added."
+    },
+    {
+      "log": "wc-context-focused-v2.log",
+      "passed": 112,
+      "failed": 0,
+      "note": "Intermediate four-file test run before canonical-origin lifecycle and hidden-population follow-on."
+    },
+    {
+      "log": "wc-context-lint-v1.log",
+      "note": "Five import ordering errors; fixed before final lint. Formatting/import fix logs retained."
+    },
+    {
+      "log": "wc-context-population-before.log",
+      "failed": 6,
+      "skipped": 33,
+      "note": "Against the uncommitted context draft before the final guarded-population refactor: real ethers fee lookup allowed grant/revision/expiry/provider changes, and pending transaction/message signatures could still be released. Six regressions fail, then pass in final source. No intermediate commit identity is claimed."
+    }
+  ],
+  "protocolReferences": [
+    {
+      "url": "https://github.com/WalletConnect/walletconnect-specs/blob/main/docs/specs/clients/sign/namespaces.md",
+      "relevance": "Approved session namespaces define the permitted methods and chain/account tuples."
+    },
+    {
+      "url": "https://github.com/WalletConnect/walletconnect-specs/blob/main/docs/specs/clients/sign/session-events.md",
+      "relevance": "Session update, delete and expiry lifecycle changes invalidate captured approval authority."
+    }
+  ],
+  "limits": [
+    "Compatibility is fail-closed: canonical positive decimal EIP-155 chains below 2^256, exactly one available EVM catalog network, acknowledged unexpired session and HTTP(S) peer metadata origin are required. Duplicate eligible catalog chains are ambiguous.",
+    "Legacy queue data without captured context cannot be approved and must be requested again. WalletConnect mobile signing remains unavailable because no supported mobile forwarding path is implemented here.",
+    "Normal expiry extension with the same session grant does not itself invalidate an approval. Session update/delete/expire/local-disconnect revisions do.",
+    "No cancellation guarantee is claimed after provider.broadcastTransaction has been invoked. Once submission starts, failure consumes that intent to prevent a fresh-nonce replay from the same screen.",
+    "Complete WalletConnect review UI remains open: full requester/account/network, untruncated content, honest fees, phishing/blind controls and large-text/compact qualification. Browser captures explicitly retain the old clipped/truncated summary.",
+    "WalletConnect Polkadot has separate legacy queue/grant authorization and is not covered. Corresponding local EVM hidden population awaits also require review and remediation.",
+    "No live WalletConnect relay, public-chain transfer or production key was used. Mocked RPC/relay tests establish local boundary behavior; SDK enforcement may reject requests before that boundary. This archive is a development artifact.",
+    "All 18 inherited test skips remain skips. Cross-protocol signing, final historical upgrades, private-chain reruns, physical accessibility, final artifacts and publication remain required."
+  ],
+  "evidenceRoot": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "evidenceSha256": {
+    "wc-context-before.log": "2fb798d73d899adaf3482e71170a7c4a3b86712e7b3072599f78116c6fff86dd",
+    "wc-context-browser-v1.log": "3076fbbfc160f9b8f854573612aa195e645573c166d8d630f8e715ef7c86954c",
+    "wc-context-build-files.json": "210fa78611fec7ec3885e4c3c3a1fc9ed88e9fee9f3430f64130f4451c0ebe37",
+    "wc-context-build-v1.log": "dfb26edcaca46f3abfedfc067e6dc880dfc0a8bb724d8717ce57ca8b387fbfb4",
+    "wc-context-chrome-test.zip": "cbccb08a793255053cb3982bccea5bd1dd4c707847c7a2489dc19c31120460d6",
+    "wc-context-commands.json": "eada0b7392d69097905457034284ee762421ca4392aa8d9c629457e807903eea",
+    "wc-context-focused-v1.log": "01b3d945b7de260fcf7db7099cd8334d46d2fc71bd6eb743c0a9e120eae15908",
+    "wc-context-focused-v2.log": "3b173caa923c1d63839b3798b8ba4e48381b25322ee6cf4965a9b824915f555a",
+    "wc-context-focused-v3.log": "c5a2ea484666921215afa4016ab4502b7193c14efb8bf88994fd562dce9b79ee",
+    "wc-context-format-v1.log": "1a7c6bc8261d3bce3488793f2e079975b460dec0aa94fdf3b83909d784628ed5",
+    "wc-context-full-v1.log": "1369cc1fb63e700c4e6280319797e568d84dca48228940cc86fae1680009f8a4",
+    "wc-context-lint-fix.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wc-context-lint-v1.log": "c9c76e329e5bbc87139bef8ab103576214fc892fae1d513ad81dabbbf3ec9350",
+    "wc-context-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wc-context-package-v1.log": "3c11a1bd968825ba3ef54fc5abc807788d83ad6573ac39a975435d8135d40e89",
+    "wc-context-population-before.log": "2ffbe09cf06a24b13172310de01b01458502bc7e99e7111a4801a048c2f2e363",
+    "wc-context-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wc-context-typecheck-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wc-context-typecheck-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wc-context-browser-v1/results.json": "1cbd38f4eb27766369f1d08d4c9d8dad6fb7c36b3a23d0f4cc176d0d064d9630",
+    "wc-context-browser-v1/wc-ownership-akk-Xsux-x-old.png": "1959bdbae9be64fb70e0a967d20263f841397704d34e4bef09c1c15295f0dee7",
+    "wc-context-browser-v1/wc-ownership-egy-Egyp.png": "ba84aa5a88dce91ceb59ecccec390e544fea206cbe16ab01ec194e48abf53b31",
+    "wc-context-browser-v1/wc-ownership-empty.png": "c4e2a89bbd74287b7d88643c5eb8a7787a345f03cfd480a9a0149c1823c25a8f",
+    "wc-context-browser-v1/wc-ownership-en-EN.png": "90f20f2e3451e4ac5dadf016f49ce33fabb3fd278d9e3855dc1ed96a8607a023",
+    "wc-context-browser-v1/wc-ownership-pending.png": "d1f34f63cb6445785a1532305b432cd6bafd7e5a2c7255547cac29b6008823b8",
+    "wc-context-browser-v1/wc-ownership-replacement.png": "cd80bf75e080b65a3d1cb87a7d0baf5b444d4c3d7eb4acfd9a42460d0ccb9947",
+    "wc-context-browser-v1/wc-ownership-retry.png": "898d60729922922dfdda09e0b8e29095b5bfa43ea02b56faf2a8c9f1f3c866e8",
+    "wc-context-browser-v1/wc-ownership-ru-RU.png": "4b31186925f4bba9634045b2a8a875109b4986b8b5e43d10f93a147c7d2a7d66"
+  }
+}

@@ -4,6 +4,7 @@ import type { NetworkJson } from '@extension-base/types';
 import type { AssetPreference } from '@/portfolio/assetIdentity';
 import type { GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
+import { parsePortfolioViewSettings, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { WalletEcosystem, type FiatJson } from '@/interfaces';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { type AccountJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -15,6 +16,7 @@ type Getters = {
   getFiatId(state: State): string;
   hiddenAssets(state: State): string[];
   assetPreferences(state: State): Record<string, AssetPreference>;
+  portfolioView(state: State): PortfolioViewSettings;
   getShowWarningNetwork(state: State): GetShowWarningNetworks;
   getAutoSelectNodesValueByNetwork(state: State): GetAutoSelectNodesValueByNetwork;
   isCustomSort(state: State): (address: string) => boolean;
@@ -45,6 +47,10 @@ export const getters: Getters = {
 
   assetPreferences({ selectedWallet, assetPreferencesForAllAccounts }) {
     return assetPreferencesForAllAccounts[selectedWallet.address] ?? {};
+  },
+
+  portfolioView({ selectedWallet, portfolioViewForAllAccounts }) {
+    return parsePortfolioViewSettings(portfolioViewForAllAccounts[selectedWallet.address]);
   },
 
   selectedNetwork({ selectedNetworks, selectedWallet: { address } }) {

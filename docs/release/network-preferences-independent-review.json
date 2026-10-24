@@ -1,0 +1,69 @@
+{
+  "recordedAt": "2026-10-13T17:50:46.534918+00:00",
+  "reviewer": "Codex native_pin_durability, independent of parent network preference implementation; authored SORA delta is covered by the separate root review",
+  "status": "Accepted for bounded checkpoint integration; overall production readiness remains open",
+  "candidate": {
+    "file": "network-preferences-candidate-evidence-v1.json",
+    "sha256": "67c4505df1969f45003a08a5476e9f764bc3d22c818e335676fc202d78371dfa"
+  },
+  "sourceCommit": "eca52cf5fe37e6b78cb1ba021a265cdc5471aaf8",
+  "testedBehaviorCommit": "9481b520d4240f1d5277ae746b956fe55751c700",
+  "baseCommit": "8f01b1f3867fe88b9eac5d8c6d703fd03a97deb2",
+  "independentChecks": {
+    "sourcePinsFromGit": 379,
+    "installedDependencyPins": 93,
+    "evidencePins": 388,
+    "mismatches": [],
+    "archives": {
+      "chrome": {
+        "sha256": "fafbf09b57c4a8a349436e001a1fc8625f82e34a99fd54acdc426b53aab37f3b",
+        "entries": 314,
+        "allEntryHashesMatch": true
+      },
+      "firefox": {
+        "sha256": "cfdbbe33fc032c2eabbdc81e3e33a52c3a2fa45c41266c90ee64703c3c15e55d",
+        "entries": 314,
+        "allEntryHashesMatch": true
+      }
+    },
+    "sourceDelta": "9481b520..eca52cf5 changes only two exact Firefox baseline hash values; no policy or application source change.",
+    "artifactEquivalence": "Compared all old/new pin maps. Chrome 314 entries differ only in extension-build-metadata.json; Firefox 314 entries all identical; upgrade 315 entries differ only in extension-build-metadata.json and upgrade-e2e-provenance.json. Also read and rehashed every entry of tested Chrome v3 and Firefox v2 archives.",
+    "browser": {
+      "checksPassed": 134,
+      "layouts": 16,
+      "captures": 40,
+      "protectedRecordsUnchanged": 13,
+      "harnessReview": "Compiled clean source assertion, actual hit-tested CDP mouse controls, network-map-only injected storage read/failure/held acknowledgement, auto=false predicate excluding status writes, full restarts and protected-record hashes inspected. UI render geometry uses actual computed URL fonts of 14/28px."
+    },
+    "validation": "Read full v6 summary: 3237 passed, 18 skipped, no failures. Typecheck17 and lint12 logs are empty successful-command records reported by parent; not independently rerun. Read passing final Chrome audit/popup and Firefox runtime/CSP/exact-warning logs.",
+    "firefox": "Pinned 152.0.4 runtime record has same before/after version, actual popup/CSP success and owned cleanup remaining[]. Its tested archive is byte-identical to final archive; no broad runtime acceptance inferred."
+  },
+  "sourceAssessment": "Previously reproduced cache acknowledgement, atomic stale-snapshot conflicts, mounted editor rebasing, queued catalog reactivation, favorite ownership and stale provider callbacks are closed by the pinned source and actual-store/component regressions. Shared Switcher owner state and bounded responsive label/URL changes reviewed. SORA authored changes rely on independent parent review, not self-review.",
+  "visualReview": {
+    "filesSha256": {
+      "nodes-ru-320-200-bottom.png": "793ee75a5c02aa4158a1e349491b1cb32f273afd9507af376d13c2f738a88029",
+      "nodes-akk-320-200-bottom.png": "895f422c37b4d4d81c838d1c41215b87d652b454354b7a3ea3c2e53b5dd8f0f6",
+      "nodes-egy-320-200-top.png": "2f5c32e0a03c1e0d7aa287d69de52d0cfd58610a2cc0980d477b80a6bc4f11b3",
+      "node-save-acknowledged.png": "b484127a65c1a62ba28aa1fdb861f13f4de82eedaf3f230687cf90c7b96458ec"
+    },
+    "assessment": "Raw Russian/Akkadian enlarged settings controls and growing Add buttons fit with readable complete wrapped labels; Egyptian enlarged top labels and auto control fit. URLs intentionally ellipsize. English acknowledged custom node shows selected persisted fixture. Broken offline external network image remains visible and explicitly open; these captures are not final whole-app design approval."
+  },
+  "supplementalEvidenceSha256": {
+    "network-preferences-independent-source-review-v3.json": "1e2b8f828da5bea8febbf84565e94abcddedd2a858f7463e283bd7bac9e48097",
+    "network-preferences-sora-root-review-v1.json": "65f2cbe2248f4a096edaf650810407cdf6ee21b89c06674b96f497a7f40464e4",
+    "network-preferences-firefox-warning-independent-review-v1.json": "fd7f5c6f89030bde42d9d6c469707af0d96a623c9ac26754e1666cdc60f1d2c6",
+    "network-preferences-config-only-equivalence-v1.json": "0dc6464d1fd084d64aac797346528ba61491b830d90219034ad625666fa8b8e2",
+    "network-preferences-browser-v20.mjs": "254774a69ef508cb12b2041d77aa4fcb791305b3e12543316ed676d3a334b90d",
+    "network-preferences-browser-v20.json": "70ac88f070b59ca373ff5d38b2f8aa5fa374dd8f85dd69ed994b45105d928805",
+    "network-preferences-firefox-runtime-v2.json": "6bef0066100af91cf4def5b6def2c3429d274053e84b1e5c87f34126a628c84a"
+  },
+  "warningReview": "Supplemental independent warning review landed after candidate selection and is pinned here. All 41 findings retain category/message/file; eight of nine artifacts unchanged, accounts.js changes inspected as 15 identical contexts plus two fixed-global fallthrough binding renames. No count or category relaxation.",
+  "limits": [
+    "Broader approved sun-disc branding, offline network-icon fallback, full application font/accessibility matrix and remaining design work stay open. Broken offline external images visible in settings captures are not accepted as final design.",
+    "This matrix qualifies Nodes and related persistence paths on a disposable public historical Chrome profile with DNS blocked. It does not qualify every editor/dialog in every locale, every ecosystem-specific custom-node URL, live provider reconnect behavior, or mixed-version concurrently running extension workers.",
+    "SORA dex/swap metadata initialization remains unchanged and is not newly qualified by the isolated connection/static-fee tests.",
+    "Firefox runtime scope is the unsigned pinned152.0.4 popup/CSP smoke; AMO signing, historical Firefox upgrade and Linux runtime remain open. Hardware signing, real cloud services and final release publication gates remain open.",
+    "Native automatic JSON recovery/Cancel/Profile authentication, Android imported-wallet navigation, final migration/device/private-chain and cross-platform acceptance remain active goals.",
+    "The full unit suite and browser journeys were reviewed from frozen results, not duplicated during this evidence review. No transaction, live provider interoperability, full accessibility or clean-console claim is made."
+  ]
+}

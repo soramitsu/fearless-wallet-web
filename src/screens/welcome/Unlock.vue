@@ -14,7 +14,9 @@
       </div>
 
       <div class="logo-container">
-        <img class="logo-animated" src="@/assets/fearless-logo-animated.gif" :alt="t('common.fearlessLogo')" />
+        <div class="logo-mark" role="img" :aria-label="t('common.fearlessLogo')">
+          <img :src="sunColour" class="unlock-logo" alt="" />
+        </div>
 
         <Logo
           class="description"
@@ -27,40 +29,41 @@
     </div>
 
     <div class="pass-block">
-      <div v-if="tonRecoveryNotice" class="recovery-notice" role="alert">
-        <p>{{ t(tonRecoveryNotice === 'ton-storage-unavailable' ? 'welcome.tonStorageUnavailable' : 'welcome.tonRecoveryRequired') }}</p>
-        <FButton text="common.continue" size="big" @click="continueToWallet" />
-      </div>
-
       <ValidatedInput
-        v-else
         size="big"
         placeholder="common.password"
         errorDescriptions="common.invalidPassword"
         :isError="isError"
         :showPassword="true"
+        :readonly="isUnlocking"
         :value="password"
         @pressEnter="unlock"
         @change="changeSyncedPassword"
       />
 
       <FButton
-        v-if="!tonRecoveryNotice"
         class="unlock-btn"
         text="welcome.unlock"
         size="big"
-        :disabled="isDisabledBtn"
+        :loading="isUnlocking"
         :border="false"
         @click="unlock"
       />
 
+      <p class="unlock-error" role="alert" aria-live="polite" aria-atomic="true">{{ unlockFailed ? t('accountAccess.unlockFailed') : '' }}</p>
+      <RecoveryDataLink />
+
       <div class="bottom">
-        <span class="pink" @click="toggleResetPopup">{{ t('welcome.forgotYourPassword') }}</span>
+        <button type="button" class="pink" data-testid="forgotPassword" :disabled="isUnlocking" @click="toggleResetPopup">
+          {{ t('welcome.forgotYourPassword') }}
+        </button>
 
         <div class="fearless-support">
           <span>{{ t('welcome.needHelp') }}</span>
 
-          <span class="pink" @click="openSupport">&nbsp;{{ t('common.fearlessSupport') }}</span>
+          <a class="pink" data-testid="unlockSupport" :href="URLS.FEARLESS_HAPPINESS" target="_blank" rel="noopener noreferrer">
+            {{ t('common.fearlessSupport') }}
+          </a>
         </div>
       </div>
     </div>
@@ -70,14 +73,16 @@
 </template>
 
 <script lang="ts" setup>
-import { watch, ref } from 'vue';
+import { watch, ref, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import sunColour from '@/assets/brand/winged-sun-colour.svg';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';
 import { URLS } from '@/consts/urls';
 import ResetPopup from '@/screens/welcome/ResetPopup.vue';
+import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 import { resolveUnlockRedirect } from '@/router/unlockRedirect';
 
 const router = useRouter();
@@ -85,44 +90,43 @@ const route = useRoute();
 const password = ref('');
 const isError = ref(false);
 const showResetPopup = ref(false);
-const isDisabledBtn = ref(false);
+const isUnlocking = ref(false);
+const unlockFailed = ref(false);
+let disposed = false;
 const isPopup = ref(IS_POPUP);
 const { t } = useI18n();
-const tonRecoveryNotice = ref<'ton-recovery-required' | 'ton-storage-unavailable' | ''>('');
 
-watch(password, () => (isError.value = false));
+watch(password, () => { isError.value = false; unlockFailed.value = false; });
+onBeforeUnmount(() => { disposed = true; password.value = ''; });
 
 const changeSyncedPassword = (pass: string) => (password.value = pass);
 
-const continueToWallet = () => router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
-
 const unlock = async () => {
-  isDisabledBtn.value = true;
+  if (isUnlocking.value || disposed) return;
+  isUnlocking.value = true;
+  isError.value = false;
+  unlockFailed.value = false;
 
-  const isUnlock = await unlockExtension({ password: password.value });
-
-  if (isUnlock === 'ton-recovery-required' || isUnlock === 'ton-storage-unavailable') {
-    password.value = '';
-    tonRecoveryNotice.value = isUnlock;
-    return;
+  try {
+    const isUnlock = await unlockExtension({ password: password.value });
+    if (disposed) return;
+    if (isUnlock) {
+      await router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
+    } else {
+      isError.value = true;
+    }
+  } catch {
+    // Transport errors do not establish that the password was incorrect.
+    if (!disposed) unlockFailed.value = true;
+  } finally {
+    isUnlocking.value = false;
   }
-
-  if (isUnlock) {
-    continueToWallet();
-
-    return;
-  }
-
-  isDisabledBtn.value = false;
-  isError.value = true;
 };
 
 const openFullScreen = () => {
   windowOpen(resolveUnlockRedirect(route.query.redirect) ?? '/');
   window.close();
 };
-
-const openSupport = () => window.open(URLS.FEARLESS_HAPPINESS);
 
 const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
 </script>
@@ -132,7 +136,9 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  min-height: 100%;
+  gap: 24px;
+  padding-bottom: 8px;
 
   .header {
     display: flex;
@@ -144,35 +150,60 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     flex-direction: column;
   }
 
-  .logo-animated {
-    width: 70%;
-    height: 70%;
-    margin: auto;
+  .logo-mark {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 8px;
+
+    :deep(.unlock-logo) {
+      width: 240px;
+      max-width: 100%;
+      height: auto;
+    }
   }
 
-  .pass-block {
-    .recovery-notice {
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 16px;
-    }
+  .description :deep(.text) { font-size: 1.75rem; }
 
+
+  .pass-block {
     .unlock-btn {
       margin: 16px 0;
     }
   }
 
+  .unlock-error {
+    margin: 0 0 8px;
+    color: var(--fw-text-1);
+    overflow-wrap: anywhere;
+    &:empty { display: none; }
+  }
+
   .bottom {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
 
     .fearless-support {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      column-gap: 0.25em;
       font-size: 12px;
       color: $gray-color;
     }
 
     .pink {
-      color: $pink-color;
+      display: inline-flex;
+      align-items: center;
+      min-height: 48px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      text-align: start;
+      text-decoration: none;
+      color: palette($pink-color, var(--fw-link));
       cursor: pointer;
     }
   }

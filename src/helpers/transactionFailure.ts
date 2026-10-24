@@ -1,5 +1,5 @@
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
-import { SEND_ERROR_LOCALE_KEYS } from '@/helpers/transferErrors';
+import { ACCOUNT_ACCESS_ERROR_LOCALE_KEYS, SEND_ERROR_LOCALE_KEYS } from '@/helpers/transferErrors';
 
 type TransactionFailurePresentation = {
   key: string;
@@ -21,10 +21,13 @@ type TransactionResponseLike = {
 
 type OwnDataProperty = { kind: 'invalid' } | { kind: 'missing' } | { kind: 'value'; value: unknown };
 
+type TransactionOutcome = 'failed' | 'success' | 'unconfirmed';
+
 const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ...Object.entries(SEND_ERROR_LOCALE_KEYS),
   ['transfer_fee_changed', 'assets.transferFeeChanged'],
   ['transfer_fee_approval_required', 'assets.transferFeeApprovalRequired'],
+  ...Object.entries(ACCOUNT_ACCESS_ERROR_LOCALE_KEYS),
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
   ['iroha_network_reset', 'assets.irohaTransfersDisabled'],
@@ -36,6 +39,14 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
 const HEX_TRANSACTION_HASH = /^[0-9a-f]{64}$/iu;
 // 64 bytes in base58: 88 characters at most, and fewer for the rare signature that is a smaller number.
 const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/u;
+// The network may already have these transfers: they can still go through, so the
+// result is neither a success nor a failure.
+const UNCONFIRMED_MESSAGES: ReadonlySet<string> = new Set([
+  'bitcoin_broadcast_ambiguous',
+  'solana_broadcast_ambiguous',
+  'solana_broadcast_signature_mismatch',
+]);
+
 const SAFE_ASSET_SYMBOL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/u;
 
 function asResponse(value: unknown): TransactionResponseLike | null {
@@ -153,6 +164,21 @@ function getUnknownTransactionHash(value: unknown): string | null {
   return SOLANA_SIGNATURE.test(hash.value) ? hash.value : null;
 }
 
+function getTransactionOutcome(value: unknown): TransactionOutcome {
+  if (transactionResponseSucceeded(value)) return 'success';
+  if (getUnknownTransactionHash(value)) return 'unconfirmed';
+
+  const response = asResponse(value);
+  const errors = errorsFrom(response);
+  const passwordError = passwordErrorState(response);
+
+  if (!response || errors === null || !passwordError.valid || passwordError.present) return 'failed';
+
+  return errors.some(({ message }) => typeof message === 'string' && UNCONFIRMED_MESSAGES.has(message))
+    ? 'unconfirmed'
+    : 'failed';
+}
+
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {
   const response = asResponse(value);
   const errors = errorsFrom(response);
@@ -188,5 +214,21 @@ function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown
   return { key: 'assets.transactionFailedDetails' };
 }
 
-export { getTransactionFailurePresentation, getUnknownTransactionHash, transactionResponseSucceeded };
-export type { TransactionFailurePresentation };
+/** The send stopped before signing because the account's key waits for a password (Account access). */
+function isAccountAccessFailure(value: unknown): boolean {
+  const errors = errorsFrom(asResponse(value));
+
+  return (
+    getTransactionOutcome(value) === 'failed' &&
+    !!errors?.some(({ message }) => typeof message === 'string' && message in ACCOUNT_ACCESS_ERROR_LOCALE_KEYS)
+  );
+}
+
+export {
+  getTransactionFailurePresentation,
+  getTransactionOutcome,
+  getUnknownTransactionHash,
+  isAccountAccessFailure,
+  transactionResponseSucceeded,
+};
+export type { TransactionFailurePresentation, TransactionOutcome };

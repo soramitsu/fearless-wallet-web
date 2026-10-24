@@ -5,10 +5,66 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { captureEffectsScreenshots } from './extension-smoke-effects.mjs';
+import { capturePortfolioScreenshots } from './extension-smoke-portfolio.mjs';
+import { capturePrimitivesScreenshots } from './extension-smoke-primitives.mjs';
+import { checkTonImportStorage } from './extension-smoke-ton-import.mjs';
+import { checkLocalImportStorage } from './extension-smoke-local-import.mjs';
+import { checkJsonImportStorage } from './extension-smoke-json-import.mjs';
+import { checkMobileAddressStorage } from './extension-smoke-mobile-address.mjs';
+import { checkMasterPasswordStorage } from './extension-smoke-master-password.mjs';
+import { checkWalletResetStorage } from './extension-smoke-wallet-reset.mjs';
+import { checkAccountRemovalStorage } from './extension-smoke-account-removal.mjs';
+import { checkCurrentAccountStorage } from './extension-smoke-current-account.mjs';
+import { checkSessionRetirementStorage } from './extension-smoke-session-retirement.mjs';
+import { captureJsonRecoveryNotice } from './extension-smoke-json-notice.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const productionPopupOnly = process.argv.includes('--production-popup');
+// `--portfolio-screenshots [dir]`: seed the test wallet, then capture the portfolio at the popup size, offline.
+const portfolioScreenshotsArg = process.argv.indexOf('--portfolio-screenshots');
+const portfolioScreenshotsDir =
+  portfolioScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[portfolioScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[portfolioScreenshotsArg + 1]
+          : 'output/portfolio-screenshots'
+      );
+// `--effects-screenshots [dir]`: the same offline wallet, once per effects tier and system setting (design-system 2).
+const effectsScreenshotsArg = process.argv.indexOf('--effects-screenshots');
+const effectsScreenshotsDir =
+  effectsScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[effectsScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[effectsScreenshotsArg + 1]
+          : 'output/effects-screenshots'
+      );
+// `--primitives-screenshots [dir]`: the same offline wallet, on the screens that draw the shared primitives.
+const primitivesScreenshotsArg = process.argv.indexOf('--primitives-screenshots');
+const primitivesScreenshotsDir =
+  primitivesScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[primitivesScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[primitivesScreenshotsArg + 1]
+          : 'output/primitives-screenshots'
+      );
+const tonImportStorageOnly = process.argv.includes('--ton-import-storage');
+const localImportStorageOnly = process.argv.includes('--local-account-import-storage');
+const jsonImportStorageOnly = process.argv.includes('--json-account-import-storage');
+const mobileAddressStorageOnly = process.argv.includes('--mobile-address-storage');
+const masterPasswordStorageOnly = process.argv.includes('--master-password-storage');
+const walletResetStorageOnly = process.argv.includes('--wallet-reset-storage');
+const accountRemovalStorageOnly = process.argv.includes('--account-removal-storage');
+const currentAccountStorageOnly = process.argv.includes('--current-account-storage');
+const sessionRetirementStorageOnly = process.argv.includes('--session-retirement-storage');
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -210,7 +266,9 @@ async function main() {
   chromeBinary = await resolveExecutable(chromeBinary, 'Set CHROME_BIN to a Chrome/Chromium executable.');
 
   const deriveWalletFixture = productionPopupOnly ? undefined : await loadWalletFixtureDerivation();
-  const [solanaServer, irohaServer] = productionPopupOnly
+  const universalWalletFixture = productionPopupOnly ? undefined : await loadUniversalWalletFixture();
+  const transactionBase64 = productionPopupOnly ? undefined : validTransactionBase64();
+  const [solanaServer, irohaServer] = productionPopupOnly || offlineScreenshots
     ? [undefined, undefined]
     : await Promise.all([startDappServer(), startDappServer()]);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-solana-extension-smoke-'));
@@ -282,6 +340,113 @@ async function main() {
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
     await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture, legacyAddress);
     console.info('[extension-smoke] wallet seeded');
+
+    if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly) {
+      let controlSession = extensionSession;
+      let liveBackgroundSession = backgroundSession;
+      const checkImport = masterPasswordStorageOnly ? checkMasterPasswordStorage : walletResetStorageOnly ? checkWalletResetStorage : accountRemovalStorageOnly ? checkAccountRemovalStorage : currentAccountStorageOnly ? checkCurrentAccountStorage : sessionRetirementStorageOnly ? checkSessionRetirementStorage : mobileAddressStorageOnly ? checkMobileAddressStorage : jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
+      const result = await checkImport({
+        eventually,
+        inspectUI: ({ address, password }) => captureJsonRecoveryNotice({ cdp, extensionId,
+          send: (message, request) => extensionSend(cdp, controlSession, message, request),
+          address, password, outputDir: process.env.JSON_IMPORT_SCREENSHOTS_DIR || path.resolve(root, 'build/reports/json-import-notice'),
+          evaluate, waitForExpression }),
+        storageFault: (mode) => evaluate(cdp, liveBackgroundSession, `(() => {
+          let fault = globalThis.publicPasswordFault;
+          if (!fault) {
+            const original = chrome.storage.local.set.bind(chrome.storage.local);
+            fault = globalThis.publicPasswordFault = { original, mode: 'normal', pending: [], calls: [] };
+            chrome.storage.local.set = (items, callback) => {
+              if (!Object.hasOwn(items, 'fw:keyring')) return original(items, callback);
+              fault.calls.push(Object.keys(items));
+              if (fault.mode === 'fail') throw new Error('Public password storage rejection');
+              if (fault.mode === 'hold') { fault.pending.push(() => original(items, callback)); return; }
+              return original(items, callback);
+            };
+          }
+          const mode = ${JSON.stringify(mode)};
+          if (mode === 'restore') { chrome.storage.local.set = fault.original; delete globalThis.publicPasswordFault; }
+          else if (mode === 'release') { fault.mode = 'normal'; fault.pending.splice(0).forEach(finish => finish()); }
+          else if (mode !== 'inspect') fault.mode = mode;
+          return { calls: fault.calls, pending: fault.pending.length };
+        })()`),
+        fixture: universalWalletFixture,
+        password: TEST_PASSWORD,
+        assert,
+        send: (message, request) => extensionSend(cdp, controlSession, message, request),
+        read: (key) => evaluate(cdp, controlSession, `chrome.storage.local.get(${JSON.stringify(key)}).then((data) => data[${JSON.stringify(key)}])`),
+        remove: (keys) => evaluate(cdp, controlSession, `chrome.storage.local.remove(${JSON.stringify(keys)})`),
+        restart: async () => {
+          await stopExtensionKeepAlive();
+          const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, liveBackgroundSession);
+          await evaluate(cdp, liveBackgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
+          const restartedTarget = await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
+            && ['background_page', 'service_worker'].includes(target.type)
+            && target.url.startsWith(`chrome-extension://${extensionId}/`), 'restarted extension worker', chrome);
+          // The retiring worker may still be listed. Attach the new target we just
+          // observed, rather than choosing the first matching (possibly old) worker.
+          console.info(`[extension-smoke] worker restart ${targetInfo.targetId} -> ${restartedTarget.targetId}`);
+          liveBackgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome, restartedTarget.targetId);
+          controlSession = await openExtensionControlPage(cdp, extensionId);
+          await setupExtensionMessaging(cdp, controlSession);
+          stopExtensionKeepAlive = startExtensionKeepAlive(cdp, controlSession, liveBackgroundSession);
+          await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
+        },
+      });
+      console.info(JSON.stringify({ extensionId, [masterPasswordStorageOnly ? 'masterPasswordStorage' : walletResetStorageOnly ? 'walletResetStorage' : accountRemovalStorageOnly ? 'accountRemovalStorage' : currentAccountStorageOnly ? 'currentAccountStorage' : sessionRetirementStorageOnly ? 'sessionRetirementStorage' : mobileAddressStorageOnly ? 'mobileAddressStorage' : jsonImportStorageOnly ? 'jsonImportStorage' : localImportStorageOnly ? 'localImportStorage' : 'tonImportStorage']: result }, null, 2));
+      return;
+    }
+
+    if (effectsScreenshotsDir) {
+      const { shots, results } = await captureEffectsScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: effectsScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (primitivesScreenshotsDir) {
+      const { shots, results } = await capturePrimitivesScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: primitivesScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (portfolioScreenshotsDir) {
+      const shots = await capturePortfolioScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: portfolioScreenshotsDir,
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers: { evaluate, waitForExpression, extensionSend, sleep },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots }, null, 2));
+
+      return;
+    }
     const dappSession = await openDappPage(cdp, solanaServer.url);
 
     await waitForExpression(
@@ -1157,11 +1322,12 @@ async function assertProductionPopup(cdp, extensionId, backgroundSession) {
   }
 }
 
-async function openExtensionBackgroundSession(cdp, extensionId, chrome) {
+async function openExtensionBackgroundSession(cdp, extensionId, chrome, targetId) {
   const target = await waitForTarget(
     cdp,
     (candidate) =>
       ['background_page', 'service_worker'].includes(candidate.type) &&
+      (!targetId || candidate.targetId === targetId) &&
       candidate.url.startsWith(`chrome-extension://${extensionId}/`),
     'extension background target',
     chrome
@@ -1245,6 +1411,9 @@ async function waitForExpression(cdp, sessionId, expression, description) {
 }
 
 async function evaluate(cdp, sessionId, expression, options = {}) {
+  // Keep the call site when a delayed protocol timeout loses its async caller.
+  // Do not log the expression: other harness calls can contain signing inputs.
+  const callSite = new Error('Runtime.evaluate call site').stack;
   const result = await cdp.send(
     'Runtime.evaluate',
     {
@@ -1254,7 +1423,10 @@ async function evaluate(cdp, sessionId, expression, options = {}) {
       userGesture: true,
     },
     sessionId
-  );
+  ).catch((error) => {
+    error.stack += `\n${callSite}`;
+    throw error;
+  });
 
   if (result.exceptionDetails) {
     const exception = result.exceptionDetails.exception;
@@ -1305,6 +1477,11 @@ function launchChrome(userDataDir) {
     'about:blank',
   ];
 
+  // Screenshots render fixture data. The background still needs the public registry to start, so only that host
+  // resolves: no node, indexer or price service is reached, and nothing can be broadcast.
+  if (offlineScreenshots) {
+    args.unshift('--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE localhost , EXCLUDE raw.githubusercontent.com');
+  }
   if (usePipeTransport) args.unshift('--enable-unsafe-extension-debugging', '--remote-debugging-pipe');
   else
     args.unshift(
@@ -1314,6 +1491,8 @@ function launchChrome(userDataDir) {
     );
 
   if (headless) args.unshift('--headless=new');
+  if (process.env.SOLANA_EXTENSION_SMOKE_DISABLE_GPU === 'true')
+    args.unshift('--disable-gpu', '--disable-gpu-vsync', '--disable-frame-rate-limit');
 
   const child = spawn(chromeBinary, args, {
     env: {

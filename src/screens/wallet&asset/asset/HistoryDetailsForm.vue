@@ -191,7 +191,9 @@ export default defineComponent({
     showFee() {
       if (this.isSora) return this.historyElementSoraType.method !== 'rewarded';
 
-      if (this.isTon) return this.signTransfer === '-';
+      if (this.isTon) {
+        return this.signTransfer === '-' && getHumanTransferFee(this.historyElement, this.selectedNetwork) !== null;
+      }
 
       return (
         this.isTransfer &&

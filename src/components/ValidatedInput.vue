@@ -9,6 +9,7 @@
       :maxlength="maxlength"
       :showPassword="showPassword"
       :isError="isError"
+      :describedBy="showErrorText ? errorId : undefined"
       :readonly="readonly"
       :disabled="disabled"
       :typeText="typeText"
@@ -17,16 +18,16 @@
       @pressEnter="emitPressEnter"
     />
 
-    <div v-show="showErrorText" class="error-descriptions" data-testid="errorDescriptions">
-      <Icon v-if="errorWithIcon" icon="warning" className="warning" />
+    <div :id="errorId" class="error-descriptions" data-testid="errorDescriptions" role="alert" aria-live="polite" aria-atomic="true">
+      <Icon v-if="showErrorText && errorWithIcon" icon="warning" className="warning" />
 
-      {{ $t(errorDescriptions) }}
+      {{ showErrorText ? $t(errorDescriptions) : '' }}
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, useId } from 'vue';
 import FInput from '@/components/FInput.vue';
 
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -71,6 +72,7 @@ const emit = defineEmits(['change', 'pressEnter']);
 const emitChange = (value: string | number) => emit('change', value);
 const emitPressEnter = () => emit('pressEnter');
 
+const errorId = useId();
 const inputRef = ref<InstanceType<typeof FInput> | null>(null);
 
 const showErrorText = computed(() => props.isError && props.errorDescriptions);
@@ -86,12 +88,13 @@ defineExpose({ input });
   }
 
   .error-descriptions {
+    &:empty { display: none; }
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 5px;
     font-size: 0.875em;
-    color: #ee7700;
+    color: $fw-validation-label;
     text-align: left;
     margin-top: 15px;
   }

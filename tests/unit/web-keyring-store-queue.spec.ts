@@ -1,31 +1,32 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-const { request, write, readRecords, removeRecords } = vi.hoisted(() => ({ request: vi.fn(), write: vi.fn(), readRecords: vi.fn(), removeRecords: vi.fn() }));
-vi.mock('@/bootstrap/webPasswordStore', () => ({ requestWebPasswordStorage: request }));
-vi.mock('@extension-base/stores/WalletStorage', () => ({ PASSWORD_STORAGE_KEY: 'fw:keyring', writeWalletRecords: write, readWalletRecords: readRecords, removeWalletRecords: removeRecords }));
-afterEach(() => { vi.resetModules(); vi.resetAllMocks(); });
+afterEach(() => { vi.resetModules(); vi.restoreAllMocks(); });
+async function writeSpy() {
+  const { default: BaseWebStore } = await import('@extension-base/stores/BaseWeb');
+  return vi.spyOn(BaseWebStore.prototype, 'replaceAndWait');
+}
 
 describe('encrypted password record persistence', () => {
   it('serializes overlapping mutations and flushes every queued write', async () => {
     const { default: Store } = await import('@extension-base/stores/KeyringStoreWeb');
+    const request = await writeSpy();
     let finish!: () => void;
-    write.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; })).mockResolvedValue(null);
-    request.mockResolvedValue(null);
-    removeRecords.mockResolvedValue(undefined);
+    request.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; })).mockResolvedValue(undefined);
     const store = new Store();
     const written = vi.fn();
     const removed = vi.fn();
-    store.set({} as never, written);
+    store.set({ passwordHash: 'public-first-hash' }, written);
     store.remove(removed);
     let flushed = false;
     const flush = Store.flush().then(() => { flushed = true; });
-    await vi.waitFor(() => expect(write).toHaveBeenCalledTimes(1));
-    expect(write).toHaveBeenLastCalledWith({ 'fw:keyring': {} });
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+    expect(request).toHaveBeenLastCalledWith({ webPasswordRecord: { version: 1, serialized: '{"passwordHash":"public-first-hash"}' } }, [], false);
     expect(flushed).toBe(false);
     expect(written).not.toHaveBeenCalled();
     finish();
     await flush;
-    expect(removeRecords).toHaveBeenCalledExactlyOnceWith(['fw:keyring']);
-    expect(request).not.toHaveBeenCalled();
+    expect(request.mock.calls.map(([records]) => records.webPasswordRecord)).toEqual([
+      { version: 1, serialized: '{"passwordHash":"public-first-hash"}' }, { version: 1, serialized: null },
+    ]);
     expect(written).toHaveBeenCalledOnce();
     expect(removed).toHaveBeenCalledOnce();
     const read = vi.fn();
@@ -35,29 +36,15 @@ describe('encrypted password record persistence', () => {
 
   it('reports a failed batch and allows a subsequent retry', async () => {
     const { default: Store } = await import('@extension-base/stores/KeyringStoreWeb');
-    write.mockRejectedValueOnce(new Error('Storage unavailable')).mockResolvedValue(null);
+    const request = await writeSpy();
+    request.mockRejectedValueOnce(new Error('Storage unavailable')).mockResolvedValue(undefined);
     const store = new Store();
     const saved = vi.fn();
-    store.set({} as never, saved);
+    store.set({ passwordHash: 'public-retried-hash' }, saved);
     await expect(Store.flush()).rejects.toThrow('Storage unavailable');
     expect(saved).not.toHaveBeenCalled();
-    store.set({} as never, saved);
+    store.set({ passwordHash: 'public-retried-hash' }, saved);
     await Store.flush();
     expect(saved).toHaveBeenCalledOnce();
   });
-  it('initializes from the authoritative durable verifier and updates cache only after commit', async () => {
-    const { default: Store } = await import('@extension-base/stores/KeyringStoreWeb');
-    const password = { passwordHash: 'durable fixture hash' };
-    readRecords.mockResolvedValue({ 'fw:keyring': password });
-    await Store.initialize();
-    const read = vi.fn();
-    new Store().get(read);
-    expect(read).toHaveBeenCalledWith(password);
-    const replacement = { passwordHash: 'atomically committed fixture hash' };
-    Store.applyCommittedPassword(replacement);
-    new Store().get(read);
-    expect(read).toHaveBeenLastCalledWith(replacement);
-    expect(request).not.toHaveBeenCalled();
-  });
-
 });

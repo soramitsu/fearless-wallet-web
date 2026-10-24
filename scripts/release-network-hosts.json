@@ -1,0 +1,265 @@
+{
+  "format": "fearless-release-network-hosts",
+  "version": 1,
+  "description": "Every network host a release bundle may name. scripts/audit-bundle-hosts.mjs fails the Chrome release audit when the built extension names any other host, or contains whitelist?address or tonscanner (the 3.0.x phrase upload). Add a host only after reviewing why the bundle names it.",
+  "groups": [
+    {
+      "reason": "Fearless Wallet, Soramitsu and SORA pages the app links to (help, about, terms, social). Opened in a browser tab on the user's request; the wallet sends no data to them. The tachi.soramitsu.co.jp name is the non-production Polkaswap link compiled next to the production one.",
+      "hosts": [
+        "fearlesswallet.io",
+        "wiki.fearlesswallet.io",
+        "soramitsu.co.jp",
+        "sora.org",
+        "wiki.sora.org",
+        "polkaswap.io",
+        "exchange.dev.sora2.tachi.soramitsu.co.jp",
+        "github.com",
+        "medium.com",
+        "t.me",
+        "twitter.com",
+        "www.instagram.com",
+        "www.youtube.com"
+      ]
+    },
+    {
+      "reason": "Shared network registry, remote configuration (veto-only), onboarding stories and the scam-address list, read from soramitsu/shared-features-utils on GitHub.",
+      "hosts": [
+        "raw.githubusercontent.com"
+      ]
+    },
+    {
+      "reason": "SORA infrastructure the wallet reads: TON indexer (owner-designated TON provider), Solana indexer, SORA pricing and XOR price, and the Iroha Torii endpoints of Taira (testnet) and Minamoto.",
+      "hosts": [
+        "ti.soramitsu.io",
+        "si.soramitsu.io",
+        "pi.soramitsu.io",
+        "sorametrics.org",
+        "taira.sora.org",
+        "minamoto.sora.org"
+      ]
+    },
+    {
+      "reason": "Bitcoin and Solana public endpoints with failover (Esplora and JSON-RPC), and the Solana explorer link in history.",
+      "hosts": [
+        "blockstream.info",
+        "mempool.space",
+        "api.mainnet-beta.solana.com",
+        "api.devnet.solana.com",
+        "solana-rpc.publicnode.com",
+        "solana.drpc.org",
+        "solscan.io"
+      ]
+    },
+    {
+      "reason": "Fiat prices and the buy providers (MoonPay, Ramp) opened from Buy.",
+      "hosts": [
+        "api.coingecko.com",
+        "buy.moonpay.com",
+        "app.ramp.network"
+      ]
+    },
+    {
+      "reason": "Google sign-in and the Google Drive app-data backup.",
+      "hosts": [
+        "accounts.google.com",
+        "www.googleapis.com"
+      ]
+    },
+    {
+      "reason": "Favicons of connected dApps, fetched by host name.",
+      "hosts": [
+        "icons.duckduckgo.com"
+      ]
+    },
+    {
+      "reason": "IPFS gateways for NFT metadata and images (the app's own gateway, and the ethers default).",
+      "hosts": [
+        "ipfs.io",
+        "gateway.ipfs.io"
+      ]
+    },
+    {
+      "reason": "WalletConnect SDK relay, verification, telemetry and RPC endpoints.",
+      "hosts": [
+        "relay.walletconnect.com",
+        "relay.walletconnect.org",
+        "verify.walletconnect.com",
+        "verify.walletconnect.org",
+        "pulse.walletconnect.org",
+        "rpc.walletconnect.org",
+        "echo.walletconnect.com"
+      ]
+    },
+    {
+      "reason": "Defaults compiled into dependencies: the Polkadot phishing list source (@polkadot/phishing), the TonAPI default base URL (@ton-api/client), Polygon gas stations (ethers), and the npm registry named in the package metadata that @subwallet/keyring bundles.",
+      "hosts": [
+        "polkadot.js.org",
+        "tonapi.io",
+        "gasstation.polygon.technology",
+        "gasstation-testnet.polygon.technology",
+        "registry.npmjs.org"
+      ]
+    },
+    {
+      "reason": "Documentation links in library comments and error messages (Vue, Vue Router, Pinia, Vue I18n, Element Plus, Tippy, ox, Rolldown, MDN). Never requested.",
+      "hosts": [
+        "cli.vuejs.org",
+        "link.vuejs.org",
+        "devtools.vuejs.org",
+        "router.vuejs.org",
+        "pinia.vuejs.org",
+        "vue-i18n.intlify.dev",
+        "element-plus.org",
+        "atomiks.github.io",
+        "oxlib.sh",
+        "rolldown.rs",
+        "developer.mozilla.org",
+        "mathiasbynens.be"
+      ]
+    },
+    {
+      "reason": "XML namespaces in SVG and reserved example names in library code. Never requested.",
+      "hosts": [
+        "www.w3.org",
+        "example.com"
+      ]
+    },
+    {
+      "reason": "The SIL Open Font License texts that ship beside the bundled fonts (licenses/fonts/) cite the licence FAQ. Never requested.",
+      "hosts": [
+        "scripts.sil.org"
+      ]
+    },
+    {
+      "reason": "Issuer deployment lists (Tether's supported protocols, Circle's USDC contract addresses) that the shared canonical asset groups file cites in issuerSources as the source of its USDT and USDC members. The file is bundled byte for byte under a sha256 pin; the wallet never requests or opens these pages.",
+      "hosts": [
+        "tether.to",
+        "developers.circle.com"
+      ]
+    },
+    {
+      "reason": "Loopback names: the app accepts them only as local test endpoints (regtest, test validator, local Torii) and as the web build's development OAuth redirect.",
+      "hosts": [
+        "localhost",
+        "127.0.0.1"
+      ]
+    },
+    {
+      "reason": "Network websites in the SS58 address-format registry (@substrate/ss58-registry, bundled by @polkadot/util-crypto). Display data only; the wallet never requests them.",
+      "hosts": [
+        "3dpass.org",
+        "acala.network",
+        "ajuna.io",
+        "allfeat.network",
+        "analog.one",
+        "anmol.network",
+        "astar.network",
+        "ata.network",
+        "autonomys.xyz",
+        "aventus.io",
+        "bifrost.finance",
+        "bit.country",
+        "bitgreen.org",
+        "bittensor.com",
+        "bsx.fi",
+        "centrifuge.io",
+        "cere.network",
+        "cess.cloud",
+        "chainflip.io",
+        "chainx.org",
+        "clover.finance",
+        "composable.finance",
+        "cord.network",
+        "crust.network",
+        "darwinia.network",
+        "dico.io",
+        "dock.io",
+        "dorafactory.org",
+        "duniter.org",
+        "edgewa.re",
+        "efinity.io",
+        "equilibrium.io",
+        "explorer.mainnet.cloudwalk.io",
+        "fragnova.com",
+        "geek.gl",
+        "genshiro.equilibrium.io",
+        "ggxchain.io",
+        "gmordie.com",
+        "goro.network",
+        "hashed.network",
+        "humanode.io",
+        "hydration.net",
+        "icenetwork.io",
+        "impactprotocol.network",
+        "integritee.network",
+        "interlay.io",
+        "invarch.network",
+        "jupiter.patract.io",
+        "kabocha.network",
+        "karmaco.in",
+        "karura.network",
+        "kilt.io",
+        "krigan.network",
+        "kulupu.network",
+        "kusama.network",
+        "laminar.network",
+        "litentry.com",
+        "logion.network",
+        "luhn.network",
+        "manta.network",
+        "mathwallet.org",
+        "metaquity.xyz",
+        "moonbeam.network",
+        "moonsama.com",
+        "mosaicchain.io",
+        "mythos.foundation",
+        "neatcoin.org",
+        "nftmart.io",
+        "nodle.io",
+        "oak.tech",
+        "parachain.capitaldex.exchange",
+        "parachain.origintrail.io",
+        "parallel.fi",
+        "pendulumchain.org",
+        "phala.network",
+        "picasso.composable.finance",
+        "polkadex.trade",
+        "polkadot.network",
+        "polkafoundry.com",
+        "polymath.network",
+        "pontem.network",
+        "robonomics.network",
+        "seals.app",
+        "social.network",
+        "stafi.io",
+        "subspace.network",
+        "substrate.io",
+        "synesthesia.network",
+        "t3rn.io",
+        "tidefi.com",
+        "totemaccounting.com",
+        "uniarts.me",
+        "unique.network",
+        "valiu.com",
+        "vara.network",
+        "www.aresprotocol.com",
+        "www.dentnet.io",
+        "www.frequency.xyz",
+        "www.joystream.org",
+        "www.peaq.network",
+        "www.peerplays.com",
+        "www.polimec.org",
+        "www.sctl.xyz",
+        "www.tangle.tools",
+        "www.ternoa.network",
+        "www.vow.foundation",
+        "www.watr.org",
+        "www.ysknfr.cn",
+        "xcavate.io",
+        "xx.network",
+        "zeitgeist.pm",
+        "zero.io"
+      ]
+    }
+  ]
+}

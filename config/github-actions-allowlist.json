@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "repositoryPolicy": {
+    "allowedActions": "selected",
+    "githubOwnedAllowed": true,
+    "verifiedAllowed": true,
+    "patternsAllowed": [],
+    "checkedAt": "2026-10-09",
+    "source": "gh api repos/soramitsu/fearless-wallet-web/actions/permissions/selected-actions"
+  },
+  "allowedActions": []
+}

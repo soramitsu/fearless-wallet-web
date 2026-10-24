@@ -69,6 +69,7 @@ export default defineComponent({
     countSteps: { required: true, type: Number },
     step: { required: true, type: Number },
     isLoading: { default: false, type: Boolean },
+    completionConfirmed: { default: true, type: Boolean },
     header: String,
     showFullScreenIcon: { default: false },
     showAdvancedForm: { default: false },
@@ -78,7 +79,7 @@ export default defineComponent({
       return getGoogleWalletProgressState(this.countSteps, this.step);
     },
     isFinishStep() {
-      return this.progressState.isFinishStep;
+      return this.progressState.isFinishStep && this.completionConfirmed;
     },
     showBackButton() {
       return this.progressState.isValid && !this.showAdvancedForm && !this.isFinishStep;
@@ -115,6 +116,7 @@ export default defineComponent({
   flex-direction: column;
   align-items: center;
   height: 100%;
+  min-height: 0;
 
   .header {
     width: 100%;
@@ -141,7 +143,8 @@ export default defineComponent({
   }
 
   .content-wrapper {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -150,7 +153,10 @@ export default defineComponent({
 
     .content {
       width: 100%;
-      height: 100%;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
 
       .selected-network {
         margin-bottom: 16px;
@@ -178,6 +184,8 @@ export default defineComponent({
 
   .controls {
     width: 100%;
+    flex-shrink: 0;
+    margin-top: 16px;
   }
 }
 </style>

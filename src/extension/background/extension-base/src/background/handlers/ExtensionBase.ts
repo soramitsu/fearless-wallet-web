@@ -1,5 +1,11 @@
-import { isEthereumAddress } from '@polkadot/util-crypto';
+import { CurrentAccountContextChanged } from '@extension-base/stores/CurrentAccountStore';
+import BaseWebStore from '@extension-base/stores/BaseWeb';
+import { EXTENSION_PREFIX } from '@extension-base/defaults';
+import { u8aToHex } from '@polkadot/util';
+import { decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
+import { ecdsaRecordKeys } from '@extension-base/stores/EcdsaAccountRecords';
+import { isSameAddress } from '@extension-base/utils';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   RequestAccountExport,
@@ -14,30 +20,51 @@ import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/ba
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { WalletEcosystem, type DerivationPath } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { IS_EXTENSION } from '@/consts/global';
 
 const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 type StoredAccount = { address?: string } & Record<string, unknown>;
+class WebAccountBackups extends BaseWebStore<StoredAccount> {}
+
+// The storage key 2.x and 3.0.x used for the account at a Substrate address.
+function legacyAccountKey(address: string): string | undefined {
+  if (isEthereumAddress(address)) return undefined;
+
+  try {
+    return `account:${u8aToHex(decodeAddress(address))}`;
+  } catch {
+    return undefined;
+  }
+}
 
 export default class FWExtensionBase {
   constructor(protected state: State) {}
 
-  migrateExportJSON(address: string): Promise<ResponseAccountExport> {
-    return new Promise((resolve) => {
-      (chrome.storage.local.get(null) as unknown as Promise<Record<string, StoredAccount>>).then((values) => {
-        const accounts = Object.entries(values).filter(([key]) => key.includes('fw:account'));
+  // The account's record exactly as stored, still encrypted with whatever password it has. Read-only.
+  async migrateExportJSON(address: string): Promise<ResponseAccountExport> {
+    const values = IS_EXTENSION
+      ? await chrome.storage.local.get(null) as Record<string, StoredAccount>
+      : await new WebAccountBackups(EXTENSION_PREFIX).getAllAndWait();
+    const prefix = IS_EXTENSION ? `${EXTENSION_PREFIX}:account:` : 'account:';
+    const accounts = Object.entries(values).filter(([key]) => key.startsWith(prefix));
+    const legacyKey = legacyAccountKey(address);
 
-        const [, json] = accounts.find(([key, value]) => {
-          if (!isEthereumAddress(address)) return isSameString(value.address, address);
+    const stored = accounts.find(([key, value]) => {
+      // An ECDSA record holds the public key; the address is its hash.
+      if (!isEthereumAddress(address))
+        return isSameString(value.address, address) || (!!legacyKey && ecdsaRecordKeys(value)?.legacy === legacyKey);
 
-          const keySplit = key.split(':');
-          const addressKey = keySplit[keySplit.length - 1];
+      const keySplit = key.split(':');
+      const addressKey = keySplit[keySplit.length - 1];
 
-          return isSameString(addressKey, address);
-        })!;
-
-        resolve({ json: json as unknown as KeyringPair$Json });
-      });
+      return isSameString(addressKey, address);
     });
+
+    // Answer the popup instead of leaving it waiting: it then offers a retry and never counts the
+    // account as backed up.
+    if (!stored) throw new Error('account_record_not_found');
+
+    return { json: stored[1] as unknown as KeyringPair$Json };
   }
 
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
@@ -79,14 +106,18 @@ export default class FWExtensionBase {
           if (isNativeEVMNetwork(network)) this.state.networkService.evmApiHandler.refreshEvmApi(network);
         });
 
-      if (this.state.currentAccount) {
-        this.state.setCurrentAccount(
+      if (this.state.currentAccount && isSameAddress(this.state.currentAccount.address, address)) {
+        await this.state.setCurrentAccount(
           {
             ...this.state.currentAccount,
             ethereumAddress: (meta.ethereumAddress as string) ?? '',
           },
-          cb
-        );
+          cb,
+          () => {}
+        ).catch((error: unknown) => {
+          // Metadata is durable; a newer wallet choice owns selection now.
+          if (!(error instanceof CurrentAccountContextChanged)) throw error;
+        });
       }
 
       this.state.updateServiceInfo();

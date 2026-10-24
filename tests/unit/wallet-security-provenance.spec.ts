@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@subwallet/ui-keyring', () => ({ keyring: {
   addUri: mocks.addUri,
+  keyring: { isLocked: false },
   getPair: (address: string) => mocks.pairs.get(address),
   getAccount: (address: string) => mocks.pairs.get(address),
   restoreAccount: mocks.restore, createFromJson: mocks.fromJson, createFromUri: mocks.fromUri,
@@ -22,6 +23,8 @@ vi.mock('@extension-base/stores/KeyringStore', () => ({ default: class {} }));
 vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: class {} }));
 vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({ TonKeyringService: class {} }));
 vi.mock('@extension-base/services/keyring-service/AccountMetadata', () => ({ updateAccountMetadata: mocks.update }));
+vi.mock('@extension-base/services/keyring-service/LocalAccountImport', () => ({ importLocalAccount: async (pair) => pair.address }));
+vi.mock('@extension-base/services/keyring-service/JsonAccountImport', () => ({ decodeJsonAccount: mocks.restore }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
 
 import { WalletEcosystem } from '@/interfaces';
@@ -34,7 +37,8 @@ const flags = ['isExternal', 'isHardware', 'isInjected', 'isMobile', 'isReadOnly
 const claims = { walletSecurityGeneration: 1, ...Object.fromEntries(flags.map((flag) => [flag, true])) };
 const service = () => {
   const value = Object.create(KeyringService.prototype) as KeyringService;
-  Object.defineProperty(value, 'tonKeyring', { configurable: true, value: { withStoreLock: (fn) => fn() } });
+  Object.defineProperty(value, 'tonKeyring', { configurable: true, value: { vault: { exclusive: (fn) => fn() } } });
+  Object.assign(value, { password: 'fixture-password' });
   return value;
 };
 
@@ -50,7 +54,8 @@ beforeEach(() => {
     pair.meta = update(pair.meta, { meta: pair.meta });
     return true;
   });
-  mocks.restore.mockReturnValue({ address: SUBSTRATE });
+  mocks.fromUri.mockImplementation((suri, meta, type) => mocks.addUri(suri, meta, type).pair);
+  mocks.restore.mockImplementation((json) => ({ address: SUBSTRATE, type: 'sr25519', meta: json.meta, lock: vi.fn() }));
 });
 
 describe('fresh wallet security provenance', () => {
@@ -82,14 +87,15 @@ describe('fresh wallet security provenance', () => {
     expect(claims.walletSecurityGeneration).toBe(1);
   });
 
-  it.each(['restoreAccount', 'createFromJson'] as const)('strips untrusted backup claims in %s', (method) => {
+  it.each(['restoreAccount', 'createFromJson'] as const)('strips untrusted backup claims in %s', async (method) => {
     const wallet = service();
     const backup = { address: SUBSTRATE, meta: { ...claims, name: 'Old backup' } } as unknown as KeyringPair$Json;
-    if (method === 'restoreAccount') wallet.restoreAccount(backup, 'fixture-password');
+    if (method === 'restoreAccount') await wallet.restoreAccount(backup, 'fixture-password');
     else wallet.createFromJson(backup);
-    expect(backup.meta.walletSecurityGeneration).toBeUndefined();
-    for (const flag of flags) expect(backup.meta[flag]).toBeUndefined();
-    expect(backup.meta.name).toBe('Old backup');
+    const imported = method === 'restoreAccount' ? mocks.restore.mock.calls[0][0] : backup;
+    expect(imported.meta.walletSecurityGeneration).toBeUndefined();
+    for (const flag of flags) expect(imported.meta[flag]).toBeUndefined();
+    expect(imported.meta.name).toBe('Old backup');
   });
 
   it('preserves trusted provenance during rename but cannot mint it for an old account', async () => {

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
@@ -18,6 +20,7 @@ vi.mock('@/extension/messaging/nfts', () => ({ sendNft: vi.fn() }));
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 let transferCallback: ((response: BasicTxResponse) => void) | undefined;
+const router = { push: vi.fn() };
 
 const createLocalStorageStub = () => {
   const storage = new Map<string, string>();
@@ -34,13 +37,14 @@ const createLocalStorageStub = () => {
   };
 };
 
-const mountPopup = async (rejectDirectRequest = false) => {
+const mountPopup = async (rejectDirectRequest: boolean | Error = false, props: Record<string, unknown> = {}) => {
   vi.stubGlobal('localStorage', createLocalStorageStub());
   setActivePinia(createPinia());
   transferCallback = undefined;
   makeTransfer.mockImplementation(async (_request: unknown, callback: (response: BasicTxResponse) => void) => {
     transferCallback = callback;
 
+    if (rejectDirectRequest instanceof Error) throw rejectDirectRequest;
     if (rejectDirectRequest) throw new Error('private transport failure');
 
     return { status: true };
@@ -53,10 +57,12 @@ const mountPopup = async (rejectDirectRequest = false) => {
       extrinsicType: 'transfer',
       fee: '0.1',
       tx: {},
+      ...props,
     },
     global: {
       mocks: {
         $n: (value: number) => String(value),
+        $router: router,
         $t: (key: string, params?: Record<string, string>) =>
           key === 'assets.insufficientBalance' ? `Insufficient balance ${params?.asset ?? ''}`.trim() : key,
       },
@@ -160,5 +166,109 @@ describe('confirmation password transaction failures', () => {
     expect(wrapper.find('[data-testid="pending"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe('assets.transactionFailedDetails');
     expect(wrapper.text()).not.toContain('private transport failure');
+  });
+});
+
+describe('confirmation popup for a send the network may already have', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const bitcoinSend = {
+    amount: '0.0005',
+    currency: { groupId: 'BTC', symbol: 'btc' },
+    fee: '0',
+    tx: { networkKey: 'Bitcoin' },
+    value: '30',
+  };
+
+  it('says the transfer is not confirmed yet instead of calling it an error', async () => {
+    const wrapper = await mountPopup(false, bitcoinSend);
+
+    transferCallback?.({ status: false, errors: [{ message: 'bitcoin_broadcast_ambiguous' }] });
+    await nextTick();
+
+    const popup = wrapper.vm as unknown as { headerType: string; popupHeader: string };
+
+    expect(popup.headerType).toBe('pending');
+    expect(popup.popupHeader).toBe('assets.transactionUnconfirmed');
+    expect(wrapper.find('[data-testid="transactionErrorMessage"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="transactionUnconfirmedMessage"]').text()).toBe(
+      'assets.bitcoinBroadcastUnconfirmed'
+    );
+    // The full amount, not "-0" and not a minus sign: it has not left the wallet for certain.
+    expect(wrapper.get('[data-testid="confirmedTransferAmount"]').text()).toBe('0.0005 BTC');
+    expect(wrapper.get('[data-testid="confirmedTransferValue"]').text()).toContain('30');
+  });
+
+  it('offers the asset history on that network as the next step', async () => {
+    const wrapper = await mountPopup(false, bitcoinSend);
+
+    transferCallback?.({ status: false, errors: [{ message: 'solana_broadcast_ambiguous' }] });
+    await nextTick();
+    await wrapper.get('[data-testid="viewHistoryBtn"]').trigger('click');
+
+    expect(router.push).toHaveBeenCalledWith({
+      name: 'AssetHistory',
+      params: { assetId: 'BTC', selectedNetwork: 'Bitcoin' },
+    });
+    // The popup names the route without importing the route table.
+    expect(readFileSync(resolve(__dirname, '../../src/router/routes.ts'), 'utf8')).toMatch(
+      /AssetHistory = 'AssetHistory'/u
+    );
+  });
+
+  it('shows no "-0" amount for a failed send that charged nothing', async () => {
+    const wrapper = await mountPopup(false, bitcoinSend);
+
+    transferCallback?.({ status: false, errors: [{ message: 'bitcoin_broadcast_rejected' }] });
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe('assets.bitcoinBroadcastRejected');
+    expect(wrapper.find('[data-testid="confirmedTransferAmount"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="viewHistoryBtn"]').exists()).toBe(false);
+  });
+});
+
+describe('a send from an account that waits for a password', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each([
+    ['legacy_password_required', 'migration.legacyPasswordRequired'],
+    ['previous_password_required', 'accountAccess.previousPasswordRequired'],
+  ])('%s: says why nothing was sent and opens Account access for the sender', async (code, message) => {
+    const wrapper = await mountPopup(new Error(code), {
+      tx: { from: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94', networkKey: 'Ethereum' },
+    });
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe(message);
+    await wrapper.get('[data-testid="unlockAccountBtn"]').trigger('click');
+
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({
+      name: 'AccountAccessRecovery',
+      query: { address: '0x9858EfFD232B4033E47d90003D41EC34EcaEda94' },
+    });
+    expect(wrapper.emitted('close')).toBeUndefined();
+    // The popup names the route without importing the route table.
+    expect(readFileSync(resolve(__dirname, '../../src/router/routes.ts'), 'utf8')).toMatch(
+      /AccountAccessRecovery = 'AccountAccessRecovery'/u
+    );
+  });
+
+  it('offers the unlock for a TON phrase reported through the transfer callback', async () => {
+    const wrapper = await mountPopup(false, { tx: { from: 'UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI' } });
+
+    transferCallback?.({ status: false, errors: [{ message: 'ton_seed_needs_previous_password' }] });
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe(
+      'accountAccess.previousPasswordRequired'
+    );
+    expect(wrapper.find('[data-testid="unlockAccountBtn"]').exists()).toBe(true);
+  });
+
+  it('keeps other failures without the unlock action', async () => {
+    const wrapper = await mountPopup(true);
+
+    expect(wrapper.get('[data-testid="transactionErrorMessage"]').text()).toBe('assets.transactionFailedDetails');
+    expect(wrapper.find('[data-testid="unlockAccountBtn"]').exists()).toBe(false);
   });
 });

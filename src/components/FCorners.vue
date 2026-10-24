@@ -4,8 +4,8 @@
       <slot></slot>
     </div>
 
-    <div v-if="topLeftCorner" :class="topLeftCornerClasses"></div>
-    <div v-if="bottomRightCorner" :class="bottomRightCornerClasses"></div>
+    <div v-if="topLeftCorner" :class="topLeftCornerClasses" aria-hidden="true"></div>
+    <div v-if="bottomRightCorner" :class="bottomRightCornerClasses" aria-hidden="true"></div>
   </div>
 </template>
 
@@ -91,7 +91,7 @@ const cornersClasses = computed(() => [
 }
 
 .corner-border-selected {
-  border-top: 1px solid #7700ee;
+  border-top: 1px solid $fw-focus-ring;
 }
 
 .top-left[class~='corner-size-big'] {
@@ -116,5 +116,33 @@ const cornersClasses = computed(() => [
   transform: rotate(135deg);
   bottom: 1px;
   right: 1px;
+}
+@include v1-palette {
+  .FCorners .corner-size-big,
+  .FCorners .corner-size-medium {
+    pointer-events: none;
+    width: 8px;
+    height: 8px;
+    clip-path: none;
+    transform: none;
+    border: 0;
+    &.top-left {
+      top: 0;
+      left: 0;
+      border-top: 1px solid var(--fw-hud-tick);
+      border-left: 1px solid var(--fw-hud-tick);
+    }
+    &.bottom-right {
+      bottom: 0;
+      right: 0;
+      border-bottom: 1px solid var(--fw-hud-tick);
+      border-right: 1px solid var(--fw-hud-tick);
+    }
+  }
+  // Inputs, small controls and calm screens have a complete control edge; decorative ticks belong to large panels.
+  .FCorners .corner-size-medium,
+  .fw-calm .FCorners .corner-size-big {
+    display: none;
+  }
 }
 </style>

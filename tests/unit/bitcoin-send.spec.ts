@@ -97,7 +97,9 @@ describe('Bitcoin send service', () => {
   it('quotes and sends max from confirmed fragmented UTXOs with one exact output', async () => {
     const client = mockClient({ utxos: [confirmedUtxo(30_000), confirmedUtxo(30_000, 1, secondTxid), unconfirmedUtxo(100_000)] });
     const params = { amountSat: 1, client, sources: [{ address: mainnetAddress }], toAddress: mainnetRecipient };
-    const quote = await quoteBitcoinSend({ ...params, sendMax: true });
+    const summary = await quoteBitcoinSend({ ...params, amountSat: undefined });
+    const quoted = await quoteBitcoinSend({ ...params, amountSat: summary.maxSendableSat });
+    const quote = { fee: quoted.feeSat!, amountSat: summary.maxSendableSat, changeAddress: undefined };
 
     expect(quote.fee).toBe(estimateP2wpkhTransactionVSize(2, 1) * 2);
     expect(quote.amountSat).toBe(60_000 - quote.fee);
@@ -156,7 +158,7 @@ describe('Bitcoin send service', () => {
     expect(tx.outs.map(({ value }) => value)).toEqual([50_000, result.change]);
     expect(client.getFeeEstimates).toHaveBeenCalledTimes(1);
     expect(client.getUtxos).toHaveBeenCalledWith(mainnetAddress);
-    expect(client.broadcastTransaction).toHaveBeenCalledWith(result.txHex);
+    expect(client.broadcastTransaction).toHaveBeenCalledWith(result.txHex, result.txid);
   });
 
   it('selects deterministic spendable UTXOs across discovered receive addresses', async () => {

@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <Tabs :activeTab="activeTab" :tabs="tabs" @update:activeTab="onActiveTabUpdate" />
+    <Tabs class="connection-tabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="onActiveTabUpdate" />
 
     <div class="scroll-container">
       <Scroll>
@@ -38,10 +38,15 @@ const tabs = {
 
 const route = useRoute();
 
-const activeTab = computed(() => route.path);
+const activeTab = computed(() => {
+  if (route.name === Components.WcAuths) return tabs.wc.name;
+  if (route.name === Components.DAppsAuths && route.params.type === 'evm') return tabs.evm.name;
+  if (route.name === Components.DAppsAuths && route.params.type === 'substrate') return tabs.substrate.name;
+  return '';
+});
 
 const onActiveTabUpdate = (tab: { label: string; name: Components; type: string; component: Components }) => {
-  if (route.name !== tab.name) router.push({ name: tab.component, params: { type: tab.type } });
+  if (activeTab.value !== tab.name) router.push({ name: tab.component, params: { type: tab.type } });
 };
 </script>
 
@@ -60,5 +65,18 @@ const onActiveTabUpdate = (tab: { label: string; name: Components; type: string;
 
 .scroll-container {
   height: calc(100% - 23px);
+}
+
+.connection-tabs {
+  flex-wrap: wrap;
+  :deep(.button) {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+  :deep(.tab-button) {
+    width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
 }
 </style>

@@ -1,3 +1,4 @@
+import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -26,6 +27,7 @@ import {
   ActionCapabilityService,
   SendKillSwitchService,
   SoraDisclaimerService,
+  LegacyExposureService,
   IrohaConnectService,
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
@@ -33,6 +35,11 @@ import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
+import {
+  existingCurrentAccount,
+  pickDefaultCurrentAccount,
+  toCurrentAccountInfo,
+} from '@extension-base/background/helpers/currentAccount';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -128,6 +135,11 @@ export default class State {
     read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
     write: async (soraDisclaimerAcceptance) => storage.set({ soraDisclaimerAcceptance }),
   });
+  legacyExposureService = new LegacyExposureService(this.keyringService, {
+    read: async () => (await storage.get(['legacyExposure'])).legacyExposure,
+    write: async (legacyExposure) => storage.set({ legacyExposure }),
+    readSentMarker: async () => (await storage.get(['myAddresses'])).myAddresses,
+  });
   pricesService = new PricesService(this);
   nftService = new NftService(this);
   stakingService = new StakingService(this);
@@ -200,7 +212,7 @@ export default class State {
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
     const tabAuthKey = isSelf ? null : stripUrl(tab.url);
 
-    const cb = () => (authUrls: AuthUrls) => {
+    const cb = (authUrls: AuthUrls) => {
       const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
       const isAuthorize = auth?.isAllowed === true;
 
@@ -211,53 +223,50 @@ export default class State {
       };
     };
 
-    this.requestService.getAuthorize(cb);
+    void this.requestService.getAuthorize(cb).catch(() => cb({}));
+  }
+
+  private async selectableAccounts() {
+    const accounts = this.keyringService.getAllMainAccounts();
+    if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
+    const policy = await new WalletConnectRetiredSessions().readPolicy();
+    return this.keyringService.getAllMainAccounts().filter((account) =>
+      !account.meta.isMobile || sessionIsApproved(policy, account.meta.wcTopic as string));
   }
 
   async onInstall() {
-    if (this.currentAccount) {
-      this.setCurrentAccount(this.currentAccount);
+    const revision = this.keyringService.currentAccountRevision;
+    const selected = this.currentAccount;
+    const accounts = await this.selectableAccounts();
+    if (revision !== this.keyringService.currentAccountRevision || selected !== this.currentAccount) return;
+    const storedAccount = existingCurrentAccount(this.currentAccount, accounts);
+
+    if (storedAccount) {
+      await this.setCurrentAccount(storedAccount);
 
       return;
     }
 
-    const allAccounts = this.keyringService.getAllMainAccounts();
+    const account = pickDefaultCurrentAccount(accounts);
 
-    if (allAccounts.length) {
-      const [
-        {
-          address,
-          meta: {
-            name,
-            ethereumAddress,
-            isMobile,
-            bitcoinAddress,
-            bitcoinTestnetAddress,
-            solanaAddress,
-            irohaAddress,
-            irohaPublicKeyHex,
-            walletEcosystem,
-          },
-        },
-      ] = allAccounts;
+    await this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
+  }
 
-      this.setCurrentAccount({
-        address,
-        name: name!,
-        ethereumAddress: ethereumAddress!,
-        bitcoinAddress: bitcoinAddress as string | undefined,
-        bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
-        solanaAddress: solanaAddress as string | undefined,
-        irohaAddress: irohaAddress as string | undefined,
-        irohaPublicKeyHex: irohaPublicKeyHex as string | undefined,
-        isMobile: isMobile!,
-        walletEcosystem: walletEcosystem!,
-      });
+  // Start-up calls this once the wallet storage has been read. Chrome sends onInstalled only
+  // on install or update, so a missing selection, or one whose account was removed, is
+  // replaced here as well. A valid selection is not written again.
+  async ensureCurrentAccount(): Promise<void> {
+    const revision = this.keyringService.currentAccountRevision;
+    const selected = this.currentAccount;
+    const accounts = await this.selectableAccounts();
+    if (revision !== this.keyringService.currentAccountRevision || selected !== this.currentAccount) return;
 
-      return;
-    }
+    if (existingCurrentAccount(this.currentAccount, accounts)) return;
+    if (!this.currentAccount && !accounts.length) return;
 
-    this.setCurrentAccount(null);
+    const account = pickDefaultCurrentAccount(accounts);
+
+    await this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
   }
 
   async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
@@ -268,12 +277,15 @@ export default class State {
     return authList[shortenUrl];
   }
 
+  getEvmAuthorizationSnapshot(url: string) {
+    return this.requestService.authRequestHandler.getEvmAuthorizationSnapshot(url);
+  }
+
   disableNetworkMap(networkKey: string) {
     this.networkService.disableNetworkMap(networkKey);
 
     this.updateServiceInfo();
 
-    this.requestService.getAuthorize((data) => this.requestService.setAuthorize(data));
   }
 
   updateServiceInfo() {
@@ -284,16 +296,14 @@ export default class State {
     });
   }
 
-  async setFavoriteNetwork(networkName: string): Promise<void> {
-    const network = this.networkService.networkMap[networkName];
+  async setFavoriteNetwork(networkName: string, expectedAddress?: string, desired?: boolean): Promise<void> {
     const currentAccount = this.currentAccount;
 
-    if (!currentAccount) return;
+    if (!currentAccount || (expectedAddress !== undefined && currentAccount.address !== expectedAddress)) {
+      throw new Error('Selected wallet changed');
+    }
 
-    const addressIndex = network.favorite.findIndex((address) => address === currentAccount.address);
-
-    if (addressIndex !== -1) network.favorite.splice(addressIndex, 1);
-    else network.favorite.push(currentAccount.address);
+    await this.networkService.toggleFavoriteNetwork(networkName, currentAccount.address, desired);
   }
 
   async setActiveNetworks(type: string) {
@@ -527,7 +537,7 @@ export default class State {
           networks: [network.name],
         });
       } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
-        if (!this.getTonApiMap[network.name]) await this.networkService.tonApiHandler.initApi(network);
+        if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
         await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
       } else if (ecosystem === 'ethereum' && evmAddress) {
         const wasActive = network.active;
@@ -560,15 +570,16 @@ export default class State {
     this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
-  updateCurrentAccount(
+  async updateCurrentAccount(
     { address, walletEcosystem = WalletEcosystem.Substrate }: RequestUpdateCurrentAccount,
-    isNew = true
-  ): boolean {
+    isNew = true,
+    selectionContext?: { assertCurrent: () => void; onCommitted?: () => void }
+  ): Promise<boolean> {
     if (isEthereumAddress(address)) return false;
 
     this.balanceService.generateDefaultBalance(address, walletEcosystem);
 
-    this.saveCurrentAccountAddress(address, walletEcosystem, () => {
+    await this.saveCurrentAccountAddress(address, walletEcosystem, () => {
       this.keyringService.triggerWalletsSubscription(address, walletEcosystem);
 
       const activeValue =
@@ -580,46 +591,48 @@ export default class State {
 
       this.nftService.publishNfts();
       if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
-    });
+      selectionContext?.onCommitted?.();
+    }, selectionContext?.assertCurrent);
 
     return true;
   }
 
-  setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
-    this.keyringService.setCurrentAccount(data);
-
-    // logic for Sora library
-    this.poolsService.unsubscribePools();
-
-    const isTonWallet = data?.walletEcosystem === WalletEcosystem.Ton;
-
-    // logic for Sora library
-    if (!isTonWallet && data?.address && !data.isMobile && data.walletEcosystem === 'substrate') {
-      const pair = this.keyringService.getPair(data?.address)!;
-
+  async setCurrentAccount(
+    data: CurrentAccountState, callback: () => void = () => null, assertCurrent?: () => void
+  ): Promise<void> {
+    const updateContext = (committed: CurrentAccountState) => {
+      this.poolsService.unsubscribePools();
+      const pair = committed?.address && !committed.isMobile && committed.walletEcosystem === WalletEcosystem.Substrate
+        ? this.keyringService.getPair(committed.address) : undefined;
+      const soraAccount = pair ? { json: null, pair } : undefined;
+      // The SDK exposes these fields as protected; clear the old signing pair
+      // when the selected wallet has no local Substrate key, including recovery.
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.account = { json: null, pair };
-
+      apiSora.account = soraAccount;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.bridgeProxy.sub.account = { json: null, pair };
-    }
-
-    this.updateServiceInfo();
-    callback();
+      apiSora.bridgeProxy.sub.account = soraAccount;
+      this.updateServiceInfo();
+    };
+    await this.keyringService.setCurrentAccount(data, (committed) => {
+      updateContext(committed);
+      callback();
+    }, assertCurrent, updateContext);
   }
 
-  saveCurrentAccountAddress(
+  async saveCurrentAccountAddress(
     address: string,
     walletEcosystem: WalletEcosystem,
-    callback?: (account: CurrentAccountState) => void
+    callback?: (account: CurrentAccountState) => void,
+    assertCurrent?: () => void
   ) {
-    if (address === '') return this.setCurrentAccount(null);
+    if (address === '') return this.setCurrentAccount(null, () => callback?.(null), assertCurrent);
 
     const {
       meta: {
         isMobile,
+        wcTopic,
         name,
         ethereumAddress,
         bitcoinAddress,
@@ -633,6 +646,7 @@ export default class State {
     const accountInfo: CurrentAccountInfo = {
       address,
       isMobile: !!(isMobile as boolean),
+      wcTopic: typeof wcTopic === 'string' ? wcTopic : undefined,
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
       bitcoinAddress: bitcoinAddress as string | undefined,
@@ -643,7 +657,7 @@ export default class State {
       walletEcosystem,
     };
 
-    this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
+    await this.setCurrentAccount(accountInfo, () => callback?.(accountInfo), assertCurrent);
   }
 
   cleanupDeletedAccount(address: string) {
@@ -764,17 +778,16 @@ export default class State {
   }
 
   async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
-    const authUrls = await this.requestService.getAuthList();
+    await this.requestService.getAuthList();
+    const initial = this.getEvmAuthorizationSnapshot(shortenUrl);
+    if (!initial.authorization?.isAllowed || !initial.authorization.evmAuthorizedAccount)
+      throw new Error('EVM account is not authorized for this site');
     const network = this.networkService.getNetworkJson(networkKey);
-
-    if (authUrls[shortenUrl]) {
-      if (!network.active) await this.setActiveNetworks(networkKey);
-
-      authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
-
-      this.requestService.setAuthorize(authUrls);
-    } else {
-      throw new Error(`Not found ${shortenUrl} in auth list`);
-    }
+    if (!network.active) await this.setActiveNetworks(networkKey);
+    await this.requestService.mutateAuthorizations((entries) => {
+      if (this.getEvmAuthorizationSnapshot(shortenUrl).revision !== initial.revision || !entries[shortenUrl])
+        throw new Error('Site authorization changed during network activation');
+      entries[shortenUrl].currentEvmNetworkKey = networkKey;
+    });
   }
 }

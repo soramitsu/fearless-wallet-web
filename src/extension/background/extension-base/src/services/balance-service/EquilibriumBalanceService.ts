@@ -21,11 +21,13 @@ export default class EquilibriumBalanceService {
   constructor(private readonly state: State) {}
 
   subscribeBalance(address: string, api: ApiPromise) {
+    const network = Object.values(this.state.networkService.networkMap).find(({ name }) => isSameString(name, EQUILIBRIUM));
+    if (!network) return () => {};
     const {
       parentId,
       assets,
       name: networkName,
-    } = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, EQUILIBRIUM))!;
+    } = network;
 
     const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 

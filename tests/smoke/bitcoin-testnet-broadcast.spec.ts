@@ -146,11 +146,11 @@ describe('Bitcoin testnet broadcast smoke', () => {
         toAddress: liveConfig.recipientAddress,
       };
       const quote = await quoteBitcoinSend(params);
-      const result = await sendBitcoinTransaction({ ...params, approvedMaxFeeSat: quote.fee });
+      const result = await sendBitcoinTransaction({ ...params, approvedMaxFeeSat: quote.feeSat! });
 
       expect(result.broadcastTxid).toBe(result.txid);
       expect(result.selectedUtxos).toEqual([expect.objectContaining(liveConfig.outpoint)]);
-      expect(result.fee).toBeLessThanOrEqual(quote.fee);
+      expect(result.fee).toBeLessThanOrEqual(quote.feeSat!);
       if (liveConfig.evidenceOut) {
         writeFileSync(liveConfig.evidenceOut, `${JSON.stringify({
           txid: result.txid,

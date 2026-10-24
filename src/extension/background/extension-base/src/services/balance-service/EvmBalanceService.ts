@@ -113,21 +113,9 @@ export default class EvmBalanceService {
       return utilityBalance;
     } catch {
       const cachedBalance = this.getCachedBalance(address, networkKey, id);
-      state.balanceService.setBalanceItem(
-        networkKey,
-        {
-          state: APIItemState.ERROR,
-          symbol,
-          id,
-          relayChain: 'ethereum',
-          free: '0',
-          reserved: '0',
-          frozen: '0',
-          transferable: '0',
-          total: '0',
-        },
-        address
-      );
+      // No amount: setBalanceItem keeps the last confirmed one, and a balance that never loaded stays unknown
+      // instead of a confirmed 0 (the first start after the update from 3.0.5 has no balance cache).
+      state.balanceService.setBalanceItem(networkKey, { state: APIItemState.ERROR, symbol, id, relayChain: 'ethereum' }, address);
 
       this.state.networkService.evmApiHandler.refreshEvmApi(networkKey);
 
@@ -171,21 +159,9 @@ export default class EvmBalanceService {
       return balance;
     } catch {
       const cachedBalance = this.getCachedBalance(address, networkKey, id);
-      state.balanceService.setBalanceItem(
-        networkKey,
-        {
-          state: APIItemState.ERROR,
-          symbol,
-          id,
-          relayChain: 'ethereum',
-          free: '0',
-          reserved: '0',
-          frozen: '0',
-          transferable: '0',
-          total: '0',
-        },
-        address
-      );
+      // No amount: setBalanceItem keeps the last confirmed one, and a balance that never loaded stays unknown
+      // instead of a confirmed 0 (the first start after the update from 3.0.5 has no balance cache).
+      state.balanceService.setBalanceItem(networkKey, { state: APIItemState.ERROR, symbol, id, relayChain: 'ethereum' }, address);
 
       return cachedBalance ?? '0';
     }

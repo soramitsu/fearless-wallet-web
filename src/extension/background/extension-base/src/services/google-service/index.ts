@@ -11,7 +11,6 @@ import type {
   RequestGoogleToken,
   VerifyTokenResponse,
 } from '@/interfaces';
-import { FEARLESS_TITLE } from '@/consts/global';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 
 export class GoogleService {
@@ -21,7 +20,6 @@ export class GoogleService {
   private readonly baseAuthParams = {
     client_id: process.env.OAUTH_CLIENT_ID,
     response_type: 'token',
-    state: 'pass-through value',
     access_type: 'online',
     prompt: 'consent',
     scope: 'https://www.googleapis.com/auth/drive.appdata',
@@ -45,11 +43,14 @@ export class GoogleService {
     };
   }
 
-  private authURL(type: 'desktop' | 'extension') {
+  private authPending = false;
+
+  private authURL(state: string) {
     const prepUrl = new URL(`https://accounts.google.com/o/oauth2/v2/auth`);
     const params: Record<string, string> = {
       ...this.baseAuthParams,
-      redirect_uri: type === 'extension' ? this.extensionRedirectURL : `http://localhost:5500/${type}`,
+      state,
+      redirect_uri: this.extensionRedirectURL,
     };
 
     Object.keys(params).forEach((key) => {
@@ -60,72 +61,65 @@ export class GoogleService {
   }
 
   private prepareData(json: string, { name, address }: { name: string; address: string }) {
-    return `--foo_bar_baz
-Content-Type: application/json; charset=UTF-8
-
-{
-name: "${name}.json",
-mimeType: "application/json",
-description: "${address}",
-parents: ["appDataFolder"]
-}
-
---foo_bar_baz
-Content-Type: application/json
-
-${json}
---foo_bar_baz--`;
+    const metadata = JSON.stringify({ name: `${name}.json`, mimeType: 'application/json', description: address, parents: ['appDataFolder'] });
+    let boundary: string;
+    do { boundary = `fearless-${crypto.randomUUID()}`; } while (json.includes(boundary) || metadata.includes(boundary));
+    const body = [
+      `--${boundary}`, 'Content-Type: application/json; charset=UTF-8', '', metadata,
+      `--${boundary}`, 'Content-Type: application/json', '', json, `--${boundary}--`, '',
+    ].join('\r\n');
+    return { body, boundary };
   }
 
   public async authExtension({ type = 'main', wallet }: GoogleAuthTypes) {
     if (!isGoogleDriveBackupEnabled()) throw new Error('google_drive_backup_unavailable');
-
-    return new Promise<void>((res) => {
-      chrome.identity.launchWebAuthFlow(
-        {
-          url: this.authURL('extension'),
-          interactive: true,
-        },
-        async (redirect_url) => {
-          res();
-
-          const searchParams = new URLSearchParams(redirect_url);
-          const token =
-            searchParams.get('access_token') || searchParams.get(`${this.extensionRedirectURL}#access_token`);
-          const baseURL = `${chrome.runtime.getURL(`popup.html#/${this.urlTypes[type]}/${token}`)}`;
-          const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
-          const tabs = await chrome.tabs.query({});
-
-          const [openTab] = tabs.filter((el) => el.title?.includes(FEARLESS_TITLE));
-
-          if (openTab && openTab.id) {
-            chrome.tabs.update(openTab.id, { active: true, url });
-
-            return;
-          }
-
-          chrome.tabs.create({ active: true, url });
-        }
-      );
-    });
+    if (this.authPending) throw new Error('Google authorization is already in progress');
+    this.authPending = true;
+    try {
+      const state = crypto.randomUUID();
+      // Promise form works with Firefox's browser namespace and Chrome >=106
+      // (the manifest requires 116). Rejection also releases authPending below.
+      const redirectUrl = await chrome.identity.launchWebAuthFlow({ url: this.authURL(state), interactive: true });
+      if (!redirectUrl) throw new Error('Google authorization was not completed');
+      const redirect = new URL(redirectUrl);
+      const expected = new URL(this.extensionRedirectURL);
+      const params = new URLSearchParams(redirect.hash.slice(1));
+      const token = params.get('access_token');
+      if (redirect.origin !== expected.origin || redirect.pathname !== expected.pathname ||
+        params.get('state') !== state || params.has('error') || !token?.trim())
+        throw new Error('Google authorization response was not valid');
+      const popup = chrome.runtime.getURL('popup.html');
+      const baseURL = `${popup}#/${this.urlTypes[type]}/${encodeURIComponent(token)}`;
+      const url = type === 'export' && wallet ? `${baseURL}?wallet=${encodeURIComponent(wallet)}` : baseURL;
+      const tabs = await chrome.tabs.query({});
+      const openTab = tabs.find((tab) => tab.url === popup || tab.url?.startsWith(`${popup}#`));
+      if (openTab?.id !== undefined) await chrome.tabs.update(openTab.id, { active: true, url });
+      else await chrome.tabs.create({ active: true, url });
+    } finally { this.authPending = false; }
   }
 
   public async getFiles({ token }: RequestGoogleToken): Promise<IGetFilesResponse> {
-    const { data } = await axios.get<IGetFilesResponse>(
-      `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...this.config.headers,
-        },
-      }
-    );
-
-    return data;
+    const files: FilesResponse[] = [];
+    const seen = new Set<string>();
+    let pageToken: string | undefined;
+    do {
+      const { data } = await axios.get<IGetFilesResponse & { nextPageToken?: string }>(`${this.baseURL}/files`, {
+        params: { ...this.config.params, fields: 'files(id,name,description),nextPageToken,incompleteSearch,kind', pageToken },
+        headers: { Authorization: `Bearer ${token}`, ...this.config.headers },
+      });
+      if (data.incompleteSearch || (data.files !== undefined && !Array.isArray(data.files)))
+        throw new Error('Google Drive backup inventory was incomplete');
+      files.push(...(data.files ?? []));
+      pageToken = data.nextPageToken;
+      if (pageToken && (typeof pageToken !== 'string' || seen.has(pageToken)))
+        throw new Error('Google Drive backup pagination was invalid');
+      if (pageToken) seen.add(pageToken);
+    } while (pageToken);
+    return { files, incompleteSearch: false, kind: 'drive#fileList' };
   }
 
   public async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
-    const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${id}?alt=media`, {
+    const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${encodeURIComponent(id)}?alt=media`, {
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,
@@ -137,7 +131,7 @@ ${json}
 
   public async verifyToken({ token }: RequestGoogleToken): Promise<VerifyTokenResponse | null> {
     const res = await axios
-      .get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`)
+      .get<VerifyTokenResponse>('https://www.googleapis.com/oauth2/v1/tokeninfo', { params: { access_token: token } })
       .catch(() => {
         return null;
       });
@@ -148,25 +142,22 @@ ${json}
   }
 
   async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
-    const prepData = this.prepareData(json, options);
-    const length = prepData.length;
+    const { body, boundary } = this.prepareData(json, options);
 
-    const { data } = await axios.post<FilesResponse>(this.baseUploadUrl, prepData, {
+    const { data } = await axios.post<FilesResponse>(this.baseUploadUrl, body, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/related; boundary=foo_bar_baz',
-        'Content-Length': length.toString(),
+        'Content-Type': `multipart/related; boundary=${boundary}`,
       },
     });
 
+    if (typeof data?.id !== 'string' || !data.id.trim()) throw new Error('Google Drive did not confirm a file identifier');
     return data;
   }
 
   async deleteFile({ id, token }: GoogleFileId) {
-    axios.delete(this.baseURL, {
-      params: {
-        fields: id,
-      },
+    if (!id?.trim()) throw new Error('Google Drive file identifier is required');
+    await axios.delete(`${this.baseURL}/files/${encodeURIComponent(id)}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,

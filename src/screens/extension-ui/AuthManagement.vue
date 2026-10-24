@@ -21,6 +21,8 @@ const route = useRoute();
 const showAuthDetails = computed(() => route.name !== Components.DAppsAuths && route.name !== Components.WcAuths);
 
 const header = computed(() => {
+  // Details displays the full origin in its scrolling content.
+  if (route.name === Components.DAppDetails) return 'common.manageDApp';
   const authDetailHeader = { text: 'authorize.accountsConnected', localeProps: { url: route.params.index } };
 
   if (showAuthDetails.value) return authDetailHeader;

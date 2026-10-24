@@ -1,5 +1,5 @@
 <template>
-  <div class="wrapper" @click="click">
+  <div class="wrapper" @click="click" @keydown.enter.prevent="click" @keydown.space.prevent="click">
     <FInput
       :value="value"
       size="big"
@@ -97,6 +97,33 @@ const clickIcon = () => {
       height: 15px;
       width: 15px;
       color: $gray-color;
+    }
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+@include v1-palette {
+  .wrapper {
+    position: relative;
+    .rotate-input {
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+    }
+    .icon {
+      position: absolute;
+      right: 16px;
+      top: auto;
+      bottom: 16px;
+      height: 20px;
+      pointer-events: none;
+    }
+    .icon:has(.close-icon) {
+      pointer-events: auto;
+    }
+    :deep(.el-input__inner) {
+      padding-right: 48px !important;
     }
   }
 }

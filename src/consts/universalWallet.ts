@@ -14,9 +14,33 @@ const UNIVERSAL_WALLET_INDEXERS = {
   solana: 'https://si.soramitsu.io',
 } as const;
 
+// TON is read from, and sent through, the TONSWAP indexer (TI) only while it proves it serves the network asked
+// for: its service-info names `ton:mainnet` and every balance, state and history answer says `mainnet`. Until it
+// does, the registry's own TON node is used instead, and every switch to it is logged. Set `registryNodeFallback`
+// to false once TI serves TON mainnet. Remote config never chooses a TON host.
+const UNIVERSAL_WALLET_TON_PROVIDER = {
+  indexerUrl: UNIVERSAL_WALLET_INDEXERS.ton,
+  registryNodeFallback: true,
+} as const;
+
+// Esplora-compatible indexers used with failover for Bitcoin balances, UTXOs,
+// fee estimates and broadcast. The first entry stays the canonical indexer.
+const UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS = {
+  mainnet: [UNIVERSAL_WALLET_INDEXERS.bitcoin.mainnet, 'https://mempool.space/api'],
+  testnet: [UNIVERSAL_WALLET_INDEXERS.bitcoin.testnet, 'https://mempool.space/testnet/api'],
+} as const;
+
 const UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS = {
   mainnet: 'https://api.mainnet-beta.solana.com',
   devnet: 'https://api.devnet.solana.com',
+} as const;
+
+// Public JSON-RPC nodes tried in order after the user's selected or custom
+// node. Balances, blockhashes, simulation and broadcast all come from these;
+// nothing on the send path depends on the si.soramitsu.io indexer.
+const UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS = {
+  mainnet: [UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS.mainnet, 'https://solana-rpc.publicnode.com', 'https://solana.drpc.org'],
+  devnet: [UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS.devnet],
 } as const;
 
 const UNIVERSAL_WALLET_DEFAULT_WORD_COUNT = 24;
@@ -137,6 +161,16 @@ const UNIVERSAL_WALLET_SOLANA_NETWORKS = {
     },
   },
 } as const;
+
+// The price id (the CoinGecko coin id the price service asks for) of each app-owned native asset, by chain id.
+// A network without an entry has no price: its balance says "Price unavailable" and is never counted. Test
+// networks have none on purpose. Keep in step with config/portfolio/app-owned-chains.v1.json in the workspace root.
+const UNIVERSAL_WALLET_NATIVE_PRICE_IDS: Readonly<Record<string, string>> = {
+  [UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.chainId]: 'bitcoin',
+  [UNIVERSAL_WALLET_SOLANA_NETWORKS.mainnet.chainId]: 'solana',
+  // Only used while the remote registry, which lists Toncoin itself, is not loaded.
+  'ton:mainnet': 'the-open-network',
+};
 
 const UNIVERSAL_WALLET_BITCOIN_MAINNET_REGISTRY_ENTRY: UniversalWalletChainRegistryEntry = {
   id: UNIVERSAL_WALLET_BITCOIN_NETWORKS.mainnet.id,
@@ -318,12 +352,16 @@ const UNIVERSAL_WALLET_CHAIN_REGISTRY: UniversalWalletChainRegistry = {
 
 export {
   IROHA_TRANSACTION_WIRE,
+  UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS,
   UNIVERSAL_WALLET_CHAIN_REGISTRY,
   UNIVERSAL_WALLET_INDEXERS,
   UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS,
+  UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS,
+  UNIVERSAL_WALLET_TON_PROVIDER,
   UNIVERSAL_WALLET_DEFAULT_WORD_COUNT,
   UNIVERSAL_WALLET_DERIVATION_PATHS,
   UNIVERSAL_WALLET_BITCOIN_NETWORKS,
   UNIVERSAL_WALLET_IROHA_NETWORKS,
+  UNIVERSAL_WALLET_NATIVE_PRICE_IDS,
   UNIVERSAL_WALLET_SOLANA_NETWORKS,
 };

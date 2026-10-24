@@ -68,10 +68,17 @@ const contentClasses = computed(() => {
 }
 
 .background-black {
-  background-color: #1c1c1c;
+  background-color: $fw-form-surface;
 }
 
 .background-light-black {
   background-color: $secondary-background-color;
+}
+
+@include v1-palette {
+  .content-form {
+    border-radius: 16px;
+    border-color: var(--fw-stroke-strong);
+  }
 }
 </style>

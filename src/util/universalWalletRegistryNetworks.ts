@@ -15,6 +15,15 @@ type UniversalWalletNetworkMap = Record<string, NetworkJson>;
 
 const TAIRA_TESTNET_NETWORK_NAME = 'Taira Testnet';
 const DEFAULT_ADDRESS_PREFIX = 42;
+const SHARED_TOKEN_ICONS_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured';
+// Tokens the extension names, prices and pictures itself on networks whose registry entry lists only the coin. A
+// token not listed here still shows, named by its mint.
+const REGISTRY_TOKEN_ASSETS: Readonly<Partial<Record<string, readonly Asset[]>>> = Object.freeze({
+  'solana:mainnet': [
+    createRegistryTokenAsset('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 'USDC', 'USD Coin', 6, 'usd-coin'),
+    createRegistryTokenAsset('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', 'USDT', 'Tether USD', 6, 'tether'),
+  ],
+});
 
 function createUniversalWalletRegistryNetworks(
   registry: UniversalWalletChainRegistry = UNIVERSAL_WALLET_CHAIN_REGISTRY
@@ -84,6 +93,8 @@ function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry
   const providers = Object.fromEntries(nodes.map(({ name, url }) => [name, url]));
   const currentProvider = nodes[0]?.name ?? '';
   const nativeAsset = entry.nativeAsset ? [createNativeAsset(entry)] : [];
+  // A copy per network, as the native asset is, so no network shares an asset object with another.
+  const tokenAssets = (REGISTRY_TOKEN_ASSETS[entry.chainId] ?? []).map((asset) => ({ ...asset }));
   const active = entry.enabledByDefault && nodes.length > 0;
 
   return {
@@ -101,7 +112,7 @@ function createNetworkFromRegistryEntry(entry: UniversalWalletChainRegistryEntry
     chainId: entry.chainId,
     name,
     externalApi: createExternalApi(entry),
-    assets: nativeAsset,
+    assets: [...nativeAsset, ...tokenAssets],
     customNodes: [],
     nodes,
     addressPrefix: DEFAULT_ADDRESS_PREFIX,
@@ -127,7 +138,7 @@ function mergeRegistryNetworkDefaults(
         : existing.chainId || registryNetwork.chainId,
     ecosystem: registryNetwork.ecosystem,
     externalApi: mergeExternalApi(existing.externalApi, registryNetwork.externalApi),
-    assets: mergeNativeAssets(existing.assets, registryNetwork.assets),
+    assets: mergeRegistryTokenAssets(mergeNativeAssets(existing.assets, registryNetwork.assets), registryNetwork.assets),
     nodes: existing.nodes?.length ? existing.nodes : registryNetwork.nodes,
     providers: Object.keys(existing.providers ?? {}).length ? existing.providers : registryNetwork.providers,
     currentProvider: existing.currentProvider || registryNetwork.currentProvider,
@@ -162,6 +173,16 @@ function mergeNativeAssets(existingAssets: Asset[], registryAssets: Asset[]): As
   return hasNativeAsset ? existingAssets : [nativeAsset, ...existingAssets];
 }
 
+// A stored network gains the registry tokens it does not list yet; an entry it already has for a mint is kept.
+// Mints are case-sensitive base58, so they are compared exactly.
+function mergeRegistryTokenAssets(existingAssets: Asset[], registryAssets: Asset[]): Asset[] {
+  const missing = registryAssets.filter(
+    ({ id, isNative, isUtility }) => !isNative && !isUtility && !existingAssets.some((asset) => asset.id === id)
+  );
+
+  return missing.length ? [...existingAssets, ...missing] : existingAssets;
+}
+
 function findExistingNetworkKey(networkMap: UniversalWalletNetworkMap, registryNetwork: NetworkJson): string | undefined {
   return Object.entries(networkMap).find(([, network]) => {
     return (
@@ -189,6 +210,22 @@ function createNativeAsset({ chainId, ecosystem, nativeAsset }: UniversalWalletC
     staking: '',
     isUtility: true,
     isNative: true,
+    tonType: 'normal',
+  };
+}
+
+function createRegistryTokenAsset(mint: string, symbol: string, name: string, precision: number, priceId: string): Asset {
+  return {
+    id: mint,
+    type: WalletEcosystem.Solana as Asset['type'],
+    name,
+    symbol,
+    currencyId: mint,
+    precision,
+    priceId,
+    icon: `${SHARED_TOKEN_ICONS_URL}/${symbol}.svg`,
+    color: '',
+    staking: '',
     tonType: 'normal',
   };
 }

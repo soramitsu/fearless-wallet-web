@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type State from '@extension-base/background/handlers/State';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { SolanaWalletBalancesResponse } from '@extension-base/services/solana-indexer-service';
+import type { SolanaTokenBalance, SolanaWalletBalancesResponse } from '@extension-base/services/solana-indexer-service';
 import { findTransferAssetGroup } from '@/helpers/currencies';
 import { WalletEcosystem } from '@/interfaces';
 import { buildPortfolioSections, buildPortfolioSummary } from '@/portfolio/assetIdentity';
@@ -34,7 +34,8 @@ const loadedGroups = (ecosystem: WalletEcosystem, totals: Record<string, string>
   const groups = getMockAssets(networkMap, ecosystem);
   groups.forEach(({ balances }) =>
     balances.forEach((balance) => {
-      const total = totals[balance.name] ?? '0';
+      // The network's coin holds the amount; the registry tokens beside it (USDC and USDT on Solana) hold none.
+      const total = balance.isNative ? totals[balance.name] ?? '0' : '0';
       Object.assign(balance, { state: APIItemState.READY, total, transferable: total });
     })
   );
@@ -244,5 +245,86 @@ describe('one SOL row per network', () => {
         buildPortfolioSummary({ groups, networks, prices: COINGECKO_PRICES, addressForNetwork: () => ADDRESS }).total
       ).toBe('600');
     });
+  });
+});
+
+describe('registry tokens on Solana mainnet', () => {
+  const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+  // A mint the registry does not list.
+  const OTHER_MINT = 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263';
+  const tokenAccount = (mint: string, amount: string, uiAmountString: string): SolanaTokenBalance => ({
+    accountAddress: `${mint.slice(0, 8)}TokenAccount111111111111111111111`,
+    amount,
+    decimals: 6,
+    delegatedAmount: null,
+    isNative: false,
+    mint,
+    owner: WALLET,
+    program: 'spl-token',
+    programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    rentExemptReserve: null,
+    state: 'initialized',
+    type: 'token',
+    uiAmountString,
+  });
+
+  beforeEach(() => {
+    storageMock.get.mockReset().mockResolvedValue({ assetBalances: {}, networkScanStates: {} });
+    storageMock.set.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('names, prices and pictures USDC read from the network, and leaves another token under its mint', async () => {
+    const state = {
+      networkService: { activeNetworkByEcosystem: { solana: [networkMap.Solana] }, networkMap, networkValues: networks },
+      timeoutService: { lazyNext: (_key: string, callback: () => void) => callback() },
+    } as unknown as State;
+    const balanceService = new BalanceService(state);
+    Object.assign(state, { balanceService });
+    balanceService.balanceMap[ADDRESS] = getMockAssets(networkMap, WalletEcosystem.Solana);
+    const solana = new SolanaBalanceService(state, {
+      getBalances: async () => ({
+        native: { decimals: 9, lamports: '0', mint: 'SOL', type: 'native', uiAmountString: '0' },
+        syncedAt: 1,
+        tokens: [tokenAccount(USDC_MINT, '12500000', '12.5'), tokenAccount(OTHER_MINT, '3000000', '3')],
+        total: 3,
+        wallet: WALLET,
+      }),
+    });
+
+    await solana.fetchBalance({ address: ADDRESS, solanaAddress: WALLET, networks: ['solana'] });
+
+    const groups = balanceService.balanceMap[ADDRESS];
+    const section = buildPortfolioSections({
+      groups,
+      networks,
+      prices: { ...COINGECKO_PRICES, 'usd-coin': 1 },
+      preferences: {},
+      addressForNetwork: () => ADDRESS,
+    }).find(({ name }) => name === 'Solana')!;
+
+    // The registry placeholder carries the loaded balance: one USDC group, verified and priced.
+    expect(groups.filter(({ groupId }) => groupId === USDC_MINT)).toHaveLength(1);
+    expect(section.assets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          assetId: USDC_MINT,
+          balanceText: '12.5',
+          fiatValue: '12.5',
+          icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/USDC.svg',
+          name: 'USD Coin',
+          priceTrust: 'canonicalAsset',
+          symbol: 'USDC',
+          trust: 'verified',
+        }),
+      ])
+    );
+    expect(buildPortfolioSummary({ groups, networks, prices: { 'usd-coin': 1 }, addressForNetwork: () => ADDRESS })).toMatchObject({
+      total: '12.5',
+      unpricedCount: 0,
+    });
+    // A token the registry does not list still shows, named by its mint, without a price.
+    expect(section.detectedAssets).toEqual([
+      expect.objectContaining({ assetId: OTHER_MINT, fiatValue: null, name: OTHER_MINT, trust: 'unverified' }),
+    ]);
   });
 });

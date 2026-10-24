@@ -2,6 +2,7 @@ import { FPNumber } from '@sora-substrate/util';
 import type State from '@extension-base/background/handlers/State';
 import type { ReviewedExecutionApi } from '@/cross-chain/reviewedExecution';
 import type { ReviewedCrossChainExecution, ReviewedDestinationMinimum } from '@/cross-chain/reviewedRoutes';
+import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
 
 type Codec = {
   isEmpty?: boolean;
@@ -53,24 +54,7 @@ async function runtimeForChain(state: State, chainId: string): Promise<BridgeRun
 
   if (matches.length !== 1) throw new Error('cross_chain_network_unavailable');
 
-  const network = matches[0];
-  const networkKey = network.name.toLowerCase();
-  let api = state.getSubstrateApiMap[networkKey]?.api as unknown as BridgeRuntimeApi | undefined;
-
-  if (!api || api.isConnected === false) {
-    state.networkService.substrateApiHandler.initApi(network);
-    const deadline = Date.now() + 15_000;
-
-    while (Date.now() < deadline) {
-      api = state.getSubstrateApiMap[networkKey]?.api as unknown as BridgeRuntimeApi | undefined;
-      if (api && api.isConnected !== false) break;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-
-  if (!api || api.isConnected === false) throw new Error('cross_chain_runtime_unavailable');
-
-  return api;
+  return (await connectedSubstrateApi(state, matches[0])) as BridgeRuntimeApi;
 }
 
 function assertGenesis(api: BridgeRuntimeApi, expectedChainId: string): void {

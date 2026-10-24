@@ -1,12 +1,22 @@
+function graphqlString(value: string): string {
+  if (typeof value !== 'string' || value.length > 1024) throw new Error('invalid_history_query_value');
+  return JSON.stringify(value);
+}
+
+function historyPageSize(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 100) throw new Error('invalid_history_page_size');
+  return value;
+}
+
 export const computedSubqueryRequest = (cursor: string | null, pageSize: number, address: string): string =>
   `{
     historyElements(
-      after: ${cursor},
-      first: ${pageSize},
+      after: ${cursor === null ? 'null' : graphqlString(cursor)},
+      first: ${historyPageSize(pageSize)},
       orderBy: TIMESTAMP_DESC,
       filter: {
         address: {
-          equalTo: "${address}"
+          equalTo: ${graphqlString(address)}
         }
       }
     ) {
@@ -31,7 +41,7 @@ export const computedGiantSquidRequest = (address: string): string =>
       orderBy: id_DESC
       where: {
         account: {
-          id_eq: "${address}"
+          id_eq: ${graphqlString(address)}
         }
       }
     ) {
@@ -59,7 +69,7 @@ export const computedSubsquidRequest = (address: string): string =>
     historyElements(
       orderBy: timestamp_DESC
       where: {
-        address_eq: "${address}"
+        address_eq: ${graphqlString(address)}
       }
     ) {
       timestamp
@@ -95,7 +105,7 @@ export const computedSoraRequest = (address: string) =>
     historyElements(
       orderBy: timestamp_DESC
       where: {
-        address_eq: "${address}"
+        address_eq: ${graphqlString(address)}
       }
     ) {
       timestamp

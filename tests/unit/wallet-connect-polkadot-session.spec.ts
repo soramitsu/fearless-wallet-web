@@ -14,6 +14,7 @@ import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import type { SessionTypes, SignClientTypes } from '@walletconnect/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
@@ -44,7 +45,7 @@ beforeEach(async () => {
   const record = {
     address: alice.address,
     publicKey: decodeAddress(alice.address),
-    meta: { name: 'Public signing account' },
+    meta: { name: 'Public signing account', walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION },
   };
   sessions = {
     [topic]: {
@@ -85,6 +86,7 @@ beforeEach(async () => {
     walletConnectService: wc,
     networkService: { networkMap: {} },
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getAllAccounts: () => [record],
       getAddresses: () => [],
       getAddress: () => record,

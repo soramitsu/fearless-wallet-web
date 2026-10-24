@@ -177,7 +177,7 @@ export const actions: Actions = {
       : isBitcoinNetwork
         ? (address ?? BaseApi.formatAddress(wallet, networkName))
         : isIrohaNetwork
-          ? (address ?? wallet.irohaAddress)
+          ? (address ?? BaseApi.formatAddress(wallet, networkName))
           : BaseApi.formatAddress(wallet, networkName);
 
     if (!formattedAddress) return;

@@ -9,6 +9,7 @@ import Tabs from '@extension-base/background/handlers/Tabs';
 import { RequestService } from '@extension-base/services/request-service';
 import { AuthRequestHandler } from '@extension-base/services/request-service/handlers/AuthRequestHandler';
 import type { AuthUrls, DecryptForCosignerData, EncryptByCosignerData, Port } from '@extension-base/background/types/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const storage = vi.hoisted(() => ({ data: {} as AuthUrls }));
 vi.mock('@extension-base/stores/Authorize', () => ({
@@ -59,6 +60,7 @@ function createTabs() {
   const keyringService = {
     encodeAddress: (address: string) => encodeAddress(address, 42),
     getAllSubstrateAccounts: () => [{ address: SHARED }],
+    getAllAccounts: () => [{ address: SHARED, meta: { walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } }],
     decryptForCosigner: vi.fn(() => ({ result: 'decrypted' })),
     encryptByCosigner: vi.fn(() => ({ result: 'encrypted' })),
   };
@@ -93,6 +95,14 @@ describe('cosigner requests are limited to the accounts shared with the site', (
       const { tabs, keyringService } = createTabs();
 
       await expect(handle(tabs, NOT_SHARED)).rejects.toThrow(/not authorized/i);
+      expect(keyringService[method]).not.toHaveBeenCalled();
+    });
+
+    it(`${operation}: rejects a shared account that remains recovery-only`, async () => {
+      const { tabs, keyringService } = createTabs();
+      keyringService.getAllAccounts = () => [{ address: SHARED, meta: { walletSecurityGeneration: 0 } }];
+
+      await expect(handle(tabs, SHARED)).rejects.toThrow(/recovery-only/i);
       expect(keyringService[method]).not.toHaveBeenCalled();
     });
 

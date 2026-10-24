@@ -303,3 +303,60 @@ describe('SoraPricingService XOR source fallback', () => {
     ).resolves.toMatchObject({ tokenPriceChange: {}, tokenPriceMap: {} });
   });
 });
+
+describe('SORA pricing pagination trust boundary', () => {
+  beforeEach(() => axiosPost.mockReset());
+
+  function page(cursor?: string, more = true) {
+    const response = configuredPriceResponse([{ id: XOR_ASSET_ID, priceUSD: '4.25' }]);
+    Object.assign(response.data.data.data.pageInfo, { hasNextPage: more, endCursor: cursor });
+    return response;
+  }
+
+  it('keeps a hostile cursor out of the GraphQL document and preserves normal pagination', async () => {
+    const cursor = '") { injected: __typename } #\\\n';
+    axiosPost.mockResolvedValueOnce(page(cursor)).mockResolvedValueOnce(page(undefined, false));
+    const result = await new SoraPricingService(createState()).fetchSQSora(CONFIGURED_PRICING_URL);
+    expect(result).toHaveLength(2);
+    const first = axiosPost.mock.calls[0]![1] as { query: string };
+    const second = axiosPost.mock.calls[1]![1] as { query: string; variables: unknown };
+    expect(second.query).toBe(first.query);
+    expect(second.query).not.toContain('injected');
+    expect(second.variables).toEqual({ after: cursor, first: 100 });
+    expect(axiosPost.mock.calls[0]![2]).toMatchObject({
+      adapter: 'fetch', fetchOptions: { redirect: 'error', credentials: 'omit' },
+    });
+  });
+
+  it('stops cyclic cursors without publishing a partial price snapshot', async () => {
+    axiosPost.mockResolvedValue(page('repeat'));
+    await expect(new SoraPricingService(createState()).fetchSQSora(CONFIGURED_PRICING_URL)).resolves.toEqual([]);
+    expect(axiosPost).toHaveBeenCalledTimes(2);
+  });
+
+  it('caps distinct pages as well as cycles', async () => {
+    let index = 0;
+    axiosPost.mockImplementation(async () => page(String(++index)) as never);
+    await expect(new SoraPricingService(createState()).fetchSQSora(CONFIGURED_PRICING_URL)).resolves.toEqual([]);
+    expect(axiosPost).toHaveBeenCalledTimes(20);
+  });
+
+  it.each([undefined, '', 'a'.repeat(1025)])('rejects missing or excessive continuation cursors', async (cursor) => {
+    axiosPost.mockResolvedValue(page(cursor));
+    await expect(new SoraPricingService(createState()).fetchSQSora(CONFIGURED_PRICING_URL)).resolves.toEqual([]);
+    expect(axiosPost).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['http://pricing.example/graphql', 'https://user:pass@pricing.example/graphql', 'https://pricing.example/#fragment'])(
+    'rejects an unsafe configured endpoint before requesting it: %s', async (url) => {
+      await expect(new SoraPricingService(createState()).fetchSQSora(url)).resolves.toEqual([]);
+      expect(axiosPost).not.toHaveBeenCalled();
+    }
+  );
+
+  it('rejects oversized pages', async () => {
+    const response = configuredPriceResponse(Array.from({ length: 101 }, () => ({ id: XOR_ASSET_ID, priceUSD: '4.25' })));
+    axiosPost.mockResolvedValue(response);
+    await expect(new SoraPricingService(createState()).fetchSQSora(CONFIGURED_PRICING_URL)).resolves.toEqual([]);
+  });
+});

@@ -7,6 +7,7 @@ import {
 } from '@extension-base/services/solana-indexer-service';
 import { BitcoinEsploraClient, type BitcoinEsploraTransaction } from '@extension-base/services/bitcoin-indexer-service';
 import { IrohaToriiWalletClient } from '@extension-base/services/iroha-torii-service';
+import { dataApiRequestConfig, getEthereumExplorerApiKey, oklinkApiHeaders } from './dataApiPolicy';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -21,7 +22,6 @@ import type {
 } from '@/interfaces';
 import { isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
 import BaseApi from '@/util/BaseApi';
-import { getEthereumExplorerApiKey } from '@/helpers/history';
 import { SEC1 } from '@/consts/time';
 import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { isIrohaI105Address } from '@/util/iroha';
@@ -72,7 +72,7 @@ async function fetchSubqueryHistory(
   cursor: string | null = null
 ): Promise<SubqueryHistory> {
   const res = await axios
-    .post(url, { query: computedSubqueryRequest(cursor, pageSize, address) })
+    .post(url, { query: computedSubqueryRequest(cursor, pageSize, address) }, dataApiRequestConfig(url))
     .catch((e) => console.info(e));
 
   if (res && res.data) return res.data?.historyElements;
@@ -83,7 +83,7 @@ async function fetchSubqueryHistory(
 async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {
   const {
     data: { data },
-  } = await axios.post(url, { query: computedGiantSquidRequest(address) }).catch(() => {
+  } = await axios.post(url, { query: computedGiantSquidRequest(address) }, dataApiRequestConfig(url)).catch(() => {
     return {
       data: { transfers: [] },
     };
@@ -95,7 +95,7 @@ async function fetchGiantsquidHistory(url: string, address: string): Promise<Gia
 async function fetchSubsquidHistory(url: string, address: string): Promise<HistoryElement[]> {
   const {
     data: { data },
-  } = await axios.post(url, { query: computedSubsquidRequest(address) }).catch(() => {
+  } = await axios.post(url, { query: computedSubsquidRequest(address) }, dataApiRequestConfig(url)).catch(() => {
     return {
       data: { historyElements: [], timestamp: Date.now() },
     };
@@ -123,6 +123,7 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
   }
 
   const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
+    ...dataApiRequestConfig(url),
     params,
     signal,
   });
@@ -155,9 +156,10 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
 }
 
 export async function fetchX1History(url: string, address: string): Promise<HistoryElement[]> {
-  const prepUrl = `${url}&address=${address}`;
-  const headers = { 'OK-ACCESS-KEY': process.env.VUE_APP_FL_WEB_X1_TESTNET_API_KEY };
-  const res = await axios.get<X1HistoryElement>(prepUrl, { headers });
+  const headers = oklinkApiHeaders(url);
+  const prepUrl = new URL(url);
+  prepUrl.searchParams.set('address', address);
+  const res = await axios.get<X1HistoryElement>(prepUrl.href, { ...dataApiRequestConfig(url), headers });
   const result: HistoryElement[] = [];
 
   res.data.data[0].transactionLists.forEach((el, index) => {
@@ -184,15 +186,14 @@ async function fetchSoraHistory(url: string, address: string) {
     data: { data },
   } = await axios.post<{ data: { historyElements: SoraHistoryElement[] } }>(url, {
     query: computedSoraRequest(address),
-  });
+  }, dataApiRequestConfig(url));
 
   return data?.historyElements;
 }
 
 async function fetchZetaHistory(url: string, address: string) {
-  const prepUrl = `${url}${address}/transactions`;
-  const headers = { 'OK-ACCESS-KEY': process.env.VUE_APP_FL_WEB_X1_TESTNET_API_KEY };
-  const res = await axios.get<ZetaHistory>(prepUrl, { headers });
+  const prepUrl = `${url}${encodeURIComponent(address)}/transactions`;
+  const res = await axios.get<ZetaHistory>(prepUrl, dataApiRequestConfig(url));
   const result: HistoryElement[] = [];
 
   res.data.items.forEach((el, index) => {

@@ -111,6 +111,7 @@ beforeEach(async () => {
       },
     },
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getAllAccounts: () => [record],
       getAddresses: () => [record],
       getAddress: () => record,

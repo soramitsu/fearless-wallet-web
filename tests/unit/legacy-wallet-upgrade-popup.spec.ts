@@ -21,7 +21,8 @@ vi.mock('@/consts/global', () => mocks.environment);
 import LegacyWalletUpgradeNotice from '@/screens/main/LegacyWalletUpgradeNotice.vue';
 import { WalletEcosystem } from '@/interfaces';
 
-const storageKey = 'fearless:legacy-wallet-upgrade-notice:v1';
+const storageKey = 'fearless:legacy-wallet-upgrade-notice:v2';
+const formerStorageKey = 'fearless:legacy-wallet-upgrade-notice:v1';
 const legacy = (address = 'legacy-address'): AccountJson => ({ address, name: 'Old wallet', ethereumAddress: '' });
 const wrappers: ReturnType<typeof mount>[] = [];
 const mountNotice = (locale = 'en-EN') => {
@@ -97,27 +98,31 @@ describe('legacy wallet upgrade popup', () => {
     expect(mountNotice().find('dialog').exists()).toBe(false);
   });
 
-  it.each(['later', 'close', 'escape'])('%s enters recovery mode but never permanently dismisses the security notice', async (method) => {
+  it.each(['later', 'close', 'escape'])('%s closes the dialog for good but keeps the recovery banner', async (method) => {
     mocks.accounts.accounts = [legacy('one'), legacy('two')];
     const wrapper = mountNotice();
     if (method === 'escape') await wrapper.get('dialog').trigger('cancel');
     else await wrapper.get(`.wallet-upgrade__${method}`).trigger('click');
     expect(wrapper.find('dialog').exists()).toBe(false);
-    expect(localStorage.getItem(storageKey)).toBeNull();
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(['one', 'two']);
     expect(wrapper.get('[role="status"]').text()).toContain('recovery-only');
     wrapper.unmount();
+    // Opening the extension again shows the banner without the dialog.
     mocks.accounts.accounts.reverse();
     const reopened = mountNotice();
-    expect(reopened.find('dialog').exists()).toBe(true);
-    await reopened.get('.wallet-upgrade__later').trigger('click');
+    expect(reopened.find('dialog').exists()).toBe(false);
+    expect(reopened.get('[role="status"]').text()).toContain('recovery-only');
+    // A key imported later still gets the dialog once.
     mocks.accounts.accounts.push(legacy('newly-imported'));
     await nextTick();
     expect(reopened.find('dialog').exists()).toBe(true);
+    await reopened.get('.wallet-upgrade__later').trigger('click');
+    expect(mountNotice().find('dialog').exists()).toBe(false);
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
   it('cannot be suppressed by the former optional notice acknowledgement', () => {
-    localStorage.setItem(storageKey, JSON.stringify(['legacy-address']));
+    localStorage.setItem(formerStorageKey, JSON.stringify(['legacy-address']));
     mocks.accounts.accounts = [legacy()];
     expect(mountNotice().find('dialog').exists()).toBe(true);
   });
@@ -127,6 +132,56 @@ describe('legacy wallet upgrade popup', () => {
     const wrapper = mountNotice();
     expect(wrapper.find('dialog').exists()).toBe(false);
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
+  });
+
+  it('shows no warning on a newly created wallet while older wallets remain stored', () => {
+    mocks.accounts.accounts = [legacy('old'), { ...legacy('fresh'), walletSecurityGeneration: 1 }];
+    mocks.accounts.selectedWallet.address = 'fresh';
+    const wrapper = mountNotice();
+    expect(wrapper.find('dialog').exists()).toBe(false);
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+  });
+
+  it('warns while an old wallet is viewed and stops on returning to a new wallet', async () => {
+    mocks.accounts.accounts = [legacy('old'), { ...legacy('fresh'), walletSecurityGeneration: 1 }];
+    mocks.accounts.selectedWallet.address = 'fresh';
+    const wrapper = mountNotice();
+    mocks.accounts.selectedWallet.address = 'old';
+    await nextTick();
+    expect(wrapper.get('dialog').attributes('open')).toBe('');
+    expect(wrapper.get('[role="status"]').text()).toContain('recovery-only');
+
+    mocks.accounts.selectedWallet.address = 'fresh';
+    await nextTick();
+    expect(wrapper.find('dialog').exists()).toBe(false);
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+  });
+
+  it('warns about a key imported while a newly created wallet was selected', async () => {
+    mocks.accounts.accounts = [{ ...legacy('fresh'), walletSecurityGeneration: 1 }];
+    mocks.accounts.selectedWallet.address = 'fresh';
+    const wrapper = mountNotice();
+    // The import becomes the selected wallet, and its key cannot be proven fresh.
+    mocks.accounts.accounts = [...mocks.accounts.accounts, legacy('imported')];
+    mocks.accounts.selectedWallet.address = 'imported';
+    await nextTick();
+    expect(wrapper.find('dialog').exists()).toBe(true);
+    expect(wrapper.get('[role="status"]').text()).toContain('recovery-only');
+  });
+
+  it('keeps a dismissal for this visit across switches between old and new wallets', async () => {
+    mocks.accounts.accounts = [legacy('old'), { ...legacy('fresh'), walletSecurityGeneration: 1 }];
+    mocks.accounts.selectedWallet.address = 'old';
+    const wrapper = mountNotice();
+    await wrapper.get('.wallet-upgrade__later').trigger('click');
+    mocks.accounts.selectedWallet.address = 'fresh';
+    await nextTick();
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+
+    mocks.accounts.selectedWallet.address = 'old';
+    await nextTick();
+    expect(wrapper.find('dialog').exists()).toBe(false);
+    expect(wrapper.get('[role="status"]').text()).toContain('recovery-only');
   });
 
   it('leaves a normal-use screen when the user switches from a fresh wallet to an old wallet', async () => {
@@ -157,6 +212,28 @@ describe('legacy wallet upgrade popup', () => {
     await wrapper.get('.wallet-recovery-banner button').trigger('click');
     expect(wrapper.find('dialog').exists()).toBe(true);
     expect(mocks.push).toHaveBeenCalledWith({ name: 'Wallet' });
+    await wrapper.get('.wallet-upgrade__close').trigger('click');
+    expect(wrapper.find('dialog').exists()).toBe(false);
+    expect(mountNotice().find('dialog').exists()).toBe(false);
+  });
+
+  it('stays closed when the portfolio is shown again in the same visit', async () => {
+    mocks.accounts.accounts = [legacy()];
+    const showing = ref(true);
+    const Host = defineComponent({
+      components: { LegacyWalletUpgradeNotice },
+      setup: () => ({ showing }),
+      template: '<KeepAlive><LegacyWalletUpgradeNotice v-if="showing" /></KeepAlive>',
+    });
+    const wrapper = mount(Host, { global: { plugins: [createI18n({ legacy: false, locale: 'en-EN' })] } });
+    wrappers.push(wrapper);
+    await wrapper.get('.wallet-upgrade__later').trigger('click');
+    showing.value = false;
+    await nextTick();
+    showing.value = true;
+    await nextTick();
+    expect(wrapper.find('dialog').exists()).toBe(false);
+    expect(wrapper.get('[role="status"]').text()).toContain('recovery-only');
   });
 
   it('opens the existing fresh-wallet flow without modifying the old accounts', async () => {
@@ -170,6 +247,7 @@ describe('legacy wallet upgrade popup', () => {
     });
     expect(wrapper.find('dialog').exists()).toBe(false);
     expect(JSON.stringify(mocks.accounts.accounts)).toBe(before);
+    expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(['legacy-address']);
   });
 
   it('keeps the recommendation if navigation is cancelled', async () => {

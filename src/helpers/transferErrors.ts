@@ -69,6 +69,8 @@ const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   cross_chain_runtime_minimum_unavailable: 'assets.crossChainRouteUnavailable',
   cross_chain_runtime_registration_drift: 'assets.crossChainRouteUnavailable',
   cross_chain_runtime_registration_missing: 'assets.crossChainRouteUnavailable',
+  cross_chain_runtime_not_reviewed: 'assets.crossChainRouteUnavailable',
+  cross_chain_runtime_call_index_mismatch: 'assets.crossChainRouteUnavailable',
   // An earlier send of this route may still be included; sending again could move the funds twice.
   cross_chain_previous_send_unresolved: 'assets.transactionStatusUnknown',
   cross_chain_send_in_progress: 'assets.transactionPending',

@@ -14,29 +14,48 @@ import {
   type ReviewedCrossChainExecution,
   type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
+import { REVIEWED_RUNTIMES } from '@/cross-chain/reviewedRuntimes';
 import { VALID_SUBSTRATE_ADDRESS } from '@/consts/networks';
 
-const runtimeMethod = (descriptor: ReviewedRuntimeCall) =>
-  Object.assign(
+const reviewedRuntime = (chainId: string) => {
+  const runtime = REVIEWED_RUNTIMES.find((candidate) => candidate.chainId === chainId);
+  if (!runtime) throw new Error(`No reviewed runtime for ${chainId}`);
+
+  return runtime;
+};
+
+/** The identity a node of a reviewed runtime reports. */
+const reviewedIdentity = (chainId: string) => ({
+  genesisHash: { toHex: () => `0x${chainId}` },
+  runtimeVersion: {
+    specName: { toString: () => reviewedRuntime(chainId).specName },
+    specVersion: { toString: () => String(reviewedRuntime(chainId).specVersions.max) },
+  },
+});
+
+const runtimeMethod = (descriptor: ReviewedRuntimeCall, chainId: string) => {
+  const reviewed = reviewedRuntime(chainId).calls.find(
+    ({ pallet, call }) => pallet === descriptor.pallet && call === descriptor.call
+  );
+
+  return Object.assign(
     vi.fn(() => ({ paymentInfo: vi.fn() })),
     {
+      callIndex: reviewed ? Uint8Array.from([reviewed.palletIndex, reviewed.callIndex]) : undefined,
       meta: {
         args: descriptor.args.map((name) => ({ name: { toString: () => name } })),
       },
     }
   );
+};
 
 const executionRuntime = (execution: Readonly<ReviewedCrossChainExecution>) => {
-  const method = runtimeMethod(execution.callCandidates[0]);
+  const method = runtimeMethod(execution.callCandidates[0], execution.originChainId);
   const descriptor = execution.callCandidates[0];
   const api = {
     createType: vi.fn((_type: string, value: unknown) => ({ toHex: () => `hex:${String(value)}` })),
-    genesisHash: { toHex: () => `0x${execution.originChainId}` },
     isReadyOrError: Promise.resolve(),
-    runtimeVersion: {
-      specName: { toString: () => 'reviewed-runtime' },
-      specVersion: { toString: () => '1' },
-    },
+    ...reviewedIdentity(execution.originChainId),
     tx: { [descriptor.pallet]: { [descriptor.call]: method } },
   } satisfies ReviewedExecutionApi;
 
@@ -111,13 +130,22 @@ const authorityState = (entries: Array<{ chainId: string; name: string; api: Bri
   }) as unknown as State;
 
 describe('reviewed cross-chain providers and runtime authority', () => {
-  it('matches every executable descriptor to the current audited metadata fixture', () => {
+  it('matches every executable descriptor and reviewed runtime to the live metadata fixture', () => {
     const fixture = JSON.parse(
       readFileSync(resolve(__dirname, '../fixtures/contracts/cross-chain-runtime-calls-v1.json'), 'utf8')
     ) as {
       runtimes: Array<{
         chainId: string;
-        calls: Array<{ pallet: string; call: string; args: string[]; status?: string }>;
+        specName: string;
+        specVersion: string;
+        calls: Array<{
+          pallet: string;
+          call: string;
+          palletIndex: number;
+          callIndex: number;
+          args: string[];
+          status?: string;
+        }>;
       }>;
     };
     const runtimes = new Map(fixture.runtimes.map((runtime) => [runtime.chainId, runtime]));
@@ -126,12 +154,31 @@ describe('reviewed cross-chain providers and runtime authority', () => {
     executions.forEach((execution) => {
       const runtime = runtimes.get(execution.originChainId);
       expect(runtime, execution.originChainId).toBeDefined();
+      const reviewed = reviewedRuntime(execution.originChainId);
       execution.callCandidates.forEach((candidate) => {
+        const pinned = reviewed.calls.find(({ pallet, call }) => pallet === candidate.pallet && call === candidate.call);
+        expect(pinned, `${candidate.pallet}.${candidate.call}`).toBeDefined();
         expect(runtime?.calls).toContainEqual({
           pallet: candidate.pallet,
           call: candidate.call,
+          palletIndex: pinned?.palletIndex,
+          callIndex: pinned?.callIndex,
           args: [...candidate.args],
         });
+      });
+    });
+
+    // Every pin describes what the live metadata showed: same chain, spec name, version and indices.
+    REVIEWED_RUNTIMES.forEach((reviewed) => {
+      const runtime = runtimes.get(reviewed.chainId);
+      expect(runtime, reviewed.name).toBeDefined();
+      expect(runtime?.specName).toBe(reviewed.specName);
+      expect(Number(runtime?.specVersion)).toBeGreaterThanOrEqual(reviewed.specVersions.min);
+      expect(Number(runtime?.specVersion)).toBeLessThanOrEqual(reviewed.specVersions.max);
+      reviewed.calls.forEach(({ pallet, call, palletIndex, callIndex }) => {
+        const live = runtime?.calls.find((candidate) => candidate.pallet === pallet && candidate.call === call);
+        expect(live, `${reviewed.name} ${pallet}.${call}`).toMatchObject({ palletIndex, callIndex });
+        expect(live?.status).toBeUndefined();
       });
     });
 
@@ -154,8 +201,9 @@ describe('reviewed cross-chain providers and runtime authority', () => {
   it('negotiates only an exact allowlisted pallet, call, and metadata argument signature', () => {
     const execution = bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3');
     const current = execution.callCandidates[0];
-    const currentMethod = runtimeMethod(current);
+    const currentMethod = runtimeMethod(current, execution.originChainId);
     const driftedFallback = Object.assign(vi.fn(), {
+      callIndex: currentMethod.callIndex,
       meta: {
         args: [...current.args.slice(0, -1), 'injectedWeight'].map((name) => ({
           name: { toString: () => name },
@@ -165,6 +213,7 @@ describe('reviewed cross-chain providers and runtime authority', () => {
     const api = {
       createType: vi.fn(),
       isReadyOrError: Promise.resolve(),
+      ...reviewedIdentity(execution.originChainId),
       tx: {
         [current.pallet]: { [current.call]: currentMethod },
         polkadotXcm: { [current.call]: driftedFallback },
@@ -175,6 +224,38 @@ describe('reviewed cross-chain providers and runtime authority', () => {
 
     api.tx[current.pallet][current.call] = driftedFallback;
     expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_execution_drift');
+  });
+
+  it('refuses a runtime outside the reviewed versions or with the call at another index', () => {
+    const execution = bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3');
+    const reviewed = reviewedRuntime(execution.originChainId);
+    const { api, method } = executionRuntime(execution);
+
+    expect(() => resolveReviewedRuntimeCall(execution, api)).not.toThrow();
+
+    // A runtime upgrade keeps the argument names but is not reviewed yet.
+    const upgraded = { ...api, runtimeVersion: { ...api.runtimeVersion, specVersion: { toString: () => String(reviewed.specVersions.max + 1) } } };
+    expect(() => resolveReviewedRuntimeCall(execution, upgraded)).toThrow('cross_chain_runtime_not_reviewed');
+
+    const renamed = { ...api, runtimeVersion: { ...api.runtimeVersion, specName: { toString: () => 'westend' } } };
+    expect(() => resolveReviewedRuntimeCall(execution, renamed)).toThrow('cross_chain_runtime_not_reviewed');
+
+    const otherChain = { ...api, genesisHash: { toHex: () => `0x${'11'.repeat(32)}` } };
+    expect(() => resolveReviewedRuntimeCall(execution, otherChain)).toThrow('cross_chain_runtime_genesis_mismatch');
+
+    // Metadata from the node puts another call at the reviewed name.
+    method.callIndex = Uint8Array.from([reviewed.calls[0].palletIndex, reviewed.calls[0].callIndex - 1]);
+    expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_call_index_mismatch');
+
+    method.callIndex = undefined;
+    expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_call_index_mismatch');
+  });
+
+  it('has no reviewed runtime for a chain outside the bundle', () => {
+    const execution = { ...bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3'), originChainId: 'ab'.repeat(32) };
+    const { api } = executionRuntime(bundledExecution(({ kind }) => kind === 'relay-native-xcm-v3'));
+
+    expect(() => resolveReviewedRuntimeCall(execution, api)).toThrow('cross_chain_runtime_not_reviewed');
   });
 
   it('constructs SORA and Liberland burns only from their reviewed descriptors', async () => {

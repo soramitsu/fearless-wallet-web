@@ -7,9 +7,12 @@ import type {
   ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
 import { assertReviewedRecipient } from '@/cross-chain/recipient';
+import { assertReviewedCallIndex, assertReviewedRuntimeVersion } from '@/cross-chain/reviewedRuntimes';
 
 type RuntimeMethod = ((...args: unknown[]) => Extrinsic) & {
   meta?: { args?: Array<{ name: { toString(): string } }> };
+  /** [pallet index, call index] from the runtime metadata. */
+  callIndex?: ArrayLike<number>;
 };
 
 export type ReviewedExecutionApi = {
@@ -186,10 +189,17 @@ function metadataArgs(method: RuntimeMethod): string[] {
   return method.meta?.args?.map(({ name }) => name.toString()) ?? [];
 }
 
+/**
+ * Finds the reviewed call on the connected runtime. The runtime must be a reviewed spec version of the origin chain and
+ * the call must keep its reviewed argument names and pallet and call indices; anything else fails closed, with no
+ * fallback to another call.
+ */
 export function resolveReviewedRuntimeCall(
   execution: Readonly<ReviewedCrossChainExecution>,
   api: ReviewedExecutionApi
 ): { descriptor: ReviewedRuntimeCall; method: RuntimeMethod } {
+  const runtime = assertReviewedRuntimeVersion(execution.originChainId, api);
+
   for (const descriptor of execution.callCandidates) {
     const method = api.tx[descriptor.pallet]?.[descriptor.call];
 
@@ -202,6 +212,8 @@ export function resolveReviewedRuntimeCall(
     ) {
       continue;
     }
+
+    assertReviewedCallIndex(runtime, descriptor, (method as RuntimeMethod).callIndex);
 
     return { descriptor, method: method as RuntimeMethod };
   }

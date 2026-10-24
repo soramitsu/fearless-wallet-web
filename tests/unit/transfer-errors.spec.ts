@@ -28,6 +28,11 @@ describe('transfer error locale mapping', () => {
     expect(getTransferErrorLocaleKey('cross_chain_send_in_progress')).toBe('assets.transactionPending');
   });
 
+  it('explains a route refused because its runtime is not a reviewed one', () => {
+    expect(getTransferErrorLocaleKey('cross_chain_runtime_not_reviewed')).toBe('assets.crossChainRouteUnavailable');
+    expect(getTransferErrorLocaleKey('cross_chain_runtime_call_index_mismatch')).toBe('assets.crossChainRouteUnavailable');
+  });
+
   it('falls back to the generic fee error for unknown or missing transfer errors', () => {
     expect(getTransferErrorLocaleKey(undefined)).toBe('estimateFeeError');
     expect(getTransferErrorLocaleKey('invalid_iroha_amount')).toBe('estimateFeeError');

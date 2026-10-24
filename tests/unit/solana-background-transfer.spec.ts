@@ -347,6 +347,7 @@ describe('background Solana transfer adapter', () => {
       'https://node.solana.example',
       'https://api.mainnet-beta.solana.com',
       'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
       'https://solana.drpc.org',
     ]);
     expect(getSolanaRpcUrls(devnet)).toEqual(['https://node.solana.example', 'https://api.devnet.solana.com']);
@@ -371,6 +372,7 @@ describe('background Solana transfer adapter', () => {
       'https://node.solana.example',
       'https://api.mainnet-beta.solana.com',
       'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
       'https://solana.drpc.org',
     ]);
     expect(getSolanaRpcUrl(stored)).toBe(chosen);
@@ -388,6 +390,7 @@ describe('background Solana transfer adapter', () => {
       'https://node.solana.example',
       'https://api.mainnet-beta.solana.com',
       'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
       'https://solana.drpc.org',
     ]);
     // A registry node the user picked is listed, so it is still tried first.
@@ -409,6 +412,7 @@ describe('background Solana transfer adapter', () => {
       'http://localhost:8899',
       'https://api.mainnet-beta.solana.com',
       'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
       'https://solana.drpc.org',
     ]);
   });

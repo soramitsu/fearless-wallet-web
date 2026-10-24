@@ -46,6 +46,7 @@
         "api.mainnet-beta.solana.com",
         "api.devnet.solana.com",
         "solana-rpc.publicnode.com",
+        "public.rpc.solanavibestation.com",
         "solana.drpc.org",
         "solscan.io"
       ]

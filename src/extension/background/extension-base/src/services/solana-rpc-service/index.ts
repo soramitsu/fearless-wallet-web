@@ -1,5 +1,5 @@
 import { base58Encode } from '@polkadot/util-crypto';
-import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/solanaRpc';
 import {
   EndpointFailover,
   isRetryableHttpStatus,

@@ -24,7 +24,7 @@ import {
 } from './pendingSends';
 import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
-import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/solanaRpc';
 import { isSameString } from '@/helpers';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
 import { deriveSolanaAccount } from '@/util/solanaKeyring';

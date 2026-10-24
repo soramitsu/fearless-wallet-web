@@ -18,15 +18,15 @@
     "chunks/background-vendor/lodash.merge-CNVuAApE.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "f6969219663e2268a4603f11d9ef2530ed153dd07f706678b0eba9631246437e",
+  "warningSetSha256": "f4b29781ddd85a29c85b7c9e08a1404aeea1ba2efe4066c862d8e9d56e0f75d1",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "26f902f5d07a09c08c8cbe72869b648d456ab7de3b0626a4376201f404862172"
+      "sha256": "9a03fccdfd5c42fd9abc2b8c7ece958cc8f29e9837e7b1af5b5a5d82f089b7fc"
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "ad349d0b18e169bf99084c66195aa2b3ee312ff1a73d7b6daf979a6ed0d80bd4"
+      "sha256": "a1d98a8e05a192be3c30ee825dc9601227946ed585f34b9971ac9337fa987ece"
     },
     {
       "file": "chunks/background-vendor/assert-B9II5MFb.js",
@@ -54,7 +54,7 @@
     },
     {
       "file": "chunks/soramitsuUI.js",
-      "sha256": "17df7435937b956ed862c2c69dc7e45030cfda159569575535258a598aad44c2"
+      "sha256": "bf5840efd86694cd425c1694dc456cf1eb476586deb1ae56e74b4f988eeb3039"
     }
   ]
 }

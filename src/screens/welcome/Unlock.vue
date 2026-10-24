@@ -30,6 +30,7 @@
 
     <div class="pass-block">
       <ValidatedInput
+        v-if="!unlockNotice"
         size="big"
         placeholder="common.password"
         errorDescriptions="common.invalidPassword"
@@ -42,6 +43,7 @@
       />
 
       <FButton
+        v-if="!unlockNotice"
         class="unlock-btn"
         text="welcome.unlock"
         size="big"
@@ -50,10 +52,14 @@
         @click="unlock"
       />
 
-      <p class="unlock-error" role="alert" aria-live="polite" aria-atomic="true">{{ unlockFailed ? t('accountAccess.unlockFailed') : '' }}</p>
+      <div v-if="unlockNotice" class="unlock-notice" role="alert" aria-live="polite">
+        <p>{{ t(unlockNotice) }}</p>
+        <FButton text="common.continue" :loading="isUnlocking" @click="continueUnlocked" />
+      </div>
+      <p v-else class="unlock-error" role="alert" aria-live="polite" aria-atomic="true">{{ unlockFailed ? t('accountAccess.unlockFailed') : '' }}</p>
       <RecoveryDataLink />
 
-      <div class="bottom">
+      <div v-if="!unlockNotice" class="bottom">
         <button type="button" class="pink" data-testid="forgotPassword" :disabled="isUnlocking" @click="toggleResetPopup">
           {{ t('welcome.forgotYourPassword') }}
         </button>
@@ -92,6 +98,7 @@ const isError = ref(false);
 const showResetPopup = ref(false);
 const isUnlocking = ref(false);
 const unlockFailed = ref(false);
+const unlockNotice = ref('');
 let disposed = false;
 const isPopup = ref(IS_POPUP);
 const { t } = useI18n();
@@ -102,7 +109,7 @@ onBeforeUnmount(() => { disposed = true; password.value = ''; });
 const changeSyncedPassword = (pass: string) => (password.value = pass);
 
 const unlock = async () => {
-  if (isUnlocking.value || disposed) return;
+  if (isUnlocking.value || disposed || unlockNotice.value) return;
   isUnlocking.value = true;
   isError.value = false;
   unlockFailed.value = false;
@@ -110,7 +117,10 @@ const unlock = async () => {
   try {
     const isUnlock = await unlockExtension({ password: password.value });
     if (disposed) return;
-    if (isUnlock) {
+    if (isUnlock === 'ton-recovery-required' || isUnlock === 'ton-storage-unavailable') {
+      unlockNotice.value = isUnlock === 'ton-recovery-required' ? 'welcome.tonRecoveryRequired' : 'welcome.tonStorageUnavailable';
+      password.value = '';
+    } else if (isUnlock) {
       await router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet });
     } else {
       isError.value = true;
@@ -121,6 +131,13 @@ const unlock = async () => {
   } finally {
     isUnlocking.value = false;
   }
+};
+
+const continueUnlocked = async () => {
+  if (isUnlocking.value || disposed || !unlockNotice.value) return;
+  isUnlocking.value = true;
+  try { await router.push(resolveUnlockRedirect(route.query.redirect) ?? { name: Components.Wallet }); }
+  finally { isUnlocking.value = false; }
 };
 
 const openFullScreen = () => {
@@ -169,6 +186,13 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     .unlock-btn {
       margin: 16px 0;
     }
+  }
+
+  .unlock-notice {
+    margin: 16px 0;
+    color: var(--fw-text-1);
+    overflow-wrap: anywhere;
+    p { margin: 0 0 16px; }
   }
 
   .unlock-error {

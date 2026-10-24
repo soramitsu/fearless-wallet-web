@@ -140,6 +140,9 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mocks.push, replace: mocks.replace, back: mocks.back, go: mocks.go }),
 }));
 vi.mock('@/router/helpers', () => ({ updateTitle: vi.fn() }));
+// This flow starts after the separate exposure notice has been acknowledged and account hydration completed.
+vi.mock('@/extension/messaging/legacy-exposure', () => ({ getLegacyExposureStatus: async () => ({ state: 'acknowledged' }) }));
+vi.mock('@/bootstrap/accountsReady', () => ({ initialAccountsReady: Promise.resolve() }));
 vi.mock('@/router/routes', () => ({
   default: [],
   Components: Object.fromEntries(
@@ -375,10 +378,11 @@ describe('upgrading a 2.6.3 wallet with one forgotten account password', SCRYPT_
     expect(mocks.notify).not.toHaveBeenCalled();
     wrapper.unmount();
 
-    // The wallet opens, and so does everything behind it.
-    for (const name of ['Wallet', 'SendForm', 'ReceiveForm', 'Settings', 'AccountAccessRecovery']) {
+    // Recovery actions and account repair remain available after the prompt is deferred.
+    for (const name of ['Wallet', 'SendForm', 'Settings', 'AccountAccessRecovery']) {
       expect(await navigate(name), name).toEqual([]);
     }
+    expect(await navigate('ReceiveForm')).toEqual([{ name: 'Wallet', query: { security: 'recovery-only' } }]);
 
     // The remembered account now opens with the master password and signs with the key 2.6.3 created.
     expect(mocks.service.unlockPair(savings.address)).toBe(true);

@@ -2515,7 +2515,9 @@ export default class Extension extends FWExtensionBase {
 
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
 
-    return isSuccess;
+    return isSuccess && this.state.keyringService.tonKeyring.hasStorageIssues
+      ? 'ton-storage-unavailable'
+      : isSuccess;
   }
 
   async handle<TMessageType extends MessageTypes>(

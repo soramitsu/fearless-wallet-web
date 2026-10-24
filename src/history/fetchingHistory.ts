@@ -327,7 +327,7 @@ async function fetchBitcoinHistory(
     return [];
   if (normalizedAddresses.length > 2_000) throw new Error('too_many_bitcoin_history_addresses');
 
-  const client = new BitcoinEsploraClient({ baseUrl: url, network });
+  const client = new BitcoinEsploraClient({ baseUrl: url, network, failover: { rounds: 3 } });
   const transactionPages = await fetchBitcoinAddressTransactionPages(client, normalizedAddresses);
   // Unconfirmed transactions have no block time yet but are the newest, so they lead the list.
   const sortTime = (transaction: BitcoinEsploraTransaction) => transaction.status.block_time ?? Number.MAX_SAFE_INTEGER;
@@ -753,9 +753,9 @@ export async function fetchHistory(
     if (type === 'solana') return await retryTransientHistory(() => fetchSolanaHistory(url, address, assetId, isUtility));
 
     if (type === 'bitcoin') {
-      return await retryTransientHistory(() =>
-        fetchBitcoinHistory(url, bitcoinAddresses?.length ? bitcoinAddresses : [address], networkName, assetId, isUtility)
-      );
+      // The Esplora client owns bounded retries, including Retry-After. Wrapping it
+      // in the generic history retry loop would multiply requests on an outage.
+      return await fetchBitcoinHistory(url, bitcoinAddresses?.length ? bitcoinAddresses : [address], networkName, assetId, isUtility);
     }
 
     if (type === 'iroha') {

@@ -12,6 +12,7 @@ import type { AccountJson } from '@extension-base/background/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import { signingReview } from '@/screens/extension-ui/signing/review';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const mocks = vi.hoisted(() => ({ denied: vi.fn() }));
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: mocks.denied }));
@@ -69,7 +70,8 @@ beforeEach(() => {
       networkMap: { public: { name: 'Public chain', genesisHash, ecosystem: 'substrate', disabled: false } },
     },
     keyringService: {
-      getAllAccounts: () => [{ address: pair.address, publicKey: pair.addressRaw, meta: {} }],
+      tonKeyring: { getAccounts: () => [] },
+      getAllAccounts: () => [{ address: pair.address, publicKey: pair.addressRaw, meta: { walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } }],
       getPair: vi.fn(() => pair),
     },
   } as unknown as State;

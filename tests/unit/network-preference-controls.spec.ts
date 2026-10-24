@@ -8,7 +8,7 @@ type Controls = { openNotificationPopup(): void; selectedNodeUrl: string; toggle
 const io = vi.hoisted(() => ({ save: vi.fn(), favorite: vi.fn(), notify: vi.fn(), networks: {} as Record<string, NetworkJson>, accounts: {} as Accounts }));
 vi.mock('@/extension/messaging', () => ({ upsertNetworkMap: io.save }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ getNetwork: (name: string) => io.networks[name],
-  get networks() { return Object.values(io.networks); }, toggleFavoriteNetwork: io.favorite }) }));
+  get networks() { return Object.values(io.networks); }, get selectableNetworks() { return Object.values(io.networks); }, toggleFavoriteNetwork: io.favorite }) }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => io.accounts }));
 vi.mock('@/util/BaseApi', () => ({ default: { formatAddress: () => '', isEthereumNetwork: () => false } }));
 vi.mock('@extension-base/background/handlers/utils', () => ({ isNativeEVMNetwork: () => false }));

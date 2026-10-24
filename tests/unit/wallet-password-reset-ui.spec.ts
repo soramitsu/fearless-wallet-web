@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ changePassword: vi.fn(), reset: vi.fn(), push: vi.fn(), notify: vi.fn() }));
 vi.mock('@/extension/messaging', () => ({
   extensionChangePassword: mocks.changePassword, resetWallet: mocks.reset,
+  getMigrationAccounts: vi.fn().mockResolvedValue([]), getAccessStatus: vi.fn().mockResolvedValue({ issues: [] }),
   hasMasterPassword: vi.fn().mockResolvedValue(true), hasAccounts: vi.fn().mockResolvedValue(true),
   isNeedMigration: vi.fn().mockResolvedValue(false), unlockExtension: vi.fn().mockResolvedValue(true), initGoogleAuth: vi.fn(),
 }));
@@ -22,7 +23,7 @@ const global = {
     ValidatedInput: true, PasswordForm: true, FInput: true, Icon: true,
   },
 };
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => { vi.clearAllMocks(); mocks.changePassword.mockReset(); mocks.reset.mockReset(); });
 
 describe('wallet password and reset commit acknowledgements', () => {
   it.each(['false', 'rejection'])('keeps password form open on %s and permits retry', async (failure) => {
@@ -36,7 +37,7 @@ describe('wallet password and reset commit acknowledgements', () => {
     await flushPromises();
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toBe('welcome.passwordChangeFailed');
+    expect(wrapper.get('[role="alert"]').text()).toBe('welcome.changePasswordFailed');
     expect(mocks.notify).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined();
@@ -52,11 +53,12 @@ describe('wallet password and reset commit acknowledgements', () => {
     else mocks.reset.mockRejectedValueOnce(new Error('Storage unavailable'));
     mocks.reset.mockResolvedValueOnce(true);
     const wrapper = shallowMount(ResetWallet, { global });
+    await flushPromises();
     wrapper.findComponent({ name: 'FInput' }).vm.$emit('change', 'Reset wallet');
     await flushPromises();
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toBe('welcome.walletResetFailed');
+    expect(wrapper.get('[role="alert"]').text()).toBe('welcome.resetFailed');
     expect(mocks.push).not.toHaveBeenCalled();
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined();
     await wrapper.get('button').trigger('click');
@@ -69,6 +71,7 @@ describe('wallet password and reset commit acknowledgements', () => {
     let resolve!: (result: boolean) => void;
     mocks.reset.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
     const wrapper = shallowMount(ResetWallet, { global });
+    await flushPromises();
     wrapper.findComponent({ name: 'FInput' }).vm.$emit('change', 'Reset wallet');
     await flushPromises();
     await wrapper.get('button').trigger('click');

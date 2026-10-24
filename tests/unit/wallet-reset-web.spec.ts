@@ -24,6 +24,7 @@ import { TonKeyringService } from '@extension-base/services/keyring-service/TonK
 import { accountStoreKey } from '@extension-base/services/keyring-service/DeletedWallets';
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
+import * as WebDatabase from '@extension-base/stores/WebDatabase';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import Extension from '@extension-base/background/handlers/Extension';
@@ -136,7 +137,9 @@ beforeEach(async () => {
     }
     return null;
   });
-  vi.spyOn(BaseWebStore.prototype, 'openDatabase').mockResolvedValue(database());
+  const db = database();
+  vi.spyOn(BaseWebStore.prototype, 'openDatabase').mockResolvedValue(db);
+  vi.spyOn(WebDatabase, 'openWebDatabase').mockResolvedValue(db);
   const ready = track(KeyringStoreWeb.initialize());
   await drain();
   expect(await ready).toHaveProperty('value');
@@ -178,7 +181,7 @@ describe('web reset with one IndexedDB password/account commit', { timeout: 60_0
     const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const loaded = track(service.tonKeyring.loadAll());
     await drain();
-    expect(await loaded).toHaveProperty('value');
+    expect(await loaded).toEqual({ value: undefined });
     expect(service.tonKeyring.getAccounts().map(account => account.address)).toEqual([address]);
     expect(report).toHaveBeenCalledExactlyOnceWith('Stored TON account could not be loaded; recovery data is retained.', 'public-malformed');
     expect(fixture.data).toEqual(before);

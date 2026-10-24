@@ -13,6 +13,9 @@ vi.mock('@extension-base/background/handlers', () => ({ state: {} }));
 
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class {
+    getAndWait(): Promise<AuthUrls> {
+      return Promise.resolve(structuredClone(storeState.authUrls));
+    }
     get(_key: string, update: (value: AuthUrls) => void): void {
       update(storeState.authUrls);
     }

@@ -55,7 +55,7 @@ describe('signing boundary', () => {
 
     await run();
 
-    expect(order).toEqual(['nonce', 'guard', 'sign']);
+    expect(order).toEqual(['guard', 'nonce', 'guard', 'sign', 'guard']);
     expect(extrinsic.signAsync).toHaveBeenCalledWith(ADDRESS, { signer: expect.anything(), nonce: 7 });
   });
 

@@ -53,11 +53,13 @@ describe('Adding a custom node', () => {
     expect(hasError('wss://api.example', etherscan)).toBe(true);
   });
 
-  it('saves a new Solana node and selects it', () => {
+  it('saves a new Solana node and selects it', async () => {
     const emit = vi.fn();
     const networkJson = { customNodes: [{ name: 'OLD', url: 'https://old.example/rpc' }], ecosystem: 'solana', key: 'Solana' };
     const form: Record<string, unknown> = {
       $emit: emit,
+      viewActive: true,
+      openedPreferences: networkJson,
       name: 'KEYED',
       networkJson,
       nodeName: '',
@@ -66,7 +68,7 @@ describe('Adding a custom node', () => {
       urlLength: 52,
     };
 
-    component.methods.updateNodes.call(form);
+    await component.methods.updateNodes.call(form);
 
     expect(upsertNetworkMap).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -75,7 +77,8 @@ describe('Adding a custom node', () => {
           { name: 'OLD', url: 'https://old.example/rpc' },
           { name: 'KEYED', url: 'https://mainnet.helius-rpc.com/?api-key=0123456789' },
         ],
-      })
+      }),
+      networkJson
     );
     expect(emit).toHaveBeenCalledWith('closeForm', true);
   });

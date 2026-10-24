@@ -402,7 +402,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
     }
 
     i {
-      color: #fff;
+      color: $plain-white;
     }
   }
 

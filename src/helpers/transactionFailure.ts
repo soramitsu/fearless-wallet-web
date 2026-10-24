@@ -28,6 +28,13 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
   ['cross_chain_send_in_progress', 'assets.transactionPending'],
+  // Nothing was sent; the quote must be confirmed again.
+  ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_token_required', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_token_unknown', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_expired', 'assets.transferFeeApprovalRequired'],
+  ['cross_chain_quote_mismatch', 'assets.transferFeeApprovalRequired'],
 ]);
 
 // The network may already have these transfers: they can still go through, so the
@@ -144,6 +151,24 @@ function getTransactionOutcome(value: unknown): TransactionOutcome {
     : 'failed';
 }
 
+// The hash of an extrinsic whose outcome is unknown: it may still be included, so it is neither sent nor failed.
+function getUnknownTransactionHash(value: unknown): string | null {
+  const response = asResponse(value);
+  if (!response) return null;
+
+  const status = ownDataProperty(response, 'status');
+  const outcome = ownDataProperty(response, 'outcome');
+  const hash = ownDataProperty(response, 'transactionHash');
+
+  if (
+    status.kind !== 'value' || status.value !== false ||
+    outcome.kind !== 'value' || outcome.value !== 'unknown' ||
+    hash.kind !== 'value' || typeof hash.value !== 'string' || !/^[0-9a-f]{64}$/iu.test(hash.value)
+  ) return null;
+
+  return hash.value.toLowerCase();
+}
+
 // The hash of an extrinsic whose outcome the background settled, failed at dispatch or included.
 function getSettledTransactionHash(value: unknown): string | null {
   const response = asResponse(value);
@@ -211,6 +236,7 @@ export {
   getSettledTransactionHash,
   getTransactionFailurePresentation,
   getTransactionOutcome,
+  getUnknownTransactionHash,
   isAccountAccessFailure,
   transactionResponseSucceeded,
 };

@@ -23,6 +23,11 @@ describe('transfer error locale mapping', () => {
     expect(getAccountAccessErrorLocaleKey(undefined)).toBeUndefined();
   });
 
+  it('keeps a route whose earlier send is unresolved or still running from being offered', () => {
+    expect(getTransferErrorLocaleKey('cross_chain_previous_send_unresolved')).toBe('assets.transactionStatusUnknown');
+    expect(getTransferErrorLocaleKey('cross_chain_send_in_progress')).toBe('assets.transactionPending');
+  });
+
   it('falls back to the generic fee error for unknown or missing transfer errors', () => {
     expect(getTransferErrorLocaleKey(undefined)).toBe('estimateFeeError');
     expect(getTransferErrorLocaleKey('invalid_iroha_amount')).toBe('estimateFeeError');

@@ -1,12 +1,55 @@
 import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
 import {
+  getSettledTransactionHash,
   getTransactionFailurePresentation,
   getTransactionOutcome,
+  getUnknownTransactionHash,
   isAccountAccessFailure,
   transactionResponseSucceeded,
 } from '@/helpers/transactionFailure';
 
 describe('transaction failure presentation', () => {
+  it('exposes the hash of a settled extrinsic only from a typed response', () => {
+    const hash = 'cd'.repeat(32);
+
+    expect(getSettledTransactionHash({ status: true, transactionHash: hash.toUpperCase() })).toBe(hash);
+    expect(getSettledTransactionHash({ status: false, transactionHash: hash, errors: [] })).toBe(hash);
+    expect(getSettledTransactionHash({ status: false, outcome: 'unknown', transactionHash: hash })).toBeNull();
+    expect(getSettledTransactionHash({ status: true, transactionHash: `0x${hash}` })).toBeNull();
+    expect(getSettledTransactionHash({ transactionHash: hash })).toBeNull();
+    expect(getSettledTransactionHash(Object.create({ status: true, transactionHash: hash }))).toBeNull();
+  });
+
+  it.each([
+    ['cross_chain_send_in_progress', 'assets.transactionPending'],
+    ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
+    ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
+    ['cross_chain_quote_token_required', 'assets.transferFeeApprovalRequired'],
+    ['cross_chain_quote_token_unknown', 'assets.transferFeeApprovalRequired'],
+    ['cross_chain_quote_expired', 'assets.transferFeeApprovalRequired'],
+    ['cross_chain_quote_mismatch', 'assets.transferFeeApprovalRequired'],
+  ])('explains the cross-chain refusal %s', (message, key) => {
+    expect(
+      getTransactionFailurePresentation({ status: false, errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message }] })
+    ).toEqual({ key });
+  });
+
+  it('preserves only a typed, bounded unknown-outcome hash and rejects contradictory success', () => {
+    const hash = 'ab'.repeat(32);
+    const response = { status: false, outcome: 'unknown', transactionHash: hash.toUpperCase() };
+
+    expect(getUnknownTransactionHash(response)).toBe(hash);
+    expect(transactionResponseSucceeded(response)).toBe(false);
+    expect(transactionResponseSucceeded({ ...response, status: true })).toBe(false);
+    expect(getUnknownTransactionHash({ ...response, status: true })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: '<script>secret</script>' })).toBeNull();
+    expect(getUnknownTransactionHash(Object.create(response))).toBeNull();
+    const getter = vi.fn(() => hash);
+    Object.defineProperty(response, 'transactionHash', { get: getter });
+    expect(getUnknownTransactionHash(response)).toBeNull();
+    expect(getter).not.toHaveBeenCalled();
+  });
+
   it('surfaces insufficient balance with a bounded normalized asset symbol', () => {
     const response = {
       status: false,

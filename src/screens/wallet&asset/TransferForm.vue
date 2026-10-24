@@ -373,6 +373,7 @@ export default defineComponent({
       estimateFeeError: false,
       estimateFeeErrorMessage: '',
       crossChainExecutionFingerprint: '',
+      crossChainQuoteToken: '',
       crossChainRuntimeMinimum: '',
       bitcoinQuote: null as ResponseBitcoinTransferQuote | null,
       solanaQuote: null as ResponseSolanaTransferQuote | null,
@@ -907,6 +908,7 @@ export default defineComponent({
         expectedOriginFee: this.syncedFee,
         expectedDestinationFee: this.syncedDestNetFee,
         expectedExecutionFingerprint: this.crossChainExecutionFingerprint,
+        quoteToken: this.crossChainQuoteToken,
       } as RequestCheckCrossChain;
     },
     syncedRecipient: {
@@ -1044,6 +1046,8 @@ export default defineComponent({
       });
     },
     calculateFee() {
+      // A changed form needs a new quote, so the background's token for the old one is dropped.
+      this.crossChainQuoteToken = '';
       if (!this.currency || this.isBitcoinTransferDisabled) return;
 
       clearTimeout(this.timeoutSubscription);
@@ -1057,7 +1061,7 @@ export default defineComponent({
         this.estimateFeeError = false;
         this.estimateFeeErrorMessage = '';
 
-        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, bitcoin, solana } =
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, quoteToken, errors, bitcoin, solana } =
           await this.verifyTx();
         const transferError = errors?.[0];
 
@@ -1072,6 +1076,7 @@ export default defineComponent({
         this.syncedFee = estimateFee ?? '';
         this.syncedDestNetFee = destEstimateFee ?? '';
         this.crossChainExecutionFingerprint = executionFingerprint ?? '';
+        this.crossChainQuoteToken = quoteToken ?? '';
         this.crossChainRuntimeMinimum = minimum ?? '';
         this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);
       } catch {
@@ -1080,6 +1085,7 @@ export default defineComponent({
         this.bitcoinQuote = null;
         this.solanaQuote = null;
         this.crossChainExecutionFingerprint = '';
+        this.crossChainQuoteToken = '';
         this.crossChainRuntimeMinimum = '';
         this.$emit('update:runtimeMinimum', '');
       }

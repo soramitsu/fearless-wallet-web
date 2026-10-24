@@ -178,9 +178,9 @@ sheet handing over the pair to Polkaswap, USDT in the second wallet switching wa
 before Send opens, the single-wallet legend, and Where it lives in Russian. It also asks the real background for
 `pri(accounts.portfolioHoldings)` and checks the shape of the answer.
 
-On a machine whose Node is not the one `.nvmrc` pins, 45 tests in six files (`visual-effects*`, `web-password-store`,
-`export-form-access-errors`, `json-backup-export-options`) fail because `localStorage` is not defined; they fail the same
-on the untouched base commit.
+On Node 26 (newer than the one `.nvmrc` pins), run the unit tests with `NODE_OPTIONS=--no-experimental-webstorage`.
+Without it Node's own experimental `localStorage` shadows the test environment's, and 45 tests in six files
+(`visual-effects*`, `web-password-store`, `export-form-access-errors`, `json-backup-export-options`) fail on any commit.
 
 ## Still to do
 

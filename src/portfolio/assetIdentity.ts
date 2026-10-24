@@ -83,6 +83,9 @@ export interface PortfolioSectionsInput {
   addressForNetwork: (network: NetworkJson) => string;
   scanStates?: Record<string, NetworkScanState>;
   surfaceDiscoveredAssets?: boolean;
+  /** Search includes verified zero and hidden assets without changing saved preferences. */
+  search?: string;
+  isSelectedNetwork?: (network: NetworkJson) => boolean;
   /** `view` applies the visibility rules; `manage` lists every verified asset, zero and hidden ones included. */
   mode?: PortfolioMode;
   /** View filter: drop zero-balance rows. Never written to preferences, so a later deposit shows up. */
@@ -169,6 +172,49 @@ function scanCoverage(ecosystem: string, network: NetworkJson, balance: BalanceI
 
 const coverageRank: Record<NetworkScanCoverage, number> = { complete: 2, catalogOnly: 1, limited: 0 };
 
+// The asset discovery sweep's rule: these networks are not swept, so a zero there is a placeholder, not a reading.
+function isTestNetwork(network: NetworkJson): boolean {
+  return (
+    Boolean(network.options?.some((option) => String(option).toLowerCase() === 'testnet')) ||
+    /(?:^|\s)(?:testnet|test|dev)(?:\s|$)/iu.test(`${network.name} ${network.chainId}`)
+  );
+}
+
+const searchText = ({ symbol, name }: Pick<PortfolioAsset, 'symbol' | 'name'>): string => `${symbol} ${name}`.toLowerCase();
+
+// From the start of a word, so "dot" finds DOT but not every token on Polkadot Asset Hub.
+const namesNetwork = ({ name }: NetworkJson, query: string): boolean => ` ${name.toLowerCase()}`.includes(` ${query}`);
+
+/** Best first: the exact symbol, a symbol prefix, a word of the name, any part of either, then its network only. */
+function searchRank(asset: Pick<PortfolioAsset, 'symbol' | 'name'>, query: string): number {
+  const symbol = asset.symbol.toLowerCase();
+
+  if (symbol === query) return 0;
+  if (symbol.startsWith(query)) return 1;
+  if (asset.name.toLowerCase().split(/\s+/u).some((word) => word.startsWith(query))) return 2;
+  if (searchText(asset).includes(query)) return 3;
+  return 4;
+}
+
+const isHeld = ({ balanceText }: PortfolioAsset): boolean => new FPNumber(balanceText).isGreaterThan(FPNumber.ZERO);
+
+function compareByValue(left: PortfolioAsset, right: PortfolioAsset): number {
+  if (left.fiatValue !== null || right.fiatValue !== null) {
+    const leftValue = new FPNumber(left.fiatValue ?? '-1');
+    const rightValue = new FPNumber(right.fiatValue ?? '-1');
+    if (!leftValue.eq(rightValue)) return rightValue.gt(leftValue) ? 1 : -1;
+  }
+  return left.symbol.localeCompare(right.symbol) || left.key.localeCompare(right.key);
+}
+
+function compareSectionsByValue(left: PortfolioNetworkSection, right: PortfolioNetworkSection): number {
+  if (left.hasPricedAssets !== right.hasPricedAssets) return left.hasPricedAssets ? -1 : 1;
+  if (left.hasPricedAssets && right.hasPricedAssets && left.subtotal !== right.subtotal) {
+    return new FPNumber(right.subtotal).gt(new FPNumber(left.subtotal)) ? 1 : -1;
+  }
+  return left.name.localeCompare(right.name);
+}
+
 function decimalAmount(value: unknown): string {
   try {
     const amount = new FPNumber(String(value ?? '0').trim());
@@ -254,6 +300,8 @@ export function buildPortfolioSections({
   addressForNetwork,
   scanStates = {},
   surfaceDiscoveredAssets = true,
+  search = '',
+  isSelectedNetwork = () => false,
   mode = 'view',
   hideZero = false,
   showHidden = false,
@@ -267,6 +315,7 @@ export function buildPortfolioSections({
 }: PortfolioSectionsInput): PortfolioNetworkSection[] {
   const networkByName = new Map(networks.map((network) => [network.name.toLowerCase(), network]));
   const sections = new Map<string, PortfolioNetworkSection>();
+  const query = mode === 'manage' ? '' : search.trim().toLowerCase();
   const placedRows = new Map<string, { asset: PortfolioAsset; rows: PortfolioAsset[] }>();
   // One row per key. The background keeps one balance per (network, asset); should a second one appear (a
   // placeholder beside the loaded balance), the loaded, funded, newer one is the row, and nothing is counted twice.
@@ -399,7 +448,14 @@ export function buildPortfolioSections({
       const assetCoverage = scanCoverage(ecosystem, network, balance);
       if (!explicitScan && coverageRank[assetCoverage] < coverageRank[section.coverage]) section.coverage = assetCoverage;
 
-      if (mode === 'manage') {
+      const networkMatches = Boolean(query) && namesNetwork(network, query);
+      const answersSearch = !query || networkMatches || searchText(asset).includes(query);
+      if (!answersSearch) return;
+
+      if (query && trust === 'verified') {
+        const listsZero = Boolean(section.address) && (networkMatches || isSelectedNetwork(network) || !isTestNetwork(network));
+        if (hasBalance || asset.balanceUnavailable || listsZero) placeRow(section.assets, asset);
+      } else if (mode === 'manage') {
         // Every verified asset, every holding, and every asset with an explicit choice, so any hide can be undone.
         if (trust === 'verified' || hasBalance || preference !== 'auto') placeRow(section.assets, asset);
       } else if (hidden) {
@@ -416,22 +472,46 @@ export function buildPortfolioSections({
     });
   });
 
+  // Search results: holdings first, by value; then the closest matches, on popular networks first.
+  const compareSearchAssets = (left: PortfolioAsset, right: PortfolioAsset): number => {
+    if (isHeld(left) !== isHeld(right)) return isHeld(left) ? -1 : 1;
+    if (isHeld(left)) return compareByValue(left, right);
+    return (
+      searchRank(left, query) - searchRank(right, query) ||
+      Number(right.isNative) - Number(left.isNative) ||
+      left.symbol.localeCompare(right.symbol) ||
+      left.key.localeCompare(right.key)
+    );
+  };
+  const holds = (section: PortfolioNetworkSection): boolean =>
+    section.assets.some(isHeld) || section.detectedAssets.some(isHeld);
+  const bestRank = (section: PortfolioNetworkSection): number =>
+    Math.min(...section.assets.map((asset) => searchRank(asset, query)));
+  const networkRank = (section: PortfolioNetworkSection): number => {
+    const rank = networkByName.get(section.name.toLowerCase())?.rank;
+    return Number.isFinite(rank) ? Number(rank) : Number.POSITIVE_INFINITY;
+  };
+  const compareSearchSections = (left: PortfolioNetworkSection, right: PortfolioNetworkSection): number => {
+    if (holds(left) !== holds(right)) return holds(left) ? -1 : 1;
+    if (holds(left)) return compareSectionsByValue(left, right);
+    return (
+      bestRank(left) - bestRank(right) ||
+      // Two unranked networks give NaN, which falls through to the name.
+      networkRank(left) - networkRank(right) ||
+      left.name.localeCompare(right.name)
+    );
+  };
+
   return [...sections.values()]
     .filter((section) => section.assets.length > 0 || section.detectedAssets.length > 0)
     .map((section) =>
       withSubtotal({
         ...section,
-        assets: [...section.assets].sort(compareAssets),
+        assets: [...section.assets].sort(query ? compareSearchAssets : compareAssets),
         detectedAssets: [...section.detectedAssets].sort((left, right) => left.symbol.localeCompare(right.symbol)),
       })
     )
-    .sort((left, right) => {
-      if (left.hasPricedAssets !== right.hasPricedAssets) return left.hasPricedAssets ? -1 : 1;
-      if (left.hasPricedAssets && right.hasPricedAssets && left.subtotal !== right.subtotal) {
-        return new FPNumber(right.subtotal).gt(new FPNumber(left.subtotal)) ? 1 : -1;
-      }
-      return left.name.localeCompare(right.name);
-    });
+    .sort(query ? compareSearchSections : compareSectionsByValue);
 }
 
 /** Keeps the rows a predicate accepts, recomputes subtotals, and drops sections left without rows. */

@@ -179,6 +179,7 @@ import { useI18n } from '@/locales/useI18n';
 const props = defineProps<{
   row: PortfolioTokenRow;
   manage?: boolean;
+  search?: string;
   /** Keeps a group open while a search or the Hidden filter shows its matching networks. */
   forceExpanded?: boolean;
   /** Whether the Send of this group has a network to offer. */
@@ -276,6 +277,7 @@ function onHeaderClick(): void {
 
 function openChild({ asset }: PortfolioTokenChild): void {
   if (props.manage) return;
+  if (props.search?.trim() && asset.preference === 'hidden') setPreference(asset.key, 'auto');
 
   router.push({
     name: Components.AssetHistory,

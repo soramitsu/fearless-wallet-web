@@ -314,6 +314,9 @@ export interface BasicTxResponse {
   passwordError?: string | null;
   status?: boolean;
   errors?: BasicTxError[];
+  /** A cross-chain send that may still be included; `transactionHash` names its extrinsic. */
+  outcome?: 'unknown';
+  transactionHash?: string;
 }
 
 export interface PrepareExternalRequest {

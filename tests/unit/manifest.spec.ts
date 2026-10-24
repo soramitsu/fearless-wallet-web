@@ -42,7 +42,7 @@ describe('extension manifest generation', () => {
     expect(csp).not.toContain("'unsafe-eval'");
   });
 
-  it('generates firefox mv3 shape without chromium-only keys', () => {
+  it('requires Firefox built-in data consent support without chromium-only keys', () => {
     const manifest = makeManifest('firefox');
 
     expect(manifest.manifest_version).toBe(3);
@@ -53,6 +53,7 @@ describe('extension manifest generation', () => {
     expect(manifest.browser_specific_settings).toEqual({
       gecko: {
         id: '{6a9332b9-e864-4d0a-a591-140fe75a29ba}',
+        strict_min_version: '140.0',
         data_collection_permissions: {
           required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
         },

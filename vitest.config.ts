@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 import { commonViteConfig } from './vite.config.shared.mjs';
 
@@ -26,6 +26,23 @@ export default defineConfig(({ mode }) => {
       // The Iroha SDK must go through Vite so its native import resolves to the browser binding.
       server: { deps: { inline: ['@subwallet/keyring', '@iroha/iroha-js'] } },
       environment: 'happy-dom',
+      // Git-ignored build, review and scratch output can hold old checkouts of this repository; their spec copies
+      // must not run as part of the suite.
+      exclude: [
+        ...configDefaults.exclude,
+        'build/**',
+        'coverage/**',
+        'output/**',
+        'review-output/**',
+        'review-artifacts/**',
+        'test-results/**',
+        'playwright-report/**',
+        'tmp/**',
+        '.tmp/**',
+        'tmp-*/**',
+        '.tmp-*/**',
+        'docs/validation/**',
+      ],
       coverage: {
         provider: 'v8',
         reporter: ['lcov'],

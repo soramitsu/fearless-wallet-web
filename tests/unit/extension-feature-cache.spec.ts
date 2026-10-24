@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createPinia, setActivePinia } from 'pinia';
 import { ACTION_CAPABILITY_MAX_AGE_MS } from '@extension-base/services/action-capability-service';
 import { actions } from '@/stores/extension/actions';
 
@@ -8,7 +9,7 @@ vi.mock('@/router/routes', () => ({ Components: {} }));
 vi.mock('@/extension/messaging', () => ({}));
 
 const NOW = 1_800_000_000_000;
-const KEY = 'feature_action-capabilities';
+const KEY = 'feature_action-capabilities-v2';
 
 function setup(stored?: unknown) {
   const storage = new Map<string, string>();
@@ -26,6 +27,7 @@ function setup(stored?: unknown) {
 
 describe('popup feature cache', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
     vi.mocked(axios.get).mockReset();
@@ -40,13 +42,13 @@ describe('popup feature cache', () => {
     vi.mocked(axios.get).mockRejectedValue(new Error('offline'));
     const { fetchFeatures, setFeatures } = setup({
       fiat: { moonpay: true, ramp: false },
-      actions: { crossChainXcm: true },
+      actions: { polkaswap: true, crossChainXcm: true },
       fetchedAt: NOW - 60_000,
     });
 
     await fetchFeatures();
 
-    expect(setFeatures).toHaveBeenCalledExactlyOnceWith({ fiat: { moonpay: true, ramp: false }, actions: { crossChainXcm: true } });
+    expect(setFeatures).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ fiat: { moonpay: true, ramp: false }, actions: expect.objectContaining({ polkaswap: true, crossChainXcm: false }) }));
   });
 
   it.each([
@@ -59,6 +61,7 @@ describe('popup feature cache', () => {
     await fetchFeatures();
 
     expect(setFeatures).toHaveBeenCalledOnce();
+    expect(setFeatures.mock.calls[0][0].actions.polkaswap).toBe(false);
     expect(setFeatures.mock.calls[0][0].actions.crossChainXcm).toBe(false);
   });
 

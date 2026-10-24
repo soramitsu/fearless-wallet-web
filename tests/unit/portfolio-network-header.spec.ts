@@ -55,7 +55,7 @@ const section = (overrides: Partial<NetworkSection> = {}): NetworkSection => ({
   subtotal: '1234.5', hasPricedAssets: true, isTestnet: false, latestTimestamp: Date.now(), stale: false, coverage: 'catalogOnly',
   assets: [asset], detectedAssets: [], ...overrides,
 });
-const render = (network = section(), props: { manage?: boolean; forceExpanded?: boolean } = {}) => mount(PortfolioNetworkSection, {
+const render = (network = section(), props: { manage?: boolean; forceExpanded?: boolean; search?: string } = {}) => mount(PortfolioNetworkSection, {
   props: { section: network, ...props },
   global: { stubs: { ExternalLogo: true, Icon: true, Switcher: true } },
 });
@@ -136,7 +136,7 @@ describe('Portfolio network header', () => {
     const rows = wrapper.findAll('.asset-row');
 
     expect(rows[0].get('.asset-balance').text()).toContain('15.0000 DOT');
-    expect(rows[0].get('[data-testid="transferable"]').text()).toBe('Transferable 0.0000 DOT');
+    expect(rows[0].get('[data-testid="transferable"]').text()).toBe('Transferable 0 DOT');
     expect(rows[1].find('[data-testid="transferable"]').exists()).toBe(false);
     wrapper.unmount();
   });
@@ -155,6 +155,34 @@ describe('Portfolio network header', () => {
     expect(wrapper.get('[data-testid="balanceUnavailable"]').text()).toBe('Balance update failed');
     expect(wrapper.get('.asset-row').text()).not.toContain('0.0000');
     expect(wrapper.find('.asset-fiat').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it.each([
+    [true, false, '$0.00'],
+    [false, false, 'Sync pending'],
+    [false, true, 'Balance update failed'],
+  ])('distinguishes loaded zero from an unfinished or failed search balance (%s, %s)', (isReady, balanceFailed, note) => {
+    const zero = { ...asset, balanceText: '0', transferableText: '0', hasBalance: false, fiatValue: '0', isReady, balanceFailed };
+    const wrapper = render(section({ assets: [zero], subtotal: '0', hasPricedAssets: false }), { search: 'ETH' });
+    expect(wrapper.get('.asset-balance').text()).toContain('0 ETH');
+    expect(wrapper.get('.asset-fiat').text()).toBe(note);
+    wrapper.unmount();
+  });
+
+  it.each([
+    ['ETH', false, true],
+    ['', false, false],
+    ['ETH', true, false],
+  ])('only restores a hidden asset when opening a search result (search %s, manage %s)', async (search, manage, restores) => {
+    const hidden: PortfolioAsset = { ...asset, hidden: true, preference: 'hidden' };
+    const wrapper = render(section({ assets: [hidden] }), { search, manage });
+    expect(mocks.setAssetPreference).not.toHaveBeenCalled();
+    await wrapper.get('.asset-row').trigger('click');
+    expect(mocks.setAssetPreference).toHaveBeenCalledTimes(restores ? 1 : 0);
+    if (restores) expect(mocks.setAssetPreference).toHaveBeenCalledWith({ key: asset.key, preference: 'auto' });
+    expect(mocks.push).toHaveBeenCalledTimes(manage ? 0 : 1);
+    if (!manage) expect(mocks.push).toHaveBeenCalledWith({ name: 'AssetHistory', params: { assetId: 'eth', selectedNetwork: 'Ethereum' } });
     wrapper.unmount();
   });
 });

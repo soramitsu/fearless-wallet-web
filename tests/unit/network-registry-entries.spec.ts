@@ -6,6 +6,8 @@ import type State from '@extension-base/background/handlers/State';
 vi.mock('axios', () => ({ default: { get: vi.fn() } }));
 vi.mock('@extension-base/stores/NetworkMap', () => ({
   default: class {
+    getAndWait = vi.fn().mockResolvedValue(undefined);
+    updateAndWait = vi.fn().mockResolvedValue(undefined);
     get(_key: string, callback: (value: unknown) => void) {
       callback(undefined);
     }
@@ -29,7 +31,7 @@ vi.mock('@extension-base/services/network-service/handlers/TonApiHandler', () =>
 const entry = (name: string, overrides: Record<string, unknown> = {}) => ({
   name,
   chainId: `${name.toLowerCase()}-chain`,
-  ecosystem: 'Substrate',
+  ecosystem: 'substrate',
   disabled: false,
   assets: [{ id: `${name}-asset`, symbol: name.slice(0, 3).toUpperCase(), precision: 10 }],
   nodes: [{ name: `${name} node`, url: `wss://${name.toLowerCase()}.example` }],
@@ -74,10 +76,12 @@ describe('network registry entries', () => {
     warn.mockRestore();
   });
 
-  it('still refuses a registry that is not a list', async () => {
+  it('refuses malformed remote data while retaining bundled offline networks', async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: { networks: [] } });
     const service = new NetworkService({ getAllMainAccounts: () => [] } as unknown as KeyringService, {} as State);
 
-    await expect(service.initNetworkMap()).rejects.toThrow('The network registry is not a list');
+    await expect(service.initNetworkMap()).resolves.toBeUndefined();
+    expect(service.networksGithub).toEqual([]);
+    expect(Object.keys(service.networkMap).length).toBeGreaterThan(0);
   });
 });

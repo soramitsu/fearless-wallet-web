@@ -11,7 +11,7 @@
       class="legacy-exposure-banner__dismiss"
       :aria-label="t('common.close')"
       data-testid="legacyExposureBannerDismiss"
-      @click="dismissed = true"
+      @click="close"
     >
       <Icon icon="close" width="16px" height="16px" aria-hidden="true" />
     </button>
@@ -25,18 +25,42 @@ import type { LegacyExposureStatus } from '@extension-base/services/legacy-expos
 import { getLegacyExposureStatus } from '@/extension/messaging/legacy-exposure';
 import { useI18n } from '@/locales/useI18n';
 import { Components } from '@/router/routes';
-import { walletsStillToMove } from '@/util/legacyExposure';
+import { useAccountsStore } from '@/stores/accounts';
+import {
+  readClosedReminders,
+  rememberClosedReminders,
+  sameWalletAddress,
+  walletsStillToMove,
+} from '@/util/legacyExposure';
 
 const route = useRoute();
 const router = useRouter();
 const { t, tc } = useI18n();
+const accountsStore = useAccountsStore();
 
 // Old wallets from before the update from 3.0.x that still hold their place in the app and are not
-// marked as moved. A reminder only: closing it hides it until the wallet window opens again.
+// marked as moved. A reminder only, on such a wallet's own pages: a wallet created in this version
+// never shows it. Closing it is remembered for that wallet on this device.
 const status = ref<LegacyExposureStatus>();
-const dismissed = ref(false);
-const count = computed(() => walletsStillToMove(status.value).length);
-const visible = computed(() => count.value > 0 && !dismissed.value);
+const closed = ref(readClosedReminders());
+const stillToMove = computed(() => walletsStillToMove(status.value));
+const count = computed(() => stillToMove.value.length);
+const selected = computed(() =>
+  stillToMove.value.find(({ address }) => sameWalletAddress(address, accountsStore.selectedWallet.address))
+);
+const visible = computed(() => {
+  const wallet = selected.value;
+
+  return !!wallet && !closed.value.some((address) => sameWalletAddress(address, wallet.address));
+});
+
+function close(): void {
+  if (!selected.value) return;
+
+  closed.value = [...closed.value, selected.value.address];
+  // Without storage it stays closed until the wallet window closes.
+  rememberClosedReminders(closed.value);
+}
 
 async function refresh(): Promise<void> {
   // Nothing to remind once the background has said there is nothing to tell.

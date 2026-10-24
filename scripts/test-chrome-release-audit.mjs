@@ -112,7 +112,7 @@ function baseManifest() {
     },
     permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     short_name: 'FW',
-    version: '3.0.7',
+    version: '4.2.0',
     web_accessible_resources: [
       { matches: ['https://*/*', 'http://*/*', 'http://localhost/*'], resources: ['page.js'] },
     ],
@@ -601,8 +601,8 @@ async function run() {
     await expectFailure(
       tempRoot,
       'published-version',
-      { mutateManifest: (manifest) => (manifest.version = '3.0.6') },
-      /must be greater than published version 3\.0\.6/u
+      { mutateManifest: (manifest) => (manifest.version = '3.0.9') },
+      /must be greater than published version 3\.0\.9/u
     );
     await expectFailure(
       tempRoot,

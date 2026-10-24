@@ -50,7 +50,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 500, IS_PRODUCTION: false }));
+vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 500, IS_PRODUCTION: false, IS_EXTENSION: true }));
 vi.mock('@/router/routes', () => ({
   Components: {
     CrossChain: 'CrossChain',

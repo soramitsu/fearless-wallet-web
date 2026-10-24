@@ -181,13 +181,13 @@ export function createReadinessEvaluator(context: ReadinessContext): (subject: R
     return leftLength - rightLength || leftProvider - rightProvider || leftId.localeCompare(rightId);
   };
 
-  /** The SORA asset a route ends with, found through the reviewed route that leaves SORA with it. */
+  /** Resolve the destination currency through the registry, even when its outbound route is retired. */
   const soraCounterpart = (path: Definition[]): string | undefined => {
     const execution = path[path.length - 1].execution;
     const soraAssetId = execution && 'soraAssetId' in execution ? execution.soraAssetId : undefined;
 
     return soraAssetId
-      ? routes.find((route) => route.originChainId === SORA_CHAIN_ID && route.assetKeyAssetId === soraAssetId)?.originAssetId
+      ? networkByChain.get(SORA_CHAIN_ID)?.assets.find((asset) => String(asset.currencyId ?? asset.id) === soraAssetId)?.id
       : undefined;
   };
 

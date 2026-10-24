@@ -1002,6 +1002,7 @@ export class KeyringService {
   }
 
   unlockKeyring({ password }: RequestUnlockExtension): boolean {
+    if (this.resetWork || this.resetting) return false;
     try {
       keyring.unlockKeyring(password);
       this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;

@@ -7,6 +7,7 @@ import { AuthRequestHandler } from '@extension-base/services/request-service/han
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { EipService } from '@extension-base/services/eip-service';
 import type { AuthUrls } from '@extension-base/background/types/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const storage = vi.hoisted(() => ({
   data: {} as AuthUrls,
@@ -95,10 +96,11 @@ function initialize() {
     },
     setActiveNetworks: vi.fn(async () => {}),
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getAccount: () => ({ meta: { ethereumAddress: address } }),
       getSubstrateAddress: () => 'public-root',
       getEthereumAddress: () => address,
-      getAllAccounts: () => [{ address: 'public-root', meta: { name: 'Public fixture' } }],
+      getAllAccounts: () => [{ address: 'public-root', meta: { name: 'Public fixture', ethereumAddress: address, solanaAddress: solana, walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } }],
       getAddresses: () => [],
       isMobileAccount: () => false,
     },

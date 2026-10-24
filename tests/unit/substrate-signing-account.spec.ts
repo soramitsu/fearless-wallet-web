@@ -13,6 +13,7 @@ import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { AccountJson } from '@extension-base/background/types/types';
 import type { KeyringPair } from '@polkadot/keyring/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const mocks = vi.hoisted(() => ({ denied: vi.fn() }));
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: mocks.denied }));
@@ -35,7 +36,7 @@ beforeEach(() => {
   bob = new Keyring({ type: 'sr25519' }).addFromUri('//Bob');
   selected = alice;
   records = [
-    { address: alice.address, publicKey: decodeAddress(alice.address), meta: { name: 'Stored public account' } },
+    { address: alice.address, publicKey: decodeAddress(alice.address), meta: { name: 'Stored public account', walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } },
   ];
   mocks.denied.mockReset().mockResolvedValue(false);
   service = {
@@ -48,7 +49,8 @@ beforeEach(() => {
   state = {
     requestService: service,
     networkService: { networkMap: {} },
-    keyringService: { getAllAccounts: () => records, getPair: vi.fn(() => selected), unlockPair: vi.fn() },
+    keyringService: {
+      tonKeyring: { getAccounts: () => [] }, getAllAccounts: () => records, getPair: vi.fn(() => selected), unlockPair: vi.fn() },
     walletConnectDappService: {
       getSessionRevision: () => 0,
       getSession: (topic: string) => ({
@@ -230,7 +232,11 @@ describe('Substrate reviewed account and actual signing key', () => {
       if (change === 'hardware') records[0].meta.isHardware = true;
       if (change === 'public key') records[0].publicKey = bob.publicKey;
       if (change === 'ecosystem') records[0].meta.walletEcosystem = 'solana';
-      expect(await extension.signingApprove({ id: 'public' })).toBe(false);
+      if (change === 'removed') {
+        await expect(extension.signingApprove({ id: 'public' })).rejects.toThrow('recovery-only');
+      } else {
+        expect(await extension.signingApprove({ id: 'public' })).toBe(false);
+      }
       expect(resolve).not.toHaveBeenCalled();
       expect(state.walletConnectDappService.onRequest).not.toHaveBeenCalled();
     }
@@ -319,7 +325,7 @@ describe('Substrate reviewed account and actual signing key', () => {
     async (type) => {
       alice = selected = new Keyring({ type }).addFromUri(type === 'ethereum' ? `0x${'11'.repeat(32)}` : '//Alice');
       records = [
-        { address: alice.address, publicKey: decodeAddress(alice.address), meta: { name: 'Stored public account' } },
+        { address: alice.address, publicKey: decodeAddress(alice.address), meta: { name: 'Stored public account', walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } },
       ];
       const address =
         type === 'ethereum' ? alice.address.toLowerCase() : encodeAddress(decodeAddress(alice.address), 0);
@@ -339,7 +345,7 @@ describe('Substrate reviewed account and actual signing key', () => {
     async (type) => {
       alice = selected = new Keyring({ type }).addFromUri(type === 'ethereum' ? `0x${'11'.repeat(32)}` : '//Alice');
       records = [
-        { address: alice.address, publicKey: decodeAddress(alice.address), meta: { name: 'Stored public account' } },
+        { address: alice.address, publicKey: decodeAddress(alice.address), meta: { name: 'Stored public account', walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } },
       ];
       const { result, payload } = await admitExtrinsic();
       expect(await extension.signingApprove({ id: 'public' })).toBe(true);

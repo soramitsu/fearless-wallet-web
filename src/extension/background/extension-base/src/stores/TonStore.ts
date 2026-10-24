@@ -40,8 +40,9 @@ class TonStore extends SubscribableStore<TonStoreAccount> {
       .flatMap(([key, value]) => {
         const record = value as TonStoreAccount;
 
-        if (!record || key !== this.getPrefix() + record.address || !/^[a-f0-9]{64}$/.test(record.publicKeyHex)) {
+        if (!record || key !== this.getPrefix() + record.address || !/^[a-f0-9]{64}$/i.test(record.publicKeyHex)) {
           this.hasUnreadableRecords = true;
+          console.warn('Stored TON account could not be loaded; recovery data is retained.', key.slice(this.getPrefix().length));
           return [];
         }
 

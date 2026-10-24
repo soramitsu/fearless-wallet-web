@@ -2,7 +2,9 @@ import { networkMap305, readSnapshot } from '../fixtures/legacy-305/generate';
 import type { NetworkJson } from '@extension-base/types';
 import {
   BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES,
-  defineReviewedCrossChainRoute,
+  createReviewedCrossChainRouteId,
+  getReviewedRouteProvider,
+  type ReviewedCrossChainRouteDefinition,
   type CrossChainRouteProviderId,
 } from '@/cross-chain/reviewedRoutes';
 import { createAssetKey } from '@/portfolio/assetKey';
@@ -48,8 +50,12 @@ const network = (name: string, chainId: string, symbol: string, destinations: st
     },
   }) as unknown as NetworkJson;
 
+// Synthetic graph fixtures deliberately bypass production route-retirement validation.
+const graphRoute = (input: Omit<ReviewedCrossChainRouteDefinition, 'id' | 'action'>): Readonly<ReviewedCrossChainRouteDefinition> =>
+  Object.freeze({ ...input, id: createReviewedCrossChainRouteId(input), action: getReviewedRouteProvider(input.providerId).action });
+
 const move = (from: string, to: string, symbol: string, providerId: CrossChainRouteProviderId = 'wallet-xcm') =>
-  defineReviewedCrossChainRoute({
+  graphRoute({
     providerId,
     originChainId: from,
     destinationChainId: to,
@@ -219,10 +225,10 @@ describe('readiness: the bundled routes against the registry snapshot', () => {
       return [result.state, result.hops.map(({ originNetwork, destinationNetwork }) => `${originNetwork}>${destinationNetwork}`)];
     };
 
-    expect(oneMove('Polkadot', 'DOT')).toEqual(['route', ['Polkadot>SORA Mainnet']]);
-    expect(oneMove('Kusama', 'KSM')).toEqual(['route', ['Kusama>SORA Mainnet']]);
-    expect(oneMove('Acala', 'ACA')).toEqual(['route', ['Acala>SORA Mainnet']]);
-    expect(oneMove('Astar', 'ASTR')).toEqual(['route', ['Astar>SORA Mainnet']]);
+    expect(oneMove('Polkadot', 'DOT')).toEqual(['none', []]);
+    expect(oneMove('Kusama', 'KSM')).toEqual(['none', []]);
+    expect(oneMove('Acala', 'ACA')).toEqual(['none', []]);
+    expect(oneMove('Astar', 'ASTR')).toEqual(['none', []]);
     expect(oneMove('Liberland', 'LLD')).toEqual(['route', ['Liberland>SORA Mainnet']]);
   });
 
@@ -234,12 +240,14 @@ describe('readiness: the bundled routes against the registry snapshot', () => {
   it('says what the 4.2.0 policy says: the moves exist and are paused, swaps are on', () => {
     const asked = ask({ polkaswap: true, crossChainXcm: false, crossChainSoraBridge: false, crossChainLiberland: false });
 
-    expect(asked(keyOf('Polkadot', 'DOT'))).toMatchObject({ state: 'off', cause: 'moves-off' });
+    expect(asked(keyOf('Liberland', 'LLD'))).toMatchObject({ state: 'off', cause: 'moves-off' });
     expect(asked(keyOf('SORA Mainnet', 'XOR'))).toEqual({ state: 'ready', hops: [] });
   });
 
   it('names the same asset on SORA, where Receive on SORA points', () => {
-    expect(ask(ON)(keyOf('Polkadot', 'DOT')).soraAssetId).toBe('cd092a5a-4eb6-4318-9f11-4bf8454d67a2');
+    const lld = byName('SORA Mainnet').assets.find(({ symbol }) => symbol.toUpperCase() === 'LLD')!;
+    expect(lld).toBeDefined();
+    expect(ask(ON)(keyOf('Liberland', 'LLD')).soraAssetId).toBe(lld.id);
   });
 
   it('has no route for a token that has none, and says so for Ethereum, which the registry keeps unavailable', () => {

@@ -92,6 +92,7 @@ import { captureWalletConnectSigningContext } from '@extension-base/services/wal
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 // Public test phrase only; never fund it.
 const MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
@@ -125,12 +126,15 @@ function unlockedKeyring(): KeyringService {
   return keyring;
 }
 
-// The 3.0.5-era cohort E2 made reachable: the EVM account was migrated on its own (with its JSON
-// password); its Substrate parent still waits for its legacy password.
-async function parentPendingChildMigrated() {
-  const child = storedAccount(`${MNEMONIC}${EVM_PATH}`, 'ethereum', CHILD_PASSWORD, { name: '' });
+// Model password migration independently from signing eligibility: the child has migrated while
+// its parent still needs its previous password. Eligible fixtures carry trusted runtime provenance;
+// historical wallets without that provenance remain recovery-only, as asserted below.
+async function parentPendingChildMigrated(eligible = true) {
+  const provenance = eligible ? { walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } : {};
+  const child = storedAccount(`${MNEMONIC}${EVM_PATH}`, 'ethereum', CHILD_PASSWORD, { name: '', ...provenance });
   const parent = storedAccount(MNEMONIC, 'sr25519', PARENT_PASSWORD, {
     name: 'Parent',
+    ...provenance,
     ethereumAddress: child.address,
   });
   const keyringService = unlockedKeyring();
@@ -222,7 +226,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
       resolve: vi.fn(),
       reject: vi.fn(),
     };
-    const extension = {
+    const extension = Object.assign(Object.create(Extension.prototype), {
       state: {
         keyringService,
         requestService: {
@@ -235,7 +239,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
         networkService: { networkMap: { ethereum: { name: 'Ethereum', chainId: '1' } } },
         getEvmApi: () => undefined,
       },
-    } as unknown as Extension;
+    }) as Extension;
 
     qualifyWcRequest(extension, request, child.address);
     await expect(
@@ -266,7 +270,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
       resolve: vi.fn(),
       reject: vi.fn(),
     };
-    const extension = {
+    const extension = Object.assign(Object.create(Extension.prototype), {
       state: {
         keyringService,
         requestService: {
@@ -279,7 +283,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
         networkService: { networkMap: { ethereum: { name: 'Ethereum', chainId: '1' } } },
         getEvmApi: () => undefined,
       },
-    } as unknown as Extension;
+    }) as Extension;
 
     const provider = qualifyWcRequest(extension, request, child.address);
     await expect(
@@ -294,4 +298,44 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
     expect(request.reject).not.toHaveBeenCalled();
     expect(() => keyringService.unlockPair(parent.address)).toThrow('legacy_password_required');
   });
+  it.each(['personal_sign', 'eth_sendTransaction'])(
+    'keeps an actual historical wallet recovery-only for %s after child password migration',
+    async (method) => {
+      const { child, parent, keyringService } = await parentPendingChildMigrated(false);
+      const request = {
+        request: {
+          topic: TOPIC,
+          params: {
+            chainId: 'eip155:1',
+            request: {
+              method,
+              params: method === 'personal_sign'
+                ? [stringToHex('Public fixture'), child.address]
+                : [{ from: child.address, to: child.address, value: '0x1' }],
+            },
+          },
+        },
+        resolve: vi.fn(),
+        reject: vi.fn(),
+      };
+      const claim = vi.fn(() => request);
+      const extension = Object.assign(Object.create(Extension.prototype), {
+        state: {
+          keyringService,
+          requestService: {
+            evmRequestHandler: { claimWCSignRequest: claim, getSignWCRequest: () => request, releaseWCSignRequest: vi.fn() },
+          },
+        },
+      }) as Extension;
+      const provider = qualifyWcRequest(extension, request, child.address);
+      const exportKey = vi.spyOn(keyringService, 'accountExportPrivateKey');
+
+      await expect(extension.wcRequestApprove({ address: parent.address, approvalId: 'public-approval' }))
+        .rejects.toThrow('recovery-only');
+      expect(claim).not.toHaveBeenCalled();
+      expect(exportKey).not.toHaveBeenCalled();
+      expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+      expect(request.resolve).not.toHaveBeenCalled();
+    }
+  );
 });

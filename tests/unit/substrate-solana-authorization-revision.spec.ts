@@ -12,6 +12,7 @@ import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { AuthUrls, SignRequest } from '@extension-base/background/types/types';
 import type { SolanaRequestsSubjectPayload } from '@extension-base/services/request-service/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const mocks = vi.hoisted(() => ({ data: {} as AuthUrls, denied: vi.fn(), capability: vi.fn(), broadcast: vi.fn() }));
 vi.mock('@extension-base/services/send-kill-switch-service', async (importOriginal) => ({
@@ -98,12 +99,13 @@ beforeEach(async () => {
     getAuthInfo: async () => (await auth.getAuthList())[url],
     networkService: {},
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       encodeAddress: (address: string) => address,
       getAllAccounts: vi.fn(() => [
         {
           address: substrateAddress,
           publicKey: pair.addressRaw,
-          meta: { name: 'Public fixture', solanaAddress, walletEcosystem: 'substrate' },
+          meta: { name: 'Public fixture', solanaAddress, walletEcosystem: 'substrate', walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION },
         },
       ]),
       getPair: vi.fn(() => pair),

@@ -23,6 +23,7 @@ import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
+import * as WebDatabase from '@extension-base/stores/WebDatabase';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { WEB_PASSWORD_RECORD_KEY } from '@extension-base/stores/WebPasswordRecord';
@@ -127,7 +128,9 @@ beforeEach(async () => {
     }
     return null;
   });
-  vi.spyOn(BaseWebStore.prototype, 'openDatabase').mockResolvedValue(database());
+  const db = database();
+  vi.spyOn(BaseWebStore.prototype, 'openDatabase').mockResolvedValue(db);
+  vi.spyOn(WebDatabase, 'openWebDatabase').mockResolvedValue(db);
   const ready = track(KeyringStoreWeb.initialize());
   await drain();
   expect(await ready).toHaveProperty('value');

@@ -125,8 +125,8 @@ const createWallet = async () => {
   margin: 10px 0;
   padding: 10px 12px;
   border-left: 3px solid $pink-color;
-  background: #ee007710;
-  color: #ffb9dc;
+  background: $fw-row-selection;
+  color: $pink-lavender-color;
   font-size: 11px;
   line-height: 1.4;
   text-align: left;

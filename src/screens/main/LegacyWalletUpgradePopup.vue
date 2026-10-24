@@ -91,9 +91,9 @@ onDeactivated(close);
   margin: auto;
   padding: 20px 24px 12px;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid $fw-strong-edge;
   border-radius: 16px;
-  background: #211c20;
+  background: $fw-panel-surface;
   color: $plain-white;
   font-family: var(--s-font-family-default);
   &:lang(ru) {
@@ -102,14 +102,14 @@ onDeactivated(close);
     .wallet-upgrade__actions { margin-top: 12px; }
   }
   text-align: left;
-  box-shadow: 0 20px 64px #0006;
+  box-shadow: 0 20px 64px var(--fw-scrim);
 
   &[open] {
     animation: wallet-upgrade-enter 180ms ease-out;
   }
 
   &::backdrop {
-    background: rgba(10, 7, 10, 0.78);
+    background: var(--fw-scrim);
     backdrop-filter: blur(5px);
   }
 
@@ -124,7 +124,7 @@ onDeactivated(close);
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #ff78b6;
+    color: $pink-lavender-color;
     font-size: 12px;
     font-weight: 600;
   }
@@ -137,7 +137,7 @@ onDeactivated(close);
     transition: background-color 120ms ease, color 120ms ease;
 
     &:focus-visible {
-      outline: 2px solid #ff78b6;
+      outline: 2px solid var(--fw-focus);
       outline-offset: 3px;
     }
   }
@@ -167,7 +167,7 @@ onDeactivated(close);
   p { margin: 0; }
 
   &__description {
-    color: #d2cbd0;
+    color: $grayish-white;
     font-size: 13px;
     line-height: 1.55;
   }
@@ -193,7 +193,7 @@ onDeactivated(close);
     }
 
     p {
-      color: #bfb5bd;
+      color: $grayish-white;
       font-size: 12px;
       line-height: 1.5;
     }
@@ -204,9 +204,9 @@ onDeactivated(close);
     place-items: center;
     flex: 0 0 28px;
     height: 28px;
-    border: 1px solid rgba(255, 120, 182, 0.3);
+    border: 1px solid $fw-accent-edge;
     border-radius: 50%;
-    color: #ff78b6;
+    color: $pink-lavender-color;
     font-size: 12px;
     font-weight: 600;
   }
@@ -214,7 +214,7 @@ onDeactivated(close);
   &__note {
     padding-top: 14px;
     border-top: $default-border;
-    color: #bfb5bd;
+    color: $grayish-white;
     font-size: 11px;
     line-height: 1.55;
   }
@@ -234,23 +234,23 @@ onDeactivated(close);
   }
 
   &__create {
-    background: $pink-color;
-    color: $plain-white;
+    background: $fw-primary-fill;
+    color: $fw-on-accent;
 
-    &:hover { background: #cc0066; }
+    &:hover { background: $fw-secondary-hover; }
     &:disabled { opacity: 0.65; cursor: wait; }
   }
 
   &__error {
     padding-bottom: 8px;
-    color: #ff9cc9;
+    color: $reject-color;
     font-size: 12px;
     line-height: 1.5;
   }
 
   &__later {
     background: transparent;
-    color: #d2cbd0;
+    color: $grayish-white;
 
     &:hover { background: $secondary-background-color; }
   }

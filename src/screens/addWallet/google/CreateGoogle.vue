@@ -311,7 +311,10 @@ export default defineComponent({ name: 'CreateGoogle',
     },
     async proceed() {
       if (!this.isActive || this.isLoading) return;
-      if (!this.mnemonic) { await this.prepareMnemonic(); return; }
+      if (!this.mnemonic) {
+        await this.prepareMnemonic();
+        if (!this.isActive || !this.mnemonic) return;
+      }
       if (this.step === this.countSteps) {
         if (this.isFinished) this.goBack();
         else await this.watchStep();

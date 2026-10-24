@@ -10,7 +10,7 @@ vi.mock('@/bootstrap/webPasswordStore', () => ({ requestWebPasswordStorage: mock
 beforeEach(() => vi.resetAllMocks());
 
 describe('web reset verifier tombstone', () => {
-  it('commits a null verifier with account deletion and tolerates failed legacy cleanup', async () => {
+  it('commits a null verifier with account deletion without deleting legacy recovery bytes', async () => {
     const put = vi.fn();
     const remove = vi.fn();
     const transaction = {
@@ -30,6 +30,7 @@ describe('web reset verifier tombstone', () => {
     transaction.oncomplete!();
     await resetting;
     expect(finished).toBe(true);
-    expect(mocks.bridge).toHaveBeenCalledExactlyOnceWith('remove');
+    // The committed tombstone prevents fallback to the old verifier; legacy bytes remain available for recovery.
+    expect(mocks.bridge).not.toHaveBeenCalled();
   });
 });

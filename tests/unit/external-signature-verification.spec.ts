@@ -68,9 +68,10 @@ beforeEach(() => {
       },
     },
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getSubstrateAddress: () => 'public-root',
       getEthereumAddress: () => wallet.address,
-      getAllAccounts: () => [{ address: 'public-root', meta: { name: 'Public fixture' } }],
+      getAllAccounts: () => [{ address: 'public-root', meta: { name: 'Public fixture', isExternal: true, ethereumAddress: wallet.address } }],
       getAddresses: () => [],
       isMobileAccount: () => false,
       accountExportPrivateKey: vi.fn(),

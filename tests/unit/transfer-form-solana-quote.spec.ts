@@ -39,6 +39,7 @@ function context(overrides: Record<string, unknown> = {}) {
     isBitcoinTransferDisabled: false,
     isFetchingFees: false,
     isTransfer: true,
+    isQuotedTransferNetwork: true,
     isValidAddressByNetwork: true,
     isValidRecipientAddress: true,
     solanaPriceHint: null,
@@ -55,6 +56,8 @@ function context(overrides: Record<string, unknown> = {}) {
     transferableAmount: '12.5',
     ...overrides,
   };
+
+  Object.defineProperty(form, 'transferAssetId', { get: () => form.syncedAssetId });
 
   for (const [name, method] of Object.entries(component.methods)) form[name] ??= method.bind(form);
 

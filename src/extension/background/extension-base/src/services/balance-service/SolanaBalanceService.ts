@@ -204,7 +204,7 @@ export default class SolanaBalanceService {
     const balances: ResponseBalanceRequest[] = [];
 
     groups
-      .filter(({ relayChain }) => relayChain === 'solana')
+      .filter(({ relayChain }) => isSameString(relayChain, 'solana'))
       .forEach((group) => {
         const balanceIndex = group.balances.findIndex(
           (balance) => isSameString(balance.name, network.name) && balance.timestamp !== undefined && includes(balance)

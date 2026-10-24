@@ -1,9 +1,9 @@
 {
   "welcome": {
-    "tonRecoveryRequired": "Ṭuppāt šumim ša TON awāt pirištim ša pān uddūš kīsim iḫaššaḫū. Ṭuppāt šumīka šanâtum petâtum. Ana turrim, šūṣâm ša ṭuppim petē-ma awāt pirištišu labīrtam šukun. Adi turrim, kīsam e tanassaḫ u ṭuppam e tuḫallaq.",
-    "tonStorageUnavailable": "Ṭuppāt šumim ša TON kalîšina lā innadnū ū lā uddišū. Ṭuppūšunu naṣrū u kīsūka šanûtum petû. Kīsam turram pite ū ēdil-ma pite ana šanīš epēšim. Kīsam e tanassaḫ u ṭuppāt šumim annâtim e tuḫallaq.",
-    "walletResetFailed": "Nasāḫ kīsim lā ukīn. Adi kīsam šanâm tabannû, šanīš epūš.",
-    "passwordChangeFailed": "Šunnûm ša awāt pirištim lā ukīn. Kīsam pite-ma šanīš epūš. Šumma ṭuppum ša šumim TON turram iḫaššaḫ, ina awāt pirištišu labīrtim pānam tēršu.",
+    "tonRecoveryRequired": "𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒊭 TON 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒊭 𒉺𒀭 𒌓𒁺𒍑 𒆠𒋛𒅎 𒄿𒄩𒀸𒊭𒄷. 𒌅𒌒𒉺𒀜 𒋗𒈪𒅗 𒊭𒈾𒀀𒌅𒌝 𒁉𒋫𒀀𒌅𒌝. 𒀀𒈾 𒌅𒌨𒊑𒅎, 𒋗𒍝𒀀𒄠 𒊭 𒌅𒌒𒉿𒅎 𒁉𒋼𒈠 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒋗 𒆷𒁉𒅕𒋫𒄠 𒋗𒆪𒌦. 𒀀𒁲 𒌅𒌨𒊑𒅎, 𒆠𒊓𒄠 𒂊 𒋫𒈾𒊍𒊓𒄴 𒌑 𒌅𒌒𒉺𒄠 𒂊 𒌅𒄩𒀠𒆷𒀝.",
+    "tonStorageUnavailable": "𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒊭 TON 𒅗𒇷𒄿𒅆𒈾 𒆷 𒅔𒈾𒀜𒉡 𒌑 𒆷 𒌓𒁲𒋗. 𒌅𒌒𒁍𒋗𒉡 𒈾𒊍𒊒 𒌑 𒆠𒋢𒅗 𒊭𒉡𒌑𒌅𒌝 𒁉𒌅𒌑. 𒆠𒊓𒄠 𒌅𒌨𒊏𒄠 𒉿𒋼 𒌑 𒂊𒁲𒅋𒈠 𒉿𒋼 𒀀𒈾 𒊭𒉌𒅖 𒂊𒁉𒅆𒅎. 𒆠𒊓𒄠 𒂊 𒋫𒈾𒊍𒊓𒄴 𒌑 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒀭𒈾𒀀𒋾𒅎 𒂊 𒌅𒄩𒀠𒆷𒀝.",
+    "walletResetFailed": "𒈾𒊓𒄴 𒆠𒋛𒅎 𒆷 𒌑𒆠𒅔. 𒀀𒁲 𒆠𒊓𒄠 𒊭𒈾𒀀𒄠 𒋫𒁀𒀭𒉡𒌑, 𒊭𒉌𒅖 𒂊𒁍𒍑.",
+    "passwordChangeFailed": "𒋗𒌦𒉡𒌑𒌝 𒊭 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒆷 𒌑𒆠𒅔. 𒆠𒊓𒄠 𒉿𒋼𒈠 𒊭𒉌𒅖 𒂊𒁍𒍑. 𒋗𒌝𒈠 𒌅𒌒𒁍𒌝 𒊭 𒋗𒈪𒅎 TON 𒌅𒌨𒊏𒄠 𒄿𒄩𒀸𒊭𒄴, 𒄿𒈾 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒋗 𒆷𒁉𒅕𒋾𒅎 𒉺𒈾𒄠 𒋼𒅕𒋗.",
     "importWallet": "𒋗𒊑𒅁 𒆠𒊓𒄠",
     "ecosystemEvmSubstrate": "𒁉𒉌 𒌑 𒋗𒊑𒅁 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎 𒊭 Substrate 𒌑 EVM",
     "ecosystemTon": "𒆪𒍪𒌨 𒀀𒈾 𒆠𒅖𒊭𒋾𒅎 𒊭 𒂊𒇷 𒅗𒇷𒅖 𒊏𒉺𒅆𒅎 𒅋𒆷𒆪",
@@ -835,10 +835,10 @@
     "transactionDone": "𒅁𒋗𒌝 𒊭𒇷𒅎",
     "transactionError": "𒄭𒋾𒀉 𒅁𒅆𒅎",
     "transactionFailedDetails": "𒅁𒋗𒌝 𒆷 𒅖𒇷𒅎. 𒋼𒅎 𒅁𒅆𒅎 𒀀𒈬𒌨𒈠 𒊭𒉌𒅖 𒂊𒁍𒍑.",
-    "transferFeeChanged": "Miksu ša riksim irbi. Mamma lā uštābil. Tūr-ma miksam eššam amur eli šūbulim.",
-    "transferFeeApprovalRequired": "Mamma lā uštābil. Tūr-ma miksam ša riksim kun eli šūbulim.",
-    "transactionStatusUnknown": "Ṭēm epšim lā idûm",
-    "transactionStatusUnknownDetails": "Epšum ina pānīšu uštābil. Šum kunukkim u ṭēm ṭuppim ša šumim amur. Adī lā tamur, šanīš e tušabbal; kaspum šinīšu illak.",
+    "transferFeeChanged": "𒈪𒅅𒋢 𒊭 𒊑𒅅𒋛𒅎 𒅕𒁉. 𒈠𒄠𒈠 𒆷 𒍑𒋫𒁉𒅋. 𒌅𒌨𒈠 𒈪𒅅𒊓𒄠 𒌍𒊭𒄠 𒀀𒈬𒌨 𒂊𒇷 𒋗𒁍𒇷𒅎.",
+    "transferFeeApprovalRequired": "𒈠𒄠𒈠 𒆷 𒍑𒋫𒁉𒅋. 𒌅𒌨𒈠 𒈪𒅅𒊓𒄠 𒊭 𒊑𒅅𒋛𒅎 𒆪𒌦 𒂊𒇷 𒋗𒁍𒇷𒅎.",
+    "transactionStatusUnknown": "𒋼𒅎 𒅁𒅆𒅎 𒆷 𒄿𒁺𒌑𒌝",
+    "transactionStatusUnknownDetails": "𒅁𒋗𒌝 𒄿𒈾 𒉺𒉌𒋗 𒍑𒋫𒁉𒅋. 𒋗𒌝 𒆪𒉡𒊌𒆠𒅎 𒌑 𒋼𒅎 𒌅𒌒𒉿𒅎 𒊭 𒋗𒈪𒅎 𒀀𒈬𒌨. 𒀀𒁲 𒆷 𒋫𒈬𒌨, 𒊭𒉌𒅖 𒂊 𒌅𒊭𒀊𒁀𒀠; 𒅗𒊍𒁍𒌝 𒅆𒉌𒋗 𒅋𒆷𒀝.",
     "transactionPending": "𒅁𒋗𒌝 𒀀𒈾 𒋡𒋾 𒀀𒁲𒉌 𒆷 𒅅𒋗𒌓",
     "saveQR": "𒌅𒌒𒉺𒄠 QR 𒌑𒍪𒌨",
     "copyQR": "𒌅𒌒𒉺𒄠 QR 𒊭𒈾𒀀𒄠 𒂊𒁍𒍑",
@@ -909,7 +909,7 @@
     "solanaPreviousSendUnverified": "𒊑𒅅𒋢𒌝 𒆠𒈠 𒋗𒁍𒆷𒄠 𒉺𒉌𒄠 𒊭 𒋡𒋾𒅗 𒊭 Solana 𒅎𒄷𒊒 𒀀𒁲𒉌 𒌌 𒌑𒆠𒅔; 𒀸𒋗𒌝 𒀭𒉌𒄿𒅎 𒋗𒁍𒇻𒌝 𒀀𒁲𒉌 𒀀𒈾 𒋡𒋾𒅎 𒅗𒊭𒁕𒄠 𒄿𒇷𒀪𒀪. 𒆷𒄠 𒊭𒉌𒅖 𒋗𒁍𒇷𒅎, 𒌅𒌒𒉺𒀜 𒌑𒈪𒅗 𒉺𒉡𒋾𒅎 𒀀𒈬𒌨. 𒈪𒅎𒈠 𒌍𒋗𒌝 𒌌 𒋗𒁍𒌌."
   },
   "accounts": {
-    "tonEarlierPassword": "Šumma ṭuppum ša šumim TON warki šunnê awāt pirištim lā illak, awāt pirištišu labīrtam annākam šukun ana turrim.",
+    "tonEarlierPassword": "𒋗𒌝𒈠 𒌅𒌒𒁍𒌝 𒊭 𒋗𒈪𒅎 TON 𒉿𒅈𒆠 𒋗𒌦𒉈𒂊 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒆷 𒅋𒆷𒀝, 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒋗 𒆷𒁉𒅕𒋫𒄠 𒀭𒈾𒅗𒄠 𒋗𒆪𒌦 𒀀𒈾 𒌅𒌨𒊑𒅎.",
     "invalidAccountAddress": "𒀀𒊭𒅈 𒌅𒌒𒉿𒅎 𒊭 𒋗𒈪𒅎 𒆷 𒆠𒉡𒌝",
     "walletName": "𒋗𒌝 𒆠𒋛𒅎",
     "createNewAccount": "𒁉𒉌 𒌅𒌒𒉺𒄠 𒊭 𒋗𒈪𒅎 𒌍𒊭𒄠",
@@ -1360,7 +1360,7 @@
     "favicon": "𒍝𒀠𒈬 𒍣𒄴𒊒𒌝 𒊭 𒁉𒋾𒅎",
     "fearlessLogo": "𒆪𒉡𒊌 Fearless",
     "nftImage": "𒍝𒀠𒈬 𒆪𒉡𒊌𒆠𒅎 𒆷 𒈪𒀉𒄩𒊑𒅎",
-    "helpSupport": "Tillatum"
+    "helpSupport": "𒋾𒅋𒆷𒌅𒌝"
   },
   "ux": {
     "refresh": "𒌓𒁲𒌍",

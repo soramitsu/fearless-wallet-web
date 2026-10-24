@@ -1,0 +1,45 @@
+import { describe, expect, it, vi } from 'vitest';
+import Extension from '@extension-base/background/handlers/Extension';
+import type State from '@extension-base/background/handlers/State';
+
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
+vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@extension-base/services', () => ({}));
+vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
+vi.mock('@extension-base/utils/crossenv', () => ({
+  chrome: { runtime: { getURL: (path: string) => `chrome-extension://fixture/${path}` } },
+}));
+
+function fixture(unlocked: boolean, hasStorageIssues: boolean) {
+  const keyringService = {
+    unlockKeyring: vi.fn(() => unlocked),
+    tonKeyring: { hasStorageIssues, hasRecoveryAccounts: false },
+    waitForAccessScan: vi.fn(() => new Promise<void>(() => {})),
+  };
+  const state = {
+    keyringService,
+    keyringLockService: { setExtensionAutoLockTimeout: vi.fn() },
+  };
+  return { keyringService, extension: new Extension(state as unknown as State) };
+}
+
+describe('unlock reports retained but unreadable TON storage', () => {
+  it('keeps the verified session available and warns when TON records could not load', async () => {
+    const { extension, keyringService } = fixture(true, true);
+    await expect(extension.unlockKeyring({ password: 'public fixture password' })).resolves.toBe('ton-storage-unavailable');
+    expect(keyringService.unlockKeyring).toHaveBeenCalledOnce();
+    expect(keyringService.waitForAccessScan).not.toHaveBeenCalled();
+  });
+
+  it('does not claim a successful unlock when the password verifier rejects it', async () => {
+    const { extension } = fixture(false, true);
+    await expect(extension.unlockKeyring({ password: 'incorrect' })).resolves.toBe(false);
+  });
+
+  it('continues normally while earlier-password account recovery runs through the asynchronous banner', async () => {
+    const { extension, keyringService } = fixture(true, false);
+    keyringService.tonKeyring.hasRecoveryAccounts = true;
+    await expect(extension.unlockKeyring({ password: 'public fixture password' })).resolves.toBe(true);
+    expect(keyringService.waitForAccessScan).not.toHaveBeenCalled();
+  });
+});

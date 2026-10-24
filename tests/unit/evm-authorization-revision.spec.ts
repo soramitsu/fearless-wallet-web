@@ -7,6 +7,7 @@ import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { AuthUrls } from '@extension-base/background/types/types';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const storage = vi.hoisted(() => ({
   data: {} as AuthUrls,
@@ -91,9 +92,10 @@ beforeEach(async () => {
     getEvmAuthorizationSnapshot: () => auth.getEvmAuthorizationSnapshot(url),
     getEvmApi: vi.fn(() => undefined),
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getSubstrateAddress: () => 'root',
       getEthereumAddress: () => address,
-      getAllAccounts: () => [{ address: 'root', meta: { name: 'Public fixture', ethereumAddress: address } }],
+      getAllAccounts: () => [{ address: 'root', meta: { name: 'Public fixture', ethereumAddress: address, walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } }],
       getAddresses: () => [],
       isMobileAccount: () => false,
       accountExportPrivateKey: vi.fn(() => ({ privateKey: wallet.privateKey })),

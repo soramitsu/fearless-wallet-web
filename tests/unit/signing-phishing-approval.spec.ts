@@ -9,12 +9,13 @@ vi.mock('@extension-base/utils/crossenv', () => ({
 }));
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 function fixture(protocol: 'substrate' | 'evm' | 'solana') {
   const queued = {
     id: 'public',
     url: 'https://public.example',
-    account: { address: 'public-account' },
+    account: { address: 'public-account', publicKey: 'public-account' },
     resolve: vi.fn(),
     reject: vi.fn(),
     ...(protocol === 'evm'
@@ -33,7 +34,8 @@ function fixture(protocol: 'substrate' | 'evm' | 'solana') {
       },
     },
     keyringService: {
-      getAllAccounts: vi.fn(() => []),
+      tonKeyring: { getAccounts: () => [] },
+      getAllAccounts: vi.fn(() => [{ address: 'public-account', meta: { walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } }]),
       accountExportPrivateKey: vi.fn(),
       exportMnemonic: vi.fn(),
       getPair: vi.fn(),
@@ -89,7 +91,8 @@ describe('background signing phishing veto', () => {
       finish(false);
       await pending;
       expect(queued.resolve).not.toHaveBeenCalled();
-      expect(state.keyringService.getAllAccounts).not.toHaveBeenCalled();
+      // The initial recovery-only check reads public metadata before the asynchronous phishing lookup.
+      expect(state.keyringService.getAllAccounts).toHaveBeenCalledOnce();
       expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
     }
   );

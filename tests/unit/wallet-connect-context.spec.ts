@@ -10,6 +10,7 @@ import { sessionStorage } from '../helpers/session-storage';
 import type { SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
+import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
@@ -91,9 +92,10 @@ beforeEach(async () => {
     networkService: { networkMap: { Ethereum: network }, findNetworkJsonByChainId: vi.fn(() => network) },
     getEvmApi: vi.fn(() => undefined),
     keyringService: {
+      tonKeyring: { getAccounts: () => [] },
       getSubstrateAddress: vi.fn(() => 'root'),
       getEthereumAddress: vi.fn(() => address),
-      getAllAccounts: vi.fn(() => [{ address: 'root', meta: { name: 'Public account', ethereumAddress: address } }]),
+      getAllAccounts: vi.fn(() => [{ address: 'root', meta: { name: 'Public account', ethereumAddress: address, walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION } }]),
       getAddresses: vi.fn(() => []),
       isMobileAccount: vi.fn(() => false),
       accountExportPrivateKey: vi.fn(() => ({ privateKey: wallet.privateKey })),

@@ -62,7 +62,7 @@ describe('account setup completion and recovery', () => {
   });
   it('requires fresh generation when creating but not when importing', async () => {
     for (const type of ['create', 'import']) {
-      const wrapper = mountFlow(type);
+      const wrapper = mountFlow(type, 'substrate');
       await wrapper.setData({ nickname: 'Fixture', mnemonic: 'public test phrase' });
       await wrapper.vm.saveKeypairFromSeed();
       expect(mocks.save.mock.lastCall?.[4]).toBe(type === 'create');

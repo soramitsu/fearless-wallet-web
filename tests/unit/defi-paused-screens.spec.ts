@@ -11,12 +11,12 @@ const mocks = vi.hoisted(() => ({
   snapshot: vi.fn(),
   quote: vi.fn(),
   mutatePolkamarkt: vi.fn(),
-  accounts: { showPolkaswapAlert: false, hidePolkaswapAlert: vi.fn() },
+  accounts: { accounts: [], selectedWallet: { address: '' }, showPolkaswapAlert: false, hidePolkaswapAlert: vi.fn() },
 }));
 const route = reactive({ query: {} as Record<string, string>, params: {} as Record<string, string> });
 
 vi.mock('vue-router', () => ({ useRoute: () => route, useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 379 }));
+vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 379, IS_EXTENSION: true }));
 vi.mock('@/router/routes', () => ({ Components: { Pools: 'Pools', Polkamarkt: 'Polkamarkt' } }));
 vi.mock('@/extension/messaging', () => ({
   getDemeterPools: mocks.farming,

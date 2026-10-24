@@ -15,7 +15,7 @@ import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
 import { auditBundleHosts, DEFAULT_ALLOWLIST_PATH, readHostAllowlist } from './audit-bundle-hosts.mjs';
 
-export const CURRENT_PUBLISHED_VERSION = '3.0.6';
+export const CURRENT_PUBLISHED_VERSION = '3.0.9';
 export const EXPECTED_CHROME_EXTENSION_ID = 'nhlnehondigmgckngjomcpcefcdplmgc';
 export const MINIMUM_SUPPORTED_CHROME_VERSION = '116';
 const EXPECTED_EXTENSION_AUTHOR = 'Soramitsu';

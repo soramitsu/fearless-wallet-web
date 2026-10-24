@@ -22,6 +22,9 @@ module.exports = (browser) => {
           required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
         },
       },
+      gecko_android: {
+        strict_min_version: '142.0',
+      },
     },
     action: {
       default_title: 'Fearless Wallet',

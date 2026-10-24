@@ -58,6 +58,9 @@ describe('extension manifest generation', () => {
           required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
         },
       },
+      gecko_android: {
+        strict_min_version: '142.0',
+      },
     });
     expect(manifest).not.toHaveProperty('key');
     expect(manifest).not.toHaveProperty('oauth2');

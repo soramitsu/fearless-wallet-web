@@ -43,6 +43,10 @@ upgrade notice, privacy notice and metadata corrections).
   the node you pick is tried first. Saving a custom Solana node previously
   failed with an error after storing it, and the form accepted only `wss://`
   addresses; both are fixed.
+- The upgrade notice now appears only on wallets from before the update and on
+  imported keys; a wallet created in the extension shows no warning. Its dialog
+  opens once per wallet instead of every time the extension opens, and the
+  recovery-only banner stays on those older wallets.
 
 ## How it reads and sends
 

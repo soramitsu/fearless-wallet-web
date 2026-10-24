@@ -1,6 +1,6 @@
 <template>
   <div class="qr-wrapper">
-    <img :src="qr" :class="qrClasses" />
+    <img v-if="qr" :src="qr" :class="qrClasses" alt="" />
 
     <Icon v-if="showLogo" className="logo-qr" icon="logo-qr" :hover="false" />
   </div>
@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import QRCode from 'qrcode';
-import { watch, onMounted, ref, computed } from 'vue';
+import { watch, ref, computed } from 'vue';
 
 type Props = {
   payload?: string;
@@ -36,10 +36,14 @@ const qrClasses = computed(() => {
   ];
 });
 
+let request = 0;
 const createQR = async () => {
-  if (!props.payload) return;
+  const current = ++request;
+  const payload = props.payload;
+  qr.value = '';
+  if (!payload) return;
 
-  qr.value = await QRCode.toDataURL(props.payload, {
+  const image = await QRCode.toDataURL(payload, {
     margin: props.margin,
     width: props.width,
     maskPattern: 5,
@@ -49,13 +53,13 @@ const createQR = async () => {
       light: props.background,
     },
   });
+  if (current === request) qr.value = image;
 };
-
-onMounted(() => createQR());
 
 watch(
   () => props.payload,
-  () => createQR()
+  () => createQR(),
+  { immediate: true }
 );
 </script>
 

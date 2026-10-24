@@ -36,7 +36,7 @@ export function extensionChangePassword(request: RequestChangePassword): Promise
   return sendMessage('pri(keyring.changePassword)', request);
 }
 
-export function unlockExtension(request: RequestUnlockExtension): Promise<boolean> {
+export function unlockExtension(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
   return sendMessage('pri(keyring.unlock)', request);
 }
 

@@ -8,21 +8,30 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const extensionDir = path.resolve(root, 'dist/extension/chrome-test');
+const productionPopupOnly = process.argv.includes('--production-popup');
+const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
-const chromeBinary =
+const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
+let chromeBinary =
   process.env.CHROME_BIN ||
-  (process.platform === 'darwin'
-    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-    : 'google-chrome');
+  (process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome');
 const headless = process.env.SOLANA_EXTENSION_SMOKE_HEADLESS !== 'false';
-const timeoutMs = Number(process.env.SOLANA_EXTENSION_SMOKE_TIMEOUT_MS ?? 45_000);
+const timeoutMs = Number(process.env.SOLANA_EXTENSION_SMOKE_TIMEOUT_MS ?? 60_000);
+const cdpCommandTimeoutMs = Number(process.env.SOLANA_EXTENSION_SMOKE_CDP_TIMEOUT_MS ?? timeoutMs);
 const usePipeTransport = process.env.SOLANA_EXTENSION_SMOKE_TRANSPORT !== 'websocket';
+
+assert(
+  Number.isFinite(timeoutMs) && timeoutMs >= 1_000,
+  'SOLANA_EXTENSION_SMOKE_TIMEOUT_MS must be a positive millisecond value of at least 1000'
+);
+assert(
+  Number.isFinite(cdpCommandTimeoutMs) && cdpCommandTimeoutMs >= 1_000,
+  'SOLANA_EXTENSION_SMOKE_CDP_TIMEOUT_MS must be a positive millisecond value of at least 1000'
+);
 
 const PORT_EXTENSION = 'fw-fearless-extension';
 const TEST_PASSWORD = 'fearless-solana-smoke-password';
-const TEST_MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
-const SOLANA_ADDRESS = 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk';
+const LEGACY_TEST_MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const SYSTEM_PROGRAM = '11111111111111111111111111111111';
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
@@ -77,7 +86,7 @@ class CdpConnection {
       const timeout = setTimeout(() => {
         this.#callbacks.delete(id);
         reject(new Error(`Timed out waiting for CDP response to ${method}`));
-      }, Math.min(timeoutMs, 20_000));
+      }, cdpCommandTimeoutMs);
 
       this.#callbacks.set(id, { reject, resolve, timeout });
       this.socket.send(JSON.stringify(payload));
@@ -145,7 +154,7 @@ class CdpPipeConnection {
       const timeout = setTimeout(() => {
         this.#callbacks.delete(id);
         reject(new Error(`Timed out waiting for CDP response to ${method}`));
-      }, Math.min(timeoutMs, 20_000));
+      }, cdpCommandTimeoutMs);
 
       this.#callbacks.set(id, { reject, resolve, timeout });
       this.input.write(`${JSON.stringify(payload)}\0`);
@@ -189,15 +198,25 @@ class CdpPipeConnection {
 }
 
 async function main() {
-  await assertFile(manifestPath, 'Build the test extension first with `npm run build:extension-test`.');
-  await assertFile(chromeBinary, `Set CHROME_BIN to a Chrome/Chromium executable if Chrome is not at ${chromeBinary}.`);
+  await assertFile(
+    manifestPath,
+    productionPopupOnly
+      ? 'Build the production extension first with `yarn build:extension`.'
+      : 'Build the test extension first with `yarn build:extension-test`.'
+  );
+  if (!productionPopupOnly) {
+    await assertFile(smokeControlPath, 'Build the test extension through `yarn test:e2e:solana`.');
+  }
+  chromeBinary = await resolveExecutable(chromeBinary, 'Set CHROME_BIN to a Chrome/Chromium executable.');
 
-  const universalWalletFixture = await loadUniversalWalletFixture();
-  const transactionBase64 = validTransactionBase64();
-  const server = await startDappServer();
+  const deriveWalletFixture = productionPopupOnly ? undefined : await loadWalletFixtureDerivation();
+  const [solanaServer, irohaServer] = productionPopupOnly
+    ? [undefined, undefined]
+    : await Promise.all([startDappServer(), startDappServer()]);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-solana-extension-smoke-'));
   const chrome = launchChrome(userDataDir);
   let cdp;
+  let stopExtensionKeepAlive;
 
   try {
     let extensionId;
@@ -220,7 +239,10 @@ async function main() {
 
       const extensionTarget = await waitForTarget(
         cdp,
-        (target) => target.url.startsWith('chrome-extension://') && target.url.endsWith('/background.js'),
+        (target) =>
+          ['background_page', 'service_worker'].includes(target.type) &&
+          target.url.startsWith('chrome-extension://') &&
+          ['/background.js', '/service_worker.js'].some((suffix) => target.url.endsWith(suffix)),
         'extension service worker',
         chrome
       );
@@ -228,15 +250,40 @@ async function main() {
       extensionId = new URL(extensionTarget.url).hostname;
     }
 
+    const backgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome);
+
+    if (productionPopupOnly) {
+      const popup = await assertProductionPopup(cdp, extensionId, backgroundSession);
+
+      console.info('[extension-smoke] production popup ready');
+      console.info(JSON.stringify({ extensionId, ...popup }, null, 2));
+
+      return;
+    }
+
     const extensionSession = await openExtensionControlPage(cdp, extensionId);
 
     await setupExtensionMessaging(cdp, extensionSession);
+    stopExtensionKeepAlive = startExtensionKeepAlive(cdp, extensionSession, backgroundSession);
     await eventually(() => extensionSend(cdp, extensionSession, 'pri(app.port.ping)', null), 'background ping');
     await eventually(() => extensionSend(cdp, extensionSession, 'pri(app.isReady)', null), 'extension app readiness');
+    console.info('[extension-smoke] extension ready');
 
+    await initializeKeyring(cdp, extensionSession);
+    const legacyFixture = deriveWalletFixture(LEGACY_TEST_MNEMONIC);
+    const legacyAddress = await createSeededWallet(cdp, extensionSession, legacyFixture, false);
+    await assertLegacyRecoveryPopup(cdp, extensionId, extensionSession, legacyAddress);
+    const mnemonic = await extensionSend(cdp, extensionSession, 'pri(keyring.generateMnemonic)', {
+      walletEcosystem: 'substrate', wordCount: 24,
+    });
+    const universalWalletFixture = deriveWalletFixture(mnemonic);
+    const solanaAddress = universalWalletFixture.expected.solana.address;
+    const transactionBase64 = validTransactionBase64(solanaAddress);
     const substrateAddress = await seedWallet(cdp, extensionSession, universalWalletFixture);
-    await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture);
-    const dappSession = await openDappPage(cdp, server.url);
+    await assertSeededUniversalWalletMetadata(cdp, extensionSession, universalWalletFixture, legacyAddress);
+    await assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, substrateAddress, legacyAddress);
+    console.info('[extension-smoke] wallet seeded');
+    const dappSession = await openDappPage(cdp, solanaServer.url);
 
     await waitForExpression(
       cdp,
@@ -244,6 +291,22 @@ async function main() {
       'Boolean(window.fearlessSolana && window.solana && window.fearlessSolana === window.solana && window.fearlessSolana.isFearlessWallet)',
       'Solana provider injection'
     );
+
+    const walletStandardFeatures = await evaluate(
+      cdp,
+      dappSession,
+      'Object.keys(window.fearlessSolana.features).sort()'
+    );
+    for (const feature of [
+      'solana:signAndSendTransaction',
+      'solana:signMessage',
+      'solana:signTransaction',
+      'standard:connect',
+      'standard:disconnect',
+      'standard:events',
+    ]) {
+      assert(walletStandardFeatures.includes(feature), `Wallet Standard feature is missing: ${feature}`);
+    }
 
     const malformedMessage = await evaluate(
       cdp,
@@ -258,23 +321,40 @@ async function main() {
     );
 
     await startConnect(cdp, dappSession);
-    const authRequest = await waitForAuthRequest(cdp, extensionSession, server.host);
+    const authRequest = await waitForAuthRequest(cdp, extensionSession, solanaServer.host);
 
-    assert(authRequest.accountAuthType === 'solana', `Expected Solana auth request, got ${authRequest.accountAuthType}`);
+    assert(
+      authRequest.accountAuthType === 'solana',
+      `Expected Solana auth request, got ${authRequest.accountAuthType}`
+    );
+    const legacyAuthorizationError = await evaluate(cdp, extensionSession,
+      `globalThis.__fearlessExtensionSmoke.send('pri(authorize.approve)', ${JSON.stringify({
+        authorizedAccounts: [legacyFixture.expected.solana.address], id: authRequest.id,
+      })}).then(() => '', (error) => error.message)`,
+      { awaitPromise: true });
+    assert(legacyAuthorizationError.includes('recovery-only'), 'Imported wallet was allowed to authorize a dApp');
+    console.info('[extension-smoke] legacy wallet authorization rejected');
     await extensionSend(cdp, extensionSession, 'pri(authorize.approve)', {
-      authorizedAccounts: [SOLANA_ADDRESS],
+      authorizedAccounts: [solanaAddress],
       id: authRequest.id,
     });
 
     const connectResult = await evaluate(cdp, dappSession, 'window.__fearlessSolanaSmoke.connect', {
       awaitPromise: true,
     });
+    console.info('[extension-smoke] Solana authorized');
 
     assert(connectResult.connected === true, 'Provider did not report a connected state');
-    assert(connectResult.publicKey === SOLANA_ADDRESS, `Unexpected connected public key ${connectResult.publicKey}`);
-    assert(connectResult.accounts?.[0]?.address === SOLANA_ADDRESS, 'Connected account did not use the Solana address');
+    assert(connectResult.publicKey === solanaAddress, `Unexpected connected public key ${connectResult.publicKey}`);
+    assert(connectResult.accounts?.[0]?.address === solanaAddress, 'Connected account did not use the Solana address');
+    assert(
+      ['solana:signMessage', 'solana:signTransaction', 'solana:signAndSendTransaction'].every((feature) =>
+        connectResult.accountFeatures?.includes(feature)
+      ),
+      `Connected Wallet Standard account features are incomplete: ${JSON.stringify(connectResult.accountFeatures)}`
+    );
 
-    const signMessage = await runSignFlow(cdp, extensionSession, dappSession, {
+    const signMessage = await runSignFlow(cdp, extensionSession, dappSession, solanaAddress, {
       method: 'signMessage',
       startExpression: `
         window.__fearlessSolanaSmoke.signMessage = window.fearlessSolana
@@ -289,11 +369,11 @@ async function main() {
       resultExpression: 'window.__fearlessSolanaSmoke.signMessage',
     });
 
-    assert(signMessage.publicKey === SOLANA_ADDRESS, `Unexpected signing public key ${signMessage.publicKey}`);
+    assert(signMessage.publicKey === solanaAddress, `Unexpected signing public key ${signMessage.publicKey}`);
     assert(signMessage.signatureLength === 64, `Unexpected Solana signature length ${signMessage.signatureLength}`);
     assert(signMessage.signatureNonZero === true, 'Solana message signature was all zeros');
 
-    const signTransaction = await runSignFlow(cdp, extensionSession, dappSession, {
+    const signTransaction = await runSignFlow(cdp, extensionSession, dappSession, solanaAddress, {
       method: 'signTransaction',
       startExpression: `
         {
@@ -315,7 +395,7 @@ async function main() {
     assert(signTransaction.changed === true, 'Signed transaction bytes did not change');
     assert(signTransaction.signatureNonZero === true, 'Signed transaction signature slot was all zeros');
 
-    const signAllTransactions = await runSignFlow(cdp, extensionSession, dappSession, {
+    const signAllTransactions = await runSignFlow(cdp, extensionSession, dappSession, solanaAddress, {
       method: 'signAllTransactions',
       startExpression: `
         {
@@ -338,6 +418,7 @@ async function main() {
     assert(signAllTransactions.count === 2, `Expected two signed transactions, got ${signAllTransactions.count}`);
     assert(signAllTransactions.allChanged === true, 'At least one batch transaction was not signed');
     assert(signAllTransactions.allSignatureNonZero === true, 'At least one batch signature slot was all zeros');
+    console.info('[extension-smoke] Solana signing complete');
 
     const disconnectResult = await evaluate(
       cdp,
@@ -354,17 +435,28 @@ async function main() {
     assert(disconnectResult.accountCount === 0, 'Provider kept Solana accounts after disconnect');
     assert(disconnectResult.disconnectedEventCount === 1, 'Provider did not emit exactly one disconnect event');
 
-    const irohaSmoke = await runIrohaConnectSmoke(cdp, extensionSession, dappSession, server.host, universalWalletFixture.expected.iroha);
+    const irohaDappSession = await openDappPage(cdp, irohaServer.url);
+    console.info('[extension-smoke] starting fresh-origin Iroha checks');
+    const irohaSmoke = await runIrohaConnectSmoke(
+      cdp,
+      extensionSession,
+      irohaDappSession,
+      irohaServer.host,
+      universalWalletFixture.expected.iroha
+    );
 
     console.info(
       JSON.stringify(
         {
-          authorizedHost: server.host,
+          authorizedHosts: {
+            iroha: irohaServer.host,
+            solana: solanaServer.host,
+          },
           extensionId,
           irohaNexusAddress: irohaSmoke.nexusAddress,
           irohaTairaAddress: irohaSmoke.tairaAddress,
           signedBatchTransactions: signAllTransactions.count,
-          solanaAddress: SOLANA_ADDRESS,
+          solanaAddress,
           substrateAddress,
         },
         null,
@@ -372,95 +464,111 @@ async function main() {
       )
     );
   } finally {
+    await stopExtensionKeepAlive?.();
     if (cdp) {
       await cdp.send('Browser.close').catch(() => undefined);
       cdp.close();
     }
 
     await stopChrome(chrome);
-    await server.close();
+    await Promise.all([solanaServer?.close(), irohaServer?.close()]);
     await fs.rm(userDataDir, { force: true, recursive: true }).catch(() => undefined);
   }
 }
 
-async function loadUniversalWalletFixture() {
-  const raw = await fs.readFile(path.join(root, 'docs/universal-wallet-v2-vectors.json'), 'utf8');
-  const payload = JSON.parse(raw);
-  const fixture = payload?.vectors?.[0];
-
-  assert(fixture?.expected?.iroha?.nexus?.i105, 'Universal Wallet fixture does not include a Nexus Iroha address');
-  assert(fixture?.expected?.iroha?.taira?.i105, 'Universal Wallet fixture does not include a Taira Iroha address');
-
-  return fixture;
+// Load the application's derivation helpers in Node, without adding a test-only
+// trust marker or generation path to the extension build.
+async function loadWalletFixtureDerivation() {
+  const { createServer } = await import('vite');
+  const { HDNodeWallet } = await import('ethers');
+  const server = await createServer({
+    configFile: false,
+    root,
+    server: { middlewareMode: true },
+    optimizeDeps: { noDiscovery: true, include: [] },
+    resolve: { alias: { '@': path.join(root, 'src') } },
+  });
+  try {
+    const { deriveUniversalWalletKeyringFields } = await server.ssrLoadModule('/src/util/universalWalletKeyringFields.ts');
+    const { encodeIrohaI105Address } = await server.ssrLoadModule('/src/util/iroha.ts');
+    return (mnemonic) => {
+      const fields = deriveUniversalWalletKeyringFields(mnemonic);
+      const irohaAccount = (network) => ({
+        i105: encodeIrohaI105Address(fields.irohaPublicKeyHex, network),
+        publicKeyHex: fields.irohaPublicKeyHex,
+      });
+      return {
+        mnemonic,
+        fields: { ...fields, ethereumAddress: HDNodeWallet.fromPhrase(mnemonic).address },
+        expected: {
+          solana: { address: fields.solanaAddress },
+          iroha: { nexus: irohaAccount('nexus'), taira: irohaAccount('taira') },
+        },
+      };
+    };
+  } finally {
+    await server.close();
+  }
 }
 
-async function assertSeededUniversalWalletMetadata(cdp, sessionId, fixture) {
+async function assertSeededUniversalWalletMetadata(cdp, sessionId, fixture, legacyAddress) {
   const accounts = await extensionSend(cdp, sessionId, 'pri(accounts.subscribe)', null);
-  const account = accounts.find((candidate) => candidate.solanaAddress === SOLANA_ADDRESS);
+  const account = accounts.find((candidate) => candidate.solanaAddress === fixture.expected.solana.address);
+  const legacy = accounts.find((candidate) => candidate.address === legacyAddress);
 
-  assert(account, `Seeded account did not appear in the extension account list: ${JSON.stringify(accounts)}`);
+  assert(account, 'Fresh account did not appear in the extension account list');
+  assert(account.walletSecurityGeneration === 1, 'Backend-generated wallet did not retain its security provenance');
+  assert(legacy && legacy.walletSecurityGeneration === undefined, 'Imported wallet retained an untrusted security marker');
+  assert(!legacy.isHardware, 'Imported local secret retained a hardware-wallet exemption');
   assert(
     account.irohaPublicKeyHex === fixture.expected.iroha.nexus.publicKeyHex,
-    `Seeded account lost Iroha metadata: ${JSON.stringify(account)}`
+    'Fresh account lost its derived Iroha metadata'
   );
 }
 
-async function seedWallet(cdp, sessionId, fixture) {
+async function initializeKeyring(cdp, sessionId) {
   await extensionSend(cdp, sessionId, 'pri(keyring.reset)', null).catch(() => undefined);
   const passwordChanged = await extensionSend(cdp, sessionId, 'pri(keyring.changePassword)', {
     newPassword: TEST_PASSWORD,
     oldPassword: '',
   });
-
   assert(passwordChanged === true, 'Unable to set test keyring password');
+}
 
-  const substrateAddress = await extensionSend(cdp, sessionId, 'pri(accounts.create)', {
+async function createSeededWallet(cdp, sessionId, fixture, fresh) {
+  return extensionSend(cdp, sessionId, 'pri(accounts.create)', {
     meta: {
-      irohaPublicKeyHex: fixture.expected.iroha.nexus.publicKeyHex,
-      name: 'Solana Smoke',
-      solanaAddress: SOLANA_ADDRESS,
+      ...fixture.fields,
+      name: fresh ? 'Fresh Solana Smoke' : 'Legacy Solana Smoke',
       whenCreated: 1,
+      // An import must not become trusted just because its metadata claims so.
+      ...(!fresh ? { walletSecurityGeneration: 1, isHardware: true } : {}),
     },
-    suri: TEST_MNEMONIC,
+    suri: fixture.mnemonic,
     type: 'sr25519',
     walletEcosystem: 'substrate',
+    requireFreshGeneration: fresh,
   });
+}
 
+async function seedWallet(cdp, sessionId, fixture) {
+  const substrateAddress = await createSeededWallet(cdp, sessionId, fixture, true);
   const hasAccounts = await extensionSend(cdp, sessionId, 'pri(keyring.hasAccounts)', null);
-
   assert(hasAccounts === true, 'Extension keyring did not retain the seeded account');
-  const exportedJson = await extensionSend(cdp, sessionId, 'pri(accounts.export.json)', {
+  await extensionSend(cdp, sessionId, 'pri(accounts.export.json)', {
     address: substrateAddress,
     password: TEST_PASSWORD,
-  }).catch((error) => ({ error: error.message }));
+  });
   assert(
     (await extensionSend(cdp, sessionId, 'pri(keyring.unlock)', { password: TEST_PASSWORD })) === true,
     'Unable to unlock seeded keyring'
   );
-
   const exported = await extensionSend(cdp, sessionId, 'pri(keyring.export.mnemonic)', {
     address: substrateAddress,
     password: TEST_PASSWORD,
     walletEcosystem: 'substrate',
   });
-  const exportedWithEmptyPassword =
-    exported?.seed === TEST_MNEMONIC
-      ? undefined
-      : await extensionSend(cdp, sessionId, 'pri(keyring.export.mnemonic)', {
-          address: substrateAddress,
-          password: '',
-          walletEcosystem: 'substrate',
-        });
-
-  assert(
-    exported?.seed === TEST_MNEMONIC,
-    `Seeded account mnemonic export did not match the vector mnemonic: ${JSON.stringify({
-      exported,
-      exportedWithEmptyPassword,
-      exportedJson,
-    })}`
-  );
-
+  assert(exported?.seed === fixture.mnemonic, 'Fresh account mnemonic export did not match its generated phrase');
   return substrateAddress;
 }
 
@@ -477,6 +585,17 @@ async function runIrohaConnectSmoke(cdp, extensionSession, dappSession, host, ir
   });
 
   assert(initialAccounts.accounts?.length === 0, 'Iroha provider returned accounts before authorization');
+
+  const invalidNetworkMessage = await evaluate(
+    cdp,
+    dappSession,
+    `window.fearlessIroha.connect({ network: 'invalid' })
+      .then(() => 'unexpected-success', (error) => error.message)`
+  );
+  assert(
+    invalidNetworkMessage === 'invalid_iroha_network',
+    `Unexpected invalid Iroha network result: ${invalidNetworkMessage}`
+  );
 
   const failClosedMessage = await evaluate(
     cdp,
@@ -513,6 +632,7 @@ async function runIrohaConnectSmoke(cdp, extensionSession, dappSession, host, ir
   assert(nexusConnect.publicKeyHex === iroha.nexus.publicKeyHex, 'Iroha provider exposed the wrong public key');
   assert(nexusConnect.accounts?.[0]?.chain === 'sora:nexus', 'Iroha provider returned the wrong Nexus chain id');
   assert(nexusConnect.accounts?.[0]?.network === 'nexus', 'Iroha provider returned the wrong Nexus network key');
+  console.info('[extension-smoke] Iroha Nexus authorized');
 
   await startIrohaConnect(cdp, dappSession, 'taira');
   const tairaAuthRequest = await waitForAuthRequest(cdp, extensionSession, host, 'iroha');
@@ -522,10 +642,7 @@ async function runIrohaConnectSmoke(cdp, extensionSession, dappSession, host, ir
     tairaAllowedAccounts.includes(iroha.taira.i105),
     'Taira authorization request did not include the Taira I105 address'
   );
-  assert(
-    !tairaAllowedAccounts.includes(iroha.nexus.i105),
-    'Taira authorization request leaked the Nexus I105 address'
-  );
+  assert(!tairaAllowedAccounts.includes(iroha.nexus.i105), 'Taira authorization request leaked the Nexus I105 address');
   await extensionSend(cdp, extensionSession, 'pri(authorize.approve)', {
     authorizedAccounts: [iroha.taira.i105],
     id: tairaAuthRequest.id,
@@ -537,6 +654,7 @@ async function runIrohaConnectSmoke(cdp, extensionSession, dappSession, host, ir
   assert(tairaConnect.selectedAddress === iroha.taira.i105, 'Iroha provider selected the wrong Taira address');
   assert(tairaConnect.accounts?.[0]?.chain === 'iroha:taira', 'Iroha provider returned the wrong Taira chain id');
   assert(tairaConnect.accounts?.[0]?.network === 'taira', 'Iroha provider returned the wrong Taira network key');
+  console.info('[extension-smoke] Iroha Taira authorized');
 
   const disconnectResult = await evaluate(
     cdp,
@@ -618,38 +736,41 @@ async function startConnect(cdp, sessionId) {
       window.fearlessSolana.on('accountChanged', (publicKey) => {
         window.__fearlessSolanaSmoke.accountChanged = publicKey?.toBase58?.() ?? null;
       });
-      window.__fearlessSolanaSmoke.connect = window.fearlessSolana.connect().then((response) => ({
-        accounts: response.accounts,
-        accountChanged: window.__fearlessSolanaSmoke.accountChanged,
-        connected: window.fearlessSolana.connected,
-        connectEventPublicKey: window.__fearlessSolanaSmoke.connectEventPublicKey,
-        publicKey: window.fearlessSolana.publicKey?.toBase58?.()
-      }));
+      window.__fearlessSolanaSmoke.connect = window.fearlessSolana.connect().then(
+        (response) => ({
+          accounts: response.accounts,
+          accountFeatures: window.fearlessSolana.accounts[0]?.features ?? [],
+          accountChanged: window.__fearlessSolanaSmoke.accountChanged,
+          connected: window.fearlessSolana.connected,
+          connectEventPublicKey: window.__fearlessSolanaSmoke.connectEventPublicKey,
+          publicKey: window.fearlessSolana.publicKey?.toBase58?.()
+        }),
+        (error) => {
+          window.__fearlessSolanaSmoke.connectError = error?.message ?? String(error);
+          throw error;
+        }
+      );
       true;
     `
   );
 }
 
-async function runSignFlow(cdp, extensionSession, dappSession, { method, resultExpression, startExpression }) {
+async function runSignFlow(cdp, extensionSession, dappSession, solanaAddress, { method, resultExpression, startExpression }) {
   await evaluate(cdp, dappSession, startExpression);
   const request = await waitForSolanaSigningRequest(cdp, extensionSession, method);
 
-  assert(request.account?.address === SOLANA_ADDRESS, `${method} request used unexpected account`);
+  assert(request.account?.address === solanaAddress, `${method} request used unexpected account`);
   await extensionSend(cdp, extensionSession, 'pri(signing.approve)', { id: request.id });
 
   return evaluate(cdp, dappSession, resultExpression, { awaitPromise: true });
 }
 
 async function waitForAuthRequest(cdp, sessionId, host, accountAuthType = 'solana') {
-  return eventually(async () => {
-    const requests = await extensionSend(cdp, sessionId, 'pri(authorize.requests)', null);
-
-    return requests.find((request) => {
-      const requestedType = request.request?.accountAuthType ?? request.accountAuthType;
-
-      return request.url.includes(host) && requestedType === accountAuthType;
-    });
-  }, `pending ${accountAuthType} authorization request`);
+  return extensionWaitFor(cdp, sessionId, 'pri(authorize.requests)', {
+    accountAuthType,
+    host,
+    kind: 'authorization',
+  });
 }
 
 function getAuthRequestAllowedAccounts(authRequest) {
@@ -657,11 +778,10 @@ function getAuthRequestAllowedAccounts(authRequest) {
 }
 
 async function waitForSolanaSigningRequest(cdp, sessionId, method) {
-  return eventually(async () => {
-    const requests = await extensionSend(cdp, sessionId, 'pri(signing.solanaRequests)', null);
-
-    return Object.values(requests).find((request) => request.method === method);
-  }, `pending Solana ${method} request`);
+  return extensionWaitFor(cdp, sessionId, 'pri(signing.solanaRequests)', {
+    kind: 'solana-signing',
+    method,
+  });
 }
 
 async function setupExtensionMessaging(cdp, sessionId) {
@@ -714,6 +834,26 @@ async function setupExtensionMessaging(cdp, sessionId) {
           return port;
         }
 
+        function findSubscriptionMatch(payload, match) {
+          if (match.kind === 'authorization') {
+            if (!Array.isArray(payload)) return undefined;
+
+            return payload.find((request) => {
+              const requestedType = request?.request?.accountAuthType ?? request?.accountAuthType;
+
+              return String(request?.url ?? '').includes(match.host) && requestedType === match.accountAuthType;
+            });
+          }
+
+          if (match.kind === 'solana-signing') {
+            if (!payload || typeof payload !== 'object') return undefined;
+
+            return Object.values(payload).find((request) => request?.method === match.method);
+          }
+
+          throw new Error('Unsupported extension smoke subscription match');
+        }
+
         globalThis.__fearlessExtensionSmoke = {
           send(message, request) {
             const id = 'solana-smoke-' + Date.now() + '-' + Math.random().toString(16).slice(2);
@@ -722,7 +862,7 @@ async function setupExtensionMessaging(cdp, sessionId) {
               const timeout = setTimeout(() => {
                 pending.delete(id);
                 reject(new Error('Timed out waiting for ' + message));
-              }, ${Math.min(timeoutMs, 20_000)});
+              }, ${Math.max(1_000, timeoutMs - 1_000)});
 
               pending.set(id, {
                 reject(error) {
@@ -749,6 +889,66 @@ async function setupExtensionMessaging(cdp, sessionId) {
                 reject(error);
               }
             });
+          },
+          ping() {
+            connect().postMessage({
+              id: 'extension-smoke-keepalive-' + Date.now(),
+              message: 'pri(app.port.ping)',
+              origin: 'fearless-solana-extension-smoke',
+              request: null
+            });
+          },
+          waitFor(message, request, match) {
+            const id = 'extension-smoke-subscription-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+            const subscriptionPort = chrome.runtime.connect({ name: ${JSON.stringify(PORT_EXTENSION)} });
+
+            return new Promise((resolve, reject) => {
+              let settled = false;
+              const cleanup = () => {
+                if (settled) return;
+
+                settled = true;
+                clearTimeout(timeout);
+                setTimeout(() => subscriptionPort.disconnect(), 0);
+              };
+              const fail = (error) => {
+                cleanup();
+                reject(error);
+              };
+              const timeout = setTimeout(() => {
+                fail(new Error('Timed out waiting for subscription ' + message));
+              }, ${Math.max(1_000, timeoutMs - 1_000)});
+
+              subscriptionPort.onDisconnect.addListener(() => {
+                if (settled) return;
+
+                fail(new Error(chrome.runtime.lastError?.message || 'Extension subscription port disconnected'));
+              });
+              subscriptionPort.onMessage.addListener((response) => {
+                if (settled || response.id !== id) return;
+                if (response.error) {
+                  fail(new Error(response.error));
+
+                  return;
+                }
+
+                const payload = Object.prototype.hasOwnProperty.call(response, 'response')
+                  ? response.response
+                  : response.subscription;
+                const found = findSubscriptionMatch(payload, match);
+
+                if (found === undefined) return;
+
+                cleanup();
+                resolve(found);
+              });
+              subscriptionPort.postMessage({
+                id,
+                message,
+                origin: 'fearless-solana-extension-smoke',
+                request
+              });
+            });
           }
         };
 
@@ -769,15 +969,245 @@ async function extensionSend(cdp, sessionId, message, request) {
   );
 }
 
+async function extensionWaitFor(cdp, sessionId, message, match) {
+  return evaluate(
+    cdp,
+    sessionId,
+    `globalThis.__fearlessExtensionSmoke.waitFor(${JSON.stringify(message)}, null, ${JSON.stringify(match)})`,
+    { awaitPromise: true }
+  );
+}
+
+function startExtensionKeepAlive(cdp, sessionId, backgroundSession) {
+  let stopped = false;
+  const completed = (async () => {
+    while (!stopped) {
+      await sleep(2_000);
+      if (stopped) break;
+      await cdp
+        .send('Runtime.evaluate', { expression: 'Date.now()', returnByValue: true }, backgroundSession)
+        .catch(() => undefined);
+      await evaluate(cdp, sessionId, 'globalThis.__fearlessExtensionSmoke.ping(); true').catch(() => undefined);
+    }
+  })();
+
+  return async () => {
+    stopped = true;
+    await completed;
+  };
+}
+
 async function openExtensionControlPage(cdp, extensionId) {
   const { targetId } = await cdp.send('Target.createTarget', {
-    url: `chrome-extension://${extensionId}/popup.html#/`,
+    url: `chrome-extension://${extensionId}/smoke-control.html`,
   });
   const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
 
   await cdp.send('Runtime.enable', {}, sessionId);
   await cdp.send('Page.enable', {}, sessionId);
   await waitForExpression(cdp, sessionId, 'document.readyState !== "loading"', 'extension control page readiness');
+
+  return sessionId;
+}
+
+async function assertLegacyRecoveryPopup(cdp, extensionId, extensionSession, legacyAddress) {
+  await extensionSend(cdp, extensionSession, 'pri(onboarding.setComplete)', null);
+  await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+    address: legacyAddress, walletEcosystem: 'substrate',
+  });
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: `chrome-extension://${extensionId}/popup.html#/fearless/portfolio/tokens`,
+  });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade[open]"))',
+      'legacy wallet security popup');
+    const description = await evaluate(cdp, sessionId, 'document.querySelector("#wallet-upgrade-description").textContent');
+    assert(description.includes('may be compromised'), 'Legacy popup did not explain the security issue');
+    await evaluate(cdp, sessionId, 'document.querySelector(".wallet-upgrade__later").click(); true');
+    await waitForExpression(cdp, sessionId,
+      '!document.querySelector("dialog.wallet-upgrade[open]") && Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'persistent recovery banner after dismissal');
+    const recoveryMenu = await evaluate(cdp, sessionId,
+      'Array.from(document.querySelectorAll("nav.menu button")).map(button => button.dataset.destination)');
+    assert(recoveryMenu.includes('defi'), 'Old wallet cannot reach DeFi recovery actions');
+    assert(!recoveryMenu.includes('polkaswap'), 'Old wallet still offers normal swaps');
+    await evaluate(cdp, sessionId,
+      'document.querySelector("nav.menu [data-destination=defi]").click(); true');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".defi-hub"))', 'DeFi recovery access');
+    await evaluate(cdp, sessionId, 'location.hash = "#/fearless/polkaswap"; true');
+    await waitForExpression(cdp, sessionId,
+      'location.hash.includes("portfolio") && !document.querySelector(".defi-hub")', 'normal swap route remains blocked');
+    await cdp.send('Page.reload', {}, sessionId);
+    // A closed dialog stays closed when the extension is opened again.
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'recovery banner after reopening');
+    await sleep(1_000);
+    assert(!(await evaluate(cdp, sessionId, 'Boolean(document.querySelector("dialog.wallet-upgrade"))')),
+      'Closed security popup opened again when the extension was reopened');
+    console.info('[extension-smoke] legacy popup, recovery banner, DeFi recovery access, blocked swaps, and reopening verified');
+  } catch (error) {
+    const state = await evaluate(cdp, sessionId,
+      '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);
+    throw new Error(`${error.message}; popup state=${JSON.stringify(state)}`, { cause: error });
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
+async function assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionSession, freshAddress, legacyAddress) {
+  await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+    address: freshAddress, walletEcosystem: 'substrate',
+  });
+  const { targetId } = await cdp.send('Target.createTarget', {
+    url: `chrome-extension://${extensionId}/popup.html#/fearless/portfolio/tokens`,
+  });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    // The old wallet stays stored; only the wallet being viewed decides the warning.
+    await waitForExpression(cdp, sessionId,
+      'document.querySelector("[data-testid=walletNameHeader]")?.textContent.trim() === "Fresh Solana Smoke"',
+      'fresh wallet portfolio');
+    await sleep(1_000);
+    const notice = await evaluate(cdp, sessionId,
+      '({ dialog: Boolean(document.querySelector("dialog.wallet-upgrade")), banner: Boolean(document.querySelector(".wallet-recovery-banner")) })');
+    assert(!notice.dialog && !notice.banner, `Fresh wallet showed the old-wallet warning: ${JSON.stringify(notice)}`);
+    await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+      address: legacyAddress, walletEcosystem: 'substrate',
+    });
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
+      'recovery banner after switching to the old wallet');
+    console.info('[extension-smoke] fresh wallet shows no old-wallet warning; the old wallet still does');
+  } catch (error) {
+    const state = await evaluate(cdp, sessionId,
+      '({ route: location.hash, text: document.body?.innerText?.slice(0, 1500) })').catch(() => undefined);
+    throw new Error(`${error.message}; popup state=${JSON.stringify(state)}`, { cause: error });
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
+async function assertProductionPopup(cdp, extensionId, backgroundSession) {
+  const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+  const popupPath = manifest.action?.default_popup;
+  const runtimeErrors = [];
+  const runtimeSessions = new Map([[backgroundSession, 'background']]);
+  const stopCollectingErrors = cdp.onEvent((message) => {
+    const runtimeLabel = runtimeSessions.get(message.sessionId);
+
+    if (!runtimeLabel) return;
+
+    if (message.method === 'Runtime.exceptionThrown') {
+      runtimeErrors.push(
+        `${runtimeLabel}: ${message.params?.exceptionDetails?.exception?.description || 'uncaught exception'}`
+      );
+    }
+
+    if (message.method === 'Runtime.consoleAPICalled' && message.params?.type === 'error') {
+      const stack = message.params.stackTrace?.callFrames
+        ?.slice(0, 5)
+        .map(({ functionName, lineNumber, url }) => `${functionName || '<anonymous>'}@${url}:${lineNumber + 1}`)
+        .join(' <- ');
+      runtimeErrors.push(
+        `${runtimeLabel}: ${
+          message.params.args
+            ?.map((argument) => argument.value ?? argument.description ?? '')
+            .filter(Boolean)
+            .join(' ') || 'console.error'
+        }${stack ? ` [${stack}]` : ''}`
+      );
+    }
+  });
+
+  assert(
+    typeof popupPath === 'string' && popupPath.length > 0,
+    'Production manifest does not define action.default_popup'
+  );
+
+  const popupUrl = new URL(popupPath, `chrome-extension://${extensionId}/`).href;
+  const { targetId } = await cdp.send('Target.createTarget', { url: popupUrl });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  runtimeSessions.set(sessionId, 'popup');
+
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    await waitForExpression(cdp, sessionId, 'document.readyState === "complete"', 'production popup load');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      'Boolean(document.querySelector("#app[data-v-app]"))',
+      'production popup Vue mount'
+    );
+    await setupExtensionMessaging(cdp, sessionId);
+    await eventually(() => extensionSend(cdp, sessionId, 'pri(app.port.ping)', null), 'production background ping');
+    await eventually(() => extensionSend(cdp, sessionId, 'pri(app.isReady)', null), 'production app readiness');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      'Boolean(document.querySelector("#app[data-v-app] button, #app[data-v-app] input, #app[data-v-app] a"))',
+      'production popup interactive route'
+    );
+
+    const state = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const app = document.querySelector('#app');
+        const runtimeManifest = chrome.runtime.getManifest();
+
+        return {
+          appHtmlLength: app?.innerHTML.length ?? 0,
+          bodyTextLength: document.body?.innerText.trim().length ?? 0,
+          interactiveElementCount: document.querySelectorAll('button, a, input, [role="button"]').length,
+          manifestVersion: runtimeManifest.manifest_version,
+          name: runtimeManifest.name,
+          runtimeId: chrome.runtime.id,
+          title: document.title,
+          version: runtimeManifest.version
+        };
+      })()`
+    );
+
+    assert(runtimeErrors.length === 0, `Production popup logged runtime errors: ${runtimeErrors.join(' | ')}`);
+    assert(
+      state.runtimeId === extensionId,
+      `Popup runtime id ${state.runtimeId} did not match loaded id ${extensionId}`
+    );
+    assert(state.manifestVersion === 3, `Expected Manifest V3, got ${state.manifestVersion}`);
+    assert(
+      state.version === manifest.version,
+      `Popup version ${state.version} did not match packed manifest ${manifest.version}`
+    );
+    assert(
+      state.appHtmlLength >= 100,
+      `Production popup Vue tree was unexpectedly small (${state.appHtmlLength} bytes)`
+    );
+    assert(state.bodyTextLength > 0, 'Production popup rendered no visible text');
+    assert(state.interactiveElementCount > 0, 'Production popup rendered no interactive controls');
+
+    return state;
+  } finally {
+    stopCollectingErrors();
+  }
+}
+
+async function openExtensionBackgroundSession(cdp, extensionId, chrome) {
+  const target = await waitForTarget(
+    cdp,
+    (candidate) =>
+      ['background_page', 'service_worker'].includes(candidate.type) &&
+      candidate.url.startsWith(`chrome-extension://${extensionId}/`),
+    'extension background target',
+    chrome
+  );
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId: target.targetId });
+
+  await cdp.send('Runtime.enable', {}, sessionId);
 
   return sessionId;
 }
@@ -899,10 +1329,13 @@ async function eventually(producer, description) {
 function launchChrome(userDataDir) {
   const args = [
     '--disable-background-networking',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
     '--disable-component-update',
     '--disable-default-apps',
     '--disable-features=Translate,MediaRouter,OptimizationHints',
     '--disable-popup-blocking',
+    '--disable-renderer-backgrounding',
     '--disable-sync',
     '--no-default-browser-check',
     '--no-first-run',
@@ -912,7 +1345,12 @@ function launchChrome(userDataDir) {
   ];
 
   if (usePipeTransport) args.unshift('--enable-unsafe-extension-debugging', '--remote-debugging-pipe');
-  else args.unshift(`--disable-extensions-except=${extensionDir}`, `--load-extension=${extensionDir}`, '--remote-debugging-port=0');
+  else
+    args.unshift(
+      `--disable-extensions-except=${extensionDir}`,
+      `--load-extension=${extensionDir}`,
+      '--remote-debugging-port=0'
+    );
 
   if (headless) args.unshift('--headless=new');
 
@@ -1036,15 +1474,37 @@ async function assertFile(filePath, message) {
   }
 }
 
-function validTransactionBase64() {
-  return Buffer.from(transaction(legacyMessage())).toString('base64');
+async function resolveExecutable(executable, message) {
+  const candidates =
+    path.isAbsolute(executable) || executable.includes(path.sep)
+      ? [executable]
+      : (process.env.PATH ?? '')
+          .split(path.delimiter)
+          .filter(Boolean)
+          .map((directory) => path.join(directory, executable));
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+
+      return candidate;
+    } catch {
+      // Continue searching PATH.
+    }
+  }
+
+  throw new Error(`${executable} is not available. ${message}`);
 }
 
-function legacyMessage() {
+function validTransactionBase64(solanaAddress) {
+  return Buffer.from(transaction(legacyMessage(solanaAddress))).toString('base64');
+}
+
+function legacyMessage(solanaAddress) {
   return bytes(
     [1, 0, 1],
     compact(2),
-    base58Decode(SOLANA_ADDRESS),
+    base58Decode(solanaAddress),
     base58Decode(SYSTEM_PROGRAM),
     new Uint8Array(32).fill(9),
     compact(1),

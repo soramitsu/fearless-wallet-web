@@ -23,15 +23,26 @@ describe('Identicon', () => {
     expect(wrapper.find('svg').exists()).toBe(false);
   });
 
-  it('renders non-Ethereum addresses through the Polkadot SVG component', () => {
+  it('renders SS58 addresses through the Polkadot SVG component', () => {
     const wrapper = mount(Identicon, {
       props: {
-        address: '5GrwvaEF5zXb26Fz9rcQpDWSfQp2BF7nLSJydyL7SS3QDuH8',
+        address: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
       },
     });
 
     expect(wrapper.find('img').exists()).toBe(false);
     expect(wrapper.get('svg').attributes('width')).toBe('24');
+  });
+
+  it.each([
+    ['Bitcoin', 'tb1qghg59chv33mk54dle77ml708v9py8mjpdr9acx'],
+    ['Iroha I105', 'testu\uff9b1Pw\uff71B9\uff88\uff74\uff87FV\uff91\uff90u\uff93b\uff93\uff8eyH2\uff79S\uff74\uff89R\uff99\uff98h\uff7d9RLZF\uff8a\uff98Y\uff76\uff887U5HV9'],
+    ['Solana', 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk'],
+  ])('draws %s addresses as jdenticons instead of a blank Polkadot circle', (_format, address) => {
+    const wrapper = mount(Identicon, { props: { address } });
+
+    expect(wrapper.get('img').attributes('src')).toMatch(/^data:image\/svg\+xml;charset=utf-8,%3Csvg/);
+    expect(wrapper.find('svg').exists()).toBe(false);
   });
 
   it('does not inject payload-looking address text into rendered markup', () => {

@@ -3,11 +3,18 @@
     <button
       type="button"
       :disabled="disabled || loading"
+      :aria-busy="loading"
       :class="['el-button', buttonClasses, { 'is-disabled': disabled, 'is-loading': loading }]"
       :style="buttonStyle"
       @click="$emit('click')"
     >
-      <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" :iconColor="iconColor" />
+      <Icon
+        aria-hidden="true"
+        v-if="shouldBeWithIcon"
+        :icon="prepIconName"
+        :className="prepIconClass"
+        :iconColor="iconColor"
+      />
 
       <span>{{ tText }}</span>
     </button>
@@ -58,6 +65,7 @@ const props = withDefaults(defineProps<FButtonProps>(), {
   border: true,
 });
 
+defineEmits(['click']);
 const { t, tc } = useI18n();
 
 const tText = computed(() => {
@@ -172,11 +180,21 @@ const buttonClasses = computed(() => {
     ];
   }
 
-  return classes;
+  return [...classes, 'primary'];
 });
 </script>
 
 <style lang="scss" scoped>
+.primary {
+  // Keep the brand hue while giving normal-size white labels 4.5:1 contrast.
+  background: mix(black, $pink-color, 4%);
+  color: white;
+  border-color: mix(black, $pink-color, 4%);
+}
+.button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: -4px;
+}
 .btn-content {
   display: flex;
   justify-content: center;
@@ -192,6 +210,13 @@ const buttonClasses = computed(() => {
 }
 
 .button-size-big {
+  .button {
+    min-height: 48px;
+    height: auto;
+    padding: 12px 20px;
+    white-space: normal;
+    line-height: 1.4;
+  }
   .el-button {
     clip-path: $big-clip-path-left-top-and-right-bottom;
   }
@@ -202,6 +227,11 @@ const buttonClasses = computed(() => {
 }
 
 .button-size-medium {
+  .button {
+    min-height: 44px;
+    height: auto;
+    white-space: normal;
+  }
   .el-button {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
   }

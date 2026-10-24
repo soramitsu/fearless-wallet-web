@@ -2,6 +2,7 @@ import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 
 export type IrohaNetworkKind = 'taira' | 'nexus' | 'dev' | 'custom';
 export type IrohaNetworkInput = 'taira' | 'nexus' | 'dev' | number;
+export type CanonicalIrohaNetwork = Extract<IrohaNetworkInput, 'taira' | 'nexus'>;
 
 export type IrohaAddressErrorCode =
   | 'ERR_INVALID_LENGTH'
@@ -112,6 +113,13 @@ export class IrohaAddressError extends Error {
 }
 
 export const getIrohaCanonicalHex = (publicKeyHex: string): string => bytesToHex(publicKeyToCanonicalBytes(publicKeyHex));
+
+export const resolveCanonicalIrohaAddressNetwork = (chainId: unknown): CanonicalIrohaNetwork => {
+  if (chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId) return 'taira';
+  if (chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId) return 'nexus';
+
+  throw new Error('unsupported_iroha_chain_id');
+};
 
 export const encodeIrohaI105Address = (publicKeyHex: string, network: IrohaNetworkInput): string =>
   encodeIrohaI105CanonicalHex(getIrohaCanonicalHex(publicKeyHex), network);

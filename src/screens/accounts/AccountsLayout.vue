@@ -272,7 +272,7 @@ export default defineComponent({ name: 'AccountsLayout',
           else this.$router.back();
     },
     close() {
-      this.$router.push({ name: Components.Wallet });
+      this.$router.push({ name: Components.Settings });
     },
   },
 });

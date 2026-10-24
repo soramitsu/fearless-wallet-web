@@ -65,7 +65,6 @@ import NetworkItem from './NetworkItem.vue';
 import type { Tab } from '@/interfaces/ui';
 import { isNetworkGroup } from '@/helpers/common';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { updateCurrentNetwork } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useNetworksStore } from '@/stores/networks';
@@ -117,10 +116,10 @@ export default defineComponent({ name: 'NetworkManagement',
       return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
     },
     filterByGroupNetworks() {
-      if (this.activeTab === ALL_NETWORKS) return this.networksStore.networks;
+      if (this.activeTab === ALL_NETWORKS) return this.networksStore.selectableNetworks;
 
           if (this.activeTab === POPULAR_NETWORKS) {
-            return this.networksStore.networks
+            return this.networksStore.selectableNetworks
               .filter(({ rank }) => rank !== undefined)
               .sort((a, b) => {
                 if (a.rank === undefined || b.rank === undefined) return 0;
@@ -129,7 +128,7 @@ export default defineComponent({ name: 'NetworkManagement',
               });
           }
 
-          return this.networksStore.networks.filter(({ favorite }) =>
+          return this.networksStore.selectableNetworks.filter(({ favorite }) =>
             favorite.some((address) => address === this.accountsStore.selectedWallet.address)
           );
     },
@@ -156,9 +155,6 @@ export default defineComponent({ name: 'NetworkManagement',
   async mounted() {
     if (isNetworkGroup(this.accountsStore.selectedNetwork))
           this.activeTab = this.accountsStore.selectedNetwork as keyof Tabs;
-  },
-  beforeUnmount() {
-    updateCurrentNetwork(this.accountsStore.selectedNetwork);
   },
   methods: {
     changeFilterValue(value: string) {
@@ -209,6 +205,7 @@ export default defineComponent({ name: 'NetworkManagement',
           if (isSelected) return;
 
           this.accountsStore.setSelectedNetwork(network);
+          void this.networksStore.loadIndexerNetworkBalance(network).catch(() => undefined);
 
           const prepNotification = this.$t(this.getLocale('networkSelected'), { network }).toString();
 

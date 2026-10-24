@@ -38,6 +38,7 @@ import router from '@/router';
 type Props = {
   nft: FearlessNft;
   collectionName?: string;
+  chainId: string;
 };
 const route = useRoute();
 const props = defineProps<Props>();
@@ -55,7 +56,10 @@ const isMp4 = computed(() => contentType.value === 'video/mp4');
 const imageUrl = computed(() => props.nft.image ?? fallbackNftImage);
 
 const onNavigate = () => {
-  const route: RouteLocationRaw = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
+  const route: RouteLocationRaw = {
+    name: Components.NftDetails,
+    params: { chainId: props.chainId, id: props.nft.id, contract: contract.value },
+  };
   router.push(route);
 };
 </script>

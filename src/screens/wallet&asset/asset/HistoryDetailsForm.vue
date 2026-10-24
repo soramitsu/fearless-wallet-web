@@ -1,10 +1,10 @@
 <template>
-  <AboveForm header="Details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
+  <AboveForm header="historyDetails.details" :fullScreen="true" @closeHandler="$emit('handlerClose')">
     <div class="details">
       <Scroll>
         <div class="descriptions">
           <div v-if="!isSora && !!extrinsicHash" class="item" data-testid="extrinsicHashLabel">
-            Extrinsic Hash
+            {{ $t('historyDetails.extrinsicHash') }}
 
             <div class="item-value item-icon" data-testid="extrinsicHash">
               {{ displayExtrinsicHash }}
@@ -14,7 +14,7 @@
           </div>
 
           <div v-if="!!blockHash" class="item" data-testid="extrinsicHashLabel">
-            Block Hash
+            {{ $t('historyDetails.blockHash') }}
 
             <div class="item-value item-icon" data-testid="extrinsicHash">
               {{ displayBlockHash }}
@@ -25,7 +25,7 @@
 
           <template v-if="isTransfer">
             <div class="item">
-              From
+              {{ $t('historyDetails.from') }}
 
               <div class="item-value item-icon">
                 <Identicon v-if="!isTon" :address="fromAddress" />
@@ -37,7 +37,7 @@
             </div>
 
             <div class="item">
-              To
+              {{ $t('historyDetails.to') }}
 
               <div class="item-value item-icon">
                 <Identicon v-if="!isTon" :address="toAddress" />
@@ -50,7 +50,7 @@
           </template>
 
           <div v-if="isReward" class="item">
-            Validator
+            {{ $t('historyDetails.validator') }}
 
             <div class="item-value item-icon">
               <Identicon :address="validator" />
@@ -62,49 +62,49 @@
           </div>
 
           <div class="item" data-testid="statusLabel">
-            Status
+            {{ $t('historyDetails.status') }}
 
             <div :class="statusClasses" data-testid="statusValue">{{ statusText }}</div>
           </div>
 
           <div class="item" data-testid="dateLabel">
-            Date
+            {{ $t('historyDetails.date') }}
 
             <div class="item-value" data-testid="dateValue">{{ date }}</div>
           </div>
 
           <div v-if="isReward" class="item" data-testid="eraLabel">
-            Era
+            {{ $t('historyDetails.era') }}
 
             <div class="item-value" data-testid="eraValue">{{ era }}</div>
           </div>
 
           <div v-if="!!moduleType" class="item" data-testid="moduleLabel">
-            Module
+            {{ $t('historyDetails.module') }}
 
             <div class="item-value" data-testid="moduleValue">{{ moduleType }}</div>
           </div>
 
           <div v-if="!!method" class="item" data-testid="methodLabel">
-            Method
+            {{ $t('historyDetails.method') }}
 
             <div class="item-value" data-testid="methodValue">{{ method }}</div>
           </div>
 
           <div v-if="showAmount" class="item" data-testid="amountLabel">
-            Amount
+            {{ $t('historyDetails.amount') }}
 
             <div class="item-value" data-testid="amountValue">{{ value }}</div>
           </div>
 
           <div v-if="showTargetAmount" class="item" data-testid="amountLabel">
-            Target Amount
+            {{ $t('historyDetails.targetAmount') }}
 
             <div class="item-value" data-testid="amountValue">{{ targetValue }}</div>
           </div>
 
           <div v-if="showFee" class="item" data-testid="feeLabel">
-            Transfer fee
+            {{ $t('historyDetails.transferFee') }}
 
             <div class="item-value" data-testid="feeValue">{{ transferFee }}</div>
           </div>
@@ -128,7 +128,8 @@ import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-export default defineComponent({ name: 'HistoryDetailsForm' ,
+export default defineComponent({
+  name: 'HistoryDetailsForm',
   props: {
     assetId: String,
     historyType: String,
@@ -155,13 +156,18 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.accountsStore.selectedWallet.ethereumAddress;
+      if (BaseApi.isBitcoinNetwork(this.selectedNetwork) || BaseApi.isIrohaNetwork(this.selectedNetwork)) {
+        return (
+          this.historyElement.address ?? BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork)
+        );
+      }
 
-          return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, this.networkProps.addressPrefix);
+      return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, this.networkProps.addressPrefix);
     },
     selectedNetworkJson() {
       return this.networksStore.networks.find(
-            (network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase()
-          );
+        (network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      );
     },
     explorerType() {
       return this.selectedNetworkJson?.externalApi?.explorers?.[0]?.type;
@@ -174,20 +180,24 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     },
     buttonText() {
       const explorerType =
-            this.explorerType === 'etherscan'
-              ? 'accounts.etherscan'
-              : this.explorerType === 'tonviewer'
-              ? 'accounts.tonviewer'
-              : 'accounts.subscan';
+        this.explorerType === 'etherscan'
+          ? 'accounts.etherscan'
+          : this.explorerType === 'tonviewer'
+            ? 'accounts.tonviewer'
+            : 'accounts.subscan';
 
-          return this.$t(explorerType);
+      return this.$t(explorerType);
     },
     showFee() {
       if (this.isSora) return this.historyElementSoraType.method !== 'rewarded';
 
-          if (this.isTon) return this.signTransfer === '-';
+      if (this.isTon) return this.signTransfer === '-';
 
-          return this.isTransfer && this.signTransfer === '-';
+      return (
+        this.isTransfer &&
+        this.signTransfer === '-' &&
+        getHumanTransferFee(this.historyElement, this.selectedNetwork) !== null
+      );
     },
     isTransfer() {
       return this.type === 'transfer' || this.isTon;
@@ -204,22 +214,22 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     showAmount() {
       if (this.isSora || this.isTon) return true;
 
-          return this.isTransfer;
+      return this.isTransfer;
     },
     statusIsSuccess() {
       if (this.isSora) return this.historyElementSoraType.execution.success;
 
-          const { success } = this.historyElement!;
+      const { success } = this.historyElement!;
 
-          return success ?? true;
+      return success ?? true;
     },
     validator() {
       return this.historyElement.reward?.validator;
     },
     displayValidator() {
-      if (!this.validator) return 'no validator info';
+      if (!this.validator) return this.$t('historyDetails.noValidatorInfo');
 
-          return cut(this.validator, 10);
+      return cut(this.validator, 10);
     },
     era() {
       return this.historyElement.reward?.era;
@@ -228,12 +238,12 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
       return ['item-value', this.statusIsSuccess ? 'status-success' : 'status-reject'];
     },
     statusText() {
-      return this.statusIsSuccess ? 'Completed' : 'Reject';
+      return this.$t(this.statusIsSuccess ? 'historyDetails.completed' : 'historyDetails.rejected');
     },
     fromAddress() {
       if (this.isTon) return this.historyElementTonType?.from;
 
-          return this.historyElement.transfer?.from;
+      return this.historyElement.transfer?.from;
     },
     displayFromAddress() {
       return cut(this.fromAddress, 10);
@@ -241,7 +251,7 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     toAddress() {
       if (this.isTon) return this.historyElementTonType?.to;
 
-          return this.historyElement.transfer?.to;
+      return this.historyElement.transfer?.to;
     },
     displayToAddress() {
       return cut(this.toAddress, 10);
@@ -249,37 +259,37 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     moduleType() {
       if (this.isSora) return this.historyElementSoraType.module;
 
-          return this.historyElement!.module;
+      return this.historyElement!.module;
     },
     method() {
       if (this.isSora) return this.historyElementSoraType.method;
 
-          if (this.isTon) return this.historyElementTonType.method;
+      if (this.isTon) return this.historyElementTonType.method;
 
-          return this.historyElement?.method;
+      return this.historyElement?.method;
     },
     transferFee() {
       const fees = getHumanTransferFee(this.historyElement, this.selectedNetwork);
 
-          return this.$n(fees, 'decimalPrecise');
+      return fees === null ? '' : this.$n(fees, 'decimalPrecise');
     },
     date() {
       return getFormattedDate(this.historyElement.timestamp);
     },
     value() {
       const { value, signTransfer } = getHistoryValue(
-            this.historyElement,
-            this.assetId,
-            this.selectedNetwork,
-            this.address
-          );
+        this.historyElement,
+        this.assetId,
+        this.selectedNetwork,
+        this.address
+      );
 
-          return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
+      return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
     },
     targetValue() {
       const { targetValue } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork, this.address);
 
-          return this.$n(targetValue!, 'decimalPrecise');
+      return this.$n(targetValue!, 'decimalPrecise');
     },
     type() {
       return getType(this.historyElement, this.selectedNetwork);
@@ -301,43 +311,43 @@ export default defineComponent({ name: 'HistoryDetailsForm' ,
     },
     selectedNetwork() {
       // TODO Переделать на одинаковое название параметра
-          return this.$route.params.network ?? this.$route.params.selectedNetwork;
+      return this.$route.params.network ?? this.$route.params.selectedNetwork;
     },
   },
   methods: {
     copy(value?: string) {
       if (!value) return;
 
-          setClipboard(value);
+      setClipboard(value);
     },
     openExplorer() {
       if (this.explorerType === 'etherscan' || this.explorerType === 'oklink') {
-            if (this.explorerUrl) {
-              const url = this.explorerUrl.replace('{type}', 'tx').replace('{value}', this.historyElement?.blockHash ?? '');
-
-              window.open(url);
-            }
-
-            return;
-          }
-
-          if (this.explorerType === 'tonviewer') {
-            if (this.explorerUrl) {
-              const url = this.explorerUrl
-                .replace('{type}', 'transaction')
-                .replace('{value}', this.historyElementTonType?.eventId ?? '');
-
-              window.open(url);
-            }
-
-            return;
-          }
-
-          const url = this.explorerUrl
-            .replace('{type}', 'extrinsic')
-            .replace('{value}', this.historyElement?.extrinsicHash ?? '');
+        if (this.explorerUrl) {
+          const url = this.explorerUrl.replace('{type}', 'tx').replace('{value}', this.historyElement?.blockHash ?? '');
 
           window.open(url);
+        }
+
+        return;
+      }
+
+      if (this.explorerType === 'tonviewer') {
+        if (this.explorerUrl) {
+          const url = this.explorerUrl
+            .replace('{type}', 'transaction')
+            .replace('{value}', this.historyElementTonType?.eventId ?? '');
+
+          window.open(url);
+        }
+
+        return;
+      }
+
+      const url = this.explorerUrl
+        .replace('{type}', 'extrinsic')
+        .replace('{value}', this.historyElement?.extrinsicHash ?? '');
+
+      window.open(url);
     },
   },
 });

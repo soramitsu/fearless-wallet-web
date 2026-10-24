@@ -1,10 +1,12 @@
 import * as bitcoin from 'bitcoinjs-lib';
 
+import { BitcoinIndexerError, type BitcoinEsploraUtxo } from '@extension-base/services/bitcoin-indexer-service';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
-import type { BitcoinEsploraUtxo } from '@extension-base/services/bitcoin-indexer-service';
 import {
   BitcoinSendError,
+  BitcoinTransactionStatusUnknownError,
   prepareBitcoinSend,
+  quoteBitcoinSend,
   selectBitcoinFeeRateSatPerVbyte,
   sendBitcoinTransaction,
   type BitcoinSendClient,
@@ -57,6 +59,72 @@ const expectBitcoinSendError = async (action: Promise<unknown>, code: string): P
 };
 
 describe('Bitcoin send service', () => {
+  it.each([new TypeError('connection lost'), new BitcoinIndexerError('server error', 500)])(
+    'preserves the locally computed hash after an uncertain broadcast (%s)',
+    async (failure) => {
+      const client = mockClient();
+      const broadcast = vi.mocked(client.broadcastTransaction).mockRejectedValueOnce(failure);
+      const params = {
+        amountSat: 10_000,
+        client,
+        feeRateSatPerVbyte: 1,
+        mnemonicOrSeed: mnemonic,
+        sources: [{ address: mainnetAddress }],
+        toAddress: mainnetRecipient,
+      };
+      const error = await sendBitcoinTransaction(params).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(BitcoinTransactionStatusUnknownError);
+      expect(error).toMatchObject({ transactionHash: bitcoin.Transaction.fromHex(broadcast.mock.calls[0][0]).getId() });
+      expect(broadcast).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('keeps a definitive rejected Bitcoin transaction as a failure', async () => {
+    const client = mockClient();
+    const failure = new BitcoinIndexerError('rejected', 400);
+    vi.mocked(client.broadcastTransaction).mockRejectedValueOnce(failure);
+
+    await expect(sendBitcoinTransaction({
+      amountSat: 10_000,
+      client,
+      feeRateSatPerVbyte: 1,
+      mnemonicOrSeed: mnemonic,
+      sources: [{ address: mainnetAddress }],
+      toAddress: mainnetRecipient,
+    })).rejects.toBe(failure);
+  });
+  it('quotes and sends max from confirmed fragmented UTXOs with one exact output', async () => {
+    const client = mockClient({ utxos: [confirmedUtxo(30_000), confirmedUtxo(30_000, 1, secondTxid), unconfirmedUtxo(100_000)] });
+    const params = { amountSat: 1, client, sources: [{ address: mainnetAddress }], toAddress: mainnetRecipient };
+    const quote = await quoteBitcoinSend({ ...params, sendMax: true });
+
+    expect(quote.fee).toBe(estimateP2wpkhTransactionVSize(2, 1) * 2);
+    expect(quote.amountSat).toBe(60_000 - quote.fee);
+    expect(quote.changeAddress).toBeUndefined();
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+
+    const sent = await sendBitcoinTransaction({ ...params, amountSat: quote.amountSat, approvedMaxFeeSat: quote.fee, mnemonicOrSeed: mnemonic });
+
+    expect(sent.fee).toBe(quote.fee);
+    expect(sent.change).toBe(0);
+    expect(bitcoin.Transaction.fromHex(sent.txHex).outs.map(({ value }) => value)).toEqual([quote.amountSat]);
+  });
+
+  it('rejects increased fees before deriving keys or broadcasting', async () => {
+    const client = mockClient({ estimates: { 2: 20 } });
+
+    await expectBitcoinSendError(sendBitcoinTransaction({
+      amountSat: 50_000,
+      approvedMaxFeeSat: 282,
+      client,
+      mnemonicOrSeed: 'invalid mnemonic proves signing was never reached',
+      sources: [{ address: mainnetAddress }],
+      toAddress: mainnetRecipient,
+    }), 'transfer_fee_changed');
+    expect(client.broadcastTransaction).not.toHaveBeenCalled();
+  });
+
   it('prepares and broadcasts a confirmed mainnet spend with estimated fees', async () => {
     const client = mockClient();
     const result = await sendBitcoinTransaction({
@@ -121,6 +189,27 @@ describe('Bitcoin send service', () => {
     ]);
     expect(result.sourceAddresses).toEqual([mainnetAddress, secondAddress]);
     expect(client.getUtxos).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects a duplicated outpoint returned for different discovered addresses', async () => {
+    const secondPath = getBitcoinReceivePath('mainnet', 1);
+    const secondAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: mnemonic, path: secondPath });
+    const client = mockClient({ utxos: [confirmedUtxo(100_000)] });
+
+    await expectBitcoinSendError(
+      prepareBitcoinSend({
+        amountSat: 50_000,
+        client,
+        feeRateSatPerVbyte: 1,
+        mnemonicOrSeed: mnemonic,
+        sources: [
+          { address: mainnetAddress },
+          { address: secondAddress, derivationPath: secondPath },
+        ],
+        toAddress: mainnetRecipient,
+      }),
+      'duplicate_utxo'
+    );
   });
 
   it('spends exactly the requested coin-control outpoints without auto-adding larger UTXOs', async () => {
@@ -335,7 +424,7 @@ describe('Bitcoin send service', () => {
       'too_many_inputs_required'
     );
 
-    await expectBitcoinSendError(
+    await expect(
       sendBitcoinTransaction({
         amountSat: 50_000,
         client: mockClient({ txidFromBroadcast: false }),
@@ -343,8 +432,7 @@ describe('Bitcoin send service', () => {
         mnemonicOrSeed: mnemonic,
         sources: [{ address: mainnetAddress }],
         toAddress: mainnetRecipient,
-      }),
-      'broadcast_txid_mismatch'
-    );
+      })
+    ).rejects.toMatchObject({ code: 'broadcast_txid_mismatch', name: 'BitcoinTransactionStatusUnknownError' });
   });
 });

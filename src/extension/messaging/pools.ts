@@ -5,6 +5,8 @@ import type {
   MakePoolsRequest,
   GetShareOfPoolRequest,
   DefaultParams,
+  DemeterMutationRequest,
+  DemeterPoolsResponse,
 } from '@extension-base/services/pools-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import { sendMessage } from '@/extension/messaging/index';
@@ -31,4 +33,12 @@ export async function subscribeAccountLiquidity(cb: (accountLiquidity: AccountLi
 
 export async function getAmountPoolValue(request: DefaultParams): Promise<string> {
   return sendMessage('pri(pools.getAmountValue)', request);
+}
+
+export function getDemeterPools(): Promise<DemeterPoolsResponse> {
+  return sendMessage('pri(pools.demeter.get)');
+}
+
+export function mutateDemeter(request: DemeterMutationRequest): Promise<BasicTxResponse> {
+  return sendMessage('pri(pools.demeter.mutate)', request);
 }

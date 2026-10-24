@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <img class="story__image" :src="story.image" alt="story-img" />
+    <img class="story__image" :src="story.image" :alt="story.title" />
     <h2 class="story__title">{{ story.title }}</h2>
     <p class="story__content">{{ story.description }}</p>
   </div>
@@ -15,7 +15,9 @@ defineProps<{ story: OnboardingStory }>();
 <style lang="scss" scoped>
 @font-face {
   font-family: 'Unbounded';
-  src: local('Unbounded'), url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
+  src:
+    local('Unbounded'),
+    url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
 }
 
 .story {
@@ -29,7 +31,7 @@ defineProps<{ story: OnboardingStory }>();
   }
 
   &__title {
-    font-family: Unbounded, sans-serif;
+    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', sans-serif;
     font-size: 1.5em;
     font-weight: 700;
   }

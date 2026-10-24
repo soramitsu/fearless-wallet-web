@@ -1,18 +1,33 @@
+import { withLocalTransferLock } from '@extension-base/api/localTransferLock';
 import { ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha2';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import {
-  SolanaRpcClient,
+  SolanaBroadcastError,
+  createClusterBoundSolanaRpcClient,
+  type SolanaLatestBlockhash,
+  type SolanaRpcClient,
+  type SolanaParsedAccount,
   type SolanaRpcNetwork,
 } from '@extension-base/services/solana-rpc-service';
+import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { type BalanceItem } from '@extension-base/api/evm/types';
-import { type BasicTxResponse } from '@extension-base/background/types/types';
+import { type BasicTxResponse, type ResponseSolanaTransferQuote } from '@extension-base/background/types/types';
+import {
+  getDefaultSolanaPendingSendStore,
+  isConfirmedSolanaStatus,
+  legacySolanaPendingSender,
+  resolveSolanaPendingSends,
+  type SolanaPendingSendStore,
+  type SolanaPendingSend,
+} from './pendingSends';
 import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
-import { UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS } from '@/consts/solanaRpc';
 import { isSameString } from '@/helpers';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
 import { deriveSolanaAccount } from '@/util/solanaKeyring';
+import { isUsableSolanaRpcUrl } from '@/util/solanaRpcUrl';
 import {
   getSolanaSerializedMessageBase64,
   signSolanaSerializedTransaction,
@@ -26,22 +41,51 @@ const SOLANA_TRANSFER_INSTRUCTION = 2;
 const SOLANA_TRANSFER_DATA_LENGTH = 12;
 const SOLANA_TOKEN_TRANSFER_CHECKED_INSTRUCTION = 12;
 const SOLANA_TOKEN_TRANSFER_CHECKED_DATA_LENGTH = 10;
+const SOLANA_SET_COMPUTE_UNIT_LIMIT_INSTRUCTION = 2;
+const SOLANA_SET_COMPUTE_UNIT_PRICE_INSTRUCTION = 3;
 const SOLANA_SIGNATURE_BYTES = 64;
 const SOLANA_PUBKEY_BYTES = 32;
+const SOLANA_TOKEN_ACCOUNT_BYTES = 165;
+const SOLANA_BASE_FEE_LAMPORTS_PER_SIGNATURE = 5_000n;
 const SYSTEM_PROGRAM_ADDRESS = '11111111111111111111111111111111';
 const SPL_TOKEN_PROGRAM_ADDRESS = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+const TOKEN_2022_PROGRAM_ADDRESS = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 const ASSOCIATED_TOKEN_PROGRAM_ADDRESS = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+const COMPUTE_BUDGET_PROGRAM_ADDRESS = 'ComputeBudget111111111111111111111111111111';
 const PDA_MARKER = new TextEncoder().encode('ProgramDerivedAddress');
 const DEFAULT_SEND_MAX_RETRIES = 3;
+
+// Fixed compute budgets keep the quoted fee identical to the fee the send pays.
+// They sit well above what these instructions consume; the signed simulation
+// before broadcast still refuses anything that would exceed them.
+const SOLANA_COMPUTE_UNIT_LIMITS = Object.freeze({
+  native: 1_000,
+  splToken: 20_000,
+  splTokenWithAccountCreation: 60_000,
+});
+// Priority fee per compute unit, from recent fees on the accounts the transfer
+// writes, bounded so a faulty RPC cannot inflate it.
+export const SOLANA_MIN_COMPUTE_UNIT_PRICE = 1_000;
+export const SOLANA_MAX_COMPUTE_UNIT_PRICE = 2_000_000;
+const SOLANA_DEFAULT_COMPUTE_UNIT_PRICE = 50_000;
+const SOLANA_PRIORITY_FEE_PERCENTILE = 0.75;
+
+const SIGNATURE_POLL_INTERVAL_MS = 1_000;
+const REBROADCAST_EVERY_POLLS = 2;
+const EXPIRY_CHECK_EVERY_POLLS = 3;
+const MAX_CONFIRMATION_WAIT_MS = 120_000;
 
 type HandleBasicTx = (data: BasicTxResponse) => void;
 
 type SolanaTransferParams = {
   amount: string;
+  /** The total cost (fees plus any account-creation deposit) the user reviewed on the Send screen, in SOL. */
+  approvedMaxFee?: string;
   assetId?: string;
   callback?: HandleBasicTx;
   from: string;
   networkKey: NetworkName;
+  solanaComputeUnitPriceMicroLamports?: number;
   state: State;
   to: string;
 };
@@ -55,14 +99,41 @@ type SolanaTransferSource = {
 
 type SolanaTransferClient = Pick<
   SolanaRpcClient,
-  'getFeeForMessage' | 'getLatestBlockhash' | 'sendRawTransaction' | 'simulateTransaction'
+  | 'getAccountInfo'
+  | 'getBalance'
+  | 'getFeeForMessage'
+  | 'getLatestBlockhash'
+  | 'getMinimumBalanceForRentExemption'
+  | 'getRecentPrioritizationFees'
+  | 'getSignatureStatuses'
+  | 'resolveSignatures'
+  | 'sendRawTransaction'
+  | 'simulateTransaction'
 >;
 
 type SolanaTransferKind = 'native' | 'spl-token';
 
+/**
+ * Where the transferred asset lands. SOL always goes to a wallet. A token goes
+ * to the wallet's associated token account (created when missing), or straight
+ * into an existing token account of the same mint when that is what the user
+ * pasted.
+ */
+type SolanaTransferDestination =
+  | { createTokenAccount: false; kind: 'wallet'; recipientExists: boolean }
+  | { createTokenAccount: boolean; kind: 'wallet-token-account'; tokenAccount: string }
+  | { createTokenAccount: false; kind: 'token-account'; tokenAccount: string };
+
 type PreparedSolanaTransfer = {
+  accountCreationLamports: bigint;
   amountBaseUnits: bigint;
   assetId?: string;
+  blockhash: SolanaLatestBlockhash;
+  computeUnitLimit: number;
+  computeUnitPriceMicroLamports: number;
+  destination: SolanaTransferDestination;
+  feeLamports: bigint;
+  maxSendableBaseUnits: bigint;
   network: SolanaRpcNetwork;
   networkKey: NetworkName;
   recipient: string;
@@ -74,7 +145,13 @@ type PreparedSolanaTransfer = {
   unsignedTransaction: Uint8Array;
 };
 
+type SolanaComputeBudget = {
+  unitLimit: number;
+  unitPriceMicroLamports: number;
+};
+
 type SolanaSystemTransferPayload = {
+  computeBudget?: SolanaComputeBudget;
   from: string;
   lamports: bigint;
   recentBlockhash: string;
@@ -83,7 +160,12 @@ type SolanaSystemTransferPayload = {
 
 type SolanaSplTokenTransferPayload = {
   amount: bigint;
+  computeBudget?: SolanaComputeBudget;
+  /** Defaults to creating the recipient's associated token account idempotently. */
+  createDestinationAccount?: boolean;
   decimals: number;
+  /** An existing token account to credit instead of the owner's associated one. */
+  destinationTokenAccount?: string;
   from: string;
   mint: string;
   recentBlockhash: string;
@@ -95,6 +177,7 @@ type SolanaSplTokenTransferPayload = {
 type SolanaTokenTransferMetadata = {
   decimals: number;
   mint: string;
+  sourceAmount?: bigint;
   sourceTokenAccount: string;
   tokenProgramId: string;
 };
@@ -122,62 +205,270 @@ type LegacyAccountMeta = LegacyInstructionAccountMeta & {
   order: number;
 };
 
+type SolanaSendOptions = {
+  maxConfirmationWaitMs?: number;
+  now?: () => number;
+  pendingStore?: SolanaPendingSendStore;
+  pollIntervalMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+};
+
+class SolanaTransferError extends Error {
+  constructor(readonly code: string) {
+    super(code);
+    this.name = 'SolanaTransferError';
+  }
+}
+
+/**
+ * The network has not settled the broadcast. `transactionHash` is the signature the user checks before sending
+ * again; the signed bytes stay recorded, so a later send first resolves them.
+ */
+class SolanaTransactionStatusUnknownError extends Error {
+  constructor(readonly transactionHash: string, code = 'solana_broadcast_ambiguous') {
+    super(code);
+    this.name = 'SolanaTransactionStatusUnknownError';
+  }
+}
+
 function isSolanaTransferNetwork(network: NetworkJson | undefined): boolean {
   return network?.ecosystem === WalletEcosystem.Solana;
+}
+
+/**
+ * Fee, account-creation deposit and the largest sendable amount for the Send
+ * screen. Without an amount only the fee and maximum are quoted; recipient and
+ * balance problems come back as `unavailableReason` instead of throwing.
+ */
+async function quoteSolanaTransfer(
+  params: Omit<SolanaTransferParams, 'callback'>,
+  client?: SolanaTransferClient
+): Promise<ResponseSolanaTransferQuote & { fee: string }> {
+  await assertSendCapability(params.state, 'solanaSend');
+
+  const plan = await planSolanaTransfer(params, client, { quote: true });
+
+  return {
+    accountCreationDeposit: lamportsToSolString(plan.accountCreationLamports),
+    baseFee: lamportsToSolString(plan.baseFeeLamports),
+    computeUnitLimit: plan.computeUnitLimit,
+    computeUnitPriceMicroLamports: plan.computeUnitPriceMicroLamports,
+    fee: lamportsToSolString(plan.feeLamports + plan.accountCreationLamports),
+    maxSendable: baseUnitsToDecimalString(plan.maxSendableBaseUnits, plan.decimals),
+    priorityFee: lamportsToSolString(plan.feeLamports - plan.baseFeeLamports),
+    recipientIsTokenAccount: plan.destination.kind === 'token-account',
+    unavailableReason: plan.unavailableReason,
+  };
 }
 
 async function estimateSolanaTransferFee(
   params: SolanaTransferParams,
   client?: SolanaTransferClient
 ): Promise<string> {
-  const { unsignedTransaction } = await prepareUnsignedSolanaTransfer(params, client);
-  const transferClient = client ?? createSolanaTransferClient(params.state.networkService.networkMap[params.networkKey]);
-  const { value } = await transferClient.getFeeForMessage(getSolanaSerializedMessageBase64(unsignedTransaction), 'confirmed');
+  const plan = await planSolanaTransfer(params, client, { quote: false });
 
-  if (value === null) throw new Error('solana_fee_unavailable');
-
-  return lamportsToSolString(BigInt(value));
+  return lamportsToSolString(plan.feeLamports + plan.accountCreationLamports);
 }
 
 async function makeSolanaTransfer(
   params: SolanaTransferParams,
-  client?: SolanaTransferClient
+  client?: SolanaTransferClient,
+  {
+    maxConfirmationWaitMs = MAX_CONFIRMATION_WAIT_MS,
+    now = Date.now,
+    pendingStore = getDefaultSolanaPendingSendStore(),
+    pollIntervalMs = SIGNATURE_POLL_INTERVAL_MS,
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  }: SolanaSendOptions = {}
 ): Promise<void> {
-  const prepared = await prepareSolanaTransfer(params, client);
-  const transferClient = client ?? createSolanaTransferClient(params.state.networkService.networkMap[params.networkKey]);
-  const simulation = await transferClient.simulateTransaction(prepared.signed.signedTransactionBase64, {
-    commitment: 'confirmed',
-    replaceRecentBlockhash: false,
-    sigVerify: true,
+  // The 3.0.x keyring keeps no wallet-reset revision to fence on. The secret is read inside prepareSolanaTransfer,
+  // which fails once a reset has removed the account; a transfer admitted earlier finishes as the user asked.
+  const assertCurrent = (): void => undefined;
+  await assertSendCapability(params.state, 'solanaSend');
+  if (typeof params.approvedMaxFee !== 'string') throw new Error('transfer_fee_approval_required');
+
+  const approvedMaxFeeLamports = solanaAmountToLamports(params.approvedMaxFee);
+
+  const networkJson = params.state.networkService.networkMap[params.networkKey];
+  const transferClient = client ?? createSolanaTransferClient(networkJson);
+  const source = resolveSolanaTransferSource(params.state, params.from);
+  const network = getSolanaNetworkKind(networkJson);
+  return withLocalTransferLock(`solana:${network}:${source.solanaAddress}`, 'solana_previous_send_pending', async () => {
+    const senderOf = (record: SolanaPendingSend): string | undefined => {
+      const verified = legacySolanaPendingSender(record);
+      if (record.senderAddress !== undefined) return verified === record.senderAddress ? verified : undefined;
+      return verified;
+    };
+    const records = (await pendingStore.list()).filter(record => record.network === network);
+    const senders = new Map(records.map(record => [record, senderOf(record)]));
+    const unknown = records.filter(record => senders.get(record) === undefined);
+    // Unknown legacy ownership may be resolved by reads, never by rebroadcast
+    // from a different selected account. An unresolved record blocks new sends.
+    const unknownOutcome = await resolveSolanaPendingSends(unknown, transferClient, assertCurrent, false);
+    if (unknownOutcome.resolved.length) await pendingStore.remove(unknownOutcome.resolved.map(({ signature }) => signature), network);
+    if (unknownOutcome.unresolved.length) throw new Error('solana_previous_send_pending');
+    const pending = records.filter(record => senders.get(record) === source.solanaAddress);
+    const { resolved, unresolved } = await resolveSolanaPendingSends(pending, transferClient, assertCurrent);
+
+    if (resolved.length) await pendingStore.remove(resolved.map(({ signature }) => signature), network);
+    // A Solana transaction cannot conflict with an earlier one, so a new send waits
+    // until the previous one has landed or expired.
+    if (unresolved.length) throw new Error('solana_previous_send_pending');
+
+    assertCurrent();
+    const prepared = await prepareSolanaTransfer(params, transferClient, assertCurrent);
+    assertCurrent();
+    // The reviewed cost is a ceiling: a recipient token account that vanished since the quote adds its deposit.
+    if (prepared.feeLamports + prepared.accountCreationLamports > approvedMaxFeeLamports) {
+      throw new Error('transfer_fee_changed');
+    }
+    const signature = prepared.signed.signatureBase58;
+    const transactionBase64 = prepared.signed.signedTransactionBase64;
+    // Once the outcome is settled, failing to forget the record must not change what is reported: a record left
+    // behind is resolved and removed again by the next send.
+    const forgetRecord = (): Promise<void> =>
+      pendingStore.remove([signature], network).catch((error: unknown) => {
+        console.warn('Failed to clear a settled Solana pending send', error);
+      });
+    const simulation = await transferClient.simulateTransaction(transactionBase64, {
+      commitment: 'confirmed',
+      replaceRecentBlockhash: false,
+      sigVerify: true,
+    });
+
+    if (simulation.value.err !== null) throw new Error('solana_simulation_failed');
+
+    assertCurrent();
+    // Recorded before broadcast so a stopped service worker still finds it.
+    await pendingStore.save({
+      accountAddress: source.accountAddress,
+      senderAddress: source.solanaAddress,
+      createdAt: now(),
+      lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
+      network,
+      signature,
+      transactionBase64,
+    });
+
+    // A durable record survives reset even when this attempt did not submit it.
+    // Only a proven chain outcome (or a definite first-attempt rejection) removes it.
+    assertCurrent();
+    try {
+      const broadcastSignature = await transferClient.sendRawTransaction(transactionBase64, {
+        maxRetries: DEFAULT_SEND_MAX_RETRIES,
+        preflightCommitment: 'confirmed',
+        skipPreflight: false,
+      }, assertCurrent);
+
+      // A node answering with someone else's signature is broken; whether it
+      // relayed ours is unknown, so the record stays until the next send resolves it.
+      if (broadcastSignature !== signature) {
+        throw new SolanaTransactionStatusUnknownError(signature, 'solana_broadcast_signature_mismatch');
+      }
+    } catch (error) {
+      if (error instanceof SolanaBroadcastError && !error.ambiguous) {
+        // Every node that answered refused the transaction before relaying it
+        // (preflight), and no earlier post may have reached one: nothing was sent.
+        await forgetRecord();
+        throw new Error('solana_simulation_failed', { cause: error });
+      }
+      if (error instanceof SolanaTransactionStatusUnknownError) throw error;
+      // Anything else (a timeout, throttling, every node unreachable, a refusal
+      // after a post that may have been relayed) is ambiguous: keep polling the
+      // signature and rebroadcasting the same bytes until it lands or expires.
+    }
+
+    const outcome = await waitForSolanaSignature({
+      assertCurrent,
+      client: transferClient,
+      lastValidBlockHeight: prepared.blockhash.lastValidBlockHeight,
+      maxWaitMs: maxConfirmationWaitMs,
+      now,
+      pollIntervalMs,
+      signature,
+      sleep,
+      transactionBase64,
+    });
+
+    if (outcome !== 'pending') await forgetRecord();
+    if (outcome === 'failed') throw new Error('solana_transaction_failed');
+    if (outcome === 'expired') throw new Error('solana_transaction_expired');
+    if (outcome === 'pending') throw new SolanaTransactionStatusUnknownError(signature);
+
+    params.callback?.({ status: true });
+
+    setTimeout(() => {
+      params.state.balanceService
+        .fetchBalance({
+          address: prepared.source.accountAddress,
+          ethereumAddress: '',
+          solanaAddress: prepared.source.solanaAddress,
+          solanaNetworks: [prepared.networkKey],
+          walletEcosystem: WalletEcosystem.Solana,
+        })
+        .catch((error) => console.warn('Failed to refresh Solana balance after transfer', error));
+    }, 8000);
+
+    console.info(`Solana transfer confirmed: ${signature}`);
   });
+}
 
-  if (simulation.value.err !== null) throw new Error('solana_simulation_failed');
+/**
+ * Polls the signature until the network confirms it, reports it failed, or its
+ * blockhash expires; rebroadcasts the identical signed bytes meanwhile.
+ */
+async function waitForSolanaSignature({
+  assertCurrent,
+  client,
+  lastValidBlockHeight,
+  maxWaitMs,
+  now,
+  pollIntervalMs,
+  signature,
+  sleep,
+  transactionBase64,
+}: {
+  assertCurrent?: () => void;
+  client: Pick<SolanaTransferClient, 'getSignatureStatuses' | 'resolveSignatures' | 'sendRawTransaction'>;
+  lastValidBlockHeight: number;
+  maxWaitMs: number;
+  now: () => number;
+  pollIntervalMs: number;
+  signature: string;
+  sleep: (ms: number) => Promise<void>;
+  transactionBase64: string;
+}): Promise<'confirmed' | 'expired' | 'failed' | 'pending'> {
+  const deadline = now() + maxWaitMs;
 
-  const broadcastSignature = await transferClient.sendRawTransaction(prepared.signed.signedTransactionBase64, {
-    maxRetries: DEFAULT_SEND_MAX_RETRIES,
-    preflightCommitment: 'confirmed',
-    skipPreflight: false,
-  });
+  for (let poll = 0; ; poll += 1) {
+    assertCurrent?.();
+    try {
+      const [status] = await client.getSignatureStatuses([signature]);
 
-  if (broadcastSignature !== prepared.signed.signatureBase58) {
-    throw new Error('solana_broadcast_signature_mismatch');
+      // A `processed` result, failed or not, can still be rolled back with its
+      // fork and the same bytes land elsewhere, so only a confirmed one counts.
+      if (status && isConfirmedSolanaStatus(status)) return status.err ? 'failed' : 'confirmed';
+      if (!status && poll % EXPIRY_CHECK_EVERY_POLLS === EXPIRY_CHECK_EVERY_POLLS - 1) {
+        // Expired only when one node has finalized past the last valid block and, from a state at least that recent,
+        // still has no trace of it. A trace that is not confirmed yet is followed by the next polls.
+        const [resolution] = await client.resolveSignatures([{ lastValidBlockHeight, signature }]);
+
+        if (resolution?.state === 'expired') return 'expired';
+        if (resolution?.state === 'landed') return resolution.status.err ? 'failed' : 'confirmed';
+      }
+      if (!status && poll % REBROADCAST_EVERY_POLLS === REBROADCAST_EVERY_POLLS - 1) {
+        assertCurrent?.();
+        await client.sendRawTransaction(transactionBase64, { maxRetries: 0, skipPreflight: true }, assertCurrent).catch(() => undefined);
+      }
+    } catch {
+      assertCurrent?.();
+      // An RPC hiccup is not an outcome; keep polling until the deadline.
+    }
+
+    if (now() >= deadline) return 'pending';
+
+    await sleep(pollIntervalMs);
   }
-
-  params.callback?.({ status: true });
-
-  setTimeout(() => {
-    params.state.balanceService
-      .fetchBalance({
-        address: prepared.source.accountAddress,
-        ethereumAddress: '',
-        solanaAddress: prepared.source.solanaAddress,
-        solanaNetworks: [prepared.networkKey],
-        walletEcosystem: WalletEcosystem.Solana,
-      })
-      .catch((error) => console.warn('Failed to refresh Solana balance after transfer', error));
-  }, 8000);
-
-  console.info(`Solana transfer broadcast: ${broadcastSignature}`);
 }
 
 async function prepareSolanaTransferForTest(
@@ -189,70 +480,306 @@ async function prepareSolanaTransferForTest(
 
 async function prepareSolanaTransfer(
   params: SolanaTransferParams,
-  client?: SolanaTransferClient
+  client?: SolanaTransferClient,
+  assertCurrent?: () => void
 ): Promise<PreparedSolanaTransfer> {
-  const unsigned = await prepareUnsignedSolanaTransfer(params, client);
+  const plan = await planSolanaTransfer(params, client, { quote: false });
+  assertCurrent?.();
   const signed = signSolanaSerializedTransaction({
-    expectedSigner: unsigned.source.solanaAddress,
-    mnemonic: unsigned.source.mnemonicOrSeed,
-    transaction: unsigned.unsignedTransaction,
+    expectedSigner: plan.source.solanaAddress,
+    mnemonic: plan.source.mnemonicOrSeed,
+    transaction: plan.unsignedTransaction,
   });
 
   return {
-    ...unsigned,
+    accountCreationLamports: plan.accountCreationLamports,
+    amountBaseUnits: plan.amountBaseUnits,
+    assetId: params.assetId,
+    blockhash: plan.blockhash,
+    computeUnitLimit: plan.computeUnitLimit,
+    computeUnitPriceMicroLamports: plan.computeUnitPriceMicroLamports,
+    destination: plan.destination,
+    feeLamports: plan.feeLamports,
+    maxSendableBaseUnits: plan.maxSendableBaseUnits,
+    network: plan.network,
+    networkKey: params.networkKey,
+    recipient: plan.recipient,
+    rpcUrl: plan.rpcUrl,
     signed,
+    source: plan.source,
+    token: plan.token,
+    transferKind: plan.transferKind,
+    unsignedTransaction: plan.unsignedTransaction,
   };
 }
 
-async function prepareUnsignedSolanaTransfer(
-  { amount, assetId, from, networkKey, state, to }: SolanaTransferParams,
-  client?: SolanaTransferClient
-): Promise<Omit<PreparedSolanaTransfer, 'signed'>> {
+type SolanaTransferPlan = Omit<PreparedSolanaTransfer, 'assetId' | 'networkKey' | 'signed'> & {
+  baseFeeLamports: bigint;
+  decimals: number;
+  unavailableReason?: string;
+};
+
+/**
+ * Builds the unsigned transfer and checks everything the network would refuse
+ * or that would lose funds: recipient type, rent-exempt minimums, the token
+ * account the recipient needs, the fee and the balance.
+ */
+async function planSolanaTransfer(
+  { amount, assetId, from, networkKey, solanaComputeUnitPriceMicroLamports, state, to }: Omit<SolanaTransferParams, 'callback'>,
+  client: SolanaTransferClient | undefined,
+  { quote }: { quote: boolean }
+): Promise<SolanaTransferPlan> {
   const networkJson = state.networkService.networkMap[networkKey];
 
   if (!isSolanaTransferNetwork(networkJson)) throw new Error('unsupported_solana_network');
 
   const network = getSolanaNetworkKind(networkJson);
   const rpcUrl = getSolanaRpcUrl(networkJson);
-  const transferClient = client ?? new SolanaRpcClient({ network, rpcUrl });
+  const transferClient = client ?? createSolanaTransferClient(networkJson);
   const source = resolveSolanaTransferSource(state, from);
   const recipient = normalizeSolanaAddress(to, 'invalid_solana_recipient');
-  const asset = resolveSolanaTransferAsset({ amount, assetId, networkKey, source, state });
-  const { value } = await transferClient.getLatestBlockhash('confirmed');
+  const asset = resolveSolanaTransferAsset({ amount, assetId, networkKey, quote, source, state });
+  const failures: string[] = [];
+  const fail = (code: string) => {
+    if (!quote) throw new Error(code);
+    failures.push(code);
+  };
+  const [recipientAccount, balance, rentExemptMinimum, latestBlockhash] = await Promise.all([
+    transferClient.getAccountInfo(recipient),
+    transferClient.getBalance(source.solanaAddress),
+    transferClient.getMinimumBalanceForRentExemption(0),
+    transferClient.getLatestBlockhash('confirmed'),
+  ]);
+  const blockhash = latestBlockhash.value;
+  const balanceLamports = BigInt(balance);
+  const rentLamports = BigInt(rentExemptMinimum);
+  let destination: SolanaTransferDestination;
+
+  try {
+    destination = await resolveSolanaDestination({ asset, client: transferClient, recipient, recipientAccount });
+  } catch (error) {
+    if (!(error instanceof SolanaTransferError)) throw error;
+    if (!quote) throw new Error(error.code, { cause: error });
+
+    // A quote still prices the transfer; the recipient problem is reported.
+    failures.push(error.code);
+    destination = { createTokenAccount: false, kind: 'wallet', recipientExists: true };
+  }
+
+  const accountCreationLamports = destination.createTokenAccount
+    ? BigInt(await transferClient.getMinimumBalanceForRentExemption(SOLANA_TOKEN_ACCOUNT_BYTES))
+    : 0n;
+  const computeUnitLimit =
+    asset.kind === 'native'
+      ? SOLANA_COMPUTE_UNIT_LIMITS.native
+      : destination.createTokenAccount
+        ? SOLANA_COMPUTE_UNIT_LIMITS.splTokenWithAccountCreation
+        : SOLANA_COMPUTE_UNIT_LIMITS.splToken;
+  const computeUnitPriceMicroLamports = await resolveComputeUnitPrice({
+    client: transferClient,
+    quoted: solanaComputeUnitPriceMicroLamports,
+    writableAccounts: [
+      source.solanaAddress,
+      ...(asset.kind === 'native'
+        ? [recipient]
+        : [asset.token.sourceTokenAccount, ...(destination.kind === 'wallet' ? [] : [destination.tokenAccount])]),
+    ],
+  });
+  const computeBudget = { unitLimit: computeUnitLimit, unitPriceMicroLamports: computeUnitPriceMicroLamports };
+  const amountForBuild = asset.amountBaseUnits ?? 1n;
   const unsignedTransaction =
     asset.kind === 'native'
       ? createSolanaSystemTransferTransaction({
+          computeBudget,
           from: source.solanaAddress,
-          lamports: asset.amountBaseUnits,
-          recentBlockhash: value.blockhash,
+          lamports: amountForBuild,
+          recentBlockhash: blockhash.blockhash,
           to: recipient,
         })
       : createSolanaSplTokenTransferTransaction({
-          amount: asset.amountBaseUnits,
+          amount: amountForBuild,
+          computeBudget,
+          createDestinationAccount: destination.createTokenAccount,
           decimals: asset.token.decimals,
+          destinationTokenAccount: destination.kind === 'token-account' ? destination.tokenAccount : undefined,
           from: source.solanaAddress,
           mint: asset.token.mint,
-          recentBlockhash: value.blockhash,
+          recentBlockhash: blockhash.blockhash,
           sourceTokenAccount: asset.token.sourceTokenAccount,
           toOwner: recipient,
           tokenProgramId: asset.token.tokenProgramId,
         });
+  const { value: fee } = await transferClient.getFeeForMessage(
+    getSolanaSerializedMessageBase64(unsignedTransaction),
+    'confirmed'
+  );
+
+  if (fee === null) throw new Error('solana_fee_unavailable');
+
+  const feeLamports = BigInt(fee);
+  const solCost = feeLamports + accountCreationLamports + (asset.kind === 'native' ? asset.amountBaseUnits ?? 0n : 0n);
+  const remainingLamports = balanceLamports - solCost;
+  const recipientExists = destination.kind === 'wallet' ? destination.recipientExists : true;
+  let maxSendableBaseUnits: bigint;
+
+  if (asset.kind === 'native') {
+    const maxLamports = balanceLamports - feeLamports;
+
+    maxSendableBaseUnits = maxLamports > 0n && (recipientExists || maxLamports >= rentLamports) ? maxLamports : 0n;
+  } else {
+    const solAfterFees = balanceLamports - feeLamports - accountCreationLamports;
+    const canPayFees = solAfterFees === 0n || solAfterFees >= rentLamports;
+
+    maxSendableBaseUnits = canPayFees ? asset.token.sourceAmount ?? 0n : 0n;
+  }
+
+  if (asset.amountBaseUnits !== undefined) {
+    if (remainingLamports < 0n) fail(asset.kind === 'native' ? 'solana_insufficient_funds' : 'solana_insufficient_sol_for_fee');
+    else if (remainingLamports > 0n && remainingLamports < rentLamports) fail('solana_sender_below_rent');
+    if (asset.kind === 'native' && !recipientExists && asset.amountBaseUnits < rentLamports) {
+      fail('solana_amount_below_rent');
+    }
+    if (asset.kind === 'spl-token' && asset.token.sourceAmount !== undefined && asset.amountBaseUnits > asset.token.sourceAmount) {
+      fail('solana_insufficient_token_balance');
+    }
+  }
 
   return {
-    amountBaseUnits: asset.amountBaseUnits,
-    assetId,
+    accountCreationLamports,
+    amountBaseUnits: amountForBuild,
+    baseFeeLamports: SOLANA_BASE_FEE_LAMPORTS_PER_SIGNATURE,
+    blockhash,
+    computeUnitLimit,
+    computeUnitPriceMicroLamports,
+    decimals: asset.kind === 'native' ? SOLANA_DECIMALS : asset.token.decimals,
+    destination,
+    feeLamports,
+    maxSendableBaseUnits,
     network,
-    networkKey,
     recipient,
     rpcUrl,
     source,
     token: asset.kind === 'spl-token' ? asset.token : undefined,
     transferKind: asset.kind,
+    unavailableReason: failures[0],
     unsignedTransaction,
   };
 }
 
+/**
+ * Rejects recipients that would lose funds: executable programs, accounts owned
+ * by programs other than the System Program, off-curve addresses that are not
+ * an existing System account, and token accounts or mints for a SOL transfer or
+ * for another token.
+ */
+async function resolveSolanaDestination({
+  asset,
+  client,
+  recipient,
+  recipientAccount,
+}: {
+  asset: ReturnType<typeof resolveSolanaTransferAsset>;
+  client: Pick<SolanaTransferClient, 'getAccountInfo'>;
+  recipient: string;
+  recipientAccount: SolanaParsedAccount | null;
+}): Promise<SolanaTransferDestination> {
+  if (recipientAccount?.executable) throw new SolanaTransferError('solana_recipient_program');
+
+  if (recipientAccount && isTokenProgram(recipientAccount.owner)) {
+    if (asset.kind !== 'spl-token') throw new SolanaTransferError('solana_recipient_token_account');
+
+    const tokenAccount = parseTokenAccount(recipientAccount);
+
+    if (
+      !tokenAccount ||
+      tokenAccount.mint !== asset.token.mint ||
+      recipientAccount.owner !== asset.token.tokenProgramId ||
+      tokenAccount.state !== 'initialized'
+    ) {
+      throw new SolanaTransferError('solana_recipient_token_account');
+    }
+
+    return { createTokenAccount: false, kind: 'token-account', tokenAccount: recipient };
+  }
+
+  if (recipientAccount && recipientAccount.owner !== SYSTEM_PROGRAM_ADDRESS) {
+    throw new SolanaTransferError('solana_recipient_program');
+  }
+
+  // Off-curve addresses have no private key. Only an existing System account
+  // (for example a funded multisig vault) is accepted as such a recipient.
+  if (!recipientAccount && !isOnEd25519Curve(decodeSolanaPubkey(recipient, 'invalid_solana_recipient'))) {
+    throw new SolanaTransferError('solana_recipient_off_curve');
+  }
+
+  if (asset.kind === 'native') return { createTokenAccount: false, kind: 'wallet', recipientExists: !!recipientAccount };
+
+  const tokenAccountAddress = deriveAssociatedTokenAddress({
+    mint: asset.token.mint,
+    owner: recipient,
+    tokenProgramId: asset.token.tokenProgramId,
+  });
+  const existing = await client.getAccountInfo(tokenAccountAddress);
+
+  if (existing) {
+    const tokenAccount = parseTokenAccount(existing);
+
+    if (!tokenAccount || tokenAccount.mint !== asset.token.mint || tokenAccount.owner !== recipient) {
+      throw new SolanaTransferError('solana_recipient_token_account');
+    }
+    if (tokenAccount.state !== 'initialized') throw new SolanaTransferError('solana_recipient_token_account_frozen');
+  }
+
+  return { createTokenAccount: !existing, kind: 'wallet-token-account', tokenAccount: tokenAccountAddress };
+}
+
+async function resolveComputeUnitPrice({
+  client,
+  quoted,
+  writableAccounts,
+}: {
+  client: Pick<SolanaTransferClient, 'getRecentPrioritizationFees'>;
+  quoted?: number;
+  writableAccounts: string[];
+}): Promise<number> {
+  // The send never pays a higher priority fee than the user saw.
+  if (quoted !== undefined) return clampComputeUnitPrice(quoted);
+
+  try {
+    const fees = (await client.getRecentPrioritizationFees([...new Set(writableAccounts)]))
+      .map(({ prioritizationFee }) => prioritizationFee)
+      .sort((left, right) => left - right);
+
+    if (!fees.length) return SOLANA_DEFAULT_COMPUTE_UNIT_PRICE;
+
+    return clampComputeUnitPrice(fees[Math.min(fees.length - 1, Math.floor(fees.length * SOLANA_PRIORITY_FEE_PERCENTILE))]);
+  } catch {
+    return SOLANA_DEFAULT_COMPUTE_UNIT_PRICE;
+  }
+}
+
+function clampComputeUnitPrice(value: number): number {
+  if (!Number.isFinite(value)) return SOLANA_DEFAULT_COMPUTE_UNIT_PRICE;
+
+  return Math.min(SOLANA_MAX_COMPUTE_UNIT_PRICE, Math.max(SOLANA_MIN_COMPUTE_UNIT_PRICE, Math.ceil(value)));
+}
+
+function isTokenProgram(owner: string): boolean {
+  return owner === SPL_TOKEN_PROGRAM_ADDRESS || owner === TOKEN_2022_PROGRAM_ADDRESS;
+}
+
+function parseTokenAccount(account: SolanaParsedAccount): { mint: string; owner: string; state: string } | null {
+  const data = account.data as { parsed?: { info?: Record<string, unknown>; type?: string } } | undefined;
+  const info = data?.parsed?.info;
+
+  if (data?.parsed?.type !== 'account' || !info) return null;
+  if (typeof info.mint !== 'string' || typeof info.owner !== 'string' || typeof info.state !== 'string') return null;
+
+  return { mint: info.mint, owner: info.owner, state: info.state };
+}
+
 function createSolanaSystemTransferTransaction({
+  computeBudget,
   from,
   lamports,
   recentBlockhash,
@@ -266,6 +793,7 @@ function createSolanaSystemTransferTransaction({
   return createLegacySolanaTransaction({
     feePayer: from,
     instructions: [
+      ...createComputeBudgetInstructions(computeBudget),
       {
         accounts: [
           { address: from, isSigner: true, isWritable: true },
@@ -279,9 +807,29 @@ function createSolanaSystemTransferTransaction({
   });
 }
 
+function createComputeBudgetInstructions(computeBudget?: SolanaComputeBudget): LegacyInstruction[] {
+  if (!computeBudget) return [];
+
+  const limitData = new Uint8Array(5);
+  const priceData = new Uint8Array(9);
+
+  writeU8(limitData, 0, SOLANA_SET_COMPUTE_UNIT_LIMIT_INSTRUCTION);
+  writeU32Le(limitData, 1, computeBudget.unitLimit);
+  writeU8(priceData, 0, SOLANA_SET_COMPUTE_UNIT_PRICE_INSTRUCTION);
+  writeU64Le(priceData, 1, BigInt(computeBudget.unitPriceMicroLamports));
+
+  return [
+    { accounts: [], data: limitData, programAddress: COMPUTE_BUDGET_PROGRAM_ADDRESS },
+    { accounts: [], data: priceData, programAddress: COMPUTE_BUDGET_PROGRAM_ADDRESS },
+  ];
+}
+
 function createSolanaSplTokenTransferTransaction({
   amount,
+  computeBudget,
+  createDestinationAccount = true,
   decimals,
+  destinationTokenAccount,
   from,
   mint,
   recentBlockhash,
@@ -289,7 +837,7 @@ function createSolanaSplTokenTransferTransaction({
   toOwner,
   tokenProgramId,
 }: SolanaSplTokenTransferPayload): Uint8Array {
-  const destinationTokenAccount = deriveAssociatedTokenAddress({ mint, owner: toOwner, tokenProgramId });
+  const destination = destinationTokenAccount ?? deriveAssociatedTokenAddress({ mint, owner: toOwner, tokenProgramId });
   const ataInstructionData = new Uint8Array([1]);
   const transferInstructionData = new Uint8Array(SOLANA_TOKEN_TRANSFER_CHECKED_DATA_LENGTH);
 
@@ -301,23 +849,28 @@ function createSolanaSplTokenTransferTransaction({
   return createLegacySolanaTransaction({
     feePayer: from,
     instructions: [
-      {
-        accounts: [
-          { address: from, isSigner: true, isWritable: true },
-          { address: destinationTokenAccount, isSigner: false, isWritable: true },
-          { address: toOwner, isSigner: false, isWritable: false },
-          { address: mint, isSigner: false, isWritable: false },
-          { address: SYSTEM_PROGRAM_ADDRESS, isSigner: false, isWritable: false },
-          { address: tokenProgramId, isSigner: false, isWritable: false },
-        ],
-        data: ataInstructionData,
-        programAddress: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-      },
+      ...createComputeBudgetInstructions(computeBudget),
+      ...(createDestinationAccount && !destinationTokenAccount
+        ? [
+            {
+              accounts: [
+                { address: from, isSigner: true, isWritable: true },
+                { address: destination, isSigner: false, isWritable: true },
+                { address: toOwner, isSigner: false, isWritable: false },
+                { address: mint, isSigner: false, isWritable: false },
+                { address: SYSTEM_PROGRAM_ADDRESS, isSigner: false, isWritable: false },
+                { address: tokenProgramId, isSigner: false, isWritable: false },
+              ],
+              data: ataInstructionData,
+              programAddress: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+            },
+          ]
+        : []),
       {
         accounts: [
           { address: sourceTokenAccount, isSigner: false, isWritable: true },
           { address: mint, isSigner: false, isWritable: false },
-          { address: destinationTokenAccount, isSigner: false, isWritable: true },
+          { address: destination, isSigner: false, isWritable: true },
           { address: from, isSigner: true, isWritable: false },
         ],
         data: transferInstructionData,
@@ -366,11 +919,28 @@ function getSolanaNetworkKind(network: NetworkJson | undefined): SolanaRpcNetwor
   return descriptor.includes('devnet') || descriptor.includes('testnet') ? 'devnet' : 'mainnet';
 }
 
-function getSolanaRpcUrl(network: NetworkJson): string {
-  const selectedProvider = network.providers?.[network.currentProvider] ?? network.customProviders?.[network.currentProvider];
-  const selectedNode = network.nodes?.[0]?.url ?? network.customNodes?.[0]?.url;
+/**
+ * The node the user selected first, then their custom nodes, the registry
+ * nodes and the built-in public mainnet (or devnet) nodes, so one unavailable
+ * node never blocks balances or a send. The node screen stores the chosen
+ * node's address as the current provider; a state that has never been touched
+ * names a provider key instead.
+ */
+function getSolanaRpcUrls(network: NetworkJson): string[] {
+  const { currentProvider } = network;
+  const nodes = [...(network.customNodes ?? []), ...(network.nodes ?? [])].map(({ url }) => url);
+  // An address that is no longer listed (a deleted custom node) is not trusted with balances or a signed transaction.
+  const selected =
+    network.providers?.[currentProvider] ??
+    network.customProviders?.[currentProvider] ??
+    (nodes.includes(currentProvider) ? currentProvider : undefined);
+  const candidates = [selected, ...nodes, ...UNIVERSAL_WALLET_SOLANA_RPC_FAILOVER_ENDPOINTS[getSolanaNetworkKind(network)]];
 
-  return selectedProvider ?? selectedNode ?? UNIVERSAL_WALLET_SOLANA_RPC_ENDPOINTS[getSolanaNetworkKind(network)];
+  return [...new Set(candidates.filter((url): url is string => typeof url === 'string' && isUsableSolanaRpcUrl(url)))];
+}
+
+function getSolanaRpcUrl(network: NetworkJson): string {
+  return getSolanaRpcUrls(network)[0];
 }
 
 function solanaAmountToLamports(amount: string): bigint {
@@ -396,6 +966,16 @@ function lamportsToSolString(lamports: bigint): string {
   const fraction = (lamports % LAMPORTS_PER_SOL).toString().padStart(SOLANA_DECIMALS, '0').replace(/0+$/u, '');
 
   return fraction ? `${whole.toString()}.${fraction}` : whole.toString();
+}
+
+function baseUnitsToDecimalString(value: bigint, decimals: number): string {
+  if (value < 0n) throw new Error('invalid_solana_amount');
+  if (decimals === 0) return value.toString();
+
+  const multiplier = 10n ** BigInt(decimals);
+  const fraction = (value % multiplier).toString().padStart(decimals, '0').replace(/0+$/u, '');
+
+  return fraction ? `${(value / multiplier).toString()}.${fraction}` : (value / multiplier).toString();
 }
 
 function solanaTokenAmountToBaseUnits(amount: string, decimals: number): bigint {
@@ -452,23 +1032,30 @@ function resolveSolanaTransferAsset({
   amount,
   assetId,
   networkKey,
+  quote = false,
   source,
   state,
 }: {
   amount: string;
   assetId?: string;
   networkKey: NetworkName;
+  quote?: boolean;
   source: SolanaTransferSource;
   state: State;
 }):
-  | { amountBaseUnits: bigint; kind: 'native' }
-  | { amountBaseUnits: bigint; kind: 'spl-token'; token: SolanaTokenTransferMetadata } {
-  if (isNativeSolanaAsset(assetId)) return { amountBaseUnits: solanaAmountToLamports(amount), kind: 'native' };
+  | { amountBaseUnits?: bigint; kind: 'native' }
+  | { amountBaseUnits?: bigint; kind: 'spl-token'; token: SolanaTokenTransferMetadata } {
+  // A quote may be asked for before the user has typed an amount.
+  const hasAmount = !quote || !/^\s*0*(?:\.0*)?\s*$/u.test(amount ?? '');
 
-  const token = resolveStandardSplTokenTransferMetadata(state, source.accountAddress, networkKey, assetId);
+  if (isNativeSolanaAsset(assetId)) {
+    return { amountBaseUnits: hasAmount ? solanaAmountToLamports(amount) : undefined, kind: 'native' };
+  }
+
+  const token = resolveStandardSplTokenTransferMetadata(state, source.accountAddress, networkKey, assetId!);
 
   return {
-    amountBaseUnits: solanaTokenAmountToBaseUnits(amount, token.decimals),
+    amountBaseUnits: hasAmount ? solanaTokenAmountToBaseUnits(amount, token.decimals) : undefined,
     kind: 'spl-token',
     token,
   };
@@ -506,6 +1093,7 @@ function resolveStandardSplTokenTransferMetadata(
   return {
     decimals: balance.precision,
     mint,
+    sourceAmount: /^\d+$/u.test(balance.solanaTokenSourceAmount ?? '') ? BigInt(balance.solanaTokenSourceAmount!) : undefined,
     sourceTokenAccount: normalizeSolanaAddress(balance.solanaTokenAccountAddress ?? '', 'unsupported_solana_asset'),
     tokenProgramId: normalizeSolanaAddress(balance.solanaTokenProgramId ?? '', 'unsupported_solana_asset'),
   };
@@ -631,9 +1219,9 @@ function isOnEd25519Curve(publicKey: Uint8Array): boolean {
 function createSolanaTransferClient(network: NetworkJson | undefined): SolanaRpcClient {
   if (!network) throw new Error('unsupported_solana_network');
 
-  return new SolanaRpcClient({
+  return createClusterBoundSolanaRpcClient({
     network: getSolanaNetworkKind(network),
-    rpcUrl: getSolanaRpcUrl(network),
+    rpcUrls: getSolanaRpcUrls(network),
   });
 }
 
@@ -704,23 +1292,32 @@ function concatBytes(...chunks: Uint8Array[]): Uint8Array {
 
 export {
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  COMPUTE_BUDGET_PROGRAM_ADDRESS,
+  SOLANA_COMPUTE_UNIT_LIMITS,
   SPL_TOKEN_PROGRAM_ADDRESS,
   SYSTEM_PROGRAM_ADDRESS,
+  TOKEN_2022_PROGRAM_ADDRESS,
   createSolanaSplTokenTransferTransaction,
   createSolanaSystemTransferTransaction,
+  createSolanaTransferClient,
   deriveAssociatedTokenAddress,
   estimateSolanaTransferFee,
   getSolanaNetworkKind,
   getSolanaRpcUrl,
+  getSolanaRpcUrls,
+  isOnEd25519Curve,
   isSolanaTransferNetwork,
   lamportsToSolString,
   makeSolanaTransfer,
   normalizeSolanaAddress,
   prepareSolanaTransferForTest,
+  quoteSolanaTransfer,
   resolveSolanaTransferSource,
   solanaAmountToLamports,
   solanaTokenAmountToBaseUnits,
+  SolanaTransactionStatusUnknownError,
   type PreparedSolanaTransfer,
+  type SolanaSendOptions,
   type SolanaTransferClient,
   type SolanaTransferParams,
   type SolanaTransferSource,

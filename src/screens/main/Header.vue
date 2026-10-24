@@ -1,6 +1,6 @@
 <template>
   <header class="header">
-    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+    <div class="header-part header-part-left" :ref="walletNameRef">
       <div class="logo-container">
         <CircleButton
           v-if="showBackIcon"
@@ -14,21 +14,21 @@
       </div>
 
       <div class="wallet-name">
-        <div class="name" @click.stop="toggleSelectWalletPopupVisible">
+        <button type="button" class="name" :aria-label="`${$t('header.walletManagement')}: ${name}`" :aria-expanded="syncedShowSelectWalletPopup" @click.stop="toggleSelectWalletPopupVisible">
           <span class="wallet-title" data-testid="walletNameHeader">{{ name }}</span>
           <Icon v-if="isMobile" icon="mobile" className="mobile" />
           <Rotate :isActive="syncedShowSelectWalletPopup">
-            <Icon icon="down" />
+            <Icon icon="down" width="12px" height="10px" />
           </Rotate>
-        </div>
+        </button>
 
-        <div v-if="isAddressExists" class="copy-address" data-testid="copyAddress" @click.stop="copyAddress">
+        <button v-if="isAddressExists" type="button" class="copy-address" :aria-label="$t('common.copyToClipboard')" data-testid="copyAddress" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
 
           <Icon icon="copy" className="copy" />
 
           <Tooltip text="common.copied" target=".copy-address" placement="top-end" trigger="click" />
-        </div>
+        </button>
       </div>
 
       <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
@@ -238,7 +238,7 @@ export default defineComponent({ name: 'Header',
     "highlightSettingsIcon": 'updateZIndexShowSettings',
   },
   async mounted() {
-    this.extensionStore.fetchTabStatus();
+    if (this.isPopup) await this.extensionStore.fetchTabStatus();
   },
   methods: {
     copyAddress() {
@@ -280,6 +280,19 @@ export default defineComponent({ name: 'Header',
 </script>
 
 <style lang="scss" scoped>
+.name,
+.copy-address {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -408,6 +421,29 @@ export default defineComponent({ name: 'Header',
   .mobile {
     width: 18px;
     height: 18px;
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+@media (max-width: 500px) {
+  .header {
+    height: auto;
+    min-height: 104px;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .header-part {
+      flex: 0 0 100%;
+      min-width: 0;
+      width: 100%;
+    }
+    .header-part-left {
+      .logo-container { flex: 0 0 40px; margin: 0; }
+      .wallet-name { min-width: 0; flex: 1; }
+      .name { max-width: 100%; font-size: 1.125rem; }
+    }
+    .header-part-right { justify-content: flex-end; }
   }
 }
 </style>

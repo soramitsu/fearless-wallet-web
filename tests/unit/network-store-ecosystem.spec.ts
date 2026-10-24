@@ -19,7 +19,10 @@ const createLocalStorageStub = () => {
   };
 };
 
+const messaging = vi.hoisted(() => ({ fetchBalance: vi.fn() }));
+
 vi.mock('@/extension/messaging', () => ({
+  fetchBalance: messaging.fetchBalance,
   getHistory: vi.fn(),
   toggleFavoriteNetwork: vi.fn(),
 }));
@@ -139,5 +142,80 @@ describe('network store ecosystem filtering', () => {
 
     expect(networksStore.networks.map(({ name }) => name)).toEqual(['Taira']);
     expect(networksStore.activeNetworkForSelectedWallet.map(({ name }) => name)).toEqual(['Taira']);
+    expect(networksStore.selectableNetworks.map(({ name }) => name)).toEqual(['Taira']);
+  });
+
+  it('lets universal wallets select the networks of every ecosystem they hold an account for', () => {
+    const accountsStore = useAccountsStore();
+    const networksStore = useNetworksStore();
+
+    accountsStore.selectedWallet = {
+      address: 'universal-wallet',
+      bitcoinAddress: 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+      bitcoinTestnetAddress: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx',
+      ethereumAddress: '0x0000000000000000000000000000000000000001',
+      irohaAddress: 'testu-universal',
+      solanaAddress: 'HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk',
+      name: 'Universal',
+      walletEcosystem: WalletEcosystem.Substrate,
+      isSubstrate: true,
+      isTon: false,
+      hasEthereum: true,
+    };
+
+    // Balances, warnings and staking keep using the Substrate/EVM list; only selection widens.
+    expect(networksStore.networks.map(({ name }) => name)).toEqual(['Polkadot', 'Ethereum']);
+    expect(networksStore.selectableNetworks.map(({ name }) => name)).toEqual([
+      'Polkadot',
+      'Ethereum',
+      'Bitcoin',
+      'Solana',
+      'Taira',
+    ]);
+  });
+
+  it('keeps Substrate wallets without other accounts to their own networks', () => {
+    const accountsStore = useAccountsStore();
+    const networksStore = useNetworksStore();
+
+    accountsStore.selectedWallet = {
+      address: 'legacy-wallet',
+      ethereumAddress: '',
+      name: 'Legacy',
+      walletEcosystem: WalletEcosystem.Substrate,
+      isSubstrate: true,
+      isTon: false,
+      hasEthereum: false,
+    };
+
+    expect(networksStore.selectableNetworks.map(({ name }) => name)).toEqual(['Polkadot']);
+  });
+
+  it('loads a chosen indexer network on request and leaves API-backed networks to the background', async () => {
+    const accountsStore = useAccountsStore();
+    const networksStore = useNetworksStore();
+
+    accountsStore.selectedWallet = {
+      address: 'universal-wallet',
+      bitcoinTestnetAddress: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx',
+      ethereumAddress: '',
+      name: 'Universal',
+      walletEcosystem: WalletEcosystem.Substrate,
+      isSubstrate: true,
+      isTon: false,
+      hasEthereum: false,
+    };
+    messaging.fetchBalance.mockClear();
+
+    await networksStore.loadIndexerNetworkBalance('bitcoin');
+    await networksStore.loadIndexerNetworkBalance('Polkadot');
+    await networksStore.loadIndexerNetworkBalance('All networks');
+
+    expect(messaging.fetchBalance).toHaveBeenCalledTimes(1);
+    expect(messaging.fetchBalance).toHaveBeenCalledWith({
+      address: 'universal-wallet',
+      networks: ['Bitcoin'],
+      walletEcosystem: WalletEcosystem.Substrate,
+    });
   });
 });

@@ -1,10 +1,14 @@
+// @vitest-environment node
+// happy-dom preflights every cross-origin fetch and Esplora answers OPTIONS with 404, so the live
+// broadcast uses Node's fetch, as a browser's simple GET would need no preflight.
+import { writeFileSync } from 'node:fs';
 import * as bitcoin from 'bitcoinjs-lib';
 
 import { BitcoinEsploraClient } from '@extension-base/services/bitcoin-indexer-service';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import { isBitcoinAddress } from '@/util/bitcoin';
 import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
-import { sendBitcoinTransaction, type BitcoinSendError } from '@/util/bitcoinSend';
+import { quoteBitcoinSend, sendBitcoinTransaction, type BitcoinSendError } from '@/util/bitcoinSend';
 
 const mnemonic = vectors.vectors[0].mnemonic;
 const sourceAddress = vectors.vectors[0].expected.bitcoin.testnet.firstReceiveAddress;
@@ -15,6 +19,7 @@ const wrongBroadcastTxid = '22'.repeat(32);
 
 type BitcoinTestnetSmokeConfig = {
   amountSat: number;
+  evidenceOut?: string;
   changeAddress?: string;
   derivationPath: string;
   feeRateSatPerVbyte?: number;
@@ -81,7 +86,7 @@ describe('Bitcoin testnet broadcast smoke', () => {
       })
     ).rejects.toMatchObject({
       code: 'broadcast_txid_mismatch',
-      name: 'BitcoinSendError',
+      name: 'BitcoinTransactionStatusUnknownError',
     } satisfies Partial<BitcoinSendError>);
   });
 
@@ -116,7 +121,10 @@ describe('Bitcoin testnet broadcast smoke', () => {
     ).toThrow('FEARLESS_BITCOIN_TESTNET_SOURCE_ADDRESS does not match the supplied mnemonic and derivation path');
   });
 
-  const liveConfig = readLiveSmokeConfig(process.env);
+  // `process` is the browser polyfill inside transformed modules; the opt-in lives in the real Node env.
+  const liveConfig = readLiveSmokeConfig(
+    (globalThis as { process?: { env?: Record<string, string> } }).process?.env ?? {}
+  );
   const liveTest = liveConfig ? it : it.skip;
 
   liveTest(
@@ -124,7 +132,7 @@ describe('Bitcoin testnet broadcast smoke', () => {
     async () => {
       if (!liveConfig) throw new Error('live config was unexpectedly unavailable');
 
-      const result = await sendBitcoinTransaction({
+      const params = {
         amountSat: liveConfig.amountSat,
         changeAddress: liveConfig.changeAddress,
         client: new BitcoinEsploraClient({ baseUrl: liveConfig.indexerUrl, network: 'testnet' }),
@@ -132,14 +140,28 @@ describe('Bitcoin testnet broadcast smoke', () => {
         includeUnconfirmed: liveConfig.includeUnconfirmed,
         maxInputs: 1,
         mnemonicOrSeed: liveConfig.mnemonic,
-        network: 'testnet',
+        network: 'testnet' as const,
         selectedOutpoints: [liveConfig.outpoint],
         sources: [{ address: liveConfig.sourceAddress, derivationPath: liveConfig.derivationPath }],
         toAddress: liveConfig.recipientAddress,
-      });
+      };
+      const quote = await quoteBitcoinSend(params);
+      const result = await sendBitcoinTransaction({ ...params, approvedMaxFeeSat: quote.fee });
 
       expect(result.broadcastTxid).toBe(result.txid);
       expect(result.selectedUtxos).toEqual([expect.objectContaining(liveConfig.outpoint)]);
+      expect(result.fee).toBeLessThanOrEqual(quote.fee);
+      if (liveConfig.evidenceOut) {
+        writeFileSync(liveConfig.evidenceOut, `${JSON.stringify({
+          txid: result.txid,
+          sourceAddress: liveConfig.sourceAddress,
+          recipientAddress: liveConfig.recipientAddress,
+          amountSat: String(liveConfig.amountSat),
+          outpoint: `${liveConfig.outpoint.txid}:${liveConfig.outpoint.vout}`,
+          indexerUrl: liveConfig.indexerUrl,
+          timestamp: new Date().toISOString().replace(/\.\d{3}Z$/u, 'Z'),
+        }, null, 2)}\n`);
+      }
     },
     60_000
   );
@@ -229,6 +251,7 @@ function readLiveSmokeConfig(env: Partial<Record<string, string | undefined>>): 
 
   return {
     amountSat: parsePositiveInteger(requiredEnv(env, 'FEARLESS_BITCOIN_TESTNET_AMOUNT_SAT'), 'FEARLESS_BITCOIN_TESTNET_AMOUNT_SAT'),
+    evidenceOut: env.FEARLESS_BITCOIN_TESTNET_EVIDENCE_OUT?.trim() || undefined,
     changeAddress: change,
     derivationPath,
     feeRateSatPerVbyte: optionalPositiveNumber(

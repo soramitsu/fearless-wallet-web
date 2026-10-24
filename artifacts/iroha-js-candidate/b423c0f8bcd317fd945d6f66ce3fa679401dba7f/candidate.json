@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 1,
+  "kind": "unpublished-local-candidate-evidence",
+  "observedAt": "2026-07-12",
+  "source": {
+    "repository": "https://github.com/hyperledger-iroha/iroha.git",
+    "baseCommit": "b423c0f8bcd317fd945d6f66ce3fa679401dba7f",
+    "baseTree": "f5e47336c7ba64f43e629636fd0b0b31ca39a22e",
+    "observedBranch": "optimizations",
+    "baseArchive": {
+      "format": "git-archive-tar-gzip",
+      "file": "b423c0f8-iroha-js-candidate-replay-base.tar.gz",
+      "sha256": "cb2931de7df8fd62e5580f4734f10f47ca33fa47d03f9264cc2c4cd9ea58484c",
+      "bytes": 2412361,
+      "uncompressedBytes": 15319040,
+      "archiveEntries": 305,
+      "regularFiles": 285,
+      "directories": 20,
+      "payloadBytes": 15088177,
+      "globalPaxHeaders": 1,
+      "physicalHeaders": 306,
+      "inventoryFile": "b423c0f8-iroha-js-candidate-replay-base.inventory.tsv",
+      "inventorySha256": "949e4b1f101cc47ebcd37f933784bffa183224262c94200708c1fcf237bf61d4",
+      "inventoryBytes": 35764,
+      "inventoryEntries": 305,
+      "metadataPath": ".fearless-iroha-js-replay-base.json",
+      "sourceCommit": "b423c0f8bcd317fd945d6f66ce3fa679401dba7f",
+      "sourceTree": "f5e47336c7ba64f43e629636fd0b0b31ca39a22e",
+      "reconstructedSubsetTree": "04fbf3b60512c7daf734d3f72c6a60ceb79316af",
+      "fullRepository": false,
+      "includedPaths": [".gitignore", "crates/iroha_js_host/src/lib.rs", "javascript/iroha_js"],
+      "excludedPaths": ["javascript/iroha_js/node_modules"],
+      "maxCompressedBytes": 4194304,
+      "maxUncompressedBytes": 16777216,
+      "maxEntries": 512,
+      "maxFileBytes": 2097152
+    },
+    "patch": {
+      "file": "b423c0f8-to-final-candidate.patch",
+      "sha256": "b50de5592570e96f9d48374ed39d55cb4a4cc8298e99fc0657e698d3e4c81049",
+      "bytes": 145949,
+      "lines": 3351,
+      "changedPaths": 32,
+      "modifiedPaths": 28,
+      "addedPaths": 3,
+      "deletedPaths": 1,
+      "insertions": 2017,
+      "deletions": 154,
+      "relevantStateSha256": "162e1cbbfbc1c8042075f2cb0439ea9827af0d69625a25328d2efb1686c5778c"
+    },
+    "expectedState": [
+      {
+        "mode": "644",
+        "bytes": 7667,
+        "sha256": "e25320fdd33bd500c21f72448a28c5ef1d7fac6af55d258ee65c2376b7620861",
+        "path": ".gitignore"
+      },
+      {
+        "mode": "644",
+        "bytes": 1072989,
+        "sha256": "ddf9b03290c043e87a4c3aee1d05a970e5ee90eb4478119a72667923cba63364",
+        "path": "crates/iroha_js_host/src/lib.rs"
+      },
+      {
+        "mode": "644",
+        "bytes": 31503,
+        "sha256": "124acd55e68120a7a3b93ef94be48188a59e5cd332e26d549c9fd0019cd058dd",
+        "path": "javascript/iroha_js/CHANGELOG.md"
+      },
+      {
+        "mode": "644",
+        "bytes": 173622,
+        "sha256": "0103014cefc43b1fc20927318be61087ebcbf020769ba65dc06705ca7db1fd7c",
+        "path": "javascript/iroha_js/README.md"
+      },
+      {
+        "mode": "644",
+        "bytes": 539018,
+        "sha256": "fe66f27c023fe5423fb9fcaefadabebfadeeb7d5946ab9e130bdc259934d8ad5",
+        "path": "javascript/iroha_js/dist/instructionBuilders.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 52676,
+        "sha256": "5677996214eadab4bf2fe1e8f50a55c2c5277cc6eb6ef6b4d7221e3b0198538b",
+        "path": "javascript/iroha_js/dist/kotodamaCompiler/normalize.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 262594,
+        "sha256": "119bc86ed72c46a0738310ce33ee57c0c8d240dc41751f18bd385ff787a671ee",
+        "path": "javascript/iroha_js/dist/norito.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 1109560,
+        "sha256": "18f87cc0fd1d75ce9c908dbbb2deefc0be1a0d59b2a0e2328ad6757c84338d68",
+        "path": "javascript/iroha_js/dist/toriiClient.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 447298,
+        "sha256": "171e949182af98023043921dfb1f2743a3e740050e8e5f912ca4fed72d18a8a6",
+        "path": "javascript/iroha_js/index.d.ts"
+      },
+      {
+        "mode": "644",
+        "bytes": 7554,
+        "sha256": "59d22ee9295ff4b2d1cc7db0de333916827cb6a55890a29c20c26b4eca1c9145",
+        "path": "javascript/iroha_js/kotodama-compiler.d.ts"
+      },
+      {
+        "mode": "DELETE",
+        "bytes": null,
+        "sha256": null,
+        "path": "javascript/iroha_js/native/iroha_js_host.checksums.json"
+      },
+      {
+        "mode": "644",
+        "bytes": 6705,
+        "sha256": "ed37b71360924dbcd04b81b3d3d25fecee1666e9675e1c2d1bc7341bbc747e11",
+        "path": "javascript/iroha_js/package.json"
+      },
+      {
+        "mode": "644",
+        "bytes": 19759,
+        "sha256": "ffee94f652a4e09ef1fc765ff511bb89f959cb2d3493fd6c33f720bbbee9d38d",
+        "path": "javascript/iroha_js/scripts/build-dist.mjs"
+      },
+      {
+        "mode": "644",
+        "bytes": 11816,
+        "sha256": "0a92b24fe8d096e8328fd99f72f9434ec1ffb4cb4a646d57581cd0cd46613991",
+        "path": "javascript/iroha_js/scripts/bundle-size-check.mjs"
+      },
+      {
+        "mode": "644",
+        "bytes": 40124,
+        "sha256": "1bfdfe914694b248f199f02ccd32434c127d09d3f6231439eb2e27b35a0acb50",
+        "path": "javascript/iroha_js/scripts/copy-native.mjs"
+      },
+      {
+        "mode": "644",
+        "bytes": 539018,
+        "sha256": "fe66f27c023fe5423fb9fcaefadabebfadeeb7d5946ab9e130bdc259934d8ad5",
+        "path": "javascript/iroha_js/src/instructionBuilders.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 52676,
+        "sha256": "5677996214eadab4bf2fe1e8f50a55c2c5277cc6eb6ef6b4d7221e3b0198538b",
+        "path": "javascript/iroha_js/src/kotodamaCompiler/normalize.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 262594,
+        "sha256": "119bc86ed72c46a0738310ce33ee57c0c8d240dc41751f18bd385ff787a671ee",
+        "path": "javascript/iroha_js/src/norito.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 1109560,
+        "sha256": "18f87cc0fd1d75ce9c908dbbb2deefc0be1a0d59b2a0e2328ad6757c84338d68",
+        "path": "javascript/iroha_js/src/toriiClient.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 19836,
+        "sha256": "cd2ed572c9ec6aa0e7bd71ce51bfff32c29cf3c6d9eff42710932d8ae255b8f3",
+        "path": "javascript/iroha_js/test/buildDistConcurrency.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 12639,
+        "sha256": "f0e3173bbff621d8ad9948c7d618eaa332c27a19039b376124295a2855f5f459",
+        "path": "javascript/iroha_js/test/bundleSizeCheck.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 24992,
+        "sha256": "9787abf514ecc712d40b0d844970b70f7de9b7740fc3a6a07d3f1b8f2f892521",
+        "path": "javascript/iroha_js/test/copyNative.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 3320,
+        "sha256": "41b095d9f88f9e9e39692620b699963d62f651668d5755baaa7ce146e70d58f5",
+        "path": "javascript/iroha_js/test/fixtures/validationFeeOverlayV1.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 279166,
+        "sha256": "471164b0bad21f6932eede92723cbecbc2f8db50ccf4f52cf5c262733593b36f",
+        "path": "javascript/iroha_js/test/instructionBuilders.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 66510,
+        "sha256": "96dcd76bb8498b25a16d45a8d1a06c475d5346daadf88d5886d6232a371f2067",
+        "path": "javascript/iroha_js/test/kotodamaCompiler.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 43168,
+        "sha256": "43bf557f73f6ef5e0fcfb54e9cea27943b4ad0cccfacdff5abb1f1b334c44c13",
+        "path": "javascript/iroha_js/test/norito.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 834811,
+        "sha256": "11cbcb59cc11157f6ed59664e35f25ca45c175662ea11ad3db586f362bc13cee",
+        "path": "javascript/iroha_js/test/toriiClient.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 10349,
+        "sha256": "f73dfa219c2c9cfcf5071c4de87423e3179d5e071c8fdad4ad2d5dd99e669cc2",
+        "path": "javascript/iroha_js/test/toriiSubscriptions.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 150443,
+        "sha256": "5df9fb4c2a8aed0246b390ce29cb3c31f790b76a40ac7b7d31cec5b594378c60",
+        "path": "javascript/iroha_js/test/transactionBuilder.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 11343,
+        "sha256": "7c0558c365d644b7588d481e22f26421cd3ba23492d2c0ce0fd382466aad2c13",
+        "path": "javascript/iroha_js/LICENSE"
+      },
+      {
+        "mode": "644",
+        "bytes": 1345,
+        "sha256": "a968585a8fa744504eae264801d2fd77c680f13ed50509fd008af768bb746bba",
+        "path": "javascript/iroha_js/test/kotodamaCompiler.native.test.js"
+      },
+      {
+        "mode": "644",
+        "bytes": 3837,
+        "sha256": "7a3afcce3f7ff945389c550d378042f0b445c59ff73824e6bb95462491f27904",
+        "path": "javascript/iroha_js/test/packageSurface.test.js"
+      }
+    ]
+  },
+  "artifact": {
+    "name": "@iroha/iroha-js",
+    "version": "0.0.3",
+    "file": "iroha-iroha-js-0.0.3.tgz",
+    "sha256": "15c3eabb845b5fbde419035df9085d3db6ea8fea452d77aa328d73a334ccdea8",
+    "npmShasumSha1": "8ee3a23653fc4e2648f81dc12ce5cf00d36b4439",
+    "integrity": "sha512-D/B55Y6GWQGsiBjy07PUbUOzSb8+zBRYgutNew8Wb3kJxMjahxHYOvcHbTBln1kOcgKogn/eCnQ/CC6iYrwStA==",
+    "packedBytes": 1281259,
+    "unpackedBytes": 7914958,
+    "files": 154,
+    "archiveEntries": 154,
+    "nativeAddons": 0,
+    "generatedNativeChecksumSidecar": {
+      "path": "package/native/iroha_js_host.checksums.json",
+      "bytes": 134,
+      "sha256": "72e7f471048d3ecdccfef4cd1acade1f24ba09aa6443bdf04c3b58d4561b0687",
+      "platform": "darwin-arm64",
+      "referencedAddonSha256": "3e96ea2bb4e9df6ad3481c29bc1a02741b5108e5742ecbf36fa0ed4af2f988a1"
+    }
+  },
+  "replay": {
+    "sourcePatchAppliedToExactBase": true,
+    "sourcePatchReplayableFromBundledBaseArchive": true,
+    "baseSourceArchiveBundled": true,
+    "baseRepositoryBundled": false,
+    "offlineCandidateReplayable": true,
+    "offlineFullSourceReplayable": false,
+    "exactTarRepackVerified": true,
+    "exactTarRepackRequiresStoredGeneratedSidecar": true
+  },
+  "releaseBoundary": {
+    "evidenceVendored": true,
+    "ephemeral": false,
+    "published": false,
+    "reviewed": false,
+    "productionDependencyPinned": false,
+    "productionSourceIntegrated": false,
+    "releaseEnabled": false,
+    "realSafariScenarios": 0,
+    "realSafariAssertions": 0
+  }
+}

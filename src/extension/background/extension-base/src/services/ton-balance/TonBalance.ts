@@ -1,11 +1,13 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { FPNumber } from '@sora-substrate/util';
+import { reconcileSuccessfulDynamicScan } from '@extension-base/services/balance-service/reconcileSuccessfulScan';
 import { DEFAULT_PRICES } from '../prices-service';
 import { type ResponseBalanceRequest } from '../../background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
-import { getJettonAssetId, isSameString } from '@/helpers';
+import { isSameString } from '@/helpers';
+import { createAssetKey } from '@/portfolio/assetIdentity';
 
 type TonBalanceResult = {
   balance: string;
@@ -19,8 +21,17 @@ type TonJettonBalanceResult = {
   precision: number;
   symbol: string;
   assetId: string;
+  priceId?: string;
+  priceAssetKey?: string;
+  assetMetadataTrust: NonNullable<BalanceItem['assetMetadataTrust']>;
+  assetMetadataSource: NonNullable<BalanceItem['assetMetadataSource']>;
   walletAddress?: BalanceItem['walletAddress'];
   state: APIItemState;
+};
+
+type TonJettonScanResult = {
+  balances: TonJettonBalanceResult[];
+  successful: boolean;
 };
 
 export class TonBalance {
@@ -30,11 +41,13 @@ export class TonBalance {
     const promises: Promise<ResponseBalanceRequest[]>[] = networks.map(async (networkKey) => {
       const {
         assets,
+        chainId,
+        ecosystem,
         name: networkName,
         icon,
       } = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, networkKey))!;
 
-      const { precision, symbol, id: tonId } = assets[0];
+      const { precision, symbol, id: tonId, priceId } = assets[0];
 
       const tonBalance = await this.fetchUtilityAsset(address, networkKey, precision, tonId);
 
@@ -46,15 +59,40 @@ export class TonBalance {
           relayChain: networkName.toLowerCase(),
           symbol,
           id: tonId,
+          priceId,
+          priceAssetKey: priceId
+            ? createAssetKey({
+                ecosystem: String(ecosystem ?? 'ton'),
+                chainId: String(chainId || networkName),
+                assetId: tonId,
+              })
+            : undefined,
+          assetMetadataTrust: 'verified',
+          assetMetadataSource: 'registry',
+          scanCoverage: 'complete',
           total: tonBalance.balance,
           transferable: tonBalance.balance,
         },
         address
       );
 
-      const jettonsBalance = await this.fetchJettonsAsset(address, networkKey);
+      const jettonScan = await this.fetchJettonsAsset(address, networkKey);
+      const jettonsBalance = jettonScan.balances;
 
-      jettonsBalance.forEach(({ balance, image, name, precision, symbol, assetId, walletAddress, state }) => {
+      jettonsBalance.forEach(({
+        balance,
+        image,
+        name,
+        precision,
+        symbol,
+        assetId,
+        priceId,
+        priceAssetKey,
+        walletAddress,
+        state,
+        assetMetadataTrust,
+        assetMetadataSource,
+      }) => {
         this.state.balanceService.setBalanceItem(
           networkName,
           {
@@ -64,8 +102,13 @@ export class TonBalance {
             assetIcon: image,
             icon,
             id: assetId,
+            priceId,
+            priceAssetKey,
             name,
             symbol,
+            assetMetadataTrust,
+            assetMetadataSource,
+            scanCoverage: 'complete',
             total: balance,
             transferable: balance,
             walletAddress,
@@ -73,6 +116,15 @@ export class TonBalance {
           address
         );
       });
+
+      if (jettonScan.successful) {
+        reconcileSuccessfulDynamicScan(this.state, {
+          address,
+          network: networkName,
+          observedAssetIds: jettonsBalance.map(({ assetId }) => assetId),
+          includes: ({ type }) => type === 'jetton',
+        });
+      }
 
       return [
         {
@@ -99,8 +151,7 @@ export class TonBalance {
   ): Promise<TonBalanceResult> {
     try {
       const api = this.state.getTonApiMap[networkName];
-
-      const { walletContract } = this.state.keyringService.tonKeyring.accountSubject.value[address];
+      const walletContract = this.getWalletContract(address);
 
       const account = await api.api?.accounts.getAccount(walletContract.address);
 
@@ -121,11 +172,14 @@ export class TonBalance {
     }
   }
 
-  async fetchJettonsAsset(address: string, networkName: NetworkName): Promise<TonJettonBalanceResult[]> {
+  async fetchJettonsAsset(address: string, networkName: NetworkName): Promise<TonJettonScanResult> {
     try {
       const api = this.state.getTonApiMap[networkName];
+      const network = this.state.networkService.networksGithub.find(({ name }) =>
+        isSameString(name, networkName)
+      );
 
-      const { walletContract } = this.state.keyringService.tonKeyring.accountSubject.value[address];
+      const walletContract = this.getWalletContract(address);
 
       const response = await api.api?.accounts.getAccountJettonsBalances(walletContract.address, {
         currencies: [this.state.pricesService.fiatSymbol],
@@ -135,18 +189,22 @@ export class TonBalance {
 
       const prices = DEFAULT_PRICES;
 
-      const prepareBalances = balances.map((props) => {
+      const prepareBalances = balances.map<TonJettonBalanceResult>((props) => {
         const {
           balance,
-          jetton: { decimals, image, symbol, name },
+          jetton: { address: masterAddressValue, decimals, image, symbol, name, verification },
           walletAddress: { address: walletAddress },
         } = props;
 
         const symbolLower = symbol.toLowerCase();
-        const { price, diff24 } = this.state.pricesService.tonPricingService.tonParseRates(props.price!);
+        const masterAddress = masterAddressValue.toString();
+        const isVerified = String(verification).toLowerCase() === 'whitelist';
 
-        prices.tokenPriceChange = { ...prices.tokenPriceChange, [symbolLower]: diff24 };
-        prices.tokenPriceMap = { ...prices.tokenPriceMap, [symbolLower]: price };
+        if (isVerified && props.price) {
+          const { price, diff24 } = this.state.pricesService.tonPricingService.tonParseRates(props.price);
+          prices.tokenPriceChange = { ...prices.tokenPriceChange, [masterAddress]: diff24 };
+          prices.tokenPriceMap = { ...prices.tokenPriceMap, [masterAddress]: price };
+        }
 
         const balanceFP = FPNumber.fromCodecValue(balance, decimals);
 
@@ -157,18 +215,28 @@ export class TonBalance {
           walletAddress,
           image,
           name,
-          assetId: getJettonAssetId(name, symbolLower),
+          assetId: masterAddress,
+          priceId: isVerified ? masterAddress : undefined,
+          priceAssetKey: isVerified && network
+            ? createAssetKey({
+                ecosystem: String(network.ecosystem),
+                chainId: String(network.chainId || network.name),
+                assetId: masterAddress,
+              })
+            : undefined,
+          assetMetadataTrust: isVerified ? 'verified' : 'unverified',
+          assetMetadataSource: 'indexer',
           state: APIItemState.READY,
         };
       });
 
       this.state.pricesService.setPriceValue(prices);
 
-      return prepareBalances;
+      return { balances: prepareBalances, successful: true };
     } catch (error) {
       console.error('[TON][fetchJettonsAsset] Error', error);
 
-      return this.getCachedJettonBalances(address, networkName);
+      return { balances: this.getCachedJettonBalances(address, networkName), successful: false };
     }
   }
 
@@ -192,13 +260,31 @@ export class TonBalance {
 
         return belongsToNetwork && type === 'jetton';
       })
-      .map(({ assetIcon, icon, id, precision, symbol, total, transferable, free, walletAddress }) => ({
+      .map(({
+        assetIcon,
+        icon,
+        id,
+        precision,
+        symbol,
+        total,
+        transferable,
+        free,
+        walletAddress,
+        priceId,
+        priceAssetKey,
+        assetMetadataTrust,
+        assetMetadataSource,
+      }) => ({
         balance: transferable ?? total ?? free ?? '0',
         image: assetIcon ?? icon,
         name: symbol,
         precision,
         symbol,
         assetId: id,
+        priceId,
+        priceAssetKey,
+        assetMetadataTrust: assetMetadataTrust ?? 'unverified',
+        assetMetadataSource: assetMetadataSource ?? 'indexer',
         walletAddress,
         state: APIItemState.ERROR,
       }));
@@ -209,5 +295,22 @@ export class TonBalance {
     const groups = this.state.balanceService.balanceMap[accountAddress] ?? this.state.balanceService.balanceMap[address] ?? [];
 
     return groups.flatMap(({ balances }) => balances);
+  }
+
+  private getWalletContract(address: string) {
+    const stored = this.state.keyringService.tonKeyring.accountSubject.value[address];
+    if (stored?.walletContract) return stored.walletContract;
+    const account = this.state.keyringService.getAllMainAccounts().find(({ address: accountAddress }) =>
+      isSameString(accountAddress, address)
+    );
+    const publicKeyHex = account?.meta.tonPublicKeyHex as string | undefined;
+
+    if (!publicKeyHex || !/^[0-9a-f]{64}$/iu.test(publicKeyHex)) {
+      throw new Error('ton_public_key_unavailable');
+    }
+
+    return this.state.keyringService.tonKeyring.createContractV4(
+      Uint8Array.from(Buffer.from(publicKeyHex, 'hex'))
+    );
   }
 }

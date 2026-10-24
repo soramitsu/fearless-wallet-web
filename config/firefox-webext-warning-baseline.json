@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "webExtVersion": "10.6.0",
+  "sourceDir": "dist/extension/firefox",
+  "warningCount": 42,
+  "warningCodes": {
+    "DANGEROUS_EVAL": 41,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "warningFiles": {
+    "chunks/_plugin-vue_export-helper.js": 1,
+    "chunks/accounts.js": 17,
+    "chunks/background-vendor/assert-Blv9rAXX.js": 8,
+    "chunks/background-vendor/bcryptjs-DP6KoUS7.js": 9,
+    "chunks/background-vendor/core-js-pure-DilFdaL6.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js": 2,
+    "chunks/background-vendor/lodash-Ba9bIE_F.js": 1,
+    "chunks/background-vendor/lodash.merge-7jWe4BT9.js": 1,
+    "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js": 1,
+    "chunks/soramitsuUI.js": 1
+  },
+  "warningSetSha256": "bf322f7605bff7f5d7cb940f52474ca712851cec0241dffc3ce316336224d04c",
+  "artifacts": [
+    {
+      "file": "chunks/_plugin-vue_export-helper.js",
+      "sha256": "9afcb2188837dd1519b7e87582045e3262475a8fe77bf1b99dae634f5cad50be"
+    },
+    {
+      "file": "chunks/accounts.js",
+      "sha256": "bb1415b175ae8b8de70569c6c77a817f6ca2f027e8d3575cff9693899cc7bba2"
+    },
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
+    },
+    {
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
+    },
+    {
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js",
+      "sha256": "3ab057a93b06cfa961758ac2a24f1fd17652871f155e3695885b4f6d9da3cc87"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "8dcb6554e793c620dd0824c877dd1a5017ae71595674c1f04d2deb0499b28b10"
+    }
+  ]
+}

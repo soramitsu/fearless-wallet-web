@@ -27,6 +27,8 @@ import type {
   GetShareOfPoolResponse,
   GetShareOfPoolRequest,
   DefaultParams as DefaultPoolParams,
+  DemeterMutationRequest,
+  DemeterPoolsResponse,
 } from '@extension-base/services/pools-service/types';
 import type {
   NftTx,
@@ -37,6 +39,7 @@ import type {
   ChainNftState,
   AlchemyOwnedNftsResponse,
 } from '@extension-base/services/nft-service/types';
+import type { AssetDiscoverySweepResult } from '@extension-base/services/asset-discovery-service';
 import type {
   PairingSubjectType,
   RequestApproveConnectWalletSession,
@@ -51,6 +54,12 @@ import type {
   WalletConnectSessionRequest,
   WalletConnectTransactionRequest,
 } from '@extension-base/services/wallet-connect-service/types';
+import type {
+  IrohaConnectAccountRequest,
+  IrohaConnectPendingRequest,
+  IrohaConnectSnapshot,
+  IrohaConnectStartRequest,
+} from '@extension-base/services/iroha-connect-service/types';
 import type {
   StakingParamsRequest,
   StakingParamsResponse,
@@ -146,6 +155,14 @@ import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type { UniversalWalletMigrationSnapshot } from '@/util/universalWalletMigrationContract';
 import type {
+  PolkamarktMutationRequest,
+  PolkamarktMutationResponse,
+  PolkamarktQuote,
+  PolkamarktQuoteRequest,
+  PolkamarktSnapshot,
+} from '@/defi/polkamarkt/types';
+import type { SoraDisclaimerStatus } from '@/defi/soraDisclaimer';
+import type {
   DerivationPath,
   GoogleAuthTypes,
   VerifyTokenResponse,
@@ -164,7 +181,7 @@ export interface RequestSignatures {
   'pri(keyring.hasAccounts)': [null, boolean];
   'pri(keyring.keyringIsLocked)': [null, boolean];
   'pri(keyring.changePassword)': [RequestChangePassword, boolean];
-  'pri(keyring.unlock)': [RequestUnlockExtension, boolean];
+  'pri(keyring.unlock)': [RequestUnlockExtension, boolean | 'ton-recovery-required' | 'ton-storage-unavailable'];
   'pri(keyring.lock)': [boolean, boolean];
   'pri(keyring.getPassword)': [null, string];
   'pri(keyring.reset)': [null, boolean];
@@ -243,6 +260,9 @@ export interface RequestSignatures {
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.makeSwap)': [RequestSwap, ResponseMakeSwap];
 
+  'pri(policy.soraDisclaimer.status)': [null, SoraDisclaimerStatus];
+  'pri(policy.soraDisclaimer.accept)': [{ version: number }, SoraDisclaimerStatus];
+
   'pri(accounts.soraFees.subscribe)': [null, SoraFees, SoraFees];
   'pri(accounts.checkScamAddress)': [RequestCheckScam, ResponseCheckScam];
 
@@ -263,12 +283,20 @@ export interface RequestSignatures {
   'pri(pools.unsubscribePools)': [null, void];
   'pri(pools.accountLiquidity)': [null, boolean, AccountLiquidity[]];
   'pri(pools.getAmountValue)': [DefaultPoolParams, string];
+  'pri(pools.demeter.get)': [null, DemeterPoolsResponse];
+  'pri(pools.demeter.mutate)': [DemeterMutationRequest, BasicTxResponse];
+
+  // Native SORA Polkamarkt
+  'pri(defi.polkamarkt.snapshot)': [{ marketId?: string }, PolkamarktSnapshot];
+  'pri(defi.polkamarkt.quote)': [PolkamarktQuoteRequest, PolkamarktQuote];
+  'pri(defi.polkamarkt.mutate)': [PolkamarktMutationRequest, PolkamarktMutationResponse];
 
   // Ether
   'pri(balance)': [null, BalanceJson];
   'pri(fetch.evm.balance)': [FetchBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, ResponseBalanceRequest[]];
+  'pri(asset.discovery.sweep)': [null, AssetDiscoverySweepResult];
   'pri(signing.evmRequests)': [null, EvmRequests, EvmRequests];
 
   // price
@@ -350,6 +378,16 @@ export interface RequestSignatures {
   'pri(walletConnect.app.disconnect)': [null, string];
   'pri(walletConnect.app.subscribePairing)': [string, PairingSubjectType, PairingSubjectType];
   'pri(walletConnect.app.pairing)': [null, string];
+
+  // IrohaConnect wallet relay (Uranai-compatible v1)
+  'pri(irohaConnect.connect)': [IrohaConnectStartRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.subscribe)': [null, IrohaConnectSnapshot, IrohaConnectSnapshot];
+  'pri(irohaConnect.session.approve)': [IrohaConnectAccountRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.session.reject)': [null, IrohaConnectSnapshot];
+  'pri(irohaConnect.request.approve)': [IrohaConnectPendingRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.request.reject)': [IrohaConnectPendingRequest, IrohaConnectSnapshot];
+  'pri(irohaConnect.disconnect)': [null, IrohaConnectSnapshot];
+  'pri(irohaConnect.error.clear)': [null, IrohaConnectSnapshot];
 
   // Nfts
   'pri(nft.get.all)': [string, AlchemyOwnedNftsResponse];

@@ -62,7 +62,7 @@ export default defineComponent({ name: 'MnemonicColumns' ,
   },
   methods: {
     getNumberString(number1: number, number2: number) {
-      const baseValue = number1 * number2;
+      const baseValue = (number1 - 1) * this.columnElements + number2;
 
           return baseValue.toString().padStart(2, '0');
     },

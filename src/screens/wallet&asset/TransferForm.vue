@@ -41,6 +41,14 @@
         <div v-else class="transfer-form">
           <div>
             <template v-if="step === 1">
+              <button
+                v-if="isTransfer"
+                type="button"
+                class="network-transfer-link"
+                @click="$router.push({ name: 'CrossChain' })"
+              >
+                {{ $t('ux.transferNetworks') }} →
+              </button>
               <InputWithIcon
                 v-if="isTransfer"
                 :value="syncedNetwork"
@@ -71,13 +79,24 @@
                 :assetId="syncedAssetId"
                 :amount="syncedAmount"
                 :isRotate="showSelectedAssetPopup"
+                :disableSelection="lockRouteSelection"
                 @update:amount="updateAmount"
                 @setMax="setMax"
                 @togglePopupVisibility="toggleValue('showSelectedAssetPopup')"
               />
 
+              <FInput
+                v-if="isCrossChain && lockRouteSelection"
+                :value="syncedDestNet"
+                class="row"
+                size="big"
+                placeholder="assets.destNet"
+                :readonly="true"
+                data-testid="destNet"
+              />
+
               <InputWithIcon
-                v-if="isCrossChain"
+                v-else-if="isCrossChain"
                 :value="syncedDestNet"
                 class="row"
                 icon="rotate"
@@ -131,11 +150,37 @@
                 icon="info"
               />
 
+              <InfoRow
+                v-if="isCrossChain && crossChainRuntimeMinimum"
+                text="crossChainPage.minimum"
+                :value="`${crossChainRuntimeMinimum} ${sendAssetName?.toUpperCase()}`"
+              />
+
+              <template v-if="isTransfer">
+                <InfoRow
+                  v-if="solanaAccountCreationDeposit"
+                  text="assets.solanaAccountCreation"
+                  :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+                  data-testid="solanaAccountCreation"
+                />
+                <p v-if="solanaAccountCreationDeposit" class="send-note">
+                  {{ $t('assets.solanaAccountCreationHint', { asset: sendAssetName?.toUpperCase() }) }}
+                </p>
+              </template>
+
               <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
               <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
-            <slot name="step2" v-else-if="step === 2"></slot>
+            <template v-else-if="step === 2">
+              <slot name="step2"></slot>
+
+              <InfoRow
+                v-if="isTransfer && solanaAccountCreationDeposit"
+                text="assets.solanaAccountCreation"
+                :value="`${$n(+solanaAccountCreationDeposit, 'decimalPrecise')} SOL`"
+              />
+            </template>
           </div>
 
           <FButton
@@ -200,7 +245,6 @@ import { defineComponent } from 'vue';
 
 import { FPNumber } from '@sora-substrate/util';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
-import { TransferErrorCode } from '@extension-base/background/types/types';
 import { Reasons } from '@extension-base/services/scam-service/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
@@ -209,6 +253,7 @@ import type {
   AccountJson,
   RequestCheckTransfer,
   RequestCheckCrossChain,
+  ResponseSolanaTransferQuote,
 } from '@extension-base/background/types/types';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
@@ -241,11 +286,17 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
+// How long the priority fee that Max quoted is kept for pricing the amount it produced.
+const SOLANA_PRICE_HINT_MS = 60_000;
 const VALID_BITCOIN_ADDRESS = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4';
 const VALID_BITCOIN_TESTNET_ADDRESS = 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx';
 
-export default defineComponent({ name: 'TransferForm',
+export default defineComponent({
+  name: 'TransferForm',
   components: {
     WalletInfo,
     HistoryBook,
@@ -266,10 +317,15 @@ export default defineComponent({ name: 'TransferForm',
     value: { type: String },
     partialFee: { type: String },
     destNetFee: { type: String, default: '0' },
+    canonicalAssetKey: { type: String, default: '' },
+    reviewedRouteId: { type: String, default: '' },
+    reviewedRouteProviderId: { type: String, default: '' },
+    lockRouteSelection: { type: Boolean, default: false },
   },
   data() {
     return {
       networksStore: useNetworksStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
       accountsStore: useAccountsStore(),
       timeoutSubscription: undefined as ReturnType<typeof setTimeout> | undefined,
       timeoutSetMax: undefined as ReturnType<typeof setTimeout> | undefined,
@@ -284,8 +340,13 @@ export default defineComponent({ name: 'TransferForm',
       newAddress: '',
       filterValue: '',
       isFetchingFees: false,
+      feeQuoteRevision: 0,
       estimateFeeError: false,
       estimateFeeErrorMessage: '',
+      crossChainExecutionFingerprint: '',
+      crossChainRuntimeMinimum: '',
+      solanaQuote: null as ResponseSolanaTransferQuote | null,
+      solanaPriceHint: null as { amount: string; assetId: string; at: number; network: string; price: number } | null,
       isScamAddress: false,
       scamInfo: null,
       step: 1,
@@ -294,18 +355,18 @@ export default defineComponent({ name: 'TransferForm',
   computed: {
     scamMessage() {
       const key =
-            this.scamInfo?.reason === Reasons.Donation
-              ? 'isDonationAddress'
-              : this.scamInfo?.reason === Reasons.Exchange
-              ? 'isExchangeAddress'
-              : this.scamInfo?.reason === Reasons.Sanctions
+        this.scamInfo?.reason === Reasons.Donation
+          ? 'isDonationAddress'
+          : this.scamInfo?.reason === Reasons.Exchange
+            ? 'isExchangeAddress'
+            : this.scamInfo?.reason === Reasons.Sanctions
               ? 'isSanctionsAddress'
               : 'isScamAddress';
 
-          return {
-            text: `assets.${key}`,
-            localeProps: { asset: this.sendAssetName.toUpperCase() },
-          };
+      return {
+        text: `assets.${key}`,
+        localeProps: { asset: this.sendAssetName.toUpperCase() },
+      };
     },
     recipientCut() {
       return cut(this.syncedRecipient);
@@ -313,16 +374,16 @@ export default defineComponent({ name: 'TransferForm',
     acountsEcosystem() {
       if (this.isCrossChain) return this.accountsStore.accounts;
 
-          return this.accountsStore.acountsEcosystem;
+      return this.accountsStore.acountsEcosystem;
     },
     formHeader() {
       if (this.showEditAddressBook) return 'assets.addContact';
 
-          if (this.showHistoryBook) return 'assets.chooseFromHistory';
+      if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
-          if (this.showMyWallets) return 'assets.wallets';
+      if (this.showMyWallets) return 'assets.wallets';
 
-          return this.header;
+      return this.header;
     },
     showMyWalletsButton() {
       return this.acountsEcosystem.length !== 0;
@@ -338,23 +399,23 @@ export default defineComponent({ name: 'TransferForm',
     },
     originalNetworkUtilityAsset() {
       const currency = this.accountsStore.balances.find(({ balances }) =>
-            balances.some(({ id }) => id === this.originalUtilityId)
-          );
+        balances.some(({ id }) => id === this.originalUtilityId)
+      );
 
-          return currency?.symbol ?? '';
+      return currency?.symbol ?? '';
     },
     originalAssetPrice() {
       const currency = this.accountsStore.balances.find(({ balances }) =>
-            balances.some(({ id }) => id === this.originalUtilityId)
-          );
-          const priceId = currency?.priceId ?? '';
+        balances.some(({ id }) => id === this.originalUtilityId)
+      );
+      const priceId = currency?.priceId ?? '';
 
-          return this.networksStore.getAssetPrice(priceId).price;
+      return this.networksStore.getAssetPrice(priceId).price;
     },
     syncedFeeCut() {
       const text = this.isTonNetwork ? `< ` : '';
 
-          return `${text}${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
+      return `${text}${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
     },
     fiatFeeCut() {
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
@@ -374,7 +435,7 @@ export default defineComponent({ name: 'TransferForm',
     assetPrice() {
       const priceId = this.currency?.priceId ?? '';
 
-          return this.networksStore.getAssetPrice(priceId).price;
+      return this.networksStore.getAssetPrice(priceId).price;
     },
     placeholderNetwork() {
       return this.isTransfer ? 'assets.network' : 'assets.originNet';
@@ -388,30 +449,30 @@ export default defineComponent({ name: 'TransferForm',
     isValidAddressByNetwork() {
       if (!this.isValidRecipientAddress || this.syncedNetwork === '') return true;
 
-          return BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
+      return BaseApi.validateAddressByNetwork(this.syncedRecipient, this.targetNetwork);
     },
     top() {
       if (!IS_EXTENSION) return 120;
 
-          if (this.showSelectedAssetPopup) return 220;
+      if (this.showSelectedAssetPopup) return 220;
 
-          if (this.showSelectNetworkPopup) return 150;
+      if (this.showSelectNetworkPopup) return 150;
 
-          return IS_POPUP ? 42 : 332;
+      return IS_POPUP ? 42 : 332;
     },
     left() {
       if (!IS_EXTENSION) return 0;
 
-          if (this.showSelectedAssetPopup || (this.showDestNetPopup && IS_POPUP)) return 160;
+      if (this.showSelectedAssetPopup || (this.showDestNetPopup && IS_POPUP)) return 160;
 
-          return -160;
+      return -160;
     },
     selectPopupValue() {
       if (this.showSelectedAssetPopup) return this.syncedAssetId;
 
-          if (this.showSelectNetworkPopup) return this.syncedNetwork;
+      if (this.showSelectNetworkPopup) return this.syncedNetwork;
 
-          return this.syncedDestNet;
+      return this.syncedDestNet;
     },
     showBackIcon() {
       return this.step === 2 || this.showHistoryBook || this.showMyWallets || this.showEditAddressBook;
@@ -419,27 +480,31 @@ export default defineComponent({ name: 'TransferForm',
     buttonText() {
       if (!navigator.onLine) return 'common.offlineStatus';
 
-          if (!this.currency) return '';
+      if (this.isBitcoinTransferDisabled) {
+        return BaseApi.isSolanaNetwork(this.syncedNetwork) ? 'common.featureOff' : 'assets.bitcoinTransfersDisabled';
+      }
 
-          if (this.step === 2) {
-            if (this.isTransfer) return 'assets.sendButtonText';
+      if (!this.currency) return '';
 
-            return 'common.confirm';
-          }
+      if (this.step === 2) {
+        if (this.isTransfer) return 'assets.sendButtonText';
 
-          if (this.estimateFeeError) return this.estimateFeeErrorMessage || 'estimateFeeError';
+        return 'common.confirm';
+      }
 
-          if (this.isSameAddress) return 'assets.isSameAddress';
+      if (this.estimateFeeError) return this.estimateFeeErrorMessage || 'estimateFeeError';
 
-          if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
+      if (this.isSameAddress) return 'assets.isSameAddress';
 
-          if (!this.isValidSendAsset)
-            return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
+      if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
 
-          if (!this.isValidTransferByUtility)
-            return { text: 'assets.insufficientBalance', localeProps: { asset: this.utilityAssetName.toUpperCase() } };
+      if (!this.isValidSendAsset)
+        return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName?.toUpperCase() } };
 
-          return 'common.continue';
+      if (!this.isValidTransferByUtility)
+        return { text: 'assets.insufficientBalance', localeProps: { asset: this.utilityAssetName.toUpperCase() } };
+
+      return 'common.continue';
     },
     utilityAsset() {
       return getUtilityAsset(this.accountsStore.balances, this.syncedNetwork);
@@ -453,49 +518,75 @@ export default defineComponent({ name: 'TransferForm',
     buttonDisabled() {
       if (this.isDisableBtn) return true;
 
-          if (this.isFetchingFees || this.estimateFeeError) return true;
+      if (this.isBitcoinTransferDisabled) return true;
 
-          if (!navigator.onLine) return true;
+      if (this.isFetchingFees || this.estimateFeeError) return true;
 
-          if (this.step === 2) return false;
+      if (!navigator.onLine) return true;
 
-          return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedFee === '';
+      if (this.step === 2) return false;
+
+      return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedFee === '';
     },
     isAllFieldsCorrect() {
-      if (!this.currency) return false;
+      if (!this.currency || this.isBitcoinTransferDisabled) return false;
 
-          return (
-            !!this.syncedAssetId &&
-            !!this.syncedNetwork &&
-            !!this.syncedAmount &&
-            this.isValidSendAsset &&
-            this.isValidTransferByUtility &&
-            this.isValidRecipientAddress
-          );
+      return (
+        !!this.syncedAssetId &&
+        !!this.syncedNetwork &&
+        !!this.syncedAmount &&
+        this.isValidSendAsset &&
+        this.isValidTransferByUtility &&
+        this.isValidRecipientAddress
+      );
     },
     isSameAddress() {
       if (this.isTonNetwork) return isSameString(this.accountsStore.selectedWallet.address, this.syncedRecipient);
 
-          // для CrossChain транзакций эта проверка не нужна, поэтому всегда возвращаем false
-          if (this.isCrossChain) return false;
+      // для CrossChain транзакций эта проверка не нужна, поэтому всегда возвращаем false
+      if (this.isCrossChain) return false;
 
-          return BaseApi.isSameAddress(this.accountsStore.selectedWallet, this.syncedRecipient, this.syncedNetwork);
+      return BaseApi.isSameAddress(this.accountsStore.selectedWallet, this.syncedRecipient, this.syncedNetwork);
+    },
+    isBitcoinTransferDisabled() {
+      if (!this.isTransfer) return false;
+
+      return !isNetworkTransferEnabled(this.networksStore.getNetwork(this.syncedNetwork), this.sendKillSwitchStore.vetoes);
     },
     isValidRecipientAddress() {
       if (this.isSameAddress) return false;
 
-          if (this.isTonNetwork) return true;
+      if (this.isTonNetwork) return true;
 
-          if (this.syncedRecipient === '') return false;
+      if (this.syncedRecipient === '') return false;
 
-          if (this.isCrossChain && this.syncedDestNet === '') return false;
+      if (this.isCrossChain && this.syncedDestNet === '') return false;
 
-          return BaseApi.validateAddress(this.syncedRecipient, this.targetNetwork);
+      return BaseApi.validateAddress(this.syncedRecipient, this.targetNetwork);
     },
     currency() {
+      if (this.canonicalAssetKey) {
+        return this.accountsStore.balances?.find(({ balances }) =>
+          balances.some((balance) => {
+            if (!isSameString(balance.name, this.syncedNetwork)) return false;
+
+            const network = this.networksStore.getNetwork(balance.name);
+            if (!network) return false;
+
+            return (
+              createAssetKey({
+                ecosystem: String(network.ecosystem ?? balance.relayChain ?? 'unknown'),
+                chainId: String(network.chainId || network.name),
+                assetId: getCanonicalAssetId(balance),
+              }) === this.canonicalAssetKey
+            );
+          })
+        );
+      }
+
       return this.accountsStore.balances?.find(({ balances }) =>
-            balances.some((el) => isSameString(el.id, this.syncedAssetId))
-          );
+        balances.some((el) => isSameString(el.id, this.syncedAssetId))
+      );
     },
     currencyBalance() {
       return this.currency?.balances.find(({ name }) => isSameString(name, this.syncedNetwork));
@@ -506,154 +597,184 @@ export default defineComponent({ name: 'TransferForm',
     options() {
       const filter = this.filterValue.trim().toLowerCase();
 
-          let options: { name: string; value: string; icon: string | undefined }[] = [];
+      let options: { name: string; value: string; icon: string | undefined }[] = [];
 
-          if (this.showSelectedAssetPopup) options = this.optionsAssets;
-          else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
-          else if (this.showDestNetPopup) options = this.optionsDestNet;
+      if (this.showSelectedAssetPopup) options = this.optionsAssets;
+      else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
+      else if (this.showDestNetPopup) options = this.optionsDestNet;
 
-          return options.filter(({ name }) => name.toLowerCase().includes(filter));
+      return options.filter(({ name }) => name.toLowerCase().includes(filter));
     },
     isSelectedNetworkGroup() {
       return isNetworkGroup(this.accountsStore.selectedNetwork);
     },
     assetWithActiveNetworks() {
       const result = this.accountsStore.balances.filter(({ balances }) => {
-            const prepBalances = balances ?? [];
+        const prepBalances = balances ?? [];
 
-            return prepBalances.some(({ name }) => {
-              const { active, rank, favorite } = this.networksStore.getNetwork(name);
+        return prepBalances.some(({ name }) => {
+          const { active, rank, favorite } = this.networksStore.getNetwork(name);
 
-              if (!active) return false;
+          if (!active || !isNetworkTransferEnabled(this.networksStore.getNetwork(name), this.sendKillSwitchStore.vetoes)) return false;
 
-              if (this.isSelectedNetworkGroup) {
-                if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
+          if (this.isSelectedNetworkGroup) {
+            if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
 
-                const isNetworkInFavorites = favorite.some((el) => el === this.accountsStore.selectedWallet.address);
+            const isNetworkInFavorites = favorite.some((el) => el === this.accountsStore.selectedWallet.address);
 
-                if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
-              }
+            if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS && isNetworkInFavorites) return true;
+          }
 
-              return isSameString(this.accountsStore.selectedNetwork, name);
-            });
-          });
+          return isSameString(this.accountsStore.selectedNetwork, name);
+        });
+      });
 
-          return result;
+      return result;
     },
     optionsAssets() {
+      if (this.lockRouteSelection) return this.currency ? getCurrencyOptions([this.currency]) : [];
+
       const { xcm, parentId } = this.networksStore.networks.find(
-            ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
-          )!;
-          const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
+        ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
+      )!;
+      const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
 
-          if (this.isTransfer) return getCurrencyOptions(this.accountsStore.balances);
+      if (this.isTransfer) {
+        const balances = this.accountsStore.balances.filter(({ balances: networkBalances }) =>
+          networkBalances.some(({ name }) =>
+            isNetworkTransferEnabled(this.networksStore.getNetwork(name), this.sendKillSwitchStore.vetoes)
+          )
+        );
 
-          const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
-            if (relayChain.toLowerCase() !== relay) return false;
+        return getCurrencyOptions(balances);
+      }
 
-            return xcm?.availableAssets.some(({ symbol: _symbol }) => {
-              const assetName = getSubstrateEvmAssetName(_symbol, this.syncedNetwork);
+      const balances = this.accountsStore.balances.filter(({ symbol, relayChain }) => {
+        if (relayChain.toLowerCase() !== relay) return false;
 
-              return isSameString(assetName, symbol);
-            });
-          });
+        return xcm?.availableAssets.some(({ symbol: _symbol }) => {
+          const assetName = getSubstrateEvmAssetName(_symbol, this.syncedNetwork);
 
-          return getCurrencyOptions(balances);
+          return isSameString(assetName, symbol);
+        });
+      });
+
+      return getCurrencyOptions(balances);
     },
     optionsNetworks() {
       // used only for transfer
-          const walletBalance = this.currency?.balances ?? [];
+      const walletBalance = this.currency?.balances ?? [];
 
-          return walletBalance.flatMap(({ name, icon }) => {
-            const network = this.networksStore.getNetwork(name);
+      return walletBalance.flatMap(({ name, icon }) => {
+        const network = this.networksStore.getNetwork(name);
 
-            if (!network.active) return [];
+        if (!network.active || !isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes)) return [];
 
-            return [
-              {
-                name: network.name,
-                value: network.name,
-                icon,
-              },
-            ];
-          });
+        return [
+          {
+            name: network.name,
+            value: network.name,
+            icon,
+          },
+        ];
+      });
     },
     originNet() {
       return this.networksStore.getNetwork(this.syncedNetwork);
     },
     optionsDestNet() {
       // used only for crossChain
-          if (this.isTransfer || !this.sendAssetName) return [];
+      if (this.isTransfer || !this.sendAssetName) return [];
 
-          const asset = getNativeAssetName(this.sendAssetName);
+      if (this.lockRouteSelection) {
+        const network = this.networksStore.getNetwork(this.syncedDestNet);
 
-          return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
-            if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
+        return network ? [{ name: network.name, value: network.name, icon: network.icon }] : [];
+      }
 
-            const { name, icon } = this.networksStore.getNetwork(chainId);
+      const asset = getNativeAssetName(this.sendAssetName);
 
-            return {
-              name: name,
-              value: name,
-              icon,
-            };
-          });
+      return this.originNet.xcm!.availableDestinations.flatMap(({ assets, chainId }) => {
+        if (!assets.some(({ symbol }) => symbol.toLowerCase() === asset)) return [];
+
+        const { name, icon } = this.networksStore.getNetwork(chainId);
+
+        return {
+          name: name,
+          value: name,
+          icon,
+        };
+      });
     },
     sendAssetName() {
       return getNativeAssetName(this.currency?.symbol);
     },
     isValidSendAsset() {
       return isValidAmountAsset(
-            this.currency,
-            this.syncedNetwork,
-            this.syncedFee ?? '0',
-            this.syncedAmount,
-            this.isCrossChain, // проверяем ED для crossChain транзакций
-            this.syncedDestNetFee ?? '0'
-          );
+        this.currency,
+        this.syncedNetwork,
+        this.syncedFee ?? '0',
+        this.syncedAmount,
+        this.isCrossChain, // проверяем ED для crossChain транзакций
+        this.syncedDestNetFee ?? '0'
+      );
     },
     isValidTransferByUtility() {
       if (this.syncedFee === '') return false;
 
-          // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
-          if (this.sendAssetName?.toLowerCase() === this.utilityAssetName) return true;
+      // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
+      if (this.sendAssetName?.toLowerCase() === this.utilityAssetName) return true;
 
-          const precision = this.currencyBalance?.precision;
+      const precision = this.currencyBalance?.precision;
 
-          const ed = FPNumber.fromCodecValue(this.currencyBalance?.existentialDeposit ?? '0', precision).mul(
-            new FPNumber(1.1, precision)
-          );
+      const ed = FPNumber.fromCodecValue(this.currencyBalance?.existentialDeposit ?? '0', precision).mul(
+        new FPNumber(1.1, precision)
+      );
 
-          const checkValue = this.isCrossChain
-            ? new FPNumber(this.syncedFee, precision).add(ed)
-            : new FPNumber(this.syncedFee, precision);
+      const checkValue = this.isCrossChain
+        ? new FPNumber(this.syncedFee, precision).add(ed)
+        : new FPNumber(this.syncedFee, precision);
 
-          // проверяем, что utility balance достаточно на оплату fee и ED
-          return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
+      // проверяем, что utility balance достаточно на оплату fee и ED
+      return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
+    },
+    solanaAccountCreationDeposit() {
+      const deposit = this.solanaQuote?.accountCreationDeposit;
+
+      return deposit && +deposit > 0 ? deposit : '';
     },
     transactionAddress() {
       return getTransactionAddress(this.accountsStore.selectedWallet, this.syncedNetwork);
     },
     tx() {
       const baseRequest = {
-            to: this.syncedRecipient,
-            from: this.transactionAddress,
-            relayChain: this.currency?.relayChain,
-            assetId: this.syncedAssetId,
-            amount: this.syncedAmount,
-          };
+        to: this.syncedRecipient,
+        from: this.transactionAddress,
+        relayChain: this.currency?.relayChain,
+        assetId: this.syncedAssetId,
+        amount: this.syncedAmount,
+      };
 
-          if (this.isTransfer)
-            return {
-              ...baseRequest,
-              networkKey: this.syncedNetwork,
-            } as RequestCheckTransfer;
+      if (this.isTransfer)
+        return {
+          ...baseRequest,
+          networkKey: this.syncedNetwork,
+          approvedMaxFee: this.syncedFee,
+          // The send pays the priority fee the user reviewed.
+          solanaComputeUnitPriceMicroLamports: this.solanaQuote?.computeUnitPriceMicroLamports,
+        } as RequestCheckTransfer;
 
-          return {
-            ...baseRequest,
-            originNet: this.syncedNetwork,
-            destinationNet: this.syncedDestNet,
-          } as RequestCheckCrossChain;
+      return {
+        ...baseRequest,
+        originNet: this.syncedNetwork,
+        destinationNet: this.syncedDestNet,
+        assetKey: this.canonicalAssetKey,
+        routeId: this.reviewedRouteId,
+        routeProviderId: this.reviewedRouteProviderId,
+        expectedOriginFee: this.syncedFee,
+        expectedDestinationFee: this.syncedDestNetFee,
+        expectedExecutionFingerprint: this.crossChainExecutionFingerprint,
+      } as RequestCheckCrossChain;
     },
     syncedRecipient: {
       get() {
@@ -721,14 +842,15 @@ export default defineComponent({ name: 'TransferForm',
     },
   },
   watch: {
-    "syncedRecipient": ['checkScam', 'calculateFee'],
-    "showSelectedAssetPopup": 'resetAssetPopupVisible',
-    "showSelectNetworkPopup": 'resetOriginPopupVisible',
-    "showDestNetPopup": 'resetDestPopupVisible',
-    "syncedNetwork": ['resetDestNetwork', 'calculateFee'],
-    "syncedAssetId": ['updateSelectedNetwork', 'calculateFee'],
-    "syncedDestNet": ['clearRecipient', 'calculateFee'],
-    "syncedAmount": 'calculateFee',
+    transactionAddress: 'calculateFee',
+    syncedRecipient: ['checkScam', 'calculateFee'],
+    showSelectedAssetPopup: 'resetAssetPopupVisible',
+    showSelectNetworkPopup: 'resetOriginPopupVisible',
+    showDestNetPopup: 'resetDestPopupVisible',
+    syncedNetwork: ['resetDestNetwork', 'calculateFee'],
+    syncedAssetId: ['updateSelectedNetwork', 'calculateFee'],
+    syncedDestNet: ['clearRecipient', 'calculateFee'],
+    syncedAmount: 'calculateFee',
   },
   created() {
     this.calculateEstimates();
@@ -736,86 +858,124 @@ export default defineComponent({ name: 'TransferForm',
   methods: {
     async checkScam() {
       if (this.isValidRecipientAddress && this.isValidAddressByNetwork) {
-            const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
+        const { value, info } = await checkScamAddress({ address: this.syncedRecipient, network: this.targetNetwork });
 
-            this.isScamAddress = value;
-            this.scamInfo = info;
-          } else {
-            this.isScamAddress = false;
-            this.scamInfo = null;
-          }
+        this.isScamAddress = value;
+        this.scamInfo = info;
+      } else {
+        this.isScamAddress = false;
+        this.scamInfo = null;
+      }
     },
     resetAssetPopupVisible(newValue: string) {
       if (newValue) {
-            this.showSelectNetworkPopup = false;
-            this.showDestNetPopup = false;
-            this.filterValue = '';
-          }
+        this.showSelectNetworkPopup = false;
+        this.showDestNetPopup = false;
+        this.filterValue = '';
+      }
     },
     resetOriginPopupVisible(newValue: string) {
       if (newValue) {
-            this.showSelectedAssetPopup = false;
-            this.showDestNetPopup = false;
-            this.filterValue = '';
-          }
+        this.showSelectedAssetPopup = false;
+        this.showDestNetPopup = false;
+        this.filterValue = '';
+      }
     },
     resetDestPopupVisible(newValue: string) {
       if (newValue) {
-            this.showSelectedAssetPopup = false;
-            this.showSelectNetworkPopup = false;
-            this.filterValue = '';
-          }
+        this.showSelectedAssetPopup = false;
+        this.showSelectNetworkPopup = false;
+        this.filterValue = '';
+      }
     },
     resetDestNetwork(newValue: string, prevValue: string) {
       if (newValue.toLowerCase() === this.syncedDestNet.toLowerCase()) this.syncedDestNet = prevValue;
     },
     updateSelectedNetwork() {
       this.syncedAmount = '';
-          this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
-          this.syncedValue = '';
+      this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
+      this.syncedValue = '';
 
-          if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
+      if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     },
     async clearRecipient() {
       this.$nextTick(() => {
-            if (!this.isValidRecipientAddress) this.setRecipient();
-          });
+        if (!this.isValidRecipientAddress) this.setRecipient();
+      });
     },
     calculateFee() {
-      if (!this.currency) return;
+      this.feeQuoteRevision += 1;
+      this.syncedFee = '';
+      this.syncedDestNetFee = '';
+      this.crossChainExecutionFingerprint = '';
+      this.solanaQuote = null;
+      this.isFetchingFees = true;
+      if (!this.currency || this.isBitcoinTransferDisabled) return;
 
-          clearTimeout(this.timeoutSubscription);
+      clearTimeout(this.timeoutSubscription);
 
-          this.timeoutSubscription = setTimeout(() => this.calculateEstimates(), 2000);
+      this.timeoutSubscription = setTimeout(() => this.calculateEstimates(), 2000);
     },
     async calculateEstimates() {
-      if (!this.currency) return;
+      if (!this.currency || this.isBitcoinTransferDisabled) return;
+      const revision = ++this.feeQuoteRevision;
+      const requestKey = this.feeQuoteRequestKey();
 
-          try {
-            this.estimateFeeError = false;
-            this.estimateFeeErrorMessage = '';
+      this.isFetchingFees = true;
 
-            const { estimateFee, destEstimateFee, errors } = await this.verifyTx();
-            const transferError = errors?.find((error) => error.code === TransferErrorCode.TRANSFER_ERROR);
+      try {
+        this.estimateFeeError = false;
+        this.estimateFeeErrorMessage = '';
 
-            if (transferError) {
-              this.estimateFeeError = true;
-              this.estimateFeeErrorMessage = getTransferErrorLocaleKey(transferError.message);
-            }
+        const { estimateFee, destEstimateFee, minimum, executionFingerprint, errors, solana } = await this.verifyTx();
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
+        const transferError = errors?.[0];
 
-            this.syncedFee = estimateFee ?? '';
-            this.syncedDestNetFee = destEstimateFee ?? '';
-          } catch {
-            this.syncedFee = '';
-            this.syncedDestNetFee = '';
-          }
+        this.solanaQuote = solana ?? null;
+
+        if (transferError) {
+          this.estimateFeeError = true;
+          this.estimateFeeErrorMessage = getTransferErrorLocaleKey(transferError.message);
+        }
+
+        this.syncedFee = estimateFee ?? '';
+        this.syncedDestNetFee = destEstimateFee ?? '';
+        this.crossChainExecutionFingerprint = executionFingerprint ?? '';
+        this.crossChainRuntimeMinimum = minimum ?? '';
+        this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);
+      } catch {
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
+        this.syncedFee = '';
+        this.syncedDestNetFee = '';
+        this.crossChainExecutionFingerprint = '';
+        this.crossChainRuntimeMinimum = '';
+        this.solanaQuote = null;
+        this.$emit('update:runtimeMinimum', '');
+      } finally {
+        if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
+      }
+    },
+    feeQuoteRequestKey() {
+      return JSON.stringify([
+        this.transactionAddress, this.syncedNetwork, this.syncedDestNet, this.syncedAssetId,
+        this.syncedRecipient, this.syncedAmount, this.reviewedRouteId, this.reviewedRouteProviderId,
+      ]);
     },
     toggleEditBook(address: string = '') {
       this.showEditAddressBook = !this.showEditAddressBook;
-          this.showHistoryBook = !this.showHistoryBook;
-          this.newAddress = address;
+      this.showHistoryBook = !this.showHistoryBook;
+      this.newAddress = address;
     },
-    toggleValue(value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup' | 'showEditAddressBook') {
+    toggleValue(
+      value: 'showSelectedAssetPopup' | 'showSelectNetworkPopup' | 'showDestNetPopup' | 'showEditAddressBook'
+    ) {
+      if (
+        this.lockRouteSelection &&
+        (value === 'showSelectedAssetPopup' || value === 'showSelectNetworkPopup' || value === 'showDestNetPopup')
+      ) {
+        return;
+      }
+
       this[value] = !this[value];
     },
     setRecipient(address = '') {
@@ -823,38 +983,38 @@ export default defineComponent({ name: 'TransferForm',
     },
     toggleSelectedNetwork(value: string) {
       if (this.showSelectedAssetPopup) {
-            this.syncedAssetId = value;
+        this.syncedAssetId = value;
 
-            this.toggleValue('showSelectedAssetPopup');
-          } else if (this.showSelectNetworkPopup) {
-            this.syncedNetwork = value;
+        this.toggleValue('showSelectedAssetPopup');
+      } else if (this.showSelectNetworkPopup) {
+        this.syncedNetwork = value;
 
-            this.toggleValue('showSelectNetworkPopup');
-          } else {
-            this.syncedDestNet = value;
+        this.toggleValue('showSelectNetworkPopup');
+      } else {
+        this.syncedDestNet = value;
 
-            this.toggleValue('showDestNetPopup');
-          }
+        this.toggleValue('showDestNetPopup');
+      }
     },
     updateAmount(amount: string) {
       const value = getCostOfAssets(+amount, this.assetPrice).toString() ?? '';
 
-          this.syncedAmount = amount;
-          this.syncedValue = value;
+      this.syncedAmount = amount;
+      this.syncedValue = value;
     },
     handlerFilter(value: string) {
       this.filterValue = value;
     },
     handlerBack() {
       if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-          else if (this.showEditAddressBook) this.toggleEditBook();
-          else if (this.showMyWallets) this.toggleMyWalletsVisibility();
-          else this.step -= 1;
+      else if (this.showEditAddressBook) this.toggleEditBook();
+      else if (this.showMyWallets) this.toggleMyWalletsVisibility();
+      else this.step -= 1;
     },
     confirmationPasswordPopupClose(closeForm: boolean) {
       this.showConfirmationPasswordPopup = false;
 
-          if (closeForm) this.$emit('closeForm');
+      if (closeForm) this.$emit('closeForm');
     },
     getRecipientNetwork() {
       return this.isTransfer || this.syncedDestNet === '' ? this.syncedNetwork : this.syncedDestNet;
@@ -864,124 +1024,180 @@ export default defineComponent({ name: 'TransferForm',
     },
     calcTransferableUtility() {
       const balance = this.utilityAsset.balances.find(
-            ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
-          )!;
+        ({ isUtility, name }) => isUtility && name.toLowerCase() === this.syncedNetwork.toLowerCase()
+      )!;
 
-          return balance?.transferable?.toString() ?? '0';
+      return balance?.transferable?.toString() ?? '0';
     },
     calcTransferableSendMinusFee(fee: string) {
       return calcTransferableSendMinusFee(
-            this.currency,
-            this.syncedNetwork,
-            fee,
-            this.isCrossChain, // проверяем ED для crossChain транзакций
-            this.syncedDestNetFee
-          );
+        this.currency,
+        this.syncedNetwork,
+        fee,
+        this.isCrossChain, // проверяем ED для crossChain транзакций
+        this.syncedDestNetFee
+      );
     },
     async setMax() {
       if (!this.currency) return;
+      clearTimeout(this.timeoutSubscription);
+      clearTimeout(this.timeoutSetMax);
+      const revision = ++this.feeQuoteRevision;
+      const requestKey = this.feeQuoteRequestKey();
 
-          const setMax = async () => {
-            const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
-            const transferable = this.calcTransferableSendMinusFee(estimateFee!);
+      this.syncedFee = '';
+      this.isFetchingFees = true;
+      try {
+        // A Solana quote without an amount returns the exact maximum; quoting the whole balance as the amount would
+        // report a shortfall, because the fee and any account deposit come out of it.
+        const quotedAmount =
+          this.isTransfer && BaseApi.isSolanaNetwork(this.syncedNetwork) ? '0' : this.transferableAmount.toString();
+        const quote = await this.verifyTx(quotedAmount, true);
+        if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
 
-            this.syncedAmount = transferable.toString();
-            this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
-          };
+        if (quote.errors?.length || quote.estimateFee === undefined) {
+          this.estimateFeeError = true;
+          this.estimateFeeErrorMessage = getTransferErrorLocaleKey(quote.errors?.[0]?.message);
 
-          if (this.syncedFee === '' || this.syncedFee === '0') {
-            clearTimeout(this.timeoutSetMax);
+          return;
+        }
+        const maxAmount = 'maxAmount' in quote ? quote.maxAmount : undefined;
+        const transferable = typeof maxAmount === 'string'
+          ? new FPNumber(maxAmount, this.currencyBalance?.precision)
+          : this.calcTransferableSendMinusFee(quote.estimateFee);
 
-            this.timeoutSetMax = setTimeout(setMax, 2000);
-          } else setMax();
+        this.syncedFee = quote.estimateFee;
+        this.solanaQuote = ('solana' in quote ? quote.solana : undefined) ?? null;
+        this.estimateFeeError = false;
+        this.estimateFeeErrorMessage = '';
+
+        // Setting the amount quotes it again. That quote must use the priority fee Max just quoted: a price that moved
+        // meanwhile would turn the exact maximum into a shortfall, or leave a remainder below the rent minimum.
+        this.solanaPriceHint = this.solanaQuote
+          ? {
+              amount: transferable.toString(),
+              assetId: this.syncedAssetId,
+              at: Date.now(),
+              network: this.syncedNetwork,
+              price: this.solanaQuote.computeUnitPriceMicroLamports,
+            }
+          : null;
+        this.syncedAmount = transferable.toString();
+        this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
+      } catch {
+        if (revision === this.feeQuoteRevision) this.estimateFeeError = true;
+      } finally {
+        if (revision === this.feeQuoteRevision) this.isFetchingFees = false;
+      }
     },
     toggleLoading(value = true) {
       this.isFetchingFees = value;
     },
-    async verifyTx(_amount?: string) {
-      this.toggleLoading();
+    /** Only the amount Max produced is priced at Max's priority fee, and only for a minute; any other edit reprices. */
+    getSolanaPriceHint(amount: string): number | undefined {
+      const hint = this.solanaPriceHint;
 
-          // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
-          const to = this.getFeeEstimateRecipient();
+      if (!hint || Date.now() - hint.at >= SOLANA_PRICE_HINT_MS) return undefined;
 
-          const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0' ? this.syncedAmount : '1');
+      return hint.amount === amount && hint.assetId === this.syncedAssetId && hint.network === this.syncedNetwork
+        ? hint.price
+        : undefined;
+    },
+    async verifyTx(_amount?: string, sendMax = false) {
+      // Price the entered recipient whenever it is valid for the selected network.
+      const to =
+        this.isValidRecipientAddress && (!this.isTransfer || this.isValidAddressByNetwork)
+          ? this.syncedRecipient
+          : this.getFeeEstimateRecipient();
 
-          if (this.isTransfer) {
-            const ex = await checkTransfer({
-              networkKey: this.syncedNetwork,
-              from: this.transactionAddress,
-              to,
-              relayChain: this.currency?.relayChain,
-              amount,
-              assetId: this.syncedAssetId,
-            });
+      const hasAmount = this.syncedAmount !== '' && this.syncedAmount !== '0';
+      // Without an amount a Solana quote prices only the fee and the maximum, so it never reports a balance shortfall.
+      const amount = _amount ?? (hasAmount ? this.syncedAmount : this.isTransfer && BaseApi.isSolanaNetwork(this.syncedNetwork) ? '0' : '1');
 
-            this.toggleLoading(false);
+      if (this.isTransfer) {
+        const ex = await checkTransfer({
+          networkKey: this.syncedNetwork,
+          from: this.transactionAddress,
+          to,
+          relayChain: this.currency?.relayChain,
+          amount,
+          assetId: this.syncedAssetId,
+          sendMax,
+          solanaComputeUnitPriceMicroLamports: this.getSolanaPriceHint(amount),
+        });
 
-            return ex;
-          }
+        return ex;
+      }
 
-          const ex = await checkCrossChain({
-            originNet: this.syncedNetwork,
-            destinationNet: this.syncedDestNet,
-            from: this.transactionAddress,
-            to,
-            relayChain: this.currency?.relayChain,
-            amount,
-            assetId: this.syncedAssetId,
-          });
+      const ex = await checkCrossChain({
+        originNet: this.syncedNetwork,
+        destinationNet: this.syncedDestNet,
+        from: this.transactionAddress,
+        to,
+        relayChain: this.currency?.relayChain,
+        amount,
+        assetId: this.syncedAssetId,
+        assetKey: this.canonicalAssetKey,
+        routeId: this.reviewedRouteId,
+        routeProviderId: this.reviewedRouteProviderId,
+      });
 
-          this.toggleLoading(false);
-
-          return ex;
+      return ex;
     },
     getFeeEstimateRecipient() {
       if (BaseApi.isBitcoinNetwork(this.targetNetwork)) {
-            return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.targetNetwork)
-              ? VALID_BITCOIN_TESTNET_ADDRESS
-              : VALID_BITCOIN_ADDRESS;
-          }
+        return BaseApi.validateAddress(VALID_BITCOIN_TESTNET_ADDRESS, this.targetNetwork)
+          ? VALID_BITCOIN_TESTNET_ADDRESS
+          : VALID_BITCOIN_ADDRESS;
+      }
 
-          return BaseApi.formatAddress(
-            { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-            this.targetNetwork
-          );
+      // Until a recipient is entered, a Solana quote prices a transfer to the wallet's own Solana address.
+      if (BaseApi.isSolanaNetwork(this.targetNetwork)) {
+        return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.targetNetwork);
+      }
+
+      return BaseApi.formatAddress(
+        { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
+        this.targetNetwork
+      );
     },
     async handlerContinueButton() {
+      if (this.isBitcoinTransferDisabled) return;
+
       if (this.step === 2) {
-            this.showConfirmationPasswordPopup = true;
+        this.showConfirmationPasswordPopup = true;
 
-            return;
-          }
+        return;
+      }
 
-          this.step += 1;
-          this.showSelectedAssetPopup = false;
-          this.showSelectNetworkPopup = false;
-          this.showDestNetPopup = false;
+      this.step += 1;
+      this.showSelectedAssetPopup = false;
+      this.showSelectNetworkPopup = false;
+      this.showDestNetPopup = false;
     },
     handlerCloseExistentialPopup() {
       this.showExistentialPopup = false;
     },
     handlerAcceptExistentialPopup() {
       this.handlerContinueButton();
-          this.handlerCloseExistentialPopup();
+      this.handlerCloseExistentialPopup();
     },
     handlerCloseSelectPopup() {
       if (this.showSelectedAssetPopup) this.toggleValue('showSelectedAssetPopup');
-          else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
-          else this.toggleValue('showDestNetPopup');
+      else if (this.showSelectNetworkPopup) this.toggleValue('showSelectNetworkPopup');
+      else this.toggleValue('showDestNetPopup');
     },
     handlerCloseWarningAddressPopup() {
       this.syncedRecipient = '';
     },
     formatAddress() {
       this.syncedRecipient = BaseApi.formatAddress(
-            {
-              address: this.syncedRecipient,
-              ethereumAddress: this.syncedRecipient,
-            },
-            this.targetNetwork
-          );
+        {
+          address: this.syncedRecipient,
+          ethereumAddress: this.syncedRecipient,
+        },
+        this.targetNetwork
+      );
     },
     paste() {
       this.syncedRecipient = getClipboard();
@@ -989,7 +1205,7 @@ export default defineComponent({ name: 'TransferForm',
     setWallet(wallet: AccountJson) {
       this.syncedRecipient = getTransferWalletRecipient(wallet, this.getRecipientNetwork());
 
-          this.toggleMyWalletsVisibility();
+      this.toggleMyWalletsVisibility();
     },
     toggleMyWalletsVisibility() {
       this.showMyWallets = !this.showMyWallets;
@@ -1045,5 +1261,26 @@ export default defineComponent({ name: 'TransferForm',
     user-select: none;
     margin-bottom: 30px;
   }
+}
+</style>
+
+<style lang="scss" scoped>
+.send-note {
+  margin: 6px 0 0;
+  color: $gray-color;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.network-transfer-link {
+  display: block;
+  color: $pink-lavender-color;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  padding: 12px 0;
+  text-align: left;
+  cursor: pointer;
 }
 </style>

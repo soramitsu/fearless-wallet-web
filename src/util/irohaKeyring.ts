@@ -2,11 +2,7 @@ import { keyPairFromSeed } from '@ton/crypto';
 import { mnemonicToSeedSync, validateMnemonic } from 'bip39';
 import { UNIVERSAL_WALLET_DERIVATION_PATHS } from '@/consts/universalWallet';
 import { encodeIrohaI105Address, getIrohaCanonicalHex, type IrohaNetworkInput } from '@/util/iroha';
-import {
-  bytesToHex,
-  deriveSlip10Ed25519Seed,
-  type Slip10Ed25519DerivationErrorCode,
-} from '@/util/slip10Ed25519';
+import { bytesToHex, deriveSlip10Ed25519Seed, type Slip10Ed25519DerivationErrorCode } from '@/util/slip10Ed25519';
 
 export const IROHA_DEFAULT_DERIVATION_PATH = UNIVERSAL_WALLET_DERIVATION_PATHS.irohaDefault;
 
@@ -42,21 +38,30 @@ export const deriveIrohaSigningKey = ({
   if (!validateMnemonic(normalizedMnemonic)) throw new Error('Invalid Iroha mnemonic');
 
   const seed = mnemonicToSeedSync(normalizedMnemonic);
-  const privateSeed = deriveSlip10Ed25519Seed(seed, path, createIrohaPathError);
-  const publicKeyHex = bytesToHex(keyPairFromSeed(Buffer.from(privateSeed)).publicKey);
+  try {
+    const privateSeed = deriveSlip10Ed25519Seed(seed, path, createIrohaPathError);
+    const publicKeyHex = bytesToHex(keyPairFromSeed(Buffer.from(privateSeed)).publicKey);
 
-  return {
-    derivationPath: path,
-    privateKeySeed: privateSeed,
-    publicKeyHex,
-    canonicalHex: getIrohaCanonicalHex(publicKeyHex),
-  };
+    return {
+      derivationPath: path,
+      privateKeySeed: privateSeed,
+      publicKeyHex,
+      canonicalHex: getIrohaCanonicalHex(publicKeyHex),
+    };
+  } finally {
+    seed.fill(0);
+  }
 };
 
 export const deriveIrohaAccount = (payload: IrohaDerivationPayload): IrohaDerivedAccount => {
-  const { privateKeySeed: _privateKeySeed, ...account } = deriveIrohaSigningKey(payload);
+  const signingKey = deriveIrohaSigningKey(payload);
+  try {
+    const { privateKeySeed: _privateKeySeed, ...account } = signingKey;
 
-  return account;
+    return account;
+  } finally {
+    signingKey.privateKeySeed.fill(0);
+  }
 };
 
 export const deriveIrohaAddress = ({

@@ -61,23 +61,38 @@ function buildUniversalWalletKeyringMeta({
   source = 'created-24-word',
   nowMillis = Date.now(),
 }: BuildUniversalWalletKeyringMetaInput): UniversalWalletKeyringMeta {
-  const existing = validateUniversalWalletKeyringMeta(meta.universalWallet).length === 0 ? meta.universalWallet : undefined;
-  const createdAtMillis = existing?.createdAtMillis ?? normalizeTimestamp(nowMillis);
+  // Validate identity header fields independently: a malformed optional account
+  // row must not reset an otherwise valid wallet ID, creation date or source.
+  const existing = meta.universalWallet;
+  const createdAtMillis = Number.isSafeInteger(existing?.createdAtMillis) && existing.createdAtMillis > 0
+    ? existing.createdAtMillis : normalizeTimestamp(nowMillis);
+  const walletId = typeof existing?.walletId === 'string' && /^uw2_[A-Za-z0-9_-]{16,64}$/.test(existing.walletId)
+    ? existing.walletId : createWalletId(address, createdAtMillis);
   const primaryEcosystem = normalizeWalletEcosystem(walletEcosystem ?? meta.walletEcosystem ?? existing?.primaryEcosystem);
-  const publicAccounts = buildPublicAccounts(address, meta, primaryEcosystem);
+  const generated = buildPublicAccounts(address, meta, primaryEcosystem);
+  // Existing account descriptors may use independently imported keys or custom
+  // paths. A rename or additive enrollment must never rebuild those identities.
+  const inventory = meta.universalWallet?.publicAccounts;
+  const retained = Array.isArray(inventory) ? inventory.filter((account) =>
+    account && typeof account === 'object' && typeof account.accountId === 'string' && typeof account.address === 'string'
+  ) : [];
+  const publicAccounts = [
+    ...retained,
+    ...generated.filter(({ accountId }) => !retained.some((account) => account.accountId === accountId)),
+  ];
   const displayName = normalizeDisplayName(meta.name ?? existing?.displayName);
 
   return {
     metaVersion: UNIVERSAL_WALLET_KEYRING_META_VERSION,
     schemaVersion: UNIVERSAL_WALLET_IDENTITY_SCHEMA_VERSION,
-    walletId: existing?.walletId ?? createWalletId(address, createdAtMillis),
+    walletId,
     displayName,
-    source: existing?.source ?? normalizeIdentitySource(source),
+    source: UNIVERSAL_WALLET_IDENTITY_SOURCES.includes(existing?.source) ? existing.source : normalizeIdentitySource(source),
     status: resolveIdentityStatus(publicAccounts),
     primaryEcosystem,
     publicAccounts,
     createdAtMillis,
-    updatedAtMillis: Math.max(createdAtMillis, normalizeTimestamp(nowMillis)),
+    updatedAtMillis: Math.max(createdAtMillis, normalizeTimestamp(existing?.updatedAtMillis), normalizeTimestamp(nowMillis)),
   };
 }
 
@@ -89,7 +104,7 @@ function withUniversalWalletKeyringMeta<TMeta extends UniversalWalletKeyringLega
 ): TMeta & { universalWallet: UniversalWalletKeyringMeta } {
   const nextMeta = {
     ...meta,
-    walletEcosystem: normalizeWalletEcosystem(walletEcosystem ?? meta.walletEcosystem),
+    walletEcosystem: normalizeWalletEcosystem(walletEcosystem ?? meta.walletEcosystem ?? meta.universalWallet?.primaryEcosystem),
   };
 
   return {
@@ -108,6 +123,13 @@ function validateUniversalWalletKeyringMeta(
 ): UniversalWalletKeyringMetaValidationError[] {
   if (!universalWallet || typeof universalWallet !== 'object') {
     return ['invalidMetaVersion'];
+  }
+  // Persisted metadata can come from an interrupted/older schema upgrade.
+  // Reject its shape without throwing into account listing or metadata repair.
+  if (!Array.isArray(universalWallet.publicAccounts) || universalWallet.publicAccounts.some(
+    (account) => !account || typeof account !== 'object'
+  )) {
+    return ['publicAccountsRequired'];
   }
 
   const errors = new Set<UniversalWalletKeyringMetaValidationError>();
@@ -240,7 +262,7 @@ function normalizeIdentitySource(source: UniversalWalletIdentitySource): Univers
 }
 
 function normalizeDisplayName(value: string | undefined): string {
-  const displayName = value?.trim();
+  const displayName = typeof value === 'string' ? value.trim() : undefined;
 
   return displayName ? displayName.slice(0, 64) : 'Fearless Universal Wallet';
 }
@@ -250,7 +272,7 @@ function normalizeTimestamp(value: number): number {
 }
 
 function normalizeHex(value: string | undefined): string | undefined {
-  if (!value) return undefined;
+  if (typeof value !== 'string' || !value) return undefined;
 
   return value.trim().toLowerCase();
 }

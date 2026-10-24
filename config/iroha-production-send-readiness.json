@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "platform": "browser-extension",
+  "status": "ready",
+  "releaseEnabled": true,
+  "blockers": [],
+  "transport": "torii-rest",
+  "networks": {
+    "taira": {
+      "releaseEnabled": true,
+      "toriiBaseUrl": "https://taira.sora.org",
+      "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774",
+      "networkPrefix": 369,
+      "feeAssetDefinitionId": "6TEAJqbb8oEPmLncoNiMRbLEK6tw"
+    },
+    "nexus": {
+      "releaseEnabled": false,
+      "enabledByDefault": false,
+      "blocker": "no approved production Torii endpoint or pinned network identity"
+    }
+  },
+  "artifact": {
+    "package": "@iroha/iroha-js",
+    "version": "0.0.3",
+    "path": "vendor/iroha-js/iroha-iroha-js-0.0.3.tgz",
+    "bytes": 1082778,
+    "sha256": "1fefeae587873fed45821f4a59f7b5722eab72dcc161561ffa7ecdb97049dd41",
+    "sourceRepository": "https://github.com/hyperledger-iroha/iroha",
+    "sourceCommit": "581c49d95995b57b2b0ef3245a6f11b01248ad08",
+    "sourcePath": "javascript/iroha_js",
+    "entryPoints": [
+      "@iroha/iroha-js/transaction-codec",
+      "@iroha/iroha-js/browser"
+    ],
+    "browserAddressBinding": "src/util/irohaSdkBrowserBinding.ts"
+  },
+  "wire": {
+    "dataModelVersion": 4,
+    "signedTransactionSchemaHash": "7ab5ff9c572efb316deac478f19209c5"
+  },
+  "evidencePolicy": {
+    "smokeCommand": "FEARLESS_TAIRA_LIVE=1 yarn test:smoke:taira",
+    "maxAgeDays": 30,
+    "transferPathFiles": [
+      "src/consts/universalWallet.ts",
+      "src/extension/background/extension-base/src/api/iroha/productionTransferCodec.ts",
+      "src/extension/background/extension-base/src/api/iroha/transfer.ts",
+      "src/extension/background/extension-base/src/services/iroha-torii-service/index.ts",
+      "src/util/iroha.ts",
+      "src/util/irohaKeyring.ts",
+      "src/util/irohaQuantity.ts",
+      "src/util/irohaSdkBrowserBinding.ts",
+      "src/util/slip10Ed25519.ts",
+      "vendor/iroha-js/iroha-iroha-js-0.0.3.tgz",
+      "vite.config.shared.mjs"
+    ]
+  },
+  "evidence": [
+    {
+      "amount": "0.5",
+      "assetDefinitionId": "6TEAJqbb8oEPmLncoNiMRbLEK6tw",
+      "blockHeight": 191,
+      "fee": "0.01",
+      "network": "taira",
+      "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774",
+      "recipient": "testuﾛ1NﾐoaｳｼヱﾃﾆﾑﾄaAｻwmｼｴPﾜKｱｿﾗ2Kiｵﾗgｻ2ﾁ3zcﾗｳﾓY7YWWD",
+      "recordedAt": "2026-10-23T04:27:53.218Z",
+      "source": "testuﾛ1NﾆhUﾁzｦHﾖﾒnXJ2ALWMﾎfｾRi2kﾀ9SGﾀA4ｵMvHr6ｿRLWDTX",
+      "transactionHash": "6d57858fad0c151783c4a98103f5fe473d516f337e5ff3b7406cfd94bea62b9d",
+      "commit": "7cb4c076819cf5009ecf295b079bba4a759dfce4",
+      "operator": "codex (yarn test:smoke:taira)"
+    }
+  ]
+}

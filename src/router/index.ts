@@ -4,19 +4,45 @@ import routes, { Components } from '@/router/routes';
 import { resolveUniversalWalletMigrationRedirect } from '@/router/universalWalletMigrationGuard';
 import {
   keyringIsLocked,
-  getUniversalWalletMigrationSnapshot,
   hasMasterPassword,
   hasAccounts,
   isNeedMigration,
   isOnboardingRequired,
 } from '@/extension/messaging';
 import { IS_EXTENSION, IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
-import { getUniversalWalletMigrationRequiredAction } from '@/util/universalWalletMigrationContract';
+import { resolvePrimaryBackTarget, type PrimaryDestination } from '@/router/primaryNavigation';
+import { useAccountsStore } from '@/stores/accounts';
+import { initialAccountsReady } from '@/bootstrap/accountsReady';
+import { isSelectedWalletRecoveryOnly, isWalletRecoveryRoute } from '@/util/walletRecoveryPolicy';
 
 const router = createRouter({
   history: createWebHashHistory(IS_EXTENSION ? process.env.BASE_URL : undefined),
   routes,
 });
+
+// Component-level back actions stay inside the active destination stack. Tab
+// switches use replace(), so the browser history does not interleave tabs.
+const browserBack = router.back.bind(router);
+router.back = () => {
+  const route = router.currentRoute.value;
+  const destination = route.meta.primaryNavigation as PrimaryDestination | undefined;
+
+  if (!destination) {
+    browserBack();
+    return;
+  }
+
+  const roots = {
+    portfolio: { name: Components.Wallet },
+    defi: { name: Components.Defi },
+    polkaswap: { name: Components.Polkaswap },
+    'cross-chain': { name: Components.CrossChain },
+    settings: { name: Components.Settings },
+  };
+  const walletAddress = useAccountsStore().selectedWallet.address;
+
+  void router.replace(resolvePrimaryBackTarget(walletAddress, route, roots[destination]));
+};
 
 router.beforeEach(async (to, from, next) => {
   // setTimeout нужен, чтобы установить нужный title после обновления страницы
@@ -63,9 +89,10 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
 
-    const universalMigrationSnapshot = await getUniversalWalletMigrationSnapshot();
+    // Account presence is authoritative for continuity of access. Optional
+    // network metadata or its export inventory can be absent after an upgrade.
     const universalMigrationRedirect = resolveUniversalWalletMigrationRedirect({
-      action: getUniversalWalletMigrationRequiredAction(universalMigrationSnapshot),
+      action: (await hasAccounts()) ? 'normal-access' : 'create-universal-wallet',
       routeName: to.name,
     });
 
@@ -73,6 +100,15 @@ router.beforeEach(async (to, from, next) => {
       next({ name: universalMigrationRedirect });
 
       return;
+    }
+
+    if (IS_EXTENSION && !isWalletRecoveryRoute(to.name)) {
+      await initialAccountsReady;
+      const store = useAccountsStore();
+      if (isSelectedWalletRecoveryOnly(store.accounts, store.selectedWallet.address)) {
+        next({ name: Components.Wallet, query: { security: 'recovery-only' } });
+        return;
+      }
     }
   }
 
@@ -95,8 +131,9 @@ router.beforeEach(async (to, from, next) => {
       else next();
     } else if (to.name === Components.ResetWallet) next();
     else {
-      if (isLock && to.name !== Components.Onboarding) next({ name: Components.Unlock });
-      else next();
+      if (isLock && to.name !== Components.Onboarding) {
+        next({ name: Components.Unlock, query: { redirect: to.fullPath } });
+      } else next();
     }
   }
 });

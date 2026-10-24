@@ -59,8 +59,10 @@ import { isSubstrString } from '@/helpers';
 import { Components } from '@/router/routes';
 import { subscribeAccountLiquidity, unsubscribePools } from '@/extension/messaging';
 import { usePoolsStore } from '@/stores/pools';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
 
 export default defineComponent({ name: 'PoolsPage',
+  setup: () => ({ recoveryOnly: useWalletRecovery() }),
   components: {
     PoolItem,
     PoolsSettings,
@@ -104,7 +106,7 @@ export default defineComponent({ name: 'PoolsPage',
       return !this.showPoolsItems && !this.showMyPoolsItems;
     },
     showPoolsItems() {
-      return this.poolsStore.poolsItems.length !== 0;
+      return !this.recoveryOnly && this.poolsStore.poolsItems.length !== 0;
     },
     showMyPoolsItems() {
       return this.poolsStore.myPoolsItems.length !== 0;
@@ -113,7 +115,7 @@ export default defineComponent({ name: 'PoolsPage',
       return CONTENT_FORM_HEIGHT;
     },
     isAllTab() {
-      return this.activeTabName === 'all';
+      return !this.recoveryOnly && this.activeTabName === 'all';
     },
   },
   watch: {
@@ -159,7 +161,7 @@ export default defineComponent({ name: 'PoolsPage',
       this.filterValue = value;
     },
     updateActiveTabName(name: PoolsTab) {
-      this.activeTabName = name;
+      this.activeTabName = this.recoveryOnly ? 'my' : name;
     },
     openPoolDetails(poolParams: PoolParams) {
       const asset1 = poolParams.asset1.name;
@@ -169,6 +171,10 @@ export default defineComponent({ name: 'PoolsPage',
             name: Components.PoolDetails,
             params: {
               poolName: `${asset1}-${asset2}`,
+            },
+            query: {
+              asset1Key: poolParams.asset1.assetKey,
+              asset2Key: poolParams.asset2.assetKey,
             },
           });
     },

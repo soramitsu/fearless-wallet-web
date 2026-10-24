@@ -2,12 +2,13 @@
   <div :class="containerClasses">
     <Loader v-if="widgetLoading" />
 
-    <iframe v-show="showFrame" :src="src" title="External Widget" class="widget" @load="onLoadWidget" />
+    <iframe v-show="showFrame" :src="src" :title="t('common.externalWidget')" class="widget" @load="onLoadWidget" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, watch, computed } from 'vue';
+import { useI18n } from '@/locales/useI18n';
 
 type BackgroundColor = 'polkaswap' | 'default';
 
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
   withBorder: false,
   backgroundColor: 'default',
 });
+const { t } = useI18n();
 
 const widgetLoading = ref(true);
 

@@ -2,10 +2,10 @@
   <div class="mobile-sign__popup">
     <span>{{ $t('mobileConnector.signMobile') }}</span>
 
-    <FButton text="Sign" width="100%" size="medium" fontSize="big" type="primary" :border="false" @click="handleSign" />
+    <FButton text="common.sign" width="100%" size="medium" fontSize="big" type="primary" :border="false" @click="handleSign" />
 
     <FButton
-      text="Cancel"
+      text="common.cancel"
       width="100%"
       size="medium"
       fontSize="big"

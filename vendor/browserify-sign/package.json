@@ -1,0 +1,8 @@
+{
+  "name": "browserify-sign",
+  "version": "4.2.6",
+  "private": true,
+  "description": "Fearless fail-closed shim for unused Node-style browser signing APIs",
+  "main": "index.cjs",
+  "license": "ISC"
+}

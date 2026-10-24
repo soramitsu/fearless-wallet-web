@@ -125,6 +125,12 @@
       ]
     },
     {
+      "reason": "JSON Schema dialect identifiers (the $schema values of zod 4's JSON Schema generator, which @subwallet/keyring's @ton/ton 15 bundles). Never requested.",
+      "hosts": [
+        "json-schema.org"
+      ]
+    },
+    {
       "reason": "The SIL Open Font License texts that ship beside the bundled fonts (licenses/fonts/) cite the licence FAQ. Never requested.",
       "hosts": [
         "scripts.sil.org"

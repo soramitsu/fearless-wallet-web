@@ -34,3 +34,17 @@ References:
 
 - <https://github.com/advisories/GHSA-w3rx-r6r6-pgpr>
 - <https://github.com/advisories/GHSA-5p2g-fcmc-qvqq>
+
+## `zod` resolved to 4.6.6
+
+`@ton/ton` (16.3.0, the latest release, and the 15.x that `@subwallet/keyring`
+brings) depends on `zod` `^3.21.4`. The advisory
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
+(memory exhaustion while validating oversized arrays) covers every `zod` before
+4.6.6 and has no fix for 3.x, so both audits failed on a clean install. The
+release resolves `zod` to the patched 4.6.6. `@ton/ton` uses `zod` only in its
+HTTP clients (`TonClient4` and `HttpApi`), which the wallet does not use: it
+derives TON wallet contracts and addresses. The package still loads and derives
+wallets with 4.6.6, and the TON specs pass. Reassess when `@ton/ton` and
+`@subwallet/keyring` publish releases that depend on `zod` 4, and remove the
+resolution then.

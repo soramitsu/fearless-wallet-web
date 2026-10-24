@@ -1,0 +1,61 @@
+diff --git a/dist/client/TonClient4.d.ts b/dist/client/TonClient4.d.ts
+index 6c2a6928c56f8e6bdbd47cd4fab5d351a5e1f400..e030d8941905518cb552a750a4b22501e69d7143 100644
+--- a/dist/client/TonClient4.d.ts
++++ b/dist/client/TonClient4.d.ts
+@@ -7,7 +7,7 @@
+  */
+ import { AxiosAdapter, InternalAxiosRequestConfig } from "axios";
+ import { Address, Contract, ContractProvider, OpenedContract, StateInit, Transaction, TupleItem, TupleReader } from "@ton/core";
+-import { z } from 'zod';
++import type { z } from 'zod/v3';
+ export type TonClient4Parameters = {
+     /**
+      * API endpoint
+diff --git a/dist/client/TonClient4.js b/dist/client/TonClient4.js
+index 44a7080122cefc67a9e546a5a19e86cabaa3bb7c..291521ab507b2cdb5020869b70198ff82cd5df76 100644
+--- a/dist/client/TonClient4.js
++++ b/dist/client/TonClient4.js
+@@ -27,6 +27,8 @@ const axios_1 = __importDefault(require("axios"));
+ const core_1 = require("@ton/core");
+ const toUrlSafe_1 = require("../utils/toUrlSafe");
+ const zod_1 = require("zod");
++// Browser extension CSP forbids dynamic schema compilation.
++zod_1.z.config({ jitless: true });
+ class TonClient4 {
+     constructor(args) {
+         _TonClient4_endpoint.set(this, void 0);
+@@ -656,7 +658,7 @@ const supportedMessageTypeCodec = zod_1.z.union([
+ ]);
+ const opCodec = zod_1.z.object({
+     type: supportedMessageTypeCodec,
+-    options: zod_1.z.optional(zod_1.z.record(zod_1.z.string()))
++    options: zod_1.z.optional(zod_1.z.record(zod_1.z.string(), zod_1.z.string()))
+ });
+ const parsedOperationCodec = zod_1.z.object({
+     address: zod_1.z.string(),
+diff --git a/dist/client/api/HttpApi.d.ts b/dist/client/api/HttpApi.d.ts
+index c8d8ded9c43740dd282d9f0eb130917930ea5215..5ba64243e12bdaee7063e93c41d98e82f0eef4b0 100644
+--- a/dist/client/api/HttpApi.d.ts
++++ b/dist/client/api/HttpApi.d.ts
+@@ -8,7 +8,7 @@
+ import { TonCache } from './TonCache';
+ import { AxiosAdapter } from 'axios';
+ import { Address, Cell, TupleItem } from '@ton/core';
+-import { z } from 'zod';
++import type { z } from 'zod/v3';
+ declare const message: z.ZodObject<{
+     source: z.ZodString;
+     destination: z.ZodString;
+diff --git a/dist/client/api/HttpApi.js b/dist/client/api/HttpApi.js
+index 56ac1da6dc95e8b3395a4c4b7e48dbf2b5c7dfd3..c6a322ab8931e24448bd8d2a77480e57b76f1292 100644
+--- a/dist/client/api/HttpApi.js
++++ b/dist/client/api/HttpApi.js
+@@ -15,6 +15,8 @@ const TonCache_1 = require("./TonCache");
+ const dataloader_1 = __importDefault(require("dataloader"));
+ const axios_1 = __importDefault(require("axios"));
+ const zod_1 = require("zod");
++// Browser extension CSP forbids dynamic schema compilation.
++zod_1.z.config({ jitless: true });
+ const version = require('../../../package.json').version;
+ const blockIdExt = zod_1.z.object({
+     '@type': zod_1.z.literal('ton.blockIdExt'),

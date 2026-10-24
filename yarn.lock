@@ -3003,7 +3003,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton/ton@npm:^15.0.0":
+"@ton/ton@npm:15.4.0":
   version: 15.4.0
   resolution: "@ton/ton@npm:15.4.0"
   dependencies:
@@ -3019,7 +3019,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton/ton@npm:^16.3.0":
+"@ton/ton@npm:16.3.0":
   version: 16.3.0
   resolution: "@ton/ton@npm:16.3.0"
   dependencies:
@@ -3030,6 +3030,36 @@ __metadata:
     "@ton/core": ">=0.63.0 <1.0.0"
     "@ton/crypto": ">=3.2.0"
   checksum: 10/0435b374dc5ed9e9e081cd6110b493d3c0649411cafaa669e4fc24813510b7bc5fb90deeccb7846d9a75eb2fd6b1c11a1dfcca34ffd0651ce6c2078a27574286
+  languageName: node
+  linkType: hard
+
+"@ton/ton@patch:@ton/ton@npm%3A15.4.0#./vendor/patches/ton-15.4.0-zod-4.patch::locator=fearless-wallet%40workspace%3A.":
+  version: 15.4.0
+  resolution: "@ton/ton@patch:@ton/ton@npm%3A15.4.0#./vendor/patches/ton-15.4.0-zod-4.patch::version=15.4.0&hash=ba5bf5&locator=fearless-wallet%40workspace%3A."
+  dependencies:
+    axios: "npm:^1.6.7"
+    dataloader: "npm:^2.0.0"
+    symbol.inspect: "npm:1.0.1"
+    teslabot: "npm:^1.3.0"
+    zod: "npm:^3.21.4"
+  peerDependencies:
+    "@ton/core": ">=0.62.0 <1.0.0"
+    "@ton/crypto": ">=3.2.0"
+  checksum: 10/69648d537c159122fd99e1e8f0b5169682eeeebc6ae6e6d09d3f02f73be3a3aa7e42e092be0a667eed56dcf529d9171f15a774cd2f66a702eccff8ee8a1e2b66
+  languageName: node
+  linkType: hard
+
+"@ton/ton@patch:@ton/ton@npm%3A16.3.0#./vendor/patches/ton-16.3.0-zod-4.patch::locator=fearless-wallet%40workspace%3A.":
+  version: 16.3.0
+  resolution: "@ton/ton@patch:@ton/ton@npm%3A16.3.0#./vendor/patches/ton-16.3.0-zod-4.patch::version=16.3.0&hash=52324c&locator=fearless-wallet%40workspace%3A."
+  dependencies:
+    axios: "npm:^1.15.0"
+    dataloader: "npm:^2.0.0"
+    zod: "npm:^3.21.4"
+  peerDependencies:
+    "@ton/core": ">=0.63.0 <1.0.0"
+    "@ton/crypto": ">=3.2.0"
+  checksum: 10/4f7aaac3faa951fc776e9a0a04d4f67622352493302d221db94dec34d2c6510670cfa15879d8f0c7edb83ca1196a47d648358ddf8548ed91f000438666096cae
   languageName: node
   linkType: hard
 
@@ -7019,10 +7049,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-uri@npm:4.1.5":
-  version: 4.1.5
-  resolution: "fast-uri@npm:4.1.5"
-  checksum: 10/09d8c122450fc1de72c5f9f2b09075b626a2d5e56de841c1654e8f3241d284d445aa04ad177a2b5d04de0a1e372e92206a8a0459532dab7a280e825ac2a6eac9
+"fast-uri@npm:4.2.3":
+  version: 4.2.3
+  resolution: "fast-uri@npm:4.2.3"
+  checksum: 10/1da9df2a03f02601aa9237d4c465da788dd8f4e6c5e12b251f520437d5ef4562d6ab24916193c56ff2181c70382e3c774c19c3011cba77460534ad980f16ab4f
   languageName: node
   linkType: hard
 
@@ -7083,7 +7113,7 @@ __metadata:
     "@ton-api/client": "npm:^0.4.0"
     "@ton/core": "npm:^0.63.1"
     "@ton/crypto": "npm:^3.3.0"
-    "@ton/ton": "npm:^16.3.0"
+    "@ton/ton": "patch:@ton/ton@npm%3A16.3.0#./vendor/patches/ton-16.3.0-zod-4.patch"
     "@tonconnect/ui": "npm:^3.0.0"
     "@types/chrome": "npm:^0.2.0"
     "@types/crypto-js": "npm:^4.2.2"
@@ -7126,7 +7156,7 @@ __metadata:
     fast-glob: "npm:^3.3.3"
     file-saver: "npm:^2.0.5"
     globals: "npm:^17.7.0"
-    happy-dom: "npm:^20.10.6"
+    happy-dom: "npm:^21.0.4"
     jdenticon: "npm:^3.3.0"
     json-rpc-engine: "npm:^6.1.0"
     jwt-decode: "npm:^4.0.0"
@@ -7591,9 +7621,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^20.10.6":
-  version: 20.10.6
-  resolution: "happy-dom@npm:20.10.6"
+"happy-dom@npm:^21.0.4":
+  version: 21.0.4
+  resolution: "happy-dom@npm:21.0.4"
   dependencies:
     "@types/node": "npm:>=20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
@@ -7602,7 +7632,7 @@ __metadata:
     entities: "npm:^7.0.1"
     whatwg-mimetype: "npm:^3.0.0"
     ws: "npm:^8.21.0"
-  checksum: 10/255aef5cd4f9b425dacc9e8c29b13e0366b6cf014fbcd838bed887999b2c67bf854c31311fbfa28adca163ef9056377465a3673c0054737243e556d98467d5ef
+  checksum: 10/708a07432283cab0a29a10571b06cf27c0e30a933bf5f7fe948e18f78ce3875127b09fbed9aa7c6c5d23b06f4dad824eb73bc7a0cbe356febf5f66efb36aabce
   languageName: node
   linkType: hard
 
@@ -11397,17 +11427,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:6.28.1":
-  version: 6.28.1
-  resolution: "undici@npm:6.28.1"
-  checksum: 10/a64d5972054604918448ffa1bbaa867ecd1ae9ed5aa75344a794550cc048a79949fd95ca196b961463384c49d77e924adb3643758a2aa809e43db5377a390941
+"undici@npm:6.29.1":
+  version: 6.29.1
+  resolution: "undici@npm:6.29.1"
+  checksum: 10/92acb64ec190fe3499dec69830fdfc48e28f6f19627bad7563cfd57c37b4e95379c12b8ac15a2e6a8739eaac358f17503a229c160d3dc8774141b1e270d8aa57
   languageName: node
   linkType: hard
 
-"undici@npm:7.29.1":
-  version: 7.29.1
-  resolution: "undici@npm:7.29.1"
-  checksum: 10/8b9eaf83615e96f83826c9b6b129bd378c26f750f183e931df89bf07dfae24a39736b3648c16c25904e59e34f9e151e7a852c82ef0f1fb8e8a1297c52ff3170c
+"undici@npm:7.30.1":
+  version: 7.30.1
+  resolution: "undici@npm:7.30.1"
+  checksum: 10/306a28e4c715652a0e2cd59bcc98cf8b6083b989151054fafaac27bdab6f2bc7e0f33f5847f72f5ba257971226372d04705e0e984b26b42a03271d5a35eb99b1
   languageName: node
   linkType: hard
 
@@ -12477,9 +12507,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.21.4":
-  version: 3.23.8
-  resolution: "zod@npm:3.23.8"
-  checksum: 10/846fd73e1af0def79c19d510ea9e4a795544a67d5b34b7e1c4d0425bf6bfd1c719446d94cdfa1721c1987d891321d61f779e8236fde517dc0e524aa851a6eff1
+"zod@npm:4.6.7":
+  version: 4.6.7
+  resolution: "zod@npm:4.6.7"
+  checksum: 10/3ca8b8d6bb401538e59504c543db629ea7beaa775e504c3f22269b406fdffbf1431c856d59a597bf66d8487e4d2be12b03a55d76fc2c63d9f046eae1ca173bca
   languageName: node
   linkType: hard

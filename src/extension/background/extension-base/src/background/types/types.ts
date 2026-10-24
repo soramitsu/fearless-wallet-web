@@ -34,6 +34,7 @@ import type {
 import type { WarningValueName } from '@/consts/messages';
 import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
+import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
 
@@ -747,6 +748,7 @@ export type IState = {
   networkScanStates: Record<WalletAddress, Record<NetworkName, NetworkScanState>>;
   assetDiscoverySweep: AssetDiscoverySweepState;
   actionCapabilities: ActionCapabilityConfig;
+  crossChainSendsInDoubt: CrossChainSendRecords;
   soraDisclaimerAcceptance: SoraDisclaimerAcceptance;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;

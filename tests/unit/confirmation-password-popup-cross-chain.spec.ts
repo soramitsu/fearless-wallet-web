@@ -62,8 +62,13 @@ const mountPopup = async (originNet: string, background: Background) => {
   });
   await flushPromises();
 
-  return (wrapper.vm as unknown as { transactionState: string }).transactionState;
+  return wrapper;
 };
+
+const stateOf = (wrapper: Awaited<ReturnType<typeof mountPopup>>) =>
+  (wrapper.vm as unknown as { transactionState: string }).transactionState;
+
+const HASH = 'ab'.repeat(32);
 
 describe.each([
   ['a non-SORA origin', 'Polkadot'],
@@ -72,42 +77,102 @@ describe.each([
   it('keeps a failure reported by the callback even though the background then answers { status: true }', async () => {
     // Order produced by the background when the node rejects the extrinsic: the subscription message first,
     // then the response of the handler, which only says that the send was started.
-    const state = await mountPopup(originNet, async (callback) => {
-      callback(FAILURE);
+    const state = stateOf(
+      await mountPopup(originNet, async (callback) => {
+        callback(FAILURE);
 
-      return { status: true };
-    });
+        return { status: true };
+      })
+    );
 
     expect(state).toBe('failed');
   });
 
   it('shows an early rejection that never reached a subscription instead of staying pending', async () => {
-    const state = await mountPopup(originNet, async () => FAILURE);
+    const state = stateOf(await mountPopup(originNet, async () => FAILURE));
 
     expect(state).toBe('failed');
   });
 
   it('shows success when the callback reports it', async () => {
-    const state = await mountPopup(originNet, async (callback) => {
-      callback({ status: true });
+    const state = stateOf(
+      await mountPopup(originNet, async (callback) => {
+        callback({ status: true });
 
-      return { status: true };
-    });
+        return { status: true };
+      })
+    );
 
     expect(state).toBe('success');
   });
 
   it('falls back to the response when no callback ever arrives', async () => {
-    const state = await mountPopup(originNet, async () => ({ status: true }));
+    const state = stateOf(await mountPopup(originNet, async () => ({ status: true })));
 
     expect(state).toBe('success');
   });
 
   it('shows failure when the request itself throws', async () => {
-    const state = await mountPopup(originNet, async () => {
-      throw new Error('port closed');
-    });
+    const state = stateOf(
+      await mountPopup(originNet, async () => {
+        throw new Error('port closed');
+      })
+    );
 
     expect(state).toBe('failed');
+  });
+
+  it('shows the hash of an extrinsic included in a block', async () => {
+    const wrapper = await mountPopup(originNet, async (callback) => {
+      const response = { status: true, transactionHash: HASH };
+      callback(response);
+
+      return response;
+    });
+
+    expect(stateOf(wrapper)).toBe('success');
+    expect(wrapper.find('[data-testid="settledTransactionHash"]').text()).toBe(HASH);
+  });
+
+  it('shows the hash of an extrinsic that failed at dispatch', async () => {
+    const wrapper = await mountPopup(originNet, async (callback) => {
+      const response = { ...FAILURE, transactionHash: HASH.toUpperCase() };
+      callback(response);
+
+      return response;
+    });
+
+    expect(stateOf(wrapper)).toBe('failed');
+    expect(wrapper.find('[data-testid="settledTransactionHash"]').text()).toBe(HASH);
+  });
+
+  it.each([['0xnot-a-hash'], [`0x${HASH}`], [42]])('never shows a malformed hash (%j)', async (transactionHash) => {
+    const wrapper = await mountPopup(originNet, async (callback) => {
+      callback({ status: true, transactionHash } as unknown as BasicTxResponse);
+
+      return { status: true };
+    });
+
+    expect(stateOf(wrapper)).toBe('success');
+    expect(wrapper.find('[data-testid="settledTransactionHash"]').exists()).toBe(false);
+  });
+
+  it('shows a send that may already have gone out, or a refused resend, as unknown with the earlier hash', async () => {
+    const wrapper = await mountPopup(originNet, async (callback) => {
+      const response: BasicTxResponse = {
+        status: false,
+        outcome: 'unknown',
+        transactionHash: HASH,
+        errors: [{ code: BasicTxErrorCode.INVALID_PARAM, message: 'cross_chain_previous_send_unresolved' }],
+      };
+      callback(response);
+
+      return response;
+    });
+
+    expect(stateOf(wrapper)).toBe('unknown');
+    expect(wrapper.find('[data-testid="unknownTransactionHash"]').text()).toBe(HASH);
+    expect(wrapper.find('[data-testid="transactionUnknownMessage"]').text()).toBe('assets.transactionStatusUnknownDetails');
+    expect(wrapper.find('[data-testid="settledTransactionHash"]').exists()).toBe(false);
   });
 });

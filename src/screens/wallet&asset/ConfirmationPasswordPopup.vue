@@ -39,6 +39,20 @@
           <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
 
           <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+
+          <template v-if="settledTransactionHash">
+            <code class="transaction-hash" data-testid="settledTransactionHash">{{ settledTransactionHash }}</code>
+            <FButton
+              text="common.copyHash"
+              class="copy-hash"
+              iconName="copy"
+              type="secondary"
+              size="small"
+              data-testid="copySettledHashBtn"
+              @click="copySettledHash"
+            />
+            <Tooltip text="common.copied" target=".copy-hash" placement="top" trigger="click" />
+          </template>
         </template>
 
         <template v-else-if="extrinsicType === 'nft'">
@@ -124,6 +138,7 @@ import { isSameString, setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import {
+  getSettledTransactionHash,
   getTransactionFailurePresentation,
   getUnknownTransactionHash,
   transactionResponseSucceeded,
@@ -205,6 +220,9 @@ export default defineComponent({
     },
     unknownTransactionHash() {
       return getUnknownTransactionHash(this.transactionResponse);
+    },
+    settledTransactionHash() {
+      return this.extrinsicType === 'crossChain' ? getSettledTransactionHash(this.transactionResponse) : null;
     },
     transactionErrorText() {
       const presentation = getTransactionFailurePresentation(this.transactionResponse, this.currency?.symbol);
@@ -290,6 +308,9 @@ export default defineComponent({
     copyUnknownHash() {
       setClipboard(this.unknownTransactionHash ?? '');
     },
+    copySettledHash() {
+      setClipboard(this.settledTransactionHash ?? '');
+    },
     async onSignMobile() {
       if (this.extrinsicType === 'swap') await makeSwap(this.request as RequestSwap);
       else this.makeExtrinsic();
@@ -344,10 +365,9 @@ export default defineComponent({
         // аналогично для TON экосистемы
         if (this.isTon || this.isStaking || this.isPool || this.extrinsicType === 'swap' || this.extrinsicType === 'nft')
           this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);
-        // A cross-chain send reports its outcome through the subscription callback for every origin. The background
-        // answers { status: true } as soon as the send was started, which must never replace a failure the callback
-        // already reported. The response only matters while nothing has settled the state yet: an early rejection
-        // (nothing was subscribed) arrives only here, and it must not leave the popup pending forever.
+        // A cross-chain send reports its outcome through the subscription callback, then answers with the same
+        // outcome. The response only matters while nothing has settled the state yet: an early rejection (nothing
+        // was subscribed) arrives only here, and it must not leave the popup pending forever.
         else if (this.extrinsicType === 'crossChain' && this.transactionState === 'pending')
           this.applyTransactionResponse(results as BasicTxResponse | undefined);
       } catch {

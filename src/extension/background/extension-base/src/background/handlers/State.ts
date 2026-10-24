@@ -32,7 +32,6 @@ import {
 } from '@extension-base/services';
 import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
 import {
@@ -60,13 +59,12 @@ import type {
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import type { SoraFees, NetworkName } from '@/interfaces';
 import type { BitcoinNetworkKind } from '@/util/bitcoin';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
-import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
@@ -86,8 +84,6 @@ export default class State {
   injectedProviders: Map<Port, ProviderInterface> = new Map();
   providers: Providers = {};
   serviceInfoSubject = new Subject<ServiceInfo>();
-  xcmFees: XcmFees = [];
-  xcmLocations: XcmLocations = [];
   soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
   currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,
@@ -450,18 +446,6 @@ export default class State {
     return this.currentAccount?.address ?? '';
   }
 
-  fetchXcmInfo() {
-    axios
-      .get<XcmLocations>(URLS.XCM_LOCATIONS)
-      .then(({ data }) => (this.xcmLocations = data))
-      .catch(() => (this.xcmLocations = []));
-
-    axios
-      .get<XcmFees>(URLS.XCM_FEES)
-      .then(({ data }) => (this.xcmFees = data))
-      .catch(() => (this.xcmFees = []));
-  }
-
   async init() {
     await this.eventService.waitCryptoReady;
     await Promise.all([
@@ -482,7 +466,6 @@ export default class State {
     await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
 
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
-    this.fetchXcmInfo();
     this.scamService.refreshScamAddressList();
 
     this.networkService.initNetworkApis();

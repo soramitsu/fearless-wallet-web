@@ -153,19 +153,40 @@ async function assertParachainRegistration(
   });
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** The single variant of a decoded enum value, keyed case-insensitively, or undefined. */
+function singleVariant(value: unknown): { name: string; inner: unknown } | undefined {
+  if (!isRecord(value)) return undefined;
+  const keys = Object.keys(value);
+
+  return keys.length === 1 ? { name: keys[0].toLowerCase(), inner: value[keys[0]] } : undefined;
+}
+
+/**
+ * `substrateBridgeApp.sidechainAssetId` holds a `GenericAssetId`. For Liberland it is the `Liberland` variant around a
+ * `LiberlandAssetId`, which is `LLD` or `Asset(u32)`. Read from SORA spec 134 on 2026-10-24:
+ * LLD → `{"liberland":{"lld":null}}`, LLM → `{"liberland":{"asset":1}}`, XOR → `{"liberland":{"asset":774441749}}`.
+ * Any other variant or id is registration drift.
+ */
 function matchesExternalAsset(value: Codec, expected: 'LLD' | number): boolean {
   const unwrapped = unwrap(value);
-  const encoded = JSON.stringify(unwrapped.toJSON?.() ?? unwrapped.toString())
-    .replace(/\s/g, '')
-    .toLowerCase();
+  const outer = singleVariant(unwrapped.toJSON?.());
+  if (outer?.name !== 'liberland') return false;
 
-  if (expected === 'LLD') {
-    return ['"lld"', '{"lld":null}'].includes(encoded);
-  }
+  const inner = singleVariant(outer.inner);
+  if (expected === 'LLD') return inner?.name === 'lld' && inner.inner === null;
+  if (inner?.name !== 'asset') return false;
 
-  const id = String(expected);
+  const id =
+    typeof inner.inner === 'number'
+      ? inner.inner
+      : typeof inner.inner === 'string' && /^\d+$/.test(inner.inner)
+        ? Number(inner.inner)
+        : Number.NaN;
 
-  return [id, `"${id}"`, `{"asset":${id}}`, `{"asset":"${id}"}`, `"asset(${id})"`].includes(encoded);
+  return Number.isSafeInteger(id) && id === expected;
 }
 
 async function assertLiberlandRegistration(

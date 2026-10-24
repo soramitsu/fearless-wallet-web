@@ -245,10 +245,11 @@ describe('reviewed cross-chain providers and runtime authority', () => {
     const execution = soraToLiberlandBurn;
     if (execution.kind !== 'sora-bridge-proxy-burn-v3') throw new Error('Unexpected execution fixture');
 
+    // Live shape on SORA spec 134: a GenericAssetId whose Liberland variant wraps Asset(1).
     const soraQuery = {
       substrateBridgeApp: {
         assetKinds: vi.fn(async () => codec(execution.soraAssetKind)),
-        sidechainAssetId: vi.fn(async () => codec('Asset(1)', { asset: 1 })),
+        sidechainAssetId: vi.fn(async () => codec('Liberland(Asset(1))', { liberland: { asset: 1 } })),
         sidechainPrecision: vi.fn(async () => codec(execution.sidechainPrecision)),
       },
     };
@@ -270,10 +271,70 @@ describe('reviewed cross-chain providers and runtime authority', () => {
 
     await expect(assertReviewedRuntimeAuthority(execution, state)).resolves.toMatchObject({ runtimeMinimum: '1' });
 
-    soraQuery.substrateBridgeApp.sidechainAssetId.mockResolvedValue(codec('Asset(10)', { asset: 10 }));
+    soraQuery.substrateBridgeApp.sidechainAssetId.mockResolvedValue(
+      codec('Liberland(Asset(10))', { liberland: { asset: 10 } })
+    );
     await expect(assertReviewedRuntimeAuthority(execution, state)).rejects.toThrow(
       'cross_chain_runtime_registration_drift'
     );
+  });
+
+  describe('registration of the bundled Liberland to SORA routes', () => {
+    // Values read from SORA spec 134 (substrateBridgeApp, network Liberland) on 2026-10-24.
+    const live: Record<string, { kind: string; precision: number; sidechainAssetId: unknown }> = {
+      LLD: { kind: 'Sidechain', precision: 12, sidechainAssetId: { liberland: { lld: null } } },
+      LLM: { kind: 'Sidechain', precision: 12, sidechainAssetId: { liberland: { asset: 1 } } },
+      XOR: { kind: 'Thischain', precision: 18, sidechainAssetId: { liberland: { asset: 774441749 } } },
+    };
+    const liberlandRoutes = BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.filter(
+      ({ execution }) => execution?.kind === 'liberland-to-sora-burn'
+    );
+
+    const runAuthority = async (symbol: string, sidechainAssetId: unknown, kind = live[symbol].kind) => {
+      const route = liberlandRoutes.find((candidate) => candidate.symbol === symbol)!;
+      const execution = route.execution!;
+      const soraApi = authorityApi(execution.destinationChainId, {
+        substrateBridgeApp: {
+          assetKinds: vi.fn(async () => codec(kind)),
+          sidechainAssetId: vi.fn(async () => codec(JSON.stringify(sidechainAssetId), sidechainAssetId)),
+          sidechainPrecision: vi.fn(async () => codec(live[symbol].precision)),
+        },
+      });
+      const liberlandApi = authorityApi(execution.originChainId);
+      const state = authorityState([
+        { api: liberlandApi, chainId: execution.originChainId, name: 'Liberland' },
+        { api: soraApi, chainId: execution.destinationChainId, name: 'SORA Mainnet' },
+      ]);
+
+      return assertReviewedRuntimeAuthority(execution, state);
+    };
+
+    it('bundles exactly the LLD, LLM and XOR directions', () => {
+      expect(liberlandRoutes.map(({ symbol }) => symbol).sort()).toEqual(['LLD', 'LLM', 'XOR']);
+    });
+
+    it.each(['LLD', 'LLM', 'XOR'])('accepts the live registration of %s', async (symbol) => {
+      await expect(runAuthority(symbol, live[symbol].sidechainAssetId)).resolves.toMatchObject({ runtimeMinimum: '0' });
+    });
+
+    it.each([
+      ['LLD', { liberland: { asset: 0 } }],
+      ['LLD', { lld: null }],
+      ['LLM', { liberland: { asset: 2 } }],
+      ['LLM', { asset: 1 }],
+      ['LLM', { liberland: { lld: null } }],
+      ['XOR', { liberland: { asset: 774441750 } }],
+      ['XOR', { sora: '0x0200000000000000000000000000000000000000000000000000000000000000' }],
+      ['XOR', { liberland: { asset: '774441749x' } }],
+    ])('rejects a drifted registration of %s: %j', async (symbol, sidechainAssetId) => {
+      await expect(runAuthority(symbol, sidechainAssetId)).rejects.toThrow('cross_chain_runtime_registration_drift');
+    });
+
+    it('rejects a changed asset kind', async () => {
+      await expect(runAuthority('XOR', live.XOR.sidechainAssetId, 'Sidechain')).rejects.toThrow(
+        'cross_chain_runtime_registration_drift'
+      );
+    });
   });
 
   it('fails closed when an authoritative intermediate SORA parachain runtime is unavailable', async () => {

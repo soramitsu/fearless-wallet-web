@@ -108,6 +108,10 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
+import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
+import { registerDashboardMessages } from '@/portfolio/dashboard/locales';
+import { effectiveScope } from '@/portfolio/dashboard/preferences';
 
 export default defineComponent({ name: 'Header',
   components: {
@@ -120,6 +124,9 @@ export default defineComponent({ name: 'Header',
     showSelectWalletPopup: { type: Boolean },
   },
   data() {
+    // Before the first render, so the header never shows a key: the dashboard's strings are not in translation.json.
+    if (PORTFOLIO_DASHBOARD_ENABLED) registerDashboardMessages();
+
     return {
       walletNameRef: 'walletName',
       isPopup: IS_POPUP,
@@ -127,6 +134,7 @@ export default defineComponent({ name: 'Header',
       networksStore: useNetworksStore(),
       extensionStore: useExtensionStore(),
       accountsStore: useAccountsStore(),
+      dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
       showConnectionPopup: false,
       showSelectNetworkPopup: false,
     };
@@ -135,9 +143,22 @@ export default defineComponent({ name: 'Header',
     showBackIcon() {
       const route = this.$route.name;
 
-          return route === Components.AssetNetworks || route === Components.AssetHistory;
+          return route === Components.AssetNetworks || route === Components.AssetHistory || route === Components.TokenLocations;
+    },
+    // Behind a build flag (src/portfolio/dashboard): on the portfolio, All wallets is named instead of one wallet.
+    showsAllWallets(): boolean {
+      if (!this.dashboardStore) return false;
+
+      const route = this.$route.name;
+
+      return (
+        (route === Components.Wallet || route === Components.Currencies || route === Components.Nfts) &&
+        effectiveScope(this.dashboardStore.preferences.scope, this.accountsStore.accounts.length) === 'all'
+      );
     },
     isAddressExists() {
+      if (this.showsAllWallets) return false;
+
       if (this.accountsStore.selectedWallet.isTon) return true;
 
           if (this.isGroup) return this.routeName === Components.AssetHistory;
@@ -208,7 +229,7 @@ export default defineComponent({ name: 'Header',
           return BaseApi.formatAddress(this.accountsStore.selectedWallet, selectedNetwork);
     },
     name() {
-      return this.accountsStore.selectedWallet.name;
+      return this.showsAllWallets ? this.$t('portfolioDashboard.allWallets') : this.accountsStore.selectedWallet.name;
     },
     statusConnectedClasses() {
       return !this.extensionStore.tabStatus || !this.extensionStore.tabStatus.isAuthorize

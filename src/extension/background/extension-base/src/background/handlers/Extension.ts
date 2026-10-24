@@ -178,6 +178,7 @@ import type {
   ResponseBalanceRequest,
   RequestGetHistory,
   RequestTotalBalances,
+  RequestPortfolioHoldings,
 } from '@extension-base/background/types/types';
 import type {
   PoolsParamsRequest,
@@ -2646,6 +2647,13 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.totalBalances)':
         return this.state.balanceService.getTotalBalances(request as RequestTotalBalances | null);
+
+      case 'pri(accounts.portfolioHoldings)':
+        // Read only, and only for a build that carries the dashboard (src/portfolio/dashboard/dashboardFlag.ts): a
+        // release answers it like any message it does not know.
+        if (process.env.FW_PORTFOLIO_DASHBOARD !== 'true') throw new Error(`Unable to handle message of type ${type}`);
+
+        return this.state.balanceService.getPortfolioHoldings(request as RequestPortfolioHoldings | null);
 
       case 'pri(accounts.getHistory)':
         return this.state.historyService.fetchTonAssetsHistory(request as RequestGetHistory);

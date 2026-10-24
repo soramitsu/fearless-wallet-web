@@ -8,7 +8,7 @@ const recoveryMessages = new Set([
   'pri(accounts.recovery.list)', 'pri(accounts.recovery.export)',
   'pri(accounts.export.json)', 'pri(migrate.export.json)', 'pri(accounts.deleted.list)', 'pri(accounts.subscribe)',
   'pri(accounts.validate)', 'pri(networkMap.getSubscription)', 'pri(selectedNetworks.getSubscription)',
-  'pri(accounts.totalBalances)', 'pri(accounts.soraFees.subscribe)', 'pri(price.subscription)', 'pri(price.getFiats)',
+  'pri(accounts.totalBalances)', 'pri(accounts.portfolioHoldings)', 'pri(accounts.soraFees.subscribe)', 'pri(price.subscription)', 'pri(price.getFiats)',
   'pri(balance)', 'pri(policy.soraDisclaimer.status)', 'pri(security.legacyExposure.status)',
 ]);
 

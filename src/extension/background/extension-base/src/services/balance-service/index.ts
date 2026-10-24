@@ -16,6 +16,8 @@ import type {
   BalanceJson,
   RequestTotalBalances,
   ResponseTotalBalances,
+  RequestPortfolioHoldings,
+  ResponsePortfolioHoldings,
   ResponseBalanceRequest,
   TokenGroup,
 } from '@extension-base/background/types/types';
@@ -23,6 +25,7 @@ import { getMockAssets } from '@/extension/background/extension-base/src/backgro
 import { isSameString, isTonNetwork } from '@/helpers';
 import { type RelayChainName, WalletEcosystem, type NetworkName } from '@/interfaces';
 import { buildPortfolioSummary, createAssetKey, getPortfolioAssetId } from '@/portfolio/assetIdentity';
+import { buildWalletHoldings } from '@/portfolio/dashboard/holdings';
 
 const MAX_HIDDEN_KEYS_PER_WALLET = 5000;
 
@@ -410,6 +413,40 @@ export default class BalanceService {
         });
 
         res(totalBalances);
+      })
+    );
+  }
+
+  /**
+   * Every wallet's counted holdings, for the portfolio dashboard's All wallets scope. It reads the same balance maps,
+   * registry networks and prices as `getTotalBalances`, so each wallet's `total` equals that wallet's `visibleTotal`
+   * for the same hidden keys. Nothing here writes, signs or moves value.
+   */
+  async getPortfolioHoldings(request?: RequestPortfolioHoldings | null): Promise<ResponsePortfolioHoldings[]> {
+    const hiddenKeysByAddress = sanitizeHiddenKeysByAddress(request?.hiddenKeysByAddress);
+
+    return new Promise<ResponsePortfolioHoldings[]>((res) =>
+      this.state.pricesService.getPrice((prices) => {
+        const registryNetworks = this.state.networkService.networksGithub?.length
+          ? this.state.networkService.authoritativeDiscoveryNetworks
+          : this.state.networkService.networkValues ?? [];
+
+        res(
+          Object.keys(this.balanceMap).map((address) =>
+            buildWalletHoldings(
+              address,
+              {
+                groups: this.balanceMap[address],
+                networks: registryNetworks,
+                prices: prices.tokenPriceMap,
+                priceChanges: prices.tokenPriceChange,
+                addressForNetwork: () => address,
+                scanStates: this.networkScanStates[address] ?? {},
+              },
+              hiddenKeysByAddress[address] ?? []
+            )
+          )
+        );
       })
     );
   }

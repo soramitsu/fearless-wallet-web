@@ -992,6 +992,47 @@ export type ResponseTotalBalances = {
   unavailableCount?: number;
 };
 
+/** The portfolio dashboard's all-wallets read: every wallet's counted holdings in one message. */
+export type RequestPortfolioHoldings = {
+  /** Each wallet's hidden asset keys; hidden holdings are not counted, as in the portfolio header. */
+  hiddenKeysByAddress?: Record<string, string[]>;
+};
+
+/** A holding that adds to a wallet's header total: verified, funded, visible, trusted-priced and not on a testnet. */
+export type PortfolioHolding = {
+  /** The portfolio asset key (`ecosystem:chainId:assetId`), the identity the By token lens groups by. */
+  key: string;
+  symbol: string;
+  name: string;
+  networkName: string;
+  /** Free plus reserved, as a decimal string. */
+  amount: string;
+  /** The part of `amount` that can be sent now; the rest is reserved, locked or staked. */
+  transferable: string;
+  /** `amount` times the asset's trusted price, as a decimal string. */
+  fiat: string;
+  /** The 24 h change of the trusted price in percent, when there is one. */
+  changePercent: string | null;
+};
+
+export type ResponsePortfolioHoldings = {
+  address: string;
+  /** The wallet's header total, the sum of `holdings[].fiat`; `ResponseTotalBalances.visibleTotal` for the same hidden keys. */
+  total: string;
+  changeAmount: string;
+  changePercent: string;
+  hiddenCount: number;
+  unpricedCount: number;
+  /** Visible assets whose balance no provider could load; `total` cannot include them. */
+  unavailableCount: number;
+  poolStakesExcluded: boolean;
+  holdings: PortfolioHolding[];
+  /** The newest balance time among the counted holdings, in milliseconds. */
+  latestTimestamp?: number;
+  /** Networks that hold counted value and whose last update failed or is out of date. */
+  staleNetworks: string[];
+};
+
 export interface TokenGroup {
   mainNetwork: string;
   groupId: string;

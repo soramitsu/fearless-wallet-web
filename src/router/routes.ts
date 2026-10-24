@@ -120,6 +120,7 @@ export enum Components {
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
   Polkaswap = 'Polkaswap',
+  TokenLocations = 'TokenLocations',
   Polkamarkt = 'Polkamarkt',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
@@ -156,6 +157,24 @@ export enum Components {
   NftCollection = 'NftCollection',
   NftSendForm = 'NftSendForm',
 }
+
+// Behind a build flag (src/portfolio/dashboard/dashboardFlag.ts): a build without the dashboard folds this away, import
+// included. Where it lives for one token, opened from the portfolio dashboard.
+const portfolioDashboardRoutes: RouteRecordRaw[] =
+  process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+    ? [
+        {
+          path: 'portfolio/where',
+          name: Components.TokenLocations,
+          component: () => import('@/screens/portfolio/TokenLocations.vue'),
+          props: (route) => ({
+            token: firstQueryValue(route.query.token),
+            holding: firstQueryValue(route.query.holding),
+          }),
+          meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+        },
+      ]
+    : [];
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -516,6 +535,7 @@ const routes: Array<RouteRecordRaw> = [
         component: ReceiveForm,
         meta: { title: 'receive', primaryNavigation: 'portfolio' },
       },
+      ...portfolioDashboardRoutes,
       {
         path: 'asset/:assetId',
         component: Asset,

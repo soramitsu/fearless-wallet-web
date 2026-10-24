@@ -1,6 +1,17 @@
 <template>
-  <div class="wallet">
-    <header class="wallet-header">
+  <div class="wallet" :class="{ 'wallet--dashboard': dashboardEnabled }">
+    <!-- Behind a build flag (src/portfolio/dashboard): the winged-sun hero in place of the plain total. -->
+    <PortfolioDashboard
+      v-if="dashboardEnabled"
+      :summary="portfolioSummary"
+      :summaryInput="summaryInput"
+      :hiddenKeys="hiddenKeys"
+      :caption="filteredCaption"
+      :loading="balancesLoading"
+      @openFiats="$emit('openFiatsPopup', true)"
+    />
+
+    <header v-else class="wallet-header">
       <WalletBalance
         class="wallet-balance"
         :balance="summaryTotalBalance"
@@ -15,7 +26,7 @@
       <Loading v-if="showLoadingBalance" :width="28" class="balance-loading" />
     </header>
 
-    <ContentForm :height="contentFormHeight">
+    <ContentForm v-if="!allWalletsScope" :height="dashboardEnabled ? undefined : contentFormHeight">
       <div class="content">
         <WalletSettings
           :activeTabName="activeTabName"
@@ -67,13 +78,13 @@
 
     <GoogleExportPopup v-if="showGoogleExportPopup" @closePopup="closeGoogleExportPopup" />
 
-    <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
+    <Tooltip v-if="!dashboardEnabled" text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineAsyncComponent, defineComponent } from 'vue';
 
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { TabWallet } from '@/interfaces';
@@ -89,6 +100,8 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { isNetworkGroup } from '@/helpers/common';
 import { usePortfolio } from '@/portfolio/usePortfolio';
+import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
+import { effectiveScope } from '@/portfolio/dashboard/preferences';
 import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
@@ -98,6 +111,7 @@ import { fetchEvmBalance } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
 
 export default defineComponent({ name: 'Wallet',
   components: {
@@ -108,11 +122,15 @@ export default defineComponent({ name: 'Wallet',
     NetworkManagement,
     NetworkUnavailablePopup,
     GoogleExportPopup,
+    // A build without the dashboard folds this away, import included (src/portfolio/dashboard/dashboardFlag.ts).
+    ...(process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+      ? { PortfolioDashboard: defineAsyncComponent(() => import('@/screens/portfolio/PortfolioDashboard.vue')) }
+      : {}),
   },
   setup() {
-    const { summary: portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex } = usePortfolio();
+    const { summary: portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex, summaryInput, hiddenKeys } = usePortfolio();
 
-    return { portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex };
+    return { portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex, summaryInput, hiddenKeys };
   },
   data() {
     return {
@@ -127,9 +145,18 @@ export default defineComponent({ name: 'Wallet',
         assetId?: string;
       },
       accountsStore: useAccountsStore(),
+      dashboardEnabled: PORTFOLIO_DASHBOARD_ENABLED,
+      dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
     };
   },
   computed: {
+    // All wallets lists every wallet's holdings read-only, in place of the selected wallet's own list.
+    allWalletsScope(): boolean {
+      return (
+        this.dashboardStore !== undefined &&
+        effectiveScope(this.dashboardStore.preferences.scope, this.accountsStore.accounts.length) === 'all'
+      );
+    },
     activeTabName() {
       return this.$route.name;
     },
@@ -356,6 +383,30 @@ export default defineComponent({ name: 'Wallet',
 .wallet {
   display: flex;
   flex-direction: column;
+
+  // The hero and the list scroll together, so the list keeps the room the hero would otherwise take. The chain is
+  // .main-child (overflow hidden) above and the lists' own scroll areas below, which grow to their content here.
+  &.wallet--dashboard.main-child {
+    overflow-x: hidden;
+    overflow-y: auto;
+    // The scrollbar sits in the page gutter, as the portfolio list's own does, not over the hero card.
+    width: calc(100% + #{$default-padding});
+    margin-right: -$default-padding;
+    padding-right: $default-padding;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--fw-stroke-strong);
+      border-radius: $default-border-radius;
+    }
+  }
 
   .content {
     padding: $default-padding 0 $default-padding $default-padding;

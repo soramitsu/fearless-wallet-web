@@ -126,6 +126,7 @@ export function usePortfolio() {
     preferenceSource,
     legacyOrderIndex,
     hiddenKeys,
+    summaryInput,
     addressForNetwork,
     walletScope,
     networkFilter,

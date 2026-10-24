@@ -176,6 +176,18 @@ export function resolveFwPalette(env = process.env) {
   return palette;
 }
 
+/**
+ * Whether this build carries the portfolio dashboard (src/portfolio/dashboard/dashboardFlag.ts), as the string 'true' or
+ * 'false'. It ships: a release pins it on through `PRODUCTION_RELEASE_FLAGS` (scripts/build-extension.mjs), and every
+ * other build carries it as well, so the smokes exercise what people get. Only `VUE_APP_PORTFOLIO_DASHBOARD=false` leaves
+ * it out, of a development or test build. The decision is made here, once, and reaches the bundle as a literal: a build
+ * without the dashboard folds away every branch that tests it, dynamic imports included, and ships none of its code or
+ * strings.
+ */
+export function portfolioDashboardBuildFlag(env = process.env) {
+  return env.VUE_APP_PORTFOLIO_DASHBOARD === 'false' ? 'false' : 'true';
+}
+
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
   const nodeEnv = mode === 'production' ? 'production' : 'development';
@@ -183,6 +195,7 @@ export function makeDefine(mode, extraEnv = {}) {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
     'process.env.VITE_FW_PALETTE': JSON.stringify(resolveFwPalette(env)),
+    'process.env.FW_PORTFOLIO_DASHBOARD': JSON.stringify(portfolioDashboardBuildFlag(env)),
   };
 
   for (const key of ENV_KEYS) {

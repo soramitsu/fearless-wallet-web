@@ -32,6 +32,8 @@ declare global {
       VUE_APP_ENABLE_IROHA_CONNECT: string;
       VUE_APP_ENABLE_IROHA_TRANSFERS: string;
       VUE_APP_ENABLE_SOLANA_TRANSFERS: string;
+      /** Whether this build carries the portfolio dashboard; decided in vite.config.shared.mjs, never true in production. */
+      FW_PORTFOLIO_DASHBOARD?: 'true' | 'false';
       FL_WEB_TON_API_KEY: string;
       FL_WEB_DWELLIR_API_KEY: string;
       FL_DWELLIR_API_KEY?: string;

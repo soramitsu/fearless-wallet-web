@@ -23,6 +23,29 @@ import {
 
 export type NetworkMap = Record<string, NetworkJson>;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Whether a remote registry entry has what the wallet needs to connect to it. One malformed entry is skipped instead
+ * of stopping every other network from loading.
+ */
+export function isUsableRegistryNetwork(value: unknown): value is NetworkJson {
+  if (!isRecord(value)) return false;
+
+  const { name, chainId, nodes, assets } = value;
+
+  return (
+    typeof name === 'string' &&
+    name.trim() !== '' &&
+    ((typeof chainId === 'string' && chainId !== '') || (typeof chainId === 'number' && Number.isFinite(chainId))) &&
+    Array.isArray(nodes) &&
+    nodes.length > 0 &&
+    nodes.every((node) => isRecord(node) && typeof node.url === 'string' && node.url !== '') &&
+    Array.isArray(assets)
+  );
+}
+
 export class NetworkService {
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -117,11 +140,19 @@ export class NetworkService {
   public async initNetworkMap() {
     this.logger.log('Init Network Map');
 
-    const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
+    const { data: networks } = await axios.get<unknown>(URLS.CHAINS);
+    if (!Array.isArray(networks)) throw new Error('The network registry is not a list');
 
     const networksFromStorage = await this.getStoredNetworks();
 
-    this.networksGithub = networks;
+    this.networksGithub = networks.filter((network, index): network is NetworkJson => {
+      if (isUsableRegistryNetwork(network)) return true;
+
+      const name = isRecord(network) && typeof network.name === 'string' ? network.name : `#${index}`;
+      this.logger.warn(`Skipping malformed network registry entry ${name}`);
+
+      return false;
+    });
 
     this.networksGithub
       .filter((el) => {

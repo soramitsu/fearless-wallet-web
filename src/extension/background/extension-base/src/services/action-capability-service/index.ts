@@ -11,10 +11,20 @@ export type MutableAction =
 
 export type ActionCapabilityConfig = {
   schemaVersion: 1;
+  /** Local time of the fetch that produced this configuration. */
   updatedAt: number;
   actions: Record<MutableAction, boolean>;
   assetDiscoveryMode: 'shadow' | 'visible';
 };
+
+/**
+ * A remote switch-off has to reach the wallet even when the configuration cannot be fetched: a cached configuration
+ * older than this enables nothing, so a blocked or failing fetch cannot keep an action on indefinitely.
+ */
+export const ACTION_CAPABILITY_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+/** While the background runs, the configuration is fetched again once it is this old and an action is checked. */
+export const ACTION_CAPABILITY_REFRESH_MS = 15 * 60 * 1000;
 
 const disabledActions = (): Record<MutableAction, boolean> => ({
   polkaswap: false,
@@ -51,40 +61,82 @@ export function parseActionCapabilityConfig(value: unknown, now = Date.now()): A
   return result;
 }
 
+/** Reads a persisted configuration defensively: anything malformed is the fail-closed configuration. */
+export function parseStoredActionCapabilityConfig(value: unknown): ActionCapabilityConfig {
+  const root = record(value);
+  if (root.schemaVersion !== 1 || typeof root.updatedAt !== 'number' || !Number.isFinite(root.updatedAt)) {
+    return failClosedActionCapabilities();
+  }
+
+  return parseActionCapabilityConfig(root, root.updatedAt);
+}
+
+/** True while a configuration fetched at `updatedAt` may still be used at `now`. */
+export function isActionCapabilityConfigFresh(updatedAt: number, now: number): boolean {
+  const age = now - updatedAt;
+
+  return Number.isFinite(age) && age >= 0 && age <= ACTION_CAPABILITY_MAX_AGE_MS;
+}
+
 type ActionCapabilityStorage = {
-  read: () => Promise<ActionCapabilityConfig | undefined>;
+  read: () => Promise<unknown>;
   write: (config: ActionCapabilityConfig) => Promise<void>;
 };
 
 export class ActionCapabilityService {
   private config = failClosedActionCapabilities();
+  private lastAttempt = Number.NEGATIVE_INFINITY;
+  private refreshing: Promise<void> | undefined;
 
-  constructor(private readonly storage: ActionCapabilityStorage) {}
+  constructor(
+    private readonly storage: ActionCapabilityStorage,
+    private readonly now: () => number = () => Date.now()
+  ) {}
 
   async init(): Promise<ActionCapabilityConfig> {
-    this.config = (await this.storage.read()) ?? failClosedActionCapabilities();
+    this.config = parseStoredActionCapabilityConfig(await this.storage.read());
+    await this.refresh();
 
-    try {
-      const { data } = await axios.get<unknown>(URLS.FEATURES);
-      this.config = parseActionCapabilityConfig(data);
-      await this.storage.write(this.config);
-    } catch {
-      // A persisted last-known configuration is usable; first-run failure is
-      // deliberately fail-closed for mutations and discovered-asset surfacing.
-    }
+    return this.snapshot;
+  }
 
-    return this.config;
+  /** Fetches the remote configuration. A failure keeps the cached one, which still expires on its own. */
+  refresh(): Promise<void> {
+    if (this.refreshing) return this.refreshing;
+
+    this.lastAttempt = this.now();
+    this.refreshing = (async () => {
+      try {
+        const { data } = await axios.get<unknown>(URLS.FEATURES);
+        this.config = parseActionCapabilityConfig(data, this.now());
+        await this.storage.write(this.config);
+      } catch {
+        // A recent last-known configuration stays usable until it expires; first-run failure is
+        // deliberately fail-closed for mutations and discovered-asset surfacing.
+      } finally {
+        this.refreshing = undefined;
+      }
+    })();
+
+    return this.refreshing;
   }
 
   isActionEnabled(action: MutableAction): boolean {
-    return this.config.actions[action] === true;
+    return this.current().actions[action] === true;
   }
 
   shouldSurfaceDiscoveredAssets(): boolean {
-    return this.config.assetDiscoveryMode === 'visible';
+    return this.current().assetDiscoveryMode === 'visible';
   }
 
   get snapshot(): ActionCapabilityConfig {
-    return this.config;
+    return this.current();
+  }
+
+  private current(): ActionCapabilityConfig {
+    const now = this.now();
+    if (!this.refreshing && now - this.lastAttempt >= ACTION_CAPABILITY_REFRESH_MS) void this.refresh();
+
+    return isActionCapabilityConfigFresh(this.config.updatedAt, now) ? this.config : failClosedActionCapabilities();
   }
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isActionCapabilityConfigFresh } from '@extension-base/services/action-capability-service';
 import type { HexString } from '@polkadot/util/types';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { RequestsPayload } from './types';
@@ -310,8 +311,11 @@ export const actions: Actions = {
   },
 
   async fetchFeatures() {
-    const cached = featureStorage.get<Features>('action-capabilities').value;
-    this.setFeatures(cached ?? failClosedFeatures());
+    // Like the background, a cached snapshot only counts while it is recent; it carries the time it was fetched.
+    const cached = featureStorage.get<Features & { fetchedAt?: unknown }>('action-capabilities').value;
+    const { fetchedAt, ...cachedFeatures } = cached ?? {};
+    const fresh = typeof fetchedAt === 'number' && isActionCapabilityConfigFresh(fetchedAt, Date.now());
+    this.setFeatures(cached && fresh ? (cachedFeatures as Features) : failClosedFeatures());
 
     try {
       const { data } = await axios.get<Features>(URLS.FEATURES);
@@ -322,10 +326,10 @@ export const actions: Actions = {
         actions: { ...failClosedFeatures().actions, ...data.actions },
       };
 
-      featureStorage.set('action-capabilities', features as unknown as Record<string, unknown>);
+      featureStorage.set('action-capabilities', { ...features, fetchedAt: Date.now() } as unknown as Record<string, unknown>);
       this.setFeatures(features);
     } catch {
-      // Keep the persisted snapshot; first-run mutations remain fail-closed.
+      // Keep a recent persisted snapshot; first-run and stale snapshots remain fail-closed.
     }
   },
 

@@ -279,8 +279,6 @@ async function main() {
   chromeBinary = await resolveExecutable(chromeBinary, 'Set CHROME_BIN to a Chrome/Chromium executable.');
 
   const deriveWalletFixture = productionPopupOnly ? undefined : await loadWalletFixtureDerivation();
-  const universalWalletFixture = productionPopupOnly ? undefined : await loadUniversalWalletFixture();
-  const transactionBase64 = productionPopupOnly ? undefined : validTransactionBase64();
   const [solanaServer, irohaServer] = productionPopupOnly || offlineScreenshots
     ? [undefined, undefined]
     : await Promise.all([startDappServer(), startDappServer()]);

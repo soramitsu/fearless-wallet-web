@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-25",
+  "scope": "Draft notice alignment in the existing Old Akkadian and Classical Middle Egyptian literary locales",
+  "draftApprovalMarkersPreserved": true,
+  "newCuneiformSigns": 0,
+  "method": "Reused existing lexical compounds and spellings; new Akkadian forms checked as hyphenated syllable readings using the read-only workflow in src/locales/akk/README.md, then mapped through its fixed sign list. English backtranslations reviewed for uncertainty and recovery-only restrictions.",
+  "validation": {
+    "localeAndOnboardingSuites": 4,
+    "testsPassed": 26,
+    "checks": "Key coverage, placeholders, plural branches, numbers, intentional empties, script inventory, font coverage and semantic anchors unchanged."
+  },
+  "noticeMeaning": {
+    "heading": "Your wallet keys may have been exposed",
+    "whatHappened": "A security review identified code in Fearless Wallet browser versions {first} and {from} to {to} that could send recovery phrases to an outside server on unlock. For JSON or raw-seed imports, this could include the encrypted key and wallet password.",
+    "whatWeKnow": "The wallets below were stored before this update. The app cannot establish whether their keys were received or used. We have not confirmed any loss of funds caused by this issue. As a precaution, treat these wallets as potentially exposed.",
+    "whatItMeans": "Anyone with your recovery phrase or decrypted private key can spend the funds it controls. Changing the wallet password does not replace those keys or make an exposed wallet safe.",
+    "whatToDo": "Create a new wallet here with a new recovery phrase, back it up offline, then move your funds to the matching network in that wallet. The guide explains the steps.",
+    "confirm": "I understand the risk and that changing my password does not replace an exposed recovery phrase or private key.",
+    "guide.intro": "Follow these steps in order. Old and imported wallets remain available for recovery: view balances, export backups, and send or withdraw existing funds where supported. This guide does not delete wallets or move funds automatically.",
+    "guide.createText": "Use Create wallet in this version to generate a new recovery phrase. Importing an existing phrase, key or JSON file restores the same keys and does not remove a possible exposure.",
+    "guide.moveText": "Check the recipient address and network before each send. Move your tokens to the matching network in the new wallet. Keep enough of each network's native coin for fees and transfer the remainder last.",
+    "guide.moveNotListed": "This list does not include staked funds, liquidity positions or NFTs. Use supported recovery actions to withdraw existing positions, allowing for any network waiting period. Transfer NFTs separately where supported."
+  },
+  "akkadian": {
+    "heading": {
+      "text": "pīqat namzāqū ša kīsātīka ūṣû.",
+      "backtranslation": "The keys of your wallets may have gone out—that is, been exposed."
+    },
+    "whatHappened": {
+      "text": "ina amārim ša naṣārim ṭuppum ša qibītim ina šiknī ša Fearless Wallet ana amār ṭuppī ina riksim ({first} u ištu {from} adi {to}) innamir. pīqat ṭuppum šū ina petê kīsim awātī ḫasāsim ana bīt ṭuppī aḫîm ušabbal. ana šūrubim ištu ṭuppim JSON ulūma zērim lā epšim, pīqat namzāqam ša pirištim kaṣram u awāt pirištim ša kīsim ušabbal.",
+      "backtranslation": "During an inspection for protection, a tablet of commands was found in the Fearless Wallet versions for viewing documents on the network ({first} and from {from} to {to}). That code might send recovery phrases to an outside house of records when the wallet is opened. For import from a JSON document or an unworked seed, it might send the bound private key and the wallet password."
+    },
+    "whatWeKnow": {
+      "text": "kīsātum ša šapliš šaṭrā lām uddūšim annîm naṣrā. epšum annûm šumma namzāqū ša kīsātim annīātim maḫrū ulūma šiprum ina šunūti epšum lamādam ul ileʾʾi. ḫalāq makkūrim aššum annîtim adīni ul nukīn. aššum maṣṣartim kīam šukun: pīqat namzāqū ša kīsātim annīātim ūṣû.",
+      "backtranslation": "The wallets listed below were stored before this update. This app cannot determine whether these wallets' keys were received or used for an action. We have not yet confirmed loss of property because of this issue. As a precaution, take this view: the keys of these wallets may have been exposed."
+    },
+    "whatItMeans": {
+      "text": "ša awāt ḫasāsim ulūma namzāq pirištim paṭram ukâl, makkūram ša ina qāt awātim ulūma namzāqim šūbulam ileʾʾi. šunnûm ša awāt pirištim namzāqī ul unakkar. šumma namzāqū ūṣû, šunnûm šū kīsam ul inaṣṣar.",
+      "backtranslation": "Whoever holds the recovery phrase or an unbound private key can send the property under the phrase's or key's control. Changing the password does not change those keys. If the keys have been exposed, that change does not protect the wallet."
+    },
+    "whatToDo": {
+      "text": "annakam kīsam eššam itti awāt ḫasāsim eššetim binī. awāt ḫasāsim ina ṭuppim šuṭur u ina ašrim ša lā riksim uṣur. warki kīam makkūrīka ana riksim mithārim ina kīsim eššim šūbil. ina ṭuppim ša alaktim alkātum šaṭrā.",
+      "backtranslation": "Create a new wallet here with a new recovery phrase. Write the recovery phrase on a document and keep it in a place without a network. Then send your property to the corresponding network in the new wallet. The steps are written in the guide."
+    },
+    "confirm": {
+      "text": "puḫdam īdeku. kīma šunnûm ša awāt pirištīya awāt ḫasāsim ša ūṣi ulūma namzāq pirištim ša ūṣi ul unakkar īdeku.",
+      "backtranslation": "I understand the risk. I understand that changing my password does not change an exposed recovery phrase or an exposed private key."
+    },
+    "guide.intro": {
+      "text": "alkātim annīātim ina sidirtim epūš. kīsātum labīrātum u kīsātum ša šūrubā ana turrim-ma bašâ: nikkassātim amārum, ṭuppī šanûtim šūṣûm, u makkūram ša ibašši šūbulum ulūma šūṣûm ašar epšum našûm. ṭuppum annûm kīsātim ul inassaḫ u makkūram ina ramānišu ul ušabbal.",
+      "backtranslation": "Perform these steps in order. Old wallets and imported wallets remain available only for recovery: viewing balances, exporting backup documents, and sending or withdrawing existing property where the action is supported. This guide does not remove wallets or send property by itself."
+    },
+    "guide.createText": {
+      "text": "ina šiknim annîm «binī kīsam eššam» epūš ana leqê awāt ḫasāsim eššetim. šūrubum ša awāt ḫasāsim labīrtim ulūma namzāqim ulūma ṭuppim JSON namzāqī šunūti-ma utâr. pīqat namzāqū ūṣû; šūrubum puḫdam annâm ul inassaḫ.",
+      "backtranslation": "Use 'Create a new wallet' in this version to obtain a new recovery phrase. Importing an old recovery phrase, a key, or a JSON document restores those very same keys. The keys may have been exposed; importing does not remove this risk."
+    },
+    "guide.moveText": {
+      "text": "lām kal šūbulim ašram ša māḫirim u riksam amur. makkūrīka ana riksim mithārim ina kīsim eššim šūbil. ana riksim mala ibašši, kaspam ša riksim-ma ana miksī uṣur; lū maṣûm. kaspam ša adīni ibašši warkīš šūbil.",
+      "backtranslation": "Before every sending, inspect the recipient's address and the network. Send your assets to the corresponding network in the new wallet. For each network, retain its own silver for fees; let it be sufficient. Send the remaining silver last."
+    },
+    "guide.moveNotListed": {
+      "text": "makkūrum šaknum, zittāt mê kaspim u NFTs ina sidirtim annītim ul šaṭrū. ina alkātim našâtim ša turrim makkūram ša ibašši šūṣi. adannam ša riksum išakkan qūl. NFTs aḫiam šūbil ašar šūbulum našûm.",
+      "backtranslation": "Staked property, shares of liquidity, and NFTs are not recorded in this list. Through supported recovery actions, withdraw the existing property. Wait the period the network sets. Send NFTs separately where sending is supported."
+    }
+  },
+  "egyptianBacktranslations": {
+    "heading": "Perhaps the keys of your wallet have been exposed.",
+    "whatHappened": "An inspection for protection found a writing of commands in the Fearless Wallet versions for document-viewing devices ({first} and from {from} to {to}). It could send words of remembrance to an outside house of records when the wallet's seal was opened. For wallets imported from a JSON document or an original seed, it could also send the sealed key and the wallet's secret name.",
+    "whatWeKnow": "These wallets were stored before this renewal. This work-house cannot establish whether their keys were received or work was done with them. No loss of property arising from this matter has been established. As a precaution, treat these wallets as possibly exposed.",
+    "whatItMeans": "Anyone who holds your words of remembrance or a secret key whose seal is open can pay out the property under their control. Changing the wallet's secret name will not replace these keys. It will not protect an exposed wallet.",
+    "whatToDo": "Create a new wallet here with new words of remembrance. Write them on a document and keep them outside the networks. Then transfer your property to that wallet on their same networks. The instruction document teaches you the steps.",
+    "confirm": "I understand this danger and that changing my secret name will not replace exposed words of remembrance or an exposed secret key.",
+    "guide.intro": "Perform these steps one after another. Earlier and imported wallets remain for recovery alone: viewing property balances, exporting backup documents, and sending or withdrawing existing property where these actions can be performed. This instruction document will not delete wallets. It will not transfer property by itself.",
+    "guide.createText": "Use 'Create a new wallet' in this version to make new words of remembrance. If you import earlier words of remembrance, an earlier key, or a JSON document, those very same keys are restored. These keys may still be exposed.",
+    "guide.moveText": "Check the recipient's address and the network before every sending. Transfer your property to the new wallet on its corresponding networks. Retain an amount of each network's own silver sufficient to meet its fees. Send the remaining silver last.",
+    "guide.moveNotListed": "Property bound to support the networks, property in liquidity pools, and NFTs are absent from this list. Use recovery actions that can be performed to withdraw property remaining in its positions. Wait until the end of any network waiting period. Send NFTs separately where this can be done."
+  },
+  "limits": "Literary modern-concept translations, not attested ancient sentences. The existing draft notice remains subject to owner sign-off; this review does not replace specialist philological review.",
+  "fileSha256": {
+    "akk": "48ee6f84fd1fd9660790c064f41bdca635567464389e649a3ac19064d89cedfe",
+    "egy": "96398430cf444a66c497eb32375ee3a85ca9c8102b71377d89d7b0c97b94088f"
+  }
+}

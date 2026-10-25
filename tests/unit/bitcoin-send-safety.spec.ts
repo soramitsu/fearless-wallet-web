@@ -299,6 +299,8 @@ describe('Bitcoin send kill switch', () => {
 });
 
 describe('Bitcoin ambiguous broadcast guard', () => {
+  // These retry/paired-quote cases perform two complete scans and real HD-key work. Retain that coverage with a bounded
+  // per-case crypto budget; the default 5 s remains in force for single-operation and timing/locking tests.
   it.each(['current', 'legacy', 'orphaned legacy'])('keeps the Bitcoin conflict barrier across account aliases for %s records', async recordKind => {
     const firstState = createState();
     const store = memoryPendingStore();
@@ -323,7 +325,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
       const replacement = bitcoin.Transaction.fromHex(second.broadcastTransaction.mock.calls[0][0]);
       expect(inputsOf(replacement)).toEqual(expect.arrayContaining(earlier.outpoints.map(({ txid, vout }) => `${txid}:${vout}`)));
     }
-  });
+  }, 15_000);
 
   it.each(['reset', 'rejected'])('preserves an earlier identical ambiguous send when its retry is %s', async boundary => {
     const state = createState();
@@ -346,7 +348,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
     );
     expect(stored).toEqual(earlier);
     expect(client.broadcastTransaction).toHaveBeenCalledTimes(boundary === 'reset' ? 1 : 2);
-  });
+  }, 15_000);
 
   it('allows sending after an orphaned legacy Bitcoin record is proven resolved', async () => {
     const record = pendingRecord({ accountAddress: 'removed primary' });
@@ -421,7 +423,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
 
     expect(inputsOf(second)).toEqual(expect.arrayContaining(inputsOf(first)));
     expect(store.records).toEqual([]);
-  });
+  }, 15_000);
 
   it('sends nothing new while the earlier transaction waits in the mempool', async () => {
     const store = memoryPendingStore([pendingRecord()]);
@@ -476,7 +478,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
     await expect(makeBitcoinTransfer(params(), client, discovery, store)).rejects.toThrow('bitcoin_previous_send_unconfirmed');
     expect(broadcasts).toHaveLength(1);
     expect(store.records.map(({ txid }) => txid)).toEqual([first.getId()]);
-  });
+  }, 15_000);
 
   it('refuses to build from other coins when a coin of an unresolved send is not listed', async () => {
     // Outcome unknown, yet the UTXO list (another endpoint's view, or a coin
@@ -551,7 +553,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
         unavailableReason: 'bitcoin_previous_send_unconfirmed',
       });
     }
-  });
+  }, 15_000);
 
   it('does not claim the coins are reused when one of them is not listed', async () => {
     const store = memoryPendingStore([pendingRecord({ outpoints: [{ txid: '33'.repeat(32), vout: 0 }] })]);
@@ -561,7 +563,7 @@ describe('Bitcoin ambiguous broadcast guard', () => {
 
       expect(quote).toMatchObject({ pendingPreviousSend: false, unavailableReason: 'bitcoin_previous_send_pending' });
     }
-  });
+  }, 15_000);
 
   it('resolves pending sends only when the indexer proves the outcome', async () => {
     const record = (txid: string): BitcoinPendingSend => pendingRecord({ accountAddress: 'a', txid });

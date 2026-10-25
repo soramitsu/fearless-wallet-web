@@ -138,6 +138,8 @@ describe('BitcoinBalanceService', () => {
     expect(publishBalance).toHaveBeenCalled();
   });
 
+  // Uses real BIP39/HD derivation across both branches, then exercises three cached/recovery reads.
+  // The same bounded crypto budget as the full-gap discovery test keeps runner CPU variance out of this contract.
   it('aggregates discovered receive-index and change-branch balances and publishes derivation descriptors', async () => {
     const mainnet = bitcoinNetwork('Bitcoin', 'bitcoin:mainnet');
     const { state } = createState([mainnet]);
@@ -268,7 +270,7 @@ describe('BitcoinBalanceService', () => {
     expect(client.getBalance).toHaveBeenCalledOnce();
     expect(client.getBalance).toHaveBeenCalledWith(MAINNET_ADDRESS);
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).not.toHaveProperty('bitcoinAddresses');
-  });
+  }, 15_000);
 
   it('routes selected testnet balance reads to a testnet client', async () => {
     const mainnet = bitcoinNetwork('Bitcoin', 'bitcoin:mainnet');

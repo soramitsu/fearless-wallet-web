@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { URLS } from '@/consts/urls';
+import { fetchRemoteFeatureConfig } from '@/util/remoteConfig';
 
 export type MutableAction =
   | 'polkaswap'
@@ -170,7 +169,7 @@ export class ActionCapabilityService {
     this.lastAttempt = this.now();
     this.refreshing = (async () => {
       try {
-        const { data } = await axios.get<unknown>(URLS.FEATURES);
+        const data = await fetchRemoteFeatureConfig();
         this.config = resolveActionCapabilities(data, this.now(), this.config.remoteActions);
         await this.storage.write(this.config);
       } catch {

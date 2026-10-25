@@ -96,7 +96,7 @@
       "commit": "f2ed4ccf1d3a6376b60ebd69d823a3f7748ddc4b",
       "sourcePath": "chains/v13/chains_dev.json",
       "upstreamSha256": "5726b01a5364d955e250939c71082c03f97da0dc9512ac9d120c6a2085173d05",
-      "ownedSha256": "77b2bba8e76aaadfdb27eae53bbe8ddf0492f8bb5dd29f2d0cfbf59420ad10e6"
+      "ownedSha256": "29615d183891dcbbd26a6ce25204af7d35870b3e7b5f1997210975f003e4c60f"
     },
     {
       "path": "development/fiat/fiats.json",
@@ -3264,7 +3264,7 @@
       "commit": "ca1c2655ff541ae5942d820423962d34fd29d7f9",
       "sourcePath": "chains/v13/chains.json",
       "upstreamSha256": "79a583f08f71139a31e00c825c746891cef50c04aa81318aaa492807757b9cec",
-      "ownedSha256": "27110e6ecdcb37ddeea7dc17e9e65ceb8a458da1b169892f7f881333265f6d1e"
+      "ownedSha256": "f69ae1edecd73169edb90ea4bedd73b7d7cf26099b7bac4d966b7ad6d8dcd585"
     },
     {
       "path": "production/fiat/fiats.json",
@@ -7425,6 +7425,15 @@
         "legacy/master/crowdloan/icons/litentry.png": "legacy/master/crowdloan/icons/Litentry.png",
         "production/icons/chains/white/litentry.svg": "production/icons/chains/white/Litentry.svg"
       }
+    },
+    {
+      "files": [
+        "remote-config/production/chains/v13/chains.json",
+        "remote-config/development/chains/v13/chains_dev.json"
+      ],
+      "changes": [
+        "Disable unreachable Reef Mainnet in app-owned catalogs after retaining unavailable chain parents and clearing stale staking selection; configured RPC returned HTTP502 on 2026-10-25. Legacy shared feeds remain unchanged."
+      ]
     }
   ]
 }

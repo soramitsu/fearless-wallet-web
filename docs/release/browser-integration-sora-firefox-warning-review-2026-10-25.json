@@ -1,0 +1,1037 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "sourceCommit": "e6c1d886f6d7d089d1df69428c8aabace062cb82",
+  "reviewer": "Codex source and artifact review",
+  "status": "Exact warning baseline accepted for the SORA dependency removal artifact; runtime, owner notice approval and store gates remain separate.",
+  "webExtVersion": "10.6.0",
+  "summary": {
+    "errors": 0,
+    "notices": 0,
+    "previousWarnings": 42,
+    "warnings": 38,
+    "byteIdenticalContexts": 35,
+    "renamedMinifiedContexts": 3,
+    "removedWarnings": 4
+  },
+  "warningCodes": {
+    "DANGEROUS_EVAL": 37,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "previousWarningSetSha256": "5391a4d320c2c36e48147264ac1ccb48078629c19b8ef882acc93f671377342a",
+  "currentWarningSetSha256": "50e0f6e8416743bede2e1944828184696a015885eab8a27a4c184fc41d88b6e2",
+  "previousBaselineSha256": "511fcac23cebfcd005a0ac37848cb65bc9b15646382aa13578a2d42936c86a37",
+  "currentBaselineSha256": "2c12b37014a202015678fcae0a5ed8a7be5b5f3a1c3aa03968209400448087d9",
+  "rawReports": {
+    "previous": {
+      "path": ".tmp/firefox-integration-raw-warnings.json",
+      "sha256": "7143f35d2e9c4915a0a41887bd84a28dee56186a7ab1764db74d19385c25f8e6"
+    },
+    "current": {
+      "path": ".tmp/sora-firefox-raw-warnings.json",
+      "sha256": "d857a058f486bbba1a20fd41e3001c3bf4cfb7c1170885ffe914fbf3d05a5676"
+    }
+  },
+  "checks": [
+    "Ten prior warning artifacts were extracted from the archived pre-SORA Firefox ZIP and matched every previously accepted artifact SHA256.",
+    "All38 remaining warnings match prior code, message and description. Thirty-five bounded source contexts are byte-identical; three change only minified bindings.",
+    "Vue static-template innerHTML retains the same template element/trusted-HTML call; the other changed contexts retain the lodash global fallback and empty generator feature probe.",
+    "Four lodash/lodash.merge global fallback Function sites disappeared with the removed SORA SDK dependencies. No new warning sites were accepted.",
+    "Manifest CSP matches the previous package exactly. It permits the existing wasm-unsafe-eval, but does not permit JavaScript unsafe-eval.",
+    "Nineteen adversarial baseline-policy regressions remain required; no warning-count override or broad allowlist was added."
+  ],
+  "siteComparisons": [
+    {
+      "score": 0.99,
+      "old": {
+        "_type": "warning",
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "message": "Unsafe assignment to innerHTML",
+        "description": "Due to both security and performance concerns, this may not be set using dynamic values which have not been adequately sanitized. This can lead to security issues or fairly serious performance degradation.",
+        "column": 1670,
+        "file": "chunks/usePortfolioPreferences.js",
+        "line": 1,
+        "context": ",r,i,a){let o=n?n.previousSibling:t.lastChild;if(i&&(i===a||i.nextSibling))for(;t.insertBefore(i.cloneNode(!0),n),!(i===a||!(i=i.nextSibling)););else{Ve.innerHTML=Re(r===`svg`?`<svg>${e}</svg>`:r===`mathml`?`<math>${e}</math>`:e);let i=Ve.content;if(r===`svg`||r===`mathml`){let e=i.firstChild;for(;e"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "message": "Unsafe assignment to innerHTML",
+        "description": "Due to both security and performance concerns, this may not be set using dynamic values which have not been adequately sanitized. This can lead to security issues or fairly serious performance degradation.",
+        "column": 1666,
+        "file": "chunks/usePortfolioPreferences.js",
+        "line": 1,
+        "context": ",r,i,a){let o=n?n.previousSibling:t.lastChild;if(i&&(i===a||i.nextSibling))for(;t.insertBefore(i.cloneNode(!0),n),!(i===a||!(i=i.nextSibling)););else{Re.innerHTML=Fe(r===`svg`?`<svg>${e}</svg>`:r===`mathml`?`<math>${e}</math>`:e);let i=Re.content;if(r===`svg`||r===`mathml`){let e=i.firstChild;for(;e"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 387,
+        "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+        "line": 1,
+        "context": "(typeof window==\"object\"&&window)||r(typeof self==\"object\"&&self)||r(typeof Fr==\"object\"&&Fr)||r(typeof a==\"object\"&&a)||(function(){return this})()||Function(\"return this\")()})),U=s(((a,t)=>{t.exports=function(r){try{return!!r()}catch{return!0}}})),lr=s(((a,t)=>{t.exports=!U()(function(){var r=(fun"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 387,
+        "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+        "line": 1,
+        "context": "(typeof window==\"object\"&&window)||r(typeof self==\"object\"&&self)||r(typeof Fr==\"object\"&&Fr)||r(typeof a==\"object\"&&a)||(function(){return this})()||Function(\"return this\")()})),U=s(((a,t)=>{t.exports=function(r){try{return!!r()}catch{return!0}}})),lr=s(((a,t)=>{t.exports=!U()(function(){var r=(fun"
+      }
+    },
+    {
+      "score": 0.9866666666666667,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 1090,
+        "file": "chunks/soramitsuUI.js",
+        "line": 1,
+        "context": "e=[``,`default`,`small`,`large`],Ee=typeof t==`object`&&t&&t.Object===Object&&t,De=typeof self==`object`&&self&&self.Object===Object&&self,Oe=Ee||De||Function(`return this`)(),H=Oe.Symbol,ke=Object.prototype,Ae=ke.hasOwnProperty,je=ke.toString,Me=H?H.toStringTag:void 0;function Ne(e){var t=Ae.call(e"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 1090,
+        "file": "chunks/soramitsuUI.js",
+        "line": 1,
+        "context": "e=[``,`default`,`small`,`large`],Ee=typeof e==`object`&&e&&e.Object===Object&&e,De=typeof self==`object`&&self&&self.Object===Object&&self,Oe=Ee||De||Function(`return this`)(),H=Oe.Symbol,ke=Object.prototype,Ae=ke.hasOwnProperty,je=ke.toString,Me=H?H.toStringTag:void 0;function Ne(e){var t=Ae.call(e"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 3745,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 3794,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 16993,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 4557,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 5256,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 6152,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 13987,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": "ject.prototype.toString,c=Function.prototype.toString,w=/^\\s*(?:function)?\\*/,E=qt()(),g=Object.getPrototypeOf,v=function(){if(!E)return!1;try{return Function(\"return function*() {}\")()}catch{}},m;A.exports=function(T){if(typeof T!=\"function\")return!1;if(w.test(c.call(T)))return!0;if(!E)return r.cal"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 13987,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": "ject.prototype.toString,c=Function.prototype.toString,w=/^\\s*(?:function)?\\*/,E=qt()(),g=Object.getPrototypeOf,v=function(){if(!E)return!1;try{return Function(\"return function*() {}\")()}catch{}},m;A.exports=function(T){if(typeof T!=\"function\")return!1;if(w.test(c.call(T)))return!0;if(!E)return r.cal"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 4557,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 16993,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 18504,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 18504,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 3794,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 3745,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "context": ");return Object(P)===P?P:this}else return g.apply(E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 6152,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 5256,
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 55341,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "=o.apply(this,u(a,arguments));return Object(g)===g?g:this}return o.apply(s,u(a,arguments))},S=h(0,o.length-a.length),p=[],_=0;_<S;_++)p[_]=\"$\"+_;if(y=Function(\"binder\",\"return function (\"+i(p,\",\")+\"){ return binder.apply(this,arguments); }\")(l),o.prototype){var v=function(){};v.prototype=o.prototype"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 55341,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "=o.apply(this,u(a,arguments));return Object(g)===g?g:this}return o.apply(s,u(a,arguments))},S=h(0,o.length-a.length),p=[],_=0;_<S;_++)p[_]=\"$\"+_;if(y=Function(\"binder\",\"return function (\"+i(p,\",\")+\"){ return binder.apply(this,arguments); }\")(l),o.prototype){var v=function(){};v.prototype=o.prototype"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 57909,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":n,\"%eval%\":eval,\"%EvalError%\":u,\"%Float16Array%\":typeof Float16Array>\"u\"?t:Float16Array,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 57909,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":n,\"%eval%\":eval,\"%EvalError%\":u,\"%Float16Array%\":typeof Float16Array>\"u\"?t:Float16Array,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 92669,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 66867,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 74707,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 74707,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 100024,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": ");return Object(p)===p?p:this}else return r.apply(u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 81879,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": ");return Object(p)===p?p:this}else return r.apply(u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 101535,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 83390,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 66867,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 92669,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 81879,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": ");return Object(p)===p?p:this}else return r.apply(u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 100024,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": ");return Object(p)===p?p:this}else return r.apply(u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 83390,
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 101535,
+        "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+        "line": 2,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 425775,
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+        "line": 2,
+        "context": "on(){let g=JE.global;return x(g)},arguments)}function gs(g){let t=I(g).msCrypto;return x(t)}function ls(){return x(new Map)}function ps(g,t){return x(Function(u(g,t)))}function ws(g){return x(new Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Functi"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 425775,
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js",
+        "line": 2,
+        "context": "on(){let g=JE.global;return x(g)},arguments)}function gs(g){let t=I(g).msCrypto;return x(t)}function ls(){return x(new Map)}function ps(g,t){return x(Function(u(g,t)))}function ws(g){return x(new Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Functi"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 425919,
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+        "line": 2,
+        "context": "urn x(Function(u(g,t)))}function ws(g){return x(new Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Function(u(g,t)))}function hs(g,t,e){return x(new Uint8Array(I(g),t>>>0,e>>>0))}function fs(g){return x(new Uint8Array(g>>>0))}function ys(g){let t=I("
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 425919,
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js",
+        "line": 2,
+        "context": "urn x(Function(u(g,t)))}function ws(g){return x(new Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Function(u(g,t)))}function hs(g,t,e){return x(new Uint8Array(I(g),t>>>0,e>>>0))}function fs(g){return x(new Uint8Array(g>>>0))}function ys(g){let t=I("
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 66094,
+        "file": "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js",
+        "line": 2,
+        "context": "rray.isArray(N)}e.allowsEval=t(()=>{if(f.globalConfig.jitless||typeof navigator<\"u\"&&navigator?.userAgent?.includes(\"Cloudflare\"))return!1;try{return Function(\"\"),!0}catch{return!1}});function $(N){if(W(N)===!1)return!1;let K=N.constructor;if(K===void 0||typeof K!=\"function\")return!0;let ee=K.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 66056,
+        "file": "chunks/background-vendor/subwallet-keyring-CmCqkM03.js",
+        "line": 2,
+        "context": "rray.isArray(N)}e.allowsEval=t(()=>{if(f.globalConfig.jitless||typeof navigator<\"u\"&&navigator?.userAgent?.includes(\"Cloudflare\"))return!1;try{return Function(\"\"),!0}catch{return!1}});function $(N){if(W(N)===!1)return!1;let K=N.constructor;if(K===void 0||typeof K!=\"function\")return!0;let ee=K.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 96775,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 8488,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 78658,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 9251,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 98287,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 10844,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 0.9933333333333333,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 18679,
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "context": "ject.prototype.toString,r=Function.prototype.toString,i=/^\\s*(?:function)?\\*/,a=E6()(),o=Object.getPrototypeOf,s=function(){if(!a)return!1;try{return Function(`return function*() {}`)()}catch{}},c;t.exports=function(e){if(typeof e!=`function`)return!1;if(i.test(r.call(e)))return!0;if(!a)return n.cal"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 18671,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": "ject.prototype.toString,r=Function.prototype.toString,i=/^\\s*(?:function)?\\*/,a=lf()(),o=Object.getPrototypeOf,s=function(){if(!a)return!1;try{return Function(`return function*() {}`)()}catch{}},c;t.exports=function(e){if(typeof e!=`function`)return!1;if(i.test(r.call(e)))return!0;if(!a)return n.cal"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 21686,
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 21675,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 80170,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 23184,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 51692,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "=t.apply(this,a(c,arguments));return Object(n)===n?n:this}return t.apply(e,a(c,arguments))},d=r(0,t.length-c.length),f=[],p=0;p<d;p++)f[p]=`$`+p;if(l=Function(`binder`,`return function (`+s(f,`,`)+`){ return binder.apply(this,arguments); }`)(u),t.prototype){var m=function(){};m.prototype=t.prototype"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 51644,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "=t.apply(this,a(c,arguments));return Object(n)===n?n:this}return t.apply(e,a(c,arguments))},d=r(0,t.length-c.length),f=[],p=0;p<d;p++)f[p]=`$`+p;if(l=Function(`binder`,`return function (`+s(f,`,`)+`){ return binder.apply(this,arguments); }`)(u),t.prototype){var m=function(){};m.prototype=t.prototype"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 54410,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":i,\"%eval%\":eval,\"%EvalError%\":a,\"%Float16Array%\":typeof Float16Array>`u`?n:Float16Array,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 54344,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":i,\"%eval%\":eval,\"%EvalError%\":a,\"%Float16Array%\":typeof Float16Array>`u`?n:Float16Array,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 89429,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 63588,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 71497,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 71412,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 9254,
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 78570,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 23198,
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 80079,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 63672,
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 89331,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "ecodeURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 8489,
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 96672,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": ");return Object(r)===r?r:this}else return t.apply(e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      }
+    },
+    {
+      "score": 1.0,
+      "old": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 10850,
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "new": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "eval can be harmful.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 98181,
+        "file": "chunks/router.js",
+        "line": 12,
+        "context": "eURI%\":decodeURI,\"%decodeURIComponent%\":decodeURIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      }
+    }
+  ],
+  "removedSites": [
+    {
+      "_type": "warning",
+      "code": "DANGEROUS_EVAL",
+      "message": "The Function constructor is eval.",
+      "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+      "column": 10995,
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "line": 1,
+      "context": "=typeof jr==\"object\"&&jr&&jr.Object===Object&&jr})),V=c(((s,r)=>{var n=yt(),o=typeof self==\"object\"&&self&&self.Object===Object&&self;r.exports=n||o||Function(\"return this\")()})),cr=c(((s,r)=>{r.exports=V().Symbol})),un=c(((s,r)=>{var n=cr(),o=Object.prototype,t=o.hasOwnProperty,a=o.toString,e=n?n.t"
+    },
+    {
+      "_type": "warning",
+      "code": "DANGEROUS_EVAL",
+      "message": "The Function constructor is eval.",
+      "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+      "column": 1237,
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "line": 1,
+      "context": "c[X]=c[kt]=c[Bt]=c[Mt]=c[Rt]=!1;var Y=typeof T==\"object\"&&T&&T.Object===Object&&T,tr=typeof self==\"object\"&&self&&self.Object===Object&&self,j=Y||tr||Function(\"return this\")(),Z=typeof z==\"object\"&&z&&!z.nodeType&&z,m=Z&&typeof g==\"object\"&&g&&!g.nodeType&&g,tt=m&&m.exports===Z,k=tt&&Y.process,rt=(f"
+    },
+    {
+      "_type": "warning",
+      "code": "DANGEROUS_EVAL",
+      "message": "The Function constructor is eval.",
+      "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+      "column": 475572,
+      "file": "chunks/accounts.js",
+      "line": 16,
+      "context": "rts=typeof p==`object`&&p&&p.Object===Object&&p})),Dx=a(((e,t)=>{var n=Ex(),r=typeof self==`object`&&self&&self.Object===Object&&self;t.exports=n||r||Function(`return this`)()})),Ox=a(((e,t)=>{t.exports=Dx().Symbol})),Noe=a(((e,t)=>{var n=Ox(),r=Object.prototype,i=r.hasOwnProperty,a=r.toString,o=n?n"
+    },
+    {
+      "_type": "warning",
+      "code": "DANGEROUS_EVAL",
+      "message": "The Function constructor is eval.",
+      "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+      "column": 10243,
+      "file": "chunks/accounts.js",
+      "line": 26,
+      "context": "[v]=B[b]=B[S]=B[C]=B[w]=B[E]=!1;var V=typeof p==`object`&&p&&p.Object===Object&&p,te=typeof self==`object`&&self&&self.Object===Object&&self,H=V||te||Function(`return this`)(),ne=typeof e==`object`&&e&&!e.nodeType&&e,re=ne&&typeof t==`object`&&t&&!t.nodeType&&t,ie=re&&re.exports===ne,U=ie&&V.process"
+    }
+  ],
+  "previousArtifacts": [
+    {
+      "file": "chunks/accounts.js",
+      "sha256": "86fd4d74948c9df92e848e9cd4e69420be31ee5bc6a32f98ea5c2a5fb4ba7525"
+    },
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
+    },
+    {
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
+    },
+    {
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js",
+      "sha256": "baa0bea291c51fd9d534b4eaa2b812283e077204dfb78ec336f66d60a83e9f75"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "09605c5a25df4db60d317b748b5c00ed0a290ce17ea4b06da3ad1c73b3e23ed4"
+    },
+    {
+      "file": "chunks/usePortfolioPreferences.js",
+      "sha256": "cf811c12d2c9cf74f5f75b161e6f774a7263ae5dfac3e6b5f66320c7273edcaf"
+    }
+  ],
+  "currentArtifacts": [
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+      "sha256": "8b805bf2bc41cbf6232370997d21f418bff746a75adaef2b67f61d11992912e7"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js",
+      "sha256": "f72f61a0748a0308a6b57fe97db8f95ae57e40caaa6472210dfa67188ddcb4fc"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-CmCqkM03.js",
+      "sha256": "efa7c704a848e144914de6d6bd245627fab004e385db6f88c16137d926baeee3"
+    },
+    {
+      "file": "chunks/router.js",
+      "sha256": "23fba23f8262744183f1873eb5d81a843ff35385f927d666fc0c6c37270bb2bb"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "95aace3333330464afeb0b0e948799ea8c5055b19cd690850e6b9daff2cc847d"
+    },
+    {
+      "file": "chunks/usePortfolioPreferences.js",
+      "sha256": "d0c151b4048c4a0223b0d2469f9bdb032b5678e8666f5fc1b6b42a84fd883c9b"
+    }
+  ]
+}

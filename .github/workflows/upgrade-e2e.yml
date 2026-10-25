@@ -6,6 +6,14 @@ name: Upgrade E2E
 
 on:
   workflow_dispatch:
+    inputs:
+      scenario:
+        description: Full upgrade matrix or focused rollback diagnosis
+        type: choice
+        default: all
+        options:
+          - all
+          - R1
   schedule:
     - cron: '17 3 * * *'
   pull_request:
@@ -74,14 +82,37 @@ jobs:
           CHROME_DEVEL_SANDBOX: ${{ steps.setup-chrome.outputs.sandbox-path }}
 
       - name: Real legacy-build upgrade E2E (S1-S8, ECDSA, rollback R1 to 3.0.6)
-        run: yarn test:upgrade:e2e --out output/upgrade-e2e/ci
+        run: |
+          case "$UPGRADE_SCENARIO" in
+            all) yarn test:upgrade:e2e --out output/upgrade-e2e/ci ;;
+            R1)
+              node scripts/upgrade-e2e/build-legacy.mjs 3.0.5 3.0.6
+              node scripts/upgrade-e2e/build-head.mjs
+              node scripts/upgrade-e2e/run.mjs --out output/upgrade-e2e/ci R1
+              ;;
+            *) echo 'Unknown upgrade scenario'; exit 1 ;;
+          esac
         env:
+          # PR and scheduled runs always keep the complete matrix. The manual choice
+          # makes a failing rollback reproducible without rebuilding unrelated releases.
+          UPGRADE_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.scenario || 'all' }}
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
           CHROME_DEVEL_SANDBOX: ${{ steps.setup-chrome.outputs.sandbox-path }}
 
       - name: Report
         if: always()
         run: cat output/upgrade-e2e/ci/report.json || true
+
+      - name: Preserve compiled inputs for focused rollback diagnosis
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.scenario == 'R1'
+        run: |
+          mkdir -p output/upgrade-e2e/ci
+          if [[ -d "$HOME/.cache/fearless-upgrade-e2e/3.0.6/build" ]]; then
+            tar -czf output/upgrade-e2e/ci/legacy-3.0.6-build.tar.gz -C "$HOME/.cache/fearless-upgrade-e2e/3.0.6" build provenance.json
+          fi
+          if [[ -d dist/extension/chrome-upgrade-e2e ]]; then
+            tar -czf output/upgrade-e2e/ci/head-build.tar.gz -C dist/extension chrome-upgrade-e2e
+          fi
 
       # Explicit allowlist: no browser profiles, storage dumps, test keyrings or wallet snapshots.
       - name: Preserve upgrade report and sanitized browser diagnostics
@@ -92,5 +123,7 @@ jobs:
           path: |
             output/upgrade-e2e/ci/report.json
             output/upgrade-e2e/ci/*/browser-diagnostics.json
+            output/upgrade-e2e/ci/legacy-3.0.6-build.tar.gz
+            output/upgrade-e2e/ci/head-build.tar.gz
           if-no-files-found: warn
           retention-days: 7

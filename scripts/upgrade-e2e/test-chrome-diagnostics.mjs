@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
-import { captureBrowserDiagnostics, createBrowserDiagnostics, extensionDiagnosticInfo, extensionWorkerId } from './browser-diagnostics.mjs';
+import { runInNewContext } from 'node:vm';
+import { captureBrowserDiagnostics, classifyRuntimeError, createBrowserDiagnostics, diagnosticLocation, extensionDiagnosticInfo, extensionInspectorSource, extensionWorkerId, installedDiagnosticSources } from './browser-diagnostics.mjs';
 
 const SECRET = 'private-wallet-value-that-must-never-be-persisted';
 const child = () => Object.assign(new EventEmitter(), { stderr: new PassThrough() });
@@ -143,4 +144,84 @@ test('diagnostics identify the wallet background worker instead of the first com
     { type: 'service_worker', url: `chrome-extension://${id}/background.js` },
   ]), id);
   assert.equal(extensionWorkerId([{ type: 'service_worker', url: 'https://example.invalid/background.js' }]), undefined);
+});
+
+
+test('source allowlist contains only real installed script/page files and never follows symlinks', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'upgrade-source-allowlist-'));
+  try {
+    mkdirSync(join(dir, 'assets'));
+    for (const file of ['background.js', 'popup.html', 'assets/runtime-abc123.js', 'assets/codec.wasm', 'wallet.json', 'source.map'])
+      writeFileSync(join(dir, file), 'fixture');
+    symlinkSync(join(dir, 'background.js'), join(dir, 'linked.js'));
+    assert.deepEqual([...installedDiagnosticSources(dir)].sort(), ['assets/codec.wasm', 'assets/runtime-abc123.js', 'background.js', 'popup.html']);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('installed and previous-build JS paths survive sanitization while host/query/fragment and unknown paths do not', () => {
+  const sourceFiles = { current: new Set(['assets/current-123.js']), previous: new Set(['assets/retired-456.js']) };
+  for (const [file, build] of [['assets/current-123.js', 'current'], ['assets/retired-456.js', 'previous']]) {
+    const result = diagnosticLocation(`chrome-extension://${'a'.repeat(32)}/${file}?${SECRET}#${SECRET}`, sourceFiles);
+    assert.deepEqual(result, { scheme: 'extension', page: 'other', path: file, build });
+    assert(!JSON.stringify(result).includes(SECRET));
+  }
+  const unknown = diagnosticLocation(`chrome-extension://${'a'.repeat(32)}/${SECRET}.js`, sourceFiles);
+  assert.deepEqual(unknown, { scheme: 'extension', page: 'other' });
+});
+
+test('fixed runtime categories distinguish missing chunks, module loading, CSP, network, ports and JS errors without retaining messages', () => {
+  const cases = [
+    ['Failed to load resource: net::ERR_FILE_NOT_FOUND', 'resource-not-found'],
+    ['Failed to fetch dynamically imported module: chrome-extension://a/assets/old.js', 'module-load'],
+    ['Failed to load module script: Expected a JavaScript module script', 'module-load'],
+    ['Refused to load the script because it violates the following Content Security Policy directive', 'csp-blocked'],
+    ['Failed to load resource: net::ERR_NAME_NOT_RESOLVED', 'network-load'],
+    ['Uncaught Error: Extension context invalidated.', 'extension-context-invalidated'],
+    ['Could not establish connection. Receiving end does not exist.', 'port-disconnected'],
+    ['Uncaught SyntaxError: Unexpected token', 'syntax-error'],
+    ['Uncaught ReferenceError: missing is not defined', 'reference-error'],
+    ['Uncaught TypeError: Cannot read properties of undefined', 'type-error'],
+    ['SyntaxError: Unexpected token at JSON.parse', 'json-parse'],
+    ['Unsupported keypair type', 'unsupported-key-type'],
+    ['Keyring initialization failed', 'keyring-error'],
+    ['Unable to decrypt encrypted key', 'crypto-error'],
+    ['scrypt initialization failed', 'crypto-error'],
+  ];
+  for (const [message, category] of cases) assert.equal(classifyRuntimeError(`${message} ${SECRET}`), category);
+  assert.equal(classifyRuntimeError(SECRET), 'other');
+});
+
+test('actual inspector expression aggregates all 35 errors but returns only the latest 10 classified records without message text', async () => {
+  const messageSecret = 'sensitive-message-material';
+  const errors = Array.from({ length: 35 }, (_, id) => ({
+    id, type: 'RUNTIME', severity: 'ERROR',
+    message: `${id < 30 ? 'Uncaught TypeError: Cannot read properties of undefined' : 'Failed to load resource: net::ERR_FILE_NOT_FOUND'} ${messageSecret}`,
+    source: `chrome-extension://${'a'.repeat(32)}/assets/retired-456.js?${SECRET}`,
+    stackTrace: [{ url: `chrome-extension://${'a'.repeat(32)}/assets/retired-456.js#${SECRET}`, lineNumber: id, columnNumber: 1 }],
+  }));
+  const raw = await runInNewContext(extensionInspectorSource('a'.repeat(32)), {
+    chrome: { developerPrivate: { getExtensionInfo: (_id, callback) => callback({ state: 'ENABLED', version: '3.0.6', runtimeErrors: errors, manifestErrors: [] }) } },
+  });
+  assert(!JSON.stringify(raw).includes(messageSecret), 'raw messages must not even cross DevTools');
+  const value = extensionDiagnosticInfo(raw, { current: new Set(['background.js']), previous: new Set(['assets/retired-456.js']) });
+  assert.equal(value.runtimeErrorCount, 35);
+  assert.deepEqual(value.runtimeCategoryCounts, { 'resource-not-found': 5, 'type-error': 30 });
+  assert.deepEqual(value.runtimeErrors.map(error => error.id), Array.from({ length: 10 }, (_, i) => i + 25));
+  assert.equal(value.runtimeErrors.at(-1).type, 'RUNTIME');
+  assert.equal(value.runtimeErrors.at(-1).source.path, 'assets/retired-456.js');
+  assert.equal(value.runtimeErrors.at(-1).source.build, 'previous');
+  assert.equal(value.runtimeErrors.at(-1).frames[0].line, 34);
+  assert(!JSON.stringify(value).includes(SECRET));
+  assert(!JSON.stringify(value).includes(messageSecret));
+});
+
+test('unknown category/type/severity keys cannot smuggle arbitrary strings into persisted diagnostics', () => {
+  const value = extensionDiagnosticInfo({
+    runtimeCategoryCounts: { [SECRET]: 3, 'module-load': 2, 'network-load': SECRET },
+    runtimeErrors: [{ type: SECRET, severity: SECRET, category: SECRET, source: SECRET }],
+  });
+  assert.deepEqual(value.runtimeCategoryCounts, { 'module-load': 2 });
+  assert.equal(value.runtimeErrors[0].type, 'other');
+  assert.equal(value.runtimeErrors[0].category, 'other');
+  assert(!JSON.stringify(value).includes(SECRET));
 });

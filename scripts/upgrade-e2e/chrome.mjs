@@ -9,7 +9,7 @@ import { TEST_OAUTH_CLIENT_ID } from './config.mjs';
 import { cdp } from './cdp.mjs';
 import { coldProbeSource } from './cold-probe.mjs';
 import { stopOwnedProcess } from './process-lifecycle.mjs';
-import { captureBrowserDiagnostics, createBrowserDiagnostics, extensionWorkerId } from './browser-diagnostics.mjs';
+import { captureBrowserDiagnostics, createBrowserDiagnostics, extensionInspectorSource, extensionWorkerId, installedDiagnosticSources } from './browser-diagnostics.mjs';
 export { cdp } from './cdp.mjs';
 
 /** CHROME_BIN, else the newest Chrome for Testing in Playwright's cache. Branded Chrome ignores --load-extension. */
@@ -59,6 +59,13 @@ export const NO_NETWORK = 'MAP * ~NOTFOUND , EXCLUDE localhost';
 const browserDiagnostics = new Map();
 
 export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) => {
+  const earlier = browserDiagnostics.get(port);
+  const previous = earlier?.extDir === extDir ? earlier : undefined;
+  const currentSources = installedDiagnosticSources(extDir);
+  const sourceFiles = {
+    current: currentSources,
+    previous: new Set([...(previous?.knownSources ?? [])].filter((file) => !currentSources.has(file))),
+  };
   const child = spawn(
     CHROME,
     [
@@ -79,9 +86,11 @@ export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) 
     ],
     { stdio: ['ignore', 'ignore', 'pipe'] }
   );
-  browserDiagnostics.set(port, { recorder: createBrowserDiagnostics(child, {
-    file: join(dirname(extDir), 'browser-diagnostics.json'),
-  }) });
+  browserDiagnostics.set(port, {
+    extDir, extId: previous?.extId,
+    knownSources: new Set([...sourceFiles.previous, ...currentSources]),
+    recorder: createBrowserDiagnostics(child, { file: join(dirname(extDir), 'browser-diagnostics.json'), sourceFiles }),
+  });
   return child;
 };
 
@@ -147,14 +156,7 @@ export async function collectBrowserDiagnostics(port, reason) {
         page = cdp(target.webSocketDebuggerUrl, { timeoutMs: 1000, connectTimeoutMs: 1000 });
         await page.ready;
         await waitFor(() => page.eval('!!globalThis.chrome?.developerPrivate?.getExtensionInfo'), 750, 'extension inspector');
-        return await page.eval(`new Promise((resolve) => chrome.developerPrivate.getExtensionInfo(${JSON.stringify(entry.extId)}, (info) => resolve(info && ({
-          state: info.state, version: info.version,
-          runtimeErrorCount: (info.runtimeErrors || []).length, manifestErrorCount: (info.manifestErrors || []).length,
-          runtimeErrors: (info.runtimeErrors || []).slice(0, 5).map((error) => ({
-            severity: error.severity, source: error.source,
-            frames: (error.stackTrace || []).slice(0, 5).map((frame) => ({ url: frame.url, line: frame.lineNumber, column: frame.columnNumber }))
-          }))
-        }))))`);
+        return await page.eval(extensionInspectorSource(entry.extId));
       } finally {
         signal.removeEventListener('abort', close);
         close();

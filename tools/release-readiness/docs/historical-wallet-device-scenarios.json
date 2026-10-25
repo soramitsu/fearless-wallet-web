@@ -1,0 +1,2425 @@
+{
+  "schemaVersion": 1,
+  "sourceRepository": "soramitsu/fearless-auto-tests",
+  "purpose": "Preserve historical wallet device-test scenario intent while retiring the external Appium/Selenide/Jenkins harness.",
+  "coverageStatus": "Historical method-name inventory across all 15 preserved source heads, including setup/helper methods. This is not an executable suite or evidence that current native tests cover every scenario.",
+  "retainedContent": "Source paths, method names and exact historical revisions; fixture values and obsolete page objects are excluded.",
+  "sources": [
+    {
+      "branch": "detached",
+      "revision": "ab13e8e16b40a129adf7973cb5fe712627e41653",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Staking.java",
+          "methods": [
+            "soraStaking"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "dev",
+      "revision": "b08f8bceecb7a273e3d09db965f7466984e618e4",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/NetworkManagement.java",
+          "methods": [
+            "switchNetworksMainScreen",
+            "markNetworkAsFavorite",
+            "initAssetsNetworkFavoriteMode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Settings.java",
+          "methods": [
+            "switchCurrency"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/StakingSora.java",
+          "methods": [
+            "soraMainNetCheckStake",
+            "soraStartStaking",
+            "soraStakeMore",
+            "soraStakeLess",
+            "soraUnstake",
+            "soraStakingRedeem"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "assertCleanUp",
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON",
+            "switchNodeAutoSelectNodeOn",
+            "switchNodeAddingNode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "dev-test",
+      "revision": "05372c0ae3afd5dd146a1c163f440cb83c74e4dc",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/NetworkManagement.java",
+          "methods": [
+            "switchNetworksMainScreen",
+            "markNetworkAsFavorite",
+            "initAssetsNetworkFavoriteMode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Settings.java",
+          "methods": [
+            "switchCurrency"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/StakingSora.java",
+          "methods": [
+            "soraMainNetCheckStake",
+            "soraStartStaking",
+            "soraStakeMore",
+            "soraStakeLess",
+            "soraUnstake",
+            "soraStakingRedeem"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "assertCleanUp",
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON",
+            "switchNodeAutoSelectNodeOn",
+            "switchNodeAddingNode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "fearless-selenide",
+      "revision": "0e2c49674466469768b9a0124035323668ad58fb",
+      "tests": [
+        {
+          "path": "src/test/java/android/BaseAndroid2.java",
+          "methods": [
+            "setUp"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidPolkascan.java",
+          "methods": [
+            "Step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step4ThreeDots",
+            "step5ViewInPolkascan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSett.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step5ThreeDots",
+            "step6CopyAddress",
+            "step7ThreeDots",
+            "step8GoBack"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettAbout.java",
+          "methods": [
+            "step1Import",
+            "step2About"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettCurrency.java",
+          "methods": [
+            "step1Import",
+            "step2Currency",
+            "step3CurrencyChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettLanguage.java",
+          "methods": [
+            "step1Import",
+            "step2Language",
+            "step3LanguageChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettPin.java",
+          "methods": [
+            "step1Import",
+            "step2ChangePinCodeButton",
+            "step3EnterCurrentPinCode",
+            "step4CreateNewPinCode"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettWallet.java",
+          "methods": [
+            "step1Import",
+            "step2Wallets",
+            "step3ChoosingWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSubscan.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step5ThreeDots",
+            "step6ViewInSubscan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/Anew.java",
+          "methods": [
+            "closeOnboardingPage0"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/ImportAndroid.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseAsset"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/SettingsIOS.java",
+          "methods": [
+            "test",
+            "step1typePinCode",
+            "test",
+            "step2Settings",
+            "test",
+            "step3NameOfWallet",
+            "test",
+            "step4Dots"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/BaseIOS.java",
+          "methods": [
+            "beforeTest"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/Example.java",
+          "methods": [
+            "beforeTest",
+            "test"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/ImportIos.java",
+          "methods": [
+            "test"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "fearless-selenide-elen",
+      "revision": "1a994b8d553bb4b44c62111c2159cb6cb99b8ca9",
+      "tests": [
+        {
+          "path": "src/test/java/android/BaseAndroid2.java",
+          "methods": [
+            "setUp",
+            "tearDown"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidPolkascan.java",
+          "methods": [
+            "Step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step4ThreeDots",
+            "step5ViewInPolkascan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSett.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step5ThreeDots",
+            "step6CopyAddress",
+            "step7ThreeDots",
+            "step8GoBack"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettAbout.java",
+          "methods": [
+            "step1Import",
+            "step2About"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettCurrency.java",
+          "methods": [
+            "step1Import",
+            "step2Currency",
+            "step3CurrencyChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettLanguage.java",
+          "methods": [
+            "step1Import",
+            "step2Language",
+            "step3LanguageChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettPin.java",
+          "methods": [
+            "step1Import",
+            "step2ChangePinCodeButton",
+            "step3EnterCurrentPinCode",
+            "step4CreateNewPinCode"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettWallet.java",
+          "methods": [
+            "step1Import",
+            "step2Wallets",
+            "step3ChoosingWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSubscan.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step5ThreeDots",
+            "step6ViewInSubscan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/Anew.java",
+          "methods": [
+            "closeOnboardingPage0"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/ImportAndroid.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseAsset"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/SettingsIOS.java",
+          "methods": [
+            "test",
+            "step1typePinCode",
+            "test",
+            "step2Settings",
+            "test",
+            "step3NameOfWallet",
+            "test",
+            "step4Dots"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/BaseIOS.java",
+          "methods": [
+            "beforeTest"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/Example.java",
+          "methods": [
+            "beforeTest",
+            "test"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/ImportIos.java",
+          "methods": [
+            "test"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "fearless-selenide2",
+      "revision": "88d20fa8498983f2adfbea30d9a21e731cdc4a55",
+      "tests": [
+        {
+          "path": "src/test/java/android/BaseAndroid.java",
+          "methods": [
+            "setUp",
+            "tearDown",
+            "tearDown",
+            "SendKey",
+            "WaitingInMilliseconds",
+            "Click",
+            "Click"
+          ]
+        },
+        {
+          "path": "src/test/java/android/BaseAndroid2.java",
+          "methods": [
+            "setUp2",
+            "tearDown",
+            "SendKey",
+            "WaitingInMilliseconds",
+            "Click",
+            "Click"
+          ]
+        },
+        {
+          "path": "src/test/java/android/Platform.java",
+          "methods": [
+            "isAndroid",
+            "isIOS"
+          ]
+        },
+        {
+          "path": "src/test/java/android/Precondition.java",
+          "methods": [
+            "globalSetUp",
+            "setUp",
+            "tearDown",
+            "swipe",
+            "WaitingElementOnTheScreen",
+            "WaitingElementOnTheScreen",
+            "SendKey",
+            "SendKey",
+            "WaitingInMilliseconds",
+            "Click",
+            "Click"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/ConfirmMnemonicPage.java",
+          "methods": [
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testH",
+            "testI",
+            "testZ"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/CreateImportWalletPage.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/MnemonicPhrasePage.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR",
+            "testS",
+            "testT",
+            "testU",
+            "testW",
+            "testZ"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/importWallet.java",
+          "methods": [
+            "ImportAccount"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/about/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "Test1",
+            "Test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/appVersion.java",
+          "methods": [
+            "test0",
+            "test1"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/currency/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/language/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/pinCode/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/polkaswapDisclaimer/elementsVisible.java",
+          "methods": [
+            "TestA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testP",
+            "testQ",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/wallet/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/detailsOfAsset/copyAddress.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/detailsOfAsset/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/detailsOfAsset/send.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR",
+            "testS",
+            "testT",
+            "testU",
+            "testV"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/swipeActions/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/swipeActions/receive2.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/addDeleteNewWallet.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/birdIcon.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/changeCurrency.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testF",
+            "testG"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/changeNetworkAndCopy.java",
+          "methods": [
+            "test0",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/dotsOnTheWalletsList.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/mainScreen.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/android/screens/ConfirmMnemonic.java",
+          "methods": [
+            "setCorrectStringMnemonicPhrase",
+            "pressSkipProcess"
+          ]
+        },
+        {
+          "path": "src/test/java/android/staking/mainScreen.java",
+          "methods": [
+            "TestA",
+            "TestB",
+            "TestC",
+            "testD",
+            "testE",
+            "testF"
+          ]
+        },
+        {
+          "path": "src/test/java/android/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/android/tests/Token.java",
+          "methods": [
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen"
+          ]
+        },
+        {
+          "path": "src/test/java/android/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/BaseIOS.java",
+          "methods": [
+            "beforeTest",
+            "tearDown"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/importWallet/ConfirmMnemonicPage.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testK",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/importWallet/CreateImportWalletPage.java",
+          "methods": [
+            "test0",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/importWallet/ImportIos.java",
+          "methods": [
+            "test1",
+            "test2importWallet",
+            "test3EnterPin"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/detailsOfAsset/copyAddress.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/detailsOfAsset/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/detailsOfAsset/send.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR",
+            "testS",
+            "testT",
+            "testU",
+            "testV"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/swipeActions/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/addDeleteNewWallet.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/birdIcon.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testI",
+            "testK"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/changeCurrency.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testF",
+            "testG"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/changeNetworkAndCopy.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testZ"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/dotsOnTheWalletsList.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testI"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/mainScreen.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testI",
+            "testL",
+            "testM",
+            "testP",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/RenameWallet/renameWallet.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/about/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/appVersion.java",
+          "methods": [
+            "VersionOfTheApp"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/currency/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/language/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/logout/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/polkaswapDisclaimer/elementsVisible.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testP",
+            "testQ",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/wallets/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "fearless-test",
+      "revision": "348f96b895ab93ff6a1497d4fdafc7290e09879a",
+      "tests": [
+        {
+          "path": "src/test/java/android/BaseAndroid2.java",
+          "methods": [
+            "setUp"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidPolkascan.java",
+          "methods": [
+            "Step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step4ThreeDots",
+            "step5ViewInPolkascan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSett.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step5ThreeDots",
+            "step6CopyAddress",
+            "step7ThreeDots",
+            "step8GoBack"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettAbout.java",
+          "methods": [
+            "step1Import",
+            "step2About"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettCurrency.java",
+          "methods": [
+            "step1Import",
+            "step2Currency",
+            "step3CurrencyChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettLanguage.java",
+          "methods": [
+            "step1Import",
+            "step2Language",
+            "step3LanguageChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettPin.java",
+          "methods": [
+            "step1Import",
+            "step2ChangePinCodeButton",
+            "step3EnterCurrentPinCode",
+            "step4CreateNewPinCode"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettWallet.java",
+          "methods": [
+            "step1Import",
+            "step2Wallets",
+            "step3ChoosingWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSubscan.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseSettings",
+            "step3NameOfWallet",
+            "step5ThreeDots",
+            "step6ViewInSubscan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/Anew.java",
+          "methods": [
+            "closeOnboardingPage0"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/ImportAndroid.java",
+          "methods": [
+            "step1Import",
+            "step2ChooseAsset"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/SettingsIOS.java",
+          "methods": [
+            "test",
+            "step1typePinCode",
+            "test",
+            "step2Settings",
+            "test",
+            "step3NameOfWallet",
+            "test",
+            "step4Dots"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/BaseIOS.java",
+          "methods": [
+            "beforeTest"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/Example.java",
+          "methods": [
+            "beforeTest",
+            "test"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/ImportIos.java",
+          "methods": [
+            "test"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "fearless-test-lena-fix",
+      "revision": "e0c16d96c42dd519153698bff87d27ea696d111c",
+      "tests": [
+        {
+          "path": "src/test/java/android/BaseAndroid2.java",
+          "methods": [
+            "setUp"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidPolkascan.java",
+          "methods": [
+            "test1",
+            "Step1Import",
+            "Step2ChooseSettings",
+            "Step3NameOfWallet",
+            "Step4ThreeDots",
+            "Step5ViewInPolkascan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSett.java",
+          "methods": [
+            "Step1Import",
+            "Step2ChooseSettings",
+            "Step3NameOfWallet",
+            "Step5ThreeDots",
+            "Step6CopyAddress",
+            "Step7ThreeDots",
+            "Step8GoBack"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettAbout.java",
+          "methods": [
+            "Step1Import",
+            "Step2About"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettCurrency.java",
+          "methods": [
+            "Step1Import",
+            "Step2Currency",
+            "Step3CurrencyChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettLanguage.java",
+          "methods": [
+            "Step1Import",
+            "Step2Language",
+            "Step3LanguageChanging"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettPin.java",
+          "methods": [
+            "Step1Import",
+            "Step2ChangePinCodeButton",
+            "Step3EnterCurrentPinCode",
+            "Step4CreateNewPinCode"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSettWallet.java",
+          "methods": [
+            "Step1Import",
+            "Step2Wallets",
+            "Step3ChoosingWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/AndroidSubscan.java",
+          "methods": [
+            "Step1Import",
+            "Step2ChooseSettings",
+            "Step3NameOfWallet",
+            "Step5ThreeDots",
+            "Step6ViewInSubscan"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/BaseAndroid.java",
+          "methods": [
+            "setUp"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/BaseIOS.java",
+          "methods": [
+            "beforeTest"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/ImportAndroid.java",
+          "methods": [
+            "Step1Import",
+            "Step2ChooseAsset"
+          ]
+        },
+        {
+          "path": "src/test/java/android/settings/SettingsIOS.java",
+          "methods": [
+            "test",
+            "Step1typePinCode",
+            "test",
+            "Step2Settings",
+            "test",
+            "Step3NameOfWallet",
+            "test",
+            "Step4Dots"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/BaseIOS.java",
+          "methods": [
+            "beforeTest"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/Example.java",
+          "methods": [
+            "beforeTest",
+            "test"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/ImportIos.java",
+          "methods": [
+            "test"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "fix/jenkins",
+      "revision": "404a6b521c753c57b83025512a89bd19069d9a28",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/NetworkManagement.java",
+          "methods": [
+            "switchNetworksMainScreen",
+            "markNetworkAsFavorite",
+            "initAssetsNetworkFavoriteMode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Settings.java",
+          "methods": [
+            "switchCurrency"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/StakingSora.java",
+          "methods": [
+            "soraMainNetCheckStake",
+            "soraStartStaking",
+            "soraStakeMore",
+            "soraStakeLess",
+            "soraUnstake",
+            "soraStakingRedeem"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "assertCleanUp",
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON",
+            "switchNodeAutoSelectNodeOn",
+            "switchNodeAddingNode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "ios-token-fix",
+      "revision": "3487e3f60d54cfd007d8cd8462d5e850277ad4e7",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Staking.java",
+          "methods": [
+            "soraStaking"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "kusama-staking",
+      "revision": "2664587f0b1717fe1524560897e5132c540dfc79",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/NetworkManagement.java",
+          "methods": [
+            "switchNetworksMainScreen",
+            "markNetworkAsFavorite",
+            "initAssetsNetworkFavoriteMode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Settings.java",
+          "methods": [
+            "switchCurrency"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "assertCleanUp",
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON",
+            "switchNodeAutoSelectNodeOn",
+            "switchNodeAddingNode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/staking/StakingKusama.java",
+          "methods": [
+            "kusamaCheckStake",
+            "kusamaPoolCheckStake"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/staking/StakingPolkadot.java",
+          "methods": [
+            "polkadotCheckStake",
+            "polkadotPoolCheckStake"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/staking/StakingSora.java",
+          "methods": [
+            "soraMainNetCheckStake",
+            "soraStartStaking",
+            "soraStakeMore",
+            "soraStakeLess",
+            "soraUnstake",
+            "soraStakingRedeem"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/staking/StakingWestend.java",
+          "methods": [
+            "westendStartStaking",
+            "westendStakeMore",
+            "westendStakeLess",
+            "westendUnstake",
+            "westendStakingRedeem"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/staking/StakingWestendPoolCreate.java",
+          "methods": [
+            "westendPoolCreatePool",
+            "westendStakeMore",
+            "westendStakeLess",
+            "westendUnstake"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/staking/StakingWestendPoolJoin.java",
+          "methods": [
+            "westendPoolJoinPool",
+            "westendStakeMore",
+            "westendStakeLess",
+            "westendUnstake"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "master",
+      "revision": "26e496e9c70ae02afdf55a014518960836a32ea9",
+      "tests": []
+    },
+    {
+      "branch": "michael",
+      "revision": "5b3bd63b63db148055d44beb56ab89d31eb99ca3",
+      "tests": [
+        {
+          "path": "src/test/java/android/BaseAndroid.java",
+          "methods": [
+            "setUp",
+            "tearDown",
+            "tearDown",
+            "SendKey",
+            "WaitingInMilliseconds",
+            "Click",
+            "Click"
+          ]
+        },
+        {
+          "path": "src/test/java/android/BaseAndroid2.java",
+          "methods": [
+            "setUp2",
+            "tearDown",
+            "SendKey",
+            "WaitingInMilliseconds",
+            "Click",
+            "Click"
+          ]
+        },
+        {
+          "path": "src/test/java/android/Precondition.java",
+          "methods": [
+            "setUp",
+            "tearDown",
+            "WaitingElementOnTheScreen",
+            "WaitingElementOnTheScreen",
+            "SendKey",
+            "WaitingInMilliseconds",
+            "Click",
+            "Click"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/ConfirmMnemonicPage.java",
+          "methods": [
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testH",
+            "testI",
+            "testZ"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/CreateImportWalletPage.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/MnemonicPhrasePage.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR",
+            "testS",
+            "testT",
+            "testU",
+            "testW",
+            "testZ"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/importWallet.java",
+          "methods": [
+            "ImportAccount"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/about/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "Test1",
+            "Test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/appVersion.java",
+          "methods": [
+            "test0",
+            "test1"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/currency/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/language/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/pinCode/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/polkaswapDisclaimer/elementsVisible.java",
+          "methods": [
+            "TestA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testP",
+            "testQ",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/android/importWallet/settings/wallet/elementsVisible.java",
+          "methods": [
+            "Test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/detailsOfAsset/copyAddress.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/detailsOfAsset/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/detailsOfAsset/send.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR",
+            "testS",
+            "testT",
+            "testU",
+            "testV"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/swipeActions/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/swipeActions/receive2.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/addDeleteNewWallet.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/birdIcon.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/changeCurrency.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testF",
+            "testG"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/changeNetworkAndCopy.java",
+          "methods": [
+            "test0",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/dotsOnTheWalletsList.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE"
+          ]
+        },
+        {
+          "path": "src/test/java/android/mainScreen/wallet/mainScreen.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/android/screens/BackupMnemonic.java",
+          "methods": [
+            "confirmMnemonicSkip"
+          ]
+        },
+        {
+          "path": "src/test/java/android/screens/ConfirmMnemonic.java",
+          "methods": [
+            "pressSkipProcess"
+          ]
+        },
+        {
+          "path": "src/test/java/android/staking/mainScreen.java",
+          "methods": [
+            "TestA",
+            "TestB",
+            "TestC",
+            "testD",
+            "testE",
+            "testF"
+          ]
+        },
+        {
+          "path": "src/test/java/android/tests/Token.java",
+          "methods": [
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen"
+          ]
+        },
+        {
+          "path": "src/test/java/android/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/BaseIOS.java",
+          "methods": [
+            "beforeTest",
+            "tearDown"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/importWallet/ConfirmMnemonicPage.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testK",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/importWallet/CreateImportWalletPage.java",
+          "methods": [
+            "test0",
+            "test2",
+            "test3",
+            "test4"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/importWallet/ImportIos.java",
+          "methods": [
+            "test1",
+            "test2importWallet",
+            "test3EnterPin"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/detailsOfAsset/copyAddress.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/detailsOfAsset/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/detailsOfAsset/send.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO",
+            "testP",
+            "testR",
+            "testS",
+            "testT",
+            "testU",
+            "testV"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/swipeActions/receive.java",
+          "methods": [
+            "test0",
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/addDeleteNewWallet.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testO"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/birdIcon.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testI",
+            "testK"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/changeCurrency.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testF",
+            "testG"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/changeNetworkAndCopy.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testD",
+            "testE",
+            "testZ"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/dotsOnTheWalletsList.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testI"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/mainScreen/wallet/mainScreen.java",
+          "methods": [
+            "test0",
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testI",
+            "testL",
+            "testM",
+            "testP",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/RenameWallet/renameWallet.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/about/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/appVersion.java",
+          "methods": [
+            "VersionOfTheApp"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/currency/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/language/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/logout/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/polkaswapDisclaimer/elementsVisible.java",
+          "methods": [
+            "testA",
+            "testB",
+            "testC",
+            "testD",
+            "testE",
+            "testF",
+            "testG",
+            "testH",
+            "testI",
+            "testJ",
+            "testK",
+            "testL",
+            "testM",
+            "testN",
+            "testP",
+            "testQ",
+            "testR"
+          ]
+        },
+        {
+          "path": "src/test/java/ios/settings/wallets/elementsVisible.java",
+          "methods": [
+            "test1",
+            "test2",
+            "test3",
+            "test4",
+            "test5",
+            "test6",
+            "test7",
+            "test8",
+            "test9"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "study/first_test",
+      "revision": "b175a47f8daeff505e1e4989c428139142c3f2a4",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/NetworkManagement.java",
+          "methods": [
+            "switchNetworksMainScreen",
+            "markNetworkAsFavorite",
+            "initAssetsNetworkFavoriteMode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Settings.java",
+          "methods": [
+            "switchCurrency"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/StakingSora.java",
+          "methods": [
+            "soraStartStaking",
+            "soraStakeMore",
+            "soraStakeLess",
+            "soraUnstake"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "assertCleanUp",
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen",
+            "verifyExportAccountFromDetailScreenTokenMnemonicPhrase",
+            "verifyExportAccountFromDetailScreenTokenRawSeed",
+            "verifyExportAccountFromDetailScreenTokenJSON",
+            "switchNodeAutoSelectNodeOn",
+            "switchNodeAddingNode"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    },
+    {
+      "branch": "support/android-swipe-fix",
+      "revision": "b1e3562699ad6e9d7aabc213ab83586dc0da312f",
+      "tests": [
+        {
+          "path": "src/test/java/tests/ImportAccount.java",
+          "methods": [
+            "importMnemonicPhrase",
+            "importRawSeed",
+            "importRawSeedWithoutMoonbeam",
+            "importJson",
+            "importJsonWithoutMoonbeam"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Staking.java",
+          "methods": [
+            "soraStaking"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Token.java",
+          "methods": [
+            "verifyTokenDetail",
+            "verifyFilterOnTheDetailScreen",
+            "verifyDetailsOfTransferTransactionScreen"
+          ]
+        },
+        {
+          "path": "src/test/java/tests/Wallet.java",
+          "methods": [
+            "createNewWallet"
+          ]
+        }
+      ]
+    }
+  ]
+}

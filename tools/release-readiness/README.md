@@ -9,3 +9,5 @@ The workspace manifest contains the four retained public repositories: iOS, Andr
 Cross-platform vector checks can be run with `node scripts/verify-universal-wallet-vectors.mjs /path/to/workspace`.
 
 The broader historical release-audit scripts, plan, and nested `.github` workflow contracts are retained for migration and evidence compatibility. They describe the earlier multi-repository deployment process and are not active GitHub workflows at this nested location. Use the platform repositories' current CI gates for source integration. Deployment/publication migration remains separate from these source checks; do not treat an old readiness result as approval of a new platform revision. The previous setup instructions are preserved in `docs/pre-consolidation-readme.md`.
+
+The [historical wallet device scenario inventory](docs/historical-wallet-device-scenarios.json) preserves the useful import, export, network, staking, and pool scenarios from the retired external test harness. It records source revisions and method names without fixture values. It is a planning reference, not evidence of current native device-test coverage.

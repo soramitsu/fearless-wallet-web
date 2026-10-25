@@ -138,7 +138,7 @@ How they were made (2026-10-10, WK-9 lane):
   cut at the last write the released build made (`lastLegacyWriteSequence`).
   The WalletConnect keychain record is left out (`omittedKeys`); it holds no
   wallet key.
-- The 3.0.5 profiles come from commit `600a64d5` (`origin/stage`). The Chrome
+- The 3.0.5 profiles come from commit `600a64d5` (`archive/upgrade-source-3.0.5`). The Chrome
   Web Store package was built from `129807f0` (`origin/master`); the keyring and
   storage code is the same in both, and `129807f0` adds only the phrase upload
   (`fetchJettonInfo`, the unlock-time call and the secret-returning

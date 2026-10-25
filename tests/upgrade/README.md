@@ -74,7 +74,7 @@ broadcast, and the collection host of the published 3.0.5 is never resolvable.
 
 | id | commit | why |
 | --- | --- | --- |
-| 3.0.5 | `600a64d5` (`origin/stage`) | 3.0.5's keyring and storage code **without** the phrase upload the Web Store package (`129807f0`) carries. `129807f0` and the published package are never built or run. |
+| 3.0.5 | `600a64d5` (`archive/upgrade-source-3.0.5`) | 3.0.5's keyring and storage code **without** the phrase upload the Web Store package (`129807f0`) carries. `129807f0` and the published package are never built or run. |
 | 3.0.6 | `cfcdb591` (`hotfix/3.0.6`) | The clean rollback target: the published 3.0.5 minus the upload path, with AUDIT-01, AUDIT-02 (TON phrases stored as version 2, or version 3 for an earlier password) and the availability fixes. R1 rolls back to it. Builds before it read only version 1 TON records, which 4.2.0 no longer writes. |
 | 2.7.1 | `39541eb7` | First release with a master password. |
 | 2.6.3 | `1d515acf` | Last release with per-account passwords. |

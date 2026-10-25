@@ -67,6 +67,8 @@ export interface NetworkScanState {
   lastSuccess?: number;
   stale: boolean;
   error?: string;
+  /** Canonical assets still needing a successful scan, including across restarts. */
+  failedAssetKeys?: string[];
   coverage: 'complete' | 'catalogOnly' | 'limited';
 }
 

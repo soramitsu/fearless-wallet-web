@@ -23,6 +23,9 @@ export async function captureJsonRecoveryNotice({ cdp, extensionId, send, addres
     await fs.mkdir(outputDir, { recursive: true });
     await cdp.send('Page.navigate', { url: `chrome-extension://${extensionId}/popup.html` }, sessionId);
     await wait(`Boolean(${APP}) && ${APP}.pinia._s.get('accounts')?.selectedWallet.isMnemonicUnverified === true`, 'actual restored account recovery status');
+    await wait('Boolean(document.querySelector("dialog.wallet-upgrade[open]"))', 'imported wallet recovery reminder');
+    await evalUi('(document.querySelector(".wallet-upgrade__later").click(), true)');
+    await wait('!document.querySelector("dialog.wallet-upgrade[open]")', 'dismissed imported wallet reminder');
     for (const locale of ['en-EN', 'ru-RU', 'akk-Xsux-x-old', 'egy-Egyp']) {
       for (const scale of [100, 200]) {
         await evalUi(`(${APP}.app.config.globalProperties.$i18n.locale = ${JSON.stringify(locale)}, document.documentElement.lang = ${JSON.stringify(locale)}, document.documentElement.style.fontSize = '${16 * scale / 100}px', true)`);

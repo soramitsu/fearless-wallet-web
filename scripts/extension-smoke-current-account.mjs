@@ -3,7 +3,7 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 
 // Actual compiled trusted handlers and Chrome persistence, using only public
 // unfunded identities. Service tests cover deferred/failed storage and pairing.
-export async function checkCurrentAccountStorage({ send, read, restart, password, assert }) {
+export async function checkCurrentAccountStorage({ send, read, restart, fixture, password, assert }) {
   await cryptoWaitReady();
   const keys = new Keyring({ type: 'sr25519' });
   const addresses = ['first', 'second'].map((name) => {
@@ -31,12 +31,24 @@ export async function checkCurrentAccountStorage({ send, read, restart, password
   assert(JSON.stringify(await read(key)) === JSON.stringify(beforeMetadata), 'Other-wallet metadata changed the selected wallet');
   await restart();
   assert(await send('pri(keyring.unlock)', { password }), 'Fixture wallet did not reopen');
-  assert((await read(key))?.address === addresses[1], 'Worker restart lost acknowledged selection');
+  assert(!addresses.includes((await read(key))?.address), 'Startup restored a mobile selection without an approved session');
+  // These offline mobile topics have never completed WalletConnect approval, so
+  // startup must exclude them. Verify durable selection with the generated local
+  // wallet instead of expecting an unapproved session to regain authority.
+  const native = keys.createFromUri(fixture.mnemonic);
+  const nativeAddress = native.address;
+  native.lock();
+  assert(await send('pri(accounts.update.current)', { address: nativeAddress, walletEcosystem: 'substrate' }), 'Local wallet switch failed');
+  assert((await read(key))?.address === nativeAddress, 'Local selection was not durable before acknowledgement');
+  await restart();
+  assert(await send('pri(keyring.unlock)', { password }), 'Local selection restart did not reopen');
+  assert((await read(key))?.address === nativeAddress, 'Worker restart lost acknowledged local selection');
+  assert(await send('pri(accounts.update.current)', { address: addresses[1], walletEcosystem: 'substrate' }), 'Mobile reselection failed');
   assert(await send('pri(walletConnect.session.disconnect)', { topic: topics[1] }), 'Retirement did not acknowledge');
   await restart();
-  assert(await send('pri(keyring.unlock)', { password }), 'Second restart did not reopen');
+  assert(await send('pri(keyring.unlock)', { password }), 'Retirement restart did not reopen');
   assert((await read(key))?.address !== addresses[1], 'Startup restored or reselected the retired mobile wallet');
   return { addresses, durableCreateAndSelection: true, durableSwitch: true, otherWalletMetadataIsolated: true,
-    selectionSurvivesRestart: true, retiredSelectionNotRestoredOrChosenAsFallback: true,
-    twoWorkerRestarts: true, publicMetadataOnly: true, sessionNegotiationExercised: false };
+    localSelectionSurvivesRestart: true, unapprovedMobileSelectionNotRestored: true, retiredSelectionNotRestoredOrChosenAsFallback: true,
+    threeWorkerRestarts: true, publicMetadataAndUnfundedFixtureOnly: true, sessionNegotiationExercised: false };
 }

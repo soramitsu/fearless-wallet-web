@@ -33,6 +33,12 @@ describe('transfer error locale mapping', () => {
     expect(getAccountAccessErrorLocaleKey(undefined)).toBeUndefined();
   });
 
+  it('sends an EVM transfer refused by its reviewed fee back to the fee review', () => {
+    expect(getTransferErrorLocaleKey('transfer_fee_changed')).toBe('assets.transferFeeChanged');
+    expect(getTransferErrorLocaleKey('transfer_fee_approval_required')).toBe('assets.transferFeeApprovalRequired');
+    expect(getTransferErrorLocaleKey('transfer_fee_unavailable')).toBe('assets.transferFeeApprovalRequired');
+  });
+
   it('keeps a route whose earlier send is unresolved or still running from being offered', () => {
     expect(getTransferErrorLocaleKey('cross_chain_previous_send_unresolved')).toBe('assets.transactionStatusUnknown');
     expect(getTransferErrorLocaleKey('cross_chain_send_in_progress')).toBe('assets.transactionPending');

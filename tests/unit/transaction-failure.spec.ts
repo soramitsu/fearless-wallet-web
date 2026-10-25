@@ -34,6 +34,16 @@ describe('transaction failure presentation', () => {
     ).toEqual({ key });
   });
 
+  it.each([
+    ['transfer_fee_changed', 'assets.transferFeeChanged'],
+    ['transfer_fee_approval_required', 'assets.transferFeeApprovalRequired'],
+    ['transfer_fee_unavailable', 'assets.transferFeeApprovalRequired'],
+  ])('explains the EVM fee-cap refusal %s', (message, key) => {
+    expect(
+      getTransactionFailurePresentation({ status: false, errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message }] })
+    ).toEqual({ key });
+  });
+
   it('preserves only a typed, bounded unknown-outcome hash and rejects contradictory success', () => {
     const hash = 'ab'.repeat(32);
     const response = { status: false, outcome: 'unknown', transactionHash: hash.toUpperCase() };

@@ -1515,13 +1515,15 @@ export default class Extension extends FWExtensionBase {
     // Estimate with EVM API
     if (isNativeEVMNetwork(networkKey)) {
       try {
+        // The send caps its fee at this quote, so the quote prices the amount being sent; without one, the balance.
+        const entered = typeof amount === 'string' && /^\d+(?:\.\d+)?$/u.test(amount) && +amount > 0;
         const { fee: feeValue } = await quoteEVMTransfer(
           {
             balance,
             networkKey,
             to,
             from,
-            amount: balance?.transferable || '0',
+            amount: entered ? amount : balance?.transferable || '0',
           },
           this.state
         );
@@ -1626,16 +1628,22 @@ export default class Extension extends FWExtensionBase {
         to,
       });
     } else if (isNativeEVMNetwork(networkKey)) {
-      const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
+      // The reviewed fee caps the send, as it does for Bitcoin, Solana and Iroha. Without one no key is opened.
+      if (typeof request.approvedMaxFee !== 'string') {
+        transferProm = Promise.reject(new Error('transfer_fee_approval_required'));
+      } else {
+        const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
 
-      transferProm = makeEVMTransfer(
-        {
-          ...params,
-          privateKey,
-          networkKey,
-        },
-        this.state
-      );
+        transferProm = makeEVMTransfer(
+          {
+            ...params,
+            approvedMaxFee: request.approvedMaxFee,
+            privateKey,
+            networkKey,
+          },
+          this.state
+        );
+      }
     } else if (isTonNetwork(networkKey)) {
       transferProm = makeTonTransfer(params, this.state);
     } else transferProm = makeTransfer(params);

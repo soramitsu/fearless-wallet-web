@@ -60,3 +60,33 @@ describe('account setup completion and recovery', () => {
     wrapper.unmount();
   });
 });
+
+
+describe('new-wallet generation proof', () => {
+  it.each(['create', 'import'])('distinguishes %s intent on every parent and child write', async (type) => {
+    const wrapper = mountFlow(type, 'substrate');
+    await wrapper.setData({ nickname: 'Fixture', mnemonic: 'public test phrase' });
+    await wrapper.vm.saveKeypairFromSeed();
+    expect(mocks.save).toHaveBeenCalledTimes(2);
+    for (const call of mocks.save.mock.calls) expect(call.slice(3)).toEqual(['substrate', undefined, type === 'create']);
+    wrapper.unmount();
+  });
+
+  it('clears an expired phrase and requests a fresh backup before another create attempt', async () => {
+    mocks.save.mockRejectedValueOnce(new Error('wallet_generation_expired'));
+    const wrapper = mountFlow();
+    await wrapper.setData({ nickname: 'Fixture', mnemonic: 'old public test phrase', step: 4 });
+    await flushPromises();
+    expect(wrapper.vm.step).toBe(1);
+    expect(wrapper.vm.mnemonic).toBe('');
+    expect(wrapper.vm.selectedMnemonicElements).toEqual([]);
+    expect(wrapper.vm.savedSuccessfully).toBe(false);
+    expect(wrapper.vm.isLoading).toBe(false);
+    expect(wrapper.find('[data-testid="generationExpired"]').text()).toBe('ux.walletGenerationExpired');
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.step).toBe(2);
+    expect(wrapper.vm.mnemonic).toBe('public test phrase');
+    expect(wrapper.vm.generationExpired).toBe(false);
+    wrapper.unmount();
+  });
+});

@@ -9,6 +9,7 @@
     :showFullScreenIcon="false"
     @back="back"
   >
+    <p v-if="generationExpired" role="alert" data-testid="generationExpired">{{ $t('ux.walletGenerationExpired') }}</p>
     <p v-if="creationError" role="alert" class="backup-error">{{ $t('addWallet.google.somethingWrong') }}</p>
     <p v-if="confirmMnemonicStep" class="backup-consent">{{ $t('addWallet.google.dataWillStoreOnGDrive') }}</p>
     <p v-if="isFinished" role="status">{{ $t('addWallet.google.saved') }}</p>
@@ -85,6 +86,7 @@ import { defineComponent } from 'vue';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 
 import type { FWKeyringMeta } from '@extension-base/types';
+import { isWalletGenerationExpired } from '@/util/walletSecurity';
 import { Components } from '@/router/routes';
 import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
@@ -136,6 +138,7 @@ export default defineComponent({ name: 'CreateGoogle',
       isActive: true,
       revision: 0,
       creationError: false,
+      generationExpired: false,
       isFinished: false,
       createdAddress: '',
       createdEthereumAddress: '',
@@ -235,7 +238,10 @@ export default defineComponent({ name: 'CreateGoogle',
       this.creationError = false;
       try {
         const mnemonic = await generateMnemonic(WalletEcosystem.Substrate, UNIVERSAL_WALLET_DEFAULT_WORD_COUNT);
-        if (this.isActive && this.revision === revision) this.mnemonic = mnemonic;
+        if (this.isActive && this.revision === revision) {
+          this.mnemonic = mnemonic;
+          this.generationExpired = false;
+        }
       } catch { if (this.isActive && this.revision === revision) this.creationError = true; }
       finally { if (this.isActive && this.revision === revision) this.isLoading = false; }
     },
@@ -253,8 +259,19 @@ export default defineComponent({ name: 'CreateGoogle',
         if (!ownsRequest()) return;
         await updateCurrentAccount(address);
         if (ownsRequest()) this.isFinished = true;
-      } catch { if (ownsRequest()) this.creationError = true; }
-      finally { if (ownsRequest()) this.isLoading = false; }
+      } catch (error) {
+        if (!ownsRequest()) return;
+        if (isWalletGenerationExpired(error)) {
+          this.generationExpired = true;
+          this.mnemonic = '';
+          this.selectedMnemonicElements = [];
+          this.createdEthereumAddress = '';
+          this.createdAddress = '';
+          this.backup = null;
+          this.isLoading = false;
+          this.step = 1;
+        } else this.creationError = true;
+      } finally { if (ownsRequest()) this.isLoading = false; }
     },
     updateDP(derivationPaths: DerivationPaths) {
       if (!this.isActive || this.isLoading || this.step === 4) return;
@@ -381,13 +398,13 @@ export default defineComponent({ name: 'CreateGoogle',
           const suriEthereum = this.suriEthereum;
           const suriSubstrate = this.suriSubstrate;
           if (!this.createdEthereumAddress) {
-            const ethereumAddress = await addAccount(suriEthereum, ethereumKeypairType, meta);
+            const ethereumAddress = await addAccount(suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, undefined, true);
             if (!ownsRequest()) return '';
             if (!ethereumAddress) throw new Error('Ethereum account was not confirmed');
             this.createdEthereumAddress = ethereumAddress;
           }
           meta.ethereumAddress = this.createdEthereumAddress;
-          const address = await addAccount(suriSubstrate, substrateKeypairType, meta);
+          const address = await addAccount(suriSubstrate, substrateKeypairType, meta, WalletEcosystem.Substrate, undefined, true);
           if (!ownsRequest()) return '';
           if (!address) throw new Error('Primary account was not confirmed');
           this.createdAddress = address;

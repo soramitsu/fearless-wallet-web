@@ -22,6 +22,7 @@ import {
   isLegacyExposedAddress,
   remainingBalances,
   walletsStillToMove,
+  walletsToReview,
 } from '@/util/legacyExposure';
 
 const SUBSTRATE = '5EPCUjPxiHAcNooYipQFWr9NmmXJKpNG5RhcntXwbtUySrgH';
@@ -70,6 +71,17 @@ describe('the exposure notice helpers', () => {
     expect(walletsStillToMove(status({})).map(({ address }) => address)).toEqual([SUBSTRATE]);
     expect(walletsStillToMove(status({ state: 'notice_pending' }))).toEqual([]);
     expect(walletsStillToMove(undefined)).toEqual([]);
+  });
+
+  it('offers imported-key guidance without claiming a pre-update wallet', () => {
+    const imported = { address: NEW_SUBSTRATE, walletEcosystem: WalletEcosystem.Substrate, name: 'Imported', present: true };
+    const freshProfile = status({ state: 'not_exposed', wallets: [], importedWallets: [imported] });
+
+    expect(walletsToReview(freshProfile)).toEqual([imported]);
+    expect(walletsStillToMove(freshProfile)).toEqual([imported]);
+    expect(isLegacyExposedAddress(freshProfile, NEW_SUBSTRATE)).toBe(false);
+    expect(walletsStillToMove(status({ ...freshProfile, importedWallets: [{ ...imported, movedAt: 1 }] }))).toEqual([]);
+    expect(walletsToReview(status({ ...freshProfile, state: 'unknown' }))).toEqual([]);
   });
 
   it('lists every balance above zero, testnets left out, a network coin after its tokens', () => {

@@ -80,6 +80,7 @@
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
         />
 
+        <p v-if="generationExpired" role="alert" data-testid="generationExpired">{{ $t('ux.walletGenerationExpired') }}</p>
         <p v-if="flowError" role="alert" data-testid="accountFailure">{{ $t('ux.accountSetupFailed') }}</p>
         <p v-if="isLoading" role="status">{{ $t('ux.settingUpWallet') }}</p>
         <FinishForm v-if="showFinishForm" />
@@ -151,6 +152,7 @@ import { defineComponent } from 'vue';
 import type { DerivationPaths, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
 import type { TonImportCandidateInfo } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
+import { isWalletGenerationExpired } from '@/util/walletSecurity';
 import { WalletEcosystem } from '@/interfaces';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
@@ -217,6 +219,7 @@ export default defineComponent({ name: 'AddWallet',
       address: null,
       isLoading: false,
       flowError: false,
+      generationExpired: false,
       savedSuccessfully: false,
       // TON import: every address the typed text opens, the text they were derived from, and the pick.
       tonCandidates: [] as TonImportCandidateInfo[],
@@ -553,8 +556,13 @@ export default defineComponent({ name: 'AddWallet',
         await this.saveKeypair();
         this.savedSuccessfully = true;
         if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
-      } catch {
-        this.flowError = true;
+      } catch (error) {
+        if (isWalletGenerationExpired(error)) {
+          this.generationExpired = true;
+          this.mnemonic = '';
+          this.selectedMnemonicElements = [];
+          this.step = 1;
+        } else this.flowError = true;
       } finally {
         this.isLoading = false;
       }
@@ -579,6 +587,7 @@ export default defineComponent({ name: 'AddWallet',
       if (this.step === 1 && !this.mnemonic.length) {
             // New wallets share the Universal Wallet BIP39 phrase regardless of the first network.
             this.mnemonic = await generateMnemonic(WalletEcosystem.Substrate, this.mnemonicLength);
+            this.generationExpired = false;
           } else if (this.step === 2) await this.validateSuri();
           else if (this.step === 3) this.validateSequenceMnemonic();
     },
@@ -720,7 +729,7 @@ export default defineComponent({ name: 'AddWallet',
           if (this.isOnlyEthereumAccount) meta.name = this.accountsStore.selectedWallet.name;
 
           if (this.suriEthereum !== '') {
-            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta);
+            const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, undefined, this.isCreateWallet);
 
             if (this.isOnlyEthereumAccount) {
               updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
@@ -731,7 +740,7 @@ export default defineComponent({ name: 'AddWallet',
             meta.ethereumAddress = ethereumAddress;
           }
 
-          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem);
+          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, undefined, this.isCreateWallet);
 
           return address;
     },

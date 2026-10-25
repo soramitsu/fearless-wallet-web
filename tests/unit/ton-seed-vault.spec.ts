@@ -420,7 +420,7 @@ describe('TON seed vault', PBKDF2_SUITE, () => {
 
   it('renames an account without dropping its pending copy, metadata or unknown fields', async () => {
     const pendingCipherSeed = CryptoJS.AES.encrypt(NATIVE.phrase, P2).toString();
-    const meta = { name: 'Native TON', walletEcosystem: WalletEcosystem.Ton, tonAddress: NATIVE.address };
+    const meta = { name: 'Native TON', walletEcosystem: WalletEcosystem.Ton, tonAddress: NATIVE.address, walletSecurityGeneration: 1 };
     const service = await wallet(P1, [{ ...record(NATIVE, P1, { pendingCipherSeed, meta }), futureField: 'kept' } as TonStoreAccount]);
 
     await service.tonKeyring.updateAccountName(NATIVE.address, 'Savings');
@@ -429,9 +429,10 @@ describe('TON seed vault', PBKDF2_SUITE, () => {
       name: 'Savings',
       pendingCipherSeed,
       futureField: 'kept',
-      meta: { name: 'Savings', walletEcosystem: 'ton', tonAddress: NATIVE.address },
+      meta: { name: 'Savings', walletEcosystem: 'ton', tonAddress: NATIVE.address, walletSecurityGeneration: 1 },
     });
     expect(service.tonKeyring.accountSubject.value[NATIVE.address]).toMatchObject({ name: 'Savings', pendingCipherSeed });
+    expect(service.tonKeyring.getAccount(NATIVE.address).meta.walletSecurityGeneration).toBe(1);
   });
 });
 
@@ -612,5 +613,23 @@ describe('TON access scan', PBKDF2_SUITE, () => {
     const status = await service.getAccessStatus();
     expect(status.scanComplete).toBe(false);
     expect(status.issues).toEqual([]);
+  });
+});
+
+
+describe('generated TON provenance', PBKDF2_SUITE, () => {
+  it('persists generated provenance across a worker restart, rename and password rotation', async () => {
+    const service = await wallet(P1, []);
+    expect(service.unlockKeyring({ password: P1 })).toBe(true);
+    const phrase = await service.mnemonicGenerate({ walletEcosystem: WalletEcosystem.Substrate, wordCount: 12 });
+    const address = await service.addAccount(phrase, { name: 'Generated TON' }, WalletEcosystem.Ton, undefined, undefined, true);
+    expect(stored(address).meta?.walletSecurityGeneration).toBe(1);
+    const restarted = await wallet(P1);
+    expect(restarted.tonKeyring.getAccount(address).meta.walletSecurityGeneration).toBe(1);
+    await restarted.tonKeyring.updateAccountName(address, 'Renamed TON');
+    expect(restarted.unlockKeyring({ password: P1 })).toBe(true);
+    expect(await restarted.changeMasterPassword({ oldPassword: P1, newPassword: P2 })).toBe(true);
+    expect(stored(address).meta?.walletSecurityGeneration).toBe(1);
+    await expect(exportTon(restarted, address, P2)).resolves.toEqual({ seed: phrase });
   });
 });

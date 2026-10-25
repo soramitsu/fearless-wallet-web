@@ -245,6 +245,8 @@ export interface RequestAccountCreateSuri {
   walletEcosystem: WalletEcosystem;
   /** TON imports: the address picked on the import screen and the derivation that opens it. */
   tonImport?: TonImportChoice;
+  /** A create flow must not silently become an import after a worker restart. */
+  requireFreshGeneration?: boolean;
 }
 
 export interface RequestTonImportCandidates {

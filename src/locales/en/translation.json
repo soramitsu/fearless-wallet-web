@@ -1196,6 +1196,7 @@
     "walletRemovedHint": "If it still holds funds, add it again with its recovery phrase and move them.",
     "confirm": "I understand that these wallets may be exposed and that a new password does not protect them.",
     "continue": "Continue to the guide",
+    "importedReminder": "This wallet uses an imported key. For a fresh start, create a new wallet in Fearless and transfer your funds to it.",
     "openGuide": "Open the guide",
     "readNotice": "Read the notice",
     "acknowledgeFailed": "Your confirmation could not be saved. Try again.",
@@ -1205,6 +1206,7 @@
       "title": "Move to a new wallet",
       "intro": "Do these steps in order. Your old wallets stay in the list and keep working. Nothing is deleted.",
       "createTitle": "Create a new wallet",
+      "createImportedText": "Create it here to generate a new recovery phrase. Importing an existing phrase, key or JSON file restores the same wallet instead.",
       "createText": "Create it here, in this version, so that it gets a new recovery phrase. Do not import an old phrase, key or JSON file: the exposure would come with it.",
       "createTonText": "TON wallets are separate. Funds in an old TON wallet need a new TON wallet.",
       "createTonButton": "Create a new TON wallet",
@@ -1413,6 +1415,7 @@
     "nftImage": "NFT image"
   },
   "ux": {
+    "walletGenerationExpired": "Your wallet creation session expired. Continue to generate and back up a new recovery phrase. Do not use the previous phrase.",
     "refresh": "Refresh",
     "retry": "Try again",
     "search": "Search",

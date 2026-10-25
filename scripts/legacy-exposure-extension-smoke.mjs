@@ -121,8 +121,8 @@ async function launch(profileDir) {
   );
   const extensionId = new URL(worker.url).hostname;
 
-  async function openPopup() {
-    const { targetId } = await send('Target.createTarget', { url: `chrome-extension://${extensionId}/popup.html#/` });
+  async function openPopup(hash = '#/') {
+    const { targetId } = await send('Target.createTarget', { url: `chrome-extension://${extensionId}/popup.html${hash}` });
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
 
     await send('Runtime.enable', {}, sessionId);
@@ -131,7 +131,10 @@ async function launch(profileDir) {
     await eventually(
       () => evaluate(sessionId, 'document.readyState === "complete" && Boolean(globalThis.chrome?.storage)'),
       'the wallet window'
-    );
+    ).catch(async (error) => {
+      const state = await evaluate(sessionId, '({ url: location.href, readyState: document.readyState, hasStorage: Boolean(globalThis.chrome?.storage), title: document.title })');
+      throw new Error(`${error.message} ${JSON.stringify(state)}`);
+    });
 
     return sessionId;
   }
@@ -143,7 +146,21 @@ async function launch(profileDir) {
     socket.close();
   }
 
-  return { send, evaluate, openPopup, close };
+  const message = (sessionId, name, request = {}) => evaluate(sessionId, `new Promise((resolve, reject) => {
+    const port = chrome.runtime.connect({ name: 'fw-fearless-extension' });
+    const id = crypto.randomUUID();
+    const timeout = setTimeout(() => { port.disconnect(); reject(new Error('Wallet message timed out')); }, ${timeoutMs});
+    port.onMessage.addListener((reply) => {
+      if (reply.id !== id) return;
+      clearTimeout(timeout);
+      port.disconnect();
+      if (reply.error) reject(new Error(reply.error));
+      else resolve(reply.response);
+    });
+    port.postMessage({ id, message: ${JSON.stringify(name)}, request: ${JSON.stringify(request)} });
+  })`);
+
+  return { send, evaluate, openPopup, close, message };
 }
 
 const storedRecord = (browser, session) =>
@@ -206,7 +223,7 @@ async function main() {
     await browser.close();
 
     browser = await launch(profileDir);
-    const page = await browser.openPopup();
+    let page = await browser.openPopup();
     const route = () => browser.evaluate(page, 'location.hash');
     const shot = async (name) => {
       if (!screenshotDir) return;
@@ -267,6 +284,50 @@ async function main() {
     );
     assert.match(banner, /3 wallets from before this update may be exposed/u);
     await shot('03-reminder');
+
+    await click('legacyExposureBannerDismiss');
+    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+    page = await browser.openPopup('#/fearless/settings');
+    await eventually(() => browser.evaluate(page, '!!document.querySelector("[data-testid=settings-legacy-exposure]")'), 'Settings guide after reopening')
+      .catch(async (error) => { throw new Error(`${error.message} Route: ${await route()}`); });
+    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+    await click('settings-legacy-exposure');
+    await eventually(async () => (await route()).startsWith('#/security-notice/guide'), 'guide from Settings');
+    log('dismissal survives reopening; the guide remains reachable from Settings');
+
+    const generatedPhrase = await browser.message(page, 'pri(keyring.generateMnemonic)', { walletEcosystem: 'substrate', wordCount: 12 });
+    const freshAddress = await browser.message(page, 'pri(accounts.create)', {
+      suri: generatedPhrase, type: 'sr25519', walletEcosystem: 'substrate',
+      meta: { name: 'Created after update' }, requireFreshGeneration: true,
+    });
+    await browser.evaluate(page, 'location.hash = "#/fearless/settings", true');
+    await eventually(async () => (await route()) === '#/fearless/settings', 'fresh wallet Settings');
+    await eventually(async () => {
+      const status = await browser.message(page, 'pri(security.legacyExposure.status)');
+      return status.newWallets.some(({ address }) => address === freshAddress);
+    }, 'the generated wallet classified as new');
+    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+    await shot('04-created-wallet');
+
+    // Public test phrase, used only in this isolated offline profile.
+    const importedAddress = await browser.message(page, 'pri(accounts.create)', {
+      suri: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
+      type: 'sr25519', walletEcosystem: 'substrate',
+      meta: { name: 'Imported after update', walletSecurityGeneration: 1 },
+    });
+    await browser.evaluate(page, 'location.hash = "#/fearless/portfolio", true');
+    const importedBanner = await eventually(
+      () => browser.evaluate(page, 'document.querySelector("[data-testid=legacyExposureBanner]")?.innerText'),
+      'the imported-wallet reminder'
+    );
+    assert.match(importedBanner, /imported key/u);
+    const importedStatus = await browser.message(page, 'pri(security.legacyExposure.status)');
+    assert.ok(importedStatus.importedWallets.some(({ address }) => address === importedAddress));
+    assert.ok(!importedStatus.newWallets.some(({ address }) => address === importedAddress));
+    await shot('05-imported-wallet');
+    await browser.message(page, 'pri(accounts.update.current)', { address: freshAddress, walletEcosystem: 'substrate' });
+    await eventually(() => browser.evaluate(page, '!document.querySelector("[data-testid=legacyExposureBanner]")'), 'no reminder when switching back to the generated wallet');
+    log('created wallets stay quiet; imported keys are reminded and excluded as fresh destinations');
     await browser.close();
 
     // A 2.6.3 profile nobody unlocked in 3.0.x holds nothing 3.0.x could have sent: no notice.

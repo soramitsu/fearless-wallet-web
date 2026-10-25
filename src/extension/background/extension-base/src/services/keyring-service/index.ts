@@ -27,6 +27,7 @@ import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './Legac
 import { alreadyPersistedAccountStore, isCurrentAccountPair, updateAccountMetadata } from './AccountMetadata';
 import { removePublicAddress, updatePublicAddress, type PublicAddressUpdateOptions } from './AddressMetadata';
 import { importLocalAccount } from './LocalAccountImport';
+import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import { decodeJsonAccount } from './JsonAccountImport';
 import { walletResetMutation } from './WalletReset';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
@@ -106,6 +107,16 @@ export class KeyringService {
 
   private accountsStore?: AccountsStore;
   private accountAccess?: AccountAccessService;
+  private walletSecurityProvenance?: WalletSecurityProvenance;
+
+  private get securityProvenance(): WalletSecurityProvenance {
+    return this.walletSecurityProvenance ??= new WalletSecurityProvenance();
+  }
+
+  getAccountCreationMeta(suri: string, meta: FWKeyringMeta, requireFreshGeneration = false): FWKeyringMeta {
+    return this.securityProvenance.accountMetadata(suri, meta, requireFreshGeneration);
+  }
+
   private password = '';
   private authenticationRevision = 0;
   private selectionRevision = 0;
@@ -385,16 +396,18 @@ export class KeyringService {
     meta: FWKeyringMeta,
     walletEcosystem: WalletEcosystem,
     type?: KeypairType,
-    tonImport?: TonImportChoice
+    tonImport?: TonImportChoice,
+    requireFreshGeneration = false
   ) {
+    const creationMeta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
     if (walletEcosystem === 'ton') {
-      const account = await this.tonKeyring.createAccount(suri, meta, tonImport);
+      const account = await this.tonKeyring.createAccount(suri, creationMeta, tonImport);
 
       return account.address.toString();
     }
 
     return this.tonKeyring.vault.exclusive(async () => {
-      const pair = keyring.createFromUri(suri, { ...meta, isMobile: false, walletEcosystem }, type);
+      const pair = keyring.createFromUri(suri, { ...creationMeta, isMobile: false, walletEcosystem }, type);
       const effectiveEcosystem = isEthereumAddress(pair.address) ? WalletEcosystem.Evm : walletEcosystem;
       return importLocalAccount(pair, effectiveEcosystem, () => this.password);
     });
@@ -653,6 +666,7 @@ export class KeyringService {
   }
 
   createFromJson(file: KeyringPair$Json) {
+    file = { ...file, meta: withoutWalletSecurityClaims(file.meta as FWKeyringMeta) };
     delete file.meta.genesisHash;
     delete file.meta.isMasterAccount;
     delete file.meta.isMasterPassword;
@@ -735,6 +749,8 @@ export class KeyringService {
   }
 
   async saveAccountMeta(address: string, meta: FWKeyringMeta) {
+    // Descriptive edits cannot establish or erase saved generation provenance.
+    meta = withoutWalletSecurityClaims(meta);
     const pair = this.getPair(address);
 
     if (pair) {
@@ -759,7 +775,7 @@ export class KeyringService {
   }
 
   createFromUri(suri: string, keypairType: KeypairType, meta: FWKeyringMeta = {}) {
-    return keyring.createFromUri(suri, meta, keypairType);
+    return keyring.createFromUri(suri, withoutWalletSecurityClaims(meta), keypairType);
   }
 
   getSubstrateAddress(address: string) {
@@ -828,13 +844,11 @@ export class KeyringService {
   }
 
   async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
-    if (walletEcosystem === 'ton') {
-      const seed = await this.tonKeyring.generateMnemonic(undefined, wordCount);
-
-      return seed.join(' ');
-    }
-
-    return mnemonicGenerate(wordCount);
+    const mnemonic = walletEcosystem === 'ton'
+      ? (await this.tonKeyring.generateMnemonic(undefined, wordCount)).join(' ')
+      : mnemonicGenerate(wordCount);
+    this.securityProvenance.rememberGeneratedMnemonic(mnemonic);
+    return mnemonic;
   }
 
   async mnemonicValidate({ walletEcosystem, seed }: RequestValidateMnemonic): Promise<boolean> {

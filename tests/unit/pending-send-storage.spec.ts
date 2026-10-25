@@ -11,6 +11,13 @@ const publicTransaction = (vout = 0) => buildBitcoinP2wpkhTransaction({
   feeSat: 1_000,
 });
 
+// Produce real signed fixtures once, outside the storage assertions. Key
+// derivation is covered separately and should not consume this test's timeout.
+let bitcoinTransactions: ReturnType<typeof publicTransaction>[];
+beforeAll(() => {
+  bitcoinTransactions = Array.from({ length: 55 }, (_, index) => publicTransaction(index));
+}, 60_000);
+
 // These stores are the durable duplicate-payment barrier after a worker restart.
 // Exercise actual read-modify-write behavior with public signed-data fixtures.
 describe.each(['bitcoin', 'solana'] as const)('%s pending send evidence', chain => {
@@ -25,7 +32,7 @@ describe.each(['bitcoin', 'solana'] as const)('%s pending send evidence', chain 
   });
 
   it.each(chain === 'bitcoin' ? ['empty inputs', 'wrong transaction id', 'wrong input index'] : ['negative expiry'])('rejects inconsistent transaction evidence: %s', async damage => {
-    const tx = publicTransaction();
+    const tx = bitcoinTransactions[0];
     const record = chain === 'bitcoin'
       ? { accountAddress: 'a', network: 'mainnet', txHex: tx.txHex, txid: tx.txid,
         outpoints: [{ txid: '11'.repeat(32), vout: 0 }] }
@@ -50,7 +57,7 @@ describe.each(['bitcoin', 'solana'] as const)('%s pending send evidence', chain 
     const solanaStore = createStorageSolanaPendingSendStore(backend as never);
     const id = (index: number) => index.toString(16).padStart(64, '0');
     const record = (index: number) => {
-      const tx = publicTransaction(index);
+      const tx = bitcoinTransactions[index];
       return chain === 'bitcoin'
       ? { accountAddress: 'public account', amountSat: 1, createdAt: index, network: 'mainnet',
         outpoints: [{ txid: '11'.repeat(32), vout: index }], recipient: 'public recipient', txHex: tx.txHex, txid: tx.txid }

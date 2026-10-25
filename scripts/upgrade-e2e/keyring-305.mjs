@@ -17,9 +17,6 @@ const PINNED = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../tests/fixtures/upgrade/keyring-3.0.5-packages.json'
 );
-// Yarn 3.4.1's cache key; the 3.0.5 checksums are those of these archives.
-const CACHE_KEY = 8;
-
 export function yarnCacheFolder(env = process.env) {
   return env.YARN_CACHE_FOLDER || path.join(env.YARN_GLOBAL_FOLDER || path.join(homedir(), '.yarn', 'berry'), 'cache');
 }
@@ -31,10 +28,11 @@ export function findKeyring305Archives(cacheFolder = yarnCacheFolder()) {
   const found = [];
   const missing = [];
   for (const pkg of packages) {
-    // Yarn names an archive <scope-name>-npm-<version>-<locator hash>-<cache key>.zip.
+    // Yarn 3 names global archives with a cache-key suffix and local archives
+    // with a checksum suffix. Verify the complete bytes in either case.
     const prefix = `${pkg.name.replace('/', '-')}-npm-${pkg.version}-`;
     const zip = files
-      .filter((file) => file.startsWith(prefix) && file.endsWith(`-${CACHE_KEY}.zip`))
+      .filter((file) => file.startsWith(prefix) && file.endsWith('.zip'))
       .map((file) => path.join(cacheFolder, file))
       .find((file) => createHash('sha512').update(readFileSync(file)).digest('hex') === pkg.checksum);
     if (zip) found.push({ ...pkg, zip });
@@ -49,7 +47,7 @@ export function installKeyring305(dir = mkdtempSync(path.join(tmpdir(), 'fearles
   if (missing.length) {
     throw new Error(
       `The Yarn cache (${cacheFolder ?? yarnCacheFolder()}) lacks the 3.0.5 keyring packages ${missing.join(', ')}. ` +
-        'Install a 3.0.5 checkout with `corepack yarn@3.4.1 install --immutable` once to add them.'
+        'Run `node scripts/upgrade-e2e/prepare-keyring-305.mjs` to fetch and verify them.'
     );
   }
   for (const pkg of found) {

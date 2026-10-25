@@ -25,7 +25,7 @@ import { encodePair } from '@subwallet/keyring/pair/encode';
 import { pairToJson } from '@subwallet/keyring/pair/toJson';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { KEYSTORE_SCRYPT_PARAMS, keystoreScryptParamsPlugin } from '../../scripts/keystore-scrypt-params.mjs';
-import { findKeyring305Archives, installKeyring305, loadKeyring305, openAs305 } from '../../scripts/upgrade-e2e/keyring-305.mjs';
+import { installKeyring305, loadKeyring305, openAs305 } from '../../scripts/upgrade-e2e/keyring-305.mjs';
 // chrome.storage.local as the real Fearless Wallet 3.0.6 (3.0.5 keyring code) and 2.6.3 builds wrote it
 // (tests/fixtures/upgrade/README.md).
 import profile306 from '../fixtures/upgrade/s2-3.0.6-ecdsa.json';
@@ -185,12 +185,9 @@ describe("util-crypto's default cost is 3.0.x's too, behind the rewritten encode
   });
 });
 
-// The proof itself needs the 3.0.x keyring, installed from the archives the 3.0.5 yarn.lock pins. A developer machine
-// without them fails here with the command that adds them; CI without them skips.
-const legacyArchives = findKeyring305Archives();
-const runWithLegacyKeyring = legacyArchives.missing.length === 0 || !process.env.CI;
-
-describe.runIf(runWithLegacyKeyring)('a key 4.2.0 re-encrypts opens in the 3.0.5 keyring (from the Yarn cache)', () => {
+// CI prepares these archives explicitly. Missing/corrupt dependencies must fail
+// this proof instead of silently dropping rollback coverage.
+describe('a key 4.2.0 re-encrypts opens in the 3.0.5 keyring (from the Yarn cache)', () => {
   let legacyDir: string;
   let legacy: Awaited<ReturnType<typeof loadKeyring305>>;
 

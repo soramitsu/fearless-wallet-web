@@ -73,7 +73,14 @@ function memoryLedger() {
   return { ledger: new CrossChainSendLedger(store), store, stored: () => stored };
 }
 
-function harness({ send = included, head = 1_000, nonce = 7 }: { send?: Send; head?: number; nonce?: number } = {}) {
+type BalanceRow = { name: string; transferable?: string };
+
+function harness({
+  send = included,
+  head = 1_000,
+  nonce = 7,
+  utilityRows = [{ name: 'Polkadot', transferable: '100' }],
+}: { send?: Send; head?: number; nonce?: number; utilityRows?: BalanceRow[] } = {}) {
   const order: string[] = [];
   const chain = { head, nonce };
   const api = {
@@ -114,7 +121,7 @@ function harness({ send = included, head = 1_000, nonce = 7 }: { send?: Send; he
     },
     getSubstrateApiMap: { polkadot: { api } },
     balanceService: {
-      getTokenBalance: () => ({ balances: [{ name: 'Polkadot', transferable: '100' }] }),
+      getTokenBalance: () => ({ balances: utilityRows }),
       substrateBalanceService: { fetchBalance: vi.fn(async () => undefined) },
     },
     actionCapabilityService: { isActionEnabled: () => true },
@@ -381,5 +388,80 @@ describe('makeCrossChain', () => {
     expect(mocks.storageSet).toHaveBeenCalledWith({
       crossChainSendsInDoubt: { [crossChainSendRecordKey(ADDRESS, ROUTE)]: expect.objectContaining({ hash: HASH }) },
     });
+  });
+});
+
+describe('confirmed quote at the signing boundary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.storageGet.mockResolvedValue({});
+    mocks.storageSet.mockResolvedValue(undefined);
+  });
+
+  const refuses = async (h: ReturnType<typeof harness>, props: MakeCrossChainProps, message: string) => {
+    await expect(makeCrossChain(props, h.state, memoryLedger().ledger)).rejects.toThrow(message);
+    expect(h.unlockPair).not.toHaveBeenCalled();
+    expect(mocks.signExtrinsic).not.toHaveBeenCalled();
+    expect(h.extrinsic.send).not.toHaveBeenCalled();
+  };
+
+  it('refuses a destination fee that differs from the confirmed one', async () => {
+    const h = harness();
+
+    await refuses(h, h.props({ expectedDestinationFee: '0.002' }), 'cross_chain_destination_fee_changed');
+  });
+
+  it('refuses a quote fingerprint that differs from the confirmed one', async () => {
+    const h = harness();
+
+    await refuses(h, h.props({ expectedExecutionFingerprint: 'other-quote' }), 'cross_chain_runtime_fingerprint_changed');
+  });
+
+  it.each([
+    ['an unreadable origin fee', { expectedOriginFee: 'abc' }, 'cross_chain_fee_confirmation_required'],
+    ['a negative origin fee', { expectedOriginFee: '-0.01' }, 'cross_chain_fee_confirmation_required'],
+    ['an empty origin fee', { expectedOriginFee: '' }, 'cross_chain_fee_confirmation_required'],
+    ['an unreadable destination fee', { expectedDestinationFee: 'x' }, 'cross_chain_destination_fee_confirmation_required'],
+  ])('refuses %s as a confirmation', async (_label, overrides, message) => {
+    const h = harness();
+
+    await refuses(h, h.props(overrides), message);
+  });
+
+  it.each([
+    ['no utility balance row', []],
+    [
+      'two utility balance rows for the origin',
+      [
+        { name: 'Polkadot', transferable: '100' },
+        { name: 'polkadot', transferable: '100' },
+      ],
+    ],
+  ])('refuses %s instead of guessing which one pays the fee', async (_label, utilityRows) => {
+    const h = harness({ utilityRows });
+
+    await refuses(h, h.props(), 'cross_chain_fee_balance_unavailable');
+  });
+
+  it.each([
+    ['cannot cover the amount and the fee', '1.0099', false],
+    ['covers the amount and the fee exactly', '1.01', true],
+    ['is unreadable', undefined, false],
+  ])('checks the sent asset that pays its own fee when it %s', async (_label, transferable, sends) => {
+    const h = harness({ utilityRows: [{ name: 'Polkadot', transferable }] });
+
+    if (sends) await expect(makeCrossChain(h.props(), h.state, memoryLedger().ledger)).resolves.toMatchObject({ status: true });
+    else await refuses(h, h.props(), 'cross_chain_fee_balance_insufficient');
+  });
+
+  it.each([
+    ['covers the fee', '0.01', true],
+    ['cannot cover the fee', '0.0099', false],
+  ])('checks only the fee when another asset is sent and the utility balance %s', async (_label, transferable, sends) => {
+    const h = harness({ utilityRows: [{ name: 'Polkadot', transferable }] });
+    const props = h.props({ assetId: 'polkadot-usdt' });
+
+    if (sends) await expect(makeCrossChain(props, h.state, memoryLedger().ledger)).resolves.toMatchObject({ status: true });
+    else await refuses(h, props, 'cross_chain_fee_balance_insufficient');
   });
 });

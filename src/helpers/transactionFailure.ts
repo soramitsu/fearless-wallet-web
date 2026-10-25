@@ -206,6 +206,8 @@ function getSettledTransactionHash(value: unknown): string | null {
 }
 
 function getTransactionFailurePresentation(value: unknown, assetSymbol?: unknown): TransactionFailurePresentation {
+  if (getUnknownTransactionHash(value) !== null) return { key: 'assets.transactionStatusUnknownDetails' };
+
   const response = asResponse(value);
   const errors = errorsFrom(response);
   const passwordError = passwordErrorState(response);

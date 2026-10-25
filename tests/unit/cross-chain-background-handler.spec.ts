@@ -131,10 +131,22 @@ function setup() {
     cancelSubscription,
     disconnect: () => listeners.forEach((listener) => listener()),
     extension: new Extension(state),
+    pair,
     port,
+    state,
     updates,
   };
 }
+
+const checkRequest = (overrides: Record<string, unknown> = {}) =>
+  ({ ...unsignedRequest(), ...overrides }) as unknown as RequestTypes['pri(accounts.checkCrossChain)'];
+
+const quote = {
+  originFee: { toString: () => '0.0183' },
+  destinationFee: { toString: () => '0.001' },
+  minimum: { toString: () => '0.02' },
+  executionFingerprint: 'quote-fingerprint',
+};
 
 describe('cross-chain background handler', () => {
   beforeEach(() => {
@@ -258,5 +270,163 @@ describe('cross-chain background handler', () => {
       { tag: 'origin-api' }
     );
     expect(crossChain.estimateCrossChainQuote).not.toHaveBeenCalled();
+  });
+});
+
+describe('checkCrossChain', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    crossChain.refreshCrossChainOriginBalance.mockResolvedValue(undefined);
+    crossChain.assertCrossChainSendAvailable.mockResolvedValue(undefined);
+    crossChain.estimateCrossChainQuote.mockResolvedValue(quote);
+  });
+
+  it('prices only the validated route, never route data sent by the caller', async () => {
+    const { extension } = setup();
+    const forged = { kind: 'relay-native-xcm-v3', destinationParaId: 2004 };
+
+    const response = await extension.handle(
+      'check',
+      'pri(accounts.checkCrossChain)',
+      checkRequest({ execution: forged, xcmAssetId: 'forged', reviewedMinimum: '0' })
+    );
+
+    expect(crossChain.refreshCrossChainOriginBalance).toHaveBeenCalledWith(
+      { from: ADDRESS, originNet: 'Polkadot' },
+      expect.anything()
+    );
+    expect(crossChain.estimateCrossChainQuote).toHaveBeenCalledWith(
+      expect.objectContaining({
+        execution: { kind: 'relay-native-xcm-v3' },
+        xcmAssetId: 'dot',
+        reviewedMinimum: '0.01',
+        routeId: ROUTE,
+        routeProviderId: 'wallet-xcm',
+        amount: '1',
+      }),
+      expect.anything()
+    );
+    expect(response).toEqual({
+      estimateFee: '0.0183',
+      destEstimateFee: '0.001',
+      minimum: '0.02',
+      executionFingerprint: 'quote-fingerprint',
+      quoteToken: expect.stringMatching(/^[0-9a-f]{64}$/),
+    });
+  });
+
+  it('neither prices nor issues a token while no amount is entered', async () => {
+    const { extension } = setup();
+
+    await expect(extension.handle('check', 'pri(accounts.checkCrossChain)', checkRequest({ amount: ' ' }))).resolves.toEqual({
+      estimateFee: '0',
+      destEstimateFee: '0',
+    });
+    expect(validation.validateReviewedCrossChainRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ requireAmount: false })
+    );
+    expect(crossChain.estimateCrossChainQuote).not.toHaveBeenCalled();
+  });
+
+  it('refuses a provider switched off by the capability policy before quoting', async () => {
+    const { extension, state } = setup();
+    Object.assign(state.actionCapabilityService, { isActionEnabled: () => false });
+
+    await expect(extension.handle('check', 'pri(accounts.checkCrossChain)', checkRequest())).resolves.toEqual({
+      estimateFee: '0',
+      destEstimateFee: '0',
+      errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'cross_chain_provider_temporarily_disabled' }],
+    });
+    expect(crossChain.estimateCrossChainQuote).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a route that is not reviewed', 'validate', 'cross_chain_route_id_not_reviewed'],
+    ['an amount below the live minimum', 'quote', 'cross_chain_amount_below_runtime_minimum'],
+    ['a runtime that is not reviewed', 'quote', 'cross_chain_runtime_not_reviewed'],
+  ])('reports %s as the reason and issues no token', async (_label, stage, message) => {
+    const { extension } = setup();
+    if (stage === 'validate') {
+      validation.validateReviewedCrossChainRequest.mockImplementation(() => {
+        throw new Error(message);
+      });
+    } else crossChain.estimateCrossChainQuote.mockRejectedValue(new Error(message));
+
+    await expect(extension.handle('check', 'pri(accounts.checkCrossChain)', checkRequest())).resolves.toEqual({
+      estimateFee: '0',
+      destEstimateFee: '0',
+      errors: [{ code: TransferErrorCode.UNSUPPORTED, message }],
+    });
+  });
+});
+
+describe('makeCrossChain request checks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    crossChain.refreshCrossChainOriginBalance.mockResolvedValue(undefined);
+    crossChain.assertCrossChainSignerCapability.mockImplementation(() => undefined);
+    crossChain.makeCrossChain.mockResolvedValue({ status: true, transactionHash: HASH });
+  });
+
+  it('hands the send the validated route, the captured pair and the confirmed quote', async () => {
+    const { extension, pair } = setup();
+
+    await extension.handle('send', 'pri(accounts.makeCrossChain)', request());
+
+    expect(crossChain.makeCrossChain).toHaveBeenCalledWith(
+      expect.objectContaining({
+        execution: { kind: 'relay-native-xcm-v3' },
+        xcmAssetId: 'dot',
+        reviewedMinimum: '0.01',
+        capturedPair: pair,
+        isMobile: false,
+        expectedOriginFee: '0.01',
+        expectedDestinationFee: '0.001',
+        expectedExecutionFingerprint: 'quote-fingerprint',
+      }),
+      expect.anything()
+    );
+  });
+
+  it('refuses a send once another account is selected', async () => {
+    const { extension, state } = setup();
+    const other = { meta: {} };
+    Object.assign(state, { getAccountAddress: () => 'another-account' });
+    Object.assign(state.keyringService, {
+      getPair: (address: string) => (address === 'another-account' ? other : { meta: {} }),
+    });
+
+    await expect(extension.handle('send', 'pri(accounts.makeCrossChain)', request())).resolves.toEqual({
+      status: false,
+      errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'cross_chain_selected_account_changed' }],
+    });
+    expect(crossChain.makeCrossChain).not.toHaveBeenCalled();
+  });
+
+  it('refuses an account the wallet cannot sign for', async () => {
+    const { extension } = setup();
+    crossChain.assertCrossChainSignerCapability.mockImplementation(() => {
+      throw new Error('cross_chain_signable_account_required');
+    });
+
+    await expect(extension.handle('send', 'pri(accounts.makeCrossChain)', request())).resolves.toEqual({
+      status: false,
+      errors: [{ code: TransferErrorCode.UNSUPPORTED, message: 'cross_chain_signable_account_required' }],
+    });
+    expect(crossChain.makeCrossChain).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['origin fee', { expectedOriginFee: ' ' }, 'cross_chain_fee_confirmation_required'],
+    ['destination fee', { expectedDestinationFee: '' }, 'cross_chain_destination_fee_confirmation_required'],
+    ['quote fingerprint', { expectedExecutionFingerprint: '' }, 'cross_chain_runtime_fingerprint_required'],
+  ])('refuses a send without a confirmed %s', async (_label, overrides, message) => {
+    const { extension } = setup();
+    const quoted = { ...unsignedRequest(), ...overrides } as MakeRequest;
+
+    await expect(
+      extension.handle('send', 'pri(accounts.makeCrossChain)', { ...quoted, quoteToken: issueToken(quoted) } as MakeRequest)
+    ).resolves.toEqual({ status: false, errors: [{ code: TransferErrorCode.UNSUPPORTED, message }] });
+    expect(crossChain.makeCrossChain).not.toHaveBeenCalled();
   });
 });

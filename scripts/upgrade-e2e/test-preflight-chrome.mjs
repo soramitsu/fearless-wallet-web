@@ -76,11 +76,21 @@ test('a responding DevTools endpoint is insufficient without an extension worker
   }, { timeoutMs: 150, fetchImpl: async (url) => ({ ok: true, json: async () => url.endsWith('/json/version') ? { Browser: 'Chrome/147' } : [] }) });
 });
 
-test('success requires both browser readiness and the disposable extension worker, then cleans up', async () => {
+test('an unrelated component background.js cannot satisfy the disposable extension probe', async () => {
+  await ownedProbe('setInterval(() => {}, 1000)', async (run) => {
+    await assert.rejects(run, /probe extension worker is missing/);
+  }, { timeoutMs: 150, fetchImpl: async (url) => ({ ok: true, json: async () => url.endsWith('/json/version')
+    ? { Browser: 'Chrome/147' } : [{ type: 'service_worker', url: `chrome-extension://${'a'.repeat(32)}/background.js` }] }) });
+});
+
+test('success requires the exact disposable extension worker even when another background.js appears first', async () => {
   await ownedProbe('setInterval(() => {}, 1000)', async (run) => {
     assert.deepEqual(await run(), { browser: 'Chrome/147', extensionWorkerReady: true, sandboxHelper: null });
   }, { fetchImpl: async (url) => ({ ok: true, json: async () => url.endsWith('/json/version')
-    ? { Browser: 'Chrome/147' } : [{ type: 'service_worker', url: `chrome-extension://${'a'.repeat(32)}/background.js` }] }) });
+    ? { Browser: 'Chrome/147' } : [
+      { type: 'service_worker', url: `chrome-extension://${'a'.repeat(32)}/background.js` },
+      { type: 'service_worker', url: 'chrome-extension://plnlnnlkcnkiokjgpefakfhgngpbnaec/background.js' },
+    ] }) });
 });
 
 test('an executable that cannot start reports a spawn error and removes temporary files', async () => {

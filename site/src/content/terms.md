@@ -42,6 +42,8 @@ The Application will be installed on your mobile device for the use set out in S
 
 The Application includes Open-Source Components licensed under Apache License Version 2.0, a copy of which can be found at https://www.apache.org/licenses/LICENSE-2.0 ("**Open-Source License**"). Any use of the Open-Source Components by you shall be governed by, and be subject to, the terms and conditions of the Open-Source License.
 
+Soramitsu-owned source code in the [fearless-wallet-web repository](https://github.com/soramitsu/fearless-wallet-web), including its browser wallet and website, is licensed under the Apache License, Version 2.0. Nothing in this Agreement limits the rights granted under that license, including rights to copy, modify, and redistribute that code. If this Agreement conflicts with an applicable open-source license, the open-source license controls for the covered material. Third-party components retain their own licenses and notices; no trademark rights are granted by the Apache License.
+
 ## 4. Use Restrictions
 
 You shall not directly or indirectly:

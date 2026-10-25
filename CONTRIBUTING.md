@@ -1,22 +1,18 @@
 # Contributing to Fearless Wallet Web
 
-## Git Flow
+## Branch workflow
 
-All normal work starts from `develop` and is submitted back to `develop`.
-Use short-lived branches named `feature/<ticket>-<slug>`, `fix/<ticket>-<slug>`,
-`chore/<slug>`, or `refactor/<slug>`.
+`master` is the only long-lived branch and the default branch. All normal work
+starts from `master` and is submitted back to `master` through a reviewed pull
+request with green CI. Use short-lived `feature/*`, `fix/*`, `chore/*`,
+`refactor/*`, `release/*`, or `hotfix/*` branches and delete them after merging.
 
-`master` is the releasable branch. Do not target `master` except for release
-pull requests from `develop` or urgent `hotfix/<version-or-slug>` branches.
-Every commit on `master` must be safe to release, and release tags must point at
-commits already merged to `master`.
+`master` is the releasable branch. Release tags must point at commits already
+merged to `master`. Use squash merges for ordinary changes to keep the protected
+branch's linear history. Preserve historical release commits needed by upgrade
+tests and evidence checks; deleting an obsolete branch does not remove them.
 
-Feature PRs are squash-merged after review and green CI. Release PRs to
-`master` use merge commits so the release boundary remains visible.
-
-The `Branch Flow` GitHub Actions workflow validates PR targets automatically:
-normal work must target `develop`, while `master` accepts only `develop`,
-`release/*`, or `hotfix/*` branches.
+The `Branch Flow` GitHub Actions workflow accepts pull requests only to `master`.
 
 ## Toolchain
 
@@ -102,8 +98,7 @@ on the candidate version.
 
 ## Pull Requests
 
-- Target `develop` for normal work.
-- Target `master` only for release or hotfix PRs.
+- Target `master` for all work using a short-lived branch.
 - Include the issue or task link.
 - Include screenshots or recordings for visible UI changes.
 - Include dApp permission/signing test notes for provider changes.

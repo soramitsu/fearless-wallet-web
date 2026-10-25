@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { compileString } from 'sass';
 import { describe, expect, it } from 'vitest';
-import { FONT_LICENSES, fontLicensesPlugin } from '../../vite.config.shared.mjs';
+import { FONT_LICENSES, fontLicensesPlugin, projectLicensesPlugin } from '../../vite.config.shared.mjs';
 
 // W-A4 fonts (design-system 7.1): Inter 3.019 vendored as WOFF2 (400/600/700) with its OFL text, the body face and
 // every number under the Neon Glass palette; the akk and egy locales keep rendering in the bundled Noto faces.
@@ -250,6 +250,21 @@ describe('the body face', () => {
 });
 
 describe('font licences in the package', () => {
+  it('ships the Apache license and attribution notices even in builds without fonts', async () => {
+    const emitted = new Map<string, Buffer>();
+    const plugin = projectLicensesPlugin();
+    await plugin.generateBundle.call({
+      emitFile: ({ fileName, source }: { fileName: string; source: Buffer }) => emitted.set(fileName, source),
+    });
+
+    expect([...emitted.keys()]).toEqual(['LICENSE', 'NOTICE']);
+    for (const fileName of ['LICENSE', 'NOTICE']) {
+      expect(emitted.get(fileName)).toEqual(readFileSync(repository(fileName)));
+    }
+    expect(emitted.get('LICENSE')?.toString()).toContain('Version 2.0, January 2004');
+    expect(emitted.get('NOTICE')?.toString()).toContain('Third-party');
+  });
+
   it('names an OFL text for every bundled font family', () => {
     for (const [published, source] of Object.entries(FONT_LICENSES as Record<string, string>)) {
       expect(existsSync(repository(source)), source).toBe(true);

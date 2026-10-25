@@ -5,5 +5,5 @@
   "description": "Fearless fail-closed compatibility shim for an unused Subwallet legacy Bitcoin message dependency",
   "main": "index.cjs",
   "types": "index.d.ts",
-  "license": "MIT"
+  "license": "Apache-2.0"
 }

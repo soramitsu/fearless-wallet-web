@@ -122,7 +122,7 @@ default_branch_for_repo() {
     soramitsu/fearless-release-readiness)
       echo "main"
       ;;
-    tonswap-org/ton-indexer|solswap-io/solswap-indexer|sora-xor/polkaswap-indexer)
+    soramitsu/fearless-wallet-web|tonswap-org/ton-indexer|solswap-io/solswap-indexer|sora-xor/polkaswap-indexer)
       echo "master"
       ;;
     *)
@@ -255,7 +255,7 @@ if [[ "$method" == "PUT" ]]; then
     : > "$ruleset_state_file"
     exit 0
   fi
-  if [[ "$path" == */branches/develop/protection && "$scenario" == "apply-classic-policy-success" ]]; then
+  if [[ "$path" == */branches/master/protection && "$scenario" == "apply-classic-policy-success" ]]; then
     if ! jq -e '
       .required_status_checks.strict == true and
       .required_status_checks.checks == [
@@ -373,7 +373,7 @@ reviews_for_repo() {
       fi
       ;;
     weak-review-policy)
-      if [[ "$repo" == "soramitsu/fearless-wallet-web" && "$branch" == "develop" ]]; then
+      if [[ "$repo" == "soramitsu/fearless-wallet-web" && "$branch" == "master" ]]; then
         printf '{"dismiss_stale_reviews":false,"require_code_owner_reviews":false,"require_last_push_approval":false,"required_approving_review_count":0}\n'
       else
         printf '{"dismiss_stale_reviews":true,"require_code_owner_reviews":true,"require_last_push_approval":true,"required_approving_review_count":1}\n'
@@ -505,7 +505,7 @@ if [[ "$path" == */protection ]]; then
   bypass_users='[]'
   case "$scenario" in
     weak-classic-policy)
-      if [[ "$repo" == "soramitsu/fearless-wallet-web" && "$branch" == "develop" ]]; then
+      if [[ "$repo" == "soramitsu/fearless-wallet-web" && "$branch" == "master" ]]; then
         strict=false
         admins=false
         conversations=false
@@ -515,7 +515,7 @@ if [[ "$path" == */protection ]]; then
       ;;
     apply-classic-policy-success)
       if [[ "$repo" == "soramitsu/fearless-wallet-web" &&
-        "$branch" == "develop" &&
+        "$branch" == "master" &&
         ! -f "$classic_state_file" ]]; then
         strict=false
         admins=false
@@ -526,7 +526,7 @@ if [[ "$path" == */protection ]]; then
       fi
       ;;
     classic-bypass-policy)
-      if [[ "$repo" == "soramitsu/fearless-wallet-web" && "$branch" == "develop" ]]; then
+      if [[ "$repo" == "soramitsu/fearless-wallet-web" && "$branch" == "master" ]]; then
         bypass_users='[{"login":"unsafe-bypass"}]'
       fi
       ;;
@@ -692,7 +692,7 @@ expect_failure "ruleset bypass fixture" "ruleset 42 affecting 'develop' permits 
 expect_success "ruleset apply fixture" run_audit ruleset-apply-success --apply-protection
 expect_failure "ambiguous ruleset apply fixture" "expected exactly one effective repository ruleset, found 2" run_audit ruleset-apply-ambiguous --apply-protection
 expect_failure "missing-review-policy fixture" "branch 'master' missing pull-request review protection: require_last_push_approval" run_audit missing-review-policy
-expect_failure "weak-review-policy fixture" "branch 'develop' missing pull-request review protection: dismiss_stale_reviews require_code_owner_reviews require_last_push_approval required_approving_review_count" run_audit weak-review-policy
+expect_failure "weak-review-policy fixture" "branch 'master' missing pull-request review protection: dismiss_stale_reviews require_code_owner_reviews require_last_push_approval required_approving_review_count" run_audit weak-review-policy
 expect_failure "staging fixture" "hosted staging branch still exists" run_audit staging-present
 expect_success "delete-staging fixture" run_audit delete-staging-success --delete-staging
 rm -f "${TMPDIR:-/tmp}/fake-gh-delete-staging-count"

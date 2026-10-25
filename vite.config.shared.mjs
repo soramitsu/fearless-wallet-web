@@ -148,7 +148,19 @@ export const FONT_LICENSES = Object.freeze({
   'licenses/fonts/NotoSansCuneiform-OFL.txt': 'node_modules/@fontsource/noto-sans-cuneiform/LICENSE',
   'licenses/fonts/NotoSansEgyptianHieroglyphs-OFL.txt': 'node_modules/@fontsource/noto-sans-egyptian-hieroglyphs/LICENSE',
   'licenses/fonts/Sora-OFL.txt': 'node_modules/@fontsource-variable/sora/LICENSE',
+  'licenses/fonts/Unbounded-OFL.txt': 'src/assets/fonts/Unbounded-OFL.txt',
 });
+
+export function projectLicensesPlugin() {
+  return {
+    name: 'fearless-project-licenses',
+    async generateBundle() {
+      for (const fileName of ['LICENSE', 'NOTICE']) {
+        this.emitFile({ type: 'asset', fileName, source: await fs.readFile(path.resolve(__dirname, fileName)) });
+      }
+    },
+  };
+}
 
 export function fontLicensesPlugin() {
   return {
@@ -263,6 +275,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
         symbolId: 'icon-[name]',
       }),
       fontLicensesPlugin(),
+      projectLicensesPlugin(),
     ],
     optimizeDeps: { exclude: ['@subwallet/keyring', '@subwallet/ui-keyring'] },
     resolve: {

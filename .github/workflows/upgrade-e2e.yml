@@ -63,21 +63,21 @@ jobs:
 
       - name: Set up Chrome for Testing
         id: setup-chrome
-        run: bash ./scripts/upgrade-e2e/install-cft.sh
+        run: bash ./scripts/upgrade-e2e/install-cft.sh --install-sandbox
 
       - name: Verify sandboxed Chrome and extension startup before legacy builds
         run: node scripts/upgrade-e2e/preflight-chrome.mjs
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-          # Reuse the runner's installed root-owned setuid helper. The probe checks
-          # ownership, permissions and protected parent directories before use.
-          CHROME_DEVEL_SANDBOX: /opt/google/chrome/chrome-sandbox
+          # The matching helper comes from the hash-verified pinned archive. The
+          # probe verifies root ownership, setuid mode and protected parents.
+          CHROME_DEVEL_SANDBOX: ${{ steps.setup-chrome.outputs.sandbox-path }}
 
       - name: Real legacy-build upgrade E2E (S1-S8, ECDSA, rollback R1 to 3.0.6)
         run: yarn test:upgrade:e2e --out output/upgrade-e2e/ci
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
-          CHROME_DEVEL_SANDBOX: /opt/google/chrome/chrome-sandbox
+          CHROME_DEVEL_SANDBOX: ${{ steps.setup-chrome.outputs.sandbox-path }}
 
       - name: Report
         if: always()

@@ -354,6 +354,7 @@ async function main() {
     console.info('[extension-smoke] wallet seeded');
 
     if (tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly) {
+      await enableUnpackedReload(cdp);
       let controlSession = extensionSession;
       let liveBackgroundSession = backgroundSession;
       const checkImport = masterPasswordStorageOnly ? checkMasterPasswordStorage : walletResetStorageOnly ? checkWalletResetStorage : accountRemovalStorageOnly ? checkAccountRemovalStorage : currentAccountStorageOnly ? checkCurrentAccountStorage : sessionRetirementStorageOnly ? checkSessionRetirementStorage : mobileAddressStorageOnly ? checkMobileAddressStorage : jsonImportStorageOnly ? checkJsonImportStorage : localImportStorageOnly ? checkLocalImportStorage : checkTonImportStorage;
@@ -392,6 +393,15 @@ async function main() {
           await stopExtensionKeepAlive();
           const { targetInfo } = await cdp.send('Target.getTargetInfo', {}, liveBackgroundSession);
           await evaluate(cdp, liveBackgroundSession, 'setTimeout(() => chrome.runtime.reload(), 0); true');
+          await eventually(async () => {
+            const { targetInfos } = await cdp.send('Target.getTargets');
+            return !targetInfos.some(target => target.targetId === targetInfo.targetId);
+          }, 'retired extension worker');
+          // Manifest V3 starts a replacement worker on demand. Reconnect the
+          // control page's port before waiting for it, as reopening the popup does.
+          controlSession = await openExtensionControlPage(cdp, extensionId, { afterReload: true });
+          await setupExtensionMessaging(cdp, controlSession);
+          await eventually(() => extensionSend(cdp, controlSession, 'pri(app.port.ping)', null), 'restarted extension ping');
           const restartedTarget = await waitForTarget(cdp, (target) => target.targetId !== targetInfo.targetId
             && ['background_page', 'service_worker'].includes(target.type)
             && target.url.startsWith(`chrome-extension://${extensionId}/`), 'restarted extension worker', chrome);
@@ -399,8 +409,6 @@ async function main() {
           // observed, rather than choosing the first matching (possibly old) worker.
           console.info(`[extension-smoke] worker restart ${targetInfo.targetId} -> ${restartedTarget.targetId}`);
           liveBackgroundSession = await openExtensionBackgroundSession(cdp, extensionId, chrome, restartedTarget.targetId);
-          controlSession = await openExtensionControlPage(cdp, extensionId);
-          await setupExtensionMessaging(cdp, controlSession);
           stopExtensionKeepAlive = startExtensionKeepAlive(cdp, controlSession, liveBackgroundSession);
           await eventually(() => extensionSend(cdp, controlSession, 'pri(app.isReady)', null), 'restarted extension readiness');
         },
@@ -677,7 +685,7 @@ async function loadWalletFixtureDerivation() {
   const server = await createServer({
     configFile: false,
     root,
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false, ws: false },
     optimizeDeps: { noDiscovery: true, include: [] },
     resolve: { alias: { '@': path.join(root, 'src') } },
   });
@@ -695,6 +703,7 @@ async function loadWalletFixtureDerivation() {
         fields: { ...fields, ethereumAddress: HDNodeWallet.fromPhrase(mnemonic).address },
         expected: {
           solana: { address: fields.solanaAddress },
+          ton: { addressNonBounceable: fields.tonAddress, publicKeyHex: fields.tonPublicKeyHex },
           iroha: { nexus: irohaAccount('nexus'), taira: irohaAccount('taira') },
         },
       };
@@ -1190,15 +1199,47 @@ function startExtensionKeepAlive(cdp, sessionId, backgroundSession) {
   };
 }
 
-async function openExtensionControlPage(cdp, extensionId) {
+async function enableUnpackedReload(cdp) {
+  // Loading through CDP works without developer mode, but Chrome disables that
+  // unpacked extension on runtime.reload(). Enable it only in this disposable
+  // test profile so a restart exercises persistent wallet storage.
+  const { targetId } = await cdp.send('Target.createTarget', { url: 'chrome://extensions/' });
+  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
+  try {
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await waitForExpression(cdp, sessionId, 'Boolean(chrome.developerPrivate)', 'extension developer settings');
+    const error = await evaluate(cdp, sessionId, `new Promise(resolve => {
+      chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true }, () => {
+        resolve(chrome.runtime.lastError?.message || null);
+      });
+    })`);
+    assert(!error, `Could not enable unpacked reloads in the test profile: ${error}`);
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId });
+  }
+}
+
+async function openExtensionControlPage(cdp, extensionId, { afterReload = false } = {}) {
+  const url = `chrome-extension://${extensionId}/smoke-control.html`;
   const { targetId } = await cdp.send('Target.createTarget', {
-    url: `chrome-extension://${extensionId}/smoke-control.html`,
+    url,
   });
   const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
 
   await cdp.send('Runtime.enable', {}, sessionId);
   await cdp.send('Page.enable', {}, sessionId);
   await waitForExpression(cdp, sessionId, 'document.readyState !== "loading"', 'extension control page readiness');
+  if (afterReload) {
+    // The old worker disappears before Chrome finishes registering the reloaded
+    // extension. A page opened in that gap is an error document, so navigate it
+    // again instead of waiting for an API that cannot appear in that document.
+    await eventually(async () => {
+      if (await evaluate(cdp, sessionId, 'Boolean(globalThis.chrome?.runtime?.connect)')) return true;
+      await cdp.send('Page.navigate', { url }, sessionId);
+      await sleep(500);
+      return false;
+    }, 'reloaded extension control page runtime');
+  }
 
   return sessionId;
 }
@@ -1289,6 +1330,12 @@ async function assertFreshWalletHasNoRecoveryNotice(cdp, extensionId, extensionS
     });
     await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(".wallet-recovery-banner"))',
       'recovery banner after switching to the old wallet');
+    await extensionSend(cdp, extensionSession, 'pri(accounts.update.current)', {
+      address: freshAddress, walletEcosystem: 'substrate',
+    });
+    await waitForExpression(cdp, sessionId,
+      'document.querySelector("[data-testid=walletNameHeader]")?.textContent.trim() === "Fresh Solana Smoke" && !document.querySelector(".wallet-recovery-banner") && !document.querySelector("dialog.wallet-upgrade")',
+      'fresh wallet restored without the recovery warning');
     console.info('[extension-smoke] fresh wallet shows no old-wallet warning; the old wallet still does');
   } catch (error) {
     const state = await evaluate(cdp, sessionId,

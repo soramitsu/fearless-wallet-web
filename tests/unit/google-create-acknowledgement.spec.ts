@@ -151,3 +151,31 @@ describe('Google create backup acknowledgements', () => {
   });
 
 });
+
+
+describe('Google create generation expiry', () => {
+  it('requires fresh-generation proof on both parent and child saves', async () => {
+    const wrapper = await open();
+    expect(mocks.add).toHaveBeenCalledTimes(2);
+    for (const call of mocks.add.mock.calls) expect(call.slice(3)).toEqual(['substrate', undefined, true]);
+    wrapper.unmount();
+  });
+
+  it('abandons an expired phrase and any child progress before restarting creation', async () => {
+    mocks.add.mockResolvedValueOnce(child.address).mockRejectedValueOnce(new Error('wallet_generation_expired'));
+    const wrapper = await open();
+    expect(wrapper.vm.step).toBe(1);
+    expect(wrapper.vm.isLoading).toBe(false);
+    expect(wrapper.vm.mnemonic).toBe('');
+    expect(wrapper.vm.createdEthereumAddress).toBe('');
+    expect(wrapper.vm.createdAddress).toBe('');
+    expect(wrapper.find('[data-testid="generationExpired"]').text()).toBe('ux.walletGenerationExpired');
+    expect(mocks.upload).not.toHaveBeenCalled();
+    expect(mocks.select).not.toHaveBeenCalled();
+    mocks.phrase.mockResolvedValueOnce('new public fixture phrase');
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.mnemonic).toBe('new public fixture phrase');
+    expect(wrapper.vm.generationExpired).toBe(false);
+    wrapper.unmount();
+  });
+});

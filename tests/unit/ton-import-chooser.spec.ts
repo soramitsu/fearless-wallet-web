@@ -134,7 +134,7 @@ describe('TON import: phrase validation', () => {
 
     await finish(wrapper);
 
-    expect(mocks.save.mock.calls.at(-1)).toHaveLength(4);
+    expect(mocks.save.mock.calls.at(-1)?.slice(3)).toEqual(['substrate', undefined, false]);
     expect(mocks.derive).toHaveBeenCalledWith(PHRASE);
     wrapper.unmount();
   });

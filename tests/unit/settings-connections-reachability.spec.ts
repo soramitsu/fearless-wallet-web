@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 const mocks = vi.hoisted(() => ({
   getAccessStatus: vi.fn(),
+  getLegacyExposureStatus: vi.fn(),
   lockExtension: vi.fn(),
   push: vi.fn(),
   updateAuthorization: vi.fn(),
@@ -45,6 +46,7 @@ vi.mock('@/extension/messaging', () => ({
   lockExtension: mocks.lockExtension,
   updateAuthorization: mocks.updateAuthorization,
 }));
+vi.mock('@/extension/messaging/legacy-exposure', () => ({ getLegacyExposureStatus: mocks.getLegacyExposureStatus }));
 vi.mock('@/router/routes', () => ({
   Components: {
     AccountAccessRecovery: 'AccountAccessRecovery',
@@ -52,6 +54,7 @@ vi.mock('@/router/routes', () => ({
     DAppDetails: 'DAppDetails',
     DAppsAuths: 'DAppsAuths',
     IrohaConnect: 'IrohaConnect',
+    SecurityNoticeGuide: 'SecurityNoticeGuide',
     SettingsChangePassword: 'SettingsChangePassword',
     SettingsNetworksAssets: 'SettingsNetworksAssets',
     Unlock: 'Unlock',
@@ -128,6 +131,7 @@ describe('settings connection reachability', () => {
     mocks.accountsStore.accounts = [];
     mocks.accountsStore.selectedWallet = { address: 'selected-address', isTon: false };
     mocks.getAccessStatus.mockResolvedValue({ issues: [] });
+    mocks.getLegacyExposureStatus.mockResolvedValue({ state: 'not_exposed', wallets: [], newWallets: [] });
   });
 
   it('lists Account access while accounts wait for a password, so they stay reachable after Skip for now', async () => {
@@ -150,6 +154,49 @@ describe('settings connection reachability', () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="settings-account-access"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="settings-change-password"]').exists()).toBe(true);
+  });
+
+  it('keeps the wallet guide reachable after closing the reminder, including when all wallets are moved', async () => {
+    mocks.getLegacyExposureStatus.mockResolvedValue({
+      state: 'acknowledged',
+      wallets: [{ address: 'old', present: true, movedAt: 1 }],
+      newWallets: [],
+    });
+    const wrapper = mountSettings();
+    await flushPromises();
+
+    const guide = wrapper.get('[data-testid="settings-legacy-exposure"]');
+    expect(guide.text()).toContain('exposureNotice.guide.remaining:0');
+    await guide.trigger('click');
+    expect(mocks.push).toHaveBeenCalledWith({ name: 'SecurityNoticeGuide', params: undefined });
+  });
+
+  it('keeps an imported-key guide reachable on a fresh profile', async () => {
+    mocks.getLegacyExposureStatus.mockResolvedValue({
+      state: 'not_exposed', wallets: [], newWallets: [],
+      importedWallets: [{ address: 'imported', present: true }],
+    });
+    const wrapper = mountSettings();
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="settings-legacy-exposure"]').text()).toContain('exposureNotice.guide.remaining:1');
+  });
+
+  it.each(['not_exposed', 'unknown', 'notice_pending'])('leaves the guide entry out for %s with no imports', async (state) => {
+    mocks.getLegacyExposureStatus.mockResolvedValue({ state, wallets: [], newWallets: [] });
+    const wrapper = mountSettings();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="settings-legacy-exposure"]').exists()).toBe(false);
+  });
+
+  it('keeps Settings usable when the guide status is unavailable', async () => {
+    mocks.getLegacyExposureStatus.mockRejectedValue(new Error('offline'));
+    const wrapper = mountSettings();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="settings-legacy-exposure"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="settings-change-password"]').exists()).toBe(true);
   });
 

@@ -123,13 +123,14 @@ export class TonKeyringService {
   }
 
   getAccounts() {
-    return Object.values(this.accountSubject.value).map(({ json: { address }, name, walletEcosystem }) => ({
+    return Object.values(this.accountSubject.value).map(({ json: { address, meta }, name, walletEcosystem }) => ({
       address,
       walletEcosystem,
       meta: {
         name,
         walletEcosystem,
         isMobile: false,
+        walletSecurityGeneration: meta.walletSecurityGeneration,
       } as FWKeyringMeta,
     }));
   }

@@ -379,13 +379,14 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  async accountsCreate({ suri, type, meta, walletEcosystem, tonImport }: RequestAccountCreateSuri): Promise<string> {
+  async accountsCreate({ suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration }: RequestAccountCreateSuri): Promise<string> {
     const address = await this.state.keyringService.addAccount(
       suri,
       { ...meta, isMobile: false },
       walletEcosystem,
       type,
-      tonImport
+      tonImport,
+      requireFreshGeneration
     );
 
     if (!isEthereumAddress(address) && !IS_EXTENSION_SMOKE) {

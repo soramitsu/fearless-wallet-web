@@ -468,3 +468,59 @@ describe('local account import durability with real ui-keyring and Chrome store'
     expect(restored.meta.isMasterAccount).toBe(false);
   });
 });
+
+
+describe('generated wallet provenance through real storage', { timeout: 60_000 }, () => {
+  it('persists authenticated generated parent and EVM provenance before acknowledging creation', async () => {
+    const phrase = await service.mnemonicGenerate({ walletEcosystem: WalletEcosystem.Substrate, wordCount: 12 });
+    const child = observe(extension.accountsCreate({ suri: `${phrase}/m/44'/60'/0'/0/0`, type: 'ethereum',
+      meta: { name: 'Generated' }, walletEcosystem: WalletEcosystem.Substrate, requireFreshGeneration: true }));
+    pending.push(child);
+    await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
+    expect(keyring.getAccounts()).toEqual([]);
+    await drain();
+    const childResult = await child;
+    if (!('value' in childResult)) throw childResult.error;
+    const parent = observe(extension.accountsCreate({ suri: phrase, type: 'sr25519',
+      meta: { name: 'Generated', ethereumAddress: childResult.value }, walletEcosystem: WalletEcosystem.Substrate,
+      requireFreshGeneration: true }));
+    pending.push(parent);
+    await drain();
+    const parentResult = await parent;
+    if (!('value' in parentResult)) throw parentResult.error;
+    const rename = observe(service.saveAccountMeta(parentResult.value, { name: 'Renamed generated', walletSecurityGeneration: 0 }));
+    pending.push(rename);
+    await drain();
+    expect(await rename).toEqual({ value: true });
+    expect(Object.values(fixture.data).filter((value) => value?.meta).map((value) => value.meta.walletSecurityGeneration)).toEqual([1, 1]);
+  });
+
+  it('rejects an expired create before storing or selecting an account', async () => {
+    const result = observe(extension.accountsCreate({ suri: PHRASE, type: 'sr25519',
+      meta: { name: 'Expired', walletSecurityGeneration: 1 }, walletEcosystem: WalletEcosystem.Substrate, requireFreshGeneration: true }));
+    pending.push(result);
+    expect(await result).toMatchObject({ error: expect.objectContaining({ message: expect.stringContaining('wallet_generation_expired') }) });
+    expect(fixture.writes).toEqual([]);
+    expect(keyring.getAccounts()).toEqual([]);
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it('removes forged generation and remote-wallet claims on imported local secrets', async () => {
+    const result = observe(extension.accountsCreate({ suri: PHRASE, type: 'sr25519', meta: {
+      name: 'Imported', walletSecurityGeneration: 1, isHardware: true, isInjected: true, isMobile: true,
+    }, walletEcosystem: WalletEcosystem.Substrate }));
+    pending.push(result);
+    await drain();
+    expect(await result).toHaveProperty('value');
+    const stored = Object.values(fixture.data).find((value) => value?.meta)!;
+    expect(stored.meta.walletSecurityGeneration).toBeUndefined();
+    expect(stored.meta.isHardware).toBeUndefined();
+    expect(stored.meta.isInjected).toBeUndefined();
+    expect(stored.meta.isMobile).toBe(false);
+    const update = observe(service.saveAccountMeta(stored.address, { name: 'Renamed imported', walletSecurityGeneration: 1 }));
+    pending.push(update);
+    await drain();
+    expect(await update).toEqual({ value: true });
+    expect(Object.values(fixture.data).find((value) => value?.meta)?.meta.walletSecurityGeneration).toBeUndefined();
+  });
+});

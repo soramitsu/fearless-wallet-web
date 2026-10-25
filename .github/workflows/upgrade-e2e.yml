@@ -82,3 +82,15 @@ jobs:
       - name: Report
         if: always()
         run: cat output/upgrade-e2e/ci/report.json || true
+
+      # Explicit allowlist: no browser profiles, storage dumps, test keyrings or wallet snapshots.
+      - name: Preserve upgrade report and sanitized browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: upgrade-diagnostics-${{ github.sha }}
+          path: |
+            output/upgrade-e2e/ci/report.json
+            output/upgrade-e2e/ci/*/browser-diagnostics.json
+          if-no-files-found: warn
+          retention-days: 7

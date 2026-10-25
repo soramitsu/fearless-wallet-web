@@ -23,6 +23,16 @@ immutable lockfile, type checks and production optimizations are unchanged.
 `provenance.json` records this compiler scheduling override. Browser cleanup is
 bounded and escalates only the child launched by the harness if it ignores SIGTERM.
 
+Popup retries open a fresh extension page to wake an idle worker. They do not wait for a worker after closing the
+failed page, and three unanswered attempts fail the scenario. Readiness requires a reply received over the port;
+a rejected send on a disconnected port is not an answer. Each attempt retains the same 20-second response deadline.
+
+On an unanswered popup, worker timeout or scenario failure, `browser-diagnostics.json` records bounded process
+state, native stderr categories, target lifecycle changes, and extension error counts/source locations. Arbitrary
+stderr, console messages, message payloads and wallet storage are excluded. CI uploads only the summary report and
+these sanitized diagnostics, never the browser profiles or keyring directories. A successful local retry does not
+erase an earlier failed CI run or establish the cause of its timeout.
+
 ## What runs where
 
 | Piece | File |

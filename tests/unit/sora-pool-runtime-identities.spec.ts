@@ -26,11 +26,13 @@ afterEach(() => {
   apiSora.NetworkFee = originalFees;
 });
 
-function fixture({ first = VAL, second = OTHER, xorBalance = 10n * UNIT, networkName = SORA_NETWORK_NAME } = {}) {
+function fixture({ first = VAL, second = OTHER, xorBalance = 10n * UNIT, networkName = SORA_NETWORK_NAME, poolPrecision = 18, rewardPrecision = 18 } = {}) {
   const assets = [XOR, VAL, OTHER].map((address, index) => ({
     address, currencyId: address, id: index === 0 ? SORA_XOR_ASSET_ID : `registry-${index}`,
     symbol: ['XOR', 'VAL', 'OTHER'][index], name: ['XOR', 'VAL', 'OTHER'][index],
-    precision: 18, decimals: 18, isMintable: false, priceId: `price-${index}`,
+    precision: address === VAL ? poolPrecision : address === OTHER ? rewardPrecision : 18,
+    decimals: address === VAL ? poolPrecision : address === OTHER ? rewardPrecision : 18,
+    isMintable: false, priceId: `price-${index}`,
   }));
   const runtime = {
     isConnected: true,
@@ -49,7 +51,7 @@ function fixture({ first = VAL, second = OTHER, xorBalance = 10n * UNIT, network
   const fee = '10000000000000000';
   apiSora.NetworkFee = Object.fromEntries(Object.values(Operation).map((operation) => [operation, fee]));
   vi.spyOn(apiSora, 'calcStaticNetworkFees').mockResolvedValue();
-  vi.spyOn(apiSora.poolXyk, 'getReserves').mockResolvedValue([String(100n * UNIT), String(100n * UNIT)]);
+  vi.spyOn(apiSora.poolXyk, 'getReserves').mockResolvedValue([String(100n * UNIT), String(100n * 10n ** BigInt(poolPrecision))]);
   vi.spyOn(apiSora.poolXyk, 'getTotalSupply').mockResolvedValue(String(10n * UNIT));
   vi.spyOn(apiSora.poolXyk, 'getAccountPoolBalanceObservable').mockReturnValue(of(String(5n * UNIT)));
   const accountAsset = vi.spyOn(apiSora.assets, 'getAccountAsset');
@@ -77,7 +79,7 @@ function fixture({ first = VAL, second = OTHER, xorBalance = 10n * UNIT, network
     amount1: '1', amount2: '1', assetId1: 'first-registry', assetId2: 'second-registry',
     expectedFee: '0.01', networkName: SORA_NETWORK_NAME, slippage: 0.5, isExchangeB: false, isMobile: false,
   };
-  return { service, request, accountAsset, add, remove };
+  return { service, state, request, accountAsset, add, remove };
 }
 
 describe('SORA pool operations distinguish registry identifiers from runtime asset IDs', () => {
@@ -113,10 +115,10 @@ describe('SORA pool operations distinguish registry identifiers from runtime ass
   });
 });
 
-function demeterFixture(networkName = SORA_NETWORK_NAME) {
-  const result = fixture({ networkName });
+function demeterFixture(networkName = SORA_NETWORK_NAME, poolPrecision = 18, isFarm = true, rewardPrecision = 18) {
+  const result = fixture({ networkName, poolPrecision, rewardPrecision });
   const pool = {
-    baseAsset: XOR, poolAsset: VAL, rewardAsset: OTHER, isFarm: true, isCore: false, isRemoved: false,
+    baseAsset: XOR, poolAsset: VAL, rewardAsset: OTHER, isFarm, isCore: false, isRemoved: false,
     multiplier: 1, depositFee: 0, totalTokensInPool: new FPNumber(2), rewards: new FPNumber(1),
     rewardsToBeDistributed: new FPNumber(1),
   };
@@ -128,12 +130,64 @@ function demeterFixture(networkName = SORA_NETWORK_NAME) {
   const withdraw = vi.spyOn(apiSora.demeterFarming, 'withdrawLiquidity').mockResolvedValue();
   const request: DemeterMutationRequest = {
     operation: 'withdraw', amount: '1', expectedFee: '0.01',
-    pool: { key: [XOR, VAL, OTHER, 'farm'].join(':'), isFarm: true, baseAssetId: XOR, poolAssetId: VAL, rewardAssetId: OTHER },
+    pool: { key: [XOR, VAL, OTHER, isFarm ? 'farm' : 'stake'].join(':'), isFarm, baseAssetId: XOR, poolAssetId: VAL, rewardAssetId: OTHER },
   };
-  return { ...result, withdraw, demeterRequest: request };
+  return { ...result, pool, withdraw, demeterRequest: request };
 }
 
 describe('Demeter catalog and exits use the configured SORA network', () => {
+  it.each([0, 6, 18])('values a farm using the %i-decimal pool asset reserve and 18-decimal LP supply', async (precision) => {
+    const { service } = demeterFixture(SORA_NETWORK_NAME, precision);
+    const result = await service.getDemeterPools();
+    expect(result.pools[0].tvl).toBe('80');
+  });
+
+  it('preserves fractional LP shares when the reserve asset is indivisible', async () => {
+    const { service } = demeterFixture(SORA_NETWORK_NAME, 0);
+    vi.mocked(apiSora.poolXyk.getReserves).mockResolvedValue([String(100n * UNIT), '5']);
+    const result = await service.getDemeterPools();
+    expect(result.pools[0].tvl).toBe('4');
+  });
+
+  it('preserves fractional fiat values when valuing an indivisible staking asset', () => {
+    const { service, state, pool } = demeterFixture(SORA_NETWORK_NAME, 0, false);
+    state.pricesService.prices.json.tokenPriceMap['price-1'] = 0.25;
+    pool.totalTokensInPool = new FPNumber(2, 0);
+    // The catalog currently filters to farms; exercise the shared non-farm valuation directly.
+    expect(Reflect.get(service, 'getDemeterTvl').call(service, pool, VAL, null)).toBe('0.5');
+  });
+
+  it.each([0, 6, 18])('preserves weighted fractional emissions in the visible APR for %i-decimal rewards', async (precision) => {
+    const { service } = demeterFixture(SORA_NETWORK_NAME, 18, true, precision);
+    vi.mocked(apiSora.demeterFarming.getTokenInfosObservable).mockRestore();
+    const tokenInfos = Object.assign(async (_asset: string, cb: (value: unknown) => void) => {
+      cb({ unwrapOr: () => ({
+        tokenPerBlock: String(10n ** BigInt(precision)), farmsTotalMultiplier: 4, stakingTotalMultiplier: 4,
+        farmsAllocation: '500000000000000000', stakingAllocation: '250000000000000000',
+        teamAllocation: '250000000000000000',
+      }) });
+      return () => undefined;
+    }, { keys: async () => [{ args: [OTHER] }] });
+    apiSora.api.query.demeterFarmingPlatform = { tokenInfos };
+    const result = await service.getDemeterPools();
+    expect(result.pools[0]).toMatchObject({ tokenPerBlock: '1', tvl: '80', apr: '2463750' });
+  });
+
+  it('withdraws a non-18-decimal stake using the actual observed position', async () => {
+    const { service, demeterRequest } = demeterFixture(SORA_NETWORK_NAME, 6, false);
+    vi.mocked(apiSora.demeterFarming.getAccountPoolsObservable).mockRestore();
+    apiSora.api.query.demeterFarmingPlatform = {
+      userInfos: async (_address: string, cb: (value: unknown) => void) => {
+        cb([{ baseAsset: XOR, poolAsset: VAL, rewardAsset: OTHER, isFarm: false, pooledTokens: '2000000', rewards: '0' }]);
+        return () => undefined;
+      },
+    };
+    const unstake = vi.spyOn(apiSora.demeterFarming, 'unstake').mockResolvedValue();
+    await expect(service.mutateDemeter({ ...demeterRequest, amount: '2' })).resolves.toEqual({ status: true });
+    expect(unstake).toHaveBeenCalledWith(expect.objectContaining({ address: VAL, decimals: 6 }),
+      expect.objectContaining({ address: OTHER }), '2');
+  });
+
   it.each([SORA_NETWORK_NAME, SORA_NETWORK_NAME.toUpperCase()])('finds assets and prices on %s', async (name) => {
     const { service } = demeterFixture(name);
     const result = await service.getDemeterPools();

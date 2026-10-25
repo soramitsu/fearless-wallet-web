@@ -58,7 +58,7 @@ describe('Polkaswap final execution guard', () => {
     const handler = source.slice(start, end);
     const disclaimer = handler.indexOf('!this.state.soraDisclaimerService.isAccepted()');
     const runtime = handler.indexOf('if (!runtimeReady)');
-    const rebuildQuote = handler.indexOf('await createSwap(options, apiSora, this.state)');
+    const rebuildQuote = handler.indexOf('await prepareSwapExecution(options, apiSora, this.state)');
     const balanceGuard = handler.indexOf('validatePolkaswapExecution({');
     const authoritativeGuard = handler.indexOf('validateAuthoritativePolkaswapExecution({');
     const accountBinding = handler.lastIndexOf('isCapturedSoraPairStillSelected(');
@@ -75,6 +75,8 @@ describe('Polkaswap final execution guard', () => {
     expect(authoritativeGuard).toBeGreaterThan(balanceGuard);
     expect(handler).toContain('await apiSora.calcStaticNetworkFees()');
     expect(handler).toContain('apiSora.assets.getAccountAsset(assetA.address)');
+    expect(handler).toContain('request: { ...options, amountA: maximumSourceAmount }');
+    expect(handler).toContain('sourceAmount: maximumSourceAmount');
     expect(handler.match(/isActionEnabled\('polkaswap'\)/gu)?.length).toBeGreaterThanOrEqual(3);
     expect(handler.match(/soraDisclaimerService\.isAccepted\(\)/gu)?.length).toBeGreaterThanOrEqual(3);
     expect(accountBinding).toBeGreaterThan(authoritativeGuard);

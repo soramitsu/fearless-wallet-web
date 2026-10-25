@@ -706,17 +706,20 @@ export class PoolsService {
     if (price === null) return null;
     if (pool.isFarm) {
       if (!liquidity) return null;
+      const asset = this.getDemeterPoolAsset(poolAssetId);
+      if (!asset) return null;
       const supply = FPNumber.fromCodecValue(liquidity.totalSupply);
       if (supply.isZero()) return null;
 
-      return FPNumber.fromCodecValue(liquidity.poolReserve)
+      // Ratios and fiat values may be fractional even when the token is indivisible.
+      return new FPNumber(FPNumber.fromCodecValue(liquidity.poolReserve, asset.precision))
         .div(supply)
         .mul(pool.totalTokensInPool)
         .mul(new FPNumber(price))
         .mul(FPNumber.TWO)
         .toString();
     }
-    return pool.totalTokensInPool.mul(new FPNumber(price)).toString();
+    return new FPNumber(pool.totalTokensInPool).mul(new FPNumber(price)).toString();
   }
 
   private getDemeterApr(

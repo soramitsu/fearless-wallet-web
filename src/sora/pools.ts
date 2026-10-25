@@ -2,10 +2,10 @@ import { combineLatest, defer, map, of, Subject, switchMap, type Observable, typ
 import { FPNumber } from './number';
 import { amount, codec, observe, slippageFactor, text, unwrap, XOR, type Runtime } from './runtime';
 import type { SoraClient } from './client';
-import type { AccountLiquidity, AccountLockedPool, Asset, DemeterAccountPool, DemeterPool } from './types';
+import type { AccountLiquidity, AccountLockedPool, Asset, DemeterAccountPool, DemeterPool, DemeterRewardToken } from './types';
 
 const flag = (value: Runtime) => value === true || value?.isTrue === true;
-const decimal = (value: Runtime) => FPNumber.fromCodecValue(codec(value));
+const decimal = (value: Runtime, precision = 18) => FPNumber.fromCodecValue(codec(value), precision);
 const MIN_LIQUIDITY = 1000n;
 
 export function poolWithdrawal(marker: string, reserve: string, supply: string): string {
@@ -34,6 +34,14 @@ export class SoraPools {
   accountLiquidity: AccountLiquidity[] = [];
   updated = new Subject<void>();
   constructor(private root: SoraClient) {}
+  private async assetPrecisions(addresses: string[], expectedApi: Runtime): Promise<Map<string, number>> {
+    if (this.root.api !== expectedApi) throw new Error('SORA connection changed; refresh farming balances');
+    const entries = await Promise.all([...new Set(addresses)].map(async (address) =>
+      [address, (await this.root.assets.getAssetInfo(address)).decimals] as const,
+    ));
+    if (this.root.api !== expectedApi) throw new Error('SORA connection changed; refresh farming balances');
+    return new Map(entries);
+  }
   private async poolAddress(a: string, b: string): Promise<string> {
     const properties = unwrap(await this.root.api.query.poolXYK.properties(a, b));
     if (!properties?.[0]) throw new Error('SORA pool is unavailable');
@@ -121,35 +129,54 @@ export class SoraPools {
     await this.root.submit(this.root.api.tx.poolXYK.withdrawLiquidity(dex, first.address, second.address, amount(liquidity), x, y));
   }
   farming = {
-    getAccountPoolsObservable: (): Observable<DemeterAccountPool[]> => observe(
-      (cb) => this.root.api.query.demeterFarmingPlatform.userInfos(this.root.address, cb),
-      (values) => [...values].map((value) => ({
-        isFarm: flag(value.isFarm), baseAsset: text(value.baseAsset), poolAsset: text(value.poolAsset),
-        rewardAsset: text(value.rewardAsset), pooledTokens: decimal(value.pooledTokens), rewards: decimal(value.rewards),
-      })),
-    ),
+    getAccountPoolsObservable: (): Observable<DemeterAccountPool[]> => {
+      const expectedApi = this.root.api;
+      const address = this.root.address;
+      return observe(
+        (cb) => expectedApi.query.demeterFarmingPlatform.userInfos(address, cb),
+        (values) => [...values],
+      ).pipe(switchMap(async (values): Promise<DemeterAccountPool[]> => {
+        const precisions = await this.assetPrecisions(values.flatMap((value) => [
+          text(value.rewardAsset), ...(flag(value.isFarm) ? [] : [text(value.poolAsset)]),
+        ]), expectedApi);
+        if (this.root.address !== address) throw new Error('SORA account changed; refresh farming balances');
+        return values.map((value) => ({
+          isFarm: flag(value.isFarm), baseAsset: text(value.baseAsset), poolAsset: text(value.poolAsset),
+          rewardAsset: text(value.rewardAsset),
+          // Farm positions are LP markers; staking positions are raw pool-asset atoms.
+          pooledTokens: decimal(value.pooledTokens, flag(value.isFarm) ? 18 : precisions.get(text(value.poolAsset))!),
+          rewards: decimal(value.rewards, precisions.get(text(value.rewardAsset))!),
+        }));
+      }));
+    },
     getPoolsObservable: async (): Promise<Observable<DemeterPool[]>> => {
-      const query = this.root.api.query.demeterFarmingPlatform.pools;
+      const expectedApi = this.root.api;
+      const query = expectedApi.query.demeterFarmingPlatform.pools;
       const keys = await query.keys();
       if (!keys.length) return of([]);
+      const precisions = await this.assetPrecisions(keys.flatMap((key: Runtime) => key.args.map(text)), expectedApi);
       return combineLatest(keys.map((key: Runtime) => observe(
         (cb) => query(...key.args, cb),
         (values) => [...values].map((value): DemeterPool => ({
           baseAsset: text(value.baseAsset), poolAsset: text(key.args[0]), rewardAsset: text(key.args[1]),
           multiplier: Number(value.multiplier), isCore: flag(value.isCore), isFarm: flag(value.isFarm), isRemoved: flag(value.isRemoved),
-          depositFee: decimal(value.depositFee).toNumber(), totalTokensInPool: decimal(value.totalTokensInPool),
-          rewards: decimal(value.rewards), rewardsToBeDistributed: decimal(value.rewardsToBeDistributed),
+          depositFee: decimal(value.depositFee).toNumber(),
+          totalTokensInPool: decimal(value.totalTokensInPool, flag(value.isFarm) ? 18 : precisions.get(text(key.args[0]))!),
+          rewards: decimal(value.rewards, precisions.get(text(key.args[1]))!),
+          rewardsToBeDistributed: decimal(value.rewardsToBeDistributed, precisions.get(text(key.args[1]))!),
         })),
       ))).pipe(map((values: DemeterPool[][]) => values.flat()));
     },
-    getTokenInfosObservable: async () => {
-      const query = this.root.api.query.demeterFarmingPlatform.tokenInfos;
-      const keys = await query.keys();
+    getTokenInfosObservable: async (): Promise<Observable<DemeterRewardToken[]>> => {
+      const expectedApi = this.root.api;
+      const query = expectedApi.query.demeterFarmingPlatform.tokenInfos;
+      const keys: Runtime[] = await query.keys();
       if (!keys.length) return of([]);
+      const precisions = await this.assetPrecisions(keys.map((key: Runtime) => text(key.args[0])), expectedApi);
       return combineLatest(keys.map((key: Runtime) => observe((cb) => query(...key.args, cb), (option) => {
         const value = unwrap(option);
         if (!value) throw new Error('Missing farming token configuration');
-        return { assetId: text(key.args[0]), tokenPerBlock: decimal(value.tokenPerBlock), farmsTotalMultiplier: Number(value.farmsTotalMultiplier), stakingTotalMultiplier: Number(value.stakingTotalMultiplier), farmsAllocation: decimal(value.farmsAllocation), stakingAllocation: decimal(value.stakingAllocation), teamAllocation: decimal(value.teamAllocation) };
+        return { assetId: text(key.args[0]), tokenPerBlock: decimal(value.tokenPerBlock, precisions.get(text(key.args[0]))!), farmsTotalMultiplier: Number(value.farmsTotalMultiplier), stakingTotalMultiplier: Number(value.stakingTotalMultiplier), farmsAllocation: decimal(value.farmsAllocation), stakingAllocation: decimal(value.stakingAllocation), teamAllocation: decimal(value.teamAllocation) };
       })));
     },
     depositLiquidity: (value: string, pool: Asset, reward: Asset, base: Asset) => this.root.submit(this.root.api.tx.demeterFarmingPlatform.deposit(base.address, pool.address, reward.address, true, amount(value))),

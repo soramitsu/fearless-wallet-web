@@ -11,6 +11,15 @@ const VUEUSE_ANNOTATION =
 const OX_BASE64_ANNOTATION =
   '[INVALID_ANNOTATION] A comment "/*#__PURE__*/" in "node_modules/ox/_esm/core/Base64.js" contains an annotation that Rolldown cannot interpret due to the position of the comment.';
 
+// Both screens are deliberately embedded by their parent screens as well as routed.
+// Vite 8.3 reports the existing ReceiveForm imports alongside ManageAuths.
+const REVIEWED_POPUP_DYNAMIC_IMPORTS = new Map([
+  ['src/screens/extension-ui/ManageAuths.vue',
+    '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/extension-ui/ManageAuths.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/main/Main.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'],
+  ['src/screens/wallet&asset/ReceiveForm.vue',
+    '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/wallet&asset/ReceiveForm.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/wallet&asset/asset/Asset.vue?vue&type=script&lang.ts, src/screens/wallet&asset/wallet/Wallet.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'],
+]);
+
 const REVIEWED_INVALID_ANNOTATIONS = {
   popup: new Map([
     ['node_modules/@polkadot/x-global/index.js:9:23', X_GLOBAL_ANNOTATION],
@@ -75,12 +84,7 @@ export function isReviewedFirefoxBuildWarning(buildTarget, warning) {
   }
 
   if (warning.code === 'INEFFECTIVE_DYNAMIC_IMPORT') {
-    return (
-      buildTarget === 'popup' &&
-      warning.id === 'src/screens/extension-ui/ManageAuths.vue' &&
-      warning.summary ===
-        '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/extension-ui/ManageAuths.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/main/Main.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'
-    );
+    return buildTarget === 'popup' && REVIEWED_POPUP_DYNAMIC_IMPORTS.get(warning.id) === warning.summary;
   }
 
   if (warning.code === 'PLUGIN_TIMINGS') {

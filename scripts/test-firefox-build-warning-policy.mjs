@@ -166,6 +166,15 @@ expectFailure(
     ),
   /unreviewed popup warning/
 );
+const callbacksTiming = '[PLUGIN_TIMINGS] JavaScript callbacks ran for 8.4s of this 9.5s build (88%).';
+handler('warn', { code: 'PLUGIN_TIMINGS', message: callbacksTiming }, () => {});
+assertions += 1;
+expectFailure('callback timing summary drift', () => handler('warn', {
+  code: 'PLUGIN_TIMINGS', message: `${callbacksTiming} unexpected warning`,
+}, () => {}), /unreviewed popup warning/);
+expectFailure('callback timing invalid percentage', () => handler('warn', {
+  code: 'PLUGIN_TIMINGS', message: callbacksTiming.replace('(88%)', '(188%)'),
+}, () => {}), /unreviewed popup warning/);
 
 const packageInfo =
   "export const packageInfo = { name: '@polkadot/util', path: (import.meta && import.meta.url) ? new URL(import.meta.url).pathname.substring(0, new URL(import.meta.url).pathname.lastIndexOf('/') + 1) : 'auto', type: 'esm' };";

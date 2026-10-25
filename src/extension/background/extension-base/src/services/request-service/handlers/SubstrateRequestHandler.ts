@@ -5,7 +5,7 @@ import {
 } from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
 import { BehaviorSubject } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util/logger';
-import { getId } from '@extension-base/utils';
+import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import { captureSubstrateSigningContext, validateSubstrateSigningContext } from './substrateSigningContext';
@@ -115,10 +115,10 @@ export class SubstrateRequestHandler {
     snapshot.account.address = signingAccount.address;
     snapshot.account.name = signingAccount.name;
     snapshot.account.isMobile = signingAccount.kind === 'mobile';
-    const id = _id || getId();
+    const id = _id || createSigningRequestId('substrate');
 
     return new Promise((resolve, reject): void => {
-      if (this.substrateRequests[id]) throw new Error('Duplicate Substrate request ID');
+      if (this.substrateRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate Substrate request ID');
       let settled = false;
       const complete = () => {
         if (settled || this.substrateRequests[id] !== queued) return false;

@@ -101,6 +101,7 @@ import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
 import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type {
   IrohaConnectAccountRequest,
   IrohaConnectPendingRequest,
@@ -252,6 +253,13 @@ function isSolanaSignRequest(
   return 'ecosystem' in value && value.ecosystem === 'solana';
 }
 
+// The queue a request was admitted to, by the same shapes the popup reads to show it.
+function signingKindOf(value: object): SigningRequestKind {
+  if ('data' in value) return 'evm';
+
+  return 'ecosystem' in value && (value as { ecosystem?: unknown }).ecosystem === 'solana' ? 'solana' : 'substrate';
+}
+
 function formatSoraAddress(address: string): string {
   return apiSora.formatAddress(address);
 }
@@ -268,7 +276,7 @@ export default class Extension extends FWExtensionBase {
   private readonly pendingSiteApprovals = new WeakSet<object>();
 
   private assertSigningRequestCurrent(request: { id: string }): void {
-    if (this.state.requestService.getSignRequest(request.id) !== request) {
+    if (this.state.requestService.getSignRequest(request.id, signingKindOf(request)) !== request) {
       throw new Error('Signing request was cancelled or replaced');
     }
   }
@@ -675,7 +683,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async signEvmApprove({ id }: RequestSigningApprove): Promise<boolean> {
-    const queued = this.state.requestService.getSignRequest(id);
+    const queued = this.state.requestService.getSignRequest(id, 'evm');
     assert(queued, 'Unable to find request');
     this.assertNormalWalletUse(queued.account.address);
     const handler = this.state.requestService.evmRequestHandler;
@@ -785,7 +793,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async signSolanaApprove({ id }: RequestSigningApprove): Promise<boolean> {
-    const request = this.state.requestService.getSignRequest(id) as SolanaRequestsSubjectPayload | undefined;
+    const request = this.state.requestService.getSignRequest(id, 'solana') as SolanaRequestsSubjectPayload | undefined;
 
     assert(request, 'Unable to find request');
     if (this.pendingSiteApprovals.has(request)) throw new Error('Signing approval already pending');
@@ -832,7 +840,7 @@ export default class Extension extends FWExtensionBase {
 
       return true;
     } catch (error) {
-      if (this.state.requestService.getSignRequest(id) === request)
+      if (this.state.requestService.getSignRequest(id, 'solana') === request)
         request.reject(error instanceof Error ? error : new Error('Unable to sign Solana request'));
 
       return false;
@@ -841,8 +849,9 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  async signingApprove({ id }: RequestSigningApprove): Promise<boolean> {
-    const queued = this.state.requestService.getSignRequest(id);
+  // The popup names the queue of the request it shows (`kind`): an approval only reaches that request.
+  async signingApprove({ id, kind }: RequestSigningApprove): Promise<boolean> {
+    const queued = this.state.requestService.getSignRequest(id, kind);
 
     assert(queued, 'Unable to find request');
 
@@ -887,7 +896,7 @@ export default class Extension extends FWExtensionBase {
 
       return true;
     } catch (error) {
-      if (this.state.requestService.getSignRequest(id) === queued)
+      if (this.state.requestService.getSignRequest(id, 'substrate') === queued)
         queued.reject(error instanceof Error ? error : new Error('Unable to sign Substrate request'));
       return false;
     } finally {
@@ -895,8 +904,8 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
-    const queued = this.state.requestService.getSignRequest(id);
+  async signingApproveSignature({ id, signature, kind }: RequestSigningApproveSignature): Promise<boolean> {
+    const queued = this.state.requestService.getSignRequest(id, kind);
 
     assert(queued, 'Unable to find request');
 
@@ -929,7 +938,7 @@ export default class Extension extends FWExtensionBase {
       queued.resolve({ id, payload: signature });
       return true;
     } catch (error) {
-      if (this.state.requestService.getSignRequest(id) === queued)
+      if (this.state.requestService.getSignRequest(id, signingKindOf(queued)) === queued)
         queued.reject(error instanceof Error ? error : new Error('Unable to approve external signature'));
       throw error;
     } finally {
@@ -938,8 +947,8 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  signingCancel({ id }: RequestSigningCancel): boolean {
-    const queued = this.state.requestService.getSignRequest(id);
+  signingCancel({ id, kind }: RequestSigningCancel): boolean {
+    const queued = this.state.requestService.getSignRequest(id, kind);
 
     assert(queued, 'Unable to find request');
 

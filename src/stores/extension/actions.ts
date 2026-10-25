@@ -2,6 +2,7 @@ import axios from 'axios';
 import { resolveActionCapabilities, failClosedActionCapabilities, isActionCapabilityConfigFresh, type MutableAction } from '@extension-base/services/action-capability-service';
 import type { HexString } from '@polkadot/util/types';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type { RequestsPayload } from './types';
 import type { ExtensionStore } from '.';
 import type {
@@ -86,17 +87,19 @@ const toFeatures = (remote: CachedFeatures | undefined): Features => {
   };
 };
 
+// The request on screen, by its key and its queue. Looking a key up across queues could act on another request.
 export type ApprovePayload = {
   id: string;
+  kind: SigningRequestKind;
 };
 
 type SigningQueue = 'signRequests' | 'signEvmRequests' | 'signSolanaRequests';
 
-const signingQueueFor = (store: ExtensionStore, id: string): SigningQueue | undefined => {
-  if (store.signRequests.some((request) => request.id === id)) return 'signRequests';
-  if (Object.values(store.signEvmRequests).some((request) => request.id === id)) return 'signEvmRequests';
-  if (Object.values(store.signSolanaRequests).some((request) => request.id === id)) return 'signSolanaRequests';
-};
+const SIGNING_QUEUES: Readonly<Record<SigningRequestKind, SigningQueue>> = Object.freeze({
+  substrate: 'signRequests',
+  evm: 'signEvmRequests',
+  solana: 'signSolanaRequests',
+});
 
 const removeSigningRequest = (store: ExtensionStore, queue: SigningQueue | undefined, id: string) => {
   if (queue === 'signRequests') store.deleteRequest(queue, id);
@@ -140,11 +143,14 @@ type Actions = {
   subscribeSignRequests(this: ExtensionStore): Promise<SigningRequest[]>;
   subscribeEvmSignRequests(this: ExtensionStore): Promise<EvmRequests>;
   subscribeSolanaSignRequests(this: ExtensionStore): Promise<SolanaRequests>;
-  signCancel(this: ExtensionStore, id: string): Promise<void>;
+  signCancel(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
   approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<boolean>;
   subscribeExtensionRequests(this: ExtensionStore): Promise<boolean>;
   fetchTabStatus(this: ExtensionStore): Promise<void>;
-  signSignature(this: ExtensionStore, params: { id: string; payload: { signature: HexString } }): Promise<void>;
+  signSignature(
+    this: ExtensionStore,
+    params: { id: string; kind: SigningRequestKind; payload: { signature: HexString } }
+  ): Promise<void>;
   getAuthList(this: ExtensionStore): Promise<void>;
   fetchFeatures(this: ExtensionStore): Promise<void>;
 
@@ -303,9 +309,9 @@ export const actions: Actions = {
     return subscribeSolanaSigningRequests(callback);
   },
 
-  async approveSign({ id }) {
-    const queue = signingQueueFor(this, id);
-    const signed = await approveSign(id);
+  async approveSign({ id, kind }) {
+    const queue = SIGNING_QUEUES[kind];
+    const signed = await approveSign(id, kind);
 
     removeSigningRequest(this, queue, id);
     routeSigningRequests(this);
@@ -314,9 +320,9 @@ export const actions: Actions = {
     return signed;
   },
 
-  async signSignature({ payload, id }) {
-    const queue = signingQueueFor(this, id);
-    await approveSignSignature(id, payload.signature);
+  async signSignature({ payload, id, kind }) {
+    const queue = SIGNING_QUEUES[kind];
+    await approveSignSignature(id, payload.signature, kind);
 
     removeSigningRequest(this, queue, id);
 
@@ -325,9 +331,9 @@ export const actions: Actions = {
     routeSigningRequests(this);
   },
 
-  async signCancel(id) {
-    const queue = signingQueueFor(this, id);
-    await cancelSignRequest(id);
+  async signCancel({ id, kind }) {
+    const queue = SIGNING_QUEUES[kind];
+    await cancelSignRequest(id, kind);
 
     removeSigningRequest(this, queue, id);
     routeSigningRequests(this);

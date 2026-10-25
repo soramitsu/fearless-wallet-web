@@ -117,7 +117,7 @@ export default class EvmRequestHandler {
       const authorization = this.requestService.authRequestHandler?.getEvmAuthorizationSnapshot(url);
       if (authorization && authorization.revision !== context.authorizationRevision)
         throw new Error('Signing authorization changed; request approval again');
-      if (this.evmRequests[id]) throw new Error('Duplicate EVM request ID');
+      if (this.evmRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate EVM request ID');
       const snapshot = structuredClone({ url, method, data: params, id, ...context });
       let settled = false;
       const complete = () => {

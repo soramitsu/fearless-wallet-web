@@ -173,7 +173,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { checkIfDenied } from '@polkadot/phishing';
 import { signingRequester } from './requester';
-import { signingReview, type ReviewRequest } from './review';
+import { signingRequestKind, signingReview, type ReviewRequest } from './review';
 import { walletConnectReview } from './walletConnectReview';
 import WalletInfo from './WalletInfo.vue';
 import { useI18n } from '@/locales/useI18n';
@@ -285,6 +285,8 @@ const checkSite = async () => {
 const act = async (action: 'approve' | 'reject') => {
   if (!isRendered() || pending.value || !request.value || (action === 'approve' && cannotApprove.value)) return;
   const { id } = request.value;
+  // The queue of the request on screen: approving or rejecting it can only reach this request.
+  const kind = signingRequestKind(request.value);
   const signer = request.value.account.address;
   const key = requestKey.value;
   const site = origin.value;
@@ -295,11 +297,11 @@ const act = async (action: 'approve' | 'reject') => {
     if (action === 'reject') {
       if (props.walletConnect) {
         if (!(await props.rejectWalletConnect?.(id))) throw new Error('WalletConnect request was not rejected');
-      } else await extensionStore.signCancel(id);
+      } else await extensionStore.signCancel({ id, kind });
     } else {
       const signed = props.walletConnect
         ? await props.approveWalletConnect?.(signer, id)
-        : await extensionStore.approveSign({ id });
+        : await extensionStore.approveSign({ id, kind });
       if (props.walletConnect && !signed) throw new Error('WalletConnect request was not approved');
       if (signed)
         notify({

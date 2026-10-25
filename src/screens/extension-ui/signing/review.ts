@@ -3,6 +3,7 @@ import { toRaw } from 'vue';
 import type { SigningRequest } from '@extension-base/background/types/types';
 import type { EvmRequestPayload, SolanaRequestPayload } from '@extension-base/services/request-service/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTransaction } from '@/util/evmTransaction';
 import { evmTypedData } from '@/util/evmTypedData';
@@ -207,6 +208,11 @@ function solanaReview(request: SolanaRequestPayload, result: SigningReview): voi
     solanaActions(value!).map((action) => ({ ...action, transactionIndex: transactionIndex + 1 }))
   );
   result.blind = result.actions.some((action) => action.kind === 'unknown');
+}
+
+/** The queue a shown request came from, which approving or rejecting it names. */
+export function signingRequestKind(request: ReviewRequest): SigningRequestKind {
+  return 'ecosystem' in request ? 'solana' : 'data' in request ? 'evm' : 'substrate';
 }
 
 export function signingReview(request: ReviewRequest, _networks: NetworkJson[] = []): SigningReview {

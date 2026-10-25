@@ -115,7 +115,7 @@ describe('signing review owns consent and rendered request', () => {
     expect(button(wrapper, 'approve').attributes('aria-disabled')).toBeUndefined();
     await button(wrapper, 'approve').trigger('click');
     await flushPromises();
-    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first' });
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', kind: 'evm' });
     expect(mocks.notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'signingReview.signed {"origin":"https://first.example"}', type: 'info' })
     );
@@ -170,7 +170,7 @@ describe('signing review owns consent and rendered request', () => {
       await consent(wrapper);
       await button(wrapper, 'approve').trigger('click');
       await flushPromises();
-      expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: next.id });
+      expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: next.id, kind: 'evm' });
       wrapper.unmount();
     }
   );
@@ -189,7 +189,7 @@ describe('signing review owns consent and rendered request', () => {
     expect(wrapper.find('[data-testid="approveSigning"]').exists()).toBe(false);
     expect(button(wrapper, 'reject').text()).toBe('common.close');
     await button(wrapper, 'reject').trigger('click');
-    expect(mocks.reject).toHaveBeenCalledExactlyOnceWith('second');
+    expect(mocks.reject).toHaveBeenCalledExactlyOnceWith({ id: 'second', kind: 'evm' });
     expect(mocks.approve).not.toHaveBeenCalled();
     wrapper.unmount();
   });

@@ -142,7 +142,10 @@ The extension requests Google Drive's narrow
 `https://www.googleapis.com/auth/drive.appdata` scope. A backup consists of the
 password-encrypted wallet JSON plus the wallet label and public address used as
 Drive file metadata. The feature is absent from public/credentialless builds
-and only appears when the release OAuth client is supplied.
+and only appears when the release OAuth client is supplied. Production Firefox
+builds clear the inherited Chrome OAuth client and leave Google backup disabled
+until a Firefox-specific OAuth configuration is verified; encrypted local
+backup export and import remain available.
 
 The Chrome manifest requires Chrome 116 or newer (`minimum_chrome_version`
 stays `116`):

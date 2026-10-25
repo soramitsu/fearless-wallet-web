@@ -38,6 +38,19 @@ const developmentEnvironment = { VUE_APP_TEST_ONLY: 'true' };
 enforceProductionReleaseEnvironment(developmentEnvironment, 'development');
 assert.equal(developmentEnvironment.VUE_APP_TEST_ONLY, 'true');
 
+// A credentialed Chrome build must not accidentally enable Firefox Google backup.
+for (const target of ['chrome', 'firefox']) {
+  const environment = { EXTENSION_TYPE: target, OAUTH_CLIENT_ID: 'chrome-client.apps.googleusercontent.com' };
+  enforceProductionReleaseEnvironment(environment, 'production');
+  assert.equal(environment.OAUTH_CLIENT_ID, target === 'chrome' ? 'chrome-client.apps.googleusercontent.com' : '');
+}
+const explicitFirefox = { EXTENSION_TYPE: 'chrome', OAUTH_CLIENT_ID: 'inherited-client' };
+enforceProductionReleaseEnvironment(explicitFirefox, 'production', 'firefox');
+assert.equal(explicitFirefox.OAUTH_CLIENT_ID, '');
+const developmentFirefox = { EXTENSION_TYPE: 'firefox', OAUTH_CLIENT_ID: 'development-fixture' };
+enforceProductionReleaseEnvironment(developmentFirefox, 'development', 'firefox');
+assert.equal(developmentFirefox.OAUTH_CLIENT_ID, 'development-fixture');
+
 // Bitcoin and Solana sends ship enabled; IrohaConnect stays compiled off.
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_BITCOIN_TRANSFERS, 'true');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_SOLANA_TRANSFERS, 'true');
@@ -174,4 +187,4 @@ try {
   await fs.rm(sourceArchiveDirectory, { recursive: true, force: true });
 }
 
-console.log('Extension production environment self-test passed (27 checks)');
+console.log('Extension production environment self-test passed (31 checks)');

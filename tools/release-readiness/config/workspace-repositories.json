@@ -5,14 +5,14 @@
       "path": "fearless-Android",
       "repository": "soramitsu/fearless-Android",
       "branch": "release/native-platform-ownership",
-      "commit": "ffab749a56c7c76d0c925085ed26cfde778ebbdb",
+      "commit": "117a477d1b47ed995b98fece763fc9bb055e7c4b",
       "group": "core"
     },
     {
       "path": "fearless-iOS",
       "repository": "soramitsu/fearless-iOS",
       "branch": "release/native-platform-ownership",
-      "commit": "932188beeba718e17659cb8bce9aa17a8769084f",
+      "commit": "33b9f251089006145c2e5c6ebbce239393a53874",
       "group": "core"
     },
     {

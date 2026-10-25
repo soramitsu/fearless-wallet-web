@@ -16,6 +16,13 @@ tree, and Chrome for Testing (`CHROME_BIN`, else the newest one in Playwright's 
 `--load-extension`). The report is `output/upgrade-e2e/<run>/report.json`, one `<scenario>.json` per scenario; the
 command exits non-zero on any failed assertion.
 
+The 3.0.6 fixture remains pinned to `cfcdb591`. Its Vue CLI thread-loader can stall
+with pending Vue TypeScript jobs on newer hosts. The harness uses a separate
+configuration wrapper with `parallel: false` for that build; its source files,
+immutable lockfile, type checks and production optimizations are unchanged.
+`provenance.json` records this compiler scheduling override. Browser cleanup is
+bounded and escalates only the child launched by the harness if it ignores SIGTERM.
+
 ## What runs where
 
 | Piece | File |
@@ -84,8 +91,8 @@ Passwords include a non-ASCII master password (`Pässwörd-日本語-🔐`).
 | A0 | At the first start of 4.2.0, every `fw:account:*`, `fw:ton:*` and `fw:keyring` record is still there and `encoded`, `cipherSeed`, `passwordHash`, `address`, `encoding` are byte-identical. |
 | A1 | The popup opens on Unlock or on the per-account password prompt (never a dead end), and the scripted path through the real screens (prompt, master password, rows, Skip, the 3.0.x security notice) reaches the wallet. |
 | A2 | The master password unlocks, a wrong one does not, the stored hash is unchanged. |
-| A3 | Every Substrate account signs a dApp `signRaw` (localhost page, approved over the popup's port) that verifies against the key derived from the original secret. |
-| A4 | Every Ethereum account signs `personal_sign`; the signature recovers the original address. |
+| A3 | Every historical Substrate account rejects public dApp authorization with the recovery-only policy error, without granting access or returning a signature. Its exported JSON key still signs a message that verifies against the original secret's public key. |
+| A4 | Every historical Ethereum account rejects public dApp authorization with the recovery-only policy error, without granting access or returning a signature. Its exported private key still signs a message that recovers the original address. |
 | A5 | The exported phrase is the original where the released build stored one (never a different one where it did not); the JSON export opens with the master password to the original key and is at N = 2^15; the exported Ethereum key is the original. |
 | A6 | Every TON phrase exports exactly as stored; every TON wallet sends a transfer through the TI stand-in whose external message is signed by the stored public key with the seqno TI reported. |
 | A7 | Per-account profiles: `pri(keyring.getMigrationAccounts)` over the real port returns plain rows; one DOM row per waiting key; a wrong password changes nothing; each password moves its keys; a different Ethereum password keeps that account waiting until its own row; Reset wallet is reachable but not run; Skip opens the wallet with the reminder and leaves waiting records byte-identical; a restart unlocks to the wallet; Account access opens a forgotten key with its phrase. In S2 the waiting Ethereum account does not force the prompt. |

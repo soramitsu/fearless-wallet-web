@@ -190,6 +190,17 @@ export function openJson(json, password) {
   return { publicKey: u8aToHex(pair.publicKey), address: pair.address };
 }
 
+/** Proves that a recovery export retains the original usable secret, even when
+ * the upgraded wallet correctly disallows ordinary dApp signing for old keys. */
+export function signExportedJson(json, password, message) {
+  const type = json.encoding?.content?.[1] ?? 'sr25519';
+  const pair = new Keyring({ type }).addFromJson(json);
+  pair.decodePkcs8(password);
+  return u8aToHex(pair.sign(u8aWrapBytes(message)));
+}
+
+export const signExportedEvmKey = (privateKey, message) => new Wallet(privateKey).signMessage(message);
+
 export const publicKeyOf = (address) => u8aToHex(decodeAddress(address));
 
 // ---- A dApp on localhost --------------------------------------------------------------------------------------------
@@ -223,7 +234,20 @@ export async function signThroughDapp({ port, popup, dappUrl, kind, address, mes
       for (const request of (await popup.call('pri(authorize.requests)')).ok ?? []) {
         if (new URL(request.url).origin !== new URL(dappUrl).origin) continue;
         const approved = await popup.call('pri(authorize.approve)', { id: request.id, authorizedAccounts });
-        if (approved.err) throw new Error(`Public dApp approval failed: ${approved.err}`);
+        if (approved.err) {
+          const permissions = await popup.call('pri(authorize.list)');
+          const list = permissions.ok?.list;
+          const authorizationGranted = list
+            ? Object.values(list).some(
+                (auth) =>
+                  auth.isAllowed && auth.authorizedAccounts?.some((account) => authorizedAccounts.includes(account))
+              )
+            : undefined;
+          // Close the failed request through its normal endpoint so the next
+          // account cannot inherit a request left open by this test.
+          const cancelled = await popup.call('pri(authorize.cancel)', request.id);
+          return { err: cancelled.err ?? approved.err, authorizationGranted };
+        }
       }
       const signing =
         kind === 'substrate'

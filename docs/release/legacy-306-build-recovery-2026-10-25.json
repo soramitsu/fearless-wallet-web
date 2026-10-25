@@ -1,0 +1,39 @@
+{
+  "reviewedAt": "2026-10-25",
+  "subject": "Historical 3.0.6 compiler deadlock recovery for the real upgrade matrix",
+  "pinnedCommit": "cfcdb591fd7098b24022e8e9afc19b511d0fe785",
+  "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+  "node": "v20.20.2",
+  "yarn": "3.4.1",
+  "install": "corepack yarn install --immutable",
+  "observedFailure": {
+    "compiler": "Vue CLI 5.0.8 / thread-loader",
+    "pendingVueTypeScriptJobs": 95,
+    "idleWorkerProcesses": 15,
+    "mainAndWorkerSamples": "event-loop I/O wait",
+    "largerV8HeapResolved": false
+  },
+  "resolution": {
+    "configuration": "parallel: false through a separate generated Vue CLI config wrapper",
+    "historicalSourceFilesModified": false,
+    "lockfileModified": false,
+    "typeCheckingAndProductionOptimizationsRetained": true,
+    "recordedInBuildProvenance": [
+      "Vue CLI parallel=false via an external config wrapper; original source, lockfile, type checks and production optimizations preserved"
+    ]
+  },
+  "verification": {
+    "productionBuild": "passed",
+    "productionCompileMilliseconds": 62885,
+    "allOriginalTrackedBlobsCompared": 636,
+    "originalTrackedBlobDifferences": [],
+    "buildWrapperUnitTests": {
+      "passed": 1
+    },
+    "upgradeDriverTests": {
+      "passed": 10
+    },
+    "fullUpgradeMatrix": "reported separately; this record only proves historical build recovery"
+  },
+  "browserCleanup": "SIGTERM then bounded SIGKILL only for the child launched by the harness; already signalled exits recognized without waiting for a past exit event"
+}

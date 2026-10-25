@@ -55,6 +55,7 @@ const recoveryRoutes = new Set([
   'ChangePassword', 'Unlock', 'Welcome', 'Onboarding', 'ResetWallet',
   'MigrationDescription', 'MigrationAccounts', 'UniversalWalletMigration',
   'AccountAccessRecovery', 'StorageRecovery',
+  'SecurityNotice', 'SecurityNoticeGuide',
 ]);
 
 export function isWalletRecoveryRoute(name: unknown): boolean {

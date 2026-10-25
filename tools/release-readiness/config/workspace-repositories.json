@@ -5,14 +5,14 @@
       "path": "fearless-Android",
       "repository": "soramitsu/fearless-Android",
       "branch": "release/native-platform-ownership",
-      "commit": "3854fd5bab76134e681f20f0b923e4884f4995f0",
+      "commit": "23b5397984e06dc14bf607360de763d347d880b4",
       "group": "core"
     },
     {
       "path": "fearless-iOS",
       "repository": "soramitsu/fearless-iOS",
       "branch": "release/native-platform-ownership",
-      "commit": "dbae054e1ea81489db2b3324644cd370cdb7df4c",
+      "commit": "aa5991324b76845359248085f88f5241613265c3",
       "group": "core"
     },
     {
@@ -20,6 +20,13 @@
       "repository": "soramitsu/fearless-wallet-web",
       "branch": "master",
       "commit": "6932d6fa69c402ac729bdcf4aba5ca7b31d6842b",
+      "group": "core"
+    },
+    {
+      "path": "fearless-site-web",
+      "repository": "soramitsu/fearless-site-web",
+      "branch": "release/standalone-site-ownership",
+      "commit": "716c18a64a0129c1cebe755e66d1ba5909b35abc",
       "group": "core"
     }
   ],

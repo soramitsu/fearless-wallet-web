@@ -47,12 +47,6 @@ pnpm-debug.log*
 /docs/validation/20*/
 /docs/legacy-upgrade-audit-20*.md
 
-# Website security backports are source; generated Yarn state stays ignored.
-!site/.yarn/
-site/.yarn/*
-!site/.yarn/patches/
-!site/.yarn/patches/*.patch
-
 # Generated release-tool evidence and local service state stay outside source.
 /tools/release-readiness/output/
 /tools/release-readiness/build/

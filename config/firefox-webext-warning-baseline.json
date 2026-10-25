@@ -40,7 +40,7 @@
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "c613a1039f5e517ddc07f8a7023b82b67ea252cc6dcbdeba10fec28eeb18dad2"
+      "sha256": "93505c9f3e2a7afffbd05a45227fd52716781aa7a9977b6fa175bff67d13dd07"
     },
     {
       "file": "chunks/usePortfolioPreferences.js",

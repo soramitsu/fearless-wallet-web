@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "sourceCommit": "d3bc43877b44a4607d3ad6a5418f90c0a8f3d99e",
+  "reviewer": "Codex",
+  "summary": "Rebuilt after SORA/XCM outcome fixes. Both old reference artifacts match their committed exact baselines. All 38 warning-site contexts match the new artifacts byte-for-byte; only bundle contents/coordinates outside these warning contexts changed. No new warning site, permission or CSP change.",
+  "configurations": {
+    "store": {
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 38
+      },
+      "byteIdenticalWarningContexts": 38,
+      "previousBaselineSha256": "68fde1c5ded2196af969ec347ea7a11d0f2d2fbad66dd7db87b794df80667f37",
+      "baselineSha256": "3ef410549c5d98b6990503f230e9b8e9da1bc97968e52fafc40ef540d4032f4c",
+      "rawReportSha256": "f627f678096cef3efb9aea29962863ee37f62b93d497c312e0e797bffa0af6a5",
+      "warningSetSha256": "bcb9ba888e329b5ea3f9c96ba39167288e29a1be8b5443a75bcb2599775ae603",
+      "configuration": "Published public provider configuration"
+    },
+    "ci": {
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 38
+      },
+      "byteIdenticalWarningContexts": 38,
+      "previousBaselineSha256": "5119137d1c4fae4c7933124dc24ce48b9fd1abb94d06647b399d9f8175a837bd",
+      "baselineSha256": "0f6d4c20fd1ec45e4e1db0b792d59b5548cee7a1512f63b6e20526fc077ae8ef",
+      "rawReportSha256": "1ea6af17fe7dcbd53c9441925e1a066e932c503e01615b676ca480a411939a7d",
+      "warningSetSha256": "518c438e45555509a36c39bf7916d41b1cefe704034b87c62c33dcf965495ce0",
+      "configuration": "CI without public provider configuration"
+    }
+  }
+}

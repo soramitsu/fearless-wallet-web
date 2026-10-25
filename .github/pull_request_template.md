@@ -18,8 +18,7 @@
 
 ### **Target Branch**
 
-- [ ] This PR targets `develop`
-- [ ] This PR targets `master` and is a release or hotfix PR
+- [ ] This PR targets `master` from a short-lived working branch.
 
 ---
 
@@ -31,7 +30,7 @@
 - [ ] Pull request is linked to a relevant issue or task.
 - [ ] Tests are written for new features or fixes.
 - [ ] Documentation has been updated (if applicable).
-- [ ] No direct-to-`master` workflow is introduced.
+- [ ] Required review and CI checks pass before merging into `master`.
 - [ ] No secrets, local env files, generated build output, or private release overlays are committed.
 - [ ] `./scripts/audit-public-artifacts.sh` passes when public artifacts or env defaults change.
 

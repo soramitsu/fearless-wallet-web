@@ -4,5 +4,5 @@
   "private": true,
   "description": "Fearless fail-closed shim for unused Node-style browser signing APIs",
   "main": "index.cjs",
-  "license": "ISC"
+  "license": "Apache-2.0"
 }

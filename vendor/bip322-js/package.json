@@ -5,5 +5,5 @@
   "description": "Fearless fail-closed compatibility shim for the unused Subwallet BIP-322 signer",
   "main": "index.cjs",
   "types": "index.d.ts",
-  "license": "MIT"
+  "license": "Apache-2.0"
 }

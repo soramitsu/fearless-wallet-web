@@ -1,7 +1,6 @@
 # Release Checklist
 
-Use this checklist for every browser-extension release PR from `develop` to
-`master`.
+Use this checklist for every browser-extension release PR to `master`.
 
 For Chrome `3.0.10` Solana, use `docs/chrome-web-store-release-3.0.10.md` and `docs/send-kill-switch.md`.
 For Chrome `3.0.9` Bitcoin and Taira sends, use `docs/chrome-web-store-release-3.0.9.md`.
@@ -12,7 +11,7 @@ For the underlying `3.0.7` recovery changes, also use the recovery-mode release 
 
 ## Before The Release PR
 
-- Confirm all release work has landed on `develop` through reviewed PRs with
+- Confirm all release work has landed on `master` through reviewed PRs with
   green CI, and that the CI `verify` job actually started (a
   `startup_failure` means a workflow references an action the repository
   policy refuses).
@@ -182,7 +181,7 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 
 ## Release PR To `master`
 
-- Open the PR from `develop` or `release/<version>` to `master`.
+- Open the PR from `release/<version>` to `master`.
 - Include test evidence, migration notes, release notes, and rollback notes.
 - Confirm the `Branch Flow` workflow is green for the release PR.
 - Require review and green CI before merge.

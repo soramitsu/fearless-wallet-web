@@ -18,7 +18,6 @@ on:
     - cron: '17 3 * * *'
   pull_request:
     branches:
-      - develop
       - master
     paths:
       - 'src/extension/background/**'

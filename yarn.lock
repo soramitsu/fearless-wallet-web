@@ -4759,8 +4759,8 @@ __metadata:
 
 "bip322-js@file:./vendor/bip322-js::locator=fearless-wallet%40workspace%3A.":
   version: 2.0.0
-  resolution: "bip322-js@file:./vendor/bip322-js#./vendor/bip322-js::hash=7008cc&locator=fearless-wallet%40workspace%3A."
-  checksum: 10/fde48d267d19f30ab37d47f64fc6e2d87ee52ad16659a5a9a297c8c4b141d0a543836b1ace81ab46b736a0cf2fb222840e216baae501eb213d5b4d47ac23644e
+  resolution: "bip322-js@file:./vendor/bip322-js#./vendor/bip322-js::hash=83b526&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/e500436383c483a57a2fe6dfa1f56b40fd986994689cf8cfbc64620d984aa134f3e62ac7eeb5e4ab1b85343d4ac4ce50ec06a78104d3ea81e12e3df701a2a141
   languageName: node
   linkType: hard
 
@@ -4796,8 +4796,8 @@ __metadata:
 
 "bitcoinjs-message@file:./vendor/bitcoinjs-message::locator=fearless-wallet%40workspace%3A.":
   version: 2.2.0
-  resolution: "bitcoinjs-message@file:./vendor/bitcoinjs-message#./vendor/bitcoinjs-message::hash=f1d53f&locator=fearless-wallet%40workspace%3A."
-  checksum: 10/bcae10200b43a7d13e3660bd7c1cb274592f3b3c04f1958a7238ceda3ac70f29fd5264fd3848478644860c11da17a41ef3735abb3ad0a9bbc46cb9c96e843b30
+  resolution: "bitcoinjs-message@file:./vendor/bitcoinjs-message#./vendor/bitcoinjs-message::hash=c2fd29&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/a8834ca4d5cdf604454ba81c4f2a2143b11030a48241c54ff2f763f3ed263eab7ce445793b7bd6bf4ccbaa7b7994a1017c8e882f23c623ecf8201d6d1f4c42f3
   languageName: node
   linkType: hard
 
@@ -4954,8 +4954,8 @@ __metadata:
 
 "browserify-sign@file:./vendor/browserify-sign::locator=fearless-wallet%40workspace%3A.":
   version: 4.2.6
-  resolution: "browserify-sign@file:./vendor/browserify-sign#./vendor/browserify-sign::hash=2a7851&locator=fearless-wallet%40workspace%3A."
-  checksum: 10/4d8e393195040ba3a030b2740c796eb3ff0bcf023bc2f88a3f58d3513d5e47e4058b3d664fa27ba682c518e5a0cde49eed931ed55b7796852eef3ee6d773ad50
+  resolution: "browserify-sign@file:./vendor/browserify-sign#./vendor/browserify-sign::hash=a3a566&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/07fee35bcd60e514ab862c01ff8d79db5c2edfc761ce3b67a2f985ffe23928b24235854bc397b1902e9f82e7528d5aa9118c47fabbea0566c55b59c7f7611349
   languageName: node
   linkType: hard
 
@@ -5549,8 +5549,8 @@ __metadata:
 
 "create-ecdh@file:./vendor/create-ecdh::locator=fearless-wallet%40workspace%3A.":
   version: 4.0.4
-  resolution: "create-ecdh@file:./vendor/create-ecdh#./vendor/create-ecdh::hash=18ab58&locator=fearless-wallet%40workspace%3A."
-  checksum: 10/7a9660b40f2d9189248aafc80edb92d4e56ce7bda0026768f4e73c0c8396d97d808ab2e5a55ca212d2d4f826de479d82ef1d62548237081744520b1cfb8d9cec
+  resolution: "create-ecdh@file:./vendor/create-ecdh#./vendor/create-ecdh::hash=298834&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/5a734ee802870484783aa04692e39174dd71e8695ce1439d1ef84be4158bfdf3e48e03b174f64f9b3849a09f0301df4a7467e3005530a6c92e12d322e554f284
   languageName: node
   linkType: hard
 
@@ -9112,8 +9112,8 @@ __metadata:
 
 "node-forge@file:./vendor/node-forge::locator=fearless-wallet%40workspace%3A.":
   version: 1.4.0
-  resolution: "node-forge@file:./vendor/node-forge#./vendor/node-forge::hash=5ffe48&locator=fearless-wallet%40workspace%3A."
-  checksum: 10/dc4ab3e9dcbf20e0746aac285eaba8a0bca03a8f7c66997c1bbee0547d6c30f4715fffadddd2d39d09b4cd34e3b3b872dd1e4586c4479060b511322a9d80b2ad
+  resolution: "node-forge@file:./vendor/node-forge#./vendor/node-forge::hash=bef141&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/75f0bd7fecb58df3341e3c74e1fa88b01ba25941cc57b9725b4861aa4222a359d5b48dcad40438f81155fbb729f16f05cf1b0781144ea264a1374e49d2356b3c
   languageName: node
   linkType: hard
 

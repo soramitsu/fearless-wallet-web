@@ -5,5 +5,5 @@
   "description": "Fearless fail-closed shim for the unused Node-style browser ECDH API",
   "main": "index.cjs",
   "browser": "index.cjs",
-  "license": "MIT"
+  "license": "Apache-2.0"
 }

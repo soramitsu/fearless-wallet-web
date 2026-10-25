@@ -29,13 +29,13 @@ require_pattern() {
   fi
 }
 
-scan_for_staging() {
+scan_for_retired_branches() {
   local file="$1"
   local matches
 
-  matches="$(grep -nE '(^|[^[:alnum:]_])staging([^[:alnum:]_]|$)' "$file" || true)"
+  matches="$(grep -nE '(^|[^[:alnum:]_])(develop|stage|staging)([^[:alnum:]_]|$)' "$file" || true)"
   if [[ -n "$matches" ]]; then
-    record_failure "staging branch reference found in ${file#$ROOT_DIR/}:"
+    record_failure "retired branch reference found in ${file#$ROOT_DIR/}:"
     printf '%s\n' "$matches" >&2
   fi
 }
@@ -56,7 +56,7 @@ else
   WORKFLOW_COUNT=0
   while IFS= read -r -d '' workflow; do
     WORKFLOW_COUNT=$((WORKFLOW_COUNT + 1))
-    scan_for_staging "$workflow"
+    scan_for_retired_branches "$workflow"
   done < <(find "$WORKFLOW_DIR" -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
 
   if [[ "$WORKFLOW_COUNT" -eq 0 ]]; then
@@ -67,7 +67,6 @@ fi
 if require_file "$CI_WORKFLOW" "CI workflow"; then
   require_pattern "$CI_WORKFLOW" '(^|[[:space:]])push:' "CI workflow must run on pushes"
   require_pattern "$CI_WORKFLOW" '(^|[[:space:]])pull_request:' "CI workflow must run on pull requests"
-  require_pattern "$CI_WORKFLOW" '(^|[^[:alnum:]_])develop([^[:alnum:]_]|$)' "CI workflow must include develop"
   require_pattern "$CI_WORKFLOW" '(^|[^[:alnum:]_])master([^[:alnum:]_]|$)' "CI workflow must include master"
 fi
 
@@ -75,25 +74,21 @@ if require_file "$BRANCH_FLOW_WORKFLOW" "Branch Flow workflow"; then
   require_pattern "$BRANCH_FLOW_WORKFLOW" '(^|[[:space:]])pull_request:' "Branch Flow workflow must run on pull requests"
   require_pattern "$BRANCH_FLOW_WORKFLOW" 'BASE_BRANCH' "Branch Flow workflow must inspect the PR base branch"
   require_pattern "$BRANCH_FLOW_WORKFLOW" 'HEAD_BRANCH' "Branch Flow workflow must inspect the PR head branch"
-  require_pattern "$BRANCH_FLOW_WORKFLOW" 'release/\*' "Branch Flow workflow must allow release branches into master"
-  require_pattern "$BRANCH_FLOW_WORKFLOW" 'hotfix/\*' "Branch Flow workflow must allow hotfix branches into master"
-  require_pattern "$BRANCH_FLOW_WORKFLOW" 'master is releasable' "Branch Flow workflow must preserve master as releasable"
+  require_pattern "$BRANCH_FLOW_WORKFLOW" 'BASE_BRANCH.*!=.*"master"' "Branch Flow workflow must reject other targets"
+  require_pattern "$BRANCH_FLOW_WORKFLOW" 'All pull requests must target master' "Branch Flow workflow must require master"
 fi
 
 if require_file "$PR_TEMPLATE" "pull request template"; then
-  scan_for_staging "$PR_TEMPLATE"
-  require_pattern "$PR_TEMPLATE" 'targets `develop`' "PR template must ask normal work to target develop"
-  require_pattern "$PR_TEMPLATE" 'targets `master`.*release or hotfix' "PR template must restrict master PRs to release or hotfix"
-  require_pattern "$PR_TEMPLATE" 'No direct-to-`master` workflow' "PR template must reject direct-to-master workflow drift"
+  scan_for_retired_branches "$PR_TEMPLATE"
+  require_pattern "$PR_TEMPLATE" 'targets `master`' "PR template must require master"
+  require_pattern "$PR_TEMPLATE" 'Required review and CI checks' "PR template must require review and CI"
 fi
 
 if require_file "$CONTRIBUTING" "CONTRIBUTING.md"; then
-  scan_for_staging "$CONTRIBUTING"
-  require_pattern "$CONTRIBUTING" 'Git Flow' "CONTRIBUTING.md must document Git Flow"
-  require_pattern "$CONTRIBUTING" 'starts from `develop`' "CONTRIBUTING.md must require normal work from develop"
+  scan_for_retired_branches "$CONTRIBUTING"
+  require_pattern "$CONTRIBUTING" 'only long-lived branch' "CONTRIBUTING.md must document the single main branch"
+  require_pattern "$CONTRIBUTING" 'starts from `master`' "CONTRIBUTING.md must require normal work from master"
   require_pattern "$CONTRIBUTING" '`master` is the releasable branch' "CONTRIBUTING.md must keep master releasable"
-  require_pattern "$CONTRIBUTING" 'release/\*' "CONTRIBUTING.md must document release branches"
-  require_pattern "$CONTRIBUTING" 'hotfix/\*' "CONTRIBUTING.md must document hotfix branches"
 fi
 
 if [[ "$FAILURES" -ne 0 ]]; then

@@ -22,7 +22,8 @@ Usage: scripts/audit-github-governance.sh [--apply-protection] [--delete-staging
 
 Checks maintained Fearless GitHub repositories for:
   - wallet/public-site/indexer/release-readiness repositories are public
-  - wallet/public-site default branch is develop
+  - native wallets/public-site default branch is develop
+  - browser wallet default and sole maintained branch is master
   - release-readiness default branch is main
   - indexer default branch is master
   - each repository's maintained branches exist and are protected
@@ -35,7 +36,7 @@ Checks maintained Fearless GitHub repositories for:
   - hosted staging branch is absent
 
 --apply-protection attempts the standard branch-protection API policy for
-develop/master when a branch exists but is unprotected or missing expected
+each maintained branch when it exists but is unprotected or missing expected
 status-check contexts or review-policy settings. When exactly one active
 repository ruleset protects the branch, it preserves unrelated rules and
 conditions while enforcing the same no-bypass status/review policy.
@@ -464,6 +465,7 @@ expected_default_branch() {
     soramitsu/fearless-release-readiness)
       echo "main"
       ;;
+    soramitsu/fearless-wallet-web|\
     tonswap-org/ton-indexer|\
     solswap-io/solswap-indexer|\
     sora-xor/polkaswap-indexer)
@@ -477,6 +479,9 @@ expected_default_branch() {
 
 expected_protected_branches() {
   case "$1" in
+    soramitsu/fearless-wallet-web)
+      printf '%s\n' master
+      ;;
     soramitsu/fearless-release-readiness)
       printf '%s\n' main
       ;;

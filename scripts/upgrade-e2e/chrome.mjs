@@ -9,7 +9,7 @@ import { TEST_OAUTH_CLIENT_ID } from './config.mjs';
 import { cdp } from './cdp.mjs';
 import { coldProbeSource } from './cold-probe.mjs';
 import { stopOwnedProcess } from './process-lifecycle.mjs';
-import { captureBrowserDiagnostics, createBrowserDiagnostics, extensionInspectorSource, extensionWorkerId, installedDiagnosticSources } from './browser-diagnostics.mjs';
+import { captureBrowserDiagnostics, createBrowserDiagnostics, extensionIdFromManifestKey, extensionInspectorSource, extensionWorkerId, installedDiagnosticSources } from './browser-diagnostics.mjs';
 export { cdp } from './cdp.mjs';
 
 /** CHROME_BIN, else the newest Chrome for Testing in Playwright's cache. Branded Chrome ignores --load-extension. */
@@ -59,6 +59,7 @@ export const NO_NETWORK = 'MAP * ~NOTFOUND , EXCLUDE localhost';
 const browserDiagnostics = new Map();
 
 export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) => {
+  const expectedId = extensionIdFromManifestKey(JSON.parse(readFileSync(join(extDir, 'manifest.json'), 'utf8')).key);
   const earlier = browserDiagnostics.get(port);
   const previous = earlier?.extDir === extDir ? earlier : undefined;
   const currentSources = installedDiagnosticSources(extDir);
@@ -87,7 +88,7 @@ export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) 
     { stdio: ['ignore', 'ignore', 'pipe'] }
   );
   browserDiagnostics.set(port, {
-    extDir, extId: previous?.extId,
+    extDir, extId: expectedId,
     knownSources: new Set([...sourceFiles.previous, ...currentSources]),
     recorder: createBrowserDiagnostics(child, { file: join(dirname(extDir), 'browser-diagnostics.json'), sourceFiles }),
   });
@@ -126,9 +127,8 @@ function observeTargets(port, list) {
   const entry = browserDiagnostics.get(port);
   if (entry) {
     entry.recorder.observeTargets(list);
-    // Component-extension workers can appear first. Match the actual harness worker, and
-    // preserve its identity when it disappears so the failure inspector can still query it.
-    entry.extId = extensionWorkerId(list) ?? entry.extId;
+    // Identity comes from the installed manifest key, even when its worker is absent.
+    // Component extensions may also have a worker named background.js.
   }
   return list;
 }
@@ -211,9 +211,11 @@ export async function waitFor(fn, ms = 30000, label = 'condition') {
 }
 
 export async function serviceWorker(port) {
+  const expectedId = browserDiagnostics.get(port)?.extId;
+  if (!expectedId) throw new Error('No wallet identity recorded for this browser launch');
   try {
     return await waitFor(
-      async () => (await targets(port)).find((t) => t.type === 'service_worker' && t.url.endsWith('/background.js')),
+      async () => (await targets(port)).find((target) => extensionWorkerId([target], expectedId)),
       60000,
       'service worker'
     );

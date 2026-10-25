@@ -1,6 +1,7 @@
 // Deliberately excludes arbitrary browser strings, URLs, console messages and wallet storage.
 // Chrome can write application console output to stderr; keep that text only in a bounded
 // in-memory tail and persist native diagnostic categories/source locations, never its contents.
+import { createHash } from 'node:crypto';
 import { readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -10,10 +11,18 @@ const enumValue = (value, allowed) => allowed.includes(value) ? value : 'other';
 const integer = (value) => Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 const reasonValue = (value) => enumValue(value, ['worker-timeout', 'popup-unanswered', 'scenario-failure']);
 
-export function extensionWorkerId(targets) {
+export function extensionIdFromManifestKey(key) {
+  if (typeof key !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(key.trim()))
+    throw new Error('The upgrade harness requires a base64 manifest key for the wallet identity');
+  return createHash('sha256').update(Buffer.from(key.trim(), 'base64')).digest('hex').slice(0, 32)
+    .replace(/[0-9a-f]/g, (digit) => String.fromCharCode(97 + Number.parseInt(digit, 16)));
+}
+
+export function extensionWorkerId(targets, expectedId) {
+  if (!/^[a-p]{32}$/.test(expectedId ?? '')) return undefined;
   const target = targets.find((entry) => entry.type === 'service_worker' &&
-    /^chrome-extension:\/\/[a-p]{32}\/background\.js$/.test(entry.url));
-  return target ? new URL(target.url).host : undefined;
+    entry.url === `chrome-extension://${expectedId}/background.js`);
+  return target ? expectedId : undefined;
 }
 
 export function installedDiagnosticSources(directory, prefix = '') {

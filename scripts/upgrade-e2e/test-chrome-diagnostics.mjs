@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
-import { captureBrowserDiagnostics, classifyRuntimeError, createBrowserDiagnostics, diagnosticLocation, extensionDiagnosticInfo, extensionInspectorSource, extensionWorkerId, installedDiagnosticSources } from './browser-diagnostics.mjs';
+import { captureBrowserDiagnostics, classifyRuntimeError, createBrowserDiagnostics, diagnosticLocation, extensionDiagnosticInfo, extensionIdFromManifestKey, extensionInspectorSource, extensionWorkerId, installedDiagnosticSources } from './browser-diagnostics.mjs';
 
 const SECRET = 'private-wallet-value-that-must-never-be-persisted';
 const child = () => Object.assign(new EventEmitter(), { stderr: new PassThrough() });
@@ -136,14 +136,25 @@ test('missing extension metadata is unavailable, not a successful inspection', a
 });
 
 
+test('the public test manifest key determines the Chrome wallet identity before targets appear', () => {
+  const key = readFileSync(new URL('../../tests/upgrade/test-extension-key.pub.b64', import.meta.url), 'utf8');
+  assert.equal(extensionIdFromManifestKey(key), 'plnlnnlkcnkiokjgpefakfhgngpbnaec');
+  assert.throws(() => extensionIdFromManifestKey(undefined), /manifest key/);
+  assert.throws(() => extensionIdFromManifestKey(''), /manifest key/);
+});
+
 test('diagnostics identify the wallet background worker instead of the first component-extension target', () => {
   const id = 'a'.repeat(32);
   assert.equal(extensionWorkerId([
+    { type: 'service_worker', url: `chrome-extension://${'d'.repeat(32)}/background.js` },
     { type: 'service_worker', url: `chrome-extension://${'b'.repeat(32)}/component_worker.js` },
     { type: 'page', url: `chrome-extension://${'c'.repeat(32)}/background.js` },
     { type: 'service_worker', url: `chrome-extension://${id}/background.js` },
-  ]), id);
-  assert.equal(extensionWorkerId([{ type: 'service_worker', url: 'https://example.invalid/background.js' }]), undefined);
+  ], id), id);
+  assert.equal(extensionWorkerId([
+    { type: 'service_worker', url: `chrome-extension://${'d'.repeat(32)}/background.js` },
+  ], id), undefined);
+  assert.equal(extensionWorkerId([{ type: 'service_worker', url: 'https://example.invalid/background.js' }], id), undefined);
 });
 
 

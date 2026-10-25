@@ -257,6 +257,11 @@ const getXORCurrency = (balances: TokenGroup[]) => {
   return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
 };
 
+// A field the user has not filled in, or a fee still being quoted, counts as 0 here, as these checks were written to
+// expect. FPNumber reads an empty string as NaN, which would show "Insufficient balance" for an empty form.
+const enteredAmount = (value: string | number | null | undefined): string | number =>
+  value === '' || value === null || value === undefined ? 0 : value;
+
 function calcTransferableSendMinusFee(
   currency: TokenGroup | undefined,
   network: NetworkName,
@@ -276,8 +281,8 @@ function calcTransferableSendMinusFee(
   const precision = currencyBalance.precision;
   const transferable = currencyBalance.transferable ?? '0';
 
-  const transferableFP = new FPNumber(transferable, precision);
-  const destNetFeeFP = new FPNumber(destNetFee ?? 0, precision);
+  const transferableFP = new FPNumber(enteredAmount(transferable), precision);
+  const destNetFeeFP = new FPNumber(enteredAmount(destNetFee), precision);
 
   // ED берем с запасом + 10%
   const existentialDeposit = FPNumber.fromCodecValue(currencyBalance.existentialDeposit ?? '0', precision).mul(
@@ -287,7 +292,7 @@ function calcTransferableSendMinusFee(
   // Для Utility ассета вычитаем origin fee, тк origin fee всегда списывается в Utility ассете
   // также проверяем existentialDeposit и дополнительно оставляем на балансе 10% от комисии
   if (currencyBalance.isUtility) {
-    const amountSubFee = transferableFP.sub(new FPNumber(fee, precision));
+    const amountSubFee = transferableFP.sub(new FPNumber(enteredAmount(fee), precision));
     const amountSubFeeSubDestFee = isCrossChain ? amountSubFee.sub(destNetFeeFP) : amountSubFee;
     const amountSubFeeSubDestFeeSubED = checkED
       ? amountSubFeeSubDestFee.sub(existentialDeposit)
@@ -322,7 +327,7 @@ function isValidAmountAsset(
   if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
 
   // если syncedAmount меньше или равен максимальному количеству токенов, то транзакция валидна
-  return FPNumber.lte(new FPNumber(amount), maxSendFP);
+  return FPNumber.lte(new FPNumber(enteredAmount(amount)), maxSendFP);
 }
 
 function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: string) {

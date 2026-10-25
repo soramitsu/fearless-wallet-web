@@ -2,6 +2,10 @@ import BigNumber from 'bignumber.js';
 
 // Isolated configuration: importing this module never changes other users of BigNumber.
 const Decimal = BigNumber.clone({ DECIMAL_PLACES: 80, ROUNDING_MODE: BigNumber.ROUND_FLOOR, EXPONENTIAL_AT: 1e9 });
+// The display formats of the SORA SDK's math package (1.43), which the wallet's amount text was written against: no
+// grouping unless asked for, and at most (never exactly) `dp` decimals.
+const PLAIN_FORMAT: BigNumber.Format = Object.freeze({ decimalSeparator: '.', groupSeparator: '', fractionGroupSeparator: '' });
+const LOCALE_FORMAT: BigNumber.Format = Object.freeze({ groupSize: 3, groupSeparator: ',', decimalSeparator: '.' });
 export type CodecString = string;
 type Input = FPNumber | BigNumber | string | number | bigint | { toString(): string };
 const valueOf = (input: Input): BigNumber.Value => input instanceof FPNumber ? input.value : typeof input === 'bigint' ? input.toString() : input as BigNumber.Value;
@@ -56,8 +60,17 @@ export class FPNumber {
   toFixed(dp = 4) { return this.value.toFixed(dp, FPNumber.DEFAULT_ROUND_MODE); }
   toNumber(dp = FPNumber.DEFAULT_DECIMAL_PLACES) { return this.value.decimalPlaces(dp, FPNumber.DEFAULT_ROUND_MODE).toNumber(); }
   toBigInt() { return BigInt(this.value.toFixed(0, BigNumber.ROUND_DOWN)); }
-  format(dp = FPNumber.DEFAULT_DECIMAL_PLACES, format?: BigNumber.Format) { return this.value.toFormat(dp, FPNumber.DEFAULT_ROUND_MODE, format); }
-  toLocaleString(dp = FPNumber.DEFAULT_DECIMAL_PLACES) { return this.format(dp); }
+  /** Rounded down to at most `dp` decimals without trailing zeros (with a `format`, `preserveOrder` pads to `dp`); a
+   * non-zero value that would round to zero keeps its first significant digit, so 0.000000001 never reads as 0. */
+  format(dp = FPNumber.DEFAULT_DECIMAL_PLACES, format?: BigNumber.Format, preserveOrder = false) {
+    const value = this.value;
+    let shown = value.isZero() ? value : value.decimalPlaces(dp, FPNumber.DEFAULT_ROUND_MODE);
+    if (shown.isZero() && !value.isZero()) shown = new Decimal(value.toFormat(PLAIN_FORMAT).replace(/(0\.0*[1-9])(\d*)/, '$1'));
+    if (!format) return shown.toFormat(PLAIN_FORMAT);
+    return preserveOrder ? shown.toFormat(dp, format) : shown.toFormat(format);
+  }
+  /** `format` with thousands grouped by commas, as the amount fields show them. */
+  toLocaleString(dp = FPNumber.DEFAULT_DECIMAL_PLACES, preserveOrder = false) { return this.format(dp, LOCALE_FORMAT, preserveOrder); }
   dp(dp = this.precision, rounding = FPNumber.DEFAULT_ROUND_MODE) { return this.wrap(this.value.decimalPlaces(dp, rounding)); }
   add(other: Input) { return this.wrap(this.value.plus(valueOf(other))); }
   sub(other: Input) { return this.wrap(this.value.minus(valueOf(other))); }

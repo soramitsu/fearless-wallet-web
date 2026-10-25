@@ -36,8 +36,12 @@ function formattedNumber(number: number, options: Options = {}): string {
   return roundValue.toFixed(decimalsValue);
 }
 
-function addNumbers(values: (string | number)[]): string {
-  return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
+// A field not filled in yet (a fee still being quoted) counts as 0, as it did before the wallet had its own number type.
+const shownAmount = (value: string | number | null | undefined): string | number =>
+  value === '' || value === null || value === undefined ? 0 : value;
+
+function addNumbers(values: (string | number | null | undefined)[]): string {
+  return values.reduce<FPNumber>((sum, number) => sum.add(new FPNumber(shownAmount(number))), FPNumber.ZERO).toString();
 }
 
 /** Formats a decimal without crossing the IEEE-754 number boundary. */

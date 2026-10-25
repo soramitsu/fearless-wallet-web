@@ -9,7 +9,8 @@ export function getCostOfAssets(
   price: number,
   returnType: 'string' | 'number' = 'number'
 ): number | string {
-  const fp = new FPNumber(count).mul(new FPNumber(price));
+  // An amount or fee not filled in yet is worth nothing, not NaN.
+  const fp = new FPNumber(count === '' || count === null || count === undefined ? 0 : count).mul(new FPNumber(price ?? 0));
 
   if (returnType === 'string') return fp.toString();
 

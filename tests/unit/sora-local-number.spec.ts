@@ -28,3 +28,44 @@ describe('local decimal amounts', () => {
     expect(FPNumber.fromCodecValue('not-a-number').isFinity()).toBe(false);
   });
 });
+
+// Expected text was produced by the SORA SDK's math package 1.43.0-betaMST-1.0.21, the library the wallet's amount
+// text was written against. Each value is shown with at most (never exactly) the requested decimals.
+describe('display formats kept from the SORA SDK', () => {
+  it.each([
+    ['0', '0', '0'],
+    ['5', '5', '5'],
+    ['50', '50', '50'],
+    ['1234', '1,234', '1234'],
+    ['1234567', '1,234,567', '1234567'],
+    ['1.5', '1.5', '1.5'],
+    ['1234.5', '1,234.5', '1234.5'],
+    ['1234567.123456789', '1,234,567.1234567', '1234567.1234567'],
+    ['12.30000', '12.3', '12.3'],
+    ['100', '100', '100'],
+    ['-1234.5', '-1,234.5', '-1234.5'],
+    ['999999999999999999999.99', '999,999,999,999,999,999,999.99', '999999999999999999999.99'],
+    ['NaN', 'NaN', 'NaN'],
+  ])('shows %s as %s, and %s without grouping', (value, locale, plain) => {
+    expect(new FPNumber(value).toLocaleString()).toBe(locale);
+    expect(new FPNumber(value).format()).toBe(plain);
+  });
+  it('keeps the first significant digit of a value that would round to zero', () => {
+    expect(new FPNumber('0.000000001').toLocaleString()).toBe('0.000000001');
+    expect(new FPNumber('0.00000001234').toLocaleString()).toBe('0.00000001');
+    expect(FPNumber.fromCodecValue('1', 6).toLocaleString()).toBe('0.000001');
+  });
+  it('reads whole codec amounts the way the amount field shows them', () => {
+    expect(FPNumber.fromCodecValue('1234', 0).toLocaleString()).toBe('1,234');
+    expect(FPNumber.fromCodecValue('007', 0).toLocaleString()).toBe('7');
+    expect(FPNumber.fromCodecValue('0', 0).toLocaleString()).toBe('0');
+    expect(FPNumber.HUNDRED.toLocaleString()).toBe('100');
+  });
+  it('pads to the requested decimals only when asked to keep the order', () => {
+    expect(new FPNumber('1234').toLocaleString(3)).toBe('1,234');
+    expect(new FPNumber('1234').toLocaleString(3, true)).toBe('1,234.000');
+    expect(new FPNumber('1234567.123456789').toLocaleString(3, true)).toBe('1,234,567.123');
+    expect(new FPNumber('1.5').format(4, undefined, true)).toBe('1.5');
+    expect(new FPNumber('1234.5').format(2, { decimalSeparator: ',', groupSeparator: '.', groupSize: 3 })).toBe('1.234,5');
+  });
+});

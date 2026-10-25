@@ -39,23 +39,24 @@ export default class EvmBalanceService {
         // Save timeout [network api][ethereum address]
         api.timeout[ethereumAddress] = Date.now();
 
-        if (assetId) {
-          const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, assetId, this.state);
+        const requestedAssets = assetId ? [{ id: assetId }] : assets;
+        if (!requestedAssets.length) return [];
+        const address = this.state.keyringService.getSubstrateAddress(ethereumAddress);
 
-          return [{ balance, network: name, assetId }];
-        }
+        return this.state.balanceService.refreshNetworkBalances(name, address, async () => {
+          const assetsPromises = requestedAssets.map(async ({ id }) => {
+            const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, id, this.state);
 
-        const assetsPromises = assets.map(async ({ id }) => {
-          const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, id, this.state);
+            return { balance, assetId: id, network: name };
+          });
 
-          return {
-            balance,
-            assetId: id,
-            network: name,
-          };
-        });
-
-        return await Promise.all(assetsPromises);
+          // Wait for every result even if one request throws before its balance error handler.
+          const results = await Promise.allSettled(assetsPromises);
+          return results.map((result) => {
+            if (result.status === 'rejected') throw result.reason;
+            return result.value;
+          });
+        }, !assetId);
       }
     );
 
@@ -142,7 +143,8 @@ export default class EvmBalanceService {
 
     const address = state.keyringService.getSubstrateAddress(ethereumAddress);
 
-    if (!asset || !api.api) return '0';
+    if (!asset) throw new Error(`Asset ${contractAddress} is missing on ${networkKey}`);
+    if (!api?.api) throw new Error('API not found');
 
     const { symbol, precision, id } = asset;
 

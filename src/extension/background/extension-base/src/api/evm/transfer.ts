@@ -23,6 +23,11 @@ interface TransactionObject {
 
 interface MakeTransferParams extends TransferParams {
   privateKey: string;
+  /**
+   * The network fee the Send screen showed, in the native coin. It is a ceiling, as for Bitcoin, Solana and Iroha:
+   * fee data the node returns at send time cannot raise what the transfer may cost.
+   */
+  approvedMaxFee?: string;
   finalGuard?: () => void;
   callback?: (data: BasicTxResponse) => void;
 }
@@ -35,7 +40,23 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export async function handleTransfer({ callback, networkKey, privateKey, tx, finalGuard }: HandleTransferProps): Promise<void> {
+/** The most this transaction can pay in network fees: its gas limit at the highest gas price it allows. */
+export function maximumEvmNetworkFee({ gasLimit, gasPrice, maxFeePerGas }: Pick<Transaction, 'gasLimit' | 'gasPrice' | 'maxFeePerGas'>): bigint {
+  const price = maxFeePerGas ?? gasPrice;
+
+  if (price === null || price === undefined || gasLimit <= 0n) throw new Error('transfer_fee_unavailable');
+
+  return gasLimit * price;
+}
+
+export async function handleTransfer({
+  callback,
+  networkKey,
+  privateKey,
+  tx,
+  finalGuard,
+  approvedMaxFee,
+}: HandleTransferProps): Promise<void> {
   const web3Api = state.getEvmApi(networkKey)?.api;
   const signer = new Wallet(privateKey, web3Api);
 
@@ -48,6 +69,8 @@ export async function handleTransfer({ callback, networkKey, privateKey, tx, fin
     const { from, ...unsigned } = populated;
     if (from != null && getAddress(from) !== signer.address) throw new Error('Transaction from address mismatch');
     const transaction = Transaction.from(unsigned);
+    if (approvedMaxFee !== undefined && maximumEvmNetworkFee(transaction) > parseEther(approvedMaxFee))
+      throw new Error('transfer_fee_changed');
     const digest = transaction.unsignedHash;
     finalGuard?.();
     transaction.signature = signer.signingKey.sign(digest);

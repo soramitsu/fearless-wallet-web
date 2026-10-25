@@ -27,6 +27,7 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ...Object.entries(SEND_ERROR_LOCALE_KEYS),
   ['transfer_fee_changed', 'assets.transferFeeChanged'],
   ['transfer_fee_approval_required', 'assets.transferFeeApprovalRequired'],
+  ['transfer_fee_unavailable', 'assets.transferFeeApprovalRequired'],
   ...Object.entries(ACCOUNT_ACCESS_ERROR_LOCALE_KEYS),
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],

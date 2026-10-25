@@ -48,6 +48,8 @@ const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   ...SEND_ERROR_LOCALE_KEYS,
   transfer_fee_changed: 'assets.transferFeeChanged',
   transfer_fee_approval_required: 'assets.transferFeeApprovalRequired',
+  // An EVM send whose populated transaction carries no fee to compare with the reviewed one. Nothing was sent.
+  transfer_fee_unavailable: 'assets.transferFeeApprovalRequired',
   ...ACCOUNT_ACCESS_ERROR_LOCALE_KEYS,
   bitcoin_transfer_disabled: 'assets.bitcoinTransfersDisabled',
   iroha_transfer_disabled: 'assets.irohaTransfersDisabled',

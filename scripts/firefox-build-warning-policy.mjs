@@ -92,7 +92,8 @@ export function isReviewedFirefoxBuildWarning(buildTarget, warning) {
   }
 
   if (warning.code === 'PLUGIN_TIMINGS') {
-    return warning.summary === '[PLUGIN_TIMINGS] Your build spent significant time in plugins. Here is a breakdown:';
+    return warning.summary === '[PLUGIN_TIMINGS] Your build spent significant time in plugins. Here is a breakdown:' ||
+      /^\[PLUGIN_TIMINGS\] JavaScript callbacks ran for \d+(?:\.\d+)?s of this \d+(?:\.\d+)?s build \((?:100|\d{1,2})%\)\.$/u.test(warning.summary);
   }
 
   if (warning.plugin === 'builtin:vite-reporter') {

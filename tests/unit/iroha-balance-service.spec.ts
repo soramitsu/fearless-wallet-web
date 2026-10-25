@@ -506,7 +506,7 @@ describe('IrohaBalanceService', () => {
   });
 
   it('refreshes a token group restored from the balance cache to the network asset icon and price', async () => {
-    const xorIcon = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/XOR.svg';
+    const xorIcon = 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons/tokens/coloured/XOR.svg';
     const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
     taira.assets[0] = { ...taira.assets[0], icon: xorIcon, priceId: '' };
     const cachedGroup = {

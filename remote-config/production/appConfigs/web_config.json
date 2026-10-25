@@ -1,0 +1,7 @@
+{
+    "fiat": {
+      "soraCard": false,
+      "moonpay": true,
+      "ramp": true
+    }
+}

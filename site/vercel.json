@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nuxtjs",
+  "installCommand": "npx -y @yarnpkg/cli-dist@4.17.0 install --immutable",
+  "buildCommand": "npx -y @yarnpkg/cli-dist@4.17.0 build"
+}

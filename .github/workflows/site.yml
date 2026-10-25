@@ -1,0 +1,48 @@
+name: Website
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+    branches: [develop, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install website dependencies
+        run: yarn install --immutable
+      - name: Verify website source and data
+        run: |
+          bash scripts/audit-public-artifacts.sh
+          bash scripts/test-todo-debt-audit.sh
+          bash scripts/audit-todo-debt.sh
+          yarn test:dependency-security
+          yarn audit:dependencies
+          yarn audit:dependencies:production
+          yarn verify:release-content
+          yarn test:app-associations
+          yarn verify:app-associations
+      - name: Typecheck website
+        run: yarn typecheck
+      - name: Build website
+        run: yarn build

@@ -15,14 +15,14 @@ type UniversalWalletNetworkMap = Record<string, NetworkJson>;
 
 const TAIRA_TESTNET_NETWORK_NAME = 'Taira Testnet';
 const DEFAULT_ADDRESS_PREFIX = 42;
-const SHARED_ICONS_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons';
-// shared-features-utils publishes no Solana icon, so the extension bundles one at the same relative path.
+const OWNED_ICONS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons';
+// The extension bundles its Solana icon; other registry artwork is owned in remote-config.
 const BUNDLED_ICONS_PATH = '/icons';
 // Icons for registry chains the remote chain catalog does not list yet; other entries keep their symbol.
 const REGISTRY_TOKEN_ICONS: Partial<Record<string, string>> = {
-  BTC: `${SHARED_ICONS_URL}/tokens/coloured/BTC.svg`,
+  BTC: `${OWNED_ICONS_URL}/tokens/coloured/BTC.svg`,
   SOL: `${BUNDLED_ICONS_PATH}/tokens/coloured/SOL.svg`,
-  XOR: `${SHARED_ICONS_URL}/tokens/coloured/XOR.svg`,
+  XOR: `${OWNED_ICONS_URL}/tokens/coloured/XOR.svg`,
 };
 // Tokens the extension names, prices and pictures itself on networks whose registry entry lists only the coin. A
 // token not listed here still shows, named by its mint.
@@ -34,7 +34,7 @@ const REGISTRY_TOKEN_ASSETS: Readonly<Partial<Record<string, readonly Asset[]>>>
 });
 const REGISTRY_NETWORK_ICONS: Partial<Record<string, string>> = {
   [WalletEcosystem.Bitcoin]: REGISTRY_TOKEN_ICONS.BTC,
-  [WalletEcosystem.Iroha]: `${SHARED_ICONS_URL}/chains/white/SORA.svg`,
+  [WalletEcosystem.Iroha]: `${OWNED_ICONS_URL}/chains/white/SORA.svg`,
   [WalletEcosystem.Solana]: REGISTRY_TOKEN_ICONS.SOL,
 };
 
@@ -256,7 +256,7 @@ function createRegistryTokenAsset(mint: string, symbol: string, name: string, pr
     currencyId: mint,
     precision,
     priceId,
-    icon: `${SHARED_ICONS_URL}/tokens/coloured/${symbol}.svg`,
+    icon: `${OWNED_ICONS_URL}/tokens/coloured/${symbol}.svg`,
     color: '',
     staking: '',
     tonType: 'normal',

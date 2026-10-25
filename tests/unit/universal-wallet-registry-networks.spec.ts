@@ -157,7 +157,7 @@ describe('Universal Wallet registry network mapping', () => {
   });
 
   it('gives registry coins published icons and upgrades bare stored icons only', () => {
-    const icons = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons';
+    const icons = 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons';
     const networks = createUniversalWalletRegistryNetworks();
     const byName = Object.fromEntries(networks.map((network) => [network.name, network]));
 
@@ -165,7 +165,7 @@ describe('Universal Wallet registry network mapping', () => {
     expect(byName['Taira Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/XOR.svg`);
     expect(byName['Bitcoin Testnet'].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
     expect(byName['Bitcoin Testnet'].assets[0].icon).toBe(`${icons}/tokens/coloured/BTC.svg`);
-    // shared-features-utils publishes no SOL icon, so the extension bundles one.
+    // The extension bundles its SOL icon.
     expect(byName.Solana.icon).toBe('/icons/tokens/coloured/SOL.svg');
     expect(byName.Solana.assets[0].icon).toBe('/icons/tokens/coloured/SOL.svg');
 

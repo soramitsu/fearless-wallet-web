@@ -1,20 +1,20 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
-const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils';
+const BASE_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config';
 
 const CHAINS = IS_PRODUCTION
-  ? `${BASE_URL}/master/chains/v13/chains.json`
-  : `${BASE_URL}/develop-free/chains/v13/chains_dev.json`;
+  ? `${BASE_URL}/production/chains/v13/chains.json`
+  : `${BASE_URL}/development/chains/v13/chains_dev.json`;
 
-const FIATS = `${BASE_URL}/master/fiat/fiats.json`;
+const FIATS = `${BASE_URL}/production/fiat/fiats.json`;
 
 const FEATURES = IS_PRODUCTION
-  ? `${BASE_URL}/master/appConfigs/web_config.json`
-  : `${BASE_URL}/develop-free/appConfigs/web_config.json`;
+  ? `${BASE_URL}/production/appConfigs/web_config.json`
+  : `${BASE_URL}/development/appConfigs/web_config.json`;
 
-const ONBOARDING_URL = `${BASE_URL}/master/appConfigs/onboarding/web.json`;
+const ONBOARDING_URL = `${BASE_URL}/production/appConfigs/onboarding/web.json`;
 
-const SCAM = `${BASE_URL}/master/scamDetection/Polkadot_Hot_Wallet_Attributions.csv`;
+const SCAM = `${BASE_URL}/production/scamDetection/Polkadot_Hot_Wallet_Attributions.csv`;
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
@@ -26,7 +26,7 @@ const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
 const FEARLESS_PRIVACY = 'https://github.com/soramitsu/fearless-wallet-web/blob/52c54b90febe08742f5f41fe318f84cc3a8fe62a/docs/browser-extension-privacy.md';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
-const GITHUB = 'https://github.com/soramitsu/shared-features-utils';
+const GITHUB = 'https://github.com/soramitsu/fearless-wallet-web';
 const TELEGRAM = 'https://t.me/fearlesswallet';
 const MEDIUM = 'https://medium.com/fearlesswallet';
 const INSTAGRAM = 'https://www.instagram.com/fearless_wallet';

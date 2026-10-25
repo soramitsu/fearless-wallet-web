@@ -34,12 +34,12 @@ scan_source_pattern() {
     if [[ "${TODO_AUDIT_FORCE_GREP:-0}" != "1" ]] && command -v rg >/dev/null 2>&1; then
       rg -n --no-heading -i "$rg_pattern" \
         --glob '*.{js,jsx,ts,tsx,vue,mjs,cjs}' \
-        --glob '!node_modules/**' \
-        --glob '!dist/**' \
-        --glob '!build/**' \
-        --glob '!coverage/**' \
-        --glob '!.nuxt/**' \
-        --glob '!.output/**' \
+        --glob '!**/node_modules/**' \
+        --glob '!**/dist/**' \
+        --glob '!**/build/**' \
+        --glob '!**/coverage/**' \
+        --glob '!**/.nuxt/**' \
+        --glob '!**/.output/**' \
         --glob '!**/.git/**' \
         . || true
       return
@@ -54,12 +54,12 @@ scan_source_pattern() {
       -name '*.mjs' -o \
       -name '*.cjs' \
     \) \
-      ! -path './node_modules/*' \
-      ! -path './dist/*' \
-      ! -path './build/*' \
-      ! -path './coverage/*' \
-      ! -path './.nuxt/*' \
-      ! -path './.output/*' \
+      ! -path '*/node_modules/*' \
+      ! -path '*/dist/*' \
+      ! -path '*/build/*' \
+      ! -path '*/coverage/*' \
+      ! -path '*/.nuxt/*' \
+      ! -path '*/.output/*' \
       ! -path './.git/*' \
       -print | while IFS= read -r file; do
         grep -HInEi "$grep_pattern" "$file" || true

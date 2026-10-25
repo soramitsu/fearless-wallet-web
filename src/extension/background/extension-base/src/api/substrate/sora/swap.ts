@@ -157,3 +157,37 @@ export async function createSwap(
     },
   };
 }
+
+/** Refresh availability without replacing the amounts the user confirmed. */
+export async function prepareSwapExecution(
+  options: Pick<SwapOptions, 'amountA' | 'amountB' | 'isExchangeB' | 'slippage'> & Partial<SwapOptions>,
+  api: Api<void>,
+  state: State
+): Promise<{ swapOptions: SwapOptions; maximumSourceAmount: string }> {
+  const approved = { ...options };
+  const quote = await createSwap(approved, api, state);
+  const { assetA, assetB } = quote.swapOptions!;
+  const input = new FPNumber(approved.amountA, assetA.decimals);
+  const output = new FPNumber(approved.amountB, assetB.decimals);
+  if (!input.isFinity() || !input.gt(0) || !output.isFinity() || !output.gt(0)) {
+    throw new Error('Refresh the SORA quote before confirming');
+  }
+
+  const limit = FPNumber.fromCodecValue(
+    api.swap.getMinMaxValue(assetA, assetB, approved.amountA, approved.amountB, approved.isExchangeB, approved.slippage),
+    approved.isExchangeB ? assetA.decimals : assetB.decimals
+  );
+  const refreshed = new FPNumber(approved.isExchangeB ? quote.amountA : quote.amountB);
+  if (!limit.isFinity() || !limit.gt(0) || !refreshed.isFinity() || !refreshed.gt(0)) {
+    throw new Error('Refresh the SORA quote before confirming');
+  }
+  if (approved.isExchangeB ? refreshed.gt(limit) : refreshed.lt(limit)) {
+    throw new Error('The SORA quote moved beyond your confirmed slippage');
+  }
+
+  return {
+    swapOptions: { ...quote.swapOptions!, amountA: input.toString(), amountB: output.toString() },
+    // Fixed-output swaps may spend up to the approved cap; reserve fees on top.
+    maximumSourceAmount: approved.isExchangeB ? limit.toString() : input.toString(),
+  };
+}

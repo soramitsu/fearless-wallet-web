@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { TEST_OAUTH_CLIENT_ID } from './config.mjs';
 import { cdp } from './cdp.mjs';
 import { coldProbeSource } from './cold-probe.mjs';
+import { stopOwnedProcess } from './process-lifecycle.mjs';
 export { cdp } from './cdp.mjs';
 
 /** CHROME_BIN, else the newest Chrome for Testing in Playwright's cache. Branded Chrome ignores --load-extension. */
@@ -77,11 +78,7 @@ export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) 
   );
 
 export const stop = async (chrome) => {
-  if (!chrome || chrome.exitCode !== null) return;
-  await new Promise((resolve) => {
-    chrome.once('exit', resolve);
-    chrome.kill('SIGTERM');
-  });
+  await stopOwnedProcess(chrome);
   await sleep(1000);
 };
 

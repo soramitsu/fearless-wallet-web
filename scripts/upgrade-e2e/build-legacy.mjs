@@ -24,6 +24,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { TEST_OAUTH_CLIENT_ID, cacheRoot, legacyBuilds, root, testExtensionKey } from './config.mjs';
+import { serialVueBuildConfig } from './legacy-build-compat.mjs';
 
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
 const git = (args, options = {}) => execFileSync('git', ['-C', root, ...args], { maxBuffer: 1 << 30, ...options });
@@ -144,9 +145,11 @@ export async function buildLegacy(entry, { force = false, keepSource = false } =
     delete env.NODE_ENV;
     const yarn = [path.join(node.dir, 'corepack'), `yarn@${entry.yarn}`];
     await run(yarn[0], [yarn[1], 'install', ...(entry.stub ? [] : ['--immutable'])], { cwd: src, env, log });
-    await run(yarn[0], [yarn[1], 'build:extension'], {
+    const compatibility = entry.serialVueLoaders ? serialVueBuildConfig(src) : undefined;
+    if (compatibility) deviations.push(compatibility.deviation);
+    await run(yarn[0], [yarn[1], ...(compatibility?.args ?? ['build:extension'])], {
       cwd: src,
-      env: { ...env, EXTENSION_TYPE: 'chrome', OUTPUT_DIR: 'chrome' },
+      env: { ...env, EXTENSION_TYPE: 'chrome', OUTPUT_DIR: 'chrome', ...compatibility?.env },
       log,
     });
 

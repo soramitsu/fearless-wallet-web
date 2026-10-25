@@ -13,6 +13,7 @@
       "id": "3.0.6",
       "commit": "cfcdb591",
       "sha": "cfcdb591fd7098b24022e8e9afc19b511d0fe785",
+      "serialVueLoaders": true,
       "node": "20",
       "yarn": "3.4.1",
       "note": "The final 3.0.6 source: the published 3.0.5 minus the phrase upload, with AUDIT-01, AUDIT-02 (TON version 2/3 storage) and the availability fixes (HOTFIX-3.0.6). The Web Store rollback target; R1 rolls back to it."

@@ -32,7 +32,7 @@ import {
   SolanaTransactionStatusUnknownError,
 } from '@extension-base/api/solana/transfer';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
-import { createSwap } from '@extension-base/api/substrate/sora';
+import { createSwap, prepareSwapExecution } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { getInternalError } from '@walletconnect/utils';
 import {
@@ -1158,8 +1158,9 @@ export default class Extension extends FWExtensionBase {
     }
 
     let swapOptions;
+    let maximumSourceAmount;
     try {
-      ({ swapOptions } = await createSwap(options, apiSora, this.state));
+      ({ swapOptions, maximumSourceAmount } = await prepareSwapExecution(options, apiSora, this.state));
     } catch {
       return {
         status: false,
@@ -1172,7 +1173,7 @@ export default class Extension extends FWExtensionBase {
     const balanceError = validatePolkaswapExecution({
       balances: this.state.balanceService.getAccountBalance(address) ?? [],
       networkFee: this.state.soraFees.value[Operation.Swap] ?? '',
-      request: { ...options, amountA },
+      request: { ...options, amountA: maximumSourceAmount },
     });
     if (balanceError) return { status: false, errors: [balanceError] };
 
@@ -1192,7 +1193,7 @@ export default class Extension extends FWExtensionBase {
         xor,
         sourceAddress: assetA.address,
         destinationAddress: assetB.address,
-        sourceAmount: amountA,
+        sourceAmount: maximumSourceAmount,
         networkFee,
       });
     } catch {

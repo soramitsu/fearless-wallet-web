@@ -90,6 +90,21 @@ expectFailure(
     ),
   /unreviewed popup warning/
 );
+const receiveFormWarning = {
+  code: 'INEFFECTIVE_DYNAMIC_IMPORT',
+  id: `${rootDir}/src/screens/wallet&asset/ReceiveForm.vue`,
+  message:
+    '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/wallet&asset/ReceiveForm.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/wallet&asset/asset/Asset.vue?vue&type=script&lang.ts, src/screens/wallet&asset/wallet/Wallet.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.',
+};
+handler('warn', receiveFormWarning, () => {});
+assertions += 1;
+expectFailure('ReceiveForm importer drift', () => handler('warn', {
+  ...receiveFormWarning,
+  message: receiveFormWarning.message.replace('wallet/Wallet.vue', 'wallet/Other.vue'),
+}, () => {}), /unreviewed popup warning/);
+expectFailure('ReceiveForm wrong build target', () => createFirefoxBuildWarningHandler({
+  buildTarget: 'background', rootDir,
+})('warn', receiveFormWarning, () => {}), /unreviewed background warning/);
 expectFailure('missing downstream handler', () => handler('warn', warning(), null), /log handler must be a function/);
 expectFailure(
   'unknown build target',

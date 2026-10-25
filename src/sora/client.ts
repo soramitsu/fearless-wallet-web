@@ -7,6 +7,7 @@ export { amount, codec, observe, slippageFactor, text, unwrap, XOR, VAL, type Ru
 import { Operation, SubNetworkId, type Asset, type AccountAsset, type NetworkFeesObject } from './types';
 import { SoraPools } from './pools';
 import { SoraStaking } from './staking';
+import { SoraSubmissionUnknownError } from './submission';
 import schema from './schema/types.json';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
@@ -56,26 +57,57 @@ export class SoraClient {
     await new Promise<void>((resolve, reject) => {
       let unsubscribe: (() => void) | undefined;
       let settled = false;
+      let receivedStatus = false;
+      let wasInBlock = false;
+      let transactionHash: string | undefined;
+      const captureHash = (value: Runtime) => {
+        try {
+          const hash = value?.toHex?.() ?? value?.toString?.();
+          if (typeof hash === 'string' && /^0x[a-f\d]{64}$/i.test(hash)) transactionHash = hash;
+        } catch { /* Missing diagnostics must not change the send's outcome. */ }
+      };
+      const unknown = () => {
+        // Polkadot signs this extrinsic in place. An unsigned hash is not the
+        // hash submitted to the chain, so never use it as a fallback.
+        if (!transactionHash && extrinsic.isSigned === true) captureHash(extrinsic.hash);
+        return new SoraSubmissionUnknownError(transactionHash);
+      };
+      const stop = (handle?: () => void) => {
+        try { handle?.(); } catch { /* Confirmation is already settled. */ }
+      };
       const finish = (error?: Error) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
-        unsubscribe?.();
+        stop(unsubscribe);
         if (error) reject(error); else resolve();
       };
-      const timer = setTimeout(() => finish(new Error('Transaction confirmation timed out; check history before retrying')), 120_000);
+      const timer = setTimeout(() => finish(unknown()), 120_000);
       try {
         Promise.resolve(extrinsic.signAndSend(expectedPair, { nonce: -1 }, (result: Runtime) => {
-          if (result.dispatchError) return finish(new Error('SORA transaction failed on chain'));
+          if (settled) return;
+          receivedStatus = true;
+          captureHash(result.txHash);
+          wasInBlock ||= Boolean(result.status.isInBlock);
+          if (result.status.isInvalid && !wasInBlock) return finish(new Error('SORA transaction was rejected'));
           if (result.status.isInvalid || result.status.isDropped || result.status.isUsurped || result.status.isFinalityTimeout) {
-            return finish(new Error('SORA transaction was not finalized'));
+            return finish(unknown());
           }
+          // Inclusion and dispatch results can be retracted. Only finalization
+          // establishes success or an on-chain failure.
+          if (!result.status.isFinalized) return;
+          if (result.internalError) return finish(unknown());
+          if (result.dispatchError) return finish(new Error('SORA transaction failed on chain'));
           if (result.events?.some(({ event }: Runtime) => (event.section === 'system' && event.method === 'ExtrinsicFailed') || (event.section === 'utility' && ['BatchInterrupted', 'ItemFailed'].includes(event.method)))) {
             return finish(new Error('SORA operation failed on chain'));
           }
-          if (result.status.isFinalized) finish();
-        })).then((stop) => { unsubscribe = stop; if (settled) stop(); }, (error) => finish(error));
-      } catch (error) { finish(error as Error); }
+          finish();
+        })).then((handle) => { unsubscribe = handle; if (settled) stop(handle); }, () => finish(unknown()));
+      } catch (error) {
+        // A synchronous rejection before signing/status delivery cannot have
+        // reached the chain. Once signing started, preserve uncertainty.
+        finish(receivedStatus || extrinsic.isSigned === true ? unknown() : error as Error);
+      }
     });
   }
   assets = {

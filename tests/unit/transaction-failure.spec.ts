@@ -232,6 +232,7 @@ describe('Bitcoin and Solana send outcomes', () => {
     ['bitcoin_broadcast_ambiguous', 'unconfirmed', 'assets.bitcoinBroadcastUnconfirmed'],
     ['solana_broadcast_ambiguous', 'unconfirmed', 'assets.solanaBroadcastUnconfirmed'],
     ['solana_broadcast_signature_mismatch', 'unconfirmed', 'assets.solanaBroadcastUnconfirmed'],
+    ['sora_broadcast_ambiguous', 'unconfirmed', 'assets.transactionStatusUnknownDetails'],
     ['bitcoin_broadcast_rejected', 'failed', 'assets.bitcoinBroadcastRejected'],
     ['bitcoin_previous_send_pending', 'failed', 'assets.bitcoinPreviousSendPending'],
     ['bitcoin_previous_send_unconfirmed', 'failed', 'assets.bitcoinPreviousSendUnconfirmed'],

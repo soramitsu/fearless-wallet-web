@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SoraSubmissionUnknownError, soraSubmissionUnknownResponse } from '@/sora/submission';
 import { SoraClient, amount, observe, XOR, VAL, type Runtime } from '@/sora/client';
 import { SubNetworkId, type Asset } from '@/sora/types';
 import { poolMarkerForAmount, poolWithdrawal } from '@/sora/pools';
@@ -207,5 +208,97 @@ describe('owned SORA fee refreshes', () => {
 
     await rejected;
     expect(client.NetworkFee.StakingBondExtra).toBe('29');
+  });
+});
+
+
+describe('SORA submission uncertainty after broadcasting', () => {
+  const hash = `0x${'ab'.repeat(32)}`;
+  afterEach(() => vi.useRealTimers());
+
+  function pendingSend() {
+    const { client } = fixture();
+    const stop = vi.fn();
+    let callback!: (result: Runtime) => void;
+    const tx = {
+      isSigned: true, hash: { toHex: () => hash },
+      signAndSend: vi.fn((_pair, _options, cb) => { callback = cb; return Promise.resolve(stop); }),
+    };
+    const pending = client.submit(tx);
+    return { callback: (result: Runtime) => callback(result), pending, stop, tx };
+  }
+
+  it('retains an included transaction hash when confirmation times out, without broadcasting again', async () => {
+    vi.useFakeTimers();
+    const { callback, pending, stop, tx } = pendingSend();
+    const rejected = expect(pending).rejects.toMatchObject({ outcome: 'unknown', transactionHash: hash.slice(2) });
+    callback({ status: { isInBlock: true }, txHash: { toHex: () => hash }, events: [] });
+    await vi.advanceTimersByTimeAsync(120_000);
+    await rejected;
+    expect(tx.signAndSend).toHaveBeenCalledOnce();
+    expect(stop).toHaveBeenCalledOnce();
+  });
+
+  it.each(['isFinalityTimeout', 'isDropped', 'isUsurped', 'isInvalid'])(
+    'preserves uncertainty when %s follows inclusion', async (status) => {
+      const { callback, pending, stop } = pendingSend();
+      callback({ status: { isInBlock: true }, txHash: { toHex: () => hash }, events: [] });
+      callback({ status: { [status]: true }, events: [] });
+      await expect(pending).rejects.toMatchObject({ outcome: 'unknown', transactionHash: hash.slice(2) });
+      expect(stop).toHaveBeenCalledOnce();
+    }
+  );
+
+  it('keeps invalid pre-inclusion transactions as definite rejections', async () => {
+    const { callback, pending } = pendingSend();
+    callback({ status: { isInvalid: true }, events: [] });
+    const error = await pending.catch((value) => value);
+    expect(error.message).toBe('SORA transaction was rejected');
+    expect(soraSubmissionUnknownResponse(error)).toBeNull();
+  });
+
+  it('does not settle a provisional dispatch failure until the block finalizes', async () => {
+    const { callback, pending } = pendingSend();
+    let settled = false;
+    const rejection = pending.catch((error) => { settled = true; return error; });
+    callback({ status: { isInBlock: true }, dispatchError: {}, events: [] });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    callback({ status: { isFinalized: true }, dispatchError: {}, events: [] });
+    const error = await rejection;
+    expect(error.message).toBe('SORA transaction failed on chain');
+    expect(soraSubmissionUnknownResponse(error)).toBeNull();
+  });
+
+  it('does not claim success if finalized dispatch events could not be fetched', async () => {
+    const { callback, pending } = pendingSend();
+    callback({ status: { isFinalized: true }, internalError: new Error('private provider error'), events: [] });
+    await expect(pending).rejects.toBeInstanceOf(SoraSubmissionUnknownError);
+  });
+
+  it.each([true, false])('preserves transport uncertainty, including when signed hash availability is %s', async (signed) => {
+    const { client } = fixture();
+    const tx = {
+      isSigned: signed, hash: { toHex: () => hash },
+      signAndSend: vi.fn().mockRejectedValue(new Error('private transport detail')),
+    };
+    const error = await client.submit(tx).catch((value) => value);
+    expect(soraSubmissionUnknownResponse(error)).toEqual({
+      status: false, outcome: 'unknown', ...(signed ? { transactionHash: hash.slice(2) } : {}),
+      errors: [{ message: 'sora_broadcast_ambiguous' }],
+    });
+    expect(tx.signAndSend).toHaveBeenCalledOnce();
+  });
+
+  it('preserves a synchronous rejection before signing as a definite failure', async () => {
+    const { client } = fixture();
+    const error = new Error('invalid local signing options');
+    await expect(client.submit({ isSigned: false, signAndSend: () => { throw error; } })).rejects.toBe(error);
+    expect(soraSubmissionUnknownResponse(error)).toBeNull();
+  });
+
+  it('drops malformed hashes and excludes diagnostic text from messaging responses', () => {
+    const response = soraSubmissionUnknownResponse(new SoraSubmissionUnknownError('<provider-secret>'));
+    expect(response).toEqual({ status: false, outcome: 'unknown', errors: [{ message: 'sora_broadcast_ambiguous' }] });
   });
 });

@@ -3,6 +3,7 @@ import { encodeAddress } from '@polkadot/util-crypto';
 import { StakingService } from '@extension-base/services/staking-service';
 import type State from '@extension-base/background/handlers/State';
 import type { MakeStakingRequest } from '@extension-base/services/staking-service/types';
+import { SoraSubmissionUnknownError } from '@/sora/submission';
 
 const mocks = vi.hoisted(() => ({
   api: {
@@ -231,5 +232,19 @@ describe('staking actual signer recovery policy', () => {
     ready(true);
     await expect(pending).rejects.toThrow('staking account changed');
     expect(mocks.api.staking.unbond).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('SORA staking submission uncertainty', () => {
+  it.each([
+    ['bondExtra', 'bondExtra'], ['unbond', 'unbond'], ['redeem', 'withdrawUnbonded'], ['payoutRewards', 'payout'],
+  ] as const)('preserves the unknown outcome for %s', async (type, method) => {
+    const hash = 'ab'.repeat(32);
+    mocks.api.staking[method].mockRejectedValue(new SoraSubmissionUnknownError(hash));
+    await expect(setup().service.makeStaking({ ...request, type })).resolves.toEqual({
+      status: false, outcome: 'unknown', transactionHash: hash, errors: [{ message: 'sora_broadcast_ambiguous' }],
+    });
+    expect(mocks.api.staking[method]).toHaveBeenCalledOnce();
   });
 });

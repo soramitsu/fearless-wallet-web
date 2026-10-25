@@ -140,6 +140,7 @@ export type PolkamarktMutationRequest =
 
 export interface PolkamarktMutationResponse {
   status: boolean;
+  outcome?: 'unknown';
   hash?: string;
   error?: string;
 }

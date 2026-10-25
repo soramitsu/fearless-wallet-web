@@ -33,6 +33,8 @@ export type TrackableResult = {
     asModule: { index: unknown; error: unknown };
     toString: () => string;
   };
+  /** Polkadot keeps the block status when fetching its dispatch events fails. */
+  internalError?: unknown;
   /** Events of this extrinsic only, as filtered by the API for in-block results. */
   events?: readonly { event: { section: string; method: string; data: readonly CodecLike[] } }[];
 };
@@ -108,6 +110,9 @@ function localXcmOutcome(events: TrackableResult['events']): 'complete' | 'incom
 }
 
 function inBlockOutcome(extrinsic: TrackableExtrinsic, hash: string, result: TrackableResult): TrackedSendOutcome {
+  if (result.internalError) {
+    return { kind: 'unknown', hash, reason: 'cross_chain_dispatch_outcome_unavailable' };
+  }
   if (result.dispatchError) {
     return { kind: 'failed', hash, reason: describeDispatchError(extrinsic, result.dispatchError), included: true };
   }

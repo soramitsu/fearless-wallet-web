@@ -76,6 +76,18 @@ describe('tracked cross-chain send', () => {
     await expect(sendAndTrackExtrinsic(extrinsic)).resolves.toEqual({ kind: 'included', hash: HASH });
   });
 
+  it.each(['InBlock', 'Finalized'] as const)('does not report success when %s event lookup failed', async (type) => {
+    const { extrinsic, unsubscribe } = fakeExtrinsic({
+      results: [{ status: status(type), internalError: new Error('private RPC event lookup failure') }],
+    });
+
+    await expect(sendAndTrackExtrinsic(extrinsic)).resolves.toEqual({
+      kind: 'unknown', hash: HASH, reason: 'cross_chain_dispatch_outcome_unavailable',
+    });
+    expect(extrinsic.send).toHaveBeenCalledOnce();
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
   it('reports a dispatch failure in the block with the module error and the hash', async () => {
     const { extrinsic } = fakeExtrinsic({
       results: [

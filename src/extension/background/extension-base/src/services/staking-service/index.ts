@@ -24,6 +24,7 @@ import type {
   GetNominateNetworkFeeRequest,
   getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
+import { soraSubmissionUnknownResponse } from '@/sora/submission';
 import { FPNumber, api as apiSora } from '@/sora';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { type NetworkName } from '@/interfaces';
@@ -449,6 +450,8 @@ export class StakingService {
     try {
       await apiSora.staking.bondAndNominate({ value: amount, controller: from, payee, validators }); // Controller аккаунт по умолчанию это Stash
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Bond failed: ${ex}`;
 
       console.info(message);
@@ -473,6 +476,8 @@ export class StakingService {
     try {
       await apiSora.staking.bondExtra({ value: amount });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] BondExtra failed: ${ex}`;
 
       console.info(message);
@@ -497,6 +502,8 @@ export class StakingService {
     try {
       await apiSora.staking.unbond({ value: amount });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Unbond failed: ${ex}`;
 
       console.info(message);
@@ -521,6 +528,8 @@ export class StakingService {
     try {
       await apiSora.staking.rebond({ value: amount });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Rebond failed: ${ex}`;
 
       console.info(message);
@@ -545,6 +554,8 @@ export class StakingService {
     try {
       await apiSora.staking.withdrawUnbonded({ value: amount });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] WithdrawUnbonded failed: ${ex}`;
 
       console.info(message);
@@ -569,6 +580,8 @@ export class StakingService {
     try {
       await apiSora.staking.setController({ address: controllerAddress });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Set controller failed: ${ex}`;
 
       console.info(message);
@@ -593,6 +606,8 @@ export class StakingService {
     try {
       await apiSora.staking.nominate({ validators });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Nominate failed: ${ex}`;
 
       console.info(message);
@@ -617,6 +632,8 @@ export class StakingService {
     try {
       await apiSora.staking.setPayee({ payee });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Set payee failed: ${ex}`;
 
       console.info(message);
@@ -643,6 +660,8 @@ export class StakingService {
       assertSigningAccount();
       await apiSora.staking.payout({ payouts, ...destination });
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[STAKING] Payout rewards: ${ex}`;
 
       console.info(message);

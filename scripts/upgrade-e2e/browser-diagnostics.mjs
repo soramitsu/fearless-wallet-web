@@ -122,6 +122,12 @@ export function createBrowserDiagnostics(child, { file, sourceFiles = {}, now = 
 // arbitrary message text never crosses DevTools or reaches an output file.
 export function classifyRuntimeError(message) {
   const text = typeof message === 'string' ? message.slice(0, 8192) : '';
+  // Fixed public strings from the pinned legacy bundles distinguish startup failures
+  // from their expected dependency-version warning; no message fragments are returned.
+  if (/@(?:polkadot|subwallet)\/[a-z0-9-]+ (?:has multiple versions, ensure that there is only one installed|requires direct dependencies exactly matching version)/i.test(text)) return 'dependency-version-warning';
+  if (/Keyring should be initialised via 'loadAll' before use/.test(text)) return 'keyring-not-initialized';
+  if (/The WASM interface has not been initialized\./.test(text)) return 'crypto-not-initialized';
+  if (/Unable to initialize @polkadot\/(?:util-crypto|wasm-crypto)|WebAssembly is not available in your environment/.test(text)) return 'crypto-initialization-failed';
   if (/Content Security Policy|violates? .*directive|Refused to (?:load|execute|connect|evaluate).*directive/i.test(text)) return 'csp-blocked';
   if (/ERR_FILE_NOT_FOUND|404 \(Not Found\)|(?:file|resource) not found/i.test(text)) return 'resource-not-found';
   if (/Failed to fetch dynamically imported module|Importing a module script failed|Failed to load module script|ChunkLoadError|Loading chunk .*failed/i.test(text)) return 'module-load';
@@ -137,12 +143,14 @@ export function classifyRuntimeError(message) {
   if (/TypeError|Cannot read propert|is not a function/i.test(text)) return 'type-error';
   if (/RangeError|Maximum call stack|out of memory/i.test(text)) return 'range-or-memory-error';
   if (/QuotaExceededError|IndexedDB|IDBDatabase|storage.*(?:failed|error|unavailable)/i.test(text)) return 'storage-error';
+  if (/^initialization failed\b/i.test(text)) return 'initialization-failed';
   return 'other';
 }
 
 const RUNTIME_CATEGORIES = ['csp-blocked', 'resource-not-found', 'module-load', 'network-load',
   'extension-context-invalidated', 'port-disconnected', 'syntax-error', 'reference-error',
-  'type-error', 'range-or-memory-error', 'storage-error', 'json-parse', 'unsupported-key-type', 'keyring-error', 'crypto-error', 'other'];
+  'type-error', 'range-or-memory-error', 'storage-error', 'json-parse', 'unsupported-key-type', 'keyring-error', 'crypto-error',
+  'dependency-version-warning', 'keyring-not-initialized', 'crypto-not-initialized', 'crypto-initialization-failed', 'initialization-failed', 'other'];
 
 export function extensionInspectorSource(extensionId) {
   if (!/^[a-p]{32}$/.test(extensionId)) throw new Error('Invalid diagnostic extension identity');

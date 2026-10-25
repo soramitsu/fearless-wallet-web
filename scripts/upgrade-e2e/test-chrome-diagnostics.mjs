@@ -202,6 +202,37 @@ test('fixed runtime categories distinguish missing chunks, module loading, CSP, 
   assert.equal(classifyRuntimeError(SECRET), 'other');
 });
 
+test('known legacy initialization errors remain distinct from package warnings without exposing message values', () => {
+  const cases = [
+    ["Error: Keyring should be initialised via 'loadAll' before use", 'keyring-not-initialized'],
+    ['The WASM interface has not been initialized. Ensure that you wait for the initialization Promise', 'crypto-not-initialized'],
+    ['Unable to initialize @polkadot/util-crypto', 'crypto-initialization-failed'],
+    ['FATAL: Unable to initialize @polkadot/wasm-crypto:: reason', 'crypto-initialization-failed'],
+    ['WebAssembly is not available in your environment', 'crypto-initialization-failed'],
+    ['initialization failed Error', 'initialization-failed'],
+    ['initialization failed TypeError: Cannot read properties of undefined', 'type-error'],
+    ['@polkadot/keyring has multiple versions, ensure that there is only one installed.', 'dependency-version-warning'],
+    ['@polkadot/util requires direct dependencies exactly matching version 12.6.2.', 'dependency-version-warning'],
+  ];
+  const runtimeErrors = cases.map(([message, category], index) => ({
+    id: index, message: `${message} ${SECRET}`, severity: category === 'dependency-version-warning' ? 'WARN' : 'ERROR',
+  }));
+  const inspected = runInNewContext(extensionInspectorSource('a'.repeat(32)), {
+    chrome: { developerPrivate: { getExtensionInfo: (_id, callback) => callback({ state: 'ENABLED', version: '3.0.6', runtimeErrors }) } },
+  });
+  return inspected.then((info) => {
+    assert(!JSON.stringify(info).includes(SECRET), 'raw messages must not cross DevTools');
+    const saved = extensionDiagnosticInfo(info);
+    assert.deepEqual(Array.from(saved.runtimeErrors, (error) => error.category), cases.map(([, category]) => category));
+    assert.equal(saved.runtimeCategoryCounts['dependency-version-warning'], 2);
+    assert.equal(saved.runtimeCategoryCounts['keyring-not-initialized'], 1);
+    assert.equal(saved.runtimeErrors.at(-1).severity, 'WARN');
+    assert(!JSON.stringify(saved).includes(SECRET));
+    assert(!JSON.stringify(saved).includes('12.6.2'));
+    assert(!JSON.stringify(saved).includes('loadAll'));
+  });
+});
+
 test('actual inspector expression aggregates all 35 errors but returns only the latest 10 classified records without message text', async () => {
   const messageSecret = 'sensitive-message-material';
   const errors = Array.from({ length: 35 }, (_, id) => ({

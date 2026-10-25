@@ -2,15 +2,19 @@
 // Prove that the pinned sandboxed browser can start an unpacked MV3 worker before building old releases.
 // The disposable extension contains no wallet code, accounts, permissions or network requests.
 import { spawn } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { stopOwnedProcess } from './process-lifecycle.mjs';
+import { extensionIdFromManifestKey, extensionWorkerId } from './browser-diagnostics.mjs';
 
 const STDERR_LIMIT = 12 * 1024;
 const SYSTEM_SANDBOX = '/opt/google/chrome/chrome-sandbox';
+// The public test key fixes the identity of this disposable, wallet-free probe.
+const PROBE_MANIFEST_KEY = readFileSync(new URL('../../tests/upgrade/test-extension-key.pub.b64', import.meta.url), 'utf8').trim();
+const PROBE_EXTENSION_ID = extensionIdFromManifestKey(PROBE_MANIFEST_KEY);
 
 export function validateSandboxHelper(file, stat = lstatSync) {
   const metadata = stat(file);
@@ -73,6 +77,7 @@ export async function preflightChrome({
   mkdirSync(extDir);
   writeFileSync(join(extDir, 'manifest.json'), JSON.stringify({
     manifest_version: 3, name: 'Fearless upgrade startup probe', version: '1.0.0',
+    key: PROBE_MANIFEST_KEY,
     background: { service_worker: 'background.js' },
   }));
   writeFileSync(join(extDir, 'background.js'), 'chrome.runtime.onInstalled.addListener(() => {});\n');
@@ -108,8 +113,7 @@ export async function preflightChrome({
           const version = await request('/json/version');
           const targets = await request('/json/list');
           if (typeof version.Browser !== 'string' || !version.Browser) throw new Error('DevTools browser version is missing');
-          if (Array.isArray(targets) && targets.some((target) => target.type === 'service_worker' &&
-              /^chrome-extension:\/\/[a-p]{32}\/background\.js$/.test(target.url)))
+          if (Array.isArray(targets) && extensionWorkerId(targets, PROBE_EXTENSION_ID))
             return { browser: version.Browser, extensionWorkerReady: true, sandboxHelper: sandboxHelper ?? null };
           last = 'DevTools answered, but the probe extension worker is missing';
         } catch (error) { last = error.message; }

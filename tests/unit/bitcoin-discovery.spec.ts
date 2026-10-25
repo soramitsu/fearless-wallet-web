@@ -34,18 +34,16 @@ function addressStats(address: string, txCount = 0) {
 }
 
 function mockDiscoveryClient(usedIndexes: number[]): BitcoinDiscoveryClient {
+  // Indexer fixtures are static. Deriving them on every lookup repeats PBKDF2/HD derivation in the mock as well
+  // as in the production scan, making this test depend on the machine's crypto throughput.
+  const usedAddresses = new Set(usedIndexes.map((index) => deriveBitcoinReceiveAddress({
+    mnemonicOrSeed: mnemonic,
+    path: getBitcoinReceivePath('mainnet', index),
+  })));
+
   return {
     getAddress: vi.fn(async (address: string) => {
-      const used = usedIndexes.some((index) => {
-        const expectedAddress = deriveBitcoinReceiveAddress({
-          mnemonicOrSeed: mnemonic,
-          path: getBitcoinReceivePath('mainnet', index),
-        });
-
-        return expectedAddress === address;
-      });
-
-      return addressStats(address, used ? 1 : 0);
+      return addressStats(address, usedAddresses.has(address) ? 1 : 0);
     }),
   };
 }

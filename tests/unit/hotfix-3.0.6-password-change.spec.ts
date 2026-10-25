@@ -293,10 +293,20 @@ describe('password changes commit as one batch', () => {
     await wallet.tonKeyring.loadAll();
     const publish = vi.spyOn(wallet.tonKeyring, 'setAccounts');
     const pending = deferred();
-    vi.mocked(writeWalletRecords).mockImplementation(() => pending.promise);
+    const submitted = deferred();
+    vi.mocked(writeWalletRecords).mockImplementation(() => {
+      submitted.resolve();
+      return pending.promise;
+    });
     const change = wallet.changeMasterPassword({ oldPassword: OLD, newPassword: NEXT });
 
-    await vi.waitFor(() => expect(writeWalletRecords).toHaveBeenCalledOnce());
+    // Real key derivation can take over a second on a busy host. Synchronize on
+    // the storage boundary being tested, rather than Vitest's 1s polling limit.
+    await Promise.race([
+      submitted.promise,
+      change.then(() => { throw new Error('Password change completed before submitting storage'); }),
+    ]);
+    expect(writeWalletRecords).toHaveBeenCalledOnce();
     const batch = vi.mocked(writeWalletRecords).mock.calls[0][0];
     expect(Object.keys(batch).sort()).toEqual([PASSWORD_STORAGE_KEY, accountStorageKey, evmStorageKey, `fw:ton:${tonRecord.address}`].sort());
     expect(keyring.keyring.setupMasterPassword).not.toHaveBeenCalled();

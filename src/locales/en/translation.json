@@ -1497,10 +1497,10 @@
   "exposureNotice": {
     "draftAwaitingOwnerSignOff": "",
     "title": "Security notice",
-    "heading": "Your recovery phrases may have been exposed",
-    "whatHappened": "Fearless Wallet browser versions {first} and {from} to {to} contained code that attempted to send recovery phrases to an outside server when you unlocked the wallet. For JSON or raw-seed imports, it attempted to send the encrypted key and wallet password together.",
+    "heading": "Your wallet keys may have been exposed",
+    "whatHappened": "A security review identified code in Fearless Wallet browser versions {first} and {from} to {to} that could send recovery phrases to an outside server on unlock. For JSON or raw-seed imports, this could include the encrypted key and wallet password.",
     "thisVersion": "This version does not contain that code.",
-    "whatWeKnow": "The wallets below were stored before this update. This app cannot establish whether their recovery information reached that server or was used. Treat these wallets as potentially exposed.",
+    "whatWeKnow": "The wallets below were stored before this update. The app cannot establish whether their keys were received or used. We have not confirmed any loss of funds caused by this issue. As a precaution, treat these wallets as potentially exposed.",
     "whatItMeans": "Anyone with your recovery phrase or decrypted private key can spend the funds it controls. Changing the wallet password does not replace those keys or make an exposed wallet safe.",
     "passwordAdvice": "If you use this wallet's password anywhere else, change it there.",
     "whatToDo": "Create a new wallet here with a new recovery phrase, back it up offline, then move your funds to the matching network in that wallet. The guide explains the steps.",

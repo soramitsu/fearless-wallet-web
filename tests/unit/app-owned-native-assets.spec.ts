@@ -310,7 +310,7 @@ describe('registry tokens on Solana mainnet', () => {
           assetId: USDC_MINT,
           balanceText: '12.5',
           fiatValue: '12.5',
-          icon: 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/USDC.svg',
+          icon: 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons/tokens/coloured/USDC.svg',
           name: 'USD Coin',
           priceTrust: 'canonicalAsset',
           symbol: 'USDC',

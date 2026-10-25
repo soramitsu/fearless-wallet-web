@@ -1,9 +1,9 @@
 import type { OnBoardingStoriesLocales } from '@/interfaces';
 
 const newStoryImage = (index: number) =>
-  `https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/appConfigs/onboarding/screensWeb/${index}.svg`;
+  `https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/${index}.svg`;
 const regularStoryImage = (index: number) =>
-  `https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/appConfigs/onboarding/screensWeb_v2/${index}.svg`;
+  `https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/${index}.svg`;
 
 export const egyptianOnboardingStories: OnBoardingStoriesLocales[string] = {
   new: [

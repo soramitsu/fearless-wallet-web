@@ -15,7 +15,7 @@ const SORA_VAL_ASSET_ID = IS_PRODUCTION
 const SORA_UTILITY_ASSET = 'xor';
 const SORA_REWARD_ASSET = 'val';
 const SORA_ICON =
-  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/chains/white/SORA.svg';
+  'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons/chains/white/SORA.svg';
 
 const BRIDGE_MIN_VALUES_TO_SORA: Record<string, Record<string, number>> = {
   kusama: {

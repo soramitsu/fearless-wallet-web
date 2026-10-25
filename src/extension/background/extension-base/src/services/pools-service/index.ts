@@ -71,7 +71,7 @@ type LiquidityPreparation =
   | { ok: false; response: BasicTxResponse };
 
 const getSvgUrl = (assetName: string): string =>
-  `https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/${assetName.toUpperCase()}.svg`;
+  `https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons/tokens/coloured/${assetName.toUpperCase()}.svg`;
 
 const formatSoraAddress = (address: string): string => apiSora.formatAddress(address);
 

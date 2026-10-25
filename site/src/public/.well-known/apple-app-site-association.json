@@ -1,0 +1,24 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "YLWWUD25VZ.jp.co.soramitsu.fearlesswallet",
+          "YLWWUD25VZ.jp.co.soramitsu.fearlesswallet.dev"
+        ],
+        "components": [
+          {
+            "/": "/ton-connect",
+            "comment": "The universal link works only on the /ton-connect page"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "YLWWUD25VZ.jp.co.soramitsu.fearlesswallet",
+      "YLWWUD25VZ.jp.co.soramitsu.fearlesswallet.dev"
+    ]
+  }
+}

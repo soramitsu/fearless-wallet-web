@@ -172,6 +172,12 @@
       ]
     },
     {
+      "reason": "Copyright attribution URL in the packaged Unbounded font license (licenses/fonts/Unbounded-OFL.txt). This static legal notice is not requested by the extension.",
+      "hosts": [
+        "web3.foundation"
+      ]
+    },
+    {
       "reason": "Network websites in the SS58 address-format registry (@substrate/ss58-registry, bundled by @polkadot/util-crypto). Display data only; the wallet never requests them.",
       "hosts": [
         "3dpass.org",

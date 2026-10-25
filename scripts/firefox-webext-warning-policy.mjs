@@ -4,6 +4,17 @@ import path from 'node:path';
 
 export const FIREFOX_WARNING_POLICY_SCHEMA_VERSION = 1;
 
+export function selectFirefoxWarningBaseline(args) {
+  if (!Array.isArray(args) || new Set(args).size !== args.length ||
+      args.some(arg => !['--ci', '--print-baseline'].includes(arg))) {
+    throw new Error('usage: audit-firefox-webext-warnings.mjs [--ci] [--print-baseline]');
+  }
+  return {
+    fileName: args.includes('--ci') ? 'firefox-webext-warning-baseline-ci.json' : 'firefox-webext-warning-baseline.json',
+    printBaseline: args.includes('--print-baseline'),
+  };
+}
+
 const REVIEWED_WARNING_CODES = new Set(['DANGEROUS_EVAL', 'UNSAFE_VAR_ASSIGNMENT']);
 
 function fail(message) {

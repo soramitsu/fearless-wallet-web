@@ -5,7 +5,7 @@ import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 
-import { createFirefoxWarningBaseline, verifyFirefoxWarningBaseline } from './firefox-webext-warning-policy.mjs';
+import { createFirefoxWarningBaseline, selectFirefoxWarningBaseline, verifyFirefoxWarningBaseline } from './firefox-webext-warning-policy.mjs';
 
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'fearless-firefox-warning-policy-'));
 const sourceDir = path.join(temporaryRoot, 'dist/extension/firefox');
@@ -58,6 +58,17 @@ async function verify(baseline, lint = lintResult(), overrides = {}) {
 }
 
 try {
+  assert.deepEqual(selectFirefoxWarningBaseline([]), {
+    fileName: 'firefox-webext-warning-baseline.json', printBaseline: false,
+  });
+  assert.deepEqual(selectFirefoxWarningBaseline(['--ci']), {
+    fileName: 'firefox-webext-warning-baseline-ci.json', printBaseline: false,
+  });
+  assert.deepEqual(selectFirefoxWarningBaseline(['--ci', '--print-baseline']), {
+    fileName: 'firefox-webext-warning-baseline-ci.json', printBaseline: true,
+  });
+  for (const args of [['--unknown'], ['../outside.json'], ['--ci', '--ci']])
+    assert.throws(() => selectFirefoxWarningBaseline(args), /usage:/);
   await mkdir(path.dirname(warningPath), { recursive: true });
   await writeFile(warningPath, 'const globalObject = Function("return this")();\n');
 
@@ -186,7 +197,7 @@ try {
   await symlink(outsideFile, warningPath);
   await expectFailure('symlink artifact', () => verify(baseline), /must not contain symlinks/);
 
-  console.log('[firefox-webext-warning-policy-test] all 19 adversarial tests passed');
+  console.log('[firefox-webext-warning-policy-test] all 19 adversarial tests and 6 baseline-selection checks passed');
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }

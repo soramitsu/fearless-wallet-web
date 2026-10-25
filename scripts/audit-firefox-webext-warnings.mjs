@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   createFirefoxWarningBaseline,
+  selectFirefoxWarningBaseline,
   verifyFirefoxWarningBaseline,
 } from './firefox-webext-warning-policy.mjs';
 
@@ -15,12 +16,9 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = await realpath(path.join(scriptDirectory, '..'));
 const sourceDirLabel = 'dist/extension/firefox';
 const sourceDir = path.join(repositoryRoot, sourceDirLabel);
-const baselineFile = path.join(repositoryRoot, 'config/firefox-webext-warning-baseline.json');
-const shouldPrintBaseline = process.argv.length === 3 && process.argv[2] === '--print-baseline';
-
-if (process.argv.length > (shouldPrintBaseline ? 3 : 2)) {
-  throw new Error('usage: audit-firefox-webext-warnings.mjs [--print-baseline]');
-}
+const selection = selectFirefoxWarningBaseline(process.argv.slice(2));
+const baselineFile = path.join(repositoryRoot, 'config', selection.fileName);
+const shouldPrintBaseline = selection.printBaseline;
 
 const require = createRequire(import.meta.url);
 const webExtEntry = require.resolve('web-ext');

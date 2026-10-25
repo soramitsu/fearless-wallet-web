@@ -236,7 +236,9 @@ jobs:
         run: yarn build:extension:firefox
 
       - name: Lint Firefox extension package
-        run: yarn lint:webext:firefox
+        run: |
+          node scripts/test-firefox-webext-warning-policy.mjs
+          node scripts/audit-firefox-webext-warnings.mjs --ci
 
       - name: Set up Firefox
         id: setup-firefox

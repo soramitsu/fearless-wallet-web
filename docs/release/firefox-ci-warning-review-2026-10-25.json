@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "sourceCommit": "86df0ec883005f2dc87cdfae05420bfd3376f68d",
+  "reviewer": "Codex source and artifact review",
+  "configuration": "CI build without the shipped public provider configuration",
+  "summary": {
+    "errors": 0,
+    "notices": 0,
+    "warnings": 38,
+    "byteIdenticalContexts": 35,
+    "renamedMinifiedContexts": 3,
+    "newSites": 0,
+    "removedSites": 0
+  },
+  "warningSetSha256": "61e716185866c1a93863b44a242c91ad5bf29ffd82a47f09179e99a0e43125c6",
+  "baselineSha256": "278ac1a59f8fe97b0ba1a865dd25e7f3f02b5c9c27a17d308224722dc77017b3",
+  "rawReportSha256": "16324c5246ff25a187c005a33bf3b9042cd3845ec139c25de1e2a20509037575",
+  "checks": [
+    "All38 warnings match production code, message and description one-to-one.35contexts match exactly and3contain only minified binding renames.",
+    "Vue static template insertion moves to the shared Vue export-helper chunk. The lodash global fallback and generator feature probe retain their original behavior.",
+    "Manifest CSP exactly matches the reviewed production package. No permission or CSP relaxation is involved.",
+    "CI explicitly selects this exact baseline. Default lint and store release continue selecting the production baseline. Unknown options, alternate baseline paths and duplicate flags are rejected."
+  ],
+  "changedContexts": [
+    {
+      "score": 0.9866666666666667,
+      "production": {
+        "_type": "warning",
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "message": "Unsafe assignment to innerHTML",
+        "description": "Due to both security and performance concerns, this may not be set using dynamic values which have not been adequately sanitized. This can lead to security issues or fairly serious performance degradation.",
+        "column": 1666,
+        "file": "chunks/usePortfolioPreferences.js",
+        "line": 1,
+        "context": ",r,i,a){let o=n?n.previousSibling:t.lastChild;if(i&&(i===a||i.nextSibling))for(;t.insertBefore(i.cloneNode(!0),n),!(i===a||!(i=i.nextSibling)););else{Re.innerHTML=Fe(r===`svg`?`<svg>${e}</svg>`:r===`mathml`?`<math>${e}</math>`:e);let i=Re.content;if(r===`svg`||r===`mathml`){let e=i.firstChild;for(;e"
+      },
+      "ci": {
+        "_type": "warning",
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "message": "Unsafe assignment to innerHTML",
+        "description": "Due to both security and performance concerns, this may not be set using dynamic values which have not been adequately sanitized. This can lead to security issues or fairly serious performance degradation.",
+        "column": 11054,
+        "file": "chunks/_plugin-vue_export-helper.js",
+        "line": 22,
+        "context": ",r,i,a){let o=n?n.previousSibling:t.lastChild;if(i&&(i===a||i.nextSibling))for(;t.insertBefore(i.cloneNode(!0),n),!(i===a||!(i=i.nextSibling)););else{eu.innerHTML=Xl(r===`svg`?`<svg>${e}</svg>`:r===`mathml`?`<math>${e}</math>`:e);let i=eu.content;if(r===`svg`||r===`mathml`){let e=i.firstChild;for(;e"
+      }
+    },
+    {
+      "score": 0.9333333333333333,
+      "production": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 1090,
+        "file": "chunks/soramitsuUI.js",
+        "line": 1,
+        "context": "e=[``,`default`,`small`,`large`],Ee=typeof e==`object`&&e&&e.Object===Object&&e,De=typeof self==`object`&&self&&self.Object===Object&&self,Oe=Ee||De||Function(`return this`)(),H=Oe.Symbol,ke=Object.prototype,Ae=ke.hasOwnProperty,je=ke.toString,Me=H?H.toStringTag:void 0;function Ne(e){var t=Ae.call(e"
+      },
+      "ci": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 1032,
+        "file": "chunks/soramitsuUI.js",
+        "line": 1,
+        "context": "e=[``,`default`,`small`,`large`],we=typeof e==`object`&&e&&e.Object===Object&&e,Te=typeof self==`object`&&self&&self.Object===Object&&self,Ee=we||Te||Function(`return this`)(),De=Ee.Symbol,Oe=Object.prototype,ke=Oe.hasOwnProperty,Ae=Oe.toString,je=De?De.toStringTag:void 0;function Me(e){var t=ke.cal"
+      }
+    },
+    {
+      "score": 0.9966666666666667,
+      "production": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 18671,
+        "file": "chunks/router.js",
+        "line": 3,
+        "context": "ject.prototype.toString,r=Function.prototype.toString,i=/^\\s*(?:function)?\\*/,a=lf()(),o=Object.getPrototypeOf,s=function(){if(!a)return!1;try{return Function(`return function*() {}`)()}catch{}},c;t.exports=function(e){if(typeof e!=`function`)return!1;if(i.test(r.call(e)))return!0;if(!a)return n.cal"
+      },
+      "ci": {
+        "_type": "warning",
+        "code": "DANGEROUS_EVAL",
+        "message": "The Function constructor is eval.",
+        "description": "Evaluation of strings as code can lead to security vulnerabilities and performance issues, even in the most innocuous of circumstances. Please avoid using `eval` and the `Function` constructor when at all possible.",
+        "column": 18671,
+        "file": "chunks/router.js",
+        "line": 14,
+        "context": "ject.prototype.toString,r=Function.prototype.toString,i=/^\\s*(?:function)?\\*/,a=Hf()(),o=Object.getPrototypeOf,s=function(){if(!a)return!1;try{return Function(`return function*() {}`)()}catch{}},c;t.exports=function(e){if(typeof e!=`function`)return!1;if(i.test(r.call(e)))return!0;if(!a)return n.cal"
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "chunks/_plugin-vue_export-helper.js",
+      "sha256": "a204ca3e4d905037f2ae969b18975e32eb700a140dbe5a9cf9f42b2dae645a1a"
+    },
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+      "sha256": "8b805bf2bc41cbf6232370997d21f418bff746a75adaef2b67f61d11992912e7"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js",
+      "sha256": "f72f61a0748a0308a6b57fe97db8f95ae57e40caaa6472210dfa67188ddcb4fc"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-CmCqkM03.js",
+      "sha256": "efa7c704a848e144914de6d6bd245627fab004e385db6f88c16137d926baeee3"
+    },
+    {
+      "file": "chunks/router.js",
+      "sha256": "cc787318e6c9084b8ed5495d11325ee8e548305a0fdd2fddbb1d499c31d1a505"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "7e815395f97e82234dae711b258197bcf9746ce8bba11b1f32466de02019f777"
+    }
+  ]
+}

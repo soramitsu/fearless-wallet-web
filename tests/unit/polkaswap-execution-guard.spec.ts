@@ -9,6 +9,7 @@ import {
   validatePolkaswapExecution,
 } from '@/defi/polkaswapExecutionGuard';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { XOR, VAL } from '@/sora/runtime';
 
 const asset = (groupId: string, id: string, symbol: string, transferable: string): TokenGroup => ({
   balances: [{
@@ -93,7 +94,7 @@ describe('Polkaswap final execution guard', () => {
     const exact = validateAuthoritativePolkaswapExecution({
       source: runtimeAsset('kusd-address', '2000000000000000000'),
       destination: runtimeAsset('xor-destination', '0'),
-      xor: runtimeAsset(SORA_XOR_ASSET_ID, '100000000000000000'),
+      xor: runtimeAsset(XOR, '100000000000000000'),
       sourceAddress: 'kusd-address',
       destinationAddress: 'xor-destination',
       sourceAmount: '2',
@@ -102,7 +103,7 @@ describe('Polkaswap final execution guard', () => {
     const substituted = validateAuthoritativePolkaswapExecution({
       source: runtimeAsset('other-kusd-address', '999000000000000000000'),
       destination: runtimeAsset('xor-destination', '0'),
-      xor: runtimeAsset(SORA_XOR_ASSET_ID, '100000000000000000'),
+      xor: runtimeAsset(XOR, '100000000000000000'),
       sourceAddress: 'kusd-address',
       destinationAddress: 'xor-destination',
       sourceAmount: '2',
@@ -111,6 +112,39 @@ describe('Polkaswap final execution guard', () => {
 
     expect(exact).toBeNull();
     expect(substituted?.message).toBe('The selected SORA asset identity changed.');
+  });
+
+  it.each([
+    ['2000000000000000000', 'The selected SORA asset balance is insufficient.'],
+    ['2010000000000000000', null],
+  ])('reserves the network fee when the on-chain source is XOR with %s units', (transferable, message) => {
+    const xor = { address: XOR, decimals: 18, balance: { transferable } };
+    const result = validateAuthoritativePolkaswapExecution({
+      source: xor,
+      destination: { address: VAL, decimals: 18, balance: { transferable: '0' } },
+      xor,
+      sourceAddress: XOR,
+      destinationAddress: VAL,
+      sourceAmount: '2',
+      networkFee: '0.01',
+    });
+
+    expect(result?.message ?? null).toBe(message);
+  });
+
+  it('rejects the registry UUID in an authoritative on-chain XOR response', () => {
+    expect(SORA_XOR_ASSET_ID).not.toBe(XOR);
+    const result = validateAuthoritativePolkaswapExecution({
+      source: { address: VAL, decimals: 18, balance: { transferable: '2000000000000000000' } },
+      destination: { address: XOR, decimals: 18, balance: { transferable: '0' } },
+      xor: { address: SORA_XOR_ASSET_ID, decimals: 18, balance: { transferable: '1000000000000000000' } },
+      sourceAddress: VAL,
+      destinationAddress: XOR,
+      sourceAmount: '2',
+      networkFee: '0.01',
+    });
+
+    expect(result?.message).toBe('The selected SORA asset identity changed.');
   });
 
   it('accepts only the exact selected asset rows with enough source and XOR fee balance', () => {

@@ -34,7 +34,8 @@ import { api as apiSora, type CodecString, FPNumber, Operation } from '@/sora';
 import { poolMarkerForAmount } from '@/sora/pools';
 import { getSoraAsset } from '@/extension/background/extension-base/src/api/substrate/sora';
 import { isSameString } from '@/helpers';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
+import { XOR } from '@/sora/runtime';
 import {
   isCapturedSoraPairStillSelected,
   isLocallySignableSelectedSoraPair,
@@ -455,9 +456,9 @@ export class PoolsService {
       const baseAsset = this.getDemeterAsset(request.pool.baseAssetId);
       const poolAsset = this.getDemeterAsset(request.pool.poolAssetId);
       const rewardAsset = this.getDemeterAsset(request.pool.rewardAssetId);
-      const xorAsset = await apiSora.assets.getAccountAsset(SORA_XOR_ASSET_ID);
+      const xorAsset = await apiSora.assets.getAccountAsset(XOR);
 
-      if (!isSameString(xorAsset.address, SORA_XOR_ASSET_ID)) {
+      if (!isSameString(xorAsset.address, XOR)) {
         throw new Error('The authoritative XOR balance could not be verified.');
       }
       const xorAvailable = FPNumber.fromCodecValue(xorAsset.balance.transferable, xorAsset.decimals);
@@ -486,7 +487,7 @@ export class PoolsService {
           }
           const available = FPNumber.fromCodecValue(accountAsset.balance.transferable, accountAsset.decimals);
 
-          if (isSameString(poolAsset.address, SORA_XOR_ASSET_ID)) xorRequired = xorRequired.add(amount);
+          if (isSameString(poolAsset.address, XOR)) xorRequired = xorRequired.add(amount);
           else if (amount.isGreaterThan(available)) {
             return {
               status: false,
@@ -658,7 +659,7 @@ export class PoolsService {
   }
 
   private getDemeterPoolAsset(assetId: string): DemeterPoolAsset | null {
-    const network = this.state.networkService.networkValues.find(({ name }) => isSameString(name, 'Sora'));
+    const network = this.state.networkService.networkValues.find(({ name }) => isSameString(name, SORA_NETWORK_NAME));
     const asset = network?.assets.find(({ currencyId, id }) => currencyId === assetId || id === assetId);
 
     if (!asset) return null;
@@ -743,7 +744,7 @@ export class PoolsService {
   }
 
   private getDemeterPrice(assetId: string): string | null {
-    const network = this.state.networkService.networkValues.find(({ name }) => isSameString(name, 'Sora'));
+    const network = this.state.networkService.networkValues.find(({ name }) => isSameString(name, SORA_NETWORK_NAME));
     const asset = network?.assets.find(({ currencyId, id }) => currencyId === assetId || id === assetId);
     const price = asset?.priceId ? this.state.pricesService.prices.json.tokenPriceMap[asset.priceId] : undefined;
 
@@ -1140,12 +1141,12 @@ export class PoolsService {
         return this.liquidityError('The authoritative pool state is invalid.');
       }
 
-      const xorAsset = isSameString(asset1.address, SORA_XOR_ASSET_ID)
+      const xorAsset = isSameString(asset1.address, XOR)
         ? asset1
-        : isSameString(asset2.address, SORA_XOR_ASSET_ID)
+        : isSameString(asset2.address, XOR)
           ? asset2
-          : await apiSora.assets.getAccountAsset(SORA_XOR_ASSET_ID);
-      if (!isSameString(xorAsset.address, SORA_XOR_ASSET_ID)) {
+          : await apiSora.assets.getAccountAsset(XOR);
+      if (!isSameString(xorAsset.address, XOR)) {
         return this.liquidityError('The authoritative XOR balance could not be verified.');
       }
 
@@ -1190,8 +1191,8 @@ export class PoolsService {
     const firstAvailable = FPNumber.fromCodecValue(asset1.balance.transferable, asset1.decimals);
     const secondAvailable = FPNumber.fromCodecValue(asset2.balance.transferable, asset2.decimals);
     const xorAvailable = FPNumber.fromCodecValue(xorAsset.balance.transferable, xorAsset.decimals);
-    const firstRequired = isSameString(asset1.address, SORA_XOR_ASSET_ID) ? firstAmount.add(fee) : firstAmount;
-    const secondRequired = isSameString(asset2.address, SORA_XOR_ASSET_ID) ? secondAmount.add(fee) : secondAmount;
+    const firstRequired = isSameString(asset1.address, XOR) ? firstAmount.add(fee) : firstAmount;
+    const secondRequired = isSameString(asset2.address, XOR) ? secondAmount.add(fee) : secondAmount;
 
     if (firstAvailable.lt(firstRequired) || secondAvailable.lt(secondRequired)) {
       return {

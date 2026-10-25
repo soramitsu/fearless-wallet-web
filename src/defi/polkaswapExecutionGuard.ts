@@ -1,6 +1,7 @@
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
 import type { BasicTxError, RequestSwap, TokenGroup } from '@extension-base/background/types/types';
 import { FPNumber } from '@/sora/number';
+import { XOR } from '@/sora/runtime';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 type RuntimeAccountAsset = {
@@ -93,7 +94,7 @@ export function validateAuthoritativePolkaswapExecution({
     sourceAddress.toLowerCase() === destinationAddress.toLowerCase() ||
     source.address.toLowerCase() !== sourceAddress.toLowerCase() ||
     destination.address.toLowerCase() !== destinationAddress.toLowerCase() ||
-    xor.address.toLowerCase() !== SORA_XOR_ASSET_ID.toLowerCase()
+    xor.address.toLowerCase() !== XOR.toLowerCase()
   ) {
     return { code: BasicTxErrorCode.INVALID_PARAM, message: 'The selected SORA asset identity changed.' };
   }
@@ -118,7 +119,7 @@ export function validateAuthoritativePolkaswapExecution({
       return { code: BasicTxErrorCode.BALANCE_TO_LOW, message: 'Add enough XOR to pay the current SORA network fee.' };
     }
 
-    const required = sourceAddress.toLowerCase() === SORA_XOR_ASSET_ID.toLowerCase()
+    const required = sourceAddress.toLowerCase() === XOR.toLowerCase()
       ? amount.add(fee)
       : amount;
     if (sourceAvailable.lt(required)) {

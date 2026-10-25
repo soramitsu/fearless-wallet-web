@@ -111,6 +111,17 @@ describe('wallet-owned staking adapter', () => {
     ).rejects.toThrow('stash as its controller');
   });
 
+  it('uses the SORA election metadata limit when StakingApi is not exposed', async () => {
+    const { adapter, api, tx } = setup();
+    delete api.consts.staking.maxNominations;
+    api.call = {};
+    api.consts.electionProviderMultiPhase = { minerMaxVotesPerVoter: 24 };
+    expect(adapter.getMaxNominations()).toBe(24);
+    await adapter.nominate({ validators: ['val'] });
+    expect(tx.nominate).toHaveBeenCalledWith(['val']);
+    await expect(adapter.getValidatorsInfo()).resolves.toEqual([]);
+  });
+
   it('rejects invalid or sub-precision amounts and empty nominations without signing', async () => {
     const { adapter, client } = setup();
     for (const value of ['-1', 'NaN', 'Infinity', '0', '0.0000000000000000001'])

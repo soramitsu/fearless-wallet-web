@@ -3,7 +3,7 @@ import { PoolsService } from '@extension-base/services/pools-service';
 import type State from '@extension-base/background/handlers/State';
 import type { DemeterMutationRequest, RequestRemoveLiquidity } from '@extension-base/services/pools-service/types';
 import { FPNumber } from '@/sora/number';
-import { SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { XOR } from '@/sora/runtime';
 
 const mocks = vi.hoisted(() => ({ api: {
   account: { pair: { address: 'legacy', meta: {} } },
@@ -46,7 +46,7 @@ function setup() {
     getDemeterAsset: asset,
     prepareLiquidityMutation: vi.fn(async () => ({ ok: true, value: {
       signingContext: { pair: mocks.api.account.pair, selectedAddress: selected },
-      asset1: asset('one'), asset2: asset('two'), xorAsset: asset(SORA_XOR_ASSET_ID), fee: new FPNumber('0.01'),
+      asset1: asset('one'), asset2: asset('two'), xorAsset: asset(XOR), fee: new FPNumber('0.01'),
       reserves: ['100000000000000000000', '100000000000000000000'],
       totalSupply: '10000000000000000000', poolBalance: '5000000000000000000',
     } })),

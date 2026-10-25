@@ -20,7 +20,7 @@ async function createExchangeB(
     amountB: amountB!,
     AToB: expectedAmount.div(new FPNumber(amountB!)).toString(),
     BToA: new FPNumber(amountB!).div(expectedAmount).toString(),
-    minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+    minMaxValue: FPNumber.fromCodecValue(minMaxValue, assetA.decimals).toString(),
     route,
   };
 }
@@ -37,7 +37,7 @@ async function createExchangeA(
     amountB: expectedAmount.toString(),
     AToB: new FPNumber(amountA!).div(expectedAmount).toString(),
     BToA: expectedAmount.div(new FPNumber(amountA!)).toString(),
-    minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+    minMaxValue: FPNumber.fromCodecValue(minMaxValue, assetB.decimals).toString(),
     route,
   };
 }

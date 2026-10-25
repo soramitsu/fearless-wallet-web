@@ -15,6 +15,8 @@ test('sandbox helper validation accepts a protected system helper and rejects wr
   assert.equal(validateSandboxHelper(file, sandboxStat()), file);
   for (const override of [{ uid: 1000 }, { gid: 1000 }, { mode: 0o100755 }, { mode: 0o104777 }, { isFile: () => false }])
     assert.throws(() => validateSandboxHelper(file, sandboxStat(override)), /root-owned regular file/);
+  assert.throws(() => validateSandboxHelper(file, sandboxStat({ uid: 1000, mode: 0o100755 })),
+    /observed uid=1000, gid=0, mode=755, regular=true/);
   assert.throws(() => validateSandboxHelper(file, (entry) => entry === file
     ? sandboxStat()(entry) : { isDirectory: () => true, uid: 1000, mode: 0o40755 }), /parent directories/);
 });

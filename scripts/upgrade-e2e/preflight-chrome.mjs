@@ -15,12 +15,14 @@ const SYSTEM_SANDBOX = '/opt/google/chrome/chrome-sandbox';
 export function validateSandboxHelper(file, stat = lstatSync) {
   const metadata = stat(file);
   if (!metadata.isFile() || metadata.uid !== 0 || metadata.gid !== 0 || (metadata.mode & 0o7777) !== 0o4755)
-    throw new Error('Chrome sandbox helper must be a root-owned regular file with mode 4755');
+    throw new Error('Chrome sandbox helper must be a root-owned regular file with mode 4755; ' +
+      `observed uid=${metadata.uid}, gid=${metadata.gid}, mode=${(metadata.mode & 0o7777).toString(8)}, regular=${metadata.isFile()}`);
   // A writable parent could replace even a root-owned helper between validation and launch.
   for (let parent = dirname(resolve(file)); ; parent = dirname(parent)) {
     const directory = stat(parent);
     if (!directory.isDirectory() || directory.uid !== 0 || (directory.mode & 0o022) !== 0)
-      throw new Error('Chrome sandbox helper must have root-owned, non-writable parent directories');
+      throw new Error('Chrome sandbox helper must have root-owned, non-writable parent directories; ' +
+        `observed uid=${directory.uid}, mode=${(directory.mode & 0o7777).toString(8)}, directory=${directory.isDirectory()}`);
     if (parent === dirname(parent)) break;
   }
   return file;

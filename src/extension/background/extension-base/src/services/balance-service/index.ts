@@ -43,6 +43,12 @@ function sanitizeHiddenKeysByAddress(value: unknown): Record<string, string[]> {
   );
 }
 
+interface NetworkBalanceRefresh {
+  failed: boolean;
+  coversNetwork: boolean;
+  unknownFailure?: boolean;
+}
+
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
   evmBalanceService: EvmBalanceService;
@@ -54,6 +60,8 @@ export default class BalanceService {
   networkScanStates: Record<string, Record<string, NetworkScanState>> = {};
   balanceSubject = new Subject<BalanceJson>();
   private balanceStorageMutation = Promise.resolve();
+  private networkRefreshQueue = new Map<string, Promise<unknown>>();
+  private activeNetworkRefreshes = new Map<string, NetworkBalanceRefresh>();
 
   constructor(private state: State) {
     this.substrateBalanceService = new SubstrateBalanceService(state);
@@ -138,6 +146,57 @@ export default class BalanceService {
     ).catch((e) => console.warn(e));
   }
 
+  public async refreshNetworkBalances<T>(
+    chain: string, address: string, refresh: () => Promise<T>, coversNetwork: boolean
+  ): Promise<T> {
+    const key = JSON.stringify([address, chain]);
+    const previous = this.networkRefreshQueue.get(key) ?? Promise.resolve();
+    const pending = previous.catch(() => undefined).then(async () => {
+      const scan: NetworkBalanceRefresh = { failed: false, coversNetwork };
+      this.activeNetworkRefreshes.set(key, scan);
+
+      try {
+        return await refresh();
+      } catch (error) {
+        scan.failed = true;
+        throw error;
+      } finally {
+        try {
+          // Asset writes are queued synchronously by setBalanceItem. Finish only after all of them persist.
+          await this.enqueueBalanceStorageMutation(() => this.finishNetworkRefresh(chain, address, scan));
+        } finally {
+          this.activeNetworkRefreshes.delete(key);
+        }
+      }
+    });
+    this.networkRefreshQueue.set(key, pending);
+
+    try {
+      return await pending;
+    } finally {
+      if (this.networkRefreshQueue.get(key) === pending) this.networkRefreshQueue.delete(key);
+    }
+  }
+
+  private async finishNetworkRefresh(chain: string, address: string, scan: NetworkBalanceRefresh): Promise<void> {
+    const { networkScanStates } = await storage.get(['networkScanStates']);
+    const accountScanStates = { ...(networkScanStates?.[address] ?? {}) };
+    const previous = accountScanStates[chain];
+    const failed = scan.failed || Boolean(previous?.failedAssetKeys?.length) ||
+      (!scan.coversNetwork && Boolean(scan.unknownFailure));
+    const now = Date.now();
+    accountScanStates[chain] = {
+      lastAttempt: now,
+      lastSuccess: failed ? previous?.lastSuccess : now,
+      stale: failed,
+      coverage: previous?.coverage ?? 'limited',
+      ...(failed ? { error: 'balance_scan_failed', failedAssetKeys: previous?.failedAssetKeys } : {}),
+    };
+    await storage.set({ networkScanStates: { ...(networkScanStates ?? {}), [address]: accountScanStates } });
+    this.networkScanStates[address] = accountScanStates;
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+  }
+
   public deleteBalanceStore(
     networkKey: string,
     identity: Pick<BalanceItem, 'id'> & Partial<BalanceItem>,
@@ -186,21 +245,27 @@ export default class BalanceService {
     const previousScan = accountScanStates[chain];
     const now = Date.now();
     const coverage = item.scanCoverage ?? previousScan?.coverage ?? 'limited';
+    const canonicalKey = this.getStorageAssetKey(chain, item);
+    const failedAssetKeys = new Set(previousScan?.failedAssetKeys ?? []);
+    const scan = this.activeNetworkRefreshes.get(JSON.stringify([address, chain]));
+    if (scan) scan.unknownFailure ??= Boolean(previousScan?.stale && !previousScan.failedAssetKeys?.length);
 
-    accountScanStates[chain] = item.state === APIItemState.READY
-      ? {
-          lastAttempt: now,
-          lastSuccess: item.timestamp ?? now,
-          stale: false,
-          coverage,
-        }
-      : {
-          lastAttempt: now,
-          lastSuccess: previousScan?.lastSuccess,
-          stale: true,
-          error: 'balance_scan_failed',
-          coverage,
-        };
+    if (item.state === APIItemState.ERROR) {
+      failedAssetKeys.add(canonicalKey);
+      if (scan) scan.failed = true;
+    } else {
+      failedAssetKeys.delete(canonicalKey);
+    }
+    // A successful asset cannot clear another asset's failure, or declare an unfinished refresh successful.
+    const failed = failedAssetKeys.size > 0 || Boolean(scan && (scan.failed || previousScan?.stale));
+    accountScanStates[chain] = {
+      lastAttempt: now,
+      lastSuccess: failed || scan ? previousScan?.lastSuccess : item.timestamp ?? now,
+      stale: failed,
+      coverage,
+      ...(failed ? { error: 'balance_scan_failed' } : {}),
+      ...(failedAssetKeys.size ? { failedAssetKeys: [...failedAssetKeys] } : {}),
+    };
     copyScanStates[address] = accountScanStates;
     this.networkScanStates[address] = accountScanStates;
 
@@ -209,7 +274,6 @@ export default class BalanceService {
       return;
     }
 
-    const canonicalKey = this.getStorageAssetKey(chain, item);
     copyAssetBalances[address] = {
       ...(copyAssetBalances[address] ?? {}),
       [canonicalKey]: { chain, ...item } as BalanceItem & { chain: NetworkName },

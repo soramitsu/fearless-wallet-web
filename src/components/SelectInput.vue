@@ -5,6 +5,7 @@
         <div class="header" data-testid="headerSelectInput">{{ header }}</div>
 
         <input
+          ref="amountInput"
           v-model="amountInternal"
           placeholder="0.00"
           :aria-label="header"
@@ -68,7 +69,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@/sora/number';
+import { formatAmountInput, readAmountInput } from '@/helpers/amountInput';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'SelectInput' ,
@@ -104,51 +105,28 @@ export default defineComponent({ name: 'SelectInput' ,
     isSelected() {
       return this.inputIsFocused && !this.readonly;
     },
+    // The text is formatted and read on its own (src/helpers/amountInput.ts): the field shows "1,250.5" for the kept
+    // amount "1250.5", and what the user types is never rounded or padded by a number type.
     amountInternal: {
       get() {
-        if (this.syncedAmount === '') return '';
+        const amount = this.syncedAmount ?? '';
 
-            if (this.showOriginValue) return this.syncedAmount;
-
-            if (this.syncedAmount.includes('.')) {
-              const [wholePart, fractionalPart] = this.syncedAmount.split('.');
-              const localString = FPNumber.fromCodecValue(wholePart || 0, 0).toLocaleString();
-
-              if (this.syncedAmount.endsWith('.')) return `${localString}.`;
-
-              if (localString === 'NaN') return this.syncedAmount;
-
-              return `${localString}.${fractionalPart}`;
-            }
-
-            return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+        return this.showOriginValue ? amount : formatAmountInput(amount);
       },
-      set(_value: string) {
-        const value = _value.replaceAll(',', '').replaceAll(' ', '');
+      set(text: string) {
+        const amount = readAmountInput(text, this.syncedAmount ?? '');
 
-            if (value.length < this.syncedAmount.length) {
-              this.syncedAmount = value;
+        if (amount !== this.syncedAmount) {
+          this.syncedAmount = amount;
 
-              return;
-            }
+          return;
+        }
 
-            if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
-              if (value.includes('.')) {
-                const [wholePart, fractionalPart] = value.split('.');
+        // A refused edit (or one that only removed a grouping comma) shows the kept amount again. Vue rewrites the
+        // field only when the amount changes, and the field sits in FCorners' slot, so a re-render would not reach it.
+        const input = this.$refs.amountInput as HTMLInputElement | undefined;
 
-                if (value.endsWith('.')) {
-                  this.syncedAmount = this.syncedAmount = `${wholePart}.`;
-
-                  return;
-                }
-
-                this.syncedAmount = `${wholePart}.${fractionalPart}`;
-
-                return;
-              }
-
-              this.syncedAmount = value;
-            }
+        if (input && input.value !== this.amountInternal) input.value = this.amountInternal;
       },
     },
     header() {
@@ -215,7 +193,7 @@ export default defineComponent({ name: 'SelectInput' ,
       this.inputIsFocused = value;
 
           if (!value) {
-            const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+            const [wholePart, fractionalPart] = (this.syncedAmount ?? '').split('.');
 
             if (+fractionalPart === 0) this.syncedAmount = wholePart;
           }

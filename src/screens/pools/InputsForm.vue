@@ -184,7 +184,8 @@ export default defineComponent({ name: 'InputsForm' ,
           if (this.isAddLiquidity) {
             if (this.poolParams.asset1.reserve === '0') return;
 
-            this.syncedAmount2 = new FPNumber(this.syncedAmount1)
+            // A cleared field reads as 0, as these forms expect; FPNumber would read it as NaN.
+            this.syncedAmount2 = new FPNumber(this.syncedAmount1 || '0')
               .mul(new FPNumber(this.poolParams.asset2.reserve))
               .div(new FPNumber(this.poolParams.asset1.reserve))
               .toString();
@@ -192,7 +193,7 @@ export default defineComponent({ name: 'InputsForm' ,
             this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
 
             const percent = Math.round(
-              new FPNumber(this.syncedAmount1).div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
+              new FPNumber(this.syncedAmount1 || '0').div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
             );
 
             this.percent = Math.min(percent, 100);
@@ -204,7 +205,7 @@ export default defineComponent({ name: 'InputsForm' ,
           if (this.isAddLiquidity) {
             if (this.poolParams.asset2.reserve === '0') return;
 
-            this.syncedAmount1 = new FPNumber(this.syncedAmount2)
+            this.syncedAmount1 = new FPNumber(this.syncedAmount2 || '0')
               .mul(new FPNumber(this.poolParams.asset1.reserve))
               .div(new FPNumber(this.poolParams.asset2.reserve))
               .toString();
@@ -212,7 +213,7 @@ export default defineComponent({ name: 'InputsForm' ,
             this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
 
             const percent = Math.round(
-              new FPNumber(this.syncedAmount2).div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
+              new FPNumber(this.syncedAmount2 || '0').div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
             );
 
             this.percent = Math.min(percent, 100);

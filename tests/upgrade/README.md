@@ -33,6 +33,11 @@ stderr, console messages, message payloads and wallet storage are excluded. CI u
 these sanitized diagnostics, never the browser profiles or keyring directories. A successful local retry does not
 erase an earlier failed CI run or establish the cause of its timeout.
 
+The workflow's manual `scenario` choice defaults to `all`; `R1` builds only 3.0.5 and 3.0.6 and runs the focused
+rollback diagnostic. PR and scheduled runs always execute the complete matrix. A focused run is not a full-matrix
+release result. Manual R1 runs also retain the compiled head and clean 3.0.6 test builds for source comparison;
+these contain no browser profiles or wallet data.
+
 ## What runs where
 
 | Piece | File |

@@ -278,6 +278,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates, runUpgradeE
       completeBuildHashesMatched: true,
       dependencyInstall: 'immutable-check-cache-vendored-iroha-audit',
       productionChromeSmoke: true,
+      polkaswapConnectionSmoke: true,
       tagRequired: requireTag,
       tagVerified: sourceAfter.tag !== null,
       testEnvironmentIsolated: true,

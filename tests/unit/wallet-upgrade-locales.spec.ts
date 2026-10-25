@@ -39,6 +39,14 @@ describe('wallet upgrade supplemental messages', () => {
     expect(i18n.global.te('ux.walletGenerationExpired', lang)).toBe(false);
   });
 
+  it('does not mutate the shared base catalogs when registering supplemental messages', () => {
+    for (const messages of [english, russian]) {
+      expect(messages).not.toHaveProperty('exposureNotice.importedReminder');
+      expect(messages).not.toHaveProperty('exposureNotice.guide.createImportedText');
+      expect(messages).not.toHaveProperty('ux.walletGenerationExpired');
+    }
+  });
+
   it.each([
     ['en-EN', english],
     ['ru-RU', russian],

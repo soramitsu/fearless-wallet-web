@@ -25,7 +25,8 @@ export const i18n = createI18n({
   globalInjection: true,
   locale: initialLocale,
   fallbackLocale: 'en-EN',
-  messages,
+  // Vue I18n mutates nested messages when supplemental bundles are merged. Keep the base JSON catalogs independent.
+  messages: JSON.parse(JSON.stringify(messages)) as typeof messages,
   numberFormats: {
     'akk-Xsux-x-old': {
       currency: {

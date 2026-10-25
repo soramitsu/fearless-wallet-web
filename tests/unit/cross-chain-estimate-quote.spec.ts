@@ -1,7 +1,7 @@
-import { FPNumber } from '@/sora/number';
 import { estimateCrossChainQuote } from '@extension-base/api/substrate/crossChain';
 import type State from '@extension-base/background/handlers/State';
 import type { CrossChainProps } from '@extension-base/api/substrate/types';
+import { FPNumber } from '@/sora/number';
 
 const mocks = vi.hoisted(() => ({
   assertReviewedRuntimeAuthority: vi.fn(),

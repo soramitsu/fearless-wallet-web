@@ -169,8 +169,11 @@ describe('password rotation prepares and verifies records without changing the a
     expect(prepared.accounts[0].meta.name).toBe('Public regression fixture');
   }, 30000);
 
-  it('fails the complete preparation for a wrong master password', () => {
+  it('fails the complete preparation for a wrong master password and clears its disposable keyring', () => {
+    const lock = vi.spyOn(Keyring.prototype, 'lockALl');
+
     expect(() => preparePasswordRecords(records, 'incorrect', NEXT)).toThrow();
+    expect(lock).toHaveBeenCalledOnce();
   });
 
   it('fails the complete preparation if one managed account cannot decrypt', () => {

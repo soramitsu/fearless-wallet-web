@@ -11,7 +11,7 @@ yarn audit:dependencies:production
 
 The former development-only exceptions for npm advisory IDs `1138808`
 (`GHSA-w3rx-r6r6-pgpr`) and `1138809` (`GHSA-5p2g-fcmc-qvqq`) have been
-removed. The release resolves `image-size` to patched version `2.0.3`, including
+removed. The release resolves `image-size` to patched version `2.0.4`, including
 the `addons-linter` dependency used by `web-ext`. The Firefox lint wrapper still
 strips environment overrides, disables config discovery, bounds output, and
 terminates lint after 120 seconds.

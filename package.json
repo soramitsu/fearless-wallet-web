@@ -39,6 +39,7 @@
     "test:e2e:firefox": "yarn build:extension:firefox && yarn lint:webext:firefox && yarn test:smoke:firefox",
     "test:e2e:solana": "EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode development && node scripts/solana-extension-smoke.mjs",
     "test:smoke:chrome:production": "node scripts/solana-extension-smoke.mjs --production-popup",
+    "test:smoke:polkaswap": "node scripts/polkaswap-extension-smoke.mjs",
     "test:e2e:local-chains": "node scripts/test-local-chain-sends.mjs",
     "test:local-chain-processes": "node --test scripts/local-chains/test-process-lifecycle.mjs",
     "audit:key-exfiltration": "node scripts/audit-key-exfiltration.mjs",

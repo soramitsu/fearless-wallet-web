@@ -46,7 +46,7 @@ EOF
 
 ## Checklist
 
-- [ ] Required review and CI checks pass before merging
+- [ ] Required review and local validation pass before merging; hosted CI is not required
 EOF
 
   cat > "$repo/CONTRIBUTING.md" <<'EOF'
@@ -99,7 +99,12 @@ expect_fail "$STAGING_WORKFLOW_REPO" "staging-workflow"
 MISSING_BRANCH_FLOW_REPO="$TMP_DIR/missing-branch-flow"
 write_valid_repo "$MISSING_BRANCH_FLOW_REPO"
 rm "$MISSING_BRANCH_FLOW_REPO/.github/workflows/branch-flow.yml"
-expect_fail "$MISSING_BRANCH_FLOW_REPO" "missing-branch-flow"
+expect_pass "$MISSING_BRANCH_FLOW_REPO"
+
+NO_WORKFLOWS_REPO="$TMP_DIR/no-workflows"
+write_valid_repo "$NO_WORKFLOWS_REPO"
+rm -r "$NO_WORKFLOWS_REPO/.github/workflows"
+expect_pass "$NO_WORKFLOWS_REPO"
 
 MISSING_CI_TARGET_REPO="$TMP_DIR/missing-ci-target"
 write_valid_repo "$MISSING_CI_TARGET_REPO"

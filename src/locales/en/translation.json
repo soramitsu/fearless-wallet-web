@@ -1495,7 +1495,6 @@
     "failed": "The wallet was not deleted. Try again."
   },
   "exposureNotice": {
-    "draftAwaitingOwnerSignOff": "",
     "title": "Security notice",
     "heading": "Your wallet keys may have been exposed",
     "whatHappened": "A security review identified code in Fearless Wallet browser versions {first} and {from} to {to} that could send recovery phrases to an outside server on unlock. For JSON or raw-seed imports, this could include the encrypted key and wallet password.",

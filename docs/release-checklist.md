@@ -12,9 +12,8 @@ For the underlying `3.0.7` recovery changes, also use the recovery-mode release 
 ## Before The Release PR
 
 - Confirm all release work has landed on `master` through reviewed PRs with
-  green CI, and that the CI `verify` job actually started (a
-  `startup_failure` means a workflow references an action the repository
-  policy refuses).
+  recorded local validation. Hosted CI is not used and is not a release
+  prerequisite. Run the full local release gate and preserve its receipts.
 - Confirm extension version, changelog, and release notes are final. The
   version in `package.json` feeds both the Chrome and Firefox manifests and
   must be above the published Chrome Web Store `3.0.9` (confirmed 24 October 2026).
@@ -56,6 +55,13 @@ For the underlying `3.0.7` recovery changes, also use the recovery-mode release 
   `.env.chrome-release.local` file through `env-cmd` (or an equivalent
   credential manager) so the production extension public key, OAuth client ID,
   and public service configuration are available without being committed.
+- Run `yarn test:smoke:polkaswap` against the production Chrome build (also required by
+  `prepare:chrome-release`). It uses Chrome for Testing (`CHROME_BIN` or the local
+  Playwright cache), a disposable wallet/profile, and a local dapp to verify fresh
+  approval, concurrent connects, saved-permission reconnect after a measured
+  4.5-second startup delay, and revocation. Before publishing 4.2.0, also run
+  `yarn test:smoke:polkaswap --live` to check the current `polkaswap.io` integration.
+  Reports are in `output/polkaswap-connection/`; the smoke never signs or transfers.
 - From a fresh, clean reviewed checkout, run
   `yarn env-cmd -f .env.chrome-release.local -- yarn prepare:chrome-release` to
   produce the untagged candidate provenance. The release audit rejects any ZIP

@@ -11,13 +11,17 @@ const VUEUSE_ANNOTATION =
 const OX_BASE64_ANNOTATION =
   '[INVALID_ANNOTATION] A comment "/*#__PURE__*/" in "node_modules/ox/_esm/core/Base64.js" contains an annotation that Rolldown cannot interpret due to the position of the comment.';
 
-// Both screens are deliberately embedded by their parent screens as well as routed.
-// Vite 8.3 reports the existing ReceiveForm imports alongside ManageAuths.
+// These screens are deliberately embedded by their parent screens as well as routed.
+// Vite 8.3 reports the existing form imports alongside ManageAuths.
 const REVIEWED_POPUP_DYNAMIC_IMPORTS = new Map([
   ['src/screens/extension-ui/ManageAuths.vue',
     '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/extension-ui/ManageAuths.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/main/Main.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'],
   ['src/screens/wallet&asset/ReceiveForm.vue',
     '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/wallet&asset/ReceiveForm.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/wallet&asset/asset/Asset.vue?vue&type=script&lang.ts, src/screens/wallet&asset/wallet/Wallet.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'],
+  ['src/screens/wallet&asset/SendForm.vue',
+    '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/wallet&asset/SendForm.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/wallet&asset/asset/Asset.vue?vue&type=script&lang.ts, src/screens/wallet&asset/wallet/Wallet.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'],
+  ['src/screens/extension-ui/signing/Transaction.vue',
+    '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/extension-ui/signing/Transaction.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/walletConnect/WalletConnectSignConfirmation.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.'],
 ]);
 
 const REVIEWED_INVALID_ANNOTATIONS = {

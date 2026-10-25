@@ -290,6 +290,54 @@ describe('SORA submission uncertainty after broadcasting', () => {
     expect(tx.signAndSend).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    Object.defineProperty(new Error('private RPC rejection detail'), 'code', { value: 1010 }),
+    new Error('1010: Invalid Transaction: Inability to pay some fees'),
+    '1010: Invalid Transaction: Inability to pay some fees',
+    ...[1001, 1002, 1011, 1012, 1014, 1015, 1016, 1018, 1019, 1020, 1021].map(code => ({ code })),
+  ])('preserves a definite asynchronous pool rejection after local signing: %s', async (rejection) => {
+    const { client } = fixture();
+    const tx = {
+      isSigned: true, hash: { toHex: () => hash },
+      signAndSend: vi.fn().mockRejectedValue(rejection),
+    };
+    const error = await client.submit(tx).catch(value => value);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe('SORA transaction was rejected');
+    expect(soraSubmissionUnknownResponse(error)).toBeNull();
+    expect(tx.signAndSend).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { code: 1013, message: 'already imported' },
+    Object.assign(new Error('1010: misleading error text'), { code: 1013 }),
+    new Error('1013: Transaction Already Imported'),
+    { code: 1040 }, { code: -32603 }, new Error('Connection closed'),
+  ])('keeps non-definite RPC errors uncertain: %s', async (rejection) => {
+    const { client } = fixture();
+    const tx = {
+      isSigned: true, hash: { toHex: () => hash },
+      signAndSend: vi.fn().mockRejectedValue(rejection),
+    };
+    await expect(client.submit(tx)).rejects.toMatchObject({ outcome: 'unknown', transactionHash: hash.slice(2) });
+    expect(tx.signAndSend).toHaveBeenCalledOnce();
+  });
+
+  it.each(['isReady', 'isBroadcast', 'isInBlock'])(
+    'does not reinterpret a late pool error as rejection after %s', async (status) => {
+      const { client } = fixture();
+      const tx = {
+        isSigned: true, hash: { toHex: () => hash },
+        signAndSend: vi.fn((_pair, _options, callback) => {
+          callback({ status: { [status]: true }, txHash: { toHex: () => hash }, events: [] });
+          return Promise.reject(Object.assign(new Error('1010: late RPC error'), { code: 1010 }));
+        }),
+      };
+      await expect(client.submit(tx)).rejects.toMatchObject({ outcome: 'unknown', transactionHash: hash.slice(2) });
+      expect(tx.signAndSend).toHaveBeenCalledOnce();
+    }
+  );
+
   it('preserves a synchronous rejection before signing as a definite failure', async () => {
     const { client } = fixture();
     const error = new Error('invalid local signing options');

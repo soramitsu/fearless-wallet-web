@@ -13,9 +13,15 @@ vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key 
 import FarmingPage from '@/screens/defi/FarmingPage.vue';
 
 describe('farming Manage destination', () => {
-  it.each([`0x${'ab'.repeat(32)}`, undefined])('keeps an uncertain claim visible and prevents another confirmation (hash %s)', async (hash) => {
+  it.each([
+    { label: 'uncertain with hash', hash: `0x${'ab'.repeat(32)}`, definite: false },
+    { label: 'uncertain without hash', hash: undefined, definite: false },
+    { label: 'definite rejection', hash: undefined, definite: true },
+  ])('uses the correct confirmation state for $label', async ({ hash, definite }) => {
     route.query.position = '';
-    mocks.mutate.mockReset().mockResolvedValue(soraSubmissionUnknownResponse(new SoraSubmissionUnknownError(hash)));
+    mocks.mutate.mockReset().mockResolvedValue(definite
+      ? { status: false, errors: [{ message: 'SORA transaction was rejected' }] }
+      : soraSubmissionUnknownResponse(new SoraSubmissionUnknownError(hash)));
     mocks.load.mockResolvedValue({
       available: true, canSign: true, fees: { claim: '0.01' },
       pools: [{
@@ -40,13 +46,25 @@ describe('farming Manage destination', () => {
     await button('farmingPage.confirm').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="farmingSubmissionUnknown"]').text()).toContain('assets.transactionStatusUnknownDetails');
-    expect(wrapper.find('.form-error').exists()).toBe(false);
-    if (hash) expect(wrapper.get('[data-testid="farmingSubmissionHash"]').text()).toBe(hash.slice(2));
-    else expect(wrapper.find('[data-testid="farmingSubmissionHash"]').exists()).toBe(false);
-    expect(button('farmingPage.confirm').attributes('disabled')).toBeDefined();
-    await button('farmingPage.confirm').trigger('click');
     expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    if (definite) {
+      expect(wrapper.find('[data-testid="farmingSubmissionUnknown"]').exists()).toBe(false);
+      expect(wrapper.get('.form-error').text()).toBe('farmingPage.fallback.transaction');
+      expect(button('farmingPage.confirm').attributes('disabled')).toBeUndefined();
+      // After correcting the cause, the user can explicitly submit again.
+      mocks.mutate.mockResolvedValueOnce({ status: true });
+      await button('farmingPage.confirm').trigger('click');
+      await flushPromises();
+      expect(mocks.mutate).toHaveBeenCalledTimes(2);
+    } else {
+      expect(wrapper.get('[data-testid="farmingSubmissionUnknown"]').text()).toContain('assets.transactionStatusUnknownDetails');
+      expect(wrapper.find('.form-error').exists()).toBe(false);
+      if (hash) expect(wrapper.get('[data-testid="farmingSubmissionHash"]').text()).toBe(hash.slice(2));
+      else expect(wrapper.find('[data-testid="farmingSubmissionHash"]').exists()).toBe(false);
+      expect(button('farmingPage.confirm').attributes('disabled')).toBeDefined();
+      await button('farmingPage.confirm').trigger('click');
+      expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    }
     wrapper.unmount();
   });
 

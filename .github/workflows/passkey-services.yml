@@ -1,0 +1,60 @@
+name: Passkey service sources
+
+on:
+  pull_request:
+    branches: [develop, master]
+  push:
+    branches: [develop, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: passkey-services-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [passkey-backup-challenge-service, passkey-backup-owner-authority]
+    defaults:
+      run:
+        working-directory: tools/release-readiness/services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: tools/release-readiness/services/${{ matrix.service }}/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run lint:syntax
+      - run: npm test
+      - run: npm audit --omit=dev
+      - name: Check deployment evidence contracts
+        if: matrix.service == 'passkey-backup-challenge-service'
+        run: |
+          npm run test:deployment-evidence-audit
+          npm run test:deployment-evidence-template
+  tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      - name: Verify workspace and vector tooling
+        working-directory: tools/release-readiness
+        run: |
+          node --test scripts/test-setup-workspace.mjs
+          node --test scripts/test-universal-wallet-vectors.mjs
+          node --test scripts/test-taira-release-readiness-audit.mjs scripts/test-taira-release-readiness-http.mjs scripts/test-locked-dependency-scan.mjs

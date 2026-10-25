@@ -22,7 +22,14 @@ if grep -E '(^|/)(dist|coverage|chrome|firefox|build)(/|$)' "$tracked_files" >/t
 fi
 rm -f /tmp/fearless-web-audit-generated.$$
 
-if grep -E '\.(pem|p12|pfx|key|keystore|jks|mobileprovision|crx)$' "$tracked_files" >/tmp/fearless-web-audit-keys.$$; then
+public_attestation_cert="tools/release-readiness/services/passkey-backup-owner-authority/src/apple-app-attestation-root-ca.pem"
+if [[ -e "$public_attestation_cert" || -L "$public_attestation_cert" ]]; then
+  [[ -f "$public_attestation_cert" && ! -L "$public_attestation_cert" ]] || fail 'public attestation trust anchor must be a regular file'
+  cert_sha="$(shasum -a 256 "$public_attestation_cert" | awk '{print $1}')"
+  [[ "$cert_sha" == "c778d09ac341f7fd9f8f3b19e2b815af6aed4ad4490e1e92c05cb355212a5013" ]] || fail 'public attestation trust anchor differs from reviewed Apple certificate'
+fi
+
+if grep -E '\.(pem|p12|pfx|key|keystore|jks|mobileprovision|crx)$' "$tracked_files" | grep -Fvx "$public_attestation_cert" >/tmp/fearless-web-audit-keys.$$; then
   cat /tmp/fearless-web-audit-keys.$$ >&2
   rm -f /tmp/fearless-web-audit-keys.$$
   fail 'private key, signing, or packed extension artifact is tracked'

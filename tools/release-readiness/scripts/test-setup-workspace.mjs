@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { environment, setupRepository, validateManifest } from './setup-workspace.mjs';
+import { pathToFileURL } from 'node:url';
+import { environment, resolveManifest, setupRepository, validateManifest } from './setup-workspace.mjs';
 
 function fixture(t) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'fearless-workspace-test-'));
@@ -155,4 +156,100 @@ test('environment exports preserve spaces and quotes in workspace paths', () => 
   const root = "/tmp/fearless user's workspace";
   const actual = execFileSync('bash', ['-c', environment(root) + '\nprintf "%s\\n%s" "$FEARLESS_ANDROID_PATH" "$FEARLESS_IOS_PATH"'], { encoding: 'utf8' });
   assert.equal(actual, root + '/fearless-Android\n' + root + '/fearless-iOS');
+});
+
+function ownerFixture(t) {
+  const f = fixture(t);
+  const ownerRoot = path.join(f.base, 'owner-source');
+  const ownerUrl = path.join(f.base, 'owner.git');
+  const relative = 'tools/release-readiness';
+  fs.mkdirSync(path.join(ownerRoot, relative, 'scripts'), { recursive: true });
+  fs.mkdirSync(path.join(ownerRoot, relative, 'config'));
+  f.git(ownerRoot, 'init', '--initial-branch=master');
+  f.git(ownerRoot, 'config', 'user.name', 'Workspace fixture');
+  f.git(ownerRoot, 'config', 'user.email', 'fixture@example.invalid');
+  fs.writeFileSync(path.join(ownerRoot, 'source.txt'), 'initial owner\n');
+  f.git(ownerRoot, 'add', '.'); f.git(ownerRoot, 'commit', '-m', 'initial owner');
+  const initial = f.git(ownerRoot, 'rev-parse', 'HEAD');
+  const owner = { path: 'fearless-wallet-web', repository: 'soramitsu/fearless-wallet-web', branch: 'master', commit: 'self', group: 'core' };
+  const manifest = { schemaVersion: 1, repositories: [f.row, owner] };
+  const manifestPath = path.join(ownerRoot, relative, 'config/workspace-repositories.json');
+  fs.copyFileSync(new URL('./setup-workspace.mjs', import.meta.url), path.join(ownerRoot, relative, 'scripts/setup-workspace.mjs'));
+  fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, repositories: [{ ...f.row, branch: 'release/retired' }, { ...owner, commit: initial }] }));
+  f.git(ownerRoot, 'add', '.'); f.git(ownerRoot, 'commit', '-m', 'old manifest with retired references');
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  f.git(ownerRoot, 'commit', '-am', 'self source and current native pin');
+  const ownerCommit = f.git(ownerRoot, 'rev-parse', 'HEAD');
+  fs.writeFileSync(path.join(ownerRoot, 'source.txt'), 'newer unselected owner source\n');
+  f.git(ownerRoot, 'commit', '-am', 'advance published owner');
+  const ownerTip = f.git(ownerRoot, 'rev-parse', 'HEAD');
+  f.git(f.base, 'clone', '--bare', ownerRoot, ownerUrl);
+  f.git(ownerRoot, 'remote', 'add', 'origin', ownerUrl);
+  f.git(ownerRoot, 'reset', '--hard', ownerCommit);
+  return { ...f, ownerRoot, ownerUrl, ownerCommit, ownerTip, manifest, relative };
+}
+
+test('two-generation bootstrap keeps the invoking owner and its manifest pins; cloned owner checks offline', async (t) => {
+  const f = ownerFixture(t);
+  const resolved = resolveManifest(f.manifest, f);
+  assert.equal(f.manifest.repositories[1].commit, 'self', 'Resolution must not rewrite the committed manifest');
+  assert.equal(resolved.repositories[1].commit, f.ownerCommit);
+  assert.notEqual(f.ownerCommit, f.ownerTip, 'The remote deliberately advanced beyond the invoking source');
+  const urlFor = (row) => row.path === 'fearless-wallet-web' ? f.ownerUrl : f.url;
+  for (const row of resolved.repositories) assert.equal(setupRepository(f.root, row, { url: urlFor(row) }), 'cloned');
+  const clonedOwner = path.join(f.root, 'fearless-wallet-web');
+  assert.equal(f.git(clonedOwner, 'rev-parse', 'HEAD'), f.ownerCommit);
+  assert.equal(f.git(clonedOwner, 'rev-parse', '@{upstream}'), f.ownerTip);
+  const clonedManifest = JSON.parse(fs.readFileSync(path.join(clonedOwner, f.relative, 'config/workspace-repositories.json'), 'utf8'));
+  const clonedScript = await import(pathToFileURL(path.join(clonedOwner, f.relative, 'scripts/setup-workspace.mjs')).href);
+  // No ownerRoot override: the cloned script must resolve its own containing repository.
+  const repeated = clonedScript.resolveManifest(clonedManifest, { ownerUrl: f.ownerUrl });
+  assert.deepEqual(repeated, resolved);
+  for (const row of repeated.repositories) assert.equal(clonedScript.setupRepository(f.root, row, { url: urlFor(row) }), 'verified');
+  fs.renameSync(f.url, f.url + '.offline'); fs.renameSync(f.ownerUrl, f.ownerUrl + '.offline');
+  const offline = clonedScript.resolveManifest(clonedManifest, { ownerUrl: f.ownerUrl });
+  for (const row of offline.repositories) assert.equal(clonedScript.setupRepository(f.root, row, { checkOnly: true, url: urlFor(row) }), 'verified');
+  assert.equal(f.git(path.join(f.root, f.row.path), 'rev-parse', 'HEAD'), f.row.commit);
+  assert.equal(f.git(clonedOwner, 'status', '--porcelain'), '');
+});
+
+test('self source is restricted to the actual browser owner and must be resolved before setup', (t) => {
+  const f = ownerFixture(t);
+  const owner = f.manifest.repositories[1];
+  for (const changed of [{ path: 'other' }, { repository: 'other/fearless-wallet-web' }, { group: 'private' }]) {
+    assert.throws(() => validateManifest({ schemaVersion: 1, repositories: [{ ...owner, ...changed }] }), /Self source/);
+  }
+  assert.throws(() => setupRepository(f.root, owner, { url: f.ownerUrl }), /Resolve the self source/);
+  assert.deepEqual(fs.readdirSync(f.root), []);
+});
+
+for (const hidden of [null, '--assume-unchanged', '--skip-worktree']) {
+  test(`self source rejects ${hidden || 'ordinary'} dirty owner before cloning`, (t) => {
+    const f = ownerFixture(t);
+    if (hidden) f.git(f.ownerRoot, 'update-index', hidden, 'source.txt');
+    fs.writeFileSync(path.join(f.ownerRoot, 'source.txt'), 'unreviewed invoking source\n');
+    assert.throws(() => resolveManifest(f.manifest, f), hidden ? /index flags conceal/ : /local changes/);
+    assert.deepEqual(fs.readdirSync(f.root), []);
+    assert.equal(fs.readFileSync(path.join(f.ownerRoot, 'source.txt'), 'utf8'), 'unreviewed invoking source\n');
+  });
+}
+
+test('self source rejects a mismatched origin, branch or Git root before cloning', (t) => {
+  const f = ownerFixture(t);
+  f.git(f.ownerRoot, 'remote', 'set-url', 'origin', 'https://github.com/other/project.git');
+  assert.throws(() => resolveManifest(f.manifest, f), /origin differs/);
+  f.git(f.ownerRoot, 'remote', 'set-url', 'origin', f.ownerUrl);
+  f.git(f.ownerRoot, 'switch', '-c', 'unreviewed-branch');
+  assert.throws(() => resolveManifest(f.manifest, f), /branch differs/);
+  f.git(f.ownerRoot, 'switch', 'master');
+  assert.throws(() => resolveManifest(f.manifest, { ownerRoot: path.join(f.ownerRoot, f.relative), ownerUrl: f.ownerUrl }), /independent Git clone/);
+  assert.deepEqual(fs.readdirSync(f.root), []);
+});
+
+test('fresh self clone rejects a clean invoking commit absent from the declared published branch', (t) => {
+  const f = ownerFixture(t);
+  f.git(f.ownerRoot, 'commit', '--allow-empty', '-m', 'unpublished local owner');
+  const owner = resolveManifest(f.manifest, f).repositories[1];
+  assert.throws(() => setupRepository(f.root, owner, { url: f.ownerUrl }), /git cat-file failed/);
+  assert.deepEqual(fs.readdirSync(f.root), []);
 });

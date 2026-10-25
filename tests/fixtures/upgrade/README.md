@@ -99,12 +99,15 @@ The proof uses the keyring 3.0.x shipped with, not a re-implementation: `scripts
 `@subwallet/keyring` 0.1.7, `@polkadot/util-crypto` 12.6.2 and the rest of what 3.0.x loads to open a key from the
 Yarn cache archives the 3.0.5 `yarn.lock` pins. `keyring-3.0.5-packages.json` lists them with that lockfile's
 checksums (regenerate with `node scripts/upgrade-e2e/pin-keyring-305.mjs <3.0.5 or 3.0.6 checkout>`).
-Nothing is downloaded; if the archives are missing, install a 3.0.5 checkout once with
-`corepack yarn@3.4.1 install --immutable`.
+If the archives are missing, run `node scripts/upgrade-e2e/prepare-keyring-305.mjs`.
+It fetches the exact package versions with Yarn 3.4.1 in a disposable project, with package scripts disabled,
+then verifies every archive against the pinned historical checksum. It never installs the old app or changes
+the current app's dependency graph. The archive loader itself never downloads anything.
 
 `tests/unit/keystore-scrypt-rollback.spec.ts` re-encrypts the keys of S1 and S2 the way 4.2.0 does and opens them
 in that keyring (master password from a 4.2.0 bcrypt hash, per-account password, JSON export, batch export). It
-fails without the rewrite. On CI without the archives this part is skipped; everywhere else it runs.
+fails without the rewrite. CI prepares the archives before running the suite; missing or corrupt archives fail
+the suite on every machine.
 
 ### Real rollback rehearsal
 

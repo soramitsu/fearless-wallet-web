@@ -189,7 +189,10 @@ jobs:
         run: yarn lint:check
 
       - name: Unit tests
-        run: yarn test:unit
+        run: |
+          node scripts/test-prepare-keyring-305.mjs
+          node scripts/upgrade-e2e/prepare-keyring-305.mjs
+          yarn test:unit
 
       - name: Build web app
         run: yarn build:web

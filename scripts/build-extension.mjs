@@ -36,8 +36,13 @@ export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
   VUE_APP_TEST_ONLY: 'false',
 });
 
-export function enforceProductionReleaseEnvironment(environment, buildMode) {
-  if (buildMode === 'production') Object.assign(environment, PRODUCTION_RELEASE_FLAGS);
+export function enforceProductionReleaseEnvironment(environment, buildMode, targetBrowser = environment.EXTENSION_TYPE || 'chrome') {
+  if (buildMode === 'production') {
+    Object.assign(environment, PRODUCTION_RELEASE_FLAGS);
+    // The shipped OAuth client is registered for Chrome's redirect identity.
+    // Keep Firefox backup unavailable until its own OAuth configuration is verified.
+    if (targetBrowser === 'firefox') environment.OAUTH_CLIENT_ID = '';
+  }
   return environment;
 }
 
@@ -199,7 +204,7 @@ async function normalizePopupHtml() {
 }
 
 async function run() {
-  enforceProductionReleaseEnvironment(process.env, mode);
+  enforceProductionReleaseEnvironment(process.env, mode, browser);
   auditSoraDependencyRemoval(root);
   await auditKeyExfiltrationDirectory(path.join(root, 'src'));
   const sourceBefore = readSourceProvenance(root);

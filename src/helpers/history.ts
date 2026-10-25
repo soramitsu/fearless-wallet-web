@@ -1,4 +1,3 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   HistoryElement,
@@ -10,6 +9,7 @@ import type {
   TonEvent,
 } from '@/interfaces';
 import type { History } from '@/stores/networks/types';
+import { FPNumber } from '@/sora/number';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora, isTonNetwork } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';

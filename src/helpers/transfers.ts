@@ -1,5 +1,5 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { Wallet } from '@/stores';
+import { FPNumber } from '@/sora/number';
 import { type NetworkName, WalletEcosystem } from '@/interfaces';
 import { isTonNetwork } from '@/helpers';
 import BaseApi from '@/util/BaseApi';

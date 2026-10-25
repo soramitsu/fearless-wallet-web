@@ -269,7 +269,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@sora-substrate/util';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getNativeAssetName, getSubstrateEvmAssetName } from '@extension-base/background/handlers/utils';
 import { Reasons } from '@extension-base/services/scam-service/types';
@@ -283,6 +282,7 @@ import type {
   ResponseBitcoinTransferQuote,
   ResponseSolanaTransferQuote,
 } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import RecipientInput from '@/screens/wallet&asset/RecipientInput.vue';

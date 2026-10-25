@@ -1,4 +1,3 @@
-import { api as apiSora } from '@sora-substrate/util';
 import Provider from '@walletconnect/universal-provider';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import ExtensionBase from '@extension-base/background/handlers/ExtensionBase';
@@ -10,6 +9,7 @@ import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import type { SessionTypes } from '@walletconnect/types';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import { api as apiSora } from '@/sora';
 import { WalletEcosystem } from '@/interfaces';
 
 const fixture = vi.hoisted(() => ({
@@ -21,7 +21,7 @@ const fixture = vi.hoisted(() => ({
 vi.mock('@subwallet/ui-keyring', () => ({ keyring: {} }));
 vi.mock('@subwallet/ui-keyring/observable/accounts', () => ({ accounts: { subject: { value: {} } } }));
 vi.mock('@subwallet/ui-keyring/observable/addresses', () => ({ addresses: { subject: { value: {} } } }));
-vi.mock('@sora-substrate/sdk', () => ({ api: { bridgeProxy: { sub: {} } } }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {

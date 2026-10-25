@@ -1,5 +1,5 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { ResponseTotalBalances } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import { getTotalBalances } from '@/extension/messaging';
 import { hiddenKeysForWallet } from '@/portfolio/usePortfolioPreferences';
 import { useAccountsStore } from '@/stores/accounts';

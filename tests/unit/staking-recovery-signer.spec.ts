@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
     },
   },
 }));
-vi.mock('@sora-substrate/util', () => ({
+vi.mock('@/sora', () => ({
   api: mocks.api, FPNumber: { fromCodecValue: (value: string) => ({ toString: () => value }) },
 }));
 vi.mock('@/consts/global', async (importOriginal) => ({
@@ -57,6 +57,19 @@ beforeEach(() => {
 });
 
 describe('staking actual signer recovery policy', () => {
+  it('keeps recoverable stake and a finite default APY when no validator estimate is available', async () => {
+    const { service } = setup();
+    vi.spyOn(service, 'getValidators').mockResolvedValue([{ address: 'validator', apy: '0' }] as never);
+    vi.spyOn(service, 'getMinNominatorBond').mockResolvedValue(1);
+    vi.spyOn(service, 'getMyStakingInfo').mockResolvedValue({ activeStake: '5', redeemAmount: '2' } as never);
+    vi.spyOn(service, 'getUnbondPeriod').mockReturnValue(7);
+    vi.spyOn(service, 'getMaxNominations').mockReturnValue(16);
+    vi.spyOn(service, 'maxNominatorRewardedPerValidator').mockReturnValue(256);
+    await expect(service.getStakingParams({ networks: ['sora'] })).resolves.toMatchObject([
+      { network: 'sora', activeStake: '5', redeemAmount: '2', apy: 0 },
+    ]);
+  });
+
   it('uses the fresh selected SDK signer for normal staking', async () => {
     await expect(setup().service.makeStaking(request)).resolves.toEqual({ status: true });
     expect(mocks.api.staking.bondExtra).toHaveBeenCalledExactlyOnceWith({ value: '1' });

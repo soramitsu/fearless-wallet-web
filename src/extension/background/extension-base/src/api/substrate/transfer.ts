@@ -1,11 +1,11 @@
 import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
-import { FPNumber } from '@sora-substrate/util';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate';
 import type { BasicTxResponse, TokenGroup } from '@extension-base/background/types/types';
 import type { Extrinsic, ExtrinsicTransferProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
+import { FPNumber } from '@/sora/number';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { isSameString } from '@/helpers';
 

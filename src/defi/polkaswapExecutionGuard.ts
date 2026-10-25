@@ -1,6 +1,6 @@
-import { FPNumber } from '@sora-substrate/util';
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
 import type { BasicTxError, RequestSwap, TokenGroup } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 type RuntimeAccountAsset = {

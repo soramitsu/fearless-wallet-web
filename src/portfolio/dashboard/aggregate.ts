@@ -1,5 +1,5 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { ResponsePortfolioHoldings } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 
 /** One wallet's read of the dashboard: the background answer plus the name the popup knows it by. */
 export interface WalletPortfolio extends ResponsePortfolioHoldings {

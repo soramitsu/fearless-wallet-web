@@ -1,7 +1,6 @@
 import WalletRecoveryRecords from '@extension-base/stores/WalletRecoveryRecords';
 import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
 import { validatePolkadotSigningContext } from '@extension-base/services/wallet-connect-service/polkadotSigningContext';
-import { api as apiSora, FPNumber, Operation } from '@sora-substrate/util';
 import { chrome } from '@extension-base/utils/crossenv';
 import { checkIfDenied } from '@polkadot/phishing';
 import { assert } from '@polkadot/util';
@@ -212,6 +211,7 @@ import type { HexString } from '@polkadot/util/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import { api as apiSora, FPNumber, Operation } from '@/sora';
 import { crossChainQuoteTokens } from '@/cross-chain/quoteTokens';
 import { CrossChainPreviousSendUnresolvedError } from '@/cross-chain/sendLedger';
 import { BitcoinTransactionStatusUnknownError } from '@/util/bitcoinSend';

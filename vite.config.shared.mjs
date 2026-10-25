@@ -8,6 +8,7 @@ import fg from 'fast-glob';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { soraDependencyGuard } from './scripts/audit-sora-dependency-removal.mjs';
 import { keystoreScryptParamsPlugin } from './scripts/keystore-scrypt-params.mjs';
 import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
 import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
@@ -243,6 +244,7 @@ export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir =
   return {
     publicDir,
     plugins: [
+      soraDependencyGuard(__dirname),
       irohaSdkBrowserBindingPlugin(),
       vue(),
       subwalletPackageCompatPlugin(),

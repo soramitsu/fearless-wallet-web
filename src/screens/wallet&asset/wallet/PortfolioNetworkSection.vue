@@ -93,8 +93,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { FPNumber } from '@sora-substrate/util';
 import type { AssetPreference, PortfolioAsset, PortfolioNetworkSection } from '@/portfolio/assetIdentity';
+import { FPNumber } from '@/sora/number';
 import { toggleListEntry } from '@/portfolio/portfolioViewSettings';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';

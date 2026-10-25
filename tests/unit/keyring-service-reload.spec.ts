@@ -69,7 +69,7 @@ vi.mock('@subwallet/ui-keyring', () => {
 });
 vi.mock('@subwallet/ui-keyring/observable/accounts', () => ({ accounts: { subject: { value: {} } } }));
 vi.mock('@subwallet/ui-keyring/observable/addresses', () => ({ addresses: { subject: { value: {} } } }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 
 import { EventService } from '@extension-base/services/event-service';
 import { KeyringService } from '@extension-base/services/keyring-service';

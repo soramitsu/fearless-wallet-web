@@ -1,4 +1,3 @@
-import { FPNumber } from '@sora-substrate/util';
 import { APIItemState } from '@extension-base/api/types/networks';
 import BalanceService from '@extension-base/services/balance-service';
 import { getMockAssets } from '@extension-base/background/helpers/assets';
@@ -6,6 +5,7 @@ import { networkMap305, readSnapshot } from '../fixtures/legacy-305/generate';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
+import { FPNumber } from '@/sora/number';
 import { WalletEcosystem } from '@/interfaces';
 import { buildPortfolioSummary, createAssetKey } from '@/portfolio/assetIdentity';
 import { aggregatePortfolios } from '@/portfolio/dashboard/aggregate';

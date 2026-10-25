@@ -5,7 +5,7 @@
 // Writing 3.0.x's parameters keeps a rollback to a clean 3.0.6 possible and keeps exported JSON readable by 3.0.x.
 export const KEYSTORE_SCRYPT_PARAMS = Object.freeze({ N: 1 << 15, p: 1, r: 8 });
 
-// The encoders, as ES modules or CommonJS, wherever they are installed (the SORA SDK brings its own keyring).
+// The encoders, as ES modules or CommonJS, wherever they are installed (including any nested dependency copies).
 const ENCODERS = [
   /\/node_modules\/(?:.+\/)?@(?:subwallet|polkadot)\/keyring\/(?:cjs\/)?pair\/encode\.js$/u,
   /\/node_modules\/(?:.+\/)?@polkadot\/util-crypto\/(?:cjs\/)?json\/encrypt\.js$/u,

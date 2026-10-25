@@ -1,7 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import { FPNumber } from '@/sora/number';
 import { isTestnetNetwork } from '@/portfolio/zeroRule';
 
 /**

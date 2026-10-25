@@ -1,4 +1,3 @@
-import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type {
   PoolsParamsResponse,
   PoolsParamsRequest,
@@ -9,6 +8,7 @@ import type {
   DemeterPoolsResponse,
 } from '@extension-base/services/pools-service/types';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
+import { type AccountLiquidity } from '@/sora/types';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function getPoolsParams(request: PoolsParamsRequest): Promise<PoolsParamsResponse> {

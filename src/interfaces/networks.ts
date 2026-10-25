@@ -1,6 +1,6 @@
-import { type NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
+import { type NetworkFeesObject } from '@/sora';
 import { type TON_MAINNET, type TON_TESTNET } from '@/consts/networks';
 
 type RelayChainName =

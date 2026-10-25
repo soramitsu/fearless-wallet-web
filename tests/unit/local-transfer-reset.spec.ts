@@ -9,7 +9,7 @@ import type State from '@extension-base/background/handlers/State';
 
 const fixture = vi.hoisted(() => ({ state: {} }));
 vi.mock('@extension-base/background/handlers', () => ({ state: fixture.state }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 
 let state: State;

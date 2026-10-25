@@ -182,6 +182,8 @@ jobs:
 
       - name: Reject known key-exfiltration code
         run: |
+          yarn test:sora-removal
+          yarn audit:sora-removal
           yarn test:key-exfiltration-audit
           yarn audit:key-exfiltration
 

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { BehaviorSubject } from 'rxjs';
-import { api as apiSora } from '@sora-substrate/util';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, KeyringPairJson & { accounts: Record<string, KeyringPairJson>; ton: TonStoreAccount; cipherSeed: string; pendingCipherSeed?: string }>,
@@ -44,7 +43,7 @@ vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
     },
   } },
 } }));
-vi.mock('@sora-substrate/sdk', () => ({ api: { bridgeProxy: { sub: {} } } }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
@@ -62,6 +61,7 @@ import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import type { TonStoreAccount } from '@extension-base/stores/TonStore';
 import type { KeyringPair$Json as KeyringPairJson, KeypairType } from '@subwallet/keyring/types';
+import { api as apiSora } from '@/sora';
 import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public removal fixture password';

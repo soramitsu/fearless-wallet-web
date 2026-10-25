@@ -1,7 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { PortfolioHolding } from '@extension-base/background/types/types';
 import type { AllocationEntity, AllocationFacet, SlotMap } from '@/portfolio/dashboard/allocation';
 import type { WalletPortfolio } from '@/portfolio/dashboard/aggregate';
+import { FPNumber } from '@/sora/number';
 
 /** A holding with the wallet that holds it. */
 export interface HoldingRef {

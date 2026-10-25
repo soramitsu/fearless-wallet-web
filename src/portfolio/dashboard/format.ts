@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber } from '@/sora/number';
 import { formatDecimalString } from '@/helpers/numbers';
 
 export type ChangeDirection = 'up' | 'down' | 'flat';

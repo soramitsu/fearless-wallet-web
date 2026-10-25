@@ -10,6 +10,7 @@ import { build, createLogger } from 'vite';
 
 import { commonViteConfig } from '../vite.config.shared.mjs';
 import { createFirefoxBuildLogPolicy, polkadotIifePackageInfoPlugin } from './firefox-build-warning-policy.mjs';
+import { auditSoraDependencyRemoval } from './audit-sora-dependency-removal.mjs';
 import { auditKeyExfiltrationDirectory } from './audit-key-exfiltration.mjs';
 import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 
@@ -199,6 +200,7 @@ async function normalizePopupHtml() {
 
 async function run() {
   enforceProductionReleaseEnvironment(process.env, mode);
+  auditSoraDependencyRemoval(root);
   await auditKeyExfiltrationDirectory(path.join(root, 'src'));
   const sourceBefore = readSourceProvenance(root);
   if (!watch) await fs.rm(outDir, { recursive: true, force: true });

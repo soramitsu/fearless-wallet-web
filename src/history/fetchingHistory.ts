@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { FPNumber } from '@sora-substrate/util';
 import { formatEther, formatUnits } from 'ethers';
 import {
   SolanaIndexerClient,
@@ -20,6 +19,7 @@ import type {
   X1HistoryElement,
   ZetaHistory,
 } from '@/interfaces';
+import { FPNumber } from '@/sora/number';
 import { isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
 import BaseApi from '@/util/BaseApi';
 import { SEC1 } from '@/consts/time';

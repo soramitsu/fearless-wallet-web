@@ -126,7 +126,7 @@ vi.mock('@extension-base/stores/LegacyPasswordPromptStore', () => ({ default: cl
   remove = (key: string) => { mocks.prompt.delete(key); };
 } }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 
 // tonweb derives native and 3.0.x keys with 100 000 PBKDF2 rounds per check.
 const PBKDF2_SUITE = { timeout: 120_000 };

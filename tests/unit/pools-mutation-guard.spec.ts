@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
-import { api as apiSora } from '@sora-substrate/util';
 import { PoolsService } from '@extension-base/services/pools-service';
 import type State from '@extension-base/background/handlers/State';
 import type { MakePoolsRequest } from '@extension-base/services/pools-service/types';
+import { api as apiSora } from '@/sora';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 const freshWalletState = () => ({

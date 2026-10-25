@@ -1,9 +1,9 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
 import type { ApiPromise } from '@polkadot/api';
 import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
+import { FPNumber } from '@/sora/number';
 import { CHAIN_IDS, EQUILIBRIUM } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 

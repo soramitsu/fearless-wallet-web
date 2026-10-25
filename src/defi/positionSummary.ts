@@ -1,6 +1,6 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { DemeterPoolsResponse } from '@extension-base/services/pools-service/types';
 import type { PolkamarktSnapshot } from '@/defi/polkamarkt/types';
+import { FPNumber } from '@/sora/number';
 
 export type SupplementalPositionStatus = 'ready' | 'partial' | 'unavailable';
 

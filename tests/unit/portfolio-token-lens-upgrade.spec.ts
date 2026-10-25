@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { effectScope, nextTick } from 'vue';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getMockAssets } from '@extension-base/background/helpers/assets';
-import { FPNumber } from '@sora-substrate/util';
 import {
   EVM_ADDRESS,
   SUBSTRATE_ADDRESS,
@@ -18,6 +17,7 @@ import { getMockAssets as getMockAssets305 } from '../fixtures/legacy-305/getMoc
 import { createAccountsStore305, type Storage305 } from '../fixtures/legacy-305/toggle-hide-zero.305';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import { FPNumber } from '@/sora/number';
 import { WalletEcosystem } from '@/interfaces';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { useAccountsStore } from '@/stores/accounts';

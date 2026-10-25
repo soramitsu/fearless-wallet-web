@@ -49,9 +49,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import type { PoolsTab } from '@/interfaces';
 import type { PoolParams } from '@/stores';
+import { type AccountLiquidity } from '@/sora/types';
 import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import PoolsSettings from '@/screens/pools/PoolsSettings.vue';
 import PoolItem from '@/screens/pools/PoolItem.vue';

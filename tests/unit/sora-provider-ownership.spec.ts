@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { api as apiSora } from '@sora-substrate/util';
 import { SoraApiHandler } from '@extension-base/services/network-service/handlers/SoraApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
+import { api as apiSora } from '@/sora/client';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 const io = vi.hoisted(() => ({ apis: [] as Array<{ isReady: Promise<void>; isReadyOrError: Promise<void>;
@@ -21,18 +21,21 @@ vi.mock('@polkadot/api', () => ({
   },
   WsProvider: class {},
 }));
-vi.mock('@sora-substrate/api', () => ({ options: () => ({}) }));
-vi.mock('@sora-substrate/util', async () => {
-  const { Connection } = await import('@sora-substrate/connection');
-  const { ApiPromise, WsProvider } = await import('@polkadot/api');
-  class Api {
+vi.mock('@/sora/client', async (original) => {
+  const actual = await original<typeof import('@/sora/client')>();
+  class SoraClient {
     NetworkFee = { Transfer: '0' };
-    setConnection = vi.fn();
+    dex = { baseAssetsIds: ['fixture'], ids: new Map() };
     async initialize() { await io.initialize(); }
     async calcStaticNetworkFees() { await io.fees(); this.NetworkFee.Transfer = io.feeValue; }
   }
-  return { Api, api: new Api(), connection: new Connection(ApiPromise, WsProvider, {}),
-    FPNumber: { fromCodecValue: (value: string) => ({ toString: () => value }) } };
+  return { ...actual, SoraClient, api: new SoraClient() };
+});
+vi.mock('@/sora/number', async (original) => {
+  const actual = await original<typeof import('@/sora/number')>();
+  return { ...actual, FPNumber: class extends actual.FPNumber {
+    static fromCodecValue(value: string) { return new actual.FPNumber(value); }
+  } };
 });
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -72,7 +75,7 @@ describe('owned SORA initialization and endpoint replacement', () => {
     previous.resolve(); io.apis.at(-1)!.resolve(); await settle();
   });
 
-  it('keeps the current endpoint when an older SDK open rejects and runs its cleanup', async () => {
+  it('keeps the current endpoint when an older connection rejects and runs its cleanup', async () => {
     SoraApiHandler.initApi('wss://old.invalid', []);
     const previous = io.apis.at(-1)!;
     SoraApiHandler.initApi('wss://new.invalid', []);
@@ -82,7 +85,7 @@ describe('owned SORA initialization and endpoint replacement', () => {
     expect(current.disconnect).not.toHaveBeenCalled();
   });
 
-  it('does not overwrite newer SDK fees when an old fee calculation completes late', async () => {
+  it('does not overwrite newer fees when an old fee calculation completes late', async () => {
     SoraApiHandler.initApi('wss://old-fees.invalid', []); io.apis.at(-1)!.resolve(); await settle();
     let finishOld!: () => void;
     io.fees.mockReturnValueOnce(new Promise<void>((resolve) => { finishOld = resolve; }));
@@ -111,7 +114,7 @@ describe('owned SORA initialization and endpoint replacement', () => {
     expect(owner.soraFees.next).not.toHaveBeenCalled();
   });
 
-  it('publishes successfully calculated current fees and preserves SDK fee access', async () => {
+  it('publishes successfully calculated current fees and preserves client fee access', async () => {
     SoraApiHandler.initApi('wss://healthy.invalid', []); io.apis.at(-1)!.resolve(); await settle();
     const owner = state(); await SoraApiHandler.initialize(owner as never, () => true);
     expect(owner.soraFees.next).toHaveBeenCalledExactlyOnceWith({ Transfer: '17' });

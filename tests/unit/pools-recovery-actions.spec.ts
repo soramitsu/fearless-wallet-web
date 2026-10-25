@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FPNumber } from '@sora-substrate/util';
 import { PoolsService } from '@extension-base/services/pools-service';
 import type State from '@extension-base/background/handlers/State';
 import type { DemeterMutationRequest, RequestRemoveLiquidity } from '@extension-base/services/pools-service/types';
+import { FPNumber } from '@/sora/number';
 import { SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 const mocks = vi.hoisted(() => ({ api: {
@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({ api: {
   poolXyk: { add: vi.fn(), remove: vi.fn() },
   demeterFarming: { depositLiquidity: vi.fn(), stake: vi.fn(), withdrawLiquidity: vi.fn(), unstake: vi.fn(), getRewards: vi.fn() },
 } }));
-vi.mock('@sora-substrate/util', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@sora-substrate/util')>(), api: mocks.api,
+vi.mock('@/sora', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/sora')>(), api: mocks.api,
 }));
 vi.mock('@/consts/global', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/consts/global')>(), IS_EXTENSION: true,

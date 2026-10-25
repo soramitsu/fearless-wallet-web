@@ -12,7 +12,6 @@ vi.mock('@extension-base/utils/crossenv', () => ({
   chrome: { runtime: { getURL: (path: string) => `chrome-extension://fixture/${path}` } },
 }));
 
-import { api as apiSora } from '@sora-substrate/util';
 import Extension from '@extension-base/background/handlers/Extension';
 import {
   ActionCapabilityService,
@@ -21,6 +20,7 @@ import {
 import { PoolsService } from '@extension-base/services/pools-service';
 import type State from '@extension-base/background/handlers/State';
 import type { PolkamarktSnapshot } from '@/defi/polkamarkt/types';
+import { api as apiSora } from '@/sora';
 
 const memoryStorage = (stored?: unknown) => ({
   read: vi.fn(async () => stored),

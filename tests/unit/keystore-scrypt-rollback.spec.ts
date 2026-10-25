@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { globSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
@@ -40,18 +40,13 @@ import type { KeypairType, KeyringPair$Json } from '@subwallet/keyring/types';
 const NEW_MASTER = 'Master password changed in 4.2.0';
 const payload = new TextEncoder().encode('Fearless 4.2.0 -> 3.0.x rollback check');
 const nodeModules = path.resolve(__dirname, '../../node_modules');
-// Every module installed here that encrypts at util-crypto's default cost: the keyring pair encoders (ES module and
-// CommonJS, including the SORA SDK's own @polkadot/keyring) and jsonEncrypt.
-const INSTALLED_ENCODERS = [
-  '@subwallet/keyring/pair/encode.js',
-  '@subwallet/keyring/cjs/pair/encode.js',
-  '@polkadot/keyring/pair/encode.js',
-  '@polkadot/keyring/cjs/pair/encode.js',
-  '@polkadot/ui-keyring/node_modules/@polkadot/keyring/pair/encode.js',
-  '@polkadot/ui-keyring/node_modules/@polkadot/keyring/cjs/pair/encode.js',
-  '@polkadot/util-crypto/json/encrypt.js',
-  '@polkadot/util-crypto/cjs/json/encrypt.js',
-];
+// Exercise every installed encoder, including nested copies if the dependency
+// graph introduces any. Removing a package must not require keeping its keyring.
+const INSTALLED_ENCODERS = [...globSync([
+  '**/@subwallet/keyring/{pair,cjs/pair}/encode.js',
+  '**/@polkadot/keyring/{pair,cjs/pair}/encode.js',
+  '**/@polkadot/util-crypto/{json,cjs/json}/encrypt.js',
+], { cwd: nodeModules })].sort();
 
 type Profile = typeof profile306 | typeof profile263;
 type Wallet = { name: string; address: string; ethereumAddress: string; mnemonic: string; password?: string };
@@ -117,6 +112,14 @@ beforeAll(async () => {
 describe('the build gives every key encoder the scrypt cost 3.0.x reads', () => {
   const plugin = keystoreScryptParamsPlugin();
   const explicitCost = '(passphrase, undefined, {"N":32768,"p":1,"r":8})';
+
+  it('discovers the direct encoders as well as any nested copies', () => {
+    expect(INSTALLED_ENCODERS).toEqual(expect.arrayContaining([
+      '@subwallet/keyring/pair/encode.js', '@subwallet/keyring/cjs/pair/encode.js',
+      '@polkadot/keyring/pair/encode.js', '@polkadot/keyring/cjs/pair/encode.js',
+      '@polkadot/util-crypto/json/encrypt.js', '@polkadot/util-crypto/cjs/json/encrypt.js',
+    ]));
+  });
 
   it.each(INSTALLED_ENCODERS)('rewrites %s', (encoder) => {
     const file = path.join(nodeModules, encoder);

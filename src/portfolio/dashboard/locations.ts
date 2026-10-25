@@ -1,5 +1,5 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { PortfolioHolding } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import { tokenKeyOf, type GroupOf, type HoldingRef } from '@/portfolio/dashboard/facets';
 
 /** One holding of the token, with the wallet that holds it. */

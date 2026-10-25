@@ -747,4 +747,18 @@ expect_failure \
   "IROHA_JS_SDK_RELEASE_REPO, IROHA_JS_SDK_RELEASE_TAG, IROHA_JS_SDK_RELEASE_ASSET, and IROHA_JS_SDK_RELEASE_SHA256 are required together" \
   env IROHA_JS_SDK_RELEASE_REPO="hyperledger-iroha/iroha"
 
-echo "[public-artifacts-audit-test] 22 modes passed (3 positive, 19 adversarial): clean-baseline,bitcoin-solana-send-enabled,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,iroha-connect-enablement-blocked,iroha-connect-file-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,invalid-solana-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"
+CERT_REPO="$TMP_DIR/public-attestation-certificate"
+write_fixture_repo "$CERT_REPO"
+cert_relative="tools/release-readiness/services/passkey-backup-owner-authority/src/apple-app-attestation-root-ca.pem"
+mkdir -p "$CERT_REPO/$(dirname "$cert_relative")"
+cp "$SCRIPT_DIR/../$cert_relative" "$CERT_REPO/$cert_relative"
+git -C "$CERT_REPO" add "$cert_relative"
+run_audit "$CERT_REPO" env >/dev/null
+printf '\nchanged\n' >> "$CERT_REPO/$cert_relative"
+expect_failure "changed public attestation certificate" "$CERT_REPO" "differs from reviewed Apple certificate" env
+cp "$SCRIPT_DIR/../$cert_relative" "$CERT_REPO/$cert_relative"
+cp "$CERT_REPO/$cert_relative" "$CERT_REPO/unreviewed.pem"
+git -C "$CERT_REPO" add unreviewed.pem
+expect_failure "certificate outside reviewed path" "$CERT_REPO" "private key, signing, or packed extension artifact is tracked" env
+
+echo "[public-artifacts-audit-test] 25 modes passed (4 positive, 21 adversarial): clean-baseline,bitcoin-solana-send-enabled,legacy-17-byte-declaration-blocked,legacy-17-byte-runtime-blocked,legacy-body-only-hash-blocked,domain-nul-removal-blocked,domain-separation-removal-blocked,nexus-cap-weakening-blocked,legacy-nexus-cap-blocked,nexus-baseline-drift-blocked,aggregate-cap-weakening-blocked,legacy-aggregate-cap-blocked,aggregate-baseline-drift-blocked,iroha-transfer-enablement-blocked,iroha-connect-enablement-blocked,iroha-connect-file-enablement-blocked,invalid-iroha-flag-blocked,invalid-bitcoin-flag-blocked,invalid-solana-flag-blocked,pinned-old-package-still-blocked,checksum-pinned-github-release,partial-release-pin-blocked"

@@ -52,3 +52,8 @@ pnpm-debug.log*
 site/.yarn/*
 !site/.yarn/patches/
 !site/.yarn/patches/*.patch
+
+# Generated release-tool evidence and local service state stay outside source.
+/tools/release-readiness/output/
+/tools/release-readiness/build/
+/tools/release-readiness/services/*/data/

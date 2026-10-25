@@ -98,6 +98,18 @@ const receiveFormWarning = {
 };
 handler('warn', receiveFormWarning, () => {});
 assertions += 1;
+handler('warn', {
+  ...receiveFormWarning,
+  id: receiveFormWarning.id.replace('ReceiveForm.vue', 'SendForm.vue'),
+  message: receiveFormWarning.message.replace('ReceiveForm.vue', 'SendForm.vue'),
+}, () => {});
+assertions += 1;
+handler('warn', {
+  code: 'INEFFECTIVE_DYNAMIC_IMPORT',
+  id: `${rootDir}/src/screens/extension-ui/signing/Transaction.vue`,
+  message: '[INEFFECTIVE_DYNAMIC_IMPORT] src/screens/extension-ui/signing/Transaction.vue is dynamically imported by src/router/routes.ts but also statically imported by src/screens/walletConnect/WalletConnectSignConfirmation.vue?vue&type=script&lang.ts, dynamic import will not move module into another chunk.',
+}, () => {});
+assertions += 1;
 expectFailure('ReceiveForm importer drift', () => handler('warn', {
   ...receiveFormWarning,
   message: receiveFormWarning.message.replace('wallet/Wallet.vue', 'wallet/Other.vue'),

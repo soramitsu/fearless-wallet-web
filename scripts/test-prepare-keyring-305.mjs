@@ -15,35 +15,50 @@ test('an already verified cache never invokes the package manager', () => {
 
 test('fetches exact historical versions in isolation, disables scripts, and verifies the result', () => {
   let dir;
+  let fetchedArchive;
   let inspections = 0;
-  const result = prepareKeyring305Archives({
-    cacheFolder: '/test/historical-cache',
-    inspect: cache => {
-      assert.equal(cache, '/test/historical-cache');
-      return ++inspections === 1 ? missing : ready;
-    },
-    run: (command, args, options) => {
-      dir = options.cwd;
-      assert.equal(command, 'corepack');
-      assert.deepEqual(args, ['yarn@3.4.1', 'install', '--mode=skip-build']);
-      assert.equal(options.env.YARN_ENABLE_SCRIPTS, 'false');
-      assert.equal(options.env.YARN_ENABLE_GLOBAL_CACHE, 'false');
-      assert.equal(options.env.YARN_IGNORE_PATH, '1');
-      assert.equal(options.env.YARN_CACHE_FOLDER, '/test/historical-cache');
-      assert.equal(options.env.YARN_NPM_REGISTRY_SERVER, 'https://registry.npmjs.org');
-      assert.equal(options.timeout, 300_000);
-      assert.equal(JSON.parse(readFileSync(path.join(dir, 'package.json'))).packageManager, 'yarn@3.4.1');
-      const dependencies = readdirSync(path.join(dir, 'packages')).flatMap(name =>
-        Object.entries(JSON.parse(readFileSync(path.join(dir, 'packages', name, 'package.json'))).dependencies)
-      ).map(([name, version]) => `${name}@${version}`).sort();
-      const pinned = JSON.parse(readFileSync(new URL('../tests/fixtures/upgrade/keyring-3.0.5-packages.json', import.meta.url)));
-      assert.deepEqual(dependencies, [...new Set(pinned.packages.map(pkg => `${pkg.name}@${pkg.version}`))].sort());
-      assert.equal(existsSync(path.join(dir, 'src')), false);
-    },
-  });
-  assert.equal(result, ready);
-  assert.equal(inspections, 2);
-  assert.equal(existsSync(dir), false);
+  const targetCache = mkdtempSync(path.join(tmpdir(), 'fearless-retained-keyring-cache-'));
+  writeFileSync(path.join(targetCache, 'unrelated.zip'), 'existing cache');
+  try {
+    const result = prepareKeyring305Archives({
+      cacheFolder: targetCache,
+      inspect: cache => {
+        if (++inspections === 1) {
+          assert.equal(cache, targetCache);
+          return missing;
+        }
+        assert.equal(cache, path.join(dir, 'cache'));
+        return { found: [{ name: 'verified archive', zip: fetchedArchive }], missing: [] };
+      },
+      run: (command, args, options) => {
+        dir = options.cwd;
+        assert.equal(command, 'corepack');
+        assert.deepEqual(args, ['yarn@3.4.1', 'install', '--mode=skip-build']);
+        assert.equal(options.env.YARN_ENABLE_SCRIPTS, 'false');
+        assert.equal(options.env.YARN_ENABLE_GLOBAL_CACHE, 'false');
+        assert.equal(options.env.YARN_IGNORE_PATH, '1');
+        assert.equal(options.env.YARN_CACHE_FOLDER, path.join(dir, 'cache'));
+        assert.equal(options.env.YARN_NPM_REGISTRY_SERVER, 'https://registry.npmjs.org');
+        assert.equal(options.timeout, 300_000);
+        assert.equal(JSON.parse(readFileSync(path.join(dir, 'package.json'))).packageManager, 'yarn@3.4.1');
+        const dependencies = readdirSync(path.join(dir, 'packages')).flatMap(name =>
+          Object.entries(JSON.parse(readFileSync(path.join(dir, 'packages', name, 'package.json'))).dependencies)
+        ).map(([name, version]) => `${name}@${version}`).sort();
+        const pinned = JSON.parse(readFileSync(new URL('../tests/fixtures/upgrade/keyring-3.0.5-packages.json', import.meta.url)));
+        assert.deepEqual(dependencies, [...new Set(pinned.packages.map(pkg => `${pkg.name}@${pkg.version}`))].sort());
+        assert.equal(existsSync(path.join(dir, 'src')), false);
+        fetchedArchive = path.join(dir, 'verified-archive.zip');
+        writeFileSync(fetchedArchive, 'verified bytes');
+      },
+    });
+    assert.equal(result.cacheFolder, targetCache);
+    assert.equal(readFileSync(result.found[0].zip, 'utf8'), 'verified bytes');
+    assert.equal(readFileSync(path.join(targetCache, 'unrelated.zip'), 'utf8'), 'existing cache');
+    assert.equal(inspections, 2);
+    assert.equal(existsSync(dir), false);
+  } finally {
+    rmSync(targetCache, { recursive: true, force: true });
+  }
 });
 
 test('refuses fetched archives that still fail the pinned checksum check', () => {

@@ -3,7 +3,7 @@
 // Only archives matching the existing 3.0.5 lockfile checksums can be loaded by
 // keyring-305.mjs. This does not change the application's dependency graph.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,7 @@ export function prepareKeyring305Archives({
   if (!before.missing.length) return before;
 
   const dir = mkdtempSync(path.join(tmpdir(), 'fearless-keyring-fetch-'));
+  const fetchCache = path.join(dir, 'cache');
   try {
     writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
       name: 'fearless-historical-keyring-test-oracle',
@@ -45,7 +46,7 @@ export function prepareKeyring305Archives({
       COREPACK_ENABLE_DOWNLOAD_PROMPT: '0',
       YARN_RC_FILENAME: '.fearless-keyring-yarnrc.yml',
       YARN_IGNORE_PATH: '1',
-      YARN_CACHE_FOLDER: path.resolve(cacheFolder),
+      YARN_CACHE_FOLDER: fetchCache,
       YARN_ENABLE_GLOBAL_CACHE: 'false',
       YARN_ENABLE_SCRIPTS: 'false',
       YARN_ENABLE_IMMUTABLE_INSTALLS: 'false',
@@ -56,11 +57,19 @@ export function prepareKeyring305Archives({
     run('corepack', ['yarn@3.4.1', 'install', '--mode=skip-build'], {
       cwd: dir, env, stdio: 'inherit', timeout: 300_000,
     });
-    const after = inspect(cacheFolder);
+    const after = inspect(fetchCache);
     if (after.missing.length) {
       throw new Error(`Historical keyring archives failed pinned checksum verification: ${after.missing.join(', ')}`);
     }
-    return after;
+    // Yarn may prune unrelated entries in a local cache during installation.
+    // Fetch privately, then copy only verified archives into the shared cache.
+    mkdirSync(cacheFolder, { recursive: true });
+    const found = after.found.map(pkg => {
+      const zip = path.join(cacheFolder, path.basename(pkg.zip));
+      copyFileSync(pkg.zip, zip);
+      return { ...pkg, zip };
+    });
+    return { ...after, cacheFolder, found };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

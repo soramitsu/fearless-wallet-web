@@ -19,7 +19,7 @@
     "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js": 1,
     "chunks/soramitsuUI.js": 1
   },
-  "warningSetSha256": "bf322f7605bff7f5d7cb940f52474ca712851cec0241dffc3ce316336224d04c",
+  "warningSetSha256": "e809c2687d07ee5863189e6521bd179623d1a04a73b63018769792c4e989aa22",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
@@ -27,7 +27,7 @@
     },
     {
       "file": "chunks/accounts.js",
-      "sha256": "bb1415b175ae8b8de70569c6c77a817f6ca2f027e8d3575cff9693899cc7bba2"
+      "sha256": "8b649dfe4fd2ee5eeef434420c634db7eb1552e0aeb2fbd50ac28756020c012a"
     },
     {
       "file": "chunks/background-vendor/assert-Blv9rAXX.js",

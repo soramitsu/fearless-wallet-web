@@ -2,11 +2,14 @@
   <AboveForm :fullScreen="true" header="exposureNotice.guide.title" @closeHandler="leave">
     <div class="exposure-guide" data-testid="securityNoticeGuide">
       <p class="exposure-guide__text">{{ t('exposureNotice.guide.intro') }}</p>
+      <p v-if="status?.importedWallets?.length" class="exposure-guide__text" data-testid="securityNoticeImportedExplanation">
+        {{ t('exposureNotice.importedReminder') }}
+      </p>
 
       <ol class="exposure-guide__steps">
         <li class="exposure-guide__step" :class="{ 'exposure-guide__step--done': newMainWallets.length > 0 }">
           <h2 class="exposure-guide__step-title">{{ t('exposureNotice.guide.createTitle') }}</h2>
-          <p class="exposure-guide__text">{{ t('exposureNotice.guide.createText') }}</p>
+          <p class="exposure-guide__text">{{ t(status?.wallets.length ? 'exposureNotice.guide.createText' : 'exposureNotice.guide.createImportedText') }}</p>
 
           <div v-if="newWallets.length" class="exposure-guide__new-wallets" data-testid="securityNoticeNewWallets">
             <span class="exposure-guide__label">{{ t('exposureNotice.guide.newWallets') }}</span>
@@ -180,6 +183,7 @@
 
       <div class="exposure-guide__controls">
         <FButton
+          v-if="status?.state === 'acknowledged'"
           text="exposureNotice.readNotice"
           type="secondary"
           :border="false"
@@ -214,7 +218,7 @@ import { isTestnetNetwork } from '@/portfolio/zeroRule';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';
-import { type LegacyExposureBalance, remainingBalances, sameWalletAddress, walletsStillToMove } from '@/util/legacyExposure';
+import { type LegacyExposureBalance, remainingBalances, sameWalletAddress, walletsStillToMove, walletsToReview } from '@/util/legacyExposure';
 
 const route = useRoute();
 const router = useRouter();
@@ -228,7 +232,7 @@ const failed = ref(false);
 const opening = ref('');
 const chosenDestination = ref('');
 
-const oldWallets = computed(() => status.value?.wallets ?? []);
+const oldWallets = computed(() => walletsToReview(status.value));
 const newWallets = computed(() => status.value?.newWallets ?? []);
 const newMainWallets = computed(() =>
   newWallets.value.filter(({ walletEcosystem }) => walletEcosystem !== WalletEcosystem.Ton)

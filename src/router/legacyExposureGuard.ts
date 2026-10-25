@@ -7,7 +7,7 @@ const LEGACY_EXPOSURE_ROUTE_NAMES = {
   Welcome: 'Welcome',
 } as const;
 
-type LegacyExposureState = LegacyExposureStatus['state'];
+type LegacyExposureState = LegacyExposureStatus['state'] | 'guide_available';
 
 type LegacyExposureRedirect = {
   name: string;
@@ -35,13 +35,13 @@ function resolveLegacyExposureRedirect({
   }
 
   if (state === 'acknowledged') return null;
+  if (state === 'guide_available') return isNoticeRoute ? { name: LEGACY_EXPOSURE_ROUTE_NAMES.Guide } : null;
 
   // Nothing to tell this user: the notice and its guide lead back to the wallet.
   return isNoticeRoute || name === LEGACY_EXPOSURE_ROUTE_NAMES.Guide ? { name: LEGACY_EXPOSURE_ROUTE_NAMES.Welcome } : null;
 }
 
-// The record is written once, so neither of these states changes back; every navigation after
-// the first one in a window skips the background.
+// Only acknowledgement is permanent. A fresh profile can import a key later in this window.
 let settledState: LegacyExposureState | undefined;
 
 // A background that cannot answer must never keep the user out of the wallet, so a failure reads
@@ -50,9 +50,10 @@ async function readLegacyExposureState(): Promise<LegacyExposureState | undefine
   if (settledState) return settledState;
 
   try {
-    const { state } = await getLegacyExposureStatus();
+    const { state, importedWallets } = await getLegacyExposureStatus();
 
-    if (state === 'acknowledged' || state === 'not_exposed') settledState = state;
+    if (state === 'acknowledged') settledState = state;
+    if (state === 'not_exposed' && importedWallets?.length) return 'guide_available';
 
     return state;
   } catch {

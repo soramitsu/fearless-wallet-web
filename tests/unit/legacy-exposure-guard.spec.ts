@@ -104,6 +104,15 @@ describe('the security notice after an update from 3.0.x', () => {
     expect(await navigate('Wallet')).toHaveBeenCalledExactlyOnceWith();
   });
 
+  it('allows an imported-key guide after a fresh profile imports its first key', async () => {
+    expect(await navigate('Wallet')).toHaveBeenCalledExactlyOnceWith();
+    mocks.status.mockResolvedValue({ ...status('not_exposed'), importedWallets: [{ address: 'imported', present: true }] });
+
+    expect(await navigate('SecurityNoticeGuide')).toHaveBeenCalledExactlyOnceWith();
+    expect(await navigate('Wallet')).toHaveBeenCalledExactlyOnceWith();
+    expect(await navigate('SecurityNotice')).toHaveBeenCalledExactlyOnceWith({ name: 'SecurityNoticeGuide' });
+  });
+
   it('never keeps the user out of the wallet when the background cannot answer', async () => {
     mocks.status.mockRejectedValue(new Error('Wallet storage could not be read'));
 

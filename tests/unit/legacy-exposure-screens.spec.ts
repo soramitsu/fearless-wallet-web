@@ -353,6 +353,20 @@ describe('the guide to a new wallet', () => {
     expect(wrapper.get('[data-testid="securityNoticeBalanceIssue"]').text()).toBe('portfolioPage.balanceStatus.outdated');
   });
 
+  it('offers the guide for imported keys without linking to the pre-update notice', async () => {
+    const wrapper = await mountGuide(status({
+      state: 'not_exposed', wallets: [],
+      importedWallets: [{ address: MAIN, walletEcosystem: 'substrate', name: 'Imported', present: true }],
+      newWallets: [{ address: NEW, walletEcosystem: 'substrate', name: 'Created' }],
+    } as never));
+
+    expect(wrapper.get('[data-testid="securityNoticeOldWallet"]').text()).toContain('Imported');
+    expect(wrapper.get('[data-testid="securityNoticeImportedExplanation"]').text()).toContain('exposureNotice.importedReminder');
+    expect(wrapper.find('[data-testid="securityNoticeReadNotice"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="securityNoticeProgress"]').text()).toContain('#1');
+    expect(wrapper.get('[data-testid="securityNoticeNewWallets"]').text()).toContain('Created');
+  });
+
   it('leaves for where the user was going, or the wallet', async () => {
     route.query = { redirect: '/transaction' };
     const wrapper = await mountGuide(status());
@@ -488,6 +502,54 @@ describe('the reminder in the wallet', () => {
     expect(reminder(wrapper).exists()).toBe(true);
   });
 
+  it('preserves reminders closed by another open window', async () => {
+    const wrapper = await openWindow();
+    localStorage.setItem(CLOSED, JSON.stringify([TON]));
+    await click(wrapper, 'legacyExposureBannerDismiss');
+    wrapper.unmount();
+
+    expect(JSON.parse(localStorage.getItem(CLOSED)!)).toEqual([TON, MAIN]);
+    await select(TON);
+    expect(reminder(await openWindow()).exists()).toBe(false);
+  });
+
+  it('warns about a later import on a fresh profile without calling it a pre-update wallet', async () => {
+    mocks.status.mockResolvedValue(status({ state: 'not_exposed', wallets: [] }));
+    await select(NEW);
+    const wrapper = await openWindow();
+    expect(reminder(wrapper).exists()).toBe(false);
+
+    mocks.status.mockResolvedValue(status({
+      state: 'not_exposed', wallets: [],
+      importedWallets: [{ address: IMPORTED, walletEcosystem: 'substrate', name: 'Imported', present: true }],
+    } as never));
+    await select(IMPORTED);
+    expect(reminder(wrapper).text()).toContain('exposureNotice.importedReminder');
+    expect(reminder(wrapper).text()).not.toContain('exposureNotice.reminder #');
+    await click(wrapper, 'legacyExposureBannerDismiss');
+    wrapper.unmount();
+    expect(reminder(await openWindow()).exists()).toBe(false);
+
+    await select(NEW);
+    expect(reminder(await openWindow()).exists()).toBe(false);
+  });
+
+  it('ignores a stale status reply after switching to an imported wallet', async () => {
+    let resolveOld!: (value: LegacyExposureStatus) => void;
+    mocks.status.mockReturnValueOnce(new Promise<LegacyExposureStatus>((resolve) => { resolveOld = resolve; }));
+    const wrapper = await openWindow();
+    mocks.status.mockResolvedValue(status({
+      state: 'not_exposed', wallets: [],
+      importedWallets: [{ address: IMPORTED, walletEcosystem: 'substrate', name: 'Imported', present: true }],
+    } as never));
+    await select(IMPORTED);
+    expect(reminder(wrapper).text()).toContain('exposureNotice.importedReminder');
+
+    resolveOld(status({ state: 'not_exposed', wallets: [] }));
+    await flushPromises();
+    expect(reminder(wrapper).text()).toContain('exposureNotice.importedReminder');
+  });
+
   it('matches an EVM wallet whatever the letter case', async () => {
     mocks.status.mockResolvedValue(
       status({ wallets: [{ address: EVM.toLowerCase(), walletEcosystem: 'evm', name: 'EVM', present: true }] } as never)
@@ -502,10 +564,10 @@ describe('the reminder in the wallet', () => {
   });
 
   it('keeps a closed reminder closed in this window when the device cannot store it', async () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    const read = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
       throw new Error('SecurityError');
     });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
     const wrapper = await openWindow();
@@ -518,9 +580,11 @@ describe('the reminder in the wallet', () => {
     await flushPromises();
 
     expect(reminder(wrapper).exists()).toBe(false);
+    expect(read).toHaveBeenCalled();
+    expect(write).toHaveBeenCalled();
   });
 
-  it('stays away when there is nothing to tell, and stops asking', async () => {
+  it('checks again on navigation so a later import can be recognized', async () => {
     mocks.status.mockResolvedValue(status({ state: 'not_exposed', wallets: [] }));
     const wrapper = mount(LegacyExposureBanner, { global: { stubs } });
     await flushPromises();
@@ -528,7 +592,7 @@ describe('the reminder in the wallet', () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="legacyExposureBanner"]').exists()).toBe(false);
-    expect(mocks.status).toHaveBeenCalledOnce();
+    expect(mocks.status).toHaveBeenCalledTimes(2);
   });
 
   it('stays away while the notice itself is pending or the answer is lost', async () => {

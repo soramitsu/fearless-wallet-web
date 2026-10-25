@@ -310,15 +310,17 @@ describe('JSON backup import durability with real crypto and Chrome store', { ti
     expect(select).not.toHaveBeenCalled();
   });
 
-  it('does not mutate input metadata and clears external-only authority flags on the new local key', async () => {
+  it('does not mutate input metadata and clears generation and external-only authority claims on the new local key', async () => {
     const file = backup();
     Object.assign(file.meta, { genesisHash: 'old genesis', isMobile: true, isExternal: true,
       isHardware: true, isInjected: true, isMasterPassword: false, isMasterAccount: false, unknown: { retained: true } });
+    file.meta.walletSecurityGeneration = 1;
     const original = structuredClone(file);
     const result = begin(file);
     await drain();
     expect(await result).toHaveProperty('value');
     expect(file).toEqual(original);
+    expect(Object.values(fixture.data).find((value) => value?.meta)?.meta.walletSecurityGeneration).toBeUndefined();
     const saved = Object.values(fixture.data)[0];
     expect(saved.meta).toMatchObject({ isMasterPassword: true, isMasterAccount: true, jsonBackupMeta: { unknown: { retained: true } } });
     for (const flag of ['genesisHash', 'isMobile', 'isExternal', 'isHardware', 'isInjected']) expect(saved.meta[flag]).toBeFalsy();

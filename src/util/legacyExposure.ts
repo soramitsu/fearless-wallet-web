@@ -34,11 +34,21 @@ export function isLegacyExposedAddress(status: LegacyExposureStatus | undefined,
   return status.wallets.some((wallet) => sameWalletAddress(wallet.address, address));
 }
 
-/** Old wallets still in the app that the user has not marked as moved. */
-export function walletsStillToMove(status: LegacyExposureStatus | undefined): LegacyExposureWallet[] {
-  if (!status || status.state !== 'acknowledged') return [];
+/** Pre-update wallets and imported keys, without classifying imports as pre-update wallets. */
+export function walletsToReview(status: LegacyExposureStatus | undefined): LegacyExposureWallet[] {
+  if (!status || status.state === 'unknown') return [];
 
-  return status.wallets.filter(({ present, movedAt }) => present && !movedAt);
+  return [
+    ...(status.state === 'not_exposed' ? [] : status.wallets),
+    ...(status.importedWallets ?? []),
+  ];
+}
+
+/** Wallets still in the app that the user has not marked as moved. */
+export function walletsStillToMove(status: LegacyExposureStatus | undefined): LegacyExposureWallet[] {
+  if (!status || status.state === 'notice_pending') return [];
+
+  return walletsToReview(status).filter(({ present, movedAt }) => present && !movedAt);
 }
 
 /**
@@ -84,10 +94,15 @@ export function readClosedReminders(): string[] {
   }
 }
 
-export function rememberClosedReminders(addresses: string[]): void {
+export function rememberClosedReminders(addresses: string[]): string[] {
+  // Another wallet window may have closed a different reminder since this one opened.
+  const merged = [...new Set([...readClosedReminders(), ...addresses])];
+
   try {
-    localStorage.setItem(CLOSED_REMINDERS_KEY, JSON.stringify(addresses));
+    localStorage.setItem(CLOSED_REMINDERS_KEY, JSON.stringify(merged));
   } catch {
     // The caller keeps the list for this window.
   }
+
+  return merged;
 }

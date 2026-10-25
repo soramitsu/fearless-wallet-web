@@ -57,7 +57,7 @@ import {
 import Extension from '@extension-base/background/handlers/Extension';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
-type StoredTonAccount = { address: string; name: string; cipherSeed: string; publicKeyHex: string };
+type StoredTonAccount = { address: string; name: string; cipherSeed: string; publicKeyHex: string; meta?: { walletSecurityGeneration?: number } };
 type Storage = Record<string, unknown>;
 type Fixture = { provenance: Record<string, unknown>; storage: Storage };
 
@@ -92,8 +92,8 @@ function load(storage: Storage) {
     Object.entries(storage)
       .filter(([key]) => key.startsWith('fw:ton:'))
       .map(([, value]) => {
-        const { address, name } = value as StoredTonAccount;
-        return [address, { address, name, walletEcosystem: 'ton', json: { address, meta: { name } } }];
+        const { address, name, meta } = value as StoredTonAccount;
+        return [address, { address, name, walletEcosystem: 'ton', json: { address, meta: { ...meta, name } } }];
       })
   );
   const tonKeyring = {
@@ -168,11 +168,13 @@ describe('possible exposure after an update from 3.0.x', () => {
     expect(status.wallets.map(({ name }) => name).sort()).toEqual(['Main', 'TON from BIP39', 'TON native']);
   });
 
-  it('shows nothing for a real 2.6.3 profile that no 3.0.x build could unlock', async () => {
+  it('keeps 2.6.3 outside the exposure baseline while offering generic old-key guidance', async () => {
     const { exposure, store, keyringService } = load(ACCOUNT_PASSWORDS_263.storage);
     expect(keyringService.getAccounts()).toHaveLength(2);
 
-    expect(await exposure.getStatus()).toEqual({ state: 'not_exposed', wallets: [], newWallets: [] });
+    const status = await exposure.getStatus();
+    expect(status).toMatchObject({ state: 'not_exposed', wallets: [], newWallets: [] });
+    expect(status.importedWallets?.length).toBeGreaterThan(0);
     expect(record(store)).toEqual({ version: 1, recordedAt: NOW, evidence: [], accounts: [] });
 
     // Setting a master password in this version does not turn these accounts into exposed ones.
@@ -231,7 +233,7 @@ describe('possible exposure after an update from 3.0.x', () => {
     expect(record(store).accounts).toEqual([]);
 
     mocks.hash = bcrypt.hashSync('new', 4);
-    mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'First', isMasterPassword: true, walletEcosystem: 'substrate' });
+    mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'First', isMasterPassword: true, walletEcosystem: 'substrate', walletSecurityGeneration: 1 });
 
     expect((await start().getStatus()).state).toBe('not_exposed');
   });
@@ -241,7 +243,7 @@ describe('the baseline after the first start', () => {
   it('does not grow: a wallet created after the update is a new wallet on every later start', async () => {
     const { exposure, start } = load(MASTER_305.storage);
     await exposure.init();
-    const created = mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'New wallet', isMasterPassword: true, walletEcosystem: 'substrate' });
+    const created = mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'New wallet', isMasterPassword: true, walletEcosystem: 'substrate', walletSecurityGeneration: 1 });
 
     const status = await start().getStatus();
 
@@ -310,7 +312,7 @@ describe('acknowledging the notice', () => {
   it('never holds back a wallet created after the update', async () => {
     const { exposure, keyringService } = load(MASTER_305.storage);
     await exposure.init();
-    const created = mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'New wallet', isMasterPassword: true });
+    const created = mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'New wallet', isMasterPassword: true, walletSecurityGeneration: 1 });
 
     keyringService.unlockKeyring({ password: MASTER_305.provenance.masterPassword as string });
     await keyringService.waitForLegacyNetworkEnrollment();
@@ -391,7 +393,7 @@ describe('when the stored state cannot be read', () => {
 
     await exposure.init();
     expect(store.legacyExposure).toBeUndefined();
-    mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'New wallet', isMasterPassword: true });
+    mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'New wallet', isMasterPassword: true, walletSecurityGeneration: 1 });
 
     const status = await exposure.getStatus();
     expect(status.newWallets.map(({ name }) => name)).toEqual(['New wallet']);
@@ -415,5 +417,75 @@ describe('popup messages', () => {
       state: 'acknowledged',
       backupConfirmedAt: NOW,
     });
+  });
+});
+
+
+describe('generated and imported wallet classification', () => {
+  it('excludes saved 3.0.7+ provenance, its linked EVM account and marked TON from the baseline', async () => {
+    const { exposure, store, tonAccounts } = load(MASTER_305.storage);
+    mocks.backend.getPair(SUBSTRATE).setMeta({ walletSecurityGeneration: 1 });
+    tonAccounts[TON_BIP39].json.meta.walletSecurityGeneration = 1;
+    const status = await exposure.getStatus();
+    expect(status.wallets).toEqual([
+      { address: TON_NATIVE, walletEcosystem: 'ton', name: 'TON native', present: true },
+    ]);
+    expect(record(store).accounts.map(({ address }) => address)).toEqual([TON_NATIVE]);
+    expect(status.newWallets.map(({ address }) => address)).toEqual([SUBSTRATE, TON_BIP39]);
+    expect(status.importedWallets).toBeUndefined();
+  });
+
+  it('does not warn on a profile containing only authenticated generated wallets', async () => {
+    const { exposure, tonAccounts } = load(MASTER_305.storage);
+    mocks.backend.getPair(SUBSTRATE).setMeta({ walletSecurityGeneration: 1 });
+    for (const account of Object.values(tonAccounts)) account.json.meta.walletSecurityGeneration = 1;
+    expect(await exposure.getStatus()).toEqual({ state: 'not_exposed', wallets: [], newWallets: [] });
+  });
+
+  it('keeps post-update imports out of recommended destinations and remembers their moved marks', async () => {
+    const { exposure, start, store } = load(MASTER_305.storage);
+    await exposure.acknowledge();
+    const imported = mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'Imported', isMasterPassword: true, walletEcosystem: 'substrate' });
+    const baseline = structuredClone(record(store).accounts);
+    const status = await exposure.getStatus();
+    expect(status.state).toBe('acknowledged');
+    expect(status.newWallets).toEqual([]);
+    expect(status.importedWallets).toEqual([
+      { address: imported.address, name: 'Imported', walletEcosystem: 'substrate', present: true },
+    ]);
+    await exposure.update({ moved: { address: imported.address, moved: true } });
+    expect((await start().getStatus()).importedWallets?.[0].movedAt).toBe(NOW);
+    expect(record(store).accounts).toEqual(baseline);
+  });
+
+  it('offers guidance for imports on a fresh profile without claiming prior exposure', async () => {
+    const { exposure, start } = load({});
+    await exposure.init();
+    const imported = mocks.backend.addFromUri(NEW_MNEMONIC, { name: 'Imported', walletEcosystem: 'substrate' });
+    const generated = mocks.backend.addFromUri('//Alice', { name: 'Created here', walletEcosystem: 'substrate', walletSecurityGeneration: 1 });
+    const status = await start().getStatus();
+    expect(status.state).toBe('not_exposed');
+    expect(status.wallets).toEqual([]);
+    expect(status.importedWallets?.map(({ address }) => address)).toEqual([imported.address]);
+    expect(status.newWallets.map(({ address }) => address)).toEqual([generated.address]);
+    const moved = await exposure.update({ moved: { address: imported.address, moved: true }, backupConfirmed: true });
+    expect(moved.importedWallets?.[0].movedAt).toBe(NOW);
+    expect(moved.backupConfirmedAt).toBe(NOW);
+  });
+
+  it('corrects an early preview baseline using authenticated saved provenance', async () => {
+    const { exposure, start, store } = load(MASTER_305.storage);
+    await exposure.acknowledge();
+    mocks.backend.getPair(SUBSTRATE).setMeta({ walletSecurityGeneration: 1 });
+    const corrected = await start().getStatus();
+    expect(corrected.wallets.map(({ address }) => address)).toEqual([TON_BIP39, TON_NATIVE]);
+    expect(corrected.state).toBe('acknowledged');
+    expect(record(store).accounts.map(({ address }) => address)).toEqual([TON_BIP39, TON_NATIVE]);
+  });
+
+  it('does not interpret invalid generation values as provenance', async () => {
+    const { exposure } = load(MASTER_305.storage);
+    mocks.backend.getPair(SUBSTRATE).setMeta({ walletSecurityGeneration: '1' });
+    expect((await exposure.getStatus()).wallets.map(({ address }) => address)).toContain(SUBSTRATE);
   });
 });

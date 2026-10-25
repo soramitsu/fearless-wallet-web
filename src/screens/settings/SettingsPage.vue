@@ -43,6 +43,7 @@
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import VisualEffectsSetting from './VisualEffectsSetting.vue';
+import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { Components } from '@/router/routes';
 import { getAccessStatus, lockExtension } from '@/extension/messaging';
@@ -51,6 +52,8 @@ import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
 import { isIrohaConnectEnabled } from '@/util/releaseFeatures';
 import { IROHA_CONNECT_UNAVAILABLE_NOTICE } from '@/router/irohaConnectGate';
+import { getLegacyExposureStatus } from '@/extension/messaging/legacy-exposure';
+import { walletsStillToMove } from '@/util/legacyExposure';
 
 type SettingsItem = {
   id: string;
@@ -76,6 +79,22 @@ const { t, tc } = useI18n();
 const contentHeight = CONTENT_FORM_HEIGHT;
 // Accounts whose key waits for a password; listed here so they stay reachable after "Skip for now".
 const accessIssueCount = ref(0);
+const exposureStatus = ref<LegacyExposureStatus>();
+let guideRevision = 0;
+const hasWalletGuide = computed(() =>
+  exposureStatus.value?.state === 'acknowledged' || !!exposureStatus.value?.importedWallets?.length
+);
+const walletsToMoveCount = computed(() => walletsStillToMove(exposureStatus.value).length);
+
+const refreshWalletGuide = async () => {
+  const revision = ++guideRevision;
+  try {
+    const next = await getLegacyExposureStatus();
+    if (revision === guideRevision) exposureStatus.value = next;
+  } catch {
+    // Keep the last known guide entry if the background temporarily cannot answer.
+  }
+};
 
 const refreshAccessIssues = async () => {
   try {
@@ -88,6 +107,8 @@ const refreshAccessIssues = async () => {
 onMounted(refreshAccessIssues);
 // Settings is kept alive, so coming back from Account access has to count again.
 onActivated(refreshAccessIssues);
+onMounted(refreshWalletGuide);
+onActivated(refreshWalletGuide);
 const open = (name: Components, params?: Record<string, string>) => () => router.push({ name, params });
 const lock = () => {
   lockExtension(true);
@@ -179,6 +200,15 @@ const groups = computed<SettingsGroup[]>(() => [
   {
     title: t('settingsPage.groups.security'),
     items: [
+      ...(hasWalletGuide.value
+        ? [{
+            id: 'legacy-exposure',
+            label: t('exposureNotice.guide.title'),
+            description: tc('exposureNotice.guide.remaining', walletsToMoveCount.value, { count: walletsToMoveCount.value }),
+            icon: 'protection',
+            open: open(Components.SecurityNoticeGuide),
+          }]
+        : []),
       ...(!IS_EXTENSION ? [{
         id: 'recovery-data',
         label: t('storageRecovery.title'),

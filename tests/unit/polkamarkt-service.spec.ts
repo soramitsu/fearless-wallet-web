@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import fixture from '../fixtures/contracts/polkamarkt-v1.json';
+import { SoraSubmissionUnknownError } from '@/sora/submission';
 import { PolkamarktService } from '@/extension/background/extension-base/src/services/polkamarkt-service';
 
 const KUSD_ASSET_ID = '0x02000c0000000000000000000000000000000000000000000000000000000000';
@@ -584,4 +585,22 @@ describe('PolkamarktService', () => {
     ).resolves.toEqual({ status: false, error: 'There are no creator fees to claim.' });
     expect(submit).not.toHaveBeenCalled();
   });
+});
+
+
+it('retains a possibly submitted Polkamarkt trade as unknown, without re-submitting', async () => {
+  const hash = 'ab'.repeat(32);
+  const submit = vi.fn().mockRejectedValue(new SoraSubmissionUnknownError(hash));
+  const service = new PolkamarktService({
+    apiRoot: baseApi(), accountAddress: 'cnTrader', signable: true,
+    authorizeBeforeSubmit: allowFinalAuthorization, isDisclaimerAccepted: () => true,
+    rawRpc: vi.fn(), submit, estimateFee: vi.fn().mockResolvedValue('1000000000000000'),
+  });
+  await expect(service.mutate({
+    action: 'sell', marketId: '7', mode: 'sell', outcome: 'No', amount: '1', minimumResult: '0.99', disclaimerAccepted: true,
+  })).resolves.toEqual({
+    status: false, outcome: 'unknown', hash,
+    error: 'The transaction may already have been submitted. Check its status before trying again.',
+  });
+  expect(submit).toHaveBeenCalledOnce();
 });

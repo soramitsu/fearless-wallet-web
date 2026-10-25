@@ -10,6 +10,7 @@ import type {
   PolkamarktRuntimeCapabilities,
   PolkamarktSnapshot,
 } from '@/defi/polkamarkt/types';
+import { soraSubmissionUnknownResponse } from '@/sora/submission';
 import {
   asRecord,
   codecRecord,
@@ -695,6 +696,11 @@ export class PolkamarktService {
       const result = await this.options.submit(final.extrinsic);
       return { status: true, hash: result.hash };
     } catch (error) {
+      const unknown = soraSubmissionUnknownResponse(error);
+      if (unknown) return {
+        status: false, outcome: 'unknown', hash: unknown.transactionHash,
+        error: 'The transaction may already have been submitted. Check its status before trying again.',
+      };
       return { status: false, error: error instanceof Error ? error.message : 'Polkamarkt transaction failed.' };
     }
   }

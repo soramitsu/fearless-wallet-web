@@ -274,7 +274,10 @@
           </template>
         </template>
 
-        <div v-if="mutationMessage" class="mutation-message" :class="{ error: !mutationSucceeded }">{{ mutationMessage }}</div>
+        <div v-if="mutationMessage" class="mutation-message" :class="{ error: !mutationSucceeded && !mutationUnknown, warning: mutationUnknown }">
+          {{ mutationMessage }}
+          <code v-if="unknownTransactionHash" class="transaction-hash" data-testid="polkamarktUnknownHash">{{ unknownTransactionHash }}</code>
+        </div>
       </Scroll>
     </ContentForm>
   </div>
@@ -324,6 +327,8 @@ const quoting = ref(false);
 const mutating = ref(false);
 const mutationMessage = ref('');
 const mutationSucceeded = ref(false);
+const mutationUnknown = ref(false);
+const unknownTransactionHash = ref('');
 const copied = ref(false);
 const riskAccepted = ref(false);
 
@@ -498,10 +503,20 @@ async function runMutation(request: PolkamarktMutationRequest) {
   if (recoveryOnly.value && !isRecoveryPolkamarktAction(request.action)) return;
   mutating.value = true;
   mutationMessage.value = '';
+  mutationUnknown.value = false;
+  unknownTransactionHash.value = '';
   try {
     const result = await mutatePolkamarkt(request);
     mutationSucceeded.value = result.status;
-    mutationMessage.value = result.status
+    mutationUnknown.value = result.status === false && result.outcome === 'unknown';
+    if (mutationUnknown.value) {
+      unknownTransactionHash.value = typeof result.hash === 'string' && /^[a-f\d]{64}$/i.test(result.hash)
+        ? result.hash.toLowerCase() : '';
+      quote.value = null;
+    }
+    mutationMessage.value = mutationUnknown.value
+      ? t('assets.transactionStatusUnknownDetails')
+      : result.status
       ? t('polkamarktPage.transactionSubmitted')
       : t('polkamarktPage.fallback.mutation');
     if (result.status) {
@@ -618,4 +633,6 @@ button:disabled { cursor: default; opacity: 0.45; }
 .claim-card button { grid-column: 2; grid-row: 1 / span 2; }
 .mutation-message { position: sticky; bottom: 0; padding: 10px 16px; background: $success-color; color: palette(white, var(--fw-bg-base)); font-size: 0.7rem; text-align: center; }
 .mutation-message.error { background: $reject-color; }
+.mutation-message.warning { background: palette($simple-orange-color, var(--fw-fill)); color: palette($plain-white, var(--fw-on-accent)); }
+.transaction-hash { display: block; overflow-wrap: anywhere; margin-top: 6px; }
 </style>

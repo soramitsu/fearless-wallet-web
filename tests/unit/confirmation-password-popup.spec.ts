@@ -4,14 +4,17 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
 import { BasicTxErrorCode, type BasicTxResponse } from '@extension-base/background/types/types';
+import { SoraSubmissionUnknownError, soraSubmissionUnknownResponse } from '@/sora/submission';
 
-const { makeTransfer } = vi.hoisted(() => ({ makeTransfer: vi.fn() }));
+const { makeTransfer, makeSwap, makePool, makeStaking } = vi.hoisted(() => ({
+  makeTransfer: vi.fn(), makeSwap: vi.fn(), makePool: vi.fn(), makeStaking: vi.fn(),
+}));
 
 vi.mock('@/extension/messaging', () => ({
   makeCrossChain: vi.fn(),
-  makePool: vi.fn(),
-  makeStaking: vi.fn(),
-  makeSwap: vi.fn(),
+  makePool,
+  makeStaking,
+  makeSwap,
   makeTransfer,
 }));
 
@@ -79,13 +82,41 @@ const mountPopup = async (rejectDirectRequest: boolean | Error = false, props: R
   });
 
   await flushPromises();
-  expect(transferCallback).toBeTypeOf('function');
+  if (!props.extrinsicType || props.extrinsicType === 'transfer') expect(transferCallback).toBeTypeOf('function');
 
   return wrapper;
 };
 
 describe('confirmation password transaction failures', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it.each(['swap', 'addLiquidity', 'bond'])(
+    'shows uncertain SORA %s completion without failure or another submission', async (extrinsicType) => {
+      const submit = extrinsicType === 'swap' ? makeSwap : extrinsicType === 'bond' ? makeStaking : makePool;
+      const hash = 'ab'.repeat(32);
+      submit.mockResolvedValue(soraSubmissionUnknownResponse(new SoraSubmissionUnknownError(`0x${hash}`)));
+      const wrapper = await mountPopup(false, { extrinsicType });
+
+      expect(wrapper.get('[data-testid="transactionUnknownMessage"]').text())
+        .toBe('assets.transactionStatusUnknownDetails');
+      expect(wrapper.get('[data-testid="unknownTransactionHash"]').text()).toBe(hash);
+      expect(wrapper.find('[data-testid="transactionErrorMessage"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="confirmedTransferAmount"]').exists()).toBe(false);
+      expect(submit).toHaveBeenCalledTimes(1);
+      wrapper.unmount();
+    }
+  );
+
+  it('warns that a SORA swap may have been submitted even when no hash was received', async () => {
+    makeSwap.mockResolvedValue(soraSubmissionUnknownResponse(new SoraSubmissionUnknownError()));
+    const wrapper = await mountPopup(false, { extrinsicType: 'swap' });
+
+    expect(wrapper.get('[data-testid="transactionUnconfirmedMessage"]').text())
+      .toBe('assets.transactionStatusUnknownDetails');
+    expect(wrapper.find('[data-testid="transactionErrorMessage"]').exists()).toBe(false);
+    expect(makeSwap).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
 
   it('shows an uncertain outcome with its hash, without claiming failure or retrying', async () => {
     const wrapper = await mountPopup();

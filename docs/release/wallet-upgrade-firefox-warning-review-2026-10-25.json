@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-25",
+  "sourceCommit": "e05ef36e78c81cb25fa8f6caf0a3c680253e1e59",
+  "warningCount": 41,
+  "errors": 0,
+  "notices": 0,
+  "warningCodes": {
+    "DANGEROUS_EVAL": 40,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "priorIntegrationFingerprint": "f4b29781ddd85a29c85b7c9e08a1404aeea1ba2efe4066c862d8e9d56e0f75d1",
+  "currentFingerprint": "f4b29781ddd85a29c85b7c9e08a1404aeea1ba2efe4066c862d8e9d56e0f75d1",
+  "changedWarningArtifactsSinceIntegration": [
+    "chunks/accounts.js"
+  ],
+  "unchangedWarningArtifactsSinceIntegration": 8,
+  "review": "All 41 warning expressions retain code, message, description, logical file, and expression AST after local identifier normalization against the independently verified retained baseline. Global identifiers, property names, operators, and literals remain intact. The 17 accounts.js warning sites are existing dependency dynamic-code constructors and global discovery expressions; no new warning site was introduced. No lint policy or CSP was weakened.",
+  "comparisonEvidenceSha256": "9608121c2b9a199592e5f4b86825eb7a44a8d2db7192d855c4514024fa5aa5b3",
+  "comparisonEvidence": "output/wallet-warning-4.2.0-integrated/firefox-warning-review.json"
+}

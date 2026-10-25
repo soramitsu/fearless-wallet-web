@@ -7,7 +7,7 @@
       "sha": "600a64d51365a40de646925e4b591ca06ff63643",
       "node": "20",
       "yarn": "3.4.1",
-      "note": "origin/stage: the 3.0.5 keyring and storage code without the phrase upload the Web Store package (129807f0) carries. Never build or run 129807f0."
+      "note": "archive/upgrade-source-3.0.5 (former stage): the 3.0.5 keyring and storage code without the phrase upload the Web Store package (129807f0) carries. Never build or run 129807f0."
     },
     {
       "id": "3.0.6",

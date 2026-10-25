@@ -2,6 +2,7 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 
 import { commonViteConfig } from './vite.config.shared.mjs';
+import { copyLicenseAssets } from './scripts/copy-license-assets.mjs';
 
 export default defineConfig(({ mode }) => {
   const config = commonViteConfig({
@@ -13,6 +14,14 @@ export default defineConfig(({ mode }) => {
   return {
     ...config,
     base: './',
+    plugins: [
+      ...config.plugins,
+      {
+        name: 'fearless-web-license-assets',
+        apply: 'build',
+        closeBundle: () => copyLicenseAssets({ sourceRoot: __dirname, outDir: path.resolve(__dirname, 'dist/web') }),
+      },
+    ],
     build: {
       ...config.build,
       rollupOptions: {

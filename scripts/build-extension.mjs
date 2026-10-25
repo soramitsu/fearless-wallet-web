@@ -13,6 +13,7 @@ import { createFirefoxBuildLogPolicy, polkadotIifePackageInfoPlugin } from './fi
 import { auditSoraDependencyRemoval } from './audit-sora-dependency-removal.mjs';
 import { auditKeyExfiltrationDirectory } from './audit-key-exfiltration.mjs';
 import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
+import { copyLicenseAssets } from './copy-license-assets.mjs';
 
 const require = createRequire(import.meta.url);
 const makeManifest = require('../src/extension/makeManifest.cjs');
@@ -176,6 +177,7 @@ async function copyRecursive(from, to) {
 }
 
 async function writeStaticAssets(sourceBefore) {
+  await copyLicenseAssets({ sourceRoot: root, outDir });
   await copyRecursive(path.resolve(root, 'public/icons'), path.join(outDir, 'icons'));
   await fs.copyFile(path.resolve(root, 'public/favicon.ico'), path.join(outDir, 'favicon.ico'));
   await fs.writeFile(path.join(outDir, 'manifest.json'), `${JSON.stringify(makeManifest(browser), null, 2)}\n`);

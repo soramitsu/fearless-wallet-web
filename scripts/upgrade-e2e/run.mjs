@@ -13,7 +13,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { CHROME, freePort } from './chrome.mjs';
+import { CHROME, collectBrowserDiagnostics, freePort } from './chrome.mjs';
 import { cachedBuild } from './build-legacy.mjs';
 import { headBuildDir } from './build-head.mjs';
 import { root, testExtensionKey } from './config.mjs';
@@ -91,6 +91,7 @@ try {
     } catch (error) {
       report.error = String(error?.stack ?? error);
       console.error(`[${scenario.id}] ERROR ${report.error}`);
+      await collectBrowserDiagnostics(ctx.port, 'scenario-failure').catch(() => undefined);
     } finally {
       await ctx.session?.stop().catch(() => undefined);
     }

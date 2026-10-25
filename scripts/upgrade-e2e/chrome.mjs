@@ -4,11 +4,12 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { TEST_OAUTH_CLIENT_ID } from './config.mjs';
 import { cdp } from './cdp.mjs';
 import { coldProbeSource } from './cold-probe.mjs';
 import { stopOwnedProcess } from './process-lifecycle.mjs';
+import { captureBrowserDiagnostics, createBrowserDiagnostics, extensionWorkerId } from './browser-diagnostics.mjs';
 export { cdp } from './cdp.mjs';
 
 /** CHROME_BIN, else the newest Chrome for Testing in Playwright's cache. Branded Chrome ignores --load-extension. */
@@ -55,8 +56,10 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // single hosts to local mocks first (Chrome applies the first matching rule).
 export const NO_NETWORK = 'MAP * ~NOTFOUND , EXCLUDE localhost';
 
-export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) =>
-  spawn(
+const browserDiagnostics = new Map();
+
+export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) => {
+  const child = spawn(
     CHROME,
     [
       '--headless=new',
@@ -74,11 +77,17 @@ export const launch = ({ profileDir, extDir, port, hostRules = [], args = [] }) 
       ...args,
       'about:blank',
     ],
-    { stdio: 'ignore' }
+    { stdio: ['ignore', 'ignore', 'pipe'] }
   );
+  browserDiagnostics.set(port, { recorder: createBrowserDiagnostics(child, {
+    file: join(dirname(extDir), 'browser-diagnostics.json'),
+  }) });
+  return child;
+};
 
 export const stop = async (chrome) => {
-  await stopOwnedProcess(chrome);
+  try { await stopOwnedProcess(chrome); }
+  finally { chrome?.stderr?.destroy(); }
   await sleep(1000);
 };
 
@@ -104,7 +113,58 @@ const DEVTOOLS_TIMEOUT_MS = 15000;
 export const devtools = (port, route, init) =>
   fetch(`http://127.0.0.1:${port}${route}`, { ...init, signal: AbortSignal.timeout(DEVTOOLS_TIMEOUT_MS) });
 
-export const targets = async (port) => (await devtools(port, '/json/list')).json();
+function observeTargets(port, list) {
+  const entry = browserDiagnostics.get(port);
+  if (entry) {
+    entry.recorder.observeTargets(list);
+    // Component-extension workers can appear first. Match the actual harness worker, and
+    // preserve its identity when it disappears so the failure inspector can still query it.
+    entry.extId = extensionWorkerId(list) ?? entry.extId;
+  }
+  return list;
+}
+
+export const targets = async (port) => observeTargets(port, await (await devtools(port, '/json/list')).json());
+
+/** Only lifecycle metadata and sanitized native errors are persisted; never messages or storage. */
+export async function collectBrowserDiagnostics(port, reason) {
+  const entry = browserDiagnostics.get(port);
+  return captureBrowserDiagnostics(entry?.recorder, reason, {
+    inspectTargets: async (signal) => observeTargets(port, await (await fetch(`http://127.0.0.1:${port}/json/list`, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(1000)]),
+    })).json()),
+    inspectExtension: async (_targets, signal) => {
+      if (!entry.extId) return undefined;
+      let target;
+      let page;
+      const close = () => page?.close();
+      signal.addEventListener('abort', close, { once: true });
+      try {
+        target = await (await fetch(`http://127.0.0.1:${port}/json/new?chrome://extensions/`, {
+          method: 'PUT', signal: AbortSignal.any([signal, AbortSignal.timeout(1000)]),
+        })).json();
+        if (signal.aborted) return undefined;
+        page = cdp(target.webSocketDebuggerUrl, { timeoutMs: 1000, connectTimeoutMs: 1000 });
+        await page.ready;
+        await waitFor(() => page.eval('!!globalThis.chrome?.developerPrivate?.getExtensionInfo'), 750, 'extension inspector');
+        return await page.eval(`new Promise((resolve) => chrome.developerPrivate.getExtensionInfo(${JSON.stringify(entry.extId)}, (info) => resolve(info && ({
+          state: info.state, version: info.version,
+          runtimeErrorCount: (info.runtimeErrors || []).length, manifestErrorCount: (info.manifestErrors || []).length,
+          runtimeErrors: (info.runtimeErrors || []).slice(0, 5).map((error) => ({
+            severity: error.severity, source: error.source,
+            frames: (error.stackTrace || []).slice(0, 5).map((frame) => ({ url: frame.url, line: frame.lineNumber, column: frame.columnNumber }))
+          }))
+        }))))`);
+      } finally {
+        signal.removeEventListener('abort', close);
+        close();
+        if (target?.id) await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`, {
+          signal: AbortSignal.timeout(250),
+        }).catch(() => undefined);
+      }
+    },
+  });
+}
 
 /** Reloads the extension from chrome://extensions after its directory received a new build. Without it Chrome keeps
  * running the cached service worker of the old build next to the new popup; with it the new worker starts and
@@ -149,11 +209,16 @@ export async function waitFor(fn, ms = 30000, label = 'condition') {
 }
 
 export async function serviceWorker(port) {
-  return waitFor(
-    async () => (await targets(port)).find((t) => t.type === 'service_worker' && t.url.endsWith('/background.js')),
-    60000,
-    'service worker'
-  );
+  try {
+    return await waitFor(
+      async () => (await targets(port)).find((t) => t.type === 'service_worker' && t.url.endsWith('/background.js')),
+      60000,
+      'service worker'
+    );
+  } catch (error) {
+    await collectBrowserDiagnostics(port, 'worker-timeout');
+    throw error;
+  }
 }
 
 /** chrome.storage.local exactly as the background sees it. A worker that is still starting (or being replaced) is asked
@@ -197,8 +262,8 @@ export async function openPopup(port, extId, hash = '') {
   await page.send('Runtime.enable');
   await page.send('Page.enable');
   await sleep(4000);
-  await page.eval(`(() => { window.__p = chrome.runtime.connect({ name: 'fw-fearless-extension' }); window.__h = {}; window.__n = 0;
-    window.__p.onMessage.addListener((d) => { const h = window.__h[d.id]; if (!h || d.subscription) return; delete window.__h[d.id]; d.error ? h.rej(d.error) : h.res(d.response); });
+  await page.eval(`(() => { window.__p = chrome.runtime.connect({ name: 'fw-fearless-extension' }); window.__h = {}; window.__n = 0; window.__replies = 0;
+    window.__p.onMessage.addListener((d) => { const h = window.__h[d.id]; if (!h || d.subscription) return; window.__replies++; delete window.__h[d.id]; d.error ? h.rej(d.error) : h.res(d.response); });
     window.__send = (message, request) => new Promise((res, rej) => { const id = 'h.' + (++window.__n); window.__h[id] = { res, rej }; window.__p.postMessage({ id, message, request: request ?? null }); setTimeout(() => rej('timeout ' + message), 90000); }); return true; })()`);
   page.call = (message, request) =>
     page

@@ -1,2 +1,0 @@
-User-agent: *
-Sitemap: https://fearlesswallet.io/sitemap.xml

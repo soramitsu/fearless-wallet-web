@@ -9,47 +9,42 @@
   },
   "warningFiles": {
     "chunks/_plugin-vue_export-helper.js": 1,
-    "chunks/background-vendor/assert-Blv9rAXX.js": 8,
-    "chunks/background-vendor/bcryptjs-CFThK1n5.js": 9,
-    "chunks/background-vendor/core-js-pure-DilFdaL6.js": 1,
-    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js": 2,
-    "chunks/background-vendor/subwallet-keyring-CmCqkM03.js": 1,
-    "chunks/router.js": 15,
-    "chunks/soramitsuUI.js": 1
+    "chunks/background-vendor/assert-Dr2usS2V.js": 8,
+    "chunks/background-vendor/bcryptjs-B3XpwbaB.js": 9,
+    "chunks/background-vendor/core-js-pure--MZ3QQlj.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-BE9bwdbS.js": 2,
+    "chunks/background-vendor/subwallet-keyring-CmclzGJq.js": 1,
+    "chunks/mountApp.js": 16
   },
-  "warningSetSha256": "61e716185866c1a93863b44a242c91ad5bf29ffd82a47f09179e99a0e43125c6",
+  "warningSetSha256": "518c438e45555509a36c39bf7916d41b1cefe704034b87c62c33dcf965495ce0",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
-      "sha256": "a204ca3e4d905037f2ae969b18975e32eb700a140dbe5a9cf9f42b2dae645a1a"
+      "sha256": "4f6a535a01dbce3d5320f868e53bd2548179698f99160ea78ea94d3e976837a9"
     },
     {
-      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
-      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+      "file": "chunks/background-vendor/assert-Dr2usS2V.js",
+      "sha256": "f307bd27793c5d2b54e233c4c5a8d8c3745b2a34081ece640fd1adc1ef3797ed"
     },
     {
-      "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
-      "sha256": "8b805bf2bc41cbf6232370997d21f418bff746a75adaef2b67f61d11992912e7"
+      "file": "chunks/background-vendor/bcryptjs-B3XpwbaB.js",
+      "sha256": "c4dfd2f6c258724268734794d9a38765083d98ff4768700a292c216c7792a52e"
     },
     {
-      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
-      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+      "file": "chunks/background-vendor/core-js-pure--MZ3QQlj.js",
+      "sha256": "9b383afbb606a0ae0e87f6004aa5a626593cc52a564aa34d6d63b9f2cc4caff0"
     },
     {
-      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js",
-      "sha256": "f72f61a0748a0308a6b57fe97db8f95ae57e40caaa6472210dfa67188ddcb4fc"
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-BE9bwdbS.js",
+      "sha256": "3189635159b907899104e0bca88e382ea1e2a35026c7bfcca5530d195295f28d"
     },
     {
-      "file": "chunks/background-vendor/subwallet-keyring-CmCqkM03.js",
-      "sha256": "efa7c704a848e144914de6d6bd245627fab004e385db6f88c16137d926baeee3"
+      "file": "chunks/background-vendor/subwallet-keyring-CmclzGJq.js",
+      "sha256": "42d66a89a14ac1a7e9645d330055e7bba99bc0e4c1237cd45348617bb5125c80"
     },
     {
-      "file": "chunks/router.js",
-      "sha256": "cc787318e6c9084b8ed5495d11325ee8e548305a0fdd2fddbb1d499c31d1a505"
-    },
-    {
-      "file": "chunks/soramitsuUI.js",
-      "sha256": "7e815395f97e82234dae711b258197bcf9746ce8bba11b1f32466de02019f777"
+      "file": "chunks/mountApp.js",
+      "sha256": "f8645f28bd50f5215a0b1722a1432834917c323b4704f75b5138b13b1a4c8e0b"
     }
   ]
 }

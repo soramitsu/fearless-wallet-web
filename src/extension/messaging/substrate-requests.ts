@@ -7,6 +7,7 @@ import type {
   AuthType,
 } from '@extension-base/background/types/types';
 import type { HexString } from '@polkadot/util/types';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import { sendMessage } from '@/extension/messaging/index';
 
 export function approveAuthRequest(id: string, authorizedAccounts: string[]) {
@@ -37,16 +38,17 @@ export function subscribeAuthorizeRequests(cb: (requests: AuthorizeRequest[]) =>
   return sendMessage('pri(authorize.requests)', null, cb);
 }
 
-export function cancelSignRequest(id: string): Promise<boolean> {
-  return sendMessage('pri(signing.cancel)', { id });
+// Each names the queue of the request on screen, so the background acts on that request and no other.
+export function cancelSignRequest(id: string, kind: SigningRequestKind): Promise<boolean> {
+  return sendMessage('pri(signing.cancel)', { id, kind });
 }
 
-export function approveSign(id: string): Promise<boolean> {
-  return sendMessage('pri(signing.approve)', { id });
+export function approveSign(id: string, kind: SigningRequestKind): Promise<boolean> {
+  return sendMessage('pri(signing.approve)', { id, kind });
 }
 
-export function approveSignSignature(id: string, signature: HexString): Promise<boolean> {
-  return sendMessage('pri(signing.approve.signature)', { id, signature });
+export function approveSignSignature(id: string, signature: HexString, kind: SigningRequestKind): Promise<boolean> {
+  return sendMessage('pri(signing.approve.signature)', { id, signature, kind });
 }
 
 export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => void): Promise<SigningRequest[]> {

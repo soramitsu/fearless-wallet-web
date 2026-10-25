@@ -2,6 +2,7 @@ import { toBeHex, type JsonRpcPayload } from 'ethers';
 import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/page/types';
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
+import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
@@ -253,10 +254,18 @@ export class EipService {
     });
   }
 
-  private async evmSign(id: string, url: string, { method, params }: RequestArguments): Promise<string> {
+  // `_messageId` is the page's own message id. It is never a queue key: the page chooses it, so it could equal the key
+  // of a request another site queued, and approving the request on screen would then sign this one instead.
+  private async evmSign(_messageId: string, url: string, { method, params }: RequestArguments): Promise<string> {
     const data = structuredClone(params);
     const context = await captureEvmSigningContext(this.state, url, method, data);
-    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(id, url, method, data, context);
+    const signResult = await this.state.requestService.evmRequestHandler.confirmSign(
+      createSigningRequestId('evm'),
+      url,
+      method,
+      data,
+      context
+    );
 
     if (signResult) return signResult.payload;
     else throw new Error('Failed to sign message');

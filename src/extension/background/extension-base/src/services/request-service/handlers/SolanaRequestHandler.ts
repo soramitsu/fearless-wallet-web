@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { getId } from '@extension-base/utils';
+import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import type { RequestService } from '@extension-base/services/request-service';
 import type {
   SolanaRequestPayload,
@@ -60,7 +60,7 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignMessageRequest,
     account: SolanaAccountInfo,
-    id = getId()
+    id = createSigningRequestId('solana')
   ): Promise<SolanaSigningResponse> {
     assertSolanaMessageRequest(request);
 
@@ -82,7 +82,7 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignTransactionRequest,
     account: SolanaAccountInfo,
-    id = getId()
+    id = createSigningRequestId('solana')
   ): Promise<SolanaSigningResponse> {
     assertSolanaTransactionRequest(request);
 
@@ -105,7 +105,7 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignAndSendTransactionRequest,
     account: SolanaAccountInfo,
-    id = getId(),
+    id = createSigningRequestId('solana'),
     simulateTransaction?: SimulateSolanaTransaction,
     estimateFee?: EstimateSolanaTransactionFee
   ): Promise<SolanaSigningResponse> {
@@ -139,7 +139,7 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignAllTransactionsRequest,
     account: SolanaAccountInfo,
-    id = getId()
+    id = createSigningRequestId('solana')
   ): Promise<SolanaSigningResponse> {
     assertSolanaAllTransactionsRequest(request);
 
@@ -180,7 +180,7 @@ export default class SolanaRequestHandler {
     onQueued?: (request: SolanaRequestsSubjectPayload) => void
   ): Promise<SolanaSigningResponse> {
     return new Promise<SolanaSigningResponse>((resolve, reject): void => {
-      if (this.solanaRequests[id]) throw new Error('Duplicate Solana request ID');
+      if (this.solanaRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate Solana request ID');
       let settled = false;
       const complete = () => {
         if (settled || this.solanaRequests[id] !== queued) return false;

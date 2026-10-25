@@ -105,10 +105,10 @@ describe('approval completion owns an exact queued request', () => {
       rpc.mockReturnValueOnce(wait.promise);
       const pending =
         action === 'approve'
-          ? store.approveSign({ id: 'first' })
+          ? store.approveSign({ id: 'first', kind: 'substrate' })
           : action === 'signature'
-            ? store.signSignature({ id: 'first', payload: { signature: '0x1234' } })
-            : store.signCancel('first');
+            ? store.signSignature({ id: 'first', kind: 'substrate', payload: { signature: '0x1234' } })
+            : store.signCancel({ id: 'first', kind: 'substrate' });
       store.setRequest({ type: 'signRequests', requests: [substrate('second')] });
       wait.resolve();
       await pending;
@@ -124,7 +124,7 @@ describe('approval completion owns an exact queued request', () => {
       store.signRequests = [substrate('substrate')];
       store.signEvmRequests = { evm: evm('evm') };
       store.signSolanaRequests = { solana: solana('solana') };
-      await store.approveSign({ id: ecosystem });
+      await store.approveSign({ id: ecosystem, kind: ecosystem });
       expect(store.signRequests.map(({ id }) => id)).toEqual(['substrate']);
       expect(Object.keys(store.signEvmRequests)).toEqual(ecosystem === 'evm' ? [] : ['evm']);
       expect(Object.keys(store.signSolanaRequests)).toEqual(ecosystem === 'solana' ? [] : ['solana']);
@@ -136,7 +136,7 @@ describe('approval completion owns an exact queued request', () => {
     const store = setup();
     store.signRequests = [substrate('first')];
     mocks.approveSign.mockRejectedValueOnce(new Error('worker unavailable'));
-    await expect(store.approveSign({ id: 'first' })).rejects.toThrow('worker unavailable');
+    await expect(store.approveSign({ id: 'first', kind: 'substrate' })).rejects.toThrow('worker unavailable');
     expect(store.signRequests.map(({ id }) => id)).toEqual(['first']);
     expect(mocks.push).not.toHaveBeenCalled();
   });
@@ -146,7 +146,7 @@ describe('approval completion owns an exact queued request', () => {
     const wait = deferred();
     store.signRequests = [substrate('first')];
     mocks.approveSign.mockReturnValueOnce(wait.promise);
-    const pending = store.approveSign({ id: 'first' });
+    const pending = store.approveSign({ id: 'first', kind: 'substrate' });
     mocks.currentRoute.value.name = 'Authorize';
     wait.resolve();
     await pending;
@@ -157,7 +157,7 @@ describe('approval completion owns an exact queued request', () => {
   it('returns to the wallet only when the signing screen has no remaining requests', async () => {
     const store = setup();
     store.signSolanaRequests = { first: solana('first') };
-    await store.signCancel('first');
+    await store.signCancel({ id: 'first', kind: 'solana' });
     expect(store.signSolanaRequests).toEqual({});
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
   });
@@ -191,7 +191,7 @@ describe('signing result feedback', () => {
     const store = setup();
     store.signEvmRequests = { first: evm('first') };
     mocks.approveSign.mockResolvedValueOnce(result);
-    await expect(store.approveSign({ id: 'first' })).resolves.toBe(result);
+    await expect(store.approveSign({ id: 'first', kind: 'evm' })).resolves.toBe(result);
     expect(store.signEvmRequests).toEqual({});
   });
 });

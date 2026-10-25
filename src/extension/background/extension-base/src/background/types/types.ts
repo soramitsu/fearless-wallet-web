@@ -39,6 +39,7 @@ import type { SendKillSwitchState } from '@/util/sendKillSwitch';
 import type { TonImportChoice } from '@/util/tonKeyring';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
 import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type {
   SubstrateNetworkSnapshot,
   SubstrateSigningContext,
@@ -731,17 +732,22 @@ export interface RequestRpcUnsubscribe {
   type: string;
 }
 
+// `kind` is the queue of the request the popup shows. Keys are unique across queues, and an approval or cancellation
+// that names its queue can only ever reach that request.
 export interface RequestSigningApprove {
   id: string;
+  kind?: SigningRequestKind;
 }
 
 export interface RequestSigningApproveSignature {
   id: string;
   signature: HexString;
+  kind?: SigningRequestKind;
 }
 
 export interface RequestSigningCancel {
   id: string;
+  kind?: SigningRequestKind;
 }
 
 // Responses

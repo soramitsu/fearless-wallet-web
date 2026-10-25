@@ -98,7 +98,7 @@ const queueActions = [
     subscription: 'subscribeSigningRequests',
     subscribe: 'subscribeSignRequests',
     message: 'approveSign',
-    payload: { id: first },
+    payload: { id: first, kind: 'substrate' },
   },
   {
     action: 'signSignature',
@@ -106,7 +106,7 @@ const queueActions = [
     subscription: 'subscribeSigningRequests',
     subscribe: 'subscribeSignRequests',
     message: 'approveSignSignature',
-    payload: { id: first, payload: { signature } },
+    payload: { id: first, kind: 'substrate', payload: { signature } },
   },
   {
     action: 'signCancel',
@@ -114,7 +114,7 @@ const queueActions = [
     subscription: 'subscribeSigningRequests',
     subscribe: 'subscribeSignRequests',
     message: 'cancelSignRequest',
-    payload: first,
+    payload: { id: first, kind: 'substrate' },
   },
 ] as const;
 

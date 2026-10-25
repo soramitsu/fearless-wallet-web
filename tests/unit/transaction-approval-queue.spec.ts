@@ -61,7 +61,7 @@ describe('queued transaction approvals', () => {
     await consent(wrapper);
     await approve(wrapper).trigger('click');
     expect(approve(wrapper).attributes('aria-disabled')).toBe('true');
-    expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'first' });
+    expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'first', kind: 'evm' });
 
     setRequests(request('second'));
     finishFirst(true);
@@ -70,7 +70,7 @@ describe('queued transaction approvals', () => {
     await consent(wrapper);
     expect(approve(wrapper).attributes('aria-disabled')).toBeUndefined();
     await approve(wrapper).trigger('click');
-    expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'second' });
+    expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'second', kind: 'evm' });
     expect(mocks.push).not.toHaveBeenCalledWith({ name: 'Wallet' });
     wrapper.unmount();
   });
@@ -87,7 +87,7 @@ describe('queued transaction approvals', () => {
     expect(mocks.approveSign).toHaveBeenCalledTimes(1);
     await consent(wrapper);
     await approve(wrapper).trigger('click');
-    expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'second' });
+    expect(mocks.approveSign).toHaveBeenLastCalledWith({ id: 'second', kind: 'evm' });
     expect(mocks.approveSign).toHaveBeenCalledTimes(2);
     wrapper.unmount();
   });

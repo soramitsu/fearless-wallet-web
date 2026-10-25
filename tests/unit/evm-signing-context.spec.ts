@@ -53,7 +53,8 @@ const sign = (method = 'personal_sign', params: unknown[] = ['0x1234', address])
 describe('EVM signing admission', () => {
   it('queues the exact authorized account and network alongside the method and payload', async () => {
     await expect(sign()).resolves.toBe('0x1234');
-    expect(queue).toHaveBeenCalledExactlyOnceWith('first', url, 'personal_sign', ['0x1234', address], {
+    // Queued under a key the background mints, not the page's message id ('first').
+    expect(queue).toHaveBeenCalledExactlyOnceWith(expect.stringMatching(/^evm\./), url, 'personal_sign', ['0x1234', address], {
       authorizationRevision: 0,
       account: { address, name: 'Public fixture', isMobile: false },
       network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },

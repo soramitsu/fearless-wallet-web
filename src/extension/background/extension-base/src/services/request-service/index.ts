@@ -34,6 +34,7 @@ import type {
   RequestAuthorizeCancel,
 } from '@extension-base/background/types/types';
 import type { DAppChainInfoPayload, EvmRequests, WCSignRequest } from '@extension-base/services/request-service/types';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type State from '@extension-base/background/handlers/State';
 
 export class RequestService {
@@ -189,11 +190,33 @@ export class RequestService {
     return this.substrateRequestHandler.numSubstrateRequests;
   }
 
-  public getSignRequest(id: string) {
-    if (this.evmRequestHandler.getEvmSignRequest(id)) return this.evmRequestHandler.getEvmSignRequest(id);
-    if (this.solanaRequestHandler.getSolanaSignRequest(id)) return this.solanaRequestHandler.getSolanaSignRequest(id);
+  /**
+   * The queued signing request with this key, in the queue the popup names when it shows a request. Without a queue
+   * the key must be in exactly one: an approval may never reach a request the popup did not show.
+   */
+  public getSignRequest(id: string, kind?: SigningRequestKind) {
+    if (kind === 'evm') return this.evmRequestHandler?.getEvmSignRequest(id);
+    if (kind === 'solana') return this.solanaRequestHandler?.getSolanaSignRequest(id);
+    if (kind === 'substrate') return this.substrateRequestHandler?.getSignRequest(id);
 
-    return this.substrateRequestHandler.getSignRequest(id);
+    const found = [
+      this.evmRequestHandler?.getEvmSignRequest(id),
+      this.solanaRequestHandler?.getSolanaSignRequest(id),
+      this.substrateRequestHandler?.getSignRequest(id),
+    ].filter((request) => request !== undefined);
+
+    if (found.length > 1) throw new Error('Signing request ID is ambiguous');
+
+    return found[0];
+  }
+
+  /** Whether any signing queue holds this key. A new request never takes a key another queue already uses. */
+  public hasSigningRequest(id: string): boolean {
+    return (
+      this.evmRequestHandler?.getEvmSignRequest(id) !== undefined ||
+      this.solanaRequestHandler?.getSolanaSignRequest(id) !== undefined ||
+      this.substrateRequestHandler?.getSignRequest(id) !== undefined
+    );
   }
 
   //Evm

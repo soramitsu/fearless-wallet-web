@@ -357,6 +357,14 @@ export default class Tabs {
     return true;
   }
 
+  // A page gets the signature under its own message id. The queue key stays in the wallet: a page that knew keys could
+  // name another site's queued request.
+  private async pageSignature(messageId: string, signing: Promise<ResponseSigning>): Promise<ResponseSigning> {
+    const { payload } = await signing;
+
+    return { id: messageId, payload };
+  }
+
   async bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
     const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
     return this.state.requestService.substrateRequestHandler.sign(url, new RequestBytesSign(request), {
@@ -481,10 +489,10 @@ export default class Tabs {
         return this.accountsUnsubscribe(url, request as RequestAccountUnsubscribe);
 
       case 'pub(bytes.sign)':
-        return this.bytesSign(url, request as SignerPayloadRaw);
+        return this.pageSignature(id, this.bytesSign(url, request as SignerPayloadRaw));
 
       case 'pub(extrinsic.sign)':
-        return this.extrinsicSign(url, request as SignerPayloadJSON);
+        return this.pageSignature(id, this.extrinsicSign(url, request as SignerPayloadJSON));
 
       case 'pub(metadata.list)':
         return this.metadataList();

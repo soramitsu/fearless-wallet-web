@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "webExtVersion": "10.6.0",
+  "sourceDir": "dist/extension/firefox",
+  "warningCount": 38,
+  "warningCodes": {
+    "DANGEROUS_EVAL": 37,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "warningFiles": {
+    "chunks/_plugin-vue_export-helper.js": 1,
+    "chunks/background-vendor/assert-Blv9rAXX.js": 8,
+    "chunks/background-vendor/bcryptjs-CFThK1n5.js": 9,
+    "chunks/background-vendor/core-js-pure-DilFdaL6.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js": 2,
+    "chunks/background-vendor/subwallet-keyring-CmCqkM03.js": 1,
+    "chunks/router.js": 15,
+    "chunks/soramitsuUI.js": 1
+  },
+  "warningSetSha256": "61e716185866c1a93863b44a242c91ad5bf29ffd82a47f09179e99a0e43125c6",
+  "artifacts": [
+    {
+      "file": "chunks/_plugin-vue_export-helper.js",
+      "sha256": "a204ca3e4d905037f2ae969b18975e32eb700a140dbe5a9cf9f42b2dae645a1a"
+    },
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-CFThK1n5.js",
+      "sha256": "8b805bf2bc41cbf6232370997d21f418bff746a75adaef2b67f61d11992912e7"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-6ueOLzDW.js",
+      "sha256": "f72f61a0748a0308a6b57fe97db8f95ae57e40caaa6472210dfa67188ddcb4fc"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-CmCqkM03.js",
+      "sha256": "efa7c704a848e144914de6d6bd245627fab004e385db6f88c16137d926baeee3"
+    },
+    {
+      "file": "chunks/router.js",
+      "sha256": "cc787318e6c9084b8ed5495d11325ee8e548305a0fdd2fddbb1d499c31d1a505"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "7e815395f97e82234dae711b258197bcf9746ce8bba11b1f32466de02019f777"
+    }
+  ]
+}

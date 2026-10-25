@@ -38,6 +38,7 @@ const share = (value: bigint, numerator: bigint, denominator: bigint): bigint =>
 /** Metadata-driven staking, with no key export or external SDK execution. */
 export class SoraStaking {
   private nominationLimit = 0;
+  private nominationApi: Runtime = null;
   constructor(private readonly client: SoraClient) {}
   private get api(): Runtime {
     return this.client.api;
@@ -68,16 +69,21 @@ export class SoraStaking {
   }
   private async loadNominationLimit(): Promise<void> {
     const expectedApi = this.api;
-    const constant = expectedApi.consts.staking.maxNominations;
-    // Recent staking runtimes expose NominationsQuota through the runtime API.
-    const limit =
-      constant ?? (await expectedApi.call.stakingApi.nominationsQuota('340282366920938463463374607431768211455'));
+    const quota = expectedApi.call?.stakingApi?.nominationsQuota;
+    // SORA's FixedNominationsQuota and election miner use the same solution LIMIT.
+    // Some runtimes publish that metadata constant without a StakingApi runtime call.
+    const limit = expectedApi.consts.staking.maxNominations ??
+      (quota ? await quota('340282366920938463463374607431768211455') :
+        expectedApi.consts.electionProviderMultiPhase?.minerMaxVotesPerVoter);
     if (this.api !== expectedApi) throw new Error('SORA connection changed; refresh staking parameters');
     this.nominationLimit = integer(limit);
+    this.nominationApi = expectedApi;
     if (!this.nominationLimit) throw new Error('Staking nomination limit is unavailable');
   }
   getMaxNominations(): number {
-    const limit = integer(this.api.consts.staking.maxNominations ?? this.nominationLimit);
+    const limit = integer(this.api.consts.staking.maxNominations ??
+      (this.nominationApi === this.api ? this.nominationLimit : undefined) ??
+      this.api.consts.electionProviderMultiPhase?.minerMaxVotesPerVoter);
     if (!limit) throw new Error('Refresh staking parameters before nominating');
     return limit;
   }

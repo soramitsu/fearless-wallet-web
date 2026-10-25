@@ -233,7 +233,8 @@ import {
   isRecoveryDemeterAction, isRecoveryPolkamarktAction,
 } from '@/util/walletRecoveryActions';
 import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
+import { XOR } from '@/sora/runtime';
 import { validateReviewedCrossChainRequest, type ValidatedCrossChainRoute } from '@/cross-chain/requestValidation';
 import { validateAuthoritativePolkaswapExecution, validatePolkaswapExecution } from '@/defi/polkaswapExecutionGuard';
 import { isSameString, isTonNetwork } from '@/helpers';
@@ -1182,7 +1183,7 @@ export default class Extension extends FWExtensionBase {
       const [source, destination, xor] = await Promise.all([
         apiSora.assets.getAccountAsset(assetA.address),
         apiSora.assets.getAccountAsset(assetB.address),
-        apiSora.assets.getAccountAsset(SORA_XOR_ASSET_ID),
+        apiSora.assets.getAccountAsset(XOR),
       ]);
       this.state.soraFees.next({ ...this.state.soraFees.value, [Operation.Swap]: networkFee });
       authoritativeError = validateAuthoritativePolkaswapExecution({

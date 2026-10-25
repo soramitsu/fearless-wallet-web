@@ -42,8 +42,10 @@ before submission; do not reuse the `3.0.6` copy.
 - Restoring a TON wallet from its phrase finds the address earlier Fearless
   versions used (3.0.x for Chrome, the Android app), including native TON
   phrases, which the release candidate had refused.
-- Solana and Bitcoin accounts, balances, history, and sending, on by default
-  (remote kill switch is veto-only; see `docs/send-kill-switch.md`).
+- Solana, Bitcoin and Iroha accounts, balances, history, and sending are enabled
+  in the reviewed build. Bitcoin and Iroha send flags come from their audited
+  live-transfer evidence manifests; the remote kill switch remains veto-only
+  (see `docs/send-kill-switch.md`).
 - Solana token (SPL) balances load out of the box, with no custom node.
   PublicNode refuses token-account lookups, so they are read from Solana Vibe
   Station's public node, which serves them to browser extensions without a key.
@@ -67,16 +69,23 @@ before submission; do not reuse the `3.0.6` copy.
 - Reliability and fail-closed handling across network, signing, and transfer
   flows, including bounded fee quotes and live EVM chain verification.
 - Portfolio dashboard and zero-balance search retain hidden-asset preferences, verified-only totals and explicit testnet filtering.
+- Wallet-owned SORA operations replace the retired SDK dependency. Regression
+  coverage includes connection ownership, asset precision, staking reward units
+  and liquidity withdrawal bounds.
 - A security notice for profiles that ran 3.0.x (WK-9, below).
 
 ## Security notice for profiles from 3.0.x (WK-9)
 
-Published 3.0.1 and 3.0.3-3.0.5 sent each account's recovery phrase (for JSON
-and raw-seed accounts the encrypted key with the master password) to an outside
-server on unlock. The Chrome Web Store 3.0.5 package was built from `129807f0`
+A source review identified code in published 3.0.1 and 3.0.3-3.0.5 that could
+send an account's recovery phrase (or, for JSON and raw-seed accounts, the
+encrypted key with the master password) to an outside server on unlock. The
+Chrome Web Store 3.0.5 package was built from `129807f0`
 (`origin/master`), which has that code; `600a64d5` does not. Whether a given
 phrase was delivered cannot be told from a profile: the `myAddresses` list
-3.0.3-3.0.5 kept was written before each request and 3.0.1 wrote none.
+3.0.3-3.0.5 kept was written before each request and 3.0.1 wrote none. Receipt
+or use of a wallet's keys is not established by that local evidence. No loss of
+funds caused by this issue has been confirmed. The notice therefore describes
+possible exposure and precautionary recovery steps.
 
 What 4.2.0 does on its first start, before it can add an account:
 
@@ -156,12 +165,12 @@ published `3.0.5` package can be imported without printing or committing its
 values:
 
 ```sh
-curl --fail --location --output /tmp/fearless-wallet-3.0.5.crx \
-  'https://clients2.google.com/service/update2/crx?response=redirect&prodversion=151.0.7922.172&acceptformat=crx2,crx3&x=id%3Dnhlnehondigmgckngjomcpcefcdplmgc%26uc'
-yarn import:chrome-release-config --crx /tmp/fearless-wallet-3.0.5.crx
+yarn import:chrome-release-config --crx /path/to/archived/fearless-wallet-3.0.5.crx
 ```
 
-The importer accepts only the inspected `3.0.5` CRX SHA-256
+Use the inspected archived package: the Chrome update URL now returns the
+current store version, not a requested historical version. The importer accepts
+only the inspected `3.0.5` CRX SHA-256
 `be6e2d4c4cb8072ced8e3813f470db914ef657d2c301425d4a7979f936b31704`,
 validates the stable extension ID, and writes `.env.chrome-release.local` with
 mode `0600`. That path is ignored by Git. Run credentialed build/smoke commands
@@ -176,15 +185,15 @@ yarn env-cmd -f .env.chrome-release.local -- yarn prepare:chrome-release
 
 It requires the exact Node/Yarn toolchain, runs the full test suite and release
 self-tests after `yarn install --immutable --check-cache`, verifies the exact
-vendored Iroha 0.0.2 archive and its installed contents byte-for-byte, builds twice and
+vendored Iroha 0.0.3 archive and its installed contents byte-for-byte, builds twice and
 requires identical ZIP hashes, audits the real store identity and compiled
 public configuration, performs the production Chrome smoke, rechecks the clean
 source commit, and writes a non-secret
 `dist/extension/chrome-release-provenance.json` report with status
-`untagged-candidate`. The production build forcibly sets the reviewed release
-flags (Bitcoin and Solana send on; Iroha send, IrohaConnect, test-only and
-smoke off) and the artifact audit verifies those values in
-`extension-build-metadata.json`.
+`untagged-candidate`. The production build fixes Solana send on and
+IrohaConnect, test-only and smoke off. Bitcoin and Iroha send flags are read from their audited readiness
+manifests; both are enabled in the current integration. The artifact audit
+verifies those values in `extension-build-metadata.json`.
 
 The same metadata file records `sourceCommit`, `sourceDirty`, and
 `yarnLockSha256`. The release audit (`--release`, also run by

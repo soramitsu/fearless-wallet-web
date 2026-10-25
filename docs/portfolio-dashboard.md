@@ -90,9 +90,10 @@ Readiness is how a holding stands to a swap on Polkaswap (`readiness.ts`; design
 It asks the app's own reviewed routes (`BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES`), only those that carry an execution
 definition, and a route counts only while the live registry's catalogues still match it
 (`matchesReviewedRouteCatalog`). It never assumes a route. Paused is dashed and carries its own words, so it never reads as
-available. In the release this branch was cut from, swaps are on and cross-network moves are off, so a token on SORA reads
-Swap-ready, DOT and KSM read Moves paused, and a token with no route (USDT on Ethereum) has no chip. The Ethereum to SORA
-route stays unavailable by design, and the route card says so when the app's registry knows it.
+available. In 4.2.0 swaps are on and cross-network moves are off. Every route into SORA except Liberland's is retired
+with SORA's halted parachains (`reviewedRoutes.ts`). So a token on SORA reads Swap-ready, LLD on Liberland reads Moves
+paused, and DOT, KSM and USDT on Ethereum have no chip. The Ethereum to SORA route stays unavailable by design, and the
+route card says so when the app's registry knows it.
 
 ## Hand-offs
 
@@ -104,7 +105,7 @@ has, with what it knows already chosen:
 | Move | `CrossChain` | the first move's `originChainId` and `assetKey` in the route query; with two or three moves the first is started and the rest are reviewed as they come |
 | Swap | `Polkaswap` | the pay asset (`from`) and the asset to receive (`to`) in the route query, never an amount |
 | Send, Receive | `SendForm`, `ReceiveForm` | `assetId` and `network` in the route params, as the portfolio list opens them |
-| Receive on SORA | `ReceiveForm` | the same asset on SORA that a reviewed route names, on the SORA network |
+| Receive on SORA | `ReceiveForm` | the SORA asset the route's last move delivers, as the live registry names it, on the SORA network |
 
 The Swap hand-off is read by `SwapForm.vue` (behind the flag) through `swapPairFromQuery`, which accepts only values shaped
 like a registry asset id, ignores a `to` equal to `from`, and ignores anything else. An action that is not available stays
@@ -172,8 +173,9 @@ and the wallet switch stood in for (`portfolio-dashboard-token-locations.spec.ts
 The smoke opens the real popup at 561 x 600, offline, with two wallets (the second created in the real keyring, its
 holdings injected as the background would report them), checks what the screens claim and captures the screens listed in
 the README it writes (`scripts/extension-smoke-dashboard.mjs`). The P1 flow checks the readiness chips, Where it lives for
-DOT with its moves paused, Receive on SORA, the same screen with moves on and the Move sheet handing over to the
-cross-chain screen with the network and asset chosen, the dock and the header's back button, XOR as swap-ready and the Swap
+DOT (no route, Send first), Where it lives for LLD on Liberland with its move paused, Receive on SORA, the same screen
+with moves on and the Move sheet handing over to the cross-chain screen with the network and asset chosen, the dock and
+the header's back button, XOR as swap-ready and the Swap
 sheet handing over the pair to Polkaswap, USDT in the second wallet switching wallet first (the real background switches)
 before Send opens, the single-wallet legend, and Where it lives in Russian. It also asks the real background for
 `pri(accounts.portfolioHoldings)` and checks the shape of the answer.

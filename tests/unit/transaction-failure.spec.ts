@@ -39,6 +39,7 @@ describe('transaction failure presentation', () => {
     const response = { status: false, outcome: 'unknown', transactionHash: hash.toUpperCase() };
 
     expect(getUnknownTransactionHash(response)).toBe(hash);
+    expect(getTransactionFailurePresentation(response)).toEqual({ key: 'assets.transactionStatusUnknownDetails' });
     expect(transactionResponseSucceeded(response)).toBe(false);
     expect(transactionResponseSucceeded({ ...response, status: true })).toBe(false);
     expect(getUnknownTransactionHash({ ...response, status: true })).toBeNull();

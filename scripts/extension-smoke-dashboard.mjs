@@ -26,6 +26,8 @@ const MAIN_HOLDINGS = [
   ['Kusama', 'ksm', '25'],
   ['SORA Mainnet', 'xor', '25000'],
   ['SORA Mainnet', 'val', '12000'],
+  // Liberland to SORA is the one reviewed route into SORA still bundled: LLD carries the route checks.
+  ['Liberland', 'lld', '300'],
 ];
 // What the second wallet holds, as the background would report it.
 const SAVINGS_HOLDINGS = [
@@ -33,7 +35,10 @@ const SAVINGS_HOLDINGS = [
   ['Ethereum', 'eth', '0.4'],
   ['Ethereum', 'usdt', '250'],
 ];
-const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin': 1, sora: 0.02, 'sora-validator-token': 0.01 };
+const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin': 1, sora: 0.02, 'sora-validator-token': 0.01, 'liberland-lld': 0.5 };
+// LLD's row on Liberland (it is in no token group, so the row is named by its asset key), and LLD on SORA.
+const LLD_ROW = 'tokenRow-substrate:6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6';
+const SORA_LLD = '1c3b4fcb-5a5f-4319-9dce-d178006eb9bf';
 const PRICE_CHANGES = { polkadot: 2.5, ethereum: -1.2 };
 
 const assetKey = (network, asset) =>
@@ -331,14 +336,15 @@ export async function captureDashboardScreenshots({
     await features({ polkaswap: true, crossChainXcm: false, crossChainSoraBridge: false, crossChainLiberland: false });
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the token list');
     await check('a token on SORA is swap-ready, with the words and an icon', `document.querySelector('[data-testid="tokenRow-substrate:7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5:b774c386-5cce-454a-a845-1ec0381538ec"] [data-testid="readiness-ready"]')?.innerText.trim()`, 'Swap-ready');
-    await check('KSM, which has a reviewed route to SORA that is turned off in this version, says Moves paused', `document.querySelector('[data-testid="tokenRow-group:ksm"] [data-testid="readiness-off"], [data-testid^="tokenRow-substrate:b0a8d493"] [data-testid="readiness-off"]')?.innerText.trim()`, 'Moves paused');
+    await check('LLD on Liberland, whose reviewed route to SORA is turned off in this version, says Moves paused', `document.querySelector('[data-testid^="${LLD_ROW}"] [data-testid="readiness-off"]')?.innerText.trim()`, 'Moves paused');
+    await check('KSM, whose routes to SORA are retired, has no chip', `document.querySelectorAll('[data-testid="tokenRow-group:ksm"] [data-testid^="readiness-"], [data-testid^="tokenRow-substrate:b0a8d493"] [data-testid^="readiness-"]').length`, 0);
     await click('[data-testid="tokenRow-group:usdt"]');
     await check('USDT, which has no route to SORA, has no chip on any of its holdings', `document.querySelectorAll('[data-testid="tokenChildren-group:usdt"] [data-testid^="readiness-"]').length`, 0);
     await click('[data-testid="tokenRow-group:usdt"]');
-    await evalPage(`(document.querySelector('[data-testid="tokenRow-group:ksm"], [data-testid^="tokenRow-substrate:b0a8d493"]')?.scrollIntoView({ block: 'center' }), true)`);
-    await capture('13-readiness-chips', 'The tokens with how each stands to a swap: Swap-ready on SORA, Moves paused where a reviewed route exists but is off, nothing where there is no route.');
+    await evalPage(`(document.querySelector('[data-testid^="${LLD_ROW}"]')?.scrollIntoView({ block: 'center' }), true)`);
+    await capture('13-readiness-chips', 'The tokens with how each stands to a swap: Swap-ready on SORA, Moves paused where a reviewed route exists but is off (LLD on Liberland), nothing where there is no route.');
 
-    // DOT lives on two networks in two wallets: open it, then Where it lives.
+    // DOT lives on two networks in two wallets: open it, then Where it lives. Its routes to SORA are retired.
     const dotRow = await evalPage(`(() => { const row = [...document.querySelectorAll('[data-testid^="tokenRow-group:dot"]')][0]; return row?.dataset.testid ?? null; })()`);
     if (!dotRow) throw new Error('The DOT row is not on screen');
     await click(`[data-testid="${dotRow}"]`);
@@ -348,46 +354,54 @@ export async function captureDashboardScreenshots({
     await check('Where it lives names the token and its holdings across wallets and networks', `[document.querySelector('.head-symbol')?.innerText, document.querySelectorAll('[data-testid="locationsHoldings"] [data-testid^="holding-"]').length]`, ['DOT', 3]);
     await check('the orbit has one satellite per network', `document.querySelectorAll('[data-testid^="satellite-"]').length`, 2);
     await check('the breakdown adds up: transferable plus the rest is the total counted', `(() => { const read = (id) => parseFloat(document.querySelector('[data-testid="' + id + '"]').innerText.replace(/,/g, '')); return Math.abs(read('breakdownTransferable') + read('breakdownHeld') - read('breakdownTotal')) < 0.0002; })()`, true);
-    await check('the route card says the moves are paused, and names the move', `[document.querySelector('[data-testid="portfolioRouteCard"] .lead')?.innerText.trim(), document.querySelectorAll('[data-testid="routeHops"] li').length]`, ['Moves paused', 1]);
-    await check('a paused move is shown as unavailable, with its reason', `[document.querySelector('[data-testid="action-move"]')?.disabled, document.querySelector('[data-testid="action-move"]')?.innerText.trim(), document.querySelector('[data-testid="actionReason"]')?.innerText.trim()]`, [true, 'Move unavailable', 'Cross-network moves are turned off in this version.']);
-    await check('Receive on SORA is offered instead, because a reviewed route names the asset there', `Boolean(document.querySelector('[data-testid="action-receiveOnSora"]'))`, true);
+    await check('DOT has no reviewed route to SORA, and the route card says so', `[document.querySelector('[data-testid="portfolioRouteCard"] .lead')?.innerText.trim(), document.querySelectorAll('[data-testid="routeHops"] li').length]`, ['No route yet', 0]);
+    await check('without a route Send comes first, and nothing offers a move', `[document.querySelector('[data-testid="action-send"]')?.innerText.trim(), Boolean(document.querySelector('[data-testid="action-move"]')), Boolean(document.querySelector('[data-testid="action-receiveOnSora"]'))]`, ['Send', false, false]);
     await check('the Polkaswap card says moves are off and swaps are on', `[document.querySelector('[data-testid="check-moves"]')?.dataset.ok, document.querySelector('[data-testid="check-swaps"]')?.dataset.ok]`, ['false', 'true']);
-    await capture('14-where-it-lives-dot', 'Where it lives for DOT: the orbit, its holdings in both wallets, the breakdown, the route card with its move paused, and the Polkaswap card.');
+    await capture('14-where-it-lives-dot', 'Where it lives for DOT: the orbit, its holdings in both wallets, the breakdown, the route card saying there is no route, and the Polkaswap card.');
     await evalPage(`(document.querySelector('[data-testid="holdingPanel"]')?.scrollIntoView({ block: 'start' }), true)`);
-    await capture('14b-where-it-lives-panel', 'The holding picked: its breakdown with a pattern bar, the route card, and its actions with the reason a move is unavailable.');
+    await capture('14b-where-it-lives-panel', 'The holding picked: its breakdown with a pattern bar, the route card, and its actions, Send first.');
     await evalPage(`(document.querySelector('[data-testid="polkaswapCard"]')?.scrollIntoView({ block: 'start' }), true)`);
     await capture('14c-polkaswap-card', 'The Polkaswap card: the checks behind a swap, with words as well as marks, and one way in.');
-    await evalPage(`(document.querySelector('[data-testid="tokenLocations"]')?.scrollTo(0, 0), true)`);
+    await headerBack();
+    await wait(`${APP}.router.currentRoute.value.name === 'Currencies' && Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'back on the token list from DOT');
 
-    // While the move is paused, Receive on SORA opens Receive for the SORA asset a reviewed route names: the person can
-    // ask for it to be sent to SORA, where it is swap-ready.
+    // LLD on Liberland keeps a reviewed route to SORA: one move, paused in this version, so Receive on SORA comes first.
+    await click(`[data-testid^="${LLD_ROW}"]`);
+    await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives for LLD');
+    await wait(`Boolean(document.querySelector('[data-testid="holdingPanel"]'))`, 'the LLD holding');
+    await check('the route card says the move is paused, and names it', `[document.querySelector('[data-testid="portfolioRouteCard"] .lead')?.innerText.trim(), [...document.querySelectorAll('[data-testid="routeHops"] .hop-path')].map((hop) => hop.innerText.trim())]`, ['Moves paused', ['Liberland → SORA Mainnet']]);
+    await check('a paused move is shown as unavailable, with its reason', `[document.querySelector('[data-testid="action-move"]')?.disabled, document.querySelector('[data-testid="action-move"]')?.innerText.trim(), document.querySelector('[data-testid="actionReason"]')?.innerText.trim()]`, [true, 'Move unavailable', 'Cross-network moves are turned off in this version.']);
+    await check('Receive on SORA is offered instead, because a reviewed route names the asset there', `Boolean(document.querySelector('[data-testid="action-receiveOnSora"]'))`, true);
+    await capture('14d-where-it-lives-lld', 'Where it lives for LLD on Liberland: one reviewed move to SORA, paused in this version, and Receive on SORA offered instead.');
+
+    // Receive on SORA opens Receive for the SORA asset the route delivers: the person can ask for it to be sent there.
     await click('[data-testid="action-receiveOnSora"]');
     await wait(`${APP}.router.currentRoute.value.name === 'ReceiveForm'`, 'the Receive screen');
     await check(
-      'Receive on SORA opens Receive for the SORA asset a reviewed route names, on the SORA network',
+      'Receive on SORA opens Receive for the SORA asset the route delivers, on the SORA network',
       `(() => { const { assetId, network } = ${APP}.router.currentRoute.value.params; return [assetId, /^SORA/.test(network)]; })()`,
-      ['cd092a5a-4eb6-4318-9f11-4bf8454d67a2', true]
+      [SORA_LLD, true]
     );
     await wait(`Boolean(document.querySelector('[data-testid="receiveNetworkChip"]'))`, 'the network on the Receive screen');
     await check('the Receive screen names SORA as the network', `/SORA/.test(document.querySelector('[data-testid="receiveNetworkChip"]').innerText)`, true);
-    await capture('14d-receive-on-sora', 'Receive on SORA instead: the Receive screen opened for the SORA counterpart of DOT, on the SORA network.');
+    await capture('14e-receive-on-sora', 'Receive on SORA instead: the Receive screen opened for LLD on SORA, the asset the reviewed route delivers.');
     await evalPage(`(${APP}.router.back(), true)`);
     await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'back on Where it lives from Receive');
     await wait(`Boolean(document.querySelector('[data-testid="holdingPanel"]'))`, 'the holding panel again');
     checks.push('Receive on SORA returns to Where it lives');
 
     // The same screen once moves are on: a route with one move, and a Move sheet that hands off to the cross-chain screen.
-    await features({ crossChainSoraBridge: true });
+    await features({ crossChainLiberland: true });
     await wait(`document.querySelector('[data-testid="action-move"]')?.disabled === false`, 'the move enabled');
     await check('with moves on the chip counts the move', `document.querySelector('[data-testid="holdingPanel"] [data-testid="readiness-route"]')?.innerText.trim()`, '1 move');
     await click('[data-testid="action-move"]');
     await wait(`Boolean(document.querySelector('[data-testid="portfolioMoveSheet"]'))`, 'the Move sheet');
-    await check('the Move sheet names where from and where to, and the route', `[document.querySelector('[data-testid="moveFrom"] strong')?.innerText, document.querySelector('[data-testid="moveTo"] strong')?.innerText]`, ['Polkadot', 'SORA Mainnet']);
+    await check('the Move sheet names where from and where to, and the route', `[document.querySelector('[data-testid="moveFrom"] strong')?.innerText, document.querySelector('[data-testid="moveTo"] strong')?.innerText]`, ['Liberland', 'SORA Mainnet']);
     await capture('15-move-sheet', 'The Move sheet: from, to, the reviewed route, time, fee and minimum, and the button that hands over to the review screen.');
     await click('[data-testid="moveReview"]');
     await wait(`${APP}.router.currentRoute.value.name === 'CrossChain'`, 'the cross-chain screen');
-    await check('the move hands over with the network and asset already chosen', `(() => { const { originChainId, assetKey } = ${APP}.router.currentRoute.value.query; return [originChainId.slice(0, 8), assetKey.startsWith('substrate:91b171bb')]; })()`, ['91b171bb', true]);
-    await features({ crossChainSoraBridge: false });
+    await check('the move hands over with the network and asset already chosen', `(() => { const { originChainId, assetKey } = ${APP}.router.currentRoute.value.query; return [originChainId.slice(0, 8), assetKey.startsWith('substrate:6bd89e05')]; })()`, ['6bd89e05', true]);
+    await features({ crossChainLiberland: false });
     await dockWallet();
     await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'the Wallet tab back on Where it lives');
     checks.push('the Wallet tab returns to Where it lives after a hand-off');

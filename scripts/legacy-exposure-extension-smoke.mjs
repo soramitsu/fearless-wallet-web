@@ -344,12 +344,12 @@ async function main() {
       await eventually(() => browser.evaluate(page, '!!document.querySelector("[data-testid=walletContent]")'), 'the wallet picker');
       await browser.evaluate(page, `(() => {
         const row = [...document.querySelectorAll('[data-testid="walletContent"]')]
-          .find((item) => item.querySelector('[data-testid="name"]')?.innerText.trim() === ${JSON.stringify(name)});
+          .find((item) => item.querySelector('[data-testid="name"]')?.textContent.trim() === ${JSON.stringify(name)});
         if (!row) throw new Error('Expected wallet is absent from picker');
         row.querySelector('[data-testid="content"]').click();
         return true;
       })()`);
-      await eventually(() => browser.evaluate(page, `document.querySelector('[data-testid="walletNameHeader"]')?.innerText.trim() === ${JSON.stringify(name)}`), 'the selected wallet header');
+      await eventually(() => browser.evaluate(page, `document.querySelector('[data-testid="walletNameHeader"]')?.textContent.trim() === ${JSON.stringify(name)}`), 'the selected wallet header');
     };
     await pickWallet('Imported after update');
     await eventually(() => browser.evaluate(page, 'document.querySelector("[data-testid=legacyExposureBanner]")?.innerText.includes("imported key")'), 'the reminder after selecting the imported wallet');

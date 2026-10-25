@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST = path.join(ROOT, 'config/workspace-repositories.json');
+const OWNER_ROOT = path.resolve(ROOT, '../..');
+const OWNER = { path: 'fearless-wallet-web', repository: 'soramitsu/fearless-wallet-web', group: 'core' };
 const GROUPS = new Set(['core', 'services', 'private']);
 const COMPONENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 const COMMIT = /^[a-f0-9]{40}$/u;
@@ -38,7 +40,10 @@ export function validateManifest(manifest) {
     seen.add(name.toLowerCase());
     assert.ok(typeof row.repository === 'string' && row.repository.split('/').length === 2 &&
       row.repository.split('/').every((value) => COMPONENT.test(value) && !['.', '..'].includes(value)), 'Invalid GitHub repository');
-    assert.ok(COMMIT.test(row.commit), 'Expected a full commit ID');
+    if (row.commit === 'self') {
+      assert.ok(Object.entries(OWNER).every(([key, value]) => row[key] === value),
+        'Self source is only valid for the containing browser repository');
+    } else assert.ok(COMMIT.test(row.commit), 'Expected a full commit ID');
     assert.ok(typeof row.branch === 'string' && row.branch.length > 0 &&
       !row.branch.startsWith('-') && !row.branch.startsWith('refs/'), 'Invalid branch');
     git(ROOT, 'check-ref-format', 'refs/heads/' + row.branch);
@@ -71,9 +76,26 @@ function verifyCheckout(directory, row, url) {
   assert.ok(!exists(alternates), `${row.path}: clone depends on an external Git object store`);
 }
 
+// The owning repository cannot embed the hash of the commit containing this manifest.
+// Resolve its explicit self marker from the clean invoking checkout, never from a moving remote tip.
+// Optional source/URL arguments support independent local Git fixtures; the CLI always uses its own root.
+export function resolveManifest(manifest, { ownerRoot = OWNER_ROOT, ownerUrl = `https://github.com/${OWNER.repository}.git` } = {}) {
+  validateManifest(manifest);
+  return {
+    ...manifest,
+    repositories: manifest.repositories.map((row) => {
+      if (row.commit !== 'self') return { ...row };
+      const resolved = { ...row, commit: git(ownerRoot, 'rev-parse', '--verify', 'HEAD^{commit}') };
+      verifyCheckout(ownerRoot, resolved, ownerUrl);
+      return resolved;
+    }),
+  };
+}
+
 // The optional URL argument lets tests use local bare Git repositories without network access.
 export function setupRepository(root, row, { checkOnly = false, url = `https://github.com/${row.repository}.git` } = {}) {
   validateManifest({ schemaVersion: 1, repositories: [row] });
+  assert.ok(COMMIT.test(row.commit), 'Resolve the self source before setting up repositories');
   root = fs.realpathSync(root);
   const directory = path.resolve(root, row.path);
   if (exists(directory)) {
@@ -121,13 +143,13 @@ function main(args) {
       assert.ok(args[index + 1] && !args[index + 1].startsWith('--'), '--root requires a directory');
       options.root = path.resolve(args[++index]);
     } else if (arg === '--help') {
-      console.log('Usage: node scripts/setup-workspace.mjs [--check] [--include-services] [--include-private] [--root DIR] [--env]\nClones missing repositories at manifest revisions. Existing checkouts are verified, never overwritten.\n--check is offline and read-only. --env prints shell exports for the three platform checkout paths.');
+      console.log('Usage: node scripts/setup-workspace.mjs [--check] [--include-services] [--include-private] [--root DIR] [--env]\nClones missing repositories at manifest revisions; self means the clean invoking browser commit. Existing checkouts are verified, never overwritten.\n--check is offline and read-only. --env prints shell exports for the three platform checkout paths.');
       return;
     } else throw new Error(`Unknown option: ${arg}`);
   }
   const manifest = validateManifest(JSON.parse(fs.readFileSync(MANIFEST, 'utf8')));
   if (options.env) { process.stdout.write(environment(options.root)); return; }
-  const rows = manifest.repositories.filter((row) => options.groups.has(row.group));
+  const rows = resolveManifest(manifest).repositories.filter((row) => options.groups.has(row.group));
   const failures = [];
   for (const row of rows) {
     try {

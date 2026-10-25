@@ -109,21 +109,21 @@ const jettonGroup = (balance: string): TokenGroup =>
   }) as unknown as TokenGroup;
 
 const createTonState = (balanceMap: Record<string, TokenGroup[]> = {}) => {
-  const getAccount = vi.fn();
-  const getAccountJettonsBalances = vi.fn();
+  const getAccountBalance = vi.fn();
+  const getJettonBalances = vi.fn();
   const setBalanceItem = vi.fn();
+  const updateBalanceStore = vi.fn();
   const state = {
     balanceService: {
       balanceMap,
       setBalanceItem,
+      updateBalanceStore,
     },
     getTonApiMap: {
       [NETWORK_KEY]: {
         api: {
-          accounts: {
-            getAccount,
-            getAccountJettonsBalances,
-          },
+          getAccountBalance,
+          getJettonBalances,
         },
       },
     },
@@ -145,21 +145,24 @@ const createTonState = (balanceMap: Record<string, TokenGroup[]> = {}) => {
     networkService: {
       networksGithub: [tonNetwork],
     },
+    pricesService: {
+      fiatSymbol: 'USD',
+      setPriceValue: vi.fn(),
+      tonPricingService: { tonParseRates: vi.fn() },
+    },
   } as unknown as State;
 
-  return { getAccount, getAccountJettonsBalances, setBalanceItem, state };
+  return { getAccountBalance, getJettonBalances, setBalanceItem, state, updateBalanceStore };
 };
 
 const createHistoryState = () => {
-  const getAccountEvents = vi.fn();
+  const getHistory = vi.fn();
   const state = {
     currentAccount: { address: ADDRESS },
     getTonApiMap: {
       [NETWORK_KEY]: {
         api: {
-          accounts: {
-            getAccountEvents,
-          },
+          getHistory,
         },
       },
     },
@@ -179,17 +182,60 @@ const createHistoryState = () => {
     },
   } as unknown as State;
 
-  return { getAccountEvents, state };
+  return { getHistory, state };
 };
 
 describe('TON outage fallback behavior', () => {
-  it('keeps the previous native and jetton balances when TI is unavailable', async () => {
+  it('zeros a cached Jetton only after a successful complete response omits it', async () => {
+    const { getAccountBalance, getJettonBalances, state, updateBalanceStore } = createTonState({
+      [ADDRESS]: [nativeGroup('1'), jettonGroup('7.25')],
+    });
+    getAccountBalance.mockResolvedValue({ balance: 1_000_000_000n, hasActivity: true });
+    getJettonBalances.mockResolvedValue({ holdings: [], complete: true });
+    const service = new TonBalance(state);
+
+    await service.fetchBalance(ADDRESS, [NETWORK_KEY]);
+
+    expect(state.balanceService.balanceMap[ADDRESS][1].balances[0]).toMatchObject({
+      id: 'jetton-usdc',
+      state: APIItemState.READY,
+      total: '0',
+      transferable: '0',
+    });
+    expect(updateBalanceStore).toHaveBeenCalledWith(
+      NETWORK_NAME,
+      expect.objectContaining({ id: 'jetton-usdc', state: APIItemState.READY, total: '0' }),
+      ADDRESS
+    );
+  });
+
+  it('keeps a cached Jetton that TI does not list, because TI lists only the jettons it indexes', async () => {
+    const { getAccountBalance, getJettonBalances, setBalanceItem, state, updateBalanceStore } = createTonState({
+      [ADDRESS]: [nativeGroup('1'), jettonGroup('7.25')],
+    });
+    getAccountBalance.mockResolvedValue({ balance: 1_000_000_000n, hasActivity: true });
+    getJettonBalances.mockResolvedValue({ holdings: [], complete: false });
+    const service = new TonBalance(state);
+
+    await service.fetchBalance(ADDRESS, [NETWORK_KEY]);
+
+    expect(state.balanceService.balanceMap[ADDRESS][1].balances[0]).toMatchObject({ id: 'jetton-usdc', total: '7.25' });
+    expect(updateBalanceStore).not.toHaveBeenCalled();
+    // The network's coverage says the list was partial.
+    expect(setBalanceItem).toHaveBeenCalledWith(
+      NETWORK_NAME,
+      expect.objectContaining({ id: TON_ID, state: APIItemState.READY, total: '1', scanCoverage: 'limited' }),
+      ADDRESS
+    );
+  });
+
+  it('keeps the previous native and jetton balances, marked as failed, when no provider answers', async () => {
     const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { getAccount, getAccountJettonsBalances, setBalanceItem, state } = createTonState({
+    const { getAccountBalance, getJettonBalances, setBalanceItem, state } = createTonState({
       [ADDRESS]: [nativeGroup('42.5'), jettonGroup('7.25')],
     });
-    getAccount.mockRejectedValue(new Error('ti unavailable'));
-    getAccountJettonsBalances.mockRejectedValue(new Error('ti unavailable'));
+    getAccountBalance.mockRejectedValue(new Error('ton_provider_unavailable'));
+    getJettonBalances.mockRejectedValue(new Error('ton_provider_unavailable'));
     const service = new TonBalance(state);
 
     await expect(service.fetchBalance(ADDRESS, [NETWORK_KEY])).resolves.toEqual([
@@ -221,60 +267,60 @@ describe('TON outage fallback behavior', () => {
     warn.mockRestore();
   });
 
-  it('marks TON as errored with zero only when there is no cached balance', async () => {
+  it('marks TON as failed with no amount, never zero, when no provider answers and nothing was loaded before', async () => {
     const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { getAccount, getAccountJettonsBalances, setBalanceItem, state } = createTonState();
-    getAccount.mockRejectedValue(new Error('ti unavailable'));
-    getAccountJettonsBalances.mockRejectedValue(new Error('ti unavailable'));
+    const { getAccountBalance, getJettonBalances, setBalanceItem, state } = createTonState();
+    getAccountBalance.mockRejectedValue(new Error('ton_provider_unavailable'));
+    getJettonBalances.mockRejectedValue(new Error('ton_provider_unavailable'));
     const service = new TonBalance(state);
 
-    await expect(service.fetchBalance(ADDRESS, [NETWORK_KEY])).resolves.toEqual([
-      { assetId: TON_ID, balance: '0', network: NETWORK_NAME },
-    ]);
+    await expect(service.fetchBalance(ADDRESS, [NETWORK_KEY])).resolves.toEqual([]);
 
-    expect(setBalanceItem).toHaveBeenCalledWith(
-      NETWORK_NAME,
-      expect.objectContaining({
-        id: TON_ID,
-        state: APIItemState.ERROR,
-        total: '0',
-        transferable: '0',
-      }),
-      ADDRESS
-    );
+    expect(setBalanceItem).toHaveBeenCalledOnce();
+    const [, item] = setBalanceItem.mock.calls[0];
+    expect(item).toMatchObject({ id: TON_ID, state: APIItemState.ERROR });
+    expect(item.total).toBeUndefined();
+    expect(item.transferable).toBeUndefined();
+
+    warn.mockRestore();
+  });
+
+  it('fails the balance when the network has no TON provider at all', async () => {
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { setBalanceItem, state } = createTonState();
+    (state as unknown as { getTonApiMap: Record<string, unknown> }).getTonApiMap = {};
+
+    await expect(new TonBalance(state).fetchBalance(ADDRESS, [NETWORK_KEY])).resolves.toEqual([]);
+    expect(setBalanceItem.mock.calls[0][1]).toMatchObject({ id: TON_ID, state: APIItemState.ERROR, total: undefined });
 
     warn.mockRestore();
   });
 
   it('returns cached history on outage without exposing cached objects to mutation', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const { getAccountEvents, state } = createHistoryState();
+    const { getHistory, state } = createHistoryState();
     const service = new HistoryService(state);
-    getAccountEvents.mockResolvedValueOnce({
-      events: [
-        {
-          actions: [
-            {
-              status: 'ok',
-              type: 'TonTransfer',
-              TonTransfer: {
-                amount: { toString: () => '1000000000' },
-                comment: 'first',
-                recipient: { address: { toString: () => 'EQRecipient' } },
-                sender: { address: WALLET_CONTRACT_ADDRESS },
-              },
-            },
-          ],
-          eventId: 'event-1',
-          extra: { toString: () => '12500' },
-          timestamp: 1_710_000_000,
-        },
-      ],
-    });
+    getHistory.mockResolvedValueOnce([
+      {
+        actions: [
+          {
+            type: 'ton-transfer',
+            success: true,
+            amount: '1000000000',
+            comment: 'first',
+            recipient: { toString: () => 'EQRecipient' },
+            sender: WALLET_CONTRACT_ADDRESS,
+          },
+        ],
+        eventId: 'event-1',
+        fee: '12500',
+        timestamp: 1_710_000_000,
+      },
+    ]);
 
     const first = await service.fetchTonAssetsHistory({ address: ADDRESS, network: NETWORK_KEY });
     first[TON_ID][0].amount = 'mutated-by-caller';
-    getAccountEvents.mockRejectedValueOnce(new Error('ti unavailable'));
+    getHistory.mockRejectedValueOnce(new Error('ti unavailable'));
 
     await expect(service.fetchTonAssetsHistory({ address: ADDRESS, network: NETWORK_KEY })).resolves.toEqual({
       [TON_ID]: [
@@ -291,6 +337,7 @@ describe('TON outage fallback behavior', () => {
         }),
       ],
     });
+    expect(getHistory).toHaveBeenCalledWith(WALLET_CONTRACT_ADDRESS, 100);
 
     warn.mockRestore();
   });

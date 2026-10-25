@@ -1,22 +1,34 @@
 <template>
   <div :class="containerClasses">
-    <div class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ $n(balance, 'price') }}</div>
+    <!-- While nothing has loaded, a $0.00 would be a guess: the amount waits for the balances. -->
+    <div v-if="loading" class="fiat-balance" data-testid="fiatBalanceLoading" role="status" :aria-label="loadingLabel">
+      <Shimmer class="balance-shimmer" height="20px" width="112px" />
+    </div>
 
-    <div v-if="changeWalletBalance" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
+    <div v-else class="fiat-balance" data-testid="fiatBalance">{{ accountsStore.fiatSymbol }}{{ formattedBalance }}</div>
+
+    <div v-if="changeWalletBalance && !loading" :class="percentClasses" data-testid="percent">{{ percentString }}</div>
+
+    <div v-if="caption" class="balance-caption" data-testid="balanceCaption">{{ caption }}</div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
-
+import { FPNumber } from '@/sora/number';
 import { useAccountsStore } from '@/stores/accounts';
+import { formatDecimalString } from '@/helpers/numbers';
 
 export default defineComponent({ name: 'WalletBalance' ,
   props: {
     changeWalletBalance: Object,
-    balance: Number,
+    balance: { type: [String, Number], default: '0' },
+    /** A line under the amount, such as the filtered part of the total or "incl. hidden". */
+    caption: { type: String, default: '' },
     staticWidth: { default: true },
+    /** The balances have not loaded yet: show a placeholder instead of an amount. */
+    loading: { type: Boolean, default: false },
+    loadingLabel: { type: String, default: '' },
   },
   data() {
     return {
@@ -34,26 +46,34 @@ export default defineComponent({ name: 'WalletBalance' ,
 
           return array;
     },
+    formattedBalance() {
+      return formatDecimalString(this.balance, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     percentString() {
       const { percent, amount } = this.changeWalletBalance;
+      const percentValue = new FPNumber(String(percent ?? '0'));
+      const amountValue = new FPNumber(String(amount ?? '0'));
 
-          if (percent === 0) return `${this.$n(0, 'percent')}`;
+          if (percentValue.isZero()) return '0.00%';
 
-          const sign = percent > 0 ? '+' : '';
-          const displayAmount = amount < 0 ? amount * -1 : amount;
-          const percentage = percent / 100;
+          const sign = percentValue.isGtZero() ? '+' : '';
+          const displayAmount = amountValue.isLtZero() ? amountValue.mul(new FPNumber('-1')) : amountValue;
 
-          return `${sign}${this.$n(percentage, 'percent')}(${this.accountsStore.fiatSymbol}${this.$n(
-            displayAmount ?? 0,
-            'price'
-          )})`;
+          return `${sign}${formatDecimalString(percentValue.toString(), {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}%(${this.accountsStore.fiatSymbol}${formatDecimalString(displayAmount.toString(), {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })})`;
     },
     percentClasses() {
       const { percent } = this.changeWalletBalance;
+          const percentValue = new FPNumber(String(percent ?? '0'));
           const classes = ['percent'];
 
-          if (percent > 0) classes.push('up-percent');
-          else if (percent < 0) classes.push('down-percent');
+          if (percentValue.isGtZero()) classes.push('up-percent');
+          else if (percentValue.isLtZero()) classes.push('down-percent');
 
           return classes;
     },
@@ -88,20 +108,44 @@ export default defineComponent({ name: 'WalletBalance' ,
   }
 
   .up-percent {
-    color: $success-color;
+    color: palette($success-color, var(--fw-up));
   }
 
   .down-percent {
-    color: $orange-color;
+    color: palette($orange-color, var(--fw-down));
+  }
+
+  // Aqua and orange never carry the direction alone (design-system 3.5); the triangle is decoration.
+  @include v1-palette {
+    .up-percent::before {
+      content: '\25B2\00A0';
+      content: '\25B2\00A0' / '';
+    }
+
+    .down-percent::before {
+      content: '\25BC\00A0';
+      content: '\25BC\00A0' / '';
+    }
+  }
+
+  .balance-caption {
+    color: $gray-color;
+    font-size: 0.7rem;
+    font-weight: 400;
+    line-height: 16px;
+    overflow-wrap: anywhere;
   }
 
   .fiat-balance {
     font-weight: 800;
-    text-overflow: ellipsis;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    height: 23px;
-    line-height: 23px;
+    overflow-wrap: anywhere;
+    min-height: 23px;
+    line-height: 1.2;
+  }
+
+  .balance-shimmer {
+    margin-top: 2px;
+    border-radius: 6px;
   }
 }
 </style>

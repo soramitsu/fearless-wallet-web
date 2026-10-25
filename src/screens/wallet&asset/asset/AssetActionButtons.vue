@@ -1,6 +1,7 @@
 <template>
   <div class="activity">
     <BorderButton
+      v-if="showSendButton"
       class="activity-button"
       text="assets.sendButtonText"
       iconName="send"
@@ -9,6 +10,7 @@
     />
 
     <BorderButton
+      v-if="!recoveryOnly"
       class="activity-button"
       width="100%"
       text="assets.receiveButtonText"
@@ -36,7 +38,7 @@
     />
 
     <BorderButton
-      v-if="showBuyButton && !isNeedPopupButton"
+      v-if="!recoveryOnly && showBuyButton && !isNeedPopupButton"
       class="activity-button"
       text="assets.buy"
       iconName="plus-pink"
@@ -58,9 +60,14 @@ import { defineComponent } from 'vue';
 
 import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import { isSora } from '@/helpers';
+import { buildOwnedCrossChainAssets } from '@/cross-chain/routeRegistry';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -91,9 +98,13 @@ export default defineComponent({ name: 'AssetActionButtons' ,
   ] as ControlButtons[],
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
+      sendKillSwitchStore: useSendKillSwitchStore(),
     };
   },
   computed: {
+    recoveryOnly() {
+      return IS_EXTENSION && isSelectedWalletRecoveryOnly(this.accountsStore.accounts, this.accountsStore.selectedWallet.address);
+    },
     selectedNetwork() {
       return this.$route.params.selectedNetwork ?? '';
     },
@@ -101,13 +112,18 @@ export default defineComponent({ name: 'AssetActionButtons' ,
       return this.currency?.symbol?.toLowerCase() ?? '';
     },
     showSwapButton() {
-      return isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
+      return !this.recoveryOnly && isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
+    },
+    showSendButton() {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+
+      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
     },
     isNeedPopupButton() {
       return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
     },
     showCrossChainButton() {
-      if (this.selectedNetwork === '') return false;
+      if (this.recoveryOnly || this.selectedNetwork === '') return false;
 
           const network = this.networksStore.getNetwork(this.selectedNetwork);
 
@@ -117,11 +133,31 @@ export default defineComponent({ name: 'AssetActionButtons' ,
 
           return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
     },
+    crossChainEntryQuery(): Record<string, string> {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+      if (!network) return {};
+
+      const assetId = String(this.$route.params.assetId ?? '');
+      const asset = buildOwnedCrossChainAssets(this.accountsStore.balances, this.networksStore.allNetworks).find(
+        (owned) =>
+          owned.networkName === network.name && [owned.groupId, owned.assetId, owned.canonicalAssetId].includes(assetId)
+      );
+
+      return asset
+        ? { originChainId: asset.networkChainId, assetKey: asset.key }
+        : { originChainId: String(network.chainId || network.name) };
+    },
   },
   methods: {
     onRoute(form: 'send' | 'receive' | 'crossChain') {
-      const name =
-            form === 'send' ? Components.SendForm : form === 'receive' ? Components.ReceiveForm : Components.CrossChainForm;
+      // The route builder needs a reviewed route id, so the asset page opens it
+      // with this network and asset preselected instead of the transfer form.
+      if (form === 'crossChain') {
+        this.$router.push({ name: Components.CrossChain, query: this.crossChainEntryQuery });
+        return;
+      }
+
+      const name = form === 'send' ? Components.SendForm : Components.ReceiveForm;
 
           this.$router.push({
             name,

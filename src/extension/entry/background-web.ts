@@ -1,25 +1,55 @@
+import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import { initStorage } from '@extension-base/stores/Storage';
+import { tonStore } from '@extension-base/stores/TonStore';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { handlers, state } from '@extension-base/background/handlers';
 import MigrationService from '@extension-base/services/migration-service';
 import axios from 'axios';
 import { keyring } from '@subwallet/ui-keyring';
+import { retryableInitialization } from '@/bootstrap/retryableInitialization';
 
 axios.defaults.adapter = 'fetch';
 
-addEventListener('message', (event) => {
-  // event is an ExtendableMessageEvent object
-  console.info('[test] The client sent me a message', event);
-
-  handlers(event?.data);
+// Hold incoming requests until the keyring has finished initializing.
+const initialize = retryableInitialization(async () => {
+  const ready = await cryptoWaitReady();
+  if (!ready) throw new Error('Wallet crypto initialization failed');
+  await initStorage();
+  await KeyringStoreWeb.initialize();
+  await state.keyringService.loadAll();
+  // A failed read is read again here; a later request retries the whole initialization.
+  await tonStore.loaded.catch(() => state.keyringService.tonKeyring.loadAll());
+  state.eventService.emit('crypto.ready', true);
+  await state.keyringService.currentAccountReady.catch(() => state.keyringService.restoreCurrentAccount());
+  await keyring.restoreKeyringPassword();
+  // Before anything can add an account: what is stored now is what earlier builds wrote. The
+  // security notice must never keep the wallet from starting.
+  try {
+    await state.legacyExposureService.init();
+  } catch (error) {
+    console.error('Security notice state could not be prepared', error);
+  }
+  if (!KeyringStoreWeb.readOnly) await MigrationService.start();
+  // The web wallet has no install event, so start-up is where a missing selection is repaired.
+  // A failure here must not keep the wallet from starting.
+  try {
+    if (!KeyringStoreWeb.readOnly) await state.ensureCurrentAccount();
+  } catch (error) {
+    console.error('Default account could not be selected', error);
+  }
 });
 
-cryptoWaitReady()
-  .then(() => {
-    state.keyringService.loadAll();
-    state.eventService.emit('crypto.ready', true);
-
-    keyring.restoreKeyringPassword();
-
-    MigrationService.start();
-  })
-  .catch((error) => console.error('initialization failed', error));
+addEventListener('message', (event) => {
+  const request = event as MessageEvent & { waitUntil: (work: Promise<unknown>) => void };
+  request.waitUntil(
+    initialize()
+      .then(async () => {
+        await handlers(request.data);
+      })
+      .catch(() => {
+        const channel = new BroadcastChannel('sw-messages');
+        channel.postMessage({ id: request.data?.id, error: 'Wallet services could not start.' });
+        channel.close();
+      })
+  );
+});

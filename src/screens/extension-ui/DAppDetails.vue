@@ -1,28 +1,38 @@
 <template>
-  <div class="update-accounts">
-    <SelectAuthAccountForm
-      :selectAll="selectAll"
-      :accounts="state"
-      :authType="authType"
-      :showSelectAll="showSelectAll"
-      @onSelectAll="onSelectAll"
-      @onSelect="onSelect"
-    />
-
-    <FButton
-      class="connect-button"
-      width="100%"
-      size="big"
-      fontSize="big"
-      :disabled="isDisabledApproveBtn"
-      :text="buttonText"
-      @click="updateAuths"
-    />
+  <div v-if="!isSupportedAuthType" class="unsupported-auth" data-testid="unsupportedConnectionDetails">
+    {{ t('authorize.unsupportedConnectionManagement') }}
+  </div>
+  <div v-else class="update-accounts" :aria-busy="loading || pending">
+    <p class="connection-origin">{{ url }}</p>
+    <p v-if="readError || actionError" role="alert">{{ t('addWallet.google.somethingWrong') }}</p>
+    <FButton v-if="readError" data-testid="retryConnectionRead" text="ux.retry" @click="load" />
+    <p v-else-if="loading" role="status">{{ t('migration.pending') }}</p>
+    <template v-else-if="ready">
+      <SelectAuthAccountForm
+        :selectAll="selectAll"
+        :accounts="state"
+        :authType="authType"
+        :showSelectAll="!isEVM"
+        :disabled="pending"
+        @onSelectAll="onSelectAll"
+        @onSelect="onSelect"
+      />
+      <FButton
+        class="connect-button"
+        width="100%"
+        size="big"
+        fontSize="big"
+        :disabled="isDisabledApproveBtn"
+        :loading="pending"
+        :text="buttonText"
+        @click="updateAuths"
+      />
+    </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch, onBeforeUnmount, onMounted, onUpdated } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { AuthType } from '@extension-base/background/types/types';
 import type { WalletInfo } from '@/stores';
@@ -30,149 +40,120 @@ import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccountForm from '@/screens/extension-ui/authorize/SelectAuthAccountForm.vue';
 import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
-import { WalletEcosystem } from '@/interfaces';
-import { encodeIrohaI105Address } from '@/util/iroha';
-
-type IrohaAuthAccount = {
-  address: string;
-  irohaAddress?: string;
-  irohaPublicKeyHex?: string;
-  walletEcosystem?: WalletEcosystem;
-};
+import { useI18n } from '@/locales/useI18n';
 
 const router = useRouter();
 const route = useRoute();
 const extensionStore = useExtensionStore();
 const accountsStore = useAccountsStore();
-
-const selectAll = ref(false);
+const { t } = useI18n();
 const state = ref<Record<string, WalletInfo>>({});
+const loading = ref(false);
+const ready = ref(false);
+const pending = ref(false);
+const readError = ref(false);
+const actionError = ref(false);
+let active = true;
+let epoch = 0;
+let renderedEpoch = -1;
+onBeforeUnmount(() => {
+  active = false;
+  epoch++;
+});
+onMounted(() => {
+  renderedEpoch = epoch;
+});
+onUpdated(() => {
+  renderedEpoch = epoch;
+});
 
-const routeParam = (value: string | string[] | undefined): string => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
-
+const routeParam = (value: string | string[] | undefined): string =>
+  Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 const authType = computed(() => (routeParam(route.params.type) || 'substrate') as AuthType);
+const isSupportedAuthType = computed(() => ['substrate', 'evm'].includes(authType.value));
 const isEVM = computed(() => authType.value === 'evm');
-const isSolana = computed(() => authType.value === 'solana');
-const isIroha = computed(() => authType.value === 'iroha');
-const showSelectAll = computed(() => authType.value !== 'evm' && authType.value !== 'solana' && authType.value !== 'iroha');
 const url = computed(() => routeParam(route.params.id));
-const isDisabledApproveBtn = computed(() => !Object.values(state.value).some(({ active }) => active));
+const accounts = computed(() => accountsStore.accounts.filter((account) => !isEVM.value || !!account.ethereumAddress));
+const context = computed(() => JSON.stringify([url.value, authType.value, accounts.value]));
+const selected = computed(() => Object.values(state.value).filter(({ active }) => active));
+const selectAll = computed(
+  () => !!Object.keys(state.value).length && Object.values(state.value).every(({ active }) => active)
+);
+const isDisabledApproveBtn = computed(() => !ready.value || pending.value || !selected.value.length);
+const buttonText = computed(() => ({
+  text: actionError.value ? 'ux.retry' : 'authorize.connectCountAccounts',
+  localeProps: { count: selected.value.length, tc: selected.value.length === 1 ? 1 : 2 },
+}));
 
-const buttonText = computed(() => {
-  const count = Object.values(state.value).filter((el) => el.active).length;
-  const tc = count === 1 ? 1 : 2;
-
-  return {
-    text: 'authorize.connectCountAccounts',
-    localeProps: { count, tc },
-  };
-});
-
-const prepAccounts = computed<string[]>(() => {
-  return Object.values(state.value)
-    .filter(({ active }) => active)
-    .map(({ address, ethereumAddress, irohaAddress, solanaAddress }) =>
-      isEVM.value ? ethereumAddress : isSolana.value ? solanaAddress ?? address : isIroha.value ? irohaAddress ?? address : address
-    );
-});
-
-const list = computed(() => extensionStore.authList);
-
-const isAllSelected = () => Object.values(state.value).every(({ active }) => active);
-
-onMounted(async () => {
-  await extensionStore.getAuthList();
-
-  const { authorizedAccounts, evmAuthorizedAccount, irohaAuthorizedAccount, solanaAuthorizedAccount } =
-    list.value[url.value] ?? {};
-  const allowedIroha = new Set(irohaAuthorizedAccount ? [irohaAuthorizedAccount] : []);
-
-  accountsStore.accounts.forEach((account) => {
-    const { name, address, ethereumAddress, irohaAddress, isMobile, solanaAddress, walletEcosystem } = account;
-    const authAddress = isSolana.value
-      ? solanaAddress ?? address
-      : isIroha.value
-      ? resolveIrohaAuthAddress(account, allowedIroha) ?? address
-      : address;
-
-    if (isSolana.value && !solanaAddress && walletEcosystem !== WalletEcosystem.Solana) return;
-    if (isIroha.value && !resolveIrohaAuthAddress(account, allowedIroha)) return;
-
-    const isAuthorized = isEVM.value
-      ? ethereumAddress === evmAuthorizedAccount
-      : isSolana.value
-      ? authAddress === solanaAuthorizedAccount
-      : isIroha.value
-      ? authAddress === irohaAuthorizedAccount
-      : authorizedAccounts.some((el: string) => el === address);
-
-    state.value[authAddress] = {
-      name,
-      isMobile,
-      address: authAddress,
-      ethereumAddress,
-      irohaAddress: isIroha.value ? authAddress : irohaAddress,
-      solanaAddress,
-      active: isAuthorized,
-    };
-  });
-
-  selectAll.value = isAllSelected();
-});
-
-const onSelect = (value: boolean, address: string) => {
-  if (!showSelectAll.value) Object.keys(state.value).forEach((key) => (state.value[key].active = false));
-
-  state.value[address].active = value;
-
-  if (showSelectAll.value) selectAll.value = isAllSelected();
-};
-
-const onSelectAll = (value: boolean) => {
-  Object.keys(state.value).forEach((key) => {
-    state.value[key] = {
-      ...state.value[key],
-      active: value,
-    };
-  });
-
-  selectAll.value = value;
-};
-
-const updateAuths = async () => {
-  await updateAuthorization(prepAccounts.value, url.value, authType.value);
-  await extensionStore.getAuthList();
-
-  router.back();
-};
-
-const resolveIrohaAuthAddress = (
-  {
-    address,
-    irohaAddress,
-    irohaPublicKeyHex,
-    walletEcosystem,
-  }: IrohaAuthAccount,
-  allowed: Set<string>
-): string | undefined => {
-  const candidates = [
-    irohaAddress,
-    address,
-    ...deriveIrohaAddresses(irohaPublicKeyHex),
-  ].filter((value): value is string => !!value);
-
-  if (allowed.size > 0) return candidates.find((candidate) => allowed.has(candidate));
-
-  return walletEcosystem === WalletEcosystem.Iroha ? candidates[0] : irohaAddress;
-};
-
-const deriveIrohaAddresses = (publicKeyHex?: string): string[] => {
-  if (!publicKeyHex) return [];
-
+const load = async () => {
+  const owner = ++epoch;
+  ready.value = false;
+  state.value = {};
+  readError.value = false;
+  actionError.value = false;
+  loading.value = isSupportedAuthType.value;
+  if (!active || !isSupportedAuthType.value) return;
   try {
-    return [encodeIrohaI105Address(publicKeyHex, 'nexus'), encodeIrohaI105Address(publicKeyHex, 'taira')];
+    await extensionStore.getAuthList();
+    if (!active || owner !== epoch) return;
+    const entry = extensionStore.authList[url.value];
+    if (!entry || !['all', 'both', authType.value].includes(entry.accountAuthType ?? 'substrate'))
+      throw new Error('Connection unavailable');
+    state.value = Object.fromEntries(
+      accounts.value.map(({ name, address, ethereumAddress, isMobile }) => [
+        address,
+        {
+          name,
+          address,
+          ethereumAddress,
+          isMobile,
+          active: isEVM.value
+            ? ethereumAddress === entry.evmAuthorizedAccount
+            : entry.authorizedAccounts.includes(address),
+        },
+      ])
+    );
+    ready.value = true;
   } catch {
-    return [];
+    if (active && owner === epoch) readError.value = true;
+  } finally {
+    if (active && owner === epoch) loading.value = false;
+  }
+};
+watch(context, load, { immediate: true, flush: 'sync' });
+
+const canAct = () => active && ready.value && !pending.value && renderedEpoch === epoch;
+const onSelect = (value: boolean, address: string) => {
+  if (!canAct() || !state.value[address]) return;
+  if (isEVM.value)
+    Object.values(state.value).forEach((item) => {
+      item.active = false;
+    });
+  state.value[address].active = value;
+};
+const onSelectAll = (value: boolean) => {
+  if (!canAct() || isEVM.value) return;
+  Object.values(state.value).forEach((item) => {
+    item.active = value;
+  });
+};
+const updateAuths = async () => {
+  if (!canAct() || isDisabledApproveBtn.value) return;
+  const owner = epoch;
+  const addresses = selected.value.map((account) => (isEVM.value ? account.ethereumAddress : account.address));
+  const origin = url.value;
+  const type = authType.value;
+  pending.value = true;
+  actionError.value = false;
+  try {
+    await updateAuthorization(addresses, origin, type);
+    // The write acknowledgement is the success boundary. The list screen performs
+    // its own read; a later read error must not turn a committed save into a retry.
+    if (active && owner === epoch) router.back();
+  } catch {
+    if (active && owner === epoch) actionError.value = true;
+  } finally {
+    if (active) pending.value = false;
   }
 };
 </script>
@@ -181,11 +162,22 @@ const deriveIrohaAddresses = (publicKeyHex?: string): string[] => {
 .update-accounts {
   display: flex;
   flex-flow: column;
-  justify-content: space-between;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
-
+.connection-origin {
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.unsupported-auth {
+  padding: 20px;
+  color: $gray-color;
+  line-height: 1.45;
+}
 .connect-button {
   margin-top: 16px;
+  flex-shrink: 0;
 }
 </style>

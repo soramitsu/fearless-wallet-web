@@ -82,10 +82,10 @@ const SUPPORT_ITEMS = [
     url: URLS.FEARLESS_HAPPINESS,
   },
   {
-    icon: 'more',
-    label: 'contactEmail',
-    subLabel: 'fearless@soramitsu.co.jp',
-    url: URLS.EMAIL,
+    icon: 'info',
+    label: 'helpSupport',
+    subLabel: 'fearlesswallet.io/support',
+    url: URLS.HELP_SUPPORT,
   },
 ];
 

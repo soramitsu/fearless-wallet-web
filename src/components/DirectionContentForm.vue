@@ -129,7 +129,7 @@ const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price
       .hr {
         height: 95px;
         width: 1px;
-        border-left: 2px solid $secondary-background-color;
+        border-left: 2px solid palette($secondary-background-color, var(--fw-divider));
       }
 
       .direction-icon {

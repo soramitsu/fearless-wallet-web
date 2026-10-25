@@ -1,110 +1,95 @@
 <template>
-  <div class="menu" data-testid="menu">
+  <nav class="menu" data-testid="menu" :aria-label="t('primaryMenu.ariaLabel')">
     <MenuItem
-      v-for="menuItem in menuItems"
-      :key="menuItem"
-      :name="menuItem"
-      :isActive="checkActive(menuItem)"
-      @click="clickMenuItem(menuItem)"
+      v-for="item in menuItems"
+      :key="item.id"
+      :name="item.label"
+      :icon="item.icon"
+      :data-destination="item.id"
+      :isActive="activeDestination === item.id"
+      :emphasized="item.id === 'polkaswap'"
+      :aria-label="item.id === 'polkaswap' ? 'Polkaswap' : item.label"
+      @click="open(item)"
     />
-  </div>
+  </nav>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-
+<script lang="ts" setup>
+import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
+import {
+  rememberPrimaryRoute,
+  resetPrimaryDestination,
+  resolvePrimaryNavigationTarget,
+  type PrimaryDestination,
+} from '@/router/primaryNavigation';
 import MenuItem from '@/screens/main/MenuItem.vue';
-import { IS_PRODUCTION } from '@/consts/global';
-import { SORA_MAINNET } from '@/consts/sora';
-import { isSameString } from '@/helpers';
 import { useAccountsStore } from '@/stores/accounts';
+import { useI18n } from '@/locales/useI18n';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
+import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
-type MenuItemType = 'Wallet' | 'Staking' | 'Polkaswap';
+type MenuDefinition = {
+  id: PrimaryDestination;
+  label: string;
+  icon: string;
+  route: Components;
+};
 
-export const MENU_HEIGHT = 70;
+const route = useRoute();
+const router = useRouter();
+const accountsStore = useAccountsStore();
+const { t, locale } = useI18n();
+const recoveryOnly = computed(() => IS_EXTENSION &&
+  isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address));
+const recoveryLabel = computed(() => legacyWalletUpgradeMessages[locale.value === 'ru-RU' ? 'ru-RU' : 'en-EN'].recoveryNavigation);
+const menuItems = computed<MenuDefinition[]>(() => ([
+  { id: 'portfolio', label: t('primaryMenu.portfolio'), icon: 'wallet', route: Components.Wallet },
+  { id: 'defi', label: recoveryOnly.value ? recoveryLabel.value : t('primaryMenu.defi'), icon: 'pools', route: Components.Defi },
+  { id: 'polkaswap', label: t('primaryMenu.polkaswap'), icon: 'polkaswap', route: Components.Polkaswap },
+  { id: 'cross-chain', label: t('primaryMenu.crossChain'), icon: 'cross-chain', route: Components.CrossChain },
+  { id: 'settings', label: t('primaryMenu.settings'), icon: 'settings', route: Components.Settings },
+] as MenuDefinition[]).filter(({ id }) => !recoveryOnly.value ||
+  id === 'portfolio' || id === 'defi' || id === 'settings'));
 
-export default defineComponent({ name: 'Menu',
-  components: { MenuItem },
-  data() {
-    return {
-      accountsStore: useAccountsStore(),
-      walletItems: [
-    Components.Currencies,
-    Components.Nfts,
-    Components.AccountSetting,
-    Components.Export,
-    Components.Nodes,
-  ],
-      stakingItems: [Components.MyStake],
-    };
-  },
-  computed: {
-    menuItems() {
-      const array: MenuItemType[] = [Components.Wallet];
+const activeDestination = computed(
+  () => (route.meta.primaryNavigation as PrimaryDestination | undefined) ?? 'portfolio'
+);
 
-          if (!this.isTonWallet) {
-            array.push(Components.Staking);
+watch(
+  [() => route.fullPath, () => accountsStore.selectedWallet.address],
+  () => rememberPrimaryRoute(accountsStore.selectedWallet.address, route),
+  { immediate: true }
+);
 
-            if (IS_PRODUCTION || (!IS_PRODUCTION && !isSameString(this.accountsStore.selectedNetwork, SORA_MAINNET)))
-              array.push(Components.Polkaswap);
-          }
-
-          return array;
-    },
-    isTonWallet() {
-      return this.accountsStore.selectedWallet.isTon;
-    },
-    currentRouteName() {
-      const route = this.$route.path.split('/')[2];
-
-          return route;
-    },
-    routeName() {
-      return this.$route.name as string;
-    },
-  },
-  methods: {
-    checkActive(menuItem: MenuItemType) {
-      if (menuItem === 'Wallet') {
-            const isHighlightWalletItem = this.walletItems.includes(this.routeName);
-            const haveAssetId = this.$route.params.assetId !== undefined;
-
-            if (isHighlightWalletItem || haveAssetId) return true;
-          }
-
-          if (menuItem === 'Staking') {
-            const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
-
-            if (isHighlightWalletItem) return true;
-          }
-
-          return menuItem.toLowerCase() === this.currentRouteName;
-    },
-    clickMenuItem(menuItem: MenuItemType) {
-      if (this.currentRouteName === menuItem.toLowerCase()) return;
-
-          const route = menuItem as keyof typeof Components;
-
-          const name = menuItem === 'Polkaswap' ? Components.SoraSwap : Components[route];
-
-          this.$router.push({
-            name,
-          });
-    },
-  },
-});
+function open(item: MenuDefinition): void {
+  const root = { name: item.route };
+  if (activeDestination.value === item.id) {
+    resetPrimaryDestination(accountsStore.selectedWallet.address, item.id);
+    router.replace(root);
+    return;
+  }
+  router.replace(
+    resolvePrimaryNavigationTarget(accountsStore.selectedWallet.address, activeDestination.value, item.id, root)
+  );
+}
 </script>
 
 <style lang="scss" scoped>
 .menu {
-  display: flex;
   min-height: 82px;
-  justify-content: space-around;
-  align-items: center;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  margin: 0 -16px -16px;
+  padding: 8px 8px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  // The dock is chrome; without blur it takes the solid chrome tint (design-system 3.2).
+  background: $fw-chrome-surface;
   user-select: none;
   z-index: 199;
-  margin: 0 0 -16px -16px;
-  border-radius: 0 0 $default-border-radius;
 }
 </style>

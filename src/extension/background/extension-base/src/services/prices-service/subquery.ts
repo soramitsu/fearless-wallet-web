@@ -1,7 +1,7 @@
-export const computedSQPricingSora = (cursor: string = '', pageSize: number = 100) => `
+export const SORA_PRICING_QUERY = `
   query SubqueryFiatPriceQuery(
-    $after: Cursor  = "${cursor}"
-    $first: Int = ${pageSize})
+    $after: Cursor
+    $first: Int!)
     {
       data: assets(
           first: $first

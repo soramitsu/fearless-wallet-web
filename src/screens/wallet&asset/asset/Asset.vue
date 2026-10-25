@@ -2,6 +2,15 @@
   <div class="asset">
     <AssetInfo :currency="currentCurrency" :price="assetPrice" />
 
+    <div v-if="legacyCrowdloanEvidence.hasEvidence" class="legacy-crowdloan" data-testid="legacyCrowdloan">
+      <div>
+        <div class="legacy-crowdloan__title">{{ $t('assets.legacyCrowdloan') }}</div>
+        <div class="legacy-crowdloan__detail">{{ legacyCrowdloanDetail }}</div>
+      </div>
+
+      <div class="legacy-crowdloan__network">{{ selectedNetworkAsset.name }}</div>
+    </div>
+
     <router-view
       :currency="currentCurrency"
       @openHistoryDetailsForm="openHistoryDetailsForm"
@@ -30,14 +39,12 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-
 import type { HistoryElement } from '@/interfaces/history';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import AssetInfo from '@/screens/wallet&asset/asset/AssetInfo.vue';
-import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BaseApi from '@/util/BaseApi';
@@ -46,14 +53,21 @@ import { isNetworkGroup } from '@/helpers/common/index';
 import { IS_POPUP } from '@/consts/globalClient';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import {
+  getLegacyCrowdloanEvidence,
+  isLegacyCrowdloanAssetContext,
+  type LegacyCrowdloanAssetContext,
+} from '@/portfolio/legacyCrowdloan';
+import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { findAssetGroup } from '@/helpers/currencies';
 
-export default defineComponent({ name: 'Asset',
+export default defineComponent({
+  name: 'Asset',
   components: {
     AssetInfo,
     SendForm,
     BuyPopup,
     ReceiveForm,
-    CrossChainForm,
     HistoryDetailsForm,
     NetworkManagementButton,
     NetworkManagement,
@@ -78,7 +92,7 @@ export default defineComponent({ name: 'Asset',
     selectedNetworkIcon() {
       if (this.isGroupIcon) return 'all-networks';
 
-          return this.networksStore.getNetwork(this.accountsStore.selectedNetwork).icon;
+      return this.networksStore.getNetwork(this.accountsStore.selectedNetwork).icon;
     },
     selectedLocalNetwork() {
       return this.$route.params.selectedNetwork ?? '';
@@ -86,7 +100,7 @@ export default defineComponent({ name: 'Asset',
     isHistoryPage() {
       if (!NETWORKS_GROUPS.includes(this.accountsStore.selectedNetwork)) return false;
 
-          return this.selectedLocalNetwork === '';
+      return this.selectedLocalNetwork === '';
     },
     providers() {
       return this.currentCurrency.providers ?? [];
@@ -94,20 +108,88 @@ export default defineComponent({ name: 'Asset',
     mainNetwork() {
       const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
 
-          return currency ? currency.name : '';
+      return currency ? currency.name : '';
     },
     currentCurrency() {
       return (
-            this.accountsStore.balances.find(
-              ({ groupId: id, balances }) =>
-                id === this.selectedAssetId || balances.some(({ id }) => id === this.selectedAssetId)
-            )! ?? {}
-          );
+        findAssetGroup(
+          this.accountsStore.balances,
+          String(this.selectedAssetId),
+          String(this.selectedLocalNetwork)
+        )! ?? {}
+      );
+    },
+    selectedNetworkAsset() {
+      const onNetwork = (balance) =>
+        balance.name.toLowerCase() === String(this.selectedLocalNetwork).toLowerCase();
+      const balances = this.currentCurrency.balances ?? [];
+
+      // The registry id names one asset; a group or on-chain id is only the fallback of older links.
+      return (
+        balances.find((balance) => onNetwork(balance) && balance.id === this.selectedAssetId) ??
+        balances.find(
+          (balance) =>
+            onNetwork(balance) &&
+            (this.currentCurrency.groupId === this.selectedAssetId ||
+              getCanonicalAssetId(balance) === this.selectedAssetId)
+        ) ??
+        {}
+      );
+    },
+    legacyCrowdloanContext(): LegacyCrowdloanAssetContext {
+      const networkAsset = this.selectedNetworkAsset;
+      const utilityAsset = this.accountsStore.balances
+        .flatMap(({ balances }) => balances)
+        .find(
+          ({ name, isNative, isUtility }) =>
+            (isUtility || isNative) && name.toLowerCase() === String(this.selectedLocalNetwork).toLowerCase()
+        );
+
+      return {
+        networkName: networkAsset.name ?? String(this.selectedLocalNetwork),
+        assetId: networkAsset.id ? getCanonicalAssetId(networkAsset) : '',
+        utilityAssetId: utilityAsset ? getCanonicalAssetId(utilityAsset) : '',
+        isNative: networkAsset.isNative === true,
+        isUtility: networkAsset.isUtility === true,
+        walletAddress: this.accountsStore.selectedWallet.address ?? '',
+      };
+    },
+    legacyCrowdloanContextKey() {
+      if (!isLegacyCrowdloanAssetContext(this.legacyCrowdloanContext)) return '';
+
+      const context = this.legacyCrowdloanContext;
+
+      return `${context.networkName.toLowerCase()}:${context.assetId}:${context.walletAddress}`;
+    },
+    legacyCrowdloanHistory() {
+      if (!this.legacyCrowdloanContextKey) return [];
+
+      return (
+        this.networksStore.getHistory(
+          this.legacyCrowdloanContext.assetId,
+          this.legacyCrowdloanContext.networkName.toLowerCase()
+        )?.nodes ?? []
+      );
+    },
+    legacyCrowdloanEvidence() {
+      return getLegacyCrowdloanEvidence(this.legacyCrowdloanContext, this.legacyCrowdloanHistory);
+    },
+    legacyCrowdloanDetail() {
+      const { contributionCount, recoveryCount } = this.legacyCrowdloanEvidence;
+
+      if (contributionCount > 0 && recoveryCount > 0) {
+        return this.$t('assets.legacyCrowdloanContributionAndRecovery', { contributionCount, recoveryCount });
+      }
+      if (contributionCount > 0) {
+        return this.$t('assets.legacyCrowdloanContribution', { count: contributionCount });
+      }
+
+      return this.$t('assets.legacyCrowdloanRecovery', { count: recoveryCount });
     },
     displayAddressByNetwork() {
       if (this.isHistoryPage) return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.mainNetwork);
 
-          return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedLocalNetwork);
+      return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedLocalNetwork);
     },
     selectedAssetId() {
       return this.$route.params.assetId ?? '';
@@ -125,7 +207,23 @@ export default defineComponent({ name: 'Asset',
       return this.networksStore.getAssetPrice(this.currentCurrency.priceId ?? '');
     },
   },
+  watch: {
+    legacyCrowdloanContextKey: {
+      handler: 'loadLegacyCrowdloanEvidence',
+      immediate: true,
+    },
+  },
   methods: {
+    loadLegacyCrowdloanEvidence() {
+      if (!this.legacyCrowdloanContextKey) return;
+
+      void this.networksStore
+        .fetchHistory({
+          networkName: this.legacyCrowdloanContext.networkName,
+          assetId: this.legacyCrowdloanContext.assetId,
+        })
+        .catch(() => undefined);
+    },
     toggleVisible(value = true) {
       this.showBuyPopup = value;
     },
@@ -149,6 +247,34 @@ export default defineComponent({ name: 'Asset',
   gap: 6px;
   width: 100%;
   height: 450px;
+
+  .legacy-crowdloan {
+    min-height: 48px;
+    padding: 8px 14px;
+    border: 1px solid $fw-asset-detail-edge;
+    border-radius: 12px;
+    background: $secondary-background-color;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    &__title {
+      color: $default-white;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    &__detail,
+    &__network {
+      color: $gray-color;
+      font-size: 0.6875rem;
+    }
+
+    &__network {
+      flex-shrink: 0;
+    }
+  }
 
   .popup-tip {
     position: absolute;

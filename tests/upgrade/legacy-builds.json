@@ -1,0 +1,56 @@
+{
+  "description": "Released Fearless Wallet extension builds the upgrade E2E runs (scripts/upgrade-e2e/build-legacy.mjs). Each is built from its own source commit and lockfile. `commit` is resolved with git rev-parse and must name exactly `sha`.",
+  "builds": [
+    {
+      "id": "3.0.5",
+      "commit": "600a64d5",
+      "sha": "600a64d51365a40de646925e4b591ca06ff63643",
+      "node": "20",
+      "yarn": "3.4.1",
+      "note": "origin/stage: the 3.0.5 keyring and storage code without the phrase upload the Web Store package (129807f0) carries. Never build or run 129807f0."
+    },
+    {
+      "id": "3.0.6",
+      "commit": "cfcdb591",
+      "sha": "cfcdb591fd7098b24022e8e9afc19b511d0fe785",
+      "serialVueLoaders": true,
+      "node": "20",
+      "yarn": "3.4.1",
+      "note": "The final 3.0.6 source: the published 3.0.5 minus the phrase upload, with AUDIT-01, AUDIT-02 (TON version 2/3 storage) and the availability fixes (HOTFIX-3.0.6). The Web Store rollback target; R1 rolls back to it."
+    },
+    {
+      "id": "2.7.1",
+      "commit": "39541eb7",
+      "sha": "39541eb70604185f7f5e1d12a06429a88fd03b1c",
+      "node": "20",
+      "yarn": "3.4.1",
+      "note": "The first release with a master password (@subwallet/ui-keyring 0.1.7)."
+    },
+    {
+      "id": "2.6.3",
+      "commit": "1d515acf",
+      "sha": "1d515acf0af16729dfdae6eac6a74ff06e6dac14",
+      "node": "20",
+      "yarn": "3.4.1",
+      "note": "The last release with per-account passwords (@polkadot/ui-keyring 3.5.1)."
+    },
+    {
+      "id": "2.0.1",
+      "commit": "8a96facd",
+      "sha": "8a96facdc5e59d027b736a1b8890f14208a076c2",
+      "node": "20",
+      "yarn": "3.4.1",
+      "note": "Per-account passwords, before the multi-ecosystem account meta."
+    },
+    {
+      "id": "1.3.1",
+      "commit": "5a8b7f10",
+      "sha": "5a8b7f1016bcaa6d903244676ea08b9ae686eea7",
+      "node": "20",
+      "yarn": "3.4.1",
+      "backgroundOnly": true,
+      "stub": "@soramitsu/soramitsu-js-ui",
+      "note": "@soramitsu/soramitsu-js-ui 1.0.46 existed only on the retired nexus.iroha.tech registry. The popup's UI kit is replaced by an empty stub (scripts/upgrade-e2e/stubs/soramitsu-js-ui), so the lockfile changes for that one package and the install runs without --immutable. The service worker, which owns the keyring and storage, is built from the release's own lockfile; the popup is not used."
+    }
+  ]
+}

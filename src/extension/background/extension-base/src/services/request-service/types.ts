@@ -1,3 +1,4 @@
+import type { MobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import type { WalletConnectTransactionRequest } from '@extension-base/services/wallet-connect-service/types';
 import type { Resolver, ResponseSigning } from '@extension-base/background/types/types';
 import type {
@@ -20,28 +21,28 @@ export type DAppChainInfoPayload = {
 
 export type EvmRequestParams = unknown;
 
-export type EvmRequestPayload = {
+export type EvmSigningContext = {
+  // Legacy/unqualified queue data may display, but cannot pass approval validation.
+  authorizationRevision?: number;
+  mobileSession?: MobileSigningContext;
+  account: { address: string; name?: string; isMobile: boolean };
+  network: { name: string; chainId: string; genesisHash: string; provider?: string; symbol?: string; decimals?: number };
+};
+
+export type EvmRequestPayload = EvmSigningContext & {
   id: string;
   data: EvmRequestParams;
+  method: string;
   url: string;
 };
 
 export type EvmRequests = Record<string, EvmRequestPayload>;
 
-export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning> {
-  id: string;
-  data: EvmRequestParams;
-  method: string;
-  url: string;
-}
+export interface EvmRequestsSubjectPayload extends Resolver<ResponseSigning>, EvmRequestPayload {}
 
 export type EvmRequestsSubject = Record<string, EvmRequestsSubjectPayload>;
 
-export type SolanaSigningMethod =
-  | 'signAllTransactions'
-  | 'signAndSendTransaction'
-  | 'signMessage'
-  | 'signTransaction';
+export type SolanaSigningMethod = 'signAllTransactions' | 'signAndSendTransaction' | 'signMessage' | 'signTransaction';
 
 export type SolanaTransactionPreview = {
   accountCount?: number;
@@ -98,7 +99,9 @@ export type SolanaRequestPayload = {
 
 export type SolanaRequests = Record<string, SolanaRequestPayload>;
 
-export interface SolanaRequestsSubjectPayload extends Resolver<SolanaSigningResponse>, SolanaRequestPayload {}
+export interface SolanaRequestsSubjectPayload extends Resolver<SolanaSigningResponse>, SolanaRequestPayload {
+  authorizationRevision?: number;
+}
 
 export type SolanaSerializedTransactionRequest =
   | SolanaSignAllTransactionsRequest

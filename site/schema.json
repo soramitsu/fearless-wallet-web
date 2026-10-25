@@ -1,0 +1,58 @@
+{
+  "@context": "http://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://fearlesswallet.io/#webpage",
+      "url": "https://fearlesswallet.io/",
+      "inLanguage": "en-US",
+      "name": "Fearless Wallet is a Multi-chain Web3 Wallet. Web and mobile app versions. Securely buy, sell, trade, store, stake and send Crypto across 80+ blockchains.",
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://fearlesswallet.io/#website",
+        "url": "https://www.fearlesswallet.io",
+        "name": "Fearless Wallet",
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://fearlesswallet.io/#organization",
+          "name": "Fearless Wallet",
+          "url": "https://www.fearlesswallet.io",
+          "sameAs": [
+            "https://x.com/FearlessWallet",
+            "https://t.me/fearlesswallet",
+            "https://www.youtube.com/c/FearlessWallet"
+          ],
+          "email": "hello@fearlesswallet.io",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://fearlesswallet.io/#logo",
+            "url": "https://fearlesswallet.io/assets/images/Fearless-shield-logo.svg",
+            "caption": "Fearless Wallet"
+          }
+        }
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "@id": "https://fearlesswallet.io/#primaryimage",
+        "url": "https://fearlesswallet.io/assets/images/poster.png"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Fearless Wallet",
+      "applicationCategory": "http://schema.org/FinanceApplication",
+      "operatingSystem": "WINDOWS, OSX, IOS, ANDROID",
+      "downloadUrl": "https://fearlesswallet.io/",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.6",
+        "ratingCount": "6459"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  ]
+}

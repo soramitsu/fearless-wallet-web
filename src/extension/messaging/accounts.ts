@@ -1,15 +1,23 @@
+import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@subwallet/keyring/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import type {
   ValidateJsonResult,
   AccountJson,
+  DeletedWalletSummary,
+  ResponseRestoreDeletedWallet,
+  RequestTotalBalances,
   ResponseTotalBalances,
+  RequestPortfolioHoldings,
+  ResponsePortfolioHoldings,
   ResponseAccountExport,
   ResponseExportSeed,
+  TonImportCandidateInfo,
 } from '@extension-base/background/types/types';
 import type { DerivationPath, NetworkName, TonEventTokens } from '@/interfaces';
 import type { WordCount } from '@extension-base/services';
+import type { TonImportChoice } from '@/util/tonKeyring';
 import { WalletEcosystem } from '@/interfaces';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { sendMessage } from '@/extension/messaging/index';
@@ -18,9 +26,12 @@ export function addAccount(
   suri: string,
   type: KeypairType,
   meta: FWKeyringMeta,
-  walletEcosystem = WalletEcosystem.Substrate
+  walletEcosystem = WalletEcosystem.Substrate,
+  tonImportOrFreshGeneration?: TonImportChoice | boolean
 ): Promise<string> {
-  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem });
+  const tonImport = typeof tonImportOrFreshGeneration === 'object' ? tonImportOrFreshGeneration : undefined;
+  const requireFreshGeneration = tonImportOrFreshGeneration === true;
+  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration });
 }
 
 export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {
@@ -62,6 +73,10 @@ export function mnemonicValidate(walletEcosystem = WalletEcosystem.Substrate, se
   return sendMessage('pri(keyring.mnemonicValidate)', { walletEcosystem, seed });
 }
 
+export function tonImportCandidates(mnemonic: string): Promise<TonImportCandidateInfo[]> {
+  return sendMessage('pri(keyring.tonImportCandidates)', { mnemonic });
+}
+
 export function accountUpdateName(address: string, name: string, walletEcosystem: WalletEcosystem): Promise<boolean> {
   return sendMessage('pri(accounts.name)', { address, name, walletEcosystem });
 }
@@ -70,12 +85,20 @@ export function forgetAccount(address: string, type: 'native' | 'mobile'): Promi
   return sendMessage('pri(accounts.forget)', { address, type });
 }
 
+export function getDeletedWallets(): Promise<DeletedWalletSummary[]> {
+  return sendMessage('pri(accounts.deleted.list)', null);
+}
+
+export function restoreDeletedWallet(id: string): Promise<ResponseRestoreDeletedWallet> {
+  return sendMessage('pri(accounts.deleted.restore)', { id });
+}
+
 export function validatePassword(password: string): Promise<boolean> {
   return sendMessage('pri(accounts.validate)', { password });
 }
 
-export function jsonRestore(file: KeyringPair$Json, password: string): Promise<string> {
-  return sendMessage('pri(accounts.json.restore)', { file, password });
+export function jsonRestore(file: KeyringPair$Json, password: string, linkedEthereumAddress?: string): Promise<string> {
+  return sendMessage('pri(accounts.json.restore)', { file, password, linkedEthereumAddress });
 }
 
 export function isJsonValid(file: KeyringPair$Json, password: string, isSubstrate = true): Promise<ValidateJsonResult> {
@@ -98,10 +121,23 @@ export function updatePairMeta(address: string, meta: Partial<FWKeyringMeta>): P
   return sendMessage('pri(accounts.update.meta)', { address, meta });
 }
 
-export function getTotalBalances(): Promise<ResponseTotalBalances[]> {
-  return sendMessage('pri(accounts.totalBalances)', null);
+export function getTotalBalances(request: RequestTotalBalances | null = null): Promise<ResponseTotalBalances[]> {
+  return sendMessage('pri(accounts.totalBalances)', request);
+}
+
+/** Every wallet's counted holdings in one read, for the portfolio dashboard. It never moves or signs anything. */
+export function getPortfolioHoldings(request: RequestPortfolioHoldings | null = null): Promise<ResponsePortfolioHoldings[]> {
+  return sendMessage('pri(accounts.portfolioHoldings)', request);
 }
 
 export function getHistory(address: string, network: NetworkName): Promise<TonEventTokens> {
   return sendMessage('pri(accounts.getHistory)', { address, network });
+}
+
+export function getRecoveryRecords(): Promise<RecoveryRecordSummary[]> {
+  return sendMessage('pri(accounts.recovery.list)', null);
+}
+
+export function exportRecoveryRecords(): Promise<{ json: string }> {
+  return sendMessage('pri(accounts.recovery.export)', null);
 }

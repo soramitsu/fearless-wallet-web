@@ -1,8 +1,10 @@
-import { type TransactionRequest, Wallet, parseEther, parseUnits } from 'ethers';
+import { captureWalletResetGuard, WalletResetContextChanged } from '@extension-base/api/walletResetGuard';
+import { type TransactionRequest, Transaction, Wallet, getAddress, parseEther, parseUnits } from 'ethers';
 import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
 import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
+import { withTimeout } from '@/util/endpointFailover';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 
@@ -21,6 +23,12 @@ interface TransactionObject {
 
 interface MakeTransferParams extends TransferParams {
   privateKey: string;
+  /**
+   * The network fee the Send screen showed, in the native coin. It is a ceiling, as for Bitcoin, Solana and Iroha:
+   * fee data the node returns at send time cannot raise what the transfer may cost.
+   */
+  approvedMaxFee?: string;
+  finalGuard?: () => void;
   callback?: (data: BasicTxResponse) => void;
 }
 
@@ -32,15 +40,47 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export async function handleTransfer({ callback, networkKey, privateKey, tx }: HandleTransferProps): Promise<void> {
+/** The most this transaction can pay in network fees: its gas limit at the highest gas price it allows. */
+export function maximumEvmNetworkFee({ gasLimit, gasPrice, maxFeePerGas }: Pick<Transaction, 'gasLimit' | 'gasPrice' | 'maxFeePerGas'>): bigint {
+  const price = maxFeePerGas ?? gasPrice;
+
+  if (price === null || price === undefined || gasLimit <= 0n) throw new Error('transfer_fee_unavailable');
+
+  return gasLimit * price;
+}
+
+export async function handleTransfer({
+  callback,
+  networkKey,
+  privateKey,
+  tx,
+  finalGuard,
+  approvedMaxFee,
+}: HandleTransferProps): Promise<void> {
   const web3Api = state.getEvmApi(networkKey)?.api;
   const signer = new Wallet(privateKey, web3Api);
 
   try {
-    await signer.sendTransaction(tx);
+    finalGuard?.();
+    const populated = await signer.populateTransaction(tx);
+    // populateTransaction resolves names, nonce, fees and chain ID. Signing
+    // those resolved fields synchronously keeps reset from entering an extra
+    // promise gap inside Wallet.signTransaction before the crypto operation.
+    const { from, ...unsigned } = populated;
+    if (from != null && getAddress(from) !== signer.address) throw new Error('Transaction from address mismatch');
+    const transaction = Transaction.from(unsigned);
+    if (approvedMaxFee !== undefined && maximumEvmNetworkFee(transaction) > parseEther(approvedMaxFee))
+      throw new Error('transfer_fee_changed');
+    const digest = transaction.unsignedHash;
+    finalGuard?.();
+    transaction.signature = signer.signingKey.sign(digest);
+    finalGuard?.();
+    if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
+    await web3Api.broadcastTransaction(transaction.serialized);
 
     callback?.({ status: true });
   } catch (error: unknown) {
+    if (error instanceof WalletResetContextChanged) throw error;
     console.warn(error);
 
     callback?.({
@@ -151,7 +191,38 @@ export function getEVMTransactionObject(params: TransferParams, state: State): P
   return getERC20TransactionObject(params, state);
 }
 
+// How long a fee quote waits for the node before its provider is rebuilt and the quote asked once more.
+export const EVM_QUOTE_TIMEOUT_MS = 10_000;
+
+export class EvmQuoteTimeoutError extends Error {
+  constructor() {
+    super('evm_quote_timeout');
+  }
+}
+
+const quoteWithin = (params: TransferParams, state: State) =>
+  withTimeout(getEVMTransactionObject(params, state), EVM_QUOTE_TIMEOUT_MS, () => new EvmQuoteTimeoutError());
+
+/**
+ * Prices a transfer within a bounded time. A node that does not answer is asked once more through a rebuilt provider:
+ * a request written to a socket the node has closed is never answered, and the Send screen would wait on it forever.
+ */
+export async function quoteEVMTransfer(params: TransferParams, state: State): Promise<TransactionObject> {
+  try {
+    return await quoteWithin(params, state);
+  } catch (error) {
+    if (!(error instanceof EvmQuoteTimeoutError)) throw error;
+
+    state.networkService.evmApiHandler.rebuildApi(params.networkKey);
+
+    return quoteWithin(params, state);
+  }
+}
+
 export async function makeEVMTransfer(params: MakeTransferParams, state: State): Promise<void> {
+  const resetGuard = captureWalletResetGuard(state);
+  const callerGuard = params.finalGuard;
+  params = { ...params, finalGuard: () => { resetGuard(); callerGuard?.(); } };
   const transfer = params.balance.isUtility ? makeUtilityTransfer(params) : makeERC20Transfer(params, state);
 
   return transfer.finally(() => {

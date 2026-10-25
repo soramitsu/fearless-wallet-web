@@ -1,0 +1,182 @@
+{
+  "recordedAt": "2026-10-12T13:24:17.561071+00:00",
+  "status": "Background EVM signing-context checkpoint passed; signing-screen and release qualification remain open.",
+  "baseCommit": "8f7888338492b596571aabd7ed7fd6c6efbfeaf6",
+  "sourceCommit": "2438dff1accce693f31c1b3b306ef6679be5cc4d",
+  "implementationCommits": [
+    "94fb90d216ff36c066efe132bc5c3b4daf091789",
+    "2438dff1accce693f31c1b3b306ef6679be5cc4d"
+  ],
+  "sourceSha256": {
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts": "3113e7c74ce913d784eae1276406bd254f1bbe192df009b86f8f469c862a1443",
+    "src/extension/background/extension-base/src/services/eip-service/index.ts": "53a4c74358eb58ec049326f2a8977a4f9e2473ca4da9be631ce588441d572638",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts": "bb46fdd7fdcba98df4d4b8171d869d6f631ad350a07ee16a590d0422c86d7c38",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts": "7e5abcf3548c651f187ec05d7a993f7ea87193d8f0cf3069e04d1f50d8171614",
+    "src/extension/background/extension-base/src/services/request-service/index.ts": "1c1ef4bdd31f8ccaa5703d59e168a7d3f9b47fa97a21d23c83d68c4631d77d1b",
+    "src/extension/background/extension-base/src/services/request-service/types.ts": "57572080643b0d7fd9146dac8fb239235973726ce9b95dc80171d97eba0e143f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts": "e909e9ab2cd64aa5fe9042c1606ce66dbce131cc4af484e1224055c837e75e0f",
+    "tests/unit/evm-request-handler.spec.ts": "488350eee2d2be4ed7f434d1aee344b8662bf9485d21e32e6c2aa47079c1562a",
+    "tests/unit/evm-signing-approval.spec.ts": "ce88679a50b05eab4dabdea3b68ae5aa938efcf1a5e1a3c5f4ebad84d9af9d59",
+    "tests/unit/evm-signing-context.spec.ts": "81ad2b67f01e5ba60bc1672fb6e3521a97ff4bab1cb28bceabde4ba4cf0862a4",
+    "tests/unit/request-popup-route.spec.ts": "e04726db0bcfca679c89bf7da4cb22f9e3ffb09136e9e01c3762f7419a777578",
+    "package.json": "959c4e035d4c6eb7f6dd5394e8ff0094d786ef5668ddcf8ad54c59d2a485c83f",
+    "yarn.lock": "4a651a49dce462cf86a6016e7159334887ff941f6df815baff0ccb579883e0f7",
+    "tests/fixtures/legacy-305/chains-v13.snapshot.json": "fa6f0e23cd87dfb3e5536980591dd22ae30e49bf59d04dc2a0b31fc53237ea66",
+    "scripts/build-extension.mjs": "97a0f3084ccd47fae3d478b6ca3324ba8d51980c430df0cac8e0debe86bb682d",
+    "vite.config.shared.mjs": "6a0d033243e0f4351db390a9dd71665ef436dfe4d27cb36698563cb64afee6c2"
+  },
+  "changes": [
+    "Queued requests carry the exact method, copied payload, authorized account and normalized chain identity before observers are notified. Public projections exclude resolver functions and do not share nested data with the signing snapshot.",
+    "Authorization, account availability and current network identity are checked before admission and again before key export. The transaction provider chain is checked and local authorization repeated after that await; the exported signer must match the reviewed address.",
+    "Method-defined address positions avoid treating an address-shaped personal_sign message as the signing account. Explicit transaction/typed-domain chain IDs must match the queued network.",
+    "One approval claim owns each request instance. Cancellation during pre-sign authorization prevents key use; duplicate IDs and late completion cannot replace/delete newer requests. EVM requests contribute to popup and badge counts.",
+    "Mobile requests retain the captured chain and require session permission for that chain/account. Raw signature/hash responses are validated and preserved. Mobile rejection settles the dApp request.",
+    "A local send transport failure consumes the exact queued intent to prevent an in-place retry with a fresh nonce. This is not complete ambiguous-broadcast recovery or a claim that the transaction was not broadcast."
+  ],
+  "validation": {
+    "finalFullSuite": {
+      "sourceCommit": "2438dff1accce693f31c1b3b306ef6679be5cc4d",
+      "log": "evm-context-full-v2.log",
+      "passed": 1966,
+      "skipped": 18,
+      "failed": 0,
+      "filesPassed": 237,
+      "filesSkipped": 2,
+      "durationSeconds": 184.03
+    },
+    "focused": {
+      "log": "evm-context-focused-v4.log",
+      "passed": 70,
+      "skipped": 0,
+      "failed": 0,
+      "filesPassed": 6
+    },
+    "checks": [
+      {
+        "log": "evm-context-typecheck-v4.log",
+        "command": "vue-tsc --noEmit",
+        "exitCode": 0
+      },
+      {
+        "log": "evm-context-lint-v3.log",
+        "command": "Scoped eslint on changed production and test files",
+        "exitCode": 0
+      },
+      {
+        "log": "evm-context-build-v1.log",
+        "command": "Development Chrome extension build with isolated test/smoke flags",
+        "exitCode": 0
+      }
+    ],
+    "buildMetadata": {
+      "browser": "chrome",
+      "mode": "development",
+      "releaseFlags": {
+        "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+        "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+        "VUE_APP_ENABLE_IROHA_TRANSFERS": "",
+        "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+        "VUE_APP_EXTENSION_SMOKE": "true",
+        "VUE_APP_TEST_ONLY": "true"
+      },
+      "schemaVersion": 2,
+      "sourceCommit": "2438dff1accce693f31c1b3b306ef6679be5cc4d",
+      "sourceDirty": false,
+      "yarnLockSha256": "4a651a49dce462cf86a6016e7159334887ff941f6df815baff0ccb579883e0f7"
+    },
+    "buildFiles": {
+      "path": "evm-context-build-files.json",
+      "count": 489
+    },
+    "archive": {
+      "path": "evm-context-chrome-test.zip",
+      "sha256": "06c51eb64c5ec6b3cd47210bcff5ecdd5267371c21af4e79ab1bd92036fdf39d"
+    },
+    "commands": "evm-context-final-commands.json",
+    "realCrypto": "Public unfunded fixture key signs personal and typed messages; signatures verify to the captured account. Actual mobile forwarding/approval preserves a real public-fixture signature. No live network signing or broadcasting was used."
+  },
+  "independentReview": {
+    "reviewer": "audit_inventory",
+    "reviewedSources": [
+      "94fb90d2",
+      "2438dff1"
+    ],
+    "result": "No remaining scoped blocker after follow-ups.",
+    "findings": [
+      "Use the network ecosystem/API contract instead of the legacy isEthereum name allowlist.",
+      "Handle raw WalletConnect results, matching native JsonRpcResult and the web EIP-155 handler.",
+      "Root additionally fixed EVM request counting, exported signer verification and same-request replay after transport failure."
+    ]
+  },
+  "preservedRuns": [
+    {
+      "log": "evm-request-before.log",
+      "failed": 4,
+      "passed": 0,
+      "note": "Old queue lost context, shared mutable payloads, exposed resolvers and allowed duplicate live IDs; duplicate promise test timed out."
+    },
+    {
+      "log": "evm-context-before.log",
+      "failed": 10,
+      "passed": 0,
+      "note": "Old EipService queued without account/network admission. The deferred-read test could not resume because no authorization read occurred."
+    },
+    {
+      "log": "evm-context-full-v1.log",
+      "sourceCommit": "94fb90d216ff36c066efe132bc5c3b4daf091789",
+      "passed": 1953,
+      "skipped": 18,
+      "failed": 0
+    },
+    {
+      "log": "evm-review-before.log",
+      "failed": 4,
+      "passed": 34,
+      "note": "Reproduced registry-ecosystem mismatch, missing popup count and wrong exported signer acceptance."
+    },
+    {
+      "log": "evm-mobile-result-before.log",
+      "failed": 6,
+      "passed": 19,
+      "note": "Reproduced raw mobile result loss and acceptance of malformed wrapped/string results."
+    },
+    {
+      "log": "evm-context-lint-v1.log",
+      "exitCode": 1,
+      "note": "Five unused/import-order findings corrected; subsequent type/lint checks pass."
+    }
+  ],
+  "limitations": [
+    "This is a background-only checkpoint. Transaction.vue still has the old mobile auto-forward-on-mount flow, truncated details and incomplete approval lifecycle. The screen must be replaced and tested before production clearance.",
+    "Full human-readable signing summaries, unreadable-request acknowledgement, exact displayed-request ownership, phishing-blocked state, complete addresses, localization, keyboard and browser captures remain open.",
+    "Substrate/Solana signing lifecycle and the separate WalletConnect confirmation screens still need their own review; no blanket cross-protocol approval is claimed.",
+    "Legacy eth_sign/typed-data-v1 method semantics and binary message handling require explicit follow-up; this checkpoint does not claim support that the previous implementation lacked.",
+    "Ambiguous transaction submissions are not replayed from the same queue, but complete receipt/reconciliation UI remains a separate gate. Transport mocks do not prove live mobile or chain behavior.",
+    "The archive is a development test artifact, not a shipping bundle. Final-source historical upgrades, local-chain scenarios, production bundles, physical/native signing and publication gates remain open."
+  ],
+  "evidenceRoot": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "evidenceSha256": {
+    "evm-approval-focused-v1.log": "d0d9218e87d1e657a1a9a8a4f968489da54bdb40db04ab9357f463fcf73338bb",
+    "evm-context-before.log": "6280461e6cdcf7eed97fa052592c4608a4a22aefa11308dbdea9b85a206259f5",
+    "evm-context-build-v1.log": "2354f60fc7cfb03460eece57ccfcfad4f9fc8cedb9351ac22e9fa941448d3ad6",
+    "evm-context-focused-v1.log": "03cc2ad33a37ab222eedd7648e7b8aedfbd2feea42801f0373771d7886bcd208",
+    "evm-context-focused-v2.log": "2d38d3b721d119078dfb9ce5adbe78a0ed4513802e1ed2af523f12dfdb8d11f4",
+    "evm-context-focused-v3.log": "7533638b587079f6c1e2702bf95f0170743d5778befe14166280f3bc70dc5974",
+    "evm-context-focused-v4.log": "e9cc8c781c10e9046339d6bfd08909a91313462f598ddcb3edb2bc1a77ed3868",
+    "evm-context-full-v1.log": "c5d53723cc0e476eb5fb84df56c2c1a37a234ba7c34a3a3caa1b4aedb34e1039",
+    "evm-context-full-v2.log": "630808035161750c88f3e23bc99c97007231057d6399f64faa29158078ced5e6",
+    "evm-context-lint-v1.log": "e62ecb4dc9b25a96ec1779369f6aac2d2924c02664612f26c3763a88ab1b224f",
+    "evm-context-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-context-lint-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-context-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-context-typecheck-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-context-typecheck-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-context-typecheck-v4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-mobile-result-before.log": "09e22dacf40920bc1060e043a18f866c1cd92ba3188e9de547ca88d2f29c26eb",
+    "evm-request-before.log": "201771df28abcb212cf739136bb85eff1922a86d5c544b99d6ee597022007318",
+    "evm-review-before.log": "9111523dcfcb370c92afc2de94cab1573e9692ba8d736b5f182a4fba9c8b5e2c",
+    "evm-context-final-commands.json": "92c62c0df354a88feb991f097a4896ed4444a71dec17f5d49287011c25e77cba",
+    "evm-context-build-files.json": "4fd768aa41518e23dab61398896a51105ad153936cccc1049293671663f905ee",
+    "evm-context-chrome-test.zip": "06c51eb64c5ec6b3cd47210bcff5ecdd5267371c21af4e79ab1bd92036fdf39d"
+  }
+}

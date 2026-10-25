@@ -1,4 +1,4 @@
-import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import { LiquiditySourceTypes } from '@/sora/types';
 import { MarketType } from '@/interfaces';
 
 const LIQUID_SOURCE_FOR_MARKET = {

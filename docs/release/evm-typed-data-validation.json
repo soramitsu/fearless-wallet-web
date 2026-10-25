@@ -1,0 +1,361 @@
+{
+  "recordedAt": "2026-10-12T15:14:15.660618+00:00",
+  "status": "Scoped EVM typed-data semantic alignment checkpoint passed. Cross-protocol lifecycle, WalletConnect session/queue and release gates remain open.",
+  "baseCommit": "efd796ec01d33a3e2d79e46c0e41f9286b07f169",
+  "sourceCommit": "a368f20ffe02eb0da84f03e22cdadfd900a307bf",
+  "initialSourceCommit": "43a629b36041fce4ef8089d68bb5f490284e6630",
+  "sourceSha256": {
+    "package.json": "4cd9cb62052f55c7d181bfd519d3f4734c4a4b539412f33516e477b3193b02dc",
+    "scripts/build-extension.mjs": "97a0f3084ccd47fae3d478b6ca3324ba8d51980c430df0cac8e0debe86bb682d",
+    "scripts/extension-smoke-portfolio.mjs": "3e136281d97bb964c1e7f8424b6a6389c302319263a36d705fa8adbf86cec173",
+    "scripts/extension-smoke-primitives.mjs": "8f27f3c7e6bfa22b49dc3927be75fdb47e96359bf80362b91574d6f219b2aac1",
+    "scripts/extension-smoke-signing.mjs": "938f8d81e2cb3138dda7b2ee681b1c6560e0276fa3c7e463f31624bcae1cc44f",
+    "scripts/package-extension.mjs": "427fec7c94bca0ebbc7773c7126cdd53522be51ba66db30e247af06ab21daf64",
+    "scripts/solana-extension-smoke.mjs": "f2f3771ff32a0b6a2decdcb834e26829693194e385d62fe34fa390b3d12726ad",
+    "src/components/AboveForm.vue": "8c98721727ec2c1bc86e0a349a09a7bd017ccefb093ad58d4972aee0494a0f81",
+    "src/components/Checkbox.vue": "dd574236b715fbaacb20cddc705fc307ea16e71c491d04b19339ccc27adec4a4",
+    "src/components/FButton.vue": "ac5a4682d165fde5269dc822e3ed80e79fff2ea0b68d4a248e3c61bba94a2549",
+    "src/components/useModalFocus.ts": "1d6085b7096a52005b93d0807160ed9de75bf9c08361f76709b2f1b8a67c0c1a",
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts": "839955fa508c3e91a536b490010f8ce982654ab79736a8530163f4fcf71361f6",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts": "bb46fdd7fdcba98df4d4b8171d869d6f631ad350a07ee16a590d0422c86d7c38",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts": "9b3220c746a9127d798abd9433613556fd38e267cf356f5ba0857a2c879d16a0",
+    "src/extension/background/extension-base/src/services/request-service/index.ts": "1c1ef4bdd31f8ccaa5703d59e168a7d3f9b47fa97a21d23c83d68c4631d77d1b",
+    "src/extension/background/extension-base/src/services/request-service/types.ts": "57572080643b0d7fd9146dac8fb239235973726ce9b95dc80171d97eba0e143f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts": "e909e9ab2cd64aa5fe9042c1606ce66dbce131cc4af484e1224055c837e75e0f",
+    "src/locales/akk/README.md": "a7409246587e5b0d06452eed038e895cba247c5380b596387aab7ae973689950",
+    "src/locales/akk/translation.json": "ddc7a7db81f296b5039e3d58bc179fc9ff63bfaf644e4934a3ad8ea74ebb2a4d",
+    "src/locales/egy/README.md": "2acf076428512b6d48b3a3753379100b6338680e02e3fa4ba638b2a35453f3e5",
+    "src/locales/egy/translation.json": "8c647d937648e37708cb76510f1ef5d8d30646588a93fc632e1bfbfa816e8821",
+    "src/locales/en/translation.json": "42028633c795e151115e4d8d83e132ddd9dcba20f4e1f3c411f54cd6f531a0c0",
+    "src/locales/ru/translation.json": "cae2c5e3f25772fd1a79ac5327b57291ec6dd67f653154e7b6199363b22779e4",
+    "src/screens/extension-ui/signing/Transaction.vue": "d1783a954fe99e8aad66cdd1a2bd551ac2fa141e078b1381c6a04663bba6aea0",
+    "src/screens/extension-ui/signing/WalletInfo.vue": "cee20ea3a4d5ceb74d659c7379c256b9b217562cc4a94c7ebfa8d18b7e0f39e7",
+    "src/screens/extension-ui/signing/requester.ts": "cfab45395524527b6ad83998e4076b5aa6503a222081fd1a5fd9f03f45de286c",
+    "src/screens/extension-ui/signing/review.ts": "4afb2b1d474ca9bd55f0f5275e00ed0bc411ccf4d9c36ecf98c5de04a4c93f87",
+    "src/stores/extension/actions.ts": "a498eee369e0fbd6754d92bb793e571dc3991e7234164ca380be0406230974da",
+    "src/util/evmMessageBytes.ts": "48f09485a2a98a2ab42414aa4ce0c0b61ec2de4dc4bae95ec9fa593fbde9e770",
+    "src/util/evmTransaction.ts": "ad880af05a184efadca576d72bf85c69c332363bdfaa226135b7edbf79b781b2",
+    "src/util/evmTypedData.ts": "9be8c21b068069db5a7cf55783197aecae01f42d6a69fe2c1f03823aa2efe140",
+    "src/util/solanaTransaction.ts": "3c8c54e088527b9b55a91a1305d23b7cc0f3d54fcd258ea8c073751016f271e5",
+    "tests/fixtures/legacy-305/chains-v13.snapshot.json": "fa6f0e23cd87dfb3e5536980591dd22ae30e49bf59d04dc2a0b31fc53237ea66",
+    "tests/unit/evm-signing-approval.spec.ts": "8544afeba765bec9269b59ccb6e5c2e22bec9679b8d90c4872ca6ca0e0804fdf",
+    "tests/unit/evm-signing-context.spec.ts": "81ad2b67f01e5ba60bc1672fb6e3521a97ff4bab1cb28bceabde4ba4cf0862a4",
+    "tests/unit/evm-typed-data.spec.ts": "1d43b17874668608b7fb778048f892fe0b285200d1e2e41e94be9ccc36613c57",
+    "tests/unit/extension-request-queue.spec.ts": "5c9f7e1da0da579d6df46c351943f888e678c311ffa2c37f5e5a7f6a6a2d592d",
+    "tests/unit/signing-phishing-approval.spec.ts": "35649e58f3006d18fc86c939271886cdc2a6e9655a367877cb5b767cd681dd66",
+    "tests/unit/signing-request-lifecycle.spec.ts": "1fe5196cea0cbe4e693464e9671bd868aef749ce3b1f01622e691ec87967d385",
+    "tests/unit/signing-review.spec.ts": "ba9f1598c7ce1a13777ad851dfd5b9c07202b8738d3b8ad7bd9f1a2111ae28a1",
+    "tests/unit/solana-transaction.spec.ts": "e6c79abb61049ab72080a756f9573e1f908a49673694f59c059a8b963655815e",
+    "tests/unit/wallet-connect-approve.spec.ts": "681327efb5c47a9cb9eaa26de330088fe5b2077696e055446b22a4658c9c1926",
+    "vite.config.shared.mjs": "6a0d033243e0f4351db390a9dd71665ef436dfe4d27cb36698563cb64afee6c2",
+    "yarn.lock": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+  },
+  "changedFiles": [
+    "scripts/extension-smoke-signing.mjs",
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts",
+    "src/screens/extension-ui/signing/review.ts",
+    "src/util/evmTypedData.ts",
+    "tests/unit/evm-signing-approval.spec.ts",
+    "tests/unit/evm-typed-data.spec.ts",
+    "tests/unit/signing-review.spec.ts"
+  ],
+  "behavior": [
+    "The preview, injected-request admission, local approval and WalletConnect signing use one typed-data parser. Mobile forwarding revalidates the same contract before transport.",
+    "Boolean fields must be actual booleans. The string false can no longer be displayed as false while ethers encodes true. Strings, bytes, literal addresses and integers are checked before ethers range/digest validation.",
+    "primaryType must match the encoder root. Message structs and arrays are checked recursively; missing and unsigned extra fields are rejected. A declared EIP712Domain schema must match the canonical schema ethers actually signs instead of being silently deleted.",
+    "Unsupported legacy v1 and v3 arrays are rejected before key access or mobile forwarding. Object and JSON-string EIP-712 payloads produce the same validated intent; inputs are not mutated.",
+    "Malformed typed data has no Approve or Sign anyway action in the signing screen. Valid typed data uses the existing explicit approval path and complete raw request.",
+    "The UI unwraps Vue reactive arrays before the shared parser copies RPC data. This preserves strict backend validation while allowing valid object payloads in the actual store.",
+    "WalletConnect typed-data domain.chainId, when present, must equal the request chain before key export. Broader session/network authorization is not implied."
+  ],
+  "validation": {
+    "fullSuite": {
+      "log": "typed-data-full-v2.log",
+      "sourceCommit": "a368f20ffe02eb0da84f03e22cdadfd900a307bf",
+      "passed": 2090,
+      "skipped": 18,
+      "failed": 0,
+      "filesPassed": 241,
+      "filesSkipped": 2,
+      "durationSeconds": 152.52
+    },
+    "focusedProgress": [
+      {
+        "log": "typed-data-focused-v1.log",
+        "passed": 99
+      },
+      {
+        "log": "typed-data-focused-v2.log",
+        "passed": 125
+      },
+      {
+        "log": "typed-data-focused-v3.log",
+        "passed": 129
+      },
+      {
+        "log": "typed-data-focused-v4.log",
+        "passed": 130,
+        "note": "After reactive-object fix, before the additional JSON-string variant. Both final variants are in the full suite."
+      }
+    ],
+    "checks": [
+      {
+        "log": "typed-data-typecheck-v4.log",
+        "exitCode": 0
+      },
+      {
+        "log": "typed-data-lint-v4.log",
+        "exitCode": 0
+      },
+      {
+        "log": "typed-data-build-v2.log",
+        "exitCode": 0
+      },
+      {
+        "log": "typed-data-package-v1.log",
+        "exitCode": 0
+      }
+    ],
+    "browser": {
+      "log": "typed-data-browser-v2.log",
+      "results": "typed-data-browser-v2/results.json",
+      "exitCode": 0,
+      "captures": 23,
+      "scope": "Signing review only, including eight new typed-data captures across all four catalogs. Previous full-screen browser matrix remains a historical checkpoint.",
+      "assertions": [
+        "Invalid string Boolean, wrong primaryType, v3 arrays and v1 have no approval or blind acknowledgment.",
+        "Valid Boolean false is visible and Approve becomes available after site checking.",
+        "Only the original public blind-signing fixture produces one intercepted approval; no typed-data fixture is signed or submitted."
+      ],
+      "visualReview": [
+        {
+          "path": "typed-data-browser-v2/85-signing-typed-blocked-en-EN.png",
+          "sha256": "f014a3e753488f05dcce76a026828b6c65cc05a40747f9b8b8eda38ba2d5f139",
+          "observation": "Invalid string Boolean has a localized warning, a visible focused Reject action and no signing override.",
+          "locale": "en-EN"
+        },
+        {
+          "path": "typed-data-browser-v2/86-signing-typed-false-en-EN.png",
+          "sha256": "b338bbdcad11499631c048a83dfe755d360b2ef685e5891e02a799550153e5ec",
+          "observation": "Typed-data domain, primary type and exact Boolean false are visible without horizontal clipping. Approve availability is asserted by the browser harness; the screenshot is scrolled to the message.",
+          "locale": "en-EN"
+        },
+        {
+          "path": "typed-data-browser-v2/85-signing-typed-blocked-ru-RU.png",
+          "sha256": "2cc432b049cb8f576fc6190a78c364191c4c55f789fc47dc6e7672627ca36394",
+          "observation": "Invalid string Boolean has a localized warning, a visible focused Reject action and no signing override.",
+          "locale": "ru-RU"
+        },
+        {
+          "path": "typed-data-browser-v2/86-signing-typed-false-ru-RU.png",
+          "sha256": "0ab05a18ca86ed7f3fdccbedf635c8e93ad07da34946dde3ed85eb5e3a7f2935",
+          "observation": "Typed-data domain, primary type and exact Boolean false are visible without horizontal clipping. Approve availability is asserted by the browser harness; the screenshot is scrolled to the message.",
+          "locale": "ru-RU"
+        },
+        {
+          "path": "typed-data-browser-v2/85-signing-typed-blocked-akk-Xsux-x-old.png",
+          "sha256": "40e532eae2be9a941c2c78c1e39d8707ec27f93e7244e1aa932dce245c0ae086",
+          "observation": "Invalid string Boolean has a localized warning, a visible focused Reject action and no signing override.",
+          "locale": "akk-Xsux-x-old"
+        },
+        {
+          "path": "typed-data-browser-v2/86-signing-typed-false-akk-Xsux-x-old.png",
+          "sha256": "82434acb3ad408c6e42d8bc42f64bce0d417b12d9b80d3a9d903edfe0414ccd8",
+          "observation": "Typed-data domain, primary type and exact Boolean false are visible without horizontal clipping. Approve availability is asserted by the browser harness; the screenshot is scrolled to the message.",
+          "locale": "akk-Xsux-x-old"
+        },
+        {
+          "path": "typed-data-browser-v2/85-signing-typed-blocked-egy-Egyp.png",
+          "sha256": "893994b5be593011aa957e3d32ee22e64e6d41cac9dca9f159eabab91b28f778",
+          "observation": "Invalid string Boolean has a localized warning, a visible focused Reject action and no signing override.",
+          "locale": "egy-Egyp"
+        },
+        {
+          "path": "typed-data-browser-v2/86-signing-typed-false-egy-Egyp.png",
+          "sha256": "d7e9192ec1ea1a53a3727d8056dad0c9c06ea80bb5fb2433caf8f72104235a5a",
+          "observation": "Typed-data domain, primary type and exact Boolean false are visible without horizontal clipping. Approve availability is asserted by the browser harness; the screenshot is scrolled to the message.",
+          "locale": "egy-Egyp"
+        }
+      ]
+    },
+    "realCryptography": "Public unfunded test keys sign valid false payloads through the shared helper, actual local approval and WalletConnect approval methods. verifyTypedData recovers the intended account for false and a different account for true. Transports are stubbed; no public-chain request or broadcast.",
+    "buildMetadata": {
+      "browser": "chrome",
+      "mode": "development",
+      "releaseFlags": {
+        "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+        "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+        "VUE_APP_ENABLE_IROHA_TRANSFERS": "",
+        "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+        "VUE_APP_EXTENSION_SMOKE": "true",
+        "VUE_APP_TEST_ONLY": "true"
+      },
+      "schemaVersion": 2,
+      "sourceCommit": "a368f20ffe02eb0da84f03e22cdadfd900a307bf",
+      "sourceDirty": false,
+      "yarnLockSha256": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+    },
+    "buildFiles": {
+      "path": "typed-data-build-files.json",
+      "count": 491
+    },
+    "archive": {
+      "path": "typed-data-chrome-test.zip",
+      "sha256": "cc02865086802429c6d860cc996e7cf8cb9312e553f47f05e1216ebf0e24ccf5",
+      "bytes": 19684924,
+      "archiveEntriesMatchBuildFiles": true
+    },
+    "commands": "typed-data-commands.json"
+  },
+  "independentReview": {
+    "recordedAt": "2026-10-12T15:06:47.736322+00:00",
+    "reviewer": "ios_font_qualification",
+    "sourceCommit": "43a629b36041fce4ef8089d68bb5f490284e6630",
+    "result": "No actionable blocker found in shared typed-data parser or changed admission/local/mobile/WalletConnect callers.",
+    "checks": [
+      "Traced strict Boolean/schema/range/primaryType/domain validation through capture and revalidation before mobile forwarding and key export.",
+      "Explicit domain schema prevents ethers substitution; raw request preserves complete types for inspection."
+    ],
+    "limits": [
+      "Existing WalletConnect queue/session authorization remains open.",
+      "Substrate/Solana request lifecycle remains open."
+    ],
+    "followUp": {
+      "sourceCommit": "a368f20ffe02eb0da84f03e22cdadfd900a307bf",
+      "result": "No blocker found in two-file reactive UI follow-up.",
+      "checks": [
+        "UI-only toRaw unwrap is limited to parser input; raw rendering and backend strictness stay unchanged.",
+        "Object and JSON-string reactive regressions verify false, unchanged raw/input, and rejection after malformed mutation."
+      ]
+    }
+  },
+  "preservedDiagnostics": [
+    {
+      "log": "typed-data-before.log",
+      "applicationSource": "efd796ec01d33a3e2d79e46c0e41f9286b07f169",
+      "failed": 8,
+      "passed": 50,
+      "note": "New regressions reproduce coercive Boolean acceptance, mismatched primary/schema/unsigned fields, v3/v1 misinterpretation and object-payload rejection."
+    },
+    {
+      "log": "typed-data-full-v1.log",
+      "sourceCommit": "43a629b36041fce4ef8089d68bb5f490284e6630",
+      "passed": 2088,
+      "skipped": 18,
+      "failed": 0,
+      "note": "Backend and plain-object tests passed, but did not cover Vue reactive object payloads."
+    },
+    {
+      "log": "typed-data-browser-v1.log",
+      "exitCode": 1,
+      "note": "Valid object Boolean false was blocked in the actual Vue store; browser timed out. Failure context and raw screenshot retained."
+    },
+    {
+      "log": "typed-data-reactive-before.log",
+      "failed": 1,
+      "passed": 29,
+      "note": "Reactive store regression independently reproduces the browser failure before toRaw correction."
+    },
+    {
+      "path": "typed-data-reactive-probe.json",
+      "note": "Direct Vue reactive input raises DataCloneError; the same raw input succeeds."
+    }
+  ],
+  "protocolReferences": [
+    {
+      "url": "https://eips.ethereum.org/EIPS/eip-712",
+      "relevance": "EIP-712 types, primaryType, domain and message define the intended digest; domain chain binding is checked."
+    },
+    {
+      "url": "https://docs.ethers.org/v6/api/hashing/#TypedDataEncoder",
+      "relevance": "TypedDataEncoder validates types and produces the canonical payload/digest used by the signer."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/MetaMask/eth-sig-util/main/src/sign-typed-data.ts",
+      "relevance": "Legacy V1 uses a different digest; V3 does not support arrays, while V4 does. No legacy digest implementation is introduced."
+    }
+  ],
+  "compatibilityLimits": [
+    "Boolean strings and numeric booleans are rejected, even if a caller previously relied on library coercion. Callers must send actual JSON booleans.",
+    "EIP712Domain may be omitted for existing ethers-compatible callers. When supplied, only ethers canonical field types/order are accepted; alternate declared order is conservatively rejected rather than replaced.",
+    "Legacy eth_signTypedData_v1 and legacy array-shaped eth_signTypedData payloads are unsupported. The unversioned method accepts the existing EIP-712 object contract only; it is not claimed as legacy V1 support.",
+    "Cyclic/recursive type graphs rejected by ethers remain unsupported. V4 arrays are supported within encoder constraints. No complete EIP-712 implementation/conformance claim is made.",
+    "Addresses must be literal valid EVM addresses, bytes complete hex, integer numbers safe or exact decimal/hex strings; ENS and implicit primitive coercions are unsupported. Struct/value validation is bounded at 10,000 visits and depth 64.",
+    "WalletConnect queue identity, concurrent approvals, session authorization/provider context and its separate signing screen remain open. This checkpoint only aligns its typed-data parsing and domain-chain comparison.",
+    "Immutable Substrate/Solana context and remaining TON/Iroha signing surfaces, real assistive technology, final historical upgrades/private-chain reruns, signed production artifacts and publication remain open.",
+    "All 18 inherited suite skips remain skips. This archive is a development test artifact, not a production release. Existing build/dependency warnings are retained in logs."
+  ],
+  "evidenceRoot": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "evidenceSha256": {
+    "typed-data-before.log": "485d50d1b704a4c2db8dd23bc28c933575ca3c46518bd5f587f52ca0d48ec7af",
+    "typed-data-browser-v1.log": "5f6525e7e95be4ba6c3ba640118870ce02e71ae4bfe2ba2561a47bb318fa81a4",
+    "typed-data-browser-v2.log": "fb2d93f48ac2ab7d42beb9fe3c704c0bf754f40b3924d7e63d006e8bf8a3fd6b",
+    "typed-data-build-files.json": "2d587c941275cba8f3ca089d78e49fcaa71769229eae796963ee8347fdd39926",
+    "typed-data-build-v1.log": "b5c82b1bf02e801c8cac01833d8cb45cadcc2d27a20ad2cee3f69af52df32274",
+    "typed-data-build-v2.log": "c0c8f1abe78a13518e2d43817962445a24c5cc3de4864871df88d6bfd2c72487",
+    "typed-data-chrome-test.zip": "cc02865086802429c6d860cc996e7cf8cb9312e553f47f05e1216ebf0e24ccf5",
+    "typed-data-commands.json": "2308c7fd74a219733fd4e01e15d7ea1fab2cde744513f823c531abb9b2256e3f",
+    "typed-data-focused-v1.log": "d70a993e81ba4aad622b3954b977b7a54a6338af60eb8738c0dd885758c49d4e",
+    "typed-data-focused-v2.log": "d03c42f05dd97b0d5899b027a03e8d7da21dafca71e3e76b63a37aba62c43c37",
+    "typed-data-focused-v3.log": "5541582297f12fa08888dee279e989bd2e50736beafcffc98769b8aa19043734",
+    "typed-data-focused-v4.log": "20aa26f44ac1e2f39d79ff1c60ef6df6d822237d90e34e0ed96e7b4451f4d217",
+    "typed-data-format-v1.log": "9719ce117b58e73376c132c236e8ad180b10c74b6254c44d9ab9a8989aa486ae",
+    "typed-data-full-v1.log": "ff90a585c88a9fc38f78f4cff0e9ad20f90517b9f9a3ededda18118faee409fa",
+    "typed-data-full-v2.log": "16df8ff87d790a3bb97eaaaf21f6d71a6e1ec628f46fa05f775a192c682f64e5",
+    "typed-data-independent-review.json": "fd7483636a567464a4994e12dd8d135b9fe71ff3fae706f0ea8337fc6cfe3575",
+    "typed-data-lint-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-lint-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-lint-v4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-package-v1.log": "996c8e2d56a93cfd6acc5a26eddac43e95a20a4752661dccfa14052f7f71977a",
+    "typed-data-reactive-before.log": "029578c4db42f5cfbed03dd366ab6871640529d46fae01fbfc8d0d19645d52d7",
+    "typed-data-reactive-probe.json": "494f37d777a747d037a4218812c208dc9d74f94e88af17b7c815afda33663968",
+    "typed-data-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-typecheck-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-typecheck-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-typecheck-v4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typed-data-browser-v1/77-signing-akk-Xsux-x-old-top.png": "7350b29288538f685da02ae0e99d630430037349d3eba22c38b4a838de036246",
+    "typed-data-browser-v1/77-signing-egy-Egyp-top.png": "5647b668450849524623a5dc881f4013cd79a94ecb961b4092ab6cbcb6e7e264",
+    "typed-data-browser-v1/77-signing-en-EN-top.png": "68748f537cc5fd0e8c2c35cc8aa668e716ef0e621cbb6064cc9d250e1b7e2327",
+    "typed-data-browser-v1/77-signing-ru-RU-top.png": "73c8e6acadddabfc1303fdaf5d5df6e800aeef11be03a1a4bedfde2aa9f3dbf4",
+    "typed-data-browser-v1/78-signing-akk-Xsux-x-old-consent.png": "4db228d6b0cde002bc2cbe6686798c9fa56d0136e58ea6053aa86dbc8f7407ac",
+    "typed-data-browser-v1/78-signing-egy-Egyp-consent.png": "2610dbfe37330181700ba8eba32620343f5ecaac496ec56e9d104b26e7710db9",
+    "typed-data-browser-v1/78-signing-en-EN-consent.png": "9eba29c695d20cda2dd6818efb1898a2e3cd0634de768a071567c75ee0a7c302",
+    "typed-data-browser-v1/78-signing-ru-RU-consent.png": "707282f9d0a9e352d066b51fa3e6cc27bf12a3699e0899b978882d6f21d240dc",
+    "typed-data-browser-v1/79-signing-compact-large-text-top.png": "88380543e1afc48612d222d7758b513373ac03188b22788b3a2707b87c2b6fef",
+    "typed-data-browser-v1/79-signing-compact-large-text.png": "fa858ffcb6911e2587c03ba572d7cb4437e2db2d4f977239254af065f5138005",
+    "typed-data-browser-v1/80-signing-blind-consent-ready.png": "1d05d89255d9e1bc8270a8f8c9c5e23a9c1777ca4a1365b2639202060f1174d0",
+    "typed-data-browser-v1/81-signing-pending.png": "78abd7ce27e27145e5c97a485bffd16b3cd0f9983bf9a4891da473dd36871785",
+    "typed-data-browser-v1/82-signing-replacement.png": "cf77f217633e7fa727298f7734c133893bde0cb08fbf19ee5da87d3895ab3731",
+    "typed-data-browser-v1/83-signing-flagged.png": "2a5522edaa3dd5b0e8e265591772dc2e6a4632928c433f29905fa221a065f1f2",
+    "typed-data-browser-v1/84-signing-readable.png": "eac3db996b3a23769dcb0b636d36ba9c0900203b813647cfd2668f9b2150853b",
+    "typed-data-browser-v1/85-signing-typed-blocked-en-EN.png": "353387d841e03ac339c1e3d836c28e6489992875e9cb3dc1c7a1f0202aa71e39",
+    "typed-data-browser-v1/failure-context.json": "f75570c4f65cac3c6e0af16a7f231fe3efed7e10482dff9ea466e41d9203ed4c",
+    "typed-data-browser-v1/failure.png": "d207ef30c537e2afd4c316633b7e497647cdd8cd304464bfa538bdde0f6c9aa2",
+    "typed-data-browser-v2/77-signing-akk-Xsux-x-old-top.png": "7350b29288538f685da02ae0e99d630430037349d3eba22c38b4a838de036246",
+    "typed-data-browser-v2/77-signing-egy-Egyp-top.png": "a71812ef1133fb2aaa0444d0d42c6d9e26f7b4d0e72b1c4f03964ee84dfed11e",
+    "typed-data-browser-v2/77-signing-en-EN-top.png": "7391322358c2449a79e855d6757ec38ec252259468113cfe5cb31900f18c2e12",
+    "typed-data-browser-v2/77-signing-ru-RU-top.png": "30b00f11f8a2c3f39ea3fc16835062c4ddc1bb284a561df9a7eb15afc845c3dd",
+    "typed-data-browser-v2/78-signing-akk-Xsux-x-old-consent.png": "b81377a031cbe35f1b7effb97740998d6b1abae73c6c8b002dd1cf3393ec4701",
+    "typed-data-browser-v2/78-signing-egy-Egyp-consent.png": "2610dbfe37330181700ba8eba32620343f5ecaac496ec56e9d104b26e7710db9",
+    "typed-data-browser-v2/78-signing-en-EN-consent.png": "9eba29c695d20cda2dd6818efb1898a2e3cd0634de768a071567c75ee0a7c302",
+    "typed-data-browser-v2/78-signing-ru-RU-consent.png": "3d6de36ac166a0eee42ffd9443e1f6a1a058d1c8d2738867f43dfa19f1753719",
+    "typed-data-browser-v2/79-signing-compact-large-text-top.png": "88380543e1afc48612d222d7758b513373ac03188b22788b3a2707b87c2b6fef",
+    "typed-data-browser-v2/79-signing-compact-large-text.png": "fa858ffcb6911e2587c03ba572d7cb4437e2db2d4f977239254af065f5138005",
+    "typed-data-browser-v2/80-signing-blind-consent-ready.png": "1dcc1a897f8fcd7f3dd99ab18110bc765d1649269d9803beb661ce348d61e759",
+    "typed-data-browser-v2/81-signing-pending.png": "78abd7ce27e27145e5c97a485bffd16b3cd0f9983bf9a4891da473dd36871785",
+    "typed-data-browser-v2/82-signing-replacement.png": "cf77f217633e7fa727298f7734c133893bde0cb08fbf19ee5da87d3895ab3731",
+    "typed-data-browser-v2/83-signing-flagged.png": "2a5522edaa3dd5b0e8e265591772dc2e6a4632928c433f29905fa221a065f1f2",
+    "typed-data-browser-v2/84-signing-readable.png": "cf99149bc8ec59c1951097453a52e3ad560eaab9b038abe1c78002c01fd7b732",
+    "typed-data-browser-v2/85-signing-typed-blocked-akk-Xsux-x-old.png": "40e532eae2be9a941c2c78c1e39d8707ec27f93e7244e1aa932dce245c0ae086",
+    "typed-data-browser-v2/85-signing-typed-blocked-egy-Egyp.png": "893994b5be593011aa957e3d32ee22e64e6d41cac9dca9f159eabab91b28f778",
+    "typed-data-browser-v2/85-signing-typed-blocked-en-EN.png": "f014a3e753488f05dcce76a026828b6c65cc05a40747f9b8b8eda38ba2d5f139",
+    "typed-data-browser-v2/85-signing-typed-blocked-ru-RU.png": "2cc432b049cb8f576fc6190a78c364191c4c55f789fc47dc6e7672627ca36394",
+    "typed-data-browser-v2/86-signing-typed-false-akk-Xsux-x-old.png": "82434acb3ad408c6e42d8bc42f64bce0d417b12d9b80d3a9d903edfe0414ccd8",
+    "typed-data-browser-v2/86-signing-typed-false-egy-Egyp.png": "d7e9192ec1ea1a53a3727d8056dad0c9c06ea80bb5fb2433caf8f72104235a5a",
+    "typed-data-browser-v2/86-signing-typed-false-en-EN.png": "b338bbdcad11499631c048a83dfe755d360b2ef685e5891e02a799550153e5ec",
+    "typed-data-browser-v2/86-signing-typed-false-ru-RU.png": "0ab05a18ca86ed7f3fdccbedf635c8e93ad07da34946dde3ed85eb5e3a7f2935",
+    "typed-data-browser-v2/results.json": "65911fbceb6755de122d475bbafd05f8d8e90451ec1551ecb1d7e36250d7ca43"
+  }
+}

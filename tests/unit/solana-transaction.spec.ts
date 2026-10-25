@@ -210,3 +210,66 @@ describe('Solana serialized transaction signing', () => {
     ).toBe('missing_required_signature_slots');
   });
 });
+
+describe('serialized message review integrity', () => {
+  it('retains independent instruction bytes and account indexes for review', () => {
+    const raw = transaction(legacyMessage({ instructionData: [2, 0, 255] }));
+    const parsed = parseSolanaSerializedTransaction(raw);
+    expect(parsed.instructions).toEqual([
+      { programIdIndex: 1, accountIndexes: [0], data: new Uint8Array([2, 0, 255]) },
+    ]);
+    raw.fill(0);
+    expect(parsed.instructions[0].data).toEqual(new Uint8Array([2, 0, 255]));
+  });
+  it('rejects excess signature slots and a read-only fee payer', () => {
+    expect(errorCode(() => parseSolanaSerializedTransaction(transaction(legacyMessage(), 2)))).toBe(
+      'extra_signature_slots'
+    );
+    const message = legacyMessage();
+    message[1] = 1;
+    expect(errorCode(() => parseSolanaSerializedTransaction(transaction(message)))).toBe(
+      'invalid_required_signature_count'
+    );
+  });
+  it.each([
+    [0x81, 0],
+    [0x81, 0x80, 0],
+    [0xff, 0xff, 0x04],
+  ])('rejects short-u16 aliases and overflow %j', (...prefix) => {
+    const raw = transaction(legacyMessage());
+    expect(errorCode(() => parseSolanaSerializedTransaction(bytes(prefix, raw.slice(1))))).toBe(
+      'invalid_signature_count'
+    );
+  });
+  it('rejects invalid program and account indexes before review or signing', () => {
+    // Header + short key count + two keys + blockhash + instruction count.
+    const programOffset = 3 + 1 + 64 + 32 + 1;
+    for (const programIndex of [0, 2]) {
+      const message = legacyMessage();
+      message[programOffset] = programIndex;
+      expect(errorCode(() => parseSolanaSerializedTransaction(transaction(message)))).toBe('invalid_instruction_index');
+    }
+    const message = legacyMessage();
+    message[programOffset + 2] = 2;
+    expect(errorCode(() => parseSolanaSerializedTransaction(transaction(message)))).toBe('invalid_instruction_index');
+  });
+  it('permits V0 loaded instruction accounts without pretending they are static keys', () => {
+    const message = bytes(
+      [0x80],
+      [1, 0, 1],
+      [2],
+      key(expected.address),
+      key(SYSTEM_PROGRAM),
+      new Uint8Array(32).fill(7),
+      [1, 1, 2, 0, 2, 0], // one instruction, static program 1, accounts 0 and loaded 2, no data
+      [1],
+      new Uint8Array(32).fill(8),
+      [1, 0],
+      [0]
+    );
+    const parsed = parseSolanaSerializedTransaction(transaction(message));
+    expect(parsed.instructions[0].accountIndexes).toEqual([0, 2]);
+    expect(parsed.addressTableLookupCount).toBe(1);
+    expect(parsed.accountKeys[2]).toBeUndefined();
+  });
+});

@@ -1,10 +1,11 @@
-import { FPNumber } from '@sora-substrate/util';
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { getAssetOptions, getPrecisionValue } from '@extension-base/api/substrate';
 import type { BasicTxResponse, TokenGroup } from '@extension-base/background/types/types';
 import type { Extrinsic, ExtrinsicTransferProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
+import { FPNumber } from '@/sora/number';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { isSameString } from '@/helpers';
 
@@ -110,6 +111,7 @@ export async function makeTransfer({
   isMobile,
   state,
 }: MakeTransferParams): Promise<void> {
+  const finalGuard = captureWalletResetGuard(state);
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[networkKey.toLowerCase()];
   const api = apiProps.api;
@@ -118,8 +120,9 @@ export async function makeTransfer({
 
   await api?.isReady;
 
+  finalGuard();
   const address = state.keyringService.getSubstrateAddress(from);
-  const tokenBalance = state.balanceService.getAccountBalance(address).find(({ groupId }) => groupId === assetId)!;
+  const tokenBalance = state.balanceService.getTokenBalance(address, assetId, undefined, networkKey);
 
   const extrinsic = createExtrinsicTransfer(
     {
@@ -140,6 +143,7 @@ export async function makeTransfer({
       txState,
       address: from,
       errorMessage: 'error transfer',
+      finalGuard,
     },
     state
   );

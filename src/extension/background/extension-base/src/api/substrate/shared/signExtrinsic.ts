@@ -1,3 +1,4 @@
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import type State from '@extension-base/background/handlers/State';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -8,17 +9,23 @@ interface SignExtrinsicProps {
   apiProps: ApiProps;
   extrinsic: SubmittableExtrinsic<'promise'>;
   isMobile: boolean;
+  finalGuard?: () => void;
 }
 
 export const signExtrinsic = async (
-  { address, apiProps, extrinsic, isMobile }: SignExtrinsicProps,
+  { address, apiProps, extrinsic, isMobile, finalGuard }: SignExtrinsicProps,
   state: State
 ): Promise<void> => {
+  const resetGuard = captureWalletResetGuard(state);
+  const assertCurrent = () => { resetGuard(); finalGuard?.(); };
+  assertCurrent();
   const keyPair = state.keyringService.getPair(address);
 
   const nonce = (await apiProps.api?.rpc.system.accountNextIndex(address)) as unknown as number;
   const registry = apiProps.api!.registry;
-  const signer = new KeyringSigner({ registry, keyPair, isMobile });
+  const signer = new KeyringSigner({ registry, keyPair, isMobile, finalGuard: assertCurrent });
 
+  assertCurrent();
   await extrinsic.signAsync(address, { signer, nonce });
+  assertCurrent();
 };

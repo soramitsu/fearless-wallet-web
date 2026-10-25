@@ -126,6 +126,11 @@ describe('BitcoinEsploraClient', () => {
 
     expect(() => new BitcoinEsploraClient({ baseUrl: 'http://blockstream.info/api', fetchFn })).toThrow(BitcoinIndexerError);
     expect(() => new BitcoinEsploraClient({ baseUrl: 'http://localhost:3000/api', fetchFn })).not.toThrow();
+    expect(() => new BitcoinEsploraClient({ baseUrl: 'http://[::1]:3000/api', fetchFn })).not.toThrow();
+    expect(() => new BitcoinEsploraClient({ baseUrl: 'ftp://localhost/api', fetchFn })).toThrow(BitcoinIndexerError);
+    expect(() => new BitcoinEsploraClient({ baseUrl: 'https://user:secret@bitcoin.example/api', fetchFn })).toThrow(
+      BitcoinIndexerError
+    );
     await expect(client.getAddress(TESTNET_ADDRESS)).rejects.toThrow(BitcoinIndexerError);
     await expect(client.getTransactions(MAINNET_ADDRESS, { lastSeenTxid: '../bad' })).rejects.toThrow(BitcoinIndexerError);
     await expect(client.broadcastTransaction('abc')).rejects.toThrow(BitcoinIndexerError);
@@ -158,10 +163,59 @@ describe('BitcoinEsploraClient', () => {
 
     await expect(malformedShape.getBalance(MAINNET_ADDRESS)).rejects.toThrow(BitcoinIndexerError);
 
+    // An endpoint that accepted the POST but answered garbage may still have
+    // relayed the transaction, so the outcome is ambiguous, never "failed".
     const badBroadcast = new BitcoinEsploraClient({
       fetchFn: vi.fn(async () => new Response('not-a-txid', { status: 200 })),
     });
 
-    await expect(badBroadcast.broadcastTransaction('00aa')).rejects.toThrow(BitcoinIndexerError);
+    await expect(badBroadcast.broadcastTransaction('00aa')).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'bitcoin_broadcast_ambiguous',
+      name: 'BitcoinBroadcastError',
+    });
+  });
+
+  it('rejects impossible balances and bounded-response bypass attempts', async () => {
+    const impossibleBalance = new BitcoinEsploraClient({
+      fetchFn: vi.fn(async () =>
+        jsonResponse({
+          ...addressResponse(),
+          chain_stats: {
+            ...addressResponse().chain_stats,
+            funded_txo_sum: 2_100_000_000_000_001,
+            spent_txo_sum: 0,
+          },
+        })
+      ),
+    });
+
+    await expect(impossibleBalance.getBalance(MAINNET_ADDRESS)).rejects.toMatchObject({
+      message: 'invalid_balance_response',
+      name: 'BitcoinIndexerError',
+    });
+
+    const oversizedHeader = new BitcoinEsploraClient({
+      fetchFn: vi.fn(async () =>
+        new Response('{}', {
+          headers: { 'content-length': String(32 * 1024 * 1024 + 1) },
+        })
+      ),
+    });
+
+    await expect(oversizedHeader.getBalance(MAINNET_ADDRESS)).rejects.toMatchObject({
+      message: 'bitcoin_indexer_response_too_large',
+      name: 'BitcoinIndexerError',
+    });
+
+    const oversizedBroadcastBody = new BitcoinEsploraClient({
+      fetchFn: vi.fn(async () => new Response('x'.repeat(64 * 1024 + 1))),
+    });
+
+    await expect(oversizedBroadcastBody.broadcastTransaction('00aa')).rejects.toMatchObject({
+      ambiguous: true,
+      message: 'bitcoin_broadcast_ambiguous',
+      name: 'BitcoinBroadcastError',
+    });
   });
 });

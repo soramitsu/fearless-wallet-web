@@ -1,30 +1,9 @@
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import router from '@/router';
-import { i18n } from '@/locales';
-import App from '@/App.vue';
-import '@/styles';
-import { registerPlugins } from '@/plugins';
-import '@/assets';
-import { registerComponents } from '@/components';
-import { IS_EXTENSION } from '@/consts/global';
+import { installVisualEffects } from '@/appearance/visualEffects';
+import { prepareWebWorker, startWallet } from '@/bootstrap/startup';
+import '@/styles/fw-tokens.scss';
+import '@/styles/fw-fonts.scss';
+import '@/styles/_fw-effects.scss';
 
-if ('serviceWorker' in navigator && !IS_EXTENSION) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('service-worker.js')
-      .then((registration) => console.info('SW registered: ', registration))
-      .catch((registrationError) => console.info('SW registration failed: ', registrationError));
-  });
-}
-
-const pinia = createPinia();
-const app = createApp(App);
-
-app.use(pinia);
-app.use(router);
-app.use(i18n);
-registerPlugins(app);
-registerComponents(app);
-app.config.performance = process.env.NODE_ENV === 'development';
-app.mount('#app');
+// Before mount: the web wallet keeps the effects choice in localStorage only.
+installVisualEffects();
+void startWallet(() => import('@/bootstrap/mountApp'), prepareWebWorker);

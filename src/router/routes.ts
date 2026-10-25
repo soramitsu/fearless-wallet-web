@@ -1,11 +1,16 @@
-import { type RouteRecordRaw } from 'vue-router';
+import { type LocationQueryValue, type RouteRecordRaw } from 'vue-router';
+import { ADD_WALLET_PATH, PASSWORD_SETUP_PATH } from './accountFlowPaths';
 import { getStakingNetwork, haveAuthRequests, haveMetaRequests, hasSelectedWallet, haveSignRequests } from './helpers';
+import { createIrohaConnectRouteGuard } from './irohaConnectGate';
 import type { NetworkName } from '@/interfaces';
 import { keyringIsLocked } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 import { useExtensionStore } from '@/stores/extension';
 import { useStakingStore } from '@/stores/staking';
 import Unlock from '@/screens/welcome/Unlock.vue';
+import { initialAccountsReady } from '@/bootstrap/accountsReady';
+import { IS_EXTENSION } from '@/consts/global';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -62,6 +67,17 @@ const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking
 
 const Pools = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolsPage.vue');
 const PoolDetails = () => import(/* webpackChunkName: "pools */ '@/screens/pools/PoolDetails.vue');
+const DeFi = () => import('@/screens/defi/DeFiHub.vue');
+const CrossChain = () => import('@/screens/cross-chain/CrossChainRoot.vue');
+const Settings = () => import('@/screens/settings/SettingsPage.vue');
+const NetworksAssetsSettings = () => import('@/screens/settings/NetworksAssetsSettings.vue');
+const AccountAccessRecovery = () => import('@/screens/settings/AccountAccessRecovery.vue');
+const IrohaConnect = () => import('@/screens/irohaConnect/IrohaConnectPage.vue');
+const Farming = () => import('@/screens/defi/FarmingPage.vue');
+const Polkamarkt = () => import('@/screens/defi/polkamarkt/PolkamarktPage.vue');
+
+const firstQueryValue = (value: LocationQueryValue | LocationQueryValue[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) ?? '';
 
 const MigrationDescription = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/keyringMigration/MigrationDescription.vue');
@@ -72,10 +88,15 @@ const MigrationAccounts = (/* webpackChunkName: "migration */) =>
 const UniversalWalletMigration = (/* webpackChunkName: "migration */) =>
   import('@/screens/addWallet/universalWalletMigration/UniversalWalletMigration.vue');
 
+const SecurityNotice = () => import('@/screens/securityNotice/SecurityNotice.vue');
+const SecurityNoticeGuide = () => import('@/screens/securityNotice/SecurityNoticeGuide.vue');
+
 export enum Components {
   MigrationDescription = 'MigrationDescription',
   MigrationAccounts = 'MigrationAccounts',
   UniversalWalletMigration = 'UniversalWalletMigration',
+  SecurityNotice = 'SecurityNotice',
+  SecurityNoticeGuide = 'SecurityNoticeGuide',
   Unlock = 'Unlock',
   ResetWallet = 'ResetWallet',
   ChangePassword = 'ChangePassword',
@@ -84,6 +105,7 @@ export enum Components {
   MobileWalletAuth = 'MobileWalletAuth',
   Main = 'Main',
   Wallet = 'Wallet',
+  Defi = 'Defi',
   Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
   AccountSetting = 'AccountSetting',
@@ -98,15 +120,25 @@ export enum Components {
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
   Polkaswap = 'Polkaswap',
+  TokenLocations = 'TokenLocations',
+  Polkamarkt = 'Polkamarkt',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
   SendForm = 'SendForm',
   ReceiveForm = 'ReceiveForm',
   CrossChainForm = 'CrossChainForm',
+  CrossChain = 'CrossChain',
   Staking = 'Staking',
   MyStake = 'MyStake',
   Pools = 'Pools',
   PoolDetails = 'PoolDetails',
+  Farming = 'Farming',
+  Settings = 'Settings',
+  SettingsNetworksAssets = 'SettingsNetworksAssets',
+  SettingsChangePassword = 'SettingsChangePassword',
+  AccountAccessRecovery = 'AccountAccessRecovery',
+  StorageRecovery = 'StorageRecovery',
+  IrohaConnect = 'IrohaConnect',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInitAuth = 'WalletConnectInitAuth',
@@ -126,13 +158,38 @@ export enum Components {
   NftSendForm = 'NftSendForm',
 }
 
+// Behind a build flag (src/portfolio/dashboard/dashboardFlag.ts): a build without the dashboard folds this away, import
+// included. Where it lives for one token, opened from the portfolio dashboard.
+const portfolioDashboardRoutes: RouteRecordRaw[] =
+  process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+    ? [
+        {
+          path: 'portfolio/where',
+          name: Components.TokenLocations,
+          component: () => import('@/screens/portfolio/TokenLocations.vue'),
+          props: (route) => ({
+            token: firstQueryValue(route.query.token),
+            holding: firstQueryValue(route.query.holding),
+          }),
+          meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+        },
+      ]
+    : [];
+
 const routes: Array<RouteRecordRaw> = [
+  {
+    path: '/storage-recovery',
+    name: Components.StorageRecovery,
+    component: () => import('@/screens/settings/StorageRecovery.vue'),
+    meta: { title: 'export', calm: true },
+  },
   {
     path: '/migration-description',
     name: Components.MigrationDescription,
     component: MigrationDescription,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -141,6 +198,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MigrationAccounts,
     meta: {
       title: 'migration',
+      calm: true,
     },
   },
   {
@@ -149,15 +207,35 @@ const routes: Array<RouteRecordRaw> = [
     component: UniversalWalletMigration,
     meta: {
       title: 'migration',
+      calm: true,
+    },
+  },
+  {
+    path: '/security-notice',
+    name: Components.SecurityNotice,
+    component: SecurityNotice,
+    meta: {
+      title: 'securityNotice',
+      calm: true,
+    },
+  },
+  {
+    path: '/security-notice/guide',
+    name: Components.SecurityNoticeGuide,
+    component: SecurityNoticeGuide,
+    meta: {
+      title: 'securityNotice',
+      calm: true,
     },
   },
 
   {
-    path: '/change-password',
+    path: PASSWORD_SETUP_PATH,
     name: Components.ChangePassword,
     component: ChangePassword,
     meta: {
       title: 'changePassword',
+      calm: true,
     },
   },
   {
@@ -166,6 +244,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Unlock,
     meta: {
       title: 'unlock',
+      calm: true,
     },
   },
   {
@@ -174,6 +253,7 @@ const routes: Array<RouteRecordRaw> = [
     component: ResetWallet,
     meta: {
       title: 'reset',
+      calm: true,
     },
   },
   {
@@ -206,11 +286,12 @@ const routes: Array<RouteRecordRaw> = [
     component: CreateGoogle,
   },
   {
-    path: '/add-wallet/:type',
+    path: ADD_WALLET_PATH,
     name: Components.AddWallet,
     component: AddWallet,
     meta: {
       title: 'addWallet',
+      calm: true,
     },
   },
   {
@@ -227,17 +308,24 @@ const routes: Array<RouteRecordRaw> = [
     component: Authorize,
     meta: {
       title: 'authorize',
+      calm: true,
     },
   },
   {
     path: '/wc-authorize',
     name: Components.WalletConnectAuthConfirmation,
     component: WalletConnectAuthConfirmation,
+    meta: {
+      calm: true,
+    },
   },
   {
     path: '/wc-transaction',
     name: Components.WalletConnectSignConfirmation,
     component: WalletConnectSignConfirmation,
+    meta: {
+      calm: true,
+    },
   },
   {
     path: '/wc-not-supported',
@@ -246,8 +334,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/wallet-connect',
-    name: Components.WalletConnectInitAuth,
-    component: WalletConnectInitAuth,
+    redirect: { name: Components.WalletConnectInitAuth },
   },
   {
     path: '/wc-sign',
@@ -256,21 +343,15 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/collection/:contract',
-    name: Components.NftCollection,
-    component: NftCollection,
-    meta: { title: 'wallet' },
+    redirect: { name: Components.Nfts },
   },
   {
     path: '/collection/:contract/:id',
-    name: Components.NftDetails,
-    component: NftDetails,
-    meta: { title: 'wallet' },
+    redirect: { name: Components.Nfts },
   },
   {
     path: '/send-nft/:contract/:id',
-    name: Components.NftSendForm,
-    component: NftSendForm,
-    meta: { title: 'wallet' },
+    redirect: { name: Components.Nfts },
   },
   {
     path: '/meta',
@@ -278,6 +359,7 @@ const routes: Array<RouteRecordRaw> = [
     component: MetaRequest,
     meta: {
       title: 'meta',
+      calm: true,
     },
   },
   {
@@ -286,6 +368,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Transaction,
     meta: {
       title: 'transaction',
+      calm: true,
     },
     beforeEnter: (to, from, next) => {
       const extensionStore = useExtensionStore();
@@ -296,128 +379,92 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/send/:assetId/:network',
-    name: Components.SendForm,
-    component: SendForm,
-    meta: {
-      title: 'send',
-    },
+    redirect: (to) => ({ name: Components.SendForm, params: to.params, query: to.query }),
   },
   {
     path: '/receive/:assetId/:network',
-    name: Components.ReceiveForm,
-    component: ReceiveForm,
-    meta: {
-      title: 'receive',
-    },
+    redirect: (to) => ({ name: Components.ReceiveForm, params: to.params, query: to.query }),
   },
   {
     path: '/cross-chain/:assetId/:network',
-    name: Components.CrossChainForm,
-    component: CrossChainForm,
-    meta: {
-      title: 'crossChain',
-    },
+    redirect: (to) => ({ name: Components.CrossChainForm, params: to.params }),
+  },
+  {
+    path: '/currencies/:access_token?',
+    redirect: (to) => ({ name: Components.Currencies, params: to.params, query: to.query }),
+  },
+  {
+    path: '/nft-collections/:access_token?',
+    redirect: (to) => ({ name: Components.Nfts, params: to.params, query: to.query }),
   },
   {
     path: '/auth-management',
-    component: AuthManagement,
-    children: [
-      {
-        path: '/',
-        name: Components.ManageAuths,
-        component: ManageAuths,
-        redirect: { name: Components.DAppsAuths },
-        children: [
-          {
-            path: '/dapps/:type',
-            name: Components.DAppsAuths,
-            component: DAppsAuths,
-          },
-          {
-            path: '/wc',
-            name: Components.WcAuths,
-            component: WcAuths,
-          },
-        ],
-      },
-      {
-        path: '/dapp-details/:type/:id',
-        name: Components.DAppDetails,
-        component: DAppDetails,
-      },
-      {
-        path: 'wc-details/:topic',
-        name: Components.WalletConnectAuthDetails,
-        component: WalletConnectAuthDetails,
-      },
-    ],
+    redirect: { name: Components.DAppsAuths, params: { type: 'substrate' } },
+  },
+  {
+    path: '/dapps/:type',
+    redirect: (to) => ({ name: Components.DAppsAuths, params: to.params, query: to.query }),
+  },
+  {
+    path: '/wc',
+    redirect: { name: Components.WcAuths },
+  },
+  {
+    path: '/dapp-details/:type/:id',
+    redirect: (to) => ({ name: Components.DAppDetails, params: to.params, query: to.query }),
+  },
+  {
+    path: '/auth-management/wc-details/:topic',
+    redirect: (to) => ({ name: Components.WalletConnectAuthDetails, params: to.params, query: to.query }),
   },
   {
     path: '/sora-swap',
     name: Components.SoraSwap,
-    component: SoraSwap,
-    meta: {
-      title: 'soraSwap',
-    },
+    redirect: { name: Components.Polkaswap },
   },
   {
     path: '/pools',
-    name: Components.Pools,
-    component: Pools,
-    meta: {
-      title: 'pools',
-    },
+    redirect: { name: Components.Pools },
   },
   {
     path: '/pool-details/:poolName',
-    name: Components.PoolDetails,
-    component: PoolDetails,
-    meta: {
-      title: 'poolDetails',
-    },
+    redirect: (to) => ({ name: Components.PoolDetails, params: to.params }),
   },
   {
     path: '/polkaswap-disclaimer',
-    name: Components.PolkaswapDisclaimer,
-    component: PolkaswapDisclaimer,
-    meta: {
-      title: 'polkaswapDisclaimer',
-    },
+    redirect: { name: Components.PolkaswapDisclaimer },
   },
   {
     path: '/my-stake/:network',
-    name: Components.MyStake,
-    component: MyStake,
-    beforeEnter: async (to, from, next) => {
-      const network = (Array.isArray(to.params.network) ? to.params.network[0] : to.params.network) as NetworkName;
-      const stakingStore = useStakingStore();
-      const stakingParams = await getStakingNetwork(stakingStore, network);
-
-      if (stakingParams.totalStake === '0') next({ name: Components.Staking });
-      else next();
-    },
-    meta: {
-      title: 'myStake',
-    },
+    redirect: (to) => ({ name: Components.MyStake, params: to.params, query: to.query }),
   },
   {
     path: '/fearless',
     component: Main,
     children: [
       {
-        path: '/',
+        path: '',
         redirect: { name: Components.Wallet },
         meta: {
           title: 'wallet',
         },
       },
       {
-        path: 'wallet/:access_token?',
+        path: 'portfolio/:access_token?',
+        alias: 'wallet/:access_token?',
         props: (route) => ({ query: route.query.wallet }),
         name: Components.Wallet,
         component: Wallet,
         redirect: { name: Components.Currencies },
-        beforeEnter: (to, from, next) => {
+        beforeEnter: async (to, from, next) => {
+          if (IS_EXTENSION) {
+            await initialAccountsReady;
+            const accounts = useAccountsStore();
+            if (isSelectedWalletRecoveryOnly(accounts.accounts, accounts.selectedWallet.address)) {
+              next();
+              return;
+            }
+          }
           const extensionStore = useExtensionStore();
 
           if (haveAuthRequests(extensionStore)) next({ name: Components.Authorize });
@@ -427,32 +474,77 @@ const routes: Array<RouteRecordRaw> = [
         },
         meta: {
           title: 'wallet',
+          primaryNavigation: 'portfolio',
         },
         children: [
           {
-            path: '/currencies/:access_token?',
+            path: 'tokens',
             name: Components.Currencies,
             component: Currencies,
             meta: {
               title: 'wallet',
+              primaryNavigation: 'portfolio',
             },
           },
           {
-            path: '/nft-collections',
+            path: 'nfts',
             name: Components.Nfts,
             component: NftCollectionList,
             meta: {
               title: 'wallet',
+              primaryNavigation: 'portfolio',
             },
           },
         ],
       },
       {
+        path: 'portfolio/nfts/:chainId/collection/:contract',
+        name: Components.NftCollection,
+        component: NftCollection,
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+      },
+      {
+        path: 'portfolio/nfts/:chainId/collection/:contract/:id',
+        name: Components.NftDetails,
+        component: NftDetails,
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+      },
+      {
+        path: 'portfolio/nfts/:chainId/send/:contract/:id',
+        name: Components.NftSendForm,
+        component: NftSendForm,
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+      },
+      {
+        path: 'portfolio/nfts/collection/:contract/:id?',
+        redirect: { name: Components.Nfts },
+      },
+      {
+        path: 'portfolio/nfts/send/:contract/:id',
+        redirect: { name: Components.Nfts },
+      },
+      {
+        path: 'portfolio/send/:assetId/:network',
+        name: Components.SendForm,
+        component: SendForm,
+        meta: { title: 'send', primaryNavigation: 'portfolio' },
+      },
+      {
+        path: 'portfolio/receive/:assetId/:network',
+        name: Components.ReceiveForm,
+        component: ReceiveForm,
+        meta: { title: 'receive', primaryNavigation: 'portfolio' },
+      },
+      ...portfolioDashboardRoutes,
+      {
         path: 'asset/:assetId',
         component: Asset,
+        meta: {
+          primaryNavigation: 'portfolio',
+        },
         children: [
           {
-            path: '/',
+            path: '',
             name: Components.AssetNetworks,
             component: AssetNetworks,
           },
@@ -464,61 +556,222 @@ const routes: Array<RouteRecordRaw> = [
         ],
       },
       {
-        path: 'staking',
+        path: 'defi',
+        name: Components.Defi,
+        component: DeFi,
+        meta: { title: 'defi', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'defi/staking',
         name: Components.Staking,
         component: Staking,
-        meta: {
-          title: 'staking',
+        meta: { title: 'staking', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'defi/staking/:network',
+        name: Components.MyStake,
+        component: MyStake,
+        beforeEnter: async (to, from, next) => {
+          const network = (Array.isArray(to.params.network) ? to.params.network[0] : to.params.network) as NetworkName;
+          const stakingStore = useStakingStore();
+          const stakingParams = await getStakingNetwork(stakingStore, network);
+          const accountsStore = useAccountsStore();
+          const recoveryOnly = IS_EXTENSION && isSelectedWalletRecoveryOnly(accountsStore.accounts, accountsStore.selectedWallet.address);
+
+          if (stakingParams.totalStake === '0' && !recoveryOnly) next({ name: Components.Staking });
+          else next();
         },
+        meta: { title: 'myStake', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'defi/pools',
+        name: Components.Pools,
+        component: Pools,
+        meta: { title: 'pools', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'defi/pools/:poolName',
+        name: Components.PoolDetails,
+        component: PoolDetails,
+        meta: { title: 'poolDetails', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'defi/farming',
+        name: Components.Farming,
+        component: Farming,
+        meta: { title: 'farming', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'defi/polkamarkt/:marketId?',
+        name: Components.Polkamarkt,
+        component: Polkamarkt,
+        meta: { title: 'polkamarkt', primaryNavigation: 'defi' },
+      },
+      {
+        path: 'polkaswap',
+        name: Components.Polkaswap,
+        component: SoraSwap,
+        meta: { title: 'soraSwap', primaryNavigation: 'polkaswap', embedded: true },
+      },
+      {
+        path: 'polkaswap/disclaimer',
+        name: Components.PolkaswapDisclaimer,
+        component: PolkaswapDisclaimer,
+        meta: { title: 'polkaswapDisclaimer', primaryNavigation: 'polkaswap' },
+      },
+      {
+        path: 'cross-chain',
+        name: Components.CrossChain,
+        component: CrossChain,
+        props: (route) => ({
+          requestedOriginChainId: firstQueryValue(route.query.originChainId),
+          requestedAssetKey: firstQueryValue(route.query.assetKey),
+        }),
+        meta: { title: 'crossChain', primaryNavigation: 'cross-chain' },
+      },
+      {
+        path: 'cross-chain/transfer/:assetId/:network',
+        name: Components.CrossChainForm,
+        component: CrossChainForm,
+        meta: { title: 'crossChain', primaryNavigation: 'cross-chain' },
+      },
+      {
+        path: 'settings',
+        name: Components.Settings,
+        component: Settings,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+      },
+      {
+        path: 'settings/networks-assets',
+        name: Components.SettingsNetworksAssets,
+        component: NetworksAssetsSettings,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+      },
+      {
+        path: 'settings/change-password',
+        name: Components.SettingsChangePassword,
+        component: ChangePassword,
+        meta: { title: 'changePassword', primaryNavigation: 'settings', calm: true },
+      },
+      {
+        path: 'settings/account-access',
+        name: Components.AccountAccessRecovery,
+        component: AccountAccessRecovery,
+        props: (route) => ({
+          address: firstQueryValue(route.query.address),
+          mode: firstQueryValue(route.query.mode),
+        }),
+        meta: { title: 'settings', primaryNavigation: 'settings', calm: true },
+      },
+      {
+        path: 'settings/iroha-connect',
+        name: Components.IrohaConnect,
+        component: IrohaConnect,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+        beforeEnter: createIrohaConnectRouteGuard(Components.Settings),
+      },
+      {
+        path: 'settings/wallet-connect',
+        name: Components.WalletConnectInitAuth,
+        component: WalletConnectInitAuth,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+      },
+      {
+        path: 'settings/connections',
+        component: AuthManagement,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+        children: [
+          {
+            path: '',
+            name: Components.ManageAuths,
+            component: ManageAuths,
+            redirect: { name: Components.DAppsAuths, params: { type: 'substrate' } },
+            children: [
+              {
+                path: 'dapps/:type',
+                name: Components.DAppsAuths,
+                component: DAppsAuths,
+                meta: { primaryNavigation: 'settings', calm: true },
+              },
+              {
+                path: 'wallet-connect',
+                name: Components.WcAuths,
+                component: WcAuths,
+                meta: { primaryNavigation: 'settings' },
+              },
+            ],
+          },
+          {
+            path: 'dapp/:type/:id',
+            name: Components.DAppDetails,
+            component: DAppDetails,
+            meta: { primaryNavigation: 'settings', calm: true },
+          },
+          {
+            path: 'wallet-connect/:topic',
+            name: Components.WalletConnectAuthDetails,
+            component: WalletConnectAuthDetails,
+            meta: { primaryNavigation: 'settings' },
+          },
+        ],
+      },
+      {
+        path: 'settings/accounts',
+        component: AccountsLayout,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
+        children: [
+          {
+            path: '',
+            name: Components.AccountSetting,
+            component: AccountSetting,
+            meta: { title: 'accountSetting', primaryNavigation: 'settings' },
+          },
+          {
+            path: 'chains/:type',
+            name: Components.ChainAccounts,
+            component: ChainAccounts,
+            meta: { title: 'accounts', primaryNavigation: 'settings' },
+          },
+          {
+            path: 'network/:network',
+            name: Components.Nodes,
+            component: Nodes,
+            meta: { title: 'nodes', primaryNavigation: 'settings' },
+          },
+          {
+            path: 'network/:network/export',
+            name: Components.Export,
+            component: Export,
+            meta: { title: 'export', primaryNavigation: 'settings', calm: true },
+          },
+        ],
       },
     ],
-    beforeEnter: (to, from, next) => {
+    beforeEnter: async (to, from, next) => {
       const accountsStore = useAccountsStore();
-
+      await initialAccountsReady;
       if (!hasSelectedWallet(accountsStore)) next({ name: Components.Welcome });
       else next();
     },
   },
   {
     path: '/accounts',
-    component: AccountsLayout,
-    children: [
-      {
-        path: '/',
-        name: Components.AccountSetting,
-        component: AccountSetting,
-        meta: {
-          title: 'accountSetting',
-        },
-      },
-      {
-        path: '/chain-accounts/:type',
-        name: Components.ChainAccounts,
-        component: ChainAccounts,
-        meta: {
-          title: 'accounts',
-        },
-      },
-      {
-        path: ':network',
-        name: Components.Nodes,
-        component: Nodes,
-        meta: {
-          title: 'nodes',
-        },
-      },
-      {
-        path: ':network/export',
-        name: Components.Export,
-        component: Export,
-        meta: {
-          title: 'export',
-        },
-      },
-    ],
+    redirect: { name: Components.AccountSetting },
   },
   {
-    path: '*',
+    path: '/chain-accounts/:type',
+    redirect: (to) => ({ name: Components.ChainAccounts, params: to.params, query: to.query }),
+  },
+  {
+    path: '/accounts/:network/export',
+    redirect: (to) => ({ name: Components.Export, params: to.params, query: to.query }),
+  },
+  {
+    path: '/accounts/:network',
+    redirect: (to) => ({ name: Components.Nodes, params: to.params, query: to.query }),
+  },
+  {
+    path: '/:pathMatch(.*)*',
     component: Welcome,
     beforeEnter: async (to, from, next) => {
       const isLock = await keyringIsLocked();

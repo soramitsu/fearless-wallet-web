@@ -1,12 +1,22 @@
 <template>
   <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
     <FCorners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
-      <div :class="popupContainerClasses" :style="popupContainerStyles">
+      <div
+        ref="dialog"
+        :class="popupContainerClasses"
+        :style="popupContainerStyles"
+        role="dialog"
+        :aria-modal="showBackground || undefined"
+        :aria-label="ariaLabel || $t(headerText || placeholder || 'common.select')"
+        tabindex="-1"
+        @keydown="dialogKeydown"
+      >
         <div v-if="showHeader" class="header" :class="headerCentered">
           <SearchInput
             v-if="showSearch"
             :value="filterValue"
             :placeholder="placeholder"
+            :resultCount="searchResultCount"
             width="235px"
             @change="changeFilterValue"
           />
@@ -20,8 +30,15 @@
             </div>
           </template>
 
-          <button v-if="showCloseButton" type="button" class="button-close" data-testid="basicCloseBtn" @click="close">
-            <Icon icon="close" />
+          <button
+            v-if="showCloseButton"
+            type="button"
+            class="button-close"
+            :aria-label="$t('common.close')"
+            data-testid="basicCloseBtn"
+            @click="close"
+          >
+            <Icon icon="close" aria-hidden="true" />
           </button>
         </div>
 
@@ -37,6 +54,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
+import { useModalFocus } from './useModalFocus';
 import { IS_EXTENSION } from '@/consts/global';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
@@ -52,6 +70,7 @@ type Props = {
   height?: number;
   maxHeight?: number;
   headerText?: string;
+  ariaLabel?: string;
   placeholder?: string;
   isIcon?: boolean;
   showHeader?: boolean;
@@ -60,6 +79,7 @@ type Props = {
   showBackground?: boolean;
   closeByBackground?: boolean;
   showSearch?: boolean;
+  searchResultCount?: number | null;
   showBorder?: boolean;
   sizeWidth?: Size;
   showCloseButton?: boolean;
@@ -127,7 +147,10 @@ const popupContainerStyles = computed(() => {
 
   if (props.height) styles.height = `${props.height}px`;
 
-  if (props.maxHeight) styles.maxHeight = `${props.maxHeight}px`;
+  if (props.showBackground) {
+    const verticalSpace = 32 + Math.max(0, props.top ?? 0);
+    styles.maxHeight = `min(${props.maxHeight ?? 410}px, calc(100dvh - ${verticalSpace}px))`;
+  } else if (props.maxHeight) styles.maxHeight = `${props.maxHeight}px`;
 
   return styles;
 });
@@ -158,7 +181,7 @@ const topLeftStyles = computed(() => {
 const popupBackgroundStyles = computed(() => {
   const styles: Record<string, string> = !props.showBackground ? topLeftStyles.value : {};
 
-  if (props.zIndex) styles.zIndex = props.zIndex.toString();
+  if (props.zIndex) styles.zIndex = Math.max(props.zIndex, props.showBackground ? 399 : 0).toString();
 
   return styles;
 });
@@ -173,6 +196,17 @@ const changeFilterValue = (value: string) => {
 
 const close = () => emit('handlerClose');
 
+const dialog = ref<HTMLElement | null>(null);
+const dialogKeydown = useModalFocus(
+  dialog,
+  () => props.showBackground,
+  () => {
+    if (!props.showCloseButton || !props.showHeader) return false;
+    close();
+    return true;
+  }
+);
+
 const backgroundClick = (event: CustomEvent) => {
   if (props.closeByBackground && (event.target as Element)?.classList.contains('popup-background')) close();
 };
@@ -180,6 +214,7 @@ const backgroundClick = (event: CustomEvent) => {
 
 <style lang="scss" scoped>
 .popup-background {
+  box-sizing: border-box;
   display: flex;
   position: absolute;
   top: 0;
@@ -191,6 +226,7 @@ const backgroundClick = (event: CustomEvent) => {
   height: fit-content;
 
   .popup-container {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -200,7 +236,7 @@ const backgroundClick = (event: CustomEvent) => {
     min-width: 230px;
     max-height: 410px;
     max-width: 480px;
-    background-color: #111111;
+    background-color: $fw-panel-surface;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
     padding: 15px 0 13px;
@@ -217,7 +253,7 @@ const backgroundClick = (event: CustomEvent) => {
   }
 
   .width-big {
-    min-width: 370px;
+    min-width: min(370px, calc(100vw - 32px));
     max-width: 450px;
   }
 
@@ -243,6 +279,7 @@ const backgroundClick = (event: CustomEvent) => {
   }
 
   .header {
+    box-sizing: border-box;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -283,16 +320,37 @@ const backgroundClick = (event: CustomEvent) => {
   }
 
   .button-close {
+    appearance: none;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: $grayish-white;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
     padding: 0;
-    width: 20px;
-    height: 20px;
+    width: 44px;
+    height: 44px;
     margin: auto 0;
+
+    :deep(svg) {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .button-close:focus-visible {
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+    outline-offset: -2px;
   }
 }
 
 .popup-background-show {
-  height: 100%;
+  position: fixed;
+  height: 100dvh;
   width: $extension-width;
+  max-width: 100vw;
   padding: $default-padding;
 }
 
@@ -304,6 +362,7 @@ const backgroundClick = (event: CustomEvent) => {
 .popup-background-blur {
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
+  @include fw-scrim-tiers;
 }
 
 .popup-background-animation {
@@ -337,6 +396,33 @@ const backgroundClick = (event: CustomEvent) => {
 .fw-web {
   .popup-background-show {
     width: auto;
+  }
+}
+
+@include v1-palette {
+  .popup-background .popup-container {
+    background: var(--fw-raised-2);
+    border: 1px solid var(--fw-stroke-strong);
+    border-radius: 24px;
+    clip-path: none;
+    box-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.8);
+    max-width: calc(100vw - 32px);
+  }
+  .popup-background .header {
+    align-items: center;
+    gap: 8px;
+    padding-inline: 16px;
+  }
+  .popup-background-blur {
+    background: var(--fw-scrim);
+  }
+  .fw-calm .popup-background .popup-container,
+  html[data-fw-effects='reduced'] .popup-background .popup-container {
+    box-shadow: none;
+  }
+  .popup-background :deep(.corner-size-big),
+  .popup-background :deep(.corner-size-medium) {
+    display: none;
   }
 }
 </style>

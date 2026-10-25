@@ -1,8 +1,17 @@
 # fearless-wallet-web
 
+Soramitsu-owned code, including the browser wallet, website, release tools, and
+local compatibility shims, is licensed under the [Apache License 2.0](LICENSE).
+Third-party components retain their original licenses and attribution; see
+[NOTICE](NOTICE), the component license files, and the font notices bundled
+with release builds. The license does not grant trademark rights.
+
 ## Project setup
+Requires Node 24 (`.nvmrc`: `24.19.0`) and Yarn 4.17.0 through Corepack; see
+[CONTRIBUTING.md](CONTRIBUTING.md#toolchain) for the Homebrew `node@24` setup.
 ```
-yarn install
+corepack enable
+yarn install --immutable
 ```
 
 ### Compiles and hot-reloads for development

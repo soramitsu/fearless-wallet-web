@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "status": "qualified bounded candidate; independent acceptance pending",
+  "sourceCommit": "ff88e823cf310a384404a9f7a9d59a12489e90e5",
+  "baseCommit": "65e6efb4cd058918e523cebaf4c4e0f434979015",
+  "scope": "Test/CI-only raw Vue colour guard; no product source or generated theme changes",
+  "sourcePins": {
+    ".github/workflows/ci.yml": "7ccff6aea959cc6e049a3547570dba41388fd398b3ce63f90c3d31e2da168d54",
+    "config/raw-colour-baseline.json": "43f1a82a6368885dc57dea1cc098e8d567bd509ab94101db78f45a8547e6b940",
+    "scripts/check-raw-colours.mjs": "1d414717a517e1d9c25b8cb255c8749acb875c018c55d0beac4ff9e70f301031",
+    "tests/unit/raw-colour-ratchet.spec.ts": "e644049690f63695cc3ce4b2c1b1e0d17c29b08dd233d2a7fe213da120287d72"
+  },
+  "compiledSourceSnapshot": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-source-start-v1.json",
+    "sha256": "96734b25a404661e24082f78bc9b004dad4ecadc7e4e3edce96b364ec15d115d",
+    "files": 1382,
+    "zeroDrift": true
+  },
+  "evidencePins": {
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-actions-policy-v1-run.json": "70c1cb448fcd44a3089ada0969161a7ec3adaa1ba927ba074732bca8d6d4a392",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-actions-policy-v1.log": "2fd6b4a07c43f6166daf4fcc6c21bd4cab2bcde5c073443b258e9fad8bbf265d",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-cli-v1-run.json": "5485e5f2cafaf20b246b61dac25f20bc6ece47a6289696f6ee70939bb1e7c544",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-cli-v1.log": "1d561fc443eeed032b6b937ea357f703d05ea5e50558ce0c8e21ec4a20efce9e",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-cli-v1-run.json": "27a0007afa93e45335e88c30d84995de09e95025d1255012c8ab18238a317b5b",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-cli-v1.log": "ccfdd3234025b56ec8d13769541a719b614ff97352ba77b6f88f357a613582af",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-lint-v1-run.json": "39d9672764d70e54f67f3f15a203bd6a4c4e5fa1340a6ae95ff337519690419f",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-lint-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-source-start-v1.json": "96734b25a404661e24082f78bc9b004dad4ecadc7e4e3edce96b364ec15d115d",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-typecheck-v1-run.json": "d5c0c336e1d8db9bd8ba8769bad50efc776d8dd53a4de03b9583e224298062d7",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-unit-v1-run.json": "3ba96b9a070f02fea43ea60b6b513ee05e7329e8dcf41f7916403a027317133a",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-final-unit-v1.log": "c76cae69d66a28e6a12a1688f08650c65dcc5730b9aaf018f4c8aa28e2048f7f",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-inventory-v1.json": "bc8c303c17d7dcb5d8435ab443e4377e2ea5b5bbbbf34f4349cfb635e859675f",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-lint-v1-run.json": "09c695ec03dd13728b64cca69626d64d83b319b4c510fafd45db6a1e3366ba33",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-lint-v1.log": "b3c32a72c82d408c31e1eec16f303180cd30a045d81f53ca643c00736aab546e",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-lint-v2-run.json": "3ee272a2f60a335b2c707fb1a788e8b3b785ccd01d5ba4983dbab529594ede5b",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-typecheck-v1-run.json": "0f680184993fcdb2b6cc988fade9185d59b8e43130d45393cbe92a30b333d54e",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-unit-v1-run.json": "8010d88a7f79b0d50b6a8760c5874bdfb1f2fe58e1550aac87d7f423fa2b5b84",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-unit-v1.log": "1fc6f8b9829255982c2d35055584f8d02e048222c959d4503015c64999bf0537",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-unit-v2-run.json": "a39a321a9f006e367126e3f7d44891aad3d08ba67f6ad31ace1a43f984afffd5",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-unit-v2.log": "388069bb56df5dc183a2a3666e39d58fb1d608dbe2483bafefe25361ce3c3732"
+  },
+  "checks": {
+    "targetedVitest": {
+      "files": 3,
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "guardTests": 10,
+      "existingPaletteContrastTests": 20
+    },
+    "typecheck": "passed",
+    "scopedEslint": "passed",
+    "githubActionsPolicy": "7 pinned action references/3files pass",
+    "realRepositoryCli": "passes and compares current Git baseline",
+    "productionSourceChanges": []
+  },
+  "inventory": {
+    "vueFiles": 243,
+    "matchingFiles": 65,
+    "uniqueSites": 181,
+    "occurrences": 203,
+    "planRecordedCount": 179,
+    "october10ObservedOccurrences": 180,
+    "october12ObservedOccurrences": 191,
+    "commentOccurrences": 1
+  },
+  "failureHistory": [
+    "Initial Vitest Vite/shebang parse failure:20 existing tests pass, guard suite does not load; preserved.",
+    "Initial scoped lint6 Node-global failures; explicit node imports fix.",
+    "Final log fatal:Needed a single revision is the intentionally rejected missing Git ref in an isolated adversarial test; overall30 tests pass."
+  ],
+  "limits": [
+    "Initial current-source guard prevents future growth, does not close earlier179-site migration debt.",
+    "No production CSS, browser, build, packaging, signed artifact or visual acceptance claim.",
+    "Only literal hex3/4/6/8 and rgb/rgba inside Vue text; named colours/other functions and non-Vue source are outside this binding rule.",
+    "CI checks exact PR base or push predecessor; no remote GitHub run is claimed. Initial baseline adoption explicitly reports absence in base; later additions and retired-entry revival fail.",
+    "Android/iOS guards and full cross-platform design/G5 remain open."
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "source": {
+    "commit": "cfcdb591fd7098b24022e8e9afc19b511d0fe785",
+    "version": "3.0.6",
+    "writtenBy": "TonKeyringService (src/extension/background/extension-base/src/services/keyring-service/TonKeyring.ts)",
+    "startsFrom": "tests/fixtures/3.0.5/ton-accounts.json",
+    "generated": "2026-10-22, see README.md",
+    "note": "Test-only passwords; the phrases are those of the 3.0.5 fixture. Never fund these accounts."
+  },
+  "states": {
+    "upgradedAtUnlock": {
+      "description": "The 3.0.5 records after the first 3.0.6 unlock with the password they were stored under.",
+      "masterPassword": "test-only master password 3.0.5",
+      "records": [
+        {
+          "name": "Fixture ton-native-24",
+          "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"JETBP3x5sf3busO+1V6zm8lPrFm0/tVYbFlLHudTFwcAgAAAAQAAAAgAAACpfptcqYlbHNPcNjh34EatXtVtdRYsXJVJaxrCex2JZyWnujamaE6WvVKzon0wy12IpZoEF/cCaszziIjTRR/yD8YxdWe9VYJB8G331HqgB9UB+SgWGTDaqg3E+el0ge+bs6sPjBf2CiZ4+XOOrr2byShypiKeKY1N73xVMYf5EQoRLPxxlh7s6fs5nYTikrxRzqtDMa+r/MkGpqhdWJ92djvl0NDAKfuknYl0zNQlptoXfTAGe0fIzCrWBYTueA==\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+        },
+        {
+          "name": "Fixture bip39-12",
+          "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"tI2qxw3cQAWzpG+z2rIWHCeobexo5gZOhSqnUFSSpQYAgAAAAQAAAAgAAABxxllpEyrTfDllZoy/eBRarvsv7BcHOkPFh6DDmss+DXJmcgJ1uEnbIPG9R2ZhwMO3YLPJjby8BYLs1+AHNdmYvx6CN95R4llb1Kzen4AEa+999dwp1j9/878wjaDQonhLVoVc18TOtWXWxASJnhOYrAZJOmefPCsy679OU4oZy8jom3eQ\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+        }
+      ]
+    },
+    "keptForRecovery": {
+      "description": "The 3.0.5 records after the first 3.0.6 unlock with a later master password: 3.0.5 did not re-encrypt TON phrases when the password changed, so they still open only with the earlier one.",
+      "masterPassword": "test-only master password 3.0.6",
+      "earlierPassword": "test-only master password 3.0.5",
+      "records": [
+        {
+          "name": "Fixture ton-native-24",
+          "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+          "cipherSeed": "{\"version\":3,\"encoded\":\"LB56FJGgk6Azv7vFUHSNNuY90Ox7YNlILFGmrev/H2IAgAAAAQAAAAgAAAC2OFRSZbTu1a1fY8LQVHZZvMHPn4+P8QzHcS/eOdsaZgsCANJ3sCkWk12UT1nTLXnZ1+cd6/nusqengHUMUj5NSqlZSTFC41f0ZHoCh7Ai0ioiNgX7O1NFicVsdtrMsDP9Tiafk7FV22rgFHX8oRiOP4p4BtUDaPOqjryYK+sbMBRYSQIT7k316/yRGtriETdNgitzM8XsuS0fcaXUw9UGQyrRwdhAckrtt7ZOtwzHrsO9jibLJvFkPlE/Ni+A1NAtdgv76gmWQ+3yC+naNNl+nMlqK0wetGvrRcyAghXze1jOn4QSrJtPE4wI17wEXNsiF11HH5Ts27M0FSRxbyP+YnvnM7DpJhhE2Ecr5jw6767oG2L+lECRq0VPjGOWTcl86iIAuTirYyDy1A8g475ttsTlCCR0IUYKmT/c/wVjnVznpIfmCZ8l1xob2vAYUzKduOYnIbJUn3KoQBM6gwEZibTQNDZQRCYJ46C5U0Fbu/8hZEE/9bV/d/2yk3fPME/kMDjv0Fu42RRc6vBSqDgO2RPdhDe5Qz8eROt6mAtPQrXWjjwkpFqEd185Wjgd8auMVGV6\",\"encoding\":{\"content\":[\"ton-legacy-recovery\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+        },
+        {
+          "name": "Fixture bip39-12",
+          "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+          "cipherSeed": "{\"version\":3,\"encoded\":\"FzqcchjML069bC+BmQ2EVkomfRoCwlaN+zrGyE7HGpwAgAAAAQAAAAgAAADqxrQtlu6ftOg7zbTGWcLHZ5+UvggztVNqJM/Ipn1DIlHOaQMG1X+UA8C0zhJ3Ofls2lWomOHNn01tngdE078+1Tk829JBvyvv1djiz6bt0kinLA7oYiwBg4W1Uz2IneR3hx1sJkIZnxufiAAWh1tM5+bq4xmXgSqRtuK8Y1fZuDRZn2z9mXfGYMZCi5MgAVMBNkvsJE+iHweWzCBYGmbisongwIWr2KmwM366grnEYSSFywqgju6sPI5CYmVlCWVOjDij9e5Je/qVV6KoEUUp3agoorEIr/HxJhSJ1WEhsmiRyK8zjUTSIM+TK8wpgxmQI+hsT6fHCvP2GTJvhQJKTP4ABvpw5UBrf3qIw4muh7sg/HYYj302BKfzPUcZGKc1GfAmTHPTPix3x88R24JEoy4l/GIg4ilnPTTSFu4u175pXI6qEdyzRrdmGl5Ge99YB5OLx1USZElkde69+ghL\",\"encoding\":{\"content\":[\"ton-legacy-recovery\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+        }
+      ]
+    },
+    "passwordChanged": {
+      "description": "upgradedAtUnlock after a 3.0.6 master password change.",
+      "masterPassword": "test-only next master password 3.0.6",
+      "records": [
+        {
+          "name": "Fixture ton-native-24",
+          "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"1pUNdC/QJsgm7DW3nZ+AzoGbdrNABuvfwIIISi4swf0AgAAAAQAAAAgAAABq3cR+EuuuOAaLHaB6AYRxr7akkCw1EWTz6fVNXPwico/K8aUhU1zkiOCeepBQudYDpl0TumBL7kzg7QZ5KLErAEDDdLKkCa/poUHgjnrnmrJXEOASjCR6RbsYPhOrFoLy+Hok0FU3L/lxHTP01zVxpVjVMnGM8kM5m8sDLPaDa8nvvrwk23lTa7Zz5PP4vpNJrBCwN3axJeUlwv49ex7gt3+Y88IdVbAa5RSDxn8cz6zK6tNCAzHQDXzn+4JgSA==\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+        },
+        {
+          "name": "Fixture bip39-12",
+          "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"yAqVLTtX113cui9Ah3hipn00Rp8XXO8B+F1ifbJs5dgAgAAAAQAAAAgAAAC7L5SqL3EyQA+yB0nAKsADyAWRNg4rck2uHaysohM6OAX8z8BVDP4tRO9PHuXz0YKnVlvxGR8xjYuww4ijX2ZbwQ0kV11c3twuph4ulIo7fuxlMmhPT/ujqCMarOAKMTjfeWMOl+hIXZqxyj8Hpnub/FsoOFMaKFzHXR23IPeC7THuJKUp\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+        }
+      ]
+    },
+    "keptForRecoveryPasswordChanged": {
+      "description": "keptForRecovery after a 3.0.6 master password change.",
+      "masterPassword": "test-only next master password 3.0.6",
+      "earlierPassword": "test-only master password 3.0.5",
+      "records": [
+        {
+          "name": "Fixture ton-native-24",
+          "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+          "cipherSeed": "{\"version\":3,\"encoded\":\"tzkp28snan4dGGYFhX8Y3trzCOiAweROV6yQ4xkRZ7gAgAAAAQAAAAgAAADFJwnH2JQ4cQeNreKshu00cM0P54111t0umC7/cokeO6mjzEx414+Qm798tXJH7na5r8gI2mmp2FwrsNnZEzk6X2oVGAuCgQ/fSV/7rtcVU93qTIgsb7qSrzpIjuwOgDfaVDeGzlrX/Yr2XZ4C8tFKe9qfGW5s8RZpJu5GCfsPtSd1UhwECRrFy8ZjqDEfOlY8AOiQou8SLkRurkSvfvhupL5CwjKzZedztvH97pyqsj1NfLCjwD9awkLUnKJhLtajSvTMxnMXhfQbFu3AbQZiYYukRqaFiRyaAa2uaDEW3m+ACjumj/qlGbf716rD+vfXpgPmilsV7ub/c11Q5Z3x3olPnR9QCgeV7rWgDY9pRKd76P9fwI1MM5Dht44oEY9eBD6zwlBALbjPrb9KE1RNzDOy2AeTxYqutTUy4rtvQc6H0O4sQN607vFRFn+WXu/B2N5VoDdqfcklcP1QJrPetvcvmrfIJTSAky9wauP0jrVCb1DAtM+jTeqlKZOneHjtLVJ28qlEzhx42OIgv30xM0kjnyD8Lo7FMn7yCFuQBoJd/8TtsH+xKVheUtRuG/42eLwZ\",\"encoding\":{\"content\":[\"ton-legacy-recovery\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+        },
+        {
+          "name": "Fixture bip39-12",
+          "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+          "cipherSeed": "{\"version\":3,\"encoded\":\"/XInB5ZeMVamQIeA4bmarqbngsPwIxMH/Yoblc0GleMAgAAAAQAAAAgAAAD2Vrl+En+EL6iMqRgn5y0SFOERnIN51RRG+9nQzpIEEB+MM+c9XFc8x4du8ufI8ksd08X2SQCkayV59m7D9PYr/QE933FSJQ3RPKJH7zYk3mQ6bOvuySRUehnvQ//U/fTZ7KZ6SIPkjsFbFtzpBK/Aes/m+goNR4+EZZziVPjBD/2mqd5llrLzVNC578yBmk5305sWPOGYDl1O0B7WlOnhbQe9Yi+i/VbSUumC/qJKN5DypjDaQwQ1WsLIpvuDEeE5PGppJxwsbdA8RwyRb0dLzNoh6llJBe952PuWpeuNFD4jh1dfJQ0ax65dHI0J4ePG7rOw1y+VxC3emRLDl9gJ2FizhEnxJBvnbvZ9atMFEO+aj/MPTkiPJtGFkuC+QbUk1f4TGlJ5yBZ7Tn8zRMynGM9FtuamlaqGmV0xivBGtpec3gcRFlhi+O9p+1DV0wz1NYM1aoTG9ahgB6YaJqSV\",\"encoding\":{\"content\":[\"ton-legacy-recovery\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+        }
+      ]
+    },
+    "recoveredWithEarlierPassword": {
+      "description": "keptForRecovery after exporting each phrase in 3.0.6 with the earlier password.",
+      "masterPassword": "test-only master password 3.0.6",
+      "records": [
+        {
+          "name": "Fixture ton-native-24",
+          "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"sV1cGXHvdLSQ+keOQ3u2y8CPv+tvPFR508YY0IvqVvYAgAAAAQAAAAgAAADWo+02e7c97+qsw2SiGQhgptIWrXYoS6HoMezkrOEZrdbPYhG1nwUR/sVoVJS3xwrmRnruFkuSt4ISgUmhH1qitPtULkI7U2EVz2GAz3d6PSMRhp74NFz4VQc0tuAVceeBQw6pR1oO0/ANNxskA6Ho/e9uMBpOgDLNQlr39JYBEg+j/WmF0GZknxBklhJsVZLbbEdZC/kkHUvsiIkshATIoEeFrGofavjjIXz8n4Ou1roGtr+MPOoVhyfr8PYi0Q==\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+        },
+        {
+          "name": "Fixture bip39-12",
+          "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"uP5/09QHxoxcYSPwAYRMasKBfYm7RDX/qpq+yJDQyyAAgAAAAQAAAAgAAAA41Le6L5qttDQh8OUcW/DZFByYpnPzqjs6MbGbIqyosN2Y4hFFujtLneswAiANcvS5shHB8MG6z8r9CCqkG71WD2TDTN0qfbIY2AXCtwGyUsebIUuemtBss0VX712FFT/kc6wey8WjogLChvRGnZQtd2Q2s4s/OXDLZ68oav46dnJ6rOe7\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+        }
+      ]
+    },
+    "added": {
+      "description": "The same phrases added to an empty wallet in 3.0.6.",
+      "masterPassword": "test-only master password 3.0.6",
+      "records": [
+        {
+          "name": "Added in 3.0.6 ton-native-24",
+          "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"IyKKZg1YZmeRhqpySzNs1Ue8gQMFcZVcT19pMN6yAsYAgAAAAQAAAAgAAAC8KJVwtulWhaSIZWgpqMcUS1EtTvfj+y1/ZWxAmPB3CQw1ybhhCz3FPqq0nQlyO3GCgDk/xy2hnMhyHm0lnsJWW2sl1KGxJp0oiXwNdujm/42o/JUSjsFxcS4IMUaxi1KrnDFO0zWeWi4GinUyKNqZdH9eypEHHqdMqXS7imB4O3jALmcmFsN1Mb/9TG5ZeDn3g9uNikAdobWILtTJb+qvUksNZQ1LtiMDnZCyRq8W5o42J56f4xr8fDZk02QYtQ==\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+        },
+        {
+          "name": "Added in 3.0.6 bip39-12",
+          "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+          "cipherSeed": "{\"version\":2,\"encoded\":\"/ukp61AgvV8tQd5e90w6KfQ6MFtu5w9lClKBWZFuyvEAgAAAAQAAAAgAAACb8DEpfk4wmOrfZ3j2HU1e1bro0vGBVt9zWqFPlYR+tDZS+zsVvIzgTzD4T8ADzlgJaAOlAru+E8yJHgCViTlEdOLsajtDdllY/tlreFL4msNX9wiThFPZqKwEBrb7N/K5wLUM2w9kIBCp+EZ1wyDnyNWpDELdAkFsCoJC1PelSH1uuolV\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+          "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+        }
+      ]
+    }
+  }
+}

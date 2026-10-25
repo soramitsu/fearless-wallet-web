@@ -9,14 +9,15 @@ module.exports = (browser) => {
 
   const firefoxBase = {
     manifest_version: 3,
-    permissions: ['storage', 'tabs', 'identity', 'clipboardRead'],
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     background: {
       scripts: ['background.js'],
       type: 'module',
     },
     browser_specific_settings: {
       gecko: {
-        id: '{6a9332b9-e864-4d0a-a591-140fe75a29ba}',
+        id: '{23b9f52e-e9d7-4180-9126-fc9063e57c1a}',
+        strict_min_version: '142.0',
         data_collection_permissions: {
           required: ['authenticationInfo', 'financialAndPaymentInfo', 'websiteActivity'],
         },
@@ -34,7 +35,7 @@ module.exports = (browser) => {
 
   const chromiumBase = {
     manifest_version: 3,
-    permissions: ['storage', 'tabs', 'identity', 'clipboardRead'],
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
     background: {
       service_worker: 'background.js',
       type: 'module',
@@ -53,7 +54,7 @@ module.exports = (browser) => {
           },
         }
       : {}),
-    minimum_chrome_version: '92',
+    minimum_chrome_version: '116',
     content_security_policy: {
       extension_pages: baseContentSecurityPolicy,
     },

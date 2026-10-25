@@ -1,37 +1,56 @@
 <template>
-  <div :class="menuItemClasses" data-testid="menuItemStatus">
-    <Icon :icon="img" :className="iconClass" :hover="false" />
+  <button
+    :class="menuItemClasses"
+    type="button"
+    data-testid="menuItemStatus"
+    :aria-current="isActive ? 'page' : undefined"
+  >
+    <span class="icon-shell">
+      <Icon :icon="icon" :className="iconClass" :hover="false" />
+    </span>
 
-    <div class="name" data-testid="menuItem">{{ $t(localeName) }}</div>
-  </div>
+    <span class="name" data-testid="menuItem">{{ name }}</span>
+  </button>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import type { MenuItem as TMenuItem } from '@/interfaces/common';
+import { computed } from 'vue';
 
 type Props = {
-  name: TMenuItem;
+  name: string;
+  icon: string;
   isActive?: boolean;
+  emphasized?: boolean;
 };
 
-const props = withDefaults(defineProps<Props>(), { isActive: false });
+const props = withDefaults(defineProps<Props>(), { isActive: false, emphasized: false });
 
 const iconClass = ['menu-icon'];
-const localeName = ref(`menu.${props.name.toLowerCase()}`);
-
-const menuItemClasses = computed(() => ['menu-item', { active: props.isActive }]);
-const img = ref(props.name.toLowerCase());
+const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, emphasized: props.emphasized }]);
 </script>
 
 <style lang="scss" scoped>
 .menu-item {
+  appearance: none;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  border: 0;
+  min-height: 56px;
+  padding: 4px 2px;
+
+  &:focus-visible {
+    outline: 2px solid palette($pink-color, var(--fw-focus));
+    outline-offset: -2px;
+    border-radius: 6px;
+  }
+  background: transparent;
   color: $gray-color;
-  width: 85px;
   cursor: pointer;
+  font: inherit;
 
   &:hover {
     color: $plain-white;
@@ -44,13 +63,13 @@ const img = ref(props.name.toLowerCase());
   }
 
   .name {
-    margin-top: 8px;
     font-weight: 600;
-    font-size: 0.8125em;
-
-    &::first-letter {
-      text-transform: capitalize;
-    }
+    font-size: 0.8125rem;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .menu-icon {
@@ -65,11 +84,40 @@ const img = ref(props.name.toLowerCase());
   }
 }
 
+.icon-shell {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.emphasized {
+  .icon-shell {
+    width: 48px;
+    height: 48px;
+    margin-top: -22px;
+    background: palette($pink-lavender-color, var(--fw-fill));
+    box-shadow: 0 0 0 5px $fw-page-base;
+  }
+
+  .menu-icon {
+    color: $fw-on-accent;
+  }
+}
+
 .active {
   color: $plain-white;
 
   .menu-icon {
     color: $plain-white;
+  }
+
+  &.emphasized .menu-icon {
+    color: $fw-on-accent;
   }
 }
 </style>

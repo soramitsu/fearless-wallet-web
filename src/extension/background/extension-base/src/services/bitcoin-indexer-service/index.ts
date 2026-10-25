@@ -1,5 +1,12 @@
-import { UNIVERSAL_WALLET_INDEXERS } from '@/consts/universalWallet';
+import { UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS } from '@/consts/universalWallet';
 import { isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
+import {
+  EndpointFailover,
+  isRetryableHttpStatus,
+  parseRetryAfterMs,
+  withTimeout,
+  type EndpointFailoverOptions,
+} from '@/util/endpointFailover';
 
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -56,32 +63,82 @@ type BitcoinTransactionQuery = {
   mempool?: boolean;
 };
 
+type BitcoinOutspend = {
+  spent: boolean;
+  txid?: string;
+};
+
 type BitcoinEsploraClientOptions = {
   baseUrl?: string;
+  baseUrls?: readonly string[];
+  failover?: EndpointFailoverOptions;
   fetchFn?: FetchLike;
   network?: BitcoinNetworkKind;
+  requestTimeoutMs?: number;
 };
+
+const MAX_BITCOIN_SATOSHIS = 2_100_000_000_000_000;
+const MAX_BITCOIN_INDEXER_JSON_BYTES = 32 * 1024 * 1024;
+const MAX_BITCOIN_BROADCAST_RESPONSE_BYTES = 64 * 1024;
+const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
+// bitcoind answers a rebroadcast of a transaction it already has with one of
+// these rejections; for the sender they mean the transaction is out there.
+const ALREADY_KNOWN_BROADCAST =
+  /txn-already-in-mempool|txn-already-known|already in block chain|outputs already in utxo set/iu;
 
 class BitcoinIndexerError extends Error {
   constructor(
     message: string,
     readonly status?: number,
-    readonly body?: unknown
+    readonly body?: unknown,
+    readonly retryAfterMs?: number
   ) {
     super(message);
     this.name = 'BitcoinIndexerError';
   }
 }
 
+/**
+ * `ambiguous` means at least one endpoint may have accepted the transaction
+ * (timeout, network error, throttling or a server error) and none confirmed
+ * it, so the sender must not sign a different spend of the same payment.
+ */
+class BitcoinBroadcastError extends Error {
+  constructor(
+    message: 'bitcoin_broadcast_ambiguous' | 'bitcoin_broadcast_rejected',
+    readonly ambiguous: boolean,
+    readonly reason?: string
+  ) {
+    super(message);
+    this.name = 'BitcoinBroadcastError';
+  }
+}
+
 class BitcoinEsploraClient {
-  private readonly baseUrl: string;
+  private readonly endpoints: EndpointFailover;
   private readonly fetchFn: FetchLike;
   private readonly network: BitcoinNetworkKind;
+  private readonly requestTimeoutMs: number;
 
-  constructor({ baseUrl, fetchFn = globalThis.fetch.bind(globalThis), network = 'mainnet' }: BitcoinEsploraClientOptions = {}) {
+  constructor({
+    baseUrl,
+    baseUrls,
+    failover,
+    fetchFn = globalThis.fetch.bind(globalThis),
+    network = 'mainnet',
+    requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  }: BitcoinEsploraClientOptions = {}) {
     this.network = network;
-    this.baseUrl = normalizeBaseUrl(baseUrl ?? UNIVERSAL_WALLET_INDEXERS.bitcoin[network]);
+    this.endpoints = new EndpointFailover(
+      (baseUrl ? [baseUrl] : baseUrls ?? UNIVERSAL_WALLET_BITCOIN_ESPLORA_ENDPOINTS[network]).map(normalizeBaseUrl),
+      failover
+    );
     this.fetchFn = fetchFn;
+    this.requestTimeoutMs = requestTimeoutMs;
+  }
+
+  get baseUrls(): readonly string[] {
+    return this.endpoints.endpoints;
   }
 
   async getAddress(address: string): Promise<BitcoinEsploraAddress> {
@@ -93,11 +150,11 @@ class BitcoinEsploraClient {
     const confirmedSats = chainStats.funded_txo_sum - chainStats.spent_txo_sum;
     const mempoolSats = mempoolStats.funded_txo_sum - mempoolStats.spent_txo_sum;
 
-    return {
+    return normalizeBalance({
       confirmedSats,
       mempoolSats,
       totalSats: confirmedSats + mempoolSats,
-    };
+    });
   }
 
   async getUtxos(address: string): Promise<BitcoinEsploraUtxo[]> {
@@ -140,33 +197,145 @@ class BitcoinEsploraClient {
     }, {});
   }
 
-  async broadcastTransaction(txHex: string): Promise<string> {
-    const response = await this.fetchFn(`${this.baseUrl}/tx`, {
-      body: normalizeTxHex(txHex),
-      headers: { 'content-type': 'text/plain' },
-      method: 'POST',
+  /** `null` when no endpoint knows the transaction (Esplora answers 404). */
+  async getTransactionStatus(txid: string): Promise<BitcoinEsploraTxStatus | null> {
+    const response = await this.requestJson(`/tx/${normalizeTxid(txid)}/status`, { notFoundAsNull: true });
+
+    return response === null ? null : normalizeStatus(response);
+  }
+
+  async getOutspend(txid: string, vout: number): Promise<BitcoinOutspend> {
+    const response = await this.requestJson(`/tx/${normalizeTxid(txid)}/outspend/${requireVout(vout, 'invalid_vout')}`);
+
+    if (!isRecord(response) || typeof response.spent !== 'boolean') {
+      throw new BitcoinIndexerError('invalid_outspend_response');
+    }
+
+    return {
+      spent: response.spent,
+      txid: response.txid === undefined || response.txid === null ? undefined : normalizeTxid(String(response.txid)),
+    };
+  }
+
+  /**
+   * Posts the signed transaction to each endpoint in turn until one accepts it.
+   * Rebroadcasting the same signed bytes is idempotent, so a timeout on one
+   * endpoint is retried on the next. `expectedTxid` lets an "already known"
+   * rejection count as success.
+   */
+  async broadcastTransaction(txHex: string, expectedTxid?: string, assertCurrent?: () => void): Promise<string> {
+    const body = normalizeTxHex(txHex);
+    const expected = expectedTxid === undefined ? undefined : normalizeTxid(expectedTxid);
+    let ambiguous = false;
+    let reason: string | undefined;
+
+    for (const baseUrl of this.endpoints.endpoints) {
+      assertCurrent?.();
+      let response: Response;
+      let text: string;
+
+      try {
+        response = await this.fetchWithTimeout(`${baseUrl}/tx`, {
+          body,
+          headers: { 'content-type': 'text/plain' },
+          method: 'POST',
+        });
+        text = await readBoundedText(response, MAX_BITCOIN_BROADCAST_RESPONSE_BYTES, 'bitcoin_broadcast_response_too_large');
+      } catch {
+        ambiguous = true;
+        continue;
+      }
+
+      if (response.ok) {
+        try {
+          return normalizeTxid(text.trim());
+        } catch {
+          ambiguous = true;
+          continue;
+        }
+      }
+      if (expected && ALREADY_KNOWN_BROADCAST.test(text)) return expected;
+      if (isRetryableHttpStatus(response.status)) {
+        ambiguous = true;
+        continue;
+      }
+
+      reason = text.trim().slice(0, 300) || `http_${response.status}`;
+    }
+
+    throw new BitcoinBroadcastError(
+      ambiguous ? 'bitcoin_broadcast_ambiguous' : 'bitcoin_broadcast_rejected',
+      ambiguous,
+      reason
+    );
+  }
+
+  private async requestJson(path: string, { notFoundAsNull = false } = {}): Promise<unknown> {
+    return this.endpoints.run(
+      async (baseUrl) => {
+        const response = await this.fetchWithTimeout(`${baseUrl}${path}`);
+
+        if (notFoundAsNull && response.status === 404) {
+          await response.body?.cancel().catch(() => undefined);
+
+          return null;
+        }
+
+        if (!response.ok) {
+          // Error pages are often plain text; the status, not the body, decides.
+          throw new BitcoinIndexerError(
+            `bitcoin_indexer_http_${response.status}`,
+            response.status,
+            await readJson(response).catch(() => undefined),
+            parseRetryAfterMs(response.headers.get('retry-after'))
+          );
+        }
+
+        return readJson(response);
+      },
+      {
+        isRetryable: isRetryableIndexerError,
+        retryAfterMs: (error) => (error instanceof BitcoinIndexerError ? error.retryAfterMs : undefined),
+      }
+    ).catch((error: unknown) => {
+      throw unwrapFailover(error);
     });
-    const body = await response.text();
-
-    if (!response.ok) throw new BitcoinIndexerError(`bitcoin_indexer_http_${response.status}`, response.status, body);
-
-    return normalizeTxid(body.trim());
   }
 
-  private async requestJson(path: string): Promise<unknown> {
-    const response = await this.fetchFn(`${this.baseUrl}${path}`);
-    const body = await readJson(response);
-
-    if (!response.ok) throw new BitcoinIndexerError(`bitcoin_indexer_http_${response.status}`, response.status, body);
-
-    return body;
+  private fetchWithTimeout(input: string, init?: RequestInit): Promise<Response> {
+    return withTimeout(
+      init ? this.fetchFn(input, init) : this.fetchFn(input),
+      this.requestTimeoutMs,
+      () => new BitcoinIndexerError('bitcoin_indexer_timeout')
+    );
   }
+}
+
+function isRetryableIndexerError(error: unknown): boolean {
+  if (error instanceof BitcoinIndexerError) {
+    // A proxy error page instead of JSON is an outage of that endpoint.
+    return isRetryableHttpStatus(error.status) || error.message === 'invalid_json' || error.message === 'bitcoin_indexer_timeout';
+  }
+
+  // fetch rejects with TypeError on network failure.
+  return true;
+}
+
+function unwrapFailover(error: unknown): unknown {
+  if (error instanceof Error && error.name === 'EndpointFailoverError') {
+    const lastError = (error as Error & { lastError?: unknown }).lastError;
+
+    return lastError instanceof BitcoinIndexerError ? lastError : new BitcoinIndexerError('bitcoin_indexer_unavailable');
+  }
+
+  return error;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
   const url = new URL(baseUrl);
+  const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
 
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
+  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) || url.username || url.password) {
     throw new BitcoinIndexerError('invalid_base_url');
   }
 
@@ -261,7 +430,7 @@ function normalizeStatus(value: unknown): BitcoinEsploraTxStatus {
 }
 
 async function readJson(response: Response): Promise<unknown> {
-  const text = await response.text();
+  const text = await readBoundedText(response, MAX_BITCOIN_INDEXER_JSON_BYTES, 'bitcoin_indexer_response_too_large');
   if (!text) return null;
 
   try {
@@ -269,6 +438,68 @@ async function readJson(response: Response): Promise<unknown> {
   } catch {
     throw new BitcoinIndexerError('invalid_json', response.status, text);
   }
+}
+
+async function readBoundedText(response: Response, maxBytes: number, errorCode: string): Promise<string> {
+  const contentLength = response.headers.get('content-length');
+
+  if (contentLength !== null) {
+    if (!/^(?:0|[1-9]\d*)$/u.test(contentLength) || Number(contentLength) > maxBytes) {
+      throw new BitcoinIndexerError(errorCode, response.status);
+    }
+  }
+  if (!response.body) return '';
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let byteLength = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+      byteLength += value.byteLength;
+      if (byteLength > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new BitcoinIndexerError(errorCode, response.status);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(byteLength);
+  let offset = 0;
+
+  chunks.forEach((chunk) => {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  });
+
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new BitcoinIndexerError('invalid_json', response.status);
+  }
+}
+
+function normalizeBalance(balance: BitcoinAddressBalance): BitcoinAddressBalance {
+  if (
+    !Number.isSafeInteger(balance.confirmedSats) ||
+    balance.confirmedSats < 0 ||
+    balance.confirmedSats > MAX_BITCOIN_SATOSHIS ||
+    !Number.isSafeInteger(balance.mempoolSats) ||
+    Math.abs(balance.mempoolSats) > MAX_BITCOIN_SATOSHIS ||
+    !Number.isSafeInteger(balance.totalSats) ||
+    balance.totalSats < 0 ||
+    balance.totalSats > MAX_BITCOIN_SATOSHIS
+  ) {
+    throw new BitcoinIndexerError('invalid_balance_response');
+  }
+
+  return balance;
 }
 
 function requireString(value: unknown, errorCode: string): string {
@@ -304,10 +535,11 @@ function requireVout(value: unknown, errorCode: string): number {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export {
+  BitcoinBroadcastError,
   BitcoinEsploraClient,
   BitcoinIndexerError,
   type BitcoinAddressBalance,
@@ -317,5 +549,6 @@ export {
   type BitcoinEsploraTxStatus,
   type BitcoinEsploraUtxo,
   type BitcoinFeeEstimates,
+  type BitcoinOutspend,
   type BitcoinTransactionQuery,
 };

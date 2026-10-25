@@ -1,6 +1,6 @@
 <template>
   <div class="story">
-    <img class="story__image" :src="story.image" alt="story-img" />
+    <ExternalLogo class="story__image" :name="story.image" :alt="story.title" :width="330" fit="natural" />
     <h2 class="story__title">{{ story.title }}</h2>
     <p class="story__content">{{ story.description }}</p>
   </div>
@@ -8,6 +8,7 @@
 
 <script lang="ts" setup>
 import type { OnboardingStory } from '@/interfaces';
+import ExternalLogo from '@/components/ExternalLogo.vue';
 
 defineProps<{ story: OnboardingStory }>();
 </script>
@@ -15,7 +16,9 @@ defineProps<{ story: OnboardingStory }>();
 <style lang="scss" scoped>
 @font-face {
   font-family: 'Unbounded';
-  src: local('Unbounded'), url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
+  src:
+    local('Unbounded'),
+    url('@/assets/fonts/Unbounded-Bold.ttf') format('truetype');
 }
 
 .story {
@@ -23,20 +26,24 @@ defineProps<{ story: OnboardingStory }>();
   flex-flow: column;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
 
   &__image {
+    max-width: 100%;
     max-height: 330px;
+    object-fit: contain;
   }
 
   &__title {
-    font-family: Unbounded, sans-serif;
+    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
     font-size: 1.5em;
     font-weight: 700;
   }
 
   &__content {
     max-width: 380px;
-    height: 60px;
     flex-shrink: 0;
     font-size: 1em;
     font-style: normal;

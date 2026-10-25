@@ -11,8 +11,14 @@
         />
       </div>
 
-      <div class="steps">
-        <div v-for="num in countSteps" :key="num" :class="getClasses(num)"></div>
+      <div class="steps" data-testid="googleWalletProgress">
+        <div
+          v-for="progressStep in progressState.steps"
+          :key="progressStep.number"
+          class="circle-step"
+          :class="{ 'circle-filled': progressStep.filled }"
+          :data-step="progressStep.number"
+        ></div>
       </div>
 
       <div class="icon-background">
@@ -54,23 +60,29 @@
 import { defineComponent } from 'vue';
 
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
+import { getGoogleWalletProgressState } from '@/helpers/googleWalletProgress';
 
-export default defineComponent({ name: 'FlowStepLayout',
+export default defineComponent({
+  name: 'FlowStepLayout',
   components: { FinishForm },
   props: {
-    countSteps: Number,
-    step: Number,
+    countSteps: { required: true, type: Number },
+    step: { required: true, type: Number },
     isLoading: { default: false, type: Boolean },
+    completionConfirmed: { default: true, type: Boolean },
     header: String,
     showFullScreenIcon: { default: false },
     showAdvancedForm: { default: false },
   },
   computed: {
+    progressState() {
+      return getGoogleWalletProgressState(this.countSteps, this.step);
+    },
     isFinishStep() {
-      return this.countSteps === this.step;
+      return this.progressState.isFinishStep && this.completionConfirmed;
     },
     showBackButton() {
-      return !this.showAdvancedForm && !this.isFinishStep;
+      return this.progressState.isValid && !this.showAdvancedForm && !this.isFinishStep;
     },
   },
   methods: {
@@ -79,19 +91,6 @@ export default defineComponent({ name: 'FlowStepLayout',
     },
     fullScreen() {
       this.$emit('openFullScreen');
-    },
-    getClasses(num: number) {
-      //TODO it maybe broken
-          const isCircleHidden = this.step >= this.countSteps;
-          const isCircleFilled = !isCircleHidden && num <= this.step;
-
-          return [
-            'circle-step',
-            {
-              'circle-filled': isCircleFilled,
-              'circle-hidden': isCircleHidden,
-            },
-          ];
     },
   },
 });
@@ -117,6 +116,7 @@ export default defineComponent({ name: 'FlowStepLayout',
   flex-direction: column;
   align-items: center;
   height: 100%;
+  min-height: 0;
 
   .header {
     width: 100%;
@@ -139,15 +139,12 @@ export default defineComponent({ name: 'FlowStepLayout',
       .circle-filled {
         background-color: $pink-color;
       }
-
-      .circle-hidden {
-        display: none;
-      }
     }
   }
 
   .content-wrapper {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -156,7 +153,10 @@ export default defineComponent({ name: 'FlowStepLayout',
 
     .content {
       width: 100%;
-      height: 100%;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
 
       .selected-network {
         margin-bottom: 16px;
@@ -184,6 +184,8 @@ export default defineComponent({ name: 'FlowStepLayout',
 
   .controls {
     width: 100%;
+    flex-shrink: 0;
+    margin-top: 16px;
   }
 }
 </style>

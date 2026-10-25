@@ -17,7 +17,7 @@
   flex-flow: column;
   background: $secondary-background-color;
   padding: 16px;
-  border: 1px solid $default-background-color !important;
+  border: 1px solid palette($default-background-color, var(--fw-divider)) !important;
   border-radius: $default-border-radius;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   width: 100%;

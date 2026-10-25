@@ -1,29 +1,26 @@
 <template>
   <FCorners size="big">
-    <div :class="contentClasses" data-testid="walletInfo" @click="setWallet">
-      <div class="content" data-testid="content">
+    <div :class="contentClasses" data-testid="walletInfo">
+      <button type="button" class="content" data-testid="content" :aria-label="name" :aria-pressed="isSelected" @click="$emit('setWallet')">
         <div class="name" data-testid="name">{{ name }}</div>
 
-        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
-      </div>
+        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" :caption="balanceCaption" />
+      </button>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
-      <div v-if="showMenu" class="dots-container" :ref="dotsHorizontalRef" data-testid="dots">
-        <Icon icon="dots-horizontal" className="dots" />
-      </div>
+      <button v-if="showMenu" type="button" class="dots-container" :ref="dotsHorizontalRef" data-testid="dots" :aria-label="`${$t('ux.moreOptions')}: ${name}`" @click.stop="showWalletDetails">
+        <Icon icon="dots-horizontal" className="dots" aria-hidden="true" />
+      </button>
     </div>
   </FCorners>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
-
-
-import { type CustomEvent } from '@/interfaces';
+import type { ResponseTotalBalances } from '@extension-base/background/types/types';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
-import { getTotalBalances } from '@/extension/messaging';
+import { fetchWalletTotals, walletBalanceCaption } from '@/screens/main/walletTotals';
 
 export default defineComponent({ name: 'WalletInfo',
   components: { WalletBalance },
@@ -38,7 +35,7 @@ export default defineComponent({ name: 'WalletInfo',
     return {
       dotsHorizontalRef: 'dotsHorizontal',
       showWalletMenu: false,
-      totalBalances: [],
+      totalBalances: [] as ResponseTotalBalances[],
       interval: undefined as ReturnType<typeof setInterval> | undefined,
     };
   },
@@ -52,6 +49,9 @@ export default defineComponent({ name: 'WalletInfo',
     changeWalletBalance() {
       return this.totalBalance?.change ?? { percent: 0, amount: 0 };
     },
+    balanceCaption(): string {
+      return walletBalanceCaption(this.totalBalance, (key) => this.$t(key));
+    },
     contentClasses() {
       return [
             'wallet-info',
@@ -62,28 +62,20 @@ export default defineComponent({ name: 'WalletInfo',
     },
   },
   async created() {
-    this.totalBalances = await getTotalBalances();
+    this.totalBalances = await this.fetchTotalBalances();
 
-        this.interval = setInterval(async () => (this.totalBalances = await getTotalBalances()), 5000);
+        this.interval = setInterval(async () => (this.totalBalances = await this.fetchTotalBalances()), 5000);
   },
   beforeUnmount() {
     clearInterval(this.interval);
   },
   methods: {
-    setWallet({ target: { classList } }: CustomEvent) {
-      const shouldUpdateSelectedWallet = !(
-            classList.contains('dots-container') ||
-            classList.contains('dots') ||
-            classList.contains('dots-horizontal') ||
-            classList.contains('icon__inner')
-          );
-
-          if (shouldUpdateSelectedWallet) this.$emit('setWallet');
-          else {
-            const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLDivElement).getBoundingClientRect().top;
-
-            this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
-          }
+    fetchTotalBalances(): Promise<ResponseTotalBalances[]> {
+      return fetchWalletTotals(this.address);
+    },
+    showWalletDetails() {
+      const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLButtonElement).getBoundingClientRect().top;
+      this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
     },
   },
 });
@@ -109,7 +101,19 @@ export default defineComponent({ name: 'WalletInfo',
     opacity: 1;
   }
 
+  button {
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    &:focus-visible { outline: 2px solid palette($pink-lavender-color, var(--fw-focus)); outline-offset: 2px; }
+  }
+
   .content {
+    min-width: 0;
     min-height: 45px; // TODO: delete after adding percent
     flex-grow: 1;
   }
@@ -136,8 +140,8 @@ export default defineComponent({ name: 'WalletInfo',
   }
 
   .dots-container {
-    height: 25px;
-    width: 25px;
+    min-height: 44px;
+    min-width: 44px;
     opacity: 0.9;
     display: flex;
 

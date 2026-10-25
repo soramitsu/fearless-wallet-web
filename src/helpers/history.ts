@@ -1,4 +1,3 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { NetworkJson } from '@extension-base/types';
 import type {
   HistoryElement,
@@ -10,6 +9,7 @@ import type {
   TonEvent,
 } from '@/interfaces';
 import type { History } from '@/stores/networks/types';
+import { FPNumber } from '@/sora/number';
 import { TransactionType } from '@/interfaces';
 import { firstCharToUp, isSora, isTonNetwork } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
@@ -121,6 +121,9 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
     const element = historyElement as unknown as TonEvent;
     const { networkFee } = element;
 
+    // A fee the provider did not report is unknown, not zero.
+    if (networkFee === undefined || networkFee === null) return null;
+
     return getHumanFeeValue(networkFee, networkName);
   }
 
@@ -129,7 +132,7 @@ function getHumanTransferFee(historyElement: HistoryElement, networkName: Networ
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
 
-    if (fee === null) return 0;
+    if (fee === null) return null;
 
     if (historyType === 'oklink' || historyType === 'etherscan') return +fee;
 
@@ -171,7 +174,7 @@ function getHistoryValue(
     const targetValue = +(element.data?.targetAssetAmount ?? 0);
 
     // fee в индексере с учетом decimals
-    const fee = getHumanTransferFee(historyElement, networkName);
+    const fee = getHumanTransferFee(historyElement, networkName) ?? 0;
 
     const result = withFee && element.method !== 'rewarded' ? +dataValue + fee : +dataValue;
 
@@ -191,7 +194,7 @@ function getHistoryValue(
 
   if (type === TransactionType.transfer && transfer) {
     const value = getHumanValue(transfer.amount, assetId, networkName);
-    const fee = getHumanTransferFee(historyElement, networkName);
+    const fee = getHumanTransferFee(historyElement, networkName) ?? 0;
     const result = withFee ? value + fee : value;
 
     return { signTransfer, value: result };
@@ -267,25 +270,11 @@ function getFormattedHistory(history: History, serviceType: HistoryServiceType):
   return history as SubqueryHistory;
 }
 
-function getEthereumExplorerApiKey(url: string): string | undefined {
-  const keys = [
-    { name: 'etherscan', key: process.env.FL_WEB_ETHERSCAN_API_KEY },
-    { name: 'bscscan', key: process.env.FL_WEB_BSCSCAN_API_KEY },
-    { name: 'polygon', key: process.env.FL_WEB_POLYGONSCAN_API_KEY },
-    { name: 'arbiscan', key: process.env.FL_WEB_ARBISCAN_API_KEY },
-    { name: 'snowtrace', key: process.env.FL_WEB_SNOWTRACE_API_KEY },
-    { name: 'zkevm.polygonscan', key: process.env.FL_WEB_ZKEVM_POLYGONSCAN_API_KEY },
-    { name: 'moonriver.moonscan', key: process.env.FL_BLAST_API_MOONRIVER_KEY },
-    { name: 'moonbeam.moonscan', key: process.env.FL_BLAST_API_MOONBEAM_KEY },
-  ];
-
-  return keys.find(({ name }) => url.includes(name))?.key;
-}
+export { getEthereumExplorerApiKey } from '@/history/dataApiPolicy';
 
 export {
   getType,
   getTypeFormatted,
-  getEthereumExplorerApiKey,
   getHumanTransferFee,
   getHistoryValue,
   getHumanFeeValue,

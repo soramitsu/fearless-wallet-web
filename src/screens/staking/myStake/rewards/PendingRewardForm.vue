@@ -13,6 +13,8 @@
 
           <div v-show="!showLoader" class="form-layout">
             <Scroll>
+              <p v-if="recoveryOnly" class="descriptions" :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'" role="note">{{ recoveryRewardsDescription }}</p>
+              <p v-if="loadError" class="descriptions" role="alert">{{ loadError }}</p>
               <div class="descriptions" data-testid="validatorsPayoutRewards">
                 {{ $t('staking.validatorsPayoutRewards') }}
               </div>
@@ -29,6 +31,7 @@
         </ContentForm>
 
         <div v-else-if="step === 2">
+          <p v-if="recoveryOnly" class="descriptions" :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'" role="note">{{ recoveryRewardsDescription }}</p>
           <FInput
             :value="selectedAccountName"
             placeholder="accounts.account"
@@ -100,9 +103,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@sora-substrate/util';
 import type { PayoutRewards } from '@extension-base/services/staking-service/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/helpers/transfers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
@@ -113,8 +116,11 @@ import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
 export default defineComponent({ name: 'PendingRewardForm',
+  setup: () => ({ recoveryOnly: useWalletRecovery() }),
   components: {
     WarningPopup,
     ValidatorItem,
@@ -136,11 +142,15 @@ export default defineComponent({ name: 'PendingRewardForm',
       fee: '',
       stashBalance: '0',
       showLoader: false,
+      loadError: '',
       rewards: { validators: [], payouts: [], sum: '0' },
       stakingStore: useStakingStore(),
     };
   },
   computed: {
+    recoveryRewardsDescription() {
+      return legacyWalletUpgradeMessages[this.$i18n.locale === 'ru-RU' ? 'ru-RU' : 'en-EN'].recoveryRewards;
+    },
     network() {
       return this.stakingNetwork.network;
     },
@@ -156,13 +166,14 @@ export default defineComponent({ name: 'PendingRewardForm',
           return 'common.confirm';
     },
     disabledBtn() {
+      if (this.showLoader || this.loadError || !this.fee) return true;
       if (this.step === 1) return this.myRewards.length === 0;
 
           return !this.isValidAmountAsset;
     },
     isValidAmountAsset() {
-      // для controller аккаунта подставляем баланс stash аккаунта
-          const stakingCurrency: TokenGroup = this.stakingNetwork.isController
+      // Recovery fees are paid by the selected signer, including controllers.
+          const stakingCurrency: TokenGroup = this.stakingNetwork.isController && !this.recoveryOnly
             ? {
                 ...this.stakingCurrency,
                 balances: this.stakingCurrency.balances.map((item) => ({ ...item, transferable: this.stashBalance })),
@@ -172,6 +183,11 @@ export default defineComponent({ name: 'PendingRewardForm',
           return isValidAmountAsset(stakingCurrency, this.network, this.fee ?? '0', '0');
     },
     payeeName() {
+      if (!this.recoveryOnly) return this.stakingNetwork.payeeName;
+      const stashName = this.stakingNetwork.stashName || this.stakingNetwork.stashAddress || this.selectedAccountName;
+      if (this.stakingNetwork.isController || (!this.stakingNetwork.isOtherController && this.stakingNetwork.controllerAddress)) return stashName;
+      if (this.stakingNetwork.payeeAddress?.toLowerCase() === 'stash') return stashName;
+      if (this.stakingNetwork.payeeAddress?.toLowerCase() === 'controller') return this.stakingNetwork.controllerName || this.stakingNetwork.controllerAddress;
       return this.stakingNetwork.payeeName;
     },
     myRewards() {
@@ -230,30 +246,34 @@ export default defineComponent({ name: 'PendingRewardForm',
     },
   },
   async created() {
-    await this.getRewards();
+    try {
+      await this.getRewards();
 
-        this.getPayoutsFee();
+      if (this.rewards.payouts.length) await this.getPayoutsFee();
 
-        if (this.stakingNetwork.isController) {
+      if (this.stakingNetwork.isController && !this.recoveryOnly) {
           const balances = await fetchBalance({
             address: this.stakingNetwork.stashAddress,
             networks: [this.network],
             walletEcosystem: WalletEcosystem.Substrate,
           });
-
-          this.stashBalance = balances[0].balance;
-        }
+        this.stashBalance = balances[0].balance;
+      }
+    } catch (error) {
+      this.loadError = error instanceof Error ? error.message : String(error);
+    } finally {
+      this.showLoader = false;
+    }
   },
   methods: {
     async getRewards() {
       this.showLoader = true;
 
           this.rewards = await getRewards({
-            address: this.stakingNetwork.stashAddress,
+            address: this.stakingNetwork.stashAddress || this.accountsStore.selectedWallet.address,
             network: this.network,
           });
 
-          this.showLoader = false;
     },
     async getPayoutsFee() {
       this.fee = await getPayoutsFee({ payouts: this.rewards.payouts, network: this.network });
@@ -265,7 +285,7 @@ export default defineComponent({ name: 'PendingRewardForm',
       this.showConfirmationPasswordPopup = false;
 
           if (closeForm) {
-            this.stakingStore.getMyStakingInfo({ network: this.network });
+            void this.stakingStore.getMyStakingInfo({ network: this.network }).catch((error) => console.warn('Unable to refresh staking details', error));
             this.closeForm();
           }
     },
@@ -283,6 +303,7 @@ export default defineComponent({ name: 'PendingRewardForm',
       this.showWarningPopup = false;
     },
     confirm() {
+      if (this.disabledBtn) return;
       if (this.step === 2) {
             const rewardLessFee = FPNumber.lte(new FPNumber(this.summaryRewardsValue), new FPNumber(this.feeValue));
 

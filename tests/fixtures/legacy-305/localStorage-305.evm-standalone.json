@@ -1,0 +1,7 @@
+{
+  "description": "Hides stored under an 0x wallet address: the ETH and USDC (ethereum) groups.",
+  "address": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+  "localStorage": {
+    "account_hidden-assets": "{\"value\":{\"0x9858EfFD232B4033E47d90003D41EC34EcaEda94\":[\"8f85b561-18f5-4cf0-9077-305ebc84d015\",\"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\"]}}"
+  }
+}

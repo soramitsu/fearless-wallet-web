@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "repositories": [
+    {
+      "path": "fearless-Android",
+      "repository": "soramitsu/fearless-Android",
+      "branch": "release/native-platform-ownership",
+      "commit": "d097c73c39add4eaa785cb3ad1766c1baeeefaa8",
+      "group": "core"
+    },
+    {
+      "path": "fearless-iOS",
+      "repository": "soramitsu/fearless-iOS",
+      "branch": "release/native-platform-ownership",
+      "commit": "0d07e1a55435f29bc90f8ea5b99fbb659af8cfef",
+      "group": "core"
+    },
+    {
+      "path": "fearless-wallet-web",
+      "repository": "soramitsu/fearless-wallet-web",
+      "branch": "release/consolidated-web",
+      "commit": "14f44349c0e8ebfbcaf8d3ac80b0bb335189fe69",
+      "group": "core"
+    }
+  ],
+  "preservedWork": []
+}

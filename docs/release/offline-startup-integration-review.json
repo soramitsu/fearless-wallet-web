@@ -1,0 +1,96 @@
+{
+  "reviewedAt": "2026-10-13T16:12:19.902964+00:00",
+  "status": "Accepted bounded offline startup, price publication and packaged-font checkpoint; full settings durability and overall release remain open.",
+  "sourceCommit": "004adf9ca3c271755ea4c256aa52f41b2c057b45",
+  "integratedCommit": "b71c51a834465acefdf232e8ce1ab0a2e59502c8",
+  "manifestSha256": "01494eae6aa86e671a4db8afa937139f2d16cc8ba66a22bae871a6a8b5ba47f6",
+  "independentReviewSha256": "ff8f329bb53c7a3473d914f88b52add016c8f24417d330f599e4e12fc487d0bc",
+  "independentReview": {
+    "recordedAt": "2026-10-13T16:11:40.955954+00:00",
+    "reviewer": "independent native audit agent",
+    "verdict": "Accept the bounded offline startup, owned price publication and packaged-font checkpoint at the pinned source; OFF10 remains open and required before release. This is not overall production readiness or a clean-console claim.",
+    "sourceCommit": "004adf9ca3c271755ea4c256aa52f41b2c057b45",
+    "candidate": {
+      "file": "offline-startup-candidate-evidence-v1.json",
+      "sha256": "01494eae6aa86e671a4db8afa937139f2d16cc8ba66a22bae871a6a8b5ba47f6",
+      "documentationCopyIdentical": true
+    },
+    "independentRehash": {
+      "candidateSha256": "01494eae6aa86e671a4db8afa937139f2d16cc8ba66a22bae871a6a8b5ba47f6",
+      "mismatches": [],
+      "counts": {
+        "sourceSha256": 362,
+        "dependencySha256": 86,
+        "evidenceSha256": 106
+      },
+      "archives": {
+        "chrome": {
+          "sha256": "7633ffd8e58c675e8b8472fc219a25fdb9ecd4eb02ef88ae77ffacbc7fa2b8c8",
+          "bytes": 10036832,
+          "entries": 314,
+          "hashDocType": "dict",
+          "hashDocKeys": [
+            "assets/AboveForm.css",
+            "assets/AccountAccessRecovery.css",
+            "assets/AccountSetting.css",
+            "assets/Accounts.css",
+            "assets/AddFromGoogle.css"
+          ],
+          "allEntriesMatchBuild": true
+        },
+        "firefox": {
+          "sha256": "bfe6f6a941ce2685051278ede64365a661974aa0322fa38e6f4bacc0dd160170",
+          "bytes": 10036902,
+          "entries": 314,
+          "hashDocType": "dict",
+          "hashDocKeys": [
+            "assets/AboveForm.css",
+            "assets/AccountAccessRecovery.css",
+            "assets/AccountSetting.css",
+            "assets/Accounts.css",
+            "assets/AddFromGoogle.css"
+          ],
+          "allEntriesMatchBuild": true
+        }
+      }
+    },
+    "sourceReview": {
+      "file": "offline-startup-independent-review-v1.json",
+      "sha256": "ebf89b1625e84c01ff5750620f0d0847e2826a299526863e52d2c2bce5141ef4",
+      "findings": "OFF1\u2013OFF9 bounded source corrections reviewed; OFF10 explicitly open."
+    },
+    "evidenceAssessment": [
+      "Read raw full-v4 log: 296 test files passed, 2 skipped; 3192 tests passed, 18 skipped. Focused-v12: 54 tests in 9 files. Type/lint v7 empty successful logs are parent-reported commands, not an independent repeat.",
+      "Inspected browser-v5 harness and raw report. Runtime.enable attaches before resuming the newly paused extension worker. Both owned current worker sessions have zero exceptionThrown events; copied prior/other worker retains two events separately. Observation is bounded to blocked-DNS startup and roughly 18 seconds after subscriptions, not arbitrary future/reconnect behavior.",
+      "Both profiles answer price/network subscriptions, show enabled extension and one-minute registry retry alarm; 13 copied and 1 fresh protected-record hashes unchanged. Real external providers and live transactions are excluded.",
+      "Inspected font audit and exact ZIP bytes: each packaged build uses local font files, no inlined font data in packaged CSS; both JetBrains Cyrillic-ext and Vietnamese face loads succeed in compiled browser report. CSP policy remains unchanged.",
+      "Independently compared every one of 314 entries in each Chrome and Firefox archive against frozen build-file hashes, plus archive size and SHA. All match.",
+      "Read production Chrome audit/popup, Firefox runtime/smoke and exact warning logs: production popup ready; Firefox 152.0.4 popup and dynamic-Function CSP test pass, 41-warning fingerprint unchanged. Runtime binary/distribution identity and cleanup evidence are pinned; this is local unsigned smoke, not signed AMO acceptance."
+    ],
+    "remainingGates": [
+      "OFF10: Explicit network edits during an unreadable-cache interval currently mutate memory but cannot persist, and repair can overwrite them. Add queued per-field intent or a truthful unavailable result before release; this checkpoint does not claim full network preference durability.",
+      "General network settings write acknowledgements, network callback ownership and mixed-worker behavior are not fully qualified.",
+      "Public provider reconnect/live service interoperability, complete screen/accessibility/brand rollout, final historical upgrade/private-chain checks and signed distribution remain open.",
+      "Native automatic JSON modal sequencing/Profile authentication, Android imported-wallet navigation, physical hardware and cross-platform release acceptance remain open."
+    ],
+    "additionalLimits": [
+      "No duplicate whole-suite or external browser execution during this review; acceptance uses independently hashed source, archives and raw existing evidence.",
+      "Expected blocked-provider WebSocket errors and Vue/router/keyring warnings remain in raw logs. Zero current-worker uncaught exceptions does not mean a clean console.",
+      "No physical device, signed distribution, Linux CI, historical Firefox wallet upgrade, network-settings acknowledgement or real-provider reconnect qualification."
+    ],
+    "supplementalEvidenceSha256": {
+      "offline-startup-independent-rehash-v1.json": "2ce76d7e13241b5fa79299df9485ebb80e7010bc1de7d091bde4b7d1022d9bdd"
+    }
+  },
+  "rootVerification": {
+    "integratedSourcePins": 362,
+    "candidateEvidencePins": 106,
+    "mismatches": []
+  },
+  "remainingGates": [
+    "OFF10: Explicit network edits during an unreadable-cache interval currently mutate memory but cannot persist, and repair can overwrite them. Add queued per-field intent or a truthful unavailable result before release; this checkpoint does not claim full network preference durability.",
+    "General network settings write acknowledgements, network callback ownership and mixed-worker behavior are not fully qualified.",
+    "Public provider reconnect/live service interoperability, complete screen/accessibility/brand rollout, final historical upgrade/private-chain checks and signed distribution remain open.",
+    "Native automatic JSON modal sequencing/Profile authentication, Android imported-wallet navigation, physical hardware and cross-platform release acceptance remain open."
+  ]
+}

@@ -166,7 +166,7 @@ function defaultAccounts(): UniversalWalletPublicAccount[] {
       accountId: 'iroha-taira',
       ecosystem: WalletEcosystem.Iroha,
       address: 'testuﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱﾇﾆｲMﾒSﾏﾑヱﾇJヱFmJﾇMs6YN687Y',
-      chainId: 'iroha3-taira',
+      chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
       derivationPath: UNIVERSAL_WALLET_DERIVATION_PATHS.irohaDefault,
       publicKeyHex: HEX_32,
       isDefault: true,

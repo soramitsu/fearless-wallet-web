@@ -1,5 +1,4 @@
-import { type FinalEncryptedStructure as SoraFinalEncryptedStructure } from '@sora-substrate/sdk';
-import { type TonApiClient } from '@ton-api/client';
+import { type TonProviderRouter } from '@extension-base/services/ton-provider';
 import { type WordCount } from '../../services';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
@@ -18,7 +17,7 @@ import type { FWKeyringMeta, NetworkJson, PriceProvider } from '@extension-base/
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { BalanceItem } from '@extension-base/api/evm/types';
+import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type {
   NetworkName,
@@ -32,6 +31,23 @@ import type {
   WalletEcosystem,
 } from '@/interfaces';
 import type { WarningValueName } from '@/consts/messages';
+import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
+import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
+import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
+import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
+import type { SendKillSwitchState } from '@/util/sendKillSwitch';
+import type { TonImportChoice } from '@/util/tonKeyring';
+import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
+import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
+import type {
+  SubstrateNetworkSnapshot,
+  SubstrateSigningContext,
+} from '@extension-base/services/request-service/handlers/substrateSigningContext';
+import type { BitcoinRecipientType } from '@/util/bitcoin';
+import type { LegacyExposureRecord } from '@extension-base/services/legacy-exposure-service';
+import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
+import { type FinalEncryptedStructure as SoraFinalEncryptedStructure } from '@/sora/cosigner';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -98,8 +114,9 @@ export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' 
 
 export interface SigningRequest {
   account: AccountJson;
+  network?: SubstrateNetworkSnapshot;
   id: string;
-  request: RequestSign;
+  request: Pick<RequestSign, 'payload'>;
   url: string;
 }
 
@@ -224,16 +241,34 @@ export interface RequestMetadataReject {
 }
 
 export interface RequestAccountCreateSuri {
+  requireFreshGeneration?: boolean;
   suri: string;
   type?: SubwalletKeypairType;
   meta: FWKeyringMeta;
   walletEcosystem: WalletEcosystem;
+  /** TON imports: the address picked on the import screen and the derivation that opens it. */
+  tonImport?: TonImportChoice;
+}
+
+export interface RequestTonImportCandidates {
+  mnemonic: string;
+}
+
+/** What the network says about a TON address; `unknown` when it could not be checked. */
+export type TonAddressActivity = 'active' | 'empty' | 'unknown';
+
+/** One TON address a typed phrase can open. `balance` is in TON and present only after a successful lookup;
+ * `inWallet` marks an address that is already one of the wallet's TON accounts. */
+export interface TonImportCandidateInfo extends TonImportChoice {
+  activity: TonAddressActivity;
+  balance?: string;
+  inWallet?: boolean;
 }
 
 export interface BalanceJson {
   reset?: boolean;
   details: TokenGroup[];
-  saveSequence?: boolean;
+  scanStates?: Record<NetworkName, NetworkScanState>;
 }
 
 export interface RequestMobileSign {
@@ -281,6 +316,8 @@ export interface BasicTxResponse {
   passwordError?: string | null;
   status?: boolean;
   errors?: BasicTxError[];
+  outcome?: 'unknown';
+  transactionHash?: string;
 }
 
 export interface PrepareExternalRequest {
@@ -312,7 +349,7 @@ export interface EvmApiProps {
 }
 
 export interface TonApiProps {
-  api: TonApiClient;
+  api: TonProviderRouter;
   nodeIndex?: number;
   apiStatus: NETWORK_STATUS;
 }
@@ -328,6 +365,8 @@ export type FetchBalancePayload = {
 export type BaseRequestSign = object;
 
 export interface RequestCheckTransfer extends BaseRequestSign {
+  approvedMaxFee?: string;
+  sendMax?: boolean;
   networkKey: NetworkName;
   from: string;
   to: string;
@@ -342,6 +381,8 @@ export interface RequestCheckTransfer extends BaseRequestSign {
     txid: string;
     vout: number;
   }>;
+  /** Priority fee quoted on the Send screen; the send never pays more. */
+  solanaComputeUnitPriceMicroLamports?: number;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -350,19 +391,71 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   from: string;
   to: string;
   assetId: string;
+  assetKey: string;
+  routeId: string;
+  routeProviderId: CrossChainRouteProviderId;
   relayChain?: RelayChainName;
   amount?: string;
+  expectedOriginFee?: string;
+  expectedDestinationFee?: string;
+  expectedExecutionFingerprint?: string;
+  /** Single-use token from the quote being confirmed; required to send. */
+  quoteToken?: string;
+}
+
+export interface ResponseBitcoinTransferQuote {
+  /** Unconfirmed incoming BTC that becomes spendable once confirmed. */
+  awaitingConfirmation: string;
+  fee: string;
+  feeRateSatPerVbyte: number;
+  maxSendable: string;
+  /** An earlier send's broadcast outcome is still unknown; its coins are reused. */
+  pendingPreviousSend: boolean;
+  /**
+   * The latest earlier send whose outcome is not settled: waiting in the
+   * mempool (no new send until it confirms) or unknown (its coins are reused).
+   */
+  previousSend?: {
+    amount?: string;
+    inMempool: boolean;
+    recipient?: string;
+    txid: string;
+  };
+  recipientType?: BitcoinRecipientType;
+  spendable: string;
+  unavailableReason?: string;
+  vsize?: number;
+}
+
+export interface ResponseSolanaTransferQuote {
+  /** One-time deposit that creates the recipient's token account, in SOL. */
+  accountCreationDeposit: string;
+  baseFee: string;
+  computeUnitLimit: number;
+  computeUnitPriceMicroLamports: number;
+  /** Largest amount of the selected asset this account can send. */
+  maxSendable: string;
+  priorityFee: string;
+  /** Sends straight into an existing token account the user pasted. */
+  recipientIsTokenAccount: boolean;
+  unavailableReason?: string;
 }
 
 export interface ResponseCheckTransfer {
   estimateFee?: string;
+  maxAmount?: string;
   destEstimateFee: '0';
   errors?: BasicTxError[];
+  bitcoin?: ResponseBitcoinTransferQuote;
+  solana?: ResponseSolanaTransferQuote;
 }
 
 export interface ResponseCheckCrossChain {
   estimateFee?: string;
   destEstimateFee?: string;
+  minimum?: string;
+  executionFingerprint?: string;
+  quoteToken?: string;
   errors?: BasicTxError[];
 }
 
@@ -413,6 +506,7 @@ export interface ResponseMakeSwap {
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
 
 export interface RequestSwap extends ActivityRequestSign<RequestCheckSwap> {
+  disclaimerAccepted: boolean;
   feeSymbol?: string;
 }
 
@@ -492,6 +586,98 @@ export interface RequestMigratePassword {
   password: string;
 }
 
+/** One account still encrypted with its own pre-2.7.1 password. Plain data, safe to message. */
+export interface LegacyPasswordAccountSummary {
+  address: string;
+  name: string;
+  type: SubwalletKeypairType;
+  walletEcosystem: WalletEcosystem;
+  isEthereum: boolean;
+  /** The Substrate account this EVM account belongs to. */
+  linkedParentAddress?: string;
+  linkedParentName?: string;
+  ethereumAddress?: string;
+  whenCreated?: number;
+}
+
+export type AccountAccessIssueKind = 'legacy_account_password' | 'previous_master_password';
+
+/** An account whose stored key does not open with the master password. It stays in the wallet:
+ * balances and receive work, signing and export wait until it is unlocked. */
+export interface AccountAccessIssue {
+  address: string;
+  walletEcosystem: WalletEcosystem;
+  kind: AccountAccessIssueKind;
+  name: string;
+  linkedParentAddress?: string;
+  /** Legacy accounts only: their original encrypted JSON, still under its old password. */
+  canDownloadEncryptedBackup: boolean;
+}
+
+export interface StorageRecoveryAccount {
+  address: string;
+  name: string;
+  walletEcosystem: WalletEcosystem;
+}
+
+export interface AccountAccessStatus {
+  /** Web password migration could not commit; only read/export operations are available. */
+  storageRecoveryOnly?: boolean;
+  storageRecoveryAccounts?: StorageRecoveryAccount[];
+  hasMasterPassword: boolean;
+  mustCreateMasterPassword: boolean;
+  /** Show the per-account password prompt now. Same value as `pri(keyring.isNeedMigration)`. */
+  promptPending: boolean;
+  deferred: boolean;
+  issues: AccountAccessIssue[];
+  /** The background check of TON phrases after the last unlock has finished. */
+  scanComplete: boolean;
+}
+
+export interface RequestRecoverAccountWithPassword {
+  address: string;
+  walletEcosystem: WalletEcosystem;
+  password: string;
+}
+
+export interface ResponseRecoverAccountWithPassword {
+  ok: boolean;
+  code?: 'wrong_password' | 'locked' | 'not_found' | 'storage_failed' | 'previous_password_required';
+}
+
+export interface RequestRecoverAccountWithPhrase {
+  address: string;
+  walletEcosystem: WalletEcosystem;
+  phrase: string;
+  derivationPath?: string;
+}
+
+export interface ResponseRecoverAccountWithPhrase {
+  ok: boolean;
+  code?: 'phrase_mismatch' | 'locked' | 'not_found' | 'storage_failed';
+}
+
+/** A wallet the user deleted whose keys are kept on the device (DeletedWallets.ts); not in the wallet list. */
+export interface DeletedWalletSummary {
+  id: string;
+  address: string;
+  name: string;
+  walletEcosystem: WalletEcosystem;
+  deletedAt: number;
+}
+
+export interface RequestRestoreDeletedWallet {
+  id: string;
+}
+
+export interface ResponseRestoreDeletedWallet {
+  ok: boolean;
+  code?: 'not_found' | 'already_in_wallet' | 'storage_failed';
+  address?: string;
+  name?: string;
+  walletEcosystem?: WalletEcosystem;
+}
+
 export interface RequestExportSeed {
   address: string;
   password?: string;
@@ -546,17 +732,22 @@ export interface RequestRpcUnsubscribe {
   type: string;
 }
 
+// `kind` is the queue of the request the popup shows. Keys are unique across queues, and an approval or cancellation
+// that names its queue can only ever reach that request.
 export interface RequestSigningApprove {
   id: string;
+  kind?: SigningRequestKind;
 }
 
 export interface RequestSigningApproveSignature {
   id: string;
   signature: HexString;
+  kind?: SigningRequestKind;
 }
 
 export interface RequestSigningCancel {
   id: string;
+  kind?: SigningRequestKind;
 }
 
 // Responses
@@ -599,10 +790,12 @@ export type MessageTypesWithNoSubscriptions = Exclude<MessageTypes, keyof Subscr
 
 export interface RequestSign {
   readonly payload: SignerPayloadJSON | SignerPayloadRaw;
+  snapshot(): RequestSign;
   sign(registry: TypeRegistry, pair: KeyringPair): Promise<{ signature: HexString }>;
 }
 
 export interface RequestJsonRestore {
+  linkedEthereumAddress?: string;
   file: KeyringPair$Json;
   password: string;
 }
@@ -623,6 +816,7 @@ export interface Resolver<T> {
 }
 
 export interface AuthRequest extends Resolver<AuthResponse> {
+  resolve: (result: AuthResponse) => Promise<void>;
   id: string;
   idStr: string;
   request: RequestAuthorizeTab;
@@ -688,6 +882,10 @@ export type Providers = Record<
 >;
 
 export interface SignRequest extends Resolver<ResponseSigning> {
+  walletConnectContext?: import('@extension-base/services/wallet-connect-service/polkadotSigningContext').PolkadotSigningContext;
+  authorizationRevision?: number;
+  signingContext?: SubstrateSigningContext;
+  signingAccount?: import('@extension-base/services/request-service/handlers/substrateSigningAccount').SubstrateSigningAccount;
   account: AccountJson;
   id: string;
   request: RequestSign;
@@ -723,6 +921,18 @@ export type IState = {
   windows: number[];
   fiatSymbol: string;
   balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
+  assetBalances: Record<WalletAddress, Record<string, BalanceItem & { chain: NetworkName }>>;
+  networkScanStates: Record<WalletAddress, Record<NetworkName, NetworkScanState>>;
+  assetDiscoverySweep: AssetDiscoverySweepState;
+  actionCapabilities: ActionCapabilityConfig;
+  sendKillSwitch: SendKillSwitchState;
+  bitcoinPendingSends: BitcoinPendingSend[];
+  solanaPendingSends: SolanaPendingSend[];
+  crossChainSendsInDoubt: CrossChainSendRecords;
+  soraDisclaimerAcceptance: SoraDisclaimerAcceptance;
+  legacyExposure: LegacyExposureRecord;
+  /** Written by 3.0.3-3.0.5 only. Read once for the security notice and never written. */
+  myAddresses: string[];
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
   addressBook: AddressBook;
@@ -775,10 +985,63 @@ interface ValidateJsonResultNegative {
 
 export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
 
+export type RequestTotalBalances = {
+  /** Each wallet's hidden asset keys, so the wallet list can say how much of its total is hidden. */
+  hiddenKeysByAddress?: Record<string, string[]>;
+};
+
 export type ResponseTotalBalances = {
   address: string;
-  total: number;
+  /** Every priced, non-testnet holding, hidden assets included (wallet-management screens show the full balance). */
+  total: string;
   change: ChangeWalletBalance;
+  /** The header total: `total` without the hidden assets named in the request. */
+  visibleTotal?: string;
+  hiddenValue?: string;
+  hiddenCount?: number;
+  /** Assets, hidden ones included, whose balance no provider could load; neither total includes them. */
+  unavailableCount?: number;
+};
+
+/** The portfolio dashboard's all-wallets read: every wallet's counted holdings in one message. */
+export type RequestPortfolioHoldings = {
+  /** Each wallet's hidden asset keys; hidden holdings are not counted, as in the portfolio header. */
+  hiddenKeysByAddress?: Record<string, string[]>;
+};
+
+/** A holding that adds to a wallet's header total: verified, funded, visible, trusted-priced and not on a testnet. */
+export type PortfolioHolding = {
+  /** The portfolio asset key (`ecosystem:chainId:assetId`), the identity the By token lens groups by. */
+  key: string;
+  symbol: string;
+  name: string;
+  networkName: string;
+  /** Free plus reserved, as a decimal string. */
+  amount: string;
+  /** The part of `amount` that can be sent now; the rest is reserved, locked or staked. */
+  transferable: string;
+  /** `amount` times the asset's trusted price, as a decimal string. */
+  fiat: string;
+  /** The 24 h change of the trusted price in percent, when there is one. */
+  changePercent: string | null;
+};
+
+export type ResponsePortfolioHoldings = {
+  address: string;
+  /** The wallet's header total, the sum of `holdings[].fiat`; `ResponseTotalBalances.visibleTotal` for the same hidden keys. */
+  total: string;
+  changeAmount: string;
+  changePercent: string;
+  hiddenCount: number;
+  unpricedCount: number;
+  /** Visible assets whose balance no provider could load; `total` cannot include them. */
+  unavailableCount: number;
+  poolStakesExcluded: boolean;
+  holdings: PortfolioHolding[];
+  /** The newest balance time among the counted holdings, in milliseconds. */
+  latestTimestamp?: number;
+  /** Networks that hold counted value and whose last update failed or is out of date. */
+  staleNetworks: string[];
 };
 
 export interface TokenGroup {

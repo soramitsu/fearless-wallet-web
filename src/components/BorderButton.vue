@@ -20,6 +20,7 @@
 
 <script lang="ts" setup>
 import type { ComponentText } from '@/interfaces';
+defineEmits(['click']);
 
 type Size = 'small' | 'medium' | 'big';
 type BorderRadius = 'mini' | 'small' | 'medium' | 'big';

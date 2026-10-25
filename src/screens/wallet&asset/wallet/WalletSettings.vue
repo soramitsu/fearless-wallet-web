@@ -16,15 +16,26 @@
         />
       </template>
 
-      <TabButton
-        v-else-if="notNftTabActive"
-        tooltipText="wallet.turnVisibilityAssets"
-        class="hide-zero"
-        target=".hide-zero"
-        placementTooltip="right"
-        :label="toggleButtonText"
-        @click="$emit('toggleCurrenciesVisible', allTokenGroupsHidden)"
-      />
+      <div v-else-if="notNftTabActive" class="manage-filters">
+        <button
+          type="button"
+          class="filter-chip"
+          data-testid="filterHidden"
+          :aria-pressed="manageHiddenOnly"
+          @click="$emit('update:manageHiddenOnly', !manageHiddenOnly)"
+        >
+          {{ $t('portfolioPage.filterHidden', { count: hiddenAssetCount }) }}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          data-testid="filterTestnets"
+          :aria-pressed="showTestnets"
+          @click="$emit('update:showTestnets', !showTestnets)"
+        >
+          {{ $t('portfolioPage.testnets') }}
+        </button>
+      </div>
     </div>
 
     <div class="settings-part">
@@ -38,7 +49,6 @@
       />
 
       <CircleButton
-        v-if="!isTonWallet"
         backgroundColor="none"
         tooltipText="wallet.assetManagement"
         placement="left"
@@ -49,6 +59,52 @@
         @click="toggleAssetsManagementVisible"
       />
     </div>
+
+    <div v-if="notNftTabActive" class="view-controls">
+      <div class="segmented" role="group" :aria-label="$t('portfolioPage.lens.label')" data-testid="portfolioLens">
+        <button
+          v-for="option in lensOptions"
+          :key="option.value"
+          type="button"
+          class="segment"
+          :aria-pressed="lens === option.value"
+          :data-testid="`portfolioLens-${option.value}`"
+          @click="$emit('update:lens', option.value)"
+        >
+          {{ $t(option.label) }}
+        </button>
+      </div>
+
+      <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
+      <div
+        v-if="lens === 'token' && showSortControl"
+        class="segmented"
+        role="group"
+        :aria-label="$t('portfolioPage.sort.label')"
+        data-testid="portfolioSort"
+      >
+        <button
+          v-for="option in sortOptions"
+          :key="option.value"
+          type="button"
+          class="segment"
+          :aria-pressed="sort === option.value"
+          :data-testid="`portfolioSort-${option.value}`"
+          @click="$emit('update:sort', option.value)"
+        >
+          {{ $t(option.label) }}
+        </button>
+      </div>
+
+      <div v-if="!syncedShowAssetsManagementForm" class="hide-zero" data-testid="hideZeroToggle">
+        <Switcher
+          :value="hideZero"
+          :activeText="$t('wallet.hideZero')"
+          :inactiveText="$t('wallet.hideZero')"
+          @change="$emit('update:hideZero', $event)"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -57,7 +113,6 @@ import { defineComponent } from 'vue';
 
 import type { TabWallet } from '@/interfaces/common';
 import { Components } from '@/router/routes';
-import { useAccountsStore } from '@/stores/accounts';
 
 interface TabsOptions {
   label: string;
@@ -70,13 +125,38 @@ interface TabsOptions {
 export default defineComponent({ name: 'ContentSettings' ,
   props: {
     tokenGroups: Array,
+    hideZero: Boolean,
+    showTestnets: Boolean,
+    lens: { type: String, default: 'token' },
+    sort: { type: String, default: 'value' },
+    /** The wallet has a 3.0.5 custom order to keep. */
+    showSortControl: Boolean,
+    hiddenAssetCount: { type: Number, default: 0 },
+    manageHiddenOnly: Boolean,
     activeTabName: { type: String },
     filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
   },
+  emits: [
+    'update:activeTabName',
+    'update:filterValue',
+    'update:showAssetsManagementForm',
+    'update:hideZero',
+    'update:showTestnets',
+    'update:manageHiddenOnly',
+    'update:lens',
+    'update:sort',
+  ],
   data() {
     return {
-      accountsStore: useAccountsStore(),
+      lensOptions: [
+        { value: 'token', label: 'portfolioPage.lens.tokens' },
+        { value: 'network', label: 'portfolioPage.lens.networks' },
+      ],
+      sortOptions: [
+        { value: 'value', label: 'portfolioPage.sort.value' },
+        { value: 'custom', label: 'portfolioPage.sort.custom' },
+      ],
     };
   },
   computed: {
@@ -91,8 +171,7 @@ export default defineComponent({ name: 'ContentSettings' ,
             },
           ];
 
-          if (!this.accountsStore.selectedWallet.isTon)
-            baseTabs.push({
+          baseTabs.push({
               label: 'wallet.nfts',
               tabName: Components.Nfts,
               tooltipText: 'wallet.nonFungibleTokens',
@@ -102,20 +181,11 @@ export default defineComponent({ name: 'ContentSettings' ,
 
           return baseTabs;
     },
-    isTonWallet() {
-      return this.accountsStore.selectedWallet.isTon;
-    },
     target() {
       return `.${this.iconName}`;
     },
-    allTokenGroupsHidden() {
-      return this.tokenGroups.every(({ groupId }) => this.accountsStore.hiddenAssets.includes(groupId));
-    },
     searchInputWidth() {
       return '100%';
-    },
-    toggleButtonText() {
-      return this.allTokenGroupsHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
     },
     iconName() {
       return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
@@ -165,9 +235,89 @@ export default defineComponent({ name: 'ContentSettings' ,
 <style lang="scss" scoped>
 .content-settings {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   margin-bottom: 10px;
   margin-right: 16px;
+
+  .manage-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-chip {
+    min-height: 32px;
+    padding: 0 12px;
+    border: $default-border;
+    border-radius: 16px;
+    background: $secondary-background-color;
+    color: $grayish-white;
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      border-color: palette($pink-lavender-color, var(--fw-select-edge));
+      background: $pink-purple-color;
+      color: $plain-white;
+    }
+
+    &:focus-visible {
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+      outline-offset: 2px;
+    }
+  }
+
+  .view-controls {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .segmented {
+    display: inline-flex;
+    padding: 2px;
+    border: $default-border;
+    border-radius: 16px;
+    background: $secondary-background-color;
+  }
+
+  .segment {
+    min-height: 28px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: $grayish-white;
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &[aria-pressed='true'] {
+      background: $pink-purple-color;
+      color: $plain-white;
+      font-weight: 700;
+    }
+
+    &:focus-visible {
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+      outline-offset: 1px;
+    }
+  }
+
+  .hide-zero {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-left: auto;
+    color: $grayish-white;
+    font-size: 0.75rem;
+  }
 
   .settings-part {
     display: flex;
@@ -209,6 +359,16 @@ export default defineComponent({ name: 'ContentSettings' ,
 
     .search-input-wrapper {
       flex-grow: 2;
+    }
+  }
+}
+
+@include v1-palette {
+  .content-settings {
+    gap: 12px;
+    .settings-part {
+      height: auto;
+      min-height: 44px;
     }
   }
 }

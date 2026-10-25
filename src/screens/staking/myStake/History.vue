@@ -7,7 +7,7 @@
       :stakingAssetId="stakingAssetId"
       :rewardedAssetId="rewardedAssetId"
       :network="network"
-      @openHistoryDetailsForm="$emit('openHistoryDetailsForm', ...arguments)"
+      @openHistoryDetailsForm="$emit('openHistoryDetailsForm', $event)"
     />
   </div>
 </template>

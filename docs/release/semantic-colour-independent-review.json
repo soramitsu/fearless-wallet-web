@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted within source-only CSS-equivalence scope",
+  "sourceCommit": "67aa17d98f869a60e56622677d3bf8ebb1b0d078",
+  "baseCommit": "875b9d42d2da2071fac989a345614b9cbdfd886a",
+  "candidate": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-candidate-v1.json",
+    "sha256": "ae17f50f428e1fd9c6ceb0ebccee2d8f67da6fe5c5c0090515019a232e0acfc8"
+  },
+  "independentChecks": {
+    "sourceWorkingAndGit": 19,
+    "fullSnapshotWorkingAndGit": 1382,
+    "candidateEvidenceHashes": 17,
+    "baselineAndCandidateStyleGitPins": 506,
+    "mismatches": 0,
+    "recompiledCurrentSassOutputsExactlyMatchFrozenAndBase": 502,
+    "palettes": [
+      "legacy",
+      "v1"
+    ],
+    "styleUnitsPerPalette": 251,
+    "independentlyParsedVueDescriptorsUnchanged": 17,
+    "replayedVitest": {
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ratchet": {
+      "oldOccurrences": 203,
+      "newOccurrences": 174,
+      "oldSites": 181,
+      "newSites": 153,
+      "onlyShrink": true,
+      "originalProvenanceUnchanged": true
+    }
+  },
+  "sourceAssessment": [
+    "Inspected every substitution and all19 shared definitions: exact legacy values and v1 CSS custom-property choices preserved. No templates, scripts, style attributes or custom blocks changed.",
+    "No new role collides with prior Sass definitions. Shared definitions are declared after palette() and before consumers; both compile-time palette modes replay identically.",
+    "Baseline reduction removes only migrated expressions; raw-colour guard behavior and original provenance are unchanged. No actionable blocker found in this bounded refactor."
+  ],
+  "limits": [
+    "This centralizes existing mappings, not a new visual/contrast approval or full design migration;174 Vue colour occurrences remain.",
+    "Direct Sass output and descriptor equality do not independently qualify Vite scoped hashes, bundle/package output, browser rendering, physical accessibility, signing or release publication.",
+    "No full application suite or browser rerun was performed for this review; inspected recorded typecheck,17-component lint and actual CLI successes.",
+    "The variable fw-secondary-hover currently also names disabled-button paint; semantic naming can be refined during future palette migration, but current output is exact."
+  ],
+  "supplementalEvidence": {
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-unit-v1-run.json": "716965f2a310b53356517f1567a5ef9f37b17d5097bc50d9bb451ec30024c301",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-sfc-v1.cjs": "917050f4a0ef9831d3c7d63f524f0ac4df8a02d19eb67dbc05a3dea25f153f2f",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-rehash-v1.json": "a7ea742a7fe4d89a559cc5a1347836411c43807c1e8daeef75b65c3b168bc281",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-styles-v1.log": "77122a546d4564db0d8e621c36c1bf0d74d8508123023d6076a755cfd2d34fd8",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-unit-v1.log": "d7bf42292d098b15839ed99f3fc2f04b4f3b6d7cbd93d2d97b6362a283b4be7a",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-styles-v1.json": "2ee7eef22d2904db3bf7f2ca75353a0362de2ebbc11fdc5d3fe4028d668aeb9e",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-sfc-v1.json": "670be168227a946c03cf39db6e57069cb23d8248f19acb3ce543810e10d41f18"
+  }
+}

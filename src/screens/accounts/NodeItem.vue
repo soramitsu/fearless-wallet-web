@@ -74,10 +74,16 @@ export default defineComponent({ name: 'NodeItem' ,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px;
+  min-height: 60px;
+  gap: 12px;
   padding: 10px 20px;
   border-bottom: $default-border;
   box-sizing: border-box;
+
+  > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
 
   &:last-child {
     border-bottom: none;
@@ -87,9 +93,8 @@ export default defineComponent({ name: 'NodeItem' ,
     font-weight: 400;
     font-size: 0.875em;
     text-align: left;
-    width: 410px;
-    height: 21px;
-    line-height: 21px;
+    width: 100%;
+    line-height: 1.5;
     color: #888888;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -98,6 +103,7 @@ export default defineComponent({ name: 'NodeItem' ,
 
   .name {
     text-align: left;
+    overflow-wrap: anywhere;
   }
 
   &:hover {

@@ -1,0 +1,775 @@
+{
+  "recordedAt": "2026-10-13T05:05:21.062433+00:00",
+  "status": "Scoped acknowledged account removal qualified locally; broader production readiness remains active.",
+  "baseCommit": "ce794ff481c357996b63d8b570c4f286c737a20f",
+  "sourceCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+  "applicationSourceCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+  "harnessCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+  "finalTestTypeOnlyPatch": "account-removal-storage-final-type-only.patch",
+  "changedFiles": [
+    "scripts/extension-smoke-account-removal.mjs",
+    "scripts/solana-extension-smoke.mjs",
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts",
+    "src/extension/background/extension-base/src/services/keyring-service/AddressMetadata.ts",
+    "src/extension/background/extension-base/src/services/keyring-service/DeletedWallets.ts",
+    "src/extension/background/extension-base/src/services/keyring-service/TonKeyring.ts",
+    "src/extension/background/extension-base/src/services/keyring-service/index.ts",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts",
+    "src/extension/background/extension-base/src/stores/Accounts.ts",
+    "src/extension/background/extension-base/src/stores/Addresses.ts",
+    "src/extension/background/extension-base/src/stores/BaseExtension.ts",
+    "src/extension/background/extension-base/src/stores/BaseWeb.ts",
+    "src/extension/background/extension-base/src/stores/StoreMutation.ts",
+    "tests/unit/account-removal-storage.spec.ts",
+    "tests/unit/base-web-store.spec.ts",
+    "tests/unit/default-current-account.spec.ts",
+    "tests/unit/deleted-wallet-ton.spec.ts",
+    "tests/unit/ecdsa-account-restart.spec.ts",
+    "tests/unit/mobile-session-retirement-storage.spec.ts"
+  ],
+  "sourceSha256": {
+    "docs/universal-wallet-v2-vectors.json": "3b6ea60c00eae541c6dc05617b295acf8fc3ad1e097274a6c0dad5c15fbfdbc6",
+    "package.json": "4cd9cb62052f55c7d181bfd519d3f4734c4a4b539412f33516e477b3193b02dc",
+    "scripts/build-extension.mjs": "97a0f3084ccd47fae3d478b6ca3324ba8d51980c430df0cac8e0debe86bb682d",
+    "scripts/extension-smoke-account-removal.mjs": "1f7b28af18643626addd1dd85de50fce2d26d88623d50c99e5298f8f3d8e0cff",
+    "scripts/extension-smoke-connections.mjs": "27424814165c0be45cbe6103a746a08f19e2f5157b1b543f713ca270879e90ca",
+    "scripts/extension-smoke-current-account.mjs": "ac37d40587cbc9bd2d1e8a8235783fd19977702e54c816206becc6fe851d0826",
+    "scripts/extension-smoke-json-import.mjs": "690bec8ef41d3c5d22fcc3368d8f80f2dff9bbe106575d938bf4f1ed37d46280",
+    "scripts/extension-smoke-json-notice.mjs": "d15bf00da951238070630db4de893ed2a44a06a2570ec9dfd45c47114ab2fa04",
+    "scripts/extension-smoke-local-import.mjs": "2cbe7b8b12001e45b9d6f475937604e144817b555ba66ddf885949cb01df5a13",
+    "scripts/extension-smoke-mobile-address.mjs": "254ad4082da5efcb14a241be50061d6ada49ea51782965294c6db93c6ba4bbe2",
+    "scripts/extension-smoke-mobile-pairing.mjs": "cabd922ef386d02c35dbd89e19b4a0c636d9173d67259619317e4f5771f053d0",
+    "scripts/extension-smoke-portfolio.mjs": "3e136281d97bb964c1e7f8424b6a6389c302319263a36d705fa8adbf86cec173",
+    "scripts/extension-smoke-primitives.mjs": "81b1ba534b61aecb5006dbf32a62413a5e2047826b640172dc44828cb842a48c",
+    "scripts/extension-smoke-session-retirement.mjs": "6598e75d4e6e8865d8cbccfb37565b9205fb8642e3b9ec140e07aaab9ef6b433",
+    "scripts/extension-smoke-signing.mjs": "a5492730f1317b1dff48c56fdd093b286fe3935acaa95d87d461b598024d631e",
+    "scripts/extension-smoke-ton-import.mjs": "4192a0cb96c96df382cd61ae37eeec19ff264ed175330313b229e520afa00dac",
+    "scripts/extension-smoke-wallet-connect.mjs": "b2d88611ef8d9800755aa655b70a3f726a613f5af48333359ac8fd09cae4f582",
+    "scripts/keystore-scrypt-params.mjs": "33d103d0ac33e7e36ddfde1ed2cb0125b88fa05b92ea903b060525cbd8c49a08",
+    "scripts/package-extension.mjs": "427fec7c94bca0ebbc7773c7126cdd53522be51ba66db30e247af06ab21daf64",
+    "scripts/solana-extension-smoke.mjs": "3eed3faa710039b6401d8faf4d9d01ebbf925eff9aca7c2597b5d907d2734a95",
+    "scripts/subwallet-package-compat.mjs": "c9fdc34e78f2e42d1e91012bb6b4a19757d649669d9c9aecb1a26135af294f48",
+    "src/components/AboveForm.vue": "8c98721727ec2c1bc86e0a349a09a7bd017ccefb093ad58d4972aee0494a0f81",
+    "src/components/Checkbox.vue": "dd574236b715fbaacb20cddc705fc307ea16e71c491d04b19339ccc27adec4a4",
+    "src/components/FButton.vue": "ac5a4682d165fde5269dc822e3ed80e79fff2ea0b68d4a248e3c61bba94a2549",
+    "src/components/TabButton.vue": "7c296850b2bf3b5e1f34cddecd403f6ab366ffb4e80cea213a819969b245e4a8",
+    "src/components/Tabs.vue": "71a17108fb7bc45d1ba3c8105add8bd9e3fc2ce6a0764d5c1cdd893972ca0e78",
+    "src/components/useModalFocus.ts": "1d6085b7096a52005b93d0807160ed9de75bf9c08361f76709b2f1b8a67c0c1a",
+    "src/consts/universalWallet.ts": "0ab6e66e723994f4207026ac8100a54cfa8c51e828699e35a4e4b3dcc93f0596",
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts": "1bec1161d63ec818e4fe9ed111d2000ca6bf35ab6dd4ea310cb8007d48fc7089",
+    "src/extension/background/extension-base/src/background/handlers/ExtensionBase.ts": "4ca77e00e1e1b710ca3bf6b40d51f65603c7fbb480122286dbe41165e45f4907",
+    "src/extension/background/extension-base/src/background/handlers/State.ts": "414c65fd768fe4e2178fbe963f878a79cc8c6a9bbbfa71a300ffcfba5b1be9fb",
+    "src/extension/background/extension-base/src/background/handlers/Tabs.ts": "4d5b6930cc0dd8bc966f43b44e682be191130e4551f99e1fc3e45d5f1e51ae25",
+    "src/extension/background/extension-base/src/background/helpers/currentAccount.ts": "c1672b37c06206c1663c562daaf93b5566c6eb8ee74b3a70b07ab89a40e57f4f",
+    "src/extension/background/extension-base/src/background/types/messages.ts": "ae9511ae00bbf7274273f78314356f4b7fb3672d6f668353a95b236d33cc17c2",
+    "src/extension/background/extension-base/src/background/types/types.ts": "f9f8e31b7c8a6286ae0ab9a0883a2dc62f85ad963e9a4f6bcd234a92ccb39c54",
+    "src/extension/background/extension-base/src/services/eip-service/index.ts": "b9ab022df09ff42f4817d9ce7dd4aebb06d1399d9358c05c996ade08ddcf8a7c",
+    "src/extension/background/extension-base/src/services/keyring-service/AccountAccess.ts": "d964c0960f93d9082e7d3c612c0bf0c5bb2d265215d64805015ca985e31bc2b7",
+    "src/extension/background/extension-base/src/services/keyring-service/AccountAccessErrors.ts": "71e5ebd191f5df2c07d63532cef07d89d1eff8ce7457c4fb3f283e90f875e488",
+    "src/extension/background/extension-base/src/services/keyring-service/AccountMetadata.ts": "4e6f92f77cbc3d4649b9f656a54e6d6a95be5b26333070439cb691adcb535853",
+    "src/extension/background/extension-base/src/services/keyring-service/AddressMetadata.ts": "0495ab73a617df8c86a0dcadf3179051ff21446673b0d4381edae49fedbcb116",
+    "src/extension/background/extension-base/src/services/keyring-service/Bip39.ts": "438409087c99dfefe324090c12713c3ce5c0a67d6c4dd55a9b2649278d46e896",
+    "src/extension/background/extension-base/src/services/keyring-service/DeletedWallets.ts": "173df5643a9a2eda349ce9f7b11681b3a45448a7ddb99e3326dc6b02811645b6",
+    "src/extension/background/extension-base/src/services/keyring-service/JsonAccountImport.ts": "2cf4e7dd7a689c6d8ea9711d512bd9b7c2c52914420ea893cf22791a4a3138d2",
+    "src/extension/background/extension-base/src/services/keyring-service/KeyringLock.ts": "f7ac840911aba3489a372e7017e84d9f651c76a80d142b13b73021a95b8c9141",
+    "src/extension/background/extension-base/src/services/keyring-service/LegacyNetworkEnrollment.ts": "7c7941472a42ee312e226a291415138cbe05f43c5c4f44237249848a6be3c088",
+    "src/extension/background/extension-base/src/services/keyring-service/LegacyPasswordUpgrade.ts": "1ce3c3a7abdf5d9acfea57a88f1915f9aec266eabb61f9a251dfffb9fee21789",
+    "src/extension/background/extension-base/src/services/keyring-service/LocalAccountImport.ts": "b6db84f48fd78c2669fbf41494939f133b6517a538a92d25f36ebb34461b8658",
+    "src/extension/background/extension-base/src/services/keyring-service/TonKeyring.ts": "d805c7ee39612a09758c493b8c079cee07b864345ad1e0c5b7029ebca8b708af",
+    "src/extension/background/extension-base/src/services/keyring-service/TonSeedVault.ts": "3796e16d62e00a7f8852baeb6471c32473229cfd837007f541e4a555b3764082",
+    "src/extension/background/extension-base/src/services/keyring-service/index.ts": "53805eba78e2afdb48f53ddfc8008d314f29a6c8eef3e260ddab59b6d5b26c27",
+    "src/extension/background/extension-base/src/services/request-service/handlers/AuthRequestHandler.ts": "f8320c962925f26526db666eb15b927dc8d8188f34b46a2a12299bb35839e1d1",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts": "817544e9202d59011f6f78e6ab735397f04c4fd6c674872ebbabb550c04c8346",
+    "src/extension/background/extension-base/src/services/request-service/handlers/SolanaRequestHandler.ts": "81d44e3707e1e91fb9ba7f042e6a13d30944f97aedd4a43fa4b5654ffceeab78",
+    "src/extension/background/extension-base/src/services/request-service/handlers/SubstrateRequestHandler.ts": "e5538914231e16e72c382d2b8ec9dc6f7f86ad5727660139904cb990ca8212c1",
+    "src/extension/background/extension-base/src/services/request-service/handlers/authorizationWrites.ts": "2bd99b063dc000140d1e000ed1d6094ac36333b2230f9271feb9ede15d08f557",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts": "b2e421a938b9315a974f4199ce57d4b8ce2b72555fef70bf1940003f0e738619",
+    "src/extension/background/extension-base/src/services/request-service/handlers/externalSignature.ts": "4f56d6ba72357295695fbf2d26ea900b5c8e4f8608bea248fea9080804a95295",
+    "src/extension/background/extension-base/src/services/request-service/handlers/solanaSigning.ts": "097c6a453a75d923ecd30b648d4be2dc25fe693343d680eb2ad71f4347385297",
+    "src/extension/background/extension-base/src/services/request-service/handlers/substrateSigningAccount.ts": "5d7ddd183285173898537d98057c5335d1624f4f702a95d9d242f527eb4b4e1e",
+    "src/extension/background/extension-base/src/services/request-service/handlers/substrateSigningContext.ts": "eae5471f47c7c33935ef13859a2d683682cd031d03920e97f8b326380b7e4d4d",
+    "src/extension/background/extension-base/src/services/request-service/index.ts": "2d5e944a1f579abc40733621fc88bacd7960176b0400eb86c69570a19fdc5601",
+    "src/extension/background/extension-base/src/services/request-service/types.ts": "eb3cb22819c86af5a696b04e30f7ed7fa1a17c783cd15ba3e768b32c44ea3a1c",
+    "src/extension/background/extension-base/src/services/send-kill-switch-service/index.ts": "c76782c3ba2d4dd82c2736ae254ff601290b554a2bf7faf1db3d51375c3e20e4",
+    "src/extension/background/extension-base/src/services/solana-rpc-service/index.ts": "48a2ac696e958a5d0a9abe06c24bc3ecc7e4f9410e62ed57d4b5bffaae52b1c4",
+    "src/extension/background/extension-base/src/services/subscription-service/index.ts": "2642cc5fb41e6bba8bf6e13f8514e3a29ed26d76b1a7b849b202d1d1967bc5c6",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts": "7a571040274c739846cab740384e02a63240f4aeea9c3aa6506dfed24b8a2d17",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/index.ts": "2cae85b4d6260517cb5b26b6e86d3710ba0094720fc3630184d2aca51f7a019a",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/mobileSigningContext.ts": "c48e41772b0764cf0dece5c0b0fb2eaf3fe94f695aabafe8a24441e056b33ce4",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/mobileTransaction.ts": "7ad36632c9a9eeaeae05da7874c90ce0ee268c800682cc0852e317808bf78dea",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/pairingContext.ts": "6f290f44b0ff2a21e9dd112473c133d6426753b04735acc75841e6f00d8a7887",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/polkadotSigningContext.ts": "8224ecc14a14d288b6e5c96df6ccec71cab9134d45eed940a342d564aafbe956",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler.ts": "ce21cd282e32e52c4140aad2de28fe84b487a0a6154960ad4cd5713f2f3315ad",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler.ts": "1bb188cc994abbaec7f91d2452e873a127cb21a228d8deb5c765f415127dc3b6",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestValidity.ts": "0e61473dc17cbc9a4a7e7fd7f0339500d35ae88301edbdf4e04ef15d137a6ed2",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/sessionSigningContext.ts": "915fafd3443908762d6d025977e41b56b9344f108ae81d48cd1c9669c6d47df7",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/signingContext.ts": "651d3f1f1f680d9e2a6264fec9f1a71e2de8619776d10d80904958d07929773b",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/storage.ts": "f8a1e54007e2d1581c52402ba930af60cae1686f909dfa1a904ce67fb4999117",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/types.ts": "f8ca57fc2ea5b4035cf7b01e776b13c1286a4e93762081adb0f53822670f45be",
+    "src/extension/background/extension-base/src/signers/KeyringSigner.ts": "9189311ba3f964d942536e1711f6769d91695a8715cf8f55675a9a4c88f58d21",
+    "src/extension/background/extension-base/src/signers/RequestBytesSign.ts": "09ea68f189632b2aa47cd4da32ef13c60172cf779230731498735079cf622e68",
+    "src/extension/background/extension-base/src/signers/RequestExtrinsicSign.ts": "e7f496f1cb81af783f1edce3366c98d281bb14f8890b0a4059a302f46d015c74",
+    "src/extension/background/extension-base/src/stores/Accounts.ts": "1de45b19f80de4d8acbf8465c9af5e376fc58fe6435333b37e4099bc4d7e4e72",
+    "src/extension/background/extension-base/src/stores/Addresses.ts": "730d08898155dd9c82700049051c8a75adec582fe09ef18b6d6b25b6c7c5a8e4",
+    "src/extension/background/extension-base/src/stores/Authorize.ts": "7e32a64b382b55bf60054541f67b67d0b7cbf762bce026ac00a6e134b263cfbb",
+    "src/extension/background/extension-base/src/stores/BaseExtension.ts": "0995f3b462fc734497850ba2e7336128023824920984492563a63a6787389fbd",
+    "src/extension/background/extension-base/src/stores/BaseWeb.ts": "beab3d787c3654db9ded02a092a3c97fc490c29385d461fa1a56891aa5bde412",
+    "src/extension/background/extension-base/src/stores/CurrentAccountStore.ts": "cd127a60dbaaefd2ec73207f51d9911a3eea42dd452cc80bc369fa6af1d23be6",
+    "src/extension/background/extension-base/src/stores/StorageExtension.ts": "7eb37b7cbb3e9b7ca11bd69053bce8b62184323a569aaa4f1a93ac2183925dc3",
+    "src/extension/background/extension-base/src/stores/StorageWeb.ts": "60d962dbf10205ca08dd494adc507d10cb0ce5765b16a4a6d7e2448eff0c2f52",
+    "src/extension/background/extension-base/src/stores/StoreMutation.ts": "904a5f63b643fc89b9593bf7e378b1190e3308b0a90fe3b44030db24a1149a6e",
+    "src/extension/background/extension-base/src/stores/SubscribableStore.ts": "28424635c46084d64671c6f27072768dd10290d5f847cb8a523aff3ad9f2b5db",
+    "src/extension/background/extension-base/src/stores/TonStore.ts": "a412973da9fee2b38dc8d9bc793661501499ac94b1861fb6a8f015fc36036a54",
+    "src/extension/background/extension-base/src/stores/WalletConnectRetiredSessions.ts": "bbe03a6f428dcffcdf730cf1c55a8437826e451df36657b5e460783699ca0601",
+    "src/extension/background/extension-base/src/stores/WebDatabase.ts": "997c30930d319bb977bcaf22843d0c075ed8e7fdc380c1c1a673ef0b4fc49b2a",
+    "src/extension/background/extension-base/src/types.ts": "a5014922fb4ccbdca522d4af56f6057cff519be03c3e829342f329a284cc3ced",
+    "src/extension/entry/background-web.ts": "66b6cbf418db8d64376376c805f377a699d029f839d3bdfa43343b9731ee6a10",
+    "src/extension/entry/backgroundRuntime.ts": "f9b98c30b105541c36dea58576ecff0bc58ad8a71be2d236c6fd54162b754f41",
+    "src/extension/messaging/accounts.ts": "ddd500b3519551ce57b75dc51dae06c7183c85e5079f7534e928f050f1e04eea",
+    "src/extension/messaging/index.ts": "91fd7eddf86de24a11417d8a41498a855c4daac2cd5ab7f5cd964b50ef94f36a",
+    "src/extension/messaging/substrate-requests.ts": "4f3d9d4b1e286739f63189f4fd559d939ecd7b431259d8ad616f03bbfc9edbe7",
+    "src/extension/messaging/wallet-connect-requests.ts": "8b7bdc1251427cd68bafab4ffbfe6f9b363677cc43fcb2d8e0dcd1df9e1fadf4",
+    "src/locales/akk/README.md": "a7409246587e5b0d06452eed038e895cba247c5380b596387aab7ae973689950",
+    "src/locales/akk/translation.json": "befa6dc03a4d00609eb3a1329a5811abe045eef81c908e917a742be642071c3d",
+    "src/locales/egy/README.md": "2acf076428512b6d48b3a3753379100b6338680e02e3fa4ba638b2a35453f3e5",
+    "src/locales/egy/translation.json": "13a7ca8baaf69065cd16e7b3096ab011d14b9a41d48f0d4571c0051dc47ad8da",
+    "src/locales/en/translation.json": "6cfab1222a62374c16e5a197e79452b5413c853dbe08e31b842985f819b6d74e",
+    "src/locales/ru/translation.json": "93fba95ba063d97c161ab3cce5104692836b068ab19dab02d528307952698a96",
+    "src/router/routes.ts": "0a6f647f9fb1bded6df8e4a2fb95a4d8fde20da135c157521f0183feec07c8a1",
+    "src/screens/accounts/ExportTypeForm.vue": "da5593f7561f2945d82c6b5bd3003905342fbb7c21c2dddeb087a85de2bd2d4f",
+    "src/screens/addWallet/AddWallet.vue": "2e4c5ffb23b8e203332a354a849376264b6184b10cffe2d791d2fd0e0565cf16",
+    "src/screens/addWallet/BackupWalletsList.vue": "0234eb27f24ec2739eb7818d616a41e2bbdd5419b3879179da610d02a0c258e2",
+    "src/screens/addWallet/TonAddressChoice.vue": "45f966bffb5e336a6e0f3c1772a12bd1d1609ba3f10cafec91f661b567aa1ed1",
+    "src/screens/addWallet/google/CreateGoogle.vue": "86b8e5188cbb25828aa0fc5b3deebce62f249533e67ddb6c5da4fd7728eadba7",
+    "src/screens/addWallet/tonImportChoice.ts": "d1430322f4cab1a11849a0079641f69e7489ba4200140bfee4a4647af006e6b9",
+    "src/screens/extension-ui/AuthItem.vue": "f601ef759329656cc402e32199abfcb3a41ce1364579dd7dfa104b64f6d0c20a",
+    "src/screens/extension-ui/AuthManagement.vue": "7cdd518b4c11fc77c70fcd96184c1ff90a5e4ee174bcf8b85616846e77066419",
+    "src/screens/extension-ui/DAppDetails.vue": "82deff05a2697a9c8770e7763834d91bad190fa921efeb18812b44f6ee4005a3",
+    "src/screens/extension-ui/DAppsAuths.vue": "9991a0672975786fbcfd3dc43db17d1f75506a50fe62f7df37e8836fee86051c",
+    "src/screens/extension-ui/ManageAuths.vue": "761ab633384a5503a5d7947da438136e6c7399867e63460accddc55a5bc04b6b",
+    "src/screens/extension-ui/authorize/SelectAuthAccountForm.vue": "614de8d7a7d7273aabecf1799841c0f87c573547f95bf08383c29be77319b5b4",
+    "src/screens/extension-ui/signing/Transaction.vue": "c237e50693ef13daa5002707ad3d2929b980497cf766b76589e1455e2291fd2c",
+    "src/screens/extension-ui/signing/WalletInfo.vue": "cee20ea3a4d5ceb74d659c7379c256b9b217562cc4a94c7ebfa8d18b7e0f39e7",
+    "src/screens/extension-ui/signing/requester.ts": "cfab45395524527b6ad83998e4076b5aa6503a222081fd1a5fd9f03f45de286c",
+    "src/screens/extension-ui/signing/review.ts": "fcb31e0599baf8437dfa45a8d0b39fdaf18691e50079593e4a6bf5194f925992",
+    "src/screens/extension-ui/signing/walletConnectReview.ts": "5684772577d27deafd8ba2ae3b39a1166e6d19547876a1c57f3d8182e491c6fe",
+    "src/screens/main/Main.vue": "df39c8c8ea017aed835748e719e72522fcb2c9c8e579555c0b962b71d2154386",
+    "src/screens/mobile-wallet/MobileWalletAuth.vue": "245a30ca690dbdf105d10dd9db7304ddd46cdcf474918f84bc2aefa72b2bc2a0",
+    "src/screens/walletConnect/WalletConnectHeader.vue": "9ac712220c62054dab369a05172e71098e9de1ec050594760b961b133fec86f8",
+    "src/screens/walletConnect/WalletConnectSignConfirmation.vue": "7dd7288c66348e2c7560c619d78956c14f1f50596e46ed7c0805c17c684383a8",
+    "src/stores/accounts/actions.ts": "abf1b6629e99a4f964ec108661419252d317ea3d8f88502a40be5856bbccc3f2",
+    "src/stores/accounts/types.ts": "4e2a1032fe2cf3257c3b0c3e16f7d71f9e6a5cc1cc6a930ff13cab3c303202da",
+    "src/stores/extension/actions.ts": "31a211237693d7036a2d1d6ad573fb5a63e03ebaa8a0df34a553c5e5d6bfdcc3",
+    "src/util/evmMessageBytes.ts": "48f09485a2a98a2ab42414aa4ce0c0b61ec2de4dc4bae95ec9fa593fbde9e770",
+    "src/util/evmTransaction.ts": "ad880af05a184efadca576d72bf85c69c332363bdfaa226135b7edbf79b781b2",
+    "src/util/evmTypedData.ts": "9be8c21b068069db5a7cf55783197aecae01f42d6a69fe2c1f03823aa2efe140",
+    "src/util/keyringJson.ts": "9fa9e2d7c551eaff6d67e09ddd0690901e6afd458edc92a80f301a61624f6ad1",
+    "src/util/slip10Ed25519.ts": "6998c4ada97e982b183cfe5d86a99c07e7cd0b693d3779364b09bb1a4075393b",
+    "src/util/solanaTransaction.ts": "3c8c54e088527b9b55a91a1305d23b7cc0f3d54fcd258ea8c073751016f271e5",
+    "src/util/tonKeyring.ts": "0c71c9e3aa3741bc21c5dee265b49cd09c9a8fdcd35e1b169c4813c851f8554e",
+    "src/util/universalWalletKeyringFields.ts": "df7ec4183201c7ea4fbba31045d4e047b1a5706c5d406904c4073f40f47eb68f",
+    "src/util/universalWalletKeyringMeta.ts": "d2466eaa1246be75caa3fada7cc5c7d6b18c2ae6251110c77d7f72c0274c1478",
+    "tests/fixtures/legacy-305/chains-v13.snapshot.json": "fa6f0e23cd87dfb3e5536980591dd22ae30e49bf59d04dc2a0b31fc53237ea66",
+    "tests/fixtures/ton/ti-responses-20261011.json": "ff584f3c7068d14d8b7b7472490e52467d30c01ae3c76a31dabe6f3d2c5b8b60",
+    "tests/fixtures/ton/ton-android-4.2.0-vectors.json": "a20fdc7c13176b2d6e1b82d579781cd47266050959dc7854b4598da1dd634cd4",
+    "tests/fixtures/ton/ton-bip39-3.0.5-vectors.json": "32c503fffd91659f43be0885f2cab8ce229c23fcb89e9991f8b187cc106c0b92",
+    "tests/fixtures/ton/ton-native-3.0.5-vectors.json": "f52e5ee192fb67e6d2a10a97e2fc52f81e09e79150e7f342dd07ab2c291f729a",
+    "tests/helpers/session-storage.ts": "ed8eb3bfd63d8045a9ca60e5e026c605d4320804147a01190c829b2a15b5811f",
+    "tests/unit/account-onboarding-recovery.spec.ts": "49e9de9a8565104a7a4ce0653d73e906410ab48e15b03dda60b4f15422338a41",
+    "tests/unit/account-removal-storage.spec.ts": "b898230c48d422fd1f6b539fe9db5a41317b117b4689d1d37f6614d26467b65f",
+    "tests/unit/auth-mutation-races.spec.ts": "0b6407cf67214759ca41a1a1eb7087316dfe720ae56171db6040fc47efb8e88c",
+    "tests/unit/authorization-storage-adapters.spec.ts": "448916d49e6ed1aaffee0fded9b5130ae6be05afaf8f7ebaadba0eb2ec9e924f",
+    "tests/unit/authorization-storage-failures.spec.ts": "406783c22d1d5f330a4d4a79017757a6c4290e52326143283110229194d9a899",
+    "tests/unit/background-startup-ordering.spec.ts": "ed6801a7d31b973d342c8af6c75de04f7c0e96a8387eabe20b1a8e7d79caa6d9",
+    "tests/unit/base-web-store.spec.ts": "a9a1f1da0ec35b4a51ee8281931df2ffc4a38d2bce9d754317594727af4be7a6",
+    "tests/unit/connection-management-durability.spec.ts": "0a97f9143dc877932fa73c8519a6edc4249ee6cf8253ca09247fadfcf289e76f",
+    "tests/unit/current-account-storage.spec.ts": "b2bcb2126b594231b528fad42758e532039fd0bce997c52350185bd5f2475655",
+    "tests/unit/default-current-account.spec.ts": "2542059c84414b6a2d913e58d104adae80fe6f856105659e3f1d27a484f370d0",
+    "tests/unit/deleted-wallet-ton.spec.ts": "6a9034d7a8b1750c4a1bb83f5a6641bed935462da7b0a435966a020b135844e2",
+    "tests/unit/ecdsa-account-restart.spec.ts": "59d37b7d4d2616132561e38f4d78d0fa09ca007a0143a450ebe58c52405a8d25",
+    "tests/unit/evm-authorization-revision.spec.ts": "f04ad2d4d1dd1b4594108cbae346c584ea39c9099896de5b885e12e1667b2e4d",
+    "tests/unit/evm-request-handler.spec.ts": "a81d6a9b846133ba8ac0d0c7a247380f305313412a42e0ddde8de97813a43b7a",
+    "tests/unit/evm-signing-approval.spec.ts": "9d7ce4689082e93a8d985ba126fca1d5353d5116b15ac2c6d5bd256f60ca9858",
+    "tests/unit/evm-signing-context.spec.ts": "454fd7da0626d4b52fa59b731f0cdef0313b2df7abc96822f9dbae3eb718e81c",
+    "tests/unit/evm-typed-data.spec.ts": "1d43b17874668608b7fb778048f892fe0b285200d1e2e41e94be9ccc36613c57",
+    "tests/unit/extension-request-queue.spec.ts": "5c9f7e1da0da579d6df46c351943f888e678c311ffa2c37f5e5a7f6a6a2d592d",
+    "tests/unit/external-signature-verification.spec.ts": "0b0b6529a4ffd786075ce0db4e428a436706b786883b85bd4ae341f127366f89",
+    "tests/unit/json-account-import-storage.spec.ts": "cdeb0360076635411063a49152c6c945f4befaf60007d8dde6570b4d02b8a38a",
+    "tests/unit/json-backup-export-options.spec.ts": "1b77973737a0a50c2c59410b2c21c883c92829926cc7a76aa6e1bbfafb65cbbb",
+    "tests/unit/legacy-keyring-upgrade.spec.ts": "000a42d6668d83bccde5fb08a8582e36ff19e700930045ee862808fc1f0d49b8",
+    "tests/unit/legacy-migration-recovery.spec.ts": "24573dd7691e8b1bbd9163d578855c69eacc39a2c24156d0e481c0e46fe16c10",
+    "tests/unit/local-account-import-storage-adapters.spec.ts": "a1e295d5a9e63515eb0f3d58d009c39fe65d30c59ce84300c29d62e85803ad8d",
+    "tests/unit/local-account-import-storage.spec.ts": "479470332d908d56326e95a5f2db3b603433fc72093b19ff77d33db64e5130b0",
+    "tests/unit/localized-template-surface.spec.ts": "a9a479dc78dbf8d00eb34227905c4c82a76c786400270c9520efa3d906dbd74b",
+    "tests/unit/messaging-subscription-cleanup.spec.ts": "043aa04c04cf141e2b22c89be6131bef5d95bb4295ecff0644f3c5d90c6a9019",
+    "tests/unit/mobile-address-storage-adapters.spec.ts": "a93b3aa2216812cc253cbf97111062f2c2e1ce279364fb355518b37c50f79ba2",
+    "tests/unit/mobile-address-storage.spec.ts": "1291ba9a9b1a6f093a4ed5fe586f17c28375220ff2ae8372b7e3d3a4b1c102a1",
+    "tests/unit/mobile-pairing-screen.spec.ts": "73f3c58159cf494c495968b322d28702a0af267fd23f02c7c9c23603164bf3c9",
+    "tests/unit/mobile-pairing.spec.ts": "b1415601a9753d6c99d6005cacb53baa611ff783d9d7c205ab181b2e77cd84ac",
+    "tests/unit/mobile-session-retirement-storage.spec.ts": "a9cb8fdee5bc26d5c44d5fae3f5f6aa8b8f3c0d5a881c2929248e638cc22b35a",
+    "tests/unit/mobile-signing-session.spec.ts": "a7d3af33e8fbff01acfa630b25b73a55b028507ff9cbc30ab8e1828b30d92b74",
+    "tests/unit/signing-phishing-approval.spec.ts": "35649e58f3006d18fc86c939271886cdc2a6e9655a367877cb5b767cd681dd66",
+    "tests/unit/signing-request-lifecycle.spec.ts": "1fe5196cea0cbe4e693464e9671bd868aef749ce3b1f01622e691ec87967d385",
+    "tests/unit/signing-review.spec.ts": "ba9f1598c7ce1a13777ad851dfd5b9c07202b8738d3b8ad7bd9f1a2111ae28a1",
+    "tests/unit/solana-authorization.spec.ts": "a6e225bda937987ed3e25eab6d4e1258051fc8aab28f568a06624293ba98e1a1",
+    "tests/unit/solana-request-handler.spec.ts": "81758a683132b24cbd225c27f89f86d9e007a224e8c2ac76f00709953ee88cbd",
+    "tests/unit/solana-signing.spec.ts": "92b884bf0f7a62bae0d39311cfad1b7ebe9a6ee4b5a1e845c1cb87d4ac367c7e",
+    "tests/unit/solana-transaction.spec.ts": "e6c79abb61049ab72080a756f9573e1f908a49673694f59c059a8b963655815e",
+    "tests/unit/substrate-signing-account.spec.ts": "70d3f0e77ed58e781016ff1a75cc0dee2290757ff7bb9108910654940c394b79",
+    "tests/unit/substrate-signing-context.spec.ts": "1f91317e1acde197c366343c9cd79702fd822ad336dcbeacb4467e649677e787",
+    "tests/unit/substrate-solana-authorization-revision.spec.ts": "779e179cff3eed7c49a877c03f8e26bd733fa860a3901d42034231e3ac09e351",
+    "tests/unit/substrate-solana-queue-ownership.spec.ts": "865443ed76acaf326c6ebe7f5c36fc559126b7bf4cddd985fc28dc92a62ea662",
+    "tests/unit/ton-api-handler.spec.ts": "43d4078ecee7bbb117e5976cf57b14096facf2dc3f978e9e522adfde17ae14a1",
+    "tests/unit/ton-balance-unavailable.spec.ts": "18232dd0dc6b874ff7c7d909c1b248d243b6fad56b743e5f689b625e4dfb825b",
+    "tests/unit/ton-export-as-typed.spec.ts": "37b1c6430abdded59aaa46374f07ba2ceb9136510ce85780eaaea98fdb377cf4",
+    "tests/unit/ton-history-fee.spec.ts": "4055293a7f877f8d90093b975ce0165b2ce88014606c1cce5d6e77a6dfa91bf8",
+    "tests/unit/ton-import-candidates.spec.ts": "c94f3431c5beaf55903db02928e7be26a73c16a1d51d6633ce96314c78cc4185",
+    "tests/unit/ton-import-chooser.spec.ts": "4852ad934e1607d277f97c8f6c3c7efbe5069d8ada2de140583f0b7def58be4b",
+    "tests/unit/ton-import-storage-adapters.spec.ts": "b59441df56d12aa7a853d7c49505102792a7f136b06c10485abef1a608077adf",
+    "tests/unit/ton-keyring.spec.ts": "a0a170921aaf206ac6a72ad44fccd55d3ea4a4c0f170efcf1f0e8a0c3f99d41f",
+    "tests/unit/ton-legacy-transfer.spec.ts": "8269f3f025c2823e44d2ec74293d8d9a746cedef022da0ef8e03961602642926",
+    "tests/unit/ton-outage-fallback.spec.ts": "8d486a79e2421bdef23462111f1c5741a67a06b3ee764c49e83b6cbcedecc53f",
+    "tests/unit/ton-seed-vault.spec.ts": "44626ecf16f7e46e14e81d512dcdfd277cca8dd7c439f69c029c19febcc46fd7",
+    "tests/unit/wallet-connect-approve.spec.ts": "028eec918f87f5846ae58a1eb7241df1310acc5e69016aba1f5dd2ad3309e795",
+    "tests/unit/wallet-connect-context.spec.ts": "e62c1a7c9b23705416e3f3ad7b91bc0a878d6a97959040527b595c0392c489ea",
+    "tests/unit/wallet-connect-polkadot-session.spec.ts": "7dbf1121b21e19a8e7ace6bdf3c27da576af71157f469c543ab518beee309320",
+    "tests/unit/wallet-connect-request-ownership.spec.ts": "bc6055e91a0d7c5429bd4601a9f39948171296bc6e14735520311fedd6dbbacf",
+    "tests/unit/wallet-connect-signing-lifecycle.spec.ts": "6df970696c2a7ae7795a441e4eb90bd2a4185444f6770eece8b9a20a8aebac53",
+    "tests/unit/wallet-connect-signing-review.spec.ts": "5730c5e69ec000ea17d8dc4599b2f1592f68a363539e64ba4eecb5d9dc03a808",
+    "tests/unit/wallet-connect-storage-failures.spec.ts": "1e978b90ba83bc596fcf2d194982fc795cb8d9326879887b7605b06a4286529e",
+    "tests/unit/web-keyring-store-queue.spec.ts": "049b04b7ed1c8d7caf8f4bd0b1102ee37e4f34c8b2b423df3e11643ccd58a150",
+    "vite.config.shared.mjs": "6a0d033243e0f4351db390a9dd71665ef436dfe4d27cb36698563cb64afee6c2",
+    "vitest.config.ts": "7f5652929d7fb8498e1323ff306c0b28f473ed6c7f41ec426bf2afc154d91ab3",
+    "yarn.lock": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+  },
+  "dependencySha256": {
+    "node_modules/@polkadot/extension-dapp/wrapBytes.js": "4ba672bec796079bab1ac9ed73a831e3a12625d0903f05efc3eefb43ade55beb",
+    "node_modules/@polkadot/keyring/pair/index.js": "36311f2e084c66038298ae97d5f887d1bd8a3e6b75d7bf36181748e6742e3875",
+    "node_modules/@polkadot/types/create/createType.js": "e703ad6672b2bba441338ccfd80f7220a40cbf28e607cfc9d7d37ac00fdec170",
+    "node_modules/@polkadot/types/create/registry.js": "5ce6eb3f397409a9b71fde1053f7b52e484c0c444c79a1958ac93eaa9ef8e98d",
+    "node_modules/@polkadot/types/extrinsic/ExtrinsicPayload.js": "33fc60bd8eb420da7baf849317a49bbb94468aa590e961533174dff98e8c352e",
+    "node_modules/@polkadot/types/extrinsic/signedExtensions/index.js": "7b54ed3dca61f2479e2c1d6f848b1eb6357ac605b9bae855d3de91f45b9d9d76",
+    "node_modules/@polkadot/types/extrinsic/signedExtensions/substrate.js": "b846b40e0d5238389d5b674b2a41ec0b7666f1ceda9a2ce6c097518e709cc9a6",
+    "node_modules/@polkadot/types/extrinsic/util.js": "6d26410608a536ea4b28d3a79415cdc7e57586f2a89914b00e68969862bd27e1",
+    "node_modules/@polkadot/types/extrinsic/v4/ExtrinsicPayload.js": "4ad3371c7c1b35fc9043466a433297e1816142823156d32fa1725ce472b85a58",
+    "node_modules/@polkadot/types/extrinsic/v5/ExtrinsicPayload.js": "745101a6d255908b44ea2a9e01bd813b15807e9828b91c20e37a715fbd750390",
+    "node_modules/@polkadot/util-crypto/address/decode.js": "f43de1a3e16bce32bc0b61ebb4fab968cfd613d4c21bfd7524a499c4440f89d2",
+    "node_modules/@polkadot/util-crypto/blake2/asU8a.js": "eb5feed142dfa96a07ae939f3a43880b2d11a89df9b504bdd838026222e46384",
+    "node_modules/@polkadot/util-crypto/ed25519/verify.js": "6786ef0bb4ae06d6fea8aa60048fef6d74330976fbc9242ad8bde18c019c24fb",
+    "node_modules/@polkadot/util-crypto/ethereum/encode.js": "38dc12dd30544248c0f7a050b5ce64e25766bb56a4acb5daed64a14a040a3ad3",
+    "node_modules/@polkadot/util-crypto/secp256k1/verify.js": "472c4636073dce6c428b1fd6616715ab2c4a35e1391767fa0f0413a69d14c586",
+    "node_modules/@polkadot/util-crypto/signature/verify.js": "cca4de0e0ea6e6afacb4c4add68b7f3c798790a5e3713348317de9bbc3717378",
+    "node_modules/@polkadot/util-crypto/sr25519/sign.js": "7b818810e918a6669d8e1800817d65030ec4a8d3721e941343ba9c2e2830b0de",
+    "node_modules/@polkadot/util-crypto/sr25519/verify.js": "a796a19637b24abf8dd3dd5eeead2a13b13dbac3dedcd781d0ca237883a65971",
+    "node_modules/@polkadot/util/u8a/wrap.js": "2ece951f4282688b3489056a45088fa079cf3d4879cbce4d7b5ea65699698c20",
+    "node_modules/@subwallet/keyring/pair/index.js": "aec03ab6f8629c470c38c1abe67d23b24c41763477f566baf7a3a3c4df1a8c64",
+    "node_modules/@subwallet/keyring/utils/legacy/type/address.js": "b2317bbc84eda45edf0315a388032512d83c10daf8a8012f6da2d4288b6de6e4",
+    "node_modules/@subwallet/ui-keyring/Keyring.js": "70a26a8204af8cf8b5edb92ff080fbc2ae3ae9eb22dc0a01d9411bf493385044",
+    "node_modules/@walletconnect/jsonrpc-utils/dist/esm/format.js": "2af81820fe4d85da9321387cc981807d438169b72d821d3bde1b85340055a286",
+    "node_modules/@walletconnect/jsonrpc-utils/package.json": "93c5f3ab606993c35f581f6ceaaadbf52ba0bd30e88b5485d4edbc3db653ae32",
+    "node_modules/@walletconnect/sign-client/dist/index.js": "80c30fd2a76a9d61f484d81e67a1ec890db9667ba0108b3b533a4a0408b2caeb",
+    "node_modules/@walletconnect/sign-client/dist/index.js.map": "f351dfd0125d142a4956f797a7a2bbd25b4591bb454d46225a2c0cd0fbcc4c27",
+    "node_modules/@walletconnect/sign-client/dist/types/client.d.ts": "a649153190387adf7a8b2cbb4cab6014223b6563744bbefc28ca06851a6c54cd",
+    "node_modules/@walletconnect/sign-client/package.json": "c3089fbf148a0867bac932b2694e33d05b24de19cd0baad71e70af716b2c2507",
+    "node_modules/@walletconnect/types/dist/types/sign-client/client.d.ts": "6330b549a53363e434682e8fc11a1b15b3338c00db19dba9edb48d8421ebd60f",
+    "node_modules/@walletconnect/types/dist/types/sign-client/engine.d.ts": "c003a5f234697e14c18a628845cea674f303c1aca0f172ec74a66a166f993e9b",
+    "node_modules/@walletconnect/types/dist/types/sign-client/session.d.ts": "d580806285b6cf3b72a350efe9de9769325135f5ed525bee5d98c25c3bbda4b5",
+    "node_modules/@walletconnect/types/package.json": "3dc0cd41c1faec73314cc8fc63f8598c259947bf1bdc6d243fa7ee9109e998ff",
+    "node_modules/@walletconnect/universal-provider/dist/index.cjs": "4f459ad2c1a008dd3881701c9d8f56d4abbd9836d8c9f42eff478908bae3117b",
+    "node_modules/@walletconnect/universal-provider/dist/index.js": "2afc76477b5c6333b4f1d4c7a0acbf732a5e340d089dac7a149186438b7bf61d",
+    "node_modules/@walletconnect/universal-provider/dist/index.js.map": "f87baba82158701dd29985c8d9ec7735dac9d8cd6db9d41eded97e6b6dd4fe29",
+    "node_modules/@walletconnect/universal-provider/package.json": "045cc850bd49a983ff7ef526da8b5560fab80f1a9d88c7bc55b63777751846c7",
+    "node_modules/ethers/lib.esm/address/address.js": "7a98077a0803a7c95fb5f94c4bf9e1e6bf24757e0a0813d89f121851ca1cb5bd",
+    "node_modules/ethers/lib.esm/crypto/signature.js": "59f40dfb2969c897d5c2985f824523231a7ad3f1891347b571416e3d55286598",
+    "node_modules/ethers/lib.esm/hash/message.js": "3112146f1efad6cb62d32acb6582303cc51720bd8854f39e9822713b6e18c140",
+    "node_modules/ethers/lib.esm/hash/typed-data.js": "507dacd1218da8dc2a7a08395900c9d6b095aa2f429f62de1f5c0d06dae8fcfb",
+    "node_modules/ethers/lib.esm/providers/abstract-provider.js": "82859a8d79a59d230a9d99b385e6fd8871e0af408644b467f9d2f19048cca0a6",
+    "node_modules/ethers/lib.esm/providers/abstract-signer.js": "b2be508623922d8555e56f06730777fd35f362d34766a8248e35c2d7f1e3efd5",
+    "node_modules/ethers/lib.esm/providers/provider.js": "a92a54a180d13444929d9afa48c28fff9b9a0addeacff28c93d00cf34cda08af",
+    "node_modules/ethers/lib.esm/transaction/accesslist.js": "7dcfa9df4861fa918bf1437f0efc6d42ac778d1ab3269152a785ae74f30f750c",
+    "node_modules/ethers/lib.esm/transaction/transaction.js": "213cf05fd98e84217afd2e865a1d24bc16c44a76048afe9014ebcd260eafed65",
+    "node_modules/ethers/lib.esm/utils/maths.js": "ad3bcf8a31ac229e317848a97b5ab3cb976679747c78518a2754fefaaa48e2aa",
+    "node_modules/ethers/lib.esm/wallet/base-wallet.js": "9bfb412471e5fb83f3fd4d015c0707c6248bc276a4bcb010686cd59a3125eec6",
+    "node_modules/ethers/package.json": "d644d7df228197962e4ca19824b06e8d50dce0b5ee2aced63dcfc2a11ec7b90f",
+    "node_modules/qrcode/lib/browser.js": "868da79917b05db1f3d4402f4875148fb06ce843cbd74c65429cd6ef960b1638",
+    "node_modules/qrcode/package.json": "cbe26d7282c802f4ab9c1f790c5d8450d2b5c82e8bb5f67e3a5c2641ea347d1d",
+    "node_modules/tonweb-mnemonic/package.json": "3a5777133b2ccfa280a3ab0bcd030d63a93ec07f97370f589845e26a1b158574",
+    "node_modules/tonweb-mnemonic/dist/node/index.js": "b24502bd1260c2ec4d82ec220d368bbe0d9d6d3cee93cc076ef00ea64267a9ea",
+    "node_modules/tonweb-mnemonic/dist/web/index.js": "b2a18d2d8558682607b94c5058cb8d6e736d6259e484f05206530f1687b5ea59",
+    "node_modules/@ton/crypto/package.json": "2cd884cbf78aa3901cef7ca77202badaed0585ec22ee097ba1fa422be550f15f",
+    "node_modules/@ton/crypto/dist/mnemonic/mnemonic.js": "fd2dc021384e9b452a611e0374d043be217b5e9bd43337fc348b7550f1e1b257",
+    "node_modules/@ton/crypto/dist/primitives/pbkdf2_sha512.js": "ded0d2dd7b583143d44bb95732dd74490156a985c0c6e01d149dcf9c18f571d2",
+    "node_modules/@ton/ton/package.json": "bc2d5bc53f273a1a6e1d8c8cd2a7572a717822c30c03fe41fdbc156aa6acb2c2",
+    "node_modules/@ton/ton/dist/wallets/v4/WalletContractV4.js": "f200f7169135789d4e83c5b280af5aad2a41c9fa6455fe15dfd9874f6a53b532",
+    "node_modules/crypto-js/package.json": "011d61589c95ad4e16051c492565f7c19c6a7832580674503cceeca612e7a6cd",
+    "node_modules/crypto-js/aes.js": "d6bb48feacbd63fd455becce7a5528877242f70e73ba1f7838c186ed8f35fd3c",
+    "node_modules/crypto-js/cipher-core.js": "1b3331c29f4a1e222ebf7d3b9bd3458a308c2a47fc5e6cccb93f7d2d5c57533d",
+    "node_modules/crypto-js/core.js": "2638bdd7224472f801890636d42df16c144ca46c84229ef3087190d21f935daf",
+    "node_modules/bip39/package.json": "41ccfd95d893a2218725dc67595d8ea4ec00dad51c038b343ea80a7cf112fe63",
+    "node_modules/bip39/src/index.js": "6bb33792b40500161711fec9df3886348c63a42c136bc2d33e34b57aeeff559a",
+    "node_modules/bip39/src/wordlists/english.json": "62f88f0b7469bfddd862ba4e2499af3758384ae6304c5bb48637d2401d22afb2",
+    "node_modules/@subwallet/ui-keyring/package.json": "166228e4a577f8789cd32ed4813ac31cc7e1e025b071b56aedf2fd20dba91a32",
+    "node_modules/@subwallet/ui-keyring/Base.js": "f4540ac9ca9b906133092fafb8384fd6fb52828452671584180dc8576efe6ebf",
+    "node_modules/@subwallet/ui-keyring/defaults.js": "3b8a42f122b25688ab6858f005e968317791941380f24b3cd801094008248ea3",
+    "node_modules/@subwallet/ui-keyring/observable/genericSubject.js": "ae2fd9f1f6f0f195e22e04a4fb1dcd3ef16208c9a6a503595cbbde7ed7e138e1",
+    "node_modules/@subwallet/ui-keyring/observable/accounts.js": "d0fb4c2cb4a13d9a7ae9f6ed63a1bad5849ee58b6d5e43ef510f928336a183c9",
+    "node_modules/@subwallet/ui-keyring/observable/addresses.js": "874f05eae2909e419ecf0b28e0dfa8c536e901fd034a457ebc93bf00064d3f2d",
+    "node_modules/@subwallet/ui-keyring/observable/env.js": "5f52a77ae610384066ef74a812a4121e41f19ed063dad84132e76e88dcf2f613",
+    "node_modules/@subwallet/ui-keyring/options/index.js": "9b82d638cea3d96af2bf4f18b36714f3dcdb0f9e3c6346f34145f7f7084324cb",
+    "node_modules/@subwallet/keyring/package.json": "ab03f79576d09439983f585fa842e57b3309265647d272e6faea36bc9784525b",
+    "node_modules/@subwallet/keyring/keyring.js": "72e8ed66b0220948199f4b629871726b257a175e100a4565a63115beedc3ec39",
+    "node_modules/@subwallet/keyring/pairs.js": "ede904e66cee5db9d200b5dfceb408cbd0d3e202c6fd023a95527fd81497537d",
+    "node_modules/@subwallet/keyring/testing.js": "25fb4a2663516bf8ab81676e62b7411770d8c4124bb7c09b1be5e5abf9aef096",
+    "node_modules/@subwallet/keyring/pair/encode.js": "6694154c3b58ce96ad1874e161bccaf77ae8ba76520595e6714e770de914d595",
+    "node_modules/@subwallet/keyring/pair/decode.js": "f29a39899f2731153eefaaddb89b19c585615aeac7826b372a05698aa2e2eb34",
+    "node_modules/@subwallet/keyring/pair/toJson.js": "0eba09c7af46c7ba001f56d7cf3ab888befd6dfa1b8be62ccdc00e3cedeaba54",
+    "node_modules/@subwallet/keyring/pair/nobody.js": "6fb2ea95af01edf3b132c5488cf5232fc48b4b159620d7f7a29fc93f734b2a02",
+    "node_modules/@subwallet/keyring/utils/index.js": "796cddb8d6f6850224bc00760b3493d3c1dc4ae2a52d233f4607d24ae12ac8e4",
+    "node_modules/@sora-substrate/util/build/apiAccount.js": "ccabb761fea22fe9cfb24dcc676beec634aff35fd576ae981e09c4024e417740",
+    "node_modules/@sora-substrate/util/build/api.js": "8e4e13a4743032098a7251087dc66a74d3a21334146429998b46e87acb0250ac",
+    "node_modules/@sora-substrate/util/build/bridgeProxy/index.js": "4504e20dec3587e46d64b9246ee825575ab2942a2079bb957a9ac032dbbbf3da",
+    "node_modules/@sora-substrate/util/package.json": "9ec9d9f715670624deed3f85ac98f30e7efe4b5dc51618795e51e1e8abb92b59"
+  },
+  "evidenceRoot": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "behavior": [
+    "Native primary, linked Ethereum, legacy/archive ECDSA and TON records are read from latest storage, copied exactly into a unique recovery entry, then removed in one grouped storage call. The archive and removal retain one store queue slot and share the vault queue with import/password/TON repair. Chrome uses separate acknowledged set/remove calls: a failed remove can retain an extra recovery copy, never an unarchived deletion.",
+    "Private keys/subjects remain live until removal acknowledgement; failure propagates without poisoning later retry. Publication locks and removes local pairs and publishes detached TON state without mutating previous observable snapshots. Missing durable primary records fail closed. Mobile removal validates the latest public identity and publishes removal only after acknowledgement.",
+    "Before a selected wallet is removed, State durably clears selection and Sora/context references. A failed selection clear aborts removal. Removal identities and epochs reject queued or new selections of that wallet, including SS58/EVM aliases. A newer explicit choice is not replaced by deletion fallback. Direct service callers also clear removed selection.",
+    "Message and incoming-session handlers await removal before cleanup/success. Explicit removal revokes permissions and retires sessions first. Captured primary pair, linked EVM/Solana/Iroha fields and mobile topic are revalidated before selection clear and inside the queued snapshot; changed identity/link causes a failed removal for explicit retry. Standalone primary and linked EVM grants clear case-insensitively.",
+    "Incoming mobile session-delete compares saved SS58 aliases by decoded identity so State context clearing and fallback apply. It validates the captured topic before clearing selection, and both deletion handlers guard the clear before/after storage acknowledgement. An obsolete event queued behind the vault cannot clear a wallet rebound to a newer topic.",
+    "IndexedDB reads, archives and deletes within one readwrite transaction and publishes after its commit. Three controlled adapter tests cover all reads, commit-only publication, abort and validation failure; this is not actual browser IndexedDB or cross-tab qualification."
+  ],
+  "validation": {
+    "fullSuite": {
+      "sourceCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+      "log": "account-removal-storage-full-v4.log",
+      "passed": 2879,
+      "failed": 0,
+      "skipped": 18,
+      "durationSeconds": 101.49
+    },
+    "intermediateTypeOnlyChange": {
+      "sourceCommit": "d960c07f27809e24e9f3f2920b86e7093667cb23",
+      "scope": "One test fixture type added cipherSeed:string; superseded by final guarded selection-clear source. Final full suite/build/browser all use sourceCommit."
+    },
+    "newTests": {
+      "path": "tests/unit/account-removal-storage.spec.ts",
+      "cases": 22,
+      "scope": "Actual installed ui-keyring, KeyringService, State, Extension, TON seed encryption and Chrome callback adapter. Acknowledgement, failures/retry, exact recovery, real signatures/phrases, linked/legacy grouping, queued metadata, selection/alias races, captured-link race and standalone EVM grant."
+    },
+    "relatedChecks": [
+      {
+        "log": "account-removal-storage-focused-v4.log",
+        "passed": 114,
+        "scope": "Intermediate removal/selection, historicalECDSA/TON restart, defaults/session retirement and baseWeb adapter tests."
+      },
+      {
+        "sourceCommit": "d960c07f27809e24e9f3f2920b86e7093667cb23",
+        "log": "account-removal-storage-focused-v5.log",
+        "passed": 36,
+        "scope": "19 removal plus17 total BaseWebStore tests, including3 new snapshot/removal transaction cases."
+      }
+    ],
+    "chrome": {
+      "sourceCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+      "log": "account-removal-storage-chrome-v3.log",
+      "result": {
+        "extensionId": "pkgfmbokpdjjoimlhegndcpgoiccnncj",
+        "accountRemovalStorage": {
+          "types": [
+            {
+              "type": "sr25519",
+              "address": "5DfhGyQdFobKM8NsWvEeAKk5EQQgYe9AydgJ7rMB6E1EqRzV"
+            },
+            {
+              "type": "ed25519",
+              "address": "5DFJF7tY4bpbpcKPJcBTQaKuCDEPCpiz8TRjpmLeTtweqmXL"
+            },
+            {
+              "type": "ecdsa",
+              "address": "5GKyBtzbxKU1qjhZrKpMiwtJj7o6jJcXbKQVtYq74DCPerXN"
+            },
+            {
+              "type": "ethereum",
+              "address": "0x7c4dE272D0091EF8115067C4067F40B6Df3647af"
+            },
+            {
+              "type": "ton",
+              "address": "UQB4wuXx1EcKDCNKAUQclKyFhONIXCPgCuMgpqm3ZepRWXqm"
+            }
+          ],
+          "acknowledgedRemoval": true,
+          "exactRecoveryCopies": true,
+          "groupedLinkedEvmRemoval": true,
+          "durableMobileRemoval": true,
+          "removedSelectionCleared": true,
+          "absentAfterRestart": true,
+          "recoveryReopensAllKeys": true,
+          "restoredKeysSurviveSecondRestart": true,
+          "twoWorkerRestarts": true,
+          "publicUnfundedFixturesOnly": true,
+          "sessionNegotiationExercised": false
+        }
+      },
+      "scope": "Actual compiled trusted create/select/remove/list/restore/export handlers, Chrome storage and two observed worker replacements; four local key curves, TON, linked EVM and public mobile address. No SDK session negotiation, external chain or physical disk-failure injection."
+    },
+    "build": {
+      "browser": "chrome",
+      "mode": "development",
+      "releaseFlags": {
+        "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+        "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+        "VUE_APP_ENABLE_IROHA_TRANSFERS": "false",
+        "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+        "VUE_APP_EXTENSION_SMOKE": "true",
+        "VUE_APP_TEST_ONLY": "true"
+      },
+      "schemaVersion": 2,
+      "sourceCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+      "sourceDirty": false,
+      "yarnLockSha256": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+    },
+    "buildFiles": {
+      "path": "account-removal-storage-build-files.json",
+      "count": 488
+    },
+    "archive": {
+      "path": "account-removal-storage-validated-chrome-test-v3.zip",
+      "sha256": "2712f2561be509c8fb7e955f36e503b3864fe057ebc334c28d8f15a2fb516133",
+      "bytes": 19736326,
+      "archiveEntriesMatchBuildFiles": true
+    },
+    "commands": "account-removal-storage-commands.json"
+  },
+  "independentReview": {
+    "reviewer": "independent ios_font_qualification agent",
+    "reviewedAt": "2026-10-13T05:03:44.452462+00:00",
+    "sourceCommit": "ebc2f03c9a0535325675031f8b1df3a8c5bfbb6f",
+    "baseCommit": "ce794ff481c357996b63d8b570c4f286c737a20f",
+    "method": "Read-only production, caller, test and harness review. Reviewer did not edit web source or execute web tests. All source pins compared to the exact Git objects. Root executed final qualification; reviewer inspected terminal full-suite and compiled Chrome logs.",
+    "sourcePins": [
+      {
+        "path": "scripts/extension-smoke-account-removal.mjs",
+        "sha256": "1f7b28af18643626addd1dd85de50fce2d26d88623d50c99e5298f8f3d8e0cff"
+      },
+      {
+        "path": "scripts/solana-extension-smoke.mjs",
+        "sha256": "3eed3faa710039b6401d8faf4d9d01ebbf925eff9aca7c2597b5d907d2734a95"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/background/handlers/Extension.ts",
+        "sha256": "1bec1161d63ec818e4fe9ed111d2000ca6bf35ab6dd4ea310cb8007d48fc7089"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/services/keyring-service/AddressMetadata.ts",
+        "sha256": "0495ab73a617df8c86a0dcadf3179051ff21446673b0d4381edae49fedbcb116"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/services/keyring-service/DeletedWallets.ts",
+        "sha256": "173df5643a9a2eda349ce9f7b11681b3a45448a7ddb99e3326dc6b02811645b6"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/services/keyring-service/TonKeyring.ts",
+        "sha256": "d805c7ee39612a09758c493b8c079cee07b864345ad1e0c5b7029ebca8b708af"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/services/keyring-service/index.ts",
+        "sha256": "53805eba78e2afdb48f53ddfc8008d314f29a6c8eef3e260ddab59b6d5b26c27"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts",
+        "sha256": "7a571040274c739846cab740384e02a63240f4aeea9c3aa6506dfed24b8a2d17"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/Accounts.ts",
+        "sha256": "1de45b19f80de4d8acbf8465c9af5e376fc58fe6435333b37e4099bc4d7e4e72"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/Addresses.ts",
+        "sha256": "730d08898155dd9c82700049051c8a75adec582fe09ef18b6d6b25b6c7c5a8e4"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/BaseExtension.ts",
+        "sha256": "0995f3b462fc734497850ba2e7336128023824920984492563a63a6787389fbd"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/BaseWeb.ts",
+        "sha256": "beab3d787c3654db9ded02a092a3c97fc490c29385d461fa1a56891aa5bde412"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/StoreMutation.ts",
+        "sha256": "904a5f63b643fc89b9593bf7e378b1190e3308b0a90fe3b44030db24a1149a6e"
+      },
+      {
+        "path": "tests/unit/account-removal-storage.spec.ts",
+        "sha256": "b898230c48d422fd1f6b539fe9db5a41317b117b4689d1d37f6614d26467b65f"
+      },
+      {
+        "path": "tests/unit/base-web-store.spec.ts",
+        "sha256": "a9a1f1da0ec35b4a51ee8281931df2ffc4a38d2bce9d754317594727af4be7a6"
+      },
+      {
+        "path": "tests/unit/default-current-account.spec.ts",
+        "sha256": "2542059c84414b6a2d913e58d104adae80fe6f856105659e3f1d27a484f370d0"
+      },
+      {
+        "path": "tests/unit/deleted-wallet-ton.spec.ts",
+        "sha256": "6a9034d7a8b1750c4a1bb83f5a6641bed935462da7b0a435966a020b135844e2"
+      },
+      {
+        "path": "tests/unit/ecdsa-account-restart.spec.ts",
+        "sha256": "59d37b7d4d2616132561e38f4d78d0fa09ca007a0143a450ebe58c52405a8d25"
+      },
+      {
+        "path": "tests/unit/mobile-session-retirement-storage.spec.ts",
+        "sha256": "a9cb8fdee5bc26d5c44d5fae3f5f6aa8b8f3c0d5a881c2929248e638cc22b35a"
+      }
+    ],
+    "readOnlyDependencyPins": [
+      {
+        "path": "src/extension/background/extension-base/src/services/keyring-service/AccountMetadata.ts",
+        "sha256": "4e6f92f77cbc3d4649b9f656a54e6d6a95be5b26333070439cb691adcb535853"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/services/keyring-service/TonSeedVault.ts",
+        "sha256": "3796e16d62e00a7f8852baeb6471c32473229cfd837007f541e4a555b3764082"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/CurrentAccountStore.ts",
+        "sha256": "cd127a60dbaaefd2ec73207f51d9911a3eea42dd452cc80bc369fa6af1d23be6"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/stores/SubscribableStore.ts",
+        "sha256": "28424635c46084d64671c6f27072768dd10290d5f847cb8a523aff3ad9f2b5db"
+      },
+      {
+        "path": "src/extension/background/extension-base/src/background/handlers/State.ts",
+        "sha256": "414c65fd768fe4e2178fbe963f878a79cc8c6a9bbbfa71a300ffcfba5b1be9fb"
+      },
+      {
+        "path": "node_modules/@subwallet/ui-keyring/Keyring.js",
+        "sha256": "70a26a8204af8cf8b5edb92ff080fbc2ae3ae9eb22dc0a01d9411bf493385044"
+      },
+      {
+        "path": "node_modules/@subwallet/ui-keyring/observable/genericSubject.js",
+        "sha256": "ae2fd9f1f6f0f195e22e04a4fb1dcd3ef16208c9a6a503595cbbde7ed7e138e1"
+      }
+    ],
+    "evidencePins": [
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-link-review-before-v1.log",
+        "sha256": "4b888546062aab907cb53b23b6c2ac030b28430b048223bc8ecb9710d1142dc0"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-evm-review-before-v1.log",
+        "sha256": "f2f2441ab70c9cf7d1a625484de72b35b8ec4885f8a1bdc69b2977f3a0cc26e0"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-topic-review-before-v1.log",
+        "sha256": "551e4cc2f5706f8fe6f073aeab59ad8795c26df585b4227c4228a6764982eaf2"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-storage-full-v3.log",
+        "sha256": "6a8aad548a0c5eb7bd13f38f03a7fd690a098a6c350bbbb093e0b6509ec2ad08"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-storage-chrome-v2.log",
+        "sha256": "4afbcef539fa481146f27b44954397bfa54c4fefa6e472351991ed2e75031f58"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-alias-review-before-v1.log",
+        "sha256": "83f6d6d2545a999e22c2e6e4d491bfb92e91ec4c0fa6d61157dadcb1b7d2a115"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-alias-review-before-v1.patch",
+        "sha256": "29aba68de3c222d4b20bcded588ebc552b9efd072b6f85d3c609b984f2739904"
+      }
+    ],
+    "findings": [
+      {
+        "id": "linked-metadata-changes-during-removal",
+        "description": "Revocation captured an earlier link while removal could delete a later linked key after asynchronous waits.",
+        "disposition": "Reproduced in preserved link-review baseline and fixed with captured pair/link/topic checks before selection clearing and inside queued store transformation."
+      },
+      {
+        "id": "standalone-evm-grant-retained",
+        "description": "Standalone EVM primary addresses without linked metadata escaped EVM grant revocation.",
+        "disposition": "Reproduced in preserved EVM-review baseline and fixed by matching primary EVM plus linked EVM identity case-insensitively."
+      },
+      {
+        "id": "obsolete-topic-clears-rebound-selection",
+        "description": "Old session deletion queued behind the vault cleared the rebound wallet selection before its store guard rejected removal.",
+        "disposition": "Reproduced at d960c07f: one failed test / 19 filtered. Final source checks topic before beforeRemoval side effects; both removal handlers pass context guard through State selection before write and after acknowledgement."
+      },
+      {
+        "id": "mobile-selection-ss58-alias",
+        "description": "DApp session-deletion beforeRemoval still compares selected and stored public-address strings literally. A selected SS58 alias skips State clearing and falls through to decoded-identity Keyring-only clearing, leaving State context and fallback handling bypassed.",
+        "disposition": "Reproduced at1b649 by two actual State saved-alias regressions with and without a remaining fallback wallet. Final ebc2f03c compares decoded walletAddressIdentity before guarded State clearing, preserving State context cleanup and fallback. Both test cases check durable selection, context callback and exact public removal."
+      }
+    ],
+    "reviewConclusions": [
+      "Native and TON removal share the vault queue with imports/password operations; latest durable records are archived before acknowledged removal and in-memory deletion.",
+      "Chrome archive set and grouped removal are separate acknowledged operations; a failed removal may leave an extra recovery copy while live keys remain. IndexedDB uses one modeled read/write transaction.",
+      "Selection removal revisions reject pending and new choices of removed identities; successful selection clearing routes through State for context cleanup, with later user choices preserved.",
+      "Actual installed-keyring tests cover acknowledged failures, retry, grouped linked-key copies, selection and metadata races. Compiled Chrome harness checks four key curves, TON and public mobile records, exact recovery copies and two worker restarts, without relay negotiation."
+    ],
+    "remainingScopedBlockers": [],
+    "qualificationObserved": {
+      "fullSuite": "Historical1b649 full-v3:2877 pass /18 inherited skip. ebc2f03c final full-v4 pending root qualification.",
+      "chrome": "Historical1b649 Chrome-v2 successful. Final ebc2f03c rebuild/Chrome-v3 pending.",
+      "otherChecks": "Parent reported final typecheck, all 19 changed-file lint, build and archive successful; reviewer did not run these."
+    },
+    "limits": [
+      "Recovery restore remains a separate gate: existing writeBackDeletedWallet read-then-replace can race imports/password changes and is outside the removal vault transaction.",
+      "Whole reset and password-flow durability beyond shared serialization remain separate; no full audit or release claim.",
+      "No Chrome crash-atomic archive-plus-delete guarantee or cross-worker/tab global transaction claim.",
+      "Modeled adapter failures and compiled local Chrome restarts do not qualify device/relay session negotiation, hardware failure or physical mobile flows.",
+      "Deletion can durably revoke permissions or clear selection before a later removal failure; keys/recovery copy remain for explicit retry."
+    ],
+    "previousReview": {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/account-removal-storage-independent-review-v1.json",
+      "sha256": "88ab24023b6ccec71ebf7e9ab1fd767abc5c04317cac83907ee31163cce330be"
+    },
+    "followUp": {
+      "productionDelta": "dapp.ts imports walletAddressIdentity and replaces exact-string comparison with decoded public identity. No other production delta from1b649.",
+      "testDelta": "Two parameterized actual State cases persist alternate SS58 selection and require context clearing plus fallback/no-fallback durable result.",
+      "disposition": "No remaining scoped blocker found. Recovery restore concurrency and other recorded limits remain open. Final qualification at ebc2f03c is still running with root; prior1b649 green results are historical."
+    }
+  },
+  "preservedDiagnostics": [
+    {
+      "log": "account-removal-alias-review-before-v1.log",
+      "sourceCommit": "1b6493580ae225f92ae03984fcfcf8971912bb26",
+      "patch": "account-removal-alias-review-before-v1.patch",
+      "failed": 2,
+      "filtered": 20,
+      "note": "Actual State selection persisted under another SS58 representation bypasses incoming session State context clear and fallback. Both with and without a remaining wallet fail the context unsubscribe assertion. Final handler uses decoded wallet identity. The fixture represents saved state; arbitrary unregistered SS58 aliases are not directly resolvable by the current address picker."
+    },
+    {
+      "log": "account-removal-storage-before-v2.log",
+      "testCommit": "b2f7c675747db50ec65fad9268337849d24974b8",
+      "failed": 10,
+      "passed": 0,
+      "note": "Actual unacknowledged native/mobile/TON removal, eager publication, absent recovery, failure swallowing and early handler success. v1 includes3 fixture failures because saveAddress omitted its required type; v2 supplies address and all10 behavioral expectations fail."
+    },
+    {
+      "log": "account-removal-link-review-before-v1.log",
+      "patch": "account-removal-link-review-before-v1.patch",
+      "failed": 1,
+      "filtered": 17,
+      "note": "Independent review: changing primary linked EVM during awaited authorization revokes old identity while deleting new linked key. Final guards reject the stale operation."
+    },
+    {
+      "log": "account-removal-evm-review-before-v1.log",
+      "patch": "account-removal-evm-review-before-v1.patch",
+      "failed": 1,
+      "filtered": 18,
+      "note": "Independent review: standalone primary EVM grant survives removal. Final handler clears exact primary and linked grants independent of case."
+    },
+    {
+      "log": "account-removal-storage-focused-v2.log",
+      "passed": 99,
+      "failed": 13,
+      "unhandledErrors": 6,
+      "note": "Existing historical keyring stand-in lacked installed removePair/removeSubjectOnly APIs and callers omitted await; default/retirement mocks omitted new callbacks. Updated historical tests use awaited grouped removal. Diagnostic run is not accepted."
+    },
+    {
+      "log": "account-removal-storage-focused-v3.log",
+      "passed": 117,
+      "failed": 2,
+      "note": "Old archive failure mock intercepted obsolete replaceAndWait; retirement assertion omitted guard callback. Final fixtures follow acknowledged operation."
+    },
+    {
+      "log": "account-removal-storage-full-v1.log",
+      "passed": 2873,
+      "failed": 1,
+      "skipped": 18,
+      "note": "One obsolete archive-failure mock remained (exact error string prevented initial replacement); final full suite uses mutateRecordsAndWait failure injection."
+    },
+    {
+      "log": "account-removal-topic-review-before-v1.log",
+      "sourceCommit": "d960c07f27809e24e9f3f2920b86e7093667cb23",
+      "patch": "account-removal-topic-review-before-v1.patch",
+      "failed": 1,
+      "filtered": 19,
+      "note": "Old incoming session event waits behind vault work, then clears same-address new-topic selection before its later store guard rejects. Final handler checks the topic before selection and guards selection storage."
+    },
+    {
+      "logs": [
+        "account-removal-storage-full-v2.log",
+        "account-removal-storage-build-v1.log",
+        "account-removal-storage-chrome-v1.log"
+      ],
+      "sourceCommit": "ebd315a3b26707567a6dd7d9cfc3a4e945a35cc7",
+      "note": "Intermediate full2876pass18skip and clean build/Chrome2restart success preserved; final guarded clear source is requalified separately."
+    },
+    {
+      "logs": [
+        "account-removal-storage-typecheck-v1.log",
+        "account-removal-storage-typecheck-v3.log"
+      ],
+      "note": "Type-only diagnostics: conditional store subclasses needed explicit method forwards; final narrowed test fixture omitted cipherSeed type. Both corrected; final typecheck clean."
+    }
+  ],
+  "limits": [
+    "Chrome recovery-write/remove is not one crash-atomic transaction. Termination after recovery write can leave a still-active wallet plus hidden recovery copy. Failed removal may leave duplicate recovery copies and prior site/session revocation or cleared selection; private records and live accounts remain. Failed physical storage is not claimed durable.",
+    "Existing recovery restore remains a separate gate: writeBackDeletedWallet presence reads and later replaceAndWait are outside the vault transaction, can race import/password rotation, and publish through ui-keyring loadAccount. Normal restart/restore/export passed, not concurrent restore durability.",
+    "Whole-wallet reset, password partial-failure recovery, external storage mutation, real browser IndexedDB/cross-tab coordination, abrupt disk/power failures and every service cache remain unqualified.",
+    "Public unfunded fixtures only. No real relay/phone negotiation, physical assistive technology, new UI/locale acceptance, historical final-artifact upgrades, private-chain final sends or production publication is claimed.",
+    "The private-key archive remains on-device by the approved deletion/recovery invariant; account removal is not key erasure. Shared-linked-key ownership semantics, undeclared link discovery and broader wallet cleanup remain separate policy/coverage gates."
+  ],
+  "evidenceSha256": {
+    "account-removal-alias-review-before-v1.log": "83f6d6d2545a999e22c2e6e4d491bfb92e91ec4c0fa6d61157dadcb1b7d2a115",
+    "account-removal-alias-review-before-v1.patch": "29aba68de3c222d4b20bcded588ebc552b9efd072b6f85d3c609b984f2739904",
+    "account-removal-evm-review-before-v1.log": "f2f2441ab70c9cf7d1a625484de72b35b8ec4885f8a1bdc69b2977f3a0cc26e0",
+    "account-removal-evm-review-before-v1.patch": "0ab677c0cc9a18cb4085310a5f9f697919d335ad5c834ef2bf79af96eeab567d",
+    "account-removal-link-review-before-v1.log": "4b888546062aab907cb53b23b6c2ac030b28430b048223bc8ecb9710d1142dc0",
+    "account-removal-link-review-before-v1.patch": "7dce082bec9adadc8920418340535e840e4c963bd67c11dc7d9bb0a272165560",
+    "account-removal-review-patch-companion.json": "f7473f2d8273cd84cb6e36f22d29ec83285fa5792ca40032c4f274a93be11946",
+    "account-removal-storage-before-v1.log": "8cf71c663679fa7aead707d4527d64c4aec1fb1cd0c9c849b80a874104a60c2b",
+    "account-removal-storage-before-v2.log": "26a888db8c7545e52870286f9e9e2e08b954902ba2515f52dd88b7024718134b",
+    "account-removal-storage-build-files.json": "8cff8ac4eae9ba465ee938cec14703b9c627b35d41ec9cd3d8a7f973a687315f",
+    "account-removal-storage-build-v1.log": "cd3cf35d190233d556fd817dc749c51b9531f2ac68fa38cfa926e5cf4c7e9843",
+    "account-removal-storage-build-v2.log": "03a40f5e88090494c63e61e67aa437d8894a29663ac3c28f0cfb205320d01c18",
+    "account-removal-storage-build-v3.log": "7cb8ed9e769e671c15498fe8212db32920a38cd0ff1483f6605c0dfd1a9bf145",
+    "account-removal-storage-chrome-v1.log": "da11c48beb6f4c4484b435579d13abaa163a02bae522f4d34cc828b57b92cd52",
+    "account-removal-storage-chrome-v2.log": "4afbcef539fa481146f27b44954397bfa54c4fefa6e472351991ed2e75031f58",
+    "account-removal-storage-chrome-v3.log": "ecd44d3bdcbf30ad24f6ac727b9408769f86fcf1514ec89d9c351637393cd51d",
+    "account-removal-storage-commands.json": "882cc720374b5a024f15ac5a655d6bc840e94561f2c89d4f7a0b7a2a6a9ca667",
+    "account-removal-storage-final-type-only.patch": "0eb157b0deb63ffd982b3d58a1da5e2d3c85ebebdadbc1284676ef0fd4fb77a6",
+    "account-removal-storage-focused-v1.log": "ebb67e442447a8d5281b47331ba32fca0cb0fde1f7b5fc3b0ba6292c106b1f4a",
+    "account-removal-storage-focused-v2.log": "d7be9c330bd0f704e1654796007cf721179b22bac5a0938f0c4950d68793131a",
+    "account-removal-storage-focused-v3.log": "8245e89e09769a15ed28ed30bf56c8f571dc872e79228b5821c6a67e8b1425fd",
+    "account-removal-storage-focused-v4.log": "e83b58e75286884afed8e65e1f872eff7c12e97f39867c0403765ceaf3760622",
+    "account-removal-storage-focused-v5.log": "4811aae471bb8f5195949c3284f6bd949f97015917644cac400e3a7b8c56da59",
+    "account-removal-storage-full-v1.log": "5e61d9298fa9959f9bc98155a10f687fbc34ff5d74538538714e098341882a36",
+    "account-removal-storage-full-v2.log": "02e9bb4a480f9c7292e15dd18f95b92ae9af3cb6cba7a4f16130dd86744a0a7b",
+    "account-removal-storage-full-v3.log": "6a8aad548a0c5eb7bd13f38f03a7fd690a098a6c350bbbb093e0b6509ec2ad08",
+    "account-removal-storage-full-v4.log": "5ab663f2822d9c6341c503d2c5618c62dcba7bdc7d21a0764702c2b887a0fcdd",
+    "account-removal-storage-independent-review-v1.json": "88ab24023b6ccec71ebf7e9ab1fd767abc5c04317cac83907ee31163cce330be",
+    "account-removal-storage-independent-review-v2.json": "93df49628c5f6c763f7deffb91d509d0a17602b7ac5c4e4280e7a33f776cfa2d",
+    "account-removal-storage-lint-v1.log": "e6ba6df06cc329960a98f9bbe12ab4c8e549c70298dc00db38d7f6d503f696d8",
+    "account-removal-storage-lint-v2.log": "e6ba6df06cc329960a98f9bbe12ab4c8e549c70298dc00db38d7f6d503f696d8",
+    "account-removal-storage-lint-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-lint-v4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-lint-v5.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-lint-v6.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-lint-v7.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-lint-v8.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-package-v1.log": "d4e4acdf84710973b769b4964af8ec5517e54813feaca98f0ce768c275143875",
+    "account-removal-storage-package-v2.log": "5d3e9f704421f2dfe52bb994aa530369834518eac787ed41c2a25642bb1c610b",
+    "account-removal-storage-package-v3.log": "f072a039f2679993da9e72b1e2a500a1252e80fdba9762d913d7c4f0ddbd085d",
+    "account-removal-storage-typecheck-v1.log": "ca099eb4651d7a9f89be03afbf206780f0fe31d71fcf08aba1a1b0d3c1228db6",
+    "account-removal-storage-typecheck-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-typecheck-v3.log": "238f0d3503305bc89b28b39553009d731cd72e2f7783f3a865319da884fb8572",
+    "account-removal-storage-typecheck-v4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-typecheck-v5.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-typecheck-v6.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-removal-storage-validated-chrome-test-v1.zip": "8d965b7d94c61e22e9f5b26cfd0b4518cfbae792b9b4e0661153810ee2d92777",
+    "account-removal-storage-validated-chrome-test-v2.zip": "939dc173650758588b543759d44eca7bbae1dc9a789c8bac4382c9027645cbd9",
+    "account-removal-storage-validated-chrome-test-v3.zip": "2712f2561be509c8fb7e955f36e503b3864fe057ebc334c28d8f15a2fb516133",
+    "account-removal-topic-review-before-v1.log": "551e4cc2f5706f8fe6f073aeab59ad8795c26df585b4227c4228a6764982eaf2",
+    "account-removal-topic-review-before-v1.patch": "bb393f84a59fd45f97e154ab08b0b07c4935f91d5d6bb00d6dac38c626e52983",
+    "record-account-removal-storage.py": "5fd1c5e32edf90ab603a6294bf639a8b6fd452d36445cd508cf97fbfc99799b6"
+  }
+}

@@ -14,7 +14,7 @@ Only the selected wallet decides whether a warning appears. While an affected wa
 
 The dialog opens once for each affected wallet. Closing it, or starting wallet creation from it, is remembered on that device for every affected wallet then stored, so it does not return each time the extension opens; a key imported later gets the dialog once. The closure never upgrades a wallet: a persistent banner stays on the pages of every affected wallet and reopens the guidance.
 
-The create action uses the existing wallet-creation flow. No account is deleted and no funds are moved automatically. Standalone EVM accounts and TON accounts are included; linked EVM children are represented by their parent wallet.
+The create action uses the existing wallet-creation flow. No account is deleted and no funds are moved automatically. Standalone EVM accounts and TON accounts remain in the account subscription and security classification; linked EVM children are represented by their parent wallet. Standalone EVM accounts are excluded from the wallet selector because the current-account, portfolio, and Send flows do not support them as wallet roots. Linked EVM accounts are selected through their parent wallet.
 
 ## Enforcement and limitations
 

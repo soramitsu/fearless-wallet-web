@@ -9,8 +9,9 @@ import { SoraPools } from './pools';
 import { SoraStaking } from './staking';
 import { SoraSubmissionUnknownError } from './submission';
 import schema from './schema/types.json';
-import type { KeyringPair } from '@polkadot/keyring/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
+import type { KeyringPair } from '@polkadot/keyring/types';
+import { isDefiniteSubstratePoolRejection } from '@/util/substratePoolRejection';
 
 export class SoraClient {
   api: Runtime = null;
@@ -102,7 +103,13 @@ export class SoraClient {
             return finish(new Error('SORA operation failed on chain'));
           }
           finish();
-        })).then((handle) => { unsubscribe = handle; if (settled) stop(handle); }, () => finish(unknown()));
+        })).then((handle) => { unsubscribe = handle; if (settled) stop(handle); }, (error: unknown) => {
+          // Local signing precedes the RPC, so a signed hash alone does not
+          // imply acceptance. Once a status arrived, preserve uncertainty.
+          finish(!receivedStatus && isDefiniteSubstratePoolRejection(error)
+            ? new Error('SORA transaction was rejected')
+            : unknown());
+        });
       } catch (error) {
         // A synchronous rejection before signing/status delivery cannot have
         // reached the chain. Once signing started, preserve uncertainty.

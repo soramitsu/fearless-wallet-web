@@ -25,7 +25,7 @@ const settle = (promise: unknown) => Promise.resolve(promise).catch(() => undefi
 const open = async (translate = (key: string) => key) => {
   const wrapper = shallowMount(CreateGoogle, { global: {
     config: { errorHandler: vi.fn() },
-    mocks: { $t: translate, $route: { params: { access_token: 'public-test-token' } }, $router: { replace: vi.fn().mockResolvedValue(undefined) } },
+    mocks: { $t: translate, $i18n: { locale: 'en-EN' }, $route: { params: { access_token: 'public-test-token' } }, $router: { replace: vi.fn().mockResolvedValue(undefined) } },
     stubs: { FlowStepLayout: false, CircleButton: true, Loader: true, FinishForm: { template: '<div data-testid="finishForm">Finished</div>' }, FButton: true, NotificationPopup: true, NegativeMessage: true },
   } });
   await flushPromises();
@@ -150,4 +150,32 @@ describe('Google create backup acknowledgements', () => {
     expect(mocks.select).not.toHaveBeenCalled();
   });
 
+});
+
+
+describe('Google create generation expiry', () => {
+  it('requires fresh-generation proof on both parent and child saves', async () => {
+    const wrapper = await open();
+    expect(mocks.add).toHaveBeenCalledTimes(2);
+    for (const call of mocks.add.mock.calls) expect(call.slice(3)).toEqual(['substrate', true]);
+    wrapper.unmount();
+  });
+
+  it('abandons an expired phrase and any child progress before restarting creation', async () => {
+    mocks.add.mockResolvedValueOnce(child.address).mockRejectedValueOnce(new Error('wallet_generation_expired'));
+    const wrapper = await open();
+    expect(wrapper.vm.step).toBe(1);
+    expect(wrapper.vm.isLoading).toBe(false);
+    expect(wrapper.vm.mnemonic).toBe('');
+    expect(wrapper.vm.createdEthereumAddress).toBe('');
+    expect(wrapper.vm.createdAddress).toBe('');
+    expect(wrapper.find('[data-testid="generationExpired"]').text()).toContain('creation session expired');
+    expect(mocks.upload).not.toHaveBeenCalled();
+    expect(mocks.select).not.toHaveBeenCalled();
+    mocks.phrase.mockResolvedValueOnce('new public fixture phrase');
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.mnemonic).toBe('new public fixture phrase');
+    expect(wrapper.vm.generationExpired).toBe(false);
+    wrapper.unmount();
+  });
 });

@@ -4,6 +4,7 @@ import * as egy from './egy/translation.json';
 import * as en from './en/translation.json';
 import * as ru from './ru/translation.json';
 import { syncDocumentLanguage, type Lang } from './languages';
+import { walletUpgradeMessages } from './walletUpgradeMessages';
 import { accountController } from '@/controllers';
 
 const messages = {
@@ -24,7 +25,8 @@ export const i18n = createI18n({
   globalInjection: true,
   locale: initialLocale,
   fallbackLocale: 'en-EN',
-  messages,
+  // Supplemental messages must not mutate the shared base catalogs.
+  messages: JSON.parse(JSON.stringify(messages)) as typeof messages,
   numberFormats: {
     'akk-Xsux-x-old': {
       currency: {
@@ -137,4 +139,8 @@ export const i18n = createI18n({
       },
     },
   },
+});
+
+Object.entries(walletUpgradeMessages).forEach(([locale, supplementalMessages]) => {
+  i18n.global.mergeLocaleMessage(locale, supplementalMessages);
 });

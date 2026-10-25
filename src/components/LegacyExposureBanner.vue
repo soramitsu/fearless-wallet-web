@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="legacy-exposure-banner" role="status" data-testid="legacyExposureBanner">
-    <span class="legacy-exposure-banner__text">{{ tc('exposureNotice.reminder', count, { count }) }}</span>
+    <span class="legacy-exposure-banner__text">{{ reminderText }}</span>
 
     <button type="button" class="legacy-exposure-banner__action" data-testid="legacyExposureBannerOpen" @click="open">
       {{ t('exposureNotice.openGuide') }}
@@ -38,15 +38,19 @@ const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 
-// Old wallets from before the update from 3.0.x that still hold their place in the app and are not
-// marked as moved. A reminder only, on such a wallet's own pages: a wallet created in this version
-// never shows it. Closing it is remembered for that wallet on this device.
+// Remind only on the selected old or imported wallet. Closing is remembered per wallet.
 const status = ref<LegacyExposureStatus>();
+let refreshRevision = 0;
 const closed = ref(readClosedReminders());
 const stillToMove = computed(() => walletsStillToMove(status.value));
-const count = computed(() => stillToMove.value.length);
+const count = computed(() => status.value?.wallets.filter(({ present, movedAt }) => present && !movedAt).length ?? 0);
 const selected = computed(() =>
   stillToMove.value.find(({ address }) => sameWalletAddress(address, accountsStore.selectedWallet.address))
+);
+const reminderText = computed(() =>
+  status.value?.importedWallets?.some(({ address }) => sameWalletAddress(address, selected.value?.address ?? ''))
+    ? t('exposureNotice.importedReminder')
+    : tc('exposureNotice.reminder', count.value, { count: count.value })
 );
 const visible = computed(() => {
   const wallet = selected.value;
@@ -57,17 +61,17 @@ const visible = computed(() => {
 function close(): void {
   if (!selected.value) return;
 
-  closed.value = [...closed.value, selected.value.address];
   // Without storage it stays closed until the wallet window closes.
-  rememberClosedReminders(closed.value);
+  closed.value = rememberClosedReminders([...closed.value, selected.value.address]);
 }
 
 async function refresh(): Promise<void> {
-  // Nothing to remind once the background has said there is nothing to tell.
-  if (status.value?.state === 'not_exposed') return;
+  const revision = ++refreshRevision;
+  closed.value = [...new Set([...closed.value, ...readClosedReminders()])];
 
   try {
-    status.value = await getLegacyExposureStatus();
+    const next = await getLegacyExposureStatus();
+    if (revision === refreshRevision) status.value = next;
   } catch {
     // The count is unknown; the banner stays as it was and the guide is still reachable.
   }
@@ -76,7 +80,7 @@ async function refresh(): Promise<void> {
 onMounted(() => void refresh());
 // Marking a wallet as moved, adding or removing one each end with a navigation.
 watch(
-  () => route.fullPath,
+  () => [route.fullPath, accountsStore.selectedWallet.address],
   () => void refresh()
 );
 

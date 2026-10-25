@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { URLS } from '@/consts/urls';
+import { fetchRemoteFeatureConfig } from '@/util/remoteConfig';
 import { isBitcoinTransfersEnabled, isSolanaTransfersEnabled } from '@/util/releaseFeatures';
 import {
   applyRemoteSendFlags,
@@ -28,7 +27,7 @@ export class SendKillSwitchService {
 
   constructor(
     private readonly storage: SendKillSwitchStorage,
-    private readonly fetchRemoteConfig: () => Promise<unknown> = async () => (await axios.get<unknown>(URLS.FEATURES)).data
+    private readonly fetchRemoteConfig: () => Promise<unknown> = fetchRemoteFeatureConfig
   ) {}
 
   async init(): Promise<SendKillSwitchState> {

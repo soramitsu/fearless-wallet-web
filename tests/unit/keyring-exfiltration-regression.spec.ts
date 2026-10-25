@@ -10,7 +10,7 @@ import { deriveTonAccount } from '@/util/tonKeyring';
 
 // Keep the real unlock handler, while excluding unrelated network/signing
 // subsystems from this offline regression test.
-vi.mock('@sora-substrate/util', () => ({}));
+vi.mock('@/sora', () => ({}));
 vi.mock('@extension-base/api/evm/transfer', () => ({}));
 vi.mock('@extension-base/api/bitcoin/transfer', () => ({}));
 vi.mock('@extension-base/api/iroha/transfer', () => ({}));

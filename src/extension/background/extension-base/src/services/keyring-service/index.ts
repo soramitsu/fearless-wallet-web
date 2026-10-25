@@ -21,7 +21,6 @@ import BaseWebStore from '@extension-base/stores/BaseWeb';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { WEB_PASSWORD_RECORD_KEY } from '@extension-base/stores/WebPasswordRecord';
-import { api as soraSdk } from '@sora-substrate/sdk';
 import { TonKeyringService } from './TonKeyring';
 import { commitMasterEncryptedCopy, upgradeLegacyAccountPassword } from './LegacyPasswordUpgrade';
 import { alreadyPersistedAccountStore, isCurrentAccountPair, updateAccountMetadata } from './AccountMetadata';
@@ -77,6 +76,7 @@ import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@subwallet/keyring/types';
 import type { KeyringAddressType, KeyringItemType } from '@subwallet/ui-keyring/types';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
+import { decryptForCosigner, encryptForCosigners } from '@/sora/cosigner';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
@@ -982,7 +982,8 @@ export class KeyringService {
 
     if (secretKey === null) throw new Error('Secret key is undefined');
 
-    return soraSdk.crypto.decryptForCosigner(address, encryptorPublicKey, data, secretKey);
+    try { return decryptForCosigner(address, encryptorPublicKey, data, secretKey); }
+    finally { secretKey.fill(0); }
   }
 
   encryptByCosigner({ address, data, cosigners }: EncryptByCosignerData): FinalEncryptedStructure {
@@ -998,7 +999,8 @@ export class KeyringService {
 
     const cosignerBytes = Object.fromEntries(Object.entries(cosigners).map(([key, value]) => [key, hexToU8a(value)]));
 
-    return soraSdk.crypto.encryptBySigner(data, cosignerBytes, secretKey);
+    try { return encryptForCosigners(data, cosignerBytes, secretKey); }
+    finally { secretKey.fill(0); }
   }
 
   unlockKeyring({ password }: RequestUnlockExtension): boolean {

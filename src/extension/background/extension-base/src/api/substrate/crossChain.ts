@@ -1,4 +1,3 @@
-import { FPNumber } from '@sora-substrate/util';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { getPrecisionValue } from '@extension-base/api/substrate';
 import { BasicTxErrorCode, TransferErrorCode, type BasicTxResponse } from '@extension-base/background/types/types';
@@ -6,6 +5,7 @@ import { storage } from '@extension-base/stores/Storage';
 import type { CrossChainProps, MakeCrossChainProps } from '@extension-base/api/substrate/types';
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@subwallet/keyring/types';
+import { FPNumber } from '@/sora/number';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import {
   createReviewedCrossChainExtrinsic,

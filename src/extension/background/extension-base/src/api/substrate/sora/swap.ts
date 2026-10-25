@@ -1,10 +1,10 @@
-import { type Api, FPNumber } from '@sora-substrate/util';
-import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { getAssetOptions } from '@extension-base/api/substrate';
 import { getSoraAsset } from '.';
 import type State from '@extension-base/background/handlers/State';
 import type { CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
+import { DexId } from '@/sora/types';
+import { type Api, FPNumber } from '@/sora';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 
@@ -95,8 +95,9 @@ export async function createSwap(
     DexId.XSTUSD
   );
 
-  const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
-  const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
+  const quoteDecimals = isExchangeB ? assetA.decimals : assetB.decimals;
+  const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR, quoteDecimals);
+  const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD, quoteDecimals);
 
   let isDexXor;
   let expectedAmount;

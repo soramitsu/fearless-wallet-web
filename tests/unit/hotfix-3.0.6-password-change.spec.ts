@@ -42,7 +42,7 @@ vi.mock('@subwallet/ui-keyring', () => ({
 }));
 vi.mock('@subwallet/ui-keyring/observable/accounts', () => ({ accounts: { subject: memory.accounts } }));
 vi.mock('@subwallet/ui-keyring/observable/addresses', () => ({ addresses: { subject: { value: {} } } }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@/helpers', () => ({ isSameString: (a: string, b: string) => a === b }));
 vi.mock('@extension-base/stores/BaseExtension', () => ({ default: class { static flush = vi.fn(async () => {}); } }));
 vi.mock('@extension-base/stores/BaseWeb', () => ({ default: class { static flush = vi.fn(async () => {}); } }));

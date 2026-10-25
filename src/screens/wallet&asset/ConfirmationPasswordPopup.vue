@@ -435,7 +435,7 @@ export default defineComponent({
           this.hash = result.hash;
         }
 
-        // функции выполняются через "@sora-substrate/util, для них не работают колбеки с подпиской
+        // Local SORA operations return only after their on-chain completion.
         // аналогично для TON экосистемы
         if (this.isTon || this.isStaking || this.isPool || this.extrinsicType === 'swap' || this.extrinsicType === 'nft')
           this.applyTransactionResponse(results as BasicTxResponse | ResponseNftTransfer | undefined);

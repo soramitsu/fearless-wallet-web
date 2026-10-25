@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber } from '@/sora/number';
 import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
 import { useI18n } from '@/locales/useI18n';
 

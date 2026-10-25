@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
     ...config,
     test: {
       globals: true,
+      include: ['tests/**/*.{test,spec}.{js,ts,jsx,tsx}'],
       // Real scrypt/HD-key regression tests need bounded CPU and memory contention.
       maxWorkers: Number(workerOverride ?? '4'),
       environment: 'happy-dom',

@@ -103,9 +103,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@sora-substrate/util';
 import type { PayoutRewards } from '@extension-base/services/staking-service/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/helpers/transfers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';

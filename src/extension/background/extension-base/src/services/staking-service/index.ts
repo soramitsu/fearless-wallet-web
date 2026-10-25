@@ -1,4 +1,3 @@
-import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { storage } from '@extension-base/stores/Storage';
 import { BasicTxErrorCode, type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
@@ -25,6 +24,7 @@ import type {
   GetNominateNetworkFeeRequest,
   getRewardsRequest,
 } from '@extension-base/services/staking-service/types';
+import { FPNumber, api as apiSora } from '@/sora';
 import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { type NetworkName } from '@/interfaces';
 import { getDefaultStakingParams } from '@/helpers/staking';
@@ -32,7 +32,7 @@ import { cut, isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
 import { assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isStoredWalletRecoveryOnly } from '@/util/walletRecoveryActions';
 import { isCapturedSoraPairStillSelected, isLocallySignableSelectedSoraPair } from '@/defi/soraAccountBinding';
-export * from '@sora-substrate/util/build/staking/types';
+export * from '@/sora/types';
 
 export class StakingService {
   constructor(private state: State) {}
@@ -70,7 +70,9 @@ export class StakingService {
       const minBond = await this.getMinNominatorBond(validators, network);
       const myStakingInfo = await this.getMyStakingInfo(network, validators, minBond);
       const validatorsFilters = validators.filter(({ apy }) => apy !== '0');
-      const apy = validatorsFilters.reduce((result, { apy }) => result + +apy, 0) / validatorsFilters.length;
+      const apy = validatorsFilters.length
+        ? validatorsFilters.reduce((result, { apy }) => result + +apy, 0) / validatorsFilters.length
+        : 0;
 
       return {
         ...myStakingInfo,

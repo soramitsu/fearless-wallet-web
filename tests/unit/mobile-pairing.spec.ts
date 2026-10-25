@@ -13,7 +13,7 @@ import type { SessionTypes } from '@walletconnect/types';
 vi.mock('@extension-base/utils/crossenv', async () => ({
   chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
 }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 

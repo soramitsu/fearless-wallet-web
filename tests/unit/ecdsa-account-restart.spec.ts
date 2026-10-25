@@ -66,7 +66,7 @@ vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({
   },
 }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 
 // chrome.storage.local as the real builds wrote it (tests/fixtures/upgrade/README.md).
 import profile306 from '../fixtures/upgrade/s2-3.0.6-ecdsa.json';

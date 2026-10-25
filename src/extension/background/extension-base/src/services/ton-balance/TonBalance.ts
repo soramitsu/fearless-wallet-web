@@ -1,5 +1,4 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
 import { Address } from '@ton/core';
 import { reconcileSuccessfulDynamicScan } from '@extension-base/services/balance-service/reconcileSuccessfulScan';
 import { TonProviderError, type TonProviderRouter } from '@extension-base/services/ton-provider';
@@ -8,6 +7,7 @@ import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { BasePriceJson } from '@extension-base/background/types/types';
 import type { NetworkName } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
+import { FPNumber } from '@/sora/number';
 import { TON_MAINNET } from '@/consts/networks';
 import { isSameString, isTonMainnet } from '@/helpers';
 import { createAssetKey } from '@/portfolio/assetIdentity';

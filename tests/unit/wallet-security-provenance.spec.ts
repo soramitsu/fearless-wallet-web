@@ -25,7 +25,7 @@ vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({ TonKeyri
 vi.mock('@extension-base/services/keyring-service/AccountMetadata', () => ({ updateAccountMetadata: mocks.update }));
 vi.mock('@extension-base/services/keyring-service/LocalAccountImport', () => ({ importLocalAccount: async (pair) => pair.address }));
 vi.mock('@extension-base/services/keyring-service/JsonAccountImport', () => ({ decodeJsonAccount: mocks.restore }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 
 import { WalletEcosystem } from '@/interfaces';
 import { isRecoveryOnlyWallet, isWalletGenerationExpired } from '@/util/walletSecurity';

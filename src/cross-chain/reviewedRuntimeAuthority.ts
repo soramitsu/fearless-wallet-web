@@ -1,7 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
 import type State from '@extension-base/background/handlers/State';
 import type { ReviewedExecutionApi } from '@/cross-chain/reviewedExecution';
 import type { ReviewedCrossChainExecution, ReviewedDestinationMinimum } from '@/cross-chain/reviewedRoutes';
+import { FPNumber } from '@/sora/number';
 import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
 
 type Codec = {

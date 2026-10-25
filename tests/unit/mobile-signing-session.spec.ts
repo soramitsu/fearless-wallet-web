@@ -24,7 +24,7 @@ import type { SessionTypes } from '@walletconnect/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 const background = vi.hoisted(() => ({ state: {} }));
 vi.mock('@extension-base/background/handlers', () => ({ state: background.state, extension: {}, handlers: vi.fn() }));

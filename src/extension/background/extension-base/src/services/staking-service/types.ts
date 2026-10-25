@@ -3,7 +3,7 @@ import type {
   Payouts,
   MyStakingInfo as SoraMyStakingInfo,
   Unlocking,
-} from '@sora-substrate/util/build/staking/types';
+} from '@/sora/types';
 import type { ActivityRequestSign } from '@extension-base/background/types/types';
 import type { NetworkName, StakingOperation } from '@/interfaces';
 

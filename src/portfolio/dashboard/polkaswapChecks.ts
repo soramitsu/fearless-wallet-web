@@ -1,7 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { MutableAction } from '@extension-base/services/action-capability-service';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import { getPolkaswapCapabilityReasons, type PolkaswapCapabilityReason } from '@/defi/polkaswapCapability';
 
 /** What the wallet in use says about Polkaswap; the swap screen derives the same facts (src/screens/polkaswap/swap/SwapForm.vue). */

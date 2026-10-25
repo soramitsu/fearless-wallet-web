@@ -195,8 +195,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@sora-substrate/util';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { FPNumber } from '@/sora/number';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';

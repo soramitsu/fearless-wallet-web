@@ -1,9 +1,9 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { NetworkJson } from '@extension-base/types';
 import type { PortfolioAsset, PortfolioNetworkSection } from '@/portfolio/assetIdentity';
 import type { CanonicalMemberRole } from '@/portfolio/canonicalGroups';
 import type { PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import type { CanonicalGroup, CanonicalGroupIndex } from '@/portfolio/tokenGroups';
+import { FPNumber } from '@/sora/number';
 
 /** One network of a token row: the portfolio asset on that network, with its role when it is a group member. */
 export interface PortfolioTokenChild {

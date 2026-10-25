@@ -1,7 +1,7 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { AccountBalance } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
+import { FPNumber } from '@/sora/number';
 
 type OrmlAccountData = {
   free?: AccountData['free'];

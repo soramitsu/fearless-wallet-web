@@ -1,9 +1,9 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
 import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { AssetPreferenceSource } from '@/portfolio/legacyPreferences305';
+import { FPNumber } from '@/sora/number';
 import { createAssetKey, type AssetKeyParts } from '@/portfolio/assetKey';
 import { createZeroDefaultRule, isTestnetNetwork } from '@/portfolio/zeroRule';
 import { isUntrustedAsset, type UntrustedAssetCheck } from '@/portfolio/untrustedAssets';

@@ -32,7 +32,7 @@ vi.mock('@extension-base/stores/KeyringStore', () => ({ default: class {} }));
 vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: class {} }));
 vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({ TonKeyringService: class {} }));
 vi.mock('@extension-base/stores/LegacyPasswordPromptStore', () => ({ default: class {} }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonSeedVault } from '@extension-base/services/keyring-service/TonSeedVault';

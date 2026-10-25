@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { effectScope, nextTick } from 'vue';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getMockAssets } from '@extension-base/background/helpers/assets';
-import { FPNumber } from '@sora-substrate/util';
 import {
   EVM_ADDRESS,
   SUBSTRATE_ADDRESS,
@@ -15,6 +14,7 @@ import {
 } from '../fixtures/legacy-305/generate';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import { FPNumber } from '@/sora/number';
 import { WalletEcosystem } from '@/interfaces';
 import { createAssetKey } from '@/portfolio/assetIdentity';
 import { usePortfolio } from '@/portfolio/usePortfolio';

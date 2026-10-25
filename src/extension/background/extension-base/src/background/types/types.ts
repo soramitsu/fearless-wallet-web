@@ -1,4 +1,3 @@
-import { type FinalEncryptedStructure as SoraFinalEncryptedStructure } from '@sora-substrate/sdk';
 import { type TonProviderRouter } from '@extension-base/services/ton-provider';
 import { type WordCount } from '../../services';
 import type { NftTx, NftSettings } from '@extension-base/services/nft-service/types';
@@ -47,6 +46,7 @@ import type {
 import type { BitcoinRecipientType } from '@/util/bitcoin';
 import type { LegacyExposureRecord } from '@extension-base/services/legacy-exposure-service';
 import type { SoraDisclaimerAcceptance } from '@/defi/soraDisclaimer';
+import { type FinalEncryptedStructure as SoraFinalEncryptedStructure } from '@/sora/cosigner';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;

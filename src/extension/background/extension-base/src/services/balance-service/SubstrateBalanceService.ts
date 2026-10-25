@@ -1,6 +1,5 @@
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate';
-import { FPNumber } from '@sora-substrate/util';
 import EquilibriumBalanceService from './EquilibriumBalanceService';
 import type { ApiPromise } from '@polkadot/api';
 import type { Subscription } from 'rxjs';
@@ -8,6 +7,7 @@ import type { FetchBalancePayload, ResponseBalanceRequest } from '../../backgrou
 import type { GetBalancesProps } from '../subscription-service';
 import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName, NetworkName } from '@/interfaces';
+import { FPNumber } from '@/sora/number';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';

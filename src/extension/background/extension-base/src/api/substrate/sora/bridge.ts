@@ -1,10 +1,10 @@
-import { FPNumber, api as apiSora } from '@sora-substrate/util';
-import { SubNetworkId } from '@sora-substrate/util/build/bridgeProxy/sub/consts';
 import { KUSAMA_PARACHAIN_ID, POLKADOT_PARACHAIN_ID, getSoraAsset } from '.';
-import type { SubNetwork } from '@sora-substrate/util/build/bridgeProxy/sub/types';
+import type { SubNetwork } from '@/sora/types';
 import type State from '@extension-base/background/handlers/State';
-import type { Asset } from '@sora-substrate/util/src/assets/types';
+import type { Asset } from '@/sora/types';
 import type { CrossChainProps, MakeCrossChainProps } from '@extension-base/api/substrate/types';
+import { SubNetworkId } from '@/sora/types';
+import { FPNumber, api as apiSora } from '@/sora';
 import { type NetworkName } from '@/interfaces';
 
 function getSoraParaId(network: NetworkName, state: State): string {

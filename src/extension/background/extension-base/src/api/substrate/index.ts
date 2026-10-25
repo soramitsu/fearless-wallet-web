@@ -1,5 +1,5 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { Asset } from '@extension-base/types';
+import { FPNumber } from '@/sora/number';
 
 export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
   const { currencyId, symbol, type } = assetsMap.find(({ id }) => id === assetId)!;

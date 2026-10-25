@@ -6,7 +6,7 @@ import type { BasicTxResponse, RequestTypes } from '@extension-base/background/t
 vi.mock('@/consts/global', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/consts/global')>(), IS_EXTENSION: true, IS_EXTENSION_SMOKE: false,
 }));
-vi.mock('@sora-substrate/util', () => ({}));
+vi.mock('@/sora', () => ({}));
 vi.mock('@extension-base/api/evm/transfer', () => ({}));
 vi.mock('@extension-base/api/bitcoin/transfer', () => ({ isBitcoinTransferNetwork: () => false, BitcoinTransactionStatusUnknownError: class extends Error {} }));
 vi.mock('@extension-base/api/iroha/transfer', () => ({ isIrohaTransferNetwork: () => false, IrohaTransactionStatusUnknownError: class extends Error {} }));

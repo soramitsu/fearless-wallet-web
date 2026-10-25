@@ -83,7 +83,9 @@
     "test:development-dependency-guards": "node scripts/test-development-dependency-guards.mjs",
     "test:iroha-safari-qa": "bash scripts/test-iroha-js-candidate-safari-qa.sh",
     "qa:iroha-safari": "bash scripts/run-iroha-js-candidate-safari-qa.sh",
-    "test:all": "yarn typecheck && yarn lint:check && yarn test:unit"
+    "test:all": "yarn typecheck && yarn lint:check && yarn test:unit",
+    "audit:sora-removal": "node scripts/audit-sora-dependency-removal.mjs",
+    "test:sora-removal": "node --test scripts/test-sora-dependency-removal.mjs"
   },
   "main": "index.js",
   "dependencies": {
@@ -104,10 +106,6 @@
     "@polkadot/vue-identicon": "^3.16.7",
     "@scure/base": "^1.2.6",
     "@scure/bip32": "^1.4.0",
-    "@sora-substrate/api": "1.40.2",
-    "@sora-substrate/connection": "1.40.2",
-    "@sora-substrate/sdk": "1.43.0-betaMST-1.0.21",
-    "@sora-substrate/util": "1.40.2",
     "@subwallet/ui-keyring": "0.1.14",
     "@ton-api/client": "^0.4.0",
     "@ton/core": "^0.63.1",

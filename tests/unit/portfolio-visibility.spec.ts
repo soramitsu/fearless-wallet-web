@@ -1,11 +1,11 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getMockAssets } from '@extension-base/background/helpers/assets';
 import { BN } from '@polkadot/util';
-import { FPNumber } from '@sora-substrate/util';
 import { readSnapshot } from '../fixtures/legacy-305/generate';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
+import { FPNumber } from '@/sora/number';
 import { WalletEcosystem } from '@/interfaces';
 import {
   buildPortfolioSections,

@@ -48,7 +48,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber } from '@/sora/number';
 import { calcTransferableSendMinusFee } from '@/helpers/currencies';
 
 import { getCostOfAssets } from '@/helpers/transfers';

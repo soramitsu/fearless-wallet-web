@@ -1,8 +1,8 @@
-import { FPNumber } from '@sora-substrate/util';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { MutableAction } from '@extension-base/services/action-capability-service';
+import { FPNumber } from '@/sora/number';
 import { createAssetKey, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import {
   BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES,

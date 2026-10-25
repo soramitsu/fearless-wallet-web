@@ -14,7 +14,7 @@ vi.mock('@/consts/global', async (importOriginal) => ({
   IS_EXTENSION: false,
   IS_EXTENSION_SMOKE: false,
 }));
-vi.mock('@sora-substrate/util', () => ({}));
+vi.mock('@/sora', () => ({}));
 vi.mock('@extension-base/api/evm/transfer', () => ({}));
 vi.mock('@extension-base/api/bitcoin/transfer', () => ({ isBitcoinTransferNetwork: () => false }));
 vi.mock('@extension-base/api/iroha/transfer', () => ({ isIrohaTransferNetwork: () => false }));

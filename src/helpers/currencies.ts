@@ -1,9 +1,9 @@
-import { FPNumber } from '@sora-substrate/util';
 import { APIItemState } from '@extension-base/api/types/networks';
 import type { NetworkName, BuyProvider } from '@/interfaces';
 import type { NetworkJson } from '@extension-base/types';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { BasePriceJson, TokenGroup } from '@extension-base/background/types/types';
+import { FPNumber } from '@/sora/number';
 import { getNativeAssetName } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';

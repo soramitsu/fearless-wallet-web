@@ -1,4 +1,3 @@
-import { api as apiSora, type CodecString, FPNumber, Operation } from '@sora-substrate/util';
 import {
   BasicTxErrorCode,
   TransferErrorCode,
@@ -6,14 +5,7 @@ import {
   type Port,
 } from '@extension-base/background/types/types';
 import { type u128 } from '@polkadot/types';
-import { type AccountLiquidity } from '@sora-substrate/util/build/poolXyk/types';
 import { BehaviorSubject } from 'rxjs';
-import {
-  type DemeterAccountPool,
-  type DemeterPool,
-  type DemeterRewardToken,
-} from '@sora-substrate/util/build/demeterFarming/types';
-import { type AccountLockedPool } from '@sora-substrate/util/build/ceresLiquidityLocker/types';
 import type {
   GetShareOfPoolRequest,
   RequestAddLiquidity,
@@ -30,7 +22,16 @@ import type {
 } from './types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
-import type { AccountAsset, Asset } from '@sora-substrate/util/src/assets/types';
+import type { AccountAsset, Asset } from '@/sora/types';
+import { type AccountLockedPool } from '@/sora/types';
+import {
+  type DemeterAccountPool,
+  type DemeterPool,
+  type DemeterRewardToken,
+} from '@/sora/types';
+import { type AccountLiquidity } from '@/sora/types';
+import { api as apiSora, type CodecString, FPNumber, Operation } from '@/sora';
+import { poolMarkerForAmount } from '@/sora/pools';
 import { getSoraAsset } from '@/extension/background/extension-base/src/api/substrate/sora';
 import { isSameString } from '@/helpers';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
@@ -1271,12 +1272,13 @@ export class PoolsService {
       };
     }
 
-    const firstAvailable = reserve1.mul(liquidity).div(supply);
-    const secondAvailable = reserve2.mul(liquidity).div(supply);
-    const requested = new FPNumber(isExchangeB ? amount2 : amount1);
-    const available = isExchangeB ? secondAvailable : firstAvailable;
-    const desiredMarker = requested.div(available).mul(liquidity);
-    if (!desiredMarker.isFinity() || !desiredMarker.isGreaterThan(FPNumber.ZERO) || desiredMarker.gt(liquidity)) {
+    let desiredMarker: FPNumber;
+    try {
+      const requested = new FPNumber(isExchangeB ? amount2 : amount1, isExchangeB ? asset2.decimals : asset1.decimals);
+      desiredMarker = FPNumber.fromCodecValue(poolMarkerForAmount(
+        requested.toCodecString(), reserves[isExchangeB ? 1 : 0], totalSupply, poolBalance
+      ));
+    } catch {
       return {
         status: false,
         errors: [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: 'The requested withdrawal exceeds the available pool position.' }],

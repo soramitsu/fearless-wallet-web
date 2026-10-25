@@ -6,7 +6,7 @@ import type { RequestTypes } from '@extension-base/background/types/types';
 vi.mock('@/consts/global', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/consts/global')>(), IS_EXTENSION: true, IS_EXTENSION_SMOKE: false,
 }));
-vi.mock('@sora-substrate/util', () => ({}));
+vi.mock('@/sora', () => ({}));
 vi.mock('@extension-base/api/evm/transfer', () => ({}));
 vi.mock('@extension-base/api/bitcoin/transfer', () => ({}));
 vi.mock('@extension-base/api/iroha/transfer', () => ({}));

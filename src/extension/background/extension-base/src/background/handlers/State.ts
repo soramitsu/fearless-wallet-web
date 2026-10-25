@@ -30,7 +30,6 @@ import {
   LegacyExposureService,
   IrohaConnectService,
 } from '@extension-base/services';
-import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
@@ -61,6 +60,7 @@ import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } fr
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, NetworkName } from '@/interfaces';
 import type { BitcoinNetworkKind } from '@/util/bitcoin';
+import { api as apiSora } from '@/sora';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';

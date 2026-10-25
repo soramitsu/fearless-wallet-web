@@ -95,7 +95,7 @@ vi.mock('@extension-base/stores/LegacyPasswordPromptStore', () => ({ default: cl
 } }));
 vi.mock('@extension-base/services/keyring-service/TonKeyring', () => ({ TonKeyringService: class {} }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
-vi.mock('@sora-substrate/sdk', () => ({ api: {} }));
+vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { accountStorageKey } from '@extension-base/services/keyring-service/AccountMetadata';

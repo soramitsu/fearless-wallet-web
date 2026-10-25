@@ -28,6 +28,7 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['transfer_fee_changed', 'assets.transferFeeChanged'],
   ['transfer_fee_approval_required', 'assets.transferFeeApprovalRequired'],
   ['transfer_fee_unavailable', 'assets.transferFeeApprovalRequired'],
+  ['sora_broadcast_ambiguous', 'assets.transactionStatusUnknownDetails'],
   ...Object.entries(ACCOUNT_ACCESS_ERROR_LOCALE_KEYS),
   ['bitcoin_transfer_disabled', 'assets.bitcoinTransfersDisabled'],
   ['iroha_transfer_disabled', 'assets.irohaTransfersDisabled'],
@@ -54,6 +55,7 @@ const UNCONFIRMED_MESSAGES: ReadonlySet<string> = new Set([
   'bitcoin_broadcast_ambiguous',
   'solana_broadcast_ambiguous',
   'solana_broadcast_signature_mismatch',
+  'sora_broadcast_ambiguous',
 ]);
 
 const SAFE_ASSET_SYMBOL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/u;

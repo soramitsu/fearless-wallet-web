@@ -202,6 +202,27 @@ describe('recovery exits in the UI', () => {
     wrapper.unmount();
   });
 
+  it.each(['ab'.repeat(32), undefined, '<private-provider-detail>'])('shows an uncertain market sale safely with hash %s', async (hash) => {
+    mocks.mutateMarket.mockResolvedValue({ status: false, outcome: 'unknown', hash, error: 'private provider detail' });
+    const wrapper = mount(PolkamarktPage, { global });
+    await flushPromises();
+    await wrapper.get('.trade-ticket input').setValue('1');
+    await wrapper.get('.trade-ticket button.primary').trigger('click');
+    await flushPromises();
+    await wrapper.get('.quote-preview button').trigger('click');
+    await flushPromises();
+    const message = wrapper.get('.mutation-message');
+    expect(message.text()).toContain('assets.transactionStatusUnknownDetails');
+    expect(message.classes()).toContain('warning');
+    expect(message.classes()).not.toContain('error');
+    expect(message.text()).not.toContain('polkamarktPage.fallback.mutation');
+    expect(message.text()).not.toContain('private');
+    expect(wrapper.find('[data-testid="polkamarktUnknownHash"]').exists()).toBe(hash === 'ab'.repeat(32));
+    expect(wrapper.find('.quote-preview').exists()).toBe(false);
+    expect(mocks.mutateMarket).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
   it('offers selling existing market shares and claiming, without buying', async () => {
     const wrapper = mount(PolkamarktPage, { global });
     await flushPromises();

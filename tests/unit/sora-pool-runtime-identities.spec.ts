@@ -4,6 +4,7 @@ import { PoolsService } from '@extension-base/services/pools-service';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestAddLiquidity, DemeterMutationRequest } from '@extension-base/services/pools-service/types';
 import { api as apiSora, FPNumber, Operation } from '@/sora';
+import { SoraSubmissionUnknownError } from '@/sora/submission';
 import { XOR, VAL } from '@/sora/runtime';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
@@ -206,5 +207,26 @@ describe('Demeter catalog and exits use the configured SORA network', () => {
     expect(accountAsset).not.toHaveBeenCalledWith(SORA_XOR_ASSET_ID);
     expect(withdraw).toHaveBeenCalledWith('1', expect.objectContaining({ address: VAL }),
       expect.objectContaining({ address: OTHER }), expect.objectContaining({ address: XOR }));
+  });
+});
+
+
+describe('SORA pool mutation uncertainty reaches the confirmation UI', () => {
+  const hash = 'ab'.repeat(32);
+  it.each(['add', 'remove'] as const)('preserves the hash and unknown outcome for %s', async (operation) => {
+    const { service, request, add, remove } = fixture();
+    (operation === 'add' ? add : remove).mockRejectedValue(new SoraSubmissionUnknownError(hash));
+    await expect(operation === 'add' ? service.addLiquidity(request) : service.removeLiquidity(request))
+      .resolves.toEqual({ status: false, outcome: 'unknown', transactionHash: hash, errors: [{ message: 'sora_broadcast_ambiguous' }] });
+    expect(operation === 'add' ? add : remove).toHaveBeenCalledOnce();
+  });
+
+  it('preserves the hash and unknown outcome of a Demeter withdrawal', async () => {
+    const { service, demeterRequest, withdraw } = demeterFixture();
+    withdraw.mockRejectedValue(new SoraSubmissionUnknownError(hash));
+    await expect(service.mutateDemeter(demeterRequest)).resolves.toEqual({
+      status: false, outcome: 'unknown', transactionHash: hash, errors: [{ message: 'sora_broadcast_ambiguous' }],
+    });
+    expect(withdraw).toHaveBeenCalledOnce();
   });
 });

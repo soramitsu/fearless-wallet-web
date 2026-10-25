@@ -1,3 +1,5 @@
+import { isDefiniteSubstratePoolRejection } from '@/util/substratePoolRejection';
+
 /**
  * Sends a signed extrinsic and follows it until its outcome is known.
  *
@@ -33,6 +35,8 @@ export type TrackableResult = {
     asModule: { index: unknown; error: unknown };
     toString: () => string;
   };
+  /** Polkadot keeps the block status when fetching its dispatch events fails. */
+  internalError?: unknown;
   /** Events of this extrinsic only, as filtered by the API for in-block results. */
   events?: readonly { event: { section: string; method: string; data: readonly CodecLike[] } }[];
 };
@@ -46,27 +50,10 @@ export type TrackedSendOutcome =
 /** Long enough for a mortal extrinsic on a slow parachain, short enough not to leave the user waiting forever. */
 export const CROSS_CHAIN_INCLUSION_TIMEOUT_MS = 180_000;
 
-/**
- * Author RPC errors that prove this node did not accept the extrinsic, so it was never propagated: bad format,
- * verification, invalid, unknown validity, temporarily banned, priority too low, cycle, immediately dropped,
- * unactionable, no tags, invalid block, future rejected. 1013 "already imported" proves the opposite, and anything
- * else (timeouts, closed sockets, 1040) proves nothing.
- */
-const DEFINITE_POOL_REJECTIONS = new Set([1001, 1002, 1010, 1011, 1012, 1014, 1015, 1016, 1018, 1019, 1020, 1021]);
-
 const XCM_PALLETS = new Set(['xcmPallet', 'polkadotXcm']);
 
 export function normalizeExtrinsicHash(hex: string): string {
   return hex.replace(/^0x/i, '').toLowerCase();
-}
-
-function rpcErrorCode(error: unknown): number | undefined {
-  const code = typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
-  if (typeof code === 'number') return code;
-
-  const match = /^(-?\d+):/.exec(error instanceof Error ? error.message : String(error));
-
-  return match ? Number(match[1]) : undefined;
 }
 
 function describeDispatchError(extrinsic: TrackableExtrinsic, error: NonNullable<TrackableResult['dispatchError']>) {
@@ -108,6 +95,9 @@ function localXcmOutcome(events: TrackableResult['events']): 'complete' | 'incom
 }
 
 function inBlockOutcome(extrinsic: TrackableExtrinsic, hash: string, result: TrackableResult): TrackedSendOutcome {
+  if (result.internalError) {
+    return { kind: 'unknown', hash, reason: 'cross_chain_dispatch_outcome_unavailable' };
+  }
   if (result.dispatchError) {
     return { kind: 'failed', hash, reason: describeDispatchError(extrinsic, result.dispatchError), included: true };
   }
@@ -186,10 +176,8 @@ export function sendAndTrackExtrinsic(
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
-        const code = rpcErrorCode(error);
-
         settle(
-          code !== undefined && DEFINITE_POOL_REJECTIONS.has(code)
+          isDefiniteSubstratePoolRejection(error)
             ? { kind: 'failed', hash, reason: message, included: false }
             : { kind: 'unknown', hash, reason: message }
         );

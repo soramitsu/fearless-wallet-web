@@ -213,6 +213,7 @@ import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
 import { api as apiSora, FPNumber, Operation } from '@/sora';
+import { soraSubmissionUnknownResponse } from '@/sora/submission';
 import { crossChainQuoteTokens } from '@/cross-chain/quoteTokens';
 import { CrossChainPreviousSendUnresolvedError } from '@/cross-chain/sendLedger';
 import { BitcoinTransactionStatusUnknownError } from '@/util/bitcoinSend';
@@ -1275,6 +1276,8 @@ export default class Extension extends FWExtensionBase {
     try {
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       console.info(`Swap transaction failed ${ex}`);
       return {
         status: false,

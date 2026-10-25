@@ -10,6 +10,9 @@ vi.mock('@/router/routes', () => ({ default: [], Components: Object.fromEntries(
   'Onboarding', 'MigrationDescription', 'MigrationAccounts', 'ChangePassword', 'Welcome', 'Unlock', 'ResetWallet', 'Wallet',
 ].map((name) => [name, name])) }));
 vi.mock('@/bootstrap/accountsReady', () => ({ initialAccountsReady: Promise.resolve() }));
+vi.mock('@/extension/messaging/legacy-exposure', () => ({
+  getLegacyExposureStatus: async () => ({ state: 'acknowledged', wallets: [] }),
+}));
 vi.mock('@/extension/messaging', () => ({
   keyringIsLocked: async () => mocks.locked, hasMasterPassword: async () => true, hasAccounts: async () => true,
   isNeedMigration: async () => false, isOnboardingRequired: async () => false,
@@ -32,7 +35,7 @@ async function navigate(name: string) {
 }
 
 describe('extension recovery navigation', () => {
-  it.each(['SendForm', 'NftSendForm', 'Export', 'AddWallet', 'Currencies', 'Settings', 'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt'])(
+  it.each(['SendForm', 'NftSendForm', 'Export', 'AddWallet', 'Currencies', 'Settings', 'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt', 'SecurityNotice', 'SecurityNoticeGuide'])(
     'allows %s for an old wallet', async (name) => { expect(await navigate(name)).toHaveBeenCalledExactlyOnceWith(); }
   );
 

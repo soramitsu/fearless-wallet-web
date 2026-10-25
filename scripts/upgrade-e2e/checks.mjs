@@ -9,6 +9,8 @@ import {
   openJson,
   passSecurityNotice,
   signThroughDapp,
+  signExportedJson,
+  signExportedEvmKey,
   stateEntries,
   substratePair,
   ui,
@@ -20,6 +22,8 @@ import {
 } from './head.mjs';
 
 const lower = (value) => String(value ?? '').toLowerCase();
+const RECOVERY_ONLY_ERROR =
+  'This wallet is recovery-only after a security issue. Create a new wallet with a new recovery phrase. Only transfers out, unstaking, withdrawals, claims and backup exports are available.';
 
 /**
  * profile = {
@@ -99,7 +103,8 @@ export async function checkUnlock(r, session, popup, master) {
   r.check('A2', 'the stored password hash is unchanged', !!hashBefore && hashBefore === hashAfter);
 }
 
-/** A3/A4: every Substrate and Ethereum account of the profile signs through a dApp, with the original key. */
+/** A3/A4: historical keys are recovery-only. A public dApp cannot gain permission
+ * to sign, while a recovery export still signs with the original key. */
 export async function checkDappSigning(r, ctx, session, popup, profile) {
   const accounts = (await popup.call('pri(accounts.subscribe)')).ok ?? [];
   const authorizedAccounts = accounts.flatMap(({ address, ethereumAddress }) =>
@@ -119,11 +124,20 @@ export async function checkDappSigning(r, ctx, session, popup, profile) {
     const original = substratePair(wallet);
     r.check(
       'A3',
-      `${wallet.name}: a dApp signRaw verifies against the original ${wallet.type} key`,
-      !!result.ok &&
-        original.address === wallet.address &&
-        verifySubstrate(message, result.ok.signature, original.address),
+      `${wallet.name}: recovery-only Substrate dApp authorization is rejected without a grant or signature`,
+      result.err === RECOVERY_ONLY_ERROR && result.authorizationGranted === false && !result.ok,
       result.err ?? result.ok?.signature
+    );
+    const exported = await popup.call('pri(accounts.export.json)', {
+      address: wallet.address,
+      password: profile.master,
+    });
+    const signature = exported.ok?.json && signExportedJson(exported.ok.json, profile.master, message);
+    r.check(
+      'A3',
+      `${wallet.name}: the exported ${wallet.type} key signs against the original identity`,
+      !!signature && original.address === wallet.address && verifySubstrate(message, signature, original.address),
+      exported.err
     );
   }
   const evmAccounts = [...profile.wallets, ...(profile.standalone ?? [])].filter(
@@ -143,11 +157,23 @@ export async function checkDappSigning(r, ctx, session, popup, profile) {
     });
     r.check(
       'A4',
-      `${wallet.name ?? wallet.ethereumAddress}: personal_sign recovers the original Ethereum address`,
-      !!result.ok &&
-        lower(ethereumAddressOf(wallet)) === lower(wallet.ethereumAddress) &&
-        verifyEvm(message, result.ok.signature, wallet.ethereumAddress),
+      `${wallet.name ?? wallet.ethereumAddress}: recovery-only Ethereum dApp authorization is rejected without a grant or signature`,
+      result.err === RECOVERY_ONLY_ERROR && result.authorizationGranted === false && !result.ok,
       result.err ?? result.ok?.signature
+    );
+    const exported = await popup.call('pri(keyring.export.rowSeed)', {
+      address: wallet.ethereumAddress,
+      password: profile.master,
+      isEVM: true,
+    });
+    const signature = exported.ok?.seed && (await signExportedEvmKey(exported.ok.seed, message));
+    r.check(
+      'A4',
+      `${wallet.name ?? wallet.ethereumAddress}: the exported Ethereum key signs against the original identity`,
+      !!signature &&
+        lower(ethereumAddressOf(wallet)) === lower(wallet.ethereumAddress) &&
+        verifyEvm(message, signature, wallet.ethereumAddress),
+      exported.err
     );
   }
 }

@@ -21,7 +21,9 @@ export function serialVueBuildConfig(src) {
       '--env.NODE_ENV=production',
       'build',
     ],
-    env: { VUE_CLI_SERVICE_CONFIG_PATH: config },
+    // --no-override preserves the wrapper path, so explicitly preserve the
+    // other value supplied by the historical .env.extension as well.
+    env: { VUE_CLI_SERVICE_CONFIG_PATH: config, IS_EXTENSION: 'true' },
     deviation:
       'Vue CLI parallel=false via an external config wrapper; original source, lockfile, type checks and production optimizations preserved',
   };

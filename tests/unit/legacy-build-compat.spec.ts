@@ -31,6 +31,7 @@ describe('historical Vue compiler compatibility', () => {
     expect(wrapped.chainWebpack).toBe(original.chainWebpack);
     expect(wrapped.configureWebpack).toBe(original.configureWebpack);
     expect(readFileSync(originalPath, 'utf8')).toBe(source);
+    expect(result.env.IS_EXTENSION).toBe('true');
     expect(result.args).toEqual([
       'exec',
       'env-cmd',

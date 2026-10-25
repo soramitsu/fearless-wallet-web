@@ -106,15 +106,19 @@
               <dd>{{ depositFee }}</dd>
             </div>
           </dl>
+          <div v-if="uncertainSubmission" class="submission-warning" role="status" data-testid="farmingSubmissionUnknown">
+            <p>{{ t('assets.transactionStatusUnknownDetails') }}</p>
+            <code v-if="uncertainHash" data-testid="farmingSubmissionHash">{{ uncertainHash }}</code>
+          </div>
           <p v-if="formError" class="form-error">{{ formError }}</p>
           <FButton
             width="100%"
             size="big"
             :text="pending ? 'farmingPage.submitting' : 'farmingPage.confirm'"
-            :disabled="pending"
+            :disabled="pending || !!uncertainSubmission"
             @click="confirmAction"
           />
-          <button type="button" class="back-action" :disabled="pending" @click="reviewing = false">
+          <button type="button" class="back-action" :disabled="pending || !!uncertainSubmission" @click="reviewing = false">
             {{ t('farmingPage.back') }}
           </button>
         </template>
@@ -127,6 +131,7 @@
 import { computed, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BigNumber from 'bignumber.js';
+import type { BasicTxResponse } from '@extension-base/background/types/types';
 import type {
   DemeterOperation,
   DemeterPoolView,
@@ -138,6 +143,7 @@ import { useI18n } from '@/locales/useI18n';
 import { useWalletRecovery } from '@/util/useWalletRecovery';
 import { isRecoveryDemeterAction } from '@/util/walletRecoveryActions';
 import { Components } from '@/router/routes';
+import { getTransactionOutcome, getUnknownTransactionHash } from '@/helpers/transactionFailure';
 
 const { t } = useI18n();
 const recoveryOnly = useWalletRecovery();
@@ -153,6 +159,8 @@ const amount = ref('');
 const reviewing = ref(false);
 const pending = ref(false);
 const formError = ref('');
+const uncertainSubmission = ref<BasicTxResponse | null>(null);
+const uncertainHash = computed(() => getUnknownTransactionHash(uncertainSubmission.value));
 
 const positions = computed(
   () =>
@@ -274,6 +282,7 @@ function openAction(pool: DemeterPoolView, operation: DemeterOperation): void {
   selectedOperation.value = operation;
   amount.value = '';
   formError.value = '';
+  uncertainSubmission.value = null;
   reviewing.value = false;
 }
 
@@ -286,7 +295,7 @@ function closeAction(): void {
 async function confirmAction(): Promise<void> {
   const pool = selectedPool.value;
   const operation = selectedOperation.value;
-  if (!pool || !operation || pending.value) return;
+  if (!pool || !operation || pending.value || uncertainSubmission.value) return;
   if (recoveryOnly.value && !isRecoveryDemeterAction(operation)) return;
   pending.value = true;
   formError.value = '';
@@ -305,6 +314,10 @@ async function confirmAction(): Promise<void> {
       expectedFee: selectedFee.value,
     });
 
+    if (getTransactionOutcome(result) === 'unconfirmed') {
+      uncertainSubmission.value = result;
+      return;
+    }
     if (!result.status) {
       formError.value = t('farmingPage.fallback.transaction');
       return;
@@ -551,6 +564,10 @@ onMounted(loadPools);
 .review-lines dd {
   margin: 0;
   text-align: right;
+}
+.submission-warning {
+  font-size: 0.72rem;
+  code { overflow-wrap: anywhere; }
 }
 .form-error {
   margin: 0;

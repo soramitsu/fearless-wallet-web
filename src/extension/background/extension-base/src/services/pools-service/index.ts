@@ -23,6 +23,7 @@ import type {
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkName } from '@/interfaces';
 import type { AccountAsset, Asset } from '@/sora/types';
+import { soraSubmissionUnknownResponse } from '@/sora/submission';
 import { type AccountLockedPool } from '@/sora/types';
 import {
   type DemeterAccountPool,
@@ -555,6 +556,8 @@ export class PoolsService {
 
       return { status: true };
     } catch (error) {
+      const unknown = soraSubmissionUnknownResponse(error);
+      if (unknown) return unknown;
       return {
         status: false,
         errors: [{ message: `[DEMETER] ${String(error)}`, code: TransferErrorCode.TRANSFER_ERROR }],
@@ -1232,6 +1235,8 @@ export class PoolsService {
       apiSora.shouldPairBeLocked = false;
       await apiSora.poolXyk.add(asset1, asset2, amount1, amount2, slippage);
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[POOLS] Add Liquidity failed: ${ex}`;
 
       console.info(message);
@@ -1319,6 +1324,8 @@ export class PoolsService {
         slippage
       );
     } catch (ex) {
+      const unknown = soraSubmissionUnknownResponse(ex);
+      if (unknown) return unknown;
       const message = `[POOLS] Remove Liquidity failed: ${ex}`;
 
       console.info(message);

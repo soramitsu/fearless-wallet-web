@@ -1,18 +1,75 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { reactive } from 'vue';
 import { describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ load: vi.fn() }));
+import { SoraSubmissionUnknownError, soraSubmissionUnknownResponse } from '@/sora/submission';
+const mocks = vi.hoisted(() => ({ load: vi.fn(), mutate: vi.fn() }));
 const route = reactive({ query: { position: 'second' } });
 vi.mock('vue-router', () => ({ useRoute: () => route, useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 379, IS_EXTENSION: false }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [], selectedWallet: { address: '' } }) }));
 vi.mock('@/router/routes', () => ({ Components: { Pools: 'Pools' } }));
-vi.mock('@/extension/messaging', () => ({ getDemeterPools: mocks.load, mutateDemeter: vi.fn() }));
+vi.mock('@/extension/messaging', () => ({ getDemeterPools: mocks.load, mutateDemeter: mocks.mutate }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 import FarmingPage from '@/screens/defi/FarmingPage.vue';
 
 describe('farming Manage destination', () => {
+  it.each([
+    { label: 'uncertain with hash', hash: `0x${'ab'.repeat(32)}`, definite: false },
+    { label: 'uncertain without hash', hash: undefined, definite: false },
+    { label: 'definite rejection', hash: undefined, definite: true },
+  ])('uses the correct confirmation state for $label', async ({ hash, definite }) => {
+    route.query.position = '';
+    mocks.mutate.mockReset().mockResolvedValue(definite
+      ? { status: false, errors: [{ message: 'SORA transaction was rejected' }] }
+      : soraSubmissionUnknownResponse(new SoraSubmissionUnknownError(hash)));
+    mocks.load.mockResolvedValue({
+      available: true, canSign: true, fees: { claim: '0.01' },
+      pools: [{
+        key: 'position', pooledTokens: '1', earnedRewards: '1', isRemoved: false, isFarm: true,
+        baseAsset: { id: 'xor', symbol: 'XOR' }, poolAsset: { id: 'val', symbol: 'VAL' },
+        rewardAsset: { id: 'pswap', symbol: 'PSWAP' }, apr: null, tvl: null, depositFee: '0',
+      }],
+    });
+    const wrapper = mount(FarmingPage, {
+      global: {
+        stubs: {
+          ContentForm: { template: '<main><slot /></main>' }, Scroll: { template: '<div><slot /></div>' },
+          Popup: { template: '<section><slot /></section>' }, Icon: true,
+          FButton: { props: ['text', 'disabled'], template: '<button :disabled="disabled">{{ text }}</button>' },
+        },
+      },
+    });
+    await flushPromises();
+    const button = (text: string) => wrapper.findAll('button').find((item) => item.text() === text)!;
+    await button('farmingPage.claim').trigger('click');
+    await button('farmingPage.review').trigger('click');
+    await button('farmingPage.confirm').trigger('click');
+    await flushPromises();
+
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    if (definite) {
+      expect(wrapper.find('[data-testid="farmingSubmissionUnknown"]').exists()).toBe(false);
+      expect(wrapper.get('.form-error').text()).toBe('farmingPage.fallback.transaction');
+      expect(button('farmingPage.confirm').attributes('disabled')).toBeUndefined();
+      // After correcting the cause, the user can explicitly submit again.
+      mocks.mutate.mockResolvedValueOnce({ status: true });
+      await button('farmingPage.confirm').trigger('click');
+      await flushPromises();
+      expect(mocks.mutate).toHaveBeenCalledTimes(2);
+    } else {
+      expect(wrapper.get('[data-testid="farmingSubmissionUnknown"]').text()).toContain('assets.transactionStatusUnknownDetails');
+      expect(wrapper.find('.form-error').exists()).toBe(false);
+      if (hash) expect(wrapper.get('[data-testid="farmingSubmissionHash"]').text()).toBe(hash.slice(2));
+      else expect(wrapper.find('[data-testid="farmingSubmissionHash"]').exists()).toBe(false);
+      expect(button('farmingPage.confirm').attributes('disabled')).toBeDefined();
+      await button('farmingPage.confirm').trigger('click');
+      expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    }
+    wrapper.unmount();
+  });
+
   it('focuses the exact loaded position without selecting a similarly named pool', async () => {
+    route.query.position = 'second';
     const scroll = vi.fn();
     HTMLElement.prototype.scrollIntoView = scroll;
     const pool = (key: string, pooledTokens = '1') => ({

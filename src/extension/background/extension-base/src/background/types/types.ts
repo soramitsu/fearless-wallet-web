@@ -498,8 +498,7 @@ export type ActivityRequestSign<T extends BaseRequestSign> = T & {
   isMobile: boolean;
 };
 
-export interface ResponseMakeSwap {
-  errors?: Array<BasicTxError>;
+export interface ResponseMakeSwap extends BasicTxResponse {
   status: boolean;
 }
 

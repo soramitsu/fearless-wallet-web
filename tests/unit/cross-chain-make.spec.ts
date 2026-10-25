@@ -233,6 +233,26 @@ describe('makeCrossChain', () => {
     vi.useRealTimers();
   });
 
+  it('keeps the durable send record when the node cannot read dispatch events', async () => {
+    const { ledger, stored } = memoryLedger();
+    const h = harness({ send: async (callback) => {
+      callback(inBlock({ events: [], internalError: new Error('private event lookup failure') }));
+      return () => undefined;
+    } });
+    const response = await makeCrossChain(h.props(), h.state, ledger);
+
+    expect(response).toEqual({
+      status: false, outcome: 'unknown', transactionHash: HASH,
+      errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: 'cross_chain_dispatch_outcome_unavailable' }],
+    });
+    expect(h.callback).toHaveBeenLastCalledWith(response);
+    expect(stored()?.[crossChainSendRecordKey(ADDRESS, ROUTE)]?.hash).toBe(HASH);
+    mocks.signExtrinsic.mockClear();
+    await expect(makeCrossChain(h.props(), h.state, ledger)).rejects.toBeInstanceOf(CrossChainPreviousSendUnresolvedError);
+    expect(mocks.signExtrinsic).not.toHaveBeenCalled();
+    expect(h.extrinsic.send).toHaveBeenCalledOnce();
+  });
+
   it('blocks the same route after an unknown outcome until the chain resolves it', async () => {
     const { ledger, stored } = memoryLedger();
     const h = harness({

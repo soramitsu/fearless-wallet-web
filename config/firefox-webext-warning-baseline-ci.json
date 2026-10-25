@@ -16,7 +16,7 @@
     "chunks/background-vendor/subwallet-keyring-CmclzGJq.js": 1,
     "chunks/mountApp.js": 16
   },
-  "warningSetSha256": "7001ba5ca54d702cf66b41d060f8e672ccd96d89be572db9984e849b17c5ada8",
+  "warningSetSha256": "518c438e45555509a36c39bf7916d41b1cefe704034b87c62c33dcf965495ce0",
   "artifacts": [
     {
       "file": "chunks/_plugin-vue_export-helper.js",
@@ -44,7 +44,7 @@
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "6b35139484c31d979707030bcc5b6d203c5177cec7eda66fab73ca6cdc06ca15"
+      "sha256": "bba4e6920be569636eee5f93de0b10a392262c5358c8c21ec4bf84a4cb532811"
     }
   ]
 }

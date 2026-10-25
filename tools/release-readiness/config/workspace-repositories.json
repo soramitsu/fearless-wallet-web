@@ -12,7 +12,7 @@
       "path": "fearless-iOS",
       "repository": "soramitsu/fearless-iOS",
       "branch": "release/native-platform-ownership",
-      "commit": "aa5991324b76845359248085f88f5241613265c3",
+      "commit": "503464149b3c1ba6c6fee3605fb3bd461c6d85e5",
       "group": "core"
     },
     {
@@ -25,8 +25,8 @@
     {
       "path": "fearless-site-web",
       "repository": "soramitsu/fearless-site-web",
-      "branch": "release/standalone-site-ownership",
-      "commit": "716c18a64a0129c1cebe755e66d1ba5909b35abc",
+      "branch": "master",
+      "commit": "945f82bdf1ef538c60b8a1451335f1c87879df58",
       "group": "core"
     }
   ],

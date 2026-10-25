@@ -1,6 +1,6 @@
 # Fearless Wallet browser extension privacy notice
 
-Effective 22 October 2026, for browser extension release 3.0.7.
+Effective 25 October 2026, for browser extension release 4.2.0.
 
 This notice supplements the
 [Fearless Wallet Privacy Policy](https://fearlesswallet.io/privacy/) and describes

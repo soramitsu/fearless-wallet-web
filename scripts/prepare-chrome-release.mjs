@@ -236,6 +236,7 @@ async function prepareChromeRelease({ requireTag, runAutomatedGates, runUpgradeE
   }
 
   runYarn(yarnPath, 'test:smoke:chrome:production');
+  runYarn(yarnPath, 'test:smoke:polkaswap');
   // Every released build writes its profile and this source replaces it in place (tests/upgrade/README.md).
   if (runAutomatedGates && runUpgradeE2E) runYarn(yarnPath, 'test:upgrade:e2e');
   const sourceAfter = await auditReleaseSource({ requireTag, rootDir });

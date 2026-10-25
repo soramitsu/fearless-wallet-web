@@ -30,7 +30,7 @@
 - [ ] Pull request is linked to a relevant issue or task.
 - [ ] Tests are written for new features or fixes.
 - [ ] Documentation has been updated (if applicable).
-- [ ] Required review and CI checks pass before merging into `master`.
+- [ ] Required review and local validation pass before merging into `master`; hosted CI is not required.
 - [ ] No secrets, local env files, generated build output, or private release overlays are committed.
 - [ ] `./scripts/audit-public-artifacts.sh` passes when public artifacts or env defaults change.
 

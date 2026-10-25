@@ -11,7 +11,7 @@ Store listing: <https://chromewebstore.google.com/detail/fearless-wallet/nhlneho
 
 No `3.0.6` was ever published. These artifacts and refs were prepared for it
 and are **not release sources**. Never upload or tag an artifact built from
-them as they stand; `4.2.0` is built from `develop` plus the upgrade-safety
+them as they stand; `4.2.0` is built from the consolidated browser source plus the upgrade-safety
 work on top of it:
 
 - `dist/extension/chrome` in older checkouts (built 2026-09-05, manifest
@@ -113,10 +113,10 @@ held-back networks, unchanged keys, the guide and the reminder; a 2.6.3 profile
 sees nothing. It needs `CHROME_BIN` set to Chrome for Testing or Chromium
 (branded Chrome ignores `--load-extension`); run it before submitting.
 
-The wording lives in `exposureNotice` in every locale file and is a draft for
-the owner's sign-off: the empty `exposureNotice.draftAwaitingOwnerSignOff` key
-makes `yarn audit:chrome-release:source` (and so release preparation) fail
-until it is removed from all four files after the owner has approved the text.
+The wording lives in `exposureNotice` in every locale file. On 25 October 2026,
+the owner directed completion of the listed release blockers, including finalizing
+this notice. The four draft markers were removed without changing the notice
+wording. The release-source audit still rejects any future draft marker.
 
 Every `build:extension:zip` (and the Firefox ZIP build) also fails when the
 package contains `whitelist?address` or `tonscanner`, or names a network host
@@ -285,10 +285,10 @@ not reached the provenance gate.
 
 ## Human/external gates
 
-- Release commits reach `develop` only through reviewed PRs with green CI
-  (the `verify` job must actually start, not end in `startup_failure`); the
-  `3.0.6` preparation commits were direct, unreviewed pushes. Tag only the
-  reviewed merge commit. A ZIP built from an unreviewed dirty tree is not a
+- Release commits reach `master` through reviewed integration with recorded
+  local validation. The owner confirmed on 25 October 2026 that hosted CI is
+  not used; hosted workflow results are not prerequisites. Tag only the
+  reviewed release commit after its local checks pass. A ZIP built from an unreviewed dirty tree is not a
   releasable artifact, and the release audit rejects one whose recorded
   source commit differs from the release checkout.
 - Signed commits and tags need a real release signing key and are out of scope
@@ -301,7 +301,7 @@ not reached the provenance gate.
   `nhlnehondigmgckngjomcpcefcdplmgc`.
 - Review updated screenshots, detailed description, supported-ecosystem copy,
   and the release note above in the store dashboard.
-- Record the exact ZIP SHA-256, source commit, CI run, reviewers, rollback
+- Record the exact ZIP SHA-256, source commit, local validation receipts, reviewers, rollback
   owner, and rollout/monitoring owner before upload.
 
 Chrome requires the uploaded ZIP to contain `manifest.json` at its root and a

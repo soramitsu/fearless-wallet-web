@@ -50,27 +50,19 @@ BRANCH_FLOW_WORKFLOW="$WORKFLOW_DIR/branch-flow.yml"
 PR_TEMPLATE="$ROOT_DIR/.github/pull_request_template.md"
 CONTRIBUTING="$ROOT_DIR/CONTRIBUTING.md"
 
-if [[ ! -d "$WORKFLOW_DIR" ]]; then
-  record_failure ".github/workflows is missing"
-else
-  WORKFLOW_COUNT=0
+if [[ -d "$WORKFLOW_DIR" ]]; then
   while IFS= read -r -d '' workflow; do
-    WORKFLOW_COUNT=$((WORKFLOW_COUNT + 1))
     scan_for_retired_branches "$workflow"
   done < <(find "$WORKFLOW_DIR" -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
-
-  if [[ "$WORKFLOW_COUNT" -eq 0 ]]; then
-    record_failure "no GitHub workflow files found"
-  fi
 fi
 
-if require_file "$CI_WORKFLOW" "CI workflow"; then
+if [[ -f "$CI_WORKFLOW" ]]; then
   require_pattern "$CI_WORKFLOW" '(^|[[:space:]])push:' "CI workflow must run on pushes"
   require_pattern "$CI_WORKFLOW" '(^|[[:space:]])pull_request:' "CI workflow must run on pull requests"
   require_pattern "$CI_WORKFLOW" '(^|[^[:alnum:]_])master([^[:alnum:]_]|$)' "CI workflow must include master"
 fi
 
-if require_file "$BRANCH_FLOW_WORKFLOW" "Branch Flow workflow"; then
+if [[ -f "$BRANCH_FLOW_WORKFLOW" ]]; then
   require_pattern "$BRANCH_FLOW_WORKFLOW" '(^|[[:space:]])pull_request:' "Branch Flow workflow must run on pull requests"
   require_pattern "$BRANCH_FLOW_WORKFLOW" 'BASE_BRANCH' "Branch Flow workflow must inspect the PR base branch"
   require_pattern "$BRANCH_FLOW_WORKFLOW" 'HEAD_BRANCH' "Branch Flow workflow must inspect the PR head branch"
@@ -81,7 +73,7 @@ fi
 if require_file "$PR_TEMPLATE" "pull request template"; then
   scan_for_retired_branches "$PR_TEMPLATE"
   require_pattern "$PR_TEMPLATE" 'targets `master`' "PR template must require master"
-  require_pattern "$PR_TEMPLATE" 'Required review and CI checks' "PR template must require review and CI"
+  require_pattern "$PR_TEMPLATE" 'Required review and local validation' "PR template must require review and local validation"
 fi
 
 if require_file "$CONTRIBUTING" "CONTRIBUTING.md"; then

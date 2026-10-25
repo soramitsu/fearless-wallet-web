@@ -11,6 +11,7 @@ import {
 } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import { registerSolanaWalletStandard } from '@extension-base/page/FearlessWalletSolanaProvider';
+import { createSubstrateProvider } from './substrateProvider';
 import type { FWEvmProvider } from '@extension-base/page/types';
 import type { Message } from '@extension-base/types';
 import type { MessageTypes, TransportRequestMessage } from '@extension-base/background/types/types';
@@ -130,29 +131,11 @@ class FearlessWalletPlaceholder {
   }
 }
 
-if (!win.injectedWeb3[walletKey]) {
-  win.injectedWeb3[walletKey] = {
-    isPlaceholder: true,
-    version: APP_VERSION,
-    enable: async (origin) => {
-      await new Promise((resolve, reject) => {
-        let retry = 0;
-
-        const interval = setInterval(() => {
-          if (++retry > 30) {
-            clearInterval(interval);
-
-            reject(new Error('Fearless Wallet provider not found'));
-          }
-
-          if (!win.injectedWeb3[walletKey].isPlaceholder) resolve(clearInterval(interval));
-        }, 100);
-      });
-
-      return win.injectedWeb3[walletKey].enable(origin);
-    },
-  };
-}
+win.injectedWeb3[walletKey] = createSubstrateProvider({
+  version: APP_VERSION,
+  enable,
+  checkIfPhishing: redirectIfPhishing,
+});
 
 win.fearlessWallet = new Proxy(new FearlessWalletPlaceholder(), {
   get(obj, key) {
@@ -191,28 +174,11 @@ win.addEventListener('eip6963:requestProvider', announceProvider);
 announceProvider();
 
 class Page {
-  static async init() {
+  static init() {
     this.setMaxListeners();
     this.injectEvm();
     this.injectIroha();
     this.injectSolana();
-
-    const gotRedirected = await redirectIfPhishing();
-
-    if (gotRedirected) return;
-
-    this.injectSubstrate();
-  }
-
-  static injectSubstrate() {
-    const windowInject = window as Window & InjectedWindow;
-
-    windowInject.injectedWeb3 = windowInject.injectedWeb3 || {};
-
-    windowInject.injectedWeb3[walletKey] = {
-      enable: (origin: string) => enable(origin),
-      version: APP_VERSION,
-    };
   }
 
   static injectEvm(): void {

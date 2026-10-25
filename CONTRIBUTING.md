@@ -4,7 +4,8 @@
 
 `master` is the only long-lived branch and the default branch. All normal work
 starts from `master` and is submitted back to `master` through a reviewed pull
-request with green CI. Use short-lived `feature/*`, `fix/*`, `chore/*`,
+request with recorded local validation. Hosted CI is not used and is not a
+merge or release prerequisite. Use short-lived `feature/*`, `fix/*`, `chore/*`,
 `refactor/*`, `release/*`, or `hotfix/*` branches and delete them after merging.
 
 `master` is the releasable branch. Release tags must point at commits already
@@ -12,7 +13,8 @@ merged to `master`. Use squash merges for ordinary changes to keep the protected
 branch's linear history. Preserve historical release commits needed by upgrade
 tests and evidence checks; deleting an obsolete branch does not remove them.
 
-The `Branch Flow` GitHub Actions workflow accepts pull requests only to `master`.
+The local branch-flow audit requires pull requests to target `master`. Retained
+GitHub Actions workflows are optional references; their execution is not required.
 
 ## Toolchain
 

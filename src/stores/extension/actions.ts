@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { resolveActionCapabilities, failClosedActionCapabilities, isActionCapabilityConfigFresh, type MutableAction } from '@extension-base/services/action-capability-service';
 import type { HexString } from '@polkadot/util/types';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
+import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type { RequestsPayload } from './types';
 import type { ExtensionStore } from '.';
 import type {
@@ -46,9 +48,78 @@ import {
 import router from '@/router';
 import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
+import { LocalStorage } from '@/controllers/localStorageController';
+import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
+const featureStorage = new LocalStorage('feature_');
+// Holds the remote config itself (fiat, remembered explicit capability values,
+// discovery mode) so the background's veto-only policy can be re-applied. The
+// unversioned `action-capabilities` key stored defaulted `false` values that
+// cannot be told apart from vetoes, so it is ignored and left untouched.
+const FEATURES_CACHE_KEY = 'action-capabilities-v2';
+
+type CachedFeatures = {
+  fetchedAt?: number;
+  fiat?: Record<string, unknown>;
+  actions?: Partial<Record<MutableAction, boolean>>;
+  assetDiscoveryMode?: Features['assetDiscoveryMode'];
+};
+
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
+const readCachedFeatures = (): CachedFeatures | undefined => {
+  try {
+    return featureStorage.get<CachedFeatures>(FEATURES_CACHE_KEY).value;
+  } catch {
+    return undefined;
+  }
+};
+
+const toFeatures = (remote: CachedFeatures | undefined): Features => {
+  const fresh = typeof remote?.fetchedAt === 'number' && isActionCapabilityConfigFresh(remote.fetchedAt, Date.now());
+  const capabilities = fresh ? resolveActionCapabilities(remote) : failClosedActionCapabilities();
+
+  return {
+    fiat: { moonpay: false, ramp: false, ...(fresh ? record(remote?.fiat) : {}) },
+    actions: capabilities.actions,
+    assetDiscoveryMode: capabilities.assetDiscoveryMode,
+  };
+};
+
+// The request on screen, by its key and its queue. Looking a key up across queues could act on another request.
 export type ApprovePayload = {
   id: string;
+  kind: SigningRequestKind;
+};
+
+type SigningQueue = 'signRequests' | 'signEvmRequests' | 'signSolanaRequests';
+
+const SIGNING_QUEUES: Readonly<Record<SigningRequestKind, SigningQueue>> = Object.freeze({
+  substrate: 'signRequests',
+  evm: 'signEvmRequests',
+  solana: 'signSolanaRequests',
+});
+
+const removeSigningRequest = (store: ExtensionStore, queue: SigningQueue | undefined, id: string) => {
+  if (queue === 'signRequests') store.deleteRequest(queue, id);
+  else if (queue) {
+    for (const [key, request] of Object.entries(store[queue])) {
+      if (request.id === id) delete store[queue][key];
+    }
+  }
+};
+
+// Each ecosystem publishes independently. An empty update from one must not hide another's prompt.
+const routeSigningRequests = (store: ExtensionStore, incomingRequests = false) => {
+  const pending =
+    store.signRequests.length +
+    Object.keys(store.signEvmRequests).length +
+    Object.keys(store.signSolanaRequests).length;
+  const onSigningScreen = router.currentRoute.value.name === Components.Transaction;
+
+  if (!pending && onSigningScreen) void router.push({ name: Components.Wallet });
+  else if (incomingRequests && !onSigningScreen) void router.push({ name: Components.Transaction });
 };
 
 type Actions = {
@@ -72,17 +143,21 @@ type Actions = {
   subscribeSignRequests(this: ExtensionStore): Promise<SigningRequest[]>;
   subscribeEvmSignRequests(this: ExtensionStore): Promise<EvmRequests>;
   subscribeSolanaSignRequests(this: ExtensionStore): Promise<SolanaRequests>;
-  signCancel(this: ExtensionStore, id: string): Promise<void>;
-  approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
+  signCancel(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
+  approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<boolean>;
   subscribeExtensionRequests(this: ExtensionStore): Promise<boolean>;
   fetchTabStatus(this: ExtensionStore): Promise<void>;
-  signSignature(this: ExtensionStore, params: { id: string; payload: { signature: HexString } }): Promise<void>;
+  signSignature(
+    this: ExtensionStore,
+    params: { id: string; kind: SigningRequestKind; payload: { signature: HexString } }
+  ): Promise<void>;
   getAuthList(this: ExtensionStore): Promise<void>;
   fetchFeatures(this: ExtensionStore): Promise<void>;
 
   deleteRequest(
     this: ExtensionStore,
-    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests'
+    payload: 'authRequests' | 'metaRequests' | 'signRequests' | 'wcConnectRequests' | 'wcNotSupportedRequests',
+    id: string
   ): void;
   setRequest(this: ExtensionStore, props: RequestsPayload): void;
   setTabStatus(this: ExtensionStore, props: ActiveTabAuthorizeStatus): void;
@@ -111,8 +186,9 @@ export const actions: Actions = {
     if (type === 'wcSessions') this.wcSessions = requests;
   },
 
-  deleteRequest(type) {
-    this[type].shift();
+  deleteRequest(type, id) {
+    const index = this[type].findIndex((request) => request.id === id);
+    if (index >= 0) this[type].splice(index, 1);
   },
 
   setTabStatus(payload) {
@@ -143,7 +219,7 @@ export const actions: Actions = {
   async approveAuthRequests({ id, accounts }) {
     await approveAuthRequest(id, accounts);
 
-    this.deleteRequest('authRequests');
+    this.deleteRequest('authRequests', id);
 
     this.fetchTabStatus();
   },
@@ -151,7 +227,7 @@ export const actions: Actions = {
   async rejectAuthRequests(payload) {
     await deleteAuthRequest(payload);
 
-    this.deleteRequest('authRequests');
+    this.deleteRequest('authRequests', payload);
 
     this.fetchTabStatus();
   },
@@ -187,17 +263,19 @@ export const actions: Actions = {
   },
 
   async approveMetaRequests(payload) {
-    await approveMetaRequest(payload.id);
+    const { id } = payload;
+    await approveMetaRequest(id);
 
-    this.deleteRequest('metaRequests');
+    this.deleteRequest('metaRequests', id);
 
     this.fetchTabStatus();
   },
 
   async rejectMetaRequests(payload) {
-    await rejectMetaRequest(payload.id);
+    const { id } = payload;
+    await rejectMetaRequest(id);
 
-    this.deleteRequest('metaRequests');
+    this.deleteRequest('metaRequests', id);
     this.fetchTabStatus();
   },
 
@@ -205,15 +283,7 @@ export const actions: Actions = {
     const callback = (requests: SigningRequest[]) => {
       this.setRequest({ type: 'signRequests', requests });
 
-      if (router.currentRoute.value.name === 'Transaction' && requests.length === 0)
-        router.push({
-          name: Components.Wallet,
-        });
-
-      if (requests.length)
-        router.push({
-          name: Components.Transaction,
-        });
+      routeSigningRequests(this, requests.length > 0);
     };
 
     return subscribeSigningRequests(callback);
@@ -223,10 +293,7 @@ export const actions: Actions = {
     const callback = (requests: EvmRequests) => {
       this.setRequest({ type: 'signEvmRequests', requests });
 
-      const isRequestsExists = Object.keys(requests).length !== 0;
-
-      if (router.currentRoute.value.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
-      else if (isRequestsExists) router.push({ name: Components.Transaction });
+      routeSigningRequests(this, Object.keys(requests).length > 0);
     };
 
     return subscribeEvmSigningRequests(callback);
@@ -236,41 +303,40 @@ export const actions: Actions = {
     const callback = (requests: SolanaRequests) => {
       this.setRequest({ type: 'signSolanaRequests', requests });
 
-      const isRequestsExists = Object.keys(requests).length !== 0;
-
-      if (router.currentRoute.value.name === 'Transaction' && !isRequestsExists) router.push({ name: Components.Wallet });
-      else if (isRequestsExists) router.push({ name: Components.Transaction });
+      routeSigningRequests(this, Object.keys(requests).length > 0);
     };
 
     return subscribeSolanaSigningRequests(callback);
   },
 
-  async approveSign({ id }) {
-    await approveSign(id);
+  async approveSign({ id, kind }) {
+    const queue = SIGNING_QUEUES[kind];
+    const signed = await approveSign(id, kind);
 
-    this.deleteRequest('signRequests');
-
-    router.push({ name: Components.Wallet });
-
-    this.fetchTabStatus();
-  },
-
-  async signSignature({ payload, id }) {
-    await approveSignSignature(id, payload.signature);
-
-    this.deleteRequest('signRequests');
+    removeSigningRequest(this, queue, id);
+    routeSigningRequests(this);
 
     this.fetchTabStatus();
-
-    router.push({ name: Components.Wallet });
+    return signed;
   },
 
-  async signCancel(id) {
-    await cancelSignRequest(id);
+  async signSignature({ payload, id, kind }) {
+    const queue = SIGNING_QUEUES[kind];
+    await approveSignSignature(id, payload.signature, kind);
 
-    this.deleteRequest('signRequests');
+    removeSigningRequest(this, queue, id);
 
-    router.push({ name: Components.Wallet });
+    this.fetchTabStatus();
+
+    routeSigningRequests(this);
+  },
+
+  async signCancel({ id, kind }) {
+    const queue = SIGNING_QUEUES[kind];
+    await cancelSignRequest(id, kind);
+
+    removeSigningRequest(this, queue, id);
+    routeSigningRequests(this);
   },
 
   async subscribeExtensionRequests() {
@@ -295,16 +361,37 @@ export const actions: Actions = {
   },
 
   async fetchFeatures() {
-    const { data } = await axios.get<Features>(URLS.FEATURES);
+    const cached = readCachedFeatures();
+    this.setFeatures(toFeatures(cached));
+    // The Bitcoin and Solana send kill switch is veto-only and sticky.
+    const sendKillSwitch = useSendKillSwitchStore();
 
-    this.setFeatures(data);
+    sendKillSwitch.restoreRemembered();
+
+    try {
+      const { data } = await axios.get<unknown>(URLS.FEATURES);
+
+      sendKillSwitch.applyRemoteConfig(data);
+
+      const capabilities = resolveActionCapabilities(data, Date.now(), cached?.actions);
+      const remote: CachedFeatures = {
+        fetchedAt: Date.now(),
+        fiat: record(record(data).fiat),
+        actions: capabilities.remoteActions,
+        assetDiscoveryMode: capabilities.assetDiscoveryMode,
+      };
+
+      this.setFeatures(toFeatures(remote));
+      featureStorage.set(FEATURES_CACHE_KEY, remote);
+    } catch {
+      // Keep the cached remote config: a remembered veto stays in force offline,
+      // and stale permissions remain disabled until a successful fetch.
+    }
   },
 
   async subscribeWcConnectRequests() {
     const callback = (requests: WalletConnectSessionRequest[]) => {
       this.setRequest({ type: 'wcConnectRequests', requests });
-
-      console.info(requests, 'WC requests');
 
       if (requests.length) router.push({ name: Components.WalletConnectAuthConfirmation });
     };
@@ -346,8 +433,6 @@ export const actions: Actions = {
   async subscribeWcRequests() {
     const callback = (requests: WalletConnectTransactionRequest[]) => {
       this.setRequest({ type: 'wcRequests', requests });
-
-      console.info(requests, 'WC requests');
 
       if (requests.length) router.push({ name: Components.WalletConnectSignConfirmation });
     };

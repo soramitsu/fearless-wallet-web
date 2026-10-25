@@ -18,7 +18,7 @@
       :hideLastBorder="false"
       :hoverIconValue="true"
       :isHoverRow="true"
-      :key="count"
+      :key="type"
       iconValue="chevron-right"
       @click="openChainAccounts(type)"
     />
@@ -30,7 +30,7 @@ import { defineComponent } from 'vue';
 
 import { Components } from '@/router/routes';
 import { accountUpdateName } from '@/extension/messaging';
-import { getChainAccounts } from '@/helpers/accounts';
+import { getChainAccounts, getIrohaChainAccounts } from '@/helpers/accounts';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { type SelectedWallet } from '@/stores';
@@ -51,6 +51,8 @@ export default defineComponent({ name: 'AccountSetting' ,
       return getChainAccounts(this.networksStore.networks, this.accountsStore.selectedWallet);
     },
     relayChains() {
+      const irohaAccounts = getIrohaChainAccounts(this.networksStore.allNetworks, this.accountsStore.selectedWallet);
+      const irohaGroups = irohaAccounts.length ? [{ name: 'Iroha', count: String(irohaAccounts.length), type: 'iroha' }] : [];
       const counterEVM = this.networksStore.networks.filter(({ ecosystem }) =>
             isSameString(ecosystem, 'ethereum')
           ).length;
@@ -68,7 +70,7 @@ export default defineComponent({ name: 'AccountSetting' ,
                 count: counterTon.toString(),
                 type: 'ton',
               },
-            ];
+            ].concat(irohaGroups);
           }
 
           return [
@@ -82,7 +84,7 @@ export default defineComponent({ name: 'AccountSetting' ,
               count: counterSubstrate.toString(),
               type: 'substrate',
             },
-          ];
+          ].concat(irohaGroups);
     },
   },
   watch: {

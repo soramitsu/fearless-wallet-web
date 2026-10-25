@@ -1,13 +1,9 @@
 <template>
   <div class="logo">
     <template v-if="showLogo">
-      <img v-if="showWalletLogo && isTonWallet" :src="tonIcon" :style="styleCircle" />
+      <ExternalLogo v-if="showWalletLogo && isTonWallet" class="brand-badge" :name="tonIcon" :width="parseInt(sizeCircle, 10)" />
 
-      <div v-else :class="circleClasses" :style="styleCircle">
-        <div :class="circleBlurClasses">
-          <Icon icon="fw-logo" className="img" :style="sizeIconLogo" />
-        </div>
-      </div>
+      <img v-else class="brand-badge" :src="sunBadge" :style="styleCircle" alt="" />
     </template>
 
     <div v-if="text" class="text">{{ $t(text) }}</div>
@@ -19,15 +15,15 @@
 import { computed } from 'vue';
 import { useAccountsStore } from '@/stores/accounts';
 import { TON_ICON } from '@/consts/networks';
+import sunBadge from '@/assets/brand/winged-sun-badge-lines.svg';
+import ExternalLogo from '@/components/ExternalLogo.vue';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
-type TypeLogo = 'primary' | 'secondary';
 
 interface Props {
   text?: string;
   subtext?: string;
   size?: SizeLogo;
-  typeLogo?: TypeLogo;
   showLogo?: boolean;
   showWalletLogo?: boolean;
 }
@@ -38,7 +34,6 @@ const accountsStore = useAccountsStore();
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
-  typeLogo: 'primary',
   showLogo: true,
 });
 
@@ -49,41 +44,12 @@ const circleSizes = {
   big: '96px',
 };
 
-const iconSizes = {
-  mini: {
-    height: '18px',
-    width: '32px',
-  },
-  small: {
-    height: '21px',
-    width: '42px',
-  },
-  medium: {
-    height: '32px',
-    width: '64px',
-  },
-  big: {
-    height: '42px',
-    width: '85px',
-  },
-};
-
 const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
-
-const circleClasses = computed(() => ['circle', `circle-${props.typeLogo}`]);
-
-const circleBlurClasses = computed(() => [
-  'circle-blur',
-  {
-    'circle-blur-primary': props.typeLogo === 'primary',
-  },
-]);
 
 const sizeCircle = computed(() => circleSizes[props.size] ?? circleSizes.medium);
 
 const styleCircle = computed(() => ({ height: sizeCircle.value, width: sizeCircle.value }));
 
-const sizeIconLogo = computed(() => iconSizes[props.size] ?? iconSizes.medium);
 </script>
 
 <style lang="scss" scoped>
@@ -91,39 +57,17 @@ const sizeIconLogo = computed(() => iconSizes[props.size] ?? iconSizes.medium);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
 
-  .circle {
-    border-radius: 50%;
-    margin: 0 auto;
-  }
-
-  .circle-primary {
-    background-color: $pink-color;
-  }
-
-  .circle-secondary {
-    background-color: $secondary-background-color;
-  }
-
-  .circle-blur {
-    height: 100%;
-    width: 100%;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .circle-blur-primary {
-    border: $default-border;
-  }
-
-  .img {
+  .brand-badge {
+    display: block;
+    flex-shrink: 0;
     margin: 0 auto;
     user-select: none;
   }
 
   .text {
+    overflow-wrap: anywhere;
     margin-top: 17px;
     font-weight: 700;
     font-size: 3em;
@@ -131,6 +75,7 @@ const sizeIconLogo = computed(() => iconSizes[props.size] ?? iconSizes.medium);
   }
 
   .subtext {
+    overflow-wrap: anywhere;
     font-size: 1.125em;
     line-height: 150%;
     margin-top: 6px;

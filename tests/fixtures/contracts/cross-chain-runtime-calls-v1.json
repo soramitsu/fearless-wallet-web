@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-10-24",
+  "runtimes": [
+    {
+      "name": "Polkadot",
+      "chainId": "91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3",
+      "specName": "polkadot",
+      "specVersion": "2005000",
+      "transactionVersion": 26,
+      "readAtBlock": 33571298,
+      "calls": [
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedTeleportAssets",
+          "palletIndex": 99,
+          "callIndex": 9,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"]
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedReserveTransferAssets",
+          "palletIndex": 99,
+          "callIndex": 8,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"],
+          "status": "retired-asset-hub-migration"
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "reserveTransferAssets",
+          "palletIndex": 99,
+          "callIndex": 2,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem"],
+          "status": "retired-asset-hub-migration"
+        }
+      ],
+      "metadataBlake2": "0xd1ddc13427ec89cebc60382a7cf18cd5aa588cdfc8335415a5ab3d55a34c0519"
+    },
+    {
+      "name": "Kusama",
+      "chainId": "b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe",
+      "specName": "kusama",
+      "specVersion": "2003002",
+      "transactionVersion": 26,
+      "readAtBlock": 35800502,
+      "calls": [
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedTeleportAssets",
+          "palletIndex": 99,
+          "callIndex": 9,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"]
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "limitedReserveTransferAssets",
+          "palletIndex": 99,
+          "callIndex": 8,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem", "weightLimit"],
+          "status": "retired-asset-hub-migration"
+        },
+        {
+          "pallet": "xcmPallet",
+          "call": "reserveTransferAssets",
+          "palletIndex": 99,
+          "callIndex": 2,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem"],
+          "status": "retired-asset-hub-migration"
+        }
+      ],
+      "metadataBlake2": "0x00976daf0717eeebc666ffebb0327b7f01fd6b484cbc093d37557a95c167e370"
+    },
+    {
+      "name": "Acala",
+      "chainId": "fc41b9bd8ef8fe53d58c7ea67c794c7ec9a73daf05e6d54b14ff6342c99ba64c",
+      "specName": "acala",
+      "specVersion": "2370",
+      "transactionVersion": 3,
+      "readAtBlock": 12280659,
+      "calls": [
+        {
+          "pallet": "xTokens",
+          "call": "transfer",
+          "palletIndex": 54,
+          "callIndex": 0,
+          "args": ["currencyId", "amount", "dest", "destWeightLimit"]
+        }
+      ]
+    },
+    {
+      "name": "Astar",
+      "chainId": "9eb76c5184c4ab8679d2d5d819fdf90b9c001403e9e17da2e14b6d8aec4029c6",
+      "specName": "astar",
+      "specVersion": "2500",
+      "transactionVersion": 3,
+      "readAtBlock": 15206894,
+      "calls": [
+        {
+          "pallet": "polkadotXcm",
+          "call": "reserveTransferAssets",
+          "palletIndex": 51,
+          "callIndex": 2,
+          "args": ["dest", "beneficiary", "assets", "feeAssetItem"]
+        }
+      ]
+    },
+    {
+      "name": "SORA Mainnet",
+      "chainId": "7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5",
+      "specName": "sora-substrate",
+      "specVersion": "134",
+      "transactionVersion": 131,
+      "readAtBlock": 28176774,
+      "calls": [
+        {
+          "pallet": "bridgeProxy",
+          "call": "burn",
+          "palletIndex": 103,
+          "callIndex": 0,
+          "args": ["networkId", "assetId", "recipient", "amount"]
+        },
+        {
+          "pallet": "ethBridge",
+          "call": "transferToSidechain",
+          "palletIndex": 31,
+          "callIndex": 3,
+          "args": ["assetId", "to", "amount", "networkId"],
+          "status": "blocked-multi-transaction-claim"
+        }
+      ]
+    },
+    {
+      "name": "Liberland",
+      "chainId": "6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6",
+      "specName": "Liberland",
+      "specVersion": "34",
+      "transactionVersion": 2,
+      "readAtBlock": 18541237,
+      "calls": [
+        {
+          "pallet": "soraBridgeApp",
+          "call": "burn",
+          "palletIndex": 81,
+          "callIndex": 3,
+          "args": ["networkId", "assetId", "recipient", "amount"]
+        }
+      ],
+      "metadataBlake2": "0x6de3008a0a655521f24f741d3ba35907a6a56bfaed5e591f96db7f9b06a951d8"
+    }
+  ]
+}

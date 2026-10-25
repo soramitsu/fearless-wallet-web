@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "decision": "accepted within compiled CSS mathematical contract test scope",
+  "sourceCommit": "82554fc53c84be30c0cc668a5fbbfd56dc78328c",
+  "candidate": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-candidate-v1.json",
+    "sha256": "f77fa5498acb28b0fa4b8ff162dab00801033ceb784ab6cc669f7aaf63fd7765",
+    "bytes": 6470
+  },
+  "hashVerification": {
+    "source": 9,
+    "sourceGit": 9,
+    "evidence": 9,
+    "nestedSource": 1379,
+    "mismatches": []
+  },
+  "checks": {
+    "vitestTests": 20,
+    "newContractTests": 5,
+    "failed": 0,
+    "skipped": 0,
+    "fullTypecheck": "pass",
+    "scopedEslint": "pass for helper and spec",
+    "sourceCount": 1379,
+    "sourceDrift": [],
+    "pairGroups": 33,
+    "permittedPairs": 172,
+    "modeRows": 688,
+    "compositeVariants": 2996,
+    "cssSemanticsAndPrimaryGradient": "Compiled Sass declarations and high-contrast overrides equal shared tokens and are inputs to the evaluator"
+  },
+  "sourceAssessment": [
+    "Sass compiles actual generated stylesheet; standard and high-contrast blocks are parsed independently and compared with shared token values before contrast evaluation. Missing/unrecognized compiled values fail rather than using fallback for CSS-backed semantic roles.",
+    "Primary gradient direction and both endpoints are parsed from compiled CSS, compared to tokens and evaluated including exact opposing-channel midpoint.",
+    "Evaluator retains shared foreground/background expansion, unrounded thresholds, both alpha modes, placement restrictions, CVD and pure-white chrome backdrop. Negative tests mutate actual compiled standard opacity, high-contrast text and price colour.",
+    "Recipe-only aurora, status-container opacity and non-primary gradient definitions use JSON; this explicit scope does not establish runtime component usage or actual paint.",
+    "Test-only source: no product or wallet logic changes. Retained final test log reports20pass and typecheck/lint command exit0."
+  ],
+  "findings": [],
+  "limits": [
+    "No production source or CSS changes. Test-only gate; no new application archive or browser-pixel/device acceptance claimed.",
+    "CSS-declared semantic colours and primary gradient come from compiled Sass. Recipe-only sheen, aurora and status-container values come from the approved JSON; actual compositing/state/glyph placement remains separate.",
+    "The first scoped ESLint attempt rejected two unnecessary regex escapes; corrected final source passes. All original logs retained.",
+    "iOS XCTest port, actual complete screen coverage, raw-colour guardrail and broader release/device gates remain open."
+  ],
+  "method": "Read-only source review and independent source/Git/evidence/nested hash verification, plus raw test/run log review. No browser launch or production build claim."
+}

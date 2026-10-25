@@ -1,0 +1,402 @@
+{
+  "format": "fearless.extension.final-historical-upgrade-validation",
+  "version": 1,
+  "sourceCommit": "ba8798b7af5df6900b83137b4e692373557fa872",
+  "result": {
+    "scenarios": 12,
+    "checks": 482,
+    "failures": 0,
+    "report": {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-final-upgrade-matrix-v1/report.json",
+      "bytes": 10391,
+      "sha256": "acd96fceea2fae356c2c6ef626c3ca427109661aee4b456fafb733467634a6ad"
+    }
+  },
+  "artifactManifest": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-final-upgrade-artifact-v1.json",
+    "bytes": 48310,
+    "sha256": "65cc11c752a44b76e337589cd47abca742785f5c93edaac83ba2709bbb4b7f93"
+  },
+  "artifactFiles": 318,
+  "artifactDrift": [],
+  "legacyFilesVerifiedBeforeExecution": 503,
+  "historicalSources": [
+    {
+      "id": "3.0.5",
+      "commit": "600a64d51365a40de646925e4b591ca06ff63643",
+      "files": 99
+    },
+    {
+      "id": "3.0.6",
+      "commit": "a7c1f172c3fd99d8b26d5c0f317666af5e1b9978",
+      "files": 99
+    },
+    {
+      "id": "2.7.1",
+      "commit": "39541eb70604185f7f5e1d12a06429a88fd03b1c",
+      "files": 92
+    },
+    {
+      "id": "2.6.3",
+      "commit": "1d515acf0af16729dfdae6eac6a74ff06e6dac14",
+      "files": 88
+    },
+    {
+      "id": "2.0.1",
+      "commit": "8a96facdc5e59d027b736a1b8890f14208a076c2",
+      "files": 72
+    },
+    {
+      "id": "1.3.1",
+      "commit": "5a8b7f1016bcaa6d903244676ea08b9ae686eea7",
+      "files": 53
+    }
+  ],
+  "runInventory": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-final-upgrade-matrix-v1-inventory.json",
+    "bytes": 3091777,
+    "sha256": "b3adf60ed8787765200461a95ada420915089eeb0e4fad5415b0822db7513751"
+  },
+  "runFiles": 10476,
+  "sourcePins": [
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/package.json",
+      "bytes": 15230,
+      "sha256": "029107915cff7554a75a791906643d7e2febab9c499240ef8ab685a29bafbe0e"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/build-head.mjs",
+      "bytes": 2482,
+      "sha256": "2038c6089e07c925b005d467b9803c287a277671193ecd961f86c06a37956c99"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/build-legacy.mjs",
+      "bytes": 9608,
+      "sha256": "915730ccd3e977f10346a214afd89ed5014342c31091e40fadaffd865a5c638e"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/capture-263.mjs",
+      "bytes": 3450,
+      "sha256": "b510d056e16c892de3868394f76741813ed45d112a0d6b1d061a09cc78204c89"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/capture-ecdsa.mjs",
+      "bytes": 4802,
+      "sha256": "0a34e3aea1feb7c1b34367db315e4f18c6161c3baf67fc1ffe54b158237fdbc6"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/cdp.mjs",
+      "bytes": 2820,
+      "sha256": "26cb416583d6162c44f952ae06df0364491ce076099b05143e6aa5b60ccd2261"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/checks.mjs",
+      "bytes": 12732,
+      "sha256": "c0efa2c7d145599bf50886481b1eadedbf21710cffb83ea77318ad08a372ac74"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/chrome.mjs",
+      "bytes": 11448,
+      "sha256": "ab1fccd74ac0a674c62648f5cd1e888c26a3292f7a55f38a1ae36f6143a80228"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/cold-probe.mjs",
+      "bytes": 2384,
+      "sha256": "27d7f6d370238c6d706822cbc6b078a3016f4709ee16c8a067678a70105b441d"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/cold-starts.mjs",
+      "bytes": 1609,
+      "sha256": "f899fab5a4c12affc353298e3c2ab897487ea0d66b994bf8e10682e1e17f6e75"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/config.mjs",
+      "bytes": 1180,
+      "sha256": "2a0c343e621e4f90164544d40c07dbc079d14233fa939dbd3e9af733dc6340f6"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/dapp/index.html",
+      "bytes": 2241,
+      "sha256": "7e44c646ce7e22300dc1e3e2d4425ee0c410a1224ba651d951366d05331f17ed"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/dapp/server.mjs",
+      "bytes": 872,
+      "sha256": "7b0d5bdaf68f004ec1597006f8631c0b6ebf0f758bcb11705ffc6cd2aaccf539"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/drivers.mjs",
+      "bytes": 7247,
+      "sha256": "293a4ef573a64cd065608bfc1008b8a5e2169b237fb25ad679fe56c98f57d80e"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/head.mjs",
+      "bytes": 11874,
+      "sha256": "9355c3e99794beccb1142d3ca91c30ef09ee4a85646f0991492b9a6efc139ec0"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/install-cft.sh",
+      "bytes": 2019,
+      "sha256": "61489415d1a54291000ced6933cbfeb58605f714de608021a90cd9be1131d1e7"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/keyring-305.mjs",
+      "bytes": 5543,
+      "sha256": "8724b44658a60074d7e6e0e6c68b7c87737ee119202fe7c62004647e5b89b7c2"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/mock-services.mjs",
+      "bytes": 5240,
+      "sha256": "9fe41fd03d2e693a0a84020038bf9a332c4a14de64024168cb5e3871e577817e"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/pin-keyring-305.mjs",
+      "bytes": 3792,
+      "sha256": "c43d49fceb31c90b3734fb29ac8cc851793e46f2758c31b598ee0ac744dbee52"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/run.mjs",
+      "bytes": 5833,
+      "sha256": "c72db5e3f38aef7a46dbeb585bd6ac948bf01c991c3d22383b0aea8f5730d6f0"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/scenarios.mjs",
+      "bytes": 45225,
+      "sha256": "634f3c83b281076151a4a399163e0e4acba40a60fff70f6ffae4eb65a1026787"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/secrets.mjs",
+      "bytes": 2373,
+      "sha256": "a2d6c33f5b31d0af1082be4d2835bfc0f9d1b98eee61b19ef50e05b8c4fb346d"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/session.mjs",
+      "bytes": 4500,
+      "sha256": "db1953d5ab3ef84f8a66c6807bc8845b02cc152bc4cc32c66ded03d6bae11dac"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/assets/fonts/JetBrainsMono-Regular.woff",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/assets/fonts/Sora-VariableFont_wght.ttf",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/assets/fonts/soramitsu-icons-1.0.0.ttf",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/index.d.ts",
+      "bytes": 830,
+      "sha256": "581909247c6598c6cf14f9f90f4f350cdd81254786747700321f7d39781d1f04"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/index.js",
+      "bytes": 804,
+      "sha256": "3377452fb1e7340faea024d4a8c900ac159236cda3d9eda3019257034c1bf016"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/plugins/elementUI.d.ts",
+      "bytes": 192,
+      "sha256": "17b39067ec627dd45d5b4819ae6b321ffcc491b69b185dc90b532f97e3bc2c8a"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/plugins/elementUI.js",
+      "bytes": 174,
+      "sha256": "aadd84e40f2ad16e7351834f245f76d94ef8d29b4d7a6e3e493adaf2cfdbd07f"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/plugins/soramitsuUIStore.d.ts",
+      "bytes": 113,
+      "sha256": "ff498abdfc346b278d2f817ba90e38c650a42a579752b04dc5164b20f4deb483"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/plugins/soramitsuUIStore.js",
+      "bytes": 66,
+      "sha256": "c84a7ff6c06eab04574157c7e2b4f9a634be6df16a15697dd3ad183ffcee44cc"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/styles/index.scss",
+      "bytes": 54,
+      "sha256": "8198d7191ca56441d25145dbc73903bfa18b9e53c54549440775711f2e7a0881"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/types/DesignSystem.d.ts",
+      "bytes": 98,
+      "sha256": "b3654779449da18158ebbac19c60b2212abbcb1cbb5db0d52dd1296228f546bd"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/types/DesignSystem.js",
+      "bytes": 98,
+      "sha256": "380b85530a324f287cba2f91d290ba935e0ae92c4c0ab4fa5a57365d9ade6673"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/utils/index.d.ts",
+      "bytes": 105,
+      "sha256": "ae281df1e39b1e42b604a9d471946d8cf6344ee3de0bd09ad352661caf67d860"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/lib/utils/index.js",
+      "bytes": 58,
+      "sha256": "717fcdc0d11c433c7fe33b3a12c389add1b61b403d5ec77ce028d0c19a197ac1"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/stubs/soramitsu-js-ui/package.json",
+      "bytes": 351,
+      "sha256": "140d4aa4038667a0d0b6fd8b50b3328d4b2d5985e83d1bd1cd86030a813d48dd"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/test-cdp.mjs",
+      "bytes": 2940,
+      "sha256": "a6038a1012b7e10b92d2abf60b4265efb20bf23697cd2317e295aac3e742900e"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/test-cold-probe.mjs",
+      "bytes": 3429,
+      "sha256": "1f8a914a979987f1d0ceb69f562086300cd82178d9088060ecb1b96c0da42d88"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/scripts/upgrade-e2e/upgrade-ecdsa.mjs",
+      "bytes": 13476,
+      "sha256": "ad3a140b78fd43428fcb70804f909bef5f2041834eb39be42460e2306096b257"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/tests/upgrade/legacy-builds.json",
+      "bytes": 2272,
+      "sha256": "f935a4ba3b31c76f39df010582dab44f6837bba829d50c8756eb594e153e2f34"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/yarn.lock",
+      "bytes": 438269,
+      "sha256": "5ebbcf24f4fab11fb06ac3097c7d2ff88bc6c7e892c655fcc8001a17fe87344b"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S1",
+      "title": "2.6.3 per-account passwords (created, 24 words, two JSON files, raw seed, standalone Ethereum JSON) \u2192 4.2.0",
+      "ok": true,
+      "passed": 49,
+      "failed": 0,
+      "notes": [],
+      "seconds": 163
+    },
+    {
+      "id": "S2",
+      "title": "2.6.3 \u2192 3.0.5 (master password, partial migration, TON) \u2192 4.2.0",
+      "ok": true,
+      "passed": 34,
+      "failed": 0,
+      "notes": [],
+      "seconds": 91
+    },
+    {
+      "id": "S3",
+      "title": "3.0.5 fresh profile (master password, every wallet kind, three TON wallets) \u2192 4.2.0",
+      "ok": true,
+      "passed": 37,
+      "failed": 0,
+      "notes": [],
+      "seconds": 138
+    },
+    {
+      "id": "S4",
+      "title": "S3 + master password changed in 3.0.5, then one more TON wallet (mixed TON state) \u2192 4.2.0",
+      "ok": true,
+      "passed": 54,
+      "failed": 0,
+      "notes": [],
+      "seconds": 91
+    },
+    {
+      "id": "S5",
+      "title": "2.7.1, the first master-password release \u2192 4.2.0",
+      "ok": true,
+      "passed": 24,
+      "failed": 0,
+      "notes": [],
+      "seconds": 77
+    },
+    {
+      "id": "S6",
+      "title": "3.0.5 with TON wallets, Reset wallet, a new password and a new wallet (orphan TON phrases) \u2192 4.2.0",
+      "ok": true,
+      "passed": 31,
+      "failed": 0,
+      "notes": [],
+      "seconds": 70
+    },
+    {
+      "id": "S7",
+      "title": "1.3.1 per-account passwords (service worker built from the 1.3.1 lockfile, UI kit stubbed) \u2192 4.2.0",
+      "ok": true,
+      "passed": 40,
+      "failed": 0,
+      "notes": [],
+      "seconds": 102
+    },
+    {
+      "id": "S7b",
+      "title": "2.0.1 per-account passwords \u2192 4.2.0",
+      "ok": true,
+      "passed": 49,
+      "failed": 0,
+      "notes": [],
+      "seconds": 106
+    },
+    {
+      "id": "S8",
+      "title": "3.0.5 with a standalone Ethereum account first in storage and no current account \u2192 4.2.0",
+      "ok": true,
+      "passed": 18,
+      "failed": 0,
+      "notes": [],
+      "seconds": 125
+    },
+    {
+      "id": "R1",
+      "title": "Rollback: 3.0.5 profile \u2192 4.2.0 (TON recovery, new wallets, JSON import, password change, deletion) \u2192 hotfix 3.0.6 \u2192 4.2.0",
+      "ok": true,
+      "passed": 98,
+      "failed": 0,
+      "notes": [],
+      "seconds": 89
+    },
+    {
+      "id": "ECDSA-2.6.3",
+      "title": "ECDSA Substrate accounts written by 2.6.3 (two record keys, WK-8) \u2192 4.2.0 and across restarts",
+      "ok": true,
+      "passed": 21,
+      "failed": 0,
+      "notes": [],
+      "seconds": 25
+    },
+    {
+      "id": "ECDSA-3.0.6",
+      "title": "ECDSA Substrate accounts written by 3.0.6 (two record keys, WK-8) \u2192 4.2.0 and across restarts",
+      "ok": true,
+      "passed": 27,
+      "failed": 0,
+      "notes": [],
+      "seconds": 32
+    }
+  ],
+  "runtime": {
+    "chrome": "Google Chrome for Testing 147.0.7727.15",
+    "node": "v24.19.0",
+    "startedAt": "2026-10-13T21:08:23.074Z",
+    "finishedAt": "2026-10-13T21:26:50.870Z"
+  },
+  "scope": [
+    "Production-mode test-key/OAuth artifact; exact sourceba8798, not signed store builds.",
+    "Clean historical3.0.5 source600a64d5 only; vulnerable published129807 is never executed.",
+    "DNS denial plus explicit local stand-ins. TON sendBoc is locally recorded and never forwarded; no public transaction.",
+    "1.3.1 background/keyring is historical; UI-kit stub and lockfile delta are disclosed.",
+    "Legacy and candidate source/artifact pins verified; all12 scenario files contain482 passing actual assertions.",
+    "Physical/store-signed upgrades, Firefox signed upgrades, Linux CI and full route completeness remain separate gates."
+  ]
+}

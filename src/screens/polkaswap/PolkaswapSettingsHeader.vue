@@ -1,28 +1,22 @@
 <template>
   <div class="header-content">
-    <div :class="classesBackIcon" data-testid="backBtn" @click="$emit('back')">
-      <Icon v-show="showBackIcon" icon="chevron-left" class="img" />
-    </div>
+    <button v-if="showBackIcon" type="button" :class="classesBackIcon" :aria-label="$t('ux.back')" data-testid="backBtn" @click="$emit('back')">
+      <Icon icon="chevron-left" class="img" aria-hidden="true" />
+    </button>
+    <span v-else class="back-placeholder" aria-hidden="true"></span>
 
     <div class="header" data-testid="header">
       {{ header }}
-
-      <Icon v-if="showPolkaswapIcon" icon="polkaswap" class="polkaswap" />
+      <Icon v-if="showPolkaswapIcon" icon="polkaswap" class="polkaswap" aria-hidden="true" />
     </div>
 
-    <template>
-      <Icon v-if="showCloseIcon" icon="close" class="img close" data-testid="closeForm" @click="$emit('closeForm')" />
-
-      <div v-else :class="classesSettings" @click="$emit('toggleSettingsVisibility')">
-        <template>
-          <div class="settings-text" data-testid="settingText">{{ marketType }}</div>
-
-          <div class="settings-circle" data-testid="settingCircle">
-            <Icon icon="settings" class="img" />
-          </div>
-        </template>
-      </div>
-    </template>
+    <button v-if="showCloseIcon" type="button" class="close" :aria-label="$t('common.close')" data-testid="closeForm" @click="$emit('closeForm')">
+      <Icon icon="close" class="img" aria-hidden="true" />
+    </button>
+    <button v-else type="button" :class="classesSettings" :disabled="settingHide" :aria-label="$t('primaryMenu.settings')" :aria-expanded="showSettings" @click="$emit('toggleSettingsVisibility')">
+      <span class="settings-text" data-testid="settingText">{{ marketType }}</span>
+      <span class="settings-circle" data-testid="settingCircle"><Icon icon="settings" class="img" aria-hidden="true" /></span>
+    </button>
   </div>
 </template>
 <script lang="ts">
@@ -149,5 +143,25 @@ export default defineComponent({ name: 'PolkaswapSettingsHeader' ,
 .img {
   height: 20px;
   width: 20px;
+}
+</style>
+
+<style lang="scss" scoped>
+.header-content {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 64px;
+  height: auto;
+  box-sizing: border-box;
+}
+.header { justify-content: center; flex-wrap: wrap; gap: 4px; font-size: 1.125rem; }
+button { font: inherit; color: inherit; border: 0; padding: 0; min-height: 44px; min-width: 44px; }
+.back-default, .close { width: 44px; height: 44px; background: transparent; }
+.back-placeholder { width: 44px; }
+button:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 620px) {
+  .settings { min-width: 44px; }
+  .settings .settings-text { display: none; }
 }
 </style>

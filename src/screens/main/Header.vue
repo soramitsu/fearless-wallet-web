@@ -1,6 +1,6 @@
 <template>
   <header class="header">
-    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+    <div class="header-part header-part-left" :ref="walletNameRef">
       <div class="logo-container">
         <CircleButton
           v-if="showBackIcon"
@@ -14,21 +14,21 @@
       </div>
 
       <div class="wallet-name">
-        <div class="name" @click.stop="toggleSelectWalletPopupVisible">
+        <button type="button" class="name" :aria-label="`${$t('header.walletManagement')}: ${name}`" :aria-expanded="syncedShowSelectWalletPopup" @click.stop="toggleSelectWalletPopupVisible">
           <span class="wallet-title" data-testid="walletNameHeader">{{ name }}</span>
           <Icon v-if="isMobile" icon="mobile" className="mobile" />
           <Rotate :isActive="syncedShowSelectWalletPopup">
-            <Icon icon="down" />
+            <Icon icon="down" width="12px" height="10px" />
           </Rotate>
-        </div>
+        </button>
 
-        <div v-if="isAddressExists" class="copy-address" data-testid="copyAddress" @click.stop="copyAddress">
+        <button v-if="isAddressExists" type="button" class="copy-address" :aria-label="$t('common.copyToClipboard')" data-testid="copyAddress" @click.stop="copyAddress">
           <span>{{ cutAddress }}</span>
 
           <Icon icon="copy" className="copy" />
 
           <Tooltip text="common.copied" target=".copy-address" placement="top-end" trigger="click" />
-        </div>
+        </button>
       </div>
 
       <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
@@ -73,7 +73,7 @@
       <Tooltip :text="accountsStore.selectedNetwork" target=".network-management" placement="top" />
 
       <CircleButton
-        :ref="settingsNameRef"
+        :class="{ 'settings-highlighted': highlightSettingsIcon }"
         iconName="settings"
         size="big"
         backgroundColor="none"
@@ -108,6 +108,10 @@ import { IS_POPUP } from '@/consts/globalClient';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
+import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
+import { registerDashboardMessages } from '@/portfolio/dashboard/locales';
+import { effectiveScope } from '@/portfolio/dashboard/preferences';
 
 export default defineComponent({ name: 'Header',
   components: {
@@ -120,14 +124,17 @@ export default defineComponent({ name: 'Header',
     showSelectWalletPopup: { type: Boolean },
   },
   data() {
+    // Before the first render, so the header never shows a key: the dashboard's strings are not in translation.json.
+    if (PORTFOLIO_DASHBOARD_ENABLED) registerDashboardMessages();
+
     return {
       walletNameRef: 'walletName',
-      settingsNameRef: 'settingsName',
       isPopup: IS_POPUP,
       allNetworksIcon: 'all-networks',
       networksStore: useNetworksStore(),
       extensionStore: useExtensionStore(),
       accountsStore: useAccountsStore(),
+      dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
       showConnectionPopup: false,
       showSelectNetworkPopup: false,
     };
@@ -136,9 +143,22 @@ export default defineComponent({ name: 'Header',
     showBackIcon() {
       const route = this.$route.name;
 
-          return route === Components.AssetNetworks || route === Components.AssetHistory;
+          return route === Components.AssetNetworks || route === Components.AssetHistory || route === Components.TokenLocations;
+    },
+    // Behind a build flag (src/portfolio/dashboard): on the portfolio, All wallets is named instead of one wallet.
+    showsAllWallets(): boolean {
+      if (!this.dashboardStore) return false;
+
+      const route = this.$route.name;
+
+      return (
+        (route === Components.Wallet || route === Components.Currencies || route === Components.Nfts) &&
+        effectiveScope(this.dashboardStore.preferences.scope, this.accountsStore.accounts.length) === 'all'
+      );
     },
     isAddressExists() {
+      if (this.showsAllWallets) return false;
+
       if (this.accountsStore.selectedWallet.isTon) return true;
 
           if (this.isGroup) return this.routeName === Components.AssetHistory;
@@ -209,7 +229,7 @@ export default defineComponent({ name: 'Header',
           return BaseApi.formatAddress(this.accountsStore.selectedWallet, selectedNetwork);
     },
     name() {
-      return this.accountsStore.selectedWallet.name;
+      return this.showsAllWallets ? this.$t('portfolioDashboard.allWallets') : this.accountsStore.selectedWallet.name;
     },
     statusConnectedClasses() {
       return !this.extensionStore.tabStatus || !this.extensionStore.tabStatus.isAuthorize
@@ -235,10 +255,9 @@ export default defineComponent({ name: 'Header',
   },
   watch: {
     "syncedShowSelectWalletPopup": 'updateZIndexSelectWalletPopup',
-    "highlightSettingsIcon": 'updateZIndexShowSettings',
   },
   async mounted() {
-    this.extensionStore.fetchTabStatus();
+    if (this.isPopup) await this.extensionStore.fetchTabStatus();
   },
   methods: {
     copyAddress() {
@@ -251,11 +270,6 @@ export default defineComponent({ name: 'Header',
       const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
 
           targetElement.style.zIndex = this.syncedShowSelectWalletPopup ? '200' : '0';
-    },
-    updateZIndexShowSettings(value: boolean) {
-      const targetElement = (this.$refs[this.settingsNameRef] as { $el: HTMLElement }).$el;
-
-          targetElement.style.zIndex = value ? '300' : '0';
     },
     toggleConnectionPopup() {
       if (!this.extensionStore.tabStatus) return;
@@ -280,6 +294,25 @@ export default defineComponent({ name: 'Header',
 </script>
 
 <style lang="scss" scoped>
+.settings-highlighted :deep(button) {
+  background: palette($secondary-background-color, var(--fw-select-fill));
+}
+</style>
+
+<style lang="scss" scoped>
+.name,
+.copy-address {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -408,6 +441,29 @@ export default defineComponent({ name: 'Header',
   .mobile {
     width: 18px;
     height: 18px;
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+@media (max-width: 500px) {
+  .header {
+    height: auto;
+    min-height: 104px;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .header-part {
+      flex: 0 0 100%;
+      min-width: 0;
+      width: 100%;
+    }
+    .header-part-left {
+      .logo-container { flex: 0 0 40px; margin: 0; }
+      .wallet-name { min-width: 0; flex: 1; }
+      .name { max-width: 100%; font-size: 1.125rem; }
+    }
+    .header-part-right { justify-content: flex-end; }
   }
 }
 </style>

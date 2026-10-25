@@ -50,6 +50,7 @@ const width = computed(() => widthParams[props.size]);
   display: flex;
   align-items: center;
   justify-content: center;
+  @include fw-no-glow-when-reduced;
 }
 
 .size-small {

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-24",
+  "status": "Local pinned Firefox runtime smoke unresolved; leave release runtime gate to the existing pinned Linux CI job.",
+  "browser": {
+    "version": "152.0.4",
+    "architecture": "ARM64",
+    "binary": "output/firefox-3.0.9-release/toolchain/Firefox-152.0.4.app/Contents/MacOS/firefox",
+    "host": "macOS 27.0.1 (26A434)",
+    "integrity": "--version reports Mozilla Firefox 152.0.4; codesign --verify --deep --strict succeeds."
+  },
+  "experiments": [
+    {
+      "mode": "Production add-on through web-ext, fresh temporary profile, headless",
+      "result": "RDP never listens within the 30-second smoke deadline, before add-on installation."
+    },
+    {
+      "mode": "Direct browser launch, fresh empty profile, about:blank, no extension or web-ext, headless",
+      "result": "RDP never listens within 35 seconds; main process consumes about one CPU in XUL startup."
+    },
+    {
+      "mode": "Direct browser launch, fresh empty profile, about:blank, no extension or web-ext, windowed",
+      "result": "RDP never listens within 35 seconds."
+    }
+  ],
+  "diagnostics": [
+    "Every startup emits sandbox_extension_issue_file_to_process failed for plugin-container.app: 1 (Operation not permitted).",
+    "Headless startup also reports RenderCompositorSWGL failed mapping default framebuffer.",
+    "Windowed startup reports Firefox GPU Helper LaunchServices notification failure and com.apple.hiservices-xpcservice connection errors."
+  ],
+  "conclusion": "The failure reproduces without the extension and without web-ext. It is a browser/host startup problem, not evidence of extension execution failure; the precise OS or browser root cause remains undetermined.",
+  "preservedGuards": [
+    "Pinned browser version unchanged.",
+    "Browser sandbox and extension CSP unchanged.",
+    "No timeout bypass or runtime smoke waiver.",
+    "Only owned diagnostic browser process groups were terminated; no diagnostic browser processes remained."
+  ],
+  "evidence": [
+    {
+      "path": ".tmp/final-firefox-smoke-pinned.log",
+      "sha256": "2041c562737edc7e9daaa2089656ccf5795114b7580b9a655b0933d078be053b"
+    },
+    {
+      "path": ".tmp/pinned-firefox-webext-startup.log",
+      "sha256": "10375e5a9872920d9f6955601f7c8712568bb0e5d9ba1aa62dfa08261621b614"
+    },
+    {
+      "path": ".tmp/pinned-firefox-empty-startup.log",
+      "sha256": "b3225fb791e96ebf409310330ce299f83769d9795f45972b9e4122777de02ac0"
+    },
+    {
+      "path": ".tmp/pinned-firefox-window-startup.log",
+      "sha256": "ad74af6049316e7be496d313febbd8cd9fbe570e49e44bd1d0c991e6b50e6484"
+    },
+    {
+      "path": ".tmp/pinned-firefox-startup-sample.txt",
+      "sha256": "04ad218a88f6d7ee7bc53a5b52060a73266bb3653774d8b43dd6634c0bc4901a"
+    }
+  ]
+}

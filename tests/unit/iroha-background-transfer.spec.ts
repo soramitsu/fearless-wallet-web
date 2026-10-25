@@ -2,27 +2,34 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  computeIrohaTransferFee,
   estimateIrohaTransferFee,
   getIrohaNetworkKey,
   isIrohaTransferEnabled,
   makeIrohaTransfer,
   normalizeIrohaAssetDefinitionId,
+  normalizeIrohaToriiBaseUrl,
   normalizeIrohaTransferAmount,
   prepareIrohaTransfer,
-  resolveIrohaTransferSource,
   type IrohaTransferCodec,
+  type IrohaTransferCodecInput,
+  type IrohaTransferFrameSizer,
 } from '@extension-base/api/iroha/transfer';
 import {
-  createIrohaNexusSdkTransferCodec,
-  type NexusTransactionCodec,
-} from '@extension-base/api/iroha/nexusSdkTransferCodec';
+  browserIrohaTransferCodec,
+  getIrohaTransferFrameBytes,
+  requireProductionIrohaTransferCodec,
+} from '@extension-base/api/iroha/productionTransferCodec';
+import {
+  IrohaToriiWalletClient,
+  IrohaTransactionRejectedError,
+} from '@extension-base/services/iroha-torii-service';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
+import { IROHA_TRANSACTION_WIRE, UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
 
-const fixture = JSON.parse(
-  readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')
-) as {
+const fixture = JSON.parse(readFileSync(resolve(__dirname, '../../docs/universal-wallet-v2-vectors.json'), 'utf8')) as {
   vectors: Array<{
     mnemonic: string;
     expected: {
@@ -36,13 +43,32 @@ const fixture = JSON.parse(
 
 const MNEMONIC = fixture.vectors[0].mnemonic;
 const TAIRA_ACCOUNT_ID = fixture.vectors[0].expected.iroha.taira.i105;
-const NEXUS_ACCOUNT_ID = fixture.vectors[0].expected.iroha.nexus.i105;
 const IROHA_PUBLIC_KEY = fixture.vectors[0].expected.iroha.taira.publicKeyHex;
 const TAIRA_COUNTERPARTY = fixture.vectors[1].expected.iroha.taira.i105;
 const NEXUS_COUNTERPARTY = fixture.vectors[1].expected.iroha.nexus.i105;
+const OTHER_PUBLIC_KEY = fixture.vectors[1].expected.iroha.taira.publicKeyHex;
 const STORED_ACCOUNT = 'stored-substrate-account';
-const HASH = '11'.repeat(32);
-const PAYLOAD_HASH = '22'.repeat(32);
+const TAIRA_CHAIN_ID = 'fc56984b-2be7-431d-840e-21514d1883f0';
+const TAIRA_XOR_ASSET_ID = '6TEAJqbb8oEPmLncoNiMRbLEK6tw';
+const KINA_ASSET_ID = '5HFTUK41MFWnFdeHo5XySHC7PQun';
+const NETWORK_ID = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.networkId;
+const TAIRA_FEES = {
+  base_fee: '0',
+  fee_asset_id: TAIRA_XOR_ASSET_ID,
+  per_byte_fee: '0',
+  per_gas_unit_fee: '0.00005',
+  per_instruction_fee: '0.001',
+};
+
+type ToriiScript = {
+  balances?: ReadonlyArray<{ asset: string; quantity: string }>;
+  capabilities?: Record<string, unknown>;
+  definitions?: Record<string, number>;
+  fees?: Record<string, unknown>;
+  genesis?: string;
+  statuses?: Array<Record<string, unknown> | 'missing'>;
+  submit?: (body: Uint8Array) => Response;
+};
 
 function irohaNetwork(
   name: string,
@@ -73,19 +99,15 @@ function irohaNetwork(
 }
 
 function createState({
-  irohaAddress = TAIRA_ACCOUNT_ID,
   publicKeyHex = IROHA_PUBLIC_KEY,
   seed = MNEMONIC,
-  walletEcosystem = WalletEcosystem.Iroha,
   networks = {
-    Taira: irohaNetwork('Taira', 'iroha3-taira', { chainDiscriminant: 369 }),
+    Taira: irohaNetwork('Taira', TAIRA_CHAIN_ID, { chainDiscriminant: 369 }),
     Nexus: irohaNetwork('Nexus', 'sora:nexus:global', { chainDiscriminant: 753 }),
   },
 }: {
-  irohaAddress?: string;
   publicKeyHex?: string;
   seed?: string;
-  walletEcosystem?: WalletEcosystem;
   networks?: Record<string, NetworkJson>;
 } = {}) {
   return {
@@ -98,9 +120,9 @@ function createState({
         {
           address: STORED_ACCOUNT,
           meta: {
-            irohaAddress,
+            irohaAddress: TAIRA_ACCOUNT_ID,
             irohaPublicKeyHex: publicKeyHex,
-            walletEcosystem,
+            walletEcosystem: WalletEcosystem.Iroha,
           },
         },
       ]),
@@ -113,392 +135,367 @@ function createState({
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json; charset=utf-8' },
     status,
   });
 }
 
-function transferParams(state = createState()) {
+function scriptedTorii(script: ToriiScript = {}) {
+  const submitted: Uint8Array[] = [];
+  const statusHashes: string[] = [];
+  const statuses = [...(script.statuses ?? [])];
+  const fetchFn = vi.fn(async (input: string | URL, init: RequestInit = {}) => {
+    const url = new URL(input.toString());
+    const path = decodeURIComponent(url.pathname);
+
+    if (path === '/v1/explorer/blocks/1') {
+      return jsonResponse({ hash: script.genesis ?? NETWORK_ID, height: 1, prev_block_hash: null });
+    }
+    if (path === '/v1/node/capabilities') {
+      return jsonResponse(
+        script.capabilities ?? {
+          abi_version: 1,
+          data_model_version: IROHA_TRANSACTION_WIRE.dataModelVersion,
+          signed_transaction_schema_hash_hex: IROHA_TRANSACTION_WIRE.signedTransactionSchemaHash,
+        }
+      );
+    }
+    if (path === '/v1/parameters') {
+      return jsonResponse({ custom: { root_fees_v1: { id: 'root_fees_v1', payload: script.fees ?? TAIRA_FEES } } });
+    }
+    if (path.startsWith('/v1/assets/definitions/')) {
+      const id = path.slice('/v1/assets/definitions/'.length);
+      const scale = (script.definitions ?? { [TAIRA_XOR_ASSET_ID]: 9, [KINA_ASSET_ID]: 2 })[id];
+
+      return scale === undefined
+        ? jsonResponse({ code: 'not_found', message: 'unknown asset' }, 404)
+        : jsonResponse({ id, spec: { scale } });
+    }
+    if (path === `/v1/accounts/${TAIRA_ACCOUNT_ID}/assets`) {
+      const balances = script.balances ?? [{ asset: TAIRA_XOR_ASSET_ID, quantity: '100' }];
+
+      return jsonResponse({
+        items: balances.map(({ asset, quantity }) => ({ account_id: TAIRA_ACCOUNT_ID, asset, quantity, scope: 'global' })),
+        next_cursor: null,
+      });
+    }
+    if (path === '/v1/pipeline/transactions' && init.method === 'POST') {
+      const body = new Uint8Array(init.body as Uint8Array);
+
+      submitted.push(body);
+
+      return script.submit ? script.submit(body) : jsonResponse({ payload: {} }, 202);
+    }
+    if (path === '/v1/pipeline/transactions/status') {
+      const hash = url.searchParams.get('hash') ?? '';
+      const next = statuses.shift() ?? { kind: 'Applied', block_height: 7 };
+
+      statusHashes.push(hash);
+      if (next === 'missing') {
+        return jsonResponse({ code: 'pipeline_transaction_status_not_found', message: 'none' }, 404);
+      }
+
+      return jsonResponse({ hash, scope: 'global', resolved_from: 'state', status: next });
+    }
+
+    throw new Error(`unexpected ${init.method ?? 'GET'} ${path}`);
+  });
+  const client = new IrohaToriiWalletClient({ baseUrl: 'https://taira.sora.org', fetchFn, network: 'taira' });
+
+  return { client, fetchFn, statusHashes, submitted };
+}
+
+function transferParams(state = createState(), overrides: Record<string, unknown> = {}) {
   return {
     amount: '12.34',
-    assetId: 'xor#sora',
+    approvedMaxFee: '0.01',
+    assetId: TAIRA_XOR_ASSET_ID,
+    callback: vi.fn(),
     from: TAIRA_ACCOUNT_ID,
     networkKey: 'Taira',
     state,
     to: TAIRA_COUNTERPARTY,
+    ...overrides,
   };
 }
 
-describe('background Iroha transfer adapter', () => {
+describe('background Iroha transfer', () => {
   const originalEnableIrohaTransfers = process.env.VUE_APP_ENABLE_IROHA_TRANSFERS;
 
-  afterEach(() => {
-    if (originalEnableIrohaTransfers === undefined) {
-      delete process.env.VUE_APP_ENABLE_IROHA_TRANSFERS;
-    } else {
-      process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = originalEnableIrohaTransfers;
-    }
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-
-  it('normalizes transfer inputs and resolves the stored Iroha source account', async () => {
+  beforeEach(() => {
     process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
-    const state = createState();
-    const prepared = prepareIrohaTransfer(transferParams(state));
-
-    expect(isIrohaTransferEnabled()).toBe(true);
-    expect(await estimateIrohaTransferFee(transferParams(state))).toBe('0');
-    expect(prepared).toMatchObject({
-      amount: '12.34',
-      assetDefinitionId: 'xor#sora',
-      chainId: 'iroha3-taira',
-      destinationAccountId: TAIRA_COUNTERPARTY,
-      network: 'taira',
-      sourceAssetId: `xor#sora#${TAIRA_ACCOUNT_ID}`,
-      toriiBaseUrl: 'https://taira.sora.org',
-    });
-    expect(prepared.source).toMatchObject({
-      accountAddress: STORED_ACCOUNT,
-      derivationPath: "m/44'/617'/0'/0'",
-      irohaAddress: TAIRA_ACCOUNT_ID,
-      mnemonicOrSeed: MNEMONIC,
-      publicKeyHex: IROHA_PUBLIC_KEY,
-    });
-    expect(state.keyringService.exportMnemonic).toHaveBeenCalledWith({
-      address: STORED_ACCOUNT,
-      walletEcosystem: WalletEcosystem.Iroha,
-    });
   });
 
-  it('derives the Nexus source literal from the stored public key when a runtime Torii URL is configured', () => {
-    const nexus = irohaNetwork('Nexus', 'sora:nexus:global', {
-      chainDiscriminant: 753,
-      providers: { custom: 'https://nexus.example.org/v1/mcp' },
-      currentProvider: 'custom',
-    });
-    const state = createState({ networks: { Nexus: nexus } });
-    const prepared = prepareIrohaTransfer({
-      amount: '1',
-      assetId: 'xor#sora',
-      from: STORED_ACCOUNT,
-      networkKey: 'Nexus',
-      state,
-      to: NEXUS_COUNTERPARTY,
-    });
-
-    expect(getIrohaNetworkKey(nexus)).toBe('nexus');
-    expect(prepared.source.irohaAddress).toBe(NEXUS_ACCOUNT_ID);
-    expect(prepared.sourceAssetId).toBe(`xor#sora#${NEXUS_ACCOUNT_ID}`);
-    expect(prepared.toriiBaseUrl).toBe('https://nexus.example.org/v1/mcp');
+  afterEach(() => {
+    if (originalEnableIrohaTransfers === undefined) delete process.env.VUE_APP_ENABLE_IROHA_TRANSFERS;
+    else process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = originalEnableIrohaTransfers;
   });
 
-  it('rejects malformed amounts, assets, missing sources, and malformed network config', () => {
-    expect(normalizeIrohaTransferAmount('0.0000000000000000000000000001')).toBe(
-      '0.0000000000000000000000000001'
-    );
-    expect(() => normalizeIrohaTransferAmount(' 1')).toThrow('invalid_iroha_amount');
-    expect(() => normalizeIrohaTransferAmount('0')).toThrow('invalid_iroha_amount');
-    expect(() => normalizeIrohaTransferAmount('1.00000000000000000000000000000')).toThrow('invalid_iroha_amount');
-    expect(() => normalizeIrohaTransferAmount('1e3')).toThrow('invalid_iroha_amount');
-    expect(() => normalizeIrohaAssetDefinitionId('xor#sora')).not.toThrow();
-    expect(() => normalizeIrohaAssetDefinitionId('xor#sora#extra')).toThrow('invalid_iroha_asset_id');
-    expect(() => normalizeIrohaAssetDefinitionId('xor #sora')).toThrow('invalid_iroha_asset_id');
+  it('rejects an increased or missing approved fee before signing or submitting', async () => {
+    for (const approvedMaxFee of ['0.009', undefined]) {
+      const { client, submitted } = scriptedTorii();
+      const codec = { buildAndSignTransfer: vi.fn() };
 
-    expect(() => prepareIrohaTransfer({ ...transferParams(), to: NEXUS_COUNTERPARTY })).toThrow();
-    expect(() => prepareIrohaTransfer({ ...transferParams(createState()), from: 'missing' })).toThrow(
-      'iroha_account_not_found'
-    );
-    expect(() =>
-      prepareIrohaTransfer({
-        amount: '1',
-        assetId: 'xor#sora',
-        from: NEXUS_ACCOUNT_ID,
-        networkKey: 'Nexus',
-        state: createState({
-          irohaAddress: NEXUS_ACCOUNT_ID,
-          publicKeyHex: '',
-          networks: {
-            Nexus: irohaNetwork('Nexus', ' ', { chainDiscriminant: 753 }),
-          },
-        }),
-        to: NEXUS_COUNTERPARTY,
-      })
-    ).toThrow('invalid_iroha_chain_id');
-    expect(() => resolveIrohaTransferSource(createState({ seed: '' }), TAIRA_ACCOUNT_ID, 'taira')).toThrow(
-      'iroha_mnemonic_unavailable'
-    );
+      await expect(
+        makeIrohaTransfer(transferParams(createState(), { approvedMaxFee }), codec, getIrohaTransferFrameBytes, client)
+      ).rejects.toThrow(approvedMaxFee === undefined ? 'transfer_fee_approval_required' : 'transfer_fee_changed');
+      expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
+      expect(submitted).toHaveLength(0);
+    }
   });
 
-  it('fails closed while Iroha transfers are not release-enabled', async () => {
-    const codec: IrohaTransferCodec = {
-      buildAndSignTransfer: vi.fn(async () => ({ signedTransaction: new Uint8Array([1]) })),
-    };
+  it('stays disabled without the release flag and makes no request', async () => {
+    process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'false';
+    const { client, fetchFn } = scriptedTorii();
 
     expect(isIrohaTransferEnabled()).toBe(false);
-    await expect(estimateIrohaTransferFee(transferParams())).rejects.toThrow('iroha_transfer_disabled');
-    await expect(makeIrohaTransfer(transferParams(), codec)).rejects.toThrow('iroha_transfer_disabled');
-    expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
-  });
-
-  it('fails closed when transfers are enabled but no browser-safe Iroha transaction codec is configured', async () => {
-    process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
-
-    await expect(makeIrohaTransfer(transferParams())).rejects.toThrow('iroha_transfer_codec_unavailable');
-  });
-
-  it('builds, submits, and schedules balance refresh when a transaction codec is supplied', async () => {
-    process.env.VUE_APP_ENABLE_IROHA_TRANSFERS = 'true';
-    vi.useFakeTimers();
-
-    const state = createState();
-    const callback = vi.fn();
-    const fetchFn = vi.fn(async () => jsonResponse({ hash: HASH }));
-    const codec: IrohaTransferCodec = {
-      buildAndSignTransfer: vi.fn(async () => ({
-        signedTransaction: '0x0a0b0c',
-        signedTransactionHashHex: HASH,
-      })),
-    };
-    vi.stubGlobal('fetch', fetchFn);
-
-    await makeIrohaTransfer({ ...transferParams(state), callback }, codec);
-
-    expect(codec.buildAndSignTransfer).toHaveBeenCalledWith({
-      amount: '12.34',
-      assetDefinitionId: 'xor#sora',
-      authority: TAIRA_ACCOUNT_ID,
-      chainId: 'iroha3-taira',
-      derivationPath: "m/44'/617'/0'/0'",
-      destinationAccountId: TAIRA_COUNTERPARTY,
-      mnemonicOrSeed: MNEMONIC,
-      network: 'taira',
-      signingPublicKeyHex: IROHA_PUBLIC_KEY,
-      sourceAccountId: TAIRA_ACCOUNT_ID,
-      sourceAssetId: `xor#sora#${TAIRA_ACCOUNT_ID}`,
-    });
-    expect(fetchFn).toHaveBeenCalledWith(
-      'https://taira.sora.org/v1/pipeline/transactions',
-      expect.objectContaining({
-        body: expect.any(ArrayBuffer),
-        headers: {
-          accept: 'application/json',
-          'content-type': 'application/x-norito',
-        },
-        method: 'POST',
-      })
+    await expect(estimateIrohaTransferFee(transferParams(), getIrohaTransferFrameBytes, client)).rejects.toThrow(
+      'iroha_transfer_disabled'
     );
-    expect(callback).toHaveBeenCalledWith({ status: true });
-
-    await vi.advanceTimersByTimeAsync(8000);
-    expect(state.balanceService.fetchBalance).toHaveBeenCalledWith({
-      address: STORED_ACCOUNT,
-      ethereumAddress: '',
-      irohaAddress: TAIRA_ACCOUNT_ID,
-      irohaNetworks: ['Taira'],
-      walletEcosystem: WalletEcosystem.Iroha,
-    });
+    await expect(
+      makeIrohaTransfer(transferParams(), browserIrohaTransferCodec, getIrohaTransferFrameBytes, client)
+    ).rejects.toThrow('iroha_transfer_disabled');
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 
-  it('builds and signs with an injected Nexus browser SDK transaction codec', async () => {
-    const finalizedBytes = new Uint8Array([1, 2, 3, 4]);
-    const signature = new Uint8Array(64).fill(0x33);
-    const payloadBytes = new Uint8Array([0xaa, 0xbb]);
-    const clientConstructors: unknown[] = [];
-    const transferDrafts: unknown[] = [];
-    const signedMessages: Uint8Array[] = [];
-    const privateKeys: Uint8Array[] = [];
-    const finalized: unknown[] = [];
-    const transactionCodec: NexusTransactionCodec = {
-      buildTransferPayload: vi.fn(() => payloadBytes),
-      finalizeSignedTransaction: vi.fn((signable, walletSignature, signingPublicKey) => {
-        finalized.push({ signable, signingPublicKey, walletSignature });
-
-        return {
-          hashHex: HASH,
-          signedTransaction: finalizedBytes,
-        };
-      }),
-    };
-    class FakeNexusAppClient {
-      constructor(config: unknown) {
-        clientConstructors.push(config);
-      }
-
-      buildTransferDraft(input: unknown) {
-        transferDrafts.push(input);
-
-        return {
-          signable: {
-            authority: TAIRA_ACCOUNT_ID,
-            payloadBytes,
-            payloadHashHex: PAYLOAD_HASH,
-            signatureAlgorithm: 'ed25519' as const,
-            signingPublicKey: new Uint8Array(Buffer.from(IROHA_PUBLIC_KEY, 'hex')),
-          },
-        };
-      }
-    }
-
-    const codec = createIrohaNexusSdkTransferCodec({
-      NexusAppClient: FakeNexusAppClient,
-      signEd25519(message, privateKey) {
-        signedMessages.push(message);
-        privateKeys.push(privateKey);
-
-        return signature;
+  it('normalizes the transfer request against the stored Taira account', () => {
+    const state = createState({
+      networks: {
+        Taira: irohaNetwork('Taira', TAIRA_CHAIN_ID, {
+          chainDiscriminant: 369,
+          currentProvider: 'torii',
+          providers: { torii: 'https://taira.sora.org/v1/mcp' },
+        }),
       },
-      transactionCodec,
     });
-    const result = await codec.buildAndSignTransfer({
+
+    expect(prepareIrohaTransfer(transferParams(state, { amount: '12.3400' }))).toMatchObject({
       amount: '12.34',
-      assetDefinitionId: 'xor#sora',
-      authority: TAIRA_ACCOUNT_ID,
-      chainId: 'iroha3-taira',
-      derivationPath: "m/44'/617'/0'/0'",
+      assetDefinitionId: TAIRA_XOR_ASSET_ID,
       destinationAccountId: TAIRA_COUNTERPARTY,
-      mnemonicOrSeed: MNEMONIC,
       network: 'taira',
-      signingPublicKeyHex: IROHA_PUBLIC_KEY,
-      sourceAccountId: TAIRA_ACCOUNT_ID,
-      sourceAssetId: `xor#sora#${TAIRA_ACCOUNT_ID}`,
+      networkKey: 'Taira',
+      source: { accountAddress: STORED_ACCOUNT, irohaAddress: TAIRA_ACCOUNT_ID, publicKeyHex: IROHA_PUBLIC_KEY },
+      sourceAssetId: `${TAIRA_XOR_ASSET_ID}#${TAIRA_ACCOUNT_ID}`,
+      toriiBaseUrl: 'https://taira.sora.org',
     });
-
-    expect(result).toEqual({
-      signedTransaction: finalizedBytes,
-      signedTransactionHashHex: HASH,
-    });
-    expect(clientConstructors).toEqual([
-      {
-        authority: TAIRA_ACCOUNT_ID,
-        chainId: 'iroha3-taira',
-        signingPublicKey: new Uint8Array(Buffer.from(IROHA_PUBLIC_KEY, 'hex')),
-        transactionCodec,
-      },
-    ]);
-    expect(transferDrafts).toEqual([
-      {
-        destinationAccountId: TAIRA_COUNTERPARTY,
-        quantity: '12.34',
-        sourceAssetHoldingId: `xor#sora#${TAIRA_ACCOUNT_ID}`,
-      },
-    ]);
-    expect(signedMessages).toEqual([new Uint8Array(Buffer.from(PAYLOAD_HASH, 'hex'))]);
-    expect(privateKeys).toHaveLength(1);
-    expect(privateKeys[0]).toHaveLength(32);
-    expect(finalized).toEqual([
-      {
-        signable: {
-          authority: TAIRA_ACCOUNT_ID,
-          payloadBytes,
-          payloadHashHex: PAYLOAD_HASH,
-          signatureAlgorithm: 'ed25519',
-          signingPublicKey: new Uint8Array(Buffer.from(IROHA_PUBLIC_KEY, 'hex')),
-        },
-        signingPublicKey: new Uint8Array(Buffer.from(IROHA_PUBLIC_KEY, 'hex')),
-        walletSignature: {
-          algorithm: 'ed25519',
-          signature,
-        },
-      },
-    ]);
+    expect(() => prepareIrohaTransfer(transferParams(state, { to: NEXUS_COUNTERPARTY }))).toThrow();
+    expect(() => prepareIrohaTransfer(transferParams(state, { assetId: 'xor#sora' }))).toThrow('invalid_iroha_asset_id');
   });
 
-  it('rejects Nexus SDK signing when the stored mnemonic does not match the account public key', async () => {
-    const transactionCodec: NexusTransactionCodec = {
-      buildTransferPayload: vi.fn(() => new Uint8Array([1])),
-      finalizeSignedTransaction: vi.fn(() => new Uint8Array([2])),
-    };
-    const signEd25519 = vi.fn(() => new Uint8Array(64));
-    class FakeNexusAppClient {
-      buildTransferDraft(): never {
-        throw new Error('should not build transfer draft');
-      }
+  it.each(['0', '0.000', '-1', ' 1', '1e3', '01', '1.', '.5', '1.12345678901234567890123456789'])(
+    'rejects the noncanonical amount %j',
+    (amount) => {
+      expect(() => normalizeIrohaTransferAmount(amount)).toThrow('invalid_iroha_amount');
     }
+  );
 
-    const codec = createIrohaNexusSdkTransferCodec({
-      NexusAppClient: FakeNexusAppClient,
-      signEd25519,
-      transactionCodec,
-    });
+  it('keeps only https or loopback Torii endpoints', () => {
+    expect(normalizeIrohaToriiBaseUrl('https://taira.sora.org/')).toBe('https://taira.sora.org');
+    expect(normalizeIrohaToriiBaseUrl('http://127.0.0.1:8080/v1/mcp')).toBe('http://127.0.0.1:8080');
+    expect(() => normalizeIrohaToriiBaseUrl('http://taira.sora.org')).toThrow('invalid_iroha_torii_url');
+    expect(() => normalizeIrohaToriiBaseUrl('https://taira.sora.org?q=1')).toThrow('invalid_iroha_torii_url');
+    expect(normalizeIrohaAssetDefinitionId(TAIRA_XOR_ASSET_ID)).toBe(TAIRA_XOR_ASSET_ID);
+  });
+
+  it('maps Iroha networks by registry chain id and I105 discriminant', () => {
+    expect(getIrohaNetworkKey(irohaNetwork('Taira', TAIRA_CHAIN_ID, { chainDiscriminant: 369 }))).toBe('taira');
+    expect(getIrohaNetworkKey(irohaNetwork('Nexus', 'sora:nexus:global'))).toBe('nexus');
+    expect(() => getIrohaNetworkKey(irohaNetwork('Taira', TAIRA_CHAIN_ID, { chainDiscriminant: 753 }))).toThrow(
+      'ambiguous_iroha_network'
+    );
+    expect(() => getIrohaNetworkKey(irohaNetwork('Other', 'other', { chainDiscriminant: 369 }))).toThrow(
+      'noncanonical_iroha_chain_id'
+    );
+  });
+
+  it('prices a transfer exactly from the live fee schedule', async () => {
+    const { client } = scriptedTorii();
+
+    await expect(estimateIrohaTransferFee(transferParams(), getIrohaTransferFrameBytes, client)).resolves.toBe('0.01');
+    expect(
+      computeIrohaTransferFee(
+        {
+          assetDefinitionId: TAIRA_XOR_ASSET_ID,
+          baseFee: '0.5',
+          perByteFee: '0.000001',
+          perGasUnitFee: '0.00005',
+          perInstructionFee: '0.001',
+        },
+        600
+      )
+    ).toBe('0.5106');
+  });
+
+  it('prices an incomplete send form as a placeholder transfer', async () => {
+    const { client } = scriptedTorii();
 
     await expect(
-      codec.buildAndSignTransfer({
-        amount: '1',
-        assetDefinitionId: 'xor#sora',
-        authority: TAIRA_ACCOUNT_ID,
-        chainId: 'iroha3-taira',
-        derivationPath: "m/44'/617'/0'/0'",
-        destinationAccountId: TAIRA_COUNTERPARTY,
-        mnemonicOrSeed: MNEMONIC,
-        network: 'taira',
-        signingPublicKeyHex: 'ff'.repeat(32),
-        sourceAccountId: TAIRA_ACCOUNT_ID,
-        sourceAssetId: `xor#sora#${TAIRA_ACCOUNT_ID}`,
-      })
-    ).rejects.toThrow('iroha_signing_key_mismatch');
-    expect(signEd25519).not.toHaveBeenCalled();
-    expect(transactionCodec.finalizeSignedTransaction).not.toHaveBeenCalled();
+      estimateIrohaTransferFee(transferParams(createState(), { amount: '0', to: '' }), getIrohaTransferFrameBytes, client)
+    ).resolves.toBe('0.01');
+    await expect(
+      estimateIrohaTransferFee(transferParams(createState(), { to: NEXUS_COUNTERPARTY }), getIrohaTransferFrameBytes, client)
+    ).resolves.toBe('0.01');
   });
 
-  it('rejects incomplete or malformed Nexus SDK transaction codec outputs', async () => {
-    class FakeNexusAppClient {
-      buildTransferDraft() {
-        return {
-          signable: {
-            authority: TAIRA_ACCOUNT_ID,
-            payloadBytes: new Uint8Array([1]),
-            payloadHashHex: PAYLOAD_HASH,
-            signatureAlgorithm: 'ed25519' as const,
-            signingPublicKey: new Uint8Array(Buffer.from(IROHA_PUBLIC_KEY, 'hex')),
-          },
-        };
-      }
-    }
+  it('settles the signed fee cap when the fee depends on the encoded size', async () => {
+    const { client } = scriptedTorii({ fees: { ...TAIRA_FEES, per_byte_fee: '0.000001' } });
+    const sizes: string[] = [];
+    const sizer: IrohaTransferFrameSizer = (input) => {
+      sizes.push(input.maxFee);
 
-    expect(() =>
-      createIrohaNexusSdkTransferCodec({
-        NexusAppClient: FakeNexusAppClient,
-        signEd25519: () => new Uint8Array(64),
-        transactionCodec: {
-          buildTransferPayload: vi.fn(() => new Uint8Array([1])),
-        } as unknown as NexusTransactionCodec,
-      })
-    ).toThrow('iroha_transaction_codec_unavailable');
-
-    const emptySignedCodec = createIrohaNexusSdkTransferCodec({
-      NexusAppClient: FakeNexusAppClient,
-      signEd25519: () => new Uint8Array(64),
-      transactionCodec: {
-        buildTransferPayload: vi.fn(() => new Uint8Array([1])),
-        finalizeSignedTransaction: vi.fn(() => ({ hashHex: HASH, signedTransaction: new Uint8Array() })),
-      },
-    });
-    const malformedHashCodec = createIrohaNexusSdkTransferCodec({
-      NexusAppClient: FakeNexusAppClient,
-      signEd25519: () => new Uint8Array(64),
-      transactionCodec: {
-        buildTransferPayload: vi.fn(() => new Uint8Array([1])),
-        finalizeSignedTransaction: vi.fn(() => ({ hashHex: '1234', signedTransaction: new Uint8Array([1]) })),
-      },
-    });
-    const input = {
-      amount: '1',
-      assetDefinitionId: 'xor#sora',
+      return getIrohaTransferFrameBytes(input);
+    };
+    const fee = await estimateIrohaTransferFee(transferParams(), sizer, client);
+    const frameBytes = getIrohaTransferFrameBytes({
+      amount: '12.34',
       authority: TAIRA_ACCOUNT_ID,
-      chainId: 'iroha3-taira',
+      creationTimeMs: 1,
+      destinationAccountId: TAIRA_COUNTERPARTY,
+      feeAssetDefinitionId: TAIRA_XOR_ASSET_ID,
+      maxFee: fee,
+      networkId: NETWORK_ID,
+      networkPrefix: 369,
+      signingPublicKeyHex: IROHA_PUBLIC_KEY,
+      sourceAssetId: `${TAIRA_XOR_ASSET_ID}#${TAIRA_ACCOUNT_ID}`,
+      ttlMs: 60_000,
+    });
+
+    expect(fee).toBe(
+      computeIrohaTransferFee(
+        {
+          assetDefinitionId: TAIRA_XOR_ASSET_ID,
+          baseFee: '0',
+          perByteFee: '0.000001',
+          perGasUnitFee: '0.00005',
+          perInstructionFee: '0.001',
+        },
+        frameBytes
+      )
+    );
+    expect(sizes.at(-1)).toBe(fee);
+  });
+
+  it.each([
+    ['a reset Taira genesis', { genesis: 'hash:0000000000000000000000000000000000000000000000000000000000000001#2E2B' }, 'iroha_network_reset'],
+    [
+      'an upgraded transaction schema',
+      { capabilities: { data_model_version: 5, signed_transaction_schema_hash_hex: IROHA_TRANSACTION_WIRE.signedTransactionSchemaHash } },
+      'iroha_node_protocol_unsupported',
+    ],
+    ['a missing fee schedule', { fees: { fee_asset_id: TAIRA_XOR_ASSET_ID } }, 'iroha_fee_estimation_unavailable'],
+  ] as const)('refuses to sign against %s', async (_label, script, message) => {
+    const { client, submitted } = scriptedTorii(script);
+    const codec = { buildAndSignTransfer: vi.fn() };
+
+    await expect(makeIrohaTransfer(transferParams(), codec, getIrohaTransferFrameBytes, client)).rejects.toThrow(message);
+    expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
+    expect(submitted).toHaveLength(0);
+  });
+
+  it('refuses amounts finer than the asset scale', async () => {
+    const { client } = scriptedTorii();
+
+    await expect(
+      estimateIrohaTransferFee(transferParams(createState(), { amount: '1.0000000001' }), getIrohaTransferFrameBytes, client)
+    ).rejects.toThrow('invalid_iroha_amount_precision');
+  });
+
+  it.each([
+    ['the amount plus fee', { balances: [{ asset: TAIRA_XOR_ASSET_ID, quantity: '12.34' }] }, {}, 'iroha_insufficient_balance'],
+    [
+      'the fee in XOR for another asset',
+      { balances: [{ asset: KINA_ASSET_ID, quantity: '50' }] },
+      { amount: '5', assetId: KINA_ASSET_ID },
+      'iroha_insufficient_fee_balance',
+    ],
+  ] as const)('refuses to sign without funds for %s', async (_label, script, overrides, message) => {
+    const { client, submitted } = scriptedTorii(script);
+    const codec = { buildAndSignTransfer: vi.fn() };
+
+    await expect(
+      makeIrohaTransfer(transferParams(createState(), overrides), codec, getIrohaTransferFrameBytes, client)
+    ).rejects.toThrow(message);
+    expect(codec.buildAndSignTransfer).not.toHaveBeenCalled();
+    expect(submitted).toHaveLength(0);
+  });
+
+  it('signs with the bundled browser codec and submits the exact bytes to Torii', async () => {
+    const { client, statusHashes, submitted } = scriptedTorii({ statuses: ['missing', { kind: 'Queued' }] });
+    const inputs: IrohaTransferCodecInput[] = [];
+    const codec: IrohaTransferCodec = {
+      async buildAndSignTransfer(input) {
+        inputs.push(input);
+
+        return browserIrohaTransferCodec.buildAndSignTransfer(input);
+      },
+    };
+    const params = transferParams();
+
+    await makeIrohaTransfer(params, codec, getIrohaTransferFrameBytes, client);
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]).toMatchObject({
+      amount: '12.34',
+      authority: TAIRA_ACCOUNT_ID,
+      destinationAccountId: TAIRA_COUNTERPARTY,
+      feeAssetDefinitionId: TAIRA_XOR_ASSET_ID,
+      maxFee: '0.01',
+      networkId: NETWORK_ID,
+      networkPrefix: 369,
+      signingPublicKeyHex: IROHA_PUBLIC_KEY,
+      sourceAssetId: `${TAIRA_XOR_ASSET_ID}#${TAIRA_ACCOUNT_ID}`,
+      ttlMs: 60_000,
+    });
+    expect(submitted).toHaveLength(1);
+    expect(submitted[0][0]).toBe(1);
+    expect(new Set(statusHashes).size).toBe(1);
+    expect(statusHashes[0]).toMatch(/^[0-9a-f]{63}[13579bdf]$/u);
+    expect(params.callback).toHaveBeenCalledWith({ status: true });
+    expect(params.state.balanceService.fetchBalance).toHaveBeenCalledWith(
+      expect.objectContaining({ irohaAddress: TAIRA_ACCOUNT_ID, irohaNetworks: ['Taira'] })
+    );
+  });
+
+  it('surfaces a ledger rejection without reporting success', async () => {
+    const { client } = scriptedTorii({ statuses: [{ kind: 'Rejected', reason: 'insufficient funds' }] });
+    const params = transferParams();
+    const error = await makeIrohaTransfer(params, browserIrohaTransferCodec, getIrohaTransferFrameBytes, client).catch(
+      (caught: unknown) => caught
+    );
+
+    expect(error).toBeInstanceOf(IrohaTransactionRejectedError);
+    expect(params.callback).not.toHaveBeenCalled();
+  });
+
+  it('produces deterministic canonical bytes and refuses a key that does not control the account', async () => {
+    const input: IrohaTransferCodecInput = {
+      amount: '1.5',
+      authority: TAIRA_ACCOUNT_ID,
+      creationTimeMs: 1_792_674_000_000,
       derivationPath: "m/44'/617'/0'/0'",
       destinationAccountId: TAIRA_COUNTERPARTY,
+      feeAssetDefinitionId: TAIRA_XOR_ASSET_ID,
+      maxFee: '0.01',
       mnemonicOrSeed: MNEMONIC,
-      network: 'taira' as const,
+      networkId: NETWORK_ID,
+      networkPrefix: 369,
       signingPublicKeyHex: IROHA_PUBLIC_KEY,
-      sourceAccountId: TAIRA_ACCOUNT_ID,
-      sourceAssetId: `xor#sora#${TAIRA_ACCOUNT_ID}`,
+      sourceAssetId: `${TAIRA_XOR_ASSET_ID}#${TAIRA_ACCOUNT_ID}`,
+      ttlMs: 60_000,
     };
+    const first = await browserIrohaTransferCodec.buildAndSignTransfer(input);
+    const second = await (await requireProductionIrohaTransferCodec()).buildAndSignTransfer(input);
+    const otherAmount = await browserIrohaTransferCodec.buildAndSignTransfer({ ...input, amount: '1.6' });
 
-    await expect(emptySignedCodec.buildAndSignTransfer(input)).rejects.toThrow('invalid_iroha_signed_transaction');
-    await expect(malformedHashCodec.buildAndSignTransfer(input)).rejects.toThrow(
-      'invalid_iroha_signed_transaction_hash'
-    );
+    expect(Array.from(first.signedTransaction)).toEqual(Array.from(second.signedTransaction));
+    expect(first.signedTransactionHashHex).toBe(second.signedTransactionHashHex);
+    expect(otherAmount.signedTransactionHashHex).not.toBe(first.signedTransactionHashHex);
+    await expect(
+      browserIrohaTransferCodec.buildAndSignTransfer({ ...input, signingPublicKeyHex: OTHER_PUBLIC_KEY })
+    ).rejects.toThrow('iroha_signing_key_mismatch');
+    await expect(
+      browserIrohaTransferCodec.buildAndSignTransfer({ ...input, sourceAssetId: `${TAIRA_XOR_ASSET_ID}#${TAIRA_COUNTERPARTY}` })
+    ).rejects.toThrow();
   });
 });

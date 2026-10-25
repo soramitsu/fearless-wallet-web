@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-12",
+  "source_commit": "16f7cee06e64930e52bfe9c6b4697943cdc158b8",
+  "status": "Independent review and local source/development build qualification pass; remaining migration/signing screens and final release qualification remain open.",
+  "source_sha256": {
+    "src/util/universalWalletLegacyExport.ts": "4aa3ab1574381b548f813cf6ff2351a82a3eb5e6f54072b093c19e6b536bf64a",
+    "src/util/bitcoin.ts": "a4de865d4678b3530ab24109d3e4efbd500ab824b9704a6f512c85c00a7eaa3f",
+    "tests/unit/universal-wallet-legacy-export.spec.ts": "8612dd0939bd29191ba0fd613568b8d86b11ba7c8b986c8604c5c74caa77ebb9",
+    "scripts/extension-smoke-primitives.mjs": "ef24aa6cfaa5d404d2a6e3a48d4e16adcf5c5ac04ba3d51024db68741077e014"
+  },
+  "finding": "Legacy export lookup lowercased all non-Iroha address text. Two distinct valid 32-byte Solana public keys differing only by letter case could select the wrong stored account.",
+  "resolution": "Exact nonempty text is preserved. Different-case text may match only full hexadecimal EVM addresses or valid same-text Bitcoin SegWit/Bech32m addresses. Base58, TON, Substrate and Iroha remain case-sensitive. Exact legacy metadata remains exportable without imposing new address validation.",
+  "regression_before": {
+    "passed": 7,
+    "failed": 5,
+    "note": "New tests on the preceding implementation reproduce case-folding bugs. Three additional Bitcoin vectors were added after the initial regression run."
+  },
+  "unit": {
+    "full_passed": 1863,
+    "full_skipped": 18,
+    "full_failed": 0,
+    "test_files_passed": 230,
+    "test_files_skipped": 2
+  },
+  "checks": [
+    "Typecheck passes; import-order lint error corrected, final scoped lint passes.",
+    "Valid distinct Solana keys are decoded in the regression and the correct account is selected regardless of the case-collision account appearing first.",
+    "Valid EVM casing, Bitcoin P2WPKH/P2WSH/Taproot/testnet uppercase, mixed-case rejection, invalid checksums, and Base58 exact identity are covered.",
+    "Final development extension build and 40 offline captures plus toolbar bootstrap pass. No visual application changes occur in this utility patch."
+  ],
+  "evidence_root": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "logs_sha256": {
+    "legacy-export-identity-browser-v1.log": "36fbafc9848dfee086a7016e11246a6acb11f525c7cb9619c0805dbd35490686",
+    "legacy-export-identity-build-v1.log": "0fa67bf6a218d8cfad8c0659d3e03d9d73a99f14baf95446ab846f937f195365",
+    "legacy-export-identity-focused-v1.log": "0875eec44a6660afcbcf86d24d84eb7fc0c4546f9b89523b9afdbbbe09f3f0bb",
+    "legacy-export-identity-format.log": "eb918acd72e730f3d07025fc5af8a505c691610376255af3417bae113c1775d2",
+    "legacy-export-identity-full-v1.log": "6680b556a3aac1faecc248d73e9fc460862ea111d0ee7042ccbe81122ea716d2",
+    "legacy-export-identity-lint-v1.log": "b8ebd2dea6e7c0200f7785ca52d3e3556d17d60af9a7f89d2bedc1665082dcb6",
+    "legacy-export-identity-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "legacy-export-identity-regression-before.log": "da10529b858442b85de984d5b01a618835e4d7cd7b55ac1cad82bc819e27c13c",
+    "legacy-export-identity-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "commands_file": "legacy-export-identity-commands.json",
+  "commands_sha256": "4c7b01e831c771ee08938d0188db1063e6571e1f04d2e5e4e7d77637e9a2a5ea",
+  "browser_results_sha256": "25023c75f5191c9c45642f75f0fb81476deefcab8f1b7494d16c1b8d31150e96",
+  "captures_sha256": {
+    "01-portfolio-controls.png": "b7195a63941d5c1bfaa4a9262c85ff0e3a32c79194ccdd7be2504516e9a93161",
+    "02-manage-switches.png": "b275c0dd0da2246e3c79ac4fa253b5fab87f499ed02f08d957ba0880b4c8f6ea",
+    "03-send-form.png": "c34720275b6693981500e9453d007243e193bb6f9a34a826fa9a659a4710a3ac",
+    "04-send-amount-keyboard-focus.png": "aa82c8e4fb75c6c3412bb85f98d3c5e3b2e84b73da66251a585c66d9e3b65ea6",
+    "05-send-recipient-keyboard-focus.png": "cde926562fc383fd82f99b77e8c24d1bf7531099c157ebfea1e044628f41168b",
+    "06-receive.png": "2b3a18589766922f8951db46a4ca6dbc1c7dec519fd82b414c378fb15d842004",
+    "07-receive-button-keyboard-focus.png": "dd21d1564a5ebcdb209df75ef7a9699fa9e576933cf01cd7089a8acc537e6a51",
+    "08-settings.png": "552b579f2083fc0bf49e7ffb51c95a6047ff79e97f8fe2f5eca7514e555895de",
+    "09-network-tabs.png": "def4486854190e6ed8b235c75dac9604b6ca59dd6386057a79c4c940f408271d",
+    "09b-network-search-clear.png": "439c47f2f1c5da76d913bef1fc28331cb94529d73b23763f391e326627e7e467",
+    "10-calm-change-password.png": "3b5a9e61bd0fcdafe4f3f5f9250383fd5abbd04d5b3894e38974a3d8790a19e5",
+    "11-calm-reset-wallet.png": "bb256f66a8b193221b9ee4da1e2ceb6d1afb46d47474d1670225114d80a52f87",
+    "12-currency-dialog.png": "5f2cad42853b3a8f13b74b1c6bf55027527b4be2cbb8c39c5ce57a5e258d8586",
+    "12b-currency-search-clear.png": "783712ffb36ae9dc00b0fa72a5316bf97b5558ed1a99047b018b80369030dcee",
+    "13-dialog-lite.png": "a9e22c2352b9677f5ca73bf93b115785aa29eaf953099d25d23bcaed04ed53c5",
+    "14-dialog-reduced.png": "ed8b56d2abb01627b265f389d926a41ad093f646dba30efefff45bc91ac42c40",
+    "15-dialog-high-contrast.png": "1ed6b69c7822c080cf440f01c4c0c953b92fd448dfeced5eececcbf41b4ebe71",
+    "16-dialog-reduced-motion.png": "31eae435f01002ef8925624eb9c3c87b2d1cfb8b6834b993b4540e89cf9ad6e8",
+    "17-dialog-forced-colors.png": "1ade0cd265736a4e50cfd69b6197486ca26cf5813cf0b7a663db7928e1f3a204",
+    "18-dialog-narrow.png": "b4bab7b33aacce48e54088daedc70bad2f3664baadaaef16150487282bcc4f52",
+    "19-dialog-200-percent.png": "a75412b0b7d263af719c8cab6faf34f34866ebf4a2f8a713f087148a2da98a02",
+    "20-dialog-russian-search.png": "3a6cc51083e3306cb6b7ae5354b926d93d32e34553533ae619b84535e70775d4",
+    "21-dialog-akkadian-search.png": "ad7820a6d6dce50ea0331d2fcfc535afc606904ca16645bdb1b6f75c6d6b0b6e",
+    "22-dialog-egyptian-search.png": "74f4d455d8df623c9ebde3fc4a9ca5095d21c84e97e5b11d7b26de3199da8413",
+    "23-unlock-retry.png": "e04607c63d1ed0fbdf334f7cb97017689c577241fc9477f219a22b658f475a0f",
+    "24-unlock-russian.png": "67c6d2fcac4fd701cff217e8490de81b78cfdcc9ad9dc25ca1b89caccfb81ad5",
+    "25-unlock-akkadian.png": "a6db1ebf2c7d471a3751b0e240bc3d999726d777b1e9b005c75a6b0a7b0c3a58",
+    "26-unlock-egyptian.png": "9d2c1934829ad2ea1a689420091c279b3fc1ea55e501554f1e5ba58b04bbc2af",
+    "27-unlock-200-percent.png": "301a726799dbd40913ff426511cd80daa18791f444c5c55d7444b1b6a5e3aae9",
+    "30-migration-unavailable-export.png": "3601ee89e089fd8dcbad846c3fa5ed7ce88bca25979e33d44493bb8670987373",
+    "31-migration-russian.png": "efa7e1ab299081d38e424af1288e6558dfe81958f0162fd21755bd9fce280db9",
+    "32-migration-akkadian.png": "c339361d4c2deb3dee7f3026754274fa11efa530f2f8e5af95f19d1332dd067a",
+    "33-migration-egyptian.png": "1e03ef85e6451b90d252366e0af6ac691d843bc1df886cc91133e1e5f44f9390",
+    "34-migration-compact.png": "f9f66a0773bc767985409ede2a4b979afbf36f8d37f86d83413630c35f7ac452",
+    "35-migration-load-failure.png": "52e459b29a5aa9a26b88957132f86e004002318a2e53ef912edf982f9bc3d3d9",
+    "36-password-migration.png": "b8aa5cef8c30b3296cbe6f1bdc66a0ba783a2bcc89107760624941a3747de5b5",
+    "37-password-migration-russian.png": "416535ed71be2ee21570efd08c48bf9330ae03c2219aa207395a701554dacba8",
+    "38-password-migration-akkadian.png": "f45aa07999257f751dfdd43d0ddeb612bc4b6f8de849277743ce6a9ec52e7a90",
+    "39-password-migration-egyptian.png": "1acc7e69dcda5a99f9c38dfb899102155aaec9f40ea8317e622fdf10bfec0ad5",
+    "40-password-migration-compact.png": "6e425d93db8d5b4c29503ee064ca2ab6ce19295b9444069b246956ae183c628b"
+  },
+  "build_file_manifest": "legacy-export-identity-build-files.json",
+  "build_file_manifest_sha256": "ade8c117d6452d6fbf825b8e8dc527f169d95cb4fe7cc3d2194b37b239343ca4",
+  "frozen_build_archive": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/legacy-export-identity-chrome-test.zip",
+    "sha256": "9f7e67959ff92f54f9e5057f19733d21c340b75a9b7cccad9d893caf15d4f63f",
+    "files": 495
+  },
+  "limitations": [
+    "Browser inventory remains public UI fixture data. Historical migration and actual secret export are not claimed by these screenshots.",
+    "This development artifact does not qualify production distribution, signed upgrades or real assistive technology.",
+    "Other migration steps and signing approvals remain active work."
+  ],
+  "independent_review": {
+    "reviewer": "audit_inventory",
+    "result": "No blocker found. Six independent frozen-Git function/decoder cases pass: Solana collision, uppercase SegWit, mixed-case rejection, EVM casing, invalid checksum rejection and exact invalid legacy text. Routing unchanged. Password-entry source/evidence/archive also independently verified."
+  }
+}

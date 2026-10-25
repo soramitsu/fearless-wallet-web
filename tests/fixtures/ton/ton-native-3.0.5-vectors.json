@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "description": "TON accounts that Fearless 3.0.1-3.0.5 created from native TON phrases (its own TON create flow, or an import that tonweb-mnemonic validates): tonweb-mnemonic KDF over the stored words, WalletContractV4R2 non-bounceable address. bip39Valid marks the rare phrases that also pass BIP39. Public test phrases from fixed seeds: never fund them.",
+  "source": {
+    "commit": "600a64d5",
+    "publishedCommit": "129807f0",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "generator": "scripts/generate-ton-legacy-vectors.mjs",
+    "libraries": {
+      "tonweb-mnemonic": "1.0.1",
+      "tweetnacl": "1.0.3",
+      "bip39": "3.1.0",
+      "@ton/ton": "15.1.0",
+      "@ton/core": "0.59.0"
+    }
+  },
+  "vectors": [
+    {
+      "mnemonic": "stool cliff pizza glory kick speed idea visit curtain shallow develop era gate unable reject mass flame school rather city result gossip soup pigeon",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "9a2595da35e8339336d264c4e223f7eabb29198f7e6bca1a6483831baa96448b",
+      "address": "UQCLLEG3HLSPVvyAMecxLuXU7sMYJBLDI__jjT9HZRh7x_e9"
+    },
+    {
+      "mnemonic": "alley purpose cluster forget raven rigid also average feature strategy laugh feature giraffe six bronze stadium daring garment praise polar beauty jelly truth fun",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "6c28e89299d265f8613e5c5e0dc56b5f7840c00e6199db3e9d4777f3d7403f32",
+      "address": "UQCNjy7J8yphq0N2kec4rwoVPDsZiXKcJejuOAvChZk_4iY0"
+    },
+    {
+      "mnemonic": "divorce acquire note say gallery front clerk sand hawk elbow pulse lonely axis weird human cool icon exit below more bag strike fetch apart",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "2b3896c234978d1c82560b3494259b8b11997ae97e8bfcf94e78323ae3503c93",
+      "address": "UQCCgyzonLDOtQWacx_TawFMgRch6U93LhBqbClSAh_f7Xx1"
+    },
+    {
+      "mnemonic": "daring detail teach infant indicate advice whale want ozone abandon arrive orient enjoy holiday crowd spawn kitten scan science candy range issue clay harsh",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "057a5900879363b88d3c10d4404fde297829c59665e6c934022fc1ee63f0cecf",
+      "address": "UQBmmUDwB1ebAsjPeJVQhm6jqtOyJpjF6p-Mlvkpm3IqNZ8W"
+    },
+    {
+      "mnemonic": "margin vibrant casino inside december system tennis dirt differ void moment test",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "cd1fac08524742408ba20e758e2920edc31a7b1f747e616b57e838c518a6ed9e",
+      "address": "UQD2pjogpyk6jFNnkMWkIEKVS9mhFh9SQqeNWCyJdiCuJfgY"
+    },
+    {
+      "mnemonic": "version cake interest aim ring guilt wonder record spawn aisle dolphin wagon wolf cluster business orphan prosper fitness",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "0ffb6496c376306183647ca82e459767fc7094801c07f455e4cca79dddf8abdf",
+      "address": "UQDFsjFq2YrnGNIYA5YUDzNl-1vTw_d7PdyQNXvlWJzOQApE"
+    },
+    {
+      "mnemonic": "heart wink fade tuition humble swear room trick retire kite toy oblige number risk model joke unaware say life normal bicycle final orchard fade",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "8f8b510678e5aeae2d08030b7348ca103ce69910f8aae037b953dc453e8cf137",
+      "address": "UQAkrTWyVQQqukY5mI71O0r2EBBRb-FuERifGPJi7164bXqS"
+    },
+    {
+      "mnemonic": "auction lazy cry sure empower average junk barely leisure local loop away project address adjust option stool trip borrow book main opinion same stomach",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "5b6c349d07280a62b28219e00bd8ad779f87f595cfe80c3859d8ad16afc847ad",
+      "address": "UQA2euNIrE8O_S4YtWxDu4N1X3hji-Jdxhbl3r2Jn2Ui8N-u"
+    },
+    {
+      "mnemonic": "estate globe insane pioneer adult globe tongue dash afford slice bicycle shiver unable valley vacant defy hamster drift original brief forest fly amused bonus",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "6af2474218aa4a287af7b4e6278532ebfebf578d612043f4412ee1f15bbd2b1a",
+      "address": "UQDU9sTRZ4ENP2HF1WmnRZ-pfbSlI_e67nDfo7GCxxFq3I4m"
+    },
+    {
+      "mnemonic": "poem receive very crash camera unveil limb place clump route remember oval knee citizen radar bulb that diesel head cake example utility lamp copper",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "c1f10dd764b1b32cb0f20b6563a181643fe297bce95e03830d429b9a54626362",
+      "address": "UQAO9Fo_6I_NMoRLHiPtqa9IL8qfAhyz6FKnGM1OLBK3uDD-"
+    },
+    {
+      "mnemonic": "battle firm own boss elite calm remind debris change fall system famous",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "6043f17de66e79ce9f8aa5efe2ea079375eb26b9f143821c6580b9c542021292",
+      "address": "UQArSaLN74jwXLlWHlADBRVRNj-FHTbbjov3XkuDqBsgcIo_"
+    },
+    {
+      "mnemonic": "nephew actress wealth adult script concert amazing artist claw claim struggle change rice since enforce scrub stage video",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "d7a87104244de85e4e8fe6777d6baa2729aac6cd08d0a27206b5982dc2147ea5",
+      "address": "UQAmRPRNkOk76-6IY1LHimr88hBX-u_EgVNsajVsuP6t5buV"
+    },
+    {
+      "mnemonic": "fever model noble blush lock goat hand chimney divorce seed onion retire purchase sword slow steak price skill young pony chat absorb convince bench",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "f5fbb21088c704365bd41efaf4d9e0469d4a4d9dd54217233dd2d74d56ef7d3c",
+      "address": "UQAyeS6kEzr4ZB8lJqoUoUhEbzoNxsporRAzMg4XcRpryWBi"
+    },
+    {
+      "mnemonic": "devote post behave tag despair craft total basket shadow vivid pepper paper turtle angle garden dose firm clock limb chicken asset material luggage drastic",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "10f997f7661e5ab9b4fb080632256132bb322ab7d99ac5b9bae968abb5c219d3",
+      "address": "UQCosbN4SL-J7047woZC4fHoXzEkOvhd22QhIv5m6MfaJdjK"
+    },
+    {
+      "mnemonic": "aisle diet usage deliver monkey donate learn champion connect type safe describe educate screen secret scene nephew express wrong chef edit again genius whisper",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "74e6e01f3ae8aba17f3308e4cc24b705e92a2e2876fe212006657d28d1effe63",
+      "address": "UQBH5oAreho3v5GdU5Ct8npktTlV0XON1b68ZF2iCHVHlXKs"
+    },
+    {
+      "mnemonic": "orient admit space rocket fire awkward parrot nose today benefit abuse rain nephew change october panda snow album will sibling life pulse sight daughter",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "6180478157e3d13b0c1eba579a5981d263724a857cecd862fdfad58cb849ad3a",
+      "address": "UQCLUlBgGGOka87R7FncYBvAutuOJJirJjH3B5-nctsqCZAU"
+    },
+    {
+      "mnemonic": "female giraffe potato soon tell pear describe loop summer luxury stone surge",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "291d26e32f40b294a2c41dd9c4dbb3299e01049e96da3ca9c2e0c4981e85d8bf",
+      "address": "UQCgJGQrwhMn2-zysksFR35ciHjW04ZWwF1mvwzetoCikhfB"
+    },
+    {
+      "mnemonic": "nice example medal camp fringe crawl copper plunge segment hand thank control black zero column science skin error",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "8988aae79d31fe67e76e5c394d435ddc868188ee0eb50f3d8ea2a263edeceb1d",
+      "address": "UQBg3uY35gNxtVJXf3kOGTW9TtRkfp_6rIoB_5zutk6Gb6ag"
+    },
+    {
+      "mnemonic": "cake upper yellow valley coral teach awful flock plunge leopard shuffle egg proof finish program much device donor notable income reunion tissue amazing nest",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "b19f0ae65fc8a893fd7a233ee3cb11ccde3bc338a31f762da37c2d974d00d5b3",
+      "address": "UQB-b0jQSsRGaLzKVfwjhFG3OGuA_DXScIOXe81mf-dgnCDh"
+    },
+    {
+      "mnemonic": "cup tomato identify fossil section limb midnight dynamic promote vote couch bulb garden deposit city roast silk warrior carbon shy tortoise develop exercise chapter",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "d7af613bfd88b9c53b14f69934258cda1176f48456934f05ea32421ca9356f46",
+      "address": "UQByh1oUEwJpZNlEPRqoydHgHWRWmP13XFNXMiQmbQFlfGxW"
+    },
+    {
+      "mnemonic": "rain couple search loyal blast inmate card monster trade surprise surround ski park slush garbage arch attack belt auto focus clerk clip mail seminar",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "4a1d4fcc74d187f6b45a83d4012a363b3c071a53a10865a7e9345fe392c2895b",
+      "address": "UQAdAj2hH4_ozmft7mvvwigKSQ6GfNUcgUb9Qz6E4FC9F4-h"
+    },
+    {
+      "mnemonic": "embark hidden habit trial hospital tell system tilt donate day hint vehicle destroy lamp excite tool wheat exchange response search enrich tag candy unknown",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "edc28454b1841c09c216e6dbec30135b274f41a6d39fc3b0aa5e45b5b0acfa9a",
+      "address": "UQC8HrAKO5WspOb-rPoN-DH6dQDHm3KqClTykSUdTDlrdt_C"
+    },
+    {
+      "mnemonic": "inspire erode enroll faith fade fetch assist leaf click aunt story drama",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "d3abe3f38af07514db89a5174f0e5c66aeefb28af267e0f4e2be0e0db8dc306b",
+      "address": "UQAEnsi_oZ6z8IxUEMfMV2-9NqBWlU-L-5iCNLUWFA7y6m3y"
+    },
+    {
+      "mnemonic": "surprise emerge bracket local suit uphold enlist pistol column diary rookie hour donate reunion weekend anger ritual rubber",
+      "bip39Valid": false,
+      "tonwebValid": true,
+      "publicKeyHex": "bcfc9babe835b686a1c19853d7149238c1950e6031829cb5a5cc199f4ebc56a4",
+      "address": "UQBhVng6VO1A6dTW0Klg4351cFnFxqJoS6r-xJ2kiTSU9ViT"
+    },
+    {
+      "mnemonic": "twice paper unusual beauty transfer cheese regular bunker noodle plug pigeon clarify when badge room cabin when shop farm crunch globe ten detail hospital",
+      "bip39Valid": true,
+      "tonwebValid": true,
+      "publicKeyHex": "493febe5208874d1af432d2df4855fd9d9a4c664291af74dccdd215249188d52",
+      "address": "UQD4YD__2bUbmxqHfKibALf-qdghf_qXi-su-rNFyRAq6Qia"
+    },
+    {
+      "mnemonic": "best furnace buddy capital rocket boring chicken vanish crawl useless crash combine coach general spot vibrant unique about chat siege erode dawn room adult",
+      "bip39Valid": true,
+      "tonwebValid": true,
+      "publicKeyHex": "85feeb4273914d776b3f237c0f12f7644469c93153205966fc7c25de852f557a",
+      "address": "UQDKldkA7BlHTspQ5vQTm7Uj2fAmwh2bopq-eAi_DsSl3NWA"
+    },
+    {
+      "mnemonic": "case clap daring grass palace flag color despair lady dream energy ready",
+      "bip39Valid": true,
+      "tonwebValid": true,
+      "publicKeyHex": "64c7a66aa06a91de83948129e311f74632f2663c37337021632223d6000f3ac1",
+      "address": "UQD1zGHGLrxg-GpkBYNU-zqIEZ6CBeNRV3S88GoF8M1N_tCv"
+    },
+    {
+      "mnemonic": "world there echo rural scheme embody middle cupboard fire promote castle island",
+      "bip39Valid": true,
+      "tonwebValid": true,
+      "publicKeyHex": "24e2d66b8bd444f175730d60b76fdde6152c13c84debe76175344e7c6c077c3f",
+      "address": "UQBYnLcG0aVATje1OMLBovzg_bba4_8biSfn-hr2hxc2H7uh"
+    }
+  ]
+}

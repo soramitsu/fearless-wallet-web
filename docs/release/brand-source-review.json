@@ -1,0 +1,1088 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "Codex native_pin_durability, independent of web implementation",
+  "sourceCommit": "dab7e7897855de3dc210cc73d23a3ec25d6b5f9a",
+  "baseCommit": "2e3ca4d6bd4c41f270ba75230f11593b2480da82",
+  "decision": "No blocking finding in bounded follow-up source and browser review; final release artifact/evidence acceptance remains separate.",
+  "inspectedSourceFiles": [
+    {
+      "path": "src/components/BrandSignature.vue",
+      "sha256": "5b59720343113af62fa92b26eb66c539d4eb9c4adb0f4367760659475d02c6d5",
+      "workingTreeMatches": true
+    },
+    {
+      "path": "src/components/ExternalLogo.vue",
+      "sha256": "3706f45460ecb871ed2fe9825510a5205d84e27fc714df52a9dda0a348938272",
+      "workingTreeMatches": true
+    },
+    {
+      "path": "src/components/Logo.vue",
+      "sha256": "2c7b443492dd85a68fbe7cfea31eb43bc60f23ac1d2bfc40d613a59bffbe1c48",
+      "workingTreeMatches": true
+    },
+    {
+      "path": "src/screens/onboarding/Onboarding.vue",
+      "sha256": "b70803c9229cf6d9aa4ff0c73b7f3dd64e8b65feeae2b51a79329919d7a3d9dc",
+      "workingTreeMatches": true
+    },
+    {
+      "path": "src/screens/onboarding/OnboardingStory.vue",
+      "sha256": "4a6c82cfc765efa9f1b15280152c1432cc660f1b45fa651d595e256a9fd217ab",
+      "workingTreeMatches": true
+    },
+    {
+      "path": "src/screens/welcome/Welcome.vue",
+      "sha256": "91250fca882953951438290bfd5b7f8a765a3c79ff755aa352637e40842cfe3d",
+      "workingTreeMatches": true
+    },
+    {
+      "path": "tests/unit/external-logo-fallback.spec.ts",
+      "sha256": "361e60649b755ea83eaec0682129309f3607696c18d7ccd344e77a2066f251c7",
+      "workingTreeMatches": true
+    }
+  ],
+  "sourceAssessment": [
+    "Signature SVG positioning matches the existing relative aspect-ratio container; all three sprites share the same viewport without changing path assets or motion policy.",
+    "Logo/welcome/onboarding width and wrap constraints retain content in scrollable containers. Story text no longer has a fixed height, and wrapping controls preserve the primary action.",
+    "ExternalLogo defaults remain square for existing consumers. The actual onboarding story requests natural aspect with bounded width/max-height and object-fit contain; fallback and current-element event ownership remain intact. The additional unit test exercises failed image and changed story identity without accepting a stale error."
+  ],
+  "browserAssessment": {
+    "sourceMatches": true,
+    "reportedSuccess": true,
+    "checks": 300,
+    "failedChecks": 0,
+    "primaryLayouts": 64,
+    "bundledStoryLayouts": 32,
+    "captures": 196,
+    "protectedRecordHashes": 13,
+    "protectedRecordsUnchanged": true,
+    "actualOfflineFallback": "Decoded neutral packaged SVG data URL with natural dimensions 150x150 after remote registry icon failure.",
+    "healthyReplacement": "Decoded packaged logo-32.png persists after error dispatched from the replaced element.",
+    "motion": "Single 1s/1-iteration entrance; computed animation-name none for OS reduced-motion, effects-reduced, Calm, forced-colors.",
+    "rawCapturesIndependentlyViewed": [
+      "onboarding-akk-320-200-top.png",
+      "welcome-egy-320-200-action.png",
+      "story-akk-1-akk-320-200-top.png",
+      "story-egy-4-egy-320-200-action.png",
+      "unlock-ru-320-200-action.png",
+      "onboarding-ru-320-200-action.png",
+      "nodes-akk-320-200-action.png",
+      "signature-os-reduced.png"
+    ],
+    "visualAssessment": "Representative Russian/Akkadian/Egyptian 320px enlarged content wraps and scrolls; primary buttons remain visible when scrolled into view. The fallback preserves natural image sizing; ancient scripts render. Line breaks can split long Russian words at enlarged size, but the inspected labels remain legible.",
+    "harnessLimits": [
+      "Only designated primary action per matrix case is hit-tested; not every link/control.",
+      "Scale is assigned to document root and extension container at 16/32px; this harness does not record each rendered label computed font size.",
+      "Bundled Akkadian/Egyptian stories are traversed through actual controls. English/Russian hero labels are switched live; remote English/Russian story service availability is not qualified.",
+      "These are recorded browser results independently inspected, not a duplicate execution. No physical device, screen reader or complete release qualification claim."
+    ]
+  },
+  "limits": [
+    "No final archive or candidate-wide dependency/evidence rehash performed in this source-review addendum.",
+    "No remote story availability or clean-console claim.",
+    "No signing/transaction behavior changed or newly qualified."
+  ],
+  "findings": [],
+  "evidencePins": [
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/brand-independent-source-review-v1.json",
+      "sha256": "fd561e8123bea39f90432b8e0c02c8a244a8b227cec3d33d6fd1113c115ceb16",
+      "bytes": 6941
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5.json",
+      "sha256": "8dbf74fbb6c109633fdb71419b9df47ffccc2c89588be12bf755891446ea9403",
+      "bytes": 335972
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5.mjs",
+      "sha256": "621335ac0a3e20e4fd6418288680bced84ca60ec2bf705708e0e2b29d3e5e66a",
+      "bytes": 11510
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5.log",
+      "sha256": "cf2d683aca599b6fa8871b3c40180200c978bf24c4014874bc92c888a2f5d480",
+      "bytes": 13495
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-320-100-top.png",
+      "sha256": "3aaf69ff9e7a12940bdd1e9e98ad1b5c69e63de2789a85d25803d04e3f4ba8a9",
+      "bytes": 34637
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-320-100-action.png",
+      "sha256": "3aaf69ff9e7a12940bdd1e9e98ad1b5c69e63de2789a85d25803d04e3f4ba8a9",
+      "bytes": 34637
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-320-200-top.png",
+      "sha256": "8b9f31ee8e7e2ae144656e7af500f51c7029ac85f81e42d1621a75168cd3e5d7",
+      "bytes": 39520
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-320-200-action.png",
+      "sha256": "99f9acc26cb6c6c20e9fbd43878ae36b72a70fb0927ffd6d563bd74b3264f349",
+      "bytes": 33210
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-390-100-top.png",
+      "sha256": "ef75bc3cca1ea706619bf11c1b6dfc00d2cbd1e2e01fb12be7829d6ad34eb44b",
+      "bytes": 35270
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-390-100-action.png",
+      "sha256": "ef75bc3cca1ea706619bf11c1b6dfc00d2cbd1e2e01fb12be7829d6ad34eb44b",
+      "bytes": 35270
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-390-200-top.png",
+      "sha256": "7fae0bda98576176ad15a4a7a41d5f9993e46557dbffd51d728b4bb4adad3ad7",
+      "bytes": 42367
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-en-390-200-action.png",
+      "sha256": "232a3fa5c85da9c66f8dee49585164d1a6f88f0096546d372e636816467a883e",
+      "bytes": 36378
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-320-100-top.png",
+      "sha256": "751697ef6d0da161597a44dbe7ad0b393bc3848d11653525ddc2517a163c0a17",
+      "bytes": 37389
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-320-100-action.png",
+      "sha256": "751697ef6d0da161597a44dbe7ad0b393bc3848d11653525ddc2517a163c0a17",
+      "bytes": 37389
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-320-200-top.png",
+      "sha256": "2e235b6e2f729079952488014e3152a56897c3b49a4f6a0a118cdd665e4e41e7",
+      "bytes": 40617
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-320-200-action.png",
+      "sha256": "e3201f6a81742bf19055cc233c5d356e11139a0b3e35184049cb0f5f73a06b08",
+      "bytes": 34755
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-390-100-top.png",
+      "sha256": "a7bce502d639a39d5435206d566a4bdafd4cffa7645accef2933c7e617ddd670",
+      "bytes": 38107
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-390-100-action.png",
+      "sha256": "a7bce502d639a39d5435206d566a4bdafd4cffa7645accef2933c7e617ddd670",
+      "bytes": 38107
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-390-200-top.png",
+      "sha256": "3a175aae80808a5ba5ef3b1e41bfb1565fac876805609f51ce429450195a8ebc",
+      "bytes": 48011
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-ru-390-200-action.png",
+      "sha256": "b688792229a1c4db8b0da8dd31238fac17b44d7aa00481595c61407e9328f63f",
+      "bytes": 41716
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-320-100-top.png",
+      "sha256": "8acb931cdd2c032cb853a8de076ab534a3930eaec6a7abcda5b601912ace854b",
+      "bytes": 47453
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-320-100-action.png",
+      "sha256": "8acb931cdd2c032cb853a8de076ab534a3930eaec6a7abcda5b601912ace854b",
+      "bytes": 47453
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-320-200-top.png",
+      "sha256": "1a0c4228660b0c9d7f92d50de9a293ca8d671d359690a4ec4b2ba16c9a180980",
+      "bytes": 52931
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-320-200-action.png",
+      "sha256": "cd222732eb15006a2adb4360f2e588967307c7975fb1c6192d3c0dc53322d684",
+      "bytes": 49735
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-390-100-top.png",
+      "sha256": "962c689207e599ab7ca65d6d986b6f7cb860c6f8d96ebd4ed73f77390fb284d0",
+      "bytes": 48179
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-390-100-action.png",
+      "sha256": "962c689207e599ab7ca65d6d986b6f7cb860c6f8d96ebd4ed73f77390fb284d0",
+      "bytes": 48179
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-390-200-top.png",
+      "sha256": "37cb268229cea0a1a9649b1bb17a4a4e40c20721f5eda2842d85aa29cdf1a766",
+      "bytes": 56480
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-akk-390-200-action.png",
+      "sha256": "3a0b47ad39f7713545391116b353f936117d75c122b7482822e7c009f01da273",
+      "bytes": 57429
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-320-100-top.png",
+      "sha256": "ff5c2a3c76e016ce04d2d49f35e0c1abd464c2429d0ee14784b2164f54542b62",
+      "bytes": 35756
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-320-100-action.png",
+      "sha256": "ff5c2a3c76e016ce04d2d49f35e0c1abd464c2429d0ee14784b2164f54542b62",
+      "bytes": 35756
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-320-200-top.png",
+      "sha256": "f488c197e40f686f9decd5f1ceb0e9baf42d4914d85ffb5ccb313661d37e16c5",
+      "bytes": 50215
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-320-200-action.png",
+      "sha256": "480d29e828ce5c2f769faf068e7286a7e3239fb31dcb27b537cc55e50bbc8ebd",
+      "bytes": 41559
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-390-100-top.png",
+      "sha256": "3cf47dfb4ca05f4b7b335e431f06fc530f3d2889bda2896996c900905d3aa19c",
+      "bytes": 36388
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-390-100-action.png",
+      "sha256": "3cf47dfb4ca05f4b7b335e431f06fc530f3d2889bda2896996c900905d3aa19c",
+      "bytes": 36388
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-390-200-top.png",
+      "sha256": "f275906014987a9ae6ff2bc3e656503b1a8389894d134438b4933b2be5774063",
+      "bytes": 52284
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/unlock-egy-390-200-action.png",
+      "sha256": "cb10232b32c22faacfce811dbd06a359cf0a655c5fdca69fd7e6b5e3837ccb68",
+      "bytes": 53075
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-320-100-top.png",
+      "sha256": "0a9836a090ed49ea7fe94429577554bae37aa425bfb3cefd34a5d92ab0c39756",
+      "bytes": 65811
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-320-100-action.png",
+      "sha256": "8145e9d71e0cafc0d877161ae467d5d9a4497883b4e77459a9626ea4e7c86970",
+      "bytes": 77714
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-320-200-top.png",
+      "sha256": "7c056a28a8253de5f1d0b84d22abd028545600f8595e7943fbdec755a7a68e79",
+      "bytes": 56533
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-320-200-action.png",
+      "sha256": "b902e9390c51b5d658ed3222a927e9f6c611e67ca5f522d6171a972ba25ef7bb",
+      "bytes": 74188
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-390-100-top.png",
+      "sha256": "785fa4893847cd2db31b225520666bf5ea1f62670f311016ae85e8734aeaf021",
+      "bytes": 89142
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-390-100-action.png",
+      "sha256": "5c4ad51fc6b3b7e19ffadcb7de74258bf815097f055aa3f3e71b5edd2dd4724c",
+      "bytes": 95171
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-390-200-top.png",
+      "sha256": "ab1a6f33985d1ae9bdc666199719ff4f50616e495a30959d646db5f5f0409d20",
+      "bytes": 75946
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-en-390-200-action.png",
+      "sha256": "6d274eaffdc5282c2a10b7c6fe338407502e4741b871dd4a93e8ebf292ee8c29",
+      "bytes": 91900
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-320-100-top.png",
+      "sha256": "8a3ef0761299283bacb08d52340e90a2f75356d7bef31343090dfb80751ca7cf",
+      "bytes": 69953
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-320-100-action.png",
+      "sha256": "05caddbfe8903a7637de4728bac28b33a20326e4583ee48e5ad26fdcd62ddb2f",
+      "bytes": 81750
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-320-200-top.png",
+      "sha256": "05e97a8686301f9bd7a5322a1cde6a25d36d46821fbdf9e72e055b4b3c796d4d",
+      "bytes": 56522
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-320-200-action.png",
+      "sha256": "dfdfdce1ee5619287b1fef386c3faf7fdf78d087eac1354807b68af12258e1e3",
+      "bytes": 68223
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-390-100-top.png",
+      "sha256": "15af052ebc1aa71afb229f227d4aa575d94b7e4a4b13d1784dcd26ce4da96810",
+      "bytes": 90921
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-390-100-action.png",
+      "sha256": "14a72fdfab23bbcab1bf4c255364fe8bc30ccc9bdf91f32bcb97a2ecfa9a5ec1",
+      "bytes": 99436
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-390-200-top.png",
+      "sha256": "6b08b201a3723c1a7d4c460271eb0a5a3c37a79a9debf0ab02130fb8e1171fdc",
+      "bytes": 76896
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-ru-390-200-action.png",
+      "sha256": "2a51236bafcb4783de785767e76ee2c74ae8b664bd3971f96b78d53083377723",
+      "bytes": 93810
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-320-100-top.png",
+      "sha256": "533af21aa0a5f3d697b53fe9c2438c624c554fdd4d6049a64028c540d3e290d9",
+      "bytes": 82893
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-320-100-action.png",
+      "sha256": "7b2472669bc7f2b08b743048d1e233ca66cf634fc2288eb77e458594b30832f4",
+      "bytes": 100291
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-320-200-top.png",
+      "sha256": "1b094b935079282d1eb7d65560edacb259b6af39f06167c9aada2f521eb1a269",
+      "bytes": 56524
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-320-200-action.png",
+      "sha256": "338288e67149e50c7720e01d581c62e05b516648a469ca08c49c21abe533426a",
+      "bytes": 87962
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-390-100-top.png",
+      "sha256": "3f926b4cfb3aeda5a5f05d046d242f84c90d4f370d014491c88381c298d99557",
+      "bytes": 105487
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-390-100-action.png",
+      "sha256": "ebe04b490bb33d11242f62c83353611c8142fc31b154571b5177c771301cedaf",
+      "bytes": 117344
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-390-200-top.png",
+      "sha256": "791a38ba3b2a6c0f9898e59101fe3336d0698c314b54ca4f08c9669dc84aaf53",
+      "bytes": 78451
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-akk-390-200-action.png",
+      "sha256": "2ca9921e4b896c07aea167d8ca7b50d7965d40d6fe0a19d437c6f1a85ef3bed5",
+      "bytes": 112018
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-320-100-top.png",
+      "sha256": "8902ee6d9ddeca587afa819b1a306b0784e5ad8272ce2484af891b48e7c4772d",
+      "bytes": 68642
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-320-100-action.png",
+      "sha256": "d1c968840a7329c88bf4dc78cd446b0a44ff1be9ff8babe1db6e9d69113e5d0c",
+      "bytes": 74081
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-320-200-top.png",
+      "sha256": "e4de5fd9cf0f5d794739710191f065bbae74b50583283a798aa01edd1cd84a5f",
+      "bytes": 56556
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-320-200-action.png",
+      "sha256": "88bfc945849a1659920b6c710b689ad7d89c30afa871c8d36ebcb23850ce24ed",
+      "bytes": 82473
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-390-100-top.png",
+      "sha256": "15ef55a03359025cdb2f0139998d8dd67949891e22268cbb574163aa5ea190ec",
+      "bytes": 89677
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-390-100-action.png",
+      "sha256": "e274ec392e5127e3ffbc896f59136db2db092174a681f44a9242db60e1d22252",
+      "bytes": 90169
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-390-200-top.png",
+      "sha256": "2a30736e480d8fe1941a1e2155729a395bf7f6d7d5907a5caa1473565d423172",
+      "bytes": 77001
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/welcome-egy-390-200-action.png",
+      "sha256": "85f1b18dd4fdd0ff3d90058e70c85a8c19fea51e53b5f86e317e49b71decf39c",
+      "bytes": 97501
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-320-100-top.png",
+      "sha256": "40aa41b9adb54e7103f52423d93578d806f3696651dc9b5d7a254cd90471318b",
+      "bytes": 38516
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-320-100-action.png",
+      "sha256": "6278102fafc8ac6f46add26905de36157d353e31c97757d44ae5fcf3fc1dbd68",
+      "bytes": 38946
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-320-200-top.png",
+      "sha256": "a5ed63aef71a3cde4fee0796b62858905cdda6ad82374f0b0d432d9307b68df9",
+      "bytes": 27577
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-320-200-action.png",
+      "sha256": "87b60f6f635862fdc5a83b30e93b99afae16a1888440bfdcfbbd0b541047ea1c",
+      "bytes": 31759
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-390-100-top.png",
+      "sha256": "ab193a7187dcdb84a754edf413cd5d6d5f2f98d2af915d44899c1cdb4c8f788c",
+      "bytes": 40073
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-390-100-action.png",
+      "sha256": "30f5ce6cbac6bb16cb460fcf38ebc7a72e5621b96868436c8d930dc9a95a7833",
+      "bytes": 40498
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-390-200-top.png",
+      "sha256": "bfda178b90b604f85fcb7184a87b752d5a219071c3df6a15b9eaabd88dda7088",
+      "bytes": 35895
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-en-390-200-action.png",
+      "sha256": "b2bc7960382c17ca8230976cd8944f0fe8b68afd463e9b1500087e5944d6fd7c",
+      "bytes": 38070
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-320-100-top.png",
+      "sha256": "f6d87cfa397187b8cf52d3fb8c67ffac57057d1296ea96997b7cd36a2432976d",
+      "bytes": 38557
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-320-100-action.png",
+      "sha256": "3621051152da2237791a739ca3a3a2600ca6771d73597a6e14d6753c3bc86191",
+      "bytes": 39465
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-320-200-top.png",
+      "sha256": "15a418432391dca6ec21ee9238e174ff479a1b4d61c3c51735ae45bce287fc9e",
+      "bytes": 26835
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-320-200-action.png",
+      "sha256": "3f84844258d3101aa800893aab17d1c29b7c0408493886cb7edb65c7d4dd674f",
+      "bytes": 34667
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-390-100-top.png",
+      "sha256": "b29aa79a5f0ffdade714803bfe1286784519853ac211f8bf3ccd0d066ebe8714",
+      "bytes": 40107
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-390-100-action.png",
+      "sha256": "2b007bd79d848bd772a42c75afc2fcb3fe7cbc0060b9c26edf69d0abfa2bd953",
+      "bytes": 43135
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-390-200-top.png",
+      "sha256": "050e19e2178435992a57622406a67636accd1d65d80d280ad541d7e29f511626",
+      "bytes": 30925
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-ru-390-200-action.png",
+      "sha256": "9cb0e637a49755cbf29c03d0fb05a2d603d97468c8e117b1bf899a5078bdd944",
+      "bytes": 40178
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-320-100-top.png",
+      "sha256": "ddc4a478fd9f5b58b6057bff2de128f4f135474fdfeb2ca8b369ad53589bae7a",
+      "bytes": 48701
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-320-100-action.png",
+      "sha256": "977d36d0196aeff4e7eced1bda640b2302456a190f5c3bd1aed0f80b19cd467c",
+      "bytes": 50470
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-320-200-top.png",
+      "sha256": "23a5b472bf6b148a2060feaae08731f760038dd81bb7c6c88d7dce05cfe63866",
+      "bytes": 42535
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-320-200-action.png",
+      "sha256": "83108bb7bc1ce5bd1f2c8b0fdf063bf5e3f66b3d1ce827be0ac5e0541ec1a1d3",
+      "bytes": 42128
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-390-100-top.png",
+      "sha256": "6c127c39247fb8d2cc06376c77d65d6abdb9b1561ba42050f5cce0b257a34b2a",
+      "bytes": 50000
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-390-100-action.png",
+      "sha256": "e1d847de7808b4c705d73f0786adb8068f03559c26a7f97b44229c3fd30ad337",
+      "bytes": 53854
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-390-200-top.png",
+      "sha256": "c7800b537086889139e7959270dd7e95a9251369d09673690019b72438cc336d",
+      "bytes": 50485
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-akk-390-200-action.png",
+      "sha256": "b48c5c3f89c26694f2acb26ba57a8138d09d9f29fa056311b51bde26fa3ff9d4",
+      "bytes": 52181
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-320-100-top.png",
+      "sha256": "3b9994ded01d68da36bd26ede452a23a91a1fb7a4e9a78ae70826ebb43a65cb7",
+      "bytes": 39159
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-320-100-action.png",
+      "sha256": "d95c2c8c8e20e863c854117abd009c48a6f3fed110f2878c08d4e167ec9a66de",
+      "bytes": 40987
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-320-200-top.png",
+      "sha256": "80fe4dad77fea9c5a606e06a17e3b8d27dbadd26833b055258b408d3867c64ff",
+      "bytes": 28622
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-320-200-action.png",
+      "sha256": "727d5568cf6ee34e2fb8c7574e2edb615ebcfcb148b5eacf22cb44415508e892",
+      "bytes": 36687
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-390-100-top.png",
+      "sha256": "f67410837036697e3a1a113f6cd4f8d4a770fb443eefa98900f1a0faf9708540",
+      "bytes": 40715
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-390-100-action.png",
+      "sha256": "0fe1eece9f53730c49b35c58c1ec22e8f335252ce40311b1925db2353a62f723",
+      "bytes": 42593
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-390-200-top.png",
+      "sha256": "51503d5ef03443886cb5ed54a23117e53bf16ba794b9d4e5f1f2dd075f22fa42",
+      "bytes": 37569
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/nodes-egy-390-200-action.png",
+      "sha256": "953370646135efc22a234eb05737a2ddd7d61dae9a323a666bc22a1bef31c16c",
+      "bytes": 40490
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/signature-os-reduced.png",
+      "sha256": "d0cf9158b21496fa13968dd18f2616e30de7aa7aa2a0afbce4d8ef0d20d1a48f",
+      "bytes": 104185
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/signature-effects-reduced.png",
+      "sha256": "6c9b03f1df3b0320a0f52c0d7c550ba9a20849cc320db4bfe8476efc354c603f",
+      "bytes": 69592
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/signature-calm.png",
+      "sha256": "c4e608c2f8e0b0ce09c672e273107d0820baeecdbcdb03ba91703c577980c28f",
+      "bytes": 65213
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/signature-forced-colors.png",
+      "sha256": "ef45b586ab07e3ab151684216c98312fa68c7b1e5d3db7c89ade198689dd5f62",
+      "bytes": 63507
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-320-100-top.png",
+      "sha256": "ca78eda79858162d3b9e23a07114afef7b8a5dd703aadbbd19244331353a5899",
+      "bytes": 69348
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-320-100-action.png",
+      "sha256": "b03ca8530cd5a7bd5bbc74c46a6f0f9257acd68709473296b36889b1f6b4ed1c",
+      "bytes": 68777
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-320-200-top.png",
+      "sha256": "9994147113e9e4c877cccca870257dba186e6cfbe2cb43aad637a3dcd73a8f10",
+      "bytes": 69205
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-320-200-action.png",
+      "sha256": "a72e8e0d72901525d1bb30605e09e679c48090258f5a1e308942030005d10959",
+      "bytes": 47615
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-390-100-top.png",
+      "sha256": "f02578455e2edc72a5350aa8ccc3212b2947379cb7d30873f23b12c61514b3e6",
+      "bytes": 86204
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-390-100-action.png",
+      "sha256": "c27a28627e218b08a7c834a29bb215759b8d25e4b5798ab7c72c1d1488fcb49f",
+      "bytes": 85956
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-390-200-top.png",
+      "sha256": "6f38a3718be8712851ff5afed40589e32aadc9b08d8b7e9d66df8a43d574e544",
+      "bytes": 89501
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-en-390-200-action.png",
+      "sha256": "3c1f771d7dcc52aa85b0be4a308c263a8363a23cd4eae38fcea40b7028800855",
+      "bytes": 60113
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-320-100-top.png",
+      "sha256": "42cb0b3844306a257334b60a2ee6d34ca1e94a7d679b9fb3dcbe31f85b89a65a",
+      "bytes": 68729
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-320-100-action.png",
+      "sha256": "42cb0b3844306a257334b60a2ee6d34ca1e94a7d679b9fb3dcbe31f85b89a65a",
+      "bytes": 68729
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-320-200-top.png",
+      "sha256": "bfea654635eabe939312df48178f465fd9ba97056401f64c65a20950afbc78ac",
+      "bytes": 67932
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-320-200-action.png",
+      "sha256": "e24a996e6a1915f07535d0f0900a035f00eb720d3adf0edc4c9d08af3b701a31",
+      "bytes": 47526
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-390-100-top.png",
+      "sha256": "09e451d77ae2e206800412e98f3374b8df3bbac89349260d482574ab33e7e0da",
+      "bytes": 85059
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-390-100-action.png",
+      "sha256": "09e451d77ae2e206800412e98f3374b8df3bbac89349260d482574ab33e7e0da",
+      "bytes": 85059
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-390-200-top.png",
+      "sha256": "343ce6350fa8b171fa9a8ca125b7fedf89a5d8c36aeb7ce5de03a779cf28df22",
+      "bytes": 87193
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-ru-390-200-action.png",
+      "sha256": "0241642f9f0fb620c51dd15b1cd71e501edf41b4117a4209803a3641e0861a90",
+      "bytes": 59334
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-320-100-top.png",
+      "sha256": "85bc61f88e13b0a89561bd31cb99b376e8ac639fecda4106c6c8043bc21cdbdd",
+      "bytes": 87530
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-320-100-action.png",
+      "sha256": "85bc61f88e13b0a89561bd31cb99b376e8ac639fecda4106c6c8043bc21cdbdd",
+      "bytes": 87530
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-320-200-top.png",
+      "sha256": "78a62b8c9af1e07a060d4fbdfa64810c415389171f5bf0b79ecb54de4913cea6",
+      "bytes": 78969
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-320-200-action.png",
+      "sha256": "1cd4aab86e534553c5067b19d5a5e9a9eb349af09a494a22946533a4d65072c2",
+      "bytes": 64803
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-390-100-top.png",
+      "sha256": "d0cf9158b21496fa13968dd18f2616e30de7aa7aa2a0afbce4d8ef0d20d1a48f",
+      "bytes": 104185
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-390-100-action.png",
+      "sha256": "d0cf9158b21496fa13968dd18f2616e30de7aa7aa2a0afbce4d8ef0d20d1a48f",
+      "bytes": 104185
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-390-200-top.png",
+      "sha256": "cda4b2eb092fb8bd4e5ef7c264dd5847d9179b8d4444841895827f1deb0d1762",
+      "bytes": 107370
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-akk-390-200-action.png",
+      "sha256": "a22ef1678782469d6f41ed7cdcfb6197515400a48a5bf9ec6646515dd6dbaeee",
+      "bytes": 85984
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-320-100-top.png",
+      "sha256": "5cc5f6c17e9038303d7332ed51f050488cf5591163c2e48c955f721b4622611e",
+      "bytes": 62328
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-320-100-action.png",
+      "sha256": "5cc5f6c17e9038303d7332ed51f050488cf5591163c2e48c955f721b4622611e",
+      "bytes": 62328
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-320-200-top.png",
+      "sha256": "5b575abe6b6fb89e19f589865f2defb24a42de052271f3134851029dd28bd24a",
+      "bytes": 65226
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-320-200-action.png",
+      "sha256": "5b575abe6b6fb89e19f589865f2defb24a42de052271f3134851029dd28bd24a",
+      "bytes": 65226
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-390-100-top.png",
+      "sha256": "81ec42e2bab1e40b89a493c1409cdee8a72247bc69410f95f946337ca225babc",
+      "bytes": 79865
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-390-100-action.png",
+      "sha256": "81ec42e2bab1e40b89a493c1409cdee8a72247bc69410f95f946337ca225babc",
+      "bytes": 79865
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-390-200-top.png",
+      "sha256": "3f2d264d617fc97f5fe41d7f08615048cd32f44a898e7c54de3a66c9e138e266",
+      "bytes": 81795
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/onboarding-egy-390-200-action.png",
+      "sha256": "3f2d264d617fc97f5fe41d7f08615048cd32f44a898e7c54de3a66c9e138e266",
+      "bytes": 81795
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-320-100-top.png",
+      "sha256": "711670cbaa508d6775e530cd6955aa413334ccea3a53c7a6d7b7c53de9da887a",
+      "bytes": 74058
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-320-100-action.png",
+      "sha256": "2e3c48cd2c137a5185d04dc1647f910c58194f7bec402f7ac20bf2bddb214b03",
+      "bytes": 70318
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-320-200-top.png",
+      "sha256": "0a79397be118b15f33d6c30b9bd94583de68f23e89711b1ecbfcd66111c19c70",
+      "bytes": 69560
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-320-200-action.png",
+      "sha256": "b0e4d529bc6b96f8cf25cc3120f96caa96123d39f8450adff6a46daa857ddd69",
+      "bytes": 74517
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-390-100-top.png",
+      "sha256": "75031fb6cd51bac28e314eef43a7ef02c4b25f9999bb3a2f28d4c2f20688fdfe",
+      "bytes": 88358
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-390-100-action.png",
+      "sha256": "3ebdb7666127a3b6cded4a6d7ed16059d9f09ddc55cc0baf4d3caadfe6835dbe",
+      "bytes": 83990
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-390-200-top.png",
+      "sha256": "8aa9595c38356d64d6b1fa84e75e2f1ec5d45ea8fdaf28b7165384d93d38d85a",
+      "bytes": 80938
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-1-akk-390-200-action.png",
+      "sha256": "2824f385e1882ccb9ff21bca4d87a9cc6597dceaaf0458ea4f229e64c2a9548a",
+      "bytes": 92909
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-320-100-top.png",
+      "sha256": "9fd76b9929c6ea79f3f43ddd1381681dfb23955b29c99bf5e4ce6c3f88e1d0ff",
+      "bytes": 64395
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-320-100-action.png",
+      "sha256": "8b8419b43ddc2f9589ee135015f82944c3268fca63beeef7b5353a7632fdd24b",
+      "bytes": 64215
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-320-200-top.png",
+      "sha256": "31651e1f52ed2990134c4fdf4199754f87863f10622d62fd8406c8269835868c",
+      "bytes": 66540
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-320-200-action.png",
+      "sha256": "0ce4dd0ac226a6045dd38af4e3112f5812ec72fe120ae47e682818e81dbb2d6b",
+      "bytes": 72698
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-390-100-top.png",
+      "sha256": "497c3892b55e1e6a4ab4543c363123858d8cc71dae50151a8e189a579103e3eb",
+      "bytes": 78197
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-390-100-action.png",
+      "sha256": "497c3892b55e1e6a4ab4543c363123858d8cc71dae50151a8e189a579103e3eb",
+      "bytes": 78197
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-390-200-top.png",
+      "sha256": "2bfb852ee817fbe567fd013204665208c38af9e2c7a1d4266f93f314a848afbd",
+      "bytes": 76873
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-2-akk-390-200-action.png",
+      "sha256": "295a2b7a876a4f8995132b5d0e12f7b607696289a5528f8056012f60a848ae02",
+      "bytes": 87304
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-320-100-top.png",
+      "sha256": "e8bf78c15581604a0e6ead275de78bd27c446e9b040f5100c9f88a98465b3e7b",
+      "bytes": 76298
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-320-100-action.png",
+      "sha256": "e4f8dbf3a010f3bf3ec01e5ef4495a46c78dd2ef4662d79d1527abb081f50cdf",
+      "bytes": 73770
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-320-200-top.png",
+      "sha256": "2aab776e6722df6782f95acf64dd303fe7cfb56df9247c261cf2fa1e9c5b27f5",
+      "bytes": 67603
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-320-200-action.png",
+      "sha256": "4660b2f286cea0595d21b29b4550cafd0b69337e2197f27851a7edf84262a34b",
+      "bytes": 76552
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-390-100-top.png",
+      "sha256": "a63dea2671ba969a494c76a57f6987ce0d8c88eed76ac249708c48d37b3965f5",
+      "bytes": 92294
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-390-100-action.png",
+      "sha256": "8d578742832250d57df0c930679b3c1a74e46b80813cbb7b790a8463576c7e1d",
+      "bytes": 87888
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-390-200-top.png",
+      "sha256": "b7f9147d642b749c0d7239c8c1f4bb0ce176ba653f28c854b5769fa4b84a01bd",
+      "bytes": 81246
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-3-akk-390-200-action.png",
+      "sha256": "b83d15f2b51ac8e6513f2c1f4d43558e8c04f8fa194d74e4f4d5043d3c1a9239",
+      "bytes": 90324
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-320-100-top.png",
+      "sha256": "700769051c96595a9d43bb63470e7e66c6fdfb2114a0bd94d0e20c4d1c370097",
+      "bytes": 64859
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-320-100-action.png",
+      "sha256": "281df80653d0ff59eda7ac13cb258fe9b2039340f67a66c0814401dd8afd0f08",
+      "bytes": 63540
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-320-200-top.png",
+      "sha256": "e435d7d8fc01cd3450e06d4e3a6b0ecc670cfc3c3301535b2fb987c7f30e39a1",
+      "bytes": 57843
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-320-200-action.png",
+      "sha256": "3e4dc50cc5f196218fc867eb63b9d6bfcc869ada9b5712be2eee9ce3b8467543",
+      "bytes": 72132
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-390-100-top.png",
+      "sha256": "373f825783f9a202240d892ed66ff088bbaa40a550f8457aca1b9cebab298492",
+      "bytes": 78061
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-390-100-action.png",
+      "sha256": "373f825783f9a202240d892ed66ff088bbaa40a550f8457aca1b9cebab298492",
+      "bytes": 78061
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-390-200-top.png",
+      "sha256": "7a4975ff8abb5fdd37b53277307f7622b0765cf0045a3934aa0bb9ff3a4314e6",
+      "bytes": 67885
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-akk-4-akk-390-200-action.png",
+      "sha256": "a83011ac324a97c2b6dbcb367c9f5b0bc0319e0e7b3f95ee478ceda3fe8b594d",
+      "bytes": 89818
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-320-100-top.png",
+      "sha256": "37a06536b920196b14b20bb99f44f0e4c943bd692c70f523de8345ba0a24a9b7",
+      "bytes": 50562
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-320-100-action.png",
+      "sha256": "37a06536b920196b14b20bb99f44f0e4c943bd692c70f523de8345ba0a24a9b7",
+      "bytes": 50562
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-320-200-top.png",
+      "sha256": "4b73d89a9164a6066d87d0a918f5fdc4557205471fb28eb01d50132a844e68f1",
+      "bytes": 63648
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-320-200-action.png",
+      "sha256": "387d53e4b4c6dacd29615301846bff65ec2ca0f3aca39bd0e1dc9e7160ca8ffb",
+      "bytes": 69437
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-390-100-top.png",
+      "sha256": "5497cb0199701e3f98bca27a4ef13c4ad28996cd00b1fecf18cab811ea40e917",
+      "bytes": 63273
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-390-100-action.png",
+      "sha256": "5497cb0199701e3f98bca27a4ef13c4ad28996cd00b1fecf18cab811ea40e917",
+      "bytes": 63273
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-390-200-top.png",
+      "sha256": "c68c1cf30184c33a56d3f0e8b9263beb5cc573823f1f99aa5058c698e154b60b",
+      "bytes": 68331
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-1-egy-390-200-action.png",
+      "sha256": "25c0f093457171118121143b500444ae7708e64cc1be45526e79582beb0a68ed",
+      "bytes": 91651
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-320-100-top.png",
+      "sha256": "1111f458d3068af8f3f627fad95de5f9e59cff34d8819df1e6928aad6a7a639c",
+      "bytes": 49599
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-320-100-action.png",
+      "sha256": "1111f458d3068af8f3f627fad95de5f9e59cff34d8819df1e6928aad6a7a639c",
+      "bytes": 49599
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-320-200-top.png",
+      "sha256": "882710050c911bef0dddafbdc7e4f58352e39c6c56d6cdfb6b7d2c879db2eacd",
+      "bytes": 58660
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-320-200-action.png",
+      "sha256": "942a4c71a85688aff97befd905eb537f127ccae9828d717d07cfecfffa55666c",
+      "bytes": 73652
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-390-100-top.png",
+      "sha256": "06e59e49c3ee46e89bdcd429863526481fcf72226e6d31969680c4d1597f7d2c",
+      "bytes": 62077
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-390-100-action.png",
+      "sha256": "06e59e49c3ee46e89bdcd429863526481fcf72226e6d31969680c4d1597f7d2c",
+      "bytes": 62077
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-390-200-top.png",
+      "sha256": "eaad94e02a27867cee0d329358f7ab969f3c8f021da8e0fc90a6a659c8c4f5b4",
+      "bytes": 69389
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-2-egy-390-200-action.png",
+      "sha256": "ac21deb862bd996bd27ed747a077372f3ba348d2151a6b4ed4bcd606c29ff2d6",
+      "bytes": 85862
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-320-100-top.png",
+      "sha256": "cd3929d1d00f4f02f1fb39ebee27d4f44b36fa84a318da8afdeeb5171cafafd2",
+      "bytes": 55235
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-320-100-action.png",
+      "sha256": "cd3929d1d00f4f02f1fb39ebee27d4f44b36fa84a318da8afdeeb5171cafafd2",
+      "bytes": 55235
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-320-200-top.png",
+      "sha256": "f1d3df2350c420b5b75b89130116bd5d8dbdd150fe0ed8a5d5cbe14143a4304c",
+      "bytes": 60459
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-320-200-action.png",
+      "sha256": "5550382300f036bb14bcaf77e5fd75d082922a0400b1c54b5817abb8bccb7ddd",
+      "bytes": 72871
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-390-100-top.png",
+      "sha256": "e7b86c2f5db7e54024e3cc6680aae723d2de43aaf344feaf4fc780100e96a2ca",
+      "bytes": 67959
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-390-100-action.png",
+      "sha256": "e7b86c2f5db7e54024e3cc6680aae723d2de43aaf344feaf4fc780100e96a2ca",
+      "bytes": 67959
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-390-200-top.png",
+      "sha256": "cd8efc711afee9c49f6f7804874b1a857ddc0116d6eb00555c2532aba87e4c07",
+      "bytes": 69605
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-3-egy-390-200-action.png",
+      "sha256": "0d56307525a9433afe0fab96860f2b5c6398ec4ccfd8bfe344364015b4759867",
+      "bytes": 91028
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-320-100-top.png",
+      "sha256": "c064aa3e88a9db327b2153ebeea3b3d40300304f6559e48f0d28463604f80126",
+      "bytes": 50389
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-320-100-action.png",
+      "sha256": "c064aa3e88a9db327b2153ebeea3b3d40300304f6559e48f0d28463604f80126",
+      "bytes": 50389
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-320-200-top.png",
+      "sha256": "a29e9353e95a9ec98bc6ead92dab31707f55e1df75d06d40a02ee2802ad8b622",
+      "bytes": 59914
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-320-200-action.png",
+      "sha256": "1168ed2e141beee3749c1ccf9790bfbe58fbf08c880ae3713d89aecf24fad27e",
+      "bytes": 70027
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-390-100-top.png",
+      "sha256": "c66939b899cf30c6a925dfb815412694fc477db2699b0c832b12c37afaf734ad",
+      "bytes": 63323
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-390-100-action.png",
+      "sha256": "c66939b899cf30c6a925dfb815412694fc477db2699b0c832b12c37afaf734ad",
+      "bytes": 63323
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-390-200-top.png",
+      "sha256": "29288197f60b1f5a5e922f47b2ce63633ae6948541f933d9741589df73e7d428",
+      "bytes": 64822
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-browser-v5/story-egy-4-egy-390-200-action.png",
+      "sha256": "6ec811acd5ecd112f81dd502ea97df43bf3c8188b74680e6a8ff12c04de4dcc3",
+      "bytes": 89113
+    }
+  ]
+}

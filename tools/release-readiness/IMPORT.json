@@ -1,0 +1,706 @@
+{
+  "schemaVersion": 1,
+  "sourceRepository": "soramitsu/fearless-release-readiness",
+  "sourceBaseCommit": "1c3edb865adf9d7be2cfa21d14db48bc58a407f6",
+  "ownershipRepository": "soramitsu/fearless-wallet-web",
+  "notes": [
+    "Original source and workflow contracts preserved; historical repository references do not form an application build dependency.",
+    "Current README, three-platform workspace manifest, environment exports and independent service CI adapted during import.",
+    "Apple public trust anchors and attestation samples retain Apple terms; see NOTICE."
+  ],
+  "sourceFileHashes": [
+    {
+      "path": "FEARLESS_PROJECT_PLAN.md",
+      "sha256": "e38e3f1758b13b84ebd5eae2317a1e19cb355d5457476a72b5e7a44c055cea99"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "NOTICE",
+      "sha256": "f7c84de05345ed7bc8806e8fb9745bfc0bfa02e763bc1cdda1b499e821c65cb3"
+    },
+    {
+      "path": "README.md",
+      "sha256": "bbb10db492cfbc65afbe702b8f23fe7ee370dee9c71463537c8a21ab7b77d7ab"
+    },
+    {
+      "path": "config/fixtures/mutation-authorization-v1.json",
+      "sha256": "59b43ebefb1ef0e79858b78f4266c3d2265b7e03d4041c1b3e936910b2eee49d"
+    },
+    {
+      "path": "config/iroha-release-readiness.env",
+      "sha256": "10d654b659e9d819724a53819558efc8d009d4edc126d314ce8c69b74194a288"
+    },
+    {
+      "path": "config/nexus-production-evidence.json",
+      "sha256": "e014bfc7fb63a821b372327944bb1b9737fa1f5d1320939b5d89c7634f5968d8"
+    },
+    {
+      "path": "config/passkey-backup-challenge-service.openapi.json",
+      "sha256": "84387dbafaeafd7d9d69b464f0466e2b385d6f9e5472393701dbf07b44c6d4c7"
+    },
+    {
+      "path": "config/passkey-backup-production.json",
+      "sha256": "4b1eeeaaaee17494e3b890f4a0f14d1bb2f6f80d07aa6bffbc24e1d91e2714a7"
+    },
+    {
+      "path": "config/release-readiness-prs.tsv",
+      "sha256": "3d2ba258e2151dd5e1252587ece43683df21bb70df27b56133a44beb993e5878"
+    },
+    {
+      "path": "config/source-publication-readiness.tsv",
+      "sha256": "39e588317497da105f31deeda92b104e2ad3bd3a00cd9256dde80069ef583fd9"
+    },
+    {
+      "path": "config/source-publication-root-owner.json",
+      "sha256": "f380f6e8e6f432d3c039451a6aa9f6a26cb695600c55216fe8c595d25a4cf6a8"
+    },
+    {
+      "path": "config/workspace-repositories.json",
+      "sha256": "f54413a660c17f0873e124ac050a3b022fa1dbe08720a026f3b0ce759630b83b"
+    },
+    {
+      "path": "docs/locked-dependency-scan.md",
+      "sha256": "dfad4f73ea78f7434951a434d351d72f1a01d1b7ca9400c074c55fbe79760047"
+    },
+    {
+      "path": "docs/mobile-production-readiness-20260922.md",
+      "sha256": "06477fd42a5ce1970fc3c01aedee2a35fa0baf2575addd91123999ccfa2302c6"
+    },
+    {
+      "path": "docs/mutation-authorization-v1.md",
+      "sha256": "ef32756b81c35beec0c32647f8be4fa6845ac176d4db4b8d18538a742b816b3c"
+    },
+    {
+      "path": "docs/nexus-production-evidence.md",
+      "sha256": "1d1e96a7596d1c80b9340e97d9370250bf085a43eb68d2b815577011529fba22"
+    },
+    {
+      "path": "docs/passkey-credential-wrapper-v1.md",
+      "sha256": "1e3c8ba74db6ea127f6061bc6564747b4f9829fb6f8fe880e1fee45253e9166a"
+    },
+    {
+      "path": "docs/passkey-enabled-acceptance.md",
+      "sha256": "93e46215775dc4369520a4b8996197e285594a970d0bd70851e4463873972e5e"
+    },
+    {
+      "path": "docs/passkey-generation-v1.md",
+      "sha256": "b4a2cb290757f0d77df1dd43c310306c5fafb8a392310675c352a209cc9d7283"
+    },
+    {
+      "path": "docs/portable-wallet-semantic-v1.md",
+      "sha256": "656a9ed0ea64c9fc612eeb7d100984a01f49b22c3cc64420f648013e16ce4336"
+    },
+    {
+      "path": "docs/production-implementation-progress.md",
+      "sha256": "03600634f573e55c49c86caa7758dff0df6991dc7cf2e8def1b141268c323dd3"
+    },
+    {
+      "path": "docs/release-shipping-manifest.md",
+      "sha256": "264d4544dfbcd951dde811edfacd69abadc9622a4e7524ed7c55d50ab15fc10d"
+    },
+    {
+      "path": "docs/source-freeze-20260801.md",
+      "sha256": "a36025f095b469c53af6b55ac9d2fc4bf55da4e5fa2de86a82f137c0d0959f61"
+    },
+    {
+      "path": "docs/universal-wallet-address-restoration.md",
+      "sha256": "b0f4693df92fa0126aa4250d5592698bafa9f384d15f54462233155c9dd97103"
+    },
+    {
+      "path": "scripts/audit-github-governance.sh",
+      "sha256": "6bc8ea4ddcc05247223ce01b37eaf35222476ca5bf3e109661d4cd4730f06142"
+    },
+    {
+      "path": "scripts/audit-iroha-production-send-readiness.sh",
+      "sha256": "1291b1425fd9fbabcecca6a3c8e2671a2be69beb267797ba46662b1be4bfe582"
+    },
+    {
+      "path": "scripts/audit-iroha-release-readiness.sh",
+      "sha256": "ee98298fb432dc26bf7e000bd4abb8bed8ec2e630665db0395b2a90ad0b0c2ef"
+    },
+    {
+      "path": "scripts/audit-iroha-wallet-coverage.sh",
+      "sha256": "b131c80cc2827096effda1e85e4e4f243321509c0191fb059c0934c692e838d0"
+    },
+    {
+      "path": "scripts/audit-nexus-production-evidence.sh",
+      "sha256": "a42e367793ea829242956446b77d5a0a04a91397f9cc0bff5b9296313e6108e3"
+    },
+    {
+      "path": "scripts/audit-passkey-android-origin-parity.sh",
+      "sha256": "7b5de42404be195bb67def7033489f91f6c95e1310778f635351f105c32f8c3d"
+    },
+    {
+      "path": "scripts/audit-passkey-backup-prerequisites.sh",
+      "sha256": "ff7b8e757bc49819feea56be344609b0c9a7267a7d761a227755825d3cd55c93"
+    },
+    {
+      "path": "scripts/audit-passkey-challenge-service.sh",
+      "sha256": "518664df969c6ee49b9762f1868ae824a66b44a2cbc78af624d0cb78bd8cb758"
+    },
+    {
+      "path": "scripts/audit-passkey-enabled-acceptance.mjs",
+      "sha256": "4d80cb26d4bb5796c64092ff8a1ad970ccf2649501767e376db092a5150d29d1"
+    },
+    {
+      "path": "scripts/audit-plan-readiness.sh",
+      "sha256": "93da9e13e4b2479d6ae68d066ee6174b54f703269db20aa572385e914a584568"
+    },
+    {
+      "path": "scripts/audit-private-overlay-readiness.sh",
+      "sha256": "b9fa357c086bff8e6ae8ef102f39c8d9be6a2a5f9d49a02a145a95cadf344242"
+    },
+    {
+      "path": "scripts/audit-release-pr-readiness.sh",
+      "sha256": "7ef9e3cb9cbe37242ef23d472eb00b8b00ef69fde8df4d6bcd6c937422a84f3a"
+    },
+    {
+      "path": "scripts/audit-release-readiness.sh",
+      "sha256": "8f0bb1ecae8481ef4fc8207d290e35da4ad8b6489c6ae60e22ed979dfeca5d1b"
+    },
+    {
+      "path": "scripts/audit-release-shipping-manifest.mjs",
+      "sha256": "1650e4fe40ef77428b4bf7e1a43b63a5f40c51fd4df60200766761e6710bd2ff"
+    },
+    {
+      "path": "scripts/audit-source-publication-readiness.mjs",
+      "sha256": "402d4957918da903e81353eafa1addad321e047ece14f5d2c93445785bb97f02"
+    },
+    {
+      "path": "scripts/audit-taira-release-readiness.mjs",
+      "sha256": "ccf6b4822d6ec48eea76ea51cd6c9144e819217e11d569f84bb83d5e464b409a"
+    },
+    {
+      "path": "scripts/audit-taira-release-readiness.sh",
+      "sha256": "1643db059539c3ee89877e1d649d4909a1f2b9a4b4fc44360fadbc41b3f6fb4c"
+    },
+    {
+      "path": "scripts/audit-workflow-action-pins.sh",
+      "sha256": "9d33ad55eb06a85c82a29327253a895f9249a060cb2c7acb05064c6bada4b8fd"
+    },
+    {
+      "path": "scripts/capture-source-freeze.mjs",
+      "sha256": "8a0f314f7925bb46d7fb43684e690b95be97c3f73a34b02bd5c65e2ee6e2a4b3"
+    },
+    {
+      "path": "scripts/export-release-unblock-bundle.sh",
+      "sha256": "576f79e8f95d42dd300a0e112f0b8642f6a300f158d57ac85655772a354e7b19"
+    },
+    {
+      "path": "scripts/extract-android-apk-signer-evidence.mjs",
+      "sha256": "76a536fc859e7cb928cacbb743f8c4e88e31095bfaea0e251fd54fb6f7da3e1b"
+    },
+    {
+      "path": "scripts/generate-nexus-production-evidence-template.sh",
+      "sha256": "05a1bc3e7dd2431f345b7b406c79c366fa735d2ea202877e933f4ddb5f68b7ce"
+    },
+    {
+      "path": "scripts/merge-release-prs.sh",
+      "sha256": "4d6d5edaf8caa3e1120f867ead1f6d3244df22b13b9b2a066b87637ae1ee4ae1"
+    },
+    {
+      "path": "scripts/quarantine-source-publication-outputs.mjs",
+      "sha256": "63ded57860cf47f089327fa0e704edbab6fbf6d0e23d9339937fb807217b7dc5"
+    },
+    {
+      "path": "scripts/resolve-release-pr-review-threads.sh",
+      "sha256": "67099d3427f4e4554ae576c783dc2f25f51c7bd1395f386bea4a20c477fb6b17"
+    },
+    {
+      "path": "scripts/run-pinned-yarn.sh",
+      "sha256": "e6be23cd876a4e7566d4378614f105190909f754d28147a4353d0084f466ac8b"
+    },
+    {
+      "path": "scripts/run-source-publication-quarantine.sh",
+      "sha256": "565e2d94128f419b3336b416b236e19c0d6767b8b9438a36db03d1d087417f78"
+    },
+    {
+      "path": "scripts/run-source-publication-readiness.sh",
+      "sha256": "85e91120cfc86646ae8e7b18685057a899d1d9773bf52e39c65c60b9e1f5ebd3"
+    },
+    {
+      "path": "scripts/scan-locked-dependencies.mjs",
+      "sha256": "c0a4665c4f74e5d0940ac14800c7e6ec0787478cd69315010fd084e90cea8197"
+    },
+    {
+      "path": "scripts/setup-workspace.mjs",
+      "sha256": "2c746c38894c955e4f50715c183caf72f0d9d453d5d7966ff93d37174bb7af6d"
+    },
+    {
+      "path": "scripts/test-github-governance-audit.sh",
+      "sha256": "38cbaaac9cf65e0f834eea7cb67c226aa322b46970c0a70a6bb15e67df127835"
+    },
+    {
+      "path": "scripts/test-ios-passkey-backup-contract.sh",
+      "sha256": "d1ed33a99e301ed8f586f6bbfbe9c6f140e4c908625a5899da87644d25d8d2d5"
+    },
+    {
+      "path": "scripts/test-iroha-production-send-readiness-audit.sh",
+      "sha256": "ea07ec3a3e1a2f9f9dfdfa8349820abfc17c3a15812dc994b8ba00f0672b73bc"
+    },
+    {
+      "path": "scripts/test-iroha-release-readiness-audit.sh",
+      "sha256": "b371a4db70c558bdff33d7e6d5a39128193a7f694dafc6292357163a80cb1fad"
+    },
+    {
+      "path": "scripts/test-iroha-wallet-coverage-audit.sh",
+      "sha256": "ebc51b401b0e42a4ae052bf5d38014a77f5998d675e787ebdc335bd42b47d918"
+    },
+    {
+      "path": "scripts/test-locked-dependency-scan.mjs",
+      "sha256": "80ac81630b54d7f98f6292abf39850a6ff223fea8f42b2305249d964b4cec185"
+    },
+    {
+      "path": "scripts/test-nexus-production-evidence-audit.sh",
+      "sha256": "8746c0fe462fa05fbe02f10feb3581b94aff60e1e235f232650d749ed47d5813"
+    },
+    {
+      "path": "scripts/test-nexus-production-evidence-template.sh",
+      "sha256": "1e1696a2a653eecfd2af307f785df427da40617acfedad0074c5f8c0fa20a8b5"
+    },
+    {
+      "path": "scripts/test-passkey-android-origin-parity-audit.sh",
+      "sha256": "65891eb86a0624976fa6efe2aaf6589a31776641d1d6a1d17acb858cd3006d63"
+    },
+    {
+      "path": "scripts/test-passkey-backup-prerequisites-audit.sh",
+      "sha256": "cb5abd7b29ccaf8dbc8440fe84f054077fdcc9b6cba3cf7dd8b9184cd77fe06c"
+    },
+    {
+      "path": "scripts/test-passkey-challenge-service-audit.sh",
+      "sha256": "ae6c72a91db8402726c84f50864bce6218b1d12f8441d29f52854f742f5d1595"
+    },
+    {
+      "path": "scripts/test-passkey-enabled-acceptance.mjs",
+      "sha256": "d34a46945874f16680f5ff4bfb4241c491a91cacb232c0feaca67ff08ca4ba57"
+    },
+    {
+      "path": "scripts/test-pinned-yarn-runner.sh",
+      "sha256": "77ea05d87cf8936c5b6005de297a5f72b52d9187c4b1f7f84e3fd4ac18252a6d"
+    },
+    {
+      "path": "scripts/test-plan-readiness-audit.sh",
+      "sha256": "235244da1a8765a7eb1f91fd823d4da3d247cbd21e42434e8659347d05775c8a"
+    },
+    {
+      "path": "scripts/test-private-overlay-readiness-audit.sh",
+      "sha256": "90e68bbd8618cceb643c595be98f6ddbbb036fd1688220757217a269ecc5846f"
+    },
+    {
+      "path": "scripts/test-release-pr-merge.sh",
+      "sha256": "fa81381ad5a6b248f8f9acc90581d691a0e0c85998130b0b51527743d3533e8e"
+    },
+    {
+      "path": "scripts/test-release-pr-readiness-audit.sh",
+      "sha256": "556eddf07be1e0a05829ca3c167bb7f4cbaaf5cdcd37f765648adf120a84e685"
+    },
+    {
+      "path": "scripts/test-release-pr-review-thread-resolver.sh",
+      "sha256": "1056303c1d037e3e371a270269ca86ffe8493d9daa289a24712f5c9bc4448ea1"
+    },
+    {
+      "path": "scripts/test-release-readiness-audit.sh",
+      "sha256": "d01cf587374f56e6615c359b7af720d43b454808e30db6fbb8eee73356ee3077"
+    },
+    {
+      "path": "scripts/test-release-shipping-manifest.mjs",
+      "sha256": "19c5be79b88e13acf97a1e94097650aaa5552356b2e06836fa743adb690a3ea9"
+    },
+    {
+      "path": "scripts/test-release-unblock-bundle-export.sh",
+      "sha256": "3059b405a699c4d29dcc3d6efe618d99b5b7384b34e245f0478dd872115850cd"
+    },
+    {
+      "path": "scripts/test-release-unblock-bundle-verify.sh",
+      "sha256": "b8c1be6267348d9f5ab6159767f9189e3766aa9b8128df0fb7c6ba472164344e"
+    },
+    {
+      "path": "scripts/test-release-unblock-command-contract.sh",
+      "sha256": "2dc45990dd17fa8132b337672fc9c9c2caad952d838cff841c823fef7a657120"
+    },
+    {
+      "path": "scripts/test-setup-workspace.mjs",
+      "sha256": "8dab2f5aac9728d22d5f5174e94c427773a7781be826657eb6ce20ca69c45a00"
+    },
+    {
+      "path": "scripts/test-source-publication-quarantine.sh",
+      "sha256": "1afe4810a6b06250942ddaf5d6efb39dc76a316b27f14ad9cbe3717198d55b90"
+    },
+    {
+      "path": "scripts/test-source-publication-readiness-audit.sh",
+      "sha256": "f403335d5d3eef07ddec6dbecb6942833a3f60bb814da144b61f3ecad72de7e3"
+    },
+    {
+      "path": "scripts/test-taira-release-readiness-audit.mjs",
+      "sha256": "78b1ef92b1ad293078da7fb06bdab712731301396ed6989cded213f8761286fb"
+    },
+    {
+      "path": "scripts/test-taira-release-readiness-http.mjs",
+      "sha256": "68aa41ac201ca3ba1bdb33fc637193d9f5ab9441c8dbd95042725c044ec57b29"
+    },
+    {
+      "path": "scripts/test-universal-wallet-vectors.mjs",
+      "sha256": "4c2740d6ea01e8d6e8d7e128b5b2aba52891559afe9d62734120c317aa2cd241"
+    },
+    {
+      "path": "scripts/test-workflow-action-pins-audit.sh",
+      "sha256": "afc93c5c6db7d0f9606578c43ee83a6674bf9e30cbfacf3b72758d4e5448aaf9"
+    },
+    {
+      "path": "scripts/verify-nexus-production-receipts.mjs",
+      "sha256": "de8097572045641a461b9315090082d93fb73955b01612cf7714a7b4c33ac968"
+    },
+    {
+      "path": "scripts/verify-release-unblock-bundle.sh",
+      "sha256": "f3103cafb28490271d607ca27a8fcc38d7a166166a2af0f73703f64bb5d331de"
+    },
+    {
+      "path": "scripts/verify-universal-wallet-vectors.mjs",
+      "sha256": "4d50ec4f20ab69e8f7e4e072fb2ff91a739516195e39e401bec721ad0fdca411"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/.dockerignore",
+      "sha256": "4916761fb4506c12167ebc5593ef6df18aace35027dbf75f12e0a7bf2730488f"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/Dockerfile",
+      "sha256": "0840c656389128cf4f419434b8ddd7ca5ddf6448283f76eaf49ac287a641a2c9"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/README.md",
+      "sha256": "74f492fd004fa390098146a18a797bf966a9a5fb3269d5967b688cb92f0e2bd5"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/docker-compose.production.yml",
+      "sha256": "e15b9d01d9096a66d3ca7c88512bf970913b84631a1a6ac78cda1dbe9c66ddae"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/docs/credential-store-migration.md",
+      "sha256": "89e2b2587e888aa6ece8186d9ada22b949a6518e1eed5f1207d496d2f7d8e37d"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/docs/production-deployment.md",
+      "sha256": "17994cdb7c5cca9f3695de8837b24346549a2ae6da8e6591b14d016e1ae18185"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/docs/release-checklist.md",
+      "sha256": "ad61cc080d50e75cf0dce7f1d8c7f766428f76acbfe8e684cc96afa72a18b09c"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/docs/rollback-checklist.md",
+      "sha256": "4c10a4925c4d69dda1ea9edf49bc5c82818c32c79c338b6a2d33d9a1dea31a3a"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/package-lock.json",
+      "sha256": "46ec0c7d8db404106590062e13dedebd7b88980371005c4b5885126c018e23a5"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/package.json",
+      "sha256": "194bce6c7dce376a7ef3868a3f8310fa3262e1f76527752eee3c95b6cf248284"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/audit-deployment-evidence.sh",
+      "sha256": "2bceec01af73ffa6605463eb8aa20b055cc7c51d2410f2ab9fc6b37a88006a1b"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/generate-deployment-evidence-template.sh",
+      "sha256": "91657277f5c899e03b9f8e382a02530484d1976009fa8ed557c67699072e654c"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/production-deployment-evidence.json",
+      "sha256": "ab0e789e437fc2c3f84a3550c1549141cacf2e39224d0d769be20a0811f63df3"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/production-smoke.mjs",
+      "sha256": "a76d6c14be776b5efd496b018bc23b5b0f9345e01b5b9288841d4fa2b073da44"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/retire-json-credential-writer.mjs",
+      "sha256": "49cc4d99b615bdd3c03b35e0787e9d51b1dc9e4c795032b02b6841863417d2ff"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/test-deployment-evidence-audit.sh",
+      "sha256": "c7ec2a8759d3907948ee485fabb0b196eae1578c71a8562d1b25aaa518ac405c"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/scripts/test-deployment-evidence-template.sh",
+      "sha256": "f0df360056c2f165a6d08fd57fa4d47b2148ccf0a0a9b1c44b0b0cebe48325d6"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/authorization.js",
+      "sha256": "17bd09be654274ac1535f667453d700ea797a67bd4f9f64a7f620c873ac84680"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/base64url.js",
+      "sha256": "595c26f9e79ac3bc9490f7e8039fe91e03c4a1160d97e339c555d1f3f44063d9"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/errors.js",
+      "sha256": "48dfba6a1fa95966beb59b9cd870ed76ee707177da3b5526cab268de02570f40"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/retire-writer.js",
+      "sha256": "220cab5f46285708fd8f2172db0629f4d04b46b0f4c9ac647ae9149b05568505"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/server.js",
+      "sha256": "8f329103ccd1281adbfffc2255449f68d5fa8a4985d118a640743afeb198859d"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/service.js",
+      "sha256": "de0e2ca08e9d46235efe9a467963274a3cfed7a4ba5cfbf6efd5b0ca49f3e359"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/store.js",
+      "sha256": "f70731e1219f417f4575bac9d4ac465b40949e356b55b4679d1cfd52dda05f49"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/validation.js",
+      "sha256": "f5ca5272e2b65d4e1a02e8e58ee145fb9ce6d31e45b47c1a2509df08c51eed47"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/src/writer-lease.js",
+      "sha256": "8294cbf79d01d139a0348f9f832d2e249301947e32168ea5b3e8d968e3b25eea"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/authorization.test.js",
+      "sha256": "b248404e5eb177fbca91118229248cad25e34ac2dae9a583685c365415a7c821"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/credential-owner-index.test.js",
+      "sha256": "7923bf2f0f1065109c49bdfd99b6e03ac519ab8ba5ba67f75fb2bda36a69f9b4"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/deployment-manifest.test.js",
+      "sha256": "86298c07d9307e103d51029bba561a689469e373cd9190d16b86182f6ae688b6"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/openapi-contract.test.js",
+      "sha256": "9bfead032a7e7d027bd1334fd065f76ac1ecd197cdb76424480d7dff85ca2826"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/production-smoke.test.js",
+      "sha256": "354ae663d66225e89dc0d65592625d5e933813c22b11c02de3648e312f186301"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/security-regression.test.js",
+      "sha256": "6a8eaa07d4271bd3bc9834b7d8173361c19caed05de171cb839d9727e15fecef"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/service.test.js",
+      "sha256": "fa96e0a2b1da16ab4ee540d2de31213b1c7dd1f849ebea0cd6ed8620da494949"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/webauthn-fixture.js",
+      "sha256": "061120b7bb589f93fc62be7cb53ef373b8d0248c68a78b41569c1bd95f4b58a8"
+    },
+    {
+      "path": "services/passkey-backup-challenge-service/test/writer-lease.test.js",
+      "sha256": "7081af62f3798f7f0fba05fabe66ef02606cf7b02303179753436365e2faa8fb"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/README.md",
+      "sha256": "edd94169c0972dc379400de25148a834b77bb7d0acc37838f25b66e8038862e5"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/docs/bootstrap-proof.md",
+      "sha256": "cc535a156e939c6e59620c1a1864439db549c3302d6211849180b571f2cafb12"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/docs/legacy-cutover.md",
+      "sha256": "eac906bb5a863e608dc4cdd57713c3e16c7448babb8aac4ffdd0a10b53759114"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/package-lock.json",
+      "sha256": "28862797e7f47bd1364e146ded39d637fd23fcf78c894c14bab078c4c3902042"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/package.json",
+      "sha256": "d8c70373bce71f08a6116bdc35bf73fcf123b91bd00e9775b4a808e2d62974b5"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/scripts/quarantine-legacy-credentials.mjs",
+      "sha256": "6a2daf29ba282a973cf9b2bf0a76b4165dac303f6e9b129246837472c7f393f2"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/scripts/reconcile-legacy-credentials.mjs",
+      "sha256": "5bbbe4e70e2c24280682e704708cd6f874198465f92802478509091b84bdf248"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/scripts/verify-legacy-cutover-manifest.mjs",
+      "sha256": "d6591428fdc0a016cd2e551743dc377764046cad8cbba2dc08e8c25089305868"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/scripts/verify-retired-json-writer.mjs",
+      "sha256": "ccf7619364d11061d1a43fadae4879bb8fa3a9c8a514d8e2c9a31c1efb401d4c"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/scripts/verify-sealed-legacy-cutover.mjs",
+      "sha256": "46d1244f2feae65232673e3163b5f182dfe3d4695deb581f976f1d31a49bb8fd"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/apple-app-attest-admission.js",
+      "sha256": "0012933ffc5101f065f04a7a005046169ced0eae6d38931df23a0dcdc97ba1d9"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/apple-app-attest-receipt.js",
+      "sha256": "40609093e2aa728efaf33dab9248fc735eec00360ed6639b22b260908578ba93"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/apple-app-attestation-root-ca.pem",
+      "sha256": "c778d09ac341f7fd9f8f3b19e2b815af6aed4ad4490e1e92c05cb355212a5013"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/apple-root-ca-g3.cer",
+      "sha256": "63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/authority.js",
+      "sha256": "c92975c69ec1a81c271cea623c9bf9f786c3f2b675e343f03a9e0c7b76844ae8"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/bootstrap-proof.js",
+      "sha256": "38e7b8c2df955b589ef0bd6d0a4054f7b174c745b22b1a336ee497a78597db32"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/http.js",
+      "sha256": "9980caae3c2a33a361e72dec52b17cf1c7c89d381314e0164d7932c947701d1d"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/legacy-cutover-manifest.js",
+      "sha256": "a10a440b4c3cd97d882f2dff33bd4198a9ed3e3bd38cde08eb882161d1c5e91a"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/legacy-cutover-verifier.js",
+      "sha256": "bd0efbfd02c7c51ff602b3cd19af8e7969f3abd2d98732b1bd304aaf93a9012b"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/legacy-import.js",
+      "sha256": "14c9c5e0ad2ebbc80b2262a629459d2bca53d68dd63ac65d6cb9f62d99f360ad"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/legacy-quarantine.js",
+      "sha256": "fbf80542302c998a5c2f165b9a9ff871c90079474a1ae451b45e8824436a1474"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/legacy-reconciliation.js",
+      "sha256": "5262abdd8d9fa1407da08797d673042cfcbc06b2950f6dbaf1f9b178a722f1b0"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/legacy-retirement-verifier.js",
+      "sha256": "e0a27dcf119e25066b3c8bdef165112bec08b159993d540bcddc4802dafc55b3"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/play-integrity-admission.js",
+      "sha256": "7147f76626ac808ab2ebafb80b1c96315726b7d329ab9012fc9d677651771988"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/store.js",
+      "sha256": "6e6091de8f14e330a5aa3ed72096fd003302cb42deb9ecd07f060e9bcc1c8a64"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/validation.js",
+      "sha256": "a43027415c631c95681188cd64aa08f044cdf39da9add9eae8b6f0539d5d850b"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/verifier-contract.d.ts",
+      "sha256": "2c0964cfbe0b6208c0a72deb66e73fd01689a13d1e182f92efeb9bd2c03b2d93"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/src/webauthn-verifier.js",
+      "sha256": "02ed2c5b31f4e0b6ef3d9b3cf0727ae8f5ef47d3036e99c3bf1c66c70725ffbb"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/apple-app-attest-admission.test.js",
+      "sha256": "069e4ac9931ca592249fc1c459f15bd5e0783e46755a4d0648d1ae2ce917608d"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/apple-app-attest-receipt.test.js",
+      "sha256": "f07a1e3089b5ac3cdc0962d92b744ae647084a58804b662e62b72718532f700d"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/apple-app-attest-sample.json",
+      "sha256": "a2ba0e8a6d1a9b0a744298d367ce54a4024056d8373a01e7dc359338391ee941"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/authority.test.js",
+      "sha256": "e1c5fd00baac5344b7e8598b552cb93ac37a124414ab21422f142bc2fb00cae3"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/bootstrap-play-integrity-vectors.json",
+      "sha256": "b05bcb66af769e304e2928ee3be32ee76d848758d16c781b2a4ac03b3dabcf3f"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/challenge-credential-mutation.test.js",
+      "sha256": "3490bb1ab370320dcc8c18f8865b5714d97e14bc1c82bb7fc1b129bc46547f71"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/fixtures.js",
+      "sha256": "7e4cdeadca2ce7280a4aa6871c9d13bf46e50df9c2557665632a1db8d4cb912d"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/generation-head.test.js",
+      "sha256": "79619d5aa12eeadbc533c23bf82ac6916507a3a1a74c82fc57cb42c4eb6ac533"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/http.test.js",
+      "sha256": "9a23b1d36ca9cf4411f140b515f029cf40eaddeee0a7df421a9028ab051fa113"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-cutover-challenge.test.js",
+      "sha256": "8fd2f7866c2405983024b32107a37018e2827c362fa48c641be5f99d4c0d3382"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-cutover-manifest.test.js",
+      "sha256": "aef641be6a750bc9fc7baed21af24d6f529e4df758bdea294336682b076113a5"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-cutover-verifier.test.js",
+      "sha256": "cba3abaa96e5d0fdc423180c4b1f98546c9fa46db1fc070c5284af1d670f75e4"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-cutover-webauthn.test.js",
+      "sha256": "093215160313fbbc04287227761a67f7ddf992c06132626cf5a096817fc54739"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-import-worker.js",
+      "sha256": "38a0b7b3cd4cc8c70b16d8136c1c139300106984d87d4340816edb6a0b24f3df"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-import.test.js",
+      "sha256": "887ff16de06b3364165ed38e8a33d46149427a48bba4ed26f3b55b439d728ab0"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-quarantine.test.js",
+      "sha256": "cb01c1daf71268be7ff4b39995d233c8502825b12986b57af8f57b2cdd5673e0"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-reconciliation.test.js",
+      "sha256": "ab66159645eea9ae9c13082e764cc8fe49cc2869e1c7d1429573ff8470e5cd65"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-retirement-verifier.test.js",
+      "sha256": "ae2f7ddfbeffc61b405a28d7115eeca376777713438fb2784c34d802dc8317e6"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/legacy-schema-migration.test.js",
+      "sha256": "1a45fd674442e0c36ba6d261ddb9ccf7a186d679cef1ac43cbca42ffb32401b5"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/play-integrity-admission.test.js",
+      "sha256": "e2714d193a7fd72496b433dcbd7d94c532292ead42b0a4f86574c0cfe2a8c177"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/process-worker.js",
+      "sha256": "8459654a6ecee1eb43447794ffbca5388d689f357edfbc3418b8d026de2fe342"
+    },
+    {
+      "path": "services/passkey-backup-owner-authority/test/webauthn-verifier.test.js",
+      "sha256": "48923a7805e751387da8fefc5834d2d8a0692bbad5450653e6374614592fcac0"
+    }
+  ],
+  "includesWorkingChanges": true
+}

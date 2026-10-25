@@ -7,8 +7,12 @@ interface FileData {
   active: boolean;
   password: string;
   isError: boolean;
+  errorDescription: string;
   isLoading: boolean;
   isComplete: boolean;
+  primaryOnly: boolean;
+  isFileLoading: boolean;
+  fileLoadError: boolean;
   ethWalletID: string;
   description: string;
   json: KeyringPair$Json;

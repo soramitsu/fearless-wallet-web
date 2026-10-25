@@ -72,8 +72,10 @@ import { getCostOfAssets } from '@/helpers/transfers';
 import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
 
 export default defineComponent({ name: 'StakingPage',
+  setup: () => ({ recoveryOnly: useWalletRecovery() }),
   components: {
     Bond,
     StakingItem,
@@ -98,10 +100,14 @@ export default defineComponent({ name: 'StakingPage',
 
           return this.stakingStore.stakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
     },
+    recoveryStakingItems() {
+      // A zero staked balance does not rule out unclaimed rewards.
+      return this.recoveryOnly ? this.stakingStore.allStakingItems : this.stakingStore.myStakingItems;
+    },
     filteredMyStakingItems() {
-      if (this.filterValue === '') return this.stakingStore.myStakingItems;
+      if (this.filterValue === '') return this.recoveryStakingItems;
 
-          return this.stakingStore.myStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
+          return this.recoveryStakingItems.filter(({ network }) => isSubstrString(network, this.filterValue));
     },
     haveFilteredItems() {
       if (this.isAllTab) return this.filteredStakingItems.length;
@@ -117,13 +123,13 @@ export default defineComponent({ name: 'StakingPage',
       return !this.showStakingItems && !this.showMyStakingItems;
     },
     showStakingItems() {
-      return this.stakingStore.stakingItems.length !== 0;
+      return !this.recoveryOnly && this.stakingStore.stakingItems.length !== 0;
     },
     showMyStakingItems() {
-      return this.stakingStore.myStakingItems.length !== 0;
+      return this.recoveryStakingItems.length !== 0;
     },
     showBond() {
-      return this.stakingNetwork !== null;
+      return !this.recoveryOnly && this.stakingNetwork !== null;
     },
     showLoading() {
       const networks = this.networksStore.networks.filter(({ name }) =>
@@ -145,20 +151,20 @@ export default defineComponent({ name: 'StakingPage',
           }, 0);
     },
     isAllTab() {
-      return this.activeTabName === 'all';
+      return !this.recoveryOnly && this.activeTabName === 'all';
     },
   },
   watch: {
     "showStakingItems": 'updateTab1',
     "showMyStakingItems": 'updateTab2',
-    "selectedWallet": 'updateTabStakingParams',
+    'accountsStore.selectedWallet.address'() { void this.updateTabStakingParams(0); },
   },
   async created() {
     const updateTab = () => this.updateActiveTabName(this.showStakingItems ? 'all' : 'my');
 
         if (this.showMyStakingItems && !this.showStakingItems) updateTab();
 
-        await this.stakingStore.getStakingParams();
+        await this.updateTabStakingParams(0);
 
         if (this.activeTabName === '') updateTab();
   },
@@ -169,20 +175,24 @@ export default defineComponent({ name: 'StakingPage',
     updateTab2(newValue: boolean) {
       if (!newValue) this.updateActiveTabName('all');
     },
-    async updateTabStakingParams() {
+    async updateTabStakingParams(delay = 5000) {
       this.isLoading = true;
-
-          await this.stakingStore.getStakingParams({ delay: 5000 });
-
-          this.isLoading = false;
+      try {
+        await this.stakingStore.getStakingParams({ delay });
+      } catch (error) {
+        console.warn('Unable to refresh staking details', error);
+      } finally {
+        this.isLoading = false;
+      }
     },
     updateFilterValue(value: string) {
       this.filterValue = value;
     },
     updateActiveTabName(name: StakingTab) {
-      this.activeTabName = name;
+      this.activeTabName = this.recoveryOnly ? 'my' : name;
     },
     updateNetworkBond(stakingNetwork: Nullable<NetworkParams> = null, updated = false) {
+      if (this.recoveryOnly) return;
       this.stakingNetwork = stakingNetwork;
 
           if (updated) this.updateTabStakingParams();

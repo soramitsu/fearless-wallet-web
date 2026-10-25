@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-12",
+  "source_commit": "b1fdcba0766cf430be34cd442b49725450c32353",
+  "source_sha256": {
+    "scripts/extension-smoke-primitives.mjs": "99090a365d64a48079ab664cf53379e10404ac720874aae080a4cf39d655c40a",
+    "src/components/FInput.vue": "6452f177e0f8c99fe9f0552d4ac5723515afa77948ea5d163d2c310dfdc11cb9",
+    "src/components/ValidatedInput.vue": "29136e8a510bb0a3c0cf1386f7e7f0b650981d975418e55556f780af25a3cdad",
+    "src/screens/welcome/Unlock.vue": "2907166a49aac5bb2670a8097e509f4f7f2a6f817fa68a230dfd382d5ecf4208",
+    "tests/unit/unlock-form-recovery.spec.ts": "b8aff4de35e994f3f6235b9012b5b85a860b881eb177470ba8d6399df4c5f1de"
+  },
+  "status": "Unlock recovery locally qualified; remaining W-A6 and release gates stay open.",
+  "unit": {
+    "passed": 1844,
+    "skipped": 18,
+    "failed": 0,
+    "files_passed": 230,
+    "files_skipped": 2
+  },
+  "checks": [
+    "Single in-flight unlock guards repeated Enter, and fields remain readonly during the request.",
+    "A transport rejection restores retry with generic localized feedback, distinct from wrong-password validation.",
+    "Late completion cannot navigate after component unmount; local password state is cleared.",
+    "FInput ignores IME Enter; ValidatedInput links error descriptions to the input with persistent polite feedback.",
+    "Forgot password and Support are native keyboard controls with 48px minimum height.",
+    "Unlock uses the existing static logo and reduced brand title in its Calm layout.",
+    "TypeScript, changed-file ESLint and development extension build pass.",
+    "29 offline Chrome captures and toolbar bootstrap pass. Actual public-fixture wrong-password feedback, keyboard recovery-dialog open/Escape close and successful password retry pass."
+  ],
+  "visual_review": [
+    "23-unlock-retry.png",
+    "24-unlock-russian.png",
+    "25-unlock-akkadian.png",
+    "26-unlock-egyptian.png",
+    "27-unlock-200-percent.png"
+  ],
+  "evidence_root": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "logs_sha256": {
+    "wa6-unlock-before.log": "efadc5c69fc40fe853f36753229bca56572cc22a19035aa28a81b226f23dfe96",
+    "wa6-unlock-after.log": "d470d8c78889dc9f6864626439f804fffbe7880f465e80674bb54c37d613c3a8",
+    "wa6-unlock-after-2.log": "23cbe27fca1533f96d287c034e18d372e97c8ebfbc9cdc9ca0f6cb1036c9dba8",
+    "wa6-unlock-full-unit-2.log": "ea2e69f878b769976ef6eec347e0e22079f6ede4341db0dde363a31b070c9d0b",
+    "wa6-unlock-types-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-unlock-lint-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-unlock-build-2.log": "6eb7418c24ed9656ddfcc738898a555972abeb935cad09b8683ea0143d50d16d",
+    "wa6-unlock-browser.log": "1509113e0c3d7eb95362104855f65d0612dca6cfd3ed31618cf5df39f04e27f5",
+    "wa6-unlock-browser-2.log": "9ff876396dc79a4a22dcfa2efa201ca13b7f428d7d0b2f5d5d1de5bbbdec0384"
+  },
+  "browser_results_sha256": "1e17f292cbe1490f07d7b29702226900b1742a73e59d525e8dc25cf185316062",
+  "captures_sha256": {
+    "01-portfolio-controls.png": "b7195a63941d5c1bfaa4a9262c85ff0e3a32c79194ccdd7be2504516e9a93161",
+    "02-manage-switches.png": "b275c0dd0da2246e3c79ac4fa253b5fab87f499ed02f08d957ba0880b4c8f6ea",
+    "03-send-form.png": "c34720275b6693981500e9453d007243e193bb6f9a34a826fa9a659a4710a3ac",
+    "04-send-amount-keyboard-focus.png": "aa82c8e4fb75c6c3412bb85f98d3c5e3b2e84b73da66251a585c66d9e3b65ea6",
+    "05-send-recipient-keyboard-focus.png": "7aab257ef833bbea3cc355eb5b4c039ad8a31e8ec7674b13e0fd223f7baa000e",
+    "06-receive.png": "2b3a18589766922f8951db46a4ca6dbc1c7dec519fd82b414c378fb15d842004",
+    "07-receive-button-keyboard-focus.png": "dd21d1564a5ebcdb209df75ef7a9699fa9e576933cf01cd7089a8acc537e6a51",
+    "08-settings.png": "44a1008616c8306258d162f692cd38874fbfc3ba8587d6de75a0c254bd85b088",
+    "09-network-tabs.png": "16fc1d582d17c6888a1c8da34c8639914f63bedbb189e35613cb7f2d00bbb09b",
+    "09b-network-search-clear.png": "439c47f2f1c5da76d913bef1fc28331cb94529d73b23763f391e326627e7e467",
+    "10-calm-change-password.png": "6ca42232b3044b8c1eee4fef2a3f3b556080161cf247190fc6f00741235696ac",
+    "11-calm-reset-wallet.png": "bb256f66a8b193221b9ee4da1e2ceb6d1afb46d47474d1670225114d80a52f87",
+    "12-currency-dialog.png": "12dc92ec3b22aa65fd933dd860f57fbf354f2ddeb8b619fac7720535eeee0221",
+    "12b-currency-search-clear.png": "13b3c7a1205131b0242109c50cf6d9d1e31f9e9141f7ace22bd0f2045439d08c",
+    "13-dialog-lite.png": "da3dbccb26efb11d81d7999058d518b2db7b8aef94ab73771b51673b2d7e9833",
+    "14-dialog-reduced.png": "38b6f434b2153981484c5b5bc4f646c1853bcf608ef9edba9c7ee5ea6e3cb1ac",
+    "15-dialog-high-contrast.png": "1ed6b69c7822c080cf440f01c4c0c953b92fd448dfeced5eececcbf41b4ebe71",
+    "16-dialog-reduced-motion.png": "31eae435f01002ef8925624eb9c3c87b2d1cfb8b6834b993b4540e89cf9ad6e8",
+    "17-dialog-forced-colors.png": "e9a5fc2dfdbea993e4c5b5f4e4c223e41fc648a94b800272fe0623fc9a55dc99",
+    "18-dialog-narrow.png": "b4bab7b33aacce48e54088daedc70bad2f3664baadaaef16150487282bcc4f52",
+    "19-dialog-200-percent.png": "a75412b0b7d263af719c8cab6faf34f34866ebf4a2f8a713f087148a2da98a02",
+    "20-dialog-russian-search.png": "0456df780a5cf0fd2fa9463c0e79fe03754069592ea2429dae58d9c8ac13e477",
+    "21-dialog-akkadian-search.png": "c2490d38cb25e0f0af421edc002ca879f7b6833f73074b4ebada616ee02f95db",
+    "22-dialog-egyptian-search.png": "74f4d455d8df623c9ebde3fc4a9ca5095d21c84e97e5b11d7b26de3199da8413",
+    "23-unlock-retry.png": "f4564dc7ee1fbf77a940c39c55263903b51251e37fbcff50fcd1f975c63f0f74",
+    "24-unlock-russian.png": "a5e1472b63c24172d3b1e33a7d695ec81dc4d6326892e5a192b99ce0e08edcf9",
+    "25-unlock-akkadian.png": "de67e4ea08f5d1d9d613a669a481ac5c54e9414535a0c1e8038b48e5c412505d",
+    "26-unlock-egyptian.png": "5819a616261081550ad5e6dc94f38b75ca0b94de0c198e6141edec3152321cca",
+    "27-unlock-200-percent.png": "84d5c92892d6398396fd2db2b0b250132dd122ba0ae401c12888634c2c4f90a5"
+  },
+  "build_file_manifest_sha256": "8dec81e4b0b4212f3c4f2011997fe7b720b5df3ffa3cb9493c3e26bcd71fb7bd",
+  "build_files": 495,
+  "preserved_failures": [
+    "All four new unit regressions failed before correction, including an unhandled rejected unlock request.",
+    "Initial after run needed a specific generic-error selector and reset of one-shot mocks; all four then pass.",
+    "First browser run captured 29 screens but timed out opening recovery by Enter because the harness omitted the native character text. The corrected CDP key event includes carriage-return text; the final run verifies opening and dismissal.",
+    "Initial screenshots exposed oversized animated branding; the final build uses a smaller static mark."
+  ],
+  "limitations": [
+    "Mock transport rejection is covered by component regression, not induced in the real-browser fixture.",
+    "281x300 CSS layout represents 200%-equivalent space; no actual toolbar zoom or operating-system screen-reader session claimed.",
+    "All supplied locale strings are reused; no linguistic retranslation claimed.",
+    "This development build does not replace production, signed-distribution, historical upgrade or final release gates."
+  ]
+}

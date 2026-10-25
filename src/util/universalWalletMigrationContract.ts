@@ -53,9 +53,11 @@ type UniversalWalletMigrationSnapshot = {
 function getUniversalWalletMigrationRequiredAction(
   snapshot: UniversalWalletMigrationSnapshot
 ): UniversalWalletMigrationRequiredAction {
-  if (snapshot.hasUniversalWallet) return 'normal-access';
+  // Legacy export inventory never restricts the original account's signer.
+  // Adding network keys is independent of access to an existing wallet.
+  if (snapshot.hasUniversalWallet || snapshot.legacyVaults.length) return 'normal-access';
 
-  return snapshot.legacyVaults.length ? 'migrate-before-access' : 'create-universal-wallet';
+  return 'create-universal-wallet';
 }
 
 function allowsUniversalWalletNormalAccess(snapshot: UniversalWalletMigrationSnapshot): boolean {

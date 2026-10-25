@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { getId } from '@extension-base/utils';
+import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import type { RequestService } from '@extension-base/services/request-service';
 import type {
   SolanaRequestPayload,
@@ -10,7 +10,10 @@ import type {
   SolanaTransactionSimulationPreview,
   SolanaTransactionPreview,
 } from '@extension-base/services/request-service/types';
-import type { SolanaFeeForMessageResponse, SolanaSimulationResponse } from '@extension-base/services/solana-rpc-service';
+import type {
+  SolanaFeeForMessageResponse,
+  SolanaSimulationResponse,
+} from '@extension-base/services/solana-rpc-service';
 import type {
   SolanaAccountInfo,
   SolanaSignAndSendTransactionOptions,
@@ -20,7 +23,6 @@ import type {
   SolanaSignMessageRequest,
   SolanaSignTransactionRequest,
 } from '@extension-base/page/types';
-import type { Resolver } from '@extension-base/background/types/types';
 import {
   getSolanaSerializedMessageBase64,
   parseSolanaSerializedTransaction,
@@ -46,6 +48,10 @@ export default class SolanaRequestHandler {
     return Object.keys(this.solanaRequests).length;
   }
 
+  resetWallet(): void {
+    for (const request of Object.values(this.solanaRequests)) request.reject(new Error('Reset wallet'));
+  }
+
   getSolanaSignRequest(id: string): SolanaRequestsSubjectPayload | undefined {
     return this.solanaRequests[id];
   }
@@ -54,7 +60,7 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignMessageRequest,
     account: SolanaAccountInfo,
-    id = getId()
+    id = createSigningRequestId('solana')
   ): Promise<SolanaSigningResponse> {
     assertSolanaMessageRequest(request);
 
@@ -76,7 +82,7 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignTransactionRequest,
     account: SolanaAccountInfo,
-    id = getId()
+    id = createSigningRequestId('solana')
   ): Promise<SolanaSigningResponse> {
     assertSolanaTransactionRequest(request);
 
@@ -99,13 +105,13 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignAndSendTransactionRequest,
     account: SolanaAccountInfo,
-    id = getId(),
+    id = createSigningRequestId('solana'),
     simulateTransaction?: SimulateSolanaTransaction,
     estimateFee?: EstimateSolanaTransactionFee
   ): Promise<SolanaSigningResponse> {
     const options = assertSolanaSignAndSendTransactionRequest(request);
 
-    const signing = this.confirmSign(
+    return this.confirmSign(
       {
         account,
         ecosystem: 'solana',
@@ -119,24 +125,21 @@ export default class SolanaRequestHandler {
         transactionPreview: previewSolanaTransaction(request.transactionBase64),
         url,
       },
-      id
+      id,
+      (queued) => {
+        const capturedTransaction = queued.transactionBase64!;
+        if (simulateTransaction)
+          this.updateSignAndSendSimulation(queued, capturedTransaction, simulateTransaction).catch(console.error);
+        if (estimateFee) this.updateSignAndSendFee(queued, capturedTransaction, estimateFee).catch(console.error);
+      }
     );
-
-    if (simulateTransaction) {
-      this.updateSignAndSendSimulation(id, request.transactionBase64, simulateTransaction).catch(console.error);
-    }
-    if (estimateFee) {
-      this.updateSignAndSendFee(id, request.transactionBase64, estimateFee).catch(console.error);
-    }
-
-    return signing;
   }
 
   confirmSignAllTransactions(
     url: string,
     request: SolanaSignAllTransactionsRequest,
     account: SolanaAccountInfo,
-    id = getId()
+    id = createSigningRequestId('solana')
   ): Promise<SolanaSigningResponse> {
     assertSolanaAllTransactionsRequest(request);
 
@@ -162,56 +165,59 @@ export default class SolanaRequestHandler {
 
   private get publicRequests(): SolanaRequests {
     return Object.fromEntries(
-      Object.entries(this.solanaRequests).map(([id, { reject: _reject, resolve: _resolve, ...request }]) => [
-        id,
-        request,
-      ])
+      Object.entries(this.solanaRequests).map(
+        ([id, { reject: _reject, resolve: _resolve, authorizationRevision: _authorizationRevision, ...request }]) => [
+          id,
+          structuredClone(request),
+        ]
+      )
     );
   }
 
-  private signComplete(
+  private confirmSign(
+    payload: SolanaRequestPayload,
     id: string,
-    resolve: (result: SolanaSigningResponse) => void,
-    reject: (error: Error) => void
-  ): Resolver<SolanaSigningResponse> {
-    const complete = (): void => {
-      delete this.solanaRequests[id];
-      this.publish(true);
-    };
-
-    return {
-      reject: (error: Error): void => {
-        complete();
-        reject(error);
-      },
-      resolve: (result: SolanaSigningResponse): void => {
-        complete();
-        resolve(result);
-      },
-    };
-  }
-
-  private confirmSign(payload: SolanaRequestPayload, id: string): Promise<SolanaSigningResponse> {
+    onQueued?: (request: SolanaRequestsSubjectPayload) => void
+  ): Promise<SolanaSigningResponse> {
     return new Promise<SolanaSigningResponse>((resolve, reject): void => {
-      this.solanaRequests[id] = {
-        ...this.signComplete(id, resolve, reject),
-        ...payload,
+      if (this.solanaRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate Solana request ID');
+      let settled = false;
+      const complete = () => {
+        if (settled || this.solanaRequests[id] !== queued) return false;
+        settled = true;
+        delete this.solanaRequests[id];
+        this.publish(true);
+        return true;
       };
+      const queued: SolanaRequestsSubjectPayload = {
+        ...structuredClone(payload),
+        authorizationRevision: this.requestService.authRequestHandler.getSigningAuthorizationRevision(
+          payload.url,
+          'solana',
+          payload.account.address
+        ),
+        resolve: (result) => {
+          if (complete()) resolve(result);
+        },
+        reject: (error) => {
+          if (complete()) reject(error);
+        },
+      };
+      this.solanaRequests[id] = queued;
 
       this.publish();
       this.requestService.popupOpen();
+      onQueued?.(queued);
     });
   }
 
   private async updateSignAndSendSimulation(
-    id: string,
+    request: SolanaRequestsSubjectPayload,
     transactionBase64: string,
     simulateTransaction: SimulateSolanaTransaction
   ): Promise<void> {
     const update = (simulation: SolanaTransactionSimulationPreview): void => {
-      const request = this.solanaRequests[id];
-
-      if (!request) return;
+      if (this.solanaRequests[request.id] !== request) return;
 
       request.simulation = simulation;
       this.publish();
@@ -228,14 +234,12 @@ export default class SolanaRequestHandler {
   }
 
   private async updateSignAndSendFee(
-    id: string,
+    request: SolanaRequestsSubjectPayload,
     transactionBase64: string,
     estimateFee: EstimateSolanaTransactionFee
   ): Promise<void> {
     const update = (fee: SolanaTransactionFeePreview): void => {
-      const request = this.solanaRequests[id];
-
-      if (!request) return;
+      if (this.solanaRequests[request.id] !== request) return;
 
       request.fee = fee;
       this.publish();
@@ -420,6 +424,13 @@ function normalizeSolanaSignAndSendOptions(
       throw new Error('Invalid Solana max retries');
     }
     normalized.maxRetries = options.maxRetries;
+  }
+
+  if (options.minContextSlot !== undefined) {
+    if (!Number.isSafeInteger(options.minContextSlot) || options.minContextSlot < 0) {
+      throw new Error('Invalid Solana minimum context slot');
+    }
+    normalized.minContextSlot = options.minContextSlot;
   }
 
   if (options.preflightCommitment !== undefined) {

@@ -19,13 +19,16 @@ export default class EvmBalanceService {
 
     if (ethereumAddress === '') return [];
 
-    const filteredNetworks = this.state.networkService.activeNetworkByEcosystem.evm.filter(({ name }) =>
-      networks?.includes(name.toLowerCase())
+    const requested = new Set((networks ?? []).map((name) => name.toLowerCase()));
+    const filteredNetworks = this.state.networkService.networkValues.filter(
+      ({ ecosystem, name }) => ecosystem === 'ethereum' && requested.has(name.toLowerCase())
     );
 
     const promises: Promise<ResponseBalanceRequest[]>[] = filteredNetworks.map(
       async ({ assets, name, networkStatus }) => {
         const api = this.state.getEvmApi(name);
+
+        if (!api) return [];
 
         const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
         const timeDiff = Date.now() - timeout;
@@ -34,25 +37,26 @@ export default class EvmBalanceService {
         if (shouldSkipUpdate || networkStatus === NETWORK_STATUS.DISCONNECTED) return [];
 
         // Save timeout [network api][ethereum address]
-        if (api) api.timeout[ethereumAddress] = Date.now();
+        api.timeout[ethereumAddress] = Date.now();
 
-        if (assetId) {
-          const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, assetId, this.state);
+        const requestedAssets = assetId ? [{ id: assetId }] : assets;
+        if (!requestedAssets.length) return [];
+        const address = this.state.keyringService.getSubstrateAddress(ethereumAddress);
 
-          return [{ balance, network: name, assetId }];
-        }
+        return this.state.balanceService.refreshNetworkBalances(name, address, async () => {
+          const assetsPromises = requestedAssets.map(async ({ id }) => {
+            const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, id, this.state);
 
-        const assetsPromises = assets.map(async ({ id }) => {
-          const balance = await this.fetchEvmAssetBalance(ethereumAddress, name, id, this.state);
+            return { balance, assetId: id, network: name };
+          });
 
-          return {
-            balance,
-            assetId: id,
-            network: name,
-          };
-        });
-
-        return await Promise.all(assetsPromises);
+          // Wait for every result even if one request throws before its balance error handler.
+          const results = await Promise.allSettled(assetsPromises);
+          return results.map((result) => {
+            if (result.status === 'rejected') throw result.reason;
+            return result.value;
+          });
+        }, !assetId);
       }
     );
 
@@ -109,25 +113,14 @@ export default class EvmBalanceService {
 
       return utilityBalance;
     } catch {
-      state.balanceService.setBalanceItem(
-        networkKey,
-        {
-          state: APIItemState.ERROR,
-          symbol,
-          id,
-          relayChain: 'ethereum',
-          free: '0',
-          reserved: '0',
-          frozen: '0',
-          transferable: '0',
-          total: '0',
-        },
-        address
-      );
+      const cachedBalance = this.getCachedBalance(address, networkKey, id);
+      // No amount: setBalanceItem keeps the last confirmed one, and a balance that never loaded stays unknown
+      // instead of a confirmed 0 (the first start after the update from 3.0.5 has no balance cache).
+      state.balanceService.setBalanceItem(networkKey, { state: APIItemState.ERROR, symbol, id, relayChain: 'ethereum' }, address);
 
       this.state.networkService.evmApiHandler.refreshEvmApi(networkKey);
 
-      return '0';
+      return cachedBalance ?? '0';
     }
   }
 
@@ -138,7 +131,8 @@ export default class EvmBalanceService {
 
     const address = state.keyringService.getSubstrateAddress(ethereumAddress);
 
-    if (!asset || !api.api) return '0';
+    if (!asset) throw new Error(`Asset ${contractAddress} is missing on ${networkKey}`);
+    if (!api?.api) throw new Error('API not found');
 
     const { symbol, precision, id } = asset;
 
@@ -166,23 +160,20 @@ export default class EvmBalanceService {
 
       return balance;
     } catch {
-      state.balanceService.setBalanceItem(
-        networkKey,
-        {
-          state: APIItemState.ERROR,
-          symbol,
-          id,
-          relayChain: 'ethereum',
-          free: '0',
-          reserved: '0',
-          frozen: '0',
-          transferable: '0',
-          total: '0',
-        },
-        address
-      );
+      const cachedBalance = this.getCachedBalance(address, networkKey, id);
+      // No amount: setBalanceItem keeps the last confirmed one, and a balance that never loaded stays unknown
+      // instead of a confirmed 0 (the first start after the update from 3.0.5 has no balance cache).
+      state.balanceService.setBalanceItem(networkKey, { state: APIItemState.ERROR, symbol, id, relayChain: 'ethereum' }, address);
 
-      return '0';
+      return cachedBalance ?? '0';
     }
+  }
+
+  private getCachedBalance(address: string, network: string, assetId: string): string | undefined {
+    const balance = (this.state.balanceService.balanceMap[address] ?? [])
+      .flatMap(({ balances }) => balances)
+      .find(({ id, name }) => id === assetId && name.toLowerCase() === network.toLowerCase());
+
+    return balance?.transferable ?? balance?.total ?? balance?.free;
   }
 }

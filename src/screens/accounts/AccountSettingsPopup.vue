@@ -11,13 +11,13 @@
     @handlerClose="$emit('handlerClose')"
   >
     <div class="account-settings">
-      <div v-if="showExport" class="row" @click="$emit('openExportAccountPage')">
+      <div v-if="showExport && !isOfflineNexus" class="row" @click="$emit('openExportAccountPage')">
         <Icon icon="export" className="icon" />
 
         <div class="label" data-testid="exportAccount">{{ $t('accounts.exportAccount') }}</div>
       </div>
 
-      <div v-if="showNodeSwitch" class="row" @click="openNetwork">
+      <div v-if="showNodeSwitch && !isOfflineNexus" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
         <div class="label" data-testid="switchNode">{{ $t('accounts.switchNode') }}</div>
@@ -29,7 +29,7 @@
         <div class="label" data-testid="copyAddress">{{ $t('accounts.copyAddress') }}</div>
       </div>
 
-      <div v-if="haveExplorers" class="row" @click="openExplorer">
+      <div v-if="!isOfflineNexus && haveExplorers" class="row" @click="openExplorer">
         <Icon icon="globus" className="icon" />
 
         <div class="label" data-testid="viewIn">{{ buttonText }}</div>
@@ -47,6 +47,7 @@ import { EXPLORERS_BASE_URLS } from '@/consts/networks';
 import { setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 
 export default defineComponent({ name: 'AccountSettingsPopup' ,
   props: {
@@ -63,6 +64,12 @@ export default defineComponent({ name: 'AccountSettingsPopup' ,
     };
   },
   computed: {
+    isOfflineNexus() {
+      const nexus = UNIVERSAL_WALLET_IROHA_NETWORKS.nexus;
+      const chainId = this.networkProps?.chainId;
+
+      return !nexus.enabledByDefault && (chainId === nexus.chainId || chainId === nexus.id);
+    },
     networkProps() {
       return this.networksStore.getNetwork(this.selectedNetwork);
     },

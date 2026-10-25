@@ -87,10 +87,8 @@ const open = (url: string) => window.open(url);
 
 const closeForm = () => router.back();
 
-const agree = () => {
-  accountsStore.hidePolkaswapAlert();
-
-  closeForm();
+const agree = async () => {
+  if (await accountsStore.hidePolkaswapAlert()) closeForm();
 };
 
 const switchAgreeWithRules = () => {

@@ -161,7 +161,7 @@ const directionValue = computed(() => (props.isIconValuePrepend ? 'row' : 'row-r
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid $secondary-background-color;
+  border-bottom: 1px solid palette($secondary-background-color, var(--fw-divider));
   color: $default-white;
 
   .value {

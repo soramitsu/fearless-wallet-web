@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "ff88e823cf310a384404a9f7a9d59a12489e90e5",
+  "integrationCommit": "c1c7891593c20e55b3521b91544fe3dba9a8aa0d",
+  "verifiedSourcePins": 1382,
+  "mismatches": [],
+  "nonDocumentationDifferences": [],
+  "review": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-raw-colour-independent-review-v1.json",
+    "sha256": "b1f9b24fd11ab008b1c739ba59d4243e363347e1b34191fcd6ad41a819c24ae2"
+  },
+  "limit": "Source equality and independent repeated30 targeted tests; no new browser or production artifact claim"
+}

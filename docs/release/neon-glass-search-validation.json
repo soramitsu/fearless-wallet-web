@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-12",
+  "status": "Search/picker continuation locally qualified; W-A6 and release remain in progress.",
+  "source_commit": "aa090c017ed40b03fe504e5340b910d86e1300a2",
+  "source_sha256": {
+    "scripts/extension-smoke-primitives.mjs": "8f7b5cbd97471e1d3fdec948d6fd9f4f44c480d3111b492486f79ccf71c57972",
+    "src/components/SearchInput.vue": "043b6e351c93a4c4fff7fd543ad9b3c3ab257e3d4b8b2f542783ab35df5abfc1",
+    "src/components/SelectPopup.vue": "8b4813e86a7e893372b298dfcc63634045d7bc9c82ee73299582a948c66b5759",
+    "src/components/useModalFocus.ts": "1d6085b7096a52005b93d0807160ed9de75bf9c08361f76709b2f1b8a67c0c1a",
+    "tests/unit/search-input-recovery.spec.ts": "0c03484fef3ff7d052b748d80bccbbfc5b7bd3d50b8e8ff3d623bd965dea8bb1"
+  },
+  "node": "24.19.0",
+  "browser": "Chrome for Testing 147.0.7727.15",
+  "unit": {
+    "passed": 1833,
+    "skipped": 18,
+    "failed": 0,
+    "files_passed": 227,
+    "files_skipped": 2
+  },
+  "checks": [
+    "TypeScript passes.",
+    "Changed-file ESLint passes.",
+    "Development test extension builds.",
+    "24 offline browser captures and toolbar bootstrap pass all geometry/interaction checks.",
+    "Clear control is at least 48x48 CSS pixels, fits inside the input and has no label overlap; text padding reserves its space.",
+    "Browser-generated text input, clear/focus, first-Escape clear, second-Escape dialog dismissal pass.",
+    "Unit coverage preserves the query and dialog during IME composition.",
+    "Four standalone Node lifecycle tests pass after discovery-safe rename at f7334b0a."
+  ],
+  "visual_review": [
+    "09b-network-search-clear.png",
+    "12b-currency-search-clear.png",
+    "19-dialog-200-percent.png",
+    "20-dialog-russian-search.png",
+    "21-dialog-akkadian-search.png",
+    "22-dialog-egyptian-search.png",
+    "17-dialog-forced-colors.png"
+  ],
+  "evidence_root": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "logs_sha256": {
+    "wa6-search-full-unit-3.log": "e4477524be85b74e2897101318bcfdca15aaed699c009804cc1119e05077ade0",
+    "wa6-search-typecheck-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-search-lint-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wa6-search-extension-build-5.log": "23c46c011d33ba3e07b27fd55e0d5d60debede8df1045cf6ae1a862e1e0809a8",
+    "wa6-search-browser-8.log": "f612877fc4bb402e84d4b68dc2a4fa47d9c7eb786d994c4c287a3ad1519ee17d",
+    "wa6-search-unit-3-before-fix.log": "4f524c8e99e25622f80019c5b70d179d27882e6c129de2308a164c34bf11c207",
+    "wa6-search-full-unit.log": "df113a9dd7cf40aee00751666fddf12bdd9d025cd44653ae58f6006fce8e9f7c",
+    "local-chain-process-discovery-fix.log": "d7651007750630d348d7447937e70b86ad40a7c7143105319c5a547afc3110f3"
+  },
+  "browser_results_sha256": "2ff21ee2790012dc43830cdf450c7873d7106248f26a2becb20178ae9c76116d",
+  "captures_sha256": {
+    "01-portfolio-controls.png": "b7195a63941d5c1bfaa4a9262c85ff0e3a32c79194ccdd7be2504516e9a93161",
+    "02-manage-switches.png": "b275c0dd0da2246e3c79ac4fa253b5fab87f499ed02f08d957ba0880b4c8f6ea",
+    "03-send-form.png": "c34720275b6693981500e9453d007243e193bb6f9a34a826fa9a659a4710a3ac",
+    "04-send-amount-keyboard-focus.png": "aa82c8e4fb75c6c3412bb85f98d3c5e3b2e84b73da66251a585c66d9e3b65ea6",
+    "05-send-recipient-keyboard-focus.png": "85f80ed14b10b450487bbcce58c13726729ac3acf4c33fe1b1ff87aaff36a0ac",
+    "06-receive.png": "2b3a18589766922f8951db46a4ca6dbc1c7dec519fd82b414c378fb15d842004",
+    "07-receive-button-keyboard-focus.png": "dd21d1564a5ebcdb209df75ef7a9699fa9e576933cf01cd7089a8acc537e6a51",
+    "08-settings.png": "552b579f2083fc0bf49e7ffb51c95a6047ff79e97f8fe2f5eca7514e555895de",
+    "09-network-tabs.png": "16fc1d582d17c6888a1c8da34c8639914f63bedbb189e35613cb7f2d00bbb09b",
+    "09b-network-search-clear.png": "439c47f2f1c5da76d913bef1fc28331cb94529d73b23763f391e326627e7e467",
+    "10-calm-change-password.png": "b6fe2c58df45659363048d5af7dbde5ed99f5e22a4c2108442a484b05d6fab70",
+    "11-calm-reset-wallet.png": "bb256f66a8b193221b9ee4da1e2ceb6d1afb46d47474d1670225114d80a52f87",
+    "12-currency-dialog.png": "12dc92ec3b22aa65fd933dd860f57fbf354f2ddeb8b619fac7720535eeee0221",
+    "12b-currency-search-clear.png": "13b3c7a1205131b0242109c50cf6d9d1e31f9e9141f7ace22bd0f2045439d08c",
+    "13-dialog-lite.png": "a9e22c2352b9677f5ca73bf93b115785aa29eaf953099d25d23bcaed04ed53c5",
+    "14-dialog-reduced.png": "ed8b56d2abb01627b265f389d926a41ad093f646dba30efefff45bc91ac42c40",
+    "15-dialog-high-contrast.png": "1ed6b69c7822c080cf440f01c4c0c953b92fd448dfeced5eececcbf41b4ebe71",
+    "16-dialog-reduced-motion.png": "31eae435f01002ef8925624eb9c3c87b2d1cfb8b6834b993b4540e89cf9ad6e8",
+    "17-dialog-forced-colors.png": "e9a5fc2dfdbea993e4c5b5f4e4c223e41fc648a94b800272fe0623fc9a55dc99",
+    "18-dialog-narrow.png": "b4bab7b33aacce48e54088daedc70bad2f3664baadaaef16150487282bcc4f52",
+    "19-dialog-200-percent.png": "a75412b0b7d263af719c8cab6faf34f34866ebf4a2f8a713f087148a2da98a02",
+    "20-dialog-russian-search.png": "0456df780a5cf0fd2fa9463c0e79fe03754069592ea2429dae58d9c8ac13e477",
+    "21-dialog-akkadian-search.png": "c2490d38cb25e0f0af421edc002ca879f7b6833f73074b4ebada616ee02f95db",
+    "22-dialog-egyptian-search.png": "c63b34763af15ea7c053c00eb9922b6f031c110a5d014195cb773f95d82074fb"
+  },
+  "build_file_manifest_sha256": "33d5446c6c38a25b3a684a5802f7a8a5583de4b6cf8b8e262c631f9bd22325ea",
+  "build_files": 493,
+  "preserved_failures": [
+    "Browser runs 1\u20133 stopped because SelectPopup forwarded render arguments rather than the query; a real nested currency-picker unit test reproduces filterValue.trim failure before correction.",
+    "Browser runs 4\u20136 expose a one-pixel clear-control overhang from FCorners margin. Run 7 passes after correction; final run 8 also includes the IME modal guard.",
+    "Initial broad Vitest run passed all application cases but failed collection of a standalone Node process test. Renamed that file using the existing test-prefix convention; broad reruns pass."
+  ],
+  "limitations": [
+    "281x300 CSS viewport represents 200% layout space; no actual toolbar zoom acceptance claimed.",
+    "Ancient locale controls reuse existing translations; remote fiat names remain supplied data.",
+    "No real screen-reader/OS-IME session, all-screen W-A6 acceptance, production build, distribution signing or release qualification claimed.",
+    "Search result announcements and other identified event-forwarding call sites remain next work."
+  ]
+}

@@ -278,7 +278,7 @@ export default defineComponent({ name: 'YourValidatorsManagement',
       this.showConfirmationPasswordPopup = false;
 
           if (closeForm) {
-            this.stakingStore.getMyStakingInfo({ network: this.network });
+            void this.stakingStore.getMyStakingInfo({ network: this.network }).catch((error) => console.warn('Unable to refresh staking details', error));
             this.closeForm();
           }
     },

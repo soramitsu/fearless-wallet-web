@@ -1,5 +1,10 @@
+import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
+import { isWebPasswordRecoveryRequest } from '@extension-base/stores/WebPasswordRecoveryAccess';
+import BaseWebStore from '@extension-base/stores/BaseWeb';
+import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import { assert } from '@polkadot/util';
 import { PORT_EXTENSION } from '@extension-base/defaults';
+import { chrome } from '@extension-base/utils/crossenv';
 import Extension from '@extension-base/background/handlers/Extension';
 import Tabs from '@extension-base/background/handlers/Tabs';
 import State from '@extension-base/background/handlers/State';
@@ -10,13 +15,39 @@ export const state = new State();
 export const extension = new Extension(state);
 export const tabs = new Tabs(state);
 
+/**
+ * The privileged port is for the wallet's own pages. Its name alone proves nothing: a content script runs with the
+ * extension's id and can pick any port name, but its sender URL is the web page it was injected into.
+ */
+export function isWalletPagePort(port: Port): boolean {
+  const sender = port.sender;
+  const runtimeId = chrome.runtime?.id;
+  let walletOrigin: string | undefined;
+
+  try {
+    walletOrigin = chrome.runtime?.getURL('');
+  } catch {
+    return false;
+  }
+
+  return (
+    typeof runtimeId === 'string' &&
+    runtimeId !== '' &&
+    sender?.id === runtimeId &&
+    typeof walletOrigin === 'string' &&
+    walletOrigin.endsWith('/') &&
+    typeof sender.url === 'string' &&
+    sender.url.startsWith(walletOrigin)
+  );
+}
+
 export function handlers<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
   port?: Port
-): void {
+): Promise<void> {
   const isExtension = !port || port?.name === PORT_EXTENSION;
 
-  if (!port && IS_EXTENSION) return;
+  if (!port && IS_EXTENSION) return Promise.resolve();
 
   const sender = port?.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
@@ -26,11 +57,24 @@ export function handlers<TMessageType extends MessageTypes>(
 
   // console.info(`[in] ${source}`);
 
-  const promise = isExtension
-    ? extension.handle(id, message, request, port)
-    : tabs.handle(id, message, request, from, port);
+  const promise = Promise.resolve().then(() => {
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly && !isWebPasswordRecoveryRequest(message))
+      KeyringStoreWeb.assertWritable();
+    if (isExtension && port && !isWalletPagePort(port)) throw new Error('Unauthorized sender');
+    return isExtension ? extension.handle(id, message, request, port) : tabs.handle(id, message, request, from, port);
+  });
 
-  promise
+  return promise
+    .finally(async () => {
+      if (IS_EXTENSION) {
+        await BaseExtensionStore.flush();
+      } else {
+        // Keep the worker alive for both stores even if one persistence operation fails.
+        const results = await Promise.allSettled([BaseWebStore.flush(), KeyringStoreWeb.flush()]);
+        const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+        if (failure) throw failure.reason;
+      }
+    })
     .then((response): void => {
       // console.info(`[out] ${source}`);
 
@@ -44,6 +88,7 @@ export function handlers<TMessageType extends MessageTypes>(
         const channel = new BroadcastChannel('sw-messages');
 
         channel.postMessage({ id, response });
+        channel.close();
       }
     })
     .catch((error: Error): void => {
@@ -55,6 +100,7 @@ export function handlers<TMessageType extends MessageTypes>(
         const channel = new BroadcastChannel('sw-messages');
 
         channel.postMessage({ error: error.message, id });
+        channel.close();
       }
     });
 }

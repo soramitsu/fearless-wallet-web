@@ -1,6 +1,11 @@
 import { Subject } from 'rxjs';
 import AlchemyNftController from '@extension-base/services/nft-service/handlers/AlchemyNftSdk';
-import { NFT_FILTERS, PROD_NFT_NETWORKS, type AlchemyNetwork, type NftFilter } from '@extension-base/services/nft-service/consts';
+import {
+  NFT_FILTERS,
+  SUPPORTED_NFT_NETWORKS,
+  type AlchemyNetwork,
+  type NftFilter,
+} from '@extension-base/services/nft-service/consts';
 import { storage } from '@extension-base/stores/Storage';
 import { parseEther, formatUnits, Wallet, type Contract } from 'ethers';
 import {
@@ -9,7 +14,6 @@ import {
   type RequestNftTransfer,
   type ResponseNftTransfer,
 } from '@extension-base/background/types/types';
-import { FPNumber } from '@sora-substrate/util';
 import { calcEvmFees } from '@extension-base/api/evm/transfer';
 import type {
   AvailableNftPayload,
@@ -21,8 +25,10 @@ import type {
   RequestSettingsChangePayload,
 } from '@extension-base/services/nft-service/types';
 import type State from '@extension-base/background/handlers/State';
+import { FPNumber } from '@/sora/number';
 import { getBalanceItem } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
+import { isNftNetworkScannable, markNftStateStale, stampNftState } from '@/portfolio/nftDiscovery';
 
 export class NftService {
   private refreshTime = 10000;
@@ -33,7 +39,7 @@ export class NftService {
   hideSettings: Record<string, NftSettings> = {};
 
   constructor(private state: State) {
-    Object.entries(PROD_NFT_NETWORKS).forEach(([chainId, network]) => {
+    Object.entries(SUPPORTED_NFT_NETWORKS).forEach(([chainId, network]) => {
       this.sdks[network] = new AlchemyNftController(network, chainId, this, this.state);
     });
 
@@ -91,7 +97,7 @@ export class NftService {
 
   availableNftsForContract({ network, contract, address, pageKey }: AvailableNftPayload) {
     const net = this.state.networkService.getNetworkJson(network);
-    const key = PROD_NFT_NETWORKS[+net.chainId];
+    const key = SUPPORTED_NFT_NETWORKS[+net.chainId];
 
     if (!this.sdks[key])
       return {
@@ -103,32 +109,45 @@ export class NftService {
   }
 
   async getNftForActiveNetworks(address: string, force = false) {
-    const substrateAddress = this.state.keyringService.getSubstrateAddress(address);
-    const activeNetworks = this.state.getActiveNetworksCurrentWallet(substrateAddress);
-    const chainIds = Array.from(activeNetworks).map(({ chainId }) => chainId);
     const networks = Object.keys(this.sdks);
+    const activeChainIds = new Set(
+      Object.values(this.state.networkService.networkMap)
+        .filter(({ active }) => active)
+        .map(({ chainId }) => String(chainId))
+    );
 
     for (const network of networks) {
       const sdk = this.sdks[network];
 
-      if (!sdk || chainIds.every((el) => el !== sdk.chainId)) continue;
+      if (!sdk) continue;
+      if (!isNftNetworkScannable(sdk.chainId, activeChainIds)) continue;
 
       const timespan = sdk.timespan;
 
-      if (force || !timespan[address] || timespan[address] + this.refreshTime > Date.now()) {
+      if (force || !timespan[address] || timespan[address] + this.refreshTime < Date.now()) {
         sdk.timespan[address] = Date.now();
 
         sdk.fetchNftsForWallet(address).then((networkNfts) => {
           if (!this.nftMap[address]) this.nftMap[address] = {};
 
-        this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(networkNfts)) as NftState;
+          const syncedNfts = stampNftState(networkNfts, Date.now());
 
-        if (this.state.currentAccount?.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
-      }).catch((error) => {
-        console.info(error);
-      });
+          this.nftMap[address][sdk.chainId] = JSON.parse(JSON.stringify(syncedNfts)) as NftState;
+
+          if (this.state.currentAccount?.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
+        }).catch((error) => {
+          const previous = this.nftMap[address]?.[sdk.chainId];
+
+          if (previous) {
+            this.nftMap[address][sdk.chainId] = markNftStateStale(previous);
+
+            if (this.state.currentAccount?.ethereumAddress === address) this.nftSubject.next(this.nftMap[address]);
+          }
+
+          console.info(error);
+        });
+      }
     }
-  }
   }
 
   changeSettings({ address, settings }: RequestSettingsChangePayload) {
@@ -167,14 +186,13 @@ export class NftService {
 
     const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address: from });
     const signer = new Wallet(privateKey, api);
-    const isApproved: boolean = await contract.isApprovedForAll(contract, tx.to);
     const contractMaster = contract.connect(signer) as Contract;
 
     try {
       let txResponse;
 
-      if (!isApproved) await contractMaster.setApprovalForAll(tx.to, true);
-
+      // The owner signs this transfer; granting the recipient operator rights
+      // would let them drain the rest of the collection without another prompt.
       if (tx.type === 'ERC721')
         txResponse = await contractMaster['safeTransferFrom(address,address,uint256)'](from, tx.to, tx.tokenId);
       else if (tx.type === 'ERC1155')
@@ -195,8 +213,6 @@ export class NftService {
       };
     } catch (e) {
       console.info(e);
-      await contractMaster.setApprovalForAll(tx.to, false);
-
       return {
         errors: [],
         status: false,

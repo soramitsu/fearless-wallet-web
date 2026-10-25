@@ -61,7 +61,7 @@ const dAppUrl = computed(() => request.peer.metadata.url);
 .auth-content {
   cursor: pointer;
   padding: 16px 0;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: 1px solid palette($default-background-color, var(--fw-divider));
 }
 .chevron-right {
   width: 20px;

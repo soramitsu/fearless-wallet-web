@@ -1,0 +1,128 @@
+name: Upgrade E2E
+
+# Every released extension build, built from its own commit and lockfile, writes a profile in Chrome for Testing and
+# this commit's production build replaces it in place (tests/upgrade/README.md). Nothing reaches a network from the
+# browser: every host name except localhost is unresolvable, and the registry and TON indexer are local stand-ins.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Full upgrade matrix or focused rollback diagnosis
+        type: choice
+        default: all
+        options:
+          - all
+          - R1
+  schedule:
+    - cron: '17 3 * * *'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'src/extension/background/**'
+      - 'src/util/tonKeyring.ts'
+      - 'src/router/**'
+      - 'src/screens/addWallet/keyringMigration/**'
+      - 'scripts/upgrade-e2e/**'
+      - 'tests/upgrade/**'
+      - 'yarn.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upgrade-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # The released builds are built from their own commits (tests/upgrade/legacy-builds.json): full history.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      # The released builds pin Node 20 and Yarn 3.4.1 through their own lockfiles.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Keep Node 20 for the released builds
+        run: echo "UPGRADE_E2E_NODE20_BIN=$(dirname "$(command -v node)")" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.19.0
+
+      - name: Enable Corepack
+        run: |
+          npm install -g corepack@0.34.1
+          corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Test the upgrade driver
+        run: node --test scripts/upgrade-e2e/test-*.mjs
+
+      - name: Set up Chrome for Testing
+        id: setup-chrome
+        run: bash ./scripts/upgrade-e2e/install-cft.sh --install-sandbox
+
+      - name: Verify sandboxed Chrome and extension startup before legacy builds
+        run: node scripts/upgrade-e2e/preflight-chrome.mjs
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          # The matching helper comes from the hash-verified pinned archive. The
+          # probe verifies root ownership, setuid mode and protected parents.
+          CHROME_DEVEL_SANDBOX: ${{ steps.setup-chrome.outputs.sandbox-path }}
+
+      - name: Real legacy-build upgrade E2E (S1-S8, ECDSA, rollback R1 to 3.0.6)
+        run: |
+          case "$UPGRADE_SCENARIO" in
+            all) yarn test:upgrade:e2e --out output/upgrade-e2e/ci ;;
+            R1)
+              node scripts/upgrade-e2e/build-legacy.mjs 3.0.5 3.0.6
+              node scripts/upgrade-e2e/build-head.mjs
+              node scripts/upgrade-e2e/run.mjs --out output/upgrade-e2e/ci R1
+              ;;
+            *) echo 'Unknown upgrade scenario'; exit 1 ;;
+          esac
+        env:
+          # PR and scheduled runs always keep the complete matrix. The manual choice
+          # makes a failing rollback reproducible without rebuilding unrelated releases.
+          UPGRADE_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.scenario || 'all' }}
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROME_DEVEL_SANDBOX: ${{ steps.setup-chrome.outputs.sandbox-path }}
+
+      - name: Report
+        if: always()
+        run: cat output/upgrade-e2e/ci/report.json || true
+
+      - name: Preserve compiled inputs for focused rollback diagnosis
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.scenario == 'R1'
+        run: |
+          mkdir -p output/upgrade-e2e/ci
+          if [[ -d "$HOME/.cache/fearless-upgrade-e2e/3.0.6/build" ]]; then
+            tar -czf output/upgrade-e2e/ci/legacy-3.0.6-build.tar.gz -C "$HOME/.cache/fearless-upgrade-e2e/3.0.6" build provenance.json
+          fi
+          if [[ -d dist/extension/chrome-upgrade-e2e ]]; then
+            tar -czf output/upgrade-e2e/ci/head-build.tar.gz -C dist/extension chrome-upgrade-e2e
+          fi
+
+      # Explicit allowlist: no browser profiles, storage dumps, test keyrings or wallet snapshots.
+      - name: Preserve upgrade report and sanitized browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: upgrade-diagnostics-${{ github.sha }}
+          path: |
+            output/upgrade-e2e/ci/report.json
+            output/upgrade-e2e/ci/*/browser-diagnostics.json
+            output/upgrade-e2e/ci/legacy-3.0.6-build.tar.gz
+            output/upgrade-e2e/ci/head-build.tar.gz
+          if-no-files-found: warn
+          retention-days: 7

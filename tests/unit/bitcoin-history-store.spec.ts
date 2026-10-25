@@ -138,9 +138,11 @@ describe('Bitcoin history store fallback', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('keeps cached Bitcoin history when Esplora history fetch fails', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     const networksStore = useNetworksStore();
 
@@ -155,11 +157,39 @@ describe('Bitcoin history store fallback', () => {
     const fetchFn = vi.fn(async () => new Response(JSON.stringify({ error: 'unavailable' }), { status: 503 }));
     vi.stubGlobal('fetch', fetchFn);
 
-    await networksStore.fetchHistory({ assetId: 'BTC', networkName: 'Bitcoin' });
+    const pending = networksStore.fetchHistory({ assetId: 'BTC', networkName: 'Bitcoin' });
+    await vi.runAllTimersAsync();
+    await pending;
 
     expect(fetchFn).toHaveBeenCalledWith(`https://blockstream.info/api/address/${BITCOIN_ADDRESS}/txs`);
     expect(networksStore.history.BTC[SUBSTRATE_ADDRESS].bitcoin.nodes).toEqual([cachedTransaction()]);
 
     info.mockRestore();
+  });
+
+  it('loads history for a network whose balance sits in a second group for the same asset', async () => {
+    const accountsStore = useAccountsStore();
+    const networksStore = useNetworksStore();
+    const testnetAddress = 'tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl';
+    const testnet = {
+      ...bitcoinNetwork(),
+      chainId: 'bitcoin:testnet',
+      externalApi: { history: { type: 'bitcoin', url: 'https://blockstream.info/testnet/api' } },
+      key: 'Bitcoin Testnet',
+      name: 'Bitcoin Testnet',
+    } as unknown as NetworkJson;
+    const testnetGroup = btcBalanceGroup();
+
+    testnetGroup.balances = [{ ...testnetGroup.balances[0], name: 'Bitcoin Testnet' }];
+    accountsStore.selectedWallet = { ...accountsStore.selectedWallet, bitcoinTestnetAddress: testnetAddress };
+    accountsStore.balances = [btcBalanceGroup(), testnetGroup];
+    networksStore.allNetworks = [bitcoinNetwork(), testnet];
+
+    const fetchFn = vi.fn(async () => new Response('[]', { headers: { 'content-type': 'application/json' }, status: 200 }));
+    vi.stubGlobal('fetch', fetchFn);
+
+    await networksStore.fetchHistory({ assetId: 'BTC', networkName: 'Bitcoin Testnet' });
+
+    expect(fetchFn).toHaveBeenCalledWith(`https://blockstream.info/testnet/api/address/${testnetAddress}/txs`);
   });
 });

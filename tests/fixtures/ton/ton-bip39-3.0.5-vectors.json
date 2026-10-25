@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "description": "TON accounts that Fearless 3.0.1-3.0.5 created by importing BIP39 phrases: tonweb-mnemonic KDF over the stored words, WalletContractV4R2 non-bounceable address. Public test phrases from fixed seeds: never fund them.",
+  "source": {
+    "commit": "600a64d5",
+    "generator": "scripts/generate-ton-legacy-vectors.mjs",
+    "libraries": {
+      "tonweb-mnemonic": "1.0.1",
+      "tweetnacl": "1.0.3",
+      "bip39": "3.1.0",
+      "@ton/ton": "15.1.0",
+      "@ton/core": "0.59.0"
+    },
+    "realBuildAddress": "UQC-UdqQ66NWBZO-TGQ3YBfis8kz37HNFju2aKWBNESTSb44"
+  },
+  "vectors": [
+    {
+      "mnemonic": "legal winner thank year wave sausage worth useful legal winner thank yellow",
+      "tonwebValid": false,
+      "publicKeyHex": "ad6a3190ed6442cec96723dc5e96c92331a1b58f21b9f1738475d2a787077474",
+      "address": "UQC-UdqQ66NWBZO-TGQ3YBfis8kz37HNFju2aKWBNESTSb44"
+    },
+    {
+      "mnemonic": "kid near father stock ordinary plunge frost ride title click permit season",
+      "tonwebValid": false,
+      "publicKeyHex": "b55137f6ba0f739989c4990c47f9931be25d58089ecbd47e42c2b61c75ace723",
+      "address": "UQCL8AEBcFtSpj1eJBElf06k1Zrpe1nj7UfWhoHeI6jtmjeP"
+    },
+    {
+      "mnemonic": "emerge mammal nation veteran garlic pepper pupil transfer produce produce between track search wood opinion",
+      "tonwebValid": false,
+      "publicKeyHex": "817d6627ee8f430e1d8608ab766558aad51c1c737c4c059d47ab4ca3fe5a0669",
+      "address": "UQDZE9EDuRye06uearO80Io-tAmzBeYkBVtRPpP5tSOb4Szl"
+    },
+    {
+      "mnemonic": "antique surge rubber income power attract flavor muscle project orient add blossom never knife later bullet silk riot",
+      "tonwebValid": false,
+      "publicKeyHex": "2f7f5b92bb00e394279cd3e20e095551cfd0c38392ca59ac20af56b1ba0ba173",
+      "address": "UQA6qNPAKAXNo9fvHglGtGhGzWxy78zHBaMHpqZy7uEKHkLJ"
+    },
+    {
+      "mnemonic": "mutual hotel include account minor student vapor weapon distance lava soft original planet wheat hybrid sunny three guard wet black van",
+      "tonwebValid": false,
+      "publicKeyHex": "64934bc8f9b677202a81f5425cc2e0103402e4a423ff37b306bc7f8b13e566fa",
+      "address": "UQBL90HCnqWiXC600GCGxI6T7C-78zaA6R9bvbngWWYvt7c-"
+    },
+    {
+      "mnemonic": "remain invite swim divide bind wire raven girl powder select garment funny blue doctor funny neck clap ivory swear lecture web witness gain train",
+      "tonwebValid": false,
+      "publicKeyHex": "19b875095b62a6840010befbe574574497fd5cd0bac396cfe450b430bc084849",
+      "address": "UQC8iFVLMfu6ZAgzL9GWdAVqQgUcu-mRfG_YTg9WJNWqq1b6"
+    },
+    {
+      "mnemonic": "trial allow eyebrow payment dinner chaos hover volcano zero broken repeat crumble",
+      "tonwebValid": false,
+      "publicKeyHex": "f5fc0c213f741834198ade1b786dd5f17ceff3b65bc46d09d5390cf154c96bbd",
+      "address": "UQDtf3lBRsYjsc4tCdmNQj3lcjWJt6I-eARj8RmisgyrUcAF"
+    },
+    {
+      "mnemonic": "beef across uncle slow caught bronze leaf merry junk kick project worry battle clap setup",
+      "tonwebValid": false,
+      "publicKeyHex": "ce3b64ced60b358c83a6f764fe6468c5d9ff1bc812eafdf3a8f81ef1f75aa4da",
+      "address": "UQA4E1vnva0Yr-KsZ-Ke47YiDURSgUwsI58NzJ5S11KVnmQb"
+    },
+    {
+      "mnemonic": "banana never trim wear solution obey upper off coach cigar sun parade walnut primary kitten knife tilt brand",
+      "tonwebValid": false,
+      "publicKeyHex": "a9b8099a1bc7c7c1e1df20488f0019ca5eda42facd0415d976c7faa6e36e7575",
+      "address": "UQDdr5W6xQrHMmiQnTcYxmr_2U5nNqfviA2sUIkliM4EWJ8p"
+    },
+    {
+      "mnemonic": "motor cereal ripple ozone wage clay wing walk exhaust service armor celery wreck page special violin crystal decline banner feature lounge",
+      "tonwebValid": false,
+      "publicKeyHex": "426dcae7b3b009cbbee1a5b14b4f53cec04737416d3df259f682d8ce3690180a",
+      "address": "UQCnDF6CQk7eMl9jGUoSXPuYthlJ7-gwD1rGG7ghcUIun5Jz"
+    },
+    {
+      "mnemonic": "cotton agent clever deposit buyer layer mimic shove humble ice vacuum harbor animal ugly orange profit opera fly reward require reopen tumble exchange reward",
+      "tonwebValid": false,
+      "publicKeyHex": "18ae85fd5593a69be7848077c2d5c79fd227fdeaa537dd6434135879871cfca6",
+      "address": "UQBaZrs8ascCpXdZEDtmDGdb7rcXPOh5ebBEKErbgrSrLp2d"
+    },
+    {
+      "mnemonic": "vibrant cart essence write forget secret note labor service net fox industry",
+      "tonwebValid": false,
+      "publicKeyHex": "00fbeea60a6dcc3cf3f4cc74ca19b881870a2ce04b28033700253ec520b23c0a",
+      "address": "UQCCykmqxgwQV2EEwoC5FfbLNV0VPJxhar9udVNacDsfRlTJ"
+    },
+    {
+      "mnemonic": "spatial universe penalty anchor various rather welcome rough vast orphan brief fitness amazing mail giant",
+      "tonwebValid": false,
+      "publicKeyHex": "bf1a3544858e1877368c49d2d056806a7bc7b57a9f7c0d3b3b5db026e165f141",
+      "address": "UQCMAjZOgq9ey4chQD3TzNp8uUbWtPf_slouDUEHJRifu6SZ"
+    },
+    {
+      "mnemonic": "humor cinnamon control moral celery quit adult rail toward melt advice fly horror tunnel iron sense pumpkin fragile",
+      "tonwebValid": false,
+      "publicKeyHex": "47d758142f2d79df24600a1316647bd4d91657113e4a8e9214354446ec80e1d4",
+      "address": "UQAGsrOAFSc4WZLZuixfV_ZyNY86iZZBfwcBsmORaIifYZnr"
+    },
+    {
+      "mnemonic": "network opinion winter finger power advice strike key relax angle easily segment random plastic awake dentist relief caught exhibit defense accuse",
+      "tonwebValid": false,
+      "publicKeyHex": "bca8922c0ace5993815d5ba5bf2d577a4440363ddbdd12cb256ad61a62229df3",
+      "address": "UQDaSmsRmquJrmTBiO2V2rVj8pwNklWeuE2W11isyiBPO5gG"
+    },
+    {
+      "mnemonic": "foil ship swing song loop demand drift guess panel alert swap like walk rival library wide fluid already crop then funny devote reject aware",
+      "tonwebValid": false,
+      "publicKeyHex": "a80c03af231531315c7c992b98471b4d4920f5f8a69a88985f27b28355968821",
+      "address": "UQCOo9wtYIP9aWxPSul281Bm0TfOElbaQuNNDHXXtbWONJC4"
+    },
+    {
+      "mnemonic": "tomato dentist timber voyage labor start piano bag nut size leaf rule",
+      "tonwebValid": false,
+      "publicKeyHex": "69a7a5f6f0b903eb600ccf92755ba4bf28d082729ee50451986a4c5ba90a6aa6",
+      "address": "UQB3tz73GTKZjFkLodjeEJDcORBBQ56uxbNCnZTuQKM2E21L"
+    },
+    {
+      "mnemonic": "talent glance soccer section energy diet math you dose wild mom divert answer glad orbit",
+      "tonwebValid": false,
+      "publicKeyHex": "4535f9b546492f138d37d0d340954af9b45e3b4b53f62ce18eaad50930f43340",
+      "address": "UQDcq_Vdtwbvrw2VY5DvXiHCw__G4E9BuIL-_L8uZCgWgRuX"
+    },
+    {
+      "mnemonic": "way input right reopen steel bring thank wash primary insect wide mouse chimney pen fox observe gaze detail",
+      "tonwebValid": false,
+      "publicKeyHex": "b12db80be297b7d34ebe1e6367e119ffc131b59230e4ffddc4980d9bf4ef10a4",
+      "address": "UQCZhQwuyu4kHTClHRP2rGixQ73sLyd9pxad8uBCa79LF7ns"
+    },
+    {
+      "mnemonic": "suspect gorilla firm private steak cabbage true slot liberty snow proof beauty satoshi junk often sign electric bullet wrap age bar",
+      "tonwebValid": false,
+      "publicKeyHex": "f48a53d3ca2b675f9d006a52749fdeb198d0a8fdf5b0451dd292017e97c9ce3d",
+      "address": "UQC35KrKnqvtthLuLsrzMBcyQ4wFICX-GVcUzbKuU860IU74"
+    },
+    {
+      "mnemonic": "skirt animal cattle brush recipe rug cover sail fruit naive forward issue brave token honey chaos antique hazard dial seat autumn green hurt family",
+      "tonwebValid": false,
+      "publicKeyHex": "00ebe33b193c4aebf712a02938a11a3f7fa5975d27c6a23785ca88b5c0596802",
+      "address": "UQBPelV82N8eOMy6n-dS6Mt_fzlWs76uh5Ji2S4zSR8nSp5j"
+    },
+    {
+      "mnemonic": "minute renew bind stairs gift wait salmon valley book logic kit lend",
+      "tonwebValid": false,
+      "publicKeyHex": "69de8f1ec56af8cffc8a0f0c34c0fed24cffe37b3a913728b47a353e6a20d593",
+      "address": "UQBKvCorTjd9AQfX7hxg1gdgoEQ8N2Cl23pWEdwfxs6jqRHa"
+    },
+    {
+      "mnemonic": "fiction stairs hobby genuine avocado jewel aware oppose risk again pelican snake forward leg crumble",
+      "tonwebValid": false,
+      "publicKeyHex": "8fc2dc3459b04c518bfbdc15516c4e54b752768a1a27c1cd6f5c822a827f3d71",
+      "address": "UQBPBoTH3Yke24YyZKYhjJUj5QtFEgb7qebEU1SkKkNt5ID9"
+    },
+    {
+      "mnemonic": "tomorrow weather prize wealth gorilla leisure jelly gain era razor tissue planet tiger usage orchard salon torch try",
+      "tonwebValid": false,
+      "publicKeyHex": "7fa180d882871d20e450f668237314dfbdd1b56d101b8879bda3ecd75ce64de3",
+      "address": "UQBgtI0bR--cXDxSFz8CF_-eu3Q8zQC3ZAMOZrTzH1bVt5U_"
+    },
+    {
+      "mnemonic": "page sister venture flash struggle have awesome section lamp alert price crystal injury robot dwarf endless mutual like tail poet card",
+      "tonwebValid": false,
+      "publicKeyHex": "bc78153ada3d9f62697f7593e5b2895fe4e71d9333f3e92f0803ffd2c69e7729",
+      "address": "UQAIQGoXuRvtCDyHbpVqtjGTJP3C67We-_anF0d9BIU3T0Gx"
+    },
+    {
+      "mnemonic": "cabin olympic act relief table video above chicken topple pioneer tip sand stand tattoo theory trigger chat early act you custom abandon basic access",
+      "tonwebValid": false,
+      "publicKeyHex": "75deff1cf625f77199172d64d0568b991dcc818687c47fd63cd097f4991b5aed",
+      "address": "UQAUk_OYiVq3oKe9GSQEA2K2iungvUbleOPutBGtPOIb8hWz"
+    },
+    {
+      "mnemonic": "wire utility knock trial oven tribe achieve chronic broken august air swallow",
+      "tonwebValid": false,
+      "publicKeyHex": "eae9ef8028c05c0c81e9f898c8c679194746f94a168753b630b047ebb6550495",
+      "address": "UQCgkTg2OXNVWVyK-9vwIYS4-3X4KqvZpih_W0JkoeJvRwyx"
+    },
+    {
+      "mnemonic": "monitor crush warfare extend melody symbol park stick illegal caution festival better hip tunnel square",
+      "tonwebValid": false,
+      "publicKeyHex": "708a73729b3a742f437108a0017b3e465b085d934768d325ffb769d906759e64",
+      "address": "UQBl5zXzEVoD3JkDpWs4CDWAuEq2xwV5mBOD22qRDgRsfjkk"
+    },
+    {
+      "mnemonic": "second dry better device impulse spare income excuse unhappy stone knee problem female vast under broccoli style among",
+      "tonwebValid": false,
+      "publicKeyHex": "f203e650139c17ceb5d5ad3e0bcdbb95ea5049f7ac468d65695bfb31100c5150",
+      "address": "UQCRIW1kmvygNOaB9A5SgdazeU3QNCdtHsFWm9jv3-4JOiF1"
+    },
+    {
+      "mnemonic": "transfer refuse file action swift mobile busy sustain must hobby ecology swear fiction foster dove energy organ light help voyage teach",
+      "tonwebValid": false,
+      "publicKeyHex": "9b0b139653696e6a01659d9155d7728d8fec34b69a6020d72ee69bfab3fb1f7f",
+      "address": "UQAByBjSKY0zAKmHbOGdwOL7aaXNuCerWBxXI0BoQCrVzVzr"
+    },
+    {
+      "mnemonic": "purse bomb unusual mango ivory solution glory gravity harsh parrot pyramid actor sad toast vote fame pencil refuse parrot cup safe term calm feature",
+      "tonwebValid": false,
+      "publicKeyHex": "c739b88eecfa88111ae8f0bd5f520f037b6b321115a554d9efdb81086d86d70b",
+      "address": "UQCCAZwFuCPrr7_MINopRj8DRdGUsrrsMXijlobpGorMnrBz"
+    },
+    {
+      "mnemonic": "boy armor lake repeat bomb turn now about glow foil zone blossom",
+      "tonwebValid": false,
+      "publicKeyHex": "1b305f97b975dbbd249df70ac99ffb4dd760f8580d606caa9b39144f2f8b19db",
+      "address": "UQCl7mwV1w_TFHp630aSBknpThA8kuwHiMvQQ7eiMiA0gmQu"
+    },
+    {
+      "mnemonic": "scorpion utility furnace have stomach text afford potato away sail brother garment first verb slide",
+      "tonwebValid": false,
+      "publicKeyHex": "71fc8490afc19b31e8580a6f6812f94fa7043e432e49745c98cefa47c77951e0",
+      "address": "UQCMmrtzDwdacLArix8RjGRDTSekt9MZUFh_-YVPnlcM65UC"
+    },
+    {
+      "mnemonic": "pioneer swing caution wage proof swallow brown bus cancel faint boss waste swim object negative wage public couple",
+      "tonwebValid": false,
+      "publicKeyHex": "de94807296933843daa3e27f266ff69445a0cb130a974efa8ea74fe23d849631",
+      "address": "UQDX9SsXF308eOzQgSnv-AbBVX9oCinJZ-a_wb9wp6pwB6Hh"
+    },
+    {
+      "mnemonic": "enemy east quote oxygen hour series earn monitor fashion online comfort twenty target pattern super virus cave into provide recycle gauge",
+      "tonwebValid": false,
+      "publicKeyHex": "7e042bc8eaf94bcc700221e123eb2a2e4ba3069dabd5fca07a96363dc60ebf89",
+      "address": "UQApwxVMr6khG6yuqs7uA4AyX3tXtoKjKjTL5_dlchvX5F3H"
+    },
+    {
+      "mnemonic": "select filter opinion grunt soon broken unknown ketchup effort bounce object security sword danger cube struggle utility dawn plunge cupboard perfect empower rigid barely",
+      "tonwebValid": false,
+      "publicKeyHex": "b5304b73cffae4a7a8b0bf1d08e8e340c2af40f321309f4b5beb14970c4ecddd",
+      "address": "UQCcEV0QtoOmeHjWNBnHVQrORPThA7GC-xdXPDOYI8-_lpDw"
+    },
+    {
+      "mnemonic": "nephew glass cry glad response gloom decorate palm remind push monkey tooth",
+      "tonwebValid": false,
+      "publicKeyHex": "59f46026d5bde135e4f5214b92a3977f4531517a7aa318d16a8e8befea70936e",
+      "address": "UQBqwvjgfwNa2PltkiLQ-vuJj3nfM7zCOFpio2XCGOdd7G94"
+    },
+    {
+      "mnemonic": "train force kiss retreat air render print glare wild remind keen typical panda giggle piano",
+      "tonwebValid": false,
+      "publicKeyHex": "8f4cb0ecb1bc6f89c15f3a490ca721e39f653b796efb395e019f1df9678a01a1",
+      "address": "UQDSglx6tTrKCbwsyx53P-ms9qfUi0n8t-PQcj6bzC8vPyZ4"
+    },
+    {
+      "mnemonic": "aisle uncover afford kite section weird identify report theory field upgrade genuine ankle woman parent mobile atom you",
+      "tonwebValid": false,
+      "publicKeyHex": "bf6ba13acef6027217a071f284ea99b09d6ff3701b1d2d9d1d1bd9c76c58351e",
+      "address": "UQCTdGGanrc8JIxYymE-qDYJTsKVlNWxMvQkDO-jjN7o-T2c"
+    },
+    {
+      "mnemonic": "split gentle nice same dismiss quarter scorpion exile sun trial science derive kitchen able evidence muscle message hybrid pyramid wire over",
+      "tonwebValid": false,
+      "publicKeyHex": "2866ec30b27be8687f5e6459ef8563f3e2be6d5955cfc203a0572ad916878f1b",
+      "address": "UQDT7725jBSv7qhKio_LRY5rVRu9M3vI0scu2Zm7NS-4wcKp"
+    },
+    {
+      "mnemonic": "ordinary into spike file night effort extend afford spin behave caution salad maple morning protect fruit okay resource leaf endless salute hidden pond cherry",
+      "tonwebValid": false,
+      "publicKeyHex": "f3f49005fdde273477da5da402bdba6c6d6c3f7852373e0a8eb2216d15fceba0",
+      "address": "UQAO_J3AGc_WHiWtJZtYMpV1yDHKwh992VHRmXzDMWrkOAvA"
+    },
+    {
+      "mnemonic": "border april oil copy shrimp virtual capable hard exclude uniform core term",
+      "tonwebValid": false,
+      "publicKeyHex": "d855c4f3ae5efc38914af1754dc4e8ae5e979b915343618a3fd9ecdcbc38d01a",
+      "address": "UQARV6s9AtmJmd-M6lmz3nxnkFibDxJ33hAIq-UqiaO6dBxh"
+    },
+    {
+      "mnemonic": "vital kitten unlock tide pact long office top drastic cage stage lazy protect swear ginger",
+      "tonwebValid": false,
+      "publicKeyHex": "72d34c79bb9f5620a334e150d09a0b8011c65f8efb848f44cc87a370bfbdf2f8",
+      "address": "UQBo0fYoh8IJlyMau3vkwIBHLztfOTauKWVjc_1FDR-XxnPG"
+    },
+    {
+      "mnemonic": "venue custom update smile rug skill gasp casino notice whisper distance tongue accuse little once punch hole blue",
+      "tonwebValid": false,
+      "publicKeyHex": "5a644e9c0fe215d2a2b2dcdfaf9b50f298c939488dee34a3e81ee4b7ce2ed423",
+      "address": "UQAr5fLM3ERqDH1JG_sd94wCKDJ63O0umlJHlvE_lfM5QGoa"
+    },
+    {
+      "mnemonic": "loan glory gaze easily loop food ball chaos innocent absurd fiber timber orange human rare explain nice annual once theme plug",
+      "tonwebValid": false,
+      "publicKeyHex": "5ef8b179d3b3659576f5736e06ac521b8153d1ecaf2e65e2577f66606b2eb729",
+      "address": "UQAH1otBmrytTE1x0xnCXeItCvuz9gPwpfxgWTJUQ-1P2SwK"
+    },
+    {
+      "mnemonic": "vocal spoon hard industry muffin lend panel radar crash gallery moment timber recycle common metal old siren match boat short wealth burst sad broccoli",
+      "tonwebValid": false,
+      "publicKeyHex": "65f355bf297f571d2ebc17cb498039dd5394209fe79dcf54091855ce8e87c4e8",
+      "address": "UQByfK-5_42DcHsR1A6nMe1C1x1TFLQwzpeuZFZjw6-WuAP2"
+    },
+    {
+      "mnemonic": "market lava shift orient device breeze south total enlist dentist kit craft",
+      "tonwebValid": false,
+      "publicKeyHex": "50fa7222c1c3306b2cdc61a00a5b079403a52a136e9af313e7e132fc5ab8cc3f",
+      "address": "UQC7DN7C8Vcu_nqhTT-cpXjjgcv3ag0OWyfYKK_xuf7_HKGO"
+    },
+    {
+      "mnemonic": "eternal always spend suspect kick boy gesture endless pair voice riot chase rookie give satisfy",
+      "tonwebValid": false,
+      "publicKeyHex": "0016ddfcac50c250e0294fe6a3ad7669e4c503bc4d6cf33a08c096970f288948",
+      "address": "UQDXoZbVDoPGuTi9wUr4OHTRCxlKLO9q_Ej5jRks0ujIbRds"
+    }
+  ]
+}

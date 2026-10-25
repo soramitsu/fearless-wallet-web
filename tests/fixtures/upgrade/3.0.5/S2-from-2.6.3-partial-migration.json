@@ -1,0 +1,266 @@
+{
+  "provenance": {
+    "scenario": "2.6.3 → 3.0.5 (master password, partial migration, TON) → 4.2.0",
+    "writtenBy": "Fearless Wallet 3.0.5, built from its own source and lockfile and driven in Chrome for Testing",
+    "commit": "600a64d51365a40de646925e4b591ca06ff63643",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "node": "v20.20.2",
+    "deviations": [],
+    "chrome": "Google Chrome for Testing 147.0.7727.15",
+    "harness": "scripts/upgrade-e2e/run.mjs --snapshot",
+    "extensionId": "plnlnnlkcnkiokjgpefakfhgngpbnaec (test key)",
+    "syntheticSecretsOnly": true,
+    "omittedKeys": [
+      "wc@2:core:0.3//keychain",
+      "fwnetworkMap:NetworkMap"
+    ]
+  },
+  "profile": {
+    "master": "Pässwörd-日本語-🔐",
+    "wallets": [
+      {
+        "name": "Alpha",
+        "kind": "mnemonic",
+        "type": "sr25519",
+        "address": "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe",
+        "ethereumAddress": "0x58A57ed9d8d624cBD12e2C467D34787555bB1b25",
+        "phrase": "legal winner thank year wave sausage worth useful legal winner thank yellow",
+        "path": "",
+        "password": "legacy-pw-A",
+        "ethereumPending": false
+      },
+      {
+        "name": "Bravo",
+        "kind": "mnemonic",
+        "type": "sr25519",
+        "address": "5Dvz1qwrSmKZkD82LgS7mrsgJSQMExLp3eZHHwfm7MqKs3nd",
+        "ethereumAddress": "0x2f826cb22E80a2c40f149Ecb92b2Fa5ecBf67170",
+        "phrase": "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
+        "path": "",
+        "password": "Bravo-pässwort-🔑",
+        "ethereumPending": false
+      },
+      {
+        "name": "Charlie",
+        "kind": "json",
+        "type": "sr25519",
+        "address": "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp",
+        "ethereumAddress": "0xc70eC8094CCE52B6574A5a2b7bf0c7D8288d77cC",
+        "password": "legacy-pw-C-substrate",
+        "ethereumPassword": "legacy-pw-C-ethereum",
+        "phrase": "scheme spot photo card baby mountain device kick cradle pact join borrow",
+        "ethereumPhrase": "scheme spot photo card baby mountain device kick cradle pact join borrow",
+        "ethereumPending": true
+      }
+    ],
+    "standalone": [],
+    "ton": [
+      {
+        "name": "TON native import",
+        "kind": "ton",
+        "walletEcosystem": "ton",
+        "address": "UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH",
+        "phrase": "motor robot hidden process lady summer apart iron educate pool call spy mad dog awful twice wrong pair sign vacuum convince web trade develop"
+      },
+      {
+        "name": "TON from a BIP39 phrase",
+        "kind": "ton",
+        "walletEcosystem": "ton",
+        "address": "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_",
+        "phrase": "letter advice cage absurd amount doctor acoustic avoid letter advice cage above"
+      }
+    ]
+  },
+  "storage": {
+    "accountSubs": {},
+    "addressBook": {},
+    "addresses": {},
+    "authUrls": {},
+    "balances": {
+      "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_": {
+        "ton": {
+          "TON Mainnet": {
+            "chain": "TON Mainnet",
+            "id": "2ba4723a-74b4-4a6f-a888-e51937773807-239",
+            "precision": 9,
+            "relayChain": "ton mainnet",
+            "state": "ready",
+            "symbol": "ton",
+            "total": "0",
+            "transferable": "0"
+          }
+        }
+      }
+    },
+    "defaultAuthAccountSelection": [],
+    "fw:account:0x2f826cb22e80a2c40f149ecb92b2fa5ecbf67170": {
+      "address": "0x0358a885518736065b391e67ec3b4e38c3b3c6518b7f84d34a62e781494bd0af85",
+      "encoded": "4ncug0dpUG+HbnozOZGSSsQ1muzJvEPfHQLCc8TL5dUAgAAAAQAAAAgAAABAc9U5TS5FKwKM2911bM7h9yaUg8D9gmKB+kWCFdNCuiHxp5Sh0gXGszSHZoGQ7ObvOQdRAeRX3YrlqpkAaQKVQA5yYymrHX7jx6/OeZoUNM5Sf18mIPiBcnvKfUDzeImcKI0Fe3s3FviFYEZjsGYMYYiKZXbJWRXsZ87meNc=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "isMasterAccount": false,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Bravo",
+        "whenCreated": 1791736392940
+      }
+    },
+    "fw:account:0x5294e5a4859a235bed10b8a38cf5e832f1a2b560c36533a36200fc4cba1ad171": {
+      "address": "5Dvz1qwrSmKZkD82LgS7mrsgJSQMExLp3eZHHwfm7MqKs3nd",
+      "encoded": "kR8fbZ5GQJRLFZDLloGR96Tskwd5W74OP7GfM5x4JXsAgAAAAQAAAAgAAAAiqUQpoZJXNRn1jKys1GnOVYldmKwqjvKKl0q2Z/AeA4R/OkQo+xf4uHIf7jwxfYpau88jO3hSdpf27tx1RF2hsNwVnECWyHy5O6qJOr8lrDWxM0vUELEG3tYylmkl5+Z+CgF+dQ2j4029WItXwVddXBFadj95eNaxwpUZ98ux2oU9UVj9bR0hU1YI+E8kCDFk+yt38ZKNhhe22+l+",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "sr25519"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0x2f826cb22E80a2c40f149Ecb92b2Fa5ecBf67170",
+        "isMasterAccount": false,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Bravo",
+        "whenCreated": 1791736393048
+      }
+    },
+    "fw:account:0x58a57ed9d8d624cbd12e2c467d34787555bb1b25": {
+      "address": "0x03a70d1ef368ad99e90d509496e9888ee7404e4f4d360376bf521d769cf0c4de46",
+      "encoded": "rw6CV22wIMQ6/9DXuh3thO0Vola5zFeywB09EbZVD40AgAAAAQAAAAgAAAAXm27fG8ULWjBbSmgnOnWdI3nSfniTw+ZKnp8o2iJthFgDXjciDUwiBPM/dJlRTx5pElrbJTBeDhRKTtfKy6n/aacT5Nc/XXYtLhPaAn2X/dwerHg49P7/Qv4DYCYIzBBcveiuXR754Xic1SCnyw/7S+LtJyiHgA3jZ8Y3bNs=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "isMasterAccount": false,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Alpha",
+        "whenCreated": 1791736392711
+      }
+    },
+    "fw:account:0x625e25364c7b68e0a83065ccb40afed43f8fe933e669b24f3d69a57eddb3b715": {
+      "address": "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe",
+      "encoded": "LGdswubfnZU+nY3cxpE/OaBhtCyZebyje50H7VjL9rYAgAAAAQAAAAgAAAATilQNpVCbA/HpyvSrXS8J6DiaDwdTP+g2viUOpes8IvSHO7JvoleQ+RmQ+SCZye9Z9rsdQh28zOD/85A2aMCYWuiuPkVIZKFWxV8gvUXMam5lMRgnSNMkeGuiXCljv6iGYYIBDpEi7dedvYD933QhQ2IF7m/jIZoMtmZdfDRDkNb+U2Y91k06gFIXH2gPjvNZfO8ErlS2R+sOjMEU",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "sr25519"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0x58A57ed9d8d624cBD12e2C467D34787555bB1b25",
+        "isMasterAccount": false,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Alpha",
+        "whenCreated": 1791736392830
+      }
+    },
+    "fw:account:0xb083ab3f7b484433e03dba76d739fad353c796e86e6a35ee0dde4372ebedaa29": {
+      "address": "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp",
+      "encoded": "bJfYH82/6++QgeFNhaDg3txzkS1/eDNx3wKPbJZ8t4IAgAAAAQAAAAgAAAB+9AzRLOqN44LPH7RkArsKGE+ZVqJte/FJZ0LHH0JwzVKxN8ubyagiu25HKIrGNttxeaWZ0DhzxnZV7ovHs68yh8Detb7np5JL1hrP9qDGsqX7Yy1YEYQ03kWzpgREEufZd9LXSK3rVjoIBsEDX7bEr16nb6okc9v+4oqcbFscoHcQ2t9agF3Clz40y8IGNEQabFyd9SZEb6InzJP9",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "sr25519"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0xc70eC8094CCE52B6574A5a2b7bf0c7D8288d77cC",
+        "isMasterAccount": false,
+        "isMasterPassword": true,
+        "name": "Charlie",
+        "whenCreated": 1700000000000
+      }
+    },
+    "fw:account:0xc70ec8094cce52b6574a5a2b7bf0c7d8288d77cc": {
+      "address": "0x02f98ce818e35ba0a094e99eca0845ca19bed0f557161fd4f791e8152cca92696d",
+      "encoded": "GQi67RdQfPbGE/op6XlhA98zkfpXkm31hBJlNK9cslkAgAAAAQAAAAgAAAAAx5S62p6jVWPv8bf2kRodTECPOvJdV35WxBNTDV03LAErZn0f1rSTVphS6AK82y7LP8gGqeZ2jVX1pYIUUncQ5bZ51w4o0gz91tM4nqac5Za1SLRLAN4XPRrFsTpKBzmn3AeV4D+875VT4e0yMxTxmVd3kzrU7sTpz46CXwg=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "isMasterAccount": true,
+        "name": "Charlie",
+        "whenCreated": 1700000000000
+      }
+    },
+    "fw:keyring": {
+      "passwordHash": "$2a$06$ZkkUE49uCfqkzs86Nm01bemkimtifKnPKdOkHeNj04T1KLfaRaRUu"
+    },
+    "fw:ton:UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_": {
+      "address": "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_",
+      "cipherSeed": "U2FsdGVkX19vTd4eHKebYff/bwro1d4c+7AxY2KaR9jhNGcrKoXNCFrA/7j8SOnTkdD2PfTjamO22kFG/X63aZwGohWIaNooCKpZUnp0m7DDhN8YPXj0wfrPZGMrorTj",
+      "name": "TON from a BIP39 phrase",
+      "publicKeyHex": "7cebef183673dacb926eabb559aa2806902b1ae8398531b71ebabd16208bd446"
+    },
+    "fw:ton:UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH": {
+      "address": "UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH",
+      "cipherSeed": "U2FsdGVkX187jnrYlj57vSlTw5bip+99HgHv3jPuVvG7oxk6a9iKoTmTyFgb+uM2vi99dPUUQ+Ho8BXpHkA5/7X3RiK9DYbhxPrTOChwEoRlrXgfnwwey62adyuYjhXh/R27XWvTyCzOtJO9cQ8jdGZkOpps1eUpY2Mh6tiRZ2+dMUQYRFSIpzhx6J34sin5XvEL5QNaIoeBM/FrqqaAZg==",
+      "name": "TON native import",
+      "publicKeyHex": "6d645f085c1d03347b5bcba0dcbc4b3a4def9a2cfb42ba3c98253cf2e9af5491"
+    },
+    "fwauthorize:authUrls": {},
+    "fwcurrent_account:CurrentAccountInfo": {
+      "address": "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_",
+      "ethereumAddress": "",
+      "isMobile": false,
+      "name": "TON from a BIP39 phrase",
+      "walletEcosystem": "ton"
+    },
+    "onboarding": {
+      "isRequired": true,
+      "user": "regular"
+    },
+    "providers": {},
+    "selectedNetworks": {
+      "5Dvz1qwrSmKZkD82LgS7mrsgJSQMExLp3eZHHwfm7MqKs3nd": "all",
+      "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe": "all",
+      "5G49Q5XJyvZ2DC8HfyL5btswLvHZmTXEwUykFCga8dzdUpTp": "all",
+      "UQAD_oydckKRarK7iJCk46M9IO1MkGUIvtb7IZTHbeNQnNS_": "Ton Mainnet",
+      "UQAwpQAiig4pt8qw16r9zKrwshbKbV7vo9k83FgeDSECGdYH": "Ton Mainnet"
+    }
+  }
+}

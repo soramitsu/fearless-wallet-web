@@ -16,3 +16,7 @@ export const downloadJsonAccount = (fileName: string, json: KeyringPair$Json, me
 
   saveAs(blobSubstrate, `${fileName}.json`);
 };
+
+export const downloadRecoveryData = (json: string) => {
+  saveAs(new Blob([json], { type: 'application/json; charset=utf-8' }), 'fearless-wallet-recovery-data.json');
+};

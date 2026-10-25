@@ -3,9 +3,13 @@
     <div :class="containerClass">
       <span v-if="isEmpty" data-testid="noNft">{{ $t('nft.noNft') }}</span>
 
-      <template v-else>
-        <NftCollectionItem v-for="(nft, i) of filteredNfts" :collection="nft" :key="i" />
-      </template>
+      <PortfolioNftNetworkSection
+        v-for="section in filteredSections"
+        v-else
+        :key="section.key"
+        :section="section"
+        :search="filterValue"
+      />
     </div>
 
     <NftSettings v-if="showAssetsManagementForm" @handleClose="onClose" />
@@ -14,11 +18,11 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, watch } from 'vue';
-import type { NetworkJson } from '@extension-base/types';
-import type { NftCollection } from '@extension-base/services/nft-service/types';
-import NftCollectionItem from '@/screens/wallet&asset/nft/NftCollectionItem.vue';
+import PortfolioNftNetworkSection from '@/screens/wallet&asset/nft/PortfolioNftNetworkSection.vue';
 import NftSettings from '@/screens/wallet&asset/nft/NftSettings.vue';
 import { fetchNfts } from '@/extension/messaging/nfts';
+import { buildNftNetworkSections } from '@/portfolio/nftIdentity';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -28,36 +32,61 @@ const props = defineProps<{ showAssetsManagementForm: boolean; filterValue: stri
 const accountsStore = useAccountsStore();
 const networksStore = useNetworksStore();
 
-const selectedNetwork = computed(() => accountsStore.selectedNetwork);
 const selectedWallet = computed(() => accountsStore.selectedWallet);
-const nfts = computed<NftCollection[]>(() => accountsStore.nftsByActiveNetworks);
-const activeNetworkForSelectedWallet = computed<NetworkJson[]>(() => networksStore.activeNetworkForSelectedWallet);
+const sections = computed(() =>
+  buildNftNetworkSections({
+    nfts: accountsStore.nfts,
+    networks: networksStore.allNetworks,
+    address: selectedWallet.value.ethereumAddress,
+  })
+);
 
-const filteredNfts = computed(() => {
-  return nfts.value.filter(({ network, name }) => {
-    const filterValue = props.filterValue.toLowerCase();
+const filteredSections = computed(() => {
+  const selected = accountsStore.selectedNetwork;
+  const search = props.filterValue.trim().toLowerCase();
+  let values = sections.value;
 
-    if (!name?.toLowerCase().includes(filterValue)) return false;
+  if (selected === POPULAR_NETWORKS) {
+    values = values.filter((section) => networksStore.getNetwork(section.chainId)?.rank !== undefined);
+  } else if (selected === FAVORITE_NETWORKS) {
+    values = values.filter((section) =>
+      networksStore.getNetwork(section.chainId)?.favorite.includes(selectedWallet.value.address)
+    );
+  } else if (!isSameString(selected, ALL_NETWORKS)) {
+    values = values.filter((section) => isSameString(section.name, selected));
+  }
 
-    return activeNetworkForSelectedWallet.value.some((net) => isSameString(net.name, network));
-  });
+  if (!search) return values;
+
+  return values.filter(
+    (section) =>
+      section.name.toLowerCase().includes(search) ||
+      section.collections.some((collection) =>
+        `${collection.name ?? ''} ${collection.address}`.toLowerCase().includes(search)
+      )
+  );
 });
 
-const isEmpty = computed(() => Object.keys(filteredNfts.value).length === 0);
+const isEmpty = computed(() => filteredSections.value.length === 0);
 const containerClass = computed(() => (isEmpty.value ? 'no-nfts' : 'nft-list'));
 
-watch([selectedWallet, selectedNetwork], () => setTimeout(() => fetchNfts(selectedWallet.value.ethereumAddress), 2000));
+watch(
+  () => selectedWallet.value.ethereumAddress,
+  (address) => {
+    if (address) setTimeout(() => fetchNfts(address), 2000);
+  }
+);
 
-onMounted(() => fetchNfts(selectedWallet.value.ethereumAddress));
+onMounted(() => {
+  if (selectedWallet.value.ethereumAddress) fetchNfts(selectedWallet.value.ethereumAddress);
+});
 
 const onClose = () => emit('toggleAssetsManagementForm', false);
 </script>
 
 <style lang="scss" scoped>
 .nft-list {
-  display: grid;
-  grid-template-columns: max-content max-content;
-  gap: 16px;
+  display: block;
   height: 100%;
 }
 

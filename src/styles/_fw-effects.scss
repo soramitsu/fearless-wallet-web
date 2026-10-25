@@ -1,0 +1,52 @@
+// Neon Glass effects plumbing (design-system 2 and 6.3); hand-written, the values come from fw-tokens.scss.
+// The page entry puts the resolved tier on <html data-fw-effects="full|lite|reduced" data-fw-contrast="standard|high">
+// before the app mounts (src/appearance/visualEffects.ts), so these selectors are the only place a tier changes paint.
+// Calm surfaces (`.fw-calm`, set by App.vue for routes with `meta.calm`) are flat at every tier.
+
+// Static, so nothing tier-dependent shows before mount. Only <html> paints it: a body background would be
+// painted above the backdrop's negative z-index and hide it.
+html {
+  background: var(--fw-bg-base);
+}
+
+// The card colour the legacy names paint under the Neon Glass palette (common.scss): glass at Full and Lite,
+// opaque surface.raised at Reduced and on Calm screens (design-system 2.1).
+@include v1-palette {
+  :root {
+    --fw-card-surface: var(--fw-glass);
+  }
+
+  [data-fw-effects='reduced'],
+  .fw-calm {
+    --fw-card-surface: var(--fw-raised);
+  }
+}
+
+// e0: a fixed layer under the app, so scrolling never repaints it. Geometry and alpha are the aurora tokens.
+.fw-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 55vw at 15% 12%, rgb(255 0 154 / 0.18), transparent 70%),
+    radial-gradient(circle 45vw at 95% 8%, rgb(46 230 255 / 0.12), transparent 70%),
+    radial-gradient(circle 60vw at 50% 100%, rgb(139 92 255 / 0.16), transparent 70%),
+    var(--fw-bg-base);
+}
+
+[data-fw-effects='reduced'] .fw-backdrop,
+.fw-calm .fw-backdrop {
+  background: var(--fw-bg-base);
+}
+
+:is(a, button, summary, select, input[type='checkbox'], input[type='radio'], [tabindex]):focus-visible {
+  outline: 2px solid var(--fw-focus);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .fw-backdrop {
+    display: none;
+  }
+}

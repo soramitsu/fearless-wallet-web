@@ -1,0 +1,78 @@
+// fw-tokens.scss: GENERATED from config/design/fw.tokens.json; do not edit.
+// sha256 18180aa767b87b8ac0bb767622e172328d95145817a1475a840905eec55b4315
+// Regenerate: node scripts/design/gen-fw-tokens.mjs --web <checkout>
+// Token values only; effect recipes live in the hand-written _fw-effects.scss.
+:root {
+  color-scheme: dark;
+  --fw-bg-base: #0A0C1B;
+  --fw-raised: #12152B;
+  --fw-raised-2: #1A1E3A;
+  --fw-pressed: #242A4D;
+  --fw-sunken: #06070F;
+  --fw-glass: rgb(20 24 51/.72);
+  --fw-glass-sheen: rgb(255 255 255/.04);
+  --fw-glass-elevated: rgb(26 30 58/.86);
+  --fw-chrome: rgb(14 17 38/.88);
+  --fw-chrome-solid: rgb(14 17 38/.96);
+  --fw-scrim: rgb(4 5 13/.72);
+  --fw-text-1: #EDF0FA;
+  --fw-text-2: #B8BEDB;
+  --fw-text-3: #9198BC;
+  --fw-text-dis: #5E6487;
+  --fw-on-accent: #FFFFFF;
+  --fw-link: #2EE6FF;
+  --fw-brand-text: #FF4DB8;
+  --fw-promo: #A99BFF;
+  --fw-brand: #FF009A;
+  --fw-fill-top: #D6007F;
+  --fw-fill-bottom: #A3006A;
+  --fw-accent-edge: rgb(255 77 184/.55);
+  --fw-focus: #2EE6FF;
+  --fw-up: #38E8E0;
+  --fw-down: #FFA057;
+  --fw-success: #3DF2B0;
+  --fw-warning: #FFC452;
+  --fw-danger: #FF7466;
+  --fw-info: #2EE6FF;
+  --fw-danger-fill: #B3302A;
+  --fw-select-fill: rgb(255 0 154/.16);
+  --fw-select-edge: #FF4DB8;
+  --fw-row-selected: rgb(255 0 154/.10);
+  --fw-divider: rgb(255 255 255/.08);
+  --fw-stroke-strong: rgb(255 255 255/.28);
+  --fw-stroke-control: rgb(255 255 255/.40);
+  --fw-hud-tick: rgb(46 230 255/.60);
+  --fw-hud-trace: rgb(46 230 255/.40);
+  --fw-thumb-off: #C9CEE8;
+  --fw-qr-module: #0A0C1B;
+  --fw-qr-field: #FFFFFF;
+  --fw-hairline: linear-gradient(135deg,rgb(255 255 255/.22) 0%,rgb(255 255 255/.06) 42%,rgb(255 0 154/.28) 100%);
+  --fw-accent-rim: linear-gradient(135deg,rgb(255 0 154/.75) 0%,rgb(139 92 255/.55) 50%,rgb(46 230 255/.65) 100%);
+  --fw-fill: linear-gradient(180deg,#D6007F 0%,#A3006A 100%);
+  --fw-ease: cubic-bezier(0.2,0,0,1);
+  --fw-ease-exit: cubic-bezier(0.3,0,1,1);
+  --fw-ease-expand: cubic-bezier(0.05,0.7,0.1,1);
+  --fw-dur-instant: 90ms;
+  --fw-dur-fast: 150ms;
+  --fw-dur-base: 220ms;
+  --fw-dur-slow: 320ms;
+  --fw-dur-deliberate: 450ms;
+  --fw-font-display: 'Sora Variable',var(--fw-font-body);
+  --fw-font-body: 'Inter',system-ui,sans-serif;
+  --fw-font-mono: 'JetBrains Mono',ui-monospace,monospace;
+  // Element Plus bridge
+  --el-color-primary: #D6007F;
+  --el-bg-color: var(--fw-raised);
+  --el-bg-color-overlay: var(--fw-raised-2);
+  --el-text-color-primary: var(--fw-text-1);
+  --el-text-color-regular: var(--fw-text-2);
+  --el-border-color: var(--fw-stroke-control);
+}
+
+[data-fw-contrast="high"] {
+  --fw-text-2: #D5DAEA;
+  --fw-text-3: #BAC0D4;
+  --fw-stroke-control: rgb(255 255 255/.55);
+  --fw-hairline: var(--fw-stroke-control);
+  --fw-accent-rim: var(--fw-stroke-control);
+}

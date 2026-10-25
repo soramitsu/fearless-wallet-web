@@ -18,7 +18,7 @@ import { defineComponent } from 'vue';
 
 import AccountsItem from './AccountsItem.vue';
 import { Components } from '@/router/routes';
-import { getChainAccounts } from '@/helpers/accounts';
+import { getChainAccounts, getIrohaChainAccounts } from '@/helpers/accounts';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSameString } from '@/helpers';
@@ -36,6 +36,9 @@ export default defineComponent({ name: 'Account',
   },
   computed: {
     chainAccounts() {
+      if (this.type === 'iroha') {
+        return getIrohaChainAccounts(this.networksStore.allNetworks, this.accountsStore.selectedWallet);
+      }
       const networks = this.networksStore.networks.filter(({ ecosystem }) => {
             if (this.isEVM) return isSameString(ecosystem, 'ethereum');
 

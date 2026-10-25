@@ -143,7 +143,10 @@ function validateUniversalWalletPublicAccount(account: UniversalWalletPublicAcco
   if (account.chainId !== undefined && !/^[A-Za-z0-9._:-]{2,128}$/.test(account.chainId)) {
     errors.add('invalidChainId');
   }
-  if (account.derivationPath?.trim() && !/^m(?:\/[0-9]+'?)*$/.test(account.derivationPath)) {
+  if (account.derivationPath !== undefined && (
+    typeof account.derivationPath !== 'string' ||
+    (account.derivationPath.trim() && !/^m(?:\/[0-9]+'?)*$/.test(account.derivationPath))
+  )) {
     errors.add('invalidDerivationPath');
   }
   if (
@@ -157,12 +160,14 @@ function validateUniversalWalletPublicAccount(account: UniversalWalletPublicAcco
 }
 
 function isHumanText(value: string | undefined, maxLength: number): boolean {
+  if (typeof value !== 'string') return false;
   const normalized = value?.trim();
   return !!normalized && normalized.length <= maxLength && !hasControlCharacters(normalized);
 }
 
 function isMachineText(value: string, maxLength: number): boolean {
   return (
+    typeof value === 'string' &&
     !!value &&
     value.length <= maxLength &&
     value === value.trim() &&

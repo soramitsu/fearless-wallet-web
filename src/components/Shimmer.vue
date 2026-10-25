@@ -1,5 +1,5 @@
 <template>
-  <div :class="shimmerClasses" :style="shimmerStyles"></div>
+  <div :class="shimmerClasses" :style="shimmerStyles" aria-hidden="true"></div>
 </template>
 
 <script lang="ts" setup>
@@ -47,5 +47,10 @@ const shimmerClasses = computed(() => {
 
 .shimmer-animate {
   @include shimmer-animate;
+}
+@include v1-palette {
+  .shimmer {
+    background-color: var(--fw-raised-2);
+  }
 }
 </style>

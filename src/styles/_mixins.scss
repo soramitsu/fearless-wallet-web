@@ -67,3 +67,29 @@
     }
   }
 }
+
+// Effects tiers for a blurred scrim behind a popup or sheet (design-system 2.1 and the 5.4 ladder): live blur at
+// Full; Lite drops the blur and raises the tint; Reduced and Calm surfaces get an 80% scrim and no blur. The page
+// entry puts the tier on <html> before mount (src/appearance/visualEffects.ts).
+@mixin fw-scrim-tiers($color: #000) {
+  html[data-fw-effects='lite'] & {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgba($color, 0.72);
+  }
+
+  html[data-fw-effects='reduced'] &,
+  .fw-calm & {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgba($color, 0.8);
+  }
+}
+
+// Reduced and Calm draw no glow (design-system 2.1); `!important` also beats a glow set as an inline style.
+@mixin fw-no-glow-when-reduced {
+  html[data-fw-effects='reduced'] &,
+  .fw-calm & {
+    filter: none !important;
+  }
+}

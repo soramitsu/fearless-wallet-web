@@ -1,0 +1,104 @@
+{
+  "en-EN": {
+    "new": [
+        {
+            "title": "Brand new network management",
+            "description": "Navigate between All, Popular and your Favourite networks modes",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/1.svg"
+        },
+        {
+            "title": "Use only prefarable chains",
+            "description": "You can customise your favourite networks and work only with the ones you prefer",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/2.svg"
+        },
+        {
+            "title": "Single or multiple network mode",
+            "description": "You’re free to choose a single network or a set of networks to operate with your assets",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/3.svg"
+        },
+        {
+            "title": "Multi-network state for the Asset details screen",
+            "description": "You can see any particular asset and its balances on multiple networks on one screen",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/4.svg"
+        },
+        {
+            "title": "Navigate assets across a vast range of networks fearlessly",
+            "description": "You can easily choose your asset on a specific network and do whatever you want to do with it",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/5.svg"
+        }
+    ],
+    "regular": [
+        {
+            "title": "Welcome to Seamless Security",
+            "description": "Enjoy enhanced wallet management with a single master password for all transactions and accounts",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/1.svg"
+        },
+        {
+            "title": "Set Your Master Password",
+            "description": "Secure your app effortlessly by creating a master password now",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/2.svg"
+        },
+        {
+            "title": "Migrate Your Wallets",
+            "description": "Enter wallet passwords to transfer them under the new master system, or skip if needed",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/3.svg"
+        },
+        {
+            "title": "You're All Set!",
+            "description": "Explore the streamlined experience, restore skipped wallets anytime with mnemonic phrases",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/4.svg"
+        }
+    ]
+  },
+  "ru-RU": {
+      "new": [
+        {
+            "title": "Абсолютно новая навигация по сетям",
+            "description": "Переключайтесь между Всеми, Популярными и вашими Избранными сетями",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/1.svg"
+        },
+        {
+            "title": "Используйте только Избранные сети",
+            "description": "Вы можете настроить Избранные сети и работать только с ними",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/2.svg"
+        },
+        {
+            "title": "Режим одной или несольких сетей",
+            "description": "Вы можешь выбрать одну сеть или набор сетей, чтобы управлять своми активами",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/3.svg"
+        },
+        {
+            "title": "Режим набора сетей для экрана деталей актива",
+            "description": "Вы можете видеть любой актив и его балансы в разных сетях на одном экране",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/4.svg"
+        },
+        {
+            "title": "Управляйте активами в широком диапазоне сетей бесстрашно",
+            "description": "Вы легко можете выбрать актив в любой из сетей и делать с ним что угодно",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb/5.svg"
+        }
+      ],
+      "regular": [
+        {
+            "title": "Добро пожаловать в мир удобной безопасности",
+            "description": "Наслаждайтесь улучшенным управлением кошельками с единым мастер-паролем для всех операций и аккаунтов",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/1.svg"
+        },
+        {
+            "title": "Установите мастер-пароль",
+            "description": "Обеспечьте безопасность приложения, создав мастер-пароль прямо сейчас",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/2.svg"
+        },
+        {
+            "title": "Перенос кошельков",
+            "description": "Введите пароли от кошельков для объединения в новую систему, или пропустите этап при необходимости",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/3.svg"
+        },
+        {
+            "title": "Всё готово!",
+            "description": "Пользуйтесь более удобным интерфейсом, при необходимости восстановите пропущенные кошельки с помощью мнемонических фраз",
+            "image": "https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/development/appConfigs/onboarding/screensWeb_v2/4.svg"
+        }
+      ]
+    }
+  }

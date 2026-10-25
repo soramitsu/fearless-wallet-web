@@ -1,10 +1,11 @@
+import { SolanaBroadcastError } from '@extension-base/services/solana-rpc-service';
 import type { SolanaRequestsSubjectPayload } from '@extension-base/services/request-service/types';
 import type {
   SolanaSignAndSendTransactionOptions,
   SolanaSignAndSendTransactionResponse,
   SolanaSigningResponse,
 } from '@extension-base/page/types';
-import { signSolanaSerializedTransaction } from '@/util/solanaTransaction';
+import { getSolanaTransactionId, signSolanaSerializedTransaction } from '@/util/solanaTransaction';
 import { signSolanaMessage } from '@/util/solanaKeyring';
 
 type SolanaKeyringAccount = {
@@ -125,7 +126,23 @@ export async function resolveSolanaSignAndSendTransaction({
     mnemonic: seed,
     transaction: request.transactionBase64,
   });
-  const signature = await broadcastTransaction(signed.signedTransactionBase64, request.options);
+  let signature: string;
+
+  try {
+    signature = await broadcastTransaction(signed.signedTransactionBase64, request.options);
+  } catch (error) {
+    // The transaction may already be on its way. Its id lets the dApp follow the
+    // outcome; an error would invite it to have a second, different transaction
+    // signed. The id is the first signature, which is the wallet's own only when
+    // the wallet pays the fee.
+    if (!(error instanceof SolanaBroadcastError && error.ambiguous)) throw error;
+
+    const transactionId = getSolanaTransactionId(signed.signedTransactionBase64);
+
+    if (transactionId === undefined) throw error;
+
+    signature = transactionId;
+  }
 
   return {
     publicKey: signed.signer,

@@ -1,0 +1,8 @@
+{
+  "name": "node-forge",
+  "version": "1.4.0",
+  "private": true,
+  "description": "Fearless fail-closed shim for unused Android ADB authentication in desktop Firefox tooling",
+  "main": "index.cjs",
+  "license": "Apache-2.0"
+}

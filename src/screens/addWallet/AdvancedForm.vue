@@ -66,9 +66,9 @@ export default defineComponent({ name: 'AdvancedForm' ,
     return {
       ethereumDefaultDerivationPath: ETHEREUM_DEFAULT_DERIVATION_PATH,
       optionsSubstrateKeyPair: [
-    { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
-    { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },
-    { label: 'ECDSA | BTC/ETH compatible', value: 'ecdsa', example: '//hard///password' },
+    { label: `Schnorrkel sr25519 (${this.$t('addWallet.recommended')})`, value: 'sr25519', example: '//hard/soft///password' },
+    { label: `Edwards ed25519 (${this.$t('addWallet.alternative')})`, value: 'ed25519', example: '//hard///password' },
+    { label: `ECDSA | ${this.$t('addWallet.btcEthCompatible')}`, value: 'ecdsa', example: '//hard///password' },
   ],
       substrateDP: '',
       ethereumDP: '',

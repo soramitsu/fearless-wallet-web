@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "webExtVersion": "10.6.0",
+  "sourceDir": "dist/extension/firefox",
+  "warningCount": 38,
+  "warningCodes": {
+    "DANGEROUS_EVAL": 37,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "warningFiles": {
+    "chunks/background-vendor/assert-Dr2usS2V.js": 8,
+    "chunks/background-vendor/bcryptjs-B3XpwbaB.js": 9,
+    "chunks/background-vendor/core-js-pure--MZ3QQlj.js": 1,
+    "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-BE9bwdbS.js": 2,
+    "chunks/background-vendor/subwallet-keyring-CmclzGJq.js": 1,
+    "chunks/mountApp.js": 16,
+    "chunks/usePortfolioPreferences.js": 1
+  },
+  "warningSetSha256": "bcb9ba888e329b5ea3f9c96ba39167288e29a1be8b5443a75bcb2599775ae603",
+  "artifacts": [
+    {
+      "file": "chunks/background-vendor/assert-Dr2usS2V.js",
+      "sha256": "f307bd27793c5d2b54e233c4c5a8d8c3745b2a34081ece640fd1adc1ef3797ed"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-B3XpwbaB.js",
+      "sha256": "c4dfd2f6c258724268734794d9a38765083d98ff4768700a292c216c7792a52e"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure--MZ3QQlj.js",
+      "sha256": "9b383afbb606a0ae0e87f6004aa5a626593cc52a564aa34d6d63b9f2cc4caff0"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-BE9bwdbS.js",
+      "sha256": "3189635159b907899104e0bca88e382ea1e2a35026c7bfcca5530d195295f28d"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-CmclzGJq.js",
+      "sha256": "42d66a89a14ac1a7e9645d330055e7bba99bc0e4c1237cd45348617bb5125c80"
+    },
+    {
+      "file": "chunks/mountApp.js",
+      "sha256": "c613a1039f5e517ddc07f8a7023b82b67ea252cc6dcbdeba10fec28eeb18dad2"
+    },
+    {
+      "file": "chunks/usePortfolioPreferences.js",
+      "sha256": "ce5cf19ffa749a176a5b6f8eb1280b82d83842c831564ad0c2edfb3c90308241"
+    }
+  ]
+}

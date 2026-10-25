@@ -8,7 +8,7 @@
     :showFullScreenIcon="false"
     @back="back"
   >
-    <NegativeMessage v-if="isAccessDenied" :message="$t('addWallet.google.somethingWrong')" />
+    <NegativeMessage v-if="isAccessDenied || loadError" :message="$t('addWallet.google.somethingWrong')" />
 
     <BackupWalletsList
       v-else-if="haveWalletsToImport"
@@ -42,7 +42,6 @@ import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messagin
 import { Components } from '@/router/routes';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
-import { ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 
 export default defineComponent({ name: 'AddFromGoogle',
   components: {
@@ -57,6 +56,10 @@ export default defineComponent({ name: 'AddFromGoogle',
       isLoading: true,
       step: 1,
       tokenValidation: 'pending',
+      isActive: true,
+      loadError: false,
+      loadRevision: 0,
+      fileRequests: new Map<string, string>(),
     };
   },
   computed: {
@@ -82,6 +85,8 @@ export default defineComponent({ name: 'AddFromGoogle',
       return !this.isLoading && this.isFilesExists;
     },
     buttonText() {
+      if (this.loadError) return this.$t('ux.retry');
+      if (this.isAccessDenied) return this.$t('common.finish');
       return this.step === 2 ? this.$t('common.finish') : this.$t('common.continue');
     },
     isActiveNotComplete() {
@@ -91,6 +96,7 @@ export default defineComponent({ name: 'AddFromGoogle',
       return this.files.every(({ isComplete }) => !isComplete);
     },
     isAllowedContinue() {
+      if (this.loadError || this.isAccessDenied) return false;
       return this.isImportInProgress || this.isActiveNotComplete || this.importAcquired;
     },
     header() {
@@ -101,55 +107,56 @@ export default defineComponent({ name: 'AddFromGoogle',
           return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
     },
   },
-  async mounted() {
-    const isValidToken = await this.isTokenValid();
-
-        if (!isValidToken) return;
-
-        const { files } = await getGoogleFiles(this.token);
-
-        const jsonsWithoutEth = files.filter((el) => el.description === '' || el.description === 'undefined');
-        const regex = /\w+\/\w+/;
-        const filterFiles = files.filter((el) => el && regex.test(el.description));
-        const filesToImport = [...filterFiles, ...jsonsWithoutEth];
-
-        if (filesToImport.length === 0) {
-          this.$router.push({
-            name: Components.CreateGoogle,
-            params: {
-              access_token: this.$route.params.access_token,
-            },
-          });
-
-          this.isLoading = false;
-
+  beforeUnmount() {
+    this.isActive = false;
+    this.loadRevision++;
+    this.fileRequests.clear();
+  },
+  watch: {
+    token() { void this.loadBackups(); },
+  },
+  async mounted() { await this.loadBackups(); },
+  methods: {
+    async loadBackups() {
+      if (!this.isActive) return;
+      const revision = ++this.loadRevision;
+      const token = this.token;
+      const current = () => this.isActive && this.loadRevision === revision && this.token === token;
+      this.files = [];
+      this.fileRequests.clear();
+      this.isLoading = true;
+      this.loadError = false;
+      this.tokenValidation = 'pending';
+      try {
+        const data = token && token !== 'null' ? await verifyToken(token) : null;
+        if (!current()) return;
+        if (!data || !Number.isFinite(+data.expires_in) || +data.expires_in <= 0) {
+          this.tokenValidation = 'invalid';
           return;
         }
-
-        filesToImport.forEach(({ id, description, name }) => {
-          const [prepName] = name.split('.');
-
-          const [address, ethID] = description.split('/');
-
-          this.files.push({
-            id,
-            name: prepName,
-            address,
-            isComplete: false,
-            isLoading: false,
-            isError: false,
-            ethWalletID: ethID,
-            password: '',
-            active: false,
-          });
+        this.tokenValidation = 'valid';
+        const { files } = await getGoogleFiles(token);
+        if (!current()) return;
+        if (!Array.isArray(files)) throw new Error('Invalid Google Drive inventory');
+        if (files.length === 0) {
+          await this.$router.push({ name: Components.CreateGoogle, params: { access_token: token } });
+          return;
+        }
+        // Descriptions are metadata, not authority to hide encrypted files. Keep
+        // standalone keys and children from interrupted backups reachable too.
+        this.files = files.map(({ id, description, name }) => {
+          const parts = typeof description === 'string' ? description.split('/') : [];
+          return {
+            id, name: typeof name === 'string' ? name.replace(/\.json$/i, '') : id, address: parts[0] ?? '',
+            ethWalletID: parts.length === 2 && parts[1] && parts[1] !== id ? parts[1] : undefined,
+            isComplete: false, isLoading: false, isError: false, password: '', active: false,
+          };
         });
-
-        this.isLoading = false;
-  },
-  methods: {
+      } catch { if (current()) this.loadError = true; }
+      finally { if (current()) this.isLoading = false; }
+    },
     goBack() {
-      this.$router.replace('/').catch((e) => e);
-          this.$router.push({ name: Components.Wallet }).catch((e) => e);
+      this.$router.replace({ name: Components.Wallet, params: { access_token: '' } }).catch((e) => e);
     },
     back() {
       if (this.step === 1) {
@@ -161,12 +168,35 @@ export default defineComponent({ name: 'AddFromGoogle',
           this.step -= 1;
     },
     async getFile(id: string, key: number) {
-      const file = await getGoogleFile(id, this.token);
-
-          if (file.address.startsWith(ETHEREUM_ADDRESS_PREFIX)) this.setItemValue(key, { ethJson: file });
-          else this.setItemValue(key, { json: file });
+      const row = this.files[key];
+      const token = this.token;
+      const revision = this.loadRevision;
+      if (!this.isActive || !row || !id || (id !== row.id && id !== row.ethWalletID)) return;
+      const requestKey = JSON.stringify([revision, row.id, id]);
+      if (this.fileRequests.has(requestKey)) return;
+      this.fileRequests.set(requestKey, row.id);
+      const currentIndex = () => this.isActive && this.token === token && this.loadRevision === revision ? this.files.findIndex((file) =>
+        file.id === row.id && file.address === row.address && file.ethWalletID === row.ethWalletID) : -1;
+      this.setItemValue(key, { isFileLoading: true, fileLoadError: false });
+      try {
+        const file = await getGoogleFile(id, token);
+        const index = currentIndex();
+        if (index < 0) return;
+        // The requested file ID determines its role, including an EVM-only primary backup.
+        this.setItemValue(index, id === row.id ? { json: file } : { ethJson: file });
+      } catch {
+        const index = currentIndex();
+        if (index >= 0) this.setItemValue(index, { fileLoadError: true });
+      } finally {
+        this.fileRequests.delete(requestKey);
+        const index = currentIndex();
+        if (index >= 0) this.setItemValue(index, {
+          isFileLoading: [...this.fileRequests.values()].some((owner) => owner === row.id),
+        });
+      }
     },
-    proceed() {
+    async proceed() {
+      if (this.loadError) { await this.loadBackups(); return; }
       if (this.isFinishForm || this.isAccessDenied) {
             this.goBack();
 
@@ -181,26 +211,7 @@ export default defineComponent({ name: 'AddFromGoogle',
     setItemPassword(index: number, password: string) {
       this.files[index] = { ...this.files[index], password };
     },
-    async isTokenValid() {
-      if (this.token === 'null') {
-            this.isLoading = false;
 
-            return false;
-          }
-
-          const data = await verifyToken(this.token);
-
-          if (data === null || +data.expires_in <= 0) {
-            this.tokenValidation = 'invalid';
-            this.isLoading = false;
-
-            return false;
-          }
-
-          this.tokenValidation = 'valid';
-
-          return true;
-    },
   },
 });
 </script>

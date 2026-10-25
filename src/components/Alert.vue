@@ -1,6 +1,6 @@
 <template>
   <FCorners :isError="true" size="big">
-    <div class="alert-container" data-testid="alertContainer">
+    <div class="alert-container" data-testid="alertContainer" role="status">
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 
@@ -53,6 +53,7 @@ const tMessage = computed(() => {
 
 <style lang="scss" scoped>
 .alert-container {
+  box-sizing: border-box;
   background: $secondary-background-color;
   padding: $default-padding;
   border: 1px solid $simple-orange-color;
@@ -85,5 +86,20 @@ const tMessage = computed(() => {
 
 .text-big {
   font-size: 1.125em;
+}
+@include v1-palette {
+  .alert-container {
+    background: color-mix(in srgb, var(--fw-warning) 14%, var(--fw-raised));
+    border: 0;
+    border-left: 4px solid var(--fw-warning);
+    border-radius: 12px;
+    clip-path: none;
+  }
+  .alert__message {
+    color: var(--fw-text-2);
+  }
+  .alert__header :deep(.info-text) {
+    width: auto;
+  }
 }
 </style>

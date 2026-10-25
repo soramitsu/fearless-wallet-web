@@ -85,6 +85,8 @@ export type NftCollection = {
   total?: string;
   isSpam?: boolean;
   ownedNfts: FearlessNft[];
+  lastSyncedAt?: number;
+  syncStale?: boolean;
 };
 
 export type AvailableNftPayload = {

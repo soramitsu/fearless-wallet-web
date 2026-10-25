@@ -10,12 +10,12 @@ import {
 } from '@/util/universalWalletMigrationContract';
 
 describe('Universal Wallet migration contract', () => {
-  it('blocks normal access when legacy vaults exist without a universal wallet', () => {
+  it('preserves normal access when legacy vaults exist without a universal wallet', () => {
     const snapshot = migrationSnapshot({ hasUniversalWallet: false, legacyVaults: [legacyVault()] });
 
     expect(validateUniversalWalletMigrationSnapshot(snapshot)).toEqual([]);
-    expect(getUniversalWalletMigrationRequiredAction(snapshot)).toBe('migrate-before-access');
-    expect(allowsUniversalWalletNormalAccess(snapshot)).toBe(false);
+    expect(getUniversalWalletMigrationRequiredAction(snapshot)).toBe('normal-access');
+    expect(allowsUniversalWalletNormalAccess(snapshot)).toBe(true);
     expect(allowsLegacySecretExport(snapshot)).toBe(true);
     expect(JSON.stringify(snapshot)).toContain('"platform":"web"');
     expect(JSON.stringify(snapshot)).toContain('"mode":"export-only"');

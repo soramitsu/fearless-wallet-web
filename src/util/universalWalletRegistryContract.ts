@@ -1,7 +1,8 @@
 import { WalletEcosystem } from '@/interfaces';
 
 const UNIVERSAL_WALLET_REGISTRY_SCHEMA_VERSION = 1;
-const UNIVERSAL_WALLET_REGISTRY_ENDPOINT_KINDS = ['indexer', 'rpc', 'torii-mcp', 'explorer'] as const;
+// `torii` is a direct Torii REST base URL; `torii-mcp` remains readable for older registries.
+const UNIVERSAL_WALLET_REGISTRY_ENDPOINT_KINDS = ['indexer', 'rpc', 'torii', 'torii-mcp', 'explorer'] as const;
 const UNIVERSAL_WALLET_REGISTRY_FEATURES = ['transfer', 'offline-cash', 'sccp', 'governance'] as const;
 
 type UniversalWalletRegistryEndpointKind = (typeof UNIVERSAL_WALLET_REGISTRY_ENDPOINT_KINDS)[number];

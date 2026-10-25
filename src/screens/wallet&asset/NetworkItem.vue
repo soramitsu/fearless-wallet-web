@@ -88,7 +88,7 @@ const prepOpacity = computed(() => (props.isAvailable ? '1' : '0.5'));
   color: v-bind(prepColor);
   font-size: 1em;
   border: solid 1px transparent;
-  border-bottom-color: $default-background-color;
+  border-bottom-color: palette($default-background-color, var(--fw-divider));
   padding-top: 16px;
   padding-bottom: 16px;
   justify-content: center;

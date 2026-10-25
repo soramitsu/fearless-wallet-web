@@ -1,0 +1,52 @@
+{
+  "source": {
+    "formatCommit": "a1dafd8f85fa5bc08e8792f8cb295dbcc1a105ef",
+    "note": "Synthetic public test data encoded with the exact published v2/v3 envelope and scrypt N32768,p1,r8; legacy identities/ciphertexts taken from the 3.0.5 fixture. Never use for funds."
+  },
+  "password": "public-only-3.0.6-master-password",
+  "earlierPassword": "test-only master password 3.0.5",
+  "accounts": [
+    {
+      "phrase": "claim market desert menu auto average label broken public oval gown cover wash vendor hire lawsuit walk grain chicken illegal dolphin tenant filter top",
+      "kind": "ton-native-24",
+      "stored": {
+        "name": "Fixture ton-native-24",
+        "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+        "cipherSeed": "{\"version\":2,\"encoded\":\"cq9IUY+Y6okwf02us3javlia8K1dcO4/H8uBt4Z88g0AgAAAAQAAAAgAAABNJu/mkvDhf7I4v7eORU+pm8ODvVIhkAds4PGvFNeK1oLcX5rSOvWVvto9iJxPvSe24o0aGl3s6y7ZJApPmVTWELdn+B7qRRpMB6v+l8wK/0rnpe3qEzZNxzXj/qKuged1G6IiSAjP8tvjDqYRQEfNGiFpLbGc7BG4qMHEGZk9XzedF9metyCYnuJKy6JaMjQSZxohktorIzff2bWNypkXTThN1DznYLXt0ZKahXv9zJBF29kxjAzjPCBh+pSJFA==\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+        "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+      }
+    },
+    {
+      "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      "kind": "bip39-12",
+      "stored": {
+        "name": "Fixture bip39-12",
+        "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+        "cipherSeed": "{\"version\":2,\"encoded\":\"9pu6NdwVDNG2piXFkYed5MrIHKTba3yWMNEqpWw4++YAgAAAAQAAAAgAAABy/emi9yupThCgpkBQc48F4Yk75DgqLjadX8X2XLopsCjqf8k1nhUFUSdy6Pfv1r3GEg1qoPfly0/IjroYAxib51NawOhz/s8HOcc+E+dLzxlQiISQjBxJDFCbQX66G5odfA/pEQ8lpt4BF3HmeBsNOxypWUqadimweY0gJ2KPp3mwlLW2\",\"encoding\":{\"content\":[\"ton-mnemonic\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+        "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+      }
+    }
+  ],
+  "recoveryAccounts": [
+    {
+      "phrase": "claim market desert menu auto average label broken public oval gown cover wash vendor hire lawsuit walk grain chicken illegal dolphin tenant filter top",
+      "kind": "ton-native-24",
+      "stored": {
+        "name": "Fixture ton-native-24",
+        "address": "UQC_NBH8yrscTmFpQMbt-y_rxTc3HjuzSiInVbCLLYwvL6eC",
+        "cipherSeed": "{\"version\":3,\"encoded\":\"CXxybRcilXYXjRDpgK5+/4Vp+vqHmJczVo0/xmqeUpIAgAAAAQAAAAgAAADZh91aj98y1ptL4+LK/jhjIjGeFyRGZuJxdO7Qff8gn8eGbBCp9SbYvgkfdbVj3NUnTCdEtjG2KfrM8twfufOBYcN8Bg08XmTKH9xq3Nrp5hwa87RXma5RRKRsV8+yBeRtYH2d/Tq/znwGfQ8rysaRmCTfO3R9vaw5ub47Vy64d+ET4REfo6mwENnXBgEupK2L/94fFxi/Chg76XUJyiS9sH3qxH6pySDrUR6Y7ceW0WE1/2ghjiN9XJgbOoPRbJ/T3oiBJM+IQ3GAbnsz4OOzgwWCDBioINL8hHsnHohVfi3934lImhsLVAs6PtDlD69utzgs4Y9rYHhwVCW5GMEDKwGlGA0iLTllGgMowagSFLj9ImrpgABOJwJFk1XpvajsmYmO0PF/DzzsXr6/rQRhJ2soBHpUqhluk5GLVpqjShiYLITVzT44Xkg3dIuSHShGdnutarAoMc9kyDM4oXfAGfoiqMQ08azgpeO+B+9PofX6GShG4xOaErpfWBy9xfnOzqexR6/SzLi8TraSBkY49CbbSDaETWFgryqzOT54XJtjC1I0wg3WRXiF78DMqRJ5ZNbQ\",\"encoding\":{\"content\":[\"ton-legacy-recovery\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+        "publicKeyHex": "1cce8e88db53b3c7563cdcdf3db57c0924c414d4eb4221ed61c84841c07dda80"
+      }
+    },
+    {
+      "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      "kind": "bip39-12",
+      "stored": {
+        "name": "Fixture bip39-12",
+        "address": "UQBuVfeIXD-R8aYsm8P9PT5s-CEdO83Oy90Ppccw3mlJQykE",
+        "cipherSeed": "{\"version\":3,\"encoded\":\"obuFpr/M+gpajVPPgCawJjM/y9K2GvE0SU/Xi6lmRg0AgAAAAQAAAAgAAAABxzaeR9O/kUzAKWReFKg+rTMswdu2iLbFh86wB0oWJkt/LT8VTQd07yhEacBEvt4npH7tUGQmX3QvhtYdjtZKdrGo0fjDpO1E8PdDd2KsoDHW6oKGGvJVwYEM/Th7QjyoakiMpjvTJxqv1uJutE9rpeIs9R9fnBHnHOvqBQ4DXWqllggXIBtBuksc9qToAfN0uBeqSie6iecX1ChDOuWJ0xERs8zqiUwh08ApT8j0WNY7hxdxt51D3IEWUvAavITc081+zPm5IQn28qnNceO9IgWMZT9cNGfVGNXA/mbDIQgTahFoSN51hJWkbkBCYA6K++npx1zCR+FV3QnVv/FKVKqBPe1bVnqwHmyTGOB6oEfw/AHY20cRj3CKOhq9F8EqM564b30fqsiXhZM5d7GP9kMJ/RkYXxKwg7ICIIZYMEp0WmshjCLdYM/fBdTU+KUxfcAB57e/Fbbyf3dk2PmJ\",\"encoding\":{\"content\":[\"ton-legacy-recovery\"],\"type\":[\"scrypt\",\"xsalsa20-poly1305\"],\"version\":\"3\"}}",
+        "publicKeyHex": "af19469000fc85b42ef8800249debdaf430dc91da21f45a7da137f51062cdc91"
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "description": "Two wallets: the first hid the KSM (Kusama) and USDT (ethereum) groups, the second the DOT group.",
+  "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+  "localStorage": {
+    "account_hidden-assets": "{\"value\":{\"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\":[\"b54f9075-6364-4ad9-8ac2-ed8a604491fd\",\"0xdac17f958d2ee523a2206206994597c13d831ec7\"],\"5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty\":[\"33b5bb6a-7360-447a-b893-4322810499dc\"]}}"
+  }
+}

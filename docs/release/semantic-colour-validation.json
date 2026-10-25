@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "status": "qualified CSS-equivalent source refactor; independent acceptance pending",
+  "sourceCommit": "67aa17d98f869a60e56622677d3bf8ebb1b0d078",
+  "baseCommit": "875b9d42d2da2071fac989a345614b9cbdfd886a",
+  "scope": "19 shared Sass role definitions and exact substitutions in17 Vue components; source colour allowlist shrink only",
+  "sourcePins": {
+    "config/raw-colour-baseline.json": "b981e0654ddb88b8a0d85415750f597f7bef9a700680e1ad673d67632b6d0cb6",
+    "src/components/AboveForm.vue": "aa5db395a2b8583a4f79c629bbcdabf27b8c4d2949bdd8ee9d6a7634852983d3",
+    "src/components/ContentForm.vue": "4022a0d0c1a9fe5579cfb71a74a345556cfd84c328fe29472925556a9f69f72b",
+    "src/components/Dropdown.vue": "d54cb400e597b8473846ffad20efc41d3821959e23461acf413477b16868b643",
+    "src/components/FButton.vue": "c9450dd3ac2bbb46407becbde7489eb8e1d934b183bc862ae9752f437757d3e4",
+    "src/components/FCorners.vue": "26a6072877a821c029f7299442a5a3f72b3d328203e430ea0e89d15c3f500b71",
+    "src/components/FSelect.vue": "84f14aff7f0ea3c88843ec33214e938e998b256f22b8d8bd6532aed363ba9119",
+    "src/components/Popup.vue": "a94864f639ac58ed73c92f393022af40ac6a5be051cb7e80e7c62cd501394e8a",
+    "src/components/SelectInput.vue": "1e6cab0e59574a6f631efacd7f32c8c997d816f89b96e42e173c6aa4f2f2cbc4",
+    "src/components/Switcher.vue": "489218cce02397b5036c0f2874f502b3bc1011f5ec2d5271651f1bba1dfefe3a",
+    "src/components/ValidatedInput.vue": "67415cc21b19c52322a9fb58649605309991017bae0095c3084dcb85490a5372",
+    "src/screens/main/Menu.vue": "ecb6935105dbb75baa198c613d1ae20cdfaf908eff1deb589d006a2eaa4a8431",
+    "src/screens/main/MenuItem.vue": "7fd3da864d494271adbbea4835a3a5f6fb00584838c454d5a4d3b3825fe76a9f",
+    "src/screens/wallet&asset/asset/Asset.vue": "8edda934fc789273c178b5b2e4cfe04ee525136e76fbe1eba674ee9471274776",
+    "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue": "2687838af1e091f04b5e26fee10c28c67ac0518eb7fe0f439a6505b40d77e2af",
+    "src/screens/wallet&asset/wallet/PortfolioHiddenFundsNotice.vue": "ad2c70622d44cbcf3bdbf52d62502b7535eb3821db6a50a0d3aa6f601361c5c1",
+    "src/screens/wallet&asset/wallet/PortfolioLayoutNote.vue": "c12468b26f5b5682bd14465d779c8e7ce4a8335904ecc0cc5c8816c4a7824bee",
+    "src/screens/wallet&asset/wallet/PortfolioTokenRow.vue": "d33254aff5ad6bf3a100b2bf88b4f00daf1dcdf5390da24e53839ca6929e90e4",
+    "src/styles/common.scss": "ab1bf715f72e3f7789cd03f0c2470bd8897899fde8c20127c225e5fdc311a96e"
+  },
+  "compiledSourceSnapshot": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-source-start-v1.json",
+    "sha256": "c6a43120a5e6a2bb7cb76325e51cd2e6cd2b10b60d3bda8cf6158a7b91c48062",
+    "files": 1382,
+    "zeroDrift": true
+  },
+  "evidencePins": {
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-baseline-styles-v1.json": "ac040fecec48a87a623eb8b8a60c96bb2eaf4ab950c3dcb0f2e3a0119ce20240",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-candidate-styles-v1.json": "fa87ea10b1a8e81d9598ae76e43e0b17d1007fe90bb6a44b99e9ebcdb80ea349",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-candidate-styles-v2.json": "93b7962c2c97d2e5d9b1d93c39717b2d621caeb402ad5ed4d4f26a532b024f5d",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-css-equality-v1.json": "e963863a11470c3b06b43670d01f9d12b8e46d7b33de71c98f7c0856a5ecd671",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-css-equality-v2.json": "32ce87155c933ae3289fe7b8b68c83a3bc68ca3ed276a96ac3d5c44cc7f557e5",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-cli-v1-run.json": "9b5eef3787d08a192d4135dd7c899cc02c4b2066d16c4023d8b6413661946774",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-cli-v1.log": "b0d2f28363e0e25d2901a0caa8c6e3b08036900ce625bdd255b2e70cdc42c6e3",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-lint-v1-run.json": "a7201f3d39d62d6f2c3d05d254e75cf5c9bfa8562233ffe32086b993a427ca62",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-lint-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-source-start-v1.json": "c6a43120a5e6a2bb7cb76325e51cd2e6cd2b10b60d3bda8cf6158a7b91c48062",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-typecheck-v1-run.json": "b71fdda0c0bc48f79b6739344cdfcfbdee1bf36742f1f7537487e6014ab09c27",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-unit-v1-run.json": "317c681ed8a9dea9c214c66eec2b5f7c45f55c4ea44583b419244b14ad608343",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-final-unit-v1.log": "f93509f0c4f5fd91bdb23b0b224ad2c2ec1ac6874e2f306021bac79db36851c9",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-role-migration-v1.json": "10d618442f9fd0c70d88e1398174ec034038371417a7f3886f2c93d84bae20f6",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-sfc-equality-v1.json": "cbce7b5616bc006e2fe2c760ea5880fea6a2083e21829de91fd6bd3c31bb997d",
+    "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/capture-web-compiled-styles-v1.mjs": "a26d00827f2080f6340977d9ad99162c3e1715f4f186d97789486d53980fd5b2"
+  },
+  "checks": {
+    "vitest": {
+      "passed": 30,
+      "skipped": 0,
+      "scope": "10 raw-colour guard plus20 existing palette/contrast tests"
+    },
+    "fullTypecheck": "passed",
+    "eslint": "all17 changed Vue files passed",
+    "actualCLI": "passed against875b9d42;174 occurrences/153 sites/59 files",
+    "cssEquality": {
+      "baselineStyleUnits": 251,
+      "candidateStyleUnits": 251,
+      "palettes": [
+        "legacy",
+        "v1"
+      ],
+      "identicalOutputs": 502,
+      "sourcePinsCheckedAgainstGit": 506
+    },
+    "vueDescriptorEquality": {
+      "checked": 17,
+      "exact": [
+        "template content and attributes",
+        "script and scriptSetup content and attributes",
+        "custom blocks",
+        "style attributes"
+      ]
+    },
+    "sourceDrift": []
+  },
+  "inventory": {
+    "before": {
+      "occurrences": 203,
+      "sites": 181,
+      "files": 65
+    },
+    "after": {
+      "occurrences": 174,
+      "sites": 153,
+      "files": 59
+    },
+    "removedOccurrences": 29,
+    "sharedRoles": 19,
+    "changedVueFiles": 17,
+    "baselineProvenanceUnchanged": true
+  },
+  "failureHistory": [
+    "Prior uncommitted candidate CSS snapshot retained as v1; final v2 binds the committed source and all253 source pins.",
+    "Intentional missing Git reference in the adversarial unit case emits fatal: Needed a single revision; the test passes by requiring rejection."
+  ],
+  "limits": [
+    "Exact Sass output and source descriptor equality; no rebuilt Vite scoped hashes, bundles, package or new browser/render qualification.",
+    "174 Vue raw colour occurrences remain; this does not close all colour migration or screen/design acceptance.",
+    "No wallet callback, storage, key, signing, network or export logic changes.",
+    "Full upgrade matrix, physical device/accessibility, signed release and production publication remain open."
+  ]
+}

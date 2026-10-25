@@ -8,6 +8,7 @@ const AUTHOR = 'Soramitsu';
 const AUTHOR_WEBSITE = '';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const IS_TEST_ONLY = process.env.VUE_APP_TEST_ONLY === 'true';
+const IS_EXTENSION_SMOKE = process.env.VUE_APP_EXTENSION_SMOKE === 'true';
 const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env.RAMP_TEST_API_KEY;
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
 const IS_EXTENSION = process.env.IS_EXTENSION !== undefined ? process.env.IS_EXTENSION === 'true' : true;
@@ -25,6 +26,7 @@ export {
   COPYRIGHT,
   IS_PRODUCTION,
   IS_TEST_ONLY,
+  IS_EXTENSION_SMOKE,
   RAMP_API_KEY,
   MOONPAY_API_KEY,
   IS_EXTENSION,

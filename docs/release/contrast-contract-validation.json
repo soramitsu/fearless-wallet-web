@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "scope": "Full contrast/CVD contract on compiled generated CSS; test-only",
+  "sourceCommit": "82554fc53c84be30c0cc668a5fbbfd56dc78328c",
+  "baseCommit": "475ffd2a",
+  "source": [
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/design/fw.contrast-pairs.json",
+      "sha256": "c1cda5d513e1095459004426104ef8d2e80f4bb3dc96d6b2012904ccfd180737",
+      "bytes": 14527
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/design/fw.tokens.json",
+      "sha256": "18180aa767b87b8ac0bb767622e172328d95145817a1475a840905eec55b4315",
+      "bytes": 43783
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/tests/helpers/fw-contrast.mjs",
+      "sha256": "9d0b0d34a158fd66dc486c0ee1cdd262022adab6c6632c04c44744b9965c9ed3",
+      "bytes": 11969
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/tests/unit/neon-glass-contrast-contract.spec.ts",
+      "sha256": "5527acddcb4619d6759b01f3c5b8765975d0cb8ee6bb03a86a2bd7b9e2fd35aa",
+      "bytes": 3786
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/src/styles/fw-tokens.scss",
+      "sha256": "07c58717f994578f2e2d416a4019152cc56a2bf673d65a11b4d5063b779bdc6c",
+      "bytes": 2782
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/tests/unit/neon-glass-palette.spec.ts",
+      "sha256": "9cdece50213a11a24b0af1dd77b5390f591178c8f14363b5f59e5c902f73653a",
+      "bytes": 17929
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/package.json",
+      "sha256": "029107915cff7554a75a791906643d7e2febab9c499240ef8ab685a29bafbe0e",
+      "bytes": 15230
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/yarn.lock",
+      "sha256": "5ebbcf24f4fab11fb06ac3097c7d2ff88bc6c7e892c655fcc8001a17fe87344b",
+      "bytes": 438269
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/fearless-wallet-web-E4-design/vitest.config.ts",
+      "sha256": "7f5652929d7fb8498e1323ff306c0b28f473ed6c7f41ec426bf2afc154d91ab3",
+      "bytes": 1512
+    }
+  ],
+  "evidence": [
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-final-v1-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-tests-v1.log",
+      "sha256": "ba781503f6fe7ca31eda9edcf7626ef9e12aebda4c647002d680daaa57eb2d7a",
+      "bytes": 259
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-final-v1-tests.log",
+      "sha256": "7e8bd0365bf94aa6cf58b52d9963f3e8d70960293975d841114a61f574fa14f4",
+      "bytes": 263
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-final-v1-source-start.json",
+      "sha256": "823d17b3f1596d0c22b38b8e4d99e793322f64669c6b7ef5d74a2f541b71b9fb",
+      "bytes": 162603
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-final-v1-run.json",
+      "sha256": "cc2a76500d3eeea75eeac9c4c80c99e8a8e7b9a9472f2efc0ab8ac93eefa0c0c",
+      "bytes": 1067
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-final-v1-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-lint-v1.log",
+      "sha256": "a2f6fdabffa4c7bb422d3e5323a2f9b660a9190391a647c8ab507cf5f3d57720",
+      "bytes": 301
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-contrast-contract-typecheck-v1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/run-web-contrast-contract-v1.py",
+      "sha256": "048a7bfd864c477a2246dbbcbb21fe525f5e92e7a3393ee0f4480e31bdd575bd",
+      "bytes": 1695
+    }
+  ],
+  "sharedContract": {
+    "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/root-integration/config/design/fw.contrast-pairs.json",
+    "sha256": "c1cda5d513e1095459004426104ef8d2e80f4bb3dc96d6b2012904ccfd180737",
+    "bytes": 14527
+  },
+  "sharedEvaluator": {
+    "path": "/Users/takemiyamakoto/dev/fearless/.worktrees/root-integration/scripts/design/check-fw-contrast.mjs",
+    "sha256": "52a16bfba3c850f21b79fb8a2e7a6c986b9e34bbbc3c802425fc033bf5550dcc",
+    "bytes": 9771
+  },
+  "sharedValidation": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/shared-contrast-candidate-v1.json",
+    "sha256": "0ab038d28040e3456e65b85db4a2baa973e7d5322fc7a786a450c171d4424c22",
+    "bytes": 7311
+  },
+  "checks": {
+    "vitestTests": 20,
+    "newContractTests": 5,
+    "failed": 0,
+    "skipped": 0,
+    "fullTypecheck": "pass",
+    "scopedEslint": "pass for helper and spec",
+    "sourceCount": 1379,
+    "sourceDrift": [],
+    "pairGroups": 33,
+    "permittedPairs": 172,
+    "modeRows": 688,
+    "compositeVariants": 2996,
+    "cssSemanticsAndPrimaryGradient": "Compiled Sass declarations and high-contrast overrides equal shared tokens and are inputs to the evaluator"
+  },
+  "limits": [
+    "No production source or CSS changes. Test-only gate; no new application archive or browser-pixel/device acceptance claimed.",
+    "CSS-declared semantic colours and primary gradient come from compiled Sass. Recipe-only sheen, aurora and status-container values come from the approved JSON; actual compositing/state/glyph placement remains separate.",
+    "The first scoped ESLint attempt rejected two unnecessary regex escapes; corrected final source passes. All original logs retained.",
+    "iOS XCTest port, actual complete screen coverage, raw-colour guardrail and broader release/device gates remain open."
+  ]
+}

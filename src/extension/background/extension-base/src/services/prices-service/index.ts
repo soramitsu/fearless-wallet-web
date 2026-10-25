@@ -1,6 +1,7 @@
 import PriceStore from '@extension-base/stores/Price';
 import { storage } from '@extension-base/stores/Storage';
 import axios from 'axios';
+import { Subject } from 'rxjs';
 import { SoraPricingService } from './SoraPricingService';
 import { TonPricingService } from './TonPricingService';
 import { CoinGeckoService } from './CoinGeckoService';
@@ -8,6 +9,7 @@ import type { BasePriceJson, PriceJson } from '@extension-base/background/types/
 import type State from '@extension-base/background/handlers/State';
 import { URLS } from '@/consts/urls';
 import { type FiatJson } from '@/interfaces';
+import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 export type Prices = {
   json: PriceJson;
@@ -23,6 +25,10 @@ export class PricesService {
   private readonly priceStore: PriceStore;
   private fiats: FiatJson[] = [];
   private priceStoreReady = false;
+  private priceRevision = 0;
+  private requestRevision = 0;
+  private fiatWasSelected = false;
+  private readonly priceSubject = new Subject<PriceJson>();
   public fiatSymbol = 'usd';
   public soraPricingService: SoraPricingService;
   public tonPricingService: TonPricingService;
@@ -44,8 +50,8 @@ export class PricesService {
     this.priceStore = new PriceStore();
 
     storage.get(['fiatSymbol']).then(({ fiatSymbol }) => {
-      if (fiatSymbol) this.fiatSymbol = fiatSymbol;
-    });
+      if (fiatSymbol && !this.fiatWasSelected) this.applyFiatSymbol(fiatSymbol);
+    }).catch((error) => console.warn('Fiat preference could not be read', error));
   }
 
   async getFiats() {
@@ -73,38 +79,55 @@ export class PricesService {
   }
 
   setFiatSymbol(symbol: string) {
+    this.fiatWasSelected = true;
+    this.applyFiatSymbol(symbol);
+    void storage.set({ fiatSymbol: this.fiatSymbol }).catch((error) => console.warn('Fiat preference could not be saved', error));
+  }
+
+  private applyFiatSymbol(symbol: string) {
+    if (this.fiatSymbol !== symbol) {
+      this.priceStoreReady = false;
+      this.priceRevision += 1;
+      this.requestRevision += 1;
+      this.prices.json = { fiat: symbol, tokenPriceMap: {}, tokenPriceChange: {} };
+    }
     this.fiatSymbol = symbol;
 
-    storage.set({ fiatSymbol: this.fiatSymbol });
   }
 
   setPriceStore(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
+    const revision = this.priceRevision;
     this.priceStore.set('PriceData', priceData, () => {
-      if (callback) callback(priceData);
-
+      if (revision !== this.priceRevision || priceData.fiat !== this.fiatSymbol) return;
       this.priceStoreReady = true;
+      this.priceSubject.next(priceData);
+      if (callback) callback(priceData);
     });
   }
 
   getPrice(update: (value: PriceJson) => void): void {
-    this.priceStore.get('PriceData', (rs) => {
-      if (this.priceStoreReady) update(rs);
-      else {
-        this.fetchTokensPrice()
-          .then((rs) => {
-            this.setPriceStore(rs);
-
-            update(rs);
-          })
-          .catch((err) => {
-            throw err;
-          });
-      }
-    });
+    const revision = this.priceRevision;
+    void withDeadline(this.priceStore.getAndWait('PriceData'), 5000, 'Price cache read timed out')
+      .catch((error) => {
+        console.warn('Price cache could not be read', error);
+        return undefined;
+      }).then((cached) => {
+        if (revision === this.priceRevision && cached?.fiat === this.fiatSymbol && cached.tokenPriceMap && cached.tokenPriceChange) {
+          this.prices.json = cached;
+          this.priceRevision += 1;
+        }
+        if (this.prices.json.fiat !== this.fiatSymbol) {
+          this.prices.json = { fiat: this.fiatSymbol, tokenPriceMap: {}, tokenPriceChange: {} };
+          this.priceStoreReady = false;
+        }
+        // Answer before network work. A failed or hanging provider must not leave the popup waiting.
+        update(this.prices.json);
+        if (!this.priceStoreReady) this.refreshPrice();
+      }).catch((error) => console.warn('Price subscriber could not be updated', error));
   }
 
   getSubject() {
-    return this.priceStore.getSubject();
+    return this.priceSubject;
   }
 
   getTokenPrice(assetName: string) {
@@ -114,20 +137,31 @@ export class PricesService {
   }
 
   setPriceValue({ tokenPriceChange, tokenPriceMap }: BasePriceJson) {
+    this.priceRevision += 1;
+    const previous = this.prices.json.fiat === this.fiatSymbol ? this.prices.json : DEFAULT_PRICES;
     this.prices = {
       json: {
         fiat: this.fiatSymbol,
-        tokenPriceChange: { ...this.prices.json.tokenPriceChange, ...tokenPriceChange },
-        tokenPriceMap: { ...this.prices.json.tokenPriceMap, ...tokenPriceMap },
+        tokenPriceChange: { ...previous.tokenPriceChange, ...tokenPriceChange },
+        tokenPriceMap: { ...previous.tokenPriceMap, ...tokenPriceMap },
       },
       timestamp: Date.now(),
     };
   }
 
   async fetchTokensPrice(): Promise<PriceJson> {
-    const tonAssetsPrice = await this.tonPricingService.fetchTonAsstetsPrice();
-    const coinGeckoAssetsPrice = await this.coinGeckoService.fetchAssetsPrice();
-    const soraAssetsPrice = await this.soraPricingService.fetchSoraExplorerPricing();
+    const fiat = this.fiatSymbol;
+    const revision = ++this.requestRevision;
+    const [tonAssetsPrice, coinGeckoAssetsPrice, soraAssetsPrice] = await Promise.all([
+      this.tonPricingService.fetchTonAsstetsPrice(),
+      this.coinGeckoService.fetchAssetsPrice(),
+      this.soraPricingService.fetchSoraExplorerPricing(),
+    ].map((work) => withDeadline(work, 15000, 'Price request timed out').catch((error) => {
+      console.warn('Price provider unavailable', error);
+      return { tokenPriceMap: {}, tokenPriceChange: {} };
+    })));
+
+    if (fiat !== this.fiatSymbol || revision !== this.requestRevision) throw new Error('Price request was superseded');
 
     const allRates: BasePriceJson = {
       tokenPriceMap: {

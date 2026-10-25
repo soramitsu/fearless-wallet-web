@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "Codex native_pin_durability; independent web review",
+  "decision": "Accepted for bounded brand/fallback/introductory accessibility checkpoint integration. Overall release remains open.",
+  "candidate": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-brand-candidate-evidence-v1.json",
+    "sha256": "2523a5dc0b80b4c27ad290b93acf84666b80c453e9f70c8401af9bf814c68ad9"
+  },
+  "sourceCommit": "dab7e7897855de3dc210cc73d23a3ec25d6b5f9a",
+  "verification": {
+    "sourceFilesRehashed": 415,
+    "sourceFilesComparedToFrozenGitCommit": 415,
+    "dependencyFilesRehashed": 98,
+    "evidenceFilesRehashed": 574,
+    "mismatches": [],
+    "removedFilesVerified": [
+      "src/assets/fearless-logo-animated.gif"
+    ],
+    "archives": [
+      {
+        "browser": "chrome",
+        "sha256": "579dd4c61cbeb318a9ea4d144792c74365d84eef60bae3a9ebaab4d7dbac1428",
+        "entries": 317,
+        "zipMatchesEntryManifestAndEntireBuiltDirectory": true,
+        "embeddedBuildMetadata": {
+          "browser": "chrome",
+          "mode": "production",
+          "releaseFlags": {
+            "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+            "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+            "VUE_APP_ENABLE_IROHA_TRANSFERS": "false",
+            "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+            "VUE_APP_EXTENSION_SMOKE": "false",
+            "VUE_APP_TEST_ONLY": "false"
+          },
+          "schemaVersion": 2,
+          "sourceCommit": "dab7e7897855de3dc210cc73d23a3ec25d6b5f9a",
+          "sourceDirty": false,
+          "yarnLockSha256": "5ebbcf24f4fab11fb06ac3097c7d2ff88bc6c7e892c655fcc8001a17fe87344b"
+        },
+        "oldAnimatedGifPresent": false
+      },
+      {
+        "browser": "firefox",
+        "sha256": "d973576e3689e7dd21ee98f2c32915c4081ec3d9297d5e577fdc2fbcd10855de",
+        "entries": 317,
+        "zipMatchesEntryManifestAndEntireBuiltDirectory": true,
+        "embeddedBuildMetadata": {
+          "browser": "firefox",
+          "mode": "production",
+          "releaseFlags": {
+            "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+            "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+            "VUE_APP_ENABLE_IROHA_TRANSFERS": "false",
+            "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+            "VUE_APP_EXTENSION_SMOKE": "false",
+            "VUE_APP_TEST_ONLY": "false"
+          },
+          "schemaVersion": 2,
+          "yarnLockSha256": "5ebbcf24f4fab11fb06ac3097c7d2ff88bc6c7e892c655fcc8001a17fe87344b"
+        },
+        "oldAnimatedGifPresent": false
+      }
+    ],
+    "firefoxRuntimeBinaryRehashed": {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/assets/toolchains/firefox-152.0.4/Firefox.app/Contents/MacOS/firefox",
+      "sha256": "45cd8b39694766854970d560647daf58bd4b19d69a0bcdc7eda9477c17b6c288"
+    }
+  },
+  "validationAssessment": {
+    "fullSuite": "Raw log confirms 3243 passed / 18 skipped; focused 6 passed. Typecheck/lint logs contain no diagnostics; candidate records successful completion.",
+    "browser": "Previously reviewed raw v5 report confirms300checks/96layouts/196captures/13protectedrecords unchanged. Refer to independent v2 review for source/visual and harness limits.",
+    "chrome": "Explicit retained ZIP audit passes317files and production popup smoke renders3interactive elements. Earlier default-path audit failure is retained and is not the accepted result.",
+    "firefox": "Exact reviewed41-warning fingerprint f6969219663e2268a4603f11d9ef2530ed153dd07f706678b0eba9631246437e,317-file host audit,2959-byte popup/CSP smoke. Pinned152.0.4 binary rehashed; frozen owned-wrapper events show cleanup remaining[].",
+    "source": "All415candidate source hashes match frozen dab7e789 Git tree and current files. Chrome and upgrade embedded metadata records name clean dab7e789. Firefox deterministic metadata omits commit/dirty fields; its provenance is the candidate source/build record and exact archive/directory manifests, not embedded source identification. Both317-entry archives match manifests and built directories; old animated GIF absent."
+  },
+  "independentSourceReviews": [
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/brand-independent-source-review-v1.json",
+      "sha256": "fd561e8123bea39f90432b8e0c02c8a244a8b227cec3d33d6fd1113c115ceb16"
+    },
+    {
+      "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/brand-final-source-review-v2.json",
+      "sha256": "6196080e9967bc617ca8fb6d2e4b75d3e997b201200b5ef9c6a5d4df755508be"
+    }
+  ],
+  "remainingLimits": [
+    "Broader screens, all individual controls, live en/ru remote story service, actual remote NFT error behavior, physical keyboard/screen-reader and device acceptance remain outside this slice.",
+    "Complete final-source historical upgrades and local-chain checks after all remaining implementation; final service configuration, signed distribution and publication gates remain open.",
+    "Unsigned developer-loaded Firefox popup smoke does not qualify AMO signing, historical Firefox migration, Linux or physical-device acceptance.",
+    "No complete clean-console, transaction or OS biometric claim.",
+    "The v5 brand matrix does not record each label computed font size and hit-tests its designated primary action, not all controls; details remain in source review."
+  ],
+  "findings": []
+}

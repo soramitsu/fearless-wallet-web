@@ -1,0 +1,15 @@
+// Portfolio dashboard chart slots (design/portfolio-dashboard SPEC 3.3); hand-written, like _fw-effects.scss.
+// They join config/design/fw.tokens.json when the iOS and Android dashboards need them. Only the dashboard imports
+// this file, so a build without the dashboard carries none of it.
+//
+// Searched among brand hues and checked on the base colour and on the glass card (#161A33): lightness, chroma,
+// colour-blind separation and 3:1 contrast all pass; tests/unit/portfolio-dashboard-tokens.spec.ts keeps them so.
+// A slot follows its entity, never its rank, and is never a status colour (aqua and orange stay the price pair).
+:root {
+  --fw-chart-1: #FF009A;
+  --fw-chart-2: #4693F1;
+  --fw-chart-3: #A97416;
+  --fw-chart-4: #8B5CFF;
+  --fw-chart-5: #3CA694;
+  --fw-chart-other: #6F7280;
+}

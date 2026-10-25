@@ -16,11 +16,12 @@
 import { useRouter } from 'vue-router';
 import { computed } from 'vue';
 import type { NftCollection } from '@extension-base/services/nft-service/types';
-import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { Components } from '@/router/routes';
 
 type Props = {
   collection: NftCollection;
+  chainId: string;
 };
 
 const props = defineProps<Props>();
@@ -31,7 +32,7 @@ const image = computed(() => props.collection.image ?? fallbackNftImage);
 const onClick = () =>
   router.push({
     name: Components.NftCollection,
-    params: { contract: props.collection.address },
+    params: { chainId: props.chainId, contract: props.collection.address },
   });
 </script>
 

@@ -1,11 +1,16 @@
 import type { AccountJson } from '@extension-base/background/types/types';
 import type { UniversalWalletLegacyVaultDescriptor } from '@/util/universalWalletMigrationContract';
-import { ALL_NETWORKS, FAVORITE_NETWORKS, MAIN_NETWORKS, POLKADOT, POPULAR_NETWORKS, TON_MAINNET } from '@/consts/networks';
 import {
-  UNIVERSAL_WALLET_BITCOIN_NETWORKS,
-  UNIVERSAL_WALLET_SOLANA_NETWORKS,
-} from '@/consts/universalWallet';
+  ALL_NETWORKS,
+  FAVORITE_NETWORKS,
+  MAIN_NETWORKS,
+  POLKADOT,
+  POPULAR_NETWORKS,
+  TON_MAINNET,
+} from '@/consts/networks';
+import { UNIVERSAL_WALLET_BITCOIN_NETWORKS, UNIVERSAL_WALLET_SOLANA_NETWORKS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
+import { decodeBitcoinRecipient } from '@/util/bitcoin';
 
 type UniversalWalletLegacyExportTarget = {
   account: AccountJson;
@@ -39,7 +44,7 @@ function isLegacyVaultAccount(account: AccountJson, vault: UniversalWalletLegacy
     account.bitcoinTestnetAddress,
     account.solanaAddress,
     account.irohaAddress,
-  ].some((address) => isSameAddressText(address, vault.address));
+  ].some((address) => isSameAddressText(address, vault.address, vault.ecosystem));
 }
 
 function resolveLegacyExportNetwork(vault: UniversalWalletLegacyVaultDescriptor, account?: AccountJson): string {
@@ -64,8 +69,21 @@ function isConcreteNetwork(network: string | undefined): boolean {
   return !!network && !GROUP_NETWORKS.has(network);
 }
 
-function isSameAddressText(left: string | undefined, right: string): boolean {
-  return left?.toLowerCase() === right.toLowerCase();
+function isSameAddressText(left: string | undefined, right: string, ecosystem: WalletEcosystem): boolean {
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.toLowerCase() !== right.toLowerCase()) return false;
+
+  // Case folding is safe only for encodings that explicitly allow it. In
+  // particular, distinct Base58 Solana public keys can differ only by case.
+  if (ecosystem === WalletEcosystem.Evm) {
+    return /^0x[0-9a-f]{40}$/i.test(left) && /^0x[0-9a-f]{40}$/i.test(right);
+  }
+  if (ecosystem === WalletEcosystem.Bitcoin && /^(bc|tb)1/i.test(left)) {
+    return decodeBitcoinRecipient(left) !== null && decodeBitcoinRecipient(right) !== null;
+  }
+
+  return false;
 }
 
 export { resolveLegacyExportNetwork, resolveUniversalWalletLegacyExportTarget };

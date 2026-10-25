@@ -5,8 +5,11 @@
         <div class="header" data-testid="headerSelectInput">{{ header }}</div>
 
         <input
+          ref="amountInput"
           v-model="amountInternal"
           placeholder="0.00"
+          :aria-label="header"
+          inputmode="decimal"
           :readonly="readonly"
           data-testid="amountInternal"
           @focus="setFocusValue(true)"
@@ -18,28 +21,45 @@
       </div>
 
       <div class="column right-column">
-        <FCorners class="FCorners-button" @click="click">
-          <button data-testid="selectBtn" :class="selectButtonClasses">
+        <FCorners class="FCorners-button">
+          <button type="button" data-testid="selectBtn" :class="selectButtonClasses" :disabled="readonly || disableSelection" :aria-label="`${header}: ${asset || $t('common.select')}`" :aria-expanded="syncedIsRotate" @click="click">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
               <div class="asset" data-testid="asset">{{ asset.toUpperCase() }}</div>
             </template>
 
-            <div v-else class="select-label">Select</div>
+            <div v-else class="select-label">{{ $t('common.select') }}</div>
 
             <Rotate v-if="showIconRotate" :isActive="syncedIsRotate" class="rotate-asset">
-              <Icon icon="down" data-testid="rotateAsset" />
+              <Icon icon="down" width="16px" height="16px" data-testid="rotateAsset" />
             </Rotate>
           </button>
         </FCorners>
 
-        <div v-if="showBalance" class="balance" data-testid="balance">
+        <!-- A balance no provider could load is unknown, not 0, and offers no Max. -->
+        <div v-if="showBalance && balanceUnavailable" class="balance balance--failed" data-testid="balanceUnavailable">
+          {{ $t('assets.balance') }}&nbsp;{{ $t('portfolioPage.balanceStatus.failed') }}
+        </div>
+
+        <div v-else-if="showBalance" class="balance" data-testid="balance">
           {{ $t('assets.balance') }}
 
-          <div :class="balanceValueClasses" data-testid="balanceValue" @click="setMax">
+          <button type="button" :class="balanceValueClasses" data-testid="balanceValue" :disabled="readonly" :aria-label="`${$t('common.max')}: ${$n(+totalAmount, 'decimal')} ${asset}`" @click="setMax">
             &nbsp;{{ $n(+totalAmount, 'decimal') }}
-          </div>
+          </button>
+
+          <button
+            v-if="showMax"
+            type="button"
+            :class="maxButtonClasses"
+            data-testid="maxBtn"
+            :disabled="readonly"
+            :aria-pressed="maxActive"
+            @click="setMax"
+          >
+            {{ $t('common.max') }}
+          </button>
         </div>
       </div>
     </div>
@@ -49,7 +69,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { FPNumber } from '@sora-substrate/util';
+import { formatAmountInput, readAmountInput } from '@/helpers/amountInput';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'SelectInput' ,
@@ -59,8 +79,14 @@ export default defineComponent({ name: 'SelectInput' ,
     assetId: { default: '' },
     value: { default: '' },
     totalAmount: { default: 0 },
+    /** No provider could load the balance: `totalAmount` is not known and is not shown. */
+    balanceUnavailable: { type: Boolean, default: false },
     showBalance: { default: true },
+    // A visible Max button next to the balance, for forms that handle setMax.
+    showMax: { type: Boolean, default: false },
+    maxActive: { type: Boolean, default: false },
     readonly: { default: false },
+    disableSelection: { type: Boolean, default: false },
     showIcon: { default: true },
     showOriginValue: { default: false },
     amount: { type: String },
@@ -74,56 +100,33 @@ export default defineComponent({ name: 'SelectInput' ,
   },
   computed: {
     showIconRotate() {
-      return this.showIcon && !this.readonly;
+      return this.showIcon && !this.readonly && !this.disableSelection;
     },
     isSelected() {
       return this.inputIsFocused && !this.readonly;
     },
+    // The text is formatted and read on its own (src/helpers/amountInput.ts): the field shows "1,250.5" for the kept
+    // amount "1250.5", and what the user types is never rounded or padded by a number type.
     amountInternal: {
       get() {
-        if (this.syncedAmount === '') return '';
+        const amount = this.syncedAmount ?? '';
 
-            if (this.showOriginValue) return this.syncedAmount;
-
-            if (this.syncedAmount.includes('.')) {
-              const [wholePart, fractionalPart] = this.syncedAmount.split('.');
-              const localString = FPNumber.fromCodecValue(wholePart || 0, 0).toLocaleString();
-
-              if (this.syncedAmount.endsWith('.')) return `${localString}.`;
-
-              if (localString === 'NaN') return this.syncedAmount;
-
-              return `${localString}.${fractionalPart}`;
-            }
-
-            return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+        return this.showOriginValue ? amount : formatAmountInput(amount);
       },
-      set(_value: string) {
-        const value = _value.replaceAll(',', '').replaceAll(' ', '');
+      set(text: string) {
+        const amount = readAmountInput(text, this.syncedAmount ?? '');
 
-            if (value.length < this.syncedAmount.length) {
-              this.syncedAmount = value;
+        if (amount !== this.syncedAmount) {
+          this.syncedAmount = amount;
 
-              return;
-            }
+          return;
+        }
 
-            if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN') {
-              if (value.includes('.')) {
-                const [wholePart, fractionalPart] = value.split('.');
+        // A refused edit (or one that only removed a grouping comma) shows the kept amount again. Vue rewrites the
+        // field only when the amount changes, and the field sits in FCorners' slot, so a re-render would not reach it.
+        const input = this.$refs.amountInput as HTMLInputElement | undefined;
 
-                if (value.endsWith('.')) {
-                  this.syncedAmount = this.syncedAmount = `${wholePart}.`;
-
-                  return;
-                }
-
-                this.syncedAmount = `${wholePart}.${fractionalPart}`;
-
-                return;
-              }
-
-              this.syncedAmount = value;
-            }
+        if (input && input.value !== this.amountInternal) input.value = this.amountInternal;
       },
     },
     header() {
@@ -145,6 +148,9 @@ export default defineComponent({ name: 'SelectInput' ,
               'balance-value-readonly': this.readonly,
             },
           ];
+    },
+    maxButtonClasses() {
+      return ['max-button', { 'max-button-active': this.maxActive }];
     },
     selectButtonClasses() {
       return [
@@ -187,7 +193,7 @@ export default defineComponent({ name: 'SelectInput' ,
       this.inputIsFocused = value;
 
           if (!value) {
-            const [wholePart, fractionalPart] = this.syncedAmount.split('.');
+            const [wholePart, fractionalPart] = (this.syncedAmount ?? '').split('.');
 
             if (+fractionalPart === 0) this.syncedAmount = wholePart;
           }
@@ -198,7 +204,7 @@ export default defineComponent({ name: 'SelectInput' ,
           this.$emit('setMax');
     },
     click() {
-      if (this.readonly) return;
+      if (this.readonly || this.disableSelection) return;
 
           this.$emit('togglePopupVisibility');
     },
@@ -208,7 +214,7 @@ export default defineComponent({ name: 'SelectInput' ,
 
 <style lang="scss" scoped>
 .select-focused {
-  border: 1px solid #7700ee !important;
+  border: 1px solid $fw-focus-ring !important;
 }
 
 .select {
@@ -338,6 +344,10 @@ export default defineComponent({ name: 'SelectInput' ,
       .balance-value-readonly {
         cursor: default;
       }
+
+      &.balance--failed {
+        color: $simple-orange-color;
+      }
     }
   }
 }
@@ -349,6 +359,70 @@ export default defineComponent({ name: 'SelectInput' ,
         width: 100%;
       }
     }
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+.select {
+  box-sizing: border-box;
+  min-height: 128px;
+  height: auto;
+  gap: 12px;
+}
+.select .column { min-width: 0; }
+.select .left-column { flex: 1; max-width: none; }
+.select .left-column input { width: 100%; min-width: 0; box-sizing: border-box; }
+.select .right-column .select-button { min-height: 44px; height: auto; padding: 8px; }
+.select .right-column .balance { white-space: normal; overflow: visible; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.select .right-column .balance-value { background: transparent; border: 0; padding: 4px 0; font: inherit; min-height: 44px; overflow-wrap: anywhere; }
+.select .right-column .select-button:disabled { cursor: default; }
+.select .right-column .max-button {
+  margin-left: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid $pink-lavender-color;
+  border-radius: 30px;
+  background: transparent;
+  color: $pink-lavender-color;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: $pink-purple-color; }
+  &:disabled { cursor: default; border-color: $gray-color; color: $gray-color; }
+}
+.select .right-column .max-button-active { background: $pink-purple-color; color: $plain-white; }
+@media (max-width: 620px) {
+  .select { flex-direction: column; }
+  .select .column { max-width: none; }
+  .select .right-column { flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .select .right-column .balance { margin-top: 0; }
+}
+@include v1-palette {
+  .select {
+    background: var(--fw-sunken);
+    border-color: var(--fw-stroke-control);
+    border-radius: 12px;
+  }
+  .select-focused {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
+  }
+  .select .left-column input {
+    font-variant-numeric: tabular-nums;
+    color: var(--fw-text-1);
+  }
+  .select .right-column .select-button {
+    clip-path: none;
+    border-radius: 12px;
+    border-color: var(--fw-stroke-control);
+  }
+  .select .right-column .select-button:focus-visible,
+  .select .right-column .balance-value:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
   }
 }
 </style>

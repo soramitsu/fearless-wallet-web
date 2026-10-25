@@ -15,13 +15,37 @@ Use this when a released browser extension causes a production-impacting issue.
 - Capture failing version, browser version, feature flags, extension manifest
   details, and relevant backend/indexer status.
 - Disable remote config or feature gates first when that removes the issue
-  without republishing.
+  without republishing. A remote `false` in `web_config.json` `actions` is a
+  sticky veto; lift it later with an explicit `true`
+  (`docs/release/web-config-actions.md`).
 - If a republish is required, prepare a hotfix branch from `master`.
+
+## Returning Users to 3.0.x Code
+
+Prefer a forward fix (Hotfix Path below). If users must run 3.0.x code again:
+
+- Use only the 3.0.6 code on `hotfix/3.0.6`. Never republish the published
+  3.0.5 package or any 3.0.x build from `master`: they send recovery phrases
+  to a remote host on unlock. The store accepts only a higher version, so
+  republish that code with a version above the live one.
+- What users keep: 4.2.0 encrypts keys with the scrypt parameters 3.0.x reads
+  (N = 2^15, `scripts/keystore-scrypt-params.mjs`), so every key and TON phrase
+  4.2.0 stored opens in 3.0.6 with the master password set in 4.2.0, and the
+  wallets come back once each when 4.2.x returns. A wallet deleted in 4.2.x is
+  not listed by 3.0.6; its keys stay set aside under `fw:deletedWallet:` and
+  4.2.x restores them from Settings → Account access (3.0.6 can also import
+  them as JSON files with the master password).
+- Rehearse with the exact builds before publishing:
+  `node scripts/upgrade-e2e/build-legacy.mjs 3.0.5 3.0.6 && node scripts/upgrade-e2e/build-head.mjs && node scripts/upgrade-e2e/run.mjs R1`
+  (scenario R1 in `tests/upgrade/README.md`).
 
 ## Hotfix Path
 
 - Create `hotfix/<version-or-slug>` from `master`.
 - Apply the smallest safe fix or revert.
+- A problem with the 4.2.0 look alone (colours, fonts) needs no code revert: build
+  with `VITE_FW_PALETTE=legacy` to ship the previous paint and Sora body text.
+  It changes styles only; wallet data, keys and storage are untouched.
 - Run typecheck, lint, unit tests, extension build, and Solana e2e smoke for the
   changed surface.
 - Open a PR to `master`, tag after merge, then merge or cherry-pick back to

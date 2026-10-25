@@ -19,7 +19,7 @@ describe('Universal Wallet registry contract', () => {
     expect(validateUniversalWalletChainRegistry(registry)).toEqual([]);
     expect(JSON.stringify(registry)).toContain('"ecosystem":"solana"');
     expect(JSON.stringify(registry)).toContain('"kind":"indexer"');
-    expect(JSON.stringify(registry)).toContain('"kind":"torii-mcp"');
+    expect(JSON.stringify(registry)).toContain('"kind":"torii"');
     expect(JSON.stringify(registry)).toContain('"readOnly":true');
     expect(JSON.stringify(registry)).toContain('"features":["transfer"]');
   });
@@ -106,9 +106,9 @@ describe('Universal Wallet registry contract', () => {
     expect(taira?.endpoints).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          kind: 'torii-mcp',
+          kind: 'torii',
           readOnly: false,
-          url: 'https://taira.sora.org/v1/mcp',
+          url: 'https://taira.sora.org',
         }),
       ])
     );
@@ -119,9 +119,9 @@ describe('Universal Wallet registry contract', () => {
     expect(nexus?.endpoints).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          kind: 'torii-mcp',
+          kind: 'torii',
           readOnly: false,
-          url: 'https://minamoto.sora.org/v1/mcp',
+          url: 'https://minamoto.sora.org',
         }),
       ])
     );
@@ -254,15 +254,21 @@ function taira(): UniversalWalletChainRegistryEntry {
   return {
     id: 'taira-testnet',
     ecosystem: WalletEcosystem.Iroha,
-    chainId: 'iroha3-taira',
+    chainId: 'fc56984b-2be7-431d-840e-21514d1883f0',
     displayName: 'Taira Testnet',
     enabledByDefault: true,
+    nativeAsset: {
+      id: '6TEAJqbb8oEPmLncoNiMRbLEK6tw',
+      symbol: 'XOR',
+      decimals: 9,
+      name: 'XOR',
+    },
     features: ['transfer'],
     endpoints: [
       {
-        id: 'taira-torii-mcp',
-        kind: 'torii-mcp',
-        url: 'https://taira.sora.org/v1/mcp',
+        id: 'taira-torii',
+        kind: 'torii',
+        url: 'https://taira.sora.org',
         readOnly: false,
       },
     ],

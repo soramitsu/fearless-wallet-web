@@ -1,6 +1,7 @@
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
 import type { EvmSendTransactionParams } from '@extension-base/api/evm/types';
+import type { EvmSigningContext } from '@extension-base/services/request-service/types';
 import type { Resolver } from '@extension-base/background/types/types';
 
 //TODO refactoring types
@@ -20,11 +21,25 @@ export type WalletConnectSessions = SessionTypes.Struct[];
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
   request: SignClientTypes.EventArguments['session_request'];
 }
-export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'];
+export type WalletConnectSigningContext = Omit<EvmSigningContext, 'network' | 'authorizationRevision'> & {
+  session: { topic: string; peerPublicKey: string; origin: string; revision: number };
+  network: EvmSigningContext['network'] & { provider?: string };
+};
+
+export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'] & {
+  // Internal approval identity; a dApp's topic/request ID may be reused later.
+  approvalId: string;
+  // Older or unqualified queued data may be displayed, but cannot be approved.
+  context?: WalletConnectSigningContext;
+};
 
 export interface RequestApproveWalletConnect {
   address: string;
-  topic: string;
+  approvalId: string;
+}
+
+export interface RequestRejectWalletConnect {
+  approvalId: string;
 }
 
 export interface RequestRejectConnectWalletSession {

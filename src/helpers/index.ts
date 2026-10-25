@@ -97,6 +97,17 @@ function getClipboard() {
   return paste;
 }
 
+/** Clipboard text, through the Clipboard API where it is allowed and the paste command otherwise. */
+async function readClipboard(): Promise<string> {
+  try {
+    if (navigator.clipboard?.readText) return await navigator.clipboard.readText();
+  } catch {
+    // Refused (no permission, or the page is not focused); the paste command may still be allowed.
+  }
+
+  return getClipboard();
+}
+
 function setClipboard(str: string) {
   if ('clipboard' in navigator) navigator.clipboard.writeText(str);
 }
@@ -128,6 +139,7 @@ export {
   cut,
   getJettonAssetId,
   getClipboard,
+  readClipboard,
   setClipboard,
   getFormattedDate,
   isSoraTest,

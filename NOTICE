@@ -1,0 +1,28 @@
+Fearless Wallet browser extension
+Copyright 2026 Soramitsu and Fearless Wallet contributors.
+
+Soramitsu-owned source code is licensed under the Apache License, Version 2.0.
+Third-party dependencies and vendored components retain their own copyright
+notices and license terms. In particular, vendor/, dependency package manifests,
+and bundled fonts and artwork may carry separate notices; those notices remain
+in force. This notice does not relicense third-party material or grant rights to
+third-party trademarks.
+
+The Fearless-authored compatibility shims in vendor/bip322-js,
+vendor/bitcoinjs-message, vendor/browserify-sign, vendor/create-ecdh, and
+vendor/node-forge are Apache-2.0 code. They preserve selected package interfaces
+and do not contain those upstream packages' cryptographic implementations.
+The upstream braces source in vendor/braces retains its MIT license.
+
+Roboto Mono: Copyright 2015 The Roboto Mono Project Authors
+(https://github.com/googlefonts/robotomono). The bundled RobotoMono-Regular.ttf
+is licensed under Apache-2.0, as recorded in its embedded font metadata.
+
+Unbounded: Copyright 2022 The Unbounded Project Authors
+(https://github.com/w3f/unbounded). The bundled Unbounded-Bold.ttf retains the
+SIL Open Font License 1.1 in src/assets/fonts/Unbounded-OFL.txt, including the
+upstream Web 3.0 Technologies Foundation copyright notice.
+
+Other bundled fonts retain their SIL Open Font License notices. Website artwork
+and the Apple materials in tools/release-readiness retain the notices described
+in site/NOTICE and tools/release-readiness/NOTICE respectively.

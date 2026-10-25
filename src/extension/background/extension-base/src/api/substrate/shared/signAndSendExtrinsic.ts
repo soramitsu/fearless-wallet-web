@@ -1,3 +1,4 @@
+import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { sendExtrinsic } from '@extension-base/api/substrate/shared/sendExtrinsic';
 import { signExtrinsic } from '@extension-base/api/substrate/shared/signExtrinsic';
 import { BasicTxErrorCode } from '@extension-base/background/types/types';
@@ -15,12 +16,15 @@ interface SignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   errorMessage: string;
   apiProps: ApiProps;
   isMobile: boolean;
+  finalGuard?: () => void;
 }
 
 export const signAndSendExtrinsic = async (
-  { address, apiProps, callback, errorMessage, extrinsic, txState = {}, isMobile }: SignAndSendExtrinsicProps,
+  { address, apiProps, callback, errorMessage, extrinsic, txState = {}, isMobile, finalGuard }: SignAndSendExtrinsicProps,
   state: State
 ) => {
+  const resetGuard = captureWalletResetGuard(state);
+  const assertCurrent = () => { resetGuard(); finalGuard?.(); };
   if (!extrinsic) {
     txState.status = false;
 
@@ -35,10 +39,12 @@ export const signAndSendExtrinsic = async (
       apiProps,
       extrinsic,
       isMobile,
+      finalGuard: assertCurrent,
     },
     state
   );
 
+  assertCurrent();
   try {
     await sendExtrinsic({
       apiProps,

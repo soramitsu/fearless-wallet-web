@@ -1,0 +1,9 @@
+{
+  "description": "A TON wallet hid the Tether USD and Notcoin jetton groups and dragged Dogs to the top.",
+  "address": "UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI",
+  "localStorage": {
+    "account_hidden-assets": "{\"value\":{\"UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI\":[\"tether usd - usdt\",\"notcoin - not\"]}}",
+    "account_sequence-assets": "{\"value\":{\"UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI\":\"dogs - dogs,tether usd - usdt,2ba4723a-74b4-4a6f-a888-e51937773807-239,notcoin - not\"}}",
+    "account_custom-sort": "{\"value\":{\"UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqEBI\":true}}"
+  }
+}

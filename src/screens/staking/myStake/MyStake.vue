@@ -109,7 +109,7 @@
       />
 
       <YourValidatorsManagement
-        v-if="showYourValidatorsForm"
+        v-if="!recoveryOnly && showYourValidatorsForm"
         :stakingCurrency="stakingCurrency"
         :stakingNetwork="stakingNetwork"
         @closeForm="toggleVisible('showYourValidatorsForm', false)"
@@ -153,16 +153,21 @@ import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.
 import { useStakingStore } from '@/stores/staking';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { useWalletRecovery } from '@/util/useWalletRecovery';
+import { isRecoveryStakingAction } from '@/util/walletRecoveryActions';
 
 type ShowField =
   | 'showBondExtraForm'
   | 'showUnbondForm'
+  | 'showRebondForm'
   | 'showRedeemForm'
   | 'showControllerAccountForm'
   | 'showPayeeForm'
-  | 'showYourValidatorsForm';
+  | 'showYourValidatorsForm'
+  | 'showPendingRewardForm';
 
 export default defineComponent({ name: 'MyStake',
+  setup: () => ({ recoveryOnly: useWalletRecovery() }),
   components: {
     About,
     Alerts,
@@ -196,22 +201,22 @@ export default defineComponent({ name: 'MyStake',
             {
               label: 'staking.yourValidators',
               value: 'showYourValidatorsForm',
-              visibility: !this.showValidatorsBtn && !this.isOtherController,
+              visibility: !this.recoveryOnly && !this.showValidatorsBtn && !this.isOtherController,
             },
             {
               label: 'staking.setController',
               value: 'showControllerAccountForm',
-              visibility: !this.showControllerBtn && !this.isController,
+              visibility: !this.recoveryOnly && !this.showControllerBtn && !this.isController,
             },
             {
               label: 'staking.setPayee',
               value: 'showPayeeForm',
-              visibility: this.isController || !this.isOtherController,
+              visibility: !this.recoveryOnly && (this.isController || !this.isOtherController),
             },
             {
               label: 'staking.pendingRewards',
               value: 'showPendingRewardForm',
-              visibility: this.isController || !this.isOtherController,
+              visibility: this.recoveryOnly || this.isController || !this.isOtherController,
             },
           ];
     },
@@ -228,6 +233,7 @@ export default defineComponent({ name: 'MyStake',
       return this.stakingNetwork.isOtherController;
     },
     showMainStakingForm() {
+      if (this.recoveryOnly && !isRecoveryStakingAction(this.type)) return false;
       return (
             this.showBondExtraForm ||
             this.showUnbondForm ||
@@ -259,17 +265,17 @@ export default defineComponent({ name: 'MyStake',
       return this.stakingStore.getStakingNetwork(this.network);
     },
     showControllerBtn() {
-      if (this.isController) return false;
+      if (this.recoveryOnly || this.isController) return false;
 
           return this.isOtherController;
     },
     showValidatorsBtn() {
-      if (this.isOtherController) return false;
+      if (this.recoveryOnly || this.isOtherController) return false;
 
           return !(this.showRebondBtn || this.showRedeemBtn);
     },
     showBondExtraBtn() {
-      return !this.isController;
+      return !this.recoveryOnly && !this.isController;
     },
     showUnbondBtn() {
       if (this.isOtherController) return false;
@@ -277,7 +283,7 @@ export default defineComponent({ name: 'MyStake',
           return this.stakingNetwork.activeStake !== '0';
     },
     showRebondBtn() {
-      if (this.isOtherController) return false;
+      if (this.recoveryOnly || this.isOtherController) return false;
 
           return this.stakingNetwork.unbond.sum !== '0';
     },
@@ -296,7 +302,8 @@ export default defineComponent({ name: 'MyStake',
       return this.activeTabName === 'history';
     },
     alerts() {
-      return this.stakingNetwork.alerts;
+      return this.stakingNetwork.alerts.filter(({ formName }) => !this.recoveryOnly ||
+        ['showUnbondForm', 'showRedeemForm', 'showPendingRewardForm'].includes(formName));
     },
     network() {
       return this.$route.params.network;
@@ -338,12 +345,33 @@ export default defineComponent({ name: 'MyStake',
           return [...stashHistory, ...payeeHistory];
     },
   },
+  watch: {
+    'accountsStore.selectedWallet.address'() {
+      this.closeStakingManagement();
+      this.showYourValidatorsForm = false;
+      this.showPendingRewardForm = false;
+      this.historyElement = null;
+      void this.refreshStakingParams();
+    },
+    recoveryOnly(restricted: boolean) {
+      if (!restricted) return;
+      this.closeStakingManagement();
+      this.showYourValidatorsForm = false;
+    },
+  },
   created() {
-    if (this.$route.params.paramsLoaded !== 'true') this.stakingStore.getStakingParams();
+    if (this.$route.params.paramsLoaded !== 'true') void this.refreshStakingParams();
 
         this.loadHistory();
   },
   methods: {
+    async refreshStakingParams() {
+      try {
+        await this.stakingStore.getStakingParams();
+      } catch (error) {
+        console.warn('Unable to refresh staking details', error);
+      }
+    },
     async loadHistory() {
       if (this.history.length !== 0) return;
 
@@ -372,10 +400,12 @@ export default defineComponent({ name: 'MyStake',
           this.showPayeeForm = false;
     },
     toggleVisible(field: ShowField, value: boolean) {
+      if (value && this.recoveryOnly && !['showUnbondForm', 'showRedeemForm', 'showPendingRewardForm'].includes(field)) return;
+      if (value) this.closeStakingManagement();
       this[field] = value;
     },
     openForm(field: ShowField) {
-      this[field] = true;
+      this.toggleVisible(field, true);
     },
     closeStake() {
       this.$router.push({ name: Components.Staking });

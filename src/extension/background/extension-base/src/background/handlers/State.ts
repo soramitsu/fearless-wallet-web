@@ -1,3 +1,4 @@
+import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -20,12 +21,23 @@ import {
   ScamService,
   PricesService,
   TimeoutService,
+  AssetDiscoverySweepService,
+  canScanSubstrateBackedDiscoveryNetwork,
+  resolveAssetDiscoveryEvmAddress,
+  ActionCapabilityService,
+  SendKillSwitchService,
+  SoraDisclaimerService,
+  LegacyExposureService,
+  IrohaConnectService,
 } from '@extension-base/services';
-import { api as apiSora } from '@sora-substrate/util';
 import { storage } from '@extension-base/stores/Storage';
-import axios from 'axios';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
+import {
+  existingCurrentAccount,
+  pickDefaultCurrentAccount,
+  toCurrentAccountInfo,
+} from '@extension-base/background/helpers/currentAccount';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -46,17 +58,16 @@ import type {
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
-import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
+import type { SoraFees, NetworkName } from '@/interfaces';
 import type { BitcoinNetworkKind } from '@/util/bitcoin';
+import { api as apiSora } from '@/sora';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
 import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
-import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
-import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
-import { encodeIrohaI105Address, type IrohaNetworkInput } from '@/util/iroha';
+import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
 
 type Wallet = {
   address: string;
@@ -73,8 +84,6 @@ export default class State {
   injectedProviders: Map<Port, ProviderInterface> = new Map();
   providers: Providers = {};
   serviceInfoSubject = new Subject<ServiceInfo>();
-  xcmFees: XcmFees = [];
-  xcmLocations: XcmLocations = [];
   soraFees: BehaviorSubject<SoraFees> = new BehaviorSubject<SoraFees>(apiSora.NetworkFee);
   currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,
@@ -86,11 +95,47 @@ export default class State {
   eventService = new EventService();
   evmContractService = new EvmContractService();
   keyringService = new KeyringService(this.eventService);
-  networkService = new NetworkService(this.keyringService, this);
+  networkService = new NetworkService(this.keyringService, this, () => {
+    if (this.ready) void this.assetDiscoverySweepService.runIfDue();
+  });
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
   walletConnectDappService = new WalletConnectDAppService(this);
+  irohaConnectService = new IrohaConnectService(this, {
+    onStateChange: (snapshot, previous) => {
+      const isApproval = snapshot.phase === 'session-approval' || snapshot.phase === 'request-approval';
+      const wasApproval = previous.phase === 'session-approval' || previous.phase === 'request-approval';
+
+      if (isApproval !== wasApproval) this.requestService.updateIcon(!isApproval);
+      if (snapshot.phase === 'request-approval' && previous.phase !== 'request-approval') {
+        this.requestService.popupOpen('/fearless/settings/iroha-connect');
+      }
+    },
+  });
   balanceService = new BalanceService(this);
+  assetDiscoverySweepService = new AssetDiscoverySweepService({
+    getRegistryNetworks: () => this.networkService.authoritativeDiscoveryNetworks,
+    scanNetwork: (network) => this.scanDiscoveryNetwork(network),
+    readState: async () => (await storage.get(['assetDiscoverySweep'])).assetDiscoverySweep,
+    writeState: async (assetDiscoverySweep) => storage.set({ assetDiscoverySweep }),
+  });
+  actionCapabilityService = new ActionCapabilityService({
+    read: async () => (await storage.get(['actionCapabilities'])).actionCapabilities,
+    write: async (actionCapabilities) => storage.set({ actionCapabilities }),
+  });
+  sendKillSwitchService = new SendKillSwitchService({
+    read: async () => (await storage.get(['sendKillSwitch'])).sendKillSwitch,
+    write: async (sendKillSwitch) => storage.set({ sendKillSwitch }),
+  });
+  soraDisclaimerService = new SoraDisclaimerService({
+    read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
+    write: async (soraDisclaimerAcceptance) => storage.set({ soraDisclaimerAcceptance }),
+  });
+  legacyExposureService = new LegacyExposureService(this.keyringService, {
+    read: async () => (await storage.get(['legacyExposure'])).legacyExposure,
+    write: async (legacyExposure) => storage.set({ legacyExposure }),
+    readSentMarker: async () => (await storage.get(['myAddresses'])).myAddresses,
+  });
   pricesService = new PricesService(this);
   nftService = new NftService(this);
   stakingService = new StakingService(this);
@@ -129,7 +174,7 @@ export default class State {
   }
 
   getEvmApi(key: string) {
-    return this.getEvmApiMap[key.toLowerCase()];
+    return this.networkService.evmApiHandler.getApi(key);
   }
 
   getFromStorage(key: (keyof IState)[]) {
@@ -161,65 +206,63 @@ export default class State {
     const url = new URL(tab.url);
     const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
+    const tabAuthKey = isSelf ? null : stripUrl(tab.url);
 
-    const cb = () => (authUrls: AuthUrls) => {
-      const authorizeUrls = Object.keys(authUrls).filter((url) => url === tabHostName);
-      const isAuthorize = authorizeUrls.length !== 0;
+    const cb = (authUrls: AuthUrls) => {
+      const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
+      const isAuthorize = auth?.isAllowed === true;
 
       this.currentTabStatus = {
         isAuthorize,
-        authorizeAccountsCount: isAuthorize ? authUrls[tabHostName].authorizedAccounts.length : 0,
+        authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
         dAppName: tabHostName,
       };
     };
 
-    this.requestService.getAuthorize(cb);
+    void this.requestService.getAuthorize(cb).catch(() => cb({}));
+  }
+
+  private async selectableAccounts() {
+    const accounts = this.keyringService.getAllMainAccounts();
+    if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
+    const policy = await new WalletConnectRetiredSessions().readPolicy();
+    return this.keyringService.getAllMainAccounts().filter((account) =>
+      !account.meta.isMobile || sessionIsApproved(policy, account.meta.wcTopic as string));
   }
 
   async onInstall() {
-    if (this.currentAccount) {
-      this.setCurrentAccount(this.currentAccount);
+    const revision = this.keyringService.currentAccountRevision;
+    const selected = this.currentAccount;
+    const accounts = await this.selectableAccounts();
+    if (revision !== this.keyringService.currentAccountRevision || selected !== this.currentAccount) return;
+    const storedAccount = existingCurrentAccount(this.currentAccount, accounts);
+
+    if (storedAccount) {
+      await this.setCurrentAccount(storedAccount);
 
       return;
     }
 
-    const allAccounts = this.keyringService.getAllMainAccounts();
+    const account = pickDefaultCurrentAccount(accounts);
 
-    if (allAccounts.length) {
-      const [
-        {
-          address,
-          meta: {
-            name,
-            ethereumAddress,
-            isMobile,
-            bitcoinAddress,
-            bitcoinTestnetAddress,
-            solanaAddress,
-            irohaAddress,
-            irohaPublicKeyHex,
-            walletEcosystem,
-          },
-        },
-      ] = allAccounts;
+    await this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
+  }
 
-      this.setCurrentAccount({
-        address,
-        name: name!,
-        ethereumAddress: ethereumAddress!,
-        bitcoinAddress: bitcoinAddress as string | undefined,
-        bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
-        solanaAddress: solanaAddress as string | undefined,
-        irohaAddress: irohaAddress as string | undefined,
-        irohaPublicKeyHex: irohaPublicKeyHex as string | undefined,
-        isMobile: isMobile!,
-        walletEcosystem: walletEcosystem!,
-      });
+  // Start-up calls this once the wallet storage has been read. Chrome sends onInstalled only
+  // on install or update, so a missing selection, or one whose account was removed, is
+  // replaced here as well. A valid selection is not written again.
+  async ensureCurrentAccount(): Promise<void> {
+    const revision = this.keyringService.currentAccountRevision;
+    const selected = this.currentAccount;
+    const accounts = await this.selectableAccounts();
+    if (revision !== this.keyringService.currentAccountRevision || selected !== this.currentAccount) return;
 
-      return;
-    }
+    if (existingCurrentAccount(this.currentAccount, accounts)) return;
+    if (!this.currentAccount && !accounts.length) return;
 
-    this.setCurrentAccount(null);
+    const account = pickDefaultCurrentAccount(accounts);
+
+    await this.setCurrentAccount(account ? toCurrentAccountInfo(account) : null);
   }
 
   async getAuthInfo(url: string, fromList?: AuthUrls): Promise<AuthUrlInfo | undefined> {
@@ -230,12 +273,15 @@ export default class State {
     return authList[shortenUrl];
   }
 
+  getEvmAuthorizationSnapshot(url: string) {
+    return this.requestService.authRequestHandler.getEvmAuthorizationSnapshot(url);
+  }
+
   disableNetworkMap(networkKey: string) {
     this.networkService.disableNetworkMap(networkKey);
 
     this.updateServiceInfo();
 
-    this.requestService.getAuthorize((data) => this.requestService.setAuthorize(data));
   }
 
   updateServiceInfo() {
@@ -246,16 +292,14 @@ export default class State {
     });
   }
 
-  async setFavoriteNetwork(networkName: string): Promise<void> {
-    const network = this.networkService.networkMap[networkName];
+  async setFavoriteNetwork(networkName: string, expectedAddress?: string, desired?: boolean): Promise<void> {
     const currentAccount = this.currentAccount;
 
-    if (!currentAccount) return;
+    if (!currentAccount || (expectedAddress !== undefined && currentAccount.address !== expectedAddress)) {
+      throw new Error('Selected wallet changed');
+    }
 
-    const addressIndex = network.favorite.findIndex((address) => address === currentAccount.address);
-
-    if (addressIndex !== -1) network.favorite.splice(addressIndex, 1);
-    else network.favorite.push(currentAccount.address);
+    await this.networkService.toggleFavoriteNetwork(networkName, currentAccount.address, desired);
   }
 
   async setActiveNetworks(type: string) {
@@ -402,50 +446,123 @@ export default class State {
     return this.currentAccount?.address ?? '';
   }
 
-  fetchXcmInfo() {
-    axios
-      .get<XcmLocations>(URLS.XCM_LOCATIONS)
-      .then(({ data }) => (this.xcmLocations = data))
-      .catch(() => (this.xcmLocations = []));
-
-    axios
-      .get<XcmFees>(URLS.XCM_FEES)
-      .then(({ data }) => (this.xcmFees = data))
-      .catch(() => (this.xcmFees = []));
-  }
-
   async init() {
     await this.eventService.waitCryptoReady;
-    await this.networkService.initNetworkMap();
+    await Promise.all([
+      this.networkService.initNetworkMap(),
+      this.actionCapabilityService.init(),
+      this.sendKillSwitchService.init(),
+      this.soraDisclaimerService.init(),
+    ]);
 
-    this.keyringService.getAllMainAccounts().forEach(({ address, meta }) => {
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    accounts.forEach(({ address, meta }) => {
       const { walletEcosystem } = meta as FWKeyringMeta;
 
       return this.balanceService.generateDefaultBalance(address, walletEcosystem!);
     });
 
+    await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
+
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
-    this.fetchXcmInfo();
     this.scamService.refreshScamAddressList();
 
     this.networkService.initNetworkApis();
     this.onReady();
     this.updateServiceInfo();
+    void this.assetDiscoverySweepService.runIfDue();
+  }
+
+  private async scanDiscoveryNetwork(registryNetwork: NetworkJson): Promise<void> {
+    const network = this.networkService.networkMap[registryNetwork.name];
+    if (!network) return;
+
+    const ecosystem = network.ecosystem;
+    const accounts = this.keyringService.getAllMainAccounts();
+
+    for (const account of accounts) {
+      const meta = account.meta as FWKeyringMeta;
+      const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
+      const publicAddress = (walletEcosystem: WalletEcosystem) =>
+        publicAccounts.find(
+          (item) =>
+            item.ecosystem === walletEcosystem &&
+            (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
+        )?.address;
+      const supports = (walletEcosystem: WalletEcosystem) =>
+        meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
+      const evmAddress = resolveAssetDiscoveryEvmAddress({
+        primaryAddress: account.address,
+        primaryEcosystem: meta.walletEcosystem,
+        ethereumAddress: meta.ethereumAddress,
+        publicAccounts,
+      });
+      const supportsSubstrate = supports(WalletEcosystem.Substrate);
+
+      if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
+        await this.balanceService.solanaBalanceService.fetchBalance({
+          address: account.address,
+          solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
+        await this.balanceService.bitcoinBalanceService.fetchBalance({
+          address: account.address,
+          bitcoinAddress: meta.bitcoinAddress,
+          bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
+        await this.balanceService.irohaBalanceService.fetchBalance({
+          address: account.address,
+          irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
+          networks: [network.name],
+        });
+      } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
+        if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
+        await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
+      } else if (ecosystem === 'ethereum' && evmAddress) {
+        const wasActive = network.active;
+        if (!this.getEvmApi(network.name)) this.networkService.evmApiHandler.initEvmApi(network);
+        await this.balanceService.evmBalanceService.fetchBalance({
+          ethereumAddress: evmAddress,
+          networks: [network.name.toLowerCase()],
+          force: true,
+        });
+        if (!wasActive) this.networkService.evmApiHandler.destroyApi(network.name);
+      } else if (
+        canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
+      ) {
+        const networkKey = network.name.toLowerCase();
+        const wasActive = network.active;
+        if (!this.getSubstrateApiMap[networkKey]?.api) await this.networkService.substrateApiHandler.initApi(network);
+        const api = this.getSubstrateApiMap[networkKey]?.api;
+        if (api) await Promise.race([api.isReady, new Promise((_, reject) => setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000))]);
+        await this.balanceService.substrateBalanceService.fetchBalance({
+          address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
+          ethereumAddress: evmAddress,
+          networks: [network.name],
+        });
+        if (!wasActive) await this.networkService.substrateApiHandler.destroyApi(network.name);
+      }
+    }
   }
 
   updateNetworkForNewWallet(address: string) {
     this.setActiveNetworks(this.networkService.selectedNetworks[address] ?? ALL_NETWORKS);
   }
 
-  updateCurrentAccount(
+  async updateCurrentAccount(
     { address, walletEcosystem = WalletEcosystem.Substrate }: RequestUpdateCurrentAccount,
-    isNew = true
-  ): boolean {
+    isNew = true,
+    selectionContext?: { assertCurrent: () => void; onCommitted?: () => void }
+  ): Promise<boolean> {
     if (isEthereumAddress(address)) return false;
 
     this.balanceService.generateDefaultBalance(address, walletEcosystem);
 
-    this.saveCurrentAccountAddress(address, walletEcosystem, () => {
+    await this.saveCurrentAccountAddress(address, walletEcosystem, () => {
       this.keyringService.triggerWalletsSubscription(address, walletEcosystem);
 
       const activeValue =
@@ -456,46 +573,49 @@ export default class State {
       if (isNew) this.setActiveNetworks(activeValue);
 
       this.nftService.publishNfts();
-    });
+      if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
+      selectionContext?.onCommitted?.();
+    }, selectionContext?.assertCurrent);
 
     return true;
   }
 
-  setCurrentAccount(data: CurrentAccountState, callback: () => void = () => null): void {
-    this.keyringService.setCurrentAccount(data);
-
-    // logic for Sora library
-    this.poolsService.unsubscribePools();
-
-    const isTonWallet = data?.walletEcosystem === WalletEcosystem.Ton;
-
-    // logic for Sora library
-    if (!isTonWallet && data?.address && !data.isMobile && data.walletEcosystem === 'substrate') {
-      const pair = this.keyringService.getPair(data?.address)!;
-
+  async setCurrentAccount(
+    data: CurrentAccountState, callback: () => void = () => null, assertCurrent?: () => void
+  ): Promise<void> {
+    const updateContext = (committed: CurrentAccountState) => {
+      this.poolsService.unsubscribePools();
+      const pair = committed?.address && !committed.isMobile && committed.walletEcosystem === WalletEcosystem.Substrate
+        ? this.keyringService.getPair(committed.address) : undefined;
+      const soraAccount = pair ? { json: null, pair } : undefined;
+      // The SDK exposes these fields as protected; clear the old signing pair
+      // when the selected wallet has no local Substrate key, including recovery.
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.account = { json: null, pair };
-
+      apiSora.account = soraAccount;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
-      apiSora.bridgeProxy.sub.account = { json: null, pair };
-    }
-
-    this.updateServiceInfo();
-    callback();
+      apiSora.bridgeProxy.sub.account = soraAccount;
+      this.updateServiceInfo();
+    };
+    await this.keyringService.setCurrentAccount(data, (committed) => {
+      updateContext(committed);
+      callback();
+    }, assertCurrent, updateContext);
   }
 
-  saveCurrentAccountAddress(
+  async saveCurrentAccountAddress(
     address: string,
     walletEcosystem: WalletEcosystem,
-    callback?: (account: CurrentAccountState) => void
+    callback?: (account: CurrentAccountState) => void,
+    assertCurrent?: () => void
   ) {
-    if (address === '') return this.setCurrentAccount(null);
+    if (address === '') return this.setCurrentAccount(null, () => callback?.(null), assertCurrent);
 
     const {
       meta: {
         isMobile,
+        wcTopic,
         name,
         ethereumAddress,
         bitcoinAddress,
@@ -509,6 +629,7 @@ export default class State {
     const accountInfo: CurrentAccountInfo = {
       address,
       isMobile: !!(isMobile as boolean),
+      wcTopic: typeof wcTopic === 'string' ? wcTopic : undefined,
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
       bitcoinAddress: bitcoinAddress as string | undefined,
@@ -519,7 +640,7 @@ export default class State {
       walletEcosystem,
     };
 
-    this.setCurrentAccount(accountInfo, () => callback?.(accountInfo));
+    await this.setCurrentAccount(accountInfo, () => callback?.(accountInfo), assertCurrent);
   }
 
   cleanupDeletedAccount(address: string) {
@@ -548,11 +669,13 @@ export default class State {
 
   getCurrentAddress(network: NetworkName, _currentAccount?: CurrentAccountState): string {
     const currentAccount = _currentAccount ?? this.currentAccount;
-    const ecosystem = this.getNetworkEcosystem(network);
+    const networkProfile = this.networkService.networkValues.find(({ name }) => isSameString(name, network));
+    const irohaNetwork = this.getIrohaExpectedNetwork(networkProfile);
+    const ecosystem = networkProfile?.ecosystem;
 
+    if (irohaNetwork) return this.formatIrohaAddress(currentAccount!, irohaNetwork);
     if (ecosystem === WalletEcosystem.Solana) return currentAccount!.solanaAddress ?? currentAccount!.address;
     if (ecosystem === WalletEcosystem.Bitcoin) return this.formatBitcoinAddress(currentAccount!, network);
-    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress(currentAccount!, network);
     return isEthereumNetwork(network) ? currentAccount!.ethereumAddress : currentAccount!.address;
   }
 
@@ -567,26 +690,22 @@ export default class State {
     return contract.includes('testnet') ? 'testnet' : 'mainnet';
   }
 
-  private getIrohaExpectedNetwork(networkName: string): IrohaNetworkInput {
-    const network = this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
-    const discriminant =
-      (network as { chainDiscriminant?: unknown; i105Prefix?: unknown } | undefined)?.chainDiscriminant ??
-      (network as { i105Prefix?: unknown } | undefined)?.i105Prefix;
-    const contract = `${network?.chainId ?? ''} ${network?.name ?? ''} ${networkName}`.toLowerCase();
+  private getIrohaExpectedNetwork(network: NetworkJson | undefined): IrohaNetworkInput | null {
+    if (!network) return null;
 
-    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainDiscriminant) return 'taira';
-    if (discriminant === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainDiscriminant) return 'nexus';
-    if (typeof discriminant === 'number') return discriminant;
-    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId || contract.includes('taira')) return 'taira';
-    if (network?.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.nexus.chainId || contract.includes('nexus')) return 'nexus';
+    try {
+      return resolveCanonicalIrohaAddressNetwork(network.chainId);
+    } catch (error) {
+      if (network.ecosystem === WalletEcosystem.Iroha) throw error;
 
-    return contract.includes('testnet') ? 'taira' : 'nexus';
+      return null;
+    }
   }
 
-  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, networkName: string): string {
+  private formatIrohaAddress({ address, irohaAddress, irohaPublicKeyHex }: Wallet, network: IrohaNetworkInput): string {
     if (irohaPublicKeyHex) {
       try {
-        return encodeIrohaI105Address(irohaPublicKeyHex, this.getIrohaExpectedNetwork(networkName));
+        return encodeIrohaI105Address(irohaPublicKeyHex, network);
       } catch {
         return irohaAddress ?? address;
       }
@@ -613,13 +732,16 @@ export default class State {
     }: Wallet,
     networkName: string = 'westend'
   ): string {
-    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName))!;
+    const network = this.networkService.networksGithub.find(({ name }) => isSameString(name, networkName)) ??
+      this.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
+    const irohaNetwork = this.getIrohaExpectedNetwork(network);
     const ecosystem = network?.ecosystem ?? this.getNetworkEcosystem(networkName);
 
+    if (irohaNetwork)
+      return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, irohaNetwork);
     if (ecosystem === WalletEcosystem.Solana) return solanaAddress ?? address;
     if (ecosystem === WalletEcosystem.Bitcoin)
       return this.formatBitcoinAddress({ address, ethereumAddress, bitcoinAddress, bitcoinTestnetAddress }, networkName);
-    if (ecosystem === WalletEcosystem.Iroha) return this.formatIrohaAddress({ address, ethereumAddress, irohaAddress, irohaPublicKeyHex }, networkName);
 
     const isEthereumNet = isEthereumNetwork(networkName);
 
@@ -639,17 +761,16 @@ export default class State {
   }
 
   async switchEvmNetworkByUrl(shortenUrl: string, networkKey: string): Promise<void> {
-    const authUrls = await this.requestService.getAuthList();
+    await this.requestService.getAuthList();
+    const initial = this.getEvmAuthorizationSnapshot(shortenUrl);
+    if (!initial.authorization?.isAllowed || !initial.authorization.evmAuthorizedAccount)
+      throw new Error('EVM account is not authorized for this site');
     const network = this.networkService.getNetworkJson(networkKey);
-
-    if (authUrls[shortenUrl]) {
-      if (!network.active) await this.setActiveNetworks(networkKey);
-
-      authUrls[shortenUrl].currentEvmNetworkKey = networkKey;
-
-      this.requestService.setAuthorize(authUrls);
-    } else {
-      throw new Error(`Not found ${shortenUrl} in auth list`);
-    }
+    if (!network.active) await this.setActiveNetworks(networkKey);
+    await this.requestService.mutateAuthorizations((entries) => {
+      if (this.getEvmAuthorizationSnapshot(shortenUrl).revision !== initial.revision || !entries[shortenUrl])
+        throw new Error('Site authorization changed during network activation');
+      entries[shortenUrl].currentEvmNetworkKey = networkKey;
+    });
   }
 }

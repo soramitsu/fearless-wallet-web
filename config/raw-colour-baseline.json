@@ -1,0 +1,771 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "65e6efb4cd058918e523cebaf4c4e0f434979015",
+  "sites": [
+    {
+      "path": "src/components/AboveForm.vue",
+      "source": "@include fw-scrim-tiers(#333);",
+      "count": 1
+    },
+    {
+      "path": "src/components/AboveForm.vue",
+      "source": "background: rgba(51, 51, 51, 0.5);",
+      "count": 1
+    },
+    {
+      "path": "src/components/AssetHighlightIcon.vue",
+      "source": "background-color: #111;",
+      "count": 1
+    },
+    {
+      "path": "src/components/Blur.vue",
+      "source": "background-color: rgba(0, 0, 0, 0.6);",
+      "count": 1
+    },
+    {
+      "path": "src/components/BrandSignature.vue",
+      "source": "color: #38e8e0;",
+      "count": 1
+    },
+    {
+      "path": "src/components/BrandSignature.vue",
+      "source": "color: #ee0077;",
+      "count": 1
+    },
+    {
+      "path": "src/components/BrandSignature.vue",
+      "source": "filter: drop-shadow(0 0 8px rgb(221 189 124 / 0.3));",
+      "count": 1
+    },
+    {
+      "path": "src/components/CircleButton.vue",
+      "source": "background-color: rgba(0, 0, 0, 0.25);",
+      "count": 2
+    },
+    {
+      "path": "src/components/DirectionContentForm.vue",
+      "source": "background-color: rgb(29, 29, 29);",
+      "count": 1
+    },
+    {
+      "path": "src/components/DirectionContentForm.vue",
+      "source": "color: #ee0077;",
+      "count": 1
+    },
+    {
+      "path": "src/components/Dropdown.vue",
+      "source": "border-color: #111111 !important;",
+      "count": 1
+    },
+    {
+      "path": "src/components/ExternalWidget.vue",
+      "source": "background-color: #111111;",
+      "count": 2
+    },
+    {
+      "path": "src/components/ExternalWidget.vue",
+      "source": "background-color: #fdf7fb;",
+      "count": 1
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "// White labels need 4.5:1: the legacy look darkens the brand pink by 4% (mix(black, #ee0077, 4%)), Neon Glass",
+      "count": 1
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "background-color: #c4c4c4 !important;",
+      "count": 2
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.5) !important;",
+      "count": 1
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "border: 1px solid rgba(255, 255, 255, 0.2) !important;",
+      "count": 2
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "border: 1px solid rgba(255, 255, 255, 0.5) !important;",
+      "count": 1
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "box-shadow: 0 0 16px rgb(255 0 154 / 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);",
+      "count": 1
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "color: #fff !important;",
+      "count": 2
+    },
+    {
+      "path": "src/components/FButton.vue",
+      "source": "color: rgba(45, 41, 38, 1) !important;",
+      "count": 2
+    },
+    {
+      "path": "src/components/FCorners.vue",
+      "source": "border-top: 1px solid rgba(255, 255, 255, 0.2);",
+      "count": 1
+    },
+    {
+      "path": "src/components/FInput.vue",
+      "source": "inset -1px -1px 2px rgb(255 255 255 / 0.05);",
+      "count": 1
+    },
+    {
+      "path": "src/components/FInput.vue",
+      "source": "inset 2px 2px 6px rgb(0 0 0 / 0.55),",
+      "count": 1
+    },
+    {
+      "path": "src/components/FSelect.vue",
+      "source": "color: rgba(255, 255, 255, 1) !important;",
+      "count": 1
+    },
+    {
+      "path": "src/components/Icon.vue",
+      "source": "color: #7700ee50;",
+      "count": 1
+    },
+    {
+      "path": "src/components/Icon.vue",
+      "source": "color: #7700ee;",
+      "count": 1
+    },
+    {
+      "path": "src/components/Icon.vue",
+      "source": "color: #ffffff;",
+      "count": 1
+    },
+    {
+      "path": "src/components/InfiniteScroll.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.15);",
+      "count": 1
+    },
+    {
+      "path": "src/components/InfiniteScroll.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.25);",
+      "count": 1
+    },
+    {
+      "path": "src/components/Popup.vue",
+      "source": "background-color: rgba(0, 0, 0, 0.6);",
+      "count": 1
+    },
+    {
+      "path": "src/components/Popup.vue",
+      "source": "box-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.8);",
+      "count": 1
+    },
+    {
+      "path": "src/components/Popup.vue",
+      "source": "color: rgba(255, 255, 255, 0.8);",
+      "count": 1
+    },
+    {
+      "path": "src/components/QR.vue",
+      "source": "background: '#FFFFFF',",
+      "count": 1
+    },
+    {
+      "path": "src/components/QR.vue",
+      "source": "foreground: '#0A0C1B',",
+      "count": 1
+    },
+    {
+      "path": "src/components/Row.vue",
+      "source": "if (props.icon === 'check') return '#00ee77';",
+      "count": 1
+    },
+    {
+      "path": "src/components/Scroll.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.15);",
+      "count": 1
+    },
+    {
+      "path": "src/components/Scroll.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.25);",
+      "count": 1
+    },
+    {
+      "path": "src/components/Shimmer.vue",
+      "source": "background: #777;",
+      "count": 1
+    },
+    {
+      "path": "src/components/ValidatedInput.vue",
+      "source": "color: #ee7700;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/AccountSettingsPopup.vue",
+      "source": "color: rgba(255, 255, 255, 0.9);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/AccountsItem.vue",
+      "source": "color: rgba(255, 255, 255, 1);",
+      "count": 2
+    },
+    {
+      "path": "src/screens/accounts/ExportForm.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.24);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/NodeItem.vue",
+      "source": "background-color: #7700ee;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/NodeItem.vue",
+      "source": "border-bottom: 1px solid #7700ee;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/NodeItem.vue",
+      "source": "color: #888888;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/NodeSettingsPopup.vue",
+      "source": "color: rgba(255, 255, 255, 0.9);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/Nodes.vue",
+      "source": "color: rgba(255, 255, 255, 0.8);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/accounts/Nodes.vue",
+      "source": "color: rgba(255, 255, 255, 1);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/AddWallet.vue",
+      "source": "background-color: rgba(238, 0, 119, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/AddWallet.vue",
+      "source": "border: rgba(238, 0, 119, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/ImportWallet.vue",
+      "source": "color: #ccd2e3 !important;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/MnemonicBackupForm.vue",
+      "source": "background-color: rgba(255, 255, 255, 0.24);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/google/CreateGoogle.vue",
+      "source": "background: rgba(255, 255, 255, 0.1);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/google/FlowStepLayout.vue",
+      "source": "background-color: rgba(238, 0, 119, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/addWallet/google/FlowStepLayout.vue",
+      "source": "border: rgba(238, 0, 119, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/defi/polkamarkt/PolkamarktPage.vue",
+      "source": ".capability-state { display: flex; flex-direction: column; gap: 3px; margin: 12px 16px 0; padding: 10px 12px; border-left: 2px solid $simple-orange-color; background: rgba(247, 151, 30, 0.06); color: $gray-color; font-size: 0.68rem; text-align: left; }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/defi/polkamarkt/PolkamarktPage.vue",
+      "source": ".history-section line { stroke: rgba(127, 127, 127, 0.2); stroke-dasharray: 3 3; }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/defi/polkamarkt/PolkamarktPage.vue",
+      "source": ".status { padding: 2px 7px; border-radius: 999px; background: rgba(127, 127, 127, 0.1); text-transform: capitalize; }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/defi/polkamarkt/PolkamarktPage.vue",
+      "source": ".view-tabs button.selected, .segmented button.selected { background: $plain-white; color: #111; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); font-weight: 600; }",
+      "count": 2
+    },
+    {
+      "path": "src/screens/defi/polkamarkt/PolkamarktPage.vue",
+      "source": ".view-tabs, .segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; margin: 14px 16px 10px; padding: 3px; border-radius: 9px; background: rgba(127, 127, 127, 0.09); }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/extension-ui/AuthItem.vue",
+      "source": "color: rgba(0, 238, 119, 1);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "--connect-ink: #fff4dc;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "--connect-line: rgba(255, 224, 154, 0.17);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "--connect-muted: rgba(255, 244, 220, 0.65);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: #80d680;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: #fff4dc;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: #fffaf0;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: linear-gradient(145deg, rgba(255, 218, 232, 0.94), rgba(246, 132, 176, 0.78));",
+      "count": 2
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: linear-gradient(90deg, #d7a542, #ee2233 48%, transparent 88%);",
+      "count": 2
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: rgba(10, 4, 5, 0.86);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: rgba(215, 165, 66, 0.08);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: rgba(238, 34, 51, 0.1);",
+      "count": 3
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: rgba(255, 244, 220, 0.04);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: rgba(255, 244, 220, 0.055);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "background: rgba(4, 2, 2, 0.56);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-color: rgba(128, 214, 128, 0.42);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-color: rgba(215, 165, 66, 0.3);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-color: rgba(238, 34, 51, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-color: rgba(238, 34, 51, 0.48);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-color: rgba(238, 34, 51, 0.7);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-color: rgba(238, 34, 51, 0.8);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-right-color: rgba(238, 34, 51, 0.8);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border-top-color: #d7a542;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(215, 165, 66, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(238, 34, 51, 0.4);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(255, 126, 136, 0.76);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(255, 224, 154, 0.22);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(255, 224, 154, 0.32);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(255, 244, 220, 0.42);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(255, 244, 220, 0.45);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 1px solid rgba(255, 255, 255, 0.12);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "border: 5px solid #ee2233;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "box-shadow: 0 0 0 3px rgba(238, 34, 51, 0.16);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "box-shadow: 0 0 0 4px rgba(128, 214, 128, 0.12);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "box-shadow: 0 12px 24px rgba(110, 8, 16, 0.26);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #99e299;",
+      "count": 2
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #d7a542;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #e4232d;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #e9c57a;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #ef3341;",
+      "count": 2
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #ff7c85;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #ff929a;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #ffd2d5;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #fff4dc;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: #fffaf0;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: rgba(255, 244, 220, 0.35);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: rgba(255, 244, 220, 0.72);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "color: rgba(255, 244, 220, 0.78);",
+      "count": 2
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "linear-gradient(145deg, #35090d, #130507 55%, #050303);",
+      "count": 3
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 45%), linear-gradient(180deg, #f03a48, #c81725);",
+      "count": 3
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "outline: 3px solid rgba(255, 224, 154, 0.3);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "outline: 3px solid rgba(255, 224, 154, 0.35);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "radial-gradient(circle at 12% 0%, rgba(238, 34, 51, 0.2), transparent 220px),",
+      "count": 1
+    },
+    {
+      "path": "src/screens/irohaConnect/IrohaConnectPage.vue",
+      "source": "repeating-linear-gradient(92deg, rgba(255, 244, 220, 0.025) 0 1px, transparent 1px 23px),",
+      "count": 1
+    },
+    {
+      "path": "src/screens/main/AboutPopup.vue",
+      "source": "color: rgba(255, 255, 255, 0.85);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/main/Header.vue",
+      "source": "background-color: #00ee77;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/main/Menu.vue",
+      "source": "border-top: 1px solid rgba(255, 255, 255, 0.08);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/main/SettingMenuItem.vue",
+      "source": "color: rgba(255, 255, 255, 0.9);",
+      "count": 2
+    },
+    {
+      "path": "src/screens/main/WalletDetailsPopup.vue",
+      "source": "color: rgba(255, 255, 255, 0.9);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/polkaswap/swap/SwapForm.vue",
+      "source": "background-color: rgb(29, 29, 29) !important;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/polkaswap/swap/SwapForm.vue",
+      "source": "background-color: rgb(29, 29, 29);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/polkaswap/swap/SwapForm.vue",
+      "source": "background-color: rgb(34, 32, 32);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/pools/InputsForm.vue",
+      "source": "background-color: rgb(29, 29, 29);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/settings/StorageRecovery.vue",
+      "source": ".recovery-account { padding-block: 24px; border-top: 1px solid var(--fw-border, #4e4e57); }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/settings/StorageRecovery.vue",
+      "source": ".recovery-account__phrase { padding: 16px; border: 1px solid var(--fw-border, #4e4e57); user-select: all; }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/settings/StorageRecovery.vue",
+      "source": ".recovery-notice { border-inline-start: 3px solid var(--fw-warning, #f0ad4e); padding-inline-start: 16px; }",
+      "count": 1
+    },
+    {
+      "path": "src/screens/staking/myStake/AlertItem.vue",
+      "source": "color: #ffffffcc;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/ConfirmationPasswordPopup.vue",
+      "source": "background-color: #ffffff08;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/HistoryBook.vue",
+      "source": "color: rgba(255, 255, 255, 0.64);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/NetworkItem.vue",
+      "source": "if (!props.isAvailable) return 'rgba(255, 255, 255, 0.5)'; //gray-color",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/NetworkItem.vue",
+      "source": "return 'rgba(255, 255, 255, 1)'; //default-white",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/ReceiveForm.vue",
+      "source": "color: rgba(255, 255, 255, 0.75);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/asset/HistoryItem.vue",
+      "source": "color: rgba(255, 255, 255, 0.64);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftCollectionItem.vue",
+      "source": "background-color: rgba(0, 0, 0, 0.54);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftCollectionItem.vue",
+      "source": "color: #ee0077;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftCollectionItem.vue",
+      "source": "color: #ffffff;",
+      "count": 2
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftDetails.vue",
+      "source": "background-color: #000000b2;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftItem.vue",
+      "source": "background-color: #000000b2;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftItem.vue",
+      "source": "background-color: #ee0077;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/nft/NftItem.vue",
+      "source": "color: #ffffff;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/wallet/NftSettingsPopup.vue",
+      "source": "color: rgba(255, 255, 255, 0.9);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
+      "source": "background: rgba(0, 0, 0, 0.6);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue",
+      "source": "box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/wallet/PortfolioHiddenFundsNotice.vue",
+      "source": "color: #111;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/wallet/PortfolioLayoutNote.vue",
+      "source": "color: #111;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/wallet&asset/wallet/PortfolioNetworkSection.vue",
+      "source": "color: #111;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/walletConnect/WalletConnectAuthDetails.vue",
+      "source": "background-color: #00ee77;",
+      "count": 1
+    },
+    {
+      "path": "src/screens/walletConnect/WalletConnectAuthDetails.vue",
+      "source": "border-bottom-color: rgba(255, 255, 255, 0.1);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/walletConnect/WalletConnectAuthItem.vue",
+      "source": "color: rgba(0, 238, 119, 1);",
+      "count": 1
+    },
+    {
+      "path": "src/screens/welcome/Welcome.vue",
+      "source": "color: rgb(199, 31, 95);",
+      "count": 1
+    }
+  ]
+}

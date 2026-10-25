@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "scope": "web-bitcoin-testnet-broadcast-readiness",
+  "status": "ready",
+  "releaseEnabled": true,
+  "lastReviewed": "2026-10-25",
+  "blockers": [],
+  "smokeCommand": "yarn test:smoke:bitcoin",
+  "readyVerificationCommands": [
+    "yarn test:bitcoin-broadcast-evidence-template",
+    "yarn generate:bitcoin-broadcast-evidence-template -- --output build/reports/bitcoin-broadcast-evidence-template.json",
+    "yarn test:bitcoin-broadcast-evidence-audit",
+    "yarn audit:bitcoin-broadcast-evidence --require-ready",
+    "FEARLESS_BITCOIN_TESTNET_LIVE=1 yarn test:smoke:bitcoin"
+  ],
+  "liveSmokeEnvironment": [
+    "FEARLESS_BITCOIN_TESTNET_LIVE",
+    "FEARLESS_BITCOIN_TESTNET_MNEMONIC",
+    "FEARLESS_BITCOIN_TESTNET_SOURCE_ADDRESS",
+    "FEARLESS_BITCOIN_TESTNET_RECIPIENT_ADDRESS",
+    "FEARLESS_BITCOIN_TESTNET_AMOUNT_SAT",
+    "FEARLESS_BITCOIN_TESTNET_OUTPOINT"
+  ],
+  "defaultIndexerUrl": "https://blockstream.info/testnet/api",
+  "requiredEvidenceFields": [
+    "txid",
+    "sourceAddress",
+    "recipientAddress",
+    "amountSat",
+    "outpoint",
+    "indexerUrl",
+    "timestamp",
+    "operator",
+    "commit"
+  ],
+  "transferPathFiles": [
+    "src/extension/background/extension-base/src/api/bitcoin/transfer.ts",
+    "src/extension/background/extension-base/src/services/bitcoin-indexer-service/index.ts",
+    "src/util/bitcoin.ts",
+    "src/util/bitcoinDiscovery.ts",
+    "src/util/bitcoinKeyring.ts",
+    "src/util/bitcoinSend.ts",
+    "src/util/bitcoinTransaction.ts"
+  ],
+  "evidence": [
+    {
+      "txid": "741a837b51d964634448aa479359787a9e1a90ac754a09cb74291967b53132c9",
+      "sourceAddress": "tb1q77es2gt0mkz32yxser2w3t78r2y20f7s3xqptf",
+      "recipientAddress": "tb1q9x084ta6myvtcy697px3axazyhm6hpkp2dxze9",
+      "amountSat": "10000",
+      "outpoint": "b84ca02e89e73c3d4bfa41a14c63511e4ac9312be39cb4174950ecaab465422d:1",
+      "indexerUrl": "https://blockstream.info/testnet/api",
+      "timestamp": "2026-10-25T00:31:52Z",
+      "commit": "41bdb41d8d21db0d2c3c7a55b723b91c1c6e809a",
+      "operator": "codex (yarn test:smoke:bitcoin)"
+    }
+  ]
+}

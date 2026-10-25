@@ -1,0 +1,19 @@
+{
+  "status": "independently accepted source integrated; no repeat browser or package claim",
+  "sourceCommit": "67aa17d98f869a60e56622677d3bf8ebb1b0d078",
+  "integrationCommit": "84d4327acbb79ecaed77135e960ee16ff5256cf7",
+  "verifiedSnapshotFiles": 1382,
+  "nonDocumentationDifferences": [],
+  "documentationDifferences": [
+    "docs/release/contrast-contract-independent-review.json",
+    "docs/release/neon-glass-component-verification.md",
+    "docs/release/raw-colour-integration-review.json",
+    "docs/release/raw-colour-integration-verification.json",
+    "docs/release/semantic-colour-validation.json"
+  ],
+  "independentReview": {
+    "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/web-semantic-colour-independent-review-v1.json",
+    "sha256": "be4c79154f78ad5e424258f3638a32d50e6365eae723b92f5b93be247830b48e"
+  },
+  "checks": "19source/1382snapshot/17evidence pins; independent 502 CSS recompilations,506 Git source pins,17 exact Vue descriptors,30 unit tests"
+}

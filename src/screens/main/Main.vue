@@ -7,6 +7,8 @@
       @toggleSettingsVisible="toggleSettingsVisible"
     />
 
+    <LegacyWalletUpgradeNotice />
+
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
       @close="setSelectWalletPopupVisible"
@@ -21,28 +23,33 @@
       @closeSelectWalletPopup="setSelectWalletPopupVisible"
     />
 
-    <SettingsPopup
-      v-if="showSettings"
-      @handlerClose="toggleSettingsVisible"
-      @openFiatsPopup="toggleFiatsPopupVisible"
-      @openLanguagePopup="toggleLanguagePopupVisible"
-      @openAboutPopup="toggleAboutPopupVisible"
-      @openManageAuths="toggleManageAuthsVisible"
-    />
-
     <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" @handlerClose="toggleFiatsPopupVisible" />
 
     <LanguagePopup v-if="showLanguagePopup" @handlerClose="toggleLanguagePopupVisible" />
 
     <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
-    <keep-alive :include="['Wallet']">
-      <router-view
-        class="main-child"
-        @openFiatsPopup="toggleFiatsPopupVisible"
-        @closeSelectWalletPopup="setSelectWalletPopupVisible"
-      />
-    </keep-alive>
+    <LegacyExposureBanner />
+    <AccountAccessBanner />
+    <p v-if="accountsStore.selectedWallet.isMnemonicUnverified" class="json-backup-notice" role="status" tabindex="0">
+      {{ $t('accounts.jsonBackupOnly') }}
+    </p>
+
+    <main class="main-content">
+      <router-view v-slot="{ Component, route }">
+        <keep-alive :max="20">
+          <component
+            :is="Component"
+            :key="route.fullPath"
+            class="main-child"
+            @openFiatsPopup="toggleFiatsPopupVisible"
+            @openLanguagePopup="toggleLanguagePopupVisible"
+            @openAboutPopup="toggleAboutPopupVisible"
+            @closeSelectWalletPopup="setSelectWalletPopupVisible"
+          />
+        </keep-alive>
+      </router-view>
+    </main>
 
     <Menu v-if="showMenu" />
   </div>
@@ -55,24 +62,28 @@ import Header from './Header.vue';
 import Menu from './Menu.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import WalletDetailsPopup from './WalletDetailsPopup.vue';
-import SettingsPopup from './SettingsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
+import LegacyWalletUpgradeNotice from './LegacyWalletUpgradeNotice.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
+import AccountAccessBanner from '@/components/AccountAccessBanner.vue';
+import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
 export default defineComponent({ name: 'Main',
   components: {
+    AccountAccessBanner,
+    LegacyExposureBanner,
     Menu,
     Header,
     FiatsPopup,
     AboutPopup,
     ManageAuths,
-    SettingsPopup,
     LanguagePopup,
     SelectWalletPopup,
     WalletDetailsPopup,
+    LegacyWalletUpgradeNotice,
   },
   data() {
     return {
@@ -91,11 +102,14 @@ export default defineComponent({ name: 'Main',
   },
   computed: {
     highlightSettingsIcon() {
-      return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
+      return this.$route.meta.primaryNavigation === 'settings' || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
     },
     showMenu() {
-      return this.accountsStore.selectedWallet.isSubstrate;
+      return Boolean(this.accountsStore.selectedWallet.address);
     },
+  },
+  mounted() {
+    void this.accountsStore.syncSoraDisclaimerStatus();
   },
   deactivated() {
     this.showSelectWalletPopup = false;
@@ -125,7 +139,7 @@ export default defineComponent({ name: 'Main',
           if (this.showFiatsPopup) this.showSettings = false;
     },
     toggleSettingsVisible() {
-      if (!this.showSettings && (this.showFiatsPopup || this.showLanguagePopup || this.showAboutPopup)) {
+      if (this.showFiatsPopup || this.showLanguagePopup || this.showAboutPopup) {
             this.showFiatsPopup = false;
             this.showAboutPopup = false;
             this.showLanguagePopup = false;
@@ -133,7 +147,7 @@ export default defineComponent({ name: 'Main',
             return;
           }
 
-          this.showSettings = !this.showSettings;
+          if (this.$route.name !== 'Settings') this.$router.push({ name: 'Settings' });
     },
     setSelectWalletPopupVisible(value = false) {
       this.showSelectWalletPopup = value;
@@ -149,6 +163,19 @@ export default defineComponent({ name: 'Main',
 </script>
 
 <style lang="scss" scoped>
+.json-backup-notice {
+  margin: 0 $default-padding 8px;
+  padding: 8px 10px;
+  max-height: 25vh;
+  overflow: auto;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+  color: $default-white;
+  background: $secondary-background-color;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
 .main {
   display: flex;
   flex-direction: column;
@@ -156,9 +183,21 @@ export default defineComponent({ name: 'Main',
   width: 100%;
   height: $default-height-page;
 
-  .main-child {
-    height: $default-height-page;
+  .main-content {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
     width: 100%;
+    overflow: hidden;
+  }
+
+  .main-child {
+    min-height: 0;
+    height: 100%;
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
   }
 }
 </style>

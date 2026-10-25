@@ -1,0 +1,874 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-24",
+  "sourceCommit": "a5ad9f4e",
+  "status": "Exact warning baseline accepted for the integrated production Firefox artifact; runtime and store gates remain separate.",
+  "webExtVersion": "10.6.0",
+  "summary": {
+    "errors": 0,
+    "notices": 0,
+    "warnings": 42
+  },
+  "warningCodes": {
+    "DANGEROUS_EVAL": 41,
+    "UNSAFE_VAR_ASSIGNMENT": 1
+  },
+  "previousWarningSetSha256": "bf322f7605bff7f5d7cb940f52474ca712851cec0241dffc3ce316336224d04c",
+  "currentWarningSetSha256": "5391a4d320c2c36e48147264ac1ccb48078629c19b8ef882acc93f671377342a",
+  "previousBaselineSha256": "58525212ba325751c568752f4350a20357f3ac5ea48f63a05c793b924510a59c",
+  "currentBaselineSha256": "511fcac23cebfcd005a0ac37848cb65bc9b15646382aa13578a2d42936c86a37",
+  "rawReports": {
+    "previous": {
+      "path": ".tmp/firefox-previous-raw-warnings.json",
+      "sha256": "34589f1ee01335d90c3ea0750762ad162f6e0b57a5735a0323452b59f6991950"
+    },
+    "current": {
+      "path": ".tmp/firefox-integration-raw-warnings.json",
+      "sha256": "7143f35d2e9c4915a0a41887bd84a28dee56186a7ab1764db74d19385c25f8e6"
+    }
+  },
+  "unchangedWarningArtifacts": [
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
+    },
+    {
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
+    },
+    {
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    }
+  ],
+  "previousArtifacts": [
+    {
+      "file": "chunks/_plugin-vue_export-helper.js",
+      "sha256": "9afcb2188837dd1519b7e87582045e3262475a8fe77bf1b99dae634f5cad50be"
+    },
+    {
+      "file": "chunks/accounts.js",
+      "sha256": "bb1415b175ae8b8de70569c6c77a817f6ca2f027e8d3575cff9693899cc7bba2"
+    },
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
+    },
+    {
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
+    },
+    {
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js",
+      "sha256": "3ab057a93b06cfa961758ac2a24f1fd17652871f155e3695885b4f6d9da3cc87"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "8dcb6554e793c620dd0824c877dd1a5017ae71595674c1f04d2deb0499b28b10"
+    }
+  ],
+  "currentArtifacts": [
+    {
+      "file": "chunks/accounts.js",
+      "sha256": "86fd4d74948c9df92e848e9cd4e69420be31ee5bc6a32f98ea5c2a5fb4ba7525"
+    },
+    {
+      "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+      "sha256": "f7855b2df950c4a7a86982e88b1b3d949b2beec7c83806d95c2d1f08a5c16f82"
+    },
+    {
+      "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+      "sha256": "349dfef22361ded6842f0de226191ac42a6d18f19442d250731525e4e2770874"
+    },
+    {
+      "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+      "sha256": "46bef1a99f48a515eab7c04f560f0f8ee729bddb69999884bf5a255c3d05318b"
+    },
+    {
+      "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+      "sha256": "be23db7078948ed469145c0495029212c9a74b891b5725af3dd3226debcd8fca"
+    },
+    {
+      "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+      "sha256": "e727ad45074708262fcbedf11062d288209da4982a7ecd1dff9fd7c824be2f7e"
+    },
+    {
+      "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+      "sha256": "60e8afee4d033961c5816edb9df0f6f1114e9a790ee1ec9d47a22d6464f691bf"
+    },
+    {
+      "file": "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js",
+      "sha256": "baa0bea291c51fd9d534b4eaa2b812283e077204dfb78ec336f66d60a83e9f75"
+    },
+    {
+      "file": "chunks/soramitsuUI.js",
+      "sha256": "09605c5a25df4db60d317b748b5c00ed0a290ce17ea4b06da3ad1c73b3e23ed4"
+    },
+    {
+      "file": "chunks/usePortfolioPreferences.js",
+      "sha256": "cf811c12d2c9cf74f5f75b161e6f774a7263ae5dfac3e6b5f66320c7273edcaf"
+    }
+  ],
+  "comparison": {
+    "totalSites": 42,
+    "byteIdenticalContexts": 37,
+    "renamedMinifiedContexts": 5,
+    "unchangedArtifactCount": 6
+  },
+  "checks": [
+    "Previous lint findings reproduce the exact previously recorded warning-set digest. Candidate baseline independently regenerated from current findings and artifact bytes is exactly equal to the supplied candidate.",
+    "Every warning matches prior code, message and description; each old/new file, line, column and bounded code context is recorded below.",
+    "Six warning-bearing vendor files are byte-identical. The changed subwallet vendor chunk retains the same empty Function feature probe behind jitless/Cloudflare checks and a catch fallback.",
+    "The existing Cardano WASM-to-JavaScript Function wrappers and dependency polyfills are retained byte-for-byte, not newly introduced eval sites. Their execution remains subject to the unchanged CSP.",
+    "The one DOM warning is Vue runtime insertStaticContent, moved from _plugin-vue_export-helper.js to usePortfolioPreferences.js during shared-chunk layout changes.",
+    "Current and prior extension CSP are identical and do not allow unsafe-eval. No policy code, permitted warning codes, count checks, location fingerprinting or artifact hash checks were relaxed."
+  ],
+  "limitations": [
+    "This is an exact-artifact static-warning comparison, not runtime verification of every dependency branch.",
+    "This record does not approve Firefox runtime smoke, AMO signing, store publication or unrelated release gates."
+  ],
+  "sites": [
+    {
+      "code": "UNSAFE_VAR_ASSIGNMENT",
+      "previous": {
+        "file": "chunks/_plugin-vue_export-helper.js",
+        "line": 22,
+        "column": 11054,
+        "context": "&&(i===a||i.nextSibling))for(;t.insertBefore(i.cloneNode(!0),n),!(i===a||!(i=i.nextSibling)););else{eu.innerHTML=Xl(r===`svg`?`<svg>${e}</svg>`:r===`mathml`?`<math>${e}</math>`:e);let i=eu.content;if(r===`svg`||r===`mathml`){let e=i.firstChild;for(;e"
+      },
+      "current": {
+        "file": "chunks/usePortfolioPreferences.js",
+        "line": 1,
+        "column": 1670,
+        "context": "&&(i===a||i.nextSibling))for(;t.insertBefore(i.cloneNode(!0),n),!(i===a||!(i=i.nextSibling)););else{Ve.innerHTML=Re(r===`svg`?`<svg>${e}</svg>`:r===`mathml`?`<math>${e}</math>`:e);let i=Ve.content;if(r===`svg`||r===`mathml`){let e=i.firstChild;for(;e"
+      },
+      "identicalContext": false,
+      "rationale": "Vue insertStaticContent template insertion moved to another shared UI chunk; only the local template-element and Trusted Types wrapper identifiers changed. The static HTML insertion operation and inputs are unchanged."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+        "line": 1,
+        "column": 387,
+        "context": "\"object\"&&self)||r(typeof Fr==\"object\"&&Fr)||r(typeof a==\"object\"&&a)||(function(){return this})()||Function(\"return this\")()})),U=s(((a,t)=>{t.exports=function(r){try{return!!r()}catch{return!0}}})),lr=s(((a,t)=>{t.exports=!U()(function(){var r=(fun"
+      },
+      "current": {
+        "file": "chunks/background-vendor/core-js-pure-DilFdaL6.js",
+        "line": 1,
+        "column": 387,
+        "context": "\"object\"&&self)||r(typeof Fr==\"object\"&&Fr)||r(typeof a==\"object\"&&a)||(function(){return this})()||Function(\"return this\")()})),U=s(((a,t)=>{t.exports=function(r){try{return!!r()}catch{return!0}}})),lr=s(((a,t)=>{t.exports=!U()(function(){var r=(fun"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+        "line": 1,
+        "column": 10995,
+        "context": "),V=c(((s,r)=>{var n=yt(),o=typeof self==\"object\"&&self&&self.Object===Object&&self;r.exports=n||o||Function(\"return this\")()})),cr=c(((s,r)=>{r.exports=V().Symbol})),un=c(((s,r)=>{var n=cr(),o=Object.prototype,t=o.hasOwnProperty,a=o.toString,e=n?n.t"
+      },
+      "current": {
+        "file": "chunks/background-vendor/lodash-Ba9bIE_F.js",
+        "line": 1,
+        "column": 10995,
+        "context": "),V=c(((s,r)=>{var n=yt(),o=typeof self==\"object\"&&self&&self.Object===Object&&self;r.exports=n||o||Function(\"return this\")()})),cr=c(((s,r)=>{r.exports=V().Symbol})),un=c(((s,r)=>{var n=cr(),o=Object.prototype,t=o.hasOwnProperty,a=o.toString,e=n?n.t"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+        "line": 1,
+        "column": 1237,
+        "context": "bject\"&&T&&T.Object===Object&&T,tr=typeof self==\"object\"&&self&&self.Object===Object&&self,j=Y||tr||Function(\"return this\")(),Z=typeof z==\"object\"&&z&&!z.nodeType&&z,m=Z&&typeof g==\"object\"&&g&&!g.nodeType&&g,tt=m&&m.exports===Z,k=tt&&Y.process,rt=(f"
+      },
+      "current": {
+        "file": "chunks/background-vendor/lodash.merge-7jWe4BT9.js",
+        "line": 1,
+        "column": 1237,
+        "context": "bject\"&&T&&T.Object===Object&&T,tr=typeof self==\"object\"&&self&&self.Object===Object&&self,j=Y||tr||Function(\"return this\")(),Z=typeof z==\"object\"&&z&&!z.nodeType&&z,m=Z&&typeof g==\"object\"&&g&&!g.nodeType&&g,tt=m&&m.exports===Z,k=tt&&Y.process,rt=(f"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/soramitsuUI.js",
+        "line": 1,
+        "column": 1052,
+        "context": "ect`&&t&&t.Object===Object&&t,we=typeof self==`object`&&self&&self.Object===Object&&self,Te=Ce||we||Function(`return this`)(),Ee=Te.Symbol,De=Object.prototype,Oe=De.hasOwnProperty,ke=De.toString,Ae=Ee?Ee.toStringTag:void 0;function je(e){var t=Oe.cal"
+      },
+      "current": {
+        "file": "chunks/soramitsuUI.js",
+        "line": 1,
+        "column": 1090,
+        "context": "ect`&&t&&t.Object===Object&&t,De=typeof self==`object`&&self&&self.Object===Object&&self,Oe=Ee||De||Function(`return this`)(),H=Oe.Symbol,ke=Object.prototype,Ae=ke.hasOwnProperty,je=ke.toString,Me=H?H.toStringTag:void 0;function Ne(e){var t=Ae.call(e"
+      },
+      "identicalContext": false,
+      "rationale": "The fixed return-this global-object fallback remains after global/self checks; only surrounding minified local identifiers changed."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 3794,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 3794,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 4557,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 4557,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 6152,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 6152,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 13987,
+        "context": "ing,w=/^\\s*(?:function)?\\*/,E=qt()(),g=Object.getPrototypeOf,v=function(){if(!E)return!1;try{return Function(\"return function*() {}\")()}catch{}},m;A.exports=function(T){if(typeof T!=\"function\")return!1;if(w.test(c.call(T)))return!0;if(!E)return r.cal"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 13987,
+        "context": "ing,w=/^\\s*(?:function)?\\*/,E=qt()(),g=Object.getPrototypeOf,v=function(){if(!E)return!1;try{return Function(\"return function*() {}\")()}catch{}},m;A.exports=function(T){if(typeof T!=\"function\")return!1;if(w.test(c.call(T)))return!0;if(!E)return r.cal"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 16993,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 16993,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 18504,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 1,
+        "column": 18504,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "column": 3745,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "column": 3745,
+        "context": "E,v.concat(r.call(arguments)))},O=Math.max(0,g.length-v.length),k=[],s=0;s<O;s++)k.push(\"$\"+s);if(m=Function(\"binder\",\"return function (\"+k.join(\",\")+\"){ return binder.apply(this,arguments); }\")(T),g.prototype){var B=function(){};B.prototype=g.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "column": 5256,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/background-vendor/assert-Blv9rAXX.js",
+        "line": 56,
+        "column": 5256,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?r:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?r:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 55341,
+        "context": "?g:this}return o.apply(s,u(a,arguments))},S=h(0,o.length-a.length),p=[],_=0;_<S;_++)p[_]=\"$\"+_;if(y=Function(\"binder\",\"return function (\"+i(p,\",\")+\"){ return binder.apply(this,arguments); }\")(l),o.prototype){var v=function(){};v.prototype=o.prototype"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 55341,
+        "context": "?g:this}return o.apply(s,u(a,arguments))},S=h(0,o.length-a.length),p=[],_=0;_<S;_++)p[_]=\"$\"+_;if(y=Function(\"binder\",\"return function (\"+i(p,\",\")+\"){ return binder.apply(this,arguments); }\")(l),o.prototype){var v=function(){};v.prototype=o.prototype"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 57909,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":n,\"%eval%\":eval,\"%EvalError%\":u,\"%Float16Array%\":typeof Float16Array>\"u\"?t:Float16Array,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 57909,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":n,\"%eval%\":eval,\"%EvalError%\":u,\"%Float16Array%\":typeof Float16Array>\"u\"?t:Float16Array,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 66867,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 66867,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 74707,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 74707,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 81879,
+        "context": "u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 81879,
+        "context": "u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 83390,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 83390,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 92669,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 92669,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":h,\"%eval%\":eval,\"%EvalError%\":n,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%FinalizationReg"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 100024,
+        "context": "u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 100024,
+        "context": "u,i.concat(t.call(arguments)))},a=Math.max(0,r.length-i.length),y=[],l=0;l<a;l++)y.push(\"$\"+l);if(s=Function(\"binder\",\"return function (\"+y.join(\",\")+\"){ return binder.apply(this,arguments); }\")(o),r.prototype){var S=function(){};S.prototype=r.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 101535,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/background-vendor/bcryptjs-DP6KoUS7.js",
+        "line": 2,
+        "column": 101535,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>\"u\"?t:Float32Array,\"%Float64Array%\":typeof Float64Array>\"u\"?t:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+        "line": 2,
+        "column": 425775,
+        "context": "ion gs(g){let t=I(g).msCrypto;return x(t)}function ls(){return x(new Map)}function ps(g,t){return x(Function(u(g,t)))}function ws(g){return x(new Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Functi"
+      },
+      "current": {
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+        "line": 2,
+        "column": 425775,
+        "context": "ion gs(g){let t=I(g).msCrypto;return x(t)}function ls(){return x(new Map)}function ps(g,t){return x(Function(u(g,t)))}function ws(g){return x(new Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Functi"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+        "line": 2,
+        "column": 425919,
+        "context": "w Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Function(u(g,t)))}function hs(g,t,e){return x(new Uint8Array(I(g),t>>>0,e>>>0))}function fs(g){return x(new Uint8Array(g>>>0))}function ys(g){let t=I("
+      },
+      "current": {
+        "file": "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-CJmY2aZ2.js",
+        "line": 2,
+        "column": 425919,
+        "context": "w Uint8Array(I(g)))}function cs(){return x({})}function bs(){return x([])}function us(g,t){return x(Function(u(g,t)))}function hs(g,t,e){return x(new Uint8Array(I(g),t>>>0,e>>>0))}function fs(g){return x(new Uint8Array(g>>>0))}function ys(g){let t=I("
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/background-vendor/subwallet-keyring-B3zf0Gjr.js",
+        "line": 2,
+        "column": 66108,
+        "context": "fig.jitless||typeof navigator<\"u\"&&navigator?.userAgent?.includes(\"Cloudflare\"))return!1;try{return Function(\"\"),!0}catch{return!1}});function $(N){if(W(N)===!1)return!1;let K=N.constructor;if(K===void 0||typeof K!=\"function\")return!0;let ee=K.protot"
+      },
+      "current": {
+        "file": "chunks/background-vendor/subwallet-keyring-Bg-H2EM9.js",
+        "line": 2,
+        "column": 66094,
+        "context": "fig.jitless||typeof navigator<\"u\"&&navigator?.userAgent?.includes(\"Cloudflare\"))return!1;try{return Function(\"\"),!0}catch{return!1}});function $(N){if(W(N)===!1)return!1;let K=N.constructor;if(K===void 0||typeof K!=\"function\")return!0;let ee=K.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 20,
+        "column": 472541,
+        "context": ",VS=n(((e,t)=>{var n=BS(),r=typeof self==`object`&&self&&self.Object===Object&&self;t.exports=n||r||Function(`return this`)()})),HS=n(((e,t)=>{t.exports=VS().Symbol})),US=n(((e,t)=>{var n=HS(),r=Object.prototype,i=r.hasOwnProperty,a=r.toString,o=n?n."
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 16,
+        "column": 475572,
+        "context": ",Dx=a(((e,t)=>{var n=Ex(),r=typeof self==`object`&&self&&self.Object===Object&&self;t.exports=n||r||Function(`return this`)()})),Ox=a(((e,t)=>{t.exports=Dx().Symbol})),Noe=a(((e,t)=>{var n=Ox(),r=Object.prototype,i=r.hasOwnProperty,a=r.toString,o=n?n"
+      },
+      "identicalContext": false,
+      "rationale": "The fixed return-this global-object fallback remains after global/self checks; only surrounding minified local identifiers changed."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 30,
+        "column": 10260,
+        "context": "ject`&&E&&E.Object===Object&&E,te=typeof self==`object`&&self&&self.Object===Object&&self,ne=V||te||Function(`return this`)(),H=typeof e==`object`&&e&&!e.nodeType&&e,re=H&&typeof t==`object`&&t&&!t.nodeType&&t,U=re&&re.exports===H,W=U&&V.process,ie=f"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 26,
+        "column": 10243,
+        "context": "bject`&&p&&p.Object===Object&&p,te=typeof self==`object`&&self&&self.Object===Object&&self,H=V||te||Function(`return this`)(),ne=typeof e==`object`&&e&&!e.nodeType&&e,re=ne&&typeof t==`object`&&t&&!t.nodeType&&t,ie=re&&re.exports===ne,U=ie&&V.process"
+      },
+      "identicalContext": false,
+      "rationale": "The fixed return-this global-object fallback remains after global/self checks; only surrounding minified local identifiers changed."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 43,
+        "column": 8489,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "column": 8489,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 43,
+        "column": 9254,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "column": 9254,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 43,
+        "column": 10850,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "column": 10850,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 43,
+        "column": 18679,
+        "context": "ing,i=/^\\s*(?:function)?\\*/,a=i8()(),o=Object.getPrototypeOf,s=function(){if(!a)return!1;try{return Function(`return function*() {}`)()}catch{}},c;t.exports=function(e){if(typeof e!=`function`)return!1;if(i.test(r.call(e)))return!0;if(!a)return n.cal"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "column": 18679,
+        "context": "ing,i=/^\\s*(?:function)?\\*/,a=E6()(),o=Object.getPrototypeOf,s=function(){if(!a)return!1;try{return Function(`return function*() {}`)()}catch{}},c;t.exports=function(e){if(typeof e!=`function`)return!1;if(i.test(r.call(e)))return!0;if(!a)return n.cal"
+      },
+      "identicalContext": false,
+      "rationale": "The fixed generator-function feature probe remains inside try/catch; only its surrounding imported helper identifier changed."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 43,
+        "column": 21686,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "column": 21686,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 43,
+        "column": 23198,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 39,
+        "column": 23198,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 51688,
+        "context": "?n:this}return t.apply(e,a(c,arguments))},d=r(0,t.length-c.length),f=[],p=0;p<d;p++)f[p]=`$`+p;if(l=Function(`binder`,`return function (`+s(f,`,`)+`){ return binder.apply(this,arguments); }`)(u),t.prototype){var m=function(){};m.prototype=t.prototype"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 51692,
+        "context": "?n:this}return t.apply(e,a(c,arguments))},d=r(0,t.length-c.length),f=[],p=0;p<d;p++)f[p]=`$`+p;if(l=Function(`binder`,`return function (`+s(f,`,`)+`){ return binder.apply(this,arguments); }`)(u),t.prototype){var m=function(){};m.prototype=t.prototype"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 54406,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":i,\"%eval%\":eval,\"%EvalError%\":a,\"%Float16Array%\":typeof Float16Array>`u`?n:Float16Array,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 54410,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":i,\"%eval%\":eval,\"%EvalError%\":a,\"%Float16Array%\":typeof Float16Array>`u`?n:Float16Array,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 63668,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 63672,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 71493,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 71497,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 78654,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 78658,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 80166,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 80170,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 89425,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 89429,
+        "context": "URIComponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":r,\"%eval%\":eval,\"%EvalError%\":i,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%FinalizationReg"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 96771,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 96775,
+        "context": "e,a.concat(n.call(arguments)))},c=Math.max(0,t.length-a.length),l=[],u=0;u<c;u++)l.push(`$`+u);if(o=Function(`binder`,`return function (`+l.join(`,`)+`){ return binder.apply(this,arguments); }`)(s),t.prototype){var d=function(){};d.prototype=t.protot"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    },
+    {
+      "code": "DANGEROUS_EVAL",
+      "previous": {
+        "file": "chunks/accounts.js",
+        "line": 52,
+        "column": 98283,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "current": {
+        "file": "chunks/accounts.js",
+        "line": 48,
+        "column": 98287,
+        "context": "omponent,\"%encodeURI%\":encodeURI,\"%encodeURIComponent%\":encodeURIComponent,\"%Error%\":Error,\"%eval%\":eval,\"%EvalError%\":EvalError,\"%Float32Array%\":typeof Float32Array>`u`?n:Float32Array,\"%Float64Array%\":typeof Float64Array>`u`?n:Float64Array,\"%Finaliz"
+      },
+      "identicalContext": true,
+      "rationale": "Warning context is byte-identical to the prior production artifact."
+    }
+  ]
+}

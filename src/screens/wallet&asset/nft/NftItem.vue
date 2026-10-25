@@ -31,13 +31,14 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { type RouteLocationRaw } from 'vue-router';
 import type { FearlessNft } from '@extension-base/services/nft-service/types';
-import fallbackNftImage from '@/assets/fearless-logo-animated.gif';
+import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { Components } from '@/router/routes';
 import router from '@/router';
 
 type Props = {
   nft: FearlessNft;
   collectionName?: string;
+  chainId: string;
 };
 const route = useRoute();
 const props = defineProps<Props>();
@@ -55,7 +56,10 @@ const isMp4 = computed(() => contentType.value === 'video/mp4');
 const imageUrl = computed(() => props.nft.image ?? fallbackNftImage);
 
 const onNavigate = () => {
-  const route: RouteLocationRaw = { name: Components.NftDetails, params: { id: props.nft.id, contract: contract.value } };
+  const route: RouteLocationRaw = {
+    name: Components.NftDetails,
+    params: { chainId: props.chainId, id: props.nft.id, contract: contract.value },
+  };
   router.push(route);
 };
 </script>

@@ -1,9 +1,9 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import { FPNumber } from '@sora-substrate/util';
 import type { ApiPromise } from '@polkadot/api';
 import type State from '@extension-base/background/handlers/State';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
+import { FPNumber } from '@/sora/number';
 import { CHAIN_IDS, EQUILIBRIUM } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 
@@ -21,11 +21,13 @@ export default class EquilibriumBalanceService {
   constructor(private readonly state: State) {}
 
   subscribeBalance(address: string, api: ApiPromise) {
+    const network = Object.values(this.state.networkService.networkMap).find(({ name }) => isSameString(name, EQUILIBRIUM));
+    if (!network) return () => {};
     const {
       parentId,
       assets,
       name: networkName,
-    } = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, EQUILIBRIUM))!;
+    } = network;
 
     const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
 

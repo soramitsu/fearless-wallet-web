@@ -11,6 +11,7 @@ import type {
 import type { NetworkName } from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { IS_EXTENSION_SMOKE } from '@/consts/global';
 
 type UpdateSub = {
   name: NetworkName;
@@ -67,7 +68,7 @@ export class SubscriptionService {
   constructor(private state: State) {
     this.logger = createLogger('Subscription');
 
-    this.init();
+    void this.init().catch(() => this.logger.error('Unable to persist authorization account display state'));
   }
 
   // Clear a previous subscriber
@@ -86,7 +87,12 @@ export class SubscriptionService {
     return (subscription: unknown): void => {
       if (this.subscriptionsPorts[id]) {
         try {
-          port?.postMessage({ id, subscription });
+          if (port) port.postMessage({ id, subscription });
+          else {
+            const channel = new BroadcastChannel('sw-messages');
+            channel.postMessage({ id, subscription });
+            channel.close();
+          }
         } catch (error) {
           console.info('Error occurred while trying to post message', error);
 
@@ -261,25 +267,17 @@ export class SubscriptionService {
       });
   }
 
-  init() {
-    this.state.requestService.getAuthorize((authUrls) => {
-      const previousAuth = authUrls;
-
-      if (previousAuth && Object.keys(previousAuth).length) {
-        Object.keys(previousAuth).forEach((url) => {
-          previousAuth[url].allowedAccountsMap = previousAuth[url].isAllowed
-            ? this.state.getAddressList(true)
-            : this.state.getAddressList();
-        });
+  async init(): Promise<void> {
+    await this.state.requestService.mutateAuthorizations((authUrls) => {
+      for (const auth of Object.values(authUrls)) {
+        auth.allowedAccountsMap = auth.isAllowed ? this.state.getAddressList(true) : this.state.getAddressList();
       }
-
-      const migrateValue = { ...previousAuth, ...authUrls };
-
-      this.state.requestService.setAuthorize(migrateValue);
     });
   }
 
   async fetchNetworkBalances(props: GetBalancesProps) {
+    if (IS_EXTENSION_SMOKE) return;
+
     const { address, walletEcosystem, isFirstRun } = props;
 
     if (isFirstRun) {

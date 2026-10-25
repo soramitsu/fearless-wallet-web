@@ -1,0 +1,299 @@
+{
+  "recordedAt": "2026-10-12T16:53:00.038115+00:00",
+  "status": "Scoped EVM grant revision, current-cache permission mutation and snapshot isolation checkpoint accepted locally. Cross-protocol signing, durable write-failure/restart behavior and overall release gates remain open.",
+  "baseCommit": "d78973793206ff8aec273eb8cd2623c128f99779",
+  "sourceCommit": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+  "harnessCommit": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+  "changedFiles": [
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts",
+    "src/extension/background/extension-base/src/background/handlers/State.ts",
+    "src/extension/background/extension-base/src/background/handlers/Tabs.ts",
+    "src/extension/background/extension-base/src/services/eip-service/index.ts",
+    "src/extension/background/extension-base/src/services/request-service/handlers/AuthRequestHandler.ts",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts",
+    "src/extension/background/extension-base/src/services/request-service/index.ts",
+    "src/extension/background/extension-base/src/services/request-service/types.ts",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/types.ts",
+    "tests/unit/auth-mutation-races.spec.ts",
+    "tests/unit/evm-authorization-revision.spec.ts",
+    "tests/unit/evm-request-handler.spec.ts",
+    "tests/unit/evm-signing-approval.spec.ts",
+    "tests/unit/evm-signing-context.spec.ts"
+  ],
+  "sourceSha256": {
+    "package.json": "4cd9cb62052f55c7d181bfd519d3f4734c4a4b539412f33516e477b3193b02dc",
+    "scripts/build-extension.mjs": "97a0f3084ccd47fae3d478b6ca3324ba8d51980c430df0cac8e0debe86bb682d",
+    "scripts/extension-smoke-portfolio.mjs": "3e136281d97bb964c1e7f8424b6a6389c302319263a36d705fa8adbf86cec173",
+    "scripts/extension-smoke-primitives.mjs": "18516e962066aa42a0cd09b783944b89831c575429da40276e58c5e78ea1d3f6",
+    "scripts/extension-smoke-signing.mjs": "938f8d81e2cb3138dda7b2ee681b1c6560e0276fa3c7e463f31624bcae1cc44f",
+    "scripts/extension-smoke-wallet-connect.mjs": "9189e5b1092ed2227d065df9afbf9128d3164581083ac8084622ee492a29d4e0",
+    "scripts/package-extension.mjs": "427fec7c94bca0ebbc7773c7126cdd53522be51ba66db30e247af06ab21daf64",
+    "scripts/solana-extension-smoke.mjs": "f2f3771ff32a0b6a2decdcb834e26829693194e385d62fe34fa390b3d12726ad",
+    "src/components/AboveForm.vue": "8c98721727ec2c1bc86e0a349a09a7bd017ccefb093ad58d4972aee0494a0f81",
+    "src/components/Checkbox.vue": "dd574236b715fbaacb20cddc705fc307ea16e71c491d04b19339ccc27adec4a4",
+    "src/components/FButton.vue": "ac5a4682d165fde5269dc822e3ed80e79fff2ea0b68d4a248e3c61bba94a2549",
+    "src/components/useModalFocus.ts": "1d6085b7096a52005b93d0807160ed9de75bf9c08361f76709b2f1b8a67c0c1a",
+    "src/extension/background/extension-base/src/background/handlers/Extension.ts": "7eebfb1a61c4f05c1ca3f1563149b15233b35235949f34093b0468b207dfd6bd",
+    "src/extension/background/extension-base/src/background/handlers/State.ts": "f9e89d89fbb8d66f88e698ce08d50603bb2d961954df6ca618967977fcb557a2",
+    "src/extension/background/extension-base/src/background/handlers/Tabs.ts": "d92921b84addf62fe457daae107f01ced13f7310ab6068ce781fbc6c17c33d3c",
+    "src/extension/background/extension-base/src/background/types/messages.ts": "25b454c63a3827867e1cd5569a2ffbd50f98924ef91cc0725ae78f06d09f7685",
+    "src/extension/background/extension-base/src/services/eip-service/index.ts": "b9ab022df09ff42f4817d9ce7dd4aebb06d1399d9358c05c996ade08ddcf8a7c",
+    "src/extension/background/extension-base/src/services/request-service/handlers/AuthRequestHandler.ts": "3bbc07d60f0247cc002c84eb5fb0181cdb912b6da84e9753057810e46ec9476c",
+    "src/extension/background/extension-base/src/services/request-service/handlers/EvmRequestHandler.ts": "817544e9202d59011f6f78e6ab735397f04c4fd6c674872ebbabb550c04c8346",
+    "src/extension/background/extension-base/src/services/request-service/handlers/evmSigningContext.ts": "4632dd5c9c09821c8d01fb7b271242b2a1ab66cee31269b217bbdc9f92b439b8",
+    "src/extension/background/extension-base/src/services/request-service/index.ts": "97e3427718d9579261f152a72cee0f7e0aa6a9fec64570ffa256dea46cb4ff6e",
+    "src/extension/background/extension-base/src/services/request-service/types.ts": "73f3d4b201dc191c41ca15944ec03f28dfece033a8d136a3a32eeac7f4611756",
+    "src/extension/background/extension-base/src/services/subscription-service/index.ts": "acc941d1a038446464ccafe1e3369741abcf2fcef0654d1b71d877db2f9df321",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/dapp.ts": "e909e9ab2cd64aa5fe9042c1606ce66dbce131cc4af484e1224055c837e75e0f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/index.ts": "565fdfcf8616479ca60bffc05fb45fcfca3dcc141d36be5812827e4472043762",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler.ts": "57b192fa6ec1bd48c32fac72083f8aced522077d87b049e4a0850fed12abbd75",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler.ts": "0402407918f04bec7fb55b378edb8b853ef3a14000e44f19faea19400922c9e9",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/signingContext.ts": "4de609ba19533e17c5c41a12005accf8729fad7d7b1705f30d5daec78814f56f",
+    "src/extension/background/extension-base/src/services/wallet-connect-service/types.ts": "f8ca57fc2ea5b4035cf7b01e776b13c1286a4e93762081adb0f53822670f45be",
+    "src/extension/background/extension-base/src/stores/Authorize.ts": "7e32a64b382b55bf60054541f67b67d0b7cbf762bce026ac00a6e134b263cfbb",
+    "src/extension/background/extension-base/src/stores/BaseExtension.ts": "cec9da878b248fec556353da8a3470be0e874408dbb051ea5599f88bb7f1efed",
+    "src/extension/background/extension-base/src/stores/BaseWeb.ts": "71ca44e27e13e9765253fa79c3a2546999882c01a315c4919afbfa7f057c0526",
+    "src/extension/background/extension-base/src/stores/SubscribableStore.ts": "99454352e7a8116d362afe6515c95577b32ce957b65cea00e4ea311374e81bc2",
+    "src/extension/messaging/index.ts": "30eb1e779e5c39f8ae448f01ff0f6f7aa71d89b2ec50a9a92095160b32570ef8",
+    "src/extension/messaging/wallet-connect-requests.ts": "d0dd03bdcfb8f6d4ab75f1b2d219465d8c45d125531d6d23928032cdabedfd0a",
+    "src/locales/akk/README.md": "a7409246587e5b0d06452eed038e895cba247c5380b596387aab7ae973689950",
+    "src/locales/akk/translation.json": "ddc7a7db81f296b5039e3d58bc179fc9ff63bfaf644e4934a3ad8ea74ebb2a4d",
+    "src/locales/egy/README.md": "2acf076428512b6d48b3a3753379100b6338680e02e3fa4ba638b2a35453f3e5",
+    "src/locales/egy/translation.json": "8c647d937648e37708cb76510f1ef5d8d30646588a93fc632e1bfbfa816e8821",
+    "src/locales/en/translation.json": "42028633c795e151115e4d8d83e132ddd9dcba20f4e1f3c411f54cd6f531a0c0",
+    "src/locales/ru/translation.json": "cae2c5e3f25772fd1a79ac5327b57291ec6dd67f653154e7b6199363b22779e4",
+    "src/screens/extension-ui/signing/Transaction.vue": "d1783a954fe99e8aad66cdd1a2bd551ac2fa141e078b1381c6a04663bba6aea0",
+    "src/screens/extension-ui/signing/WalletInfo.vue": "cee20ea3a4d5ceb74d659c7379c256b9b217562cc4a94c7ebfa8d18b7e0f39e7",
+    "src/screens/extension-ui/signing/requester.ts": "cfab45395524527b6ad83998e4076b5aa6503a222081fd1a5fd9f03f45de286c",
+    "src/screens/extension-ui/signing/review.ts": "4afb2b1d474ca9bd55f0f5275e00ed0bc411ccf4d9c36ecf98c5de04a4c93f87",
+    "src/screens/walletConnect/WalletConnectHeader.vue": "9ac712220c62054dab369a05172e71098e9de1ec050594760b961b133fec86f8",
+    "src/screens/walletConnect/WalletConnectRequestData.vue": "8b7e70f0967d3b15a971b436bb6594a6d3f6c764a507bfc8a282a2deaae44541",
+    "src/screens/walletConnect/WalletConnectSignConfirmation.vue": "9af50b223a4411aacf1de3ff3f7febde629e2db130b435c951748db2f22de80c",
+    "src/stores/extension/actions.ts": "31a211237693d7036a2d1d6ad573fb5a63e03ebaa8a0df34a553c5e5d6bfdcc3",
+    "src/util/evmMessageBytes.ts": "48f09485a2a98a2ab42414aa4ce0c0b61ec2de4dc4bae95ec9fa593fbde9e770",
+    "src/util/evmTransaction.ts": "ad880af05a184efadca576d72bf85c69c332363bdfaa226135b7edbf79b781b2",
+    "src/util/evmTypedData.ts": "9be8c21b068069db5a7cf55783197aecae01f42d6a69fe2c1f03823aa2efe140",
+    "src/util/solanaTransaction.ts": "3c8c54e088527b9b55a91a1305d23b7cc0f3d54fcd258ea8c073751016f271e5",
+    "tests/fixtures/legacy-305/chains-v13.snapshot.json": "fa6f0e23cd87dfb3e5536980591dd22ae30e49bf59d04dc2a0b31fc53237ea66",
+    "tests/unit/auth-mutation-races.spec.ts": "fbe8857609aef042263a8c12bb224e21d2f5b99303794ae5e3fcdd670f158fe5",
+    "tests/unit/evm-authorization-revision.spec.ts": "a5d7fb827aadf0fae37b9d18dca5e0efc15e4eb292244e3573b7dd8eeb85df5b",
+    "tests/unit/evm-request-handler.spec.ts": "a81d6a9b846133ba8ac0d0c7a247380f305313412a42e0ddde8de97813a43b7a",
+    "tests/unit/evm-signing-approval.spec.ts": "fd43a56c931b3fe7a88ba7be675dad22878ba939e5a3dc3ea2a7b0699d1df7fd",
+    "tests/unit/evm-signing-context.spec.ts": "454fd7da0626d4b52fa59b731f0cdef0313b2df7abc96822f9dbae3eb718e81c",
+    "tests/unit/evm-typed-data.spec.ts": "1d43b17874668608b7fb778048f892fe0b285200d1e2e41e94be9ccc36613c57",
+    "tests/unit/extension-request-queue.spec.ts": "5c9f7e1da0da579d6df46c351943f888e678c311ffa2c37f5e5a7f6a6a2d592d",
+    "tests/unit/signing-phishing-approval.spec.ts": "35649e58f3006d18fc86c939271886cdc2a6e9655a367877cb5b767cd681dd66",
+    "tests/unit/signing-request-lifecycle.spec.ts": "1fe5196cea0cbe4e693464e9671bd868aef749ce3b1f01622e691ec87967d385",
+    "tests/unit/signing-review.spec.ts": "ba9f1598c7ce1a13777ad851dfd5b9c07202b8738d3b8ad7bd9f1a2111ae28a1",
+    "tests/unit/solana-transaction.spec.ts": "e6c79abb61049ab72080a756f9573e1f908a49673694f59c059a8b963655815e",
+    "tests/unit/wallet-connect-approve.spec.ts": "90bfd23ade7c9e400908b40540626b1d971adda1d30e853c04382c80d2b4e521",
+    "tests/unit/wallet-connect-context.spec.ts": "29f0095b17303dc76672a503fd272b0728054912f190116cac484458033920a0",
+    "tests/unit/wallet-connect-request-data.spec.ts": "247cbedd9f24022c58561d725304da146d512b8cc7f4dd6f20013e7631f6e67f",
+    "tests/unit/wallet-connect-request-ownership.spec.ts": "bc6055e91a0d7c5429bd4601a9f39948171296bc6e14735520311fedd6dbbacf",
+    "tests/unit/wallet-connect-signing-lifecycle.spec.ts": "1c056a449b2a412b756a4903d15639fbb1ee1a522ab4d6dc41eda3ed1252a6b5",
+    "vite.config.shared.mjs": "6a0d033243e0f4351db390a9dd71665ef436dfe4d27cb36698563cb64afee6c2",
+    "yarn.lock": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+  },
+  "dependencySha256": {
+    "node_modules/ethers/package.json": "d644d7df228197962e4ca19824b06e8d50dce0b5ee2aced63dcfc2a11ec7b90f",
+    "node_modules/ethers/lib.esm/providers/abstract-signer.js": "b2be508623922d8555e56f06730777fd35f362d34766a8248e35c2d7f1e3efd5",
+    "node_modules/ethers/lib.esm/wallet/base-wallet.js": "9bfb412471e5fb83f3fd4d015c0707c6248bc276a4bcb010686cd59a3125eec6"
+  },
+  "behavior": [
+    "Per-origin EVM grant revisions bind queued requests to id, allowed status, account and selected network. Revocation/removal/change followed by restoration invalidates an old request; unrelated-origin or non-authority changes do not. Missing legacy revisions fail approval validation.",
+    "Admission waits for initial loading then captures current state. Approval reads an isolated current snapshot synchronously at each final key-export, transaction-broadcast or signature-release boundary; storage reads cannot yield between the authority check and local submission.",
+    "Authorization intent becomes authoritative in memory immediately. Stored snapshots are separate from caller/cache objects; older write completion and late initial reads cannot restore old authority. Reads and subscription publications return detached values.",
+    "Existing extension/web stores serialize persistence. An outer intent is enqueued before initial-load waiters run, preserving ordering when a waiter publishes a newer intent. No second persistence queue is introduced.",
+    "EVM revocation, Solana/Iroha disconnect, origin removal and account-scope changes atomically transform the latest cache after loading rather than republishing a stale whole map. Network activation additionally requires its captured origin revision to remain unchanged.",
+    "Cross-protocol approval preserves untouched scopes from the current allowed record; it rejects and consumes an approval whose origin was removed/replaced/globally changed. Explicit reauthorization from a denied record grants only the approved protocol and does not revive retained EVM/Substrate/Iroha scopes. Current selected network is retained."
+  ],
+  "validation": {
+    "fullSuite": {
+      "sourceCommit": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+      "log": "evm-grant-full-v1.log",
+      "passed": 2196,
+      "skipped": 18,
+      "failed": 0,
+      "filesPassed": 247,
+      "filesSkipped": 2,
+      "durationSeconds": 141.85
+    },
+    "focused": {
+      "sourceCommit": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+      "log": "evm-grant-focused-v3.log",
+      "passed": 184,
+      "failed": 0,
+      "filesPassed": 9
+    },
+    "checks": [
+      {
+        "log": "evm-grant-typecheck-v3.log",
+        "exitCode": 0
+      },
+      {
+        "log": "evm-grant-lint-v3.log",
+        "exitCode": 0
+      },
+      {
+        "log": "evm-grant-build-v1.log",
+        "exitCode": 0
+      },
+      {
+        "log": "evm-grant-package-v1.log",
+        "exitCode": 0
+      }
+    ],
+    "browser": {
+      "log": "evm-grant-browser-v1.log",
+      "results": "evm-grant-browser-v1/results.json",
+      "applicationSource": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+      "harnessSource": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+      "exitCode": 0,
+      "captures": 23,
+      "locales": [
+        "en-EN",
+        "ru-RU",
+        "akk-Xsux-x-old",
+        "egy-Egyp"
+      ],
+      "assertions": [
+        "Complete account/origin context and default Reject focus; no automatic approval.",
+        "Blind-signing controls require raw expansion and acknowledgement, preserve pending ownership, and block stale DOM actions.",
+        "Compact large text scrolls without horizontal overflow, with stacked equal-width actions and minimum touch targets.",
+        "Flagged origins have no approval action; typed-data validation blocks invalid requests and preserves false Boolean display."
+      ],
+      "visualReview": [
+        {
+          "path": "evm-grant-browser-v1/79-signing-compact-large-text.png",
+          "sha256": "c89b05207ac76e724de7d1d3b039a0f6392356a86d8b2833bcc73a041113b4cd",
+          "observation": "Scrolled compact large-text consent state retains wrapping acknowledgement, focused Reject and disabled Sign anyway."
+        },
+        {
+          "path": "evm-grant-browser-v1/86-signing-typed-false-en-EN.png",
+          "sha256": "861c26133d59b5b245dfb7b4108092377695254622072d2cff8f320c77e74604",
+          "observation": "Structured message displays approved:false and the reviewed Ethereum chain context in the scrolling view."
+        }
+      ],
+      "limits": "Existing signing-screen fixture matrix rechecked on the rebuilt artifact; two representative final raw captures inspected. Popup actions are intercepted before the worker. Local cryptographic/authorization behavior is separately tested with mocked RPC/mobile transports; no live mobile or public-chain qualification is claimed."
+    },
+    "build": {
+      "browser": "chrome",
+      "mode": "development",
+      "releaseFlags": {
+        "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+        "VUE_APP_ENABLE_IROHA_CONNECT": "false",
+        "VUE_APP_ENABLE_IROHA_TRANSFERS": "",
+        "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+        "VUE_APP_EXTENSION_SMOKE": "true",
+        "VUE_APP_TEST_ONLY": "true"
+      },
+      "schemaVersion": 2,
+      "sourceCommit": "e7d42f523b25aed3c7251a2e705eebac7d61d79c",
+      "sourceDirty": false,
+      "yarnLockSha256": "f353164cf24adbccd5f9724587a7e452f364f61da3e94ca612f0066c338afc51"
+    },
+    "buildFiles": {
+      "path": "evm-grant-build-files.json",
+      "count": 493
+    },
+    "archive": {
+      "path": "evm-grant-chrome-test.zip",
+      "sha256": "6f37a33cfa13950964cdc74bb0c517df0c034ab92b5b283c1679ef9b525ccb24",
+      "bytes": 19696049,
+      "archiveEntriesMatchBuildFiles": true
+    },
+    "commands": "evm-grant-commands.json"
+  },
+  "independentReview": {
+    "reviewer": "ios_font_qualification",
+    "result": "Independent review found delayed network-activation resurrection, concurrent stale whole-map writers, startup waiter write inversion and cross-ecosystem stale-grant approval. Sixteen actual-caller regressions were added by the reviewer. Final current-cache transforms, captured network revision, denied-scope behavior and detached getter/waiter/subject values were reviewed with no actionable scoped blocker.",
+    "scope": "Actual AuthRequestHandler, State/RequestService prototypes, Extension, Tabs and public EipService dispatch with public fixtures and controlled storage callbacks; no real key export or provider activity in the mutation-race suite."
+  },
+  "preservedDiagnostics": [
+    {
+      "log": "evm-grant-before.log",
+      "applicationBase": "d78973793206ff8aec273eb8cd2623c128f99779",
+      "failed": 7,
+      "passed": 1,
+      "note": "Initial actual signing/queue/store regression suite reproduced changed-away-and-back grants, stale reads, delayed persistence, old callbacks and mutable write snapshots."
+    },
+    {
+      "log": "evm-grant-focused-v1.log",
+      "failed": 1,
+      "passed": 160,
+      "note": "First fixed draft passed behavioral regressions; one publication-shape fixture omitted the new authorizationRevision field. Fixture corrected; typecheck/lint v1 were terminal zero."
+    },
+    {
+      "log": "evm-grant-focused-v2.log",
+      "passed": 167,
+      "failed": 0,
+      "note": "Revision-only draft passed before independent mutation-caller review exposed additional issues; not final acceptance."
+    },
+    {
+      "log": "evm-grant-mutation-before.log",
+      "failed": 13,
+      "passed": 1,
+      "note": "Actual-caller regressions on an uncommitted revision-only draft reproduced stale writers, startup write order and cross-protocol revival. The intermediate draft was not separately committed; final source and tests are pinned above. Two follow-up cases add network revoke-restore and denied-record reauthorization."
+    },
+    {
+      "log": "evm-grant-snapshot-before.log",
+      "failed": 1,
+      "skipped": 15,
+      "note": "Targeted root regression confirmed a grant-list consumer could mutate live authority without a setter/revision. Getter/load/waiter/subject isolation added. This was a targeted failing draft run, not a skipped final gate."
+    }
+  ],
+  "limits": [
+    "Store ordering and detached snapshots are tested with controlled callbacks. Durable revocation/error reporting after quota/disk/storage write failure and restart is not qualified here; legacy setters retain existing persistence-error machinery. This remains a release gate.",
+    "Revisions are memory-local because signing queues are memory-local. This checkpoint does not claim persisted queue recovery or revocation cancellation after local provider.broadcastTransaction or remote mobile submission has already begun.",
+    "Mobile method/session expiry/revision binding, immutable Substrate/Solana signing context and the remaining cross-protocol queues still require their own gates. Shared permission updates are covered here; full protocol signing acceptance is not.",
+    "Full WalletConnect review UI remains clipped/truncated and unqualified. Polkadot/TON/Iroha surfaces, final historical upgrades/private-chain reruns, physical accessibility, production artifacts and publication remain required.",
+    "No live relay, public-chain transfer or production key was used. Browser popup actions are intercepted before the worker; real local crypto uses public unfunded fixtures with mocked transports. All 18 inherited full-suite skips remain skips. The archive is a development artifact."
+  ],
+  "evidenceRoot": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012",
+  "evidenceSha256": {
+    "evm-grant-before.log": "f961faca50f6058f903976832409e91737b7858363c4efe54e5b55d4201ed9d9",
+    "evm-grant-browser-v1.log": "96888019d87f14978c2ff2db2c726088a7c6ca297f09b7723219b53028baf0a2",
+    "evm-grant-build-files.json": "78418c9cacf4203b3879a1aa5938e50850de6408c95feff7a0b21ed848f5933e",
+    "evm-grant-build-v1.log": "afd6cdcd1f84a72b8bd627681cf9bf5cf30293112df2cc6dc025584512075906",
+    "evm-grant-chrome-test.zip": "6f37a33cfa13950964cdc74bb0c517df0c034ab92b5b283c1679ef9b525ccb24",
+    "evm-grant-commands.json": "304f7730a101c36ab740ba68fc92b4854cd2ac1420b13412775aeb133a887875",
+    "evm-grant-focused-v1.log": "eabac586c0b309c186920f19f16d901103341ec95069c05be94b8f9eb0165f33",
+    "evm-grant-focused-v2.log": "500569c749d1eba50c9756b1511f7e55a64b0e43e467c2d9594d157164339602",
+    "evm-grant-focused-v3.log": "9aefb95046a6c48443697779780fef81c16dcbfe76726ae71b9005737c448f1e",
+    "evm-grant-full-v1.log": "9f540b79c5d2d8cd14006946606bfa5ae7094a1d5fbb59d11fae9dc652b77dc4",
+    "evm-grant-lint-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-grant-lint-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-grant-lint-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-grant-mutation-before.log": "d1c5f346079a8172e14a8eee212bb9ebd96b3698bbb63f00c176e7b415b292c0",
+    "evm-grant-package-v1.log": "0e189c25735e38a91a683591bd6bac42b372da81eacadd31ed7006f596764b72",
+    "evm-grant-snapshot-before.log": "7bd3c6cacb0f548fef8b38d09186a44db39806ee14f188a9b1f4d70913e89a17",
+    "evm-grant-typecheck-v1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-grant-typecheck-v2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-grant-typecheck-v3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evm-grant-browser-v1/77-signing-akk-Xsux-x-old-top.png": "c4fe85f088eb0ed174c09ec19047c619be119d093833ee6a048b5a3246bbf94a",
+    "evm-grant-browser-v1/77-signing-egy-Egyp-top.png": "e095f27cba27471aef2fdb135c04e0b3cd885da987dd0dd90b192a849637a8d4",
+    "evm-grant-browser-v1/77-signing-en-EN-top.png": "984016c3e039330076069c705ee519df5d9791e9142a5e5af20b8fdc40d66ba3",
+    "evm-grant-browser-v1/77-signing-ru-RU-top.png": "45d82536cb3f496119f98d4a18b940c89cbf4b908c64a80ff710c1e6e9bea848",
+    "evm-grant-browser-v1/78-signing-akk-Xsux-x-old-consent.png": "af39fd27546b36bb36c1e7113badcd9411056f6bdabfd3b30d6c64a458aa5cf4",
+    "evm-grant-browser-v1/78-signing-egy-Egyp-consent.png": "bb5f645476a6fa0036e60305afcc2a2efb204e706c4a4e58da82fa81f37f3b8c",
+    "evm-grant-browser-v1/78-signing-en-EN-consent.png": "555dc379c59290f03bc9b93e535f94aac18d5707f3bd3b79aced8988dfe9e03a",
+    "evm-grant-browser-v1/78-signing-ru-RU-consent.png": "612abcb51eb642e4beb3161915e7f8ce33ee7778d9fb3f650e65ed9aa14a0a1d",
+    "evm-grant-browser-v1/79-signing-compact-large-text-top.png": "10e7c4d348b8150e30351c9efbb494fa476eaebe478900cdcc734a1b23e197ff",
+    "evm-grant-browser-v1/79-signing-compact-large-text.png": "c89b05207ac76e724de7d1d3b039a0f6392356a86d8b2833bcc73a041113b4cd",
+    "evm-grant-browser-v1/80-signing-blind-consent-ready.png": "23d8c4632808d4ba1cb75ea04163c75444806179f0fc8093dd6b38727753c918",
+    "evm-grant-browser-v1/81-signing-pending.png": "b0762640c0b83c797b8db87b9af60df8c9ff43eebe2c9e1b48eea830c45ad67c",
+    "evm-grant-browser-v1/82-signing-replacement.png": "a7bca0a4b7660d923be72dd6259db7e35553f1f7b88a259105880ed1932e77e0",
+    "evm-grant-browser-v1/83-signing-flagged.png": "23e7d90a790eedc59ad564103b6d164e70dee8849b099791cb7228a0c47ab500",
+    "evm-grant-browser-v1/84-signing-readable.png": "2646055c9820dacdb0f0c7c5edfa242eba277ff0d2ded691c3c182bf3f0750ea",
+    "evm-grant-browser-v1/85-signing-typed-blocked-akk-Xsux-x-old.png": "3c8756dd35d379af5ac6d3c76f98904255938883453832f881f0b8c6caf0fe34",
+    "evm-grant-browser-v1/85-signing-typed-blocked-egy-Egyp.png": "b78e595a54dc0220c825959441b824f8027b2e532295b860f91337f82aa6503b",
+    "evm-grant-browser-v1/85-signing-typed-blocked-en-EN.png": "534165927ba56713301091f47aa7a676a664e64e2d6b641973e60e981625053b",
+    "evm-grant-browser-v1/85-signing-typed-blocked-ru-RU.png": "242a69c23bba2221b93a9069c91dd3095b3ec5d0f593d5447a48e1111c75404b",
+    "evm-grant-browser-v1/86-signing-typed-false-akk-Xsux-x-old.png": "679a7d441dfd5112c7ad22f119ae3d44302fabb3b31dcbe63bbcd74f82ac480f",
+    "evm-grant-browser-v1/86-signing-typed-false-egy-Egyp.png": "4087f84b097526c69bef0763e0e9241303326eaf4ecaf0b2adf39651db5956b8",
+    "evm-grant-browser-v1/86-signing-typed-false-en-EN.png": "861c26133d59b5b245dfb7b4108092377695254622072d2cff8f320c77e74604",
+    "evm-grant-browser-v1/86-signing-typed-false-ru-RU.png": "a30cae601bb2a7e301e366dbc3c32c0e42b40289973de039f5202135ad95c41e",
+    "evm-grant-browser-v1/results.json": "6f72be46b567d98902b5245fa3a76bf17098a0148eb4e0468df8d2eadc89cba1"
+  }
+}

@@ -1,20 +1,45 @@
-import { bech32 } from '@scure/base';
 import { ripemd160 } from '@noble/hashes/legacy';
 import { sha256 } from '@noble/hashes/sha2';
 import * as ecc from 'tiny-secp256k1';
 
-import { isBitcoinAddress } from '@/util/bitcoin';
+import {
+  decodeBitcoinRecipient,
+  getBitcoinDustThresholdSat,
+  isBitcoinAddress,
+  type BitcoinRecipientType,
+} from '@/util/bitcoin';
 import { deriveBitcoinKey, type BitcoinDerivationNetwork } from '@/util/bitcoinKeyring';
 
-const DEFAULT_SEQUENCE = 0xffffffff;
+// Every input signals BIP125 replaceability. A retry after an ambiguous
+// broadcast deliberately spends the same coins, and opt-in RBF lets that
+// conflicting transaction replace the original on nodes without full-RBF, so
+// at most one of the two can ever confirm. The wallet does not bump fees.
+const RBF_SEQUENCE = 0xfffffffd;
 const SIGHASH_ALL = 0x01;
 const P2WPKH_INPUT_VBYTES = 68;
 const P2WPKH_OUTPUT_VBYTES = 31;
+const OUTPUT_VALUE_AND_LENGTH_BYTES = 9;
 const TX_LOCKTIME = 0;
 const TX_OVERHEAD_VBYTES = 11;
 const TX_VERSION = 2;
 
+// The wallet's own change is P2WPKH; 330 sat stays above Core's 294-sat P2WPKH
+// dust threshold so change is never non-standard.
 export const BITCOIN_P2WPKH_DUST_SAT = 330;
+export const BITCOIN_P2WPKH_INPUT_VBYTES = P2WPKH_INPUT_VBYTES;
+export const BITCOIN_RBF_SEQUENCE = RBF_SEQUENCE;
+
+/** Never below the wallet's 330-sat floor, and never below Core's dust threshold for the type. */
+export const getBitcoinMinimumOutputSat = (type: BitcoinRecipientType): number =>
+  Math.max(BITCOIN_P2WPKH_DUST_SAT, getBitcoinDustThresholdSat(type));
+
+const OUTPUT_SCRIPT_BYTES: Readonly<Record<BitcoinRecipientType, number>> = Object.freeze({
+  p2pkh: 25,
+  p2sh: 23,
+  p2wpkh: 22,
+  p2wsh: 34,
+  p2tr: 34,
+});
 
 export type BitcoinUtxo = {
   address?: string;
@@ -80,6 +105,18 @@ export const estimateP2wpkhTransactionVSize = (inputCount: number, outputCount: 
   return TX_OVERHEAD_VBYTES + inputCount * P2WPKH_INPUT_VBYTES + outputCount * P2WPKH_OUTPUT_VBYTES;
 };
 
+/** Virtual size of a transaction spending P2WPKH inputs to outputs of the given types. */
+export const estimateBitcoinTransactionVSize = (inputCount: number, outputTypes: BitcoinRecipientType[]): number => {
+  if (!Number.isInteger(inputCount) || inputCount <= 0) throw new BitcoinTransactionError('invalid_input_count');
+  if (!Array.isArray(outputTypes) || outputTypes.length === 0) throw new BitcoinTransactionError('invalid_output_count');
+
+  return (
+    TX_OVERHEAD_VBYTES +
+    inputCount * P2WPKH_INPUT_VBYTES +
+    outputTypes.reduce((total, type) => total + OUTPUT_VALUE_AND_LENGTH_BYTES + OUTPUT_SCRIPT_BYTES[type], 0)
+  );
+};
+
 export const buildBitcoinP2wpkhTransaction = ({
   changeAddress,
   feeRateSatPerVbyte,
@@ -97,7 +134,7 @@ export const buildBitcoinP2wpkhTransaction = ({
     feeRateSatPerVbyte,
     feeSat,
     inputCount: normalizedInputs.length,
-    outputCount: normalizedOutputs.length + (changeAddress ? 1 : 0),
+    outputTypes: [...normalizedOutputs.map(({ type }) => type), ...(changeAddress ? (['p2wpkh'] as const) : [])],
   });
   const change = inputTotal - paymentOutputTotal - fee;
 
@@ -107,7 +144,7 @@ export const buildBitcoinP2wpkhTransaction = ({
   if (change > 0) {
     if (!changeAddress) throw new BitcoinTransactionError('change_address_required');
     if (change < BITCOIN_P2WPKH_DUST_SAT) throw new BitcoinTransactionError('change_below_dust');
-    finalOutputs.push(normalizeOutput({ address: changeAddress, value: change }, network));
+    finalOutputs.push(normalizeChangeOutput({ address: changeAddress, value: change }, network));
   }
 
   const signingInputs = normalizedInputs.map<SigningInput>((input) => {
@@ -134,7 +171,7 @@ export const buildBitcoinP2wpkhTransaction = ({
     };
   });
   const serializedOutputs = finalOutputs.map<SerializedOutput>((output) => ({
-    script: getP2wpkhOutputScriptFromAddress(output.address),
+    script: output.script,
     value: output.value,
   }));
   const witnesses = signingInputs.map((input) => signP2wpkhInput(signingInputs, serializedOutputs, input));
@@ -178,34 +215,47 @@ const normalizeInputs = (inputs: BitcoinUtxo[]): BitcoinUtxo[] => {
   });
 };
 
-const normalizeOutputs = (outputs: BitcoinPaymentOutput[], network: BitcoinDerivationNetwork): BitcoinPaymentOutput[] => {
-  if (!Array.isArray(outputs) || outputs.length === 0) throw new BitcoinTransactionError('outputs_required');
-
-  return outputs.map((output) => normalizeOutput(output, network));
+type NormalizedOutput = BitcoinPaymentOutput & {
+  script: Uint8Array;
+  type: BitcoinRecipientType;
 };
 
-const normalizeOutput = (
-  output: BitcoinPaymentOutput,
-  network: BitcoinDerivationNetwork
-): BitcoinPaymentOutput => {
+const normalizeOutputs = (outputs: BitcoinPaymentOutput[], network: BitcoinDerivationNetwork): NormalizedOutput[] => {
+  if (!Array.isArray(outputs) || outputs.length === 0) throw new BitcoinTransactionError('outputs_required');
+
+  return outputs.map((output) => normalizePaymentOutput(output, network));
+};
+
+const normalizePaymentOutput = (output: BitcoinPaymentOutput, network: BitcoinDerivationNetwork): NormalizedOutput => {
+  const recipient = decodeBitcoinRecipient(output.address, network);
+
+  if (!recipient) throw new BitcoinTransactionError('invalid_output_address');
+  if (!isSafeSatoshi(output.value) || output.value < getBitcoinMinimumOutputSat(recipient.type)) {
+    throw new BitcoinTransactionError('invalid_output_value');
+  }
+
+  return { ...output, script: recipient.scriptPubKey, type: recipient.type };
+};
+
+const normalizeChangeOutput = (output: BitcoinPaymentOutput, network: BitcoinDerivationNetwork): NormalizedOutput => {
   if (!isBitcoinAddress(output.address, network)) throw new BitcoinTransactionError('invalid_output_address');
   if (!isSafeSatoshi(output.value) || output.value < BITCOIN_P2WPKH_DUST_SAT) {
     throw new BitcoinTransactionError('invalid_output_value');
   }
 
-  return output;
+  return normalizePaymentOutput(output, network);
 };
 
 const normalizeFee = ({
   feeRateSatPerVbyte,
   feeSat,
   inputCount,
-  outputCount,
+  outputTypes,
 }: {
   feeRateSatPerVbyte?: number;
   feeSat?: number;
   inputCount: number;
-  outputCount: number;
+  outputTypes: BitcoinRecipientType[];
 }): number => {
   if (feeSat !== undefined) {
     if (!isSafeSatoshi(feeSat) || feeSat <= 0) throw new BitcoinTransactionError('invalid_fee');
@@ -223,7 +273,7 @@ const normalizeFee = ({
     throw new BitcoinTransactionError('invalid_fee_rate');
   }
 
-  return Math.ceil(estimateP2wpkhTransactionVSize(inputCount, outputCount) * feeRateSatPerVbyte);
+  return Math.ceil(estimateBitcoinTransactionVSize(inputCount, outputTypes) * feeRateSatPerVbyte);
 };
 
 const signP2wpkhInput = (
@@ -246,11 +296,11 @@ const getBip143SignatureHash = (
     concatBytes([
       uint32LE(TX_VERSION),
       doubleSha256(concatBytes(inputs.map(serializeOutpoint))),
-      doubleSha256(concatBytes(inputs.map(() => uint32LE(DEFAULT_SEQUENCE)))),
+      doubleSha256(concatBytes(inputs.map(() => uint32LE(RBF_SEQUENCE)))),
       serializeOutpoint(input),
       varSlice(input.scriptCode),
       uint64LE(input.value),
-      uint32LE(DEFAULT_SEQUENCE),
+      uint32LE(RBF_SEQUENCE),
       doubleSha256(concatBytes(outputs.map(serializeOutput))),
       uint32LE(TX_LOCKTIME),
       uint32LE(SIGHASH_ALL),
@@ -274,7 +324,7 @@ const serializeTransaction = (
   ]);
 
 const serializeInput = (input: SigningInput): Uint8Array =>
-  concatBytes([serializeOutpoint(input), varSlice(new Uint8Array()), uint32LE(DEFAULT_SEQUENCE)]);
+  concatBytes([serializeOutpoint(input), varSlice(new Uint8Array()), uint32LE(RBF_SEQUENCE)]);
 
 const serializeOutpoint = ({ txid, vout }: Pick<BitcoinUtxo, 'txid' | 'vout'>): Uint8Array =>
   concatBytes([reverseBytes(hexToBytes(txid)), uint32LE(vout)]);
@@ -289,19 +339,6 @@ const getP2wpkhOutputScript = (publicKey: Uint8Array): Uint8Array =>
 
 const getP2wpkhScriptCode = (publicKey: Uint8Array): Uint8Array =>
   concatBytes([Uint8Array.of(0x76, 0xa9, 0x14), ripemd160(sha256(publicKey)), Uint8Array.of(0x88, 0xac)]);
-
-const getP2wpkhOutputScriptFromAddress = (address: string): Uint8Array => {
-  try {
-    const decoded = bech32.decode(address.toLowerCase() as `${string}1${string}`);
-    const program = Uint8Array.from(bech32.fromWords(decoded.words.slice(1)));
-
-    if (decoded.words[0] !== 0 || program.length !== 20) throw new Error('invalid witness program');
-
-    return concatBytes([Uint8Array.of(0x00, 0x14), program]);
-  } catch (error) {
-    throw new BitcoinTransactionError('invalid_output_address', 'invalid_output_address', error);
-  }
-};
 
 const encodeDERSignature = (signature: Uint8Array): Uint8Array => {
   if (signature.length !== 64) throw new BitcoinTransactionError('invalid_signature');

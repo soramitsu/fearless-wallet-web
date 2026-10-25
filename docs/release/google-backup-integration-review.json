@@ -1,0 +1,180 @@
+{
+  "recordedAt": "2026-10-13T15:12:53.004361+00:00",
+  "status": "accepted-bounded-checkpoint",
+  "integrationHead": "ddc8f8cfadd90e2c7900a12e40f90119cd797574",
+  "testedSource": "64ca8fff0d62bd825c36972010bb10ab947d4fe2",
+  "candidateSha256": "ba49ff5fb55df19ca80729b7ee54e14fd20a108cba63faba6465c8a42278894c",
+  "independentReviewSha256": "716a283e0fa11b189302f4d8b28c8a179db0d7221de16c752e1859dea70f9806",
+  "integratedSourcePinsMatched": 346,
+  "review": {
+    "schemaVersion": 1,
+    "createdUtc": "2026-10-13T15:10:38.693526+00:00",
+    "reviewer": "/root/native_pin_durability",
+    "decision": "accept-bounded-google-backup-checkpoint-for-parent-integration",
+    "sourceCommit": "64ca8fff0d62bd825c36972010bb10ab947d4fe2",
+    "baseCommit": "7175f3ab0e39df2cfff4e6296e69cb7330f9fe1d",
+    "candidateSha256": "ba49ff5fb55df19ca80729b7ee54e14fd20a108cba63faba6465c8a42278894c",
+    "reviewMethod": "Independent source review and review addenda across the complete Google delta, followed by Git-pinned source hashing, installed dependency and frozen evidence rehash, every archive-entry comparison, raw log/report inspection and raw visual review. No duplicate full-suite rerun was required for this bounded acceptance.",
+    "hashVerification": {
+      "candidateSha256": "ba49ff5fb55df19ca80729b7ee54e14fd20a108cba63faba6465c8a42278894c",
+      "sourceCommit": "64ca8fff0d62bd825c36972010bb10ab947d4fe2",
+      "hashCounts": {
+        "sourceSha256": 346,
+        "dependencySha256": 86,
+        "evidenceSha256": 656
+      },
+      "archiveVerification": {
+        "chrome": {
+          "sha256": "baf06410e9e12072b8b147d86f623551ec6fd6d56adfe9ce7c23b339723cacc8",
+          "bytes": 10035753,
+          "entries": 311,
+          "entriesMatch": true
+        },
+        "firefox": {
+          "sha256": "d4dd04c6e4736084ef5eb2e578b7c5b03eb1e4c40687c16c213708b806d45408",
+          "bytes": 10035823,
+          "entries": 311,
+          "entriesMatch": true
+        }
+      },
+      "failures": [],
+      "docCopyMatches": true
+    },
+    "sourceConclusions": [
+      "Transport uploads require nonempty acknowledged file IDs; list pagination retains per-file inventory and reports failures. OAuth state/redirect/popup ownership, supported Promise identity API, URL escaping and actual file deletion acknowledgement were reviewed.",
+      "Encrypted key JSON remains the recovery payload. Canonical request identities are kept separate from historical compressed-Ethereum JSON headers; selected account and linked child ownership are not inferred from untrusted header labels. Disclosed file labels/addresses remain metadata; secrets remain encrypted.",
+      "Export and fresh creation preserve an acknowledged child across primary upload failure, retry the remaining write, and withhold Saved/Finish/selection until actual acknowledgements. Local created IDs are retained across retry. App routing and token clearing keep the owning flow visible and prevent stale export reopening.",
+      "Recovery inventories keep primary, child, standalone and orphaned files reachable. Missing-child restore is explicitly primary-only. Actual JSON curve validation permits Ethereum; row completion and failure wording distinguish password validation from storage/selection errors.",
+      "FlowStepLayout completionConfirmed closes premature All done/hidden retry with the real layout. Shared flex scrolling bounds content above the nonshrinking footer. Responsive social controls and wrapping fit the qualified small enlarged locales. CreateGoogle translates action keys reactively, eliminating cached English Finish after locale changes."
+    ],
+    "findings": [
+      {
+        "id": "GOOGLE-REVIEW-1",
+        "status": "closed",
+        "summary": "Failure copy now reserves invalidPassword for actual password failures and uses localized generic copy for worker/storage/selection errors."
+      },
+      {
+        "id": "GOOGLE-REVIEW-2",
+        "status": "closed",
+        "summary": "Real final-step layout no longer hides pending/failure content behind premature FinishForm; actual fresh creation browser checks cover failed upload, retry and acknowledged completion."
+      },
+      {
+        "id": "GOOGLE-REVIEW-3",
+        "status": "closed",
+        "summary": "Raw v13 Akkadian capture exposed Finish/Wiki overlap despite passing old checks. e778 content scrolling fixes separation; v17 validates each social row above footer, Finish center hit target and translated Finish across16 layouts. Raw Akkadian/Egyptian/Russian320px200% bottom captures independently show separated readable controls."
+      }
+    ],
+    "validationAssessment": {
+      "unitSuite": "Raw final log reports290 passed files /2 skipped,3153 passed tests /18 skipped,0 failures. Type15/lint13 pass records retained. Earlier compile/test/harness/layout failures are preserved and superseded explicitly.",
+      "browser": "Final report at64ca has186 successful checks,16 layout cases,57 captures. Actual worker reload, held/failed cloud fixture writes, inventory pagination, primary-only and standalone recovery, fresh generation, original-key signature verification after worker restart and encrypted backup restoration are recorded. Google HTTP uses isolated fixtures.",
+      "visuals": "Independently viewed four raw v17 captures: Akkadian, Egyptian and Russian320px200% bottom; fresh partial-upload failure. Footer no longer overlaps final social row, Finish uses current locale, and failed upload displays a reachable Try again action without a completion claim. Content intentionally scrolls; top clipping of a scrolled row is not hidden bottom guidance.",
+      "archives": {
+        "chrome": {
+          "sha256": "baf06410e9e12072b8b147d86f623551ec6fd6d56adfe9ce7c23b339723cacc8",
+          "bytes": 10035753,
+          "entries": 311,
+          "entriesMatch": true
+        },
+        "firefox": {
+          "sha256": "d4dd04c6e4736084ef5eb2e578b7c5b03eb1e4c40687c16c213708b806d45408",
+          "bytes": 10035823,
+          "entries": 311,
+          "entriesMatch": true
+        }
+      },
+      "firefox": "Pinned152.0.4 offline popup/CSP smoke and owned process cleanup logs agree. Exact41-warning fingerprint remains07437133a7e51079acf224cc4764747722a4947ceca20db89f90380bcd558bbd. This is local bootstrap/CSP qualification, not signed AMO or historical Firefox upgrade acceptance."
+    },
+    "runtimeDiagnostics": {
+      "record": "google-backup-runtime-error-diagnosis-v1.json",
+      "review": "Independently rehashed all six supplemental raw files and read full before/after error records and readiness probe. Forced reload before initial worker readiness reproduces14 module-load failures in copied final profile,0 before; fresh profile0. Waiting for actual accounts.subscribe response yields0 such failures before/ready/after in both copied and fresh profiles. Candidate reload helper exposes only the first5 entries. This supports initial-import cancellation by forced reload as an inference; errors are not asserted historical or missing modules.",
+      "unresolved": "Three vendor data-font CSP blocks, offline unhandled Axios rejection(s), Vue/router/keyring and tagline warnings remain explicit broader audit follow-ups. No clean-console claim or CSP relaxation is accepted."
+    },
+    "limits": [
+      "Actual production Google sign-in, production OAuth identity/permissions and live Drive read/write/delete remain unqualified. HTTP fixtures establish app behavior under controlled responses, not live service interoperability.",
+      "An unknown remote upload outcome may leave orphaned files; no exact-once cloud-write guarantee. All returned files remain reachable in inventory.",
+      "Final-source historical Chrome upgrade/private-chain qualification, historical signed Firefox upgrades, Linux CI, final signed distribution, store review and publication remain separate gates.",
+      "Native mnemonic/authentication, Android, physical devices, VoiceOver and complete app accessibility remain independent open work. This acceptance is not overall production readiness.",
+      "Supplemental runtime probes retain unrelated concrete startup/font/warning findings for follow-up; passing Google continuity does not waive them."
+    ],
+    "evidencePins": [
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-candidate-evidence-v1.json",
+        "sha256": "ba49ff5fb55df19ca80729b7ee54e14fd20a108cba63faba6465c8a42278894c"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-independent-rehash-v1.json",
+        "sha256": "94825b614bac0e88fd88ea63336f0a1f767ffcbc4827701448a3d826caf848ad"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-independent-review-v1.json",
+        "sha256": "946b0e5545330fe42212b28e128c67da5d2f2f38001fa513c3bb304b21ae01f8"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-independent-review-addendum-v1.json",
+        "sha256": "ed80162621d489e13b575ee1e084d7fd0e9d896590d0d3f9815ad843a18921ef"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-independent-review-addendum-v2.json",
+        "sha256": "5d8662d8ce8b3a6b92bdfcc6ba4abab3305e875230b5dcede5eccc9d4f6fde83"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-error-diagnosis-v1.json",
+        "sha256": "7eb511b3c63b78adaef6fb0505f5f95aa8eef6c1f275a4fb4f54f89000859d46"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-probe-v1.mjs",
+        "sha256": "f247ac96fde12c3d3e2c30eb1d511b84ab9a12f3ff02ebd869d8b64584b94050"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-probe-v1.json",
+        "sha256": "5da829fa9177caba147f6859c90fb43d00e751120b3bfc7f0eb5263619ba459a"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-probe-v1.log",
+        "sha256": "0b3604278908eda9b414f2065763029f7bb97f152022005663608d8ebac6da7e"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-probe-v2.mjs",
+        "sha256": "b2a40bc29267018e47183a70bad80b7fae4c764c97b7d3eda90ed28820cacf2d"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-probe-v2.json",
+        "sha256": "10882d99f80ec9e8dc5ad84a553668f1a89e2e17275a6730470b7e3a3eac1769"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-runtime-probe-v2.log",
+        "sha256": "89cff50e3636a85fdfd795d3fde2cf65c3c5bb7673b2e75b1fdfa17d891aba26"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-browser-v17/report.json",
+        "sha256": "9a627bb247175b64da6a41b91f92a1077ef3f8cfe214e55241d48743930b634c"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-browser-v17.mjs",
+        "sha256": "1e9fd6ed450365714154d5caf439cc3f8704666a5f922f9cbc9dd2d6246003a0"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-browser-v17/finish-akk-320-200-bottom.png",
+        "sha256": "bd4ffb5feae518c9770538d653b918da0d37aafe4f55fda434edd72c851d7449"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-browser-v17/finish-egy-320-200-bottom.png",
+        "sha256": "d4d01c5d14fe7685a2f5a4573c4ba3069a25d3925cf2f85ee2af0df644f22eec"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-browser-v17/finish-ru-320-200-bottom.png",
+        "sha256": "14067a03a08bd60f4c6c93c56872cf01629f4041f8897173949d6404cd2e5096"
+      },
+      {
+        "path": "/Users/takemiyamakoto/dev/fearless/build/safe-upgrade/evidence/codex-20261012/google-backup-browser-v17/create-partial-upload-failure.png",
+        "sha256": "8e55eab75faaca89905b833c76ff7f360a6e272d9654898b296a1d612029419a"
+      }
+    ]
+  },
+  "remainingGates": [
+    "Live Google interoperability",
+    "Final-source historical Chrome and Firefox upgrades and private-chain validation",
+    "Vendor inline fonts blocked by CSP; offline startup Axios rejections; runtime warning cleanup",
+    "Native, Android, accessibility and signed distribution gates remain open"
+  ]
+}

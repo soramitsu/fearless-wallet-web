@@ -72,3 +72,15 @@ export default defineComponent({ name: 'Tooltip' ,
   },
 });
 </script>
+
+<style lang="scss">
+@include v1-palette {
+  .tippy-box {
+    color: var(--fw-text-1);
+    background: var(--fw-raised-2);
+    border: 1px solid var(--fw-stroke-strong);
+    border-radius: 8px;
+    font: 400 0.8125rem/1.5 var(--fw-font-body);
+  }
+}
+</style>

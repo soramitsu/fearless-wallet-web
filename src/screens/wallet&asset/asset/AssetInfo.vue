@@ -22,15 +22,25 @@
 
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
+          <!-- A balance no provider could load is unknown, not zero. -->
+          <div v-else-if="balanceUnavailable" class="asset__balance asset__balance--failed" data-testid="assetBalanceUnavailable">
+            {{ $t('portfolioPage.balanceStatus.failed') }}
+          </div>
+
           <div v-else class="asset__balance" data-testid="assetBalance">{{ countAssetsString }}</div>
 
           <Shimmer v-if="showShimmers" height="14px" width="120px" />
 
-          <span v-else class="asset__balance asset__balance--fiat" data-testid="fiatAssetBalance">
+          <!-- The last amount a provider confirmed, marked as out of date. -->
+          <span v-else-if="balanceFailed && !balanceUnavailable" class="asset__failed" data-testid="assetBalanceFailed">
+            {{ transferableFiatBalanceInNetworkString }} · {{ $t('portfolioPage.balanceStatus.failed') }}
+          </span>
+
+          <span v-else-if="!balanceUnavailable" class="asset__balance asset__balance--fiat" data-testid="fiatAssetBalance">
             {{ transferableFiatBalanceInNetworkString }}
           </span>
 
-          <div class="asset__locked" @click="toggleBalanceDetailsPopup">
+          <div v-if="!balanceUnavailable" class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
 
@@ -71,7 +81,8 @@ import { defineComponent } from 'vue';
 import { APIItemState } from '@extension-base/api/types/networks';
 
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
-import { getSummaryLockedBalance } from '@/helpers/common';
+import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common';
+import { isSameString } from '@/helpers';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import AccountSettingsPopup from '@/screens/accounts/AccountSettingsPopup.vue';
 import { useAccountsStore } from '@/stores/accounts';
@@ -101,7 +112,40 @@ export default defineComponent({ name: 'AssetInfo',
       return this.selectedAssetNetwork ?? this.accountsStore.selectedNetwork;
     },
     showShimmers() {
-      return !navigator.onLine || !this.currency.balances?.some(({ state }) => state === APIItemState.READY);
+      if (this.balanceFailed) return false;
+
+      // Another network having loaded does not make this one's amount known.
+      const balances = this.shownBalances.length ? this.shownBalances : this.currency?.balances ?? [];
+
+      return !navigator.onLine || !balances.some(({ state }) => state === APIItemState.READY);
+    },
+    /** This asset's balances on the network on screen (on every network for a network group). */
+    shownBalances() {
+      const balances = this.currency?.balances ?? [];
+
+      return isNetworkGroup(this.pickedNetwork)
+        ? balances
+        : balances.filter(({ name }) => isSameString(name, this.pickedNetwork));
+    },
+    /** Nothing on screen loaded and the last update failed: that is said, not shown as a load that never ends. */
+    balanceFailed() {
+      return (
+        navigator.onLine &&
+        !this.shownBalances.some(({ state }) => state === APIItemState.READY) &&
+        this.shownBalances.some(({ state }) => state === APIItemState.ERROR)
+      );
+    },
+    /**
+     * The failed balance has no amount a provider confirmed before (a network group adds up loaded balances only),
+     * so any amount would be a guess such as 0.
+     */
+    balanceUnavailable() {
+      if (!this.balanceFailed) return false;
+      if (isNetworkGroup(this.pickedNetwork)) return true;
+
+      return this.shownBalances.every(({ transferable, total, free }) =>
+        [transferable, total, free].every((value) => value === undefined || value === null)
+      );
     },
     icon() {
       return this.currency?.icon ?? '';
@@ -260,6 +304,18 @@ export default defineComponent({ name: 'AssetInfo',
       &--fiat {
         font-size: 1.125em;
       }
+
+      &--failed {
+        color: $simple-orange-color;
+        font-size: 1.125em;
+      }
+    }
+
+    // An out-of-date amount reads as a warning next to its value.
+    .asset__failed {
+      color: $simple-orange-color;
+      font-size: 0.875em;
+      font-weight: 600;
     }
 
     .asset__locked-content {

@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "description": "TON accounts as the shipped Fearless Android 4.2.0 app stored them (TonAccountRepository.create: Mnemonic.toSeed(typedText.split(\" \")), the typed text stored verbatim). Copied from the AL-4 production-parity oracle family 08-ton; public test phrases from a fixed PRNG seed: never fund them. Non-canonical variants only open their key when replayed exactly as typed.",
+  "source": {
+    "oracle": "build/safe-upgrade/assets/vectors/android-parity/08-ton.json",
+    "schema": "fearless-android-parity/v1",
+    "family": "08-ton",
+    "prodApp420": "b5e22d49d16a0207c03ab703559892eaf9d41cf9",
+    "prodSharedFeatures": "7508bc83627b7068cfd0f4498ca5f0540205257d",
+    "prngSeed": 20261010
+  },
+  "vectors": [
+    {
+      "kind": "ton-native",
+      "variant": "canonical",
+      "typedText": "dolphin idle manual armor add empty music report oblige vicious tongue betray pluck globe sphere journey aware comfort index monkey parade detect crane inject",
+      "publicKeyHex": "33a8d4b3715d8c3185ce22c0e060207c8d53fb929cc0dfcbdffc1d25627ca42c",
+      "sameKeyAsNormalized": true
+    },
+    {
+      "kind": "ton-native",
+      "variant": "trailing-space",
+      "typedText": "dolphin idle manual armor add empty music report oblige vicious tongue betray pluck globe sphere journey aware comfort index monkey parade detect crane inject ",
+      "publicKeyHex": "7ed43746b9a917527f888c108604841b5fb7905e4f44fe85757e2f08874b69b7",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "double-space",
+      "typedText": "dolphin  idle  manual  armor  add  empty  music  report  oblige  vicious  tongue  betray  pluck  globe  sphere  journey  aware  comfort  index  monkey  parade  detect  crane  inject",
+      "publicKeyHex": "2bd99825c8cbcd376ea796145aecf0b7212993b16a6b91058cef171e62c114be",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "upper",
+      "typedText": "DOLPHIN IDLE MANUAL ARMOR ADD EMPTY MUSIC REPORT OBLIGE VICIOUS TONGUE BETRAY PLUCK GLOBE SPHERE JOURNEY AWARE COMFORT INDEX MONKEY PARADE DETECT CRANE INJECT",
+      "publicKeyHex": "7136226990e41ce81e22c224dfa4fd39eef82eb49113ea974ef513bda675788c",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "canonical",
+      "typedText": "inhale hunt rib switch curve gas vibrant risk buyer key doll fiscal federal mansion park about antique found shrimp prize mixed staff vicious arctic",
+      "publicKeyHex": "f44567fd03fc56954b5c1202584d7fd1d4f36e038de0329c39d0115d9f8879cb",
+      "sameKeyAsNormalized": true
+    },
+    {
+      "kind": "ton-native",
+      "variant": "trailing-space",
+      "typedText": "inhale hunt rib switch curve gas vibrant risk buyer key doll fiscal federal mansion park about antique found shrimp prize mixed staff vicious arctic ",
+      "publicKeyHex": "0402af56bc531c151664adb0f92ded16f040784184060f2f591dfab7095f8587",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "double-space",
+      "typedText": "inhale  hunt  rib  switch  curve  gas  vibrant  risk  buyer  key  doll  fiscal  federal  mansion  park  about  antique  found  shrimp  prize  mixed  staff  vicious  arctic",
+      "publicKeyHex": "179a43e4be873d3b68d6f6c8981ca632a0f0dc9271142ce8944b69b939a197e2",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "upper",
+      "typedText": "INHALE HUNT RIB SWITCH CURVE GAS VIBRANT RISK BUYER KEY DOLL FISCAL FEDERAL MANSION PARK ABOUT ANTIQUE FOUND SHRIMP PRIZE MIXED STAFF VICIOUS ARCTIC",
+      "publicKeyHex": "26405587c7971e02ce4c334a798efdd2a963576008da15da310fe7c3ed692f29",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "canonical",
+      "typedText": "finish skirt jungle cry nephew mixed safe demand goat admit draw twist lobster grit pill name air excess wasp powder banner attitude exclude review",
+      "publicKeyHex": "bb961e2284c7de82e8526f7d913c72b2bd406b486929fbe72072d9514a76d3ff",
+      "sameKeyAsNormalized": true
+    },
+    {
+      "kind": "ton-native",
+      "variant": "trailing-space",
+      "typedText": "finish skirt jungle cry nephew mixed safe demand goat admit draw twist lobster grit pill name air excess wasp powder banner attitude exclude review ",
+      "publicKeyHex": "0ee66d223b5bf8d0c84812329c029d5783afa9bee3f0036a9920d7ff2cee9d44",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "double-space",
+      "typedText": "finish  skirt  jungle  cry  nephew  mixed  safe  demand  goat  admit  draw  twist  lobster  grit  pill  name  air  excess  wasp  powder  banner  attitude  exclude  review",
+      "publicKeyHex": "57ac8481bfa355024a9aba07982fd3d77250fdafac28ffa0361c2f6e8e245de7",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "ton-native",
+      "variant": "upper",
+      "typedText": "FINISH SKIRT JUNGLE CRY NEPHEW MIXED SAFE DEMAND GOAT ADMIT DRAW TWIST LOBSTER GRIT PILL NAME AIR EXCESS WASP POWDER BANNER ATTITUDE EXCLUDE REVIEW",
+      "publicKeyHex": "4a3430d5ff8b075703eb16d03c1942824d70c32147bc0a446af8a6b01da567cb",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "canonical",
+      "typedText": "order spatial grape hungry famous daughter cave wagon tiger inform amused salt horn omit avocado mention tiger aspect amateur pilot genre pudding bounce tilt",
+      "publicKeyHex": "63efccd652171cea83cf02fe0d87a2fb295768b8aa457857eddba7f736647698",
+      "sameKeyAsNormalized": true
+    },
+    {
+      "kind": "bip39",
+      "variant": "trailing-space",
+      "typedText": "order spatial grape hungry famous daughter cave wagon tiger inform amused salt horn omit avocado mention tiger aspect amateur pilot genre pudding bounce tilt ",
+      "publicKeyHex": "770079f81bd53d7f63d39b0960b5bf396df5c05459d6c3f04ad2c8bd4153e5f1",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "double-space",
+      "typedText": "order  spatial  grape  hungry  famous  daughter  cave  wagon  tiger  inform  amused  salt  horn  omit  avocado  mention  tiger  aspect  amateur  pilot  genre  pudding  bounce  tilt",
+      "publicKeyHex": "f71ee6a7047111addc4e00c8d81051ced6f18ec165597299f2c2f632f1fc7d7d",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "upper",
+      "typedText": "ORDER SPATIAL GRAPE HUNGRY FAMOUS DAUGHTER CAVE WAGON TIGER INFORM AMUSED SALT HORN OMIT AVOCADO MENTION TIGER ASPECT AMATEUR PILOT GENRE PUDDING BOUNCE TILT",
+      "publicKeyHex": "2ee54c0a5fda703848f2da7a56c0c367c26b05b74765242ce2e58e02dcb28ea3",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "canonical",
+      "typedText": "course ceiling concert web flock split purse mean useless east sister under bronze major tape near state basket toast rather pizza club unknown dolphin",
+      "publicKeyHex": "c83351b5af0f81724ac5016303ea0908213ba247e7234f3eed2c1c66c4e0f88f",
+      "sameKeyAsNormalized": true
+    },
+    {
+      "kind": "bip39",
+      "variant": "trailing-space",
+      "typedText": "course ceiling concert web flock split purse mean useless east sister under bronze major tape near state basket toast rather pizza club unknown dolphin ",
+      "publicKeyHex": "96d0450d7667871b2bea52ec55689b1f0c1e0a2eb2c4172ccadc7ce46ac88678",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "double-space",
+      "typedText": "course  ceiling  concert  web  flock  split  purse  mean  useless  east  sister  under  bronze  major  tape  near  state  basket  toast  rather  pizza  club  unknown  dolphin",
+      "publicKeyHex": "525ea794ac755a487a14b585160f82d7720a639f67e366cac676c7cf09d651ef",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "upper",
+      "typedText": "COURSE CEILING CONCERT WEB FLOCK SPLIT PURSE MEAN USELESS EAST SISTER UNDER BRONZE MAJOR TAPE NEAR STATE BASKET TOAST RATHER PIZZA CLUB UNKNOWN DOLPHIN",
+      "publicKeyHex": "7f27a9998d7f2cdf98fa19598139ec5279718de998ddcca8277b3e762a4dd497",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "canonical",
+      "typedText": "chalk calm festival unlock critic ring shoulder mango situate obey witness kiwi",
+      "publicKeyHex": "96fc27e4483ace89b670c9ec554dfca62b42e91a485411942a80e9bf41a08af0",
+      "sameKeyAsNormalized": true
+    },
+    {
+      "kind": "bip39",
+      "variant": "trailing-space",
+      "typedText": "chalk calm festival unlock critic ring shoulder mango situate obey witness kiwi ",
+      "publicKeyHex": "206e6e1d3318e1d4ef8d66ab8f5ced5a573bffc5b41016fbefd2e36bc1b6f644",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "double-space",
+      "typedText": "chalk  calm  festival  unlock  critic  ring  shoulder  mango  situate  obey  witness  kiwi",
+      "publicKeyHex": "34454abbad82dab10fc010947a7c2e02abe3d03fe04b6701b1cd6be3b46ef2f0",
+      "sameKeyAsNormalized": false
+    },
+    {
+      "kind": "bip39",
+      "variant": "upper",
+      "typedText": "CHALK CALM FESTIVAL UNLOCK CRITIC RING SHOULDER MANGO SITUATE OBEY WITNESS KIWI",
+      "publicKeyHex": "970482999dd622527a24dc40b2308a6422e948c9e3ee99d605cf874dd9f9f0b7",
+      "sameKeyAsNormalized": false
+    }
+  ]
+}

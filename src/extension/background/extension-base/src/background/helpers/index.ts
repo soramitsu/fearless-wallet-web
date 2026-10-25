@@ -27,14 +27,34 @@ export function withErrorLog(fn: () => unknown): void {
 }
 
 export function stripUrl(url: string): string {
+  let parsed: URL;
+
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('Invalid dApp URL');
+  }
+
   assert(
-    url && (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('ipfs:') || url.startsWith('ipns:')),
-    `Invalid url ${url}, expected to start with http: or https: or ipfs: or ipns:`
+    ['http:', 'https:', 'ipfs:', 'ipns:'].includes(parsed.protocol),
+    'Invalid dApp URL scheme; expected http, https, ipfs, or ipns'
   );
+  assert(parsed.hostname && !parsed.username && !parsed.password, 'Invalid credential-bearing or hostless dApp URL');
 
-  const parts = url.split('/');
+  // Permissions are origin scoped. Keeping the scheme prevents an HTTPS grant
+  // from being reused by an HTTP page on the same host.
+  return `${parsed.protocol}//${parsed.host}`;
+}
 
-  return parts[2];
+// Browser-internal tabs have no dApp authorization target. Keep stripUrl strict
+// for permission requests while allowing the header's read-only status to settle.
+export function getTabAuthorizationTarget(url?: string): { key: string; hostname: string } | undefined {
+  if (!url) return undefined;
+  try {
+    return { key: stripUrl(url), hostname: new URL(url).hostname };
+  } catch {
+    return undefined;
+  }
 }
 
 export async function isOpenClient() {

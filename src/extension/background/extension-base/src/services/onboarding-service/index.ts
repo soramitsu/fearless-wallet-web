@@ -4,6 +4,9 @@ import type { UserType } from './types';
 import type { OnBoardingStoriesLocales, OnboardingStories } from '@/interfaces';
 import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import { URLS } from '@/consts/urls';
+import { akkadianOnboardingStories } from '@/locales/akk/onboarding';
+import { egyptianOnboardingStories } from '@/locales/egy/onboarding';
+import { EGYPTIAN_HIEROGLYPH_LOCALE, OLD_AKKADIAN_LOCALE } from '@/locales/languages';
 
 export class OnboardingService {
   private stories: OnBoardingStoriesLocales = {};
@@ -36,9 +39,13 @@ export class OnboardingService {
   }
 
   getStories(lang: string): OnboardingStories {
-    const localizeStories = this.stories[lang] ?? this.stories[this.defaultLocale];
+    const bundledStories = {
+      [OLD_AKKADIAN_LOCALE]: akkadianOnboardingStories,
+      [EGYPTIAN_HIEROGLYPH_LOCALE]: egyptianOnboardingStories,
+    } as const;
+    const localizeStories = this.stories[lang] ?? bundledStories[lang as keyof typeof bundledStories];
 
-    return localizeStories?.[this.userType] ?? [];
+    return (localizeStories ?? this.stories[this.defaultLocale])?.[this.userType] ?? [];
   }
 
   changeUserType(type: UserType) {

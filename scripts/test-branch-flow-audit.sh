@@ -15,11 +15,9 @@ name: CI
 on:
   push:
     branches:
-      - develop
       - master
   pull_request:
     branches:
-      - develop
       - master
 EOF
 
@@ -35,32 +33,29 @@ jobs:
           BASE_BRANCH: ${{ github.base_ref }}
           HEAD_BRANCH: ${{ github.head_ref }}
         run: |
-          if [[ "$BASE_BRANCH" == "master" ]]; then
-            if [[ "$HEAD_BRANCH" == "develop" || "$HEAD_BRANCH" == release/* || "$HEAD_BRANCH" == hotfix/* ]]; then
-              exit 0
-            fi
-            echo "master is releasable"
+          if [[ "$BASE_BRANCH" != "master" ]]; then
+            echo "All pull requests must target master"
+            exit 1
           fi
 EOF
 
   cat > "$repo/.github/pull_request_template.md" <<'EOF'
 ## Target Branch
 
-- [ ] This PR targets `develop`
-- [ ] This PR targets `master` and is a release or hotfix PR
+- [ ] This PR targets `master` from a short-lived branch
 
 ## Checklist
 
-- [ ] No direct-to-`master` workflow is introduced
+- [ ] Required review and CI checks pass before merging
 EOF
 
   cat > "$repo/CONTRIBUTING.md" <<'EOF'
 # Contributing
 
-## Git Flow
+## Branch workflow
 
-All normal work starts from `develop` and is submitted back to `develop`.
-Use `release/*` and `hotfix/*` branches only for promotion to `master`.
+`master` is the only long-lived branch.
+All normal work starts from `master` and is submitted back to `master`.
 `master` is the releasable branch.
 EOF
 }
@@ -126,5 +121,34 @@ cat > "$UNRESTRICTED_MASTER_TEMPLATE_REPO/.github/pull_request_template.md" <<'E
 - [ ] This PR targets `master`
 EOF
 expect_fail "$UNRESTRICTED_MASTER_TEMPLATE_REPO" "unrestricted-master-template"
+
+# Exercise the actual workflow guard with both working and retired targets.
+python3 - "$SCRIPT_DIR/../.github/workflows/branch-flow.yml" <<'PY'
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+workflow = Path(sys.argv[1]).read_text()
+step = workflow.split("- name: Validate PR target\n", 1)[1]
+script = step.split("        run: |\n", 1)[1]
+script = "\n".join(line[10:] for line in script.splitlines())
+for base, head, expected in [
+    ("master", "feature/new-work", 0),
+    ("master", "fix/regression", 0),
+    ("master", "release/next", 0),
+    ("master", "dependabot/npm/package", 0),
+    ("develop", "feature/new-work", 1),
+    ("stage", "release/next", 1),
+    ("master", "master", 1),
+]:
+    result = subprocess.run(
+        ["bash", "-c", script],
+        env={**os.environ, "BASE_BRANCH": base, "HEAD_BRANCH": head},
+        capture_output=True, text=True,
+    )
+    if result.returncode != expected:
+        raise SystemExit(f"Unexpected branch guard result for {head} -> {base}: {result.stdout}{result.stderr}")
+PY
 
 echo "[branch-flow-audit-test] Branch flow audit self-test passed."

@@ -1,42 +1,74 @@
-const db_name = 'fw-wallet';
+import { EXTENSION_PREFIX } from '../defaults';
+import { openWebDatabase, WEB_STORE_NAME } from './WebDatabase';
+import { assertWebStorageWritable } from './WebStorageMode';
+import type { TransformStoredRecords } from './StoreMutation';
 
 export default abstract class BaseWebStore<T> {
   #prefix: string;
+  private static writeQueue: Promise<void> = Promise.resolve();
+  private static pendingWrites: Promise<void> = Promise.resolve();
+
+  public static async flush(): Promise<void> {
+    const pending = BaseWebStore.pendingWrites;
+    try {
+      await pending;
+    } finally {
+      // Every concurrent waiter observes this batch's error before it is cleared.
+      if (BaseWebStore.pendingWrites === pending) BaseWebStore.pendingWrites = Promise.resolve();
+    }
+  }
+
+  private enqueueWrite<TResult>(write: () => Promise<TResult>, trackFailure = true): Promise<TResult> {
+    const operation = BaseWebStore.writeQueue.then(write);
+    BaseWebStore.writeQueue = operation.then(() => {}, () => {});
+    if (!trackFailure) return operation;
+    BaseWebStore.pendingWrites = Promise.allSettled([BaseWebStore.pendingWrites, operation]).then((results) => {
+      const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+      if (failure) throw failure.reason;
+    });
+    void BaseWebStore.pendingWrites.catch(() => {});
+    return operation;
+  }
 
   constructor(prefix: string | null) {
     this.#prefix = prefix ? `${prefix}:` : '';
+  }
+
+  protected assertWritable(): void {
+    if (this.#prefix === `${EXTENSION_PREFIX}:` || this.#prefix.startsWith(`${EXTENSION_PREFIX}:ton:`))
+      assertWebStorageWritable();
+  }
+
+  private enqueueMutation<TResult>(write: () => Promise<TResult>, trackFailure = true): Promise<TResult> {
+    this.assertWritable();
+    return this.enqueueWrite(() => { this.assertWritable(); return write(); }, trackFailure);
   }
 
   public getPrefix(): string {
     return this.#prefix;
   }
 
-  public all(update: (key: string, value: T) => void): void {
+  public async all(update: (key: string, value: T) => void): Promise<void> {
     const cb1 = ([key, value]: [string, T]) => update(key, value);
     const cb2 = (map: Record<string, T>) => Object.entries(map).forEach(cb1);
 
-    this.allMap(cb2);
+    await this.allMap(cb2);
   }
 
   public openDatabase(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(db_name, 1);
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        db.createObjectStore(db_name);
-      };
-
-      request.onsuccess = (event) => resolve((event.target as IDBOpenDBRequest).result);
-      request.onerror = (event) => reject((event.target as IDBOpenDBRequest).error);
-    });
+    return openWebDatabase();
   }
 
-  public writeToDB(key: string, value: T): void {
-    this.openDatabase().then((db) => {
-      const transaction = db.transaction(db_name, 'readwrite');
-      const store = transaction.objectStore(db_name);
-      if (!(value instanceof Promise)) store.put(value, key);
+  public writeToDB(key: string, value: T): Promise<void> {
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet account write failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account write was aborted.'));
+        transaction.objectStore(WEB_STORE_NAME).put(value, key);
+      });
     });
   }
 
@@ -44,65 +76,49 @@ export default abstract class BaseWebStore<T> {
     return key === 'ALL' ? this.getAllItemsWithKeys() : this.getByKey(key);
   }
 
-  public getByKey(key: string): Promise<string | undefined> {
+  public async getByKey(key: string): Promise<T | undefined> {
+    const db = await this.openDatabase();
     return new Promise((resolve, reject) => {
-      this.openDatabase().then((db) => {
-        const transaction = db.transaction(db_name, 'readonly');
-        const store = transaction.objectStore(db_name);
-        const request = store.get(key);
-
-        request.onsuccess = (event) => {
-          resolve((event.target as IDBRequest).result);
-        };
-
-        request.onerror = (event) => reject((event.target as IDBRequest).error);
-      });
+      const transaction = db.transaction(WEB_STORE_NAME, 'readonly');
+      const request = transaction.objectStore(WEB_STORE_NAME).get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account read was aborted.'));
     });
   }
 
-  public getAllItemsWithKeys() {
+  public async getAllItemsWithKeys(): Promise<{ key: IDBValidKey; value: T }[]> {
+    const db = await this.openDatabase();
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(db_name);
+      const transaction = db.transaction(WEB_STORE_NAME, 'readonly');
+      const objectStore = transaction.objectStore(WEB_STORE_NAME);
+      const items: { key: IDBValidKey; value: T }[] = [];
 
-      request.onerror = (event) => {
-        console.error('Error opening database:', (event.target as IDBRequest).error);
-        reject((event.target as IDBRequest).error);
+      objectStore.openCursor().onsuccess = (event: Event) => {
+        const cursor = (event.target as IDBRequest)?.result;
+
+        if (cursor) {
+          items.push({ key: cursor.key, value: cursor.value });
+          cursor.continue();
+        } else {
+          resolve(items);
+        }
       };
 
-      request.onsuccess = (event) => {
-        const db = (event.target as IDBRequest).result;
-        const transaction = db.transaction(db_name, 'readonly');
-        const objectStore = transaction.objectStore(db_name);
-        const items: { key: IDBValidKey; value: T }[] = [];
-
-        objectStore.openCursor().onsuccess = (event: Event) => {
-          const cursor = (event.target as IDBRequest)?.result;
-
-          if (cursor) {
-            items.push({ key: cursor.key, value: cursor.value });
-            cursor.continue();
-          } else {
-            resolve(items);
-          }
-        };
-
-        transaction.onerror = () => {
-          console.error('Transaction failed:', transaction.error);
-          reject(transaction.error);
-        };
-      };
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account enumeration was aborted.'));
     });
   }
 
   public removeFromDB(key: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.openDatabase().then((db) => {
-        const transaction = db.transaction(db_name, 'readwrite');
-        const store = transaction.objectStore(db_name);
-        const request = store.delete(key);
-
-        request.onsuccess = () => resolve();
-        request.onerror = (event) => reject((event.target as IDBRequest).error);
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet account removal failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account removal was aborted.'));
+        transaction.objectStore(WEB_STORE_NAME).delete(key);
       });
     });
   }
@@ -110,15 +126,11 @@ export default abstract class BaseWebStore<T> {
   public async allMap(update: (value: Record<string, T>) => void): Promise<void> {
     const map: Record<string, T> = {};
 
-    const all = await this.readFromDB('ALL');
-    const entries = Object.entries(all || {});
-
-    if (!entries) return;
-
-    for (let i = 0; i < entries.length; i++) {
-      const [key, value] = entries[i];
-
-      if (key.startsWith(this.#prefix)) map[key.replace(this.#prefix, '')] = value as T;
+    const entries = await this.getAllItemsWithKeys();
+    for (const { key, value } of entries) {
+      if (typeof key === 'string' && key.startsWith(this.#prefix)) {
+        map[key.slice(this.#prefix.length)] = value;
+      }
     }
 
     update(map);
@@ -127,21 +139,139 @@ export default abstract class BaseWebStore<T> {
   public get(_key: string, update: (value: T) => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    const value = this.readFromDB(key);
-    update(value as T);
+    this.readFromDB(key)
+      .then((value) => update(value as T))
+      .catch((error) => console.error('Error reading from database:', error));
   }
 
   public remove(_key: string, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    this.removeFromDB(key);
-    update?.();
+    void this.removeFromDB(key).then(() => update?.()).catch(() => {});
   }
 
   public set(_key: string, value: T, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    this.writeToDB(key, value);
-    update?.();
+    void this.writeToDB(key, value).then(() => update?.()).catch(() => {});
+  }
+
+  public getAndWait(key: string): Promise<T | undefined> {
+    return this.enqueueWrite(() => this.getByKey(`${this.#prefix}${key}`), false);
+  }
+
+  public getAllAndWait(): Promise<Record<string, T>> {
+    return this.enqueueWrite(async () => {
+      let records: Record<string, T> = {};
+      await this.allMap((values) => { records = values; });
+      return records;
+    }, false);
+  }
+
+  // Keep the read and write in one transaction. The callback publishes only
+  // after commit, while the same queue still excludes password/deletion writes.
+  public updateAndWait(
+    key: string,
+    transform: (current: T | undefined) => T | undefined,
+    publish?: (committed: T) => void,
+    trackFailure = true
+  ): Promise<T | undefined> {
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      return new Promise<T | undefined>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        let next: T | undefined;
+        transaction.oncomplete = () => {
+          try {
+            if (next !== undefined) publish?.(next);
+            resolve(next);
+          } catch (error) { reject(error); }
+        };
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet metadata write failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet metadata write was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        const request = store.get(`${this.#prefix}${key}`);
+        request.onsuccess = () => {
+          try {
+            next = transform(request.result as T | undefined);
+            if (next !== undefined) store.put(next, `${this.#prefix}${key}`);
+          } catch (error) {
+            transaction.abort();
+            reject(error);
+          }
+        };
+      });
+    }, trackFailure);
+  }
+
+  // Read, archive and remove in the same IndexedDB transaction. Publish only
+  // after its commit, while the queue still excludes later metadata writes.
+  public mutateRecordsAndWait(
+    keys: string[] | null,
+    transform: TransformStoredRecords,
+    publish?: () => void
+  ): Promise<void> {
+    const requested = keys && [...new Set(keys)];
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => {
+          try { publish?.(); resolve(); } catch (error) { reject(error); }
+        };
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet removal failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet removal was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        const current: Record<string, unknown> = {};
+        let remaining = requested?.length ?? 0;
+        const apply = () => {
+          try {
+            const { entries, remove } = transform(current);
+            Object.entries(entries).forEach(([key, value]) => store.put(value, `${this.#prefix}${key}`));
+            remove.forEach((key) => store.delete(`${this.#prefix}${key}`));
+          } catch (error) {
+            transaction.abort();
+            reject(error);
+          }
+        };
+        if (requested === null) {
+          const request = store.openCursor();
+          request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) { apply(); return; }
+            if (typeof cursor.key === 'string' && cursor.key.startsWith(this.#prefix))
+              current[cursor.key.slice(this.#prefix.length)] = cursor.value;
+            cursor.continue();
+          };
+        } else if (!remaining) apply();
+        for (const key of requested ?? []) {
+          const request = store.get(`${this.#prefix}${key}`);
+          request.onsuccess = () => {
+            current[key] = request.result;
+            if (--remaining === 0) apply();
+          };
+        }
+      });
+    }, false);
+  }
+
+  public setAndWait(key: string, value: T): Promise<void> {
+    return this.writeToDB(`${this.#prefix}${key}`, value);
+  }
+
+  // Stores every entry and removes `keys` in one transaction: all of it lands, or none of it.
+  public replaceAndWait(entries: Record<string, unknown>, keys: string[], trackFailure = true): Promise<void> {
+    return this.enqueueMutation(async () => {
+      const db = await this.openDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(WEB_STORE_NAME, 'readwrite');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error('Wallet account write failed.'));
+        transaction.onabort = () => reject(transaction.error ?? new Error('Wallet account write was aborted.'));
+        const store = transaction.objectStore(WEB_STORE_NAME);
+        Object.entries(entries).forEach(([key, value]) => store.put(value, `${this.#prefix}${key}`));
+        keys.forEach((key) => store.delete(`${this.#prefix}${key}`));
+      });
+    }, trackFailure);
   }
 }

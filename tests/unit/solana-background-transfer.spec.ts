@@ -9,6 +9,7 @@ import {
   estimateSolanaTransferFee,
   getSolanaNetworkKind,
   getSolanaRpcUrl,
+  getSolanaRpcUrls,
   lamportsToSolString,
   makeSolanaTransfer,
   normalizeSolanaAddress,
@@ -21,6 +22,7 @@ import {
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
+import * as solanaTransaction from '@/util/solanaTransaction';
 import { WalletEcosystem } from '@/interfaces';
 import { getSolanaSerializedMessageBase64, parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
@@ -139,21 +141,36 @@ function createState({
   } as unknown as State;
 }
 
+const SYSTEM_ACCOUNT = { data: ['', 'base64'], executable: false, lamports: 5_000_000, owner: SYSTEM_PROGRAM_ADDRESS };
+
 function createClient({
+  accounts = { [recipient]: SYSTEM_ACCOUNT },
+  balanceLamports = 10_000_000_000,
   feeLamports = 5000,
   sendSignature,
+  signatureStatus = { confirmationStatus: 'confirmed', confirmations: 1, err: null, slot: 130 },
   simulationError = null,
 }: {
+  accounts?: Record<string, unknown>;
+  balanceLamports?: number;
   feeLamports?: number | null;
   sendSignature?: string;
+  signatureStatus?: unknown;
   simulationError?: unknown;
 } = {}): SolanaTransferClient {
   return {
+    getAccountInfo: vi.fn(async (address: string) => (accounts[address] ?? null) as never),
+    getBalance: vi.fn(async () => balanceLamports),
     getFeeForMessage: vi.fn(async () => ({ context: { slot: 124 }, value: feeLamports })),
     getLatestBlockhash: vi.fn(async () => ({
       context: { slot: 123 },
       value: { blockhash, lastValidBlockHeight: 456 },
     })),
+    getMinimumBalanceForRentExemption: vi.fn(async (bytes: number) => (bytes === 0 ? 890_880 : 2_039_280)),
+    getRecentPrioritizationFees: vi.fn(async () => [{ prioritizationFee: 0, slot: 120 }]),
+    getSignatureStatuses: vi.fn(async () => [signatureStatus as never]),
+    // The blockhash is still valid, so an unconfirmed signature stays pending.
+    resolveSignatures: vi.fn(async (queries) => queries.map(() => ({ state: 'pending' }) as const)),
     sendRawTransaction: vi.fn(async () => sendSignature ?? ''),
     simulateTransaction: vi.fn(async () => ({
       context: { slot: 125 },
@@ -165,9 +182,33 @@ function createClient({
   };
 }
 
+const memoryPendingStore = () => {
+  let records: Array<{ signature: string }> = [];
+
+  return {
+    list: vi.fn(async () => records as never[]),
+    remove: vi.fn(async (signatures: string[]) => {
+      records = records.filter(({ signature }) => !signatures.includes(signature));
+    }),
+    save: vi.fn(async (record: { signature: string }) => {
+      records = [...records, record];
+    }),
+    get records() {
+      return records;
+    },
+  };
+};
+
+const sendOptions = (pendingStore = memoryPendingStore()) => ({
+  pendingStore,
+  pollIntervalMs: 0,
+  sleep: async () => undefined,
+});
+
 function transferParams(state = createState()) {
   return {
     amount: '1.25',
+    approvedMaxFee: '1',
     assetId: 'SOL',
     from: storedAccount,
     networkKey: 'Solana',
@@ -179,6 +220,7 @@ function transferParams(state = createState()) {
 function tokenTransferParams(state = createState({ tokenBalance: standardSolanaTokenBalance() })) {
   return {
     amount: '12.345678',
+    approvedMaxFee: '1',
     assetId: tokenMint,
     from: storedAccount,
     networkKey: 'Solana',
@@ -244,9 +286,17 @@ function readCompactU16ForTest(bytes: Uint8Array, offset: number): { offset: num
   throw new Error('invalid_compact_u16');
 }
 
+const originalSolanaFlag = process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS;
+
 describe('background Solana transfer adapter', () => {
+  beforeEach(() => {
+    process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = 'true';
+  });
+
   afterEach(() => {
     vi.useRealTimers();
+    if (originalSolanaFlag === undefined) delete process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS;
+    else process.env.VUE_APP_ENABLE_SOLANA_TRANSFERS = originalSolanaFlag;
   });
 
   it('normalizes SOL amounts without floating point loss and rejects unsafe input', () => {
@@ -293,7 +343,80 @@ describe('background Solana transfer adapter', () => {
     expect(getSolanaRpcUrl(mainnet)).toBe('https://provider.solana.example');
     expect(getSolanaRpcUrl(devnet)).toBe('https://node.solana.example');
     expect(getSolanaRpcUrl(custom)).toBe('https://custom.solana.example');
+    // The selected node comes first, then registry nodes, then public mainnet nodes.
+    expect(getSolanaRpcUrls(mainnet)).toEqual([
+      'https://provider.solana.example',
+      'https://node.solana.example',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
+      'https://solana.drpc.org',
+    ]);
+    expect(getSolanaRpcUrls(devnet)).toEqual(['https://node.solana.example', 'https://api.devnet.solana.com']);
+    expect(getSolanaRpcUrls(mainnet).some((url) => url.includes('si.soramitsu.io'))).toBe(false);
     expect(() => getSolanaNetworkKind({ ecosystem: 'substrate' } as NetworkJson)).toThrow('unsupported_solana_network');
+  });
+
+  it('puts the node the user chose first, whether the state names a provider or stores its address', () => {
+    const chosen = 'https://chosen.solana.example/?api-key=key';
+    const stored = solanaNetwork('Solana', 'solana:mainnet', {
+      currentProvider: chosen,
+      customNodes: [
+        { name: 'first', url: 'https://first.solana.example' },
+        { name: 'chosen', url: chosen },
+      ],
+    });
+
+    // The node screen stores the chosen node's address, not a provider key, and the other custom nodes follow it.
+    expect(getSolanaRpcUrls(stored)).toEqual([
+      chosen,
+      'https://first.solana.example',
+      'https://node.solana.example',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
+      'https://solana.drpc.org',
+    ]);
+    expect(getSolanaRpcUrl(stored)).toBe(chosen);
+  });
+
+  it('does not trust a selected address that is no longer one of the listed nodes', () => {
+    // The node screen stores the address of the chosen node; deleting that node leaves the address behind.
+    const deleted = solanaNetwork('Solana', 'solana:mainnet', {
+      currentProvider: 'https://deleted.solana.example/?api-key=key',
+      customNodes: [],
+    });
+    const registry = solanaNetwork('Solana', 'solana:mainnet', { currentProvider: 'https://node.solana.example' });
+
+    expect(getSolanaRpcUrls(deleted)).toEqual([
+      'https://node.solana.example',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
+      'https://solana.drpc.org',
+    ]);
+    // A registry node the user picked is listed, so it is still tried first.
+    expect(getSolanaRpcUrls(registry)[0]).toBe('https://node.solana.example');
+  });
+
+  it('ignores node addresses it cannot use, so the public nodes still serve', () => {
+    const network = solanaNetwork('Solana', 'solana:mainnet', {
+      currentProvider: 'wss://ws.solana.example',
+      customNodes: [
+        { name: 'insecure', url: 'http://insecure.solana.example' },
+        { name: 'credentials', url: 'https://user:secret@solana.example' },
+        { name: 'local', url: 'http://localhost:8899' },
+      ],
+      nodes: [],
+    });
+
+    expect(getSolanaRpcUrls(network)).toEqual([
+      'http://localhost:8899',
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://public.rpc.solanavibestation.com',
+      'https://solana.drpc.org',
+    ]);
   });
 
   it('builds a canonical legacy SystemProgram transfer transaction', () => {
@@ -403,8 +526,26 @@ describe('background Solana transfer adapter', () => {
     const state = createState({ tokenBalance: standardSolanaTokenBalance() });
     const client = createClient();
 
-    await expect(estimateSolanaTransferFee(tokenTransferParams(state), client)).resolves.toBe('0.000005');
+    // The recipient has no token account yet: the fee includes the one-time
+    // rent-exempt deposit that creates it.
+    await expect(estimateSolanaTransferFee(tokenTransferParams(state), client)).resolves.toBe('0.00204428');
     expect(state.balanceService.getTokenBalance).toHaveBeenCalledWith(storedAccount, tokenMint, 'solana');
+
+    const existingTokenAccountClient = createClient({
+      accounts: {
+        [recipient]: SYSTEM_ACCOUNT,
+        [recipientTokenAccount]: {
+          data: { parsed: { info: { mint: tokenMint, owner: recipient, state: 'initialized' }, type: 'account' } },
+          executable: false,
+          lamports: 2_039_280,
+          owner: SPL_TOKEN_PROGRAM_ADDRESS,
+        },
+      },
+    });
+
+    await expect(estimateSolanaTransferFee(tokenTransferParams(state), existingTokenAccountClient)).resolves.toBe(
+      '0.000005'
+    );
     expect(client.getLatestBlockhash).toHaveBeenCalledWith('confirmed');
     expect(client.getFeeForMessage).toHaveBeenCalledWith(expect.any(String), 'confirmed');
   });
@@ -429,7 +570,7 @@ describe('background Solana transfer adapter', () => {
     });
     expect(parsed.accountKeys).toContain(recipientTokenAccount);
 
-    await makeSolanaTransfer({ ...tokenTransferParams(state), callback }, sendClient);
+    await makeSolanaTransfer({ ...tokenTransferParams(state), callback }, sendClient, sendOptions());
 
     expect(sendClient.simulateTransaction).toHaveBeenCalledWith(prepared.signed.signedTransactionBase64, {
       commitment: 'confirmed',
@@ -440,7 +581,7 @@ describe('background Solana transfer adapter', () => {
       maxRetries: 3,
       preflightCommitment: 'confirmed',
       skipPreflight: false,
-    });
+    }, expect.any(Function));
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);
@@ -486,6 +627,49 @@ describe('background Solana transfer adapter', () => {
     expect(missingClient.getLatestBlockhash).not.toHaveBeenCalled();
   });
 
+  it.each(['fee lookup', 'simulation', 'pending save'])('does not broadcast after reset during %s', async boundary => {
+    const state = createState();
+    const reset = () => Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
+    const prepared = await prepareSolanaTransferForTest(transferParams(state), createClient());
+    const client = createClient({ sendSignature: prepared.signed.signatureBase58 });
+    const sign = vi.spyOn(solanaTransaction, 'signSolanaSerializedTransaction');
+    const pendingStore = memoryPendingStore();
+    if (boundary === 'fee lookup') vi.mocked(client.getFeeForMessage).mockImplementation(async () => {
+      reset(); return { context: { slot: 124 }, value: 5000 };
+    });
+    if (boundary === 'simulation') vi.mocked(client.simulateTransaction).mockImplementation(async () => {
+      reset(); return { context: { slot: 125 }, value: { err: null, logs: [] } };
+    });
+    if (boundary === 'pending save') pendingStore.save.mockImplementation(async () => { reset(); });
+    await expect(makeSolanaTransfer(transferParams(state), client, sendOptions(pendingStore)))
+      .rejects.toThrow('Wallet changed during transfer');
+    expect(client.sendRawTransaction).not.toHaveBeenCalled();
+    if (boundary === 'fee lookup') {
+      expect(sign).not.toHaveBeenCalled();
+      expect(client.simulateTransaction).not.toHaveBeenCalled();
+    }
+    if (boundary === 'pending save') expect(pendingStore.remove).not.toHaveBeenCalled();
+    else expect(pendingStore.save).not.toHaveBeenCalled();
+    sign.mockRestore();
+  });
+
+  it('stops Solana rebroadcast after reset and retains an already-submitted pending record', async () => {
+    const state = createState();
+    const prepared = await prepareSolanaTransferForTest(transferParams(state), createClient());
+    const client = createClient({ sendSignature: prepared.signed.signatureBase58, signatureStatus: null });
+    const pendingStore = memoryPendingStore();
+    let polls = 0;
+    vi.mocked(client.getSignatureStatuses).mockImplementation(async () => {
+      if (++polls === 2) Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
+      return [null];
+    });
+    await expect(makeSolanaTransfer(transferParams(state), client, sendOptions(pendingStore)))
+      .rejects.toThrow('Wallet changed during transfer');
+    expect(client.sendRawTransaction).toHaveBeenCalledOnce();
+    expect(pendingStore.remove).not.toHaveBeenCalled();
+    expect(pendingStore.records).toHaveLength(1);
+  });
+
   it('signs, simulates, broadcasts, and schedules a Solana balance refresh', async () => {
     vi.useFakeTimers();
 
@@ -495,7 +679,7 @@ describe('background Solana transfer adapter', () => {
     const sendClient = createClient({ sendSignature: prepared.signed.signatureBase58 });
     const callback = vi.fn();
 
-    await makeSolanaTransfer({ ...transferParams(state), callback }, sendClient);
+    await makeSolanaTransfer({ ...transferParams(state), callback }, sendClient, sendOptions());
 
     expect(prepared.signed.signer).toBe(solanaAddress);
     expect(sendClient.simulateTransaction).toHaveBeenCalledWith(prepared.signed.signedTransactionBase64, {
@@ -507,7 +691,7 @@ describe('background Solana transfer adapter', () => {
       maxRetries: 3,
       preflightCommitment: 'confirmed',
       skipPreflight: false,
-    });
+    }, expect.any(Function));
     expect(callback).toHaveBeenCalledWith({ status: true });
 
     await vi.advanceTimersByTimeAsync(8000);
@@ -524,10 +708,14 @@ describe('background Solana transfer adapter', () => {
     const prepared = await prepareSolanaTransferForTest(transferParams(), createClient());
 
     await expect(
-      makeSolanaTransfer(transferParams(), createClient({ sendSignature: prepared.signed.signatureBase58, simulationError: {} }))
+      makeSolanaTransfer(
+        transferParams(),
+        createClient({ sendSignature: prepared.signed.signatureBase58, simulationError: {} }),
+        sendOptions()
+      )
     ).rejects.toThrow('solana_simulation_failed');
-    await expect(makeSolanaTransfer(transferParams(), createClient({ sendSignature: recipient }))).rejects.toThrow(
-      'solana_broadcast_signature_mismatch'
-    );
+    await expect(
+      makeSolanaTransfer(transferParams(), createClient({ sendSignature: recipient }), sendOptions())
+    ).rejects.toThrow('solana_broadcast_signature_mismatch');
   });
 });

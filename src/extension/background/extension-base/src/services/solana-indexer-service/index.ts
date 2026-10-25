@@ -34,6 +34,8 @@ type SolanaWalletBalancesResponse = {
   tokens: SolanaTokenBalance[];
   total: number;
   syncedAt: number;
+  /** The token accounts could not be read, so the empty `tokens` says nothing about what the wallet holds. */
+  tokensUnavailable?: boolean;
 };
 
 type SolanaWalletAsset = SolanaNativeBalance | SolanaTokenBalance;

@@ -1,0 +1,131 @@
+{
+  "provenance": {
+    "scenario": "3.0.5 with a standalone Ethereum account first in storage and no current account → 4.2.0",
+    "writtenBy": "Fearless Wallet 3.0.5, built from its own source and lockfile and driven in Chrome for Testing",
+    "commit": "600a64d51365a40de646925e4b591ca06ff63643",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "node": "v20.20.2",
+    "deviations": [],
+    "chrome": "Google Chrome for Testing 147.0.7727.15",
+    "harness": "scripts/upgrade-e2e/run.mjs --snapshot",
+    "extensionId": "plnlnnlkcnkiokjgpefakfhgngpbnaec (test key)",
+    "syntheticSecretsOnly": true,
+    "omittedKeys": [
+      "wc@2:core:0.3//keychain",
+      "fwnetworkMap:NetworkMap"
+    ]
+  },
+  "profile": {
+    "master": "Pässwörd-日本語-🔐",
+    "wallets": [
+      {
+        "name": "Main",
+        "kind": "mnemonic",
+        "type": "sr25519",
+        "address": "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe",
+        "ethereumAddress": "0x58A57ed9d8d624cBD12e2C467D34787555bB1b25",
+        "phrase": "legal winner thank year wave sausage worth useful legal winner thank yellow",
+        "path": "",
+        "phraseStored": true
+      }
+    ],
+    "standalone": [
+      {
+        "name": "Echo",
+        "kind": "json-ethereum",
+        "type": "ethereum",
+        "address": "",
+        "ethereumAddress": "0x3061750d3dF69ef7B8d4407CB7f3F879Fd9d2398",
+        "ethereumPassword": "legacy-pw-E",
+        "ethereumPhrase": "letter advice cage absurd amount doctor acoustic avoid letter advice cage above",
+        "standalone": true
+      }
+    ],
+    "ton": []
+  },
+  "storage": {
+    "accountSubs": {},
+    "addressBook": {},
+    "addresses": {},
+    "authUrls": {},
+    "defaultAuthAccountSelection": [],
+    "fw:account:0x3061750d3df69ef7b8d4407cb7f3f879fd9d2398": {
+      "address": "0x02b3ee5cacdd13b9d0fad6897d18bb210687b38f0ba92e679f3673d2261e49af44",
+      "encoded": "fhU+Qj4XB3Wu+F3x6owLyeFKjtbxPJRulgUSa/NzeP8AgAAAAQAAAAgAAAAxM2sNHoXVzuyknvt1WksN+9j4/+3Mj0gmsT0C6TahCtxFO1uhnNZXgLjOS/LW1+yBcyDsupoIH5Qfn41Xv3782GAgN/5CXDGir83LuiBSvNoUXbDDmdI5cBnH0PCULMcRsAU6VUvc/hExBRGh55frnVMj2hegdfNsSEEzbthDk5ZR76vsN5hHfPRh2piXIgwwnOg=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "isMasterPassword": true,
+        "name": "Echo",
+        "whenCreated": 1700000000000
+      }
+    },
+    "fw:account:0x58a57ed9d8d624cbd12e2c467d34787555bb1b25": {
+      "address": "0x03a70d1ef368ad99e90d509496e9888ee7404e4f4d360376bf521d769cf0c4de46",
+      "encoded": "xr/KZkzGK9Sct1dLpp4UGp2pZx2RRZN5x683Sc5mdecAgAAAAQAAAAgAAABborUNfRIhXHcKQtNJpRdmOPcoT5FZOL22NQw3Ik0NWjI8He1kbPETkx+N7i/mGfCoWY7N/YvTVZyHXph90H1gqtvrDEg8P99ggNbrIulUe/LUA76DpgCJQIkyPVtEPsVVbSJmang3tKJiPB1rxcVQmpdjYS6/4GsCI8k0Op+P385XhJOT5x88JftqNJipE3vk2o0=",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "ethereum"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Main",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791737245822
+      }
+    },
+    "fw:account:0x625e25364c7b68e0a83065ccb40afed43f8fe933e669b24f3d69a57eddb3b715": {
+      "address": "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe",
+      "encoded": "OkIFoH0gx7yCUJbeGT7q/CAt7B2E62XR158IVjE/mVwAgAAAAQAAAAgAAAD2RoXe8wts7/cAnXHNgw8wGVgWHRyL751JtcjvM58qo4EedySau299HkFTlaMKtbVAVIwHg1q2amxOM3Y41bvo6hOx8GMAc7bCl20fUovLeToiHGiPxxZeql7DByG1X3+3JbTrZCZdn31UPjvn6mHeM5cxKTybd/EO7YavHObOaksQu4blFXhWRtMTFoC+UxOBWeq88vJWFtMWIXJ5mk40E5nRWCfpXixdyFQsDNf0ghA6",
+      "encoding": {
+        "content": [
+          "pkcs8",
+          "sr25519"
+        ],
+        "type": [
+          "scrypt",
+          "xsalsa20-poly1305"
+        ],
+        "version": "3"
+      },
+      "meta": {
+        "ethereumAddress": "0x58A57ed9d8d624cBD12e2C467D34787555bB1b25",
+        "genesisHash": "",
+        "isMasterAccount": true,
+        "isMasterPassword": true,
+        "isMobile": false,
+        "name": "Main",
+        "walletEcosystem": "substrate",
+        "whenCreated": 1791737245955
+      }
+    },
+    "fw:keyring": {
+      "passwordHash": "$2a$06$nan3QpIovkMnGkOtjC.5QeWIqLAfw5In9Nxxfk1LLXE2NaLavzKSO"
+    },
+    "fwauthorize:authUrls": {},
+    "providers": {},
+    "selectedNetworks": {
+      "5EHgWw2Af1pnoc7f1A8bfmM97W3DAYW8xr82RfhLL9oAabAe": "popular"
+    }
+  }
+}

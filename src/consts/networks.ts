@@ -68,7 +68,7 @@ const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70c
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
 
 const TON_ICON =
-  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/icons/tokens/coloured/TON.svg';
+  'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config/production/icons/tokens/coloured/TON.svg';
 
 const CHAIN_IDS: Record<string, NetworkName> = {
   [POLKADOT_ID]: 'Polkadot',

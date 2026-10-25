@@ -25,11 +25,6 @@ const UNIVERSAL_WALLET_MIGRATION_BASE_ALLOWED_ROUTES = new Set<string>([
   UNIVERSAL_WALLET_MIGRATION_ROUTE_NAMES.UniversalWalletMigration,
 ]);
 
-const UNIVERSAL_WALLET_MIGRATION_WITH_EXPORT_ROUTES = new Set<string>([
-  ...UNIVERSAL_WALLET_MIGRATION_BASE_ALLOWED_ROUTES,
-  UNIVERSAL_WALLET_MIGRATION_ROUTE_NAMES.Export,
-]);
-
 type UniversalWalletMigrationRedirectInput = {
   action: UniversalWalletMigrationRequiredAction;
   routeName: string | symbol | null | undefined;
@@ -41,18 +36,15 @@ function resolveUniversalWalletMigrationRedirect({
 }: UniversalWalletMigrationRedirectInput): string | null {
   const normalizedRouteName = typeof routeName === 'string' ? routeName : '';
 
-  if (action === 'normal-access') {
+  // Older workers/snapshots may still return the former mandatory action.
+  // Existing wallets remain usable while optional network enrollment retries.
+  if (action === 'normal-access' || action === 'migrate-before-access') {
     return normalizedRouteName === UNIVERSAL_WALLET_MIGRATION_ROUTE_NAMES.UniversalWalletMigration
       ? UNIVERSAL_WALLET_MIGRATION_ROUTE_NAMES.Welcome
       : null;
   }
 
-  const allowedRoutes =
-    action === 'migrate-before-access'
-      ? UNIVERSAL_WALLET_MIGRATION_WITH_EXPORT_ROUTES
-      : UNIVERSAL_WALLET_MIGRATION_BASE_ALLOWED_ROUTES;
-
-  return allowedRoutes.has(normalizedRouteName)
+  return UNIVERSAL_WALLET_MIGRATION_BASE_ALLOWED_ROUTES.has(normalizedRouteName)
     ? null
     : UNIVERSAL_WALLET_MIGRATION_ROUTE_NAMES.UniversalWalletMigration;
 }

@@ -22,11 +22,29 @@ export default abstract class SubscribableStore<T> extends (IS_EXTENSION ? BaseE
     super.remove(_key, update);
   }
 
-  public all(update: (key: string, value: T) => void): void {
-    super.all(update);
+  public all(update: (key: string, value: T) => void): Promise<void> {
+    return super.all(update);
   }
 
   public get(_key: string, update: (value: T) => void): void {
     super.get(_key, update);
+  }
+
+  public setAndWait(key: string, value: T): Promise<void> {
+    return super.setAndWait(key, value);
+  }
+
+  public getAndWait(_key: string): Promise<T | undefined> {
+    return super.getAndWait(_key);
+  }
+
+  // Read, transform and write one record in the shared write queue, keeping fields the caller does not set.
+  public updateAndWait(
+    _key: string,
+    transform: (current: T | undefined) => T | undefined,
+    publish?: (committed: T) => void,
+    trackFailure = true
+  ): Promise<T | undefined> {
+    return super.updateAndWait(_key, transform, publish, trackFailure);
   }
 }

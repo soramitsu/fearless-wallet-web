@@ -4,10 +4,10 @@ import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { locationActions, type LocationActions } from '@/portfolio/dashboard/actions';
 import { needsWalletSwitch } from '@/portfolio/dashboard/handoff';
-import { parseHoldingKey } from '@/portfolio/dashboard/holdingKey';
 import { buildTokenLocations, type LocationHolding } from '@/portfolio/dashboard/locations';
 import { derivePolkaswapFacts, polkaswapChecks, type PolkaswapChecks } from '@/portfolio/dashboard/polkaswapChecks';
 import { SORA_CHAIN_ID } from '@/portfolio/dashboard/readiness';
+import { tokenIcon, type TokenIconSubject } from '@/portfolio/dashboard/tokenIcons';
 import { useReadiness } from '@/portfolio/dashboard/useReadiness';
 import { usePortfolioDashboard } from '@/portfolio/dashboard/usePortfolioDashboard';
 import { useAccountsStore } from '@/stores/accounts';
@@ -83,14 +83,10 @@ export function useTokenLocations(tokenKey: Ref<string>, preferredHolding: Ref<s
     if (largest) selectedId.value = largest.id;
   };
 
-  // Icons and names, from the registry the popup loaded.
+  // Icons and names, from the registry the popup loaded; a SORA token wears polkaswap.io's logo (tokenIcons.ts).
   const networkOf = (name: string) => networksStore.getNetwork(name);
   const networkIconOf = (name: string): string => networkOf(name)?.icon ?? '';
-  const tokenIconOf = (holding: { key: string; networkName: string }): string => {
-    const assetId = parseHoldingKey(holding.key)?.assetId;
-
-    return networkOf(holding.networkName)?.assets.find(({ id }) => String(id) === assetId)?.icon ?? '';
-  };
+  const tokenIconOf = (holding: TokenIconSubject): string => tokenIcon(holding, networkOf);
   const roleOf = (holding: { key: string }): string | undefined => dashboard.groupIndex.value.memberOfKey.get(holding.key)?.role;
   const soraNetwork = computed(() => networksStore.allNetworks.find(({ chainId }) => String(chainId) === SORA_CHAIN_ID));
 

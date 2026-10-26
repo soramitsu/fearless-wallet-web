@@ -10,12 +10,14 @@ import {
   buildAggregateTokenRows,
   holdingRefs,
   seedSlots,
+  type AggregateTokenRow,
   type GroupOf,
 } from '@/portfolio/dashboard/facets';
 import { buildWalletHoldings } from '@/portfolio/dashboard/holdings';
 import { effectiveScope, slotMapKey, type AllWalletsLens, type DashboardScope } from '@/portfolio/dashboard/preferences';
 import { hiddenKeysByAddress } from '@/portfolio/dashboard/hiddenKeys';
 import { computeSyncState } from '@/portfolio/dashboard/syncState';
+import { rowIcon } from '@/portfolio/dashboard/tokenIcons';
 import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
 import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';
@@ -98,6 +100,8 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
   const refs = computed(() => holdingRefs(portfolios.value));
   const tokenRows = computed(() => buildAggregateTokenRows(refs.value, groupOf.value));
   const networkSections = computed(() => buildAggregateNetworkSections(refs.value, groupOf.value));
+  /** A Tokens-lens row's logo: polkaswap.io's for a SORA asset, otherwise the registry's (tokenIcons.ts). */
+  const iconOf = (row: AggregateTokenRow): string => rowIcon(row.children, (name) => networksStore.getNetwork(name));
 
   const slotKey = computed(() => slotMapKey(scope.value, lens.value, selectedAddress.value));
   const allocation = computed(() =>
@@ -185,6 +189,7 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
     refs,
     tokenRows,
     networkSections,
+    iconOf,
     allocation,
     syncState,
     groupIndex,

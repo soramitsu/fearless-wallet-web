@@ -11,6 +11,8 @@ import path from 'node:path';
 
 export const POPUP_WIDTH = 561;
 export const POPUP_HEIGHT = 600;
+// Where a tour renders: the popup by default, or the side panel page at the panel's size (extension-smoke-side-panel.mjs).
+export const POPUP_SURFACE = { page: 'popup.html', width: POPUP_WIDTH, height: POPUP_HEIGHT, name: 'popup' };
 
 const SNAPSHOT = 'tests/fixtures/legacy-305/chains-v13.snapshot.json';
 const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin': 1 };
@@ -193,6 +195,7 @@ export async function capturePortfolioScreenshots({
   helpers: { evaluate, waitForExpression, extensionSend, sleep },
   password,
   walletAddress,
+  surface = POPUP_SURFACE,
 }) {
   const fixture = await portfolioFixture(root);
   // The seeded wallet is a returning user's: past the welcome stories, and the wallet on screen.
@@ -207,13 +210,13 @@ export async function capturePortfolioScreenshots({
   // The popup decides it is a popup from its width at load, so the size is set before it loads.
   await cdp.send(
     'Emulation.setDeviceMetricsOverride',
-    { width: POPUP_WIDTH, height: POPUP_HEIGHT, deviceScaleFactor: 2, mobile: false },
+    { width: surface.width, height: surface.height, deviceScaleFactor: 2, mobile: false },
     sessionId
   );
   const stopServing = await servePopupOffline(cdp, sessionId);
 
   try {
-    await cdp.send('Page.navigate', { url: `chrome-extension://${extensionId}/popup.html` }, sessionId);
+    await cdp.send('Page.navigate', { url: `chrome-extension://${extensionId}/${surface.page}` }, sessionId);
     await waitForExpression(cdp, sessionId, `Boolean(${APP})`, 'popup Vue app');
 
     // The auto-lock may still show Unlock: unlock through the background and leave it.
@@ -247,7 +250,7 @@ export async function capturePortfolioScreenshots({
     const capture = async (name, description) => {
       await sleep(400);
       const overflow = await evaluate(cdp, sessionId, OVERFLOW);
-      if (overflow.length) throw new Error(`${name}: content wider than the ${POPUP_WIDTH}px popup:\n${overflow.join('\n')}`);
+      if (overflow.length) throw new Error(`${name}: content wider than the ${surface.width}px ${surface.name}:\n${overflow.join('\n')}`);
       const fonts = await fontsOnScreen(cdp, sessionId, evaluate);
       const system = Object.keys(fonts.families).filter((family) => family.endsWith(' (system)'));
       if (system.length) throw new Error(`${name}: text drawn with system fonts ${system.join(', ')}: ${JSON.stringify(fonts)}`);
@@ -332,7 +335,7 @@ export async function capturePortfolioScreenshots({
     if (!switched) throw new Error('Could not switch the popup to Russian');
     await scrollTo('[data-token="group:dot"]');
     await waitForExpression(cdp, sessionId, 'document.body.innerText.includes("По токенам")', 'Russian By token list');
-    await capture('10-by-token-russian', 'Russian at the popup width: the DOT row with each network\'s role and note.');
+    await capture('10-by-token-russian', `Russian at the ${surface.name} width: the DOT row with each network's role and note.`);
     await click('[data-token="group:dot"] [data-testid="groupSend"]');
     await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="groupNetworkPicker"]\'))', 'Russian Send picker');
     await capture('11-send-choose-network-russian', 'Russian Send picker: the network is chosen explicitly, with the warning.');
@@ -355,7 +358,7 @@ export async function capturePortfolioScreenshots({
 
     await fs.writeFile(
       path.join(outputDir, 'README.md'),
-      `# Portfolio at the popup size (${POPUP_WIDTH} x ${POPUP_HEIGHT}, device scale 2)\n\n` +
+      `# Portfolio at the ${surface.name} size (${surface.width} x ${surface.height}, device scale 2)\n\n` +
         'Captured offline by `node scripts/solana-extension-smoke.mjs --portfolio-screenshots <dir>` from the test build. ' +
         'Registry: the reviewed snapshot in `tests/fixtures/legacy-305`; logos are generated placeholders.\n\n' +
         shots.map(({ file, description }) => `- \`${path.basename(file)}\`: ${description}`).join('\n') +

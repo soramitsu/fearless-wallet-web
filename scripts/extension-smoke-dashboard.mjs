@@ -11,7 +11,7 @@
 // run checks what the screens claim: the totals, the legend, the drill-down, the sheets and the wallet picker.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { APP, POPUP_HEIGHT, POPUP_WIDTH, fontsOnScreen, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
+import { APP, POPUP_SURFACE, fontsOnScreen, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
 
 const SECOND_WALLET_MNEMONIC = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
 const SECOND_WALLET_NAME = 'Savings';
@@ -133,6 +133,7 @@ export async function captureDashboardScreenshots({
   helpers: { evaluate, waitForExpression, extensionSend, sleep },
   password,
   walletAddress,
+  surface = POPUP_SURFACE,
 }) {
   const fixture = await portfolioFixture(root);
   const mainTotal = fundMain(fixture);
@@ -167,7 +168,7 @@ export async function captureDashboardScreenshots({
 
   await cdp.send('Runtime.enable', {}, sessionId);
   await cdp.send('Page.enable', {}, sessionId);
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: POPUP_WIDTH, height: POPUP_HEIGHT, deviceScaleFactor: 2, mobile: false }, sessionId);
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: surface.width, height: surface.height, deviceScaleFactor: 2, mobile: false }, sessionId);
   const stopServing = await servePopupOffline(cdp, sessionId);
   const evalPage = (expression) => evaluate(cdp, sessionId, expression);
   const wait = (expression, label) => waitForExpression(cdp, sessionId, expression, label);
@@ -189,7 +190,7 @@ export async function captureDashboardScreenshots({
   const capture = async (name, description) => {
     await sleep(450);
     const overflow = await evalPage(OVERFLOW);
-    if (overflow.length) throw new Error(`${name}: content wider than the ${POPUP_WIDTH}px popup:\n${overflow.join('\n')}`);
+    if (overflow.length) throw new Error(`${name}: content wider than the ${surface.width}px ${surface.name}:\n${overflow.join('\n')}`);
     const fonts = await fontsOnScreen(cdp, sessionId, evaluate);
     const system = Object.keys(fonts.families).filter((family) => family.endsWith(' (system)'));
     if (system.length) throw new Error(`${name}: text drawn with system fonts ${system.join(', ')}: ${JSON.stringify(fonts)}`);
@@ -204,7 +205,7 @@ export async function captureDashboardScreenshots({
 
   try {
     await fs.mkdir(outputDir, { recursive: true });
-    await cdp.send('Page.navigate', { url: `chrome-extension://${extensionId}/popup.html` }, sessionId);
+    await cdp.send('Page.navigate', { url: `chrome-extension://${extensionId}/${surface.page}` }, sessionId);
     await wait(`Boolean(${APP})`, 'popup Vue app');
     const onUnlock = await evalPage(`${APP}.router.currentRoute.value.name === 'Unlock'`).catch(() => false);
     if (onUnlock) await extensionSend(cdp, controlSession, 'pri(keyring.unlock)', { password });
@@ -486,16 +487,16 @@ export async function captureDashboardScreenshots({
     await evalPage(`(() => { const dashboard = ${APP}.pinia._s.get('portfolioDashboard'); dashboard.setScope('all'); dashboard.setLens('token'); return true; })()`);
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'All wallets in Russian');
     await scrollTop();
-    await capture('12-all-wallets-russian', 'All wallets in Russian at the popup width.');
+    await capture('12-all-wallets-russian', `All wallets in Russian at the ${surface.name} width.`);
     await click('[data-testid="tokenRow-group:dot"]');
     await click('[data-testid="whereItLives-group:dot"]');
     await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives in Russian');
     await wait(`/где хранится/i.test(document.body.innerText)`, 'Russian Where it lives text');
-    await capture('20-where-it-lives-russian', 'Where it lives in Russian at the popup width.');
+    await capture('20-where-it-lives-russian', `Where it lives in Russian at the ${surface.name} width.`);
 
     await fs.writeFile(
       path.join(outputDir, 'README.md'),
-      `# Portfolio dashboard at the popup size (${POPUP_WIDTH} x ${POPUP_HEIGHT}, device scale 2)\n\n` +
+      `# Portfolio dashboard at the ${surface.name} size (${surface.width} x ${surface.height}, device scale 2)\n\n` +
         'Captured offline by `node scripts/solana-extension-smoke.mjs --dashboard-screenshots <dir>` from a test build made with ' +
         '`VUE_APP_PORTFOLIO_DASHBOARD=true`. Two wallets: the first holds the fixture balances, the second is a real keyring wallet whose ' +
         'holdings are injected as the background would report them. Logos are generated placeholders. Invented amounts.\n\n' +

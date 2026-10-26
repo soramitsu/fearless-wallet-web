@@ -85,7 +85,7 @@ import sunColour from '@/assets/brand/winged-sun-colour.svg';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
-import { IS_POPUP } from '@/consts/globalClient';
+import { IS_POPUP, IS_SIDE_PANEL } from '@/consts/globalClient';
 import { URLS } from '@/consts/urls';
 import ResetPopup from '@/screens/welcome/ResetPopup.vue';
 import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
@@ -142,7 +142,8 @@ const continueUnlocked = async () => {
 
 const openFullScreen = () => {
   windowOpen(resolveUnlockRedirect(route.query.redirect) ?? '/');
-  window.close();
+  // The side panel stays beside the new tab.
+  if (!IS_SIDE_PANEL) window.close();
 };
 
 const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);

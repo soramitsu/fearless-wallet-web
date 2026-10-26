@@ -42,6 +42,14 @@ describe('extension manifest generation', () => {
     expect(csp).not.toContain("'unsafe-eval'");
   });
 
+  it('opens Chrome builds in the side panel and keeps the popup for browsers without it', () => {
+    const manifest = makeManifest('chrome');
+
+    expect(manifest.side_panel).toEqual({ default_path: 'sidepanel.html' });
+    expect(manifest.permissions).toContain('sidePanel');
+    expect(manifest.action).toEqual({ default_title: 'Fearless Wallet', default_popup: 'popup.html#/' });
+  });
+
   it('requires Firefox built-in data consent support without chromium-only keys', () => {
     const manifest = makeManifest('firefox');
 
@@ -62,6 +70,8 @@ describe('extension manifest generation', () => {
     expect(manifest).not.toHaveProperty('key');
     expect(manifest).not.toHaveProperty('oauth2');
     expect(manifest).not.toHaveProperty('minimum_chrome_version');
+    expect(manifest).not.toHaveProperty('side_panel');
+    expect(manifest.permissions).not.toContain('sidePanel');
   });
 
   it('ships the 4.2.1 release version to Chrome and Firefox', () => {

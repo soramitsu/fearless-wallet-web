@@ -15,3 +15,14 @@ body {
     min-height: 0;
   }
 }
+
+// The side panel is as tall as the browser and as wide as the person drags it (Chrome allows 320px and up): the page
+// fills it instead of asking for the popup's size.
+html[data-fw-surface='side-panel'] {
+  &,
+  body {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+}

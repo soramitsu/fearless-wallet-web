@@ -19,6 +19,7 @@ import { checkAccountRemovalStorage } from './extension-smoke-account-removal.mj
 import { checkCurrentAccountStorage } from './extension-smoke-current-account.mjs';
 import { checkSessionRetirementStorage } from './extension-smoke-session-retirement.mjs';
 import { captureJsonRecoveryNotice } from './extension-smoke-json-notice.mjs';
+import { checkSidePanel } from './extension-smoke-side-panel.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -45,6 +46,19 @@ const dashboardScreenshotsDir =
         process.argv[dashboardScreenshotsArg + 1]?.startsWith('--') === false
           ? process.argv[dashboardScreenshotsArg + 1]
           : 'output/dashboard-screenshots'
+      );
+// `--side-panel-screenshots [dir]`: open the wallet in Chrome's side panel, check the toolbar switching, then run the
+// portfolio tour on the side panel page at the panel's size, offline. The person can drag the panel narrower or wider:
+// SIDE_PANEL_SMOKE_WIDTH=320 (or 640) runs the tour at that width instead.
+const sidePanelScreenshotsArg = process.argv.indexOf('--side-panel-screenshots');
+const sidePanelScreenshotsDir =
+  sidePanelScreenshotsArg === -1
+    ? undefined
+    : path.resolve(
+        process.cwd(),
+        process.argv[sidePanelScreenshotsArg + 1]?.startsWith('--') === false
+          ? process.argv[sidePanelScreenshotsArg + 1]
+          : 'output/side-panel-screenshots'
       );
 // `--effects-screenshots [dir]`: the same offline wallet, once per effects tier and system setting (design-system 2).
 const effectsScreenshotsArg = process.argv.indexOf('--effects-screenshots');
@@ -77,7 +91,7 @@ const walletResetStorageOnly = process.argv.includes('--wallet-reset-storage');
 const accountRemovalStorageOnly = process.argv.includes('--account-removal-storage');
 const currentAccountStorageOnly = process.argv.includes('--current-account-storage');
 const sessionRetirementStorageOnly = process.argv.includes('--session-retirement-storage');
-const offlineScreenshots = Boolean(portfolioScreenshotsDir || dashboardScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
+const offlineScreenshots = Boolean(portfolioScreenshotsDir || dashboardScreenshotsDir || sidePanelScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
 const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
@@ -447,6 +461,38 @@ async function main() {
       });
 
       console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots, results }, null, 2));
+
+      return;
+    }
+
+    if (sidePanelScreenshotsDir) {
+      const helpers = { evaluate, waitForExpression, extensionSend, sleep };
+      const sidePanel = await checkSidePanel({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: sidePanelScreenshotsDir,
+        password: TEST_PASSWORD,
+        helpers,
+      });
+      const portfolio = await capturePortfolioScreenshots({
+        cdp,
+        extensionId,
+        controlSession: extensionSession,
+        outputDir: path.join(sidePanelScreenshotsDir, 'portfolio'),
+        root,
+        password: TEST_PASSWORD,
+        walletAddress: substrateAddress,
+        helpers,
+        surface: {
+          page: 'sidepanel.html',
+          width: Number(process.env.SIDE_PANEL_SMOKE_WIDTH || sidePanel.viewport.width),
+          height: sidePanel.viewport.height,
+          name: 'side panel',
+        },
+      });
+
+      console.info(JSON.stringify({ extensionId, substrateAddress, sidePanel, portfolio }, null, 2));
 
       return;
     }
@@ -1620,6 +1666,8 @@ function launchChrome(userDataDir) {
     );
 
   if (headless) args.unshift('--headless=new');
+  // A browser window of a common laptop size, so the side panel has a realistic height.
+  if (sidePanelScreenshotsDir) args.unshift('--window-size=1280,900');
   if (process.env.SOLANA_EXTENSION_SMOKE_DISABLE_GPU === 'true')
     args.unshift('--disable-gpu', '--disable-gpu-vsync', '--disable-frame-rate-limit');
 

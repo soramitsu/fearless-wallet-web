@@ -181,7 +181,7 @@ import {
   mnemonicValidate,
   tonImportCandidates,
 } from '@/extension/messaging';
-import { IS_POPUP } from '@/consts/globalClient';
+import { IS_POPUP, IS_SIDE_PANEL } from '@/consts/globalClient';
 import { useAccountsStore } from '@/stores/accounts';
 import { type FWKeyringMeta } from '@/extension/background/extension-base/src/types';
 
@@ -788,7 +788,8 @@ export default defineComponent({ name: 'AddWallet',
     },
     openFullScreen() {
       windowOpen('/');
-          window.close();
+          // The side panel stays beside the new tab.
+          if (!IS_SIDE_PANEL) window.close();
     },
     backIsImportWallet() {
       if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;

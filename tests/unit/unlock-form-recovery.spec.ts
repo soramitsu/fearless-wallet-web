@@ -5,7 +5,7 @@ const auth = vi.hoisted(() => ({ unlock: vi.fn(), push: vi.fn(), query: {} as Re
 vi.mock('@/extension/messaging', () => ({ unlockExtension: auth.unlock, windowOpen: vi.fn() }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: auth.push }), useRoute: () => ({ query: auth.query }) }));
 vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet' } }));
-vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false }));
+vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false, IS_SIDE_PANEL: false }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key, tc: (key: string) => key }) }));
 vi.mock('@/screens/welcome/ResetPopup.vue', () => ({ default: { template: '<div data-testid="resetDialog" />' } }));
 

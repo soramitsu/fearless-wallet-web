@@ -6,7 +6,7 @@ vi.mock('@/router/routes', () => ({ Components: { Welcome: 'Welcome', Wallet: 'W
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [], selectedWallet: {} }) }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: mocks.derive }));
 vi.mock('@/util/BaseApi', () => ({ default: { parseJson: () => ({}), isValidSequenceMnemonic: () => true, isValidEthereumDerivationPath: () => true } }));
-vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false }));
+vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false, IS_SIDE_PANEL: false }));
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import CreateGoogle from '@/screens/addWallet/google/CreateGoogle.vue';
 const mountFlow = (type = 'create', walletEcosystem = 'ton') => shallowMount(AddWallet, { global: { mocks: { $t: (key: string) => key, $i18n: { locale: 'en-EN' }, $route: { params: { type, walletEcosystem } }, $router: { push: mocks.push } }, stubs: { CircleButton: true, FButton: true, NotificationPopup: true } } });

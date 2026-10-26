@@ -4,6 +4,7 @@ import * as egy from './egy/translation.json';
 import * as en from './en/translation.json';
 import * as ru from './ru/translation.json';
 import { syncDocumentLanguage, type Lang } from './languages';
+import { sidePanelMessages } from './sidePanelMessages';
 import { walletUpgradeMessages } from './walletUpgradeMessages';
 import { accountController } from '@/controllers';
 
@@ -141,6 +142,8 @@ export const i18n = createI18n({
   },
 });
 
-Object.entries(walletUpgradeMessages).forEach(([locale, supplementalMessages]) => {
-  i18n.global.mergeLocaleMessage(locale, supplementalMessages);
+[walletUpgradeMessages, sidePanelMessages].forEach((bundle) => {
+  Object.entries(bundle).forEach(([locale, supplementalMessages]) => {
+    i18n.global.mergeLocaleMessage(locale, supplementalMessages);
+  });
 });

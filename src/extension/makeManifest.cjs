@@ -35,14 +35,19 @@ module.exports = (browser) => {
 
   const chromiumBase = {
     manifest_version: 3,
-    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms', 'sidePanel'],
     background: {
       service_worker: 'background.js',
       type: 'module',
     },
+    // The toolbar opens the side panel (src/extension/toolbarSurface.ts). The popup stays the manifest default for
+    // browsers that cannot show the panel.
     action: {
       default_title: 'Fearless Wallet',
       default_popup: 'popup.html#/',
+    },
+    side_panel: {
+      default_path: 'sidepanel.html',
     },
     host_permissions: ['<all_urls>'],
     ...(chromiumKey ? { key: chromiumKey } : {}),

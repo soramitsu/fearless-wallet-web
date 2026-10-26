@@ -110,8 +110,9 @@ function baseManifest() {
       client_id: TEST_RELEASE_ENVIRONMENT.OAUTH_CLIENT_ID,
       scopes: ['https://www.googleapis.com/auth/drive.appdata'],
     },
-    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'],
+    permissions: ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms', 'sidePanel'],
     short_name: 'FW',
+    side_panel: { default_path: 'sidepanel.html' },
     version: '4.2.0',
     web_accessible_resources: [
       { matches: ['https://*/*', 'http://*/*', 'http://localhost/*'], resources: ['page.js'] },
@@ -159,8 +160,9 @@ function baseFiles(manifest, metadataOverrides = {}) {
     ],
     ['content.js', Buffer.from('globalThis.fearlessContent = true;\n')],
     ['page.js', Buffer.from('globalThis.fearlessPage = true;\n')],
-    ['popup.html', Buffer.from('<!doctype html><script type="module" src="./popup.js"></script>\n')],
+    ['popup.html', Buffer.from('<!doctype html><html lang="en"><script type="module" src="./popup.js"></script>\n')],
     ['popup.js', Buffer.from('export const popup = true;\n')],
+    ['sidepanel.html', Buffer.from('<!doctype html><html lang="en" data-fw-surface="side-panel"><script type="module" src="./popup.js"></script>\n')],
   ]);
   for (const size of [16, 32, 48, 64, 128]) files.set(`icons/logo-${size}.png`, pngIcon(size));
   return files;
@@ -663,6 +665,53 @@ async function run() {
       'popup-route-drift',
       { mutateManifest: (manifest) => (manifest.action.default_popup = 'popup.html#unexpected-route') },
       /action\.default_popup must equal popup\.html#\//u
+    );
+    await expectFailure(
+      tempRoot,
+      'side-panel-missing',
+      { mutateManifest: (manifest) => delete manifest.side_panel },
+      /top-level manifest keys differ from the reviewed allowlist; missing \["side_panel"\]/u
+    );
+    await expectFailure(
+      tempRoot,
+      'side-panel-path-drift',
+      { mutateManifest: (manifest) => (manifest.side_panel.default_path = 'popup.html') },
+      /side_panel\.default_path must equal sidepanel\.html/u
+    );
+    await expectFailure(
+      tempRoot,
+      'extra-side-panel-key',
+      { mutateManifest: (manifest) => (manifest.side_panel.open_on_action_click = true) },
+      /side_panel keys differ from the reviewed allowlist/u
+    );
+    await expectFailure(
+      tempRoot,
+      'side-panel-page-missing',
+      { mutateFiles: (files) => files.delete('sidepanel.html') },
+      /missing required file sidepanel\.html/u
+    );
+    for (const [label, page] of [
+      ['side-panel-extra-script', '<script type="module" src="./popup.js"></script><script type="module" src="./panel.js"></script>'],
+      ['side-panel-unquoted-script', '<script type="module" src="./popup.js"></script><script type=module src=./panel.js></script>'],
+      ['side-panel-inline-script', '<script type="module" src="./popup.js"></script><script>globalThis.panel = true;</script>'],
+    ]) {
+      await expectFailure(
+        tempRoot,
+        label,
+        {
+          mutateFiles: (files) =>
+            files
+              .set('sidepanel.html', Buffer.from(`<!doctype html><html lang="en" data-fw-surface="side-panel">${page}\n`))
+              .set('panel.js', Buffer.from('export const panel = true;\n')),
+        },
+        /sidepanel\.html must be popup\.html with only the side panel mark added/u
+      );
+    }
+    await expectFailure(
+      tempRoot,
+      'side-panel-unmarked',
+      { mutateFiles: (files) => files.set('sidepanel.html', files.get('popup.html')) },
+      /sidepanel\.html must be popup\.html with only the side panel mark added/u
     );
     await expectFailure(
       tempRoot,

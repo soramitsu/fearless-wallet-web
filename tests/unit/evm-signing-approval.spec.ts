@@ -137,6 +137,24 @@ const providerFixture = () => ({
 });
 
 describe('EVM approval revalidates after transaction preparation and signing', () => {
+  it('rejects an approval held across session expiry before exporting a key or broadcasting', async () => {
+    const { result } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const rejected = expect(result).rejects.toThrow('Wallet locked');
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    let release!: (fees: Awaited<ReturnType<typeof provider.getFeeData>>) => void;
+    provider.getFeeData.mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
+    const approving = extension.signEvmApprove({ id: 'first' });
+    const failedApproval = expect(approving).rejects.toThrow('cancelled');
+    await vi.waitFor(() => expect(provider.getFeeData).toHaveBeenCalledOnce());
+    handler.cancelPending(new Error('Wallet locked'));
+    release({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null });
+    await failedApproval;
+    await rejected;
+    expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
+    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+  });
+
   it('refuses an RPC configuration changed after the request was reviewed', async () => {
     network.currentProvider = 'https://first.public.invalid';
     await queue();

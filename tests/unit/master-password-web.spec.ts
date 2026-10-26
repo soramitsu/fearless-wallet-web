@@ -3,6 +3,7 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { BehaviorSubject } from 'rxjs';
 import CryptoJS from 'crypto-js';
+import { compareSync, getRounds } from 'bcryptjs';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, unknown>, password: null as string | null,
@@ -163,6 +164,26 @@ const NEW_PASSWORD = 'Public replacement web password';
 const change = () => track(service.changeMasterPassword({ oldPassword: PASSWORD, newPassword: NEW_PASSWORD }));
 
 describe('master password change through actual IndexedDB store adapter', { timeout: 60_000 }, () => {
+  it('upgrades the active legacy web verifier atomically without rewriting account ciphertext', async () => {
+    await native();
+    const before = structuredClone(fixture.data);
+    const legacyCopy = fixture.password;
+    expect(getRounds(JSON.parse(passwordRecord().serialized!).passwordHash)).toBe(6);
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const upgrading = track(service.waitForPasswordVerifierUpgrade());
+    await drain();
+    expect(await upgrading).toEqual({ value: undefined });
+    const stored = JSON.parse(passwordRecord().serialized!);
+    expect(getRounds(stored.passwordHash)).toBe(12);
+    expect(compareSync(PASSWORD, stored.passwordHash)).toBe(true);
+    expect(Object.fromEntries(Object.entries(fixture.data).filter(([key]) => key !== passwordKey)))
+      .toEqual(Object.fromEntries(Object.entries(before).filter(([key]) => key !== passwordKey)));
+    let cached: unknown;
+    new KeyringStoreWeb().get(value => { cached = value; });
+    expect(cached).toEqual(stored);
+    expect(fixture.password).toBe(legacyCopy);
+  });
+
   it('creates a first password from the durable web tombstone and preserves the legacy copy', async () => {
     fixture.data[passwordKey] = { version: 1, serialized: null };
     keyring.keyring.resetPassword();
@@ -172,7 +193,7 @@ describe('master password change through actual IndexedDB store adapter', { time
     await drain();
     expect(await creation).toEqual({ value: true });
     expect(service.unlockKeyring({ password: NEW_PASSWORD })).toBe(true);
-    expect(JSON.parse(passwordRecord().serialized!).passwordHash).toBeTruthy();
+    expect(getRounds(JSON.parse(passwordRecord().serialized!).passwordHash)).toBe(12);
     expect(fixture.password).toBe(legacy);
   });
 

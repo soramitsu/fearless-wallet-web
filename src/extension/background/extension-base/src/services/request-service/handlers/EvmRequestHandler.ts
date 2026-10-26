@@ -37,8 +37,12 @@ export default class EvmRequestHandler {
   }
 
   resetWallet(): void {
-    for (const request of Object.values(this.evmRequests)) request.reject(new Error('Reset wallet'));
-    for (const request of [...this.wcRequests.values()]) request.reject(new Error('Reset wallet'));
+    this.cancelPending(new Error('Reset wallet'));
+  }
+
+  cancelPending(error: Error): void {
+    for (const request of Object.values(this.evmRequests)) request.reject(error);
+    for (const request of [...this.wcRequests.values()]) request.reject(error);
   }
 
   getSignWCRequest(approvalId: string): WCSignRequest | undefined {

@@ -8,7 +8,7 @@ import {
 } from '@polkadot/util-crypto';
 import { accounts as accountsObservable } from '@subwallet/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@subwallet/ui-keyring/observable/addresses';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import CurrentAccountStore, { CurrentAccountContextChanged, type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
@@ -48,6 +48,7 @@ import {
   type DeletedWallet,
 } from './DeletedWallets';
 import { commitMasterPasswordChange } from './MasterPasswordChange';
+import { upgradePasswordVerifier } from './PasswordVerifier';
 import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import type { TonStoreAccount } from '@extension-base/stores/TonStore';
 import type { EventService } from '@extension-base/services';
@@ -100,6 +101,13 @@ async function flushWalletWrites(): Promise<void> {
 }
 
 export class KeyringService {
+  readonly lockSubject = new Subject<void>();
+  private sessionExpiryCheck?: () => void;
+
+  setSessionExpiryCheck(check: () => void): void {
+    this.sessionExpiryCheck = check;
+  }
+
   private readonly currentAccountStore = new CurrentAccountStore();
   readonly tonKeyring = new TonKeyringService(this);
   readonly currentAccountSubject = new BehaviorSubject<CurrentAccountState>(null);
@@ -220,11 +228,13 @@ export class KeyringService {
   }
 
   get keyringIsLocked() {
+    this.sessionExpiryCheck?.();
     // isLocked - we check only for the state when the password is set
     return this.hasMasterPassword && keyring.keyring.isLocked;
   }
 
   getPassword(): string {
+    this.sessionExpiryCheck?.();
     return this.password;
   }
 
@@ -238,6 +248,10 @@ export class KeyringService {
 
   get walletResetRevision(): number {
     return this.resetRevision ?? 0;
+  }
+
+  get walletAuthenticationRevision(): number {
+    return this.authenticationRevision ?? 0;
   }
 
   private removingAccounts = new Set<string>();
@@ -434,6 +448,7 @@ export class KeyringService {
   }
 
   getPair(addressOrPair: string | KeyringPair) {
+    this.sessionExpiryCheck?.();
     if (typeof addressOrPair !== 'string') return addressOrPair;
 
     try {
@@ -832,6 +847,7 @@ export class KeyringService {
             this.password = password;
             return true;
           });
+        this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
         retained.forEach(address => this.access.flagPreviousMasterPair(address));
         this.scheduleLegacyNetworkEnrollment();
         this.access.scheduleScan(newPassword);
@@ -880,7 +896,7 @@ export class KeyringService {
   exportMnemonic({ address, password, walletEcosystem }: RequestExportSeed): ResponseExportSeed {
     if (walletEcosystem === WalletEcosystem.Ton) throw new TonKeyringError('ton_export_requires_verification');
 
-    const passphrase = password ?? this.password;
+    const passphrase = password ?? this.getPassword();
     const accountPair = this.getPair(address);
 
     if (accountPair?.meta.isMnemonicUnverified) {
@@ -1020,14 +1036,37 @@ export class KeyringService {
     }
   }
 
+  // The privileged unlock handler waits for this before reporting success. A failed
+  // write leaves the old verifier intact and closes only this authentication session.
+  async waitForPasswordVerifierUpgrade(): Promise<void> {
+    const password = this.getPassword();
+    const revision = this.authenticationRevision;
+    const resetRevision = this.resetRevision;
+    const assertCurrent = () => {
+      if (!password || this.getPassword() !== password || this.authenticationRevision !== revision ||
+        this.resetRevision !== resetRevision || this.resetWork || this.resetting)
+        throw new Error('Wallet authentication changed during verifier upgrade.');
+    };
+    // Emergency web recovery cannot write and must remain available for export.
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly) return;
+    try {
+      await this.tonKeyring.vault.exclusive(() => upgradePasswordVerifier(password, assertCurrent));
+    } catch (error) {
+      if (this.authenticationRevision === revision && this.password === password) this.lockKeyring();
+      throw error;
+    }
+  }
+
   lockKeyring(): boolean {
     try {
+      const wasUnlocked = !!this.password;
       keyring.lockAll();
       this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
 
       this.password = '';
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
       this.access.cancelScan();
+      if (wasUnlocked) this.lockSubject?.next();
 
       return true;
     } catch (e) {

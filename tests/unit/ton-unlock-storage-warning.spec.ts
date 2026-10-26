@@ -13,6 +13,7 @@ vi.mock('@extension-base/utils/crossenv', () => ({
 function fixture(unlocked: boolean, hasStorageIssues: boolean) {
   const keyringService = {
     unlockKeyring: vi.fn(() => unlocked),
+    waitForPasswordVerifierUpgrade: vi.fn(async () => {}),
     tonKeyring: { hasStorageIssues, hasRecoveryAccounts: false },
     waitForAccessScan: vi.fn(() => new Promise<void>(() => {})),
   };
@@ -20,7 +21,7 @@ function fixture(unlocked: boolean, hasStorageIssues: boolean) {
     keyringService,
     keyringLockService: { setExtensionAutoLockTimeout: vi.fn() },
   };
-  return { keyringService, extension: new Extension(state as unknown as State) };
+  return { keyringService, keyringLockService: state.keyringLockService, extension: new Extension(state as unknown as State) };
 }
 
 describe('unlock reports retained but unreadable TON storage', () => {
@@ -41,5 +42,23 @@ describe('unlock reports retained but unreadable TON storage', () => {
     keyringService.tonKeyring.hasRecoveryAccounts = true;
     await expect(extension.unlockKeyring({ password: 'public fixture password' })).resolves.toBe(true);
     expect(keyringService.waitForAccessScan).not.toHaveBeenCalled();
+  });
+
+  it('waits for durable verifier migration before acknowledging and starting the session timer', async () => {
+    const { extension, keyringService, keyringLockService } = fixture(true, false);
+    let finish!: () => void;
+    keyringService.waitForPasswordVerifierUpgrade.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const result = extension.unlockKeyring({ password: 'public fixture password' });
+    expect(keyringLockService.setExtensionAutoLockTimeout).not.toHaveBeenCalled();
+    finish();
+    await expect(result).resolves.toBe(true);
+    expect(keyringLockService.setExtensionAutoLockTimeout).toHaveBeenCalledOnce();
+  });
+
+  it('does not acknowledge or extend a session after verifier storage fails', async () => {
+    const { extension, keyringService, keyringLockService } = fixture(true, false);
+    keyringService.waitForPasswordVerifierUpgrade.mockRejectedValue(new Error('Storage failed'));
+    await expect(extension.unlockKeyring({ password: 'public fixture password' })).rejects.toThrow('Storage failed');
+    expect(keyringLockService.setExtensionAutoLockTimeout).not.toHaveBeenCalled();
   });
 });

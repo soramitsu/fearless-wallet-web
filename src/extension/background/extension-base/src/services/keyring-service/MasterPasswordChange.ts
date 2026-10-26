@@ -7,6 +7,7 @@ import { decodeWebPassword, WEB_PASSWORD_RECORD_KEY, validateWebPasswordRecord }
 import { accountStorageKey, alreadyPersistedAccountStore, isCurrentAccountPair } from './AccountMetadata';
 import { isMasterPasswordPair } from './AccountAccess';
 import { decryptTonSeed, encryptTonSeed, protectTonRecoveryRecord, readTonRecoveryRecord } from './TonSeedVault';
+import { createPasswordVerifier } from './PasswordVerifier';
 import type { TonKeyringService } from './TonKeyring';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import type { KeyringPair, KeyringPair$Json, KeyringPasswordJson } from '@subwallet/keyring/types';
@@ -43,7 +44,7 @@ export async function commitMasterPasswordChange(
     detached.setupMasterPassword(previous.passwordHash);
     detached.unlockKeyring(oldPassword);
   }
-  const nextPassword = { ...previous, ...detached.changeMasterPassword(newPassword, oldPassword) };
+  const nextPassword = { ...previous, ...createPasswordVerifier(newPassword) };
   detached.lockALl();
   const native = new Map<string, NativeChange>();
   const retained: string[] = [];

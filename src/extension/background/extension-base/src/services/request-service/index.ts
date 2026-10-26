@@ -78,6 +78,15 @@ export class RequestService {
     await revoked;
   }
 
+  public cancelSigningRequests(): void {
+    // Keep saved site grants and sessions, but require a fresh signing request
+    // after locking; an approval already in flight must fail its identity guard.
+    const error = new Error('Wallet locked. Request approval again after unlocking.');
+    this.substrateRequestHandler.cancelPending(error);
+    this.evmRequestHandler.cancelPending(error);
+    this.solanaRequestHandler.cancelPending(error);
+  }
+
   // Popup
   public popupOpen(path?: string): void {
     // Not open new popup and use existed

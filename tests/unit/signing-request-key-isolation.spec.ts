@@ -130,6 +130,21 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
+it('cancels queued signing across ecosystems without removing saved site grants', async () => {
+  const queued = await queueShownMessage();
+  const rejectedSubstrate = expect(queued.signing).rejects.toThrow('Wallet locked');
+  const context = await captureEvmSigningContext(state, shownSite, 'personal_sign', ['0x12', wallet.address]);
+  const signingEvm = evm.confirmSign('expire-evm', shownSite, 'personal_sign', ['0x12', wallet.address], context);
+  const rejectedEvm = expect(signingEvm).rejects.toThrow('Wallet locked');
+  const grantsBefore = structuredClone(await requests.authRequestHandler.getAuthList());
+  requests.cancelSigningRequests();
+  await Promise.all([rejectedSubstrate, rejectedEvm]);
+  expect(substrate.numSubstrateRequests).toBe(0);
+  expect(evm.numEvmSignRequest).toBe(0);
+  expect(await requests.authRequestHandler.getAuthList()).toEqual(grantsBefore);
+  expect(exportKey).not.toHaveBeenCalled();
+});
+
 const signRaw = (data = '0x1234'): { payload: SignerPayloadRaw; account: AccountJson } => ({
   payload: { address: alice.address, data, type: 'bytes' },
   account: { address: alice.address, name: 'Public signer', isMobile: false } as AccountJson,

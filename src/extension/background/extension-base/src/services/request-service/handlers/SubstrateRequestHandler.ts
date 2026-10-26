@@ -154,7 +154,11 @@ export class SubstrateRequestHandler {
   }
 
   public resetWallet() {
-    for (const request of Object.values(this.substrateRequests)) request.reject(new Error('Reset wallet'));
+    this.cancelPending(new Error('Reset wallet'));
+  }
+
+  public cancelPending(error: Error): void {
+    for (const request of Object.values(this.substrateRequests)) request.reject(error);
 
     this.signSubject.next([]);
   }

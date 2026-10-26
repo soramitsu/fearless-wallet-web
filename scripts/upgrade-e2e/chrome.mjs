@@ -266,9 +266,13 @@ export async function openPopup(port, extId, hash = '') {
   await page.send('Runtime.enable');
   await page.send('Page.enable');
   await sleep(4000);
-  await page.eval(`(() => { window.__p = chrome.runtime.connect({ name: 'fw-fearless-extension' }); window.__h = {}; window.__n = 0; window.__replies = 0;
+  const bridge = `(() => { window.__p = chrome.runtime.connect({ name: 'fw-fearless-extension' }); window.__h = {}; window.__n = 0; window.__replies = 0;
     window.__p.onMessage.addListener((d) => { const h = window.__h[d.id]; if (!h || d.subscription) return; window.__replies++; delete window.__h[d.id]; d.error ? h.rej(d.error) : h.res(d.response); });
-    window.__send = (message, request) => new Promise((res, rej) => { const id = 'h.' + (++window.__n); window.__h[id] = { res, rej }; window.__p.postMessage({ id, message, request: request ?? null }); setTimeout(() => rej('timeout ' + message), 90000); }); return true; })()`);
+    window.__send = (message, request) => new Promise((res, rej) => { const id = 'h.' + (++window.__n); window.__h[id] = { res, rej }; window.__p.postMessage({ id, message, request: request ?? null }); setTimeout(() => rej('timeout ' + message), 90000); }); return true; })()`;
+  // Locking intentionally reloads wallet pages to discard cached secrets. Install
+  // a fresh bridge in the new document; never replay an interrupted request.
+  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: bridge });
+  await page.eval(bridge);
   page.call = (message, request) =>
     page
       .eval(

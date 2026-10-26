@@ -38,11 +38,22 @@
       />
     </svg>
 
-    <!-- The approved mark, split by path index into depth layers that stack to the master exactly. -->
-    <img class="sky-layer sky-art" :src="wings" alt="" draggable="false" :style="artStyle" />
-    <img class="sky-layer sky-art" :src="cobraLeft" alt="" draggable="false" :style="artStyle" />
-    <img class="sky-layer sky-art" :src="cobraRight" alt="" draggable="false" :style="artStyle" />
-    <img class="sky-layer sky-art" :src="disc" alt="" draggable="false" :style="artStyle" />
+    <!-- The approved mark, split by path index into depth layers that stack to the master exactly. The wings run off
+         the card's edges, stretched past the shoulder; the cobras and the disc keep the sky's own box. -->
+    <svg
+      class="sky-layer sky-wings"
+      :style="wingsStyle"
+      :viewBox="wingsArt.viewBox"
+      preserveAspectRatio="none"
+      data-testid="portfolioWings"
+    >
+      <path v-for="(path, index) in wingsArt.paths" :key="index" :d="path.d" :fill="path.fill" />
+    </svg>
+    <div class="sky-layer sky-sun">
+      <img class="sky-layer sky-art" :src="cobraLeft" alt="" draggable="false" :style="artStyle" />
+      <img class="sky-layer sky-art" :src="cobraRight" alt="" draggable="false" :style="artStyle" />
+      <img class="sky-layer sky-art" :src="disc" alt="" draggable="false" :style="artStyle" />
+    </div>
 
     <div v-if="tip" class="sky-tip" :style="tip.style" data-testid="portfolioSkyTip">
       <i :style="{ background: tip.colour }"></i>{{ tip.text }}
@@ -51,9 +62,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { AllocationGroup } from '@/portfolio/dashboard/allocation';
-import wings from '@/assets/brand/portfolio-sun/wings.svg';
+import wingsSvg from '@/assets/brand/portfolio-sun/wings.svg?raw';
 import cobraLeft from '@/assets/brand/portfolio-sun/uraeus-left.svg';
 import cobraRight from '@/assets/brand/portfolio-sun/uraeus-right.svg';
 import disc from '@/assets/brand/portfolio-sun/sun-disc.svg';
@@ -65,10 +76,15 @@ import {
   logoPlacement,
   rayIndexAt,
   rayLine,
+  skyReach,
   skyStars,
   rayAngle,
+  wingPaths,
+  wingsLayer,
+  wingsVeil,
   type RayLine,
   type RayPaint,
+  type WingReach,
 } from '@/portfolio/dashboard/skyGeometry';
 
 const props = defineProps<{
@@ -83,8 +99,11 @@ const geometry = POPUP_SKY;
 const lines: RayLine[] = Array.from({ length: 100 }, (_, index) => rayLine(index, geometry));
 const stars = skyStars(geometry);
 const placement = logoPlacement(geometry);
+const wings = wingPaths(wingsSvg);
 const sky = ref<HTMLElement>();
 const hovered = ref<string | null>(null);
+const reach = ref<WingReach>(skyReach(geometry));
+let resizeObserver: ResizeObserver | undefined;
 
 const rays = computed<Array<RayPaint | null>>(() => layoutRays(props.groups));
 const highlighted = computed(() => hovered.value ?? props.activeKey);
@@ -121,6 +140,54 @@ const artStyle = {
   width: `${placement.width}px`,
   height: `${placement.height}px`,
 };
+
+const wingsArt = computed(() => wingsLayer(wings, reach.value, geometry));
+const wingsStyle = computed(() => {
+  const { left, top, width, height } = wingsArt.value;
+  const mask = wingsVeil(wingsArt.value, geometry);
+
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    maskImage: mask,
+    WebkitMaskImage: mask,
+  };
+});
+
+/** The wings run off the edges of the box the sky sits in, the hero card, inside its border. */
+function measureReach(): void {
+  const box = sky.value;
+  const card = box?.parentElement;
+  const own = box?.getBoundingClientRect();
+
+  if (!card || !own?.width) return;
+
+  const scale = own.width / geometry.w;
+  const centre = own.left + geometry.cx * scale;
+  const inner = card.getBoundingClientRect().left + card.clientLeft * scale;
+  const next = {
+    left: Math.max(geometry.cx, Math.ceil((centre - inner) / scale)),
+    right: Math.max(geometry.w - geometry.cx, Math.ceil((inner + card.clientWidth * scale - centre) / scale)),
+  };
+
+  if (next.left !== reach.value.left || next.right !== reach.value.right) reach.value = next;
+}
+
+onMounted(() => {
+  measureReach();
+
+  const card = sky.value?.parentElement;
+
+  if (!card || typeof ResizeObserver === 'undefined') return;
+
+  resizeObserver = new ResizeObserver(measureReach);
+  resizeObserver.observe(card);
+});
+
+onBeforeUnmount(() => resizeObserver?.disconnect());
+
 function rayStyle(ray: RayPaint | null, line: RayLine): Record<string, string> {
   return {
     '--ray': ray ? chartColour(ray.slot) : 'transparent',
@@ -174,10 +241,10 @@ const tip = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+// Not clipped: the wings run past the sky's box to the card's edges, and the card clips them there.
 .sky {
   position: relative;
   flex: none;
-  overflow: hidden;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -200,6 +267,19 @@ const tip = computed(() => {
   inset: auto;
   max-width: none;
   user-select: none;
+}
+
+// The cobra and disc layers are as wide as the master; their boxes stay inside the sky.
+.sky-sun {
+  overflow: hidden;
+}
+
+// Placed by its inline style, edge to edge; it clips the tips that run past the card. Brand art keeps its own colours
+// in forced colours, as the image layers do.
+.sky-wings {
+  inset: auto;
+  overflow: hidden;
+  forced-color-adjust: none;
 }
 
 .sky-stars {

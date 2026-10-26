@@ -15,3 +15,8 @@ exactly. `tests/unit/portfolio-dashboard-sun-layers.spec.ts` keeps it so: the la
 paths byte for byte. The master itself stays unmodified; its hash is in `docs/release/brand-asset-provenance.json`.
 The layers are used only by the portfolio dashboard (`src/screens/portfolio/PortfolioSky.vue`) and are not part of a
 production build.
+
+The sky draws `wings.svg` inline so the wings can run off the hero card's edges: from 160 units out from the disc
+centre (the cobras end at 151) each wing stretches sideways until its tip runs off its own edge (`wingsLayer` in
+`src/portfolio/dashboard/skyGeometry.ts`). The file is not edited, and the sun, the cobras and the inner wing are drawn
+exactly as the master.

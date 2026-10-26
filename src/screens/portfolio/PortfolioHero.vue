@@ -191,7 +191,10 @@ const chipLabel = (group: AllocationGroup): string =>
   clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
 }
 
+// Above the sky: the wings run behind the text to the card's left edge.
 .hero-text {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -353,8 +356,10 @@ const chipLabel = (group: AllocationGroup): string =>
   }
 }
 
+// The wing that runs behind the text is veiled there, so every line keeps its contrast over the art.
 .hero-sky {
   align-self: flex-end;
+  --sky-veil: 0.35;
 }
 
 .legend {
@@ -457,6 +462,12 @@ const chipLabel = (group: AllocationGroup): string =>
   .hero-text {
     align-self: stretch;
     padding-right: 12px;
+  }
+
+  // The text sits below the sky here: nothing to veil, and the sun is centred so both wings run off evenly.
+  .hero-sky {
+    align-self: center;
+    --sky-veil: 1;
   }
 }
 

@@ -165,6 +165,8 @@ type Actions = {
   setFeatures(this: ExtensionStore, props: Features): void;
 };
 
+let tabStatusRevision = 0;
+
 export const actions: Actions = {
   setRequest({ type, requests }) {
     if (type === 'authRequests') this.authRequests = requests;
@@ -355,9 +357,11 @@ export const actions: Actions = {
   },
 
   async fetchTabStatus() {
+    // The side panel asks again on every tab switch: only the newest answer may land.
+    const revision = ++tabStatusRevision;
     const tabStatus = await isTabAuthorize();
 
-    this.setTabStatus(tabStatus);
+    if (revision === tabStatusRevision) this.setTabStatus(tabStatus);
   },
 
   async fetchFeatures() {

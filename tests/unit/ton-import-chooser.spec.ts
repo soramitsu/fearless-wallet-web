@@ -18,7 +18,7 @@ vi.mock('@/router/routes', () => ({ Components: { Welcome: 'Welcome', Wallet: 'W
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [], selectedWallet: {} }) }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: mocks.derive }));
 vi.mock('@/util/BaseApi', () => ({ default: { parseJson: () => ({}), isValidSequenceMnemonic: () => true, isValidEthereumDerivationPath: () => true } }));
-vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false }));
+vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false, IS_SIDE_PANEL: false }));
 
 import androidVectors from '../fixtures/ton/ton-android-4.2.0-vectors.json';
 import bip39Vectors from '../fixtures/ton/ton-bip39-3.0.5-vectors.json';

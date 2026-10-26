@@ -197,12 +197,15 @@ async function writeStaticAssets(sourceBefore) {
   }
 }
 
-async function normalizePopupHtml() {
-  const nestedPopup = path.join(outDir, 'src/extension/popup.html');
-  const rootPopup = path.join(outDir, 'popup.html');
-  const html = await fs.readFile(nestedPopup, 'utf8');
+// The extension pages. Chrome also gets the side panel, which loads the same entry as the popup.
+const htmlPages = browser === 'chrome' ? ['popup', 'sidepanel'] : ['popup'];
 
-  await fs.writeFile(rootPopup, html.replaceAll('../../', './'));
+async function normalizeExtensionPages() {
+  for (const page of htmlPages) {
+    const html = await fs.readFile(path.join(outDir, `src/extension/${page}.html`), 'utf8');
+
+    await fs.writeFile(path.join(outDir, `${page}.html`), html.replaceAll('../../', './'));
+  }
 }
 
 async function run() {
@@ -218,13 +221,13 @@ async function run() {
       {
         outDir,
         rollupOptions: {
-          input: path.resolve(root, 'src/extension/popup.html'),
+          input: Object.fromEntries(htmlPages.map((page) => [page, path.resolve(root, `src/extension/${page}.html`)])),
         },
       },
       { buildTarget: 'popup', nativeAsyncModules: true }
     )
   );
-  await normalizePopupHtml();
+  await normalizeExtensionPages();
 
   await build(
     withBuild(

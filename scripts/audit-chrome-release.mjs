@@ -59,7 +59,8 @@ export const REQUIRED_COMPILED_PUBLIC_CONFIG_KEYS = REQUIRED_PUBLIC_CONFIG_KEYS.
 
 const DEFAULT_ARCHIVE_NAME = 'fearless-wallet-extension-chrome.zip';
 const REQUIRED_ICON_SIZES = ['16', '32', '48', '64', '128'];
-const EXPECTED_PERMISSIONS = ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms'];
+const SIDE_PANEL_MARK = ' data-fw-surface="side-panel"';
+const EXPECTED_PERMISSIONS = ['storage', 'tabs', 'identity', 'clipboardRead', 'alarms', 'sidePanel'];
 const EXPECTED_HOST_PERMISSIONS = ['<all_urls>'];
 const EXPECTED_CONTENT_SCRIPT_MATCHES = ['https://*/*', 'http://*/*'];
 const EXPECTED_WEB_RESOURCE_MATCHES = ['https://*/*', 'http://*/*', 'http://localhost/*'];
@@ -91,6 +92,7 @@ const REQUIRED_MANIFEST_KEYS = [
   'name',
   'permissions',
   'short_name',
+  'side_panel',
   'version',
   'web_accessible_resources',
 ];
@@ -806,6 +808,11 @@ function validateManifest(
     manifest.action.default_title === 'Fearless Wallet',
     `${label} action.default_title must be Fearless Wallet`
   );
+  validateExactObjectKeys(manifest.side_panel, ['default_path'], `${label} side_panel`);
+  requireCondition(
+    manifest.side_panel.default_path === 'sidepanel.html',
+    `${label} side_panel.default_path must equal sidepanel.html`
+  );
   validateExactObjectKeys(manifest.icons, REQUIRED_ICON_SIZES, `${label} icons`);
 
   validateExactStringSet(manifest.permissions, EXPECTED_PERMISSIONS, `${label} permissions`);
@@ -891,9 +898,18 @@ function validateManifest(
     'content.js',
     'page.js',
     'popup.html',
+    'sidepanel.html',
   ]) {
     requireCondition(files.has(requiredFile), `${label} is missing required file ${requiredFile}`);
   }
+  // The side panel is the popup's page in Chrome's panel, byte for byte apart from the mark that tells the page where it
+  // is, so it can load nothing the popup does not.
+  const sidePanelPage = files.get('sidepanel.html').toString('utf8');
+  requireCondition(
+    sidePanelPage.includes(SIDE_PANEL_MARK) &&
+      sidePanelPage.replace(SIDE_PANEL_MARK, '') === files.get('popup.html').toString('utf8'),
+    `${label} sidepanel.html must be popup.html with only the side panel mark added`
+  );
   requireCondition(isPlainObject(manifest.icons), `${label} icons must be an object`);
   for (const size of REQUIRED_ICON_SIZES) {
     const iconPath = normalizedManifestResource(manifest.icons[size], `${label} icons.${size}`);
@@ -904,6 +920,7 @@ function validateManifest(
   const referencedResources = [
     manifest.background.service_worker,
     manifest.action.default_popup,
+    manifest.side_panel.default_path,
     ...Object.values(manifest.icons),
     ...contentScripts.flatMap((entry) => [
       ...(Array.isArray(entry?.js) ? entry.js : []),

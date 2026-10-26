@@ -104,7 +104,8 @@ import { windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut, setClipboard } from '@/helpers';
-import { IS_POPUP } from '@/consts/globalClient';
+import { IS_POPUP, IS_SIDE_PANEL } from '@/consts/globalClient';
+import { followActiveTab } from '@/extension/activeTab';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -130,6 +131,8 @@ export default defineComponent({ name: 'Header',
     return {
       walletNameRef: 'walletName',
       isPopup: IS_POPUP,
+      isSidePanel: IS_SIDE_PANEL,
+      stopFollowingTabs: undefined as (() => void) | undefined,
       allNetworksIcon: 'all-networks',
       networksStore: useNetworksStore(),
       extensionStore: useExtensionStore(),
@@ -257,7 +260,13 @@ export default defineComponent({ name: 'Header',
     "syncedShowSelectWalletPopup": 'updateZIndexSelectWalletPopup',
   },
   async mounted() {
-    if (this.isPopup) await this.extensionStore.fetchTabStatus();
+    if (!this.isPopup) return;
+    // The side panel stays open while the person moves between tabs and sites.
+    if (this.isSidePanel) this.stopFollowingTabs = followActiveTab(() => this.extensionStore.fetchTabStatus());
+    await this.extensionStore.fetchTabStatus();
+  },
+  unmounted() {
+    this.stopFollowingTabs?.();
   },
   methods: {
     copyAddress() {
@@ -281,7 +290,8 @@ export default defineComponent({ name: 'Header',
     },
     openFullScreen() {
       windowOpen('/');
-          window.close();
+          // The side panel stays beside the new tab; the popup would close anyway.
+          if (!this.isSidePanel) window.close();
     },
     toggleSettingsVisible() {
       this.$emit('toggleSettingsVisible');

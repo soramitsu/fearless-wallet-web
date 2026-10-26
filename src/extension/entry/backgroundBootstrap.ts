@@ -1,4 +1,5 @@
 import type { MessageTypes, Port, TransportRequestMessage } from '@extension-base/background/types/types';
+import { registerToolbarSurface } from '@/extension/toolbarSurface';
 
 // The error a request receives while the wallet's stored records cannot be read. The
 // popup shows its storage message for it, and its retry sends the request that reads again.
@@ -46,4 +47,5 @@ export function registerBackgroundListeners(api: typeof chrome, ready: Promise<B
   api.windows.onFocusChanged.addListener(() => dispatch((runtime) => runtime.getActiveTabs()));
   api.tabs.onActivated.addListener(() => dispatch((runtime) => runtime.getActiveTabs()));
   api.tabs.onRemoved.addListener(() => dispatch((runtime) => runtime.getActiveTabs()));
+  registerToolbarSurface(api, reportError);
 }

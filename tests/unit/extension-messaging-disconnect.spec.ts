@@ -16,6 +16,7 @@ const { connect, port } = vi.hoisted(() => {
 vi.mock('@extension-base/utils/crossenv', () => ({ chrome: { runtime: { connect } } }));
 
 import { sendMessage } from '@/extension/messaging';
+import { watchWalletLock } from '@/bootstrap/walletLock';
 
 const send = sendMessage as unknown as (message: string, request?: unknown, subscriber?: unknown) => Promise<unknown>;
 const lastRequestId = () => (port.postMessage.mock.lastCall?.[0] as { id: string }).id;
@@ -49,5 +50,41 @@ describe('extension messaging', () => {
     await Promise.resolve();
 
     expect(settled).not.toHaveBeenCalled();
+  });
+
+  it('discards an open wallet after its acknowledged lock subscription loses the worker', async () => {
+    const discardView = vi.fn();
+    const stop = watchWalletLock(discardView);
+    const subscriptionId = lastRequestId();
+    reply({ id: subscriptionId, response: false });
+    await Promise.resolve();
+    expect(discardView).not.toHaveBeenCalled();
+
+    disconnect();
+    expect(discardView).toHaveBeenCalledOnce();
+    // A reconnect or late lock notification must not initiate another reload.
+    disconnect();
+    reply({ id: subscriptionId, subscription: true });
+    expect(discardView).toHaveBeenCalledOnce();
+    stop();
+  });
+
+  it('does not reload repeatedly when a worker never answers its initial connection', () => {
+    disconnect();
+    const discardView = vi.fn();
+    const stop = watchWalletLock(discardView);
+    disconnect();
+    disconnect();
+    expect(discardView).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('stops observing worker disconnects when the wallet watcher unmounts', () => {
+    const discardView = vi.fn();
+    const stop = watchWalletLock(discardView);
+    reply({ id: lastRequestId(), response: true });
+    stop();
+    disconnect();
+    expect(discardView).not.toHaveBeenCalled();
   });
 });

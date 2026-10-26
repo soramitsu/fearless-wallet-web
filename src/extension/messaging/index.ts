@@ -25,6 +25,14 @@ type Handlers = Record<string, Handler>;
 let port: Port | undefined;
 
 const handlers: Handlers = {};
+const backgroundDisconnectListeners = new Set<() => void>();
+
+// A restarted worker loses its subscriptions and unlocked session. Consumers
+// holding secrets must discard them instead of waiting for a lost lock event.
+export function watchBackgroundDisconnect(listener: () => void): () => void {
+  backgroundDisconnectListeners.add(listener);
+  return () => { backgroundDisconnectListeners.delete(listener); };
+}
 
 function connectCallback(data: Message['data']) {
   const handler = handlers[data.id];
@@ -56,13 +64,23 @@ function rejectPendingRequests() {
 }
 
 function connectExtension() {
+  let receivedMessage = false;
   port = chrome.runtime?.connect({ name: PORT_EXTENSION });
   port?.onDisconnect.addListener(() => {
     rejectPendingRequests();
-    connect();
+    try {
+      // An unavailable worker that never answered cannot have exposed secrets.
+      // Do not turn its connection retries into a page-reload loop.
+      if (receivedMessage) [...backgroundDisconnectListeners].forEach(listener => listener());
+    } finally {
+      connect();
+    }
   });
 
-  port?.onMessage.addListener((data: Message['data']): void => connectCallback(data));
+  port?.onMessage.addListener((data: Message['data']): void => {
+    receivedMessage = true;
+    connectCallback(data);
+  });
 }
 
 function connectWeb() {

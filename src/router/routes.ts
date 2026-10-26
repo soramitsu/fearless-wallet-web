@@ -457,18 +457,23 @@ const routes: Array<RouteRecordRaw> = [
         component: Wallet,
         redirect: { name: Components.Currencies },
         beforeEnter: async (to, from, next) => {
+          if (IS_EXTENSION) await initialAccountsReady;
+          const extensionStore = useExtensionStore();
+
+          // Approval selects its own accounts, independently of the wallet
+          // currently being viewed in the portfolio.
+          if (haveAuthRequests(extensionStore)) {
+            next({ name: Components.Authorize });
+            return;
+          }
           if (IS_EXTENSION) {
-            await initialAccountsReady;
             const accounts = useAccountsStore();
             if (isSelectedWalletRecoveryOnly(accounts.accounts, accounts.selectedWallet.address)) {
               next();
               return;
             }
           }
-          const extensionStore = useExtensionStore();
-
-          if (haveAuthRequests(extensionStore)) next({ name: Components.Authorize });
-          else if (haveSignRequests(extensionStore)) next({ name: Components.Transaction });
+          if (haveSignRequests(extensionStore)) next({ name: Components.Transaction });
           else if (haveMetaRequests(extensionStore)) next({ name: Components.MetaRequest });
           else next();
         },

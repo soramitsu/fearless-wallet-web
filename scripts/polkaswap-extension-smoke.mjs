@@ -173,6 +173,39 @@ try {
   assertConnected(await result(reconnect));
   check('Revocation blocks account access and reconnect requires a fresh approval');
 
+  // Reproduce the real popup failure: an old/imported wallet is selected while
+  // a fresh wallet is available. Exercise the rendered Approve button, not the
+  // privileged approval message used by the provider-only checks above.
+  await call('pri(onboarding.setComplete)');
+  const recoveryAddress = await call('pri(accounts.create)', {
+    suri: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
+    type: 'sr25519', walletEcosystem: 'substrate', meta: { name: 'Recovery-only fixture' },
+  });
+  await call('pri(security.legacyExposure.acknowledge)');
+  await call('pri(accounts.update.current)', { address: recoveryAddress, walletEcosystem: 'substrate' });
+  await call('pri(authorize.remove)', dappUrl);
+  const mixedWalletPage = await openDapp(dappUrl);
+  await startConnect(mixedWalletPage);
+  await waitFor(() => popup.eval('window.__authRequests[0]'), 15000, 'mixed-wallet approval request');
+  const approvalPopup = await openPopup(port, extId);
+  clients.push(approvalPopup);
+  await waitFor(() => approvalPopup.eval(`location.hash === '#/authorize' &&
+    !!document.querySelector('[data-testid="approveAuthorization"] button:not(:disabled)')`),
+  15000, 'visible mixed-wallet Approve button');
+  const offeredAccounts = await approvalPopup.eval(`Array.from(document.querySelectorAll('.auth-account'))
+    .map((row) => ({ text: row.innerText, checked: row.querySelector('input[type="checkbox"]')?.checked }))`);
+  assert.equal(offeredAccounts.length, 1, 'Only the eligible fresh wallet should be offered');
+  assert(offeredAccounts[0].text.includes('Polkaswap disposable test'));
+  assert.equal(offeredAccounts[0].checked, true);
+  await fs.mkdir(reportDir, { recursive: true });
+  await fs.writeFile(path.join(reportDir, 'mixed-wallet-approval.png'),
+    Buffer.from((await approvalPopup.send('Page.captureScreenshot')).result.data, 'base64'));
+  await approvalPopup.eval(`document.querySelector('[data-testid="approveAuthorization"] button').click(), true`);
+  assertConnected(await result(mixedWalletPage));
+  check('Real approval popup connects the fresh wallet while a recovery-only wallet is selected', {
+    eligibleAccountsShown: offeredAccounts.length, recoveryOnlyAccountOffered: false,
+  });
+
   if (live) {
     const page = await openDapp('https://polkaswap.io/');
     await startConnect(page);

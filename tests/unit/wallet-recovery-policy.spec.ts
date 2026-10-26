@@ -44,11 +44,11 @@ describe('wallet recovery security policy', () => {
     expect(() => assertWalletAllowsNormalUse([{ address: 'ledger', meta: { isHardware: true } }], 'ledger')).not.toThrow();
   });
 
-  it.each(['SendForm', 'NftSendForm', 'Export', 'Wallet', 'Currencies', 'Asset', 'Settings', 'AddWallet', 'Unlock', 'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt', 'AccountAccessRecovery', 'StorageRecovery', 'SecurityNotice', 'SecurityNoticeGuide'])(
+  it.each(['Authorize', 'SendForm', 'NftSendForm', 'Export', 'Wallet', 'Currencies', 'Asset', 'Settings', 'AddWallet', 'Unlock', 'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt', 'AccountAccessRecovery', 'StorageRecovery', 'SecurityNotice', 'SecurityNoticeGuide'])(
     'keeps %s accessible for recovery', (route) => { expect(isWalletRecoveryRoute(route)).toBe(true); }
   );
 
-  it.each(['ReceiveForm', 'SoraSwap', 'CrossChain', 'Transaction', 'Authorize', 'IrohaConnect', 'UnknownRoute'])(
+  it.each(['ReceiveForm', 'SoraSwap', 'CrossChain', 'Transaction', 'IrohaConnect', 'UnknownRoute'])(
     'blocks normal use of %s for old wallets', (route) => { expect(isWalletRecoveryRoute(route)).toBe(false); }
   );
 

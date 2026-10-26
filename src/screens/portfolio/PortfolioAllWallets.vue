@@ -35,7 +35,10 @@
           :data-testid="`tokenRow-${row.id}`"
           @click="onRowClick(row)"
         >
-          <span class="orb" :style="orbStyle(row.id)" aria-hidden="true">{{ row.symbol.slice(0, 4) }}</span>
+          <span class="orb" :style="orbStyle(row.id)" aria-hidden="true">
+            <ExternalLogo v-if="logos.get(row.id)" :name="logos.get(row.id)" :width="30" class="orb-logo" />
+            <template v-else>{{ row.symbol.slice(0, 4) }}</template>
+          </span>
           <span class="identity">
             <span class="title">
               {{ row.symbol }}
@@ -168,6 +171,8 @@ const props = defineProps<{
   loading: boolean;
   /** How a holding stands to a swap on Polkaswap; a chip says so when it is actionable. */
   readinessOf: (holding: ReadinessSubject) => Readiness;
+  /** A token's logo, inside the ring of its chart colour; its initials stand in when it has none. */
+  iconOf?: (row: AggregateTokenRow) => string;
 }>();
 
 const emit = defineEmits<{
@@ -193,6 +198,8 @@ const isEmpty = computed(() =>
 
 const colourOf = (key: string): string => chartColour(props.slotOf(key));
 const orbStyle = (key: string): Record<string, string> => ({ '--orb': colourOf(key) });
+// Each row's logo, looked up again only when the rows or the registry behind iconOf change.
+const logos = computed(() => new Map(props.tokenRows.map((row) => [row.id, props.iconOf?.(row) ?? ''])));
 const change = (percent: string | null) => {
   if (percent === null) return null;
 
@@ -374,6 +381,11 @@ button.row-head {
 
 .avatar {
   font-size: 0.9rem;
+}
+
+// The logo sits inside the ring, so the row keeps the colour of its ray and chip.
+.orb-logo {
+  border-radius: 50%;
 }
 
 .identity {

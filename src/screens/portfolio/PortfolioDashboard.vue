@@ -32,6 +32,7 @@
         :focus="focus"
         :loading="dashboard.pending.value"
         :readinessOf="readinessOf"
+        :iconOf="dashboard.iconOf"
         @update:lens="setLens"
         @openWallet="openWallet"
         @open="openLocations"

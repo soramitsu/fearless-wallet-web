@@ -1,0 +1,216 @@
+// Copies the token logos polkaswap.io shows into src/assets/tokens/ and regenerates
+// src/portfolio/polkaswapTokenIcons.ts, for every SORA asset the registry lists (remote-config chains/v13, production
+// and development). polkaswap.io (sora-xor/polkaswap-exchange-web, through @soramitsu/soraneo-wallet-web 1.46.3) draws
+// a SORA token from the `icon` data URI of its entry in Polkaswap's whitelist, keyed by the asset's on-chain id. This
+// reads that whitelist at a pinned commit of the repository it is published from; the copy polkaswap.io loaded on
+// 2026-10-26 was byte-identical. The wallet never fetches it: the logos ship in the bundle.
+//
+//   node scripts/sync-polkaswap-token-icons.mjs [--whitelist <local whitelist.json>] [--check]
+//
+// --check regenerates in memory and fails when a file on disk differs. To take a newer whitelist, update the pins.
+import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
+import console from 'node:console';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+
+export const WHITELIST_REPOSITORY = 'sora-xor/polkaswap-token-whitelist-config';
+export const WHITELIST_COMMIT = 'aac95ad873dce1797ff018ffc537afcc08569cab';
+export const WHITELIST_SHA256 = '61e222c88a55cff25e4745d1515da6e2e68d9456e2c27eeff772e39166c9a268';
+export const REGISTRIES = ['remote-config/production/chains/v13/chains.json', 'remote-config/development/chains/v13/chains_dev.json'];
+export const ICON_DIRECTORY = 'src/assets/tokens';
+export const ICON_PREFIX = 'polkaswap-';
+export const MODULE_PATH = 'src/portfolio/polkaswapTokenIcons.ts';
+
+const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// An <img> never runs an SVG's scripts or loads what it references, but a logo needs none of that either: anything
+// beyond shapes, gradients, clip paths, styles and references inside the document is refused.
+const SVG_FORBIDDEN = [
+  /<script/i,
+  /<foreignObject/i,
+  /<!ENTITY/i,
+  /<!DOCTYPE/i,
+  /<(?:iframe|embed|object|image|feImage|a)\b/i,
+  /\son[a-z]+\s*=/i,
+  /javascript:/i,
+  /@import/i,
+];
+
+/** Why the bytes of a logo cannot ship, or nothing. Only PNG and plain SVG pass. */
+export function iconProblems(bytes, extension) {
+  if (extension === 'png') return bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ? [] : ['not a PNG'];
+  if (extension !== 'svg') return [`unsupported type ${extension}`];
+
+  const text = bytes.toString('utf8');
+  const problems = [];
+
+  if (!/<svg[\s>]/i.test(text)) problems.push('no <svg> element');
+  for (const pattern of SVG_FORBIDDEN) if (pattern.test(text)) problems.push(`contains ${pattern.source}`);
+  for (const [, target] of text.matchAll(/(?:xlink:)?href\s*=\s*["']([^"']*)["']/gi)) {
+    if (!target.startsWith('#')) problems.push(`references ${target}`);
+  }
+  for (const [, target] of text.matchAll(/url\(\s*["']?([^"')]*)/gi)) {
+    if (!target.startsWith('#')) problems.push(`references ${target}`);
+  }
+  // XML namespaces are the only URLs a logo may carry; the release host audit allows www.w3.org for them.
+  for (const [, host] of text.matchAll(/[a-z][a-z\d+.-]*:\/\/([^/"'\s)]+)/gi)) {
+    if (host !== 'www.w3.org') problems.push(`names host ${host}`);
+  }
+
+  return problems;
+}
+
+/** The bytes and file type of a whitelist `icon`: an SVG (percent-encoded or base64) or a base64 PNG data URI. */
+export function decodeIcon(uri) {
+  const match = /^data:(image\/(?:svg\+xml|png))((?:;[a-z-]+=[^;,]*)*)(;base64)?,(.*)$/is.exec(uri);
+
+  if (!match) throw new Error(`not an SVG or PNG data URI: ${uri.slice(0, 40)}`);
+
+  const [, mime, , base64, payload] = match;
+
+  return {
+    extension: mime === 'image/png' ? 'png' : 'svg',
+    bytes: base64 ? Buffer.from(payload, 'base64') : Buffer.from(decodeURIComponent(payload), 'utf8'),
+  };
+}
+
+/** The on-chain ids of every SORA asset the registries list. */
+function soraCurrencyIds() {
+  const ids = new Set();
+
+  for (const file of REGISTRIES) {
+    for (const network of JSON.parse(readFileSync(path.join(repository, file), 'utf8'))) {
+      for (const asset of network.assets ?? []) {
+        if (asset.type === 'soraAsset' && asset.currencyId) ids.add(asset.currencyId);
+      }
+    }
+  }
+
+  return [...ids];
+}
+
+const identifierOf = (slug) => `${/^\d/.test(slug) ? 'token' : ''}${slug.replace(/-(\w)/g, (_, letter) => letter.toUpperCase())}Icon`;
+
+function moduleSource(icons) {
+  const imports = icons.map(({ slug, file }) => `import ${identifierOf(slug)} from '@/${ICON_DIRECTORY.slice('src/'.length)}/${file}';`);
+  const entries = icons.map(({ currencyId, slug, symbol }) => `  ['${currencyId}', ${identifierOf(slug)}], // ${symbol}`);
+
+  return [
+    '// Generated by scripts/sync-polkaswap-token-icons.mjs; rerun it instead of editing. Each logo is the `icon` of the',
+    `// whitelist.json entry polkaswap.io draws the token with: ${WHITELIST_REPOSITORY} at`,
+    `// ${WHITELIST_COMMIT} (sha256 ${WHITELIST_SHA256}).`,
+    ...imports,
+    '',
+    '/** polkaswap.io\'s logo for each SORA asset the registry lists, by the asset\'s on-chain id (its `currencyId`). */',
+    'export const POLKASWAP_TOKEN_ICONS: ReadonlyMap<string, string> = new Map([',
+    ...entries,
+    ']);',
+    '',
+  ].join('\n');
+}
+
+/** The logo files and the module that names them, from the pinned whitelist's bytes. */
+export function generate(whitelistBytes) {
+  const sha256 = createHash('sha256').update(whitelistBytes).digest('hex');
+
+  if (sha256 !== WHITELIST_SHA256) throw new Error(`whitelist.json is ${sha256}; the pin is ${WHITELIST_SHA256}`);
+
+  const whitelist = new Map(JSON.parse(whitelistBytes.toString('utf8')).map((entry) => [entry.address, entry]));
+  const icons = [];
+
+  for (const currencyId of soraCurrencyIds()) {
+    const entry = whitelist.get(currencyId);
+
+    if (!entry) {
+      console.warn(`${currencyId} is not on Polkaswap's whitelist; it keeps the registry logo`);
+      continue;
+    }
+
+    const { extension, bytes } = decodeIcon(entry.icon);
+    const problems = iconProblems(bytes, extension);
+
+    if (problems.length) throw new Error(`${entry.symbol} (${currencyId}): ${problems.join('; ')}`);
+
+    const slug = entry.symbol.toLowerCase().replace(/[^a-z\d]+/g, '-').replace(/^-|-$/g, '');
+
+    if (!slug) throw new Error(`${currencyId}: symbol ${JSON.stringify(entry.symbol)} gives no file name`);
+    icons.push({ currencyId, symbol: entry.symbol, slug, file: `${ICON_PREFIX}${slug}.${extension}`, bytes });
+  }
+
+  // Code-point order, so the module is the same on every machine.
+  icons.sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
+
+  const files = new Map(icons.map(({ file, bytes }) => [file, bytes]));
+
+  if (files.size !== icons.length) throw new Error('two whitelisted SORA assets share a symbol; give their files distinct names');
+
+  return { files, module: moduleSource(icons) };
+}
+
+async function readWhitelist(local) {
+  if (local) return readFileSync(local);
+
+  const url = `https://raw.githubusercontent.com/${WHITELIST_REPOSITORY}/${WHITELIST_COMMIT}/whitelist.json`;
+  const response = await globalThis.fetch(url);
+
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+function differences({ files, module }) {
+  const directory = path.join(repository, ICON_DIRECTORY);
+  const present = existsSync(directory) ? readdirSync(directory).filter((name) => name.startsWith(ICON_PREFIX)) : [];
+  const stale = present.filter((name) => !files.has(name)).map((name) => `${ICON_DIRECTORY}/${name} is no longer generated`);
+  const changed = [...files]
+    .filter(([name, bytes]) => !present.includes(name) || !readFileSync(path.join(directory, name)).equals(bytes))
+    .map(([name]) => `${ICON_DIRECTORY}/${name} differs`);
+  const modulePath = path.join(repository, MODULE_PATH);
+  const moduleChanged = !existsSync(modulePath) || readFileSync(modulePath, 'utf8') !== module ? [`${MODULE_PATH} differs`] : [];
+
+  return [...stale, ...changed, ...moduleChanged];
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  let check = false;
+  let local;
+
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === '--check') check = true;
+    else if (args[index] === '--whitelist' && args[index + 1]) local = args[(index += 1)];
+    else throw new Error('usage: node scripts/sync-polkaswap-token-icons.mjs [--whitelist <local whitelist.json>] [--check]');
+  }
+
+  const generated = generate(await readWhitelist(local));
+  const found = differences(generated);
+
+  if (check) {
+    if (found.length) throw new Error(`Polkaswap token logos are out of date:\n${found.join('\n')}`);
+    console.log(`${generated.files.size} Polkaswap token logos match ${WHITELIST_REPOSITORY}@${WHITELIST_COMMIT}`);
+
+    return;
+  }
+
+  const directory = path.join(repository, ICON_DIRECTORY);
+
+  mkdirSync(directory, { recursive: true });
+  for (const name of readdirSync(directory)) {
+    if (name.startsWith(ICON_PREFIX) && !generated.files.has(name)) rmSync(path.join(directory, name));
+  }
+  for (const [name, bytes] of generated.files) writeFileSync(path.join(directory, name), bytes);
+  writeFileSync(path.join(repository, MODULE_PATH), generated.module);
+  console.log(`${generated.files.size} Polkaswap token logos written from ${WHITELIST_REPOSITORY}@${WHITELIST_COMMIT}`);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    await main();
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
+}

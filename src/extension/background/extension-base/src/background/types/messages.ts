@@ -199,6 +199,7 @@ export interface RequestSignatures {
   'pri(keyring.hasMasterPassword)': [null, boolean];
   'pri(keyring.hasAccounts)': [null, boolean];
   'pri(keyring.keyringIsLocked)': [null, boolean];
+  'pri(keyring.subscribeLock)': [null, boolean, boolean];
   'pri(keyring.changePassword)': [RequestChangePassword, boolean];
   'pri(keyring.unlock)': [RequestUnlockExtension, boolean | 'ton-recovery-required' | 'ton-storage-unavailable'];
   'pri(keyring.lock)': [boolean, boolean];

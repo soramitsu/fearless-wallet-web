@@ -105,7 +105,7 @@ Passwords include a non-ASCII master password (`Pässwörd-日本語-🔐`).
 | --- | --- |
 | A0 | At the first start of 4.2.0, every `fw:account:*`, `fw:ton:*` and `fw:keyring` record is still there and `encoded`, `cipherSeed`, `passwordHash`, `address`, `encoding` are byte-identical. |
 | A1 | The popup opens on Unlock or on the per-account password prompt (never a dead end), and the scripted path through the real screens (prompt, master password, rows, Skip, the 3.0.x security notice) reaches the wallet. |
-| A2 | The master password unlocks, a wrong one does not, the stored hash is unchanged. |
+| A2 | The master password unlocks, a wrong one does not and never changes storage. Successful unlock upgrades a weak bcrypt verifier to cost 12; an already strong verifier stays byte-identical. Account ciphertext is unchanged by verifier migration. |
 | A3 | Every historical Substrate account rejects public dApp authorization with the recovery-only policy error, without granting access or returning a signature. Its exported JSON key still signs a message that verifies against the original secret's public key. |
 | A4 | Every historical Ethereum account rejects public dApp authorization with the recovery-only policy error, without granting access or returning a signature. Its exported private key still signs a message that recovers the original address. |
 | A5 | The exported phrase is the original where the released build stored one (never a different one where it did not); the JSON export opens with the master password to the original key and is at N = 2^15; the exported Ethereum key is the original. |

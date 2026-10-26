@@ -61,6 +61,7 @@ export function handlers<TMessageType extends MessageTypes>(
     if (!IS_EXTENSION && KeyringStoreWeb.readOnly && !isWebPasswordRecoveryRequest(message))
       KeyringStoreWeb.assertWritable();
     if (isExtension && port && !isWalletPagePort(port)) throw new Error('Unauthorized sender');
+    state.keyringLockService.lockIfExpired();
     return isExtension ? extension.handle(id, message, request, port) : tabs.handle(id, message, request, from, port);
   });
 

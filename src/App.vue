@@ -1,7 +1,7 @@
 <template>
   <div id="app" :class="[appMainClass, { 'fw-calm': isCalm }]">
     <div class="fw-backdrop" aria-hidden="true" data-testid="fwBackdrop"></div>
-    <keep-alive :include="includeKeepAlive">
+    <keep-alive v-if="walletViewVisible" :include="includeKeepAlive">
       <router-view />
     </keep-alive>
   </div>
@@ -33,6 +33,7 @@ import { IS_EXTENSION } from '@/consts/global';
 import { getNftSubscribe } from '@/extension/messaging/nfts';
 import { getPopupIds } from '@/extension/messaging/popup';
 import { markAccountsReady } from '@/bootstrap/accountsReady';
+import { watchWalletLock } from '@/bootstrap/walletLock';
 
 export default defineComponent({
   name: 'App',
@@ -42,6 +43,8 @@ export default defineComponent({
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
       pingInterval: undefined,
+      walletViewVisible: true,
+      stopWatchingLock: undefined as (() => void) | undefined,
     };
   },
   computed: {
@@ -68,6 +71,10 @@ export default defineComponent({
       this.setupSWPing();
       return;
     }
+    this.stopWatchingLock = watchWalletLock(() => {
+      this.walletViewVisible = false;
+      window.location.reload();
+    });
     lockExtension();
     // Before onboarding can create a wallet: the By token layout note is only for wallets older than this.
     this.accountsStore.recordPortfolioLayoutFirstRun();
@@ -100,6 +107,7 @@ export default defineComponent({
   },
   unmounted() {
     clearInterval(this.pingInterval);
+    this.stopWatchingLock?.();
   },
   methods: {
     setupSWPing() {

@@ -83,6 +83,19 @@ beforeEach(() => {
 });
 
 describe('legacy encrypted account upgrade', () => {
+  it('checks an expired session before returning a password or a cached key pair', () => {
+    pair(SUBSTRATE, true);
+    const wallet = service(true);
+    const expired = vi.fn(() => { wallet.lockKeyring(); });
+    wallet.setSessionExpiryCheck(expired);
+    expect(wallet.getPassword()).toBe('');
+    expect(expired).toHaveBeenCalledOnce();
+    expired.mockClear();
+    wallet.getPair(SUBSTRATE);
+    expect(expired).toHaveBeenCalledOnce();
+    expect(wallet.getPassword()).toBe('');
+  });
+
   it.each(['isExternal', 'isHardware', 'isInjected', 'isMobile'])(
     'keeps %s accounts available without requiring a nonexistent local password', async (flag) => {
       const external = pair(SUBSTRATE);

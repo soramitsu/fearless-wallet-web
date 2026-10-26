@@ -3,6 +3,7 @@ import { u8aEq } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
 import { PASSWORD_STORAGE_KEY } from '@extension-base/stores/WalletStorage';
 import { accountStorageKey } from './AccountMetadata';
+import { createPasswordVerifier } from './PasswordVerifier';
 import type { KeyringPair$Json, KeyringPasswordJson } from '@subwallet/keyring/types';
 
 export function preparePasswordRecords(records: Record<string, unknown>, oldPassword: string, newPassword: string) {
@@ -20,7 +21,7 @@ export function preparePasswordRecords(records: Record<string, unknown>, oldPass
       isolated.unlockKeyring(oldPassword);
     }
 
-    const password = isolated.changeMasterPassword(newPassword, oldPassword);
+    const password = { ...previousPassword, ...createPasswordVerifier(newPassword) };
     const accounts: KeyringPair$Json[] = [];
     const replacements: Record<string, unknown> = { [PASSWORD_STORAGE_KEY]: password };
 

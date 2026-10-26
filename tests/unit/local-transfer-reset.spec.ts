@@ -23,6 +23,47 @@ beforeEach(() => {
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('local transfer reset ownership', () => {
+  it('checks the absolute session deadline and preserves external signing without a local password', () => {
+    Object.assign(state.keyringService, { keyringIsLocked: false, walletAuthenticationRevision: 0 });
+    const guard = captureWalletResetGuard(state);
+    expect(() => guard()).not.toThrow();
+    Object.defineProperty(state.keyringService, 'keyringIsLocked', { configurable: true, get: () => {
+      Object.assign(state.keyringService, { walletAuthenticationRevision: 1 });
+      return true;
+    } });
+    expect(() => guard()).toThrow('Wallet changed during transfer');
+  });
+
+  it.each(['locked', 're-unlocked', 'password changed'])('does not sign a retained EVM key after the wallet is %s during nonce population', async boundary => {
+    Object.assign(state.keyringService, { keyringIsLocked: false, walletAuthenticationRevision: 0 });
+    const sender = new Wallet('0x' + '11'.repeat(32));
+    const broadcastTransaction = vi.fn();
+    const provider = { broadcastTransaction,
+      estimateGas: async () => 21000n, getBlock: async () => ({ baseFeePerGas: 0n }),
+      getFeeData: async () => ({ maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, gasPrice: 1n }),
+    };
+    Object.assign(provider, { provider });
+    Object.assign(state, { getEvmApi: () => ({ api: provider }) });
+    Object.assign(fixture.state, state);
+    let resolve!: (value: TransactionLike<string>) => void;
+    let populated: TransactionLike<string>;
+    const populate = vi.spyOn(Wallet.prototype, 'populateTransaction').mockImplementation(tx => {
+      populated = { ...tx, chainId: 1n, nonce: 7, type: 2 } as TransactionLike<string>;
+      return new Promise(done => { resolve = done; });
+    });
+    const sign = vi.spyOn(SigningKey.prototype, 'sign');
+    const sending = makeEVMTransfer({ from: sender.address, to: '0x' + '22'.repeat(20), networkKey: 'Ethereum',
+      amount: '1', privateKey: sender.privateKey, balance: { isUtility: true, id: 'ETH' } as never }, state);
+    await vi.waitFor(() => expect(populate).toHaveBeenCalledOnce());
+    Object.assign(state.keyringService, {
+      keyringIsLocked: boundary === 'locked', walletAuthenticationRevision: boundary === 're-unlocked' ? 2 : 1,
+    });
+    resolve(populated!);
+    await expect(sending).rejects.toThrow('Wallet changed during transfer');
+    expect(sign).not.toHaveBeenCalled();
+    expect(broadcastTransaction).not.toHaveBeenCalled();
+  });
+
   it.each(['bitcoin', 'solana'])('does not retry %s broadcast against another endpoint after reset', async kind => {
     const assertCurrent = captureWalletResetGuard(state);
     const fetchFn = vi.fn(async () => { reset(); return new Response('Public unavailable endpoint', { status: 503 }); });

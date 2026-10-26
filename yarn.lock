@@ -6956,6 +6956,7 @@ __metadata:
     "@walletconnect/universal-provider": "npm:^2.23.9"
     autoprefixer: "npm:^10.5.0"
     axios: "npm:^1.20.0"
+    bcryptjs: "npm:3.0.3"
     bignumber.js: "npm:^11.1.4"
     bip39: "npm:3.1.0"
     bitcoinjs-lib: "npm:6.1.7"

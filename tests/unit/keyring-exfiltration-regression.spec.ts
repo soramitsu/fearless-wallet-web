@@ -81,6 +81,7 @@ describe('unlock must not upload wallet secrets', () => {
       keyringLockService: { setExtensionAutoLockTimeout },
       keyringService: {
         unlockKeyring,
+        waitForPasswordVerifierUpgrade: vi.fn(async () => {}),
         tonKeyring: { hasStorageIssues },
         getDataAccounts: forbiddenSecretAccess,
         exportMnemonic: forbiddenSecretAccess,
@@ -97,7 +98,7 @@ describe('unlock must not upload wallet secrets', () => {
     await vi.advanceTimersByTimeAsync(30_000);
 
     expect(unlockKeyring).toHaveBeenCalledExactlyOnceWith(request);
-    expect(setExtensionAutoLockTimeout).toHaveBeenCalledOnce();
+    expect(setExtensionAutoLockTimeout).toHaveBeenCalledTimes(unlocked ? 1 : 0);
     expect(upload).not.toHaveBeenCalled();
     expect(forbiddenSecretAccess).not.toHaveBeenCalled();
     expect(forbiddenNetwork).not.toHaveBeenCalled();

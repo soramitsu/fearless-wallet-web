@@ -1,6 +1,7 @@
 // Assertions A0-A10 (web-keys.md §6.4) on the upgraded build, shared by every scenario. A scenario describes the
 // profile its released build wrote (`profile`) and calls these in order.
 import { sleep, waitFor } from './chrome.mjs';
+import { compareSync, getRounds } from 'bcryptjs';
 import {
   compareKeyRecords,
   ethereumAddressOf,
@@ -91,16 +92,23 @@ export async function unlockToWallet(r, popup, { master, expectNotice }) {
   r.check('A1', 'the scripted path reaches the wallet', reached, await page.hash());
 }
 
-/** A2: the right password unlocks, a wrong one does not, and neither changes the stored hash. */
+/** A2: wrong passwords never write; successful unlock strengthens weak verifiers once. */
 export async function checkUnlock(r, session, popup, master) {
   const hashBefore = (await session.storage())['fw:keyring']?.passwordHash;
-  await popup.call('pri(keyring.lock)', true);
+  await popup.eval(`window.__send('pri(keyring.lock)', true).catch(() => {}); true`);
+  await waitFor(async () => /^#\/unlock/.test(await popup.eval('location.hash')) &&
+    (await popup.call('pri(keyring.keyringIsLocked)')).ok === true, 30000, 'locked popup after reload');
   const wrong = (await popup.call('pri(keyring.unlock)', { password: `${master}!` })).ok;
+  const hashAfterWrong = (await session.storage())['fw:keyring']?.passwordHash;
   const right = (await popup.call('pri(keyring.unlock)', { password: master })).ok;
   const hashAfter = (await session.storage())['fw:keyring']?.passwordHash;
   r.check('A2', 'a wrong password does not unlock', wrong !== true, wrong);
+  r.check('A2', 'a wrong password does not change the verifier', !!hashBefore && hashBefore === hashAfterWrong);
   r.check('A2', 'the master password unlocks', right === true, right);
-  r.check('A2', 'the stored password hash is unchanged', !!hashBefore && hashBefore === hashAfter);
+  r.check('A2', 'the verifier has cost 12 or higher and still accepts the master password',
+    !!hashAfter && getRounds(hashAfter) >= 12 && compareSync(master, hashAfter));
+  r.check('A2', 'an already strong verifier is stable across unlock',
+    !!hashBefore && (getRounds(hashBefore) < 12 || hashBefore === hashAfter));
 }
 
 /** A3/A4: historical keys are recovery-only. A public dApp cannot gain permission

@@ -277,6 +277,7 @@ export default class Extension extends FWExtensionBase {
   private readonly pendingSiteApprovals = new WeakSet<object>();
 
   private assertSigningRequestCurrent(request: { id: string }): void {
+    this.state.keyringLockService?.lockIfExpired();
     if (this.state.requestService.getSignRequest(request.id, signingKindOf(request)) !== request) {
       throw new Error('Signing request was cancelled or replaced');
     }
@@ -2381,6 +2382,7 @@ export default class Extension extends FWExtensionBase {
     try {
       const context = validateWalletConnectSigningContext(this.state, request.request);
       const assertCurrent = () => {
+        this.state.keyringLockService?.lockIfExpired();
         if (handler.getSignWCRequest(approvalId) !== request) throw new Error('WalletConnect request was cancelled');
         validateWalletConnectSigningContext(this.state, request.request);
       };
@@ -2518,10 +2520,10 @@ export default class Extension extends FWExtensionBase {
     return requireEnabledIrohaConnect(this.state.irohaConnectService);
   }
 
-  changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
-    this.state.keyringLockService.setExtensionAutoLockTimeout();
-
-    return this.state.keyringService.changeMasterPassword(request as RequestChangePassword);
+  async changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
+    const success = await this.state.keyringService.changeMasterPassword(request);
+    if (success) this.state.keyringLockService.setExtensionAutoLockTimeout();
+    return success;
   }
 
   lockKeyring(skipCheck: boolean): boolean {
@@ -2533,9 +2535,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   async unlockKeyring(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
-    this.state.keyringLockService.setExtensionAutoLockTimeout();
-
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
+    if (isSuccess) {
+      await this.state.keyringService.waitForPasswordVerifierUpgrade();
+      this.state.keyringLockService.setExtensionAutoLockTimeout();
+    }
 
     return isSuccess && this.state.keyringService.tonKeyring.hasStorageIssues
       ? 'ton-storage-unavailable'
@@ -2548,6 +2552,7 @@ export default class Extension extends FWExtensionBase {
     request: RequestTypes[TMessageType],
     port?: Port
   ): Promise<ResponseType<TMessageType>> {
+    this.state.keyringLockService?.lockIfExpired();
     // Reset retains live keys until storage succeeds, but another popup must
     // not use that recovery window to export, sign or mutate the wallet.
     if (this.state.keyringService.isResetting &&
@@ -2579,6 +2584,14 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(keyring.keyringIsLocked)':
         return this.state.keyringService.keyringIsLocked;
+
+      case 'pri(keyring.subscribeLock)': {
+        const notify = this.state.subscriptionService.createSubscription<'pri(keyring.subscribeLock)'>(id, port);
+        const subscription = this.state.keyringService.lockSubject.subscribe(() => notify(true));
+        this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
+        port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+        return this.state.keyringService.keyringIsLocked;
+      }
 
       case 'pri(keyring.changePassword)':
         return this.changeMasterPassword(request as RequestChangePassword);

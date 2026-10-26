@@ -49,7 +49,11 @@ export default class SolanaRequestHandler {
   }
 
   resetWallet(): void {
-    for (const request of Object.values(this.solanaRequests)) request.reject(new Error('Reset wallet'));
+    this.cancelPending(new Error('Reset wallet'));
+  }
+
+  cancelPending(error: Error): void {
+    for (const request of Object.values(this.solanaRequests)) request.reject(error);
   }
 
   getSolanaSignRequest(id: string): SolanaRequestsSubjectPayload | undefined {

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { keyring } from '@subwallet/ui-keyring';
 import { BehaviorSubject } from 'rxjs';
+import { compareSync, getRounds } from 'bcryptjs';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, KeyringPairJson & { accounts: Record<string, KeyringPairJson>; ton: TonStoreAccount; cipherSeed: string; pendingCipherSeed?: string }>,
@@ -121,6 +122,99 @@ const NEW_PASSWORD = 'Public replacement master password';
 const change = () => track(service.changeMasterPassword({ oldPassword: PASSWORD, newPassword: NEW_PASSWORD }));
 
 describe('acknowledged master-password change', { timeout: 60_000 }, () => {
+  it('upgrades the legacy verifier on unlock without rewriting keys and remains readable by the installed legacy keyring', async () => {
+    const address = await native();
+    const before = structuredClone(fixture.data);
+    const oldHash = (before['fw:keyring'] as unknown as { passwordHash: string }).passwordHash;
+    expect(getRounds(oldHash)).toBe(6);
+    service.lockKeyring();
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const upgrading = track(service.waitForPasswordVerifierUpgrade());
+    await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
+    expect(fixture.data).toEqual(before);
+    await drain();
+    expect(await upgrading).toEqual({ value: undefined });
+    const nextHash = (fixture.data['fw:keyring'] as unknown as { passwordHash: string }).passwordHash;
+    expect(getRounds(nextHash)).toBe(12);
+    expect(compareSync(PASSWORD, nextHash)).toBe(true);
+    expect(Object.fromEntries(Object.entries(fixture.data).filter(([key]) => key !== 'fw:keyring')))
+      .toEqual(Object.fromEntries(Object.entries(before).filter(([key]) => key !== 'fw:keyring')));
+    const verifier = new Keyring();
+    verifier.setupMasterPassword(nextHash);
+    expect(() => verifier.unlockKeyring(PASSWORD)).not.toThrow();
+    expect(service.exportMnemonic({ address, password: PASSWORD, walletEcosystem: WalletEcosystem.Substrate }).seed).toBe(PHRASE);
+    fixture.writeKeys = [];
+    await service.waitForPasswordVerifierUpgrade();
+    expect(fixture.writeKeys).toEqual([]);
+  });
+
+  it('keeps the original verifier after storage failure and retries only after authenticated unlock', async () => {
+    const before = structuredClone(fixture.data);
+    fixture.failKey = 'fw:keyring';
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const failed = track(service.waitForPasswordVerifierUpgrade());
+    await drain();
+    expect(await failed).toHaveProperty('error');
+    expect(fixture.data).toEqual(before);
+    expect(service.keyringIsLocked).toBe(true);
+    fixture.failKey = '';
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const retried = track(service.waitForPasswordVerifierUpgrade());
+    await drain();
+    expect(await retried).toEqual({ value: undefined });
+    expect(getRounds((fixture.data['fw:keyring'] as unknown as { passwordHash: string }).passwordHash)).toBe(12);
+  });
+
+  it('does not rehash or write after a wrong unlock password', async () => {
+    service.lockKeyring();
+    const before = structuredClone(fixture.data);
+    fixture.writeKeys = [];
+    expect(service.unlockKeyring({ password: 'Public incorrect password' })).toBe(false);
+    await expect(service.waitForPasswordVerifierUpgrade()).rejects.toThrow('authentication changed');
+    expect(fixture.data).toEqual(before);
+    expect(fixture.writeKeys).toEqual([]);
+  });
+
+  it('never unlocks after a verifier commit completes following manual lock', async () => {
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const upgrading = track(service.waitForPasswordVerifierUpgrade());
+    await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
+    service.lockKeyring();
+    await drain();
+    expect(await upgrading).toHaveProperty('error');
+    expect(service.keyringIsLocked).toBe(true);
+    expect(service.getPassword()).toBe('');
+    expect(getRounds((fixture.data['fw:keyring'] as unknown as { passwordHash: string }).passwordHash)).toBe(12);
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+  });
+
+  it('orders a password rotation after the verifier upgrade and never restores the old password', async () => {
+    await native();
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const upgrading = track(service.waitForPasswordVerifierUpgrade());
+    await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
+    const changing = change();
+    await drain();
+    expect(await upgrading).toEqual({ value: undefined });
+    expect(await changing).toEqual({ value: true });
+    const storedHash = (fixture.data['fw:keyring'] as unknown as { passwordHash: string }).passwordHash;
+    expect(getRounds(storedHash)).toBe(12);
+    expect(compareSync(NEW_PASSWORD, storedHash)).toBe(true);
+    expect(compareSync(PASSWORD, storedHash)).toBe(false);
+  });
+
+  it('does not recreate a verifier when reset was requested while its commit was held', async () => {
+    expect(service.unlockKeyring({ password: PASSWORD })).toBe(true);
+    const upgrading = track(service.waitForPasswordVerifierUpgrade());
+    await vi.waitFor(() => expect(fixture.writes.length).toBeGreaterThan(0));
+    const resetting = track(service.resetWallet());
+    await drain();
+    expect(await upgrading).toHaveProperty('error');
+    expect(await resetting).toEqual({ value: true });
+    expect(fixture.data['fw:keyring']).toBeUndefined();
+    expect(service.keyringIsLocked).toBe(false); // No password exists after reset.
+  });
+
   it.each([false, true])('rejects a password request admitted during reset (reset fails: %s)', async fails => {
     await native();
     let entered = false;

@@ -9,7 +9,9 @@ vi.mock('@extension-base/stores/KeyringStoreWeb', () => ({ default: {
 } }));
 vi.mock('@extension-base/background/handlers/Extension', () => ({ default: class { handle = mocks.handle; } }));
 vi.mock('@extension-base/background/handlers/Tabs', () => ({ default: class { handle = mocks.handle; } }));
-vi.mock('@extension-base/background/handlers/State', () => ({ default: class {} }));
+vi.mock('@extension-base/background/handlers/State', () => ({
+  default: class { keyringLockService = { lockIfExpired: vi.fn() }; },
+}));
 
 import { handlers } from '@extension-base/background/handlers';
 

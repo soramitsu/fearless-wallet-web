@@ -51,6 +51,7 @@ const i18n = vi.hoisted(() => ({
 }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: i18n.t }) }));
 
+vi.mock('@/bootstrap/walletLock', () => ({ watchWalletLock: vi.fn(() => vi.fn()) }));
 import App from '@/App.vue';
 import VisualEffectsSetting from '@/screens/settings/VisualEffectsSetting.vue';
 import {

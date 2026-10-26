@@ -26,3 +26,9 @@ upstream Web 3.0 Technologies Foundation copyright notice.
 Other bundled fonts retain their SIL Open Font License notices. Website artwork
 and the Apple materials in tools/release-readiness retain the notices described
 in site/NOTICE and tools/release-readiness/NOTICE respectively.
+
+Token logos: the src/assets/tokens/polkaswap-* files are the logos polkaswap.io
+shows for SORA assets, copied by scripts/sync-polkaswap-token-icons.mjs from the
+whitelist in https://github.com/sora-xor/polkaswap-token-whitelist-config
+(commit aac95ad873dce1797ff018ffc537afcc08569cab). Each logo remains the mark of
+its token's project and is shown only to identify that token.

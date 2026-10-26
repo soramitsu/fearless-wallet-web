@@ -64,12 +64,12 @@ describe('extension manifest generation', () => {
     expect(manifest).not.toHaveProperty('minimum_chrome_version');
   });
 
-  it('ships the 4.2.0 release version to Chrome and Firefox', () => {
+  it('ships the 4.2.1 release version to Chrome and Firefox', () => {
     // Chrome only offers the update when the version is above the published
-    // 3.0.5 item; both stores must receive the same release number.
-    expect(packageJson.version).toBe('4.2.0');
-    expect(makeManifest('chrome').version).toBe('4.2.0');
-    expect(makeManifest('firefox').version).toBe('4.2.0');
+    // store item; both stores must receive the same release number.
+    expect(packageJson.version).toBe('4.2.1');
+    expect(makeManifest('chrome').version).toBe('4.2.1');
+    expect(makeManifest('firefox').version).toBe('4.2.1');
   });
 
   it('omits private chromium credentials for local open-source builds', () => {

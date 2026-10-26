@@ -42,9 +42,12 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { chrome } from '@extension-base/utils/crossenv';
 import VisualEffectsSetting from './VisualEffectsSetting.vue';
 import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
 import { IS_EXTENSION } from '@/consts/global';
+import { IS_SIDE_PANEL } from '@/consts/globalClient';
+import { sidePanelAvailable, switchToPopup, switchToSidePanel } from '@/extension/toolbarSurface';
 import { Components } from '@/router/routes';
 import { getAccessStatus, lockExtension } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -114,6 +117,49 @@ const lock = () => {
   router.push({ name: Components.Unlock });
 };
 const showIrohaConnectUnavailable = computed(() => route.query?.notice === IROHA_CONNECT_UNAVAILABLE_NOTICE);
+// Chrome with the side panel API: the toolbar opens either the side panel or the popup (extension/toolbarSurface.ts).
+const canSwitchSurface = IS_EXTENSION && sidePanelAvailable(chrome);
+const sidePanelUnavailable = ref(false);
+let windowId: number | undefined;
+onMounted(async () => {
+  // Known before the click, which must open the panel synchronously; older Chrome needs a real window id.
+  if (canSwitchSurface && !IS_SIDE_PANEL) windowId = (await chrome.windows.getCurrent()).id;
+});
+const switchToolbarSurface = () => {
+  if (IS_SIDE_PANEL) {
+    // The popup opens in the panel's place.
+    void switchToPopup(chrome).then(() => window.close());
+
+    return;
+  }
+
+  void switchToSidePanel(chrome, windowId ?? chrome.windows.WINDOW_ID_CURRENT).then(async (opened) => {
+    sidePanelUnavailable.value = !opened;
+    // The toolbar popup has no tab and closes once the panel is open; a full tab stays.
+    if (opened && !(await chrome.tabs.getCurrent())) window.close();
+  });
+};
+const toolbarSurfaceItems = (): SettingsItem[] => {
+  if (!canSwitchSurface) return [];
+
+  return [
+    IS_SIDE_PANEL
+      ? {
+          id: 'toolbar-surface',
+          label: t('sidePanel.switchToPopup'),
+          description: t('sidePanel.switchToPopupDescription'),
+          icon: 'popup-window',
+          open: switchToolbarSurface,
+        }
+      : {
+          id: 'toolbar-surface',
+          label: t('sidePanel.switchToSidePanel'),
+          description: t(sidePanelUnavailable.value ? 'sidePanel.unavailable' : 'sidePanel.switchToSidePanelDescription'),
+          icon: 'side-panel',
+          open: switchToolbarSurface,
+        },
+  ];
+};
 const hasTonAccount = computed(() => {
   const account = accountsStore.accounts.find(({ address }) => address === accountsStore.selectedWallet.address);
 
@@ -262,6 +308,7 @@ const groups = computed<SettingsGroup[]>(() => [
         icon: 'language',
         open: () => emit('openLanguagePopup'),
       },
+      ...toolbarSurfaceItems(),
     ],
   },
   {

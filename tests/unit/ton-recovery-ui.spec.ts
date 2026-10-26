@@ -14,7 +14,7 @@ vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push, back: vi.fn
 vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet' } }));
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 vi.mock('@/util/BaseApi', () => ({ default: { isEthereumNetwork: () => false } }));
-vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false }));
+vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false, IS_SIDE_PANEL: false }));
 import Export from '@/screens/accounts/Export.vue';
 import Unlock from '@/screens/welcome/Unlock.vue';
 

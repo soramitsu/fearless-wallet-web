@@ -45,6 +45,9 @@ export function assertWalletAllowsNormalUse(accounts: StoredWallet[], address: s
 }
 
 const recoveryRoutes = new Set([
+  // Connection approval chooses its own eligible accounts. The portfolio's
+  // selected recovery-only wallet must not hide another wallet's request.
+  'Authorize',
   'Wallet', 'Currencies', 'Nfts', 'Asset', 'AssetHistory', 'AssetNetworks',
   'NftCollection', 'NftDetails', 'NftSendForm', 'SendForm',
   'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt',

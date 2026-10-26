@@ -32,11 +32,12 @@ vi.mock('@/util/iroha', () => ({ encodeIrohaI105Address: () => '' }));
 vi.mock('@/locales/useI18n', () => ({
   useI18n: () => ({
     t: (key: string) => (key === 'authorize.authWarningMessage' ? 'Application {name} from {link}' : key),
+    locale: { value: 'en-EN' },
   }),
 }));
 
 const account = (id: string) =>
-  ({ address: id, name: id, ethereumAddress: `0x${id}`, solanaAddress: `sol-${id}` }) as AccountJson;
+  ({ address: id, name: id, ethereumAddress: `0x${id}`, solanaAddress: `sol-${id}`, walletSecurityGeneration: 1 }) as AccountJson;
 const request = (id: string) =>
   ({ id, url: `https://${id}.example`, request: { origin: id, accountAuthType: 'evm' } }) as AuthorizeRequest;
 const Button = {
@@ -56,7 +57,7 @@ const open = (realControls = false) =>
           emits: ['closeHandler'],
           template: '<main><slot /></main>',
         },
-        Alert: { template: '<div><slot /></div>' },
+        Alert: { props: ['message'], template: '<div>{{ message }}<slot /></div>' },
         FButton: realControls ? FButton : Button,
         Icon: true,
         SelectAuthAccountForm: true,
@@ -85,9 +86,101 @@ beforeEach(() => {
 });
 
 describe('authorization screen request ownership', () => {
+  it('offers and approves only eligible wallets in a mixed Substrate inventory', async () => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    mocks.accounts.accounts = [
+      { ...account('legacy'), walletSecurityGeneration: undefined },
+      account('fresh'),
+    ];
+    const wrapper = open();
+    await flushPromises();
+    expect(Object.keys(form(wrapper).props('accounts'))).toEqual(['fresh']);
+    expect(selected(wrapper)).toEqual(['fresh']);
+    form(wrapper).vm.$emit('onSelect', true, 'legacy');
+    form(wrapper).vm.$emit('onSelectAll', true);
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', accounts: ['fresh'] });
+    wrapper.unmount();
+  });
+
+  it.each([undefined, 0])('explains recovery-only accounts with provenance %s and lets the request be rejected', async (generation) => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    mocks.accounts.accounts = [{ ...account('legacy'), walletSecurityGeneration: generation }];
+    const wrapper = open();
+    await flushPromises();
+    expect(wrapper.findComponent(SelectAuthAccountForm).exists()).toBe(false);
+    expect(approve(wrapper)).toBeUndefined();
+    expect(wrapper.text()).toContain('Old wallets are recovery-only');
+    expect(wrapper.text()).toContain('Create a new wallet');
+    expect(wrapper.text()).toContain('Use a new recovery phrase. Do not reuse the old one.');
+    expect(wrapper.text()).not.toContain('auth.noAccounts');
+    await wrapper.getComponent(Button).trigger('click');
+    expect(mocks.reject).toHaveBeenCalledExactlyOnceWith('first');
+    expect(mocks.approve).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it.each(['isExternal', 'isHardware'] as const)('keeps %s accounts eligible without local generation metadata', async (kind) => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    mocks.accounts.accounts = [{ ...account('external'), walletSecurityGeneration: undefined, [kind]: true }];
+    const wrapper = open();
+    await flushPromises();
+    expect(selected(wrapper)).toEqual(['external']);
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', accounts: ['external'] });
+    wrapper.unmount();
+  });
+
+  it('drops an account that becomes recovery-only before approval and blocks its stale rendered control', async () => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    const wrapper = open();
+    await flushPromises();
+    const oldApprove = approve(wrapper);
+    mocks.accounts.accounts[0].walletSecurityGeneration = undefined;
+    oldApprove.vm.$emit('click');
+    expect(mocks.approve).not.toHaveBeenCalled();
+    await flushPromises();
+    expect(Object.keys(form(wrapper).props('accounts'))).toEqual(['bob']);
+    expect(selected(wrapper)).toEqual(['bob']);
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', accounts: ['bob'] });
+    wrapper.unmount();
+  });
+
+  it('replaces approval with recovery guidance when the last eligible account loses its provenance', async () => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    mocks.accounts.accounts = [account('alice')];
+    const wrapper = open();
+    await flushPromises();
+    const oldApprove = approve(wrapper);
+    mocks.accounts.accounts[0].walletSecurityGeneration = undefined;
+    oldApprove.vm.$emit('click');
+    await flushPromises();
+    expect(mocks.approve).not.toHaveBeenCalled();
+    expect(approve(wrapper)).toBeUndefined();
+    expect(wrapper.text()).toContain('Old wallets are recovery-only');
+    mocks.accounts.accounts.push(account('fresh'));
+    await flushPromises();
+    expect(selected(wrapper)).toEqual(['fresh']);
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', accounts: ['fresh'] });
+    wrapper.unmount();
+  });
+
+  it('keeps the missing-account explanation when legacy wallets are incompatible with the requested ecosystem', async () => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'evm';
+    mocks.accounts.accounts = [{ ...account('legacy'), ethereumAddress: '', walletSecurityGeneration: undefined }];
+    const wrapper = open();
+    await flushPromises();
+    expect(wrapper.text()).toContain('auth.noAccounts');
+    expect(wrapper.text()).not.toContain('Old wallets are recovery-only');
+    expect(approve(wrapper)).toBeUndefined();
+    wrapper.unmount();
+  });
+
   it('allows a presented standalone Ethereum wallet to be selected for its own EVM grant', async () => {
     const address = `0x${'12'.repeat(20)}`;
-    mocks.accounts.accounts = [{ address, ethereumAddress: address, name: 'Legacy Ethereum', walletEcosystem: 'evm' } as AccountJson];
+    mocks.accounts.accounts = [{ ...account(address), ethereumAddress: address, name: 'Ethereum', walletEcosystem: 'evm' } as AccountJson];
     const wrapper = open();
     await flushPromises();
     expect(Object.keys(form(wrapper).props('accounts'))).toEqual([address]);
@@ -101,7 +194,7 @@ describe('authorization screen request ownership', () => {
   it('does not offer an Ethereum-only wallet for a Substrate grant', async () => {
     const address = `0x${'12'.repeat(20)}`;
     mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
-    mocks.accounts.accounts.push({ address, ethereumAddress: address, name: 'Legacy Ethereum', walletEcosystem: 'evm' } as AccountJson);
+    mocks.accounts.accounts.push({ ...account(address), ethereumAddress: address, name: 'Ethereum', walletEcosystem: 'evm' } as AccountJson);
     const wrapper = open();
     await flushPromises();
     expect(Object.keys(form(wrapper).props('accounts'))).toEqual(['alice', 'bob']);

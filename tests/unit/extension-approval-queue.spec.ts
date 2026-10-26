@@ -31,8 +31,8 @@ vi.mock('@/consts/globalClient', () => ({ IS_POPUP: true }));
 vi.mock('@/stores/accounts', () => ({
   useAccountsStore: () => ({
     accounts: [
-      { address: 'substrate-account', ethereumAddress: '0x1234', name: 'EVM wallet' },
-      { address: 'solana-account', solanaAddress: 'solana-public-key', name: 'Solana wallet' },
+      { address: 'substrate-account', ethereumAddress: '0x1234', name: 'EVM wallet', walletSecurityGeneration: 1 },
+      { address: 'solana-account', solanaAddress: 'solana-public-key', name: 'Solana wallet', walletSecurityGeneration: 1 },
     ],
   }),
 }));
@@ -43,7 +43,7 @@ vi.mock('@/screens/extension-ui/authorize/SelectAuthAccountForm.vue', () => ({
     template: '<div />',
   },
 }));
-vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: () => '{name} at {link}' }) }));
+vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: () => '{name} at {link}', locale: { value: 'en-EN' } }) }));
 vi.mock('@/util/iroha', () => ({ encodeIrohaI105Address: vi.fn() }));
 
 import { useExtensionStore } from '@/stores/extension';

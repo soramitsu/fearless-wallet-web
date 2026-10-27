@@ -11,16 +11,20 @@
       <span v-else-if="checkingNetworksText" class="refresh-error" data-testid="portfolioChecking" role="status">
         {{ checkingNetworksText }}
       </span>
-      <button
-        class="portfolio-refresh"
-        data-testid="portfolioRefresh"
-        type="button"
-        :disabled="refreshing"
-        :aria-busy="refreshing"
-        @click="refreshPortfolio"
-      >
-        {{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}
-      </button>
+      <!-- On the wallet screen the button sits at the end of the toolbar's view row and this row shows only a status.
+           A disabled Teleport still resolves its target, so without a slot it names one that always exists. -->
+      <Teleport defer :to="refreshSlotId ? `#${refreshSlotId}` : 'body'" :disabled="!refreshSlotId">
+        <button
+          class="portfolio-refresh"
+          data-testid="portfolioRefresh"
+          type="button"
+          :disabled="refreshing"
+          :aria-busy="refreshing"
+          @click="refreshPortfolio"
+        >
+          {{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}
+        </button>
+      </Teleport>
     </div>
 
     <div v-if="showLoader" class="portfolio-loading" data-testid="portfolioLoading" role="status" aria-live="polite">
@@ -212,6 +216,8 @@ export default defineComponent({
     showAssetsManagementForm: Boolean,
     /** Manage mode lists only hidden assets (the "Hidden (N)" filter). */
     manageHiddenOnly: Boolean,
+    /** Where the toolbar keeps a place for Refresh (WalletSettings.vue); without one it stays in the list. */
+    refreshSlotId: { type: String, default: '' },
   },
   emits: ['toggleAssetsManagementForm', 'update:manageHiddenOnly', 'toggleNetworkManagementVisible'],
   setup() {
@@ -551,6 +557,11 @@ export default defineComponent({
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+
+  // Refresh moved to the toolbar and nothing to report: no empty row above the list.
+  &:empty {
+    display: none;
+  }
 }
 
 .portfolio-refresh {

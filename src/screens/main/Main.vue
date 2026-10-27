@@ -3,6 +3,7 @@
     <Header
       :showSelectWalletPopup="showSelectWalletPopup"
       :highlightSettingsIcon="highlightSettingsIcon"
+      :showSettingsButton="!showMenu"
       @update:showSelectWalletPopup="setSelectWalletPopupVisible"
       @toggleSettingsVisible="toggleSettingsVisible"
     />
@@ -29,7 +30,7 @@
 
     <AboutPopup v-if="showAboutPopup" @handlerClose="toggleAboutPopupVisible" />
 
-    <LegacyExposureBanner />
+    <LegacyExposureBanner v-if="!selectedWalletRecoveryOnly" />
     <AccountAccessBanner />
     <p v-if="accountsStore.selectedWallet.isMnemonicUnverified" class="json-backup-notice" role="status" tabindex="0">
       {{ $t('accounts.jsonBackupOnly') }}
@@ -69,7 +70,9 @@ import LegacyWalletUpgradeNotice from './LegacyWalletUpgradeNotice.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import AccountAccessBanner from '@/components/AccountAccessBanner.vue';
 import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
+import { IS_EXTENSION } from '@/consts/global';
 import { useAccountsStore } from '@/stores/accounts';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 
 export default defineComponent({ name: 'Main',
   components: {
@@ -101,6 +104,11 @@ export default defineComponent({ name: 'Main',
     };
   },
   computed: {
+    // An old wallet's recovery banner (LegacyWalletUpgradeNotice) already asks to move its funds and opens the guide,
+    // so the exposure reminder stays away while it shows: one warning at a time.
+    selectedWalletRecoveryOnly(): boolean {
+      return IS_EXTENSION && isSelectedWalletRecoveryOnly(this.accountsStore.accounts, this.accountsStore.selectedWallet.address);
+    },
     highlightSettingsIcon() {
       return this.$route.meta.primaryNavigation === 'settings' || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
     },

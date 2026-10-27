@@ -78,14 +78,16 @@ function open(item: MenuDefinition): void {
 </script>
 
 <style lang="scss" scoped>
+// Just tall enough for the raised Swap mark to meet the top edge, where its ring cuts the border: the dock is chrome,
+// and every pixel it does not need goes to the page above it.
 .menu {
-  min-height: 82px;
+  min-height: 68px;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   align-items: end;
   margin: 0 -16px -16px;
-  padding: 8px 8px 10px;
+  padding: 6px 8px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   // The dock is chrome; without blur it takes the solid chrome tint (design-system 3.2).
   background: $fw-chrome-surface;

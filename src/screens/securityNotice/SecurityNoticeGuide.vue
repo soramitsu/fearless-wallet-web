@@ -61,10 +61,16 @@
           <a
             class="exposure-guide__link"
             data-testid="securityNoticeMigration"
+            aria-describedby="security-notice-migration-limitation"
             :href="URLS.POLKASWAP_MIGRATION"
             target="_blank"
             rel="noopener noreferrer"
           >{{ t('exposureNotice.guide.migrateLink') }}</a>
+          <p
+            id="security-notice-migration-limitation"
+            class="exposure-guide__hint"
+            data-testid="securityNoticeMigrationLimitation"
+          >{{ t('exposureNotice.guide.migrateLimitation') }}</p>
 
           <p class="exposure-guide__progress" role="status" data-testid="securityNoticeProgress">
             {{

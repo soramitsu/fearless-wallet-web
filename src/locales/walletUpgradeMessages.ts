@@ -8,7 +8,8 @@ const en = {
     guide: {
       createImportedText:
         'Create it here to generate a new recovery phrase. Importing an existing phrase, key or JSON file restores the same wallet instead.',
-      migrateLink: 'Request a SORA account migration on Polkaswap',
+      migrateLink: 'SORA migration information on Polkaswap',
+      migrateLimitation: 'Fearless cannot sign Polkaswap migration requests with old wallets.',
     },
   },
   ux: {
@@ -24,7 +25,8 @@ const ru: typeof en = {
     guide: {
       createImportedText:
         'Создайте его здесь, чтобы получить новую фразу восстановления. Импорт существующей фразы, ключа или файла JSON восстанавливает прежний кошелёк.',
-      migrateLink: 'Запросить перенос аккаунта SORA через Polkaswap',
+      migrateLink: 'Информация о переносе аккаунта SORA на Polkaswap',
+      migrateLimitation: 'Fearless не может подписывать запросы на перенос аккаунта Polkaswap с помощью старых кошельков.',
     },
   },
   ux: {

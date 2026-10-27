@@ -251,19 +251,27 @@ describe('legacy wallet upgrade popup', () => {
     expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(['legacy-address']);
   });
 
-  it('links to the Polkaswap migration request in a new tab under the main action', () => {
+  it.each([
+    ['en-EN', 'SORA migration information on Polkaswap', 'Fearless cannot sign Polkaswap migration requests with old wallets.'],
+    ['ru-RU', 'Информация о переносе аккаунта SORA на Polkaswap', 'Fearless не может подписывать запросы на перенос аккаунта Polkaswap с помощью старых кошельков.'],
+    ['akk-Xsux-x-old', 'SORA migration information on Polkaswap', 'Fearless cannot sign Polkaswap migration requests with old wallets.'],
+    ['egy-Egyp', 'SORA migration information on Polkaswap', 'Fearless cannot sign Polkaswap migration requests with old wallets.'],
+  ])('explains the signing limitation beside migration information in %s', (locale, label, limitation) => {
     mocks.accounts.accounts = [legacy()];
-    const wrapper = mountNotice();
+    const wrapper = mountNotice(locale);
     const link = wrapper.get('[data-testid="walletUpgradeMigration"]');
+    const note = wrapper.get('[data-testid="walletUpgradeMigrationLimitation"]');
     expect(link.attributes()).toMatchObject({
       href: 'https://polkaswap.io/#/migration', target: '_blank', rel: 'noopener noreferrer',
+      'aria-describedby': note.attributes('id'),
     });
-    expect(link.text()).toBe('Request a SORA account migration on Polkaswap');
+    expect(link.text()).toBe(label);
+    expect(note.text()).toBe(limitation);
+    expect(link.element.nextElementSibling).toBe(note.element);
     // Always visible, even where the steps are folded away.
     expect(link.element.closest('details')).toBeNull();
+    expect(note.element.closest('details')).toBeNull();
     expect(link.element.previousElementSibling).toBe(wrapper.get('.wallet-upgrade__create').element);
-    expect(mountNotice('ru-RU').get('[data-testid="walletUpgradeMigration"]').text())
-      .toBe('Запросить перенос аккаунта SORA через Polkaswap');
   });
 
   it('keeps the recommendation if navigation is cancelled', async () => {

@@ -8,7 +8,8 @@
 // - side-panel: the panel has loaded in this browser before. No popup; Chrome toggles the panel itself.
 // - probe: the panel is wanted but has not loaded here yet (the first click after this update). No popup and no panel
 //   behaviour, so the click reaches action.onClicked, which opens the panel and falls back to the popup unless the panel
-//   page reports within SIDE_PANEL_LOAD_TIMEOUT_MS. Some Chromium browsers expose the API without showing a panel.
+//   page reports within SIDE_PANEL_LOAD_TIMEOUT_MS. Some Chromium browsers expose the API without showing a panel. A
+//   refused open() answers only that click with the popup: it may be about that one window.
 
 export const TOOLBAR_SURFACE_KEY = 'fearless:toolbar-surface';
 export const SIDE_PANEL_STATUS_KEY = 'fearless:side-panel-status';
@@ -137,7 +138,9 @@ export function onToolbarClicked(
         await new Promise((resolve) => setTimeout(resolve, timeoutMs));
         if ((await readStored(api)).status !== 'working') await fallBackToPopup(api, windowId);
       },
-      () => fallBackToPopup(api, windowId)
+      // Refused for this window (closing, or a kind without a panel): only this click gets the popup. Nothing is
+      // stored, so the next click in a normal window tries the panel again.
+      () => openPopupNow(api, windowId)
     )
     .finally(() => {
       probing = undefined;

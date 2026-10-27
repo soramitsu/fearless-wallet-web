@@ -210,23 +210,26 @@ describe('a toolbar click the worker answers', () => {
     expect(f.api.action.openPopup).toHaveBeenCalledWith({ windowId: 9 });
   });
 
-  it('falls back at once when Chrome refuses to open the panel', async () => {
+  it('answers only this click with the popup when Chrome refuses to open the panel', async () => {
     const f = fixture();
-    f.api.sidePanel!.open.mockRejectedValueOnce(new Error('No side panel'));
+    f.api.sidePanel!.open.mockRejectedValueOnce(new Error('No side panel for this window'));
 
     await onToolbarClicked(f.chrome, tab(), 60_000);
-    expect(f.store[SIDE_PANEL_STATUS_KEY]).toBe('unavailable');
     expect(f.calls.at(-1)).toBe('openPopup');
+    // The refusal may be about this one window, so nothing is stored and the next click tries the panel again.
+    expect(f.store[SIDE_PANEL_STATUS_KEY]).toBeUndefined();
+    await onToolbarClicked(f.chrome, tab(), 1);
+    expect(f.api.sidePanel!.open).toHaveBeenCalledTimes(2);
   });
 
-  it('falls back when the call throws instead of rejecting', async () => {
+  it('answers only this click when the call throws instead of rejecting', async () => {
     const f = fixture();
     f.api.sidePanel!.open.mockImplementationOnce(() => {
       throw new Error('Not supported');
     });
 
     await onToolbarClicked(f.chrome, tab(), 60_000);
-    expect(f.store[SIDE_PANEL_STATUS_KEY]).toBe('unavailable');
+    expect(f.store[SIDE_PANEL_STATUS_KEY]).toBeUndefined();
     expect(f.calls.at(-1)).toBe('openPopup');
   });
 
@@ -271,7 +274,8 @@ describe('a toolbar click the worker answers', () => {
 
     await onToolbarClicked(f.chrome, tab(), 60_000);
     expect(f.store[SIDE_PANEL_STATUS_KEY]).toBe('working');
-    expect(f.calls).toContain('panelOnClick:true');
+    // The toolbar keeps its panel mode untouched; only this click opens the popup.
+    expect(f.calls).toEqual(['openPopup']);
     expect(f.api.action.openPopup).toHaveBeenCalledOnce();
   });
 });

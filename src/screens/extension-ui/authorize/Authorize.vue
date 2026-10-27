@@ -114,7 +114,7 @@ const recoveryCopy = computed(() => legacyWalletUpgradeMessages[locale.value ===
 const requests = computed(() => extensionStore.authRequests);
 const request = computed(() => requests.value[0]);
 const requestKey = computed(() => (request.value ? JSON.stringify(request.value) : ''));
-const accountAuthType = computed(() => request.value?.request?.accountAuthType);
+const accountAuthType = computed(() => request.value?.request?.accountAuthType ?? 'substrate');
 const allowedAccounts = computed(() => new Set(request.value?.request.allowedAccounts ?? []));
 
 const compatibleAccounts = computed<AccountJson[]>(() => {
@@ -123,7 +123,7 @@ const compatibleAccounts = computed<AccountJson[]>(() => {
   return accounts.filter((account) => {
     const { ethereumAddress, solanaAddress, walletEcosystem } = account;
 
-    if (accountAuthType.value === 'substrate' && walletEcosystem === WalletEcosystem.Evm) return false;
+    if (accountAuthType.value === 'substrate' && walletEcosystem && walletEcosystem !== WalletEcosystem.Substrate) return false;
     if (accountAuthType.value === 'evm' && !ethereumAddress) return false;
     if (accountAuthType.value === 'solana') return !!solanaAddress || walletEcosystem === WalletEcosystem.Solana;
     if (accountAuthType.value === 'iroha') return !!resolveIrohaAuthAddress(account, allowedAccounts.value);
@@ -132,9 +132,11 @@ const compatibleAccounts = computed<AccountJson[]>(() => {
   });
 });
 
-// Connection approval belongs to the requested accounts, not the wallet selected
-// in the portfolio. Keep the same eligibility rule as the background handler.
-const accounts = computed(() => compatibleAccounts.value.filter((account) => !isRecoveryOnlyWallet(account)));
+// Substrate connection shares public addresses; signing remains restricted.
+// Use the requested protocol, never the site's previously merged grants.
+const accounts = computed(() => compatibleAccounts.value.filter((account) =>
+  accountAuthType.value === 'substrate' || !isRecoveryOnlyWallet(account)
+));
 const hasRecoveryOnlyAccounts = computed(() => compatibleAccounts.value.some(isRecoveryOnlyWallet));
 const accountsKey = computed(() => JSON.stringify(accounts.value));
 

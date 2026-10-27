@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { encodeIrohaI105Address } from '@/util/iroha';
-import { assertWalletAllowsNormalUse, isSelectedWalletRecoveryOnly, isWalletRecoveryRoute } from '@/util/walletRecoveryPolicy';
+import { assertWalletAllowsConnection, assertWalletAllowsNormalUse, isSelectedWalletRecoveryOnly, isWalletRecoveryRoute } from '@/util/walletRecoveryPolicy';
 
 const old = { address: 'legacy-root', meta: { ethereumAddress: `0x${'ab'.repeat(20)}`, solanaAddress: 'legacy-solana' } };
 const fresh = { address: 'new-root', meta: { walletSecurityGeneration: 1 } };
 
 describe('wallet recovery security policy', () => {
+  it('allows sharing known public accounts independently of their signing restrictions', () => {
+    const imported = { address: 'imported', meta: { walletSecurityGeneration: 0 } };
+    const accounts = [old, fresh, imported];
+    const before = JSON.stringify(accounts);
+    for (const account of accounts) expect(() => assertWalletAllowsConnection(accounts, account.address)).not.toThrow();
+    for (const address of ['', 'unknown']) expect(() => assertWalletAllowsConnection(accounts, address)).toThrow('not available');
+    expect(() => assertWalletAllowsNormalUse(accounts, imported.address)).toThrow('recovery-only');
+    expect(JSON.stringify(accounts)).toBe(before);
+  });
   it('checks the requested old signer even when a fresh wallet is selected', () => {
     for (const address of [old.address, old.meta.ethereumAddress.toUpperCase(), old.meta.solanaAddress]) {
       expect(() => assertWalletAllowsNormalUse([old, fresh], address)).toThrow('recovery-only');

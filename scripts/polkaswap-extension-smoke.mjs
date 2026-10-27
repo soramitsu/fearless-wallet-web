@@ -138,17 +138,17 @@ try {
     window.__p.postMessage({ id: 'polkaswap-auth-subscription', message: 'pri(authorize.requests)', request: null });
     return true;
   })()`);
-  const approve = async (page) => {
+  const approve = async (page, authorizedAccounts = [address]) => {
     const request = await waitFor(async () => {
       const failure = await page.eval('window.__connectionResult?.error');
       if (failure) throw new Error(failure);
       return popup.eval('window.__authRequests[0]');
     }, 15000, 'authorization popup');
-    await call('pri(authorize.approve)', { id: request.id, authorizedAccounts: [address] });
+    await call('pri(authorize.approve)', { id: request.id, authorizedAccounts });
   };
-  const assertConnected = (value) => {
+  const assertConnected = (value, expectedAccounts = [address]) => {
     assert(!value.error, value.error);
-    assert.deepEqual(value.accounts.map((account) => account.address), [address]);
+    assert.deepEqual(value.accounts.map((account) => account.address).sort(), [...expectedAccounts].sort());
   };
 
   const delayed = await openDapp(dappUrl, 4500);
@@ -179,8 +179,13 @@ try {
   await call('pri(onboarding.setComplete)');
   const recoveryAddress = await call('pri(accounts.create)', {
     suri: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
-    type: 'sr25519', walletEcosystem: 'substrate', meta: { name: 'Recovery-only fixture' },
+    type: 'sr25519', walletEcosystem: 'substrate', meta: { name: 'Imported Polkaswap test' },
   });
+  const exposure = await call('pri(security.legacyExposure.status)');
+  assert(exposure.importedWallets.some((account) => account.address === recoveryAddress),
+    'The imported fixture must retain its recovery-only classification');
+  assert(!exposure.newWallets.some((account) => account.address === recoveryAddress),
+    'The fixture must not be classified as a newly generated wallet');
   await call('pri(security.legacyExposure.acknowledge)');
   await call('pri(accounts.update.current)', { address: recoveryAddress, walletEcosystem: 'substrate' });
   await call('pri(authorize.remove)', dappUrl);
@@ -194,27 +199,46 @@ try {
   15000, 'visible mixed-wallet Approve button');
   const offeredAccounts = await approvalPopup.eval(`Array.from(document.querySelectorAll('.auth-account'))
     .map((row) => ({ text: row.innerText, checked: row.querySelector('input[type="checkbox"]')?.checked }))`);
-  assert.equal(offeredAccounts.length, 1, 'Only the eligible fresh wallet should be offered');
-  assert(offeredAccounts[0].text.includes('Polkaswap disposable test'));
-  assert.equal(offeredAccounts[0].checked, true);
+  assert.equal(offeredAccounts.length, 2, 'Fresh and imported wallets should both be offered');
+  assert(offeredAccounts.some(({ text }) => text.includes('Polkaswap disposable test')));
+  assert(offeredAccounts.some(({ text }) => text.includes('Imported Polkaswap test')));
+  assert(offeredAccounts.every(({ checked }) => checked));
+  await approvalPopup.eval(`(() => {
+    const fresh = [...document.querySelectorAll('.auth-account')]
+      .find((row) => row.innerText.includes('Polkaswap disposable test'));
+    fresh.querySelector('input[type="checkbox"]').click();
+    return true;
+  })()`);
   await fs.mkdir(reportDir, { recursive: true });
   await fs.writeFile(path.join(reportDir, 'mixed-wallet-approval.png'),
     Buffer.from((await approvalPopup.send('Page.captureScreenshot')).result.data, 'base64'));
   await approvalPopup.eval(`document.querySelector('[data-testid="approveAuthorization"] button').click(), true`);
-  assertConnected(await result(mixedWalletPage));
-  check('Real approval popup connects the fresh wallet while a recovery-only wallet is selected', {
-    eligibleAccountsShown: offeredAccounts.length, recoveryOnlyAccountOffered: false,
+  assertConnected(await result(mixedWalletPage), [recoveryAddress]);
+  check('Real approval popup connects an imported recovery-only wallet while it is selected', {
+    eligibleAccountsShown: offeredAccounts.length, recoveryOnlyAccountOffered: true,
   });
+  const importedReconnect = await openDapp(dappUrl, 4500);
+  await startConnect(importedReconnect);
+  assertConnected(await result(importedReconnect), [recoveryAddress]);
+  assert.equal((await popup.eval('window.__authRequests')).length, 0);
+  check('Saved imported-wallet permission reconnects without another approval', await assertStartupDelay(importedReconnect));
+  await call('pri(authorize.update)', { url: dappUrl, authType: 'substrate', authorizedAccounts: [address] });
+  assertConnected(await importedReconnect.eval('window.__connectedProvider.accounts.get().then(accounts => ({ accounts }))'));
+  await call('pri(authorize.update)', { url: dappUrl, authType: 'substrate', authorizedAccounts: [address, recoveryAddress] });
+  assertConnected(await importedReconnect.eval('window.__connectedProvider.accounts.get().then(accounts => ({ accounts }))'), [address, recoveryAddress]);
+  await call('pri(authorize.remove)', dappUrl);
+  await assert.rejects(() => importedReconnect.eval('window.__connectedProvider.accounts.get()'), /has not been enabled/);
+  check('Manage dapps adds imported accounts and revocation removes their access');
 
   if (live) {
     const page = await openDapp('https://polkaswap.io/');
     await startConnect(page);
-    await approve(page);
-    assertConnected(await result(page));
+    await approve(page, [recoveryAddress]);
+    assertConnected(await result(page), [recoveryAddress]);
     await startConnect(page);
-    assertConnected(await result(page));
+    assertConnected(await result(page), [recoveryAddress]);
     assert.equal((await popup.eval('window.__authRequests')).length, 0);
-    check('Live polkaswap.io origin: fresh connection and saved-permission reconnect');
+    check('Live polkaswap.io origin: imported-wallet connection and saved-permission reconnect');
     await waitFor(() => page.eval("!!document.querySelector('.disclaimer__acknowledgement input[type=checkbox]')"), 30000, 'Polkaswap disclaimer');
     await page.eval("document.querySelector('.disclaimer__acknowledgement input[type=checkbox]').click(), true");
     await waitFor(() => page.eval("!!document.querySelector('.disclaimer__accept-btn:not(:disabled)')"), 10000, 'disclaimer acceptance');
@@ -234,16 +258,16 @@ try {
     })()`);
     await waitFor(() => page.eval("!!document.querySelector('.connection__accounts .account-card')"), 15000, 'Polkaswap account selection');
     report.liveAccountSelection = await page.eval("document.querySelector('.connection__accounts').innerText");
-    assert(report.liveAccountSelection.includes('Polkaswap disposable test'));
-    check('Polkaswap wallet selector enumerates the authorized Fearless account without Access denied');
+    assert(report.liveAccountSelection.includes('Imported Polkaswap test'));
+    check('Polkaswap wallet selector enumerates the imported Fearless account without Access denied');
     await page.eval(`(() => {
       const account = [...document.querySelectorAll('.connection__accounts .account-card')]
-        .find((card) => card.querySelector('.account-credentials_name')?.textContent.includes('Polkaswap disposable test'));
+        .find((card) => card.querySelector('.account-credentials_name')?.textContent.includes('Imported Polkaswap test'));
       if (!account) throw new Error('Authorized account absent from Polkaswap');
       account.querySelector('.account').click(); return true;
     })()`);
-    await waitFor(() => page.eval("document.querySelector('.account-control.s-pressed .account-control-title.name')?.textContent.includes('Polkaswap disposable test')"), 30000, 'Polkaswap connected account');
-    check('Polkaswap displays the selected Fearless account as connected');
+    await waitFor(() => page.eval("document.querySelector('.account-control.s-pressed .account-control-title.name')?.textContent.includes('Imported Polkaswap test')"), 30000, 'Polkaswap connected account');
+    check('Polkaswap displays the imported Fearless account as connected');
     await fs.mkdir(reportDir, { recursive: true });
     await fs.writeFile(path.join(reportDir, 'polkaswap.png'), Buffer.from((await page.send('Page.captureScreenshot')).result.data, 'base64'));
     report.livePage = await page.eval('({ title: document.title, url: location.href, text: document.body.innerText.slice(0, 2500) })');

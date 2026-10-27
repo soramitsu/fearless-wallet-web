@@ -115,6 +115,7 @@ import type {
   SolanaRequestsSubjectPayload,
 } from '@extension-base/services/request-service/types';
 import type {
+  AccountAuthType,
   RequestUpdateMeta,
   PriceJson,
   NotificationResponse,
@@ -230,6 +231,7 @@ import {
 } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { IS_EXTENSION, IS_EXTENSION_SMOKE } from '@/consts/global';
+import { assertWalletAllowsConnection } from '@/util/walletRecoveryPolicy';
 import {
   assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isRecoveryPoolAction,
   isRecoveryDemeterAction, isRecoveryPolkamarktAction,
@@ -266,6 +268,15 @@ function formatSoraAddress(address: string): string {
 }
 
 export default class Extension extends FWExtensionBase {
+  private assertConnectionAllowed(address: string, authType: AccountAuthType): void {
+    if (!IS_EXTENSION) return;
+    // Polkaswap's Substrate connection exposes only the approved public account.
+    // Existing/imported keys retain their separate signing restrictions.
+    if (authType === 'substrate') {
+      assertWalletAllowsConnection(this.state.keyringService.getAllAccounts(), address);
+    } else this.assertNormalWalletUse(address);
+  }
+
   private assertNormalWalletUse(address: string, recoveryAction = false): void {
     if (!IS_EXTENSION) return;
     assertWalletAllowsRecoveryAction([
@@ -546,10 +557,12 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
-    authorizedAccounts.forEach((address) => this.assertNormalWalletUse(address));
     const authRequest = this.state.requestService.getAuthRequest(id);
 
     assert(authRequest, 'Unable to find request');
+    // Use this request's protocol, not the accumulated scopes of an older grant.
+    const authType = authRequest.request.accountAuthType ?? 'substrate';
+    authorizedAccounts.forEach((address) => this.assertConnectionAllowed(address, authType));
 
     await authRequest.resolve({ authorizedAccounts });
 
@@ -557,7 +570,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeUpdate({ authorizedAccounts, url, authType }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    authorizedAccounts.forEach((address) => this.assertNormalWalletUse(address));
+    authorizedAccounts.forEach((address) => this.assertConnectionAllowed(address, authType));
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 

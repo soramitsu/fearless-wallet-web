@@ -39,11 +39,20 @@ describe('extension recovery navigation', () => {
     'allows %s for an old wallet', async (name) => { expect(await navigate(name)).toHaveBeenCalledExactlyOnceWith(); }
   );
 
-  it.each(['ReceiveForm', 'Polkaswap', 'CrossChainForm', 'Authorize', 'Transaction', 'WalletConnectSignConfirmation'])(
+  it.each(['ReceiveForm', 'Polkaswap', 'CrossChainForm', 'Transaction', 'WalletConnectSignConfirmation'])(
     'redirects %s to recovery instead of unlocking normal use', async (name) => {
       expect(await navigate(name)).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet', query: { security: 'recovery-only' } });
     }
   );
+
+  it('allows connection approval while a recovery-only wallet is selected', async () => {
+    expect(await navigate('Authorize')).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it('requires unlock before showing connection approval', async () => {
+    mocks.locked = true;
+    expect(await navigate('Authorize')).toHaveBeenCalledExactlyOnceWith({ name: 'Unlock', query: { redirect: '/Authorize' } });
+  });
 
   it('allows normal use only after a fresh wallet is selected', async () => {
     mocks.store.accounts[0].walletSecurityGeneration = 1;

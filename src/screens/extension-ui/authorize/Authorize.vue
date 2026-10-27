@@ -57,7 +57,10 @@
       </template>
 
       <template v-else>
-        <Alert message="auth.noAccounts" />
+        <Alert v-if="hasRecoveryOnlyAccounts">
+          {{ recoveryCopy.banner }}. {{ recoveryCopy.createTitle }}. {{ recoveryCopy.createDescription }}
+        </Alert>
+        <Alert v-else message="auth.noAccounts" />
 
         <FButton
           width="100%"
@@ -85,6 +88,8 @@ import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 import { encodeIrohaI105Address } from '@/util/iroha';
+import { isRecoveryOnlyWallet } from '@/util/walletSecurity';
+import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
 const state = ref<Record<string, WalletInfo>>({});
 const selectAll = ref(true);
@@ -103,21 +108,22 @@ onBeforeUnmount(() => {
 const extensionStore = useExtensionStore();
 const accountsStore = useAccountsStore();
 const router = useRouter();
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const recoveryCopy = computed(() => legacyWalletUpgradeMessages[locale.value === 'ru-RU' ? 'ru-RU' : 'en-EN']);
 
 const requests = computed(() => extensionStore.authRequests);
 const request = computed(() => requests.value[0]);
 const requestKey = computed(() => (request.value ? JSON.stringify(request.value) : ''));
-const accountAuthType = computed(() => request.value?.request?.accountAuthType);
+const accountAuthType = computed(() => request.value?.request?.accountAuthType ?? 'substrate');
 const allowedAccounts = computed(() => new Set(request.value?.request.allowedAccounts ?? []));
 
-const accounts = computed<AccountJson[]>(() => {
+const compatibleAccounts = computed<AccountJson[]>(() => {
   const accounts: AccountJson[] = accountsStore.accounts;
 
   return accounts.filter((account) => {
     const { ethereumAddress, solanaAddress, walletEcosystem } = account;
 
-    if (accountAuthType.value === 'substrate' && walletEcosystem === WalletEcosystem.Evm) return false;
+    if (accountAuthType.value === 'substrate' && walletEcosystem && walletEcosystem !== WalletEcosystem.Substrate) return false;
     if (accountAuthType.value === 'evm' && !ethereumAddress) return false;
     if (accountAuthType.value === 'solana') return !!solanaAddress || walletEcosystem === WalletEcosystem.Solana;
     if (accountAuthType.value === 'iroha') return !!resolveIrohaAuthAddress(account, allowedAccounts.value);
@@ -126,6 +132,12 @@ const accounts = computed<AccountJson[]>(() => {
   });
 });
 
+// Substrate connection shares public addresses; signing remains restricted.
+// Use the requested protocol, never the site's previously merged grants.
+const accounts = computed(() => compatibleAccounts.value.filter((account) =>
+  accountAuthType.value === 'substrate' || !isRecoveryOnlyWallet(account)
+));
+const hasRecoveryOnlyAccounts = computed(() => compatibleAccounts.value.some(isRecoveryOnlyWallet));
 const accountsKey = computed(() => JSON.stringify(accounts.value));
 
 const showSelectAll = computed(

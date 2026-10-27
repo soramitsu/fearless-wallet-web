@@ -160,7 +160,7 @@ button { font: inherit; color: inherit; border: 0; padding: 0; min-height: 44px;
 .back-default, .close { width: 44px; height: 44px; background: transparent; }
 .back-placeholder { width: 44px; }
 button:disabled { opacity: 0.5; cursor: default; }
-@media (max-width: 620px) {
+@include column-max-width(620px) {
   .settings { min-width: 44px; }
   .settings .settings-text { display: none; }
 }

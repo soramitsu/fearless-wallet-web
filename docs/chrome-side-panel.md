@@ -39,6 +39,11 @@ button and site connection dot. Expanding opens the full tab and leaves the pane
 dot follows the active tab, because the panel stays open while the person browses. Session expiry (4.2.1) locks the
 wallet and clears open pages, the panel included.
 
+Narrow-column styles with a breakpoint above 561px use `@include column-max-width(...)` (`src/styles/common.scss`)
+instead of a viewport query. The extension's column never grows past 561px, so they always apply there: a panel dragged
+wide or a full tab lays out the By network rows, the amount input and the Polkaswap header as the popup does. The web
+app keeps its viewport queries.
+
 dApp requests still open their own approval window. Like a full tab, an open panel also shows the request.
 
 ## Release
@@ -56,6 +61,5 @@ dApp requests still open their own approval window. Like a full tab, an open pan
 - Real Chrome: `node scripts/solana-extension-smoke.mjs --side-panel-screenshots <dir>` on a test build. It clicks
   the toolbar through `Extensions.triggerAction` (pipe transport), checks every mode change, both switches and the
   expand button in the real panel, then runs the portfolio tour on the panel page. `SIDE_PANEL_SMOKE_WIDTH=320` runs
-  the tour at the narrowest panel. A panel or full tab wider than 600px still fails the tour on the By network rows:
-  `PortfolioNetworkSection.vue` switches to its compact layout by viewport width, while the extension's column stays
-  561px wide.
+  the tour at the narrowest panel, and `SIDE_PANEL_SMOKE_WIDTH=640` in a panel dragged wide.
+  `PORTFOLIO_SMOKE_WIDTH=1280` with `--portfolio-screenshots <dir>` runs the tour in a full tab.

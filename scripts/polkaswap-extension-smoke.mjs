@@ -40,6 +40,8 @@ async function openDapp(url, delayMs = 0) {
   const page = cdp(target.webSocketDebuggerUrl, { timeoutMs: 30000 });
   clients.push(page);
   await page.ready;
+  // Match wallet-page initialization so background dApp contexts remain observable.
+  await page.send('Runtime.enable');
   await page.send('Page.enable');
   // Delay a genuine phishing reply at the page transport boundary. The extension bundle,
   // permission store, approval handler and account enumeration remain unmodified.

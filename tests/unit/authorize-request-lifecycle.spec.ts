@@ -41,6 +41,8 @@ const account = (id: string) =>
   ({ address: id, name: id, ethereumAddress: `0x${id}`, solanaAddress: `sol-${id}`, walletSecurityGeneration: 1 }) as AccountJson;
 const request = (id: string) =>
   ({ id, url: `https://${id}.example`, request: { origin: id, accountAuthType: 'evm' } }) as AuthorizeRequest;
+// Only Polkaswap, for its account migration, is offered existing and imported wallets.
+const fromPolkaswap = () => { mocks.extension.authRequests[0].url = 'https://polkaswap.io/#/migration'; };
 const Button = {
   props: ['text', 'disabled'],
   emits: ['click'],
@@ -87,8 +89,9 @@ beforeEach(() => {
 });
 
 describe('authorization screen request ownership', () => {
-  it('offers existing, imported and fresh wallets together for Substrate connection', async () => {
+  it('offers Polkaswap existing, imported and fresh wallets together for Substrate connection', async () => {
     mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    fromPolkaswap();
     mocks.accounts.accounts = [
       { ...account('legacy'), walletSecurityGeneration: undefined },
       { ...account('imported'), walletSecurityGeneration: 0 },
@@ -106,8 +109,35 @@ describe('authorization screen request ownership', () => {
     wrapper.unmount();
   });
 
+  it('offers existing and imported wallets to no other site, and explains why when nothing else is left', async () => {
+    mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    mocks.extension.authRequests[0].url = 'https://polkaswap.io.phish.example/#/migration';
+    mocks.accounts.accounts = [
+      { ...account('legacy'), walletSecurityGeneration: undefined },
+      { ...account('imported'), walletSecurityGeneration: 0 },
+      account('fresh'),
+    ];
+    const wrapper = open();
+    await flushPromises();
+    expect(Object.keys(form(wrapper).props('accounts'))).toEqual(['fresh']);
+    await approve(wrapper).trigger('click');
+    expect(mocks.approve).toHaveBeenCalledExactlyOnceWith({ id: 'first', accounts: ['fresh'] });
+    wrapper.unmount();
+
+    mocks.approve.mockClear();
+    mocks.accounts.accounts = [{ ...account('legacy'), walletSecurityGeneration: undefined }];
+    const onlyOld = open();
+    await flushPromises();
+    expect(onlyOld.findComponent(SelectAuthAccountForm).exists()).toBe(false);
+    expect(approve(onlyOld)).toBeUndefined();
+    expect(onlyOld.text()).toContain('Old wallets are recovery-only');
+    expect(mocks.approve).not.toHaveBeenCalled();
+    onlyOld.unmount();
+  });
+
   it.each([undefined, 0])('allows connection when the only wallet has provenance %s', async (generation) => {
     mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    fromPolkaswap();
     mocks.accounts.accounts = [{ ...account('legacy'), walletSecurityGeneration: generation }];
     const wrapper = open();
     await flushPromises();
@@ -120,6 +150,7 @@ describe('authorization screen request ownership', () => {
 
   it('defaults an omitted requested protocol to Substrate even when the site has a merged grant', async () => {
     mocks.extension.authRequests[0].accountAuthType = 'both';
+    fromPolkaswap();
     mocks.extension.authRequests[0].request.accountAuthType = undefined;
     mocks.accounts.accounts = [{ ...account('legacy'), walletSecurityGeneration: undefined }];
     const wrapper = open();
@@ -175,6 +206,7 @@ describe('authorization screen request ownership', () => {
 
   it('preserves connection selection when security metadata changes and waits for the refreshed controls', async () => {
     mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    fromPolkaswap();
     const wrapper = open();
     form(wrapper).vm.$emit('onSelect', false, 'bob');
     await flushPromises();
@@ -192,6 +224,7 @@ describe('authorization screen request ownership', () => {
 
   it('invalidates a stale approval when the last account is removed and allows a newly imported account', async () => {
     mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    fromPolkaswap();
     mocks.accounts.accounts = [account('alice')];
     const wrapper = open();
     await flushPromises();
@@ -238,6 +271,7 @@ describe('authorization screen request ownership', () => {
     WalletEcosystem.Evm, WalletEcosystem.Ton, WalletEcosystem.Bitcoin, WalletEcosystem.Solana, WalletEcosystem.Iroha,
   ])('excludes an imported %s wallet from a mixed legacy Substrate connection', async (ecosystem) => {
     mocks.extension.authRequests[0].request.accountAuthType = 'substrate';
+    fromPolkaswap();
     mocks.accounts.accounts = [
       { ...account('old-substrate'), walletEcosystem: WalletEcosystem.Substrate, walletSecurityGeneration: undefined },
       { ...account('legacy-unclassified'), walletSecurityGeneration: undefined },

@@ -134,6 +134,25 @@ async function admitExtrinsic(mobile = false) {
   return { result, payload, queued: handler.getSignRequest('public')! };
 }
 describe('Substrate reviewed account and actual signing key', () => {
+  it.each([undefined, 0])('refuses a connected wallet with provenance %s at once, queueing and signing nothing', async (generation) => {
+    // Polkaswap may be shown an existing or imported wallet; it still never signs for a site, and the page hears so
+    // straight away instead of waiting on a request the popup cannot approve.
+    records[0].meta.walletSecurityGeneration = generation;
+    await expect(start()).rejects.toThrow('recovery-only');
+    const extrinsicResult = handler.sign(url, new RequestExtrinsicSign(extrinsic()), { address: alice.address } as AccountJson, 'extrinsic');
+    await expect(extrinsicResult).rejects.toThrow('recovery-only');
+    expect(handler.numSubstrateRequests).toBe(0);
+    expect(state.keyringService.getPair).not.toHaveBeenCalled();
+    expect(state.keyringService.unlockPair).not.toHaveBeenCalled();
+  });
+
+  it('still admits a mobile signer, which carries no local provenance', async () => {
+    delete records[0].meta.walletSecurityGeneration;
+    const { queued } = await admitExtrinsic(true);
+    expect(queued.signingAccount?.kind).toBe('mobile');
+    queued.reject(new Error('Fixture cleanup'));
+  });
+
   it('rejects an extrinsic for a different account-bound genesis hash', async () => {
     records[0].meta.genesisHash = `0x${'22'.repeat(32)}`;
     let rejected = false;

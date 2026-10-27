@@ -51,7 +51,7 @@ function substrate() {
     networkService: { networkMap: {} },
     keyringService: {
       getAllAccounts: () => [
-        { address: publicPair.address, publicKey: publicPair.addressRaw, meta: { name: 'Public signer' } },
+        { address: publicPair.address, publicKey: publicPair.addressRaw, meta: { name: 'Public signer', walletSecurityGeneration: 1 } },
       ],
       getPair: () => publicPair,
     },

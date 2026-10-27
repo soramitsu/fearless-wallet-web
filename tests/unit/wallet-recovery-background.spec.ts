@@ -43,17 +43,21 @@ function setup() {
   const makeStaking = vi.fn().mockResolvedValue({ status: true });
   const sign = vi.fn();
   const resolve = vi.fn().mockResolvedValue(undefined);
-  const authRequest = { request: { accountAuthType: 'substrate' as AccountAuthType | undefined }, accountAuthType: 'substrate' as AccountAuthType, resolve };
+  const authRequest = {
+    request: { accountAuthType: 'substrate' as AccountAuthType | undefined }, accountAuthType: 'substrate' as AccountAuthType,
+    url: 'https://polkaswap.io/#/migration', resolve,
+  };
+  const ton = { address: 'ton-root', meta: { walletSecurityGeneration: 1 } };
   const getAuthRequest = vi.fn(() => authRequest);
   const updateAuthorizedAccounts = vi.fn().mockResolvedValue(undefined);
   const queued = { account: { address: old.address, publicKey: 'old-solana' }, method: 'personal_sign', data: [], request: { sign } };
   const state = {
     getAccountAddress: () => old.address,
-    keyringService: { getAllAccounts: () => [old, fresh, imported], tonKeyring: { getAccounts: () => [] }, unlockPair },
+    keyringService: { getAllAccounts: () => [old, fresh, imported], tonKeyring: { getAccounts: () => [ton] }, unlockPair },
     requestService: { getSignRequest: () => queued, getAuthRequest, updateAuthorizedAccounts },
     stakingService: { makeStaking },
   } as unknown as State;
-  return { extension: new Extension(state), state, old, fresh, imported, unlockPair, makeStaking, sign, authRequest, resolve, getAuthRequest, updateAuthorizedAccounts };
+  return { extension: new Extension(state), state, old, fresh, imported, ton, unlockPair, makeStaking, sign, authRequest, resolve, getAuthRequest, updateAuthorizedAccounts };
 }
 
 describe('background recovery-only enforcement', () => {
@@ -90,6 +94,30 @@ describe('background recovery-only enforcement', () => {
     await extension.authorizeUpdate({ url: 'https://polkaswap.io', authType: 'substrate', authorizedAccounts });
     expect(updateAuthorizedAccounts).toHaveBeenCalledExactlyOnceWith([
       ['https://polkaswap.io', authorizedAccounts, 'substrate'],
+    ]);
+  });
+
+  it('shows existing and imported wallets to no site but Polkaswap, whatever the page calls itself', async () => {
+    const { extension, authRequest, old, fresh, imported, resolve, updateAuthorizedAccounts } = setup();
+    for (const url of ['https://polkaswap.io.phish.example/#/migration', 'http://polkaswap.io', 'https://dapp.example']) {
+      authRequest.url = url;
+      for (const address of [old.address, imported.address]) {
+        await expect(extension.authorizeApprove({ id: 'phish', authorizedAccounts: [fresh.address, address] })).rejects.toThrow('recovery-only');
+        await expect(extension.authorizeUpdate({ url, authType: 'substrate', authorizedAccounts: [address] })).rejects.toThrow('recovery-only');
+      }
+    }
+    expect(resolve).not.toHaveBeenCalled();
+    expect(updateAuthorizedAccounts).not.toHaveBeenCalled();
+    authRequest.url = 'https://dapp.example';
+    await expect(extension.authorizeApprove({ id: 'other-site', authorizedAccounts: [fresh.address] })).resolves.toBe(true);
+    expect(resolve).toHaveBeenCalledExactlyOnceWith({ authorizedAccounts: [fresh.address] });
+  });
+
+  it('lets Manage dapps keep granting a TON account Substrate access, as before', async () => {
+    const { extension, fresh, ton, updateAuthorizedAccounts } = setup();
+    await extension.authorizeUpdate({ url: 'https://dapp.example', authType: 'substrate', authorizedAccounts: [fresh.address, ton.address] });
+    expect(updateAuthorizedAccounts).toHaveBeenCalledExactlyOnceWith([
+      ['https://dapp.example', [fresh.address, ton.address], 'substrate'],
     ]);
   });
 

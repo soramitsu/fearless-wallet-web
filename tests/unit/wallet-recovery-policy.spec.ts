@@ -1,20 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { encodeIrohaI105Address } from '@/util/iroha';
-import { assertWalletAllowsConnection, assertWalletAllowsNormalUse, isSelectedWalletRecoveryOnly, isWalletRecoveryRoute } from '@/util/walletRecoveryPolicy';
+import {
+  assertWalletAllowsConnection, assertWalletAllowsNormalUse, isSelectedWalletRecoveryOnly, isWalletRecoveryRoute,
+  siteMayConnectRecoveryWallets,
+} from '@/util/walletRecoveryPolicy';
 
 const old = { address: 'legacy-root', meta: { ethereumAddress: `0x${'ab'.repeat(20)}`, solanaAddress: 'legacy-solana' } };
 const fresh = { address: 'new-root', meta: { walletSecurityGeneration: 1 } };
 
 describe('wallet recovery security policy', () => {
-  it('allows sharing known public accounts independently of their signing restrictions', () => {
+  it('lets Polkaswap be shown known public accounts independently of their signing restrictions', () => {
     const imported = { address: 'imported', meta: { walletSecurityGeneration: 0 } };
     const accounts = [old, fresh, imported];
     const before = JSON.stringify(accounts);
-    for (const account of accounts) expect(() => assertWalletAllowsConnection(accounts, account.address)).not.toThrow();
-    for (const address of ['', 'unknown']) expect(() => assertWalletAllowsConnection(accounts, address)).toThrow('not available');
+    for (const url of ['https://polkaswap.io/#/migration', 'https://polkaswap.io']) {
+      for (const account of accounts) expect(() => assertWalletAllowsConnection(accounts, account.address, url)).not.toThrow();
+    }
+    for (const address of ['', 'unknown']) {
+      expect(() => assertWalletAllowsConnection(accounts, address, 'https://polkaswap.io')).toThrow('not available');
+    }
     expect(() => assertWalletAllowsNormalUse(accounts, imported.address)).toThrow('recovery-only');
     expect(JSON.stringify(accounts)).toBe(before);
+  });
+  it('shows existing and imported wallets to no other site, however it names itself', () => {
+    const imported = { address: 'imported', meta: { walletSecurityGeneration: 0 } };
+    const accounts = [old, fresh, imported];
+    for (const url of [
+      'https://polkaswap.io.phish.example/#/migration', 'http://polkaswap.io', 'https://www.polkaswap.io',
+      'https://polkaswap.io:8443', 'https://dapp.example', 'http://localhost:4173', 'polkaswap.io', '',
+    ]) {
+      for (const account of [old, imported]) {
+        expect(() => assertWalletAllowsConnection(accounts, account.address, url)).toThrow('recovery-only');
+      }
+      expect(() => assertWalletAllowsConnection(accounts, fresh.address, url)).not.toThrow();
+    }
+    expect(siteMayConnectRecoveryWallets('https://polkaswap.io/#/migration')).toBe(true);
+    expect(siteMayConnectRecoveryWallets('not a url')).toBe(false);
   });
   it('checks the requested old signer even when a fresh wallet is selected', () => {
     for (const address of [old.address, old.meta.ethereumAddress.toUpperCase(), old.meta.solanaAddress]) {

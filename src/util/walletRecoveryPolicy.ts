@@ -40,10 +40,22 @@ function matchingWallets(accounts: StoredWallet[], address: string): StoredWalle
       requestedIrohaKey === account.meta.irohaPublicKeyHex.replace(/^0x/i, '').toLowerCase()));
 }
 
+// Polkaswap's account migration asks for the old account; no other site may be shown an existing or imported wallet.
+const RECOVERY_CONNECTION_ORIGINS = new Set(['https://polkaswap.io']);
+
+/** Whether the page at `url` (or a grant's origin) may be offered and connected existing or imported wallets. */
+export function siteMayConnectRecoveryWallets(url: string): boolean {
+  try { return RECOVERY_CONNECTION_ORIGINS.has(new URL(url).origin); } catch { return false; }
+}
+
 /** Sharing an approved public account does not authorize signing with its keys. */
-export function assertWalletAllowsConnection(accounts: StoredWallet[], address: string): void {
-  if (!address || matchingWallets(accounts, address).length === 0) {
+export function assertWalletAllowsConnection(accounts: StoredWallet[], address: string, url: string): void {
+  const matches = matchingWallets(accounts, address);
+  if (!address || matches.length === 0) {
     throw new Error('The requested wallet is not available');
+  }
+  if (matches.some(({ meta }) => isRecoveryOnlyWallet(meta)) && !siteMayConnectRecoveryWallets(url)) {
+    throw new Error(WALLET_RECOVERY_ONLY_ERROR);
   }
 }
 

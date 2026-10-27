@@ -268,12 +268,15 @@ function formatSoraAddress(address: string): string {
 }
 
 export default class Extension extends FWExtensionBase {
-  private assertConnectionAllowed(address: string, authType: AccountAuthType): void {
+  private assertConnectionAllowed(address: string, authType: AccountAuthType, url: string): void {
     if (!IS_EXTENSION) return;
-    // Polkaswap's Substrate connection exposes only the approved public account.
-    // Existing/imported keys retain their separate signing restrictions.
+    // A Substrate connection exposes only the approved public account. Existing/imported keys are shared only with
+    // Polkaswap (its account migration) and retain their separate signing restrictions.
     if (authType === 'substrate') {
-      assertWalletAllowsConnection(this.state.keyringService.getAllAccounts(), address);
+      assertWalletAllowsConnection([
+        ...this.state.keyringService.getAllAccounts(),
+        ...this.state.keyringService.tonKeyring.getAccounts(),
+      ], address, url);
     } else this.assertNormalWalletUse(address);
   }
 
@@ -562,7 +565,7 @@ export default class Extension extends FWExtensionBase {
     assert(authRequest, 'Unable to find request');
     // Use this request's protocol, not the accumulated scopes of an older grant.
     const authType = authRequest.request.accountAuthType ?? 'substrate';
-    authorizedAccounts.forEach((address) => this.assertConnectionAllowed(address, authType));
+    authorizedAccounts.forEach((address) => this.assertConnectionAllowed(address, authType, authRequest.url));
 
     await authRequest.resolve({ authorizedAccounts });
 
@@ -570,7 +573,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   async authorizeUpdate({ authorizedAccounts, url, authType }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    authorizedAccounts.forEach((address) => this.assertConnectionAllowed(address, authType));
+    authorizedAccounts.forEach((address) => this.assertConnectionAllowed(address, authType, url));
     return this.state.requestService.updateAuthorizedAccounts([[url, authorizedAccounts, authType]]);
   }
 

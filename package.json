@@ -41,7 +41,7 @@
     "test:smoke:chrome:production": "node scripts/solana-extension-smoke.mjs --production-popup",
     "test:smoke:polkaswap": "node scripts/polkaswap-extension-smoke.mjs",
     "test:e2e:local-chains": "node scripts/test-local-chain-sends.mjs",
-    "test:local-chain-processes": "node --test scripts/local-chains/test-process-lifecycle.mjs",
+    "test:local-chain-processes": "node --test scripts/local-chains/test-process-lifecycle.mjs scripts/local-chains/test-bitcoind-rpc.mjs",
     "audit:key-exfiltration": "node scripts/audit-key-exfiltration.mjs",
     "test:key-exfiltration-audit": "node scripts/test-key-exfiltration-audit.mjs",
     "test:smoke:chrome:legacy-exposure": "node scripts/legacy-exposure-extension-smoke.mjs",

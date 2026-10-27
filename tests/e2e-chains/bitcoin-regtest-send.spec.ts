@@ -123,7 +123,9 @@ describe.skipIf(!ESPLORA_URL)('Bitcoin send on local regtest', () => {
     await rpc.call('createwallet', ['miner']);
     await rpc.call('createwallet', ['recipient']);
     minerAddress = await rpc.call('getnewaddress', [], 'miner');
-    await mine(101);
+    // Bootstrap mining can exceed 10 seconds on a busy host. Only this local
+    // setup operation gets a longer deadline; sends and broadcasts do not.
+    await rpc.call('generatetoaddress', [101, minerAddress], undefined, { timeoutMs: 60_000 });
     await rpc.call('sendtoaddress', [toRegtestAddress(walletAddress), 1], 'miner');
     await rpc.call('sendtoaddress', [toRegtestAddress(walletAddress), 0.5], 'miner');
     await mine(1);

@@ -44,6 +44,7 @@
       <a
         class="wallet-upgrade__migrate"
         data-testid="walletUpgradeMigration"
+        aria-describedby="wallet-upgrade-migration-limitation"
         :href="URLS.POLKASWAP_MIGRATION"
         target="_blank"
         rel="noopener noreferrer"
@@ -51,6 +52,11 @@
         {{ t('migrate') }}
         <Icon icon="arrow-link" width="16px" height="16px" :hover="false" />
       </a>
+      <p
+        id="wallet-upgrade-migration-limitation"
+        class="wallet-upgrade__description"
+        data-testid="walletUpgradeMigrationLimitation"
+      >{{ t('migrateLimitation') }}</p>
       <button type="button" class="wallet-upgrade__later" @click="emit('dismiss')">{{ t('later') }}</button>
     </div>
   </dialog>

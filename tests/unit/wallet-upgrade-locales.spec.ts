@@ -26,6 +26,7 @@ describe('wallet upgrade supplemental messages', () => {
     expect(translate('exposureNotice.importedReminder')).toBe(messages.exposureNotice.importedReminder);
     expect(translate('exposureNotice.guide.createImportedText')).toBe(messages.exposureNotice.guide.createImportedText);
     expect(translate('exposureNotice.guide.migrateLink')).toBe(messages.exposureNotice.guide.migrateLink);
+    expect(translate('exposureNotice.guide.migrateLimitation')).toBe(messages.exposureNotice.guide.migrateLimitation);
     expect(translate('ux.walletGenerationExpired')).toBe(messages.ux.walletGenerationExpired);
     expect(i18n.global.te('ux.walletGenerationExpired', lang)).toBe(true);
   });
@@ -37,6 +38,7 @@ describe('wallet upgrade supplemental messages', () => {
     expect(translate('exposureNotice.importedReminder')).toBe(messages.exposureNotice.importedReminder);
     expect(translate('exposureNotice.guide.createImportedText')).toBe(messages.exposureNotice.guide.createImportedText);
     expect(translate('exposureNotice.guide.migrateLink')).toBe(messages.exposureNotice.guide.migrateLink);
+    expect(translate('exposureNotice.guide.migrateLimitation')).toBe(messages.exposureNotice.guide.migrateLimitation);
     expect(translate('ux.walletGenerationExpired')).toBe(messages.ux.walletGenerationExpired);
     expect(i18n.global.te('ux.walletGenerationExpired', lang)).toBe(false);
   });

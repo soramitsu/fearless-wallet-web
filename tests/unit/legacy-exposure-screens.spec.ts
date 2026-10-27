@@ -218,11 +218,17 @@ describe('the guide to a new wallet', () => {
     expect(mocks.push).toHaveBeenLastCalledWith({ name: 'AddWallet', params: { type: 'create', walletEcosystem: 'ton' } });
   });
 
-  it('links to Polkaswap\'s migration request for a SORA account, in a new tab', async () => {
+  it('links to migration information and explains why the old wallet cannot sign its request', async () => {
     const wrapper = await mountGuide(status());
     const link = wrapper.get('[data-testid="securityNoticeMigration"]');
+    const note = wrapper.get('[data-testid="securityNoticeMigrationLimitation"]');
 
-    expect(link.attributes()).toMatchObject({ href: 'https://polkaswap.io/#/migration', target: '_blank', rel: 'noopener noreferrer' });
+    expect(link.attributes()).toMatchObject({
+      href: 'https://polkaswap.io/#/migration', target: '_blank', rel: 'noopener noreferrer',
+      'aria-describedby': note.attributes('id'),
+    });
+    expect(note.text()).toBe('exposureNotice.guide.migrateLimitation');
+    expect(link.element.nextElementSibling).toBe(note.element);
     // The words come from walletUpgradeMessages (pinned in wallet-upgrade-locales.spec.ts); here i18n returns keys.
     expect(link.text()).toBe('exposureNotice.guide.migrateLink');
   });

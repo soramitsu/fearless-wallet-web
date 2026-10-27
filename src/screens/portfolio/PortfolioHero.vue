@@ -363,7 +363,7 @@ const chipLabel = (group: AllocationGroup): string =>
 // The wing that runs behind the text is veiled there, so every line keeps its contrast over the art.
 .hero-sky {
   align-self: flex-end;
-  --sky-veil: 0.35;
+  --sky-veil: 0.25;
 }
 
 // The legend scrolls within the row; Swap keeps its place at the end of it rather than taking a row of its own.

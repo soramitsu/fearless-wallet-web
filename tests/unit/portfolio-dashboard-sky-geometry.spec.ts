@@ -141,13 +141,13 @@ describe('wings', () => {
     });
   });
 
-  it('are veiled only where they leave the sky, fading in across its edge', () => {
+  it('are veiled wherever they leave the sky, fading in only inside it', () => {
     const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
 
     // Popup: the sky at the card's right edge, the text to its left.
-    expect(wingsVeil({ left: POPUP_SKY.cx - 389, width: 520 })).toBe(`linear-gradient(to right, ${veil} 228px, #000 288px, #000 100%)`);
+    expect(wingsVeil({ left: POPUP_SKY.cx - 389, width: 520 })).toBe(`linear-gradient(to right, ${veil} 258px, #000 318px, #000 100%)`);
     // Stacked: the sun centred, a wing past each side of the sky.
-    expect(wingsVeil({ left: -49, width: 360 })).toBe(`linear-gradient(to right, ${veil} 19px, #000 79px, #000 281px, ${veil} 341px)`);
+    expect(wingsVeil({ left: -49, width: 360 })).toBe(`linear-gradient(to right, ${veil} 49px, #000 109px, #000 251px, ${veil} 311px)`);
     // Before the card is measured the wings stay in the sky, and nothing is veiled.
     expect(wingsVeil({ left: 0, width: POPUP_SKY.w })).toBe('linear-gradient(to right, #000 0, #000 100%)');
   });

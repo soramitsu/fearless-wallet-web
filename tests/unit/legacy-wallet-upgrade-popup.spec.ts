@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accounts }));
 vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }));
 vi.mock('@/router/routes', () => ({
-  Components: { Wallet: 'Wallet', Currencies: 'Currencies', Nfts: 'Nfts', AddWallet: 'AddWallet' },
+  Components: { Wallet: 'Wallet', Currencies: 'Currencies', Nfts: 'Nfts', AddWallet: 'AddWallet', SecurityNoticeGuide: 'SecurityNoticeGuide' },
 }));
 vi.mock('@/consts/global', () => mocks.environment);
 
@@ -205,14 +205,15 @@ describe('legacy wallet upgrade popup', () => {
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it('can reopen security guidance from the persistent recovery banner', async () => {
+  it('keeps one banner on the old wallet that says what to do and opens the guide, not the dialog again', async () => {
     mocks.accounts.accounts = [legacy()];
     const wrapper = mountNotice();
     await wrapper.get('.wallet-upgrade__later').trigger('click');
-    await wrapper.get('.wallet-recovery-banner button').trigger('click');
-    expect(wrapper.find('dialog').exists()).toBe(true);
-    expect(mocks.push).toHaveBeenCalledWith({ name: 'Wallet' });
-    await wrapper.get('.wallet-upgrade__close').trigger('click');
+    const banner = wrapper.get('[data-testid="walletRecoveryBanner"]');
+    expect(banner.text()).toContain('Move its funds to a new wallet.');
+    expect(banner.findAll('button')).toHaveLength(1);
+    await banner.get('[data-testid="walletRecoveryGuide"]').trigger('click');
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'SecurityNoticeGuide' });
     expect(wrapper.find('dialog').exists()).toBe(false);
     expect(mountNotice().find('dialog').exists()).toBe(false);
   });
@@ -393,6 +394,8 @@ describe('legacy wallet upgrade popup', () => {
     const russian = mountNotice('ru-RU');
     expect(russian.text()).toContain('Переведите средства');
     expect(russian.get('dialog').attributes('lang')).toBe('ru');
+    expect(russian.get('[data-testid="walletRecoveryBanner"]').text()).toContain('только для вывода средств');
+    expect(russian.get('[data-testid="walletRecoveryBanner"]').attributes('lang')).toBe('ru');
     const fallback = mountNotice('egy-Egyp');
     expect(fallback.text()).toContain('Transfer your funds');
     expect(fallback.get('dialog').attributes('lang')).toBe('en');

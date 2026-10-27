@@ -8,6 +8,7 @@
       :hiddenKeys="hiddenKeys"
       :caption="filteredCaption"
       :loading="balancesLoading"
+      :swapAvailable="!selectedWalletRecoveryOnly"
       @openFiats="$emit('openFiatsPopup', true)"
     />
 
@@ -40,6 +41,7 @@
           :showSortControl="legacyOrderIndex.size > 0"
           :hiddenAssetCount="hiddenAssetCount"
           :manageHiddenOnly="manageHiddenOnly"
+          :refreshSlotId="refreshSlotId"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementForm"
@@ -55,6 +57,7 @@
           :showAssetsManagementForm="showAssetsManagementForm"
           :manageHiddenOnly="manageHiddenOnly"
           :filterValue="filterValue"
+          :refreshSlotId="refreshSlotId"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           @toggleAssetsManagementForm="toggleAssetsManagementForm"
           @update:manageHiddenOnly="setManageHiddenOnly"
@@ -104,7 +107,7 @@ import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag
 import { effectiveScope } from '@/portfolio/dashboard/preferences';
 import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { formatDecimalString } from '@/helpers/numbers';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
+import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
 import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
@@ -112,6 +115,10 @@ import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
+import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
+
+// Kept-alive wallet screens live side by side, so each gives its toolbar's Refresh place an id of its own.
+let walletViews = 0;
 
 export default defineComponent({ name: 'Wallet',
   components: {
@@ -147,9 +154,14 @@ export default defineComponent({ name: 'Wallet',
       accountsStore: useAccountsStore(),
       dashboardEnabled: PORTFOLIO_DASHBOARD_ENABLED,
       dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
+      refreshSlotId: `portfolio-refresh-${++walletViews}`,
     };
   },
   computed: {
+    // Swaps are closed to an old wallet (walletRecoveryPolicy.ts), so the hero offers no Swap that would bounce back.
+    selectedWalletRecoveryOnly(): boolean {
+      return IS_EXTENSION && isSelectedWalletRecoveryOnly(this.accountsStore.accounts, this.accountsStore.selectedWallet.address);
+    },
     // All wallets lists every wallet's holdings read-only, in place of the selected wallet's own list.
     allWalletsScope(): boolean {
       return (

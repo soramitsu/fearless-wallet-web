@@ -13,7 +13,7 @@
       :sync="dashboard.syncState.value"
       :groups="dashboard.allocation.value.groups"
       :activeKey="activeKey"
-      :showSwap="singleWallet"
+      :showSwap="singleWallet && swapAvailable"
       @openFiats="$emit('openFiats')"
       @openCounting="countingOpen = true"
       @openSync="syncOpen = true"
@@ -73,15 +73,20 @@ import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
 
 registerDashboardMessages();
 
-const props = defineProps<{
-  /** The selected wallet's portfolio summary, as the header has always shown it. */
-  summary: PortfolioSummary;
-  summaryInput: PortfolioSummaryInput;
-  hiddenKeys: ReadonlySet<string>;
-  /** The caption the wallet screen has for a filtered view, such as "Showing Ethereum · $1,620.00". */
-  caption: string;
-  loading: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    /** The selected wallet's portfolio summary, as the header has always shown it. */
+    summary: PortfolioSummary;
+    summaryInput: PortfolioSummaryInput;
+    hiddenKeys: ReadonlySet<string>;
+    /** The caption the wallet screen has for a filtered view, such as "Showing Ethereum · $1,620.00". */
+    caption: string;
+    loading: boolean;
+    /** False for a recovery-only wallet: swaps are closed to it, so a Swap button would only bounce back. */
+    swapAvailable?: boolean;
+  }>(),
+  { swapAvailable: true }
+);
 
 defineEmits<{ (event: 'openFiats'): void }>();
 

@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   route: null as unknown as { name: string },
   push: vi.fn(),
   replace: vi.fn(),
-  environment: { IS_EXTENSION: true },
+  environment: { IS_EXTENSION: true, IS_PRODUCTION: true },
 }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accounts }));
 vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }));
@@ -249,6 +249,21 @@ describe('legacy wallet upgrade popup', () => {
     expect(wrapper.find('dialog').exists()).toBe(false);
     expect(JSON.stringify(mocks.accounts.accounts)).toBe(before);
     expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(['legacy-address']);
+  });
+
+  it('links to the Polkaswap migration request in a new tab under the main action', () => {
+    mocks.accounts.accounts = [legacy()];
+    const wrapper = mountNotice();
+    const link = wrapper.get('[data-testid="walletUpgradeMigration"]');
+    expect(link.attributes()).toMatchObject({
+      href: 'https://polkaswap.io/#/migration', target: '_blank', rel: 'noopener noreferrer',
+    });
+    expect(link.text()).toBe('Request a SORA account migration on Polkaswap');
+    // Always visible, even where the steps are folded away.
+    expect(link.element.closest('details')).toBeNull();
+    expect(link.element.previousElementSibling).toBe(wrapper.get('.wallet-upgrade__create').element);
+    expect(mountNotice('ru-RU').get('[data-testid="walletUpgradeMigration"]').text())
+      .toBe('Запросить перенос аккаунта SORA через Polkaswap');
   });
 
   it('keeps the recommendation if navigation is cancelled', async () => {

@@ -39,6 +39,7 @@ const POLKASWAP_FAQ = 'https://wiki.sora.org/polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/polkaswap/terms';
 const POLKASWAP_POLICY = 'https://wiki.sora.org/polkaswap/privacy';
 const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
+const POLKASWAP_MIGRATION = 'https://polkaswap.io/#/migration'; // mainnet accounts, so never the test host
 
 const URLS = {
   BASE_URL,
@@ -62,6 +63,7 @@ const URLS = {
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,
   POLKASWAP,
+  POLKASWAP_MIGRATION,
   ONBOARDING_URL,
   SCAM,
 };

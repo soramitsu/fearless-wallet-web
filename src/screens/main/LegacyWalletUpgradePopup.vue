@@ -41,6 +41,16 @@
         :aria-busy="opening"
         @click="emit('create')"
       >{{ t(opening ? 'opening' : 'create') }}</button>
+      <a
+        class="wallet-upgrade__migrate"
+        data-testid="walletUpgradeMigration"
+        :href="URLS.POLKASWAP_MIGRATION"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ t('migrate') }}
+        <Icon icon="arrow-link" width="16px" height="16px" :hover="false" />
+      </a>
       <button type="button" class="wallet-upgrade__later" @click="emit('dismiss')">{{ t('later') }}</button>
     </div>
   </dialog>
@@ -50,6 +60,7 @@
 import { onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/components/Icon.vue';
+import { URLS } from '@/consts/urls';
 import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
 withDefaults(defineProps<{ opening?: boolean; navigationError?: boolean }>(), {
@@ -224,7 +235,8 @@ onDeactivated(close);
     gap: 4px;
     margin-top: 18px;
 
-    button {
+    button,
+    a {
       min-height: 44px;
       padding: 10px 16px;
       border-radius: 8px;
@@ -239,6 +251,27 @@ onDeactivated(close);
 
     &:hover { background: $fw-secondary-hover; }
     &:disabled { opacity: 0.65; cursor: wait; }
+  }
+
+  &__migrate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    border: 1px solid $fw-accent-edge;
+    color: $pink-lavender-color;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 120ms ease;
+
+    svg { flex-shrink: 0; }
+    &:hover { background: $secondary-background-color; }
+
+    &:focus-visible {
+      outline: 2px solid var(--fw-focus);
+      outline-offset: 3px;
+    }
   }
 
   &__error {
@@ -257,7 +290,7 @@ onDeactivated(close);
 
   @media (prefers-reduced-motion: reduce) {
     &[open] { animation: none; }
-    button { transition: none; }
+    button, a { transition: none; }
   }
 }
 

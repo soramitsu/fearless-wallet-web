@@ -2,7 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { updateTitle } from './helpers';
 import routes, { Components } from '@/router/routes';
 import { resolveUniversalWalletMigrationRedirect } from '@/router/universalWalletMigrationGuard';
-import { readLegacyExposureState, resolveLegacyExposureRedirect } from '@/router/legacyExposureGuard';
+import { LEGACY_EXPOSURE_ROUTE_NAMES, readLegacyExposureState, resolveLegacyExposureRedirect } from '@/router/legacyExposureGuard';
 import {
   keyringIsLocked,
   hasMasterPassword,
@@ -46,6 +46,14 @@ router.back = () => {
   void router.replace(resolvePrimaryBackTarget(walletAddress, route, roots[destination]));
 };
 
+// The guide the recovery banner opens is for whichever old or imported wallet is selected.
+async function guidesRecoveryWallet(routeName: unknown): Promise<boolean> {
+  if (!IS_EXTENSION || routeName !== LEGACY_EXPOSURE_ROUTE_NAMES.Guide) return false;
+  await initialAccountsReady;
+  const store = useAccountsStore();
+  return isSelectedWalletRecoveryOnly(store.accounts, store.selectedWallet.address);
+}
+
 router.beforeEach(async (to, from, next) => {
   // setTimeout нужен, чтобы установить нужный title после обновления страницы
   // так же, 150ms минимальное время для того, чтобы balances успели подтянуться из SW
@@ -87,6 +95,7 @@ router.beforeEach(async (to, from, next) => {
       state: await readLegacyExposureState(),
       routeName: to.name,
       fullPath: to.fullPath,
+      walletRecoveryOnly: await guidesRecoveryWallet(to.name),
     });
 
     if (exposureRedirect) {

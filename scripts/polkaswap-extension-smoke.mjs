@@ -173,9 +173,9 @@ try {
   assertConnected(await result(reconnect));
   check('Revocation blocks account access and reconnect requires a fresh approval');
 
-  // Reproduce the real popup failure: an old/imported wallet is selected while
-  // a fresh wallet is available. Exercise the rendered Approve button, not the
-  // privileged approval message used by the provider-only checks above.
+  // An old/imported wallet is selected while a fresh wallet is available. Exercise the rendered Approve button, not
+  // the privileged approval message used by the provider-only checks above. Old wallets are offered only to
+  // Polkaswap, for its account migration (checked live below); this local page gets the fresh wallet alone.
   await call('pri(onboarding.setComplete)');
   const recoveryAddress = await call('pri(accounts.create)', {
     suri: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
@@ -199,36 +199,23 @@ try {
   15000, 'visible mixed-wallet Approve button');
   const offeredAccounts = await approvalPopup.eval(`Array.from(document.querySelectorAll('.auth-account'))
     .map((row) => ({ text: row.innerText, checked: row.querySelector('input[type="checkbox"]')?.checked }))`);
-  assert.equal(offeredAccounts.length, 2, 'Fresh and imported wallets should both be offered');
-  assert(offeredAccounts.some(({ text }) => text.includes('Polkaswap disposable test')));
-  assert(offeredAccounts.some(({ text }) => text.includes('Imported Polkaswap test')));
-  assert(offeredAccounts.every(({ checked }) => checked));
-  await approvalPopup.eval(`(() => {
-    const fresh = [...document.querySelectorAll('.auth-account')]
-      .find((row) => row.innerText.includes('Polkaswap disposable test'));
-    fresh.querySelector('input[type="checkbox"]').click();
-    return true;
-  })()`);
+  assert.equal(offeredAccounts.length, 1, 'A site other than Polkaswap should be offered the fresh wallet alone');
+  assert(offeredAccounts[0].text.includes('Polkaswap disposable test'));
+  assert(offeredAccounts[0].checked);
   await fs.mkdir(reportDir, { recursive: true });
   await fs.writeFile(path.join(reportDir, 'mixed-wallet-approval.png'),
     Buffer.from((await approvalPopup.send('Page.captureScreenshot')).result.data, 'base64'));
   await approvalPopup.eval(`document.querySelector('[data-testid="approveAuthorization"] button').click(), true`);
-  assertConnected(await result(mixedWalletPage), [recoveryAddress]);
-  check('Real approval popup connects an imported recovery-only wallet while it is selected', {
-    eligibleAccountsShown: offeredAccounts.length, recoveryOnlyAccountOffered: true,
+  assertConnected(await result(mixedWalletPage), [address]);
+  check('Real approval popup offers a site other than Polkaswap only the fresh wallet while an imported one is selected', {
+    eligibleAccountsShown: offeredAccounts.length, recoveryOnlyAccountOffered: false,
   });
-  const importedReconnect = await openDapp(dappUrl, 4500);
-  await startConnect(importedReconnect);
-  assertConnected(await result(importedReconnect), [recoveryAddress]);
-  assert.equal((await popup.eval('window.__authRequests')).length, 0);
-  check('Saved imported-wallet permission reconnects without another approval', await assertStartupDelay(importedReconnect));
-  await call('pri(authorize.update)', { url: dappUrl, authType: 'substrate', authorizedAccounts: [address] });
-  assertConnected(await importedReconnect.eval('window.__connectedProvider.accounts.get().then(accounts => ({ accounts }))'));
-  await call('pri(authorize.update)', { url: dappUrl, authType: 'substrate', authorizedAccounts: [address, recoveryAddress] });
-  assertConnected(await importedReconnect.eval('window.__connectedProvider.accounts.get().then(accounts => ({ accounts }))'), [address, recoveryAddress]);
+  const refused = await popup.call('pri(authorize.update)', { url: dappUrl, authType: 'substrate', authorizedAccounts: [address, recoveryAddress] });
+  assert(/recovery-only/.test(String(refused.err)), `Manage dapps added an imported wallet to a non-Polkaswap site: ${JSON.stringify(refused)}`);
+  assertConnected(await mixedWalletPage.eval('window.__connectedProvider.accounts.get().then(accounts => ({ accounts }))'), [address]);
   await call('pri(authorize.remove)', dappUrl);
-  await assert.rejects(() => importedReconnect.eval('window.__connectedProvider.accounts.get()'), /has not been enabled/);
-  check('Manage dapps adds imported accounts and revocation removes their access');
+  await assert.rejects(() => mixedWalletPage.eval('window.__connectedProvider.accounts.get()'), /has not been enabled/);
+  check('Manage dapps refuses an imported wallet for a site other than Polkaswap, and revocation removes access');
 
   if (live) {
     const page = await openDapp('https://polkaswap.io/');

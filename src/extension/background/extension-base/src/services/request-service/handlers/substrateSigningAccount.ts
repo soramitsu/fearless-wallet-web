@@ -5,6 +5,9 @@ import type { MobileSigningContext } from '@extension-base/services/wallet-conne
 import type State from '@extension-base/background/handlers/State';
 import type { AccountJson, RequestSign, SignRequest } from '@extension-base/background/types/types';
 import type { KeyringPair } from '@subwallet/keyring/types';
+import { isRecoveryOnlyWallet } from '@/util/walletSecurity';
+import { WALLET_RECOVERY_ONLY_ERROR } from '@/util/walletRecoveryPolicy';
+import { IS_EXTENSION } from '@/consts/global';
 
 type SigningKey = { type: KeyringPair['type']; publicKey: string; identity: string };
 export type SubstrateSigningAccount = {
@@ -65,6 +68,9 @@ export function captureSubstrateSigningAccount(
   if (!record.publicKey || !u8aEq(record.publicKey, expected))
     throw new Error('Substrate account record identity is invalid');
   const meta = record.meta;
+  // A connected existing or imported wallet never signs for a site. Refusing at admission answers the page at once,
+  // instead of queueing a request the popup can neither show nor approve while that wallet is selected.
+  if (IS_EXTENSION && isRecoveryOnlyWallet(meta)) throw new Error(WALLET_RECOVERY_ONLY_ERROR);
   if (
     meta.genesisHash &&
     'genesisHash' in request.payload &&

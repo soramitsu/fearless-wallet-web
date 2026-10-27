@@ -88,6 +88,7 @@ import { useExtensionStore } from '@/stores/extension';
 import { useAccountsStore } from '@/stores/accounts';
 import { WalletEcosystem } from '@/interfaces';
 import { encodeIrohaI105Address } from '@/util/iroha';
+import { siteMayConnectRecoveryWallets } from '@/util/walletRecoveryPolicy';
 import { isRecoveryOnlyWallet } from '@/util/walletSecurity';
 import { legacyWalletUpgradeMessages } from '@/locales/legacyWalletUpgrade';
 
@@ -132,10 +133,13 @@ const compatibleAccounts = computed<AccountJson[]>(() => {
   });
 });
 
-// Substrate connection shares public addresses; signing remains restricted.
-// Use the requested protocol, never the site's previously merged grants.
+// Substrate connection shares public addresses; signing remains restricted. Existing/imported wallets are offered
+// only to Polkaswap, for its account migration. Use the requested protocol, never the site's previously merged grants.
+const offersRecoveryWallets = computed(() =>
+  accountAuthType.value === 'substrate' && siteMayConnectRecoveryWallets(request.value?.url ?? '')
+);
 const accounts = computed(() => compatibleAccounts.value.filter((account) =>
-  accountAuthType.value === 'substrate' || !isRecoveryOnlyWallet(account)
+  offersRecoveryWallets.value || !isRecoveryOnlyWallet(account)
 ));
 const hasRecoveryOnlyAccounts = computed(() => compatibleAccounts.value.some(isRecoveryOnlyWallet));
 const accountsKey = computed(() => JSON.stringify(accounts.value));

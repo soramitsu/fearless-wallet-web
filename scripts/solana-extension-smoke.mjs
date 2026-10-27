@@ -20,6 +20,7 @@ import { checkCurrentAccountStorage } from './extension-smoke-current-account.mj
 import { checkSessionRetirementStorage } from './extension-smoke-session-retirement.mjs';
 import { captureJsonRecoveryNotice } from './extension-smoke-json-notice.mjs';
 import { checkSidePanel } from './extension-smoke-side-panel.mjs';
+import { openDappPage } from './extension-smoke-dapp.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -534,7 +535,7 @@ async function main() {
 
       return;
     }
-    const dappSession = await openDappPage(cdp, solanaServer.url);
+    const dappSession = await openDappPage(cdp, solanaServer.url, { evaluate, waitForExpression });
 
     await waitForExpression(
       cdp,
@@ -686,7 +687,7 @@ async function main() {
     assert(disconnectResult.accountCount === 0, 'Provider kept Solana accounts after disconnect');
     assert(disconnectResult.disconnectedEventCount === 1, 'Provider did not emit exactly one disconnect event');
 
-    const irohaDappSession = await openDappPage(cdp, irohaServer.url);
+    const irohaDappSession = await openDappPage(cdp, irohaServer.url, { evaluate, waitForExpression });
     console.info('[extension-smoke] starting fresh-origin Iroha checks');
     const irohaSmoke = await runIrohaConnectSmoke(
       cdp,
@@ -1514,43 +1515,6 @@ async function openExtensionBackgroundSession(cdp, extensionId, chrome, targetId
   const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId: target.targetId });
 
   await cdp.send('Runtime.enable', {}, sessionId);
-
-  return sessionId;
-}
-
-async function openDappPage(cdp, url) {
-  const { targetId } = await cdp.send('Target.createTarget', { url });
-  const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
-
-  await cdp.send('Runtime.enable', {}, sessionId);
-  await cdp.send('Page.enable', {}, sessionId);
-  await waitForExpression(cdp, sessionId, 'document.readyState === "complete"', 'dApp page load');
-  await evaluate(
-    cdp,
-    sessionId,
-    `
-      function base64ToBytes(value) {
-        const binary = atob(value);
-        const bytes = new Uint8Array(binary.length);
-
-        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-
-        return bytes;
-      }
-
-      function bytesToBase64(bytes) {
-        let binary = '';
-
-        bytes.forEach((byte) => {
-          binary += String.fromCharCode(byte);
-        });
-
-        return btoa(binary);
-      }
-
-      true;
-    `
-  );
 
   return sessionId;
 }

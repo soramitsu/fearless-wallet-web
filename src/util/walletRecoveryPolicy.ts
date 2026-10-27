@@ -30,21 +30,35 @@ function sameAddress(left: string, right: string): boolean {
   try { return u8aEq(decodeAddress(left), decodeAddress(right)); } catch { return false; }
 }
 
-/** Check the requested signer, never just the currently selected wallet. */
-export function assertWalletAllowsNormalUse(accounts: StoredWallet[], address: string): void {
+function matchingWallets(accounts: StoredWallet[], address: string): StoredWallet[] {
   const requestedIrohaKey = irohaPublicKey(address);
-  const matches = accounts.filter((account) => [
+  return accounts.filter((account) => [
     account.address, account.meta.ethereumAddress, account.meta.solanaAddress,
     account.meta.tonAddress, account.meta.irohaAddress,
   ].some((candidate) => typeof candidate === 'string' && candidate && sameAddress(candidate, address)) ||
     (requestedIrohaKey && typeof account.meta.irohaPublicKeyHex === 'string' &&
       requestedIrohaKey === account.meta.irohaPublicKeyHex.replace(/^0x/i, '').toLowerCase()));
+}
+
+/** Sharing an approved public account does not authorize signing with its keys. */
+export function assertWalletAllowsConnection(accounts: StoredWallet[], address: string): void {
+  if (!address || matchingWallets(accounts, address).length === 0) {
+    throw new Error('The requested wallet is not available');
+  }
+}
+
+/** Check the requested signer, never just the currently selected wallet. */
+export function assertWalletAllowsNormalUse(accounts: StoredWallet[], address: string): void {
+  const matches = matchingWallets(accounts, address);
   if (!address || matches.length === 0 || matches.some(({ meta }) => isRecoveryOnlyWallet(meta))) {
     throw new Error(WALLET_RECOVERY_ONLY_ERROR);
   }
 }
 
 const recoveryRoutes = new Set([
+  // Connection approval chooses its own eligible accounts. The portfolio's
+  // selected recovery-only wallet must not hide another wallet's request.
+  'Authorize',
   'Wallet', 'Currencies', 'Nfts', 'Asset', 'AssetHistory', 'AssetNetworks',
   'NftCollection', 'NftDetails', 'NftSendForm', 'SendForm',
   'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt',

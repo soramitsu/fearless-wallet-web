@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import { BehaviorSubject } from 'rxjs';
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
-import type { RequestTypes } from '@extension-base/background/types/types';
+import type { AccountAuthType, AuthType, RequestTypes } from '@extension-base/background/types/types';
 
 vi.mock('@/consts/global', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/consts/global')>(), IS_EXTENSION: true, IS_EXTENSION_SMOKE: false,
@@ -37,17 +38,22 @@ vi.mock('@extension-base/background/handlers/ExtensionBase', () => ({
 function setup() {
   const old = { address: 'old-root', meta: { ethereumAddress: 'old-evm', solanaAddress: 'old-solana' } };
   const fresh = { address: 'fresh-root', meta: { walletSecurityGeneration: 1 } };
+  const imported = { address: 'imported-root', meta: { walletSecurityGeneration: 0 } };
   const unlockPair = vi.fn();
   const makeStaking = vi.fn().mockResolvedValue({ status: true });
   const sign = vi.fn();
+  const resolve = vi.fn().mockResolvedValue(undefined);
+  const authRequest = { request: { accountAuthType: 'substrate' as AccountAuthType | undefined }, accountAuthType: 'substrate' as AccountAuthType, resolve };
+  const getAuthRequest = vi.fn(() => authRequest);
+  const updateAuthorizedAccounts = vi.fn().mockResolvedValue(undefined);
   const queued = { account: { address: old.address, publicKey: 'old-solana' }, method: 'personal_sign', data: [], request: { sign } };
   const state = {
     getAccountAddress: () => old.address,
-    keyringService: { getAllAccounts: () => [old, fresh], tonKeyring: { getAccounts: () => [] }, unlockPair },
-    requestService: { getSignRequest: () => queued },
+    keyringService: { getAllAccounts: () => [old, fresh, imported], tonKeyring: { getAccounts: () => [] }, unlockPair },
+    requestService: { getSignRequest: () => queued, getAuthRequest, updateAuthorizedAccounts },
     stakingService: { makeStaking },
   } as unknown as State;
-  return { extension: new Extension(state), state, old, fresh, unlockPair, makeStaking, sign };
+  return { extension: new Extension(state), state, old, fresh, imported, unlockPair, makeStaking, sign, authRequest, resolve, getAuthRequest, updateAuthorizedAccounts };
 }
 
 describe('background recovery-only enforcement', () => {
@@ -60,13 +66,64 @@ describe('background recovery-only enforcement', () => {
     ['pri(defi.polkamarkt.mutate)', {}],
     ['pri(walletConnect.request.approve)', { address: 'old-root' }],
     ['pri(walletConnect.session.approve)', { accounts: ['old-evm'] }],
-    ['pri(authorize.approve)', { authorizedAccounts: ['old-root'] }],
-    ['pri(authorize.update)', { authorizedAccounts: ['old-root'] }],
   ] as const)('rejects %s before accessing signing or network services', async (type, request) => {
     const { extension, unlockPair, sign } = setup();
     await expect(extension.handle('test', type, request as never)).rejects.toThrow('recovery-only');
     expect(unlockPair).not.toHaveBeenCalled();
     expect(sign).not.toHaveBeenCalled();
+  });
+
+  it('connects existing and imported Substrate wallets without unlocking or changing their security metadata', async () => {
+    const { extension, old, imported, resolve, unlockPair, sign } = setup();
+    const before = JSON.stringify([old, imported]);
+    const authorizedAccounts = [old.address, imported.address];
+    await expect(extension.authorizeApprove({ id: 'polkaswap', authorizedAccounts })).resolves.toBe(true);
+    expect(resolve).toHaveBeenCalledExactlyOnceWith({ authorizedAccounts });
+    expect(JSON.stringify([old, imported])).toBe(before);
+    expect(unlockPair).not.toHaveBeenCalled();
+    expect(sign).not.toHaveBeenCalled();
+  });
+
+  it('allows Manage dapps to add existing and imported Substrate wallets', async () => {
+    const { extension, old, imported, updateAuthorizedAccounts } = setup();
+    const authorizedAccounts = [old.address, imported.address];
+    await extension.authorizeUpdate({ url: 'https://polkaswap.io', authType: 'substrate', authorizedAccounts });
+    expect(updateAuthorizedAccounts).toHaveBeenCalledExactlyOnceWith([
+      ['https://polkaswap.io', authorizedAccounts, 'substrate'],
+    ]);
+  });
+
+  it.each(['', 'deleted-or-unknown'])('rejects an unavailable account %s before approving or updating a connection', async (address) => {
+    const { extension, resolve, updateAuthorizedAccounts } = setup();
+    await expect(extension.authorizeApprove({ id: 'polkaswap', authorizedAccounts: [address] })).rejects.toThrow('not available');
+    await expect(extension.authorizeUpdate({ url: 'https://polkaswap.io', authType: 'substrate', authorizedAccounts: [address] })).rejects.toThrow('not available');
+    expect(resolve).not.toHaveBeenCalled();
+    expect(updateAuthorizedAccounts).not.toHaveBeenCalled();
+  });
+
+  it('uses the requested Substrate protocol even when a previous grant covers both protocols', async () => {
+    const { extension, authRequest, old, resolve } = setup();
+    authRequest.accountAuthType = 'both';
+    authRequest.request.accountAuthType = undefined;
+    await extension.authorizeApprove({ id: 'polkaswap', authorizedAccounts: [old.address] });
+    expect(resolve).toHaveBeenCalledExactlyOnceWith({ authorizedAccounts: [old.address] });
+  });
+
+  it.each(['evm', 'solana', 'iroha'] as AuthType[])('retains the existing %s connection policy', async (authType) => {
+    const { extension, authRequest, old, resolve, updateAuthorizedAccounts } = setup();
+    authRequest.request.accountAuthType = authType;
+    authRequest.accountAuthType = 'all';
+    await expect(extension.authorizeApprove({ id: 'other-protocol', authorizedAccounts: [old.address] })).rejects.toThrow('recovery-only');
+    await expect(extension.authorizeUpdate({ url: 'https://dapp.example', authType, authorizedAccounts: [old.address] })).rejects.toThrow('recovery-only');
+    expect(resolve).not.toHaveBeenCalled();
+    expect(updateAuthorizedAccounts).not.toHaveBeenCalled();
+  });
+
+  it('still requires an existing authorization request', async () => {
+    const { extension, getAuthRequest, old, resolve } = setup();
+    getAuthRequest.mockReturnValue(undefined as never);
+    await expect(extension.authorizeApprove({ id: 'missing', authorizedAccounts: [old.address] })).rejects.toThrow('Unable to find request');
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('rejects direct EVM and Solana dApp approvals for old roots', async () => {
@@ -177,5 +234,33 @@ describe('background recovery-only enforcement', () => {
     expect(extension.convertAccounts({ [address]: account } as never)).toEqual([
       expect.objectContaining({ address, ethereumAddress: address, walletEcosystem: 'evm' }),
     ]);
+  });
+
+  it('identifies imported TON accounts in the initial snapshot so Substrate approval excludes them', async () => {
+    const { extension, state } = setup();
+    const address = 'imported-ton';
+    const account = { json: { address, meta: { name: 'Imported TON' } } };
+    const publish = vi.fn();
+    let cleanup = () => {};
+    Object.assign(state.keyringService, {
+      getPair: () => undefined,
+      addressSubject: new BehaviorSubject({}),
+      accountSubject: new BehaviorSubject({}),
+      currentAccountSubject: new BehaviorSubject(undefined),
+      tonKeyring: { accountSubject: new BehaviorSubject({ [address]: account }) },
+    });
+    Object.assign(state, {
+      networkService: { selectedNetworks: {} },
+      subscriptionService: {
+        createSubscription: () => publish,
+        setUnsubscriptionHandle: (_id: string, handle: () => void) => { cleanup = handle; },
+      },
+    });
+    const initial = await extension.accountsSubscribe('authorization-accounts');
+    expect(initial).toEqual([expect.objectContaining({ address, walletEcosystem: 'ton' })]);
+    for (const [snapshot] of publish.mock.calls) {
+      expect(snapshot).toEqual([expect.objectContaining({ address, walletEcosystem: 'ton' })]);
+    }
+    cleanup();
   });
 });

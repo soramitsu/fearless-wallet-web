@@ -161,8 +161,8 @@ popular SORA assets the Swap sheet offers (XOR, VAL, PSWAP, XSTUSD, from the reg
 
 ```bash
 yarn vitest run tests/unit/portfolio-dashboard-*.spec.ts
-EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test IS_EXTENSION=true \
-  yarn env-cmd -f .env.extension node scripts/build-extension.mjs --mode development
+NODE_ENV=production EXTENSION_TYPE=chrome VUE_APP_TEST_ONLY=true VUE_APP_EXTENSION_SMOKE=true OUTPUT_DIR=chrome-test \
+  IS_EXTENSION=true yarn env-cmd -f .env.extension node scripts/build-extension.mjs --mode development
 node scripts/solana-extension-smoke.mjs --dashboard-screenshots output/dashboard-screenshots
 ```
 
@@ -170,15 +170,21 @@ The unit specs cover the readiness evaluator against synthetic chains and the re
 actions each state gets, the wallet switch, and the Where it lives screen and its sheets with only the stores, the router
 and the wallet switch stood in for (`portfolio-dashboard-token-locations.spec.ts`).
 
-The smoke opens the real popup at 561 x 600, offline, with two wallets (the second created in the real keyring, its
-holdings injected as the background would report them), checks what the screens claim and captures the screens listed in
-the README it writes (`scripts/extension-smoke-dashboard.mjs`). The P1 flow checks the readiness chips, Where it lives for
+The smoke opens the real popup at 561 x 600, offline, with every wallet in the keyring: the main smoke's fresh wallet
+holds the fixture balances, a second wallet, Savings, is created in the real keyring with its holdings injected as the
+background would report them, and the main smoke's old, imported wallet holds nothing, so the Wallets lens also shows
+how an empty wallet reads. It checks what the screens claim and captures the screens listed in the README it writes
+(`scripts/extension-smoke-dashboard.mjs`). The P1 flow checks the readiness chips, Where it lives for
 DOT (no route, Send first), Where it lives for LLD on Liberland with its move paused, Receive on SORA, the same screen
 with moves on and the Move sheet handing over to the cross-chain screen with the network and asset chosen, the dock and
 the header's back button, XOR as swap-ready and the Swap
-sheet handing over the pair to Polkaswap, USDT in the second wallet switching wallet first (the real background switches)
+sheet handing over the pair to Polkaswap, USDT in Savings switching wallet first (the real background switches)
 before Send opens, the single-wallet legend, and Where it lives in Russian. It also asks the real background for
 `pri(accounts.portfolioHoldings)` and checks the shape of the answer.
+
+Build the test extension with `NODE_ENV=production`, as release preparation does. The fixture is the production
+registry, and the popup takes SORA's network name and asset ids from `NODE_ENV` at build time (`src/consts/sora.ts`), so
+without it XOR on SORA Mainnet is not swap-ready and the smoke stops at the readiness chips, saying to rebuild.
 
 On Node 26 (newer than the one `.nvmrc` pins), run the unit tests with `NODE_OPTIONS=--no-experimental-webstorage`.
 Without it Node's own experimental `localStorage` shadows the test environment's, and 45 tests in six files

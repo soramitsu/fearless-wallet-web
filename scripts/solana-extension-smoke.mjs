@@ -36,8 +36,9 @@ const portfolioScreenshotsDir =
           ? process.argv[portfolioScreenshotsArg + 1]
           : 'output/portfolio-screenshots'
       );
-// `--dashboard-screenshots [dir]`: two wallets, then the portfolio dashboard at the popup size, offline. Needs a test
-// build that carries the dashboard (every build does unless made with VUE_APP_PORTFOLIO_DASHBOARD=false).
+// `--dashboard-screenshots [dir]`: every wallet in the keyring, two of them funded, then the portfolio dashboard at the
+// popup size, offline. Needs a test build made with NODE_ENV=production that carries the dashboard (every build does
+// unless made with VUE_APP_PORTFOLIO_DASHBOARD=false); see extension-smoke-dashboard.mjs.
 const dashboardScreenshotsArg = process.argv.indexOf('--dashboard-screenshots');
 const dashboardScreenshotsDir =
   dashboardScreenshotsArg === -1

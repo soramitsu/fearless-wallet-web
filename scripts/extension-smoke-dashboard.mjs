@@ -1,14 +1,18 @@
 /* global Buffer, console */
 // Portfolio dashboard screenshots for the DevTools-protocol extension smoke
-// (`solana-extension-smoke.mjs --dashboard-screenshots`). Needs a test build, which carries the dashboard unless it was
-// made with VUE_APP_PORTFOLIO_DASHBOARD=false:
-//   yarn build:extension-test
+// (`solana-extension-smoke.mjs --dashboard-screenshots`). Needs a test build made with NODE_ENV=production, as release
+// preparation makes it: the fixture is the production registry, and the popup takes SORA's network name and asset ids
+// from NODE_ENV at build time (src/consts/sora.ts). The build carries the dashboard unless it was made with
+// VUE_APP_PORTFOLIO_DASHBOARD=false:
+//   NODE_ENV=production yarn build:extension-test
 //
 // Same method as the portfolio screenshots: the popup is opened at the real popup size (561 x 600), offline, and the
 // registry, prices and balances are injected into the popup's own stores, so every run renders the same screens through
 // the real components. A second wallet is created in the real keyring; its holdings, which the offline background cannot
-// load, are put into the dashboard store as the background's own answer would shape them. Besides the screenshots, the
-// run checks what the screens claim: the totals, the legend, the drill-down, the sheets and the wallet picker.
+// load, are put into the dashboard store as the background's own answer would shape them. The other wallets the main
+// smoke leaves in the keyring (its old, imported wallet) hold nothing, so All wallets also shows how an empty wallet
+// reads. Besides the screenshots, the run checks what the screens claim: the totals, the legend, the drill-down, the
+// sheets and the wallet picker.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { APP, POPUP_SURFACE, fontsOnScreen, portfolioFixture, servePopupOffline } from './extension-smoke-portfolio.mjs';
@@ -39,6 +43,8 @@ const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin':
 // LLD's row on Liberland (it is in no token group, so the row is named by its asset key), and LLD on SORA.
 const LLD_ROW = 'tokenRow-substrate:6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6';
 const SORA_LLD = '1c3b4fcb-5a5f-4319-9dce-d178006eb9bf';
+// XOR's row on SORA mainnet, the swap venue.
+const XOR_ROW = 'tokenRow-substrate:7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5:b774c386-5cce-454a-a845-1ec0381538ec';
 const PRICE_CHANGES = { polkadot: 2.5, ethereum: -1.2 };
 
 const assetKey = (network, asset) =>
@@ -97,13 +103,14 @@ function walletAnswer(fixture, address, held) {
       address,
       total: String(total),
       changeAmount: changeAmount.toFixed(4),
-      changePercent: ((changeAmount / (total - changeAmount)) * 100).toFixed(4),
+      changePercent: total ? ((changeAmount / (total - changeAmount)) * 100).toFixed(4) : '0',
       hiddenCount: 0,
       unpricedCount: 0,
       unavailableCount: 0,
       poolStakesExcluded: false,
       holdings,
-      latestTimestamp: Date.now() - 20_000,
+      // A balance time comes only from counted holdings, so a wallet with nothing in it has none.
+      ...(holdings.length ? { latestTimestamp: Date.now() - 20_000 } : {}),
       staleNetworks: [],
     },
   };
@@ -146,6 +153,16 @@ export async function captureDashboardScreenshots({
     walletEcosystem: 'substrate',
   });
   await extensionSend(cdp, controlSession, 'pri(accounts.update.current)', { address: walletAddress, walletEcosystem: 'substrate' });
+  // All wallets counts every wallet in the keyring, so the ones the main smoke made before this step are on screen too.
+  // They hold nothing here, and the Wallets lens check reads how such a wallet is shown.
+  const keyring = await extensionSend(cdp, controlSession, 'pri(accounts.subscribe)', null);
+  const mainName = keyring.find(({ address }) => address === walletAddress)?.name;
+  const emptyWallets = keyring
+    .filter(({ address }) => address !== walletAddress && address !== savingsAddress)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (!mainName || !emptyWallets.length) {
+    throw new Error(`Expected the funded wallet and at least one empty wallet in the keyring, found ${JSON.stringify(keyring.map(({ name }) => name))}`);
+  }
 
   // The background answers the new message in the real extension: one entry per wallet it keeps balances for.
   const backgroundAnswer = await extensionSend(cdp, controlSession, 'pri(accounts.portfolioHoldings)', null);
@@ -160,7 +177,10 @@ export async function captureDashboardScreenshots({
 
   const savings = walletAnswer(fixture, savingsAddress, SAVINGS_HOLDINGS);
   const main = walletAnswer(fixture, walletAddress, MAIN_HOLDINGS);
+  const empty = emptyWallets.map(({ address }) => walletAnswer(fixture, address, []).answer);
   const allTotal = mainTotal + savings.total;
+  // A wallet's share as the Wallets lens words it, in whole percent of the all-wallets total.
+  const share = (total) => `${Math.round((total / allTotal) * 100)}% of total`;
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await cdp.send('Target.attachToTarget', { flatten: true, targetId });
   const shots = [];
@@ -209,8 +229,9 @@ export async function captureDashboardScreenshots({
     await wait(`Boolean(${APP})`, 'popup Vue app');
     const onUnlock = await evalPage(`${APP}.router.currentRoute.value.name === 'Unlock'`).catch(() => false);
     if (onUnlock) await extensionSend(cdp, controlSession, 'pri(keyring.unlock)', { password });
-    await wait(`${APP}.pinia._s.get('accounts').selectedWallet.address !== ''`, 'the wallet on screen');
-    await wait(`${APP}.pinia._s.get('accounts').accounts.length === 2`, 'both wallets in the popup');
+    // The fixture balances go to the selected wallet, so it must be the funded one.
+    await wait(`${APP}.pinia._s.get('accounts').selectedWallet.address === ${JSON.stringify(walletAddress)}`, 'the funded wallet on screen');
+    await wait(`${APP}.pinia._s.get('accounts').accounts.length === ${keyring.length}`, 'every wallet in the popup');
     // The dashboard store exists once the wallet screen's header has mounted.
     await wait(`${APP}.pinia._s.has('portfolioDashboard')`, 'the dashboard store');
 
@@ -242,7 +263,7 @@ export async function captureDashboardScreenshots({
       evalPage(`(() => {
         const dashboard = ${APP}.pinia._s.get('portfolioDashboard');
 
-        dashboard.holdings = [${JSON.stringify(main.answer)}, ${JSON.stringify(savings.answer)}];
+        dashboard.holdings = ${JSON.stringify([main.answer, savings.answer, ...empty])};
         dashboard.readAt = Date.now();
         dashboard.status = 'ready';
         return true;
@@ -255,9 +276,9 @@ export async function captureDashboardScreenshots({
     await wait(`Boolean(document.querySelector('[data-testid="portfolioHero"]'))`, 'the dashboard hero');
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the All wallets token list');
 
-    // All wallets: the header names it, the total is the sum of both wallets, the legend and the list agree.
+    // All wallets: the header names it, the total is the sum of every wallet, the legend and the list agree.
     await check('the header names All wallets', `document.querySelector('[data-testid="walletNameHeader"]')?.innerText`, 'All wallets');
-    await check('the total is the sum of both wallets', `document.querySelector('[data-testid="heroTotal"]')?.getAttribute('aria-label').includes(${JSON.stringify(dollars(allTotal))})`, true);
+    await check('the total is the sum of every wallet', `document.querySelector('[data-testid="heroTotal"]')?.getAttribute('aria-label').includes(${JSON.stringify(dollars(allTotal))})`, true);
     await check('the sync chip says live', `document.querySelector('[data-testid="heroSync"]')?.innerText.trim().toLowerCase()`, 'live');
     await check('the Wallets lens exists only in All wallets', `[...document.querySelectorAll('[data-testid^="allLens-"]')].map((button) => button.dataset.testid)`, ['allLens-token', 'allLens-network', 'allLens-wallet']);
     const legendShares = await evalPage(`[...document.querySelectorAll('[data-testid="heroLegend"] .chip-share')].map((node) => parseInt(node.innerText, 10))`);
@@ -282,9 +303,21 @@ export async function captureDashboardScreenshots({
 
     await click('[data-testid="allLens-wallet"]');
     await wait(`Boolean(document.querySelector('[data-testid="allWalletRows"]'))`, 'the Wallets lens');
-    await check('the Wallets lens lists both wallets, largest first', `[...document.querySelectorAll('[data-testid="allWalletRows"] .title')].map((node) => node.innerText)`, ['Solana Smoke', SECOND_WALLET_NAME]);
+    const walletRows = `[...document.querySelectorAll('[data-testid="allWalletRows"] .row')]`;
+    await check(
+      'the Wallets lens lists every wallet, largest first, with its own total and share',
+      `${walletRows}.map((row) => [row.querySelector('.title').innerText, row.querySelector('.fiat').innerText.replace(/^[^0-9]+/, ''), row.querySelector('.amount').innerText])`,
+      [
+        [mainName, dollars(mainTotal), share(mainTotal)],
+        [SECOND_WALLET_NAME, dollars(savings.total), share(savings.total)],
+        ...emptyWallets.map(({ name }) => [name, dollars(0), share(0)]),
+      ]
+    );
+    await check('a wallet with nothing in it comes last, with no networks and no balance age', `${walletRows}.slice(-${emptyWallets.length}).map((row) => row.querySelector('.sub').innerText)`, emptyWallets.map(() => '0 networks'));
     await scrollTop();
     await capture('05-all-wallets-wallets', 'All wallets by wallet: each wallet with its share, networks and age, and a way to open it alone.');
+    await evalPage(`(${walletRows}.at(-1).scrollIntoView({ block: 'center' }), true)`);
+    await capture('05b-all-wallets-empty-wallet', 'The end of the Wallets lens: a wallet with nothing in it comes last, at $0.00 and 0% of total, with no networks and no age.');
 
     await click('[data-testid="heroHowWeCount"]');
     await wait(`Boolean(document.querySelector('[data-testid="portfolioCountingSheet"]'))`, 'the how-we-count sheet');
@@ -315,7 +348,7 @@ export async function captureDashboardScreenshots({
     await check('the sheet names the network that did not answer', `document.querySelector('[data-testid="syncNetworks"]').innerText.trim()`, 'Polkadot');
     await capture('09-partial-balances', 'A network that did not answer is named, and the status is Partial.');
     await click('[data-testid="portfolioSheetClose"]');
-    await evalPage(`(() => { const dashboard = ${APP}.pinia._s.get('portfolioDashboard'); dashboard.holdings = dashboard.holdings.map((entry) => ({ ...entry, staleNetworks: [], latestTimestamp: Date.now() - 20000 })); return true; })()`);
+    await evalPage(`(() => { const dashboard = ${APP}.pinia._s.get('portfolioDashboard'); dashboard.holdings = dashboard.holdings.map((entry) => ({ ...entry, staleNetworks: [], ...(entry.latestTimestamp ? { latestTimestamp: Date.now() - 20000 } : {}) })); return true; })()`);
 
 
     // ---- Where it lives (phase P1): readiness chips, the screen for one token, the Swap and Move hand-offs ----------
@@ -336,7 +369,12 @@ export async function captureDashboardScreenshots({
     await lens('token');
     await features({ polkaswap: true, crossChainXcm: false, crossChainSoraBridge: false, crossChainLiberland: false });
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the token list');
-    await check('a token on SORA is swap-ready, with the words and an icon', `document.querySelector('[data-testid="tokenRow-substrate:7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5:b774c386-5cce-454a-a845-1ec0381538ec"] [data-testid="readiness-ready"]')?.innerText.trim()`, 'Swap-ready');
+    // With swaps on, a holding on the swap venue always wears a chip. Without one the popup names another network as the
+    // venue: it was built without NODE_ENV=production, and none of the swap checks below can pass.
+    if (await evalPage(`Boolean(document.querySelector('[data-testid="${XOR_ROW}"]')) && !document.querySelector('[data-testid="${XOR_ROW}"] [data-testid^="readiness-"]')`)) {
+      throw new Error('XOR on SORA Mainnet has no readiness chip while swaps are on: the popup was built without the production network constants. Build the test extension with NODE_ENV=production.');
+    }
+    await check('a token on SORA is swap-ready, with the words and an icon', `document.querySelector('[data-testid="${XOR_ROW}"] [data-testid="readiness-ready"]')?.innerText.trim()`, 'Swap-ready');
     await check('LLD on Liberland, whose reviewed route to SORA is turned off in this version, says Moves paused', `document.querySelector('[data-testid^="${LLD_ROW}"] [data-testid="readiness-off"]')?.innerText.trim()`, 'Moves paused');
     await check('KSM, whose routes to SORA are retired, has no chip', `document.querySelectorAll('[data-testid="tokenRow-group:ksm"] [data-testid^="readiness-"], [data-testid^="tokenRow-substrate:b0a8d493"] [data-testid^="readiness-"]').length`, 0);
     await click('[data-testid="tokenRow-group:usdt"]');
@@ -411,7 +449,7 @@ export async function captureDashboardScreenshots({
     checks.push('the header back leaves Where it lives for the list');
 
     // A token on SORA is swap-ready: the Swap sheet picks the pair and hands over to Polkaswap.
-    await click(`[data-testid="tokenRow-substrate:7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5:b774c386-5cce-454a-a845-1ec0381538ec"]`);
+    await click(`[data-testid="${XOR_ROW}"]`);
     await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives for XOR');
     await wait(`Boolean(document.querySelector('[data-testid="action-swap"]'))`, 'the swap action');
     await check('a swap-ready token offers a swap first, with the Polkaswap mark', `[document.querySelector('[data-testid="action-swap"]')?.innerText.trim(), Boolean(document.querySelector('[data-testid="action-swap"] use'))]`, ['Swap XOR on Polkaswap', true]);
@@ -455,7 +493,7 @@ export async function captureDashboardScreenshots({
     await click('[data-testid="legend-group:dot"]');
     await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'Where it lives from the legend');
     await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'the holdings of one wallet');
-    await check('in one wallet Where it lives shows only that wallet', `[...new Set([...document.querySelectorAll('[data-testid="locationsHoldings"] .holding-meta > span:first-child')].map((node) => node.innerText))]`, ['Solana Smoke']);
+    await check('in one wallet Where it lives shows only that wallet', `[...new Set([...document.querySelectorAll('[data-testid="locationsHoldings"] .holding-meta > span:first-child')].map((node) => node.innerText))]`, [mainName]);
     await capture('19-where-it-lives-one-wallet', 'Where it lives from the legend of one wallet: only that wallet holds are listed.');
     await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
     await lens('token');
@@ -464,17 +502,18 @@ export async function captureDashboardScreenshots({
     await evalPage(`document.querySelector('.wallet-name .name').click()`);
     await wait(`Boolean(document.querySelector('[data-testid="allWalletsRow"]'))`, 'All wallets in the wallet picker');
     await check('the picker marks All wallets as selected', `document.querySelector('[data-testid="allWalletsRow"] button').getAttribute('aria-pressed')`, 'true');
+    await check('the picker lists every wallet by name, the empty one too', `[...document.querySelectorAll('[data-testid="walletContent"] [data-testid="name"]')].map((node) => node.textContent.trim())`, keyring.map(({ name }) => name).sort((a, b) => a.localeCompare(b)));
     await capture('10-wallet-picker', 'The wallet picker: All wallets first, with the sum of every wallet. Offline the background has no balances, so the wallets below read zero.');
 
     // One wallet: the header keeps its own total and its own list, with Swap on Polkaswap.
     await evalPage(`(() => {
-      const row = [...document.querySelectorAll('[data-testid="walletContent"]')].find((candidate) => candidate.querySelector('[data-testid="name"]')?.innerText.trim().toLowerCase() === 'solana smoke');
-      if (!row) throw new Error('Solana Smoke is not in the wallet picker');
+      const row = [...document.querySelectorAll('[data-testid="walletContent"]')].find((candidate) => candidate.querySelector('[data-testid="name"]')?.innerText.trim().toLowerCase() === ${JSON.stringify(mainName.toLowerCase())});
+      if (!row) throw new Error(${JSON.stringify(`${mainName} is not in the wallet picker`)});
       row.querySelector('[data-testid="content"]').click();
       return true;
     })()`);
     await wait(`Boolean(document.querySelector('[data-testid="heroSwap"]'))`, 'one wallet with the Swap action');
-    await check('one wallet reads as itself', `document.querySelector('[data-testid="walletNameHeader"]')?.innerText`, 'Solana Smoke');
+    await check('one wallet reads as itself', `document.querySelector('[data-testid="walletNameHeader"]')?.innerText`, mainName);
     await check('one wallet keeps its own total, the fixture the popup was given', `document.querySelector('[data-testid="heroTotal"]')?.getAttribute('aria-label').includes(${JSON.stringify(dollars(mainTotal))})`, true);
     await check('Swap carries the Polkaswap mark', `document.querySelector('[data-testid="heroSwap"] use')?.getAttribute('xlink:href') ?? document.querySelector('[data-testid="heroSwap"] use')?.getAttribute('href')`, '#icon-polkaswap');
     checks.push('choosing a wallet leaves All wallets');
@@ -498,8 +537,10 @@ export async function captureDashboardScreenshots({
       path.join(outputDir, 'README.md'),
       `# Portfolio dashboard at the ${surface.name} size (${surface.width} x ${surface.height}, device scale 2)\n\n` +
         'Captured offline by `node scripts/solana-extension-smoke.mjs --dashboard-screenshots <dir>` from a test build made with ' +
-        '`VUE_APP_PORTFOLIO_DASHBOARD=true`. Two wallets: the first holds the fixture balances, the second is a real keyring wallet whose ' +
-        'holdings are injected as the background would report them. Logos are generated placeholders. Invented amounts.\n\n' +
+        `\`NODE_ENV=production\`. ${keyring.length} wallets: ${mainName} holds the fixture balances, ${SECOND_WALLET_NAME} is a real ` +
+        'keyring wallet whose holdings are injected as the background would report them, and ' +
+        `${emptyWallets.map(({ name }) => name).join(', ')}, left by the main smoke, hold${emptyWallets.length === 1 ? 's' : ''} nothing. ` +
+        'Logos are generated placeholders. Invented amounts.\n\n' +
         shots.map(({ file, description }) => `- \`${path.basename(file)}\`: ${description}`).join('\n') +
         '\n\nChecked on the way:\n\n' +
         checks.map((label) => `- ${label}`).join('\n') +

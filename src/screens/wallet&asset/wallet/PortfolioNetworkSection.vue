@@ -37,11 +37,14 @@
             {{ asset.symbol }}
             <span v-if="asset.trust !== 'verified'" class="trust-badge">{{ t('portfolioPage.unverified') }}</span>
           </span>
-          <span class="asset-name">{{ asset.name || t('portfolioPage.unknownAsset') }}</span>
-          <span v-if="asset.hidden" class="asset-badges">
-            <span class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
-            <span v-if="asset.preferenceSource === 'legacy305'" class="row-badge legacy" data-testid="hiddenPreviousVersion">
-              {{ t('portfolioPage.hiddenPreviousVersion') }}
+          <!-- The badges share the name's line, so a hidden asset in Manage stays two lines tall like the rest. -->
+          <span class="asset-meta">
+            <span class="asset-name">{{ asset.name || t('portfolioPage.unknownAsset') }}</span>
+            <span v-if="asset.hidden" class="asset-badges">
+              <span class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
+              <span v-if="asset.preferenceSource === 'legacy305'" class="row-badge legacy" data-testid="hiddenPreviousVersion">
+                {{ t('portfolioPage.hiddenPreviousVersion') }}
+              </span>
             </span>
           </span>
         </span>
@@ -311,6 +314,26 @@ function openAsset(asset: PortfolioAsset): void {
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 4px;
+}
+
+// The name's line: the name gives way (ellipsis) to the badges, which keep full contrast on a dimmed row.
+.asset-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  margin-top: 4px;
+
+  .asset-name {
+    min-width: 0;
+    margin-top: 0;
+  }
+
+  .asset-badges {
+    flex: none;
+    margin-top: 0;
+  }
 }
 
 .row-badge {

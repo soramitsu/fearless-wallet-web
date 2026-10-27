@@ -72,7 +72,9 @@
       <Tooltip text="header.connectionStatus" target=".connection" placement="top" />
       <Tooltip :text="accountsStore.selectedNetwork" target=".network-management" placement="top" />
 
+      <!-- The dock carries Settings whenever a wallet is open; the header keeps it only without the dock. -->
       <CircleButton
+        v-if="showSettingsButton"
         :class="{ 'settings-highlighted': highlightSettingsIcon }"
         iconName="settings"
         size="big"
@@ -122,6 +124,7 @@ export default defineComponent({ name: 'Header',
   props: {
     highlightSettingsIcon: Boolean,
     showSelectWalletPopup: { type: Boolean },
+    showSettingsButton: { type: Boolean, default: true },
   },
   data() {
     // Before the first render, so the header never shows a key: the dashboard's strings are not in translation.json.
@@ -362,11 +365,12 @@ export default defineComponent({ name: 'Header',
       justify-content: center;
       flex-direction: column;
 
+      // Sized so a wallet name of about twenty characters fits beside the network controls, not ten as before.
       .name {
         display: flex;
-        max-width: 190px;
+        max-width: 250px;
         font-weight: 700;
-        font-size: 1.5em;
+        font-size: 1.25rem;
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;

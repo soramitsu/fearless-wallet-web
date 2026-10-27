@@ -1,7 +1,16 @@
 <template>
-  <div v-if="recoveryOnly" class="wallet-recovery-banner" :lang="noticeLocale === 'ru-RU' ? 'ru' : 'en'" role="status">
-    <span>{{ t('banner') }}</span>
-    <button type="button" @click="reviewNotice">{{ t('review') }}</button>
+  <div
+    v-if="recoveryOnly"
+    class="wallet-recovery-banner"
+    :lang="noticeLocale === 'ru-RU' ? 'ru' : 'en'"
+    role="status"
+    data-testid="walletRecoveryBanner"
+  >
+    <Icon icon="info-triangle" width="16px" height="16px" :hover="false" className="wallet-recovery-banner__icon" />
+    <span class="wallet-recovery-banner__text">{{ t('walletBanner') }}</span>
+    <button type="button" class="wallet-recovery-banner__action" data-testid="walletRecoveryGuide" @click="openGuide">
+      {{ t('walletBannerAction') }}
+    </button>
   </div>
   <LegacyWalletUpgradePopup
     v-if="visible"
@@ -17,6 +26,7 @@ import { computed, onActivated, onBeforeUnmount, onDeactivated, ref, watch } fro
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import LegacyWalletUpgradePopup from './LegacyWalletUpgradePopup.vue';
+import Icon from '@/components/Icon.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
 import { Components } from '@/router/routes';
@@ -47,8 +57,6 @@ let navigationAttempt = 0;
 // once per old or imported wallet rather than every time the extension opens.
 // It never upgrades a wallet, and the recovery banner stays on its pages.
 const reviewed = ref<string[]>(readClosedLegacyWalletNotices());
-// The banner reopens the guidance on request.
-const reviewing = ref(false);
 const candidates = computed(() => getLegacyWalletUpgradeAccounts(accountsStore.accounts));
 // Only the wallet being viewed decides whether to warn: a newly created wallet
 // shows neither the banner nor the dialog, even while older wallets remain.
@@ -57,7 +65,7 @@ const recoveryOnly = computed(() => IS_EXTENSION &&
 // Wallet redirects to Currencies; only portfolio roots may interrupt browsing.
 const portfolioRoutes = new Set<string>([Components.Wallet, Components.Currencies, Components.Nfts]);
 const visible = computed(() => recoveryOnly.value && active.value && portfolioRoutes.has(String(route.name)) &&
-  (reviewing.value || candidates.value.some(({ address }) => !reviewed.value.includes(address))));
+  candidates.value.some(({ address }) => !reviewed.value.includes(address)));
 
 // Switching accounts does not itself navigate. Leave any normal-use screen
 // immediately when its selected signer becomes a recovery-only wallet.
@@ -80,7 +88,6 @@ watch([visible, () => route.name], resetNavigation, { flush: 'sync' });
 onBeforeUnmount(resetNavigation);
 
 const acknowledge = (addresses: string[]) => {
-  reviewing.value = false;
   reviewed.value = [...new Set([...reviewed.value, ...addresses])];
   rememberClosedLegacyWalletNotices(reviewed.value);
 };
@@ -90,9 +97,9 @@ const dismiss = () => {
   acknowledge(candidates.value.map(({ address }) => address));
 };
 
-const reviewNotice = () => {
-  reviewing.value = true;
-  void router.push({ name: Components.Wallet });
+// The banner's one action is the guide, where the funds are moved step by step (it links the full notice).
+const openGuide = () => {
+  void router.push({ name: Components.SecurityNoticeGuide });
 };
 
 const createWallet = async () => {
@@ -116,31 +123,57 @@ const createWallet = async () => {
 </script>
 
 <style lang="scss" scoped>
+// The one warning an old wallet's pages carry (the exposure reminder stays away while it shows, see Main.vue):
+// a single line at the width of the cards below it, so the portfolio keeps its room.
 .wallet-recovery-banner {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 10px 0;
-  padding: 10px 12px;
-  border-left: 3px solid $pink-color;
-  background: $fw-row-selection;
-  color: $pink-lavender-color;
-  font-size: 11px;
-  line-height: 1.4;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--fw-divider);
+  border-left: 3px solid var(--fw-warning);
+  border-radius: $default-border-radius;
+  background: var(--fw-raised);
+  color: var(--fw-text-1);
+  font-size: 0.75rem;
+  line-height: 1.35;
   text-align: left;
 
   &:lang(ru) { font-family: system-ui, sans-serif; }
+}
 
-  button {
-    border: 0;
-    padding: 6px 0;
-    background: transparent;
-    color: white;
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
+.wallet-recovery-banner__icon {
+  flex: none;
+  color: var(--fw-warning);
+}
+
+.wallet-recovery-banner__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wallet-recovery-banner__action {
+  flex: none;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--fw-link);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fw-raised-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: 2px;
   }
 }
 </style>

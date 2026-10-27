@@ -45,32 +45,33 @@
       <PortfolioSky class="hero-sky" :groups="groups" :activeKey="activeKey" @select="$emit('select', $event)" />
     </div>
 
-    <ul v-if="groups.length" class="legend" :aria-label="t('portfolioDashboard.legend.label')" data-testid="heroLegend">
-      <li v-for="group in groups" :key="group.key">
-        <button
-          type="button"
-          class="chip"
-          :class="{ 'chip--active': group.key === activeKey }"
-          :aria-pressed="group.key === activeKey"
-          :aria-label="chipLabel(group)"
-          :title="group.members ? t('portfolioDashboard.legend.otherDetail', { names: group.members.join(', ') }) : undefined"
-          :data-testid="`legend-${group.key}`"
-          @click="$emit('select', group.key)"
-        >
-          <span class="chip-dot" :style="{ background: chartColour(group.slot) }" aria-hidden="true"></span>
-          <span class="chip-name">{{ groupName(group) }}</span>
-          <span class="chip-share">{{ formatShare(group.share) }}%</span>
+    <div v-if="groups.length || showSwap" class="hero-row">
+      <ul v-if="groups.length" class="legend" :aria-label="t('portfolioDashboard.legend.label')" data-testid="heroLegend">
+        <li v-for="group in groups" :key="group.key">
+          <button
+            type="button"
+            class="chip"
+            :class="{ 'chip--active': group.key === activeKey }"
+            :aria-pressed="group.key === activeKey"
+            :aria-label="chipLabel(group)"
+            :title="group.members ? t('portfolioDashboard.legend.otherDetail', { names: group.members.join(', ') }) : undefined"
+            :data-testid="`legend-${group.key}`"
+            @click="$emit('select', group.key)"
+          >
+            <span class="chip-dot" :style="{ background: chartColour(group.slot) }" aria-hidden="true"></span>
+            <span class="chip-name">{{ groupName(group) }}</span>
+            <span class="chip-share">{{ formatShare(group.share) }}%</span>
+          </button>
+        </li>
+      </ul>
+
+      <div v-if="showSwap" class="actions" data-testid="heroActions">
+        <button type="button" class="action" :aria-label="t('portfolioDashboard.actions.swapAria')" data-testid="heroSwap" @click="$emit('swap')">
+          <Icon icon="polkaswap" width="20px" height="20px" :hover="false" class="action-icon" />
+          {{ t('portfolioDashboard.actions.swap') }}
         </button>
-      </li>
-    </ul>
-
-    <div v-if="showSwap" class="actions" data-testid="heroActions">
-      <button type="button" class="action" :aria-label="t('portfolioDashboard.actions.swapAria')" data-testid="heroSwap" @click="$emit('swap')">
-        <Icon icon="polkaswap" width="22px" height="22px" :hover="false" class="action-icon" />
-        {{ t('portfolioDashboard.actions.swap') }}
-      </button>
+      </div>
     </div>
-
   </section>
 </template>
 
@@ -138,11 +139,14 @@ const captions = computed(() => {
     props.unpricedCount ? t('portfolioDashboard.unpricedCount', { count: props.unpricedCount }) : '',
   ].filter(Boolean);
 
+  // The wallet screen's caption already ends in "Balance update failed" when a balance could not be read: say it once.
   return [
-    props.caption,
-    parts.length ? t('portfolioDashboard.notIncluded', { parts: parts.join(', ') }) : '',
-    props.poolStakesExcluded ? t('portfolioPage.poolStakesNotIncluded') : '',
-    props.unavailableCount ? t('portfolioPage.balanceStatus.failed') : '',
+    ...new Set([
+      ...props.caption.split(' · '),
+      parts.length ? t('portfolioDashboard.notIncluded', { parts: parts.join(', ') }) : '',
+      props.poolStakesExcluded ? t('portfolioPage.poolStakesNotIncluded') : '',
+      props.unavailableCount ? t('portfolioPage.balanceStatus.failed') : '',
+    ]),
   ].filter(Boolean);
 });
 
@@ -357,7 +361,17 @@ const chipLabel = (group: AllocationGroup): string =>
   align-self: flex-end;
 }
 
+// The legend scrolls within the row; Swap keeps its place at the end of it rather than taking a row of its own.
+.hero-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .legend {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: 8px;
   margin: 0;
@@ -413,6 +427,7 @@ const chipLabel = (group: AllocationGroup): string =>
 }
 
 .actions {
+  flex: none;
   display: flex;
   gap: 8px;
 }
@@ -422,11 +437,10 @@ const chipLabel = (group: AllocationGroup): string =>
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 132px;
-  min-height: 48px;
-  padding: 0 20px;
+  min-height: 44px;
+  padding: 0 16px;
   border: 1px solid var(--fw-stroke-control);
-  border-radius: 24px;
+  border-radius: 22px;
   background: var(--fw-raised);
   color: var(--fw-text-1);
   font: inherit;

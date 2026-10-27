@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <div class="settings-part">
+    <div class="settings-part search-part">
       <SearchInput
         v-if="!syncedShowAssetsManagementForm"
         :value="syncedFilterValue"
@@ -96,13 +96,18 @@
         </button>
       </div>
 
-      <div v-if="!syncedShowAssetsManagementForm" class="hide-zero" data-testid="hideZeroToggle">
-        <Switcher
-          :value="hideZero"
-          :activeText="$t('wallet.hideZero')"
-          :inactiveText="$t('wallet.hideZero')"
-          @change="$emit('update:hideZero', $event)"
-        />
+      <div class="view-end">
+        <div v-if="!syncedShowAssetsManagementForm" class="hide-zero" data-testid="hideZeroToggle">
+          <Switcher
+            :value="hideZero"
+            :activeText="$t('wallet.hideZero')"
+            :inactiveText="$t('wallet.hideZero')"
+            @change="$emit('update:hideZero', $event)"
+          />
+        </div>
+
+        <!-- The list (Currencies.vue) teleports its Refresh here, so it shares this row instead of taking one below. -->
+        <span v-if="refreshSlotId" :id="refreshSlotId" class="refresh-slot"></span>
       </div>
     </div>
   </div>
@@ -133,6 +138,8 @@ export default defineComponent({ name: 'ContentSettings' ,
     showSortControl: Boolean,
     hiddenAssetCount: { type: Number, default: 0 },
     manageHiddenOnly: Boolean,
+    /** The id of the place in the view row where the list puts its Refresh. */
+    refreshSlotId: { type: String, default: '' },
     activeTabName: { type: String },
     filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
@@ -310,13 +317,24 @@ export default defineComponent({ name: 'ContentSettings' ,
     }
   }
 
+  // Hide zero balances and Refresh end the view row, in normal use and in Manage alike.
+  .view-end {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+
   .hide-zero {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-left: auto;
     color: $grayish-white;
     font-size: 0.75rem;
+  }
+
+  .refresh-slot {
+    display: contents;
   }
 
   .settings-part {
@@ -326,6 +344,28 @@ export default defineComponent({ name: 'ContentSettings' ,
 
     .tab {
       margin: auto 12px auto 0;
+    }
+  }
+
+  // Tabs, search and Manage share the first row: the field takes the room the tabs leave.
+  .search-part {
+    flex: 1 1 200px;
+    min-width: 0;
+    justify-content: flex-end;
+
+    :deep(.search-input-wrapper) {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    // The magnifier says what the field is for; its label stays for screen readers only.
+    :deep(.s-placeholder) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
 
@@ -369,6 +409,10 @@ export default defineComponent({ name: 'ContentSettings' ,
     .settings-part {
       height: auto;
       min-height: 44px;
+    }
+    // The row gap already separates it from the tabs.
+    .view-controls {
+      margin-top: 0;
     }
   }
 }

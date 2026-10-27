@@ -402,7 +402,7 @@ function openAsset(asset: PortfolioAsset): void {
   color: $gray-color;
 }
 
-@media (max-width: 600px) {
+@include column-max-width(600px) {
   .network-header,
   .asset-row {
     grid-template-columns: 32px minmax(0, 1fr) 20px;

@@ -10,7 +10,7 @@
       </button>
     </header>
 
-    <ContentForm :height="contentHeight">
+    <ContentForm fillHeight>
       <Scroll>
         <Loader v-if="loading" class="loading" />
 
@@ -137,7 +137,6 @@ import type {
   DemeterPoolView,
   DemeterPoolsResponse,
 } from '@extension-base/services/pools-service/types';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { getDemeterPools, mutateDemeter } from '@/extension/messaging';
 import { useI18n } from '@/locales/useI18n';
 import { useWalletRecovery } from '@/util/useWalletRecovery';
@@ -150,7 +149,6 @@ const recoveryOnly = useWalletRecovery();
 const route = useRoute();
 const router = useRouter();
 const positionElements = new Map<string, HTMLElement>();
-const contentHeight = CONTENT_FORM_HEIGHT;
 const loading = ref(true);
 const catalog = ref<DemeterPoolsResponse | null>(null);
 const selectedPool = ref<DemeterPoolView | null>(null);

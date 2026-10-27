@@ -5,7 +5,7 @@
       <p>{{ t('settingsPage.subtitle') }}</p>
     </header>
 
-    <ContentForm :height="contentHeight">
+    <ContentForm fillHeight>
       <Scroll>
         <p v-if="showIrohaConnectUnavailable" class="settings-notice" role="status" data-testid="iroha-connect-unavailable">
           {{ t('settingsPage.irohaConnectUnavailable') }}
@@ -44,7 +44,7 @@ import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import VisualEffectsSetting from './VisualEffectsSetting.vue';
 import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
-import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION } from '@/consts/global';
 import { Components } from '@/router/routes';
 import { getAccessStatus, lockExtension } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
@@ -76,7 +76,6 @@ const router = useRouter();
 const route = useRoute();
 const accountsStore = useAccountsStore();
 const { t, tc } = useI18n();
-const contentHeight = CONTENT_FORM_HEIGHT;
 // Accounts whose key waits for a password; listed here so they stay reachable after "Skip for now".
 const accessIssueCount = ref(0);
 const exposureStatus = ref<LegacyExposureStatus>();

@@ -279,6 +279,30 @@ async function main() {
 
     await click('securityNoticeLater');
     await eventually(async () => (await route()) === '#/fearless/settings', 'the screen the user was opening');
+
+    // Banners above an old wallet's pages take room from them; each panel must still end above the tab bar
+    // and scroll to its last row.
+    for (const [hash, pageClass] of [['#/fearless/defi', 'defi-hub'], ['#/fearless/settings', 'settings-page']]) {
+      await browser.evaluate(page, `location.hash = ${JSON.stringify(hash)}, true`);
+      const fit = await eventually(() => browser.evaluate(page, `(() => {
+        const scroll = document.querySelector('.${pageClass} .content-form .scroll');
+        if (!scroll?.lastElementChild || !document.querySelector('.wallet-recovery-banner')) return undefined;
+        scroll.scrollTop = scroll.scrollHeight;
+        return {
+          panelBottom: scroll.closest('.content-form').getBoundingClientRect().bottom,
+          scrollBottom: scroll.getBoundingClientRect().bottom,
+          lastRowBottom: scroll.lastElementChild.getBoundingClientRect().bottom,
+          menuTop: document.querySelector('[data-testid=menu]').getBoundingClientRect().top,
+        };
+      })()`), `the ${hash} panel below the recovery banner`);
+      assert.ok(
+        fit.panelBottom <= fit.menuTop && fit.lastRowBottom <= fit.scrollBottom + 1,
+        `${hash} runs under the tab bar: ${JSON.stringify(fit)}`
+      );
+      if (pageClass === 'defi-hub') await shot('02b-recover-funds-end');
+    }
+    log('Recover funds and Settings scroll to their last row above the tab bar, below the banners');
+
     const banner = await eventually(
       () => browser.evaluate(page, 'document.querySelector("[data-testid=legacyExposureBanner]")?.innerText'),
       'the reminder'

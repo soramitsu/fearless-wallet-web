@@ -1,5 +1,5 @@
 <template>
-  <FCorners size="big" :bottomRightCorner="bottomRightCorner">
+  <FCorners size="big" :bottomRightCorner="bottomRightCorner" :class="{ 'fill-height': fillHeight }">
     <div :class="contentClasses" :style="contentFormStyle">
       <slot></slot>
     </div>
@@ -15,12 +15,16 @@ type BackgroundType = 'black' | 'light-black';
 type Props = {
   height?: number;
   isStaticHeight?: boolean;
+  // Take the rest of a flex-column page instead of a height derived from the window, so banners above the
+  // page shrink the form rather than push its end under the menu.
+  fillHeight?: boolean;
   bottomRightCorner?: boolean;
   backgroundColor?: BackgroundType;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   isStaticHeight: false,
+  fillHeight: false,
   bottomRightCorner: false,
   backgroundColor: 'light-black',
 });
@@ -28,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
 const contentFormStyle = computed(() => {
   const styles: Record<string, string> = {};
 
+  if (props.fillHeight) return styles;
   if (!(IS_EXTENSION || props.height)) return { height: '100%' };
 
   if (props.isStaticHeight) styles.height = `${props.height}px`;
@@ -57,6 +62,19 @@ const contentClasses = computed(() => {
   border: $default-border;
   border-radius: $default-border-radius;
   z-index: 1;
+}
+
+// The corners wrapper (this component's root) shares the page with its header; the form fills what is left
+// and its own scroll area keeps the overflow.
+.fill-height {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+
+  .content-form {
+    height: 100%;
+  }
 }
 
 .corner-left-top {

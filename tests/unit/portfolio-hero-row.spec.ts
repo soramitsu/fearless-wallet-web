@@ -86,4 +86,19 @@ describe('the portfolio hero', () => {
     expect(mountDashboard({}).props('showSwap')).toBe(true);
     expect(mountDashboard({ swapAvailable: false }).props('showSwap')).toBe(false);
   });
+
+  it('hands All wallets the dashboard\'s logo for each token row', () => {
+    const summary = { total: '10', changeAmount: '0', changePercent: '0', hiddenCount: 0, unpricedCount: 0, unavailableCount: 0, poolStakesExcluded: false };
+    dashboard.scope.value = 'all';
+    try {
+      const wrapper = shallowMount(PortfolioDashboard, {
+        props: { summary, summaryInput: {}, hiddenKeys: new Set<string>(), caption: '', loading: false } as never,
+      });
+      wrappers.push(wrapper);
+      // A SORA row wears polkaswap.io's logo only if this function reaches the list (portfolio-dashboard-token-icons).
+      expect(wrapper.getComponent({ name: 'PortfolioAllWallets' }).vm.$attrs.iconOf).toBe(dashboard.iconOf);
+    } finally {
+      dashboard.scope.value = 'wallet';
+    }
+  });
 });

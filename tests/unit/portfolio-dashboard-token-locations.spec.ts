@@ -7,6 +7,7 @@ import type { WalletPortfolio } from '@/portfolio/dashboard/aggregate';
 import type { PolkaswapWalletFacts } from '@/portfolio/dashboard/polkaswapChecks';
 import { holdingRefs, type GroupOf } from '@/portfolio/dashboard/facets';
 import { SORA_CHAIN_ID, type MoveHop, type Readiness, type ReadinessSubject } from '@/portfolio/dashboard/readiness';
+import { POLKASWAP_TOKEN_ICONS } from '@/portfolio/polkaswapTokenIcons';
 
 type Actions = Partial<Record<MutableAction, boolean>>;
 
@@ -190,6 +191,19 @@ describe('Where it lives: what the screen shows', () => {
 
     await wrapper.get(`${byId('locationsNotFound')} button`).trigger('click');
     expect(mocks.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('wears polkaswap.io\'s logo for a SORA token and the registry\'s for any other', () => {
+    // As the registry lists it, a SORA asset carries its type and on-chain id.
+    const xor = NETWORKS.find(({ name }) => name === 'SORA')!.assets.find(({ symbol }) => symbol === 'XOR')! as Record<string, unknown>;
+    Object.assign(xor, { type: 'soraAsset', currencyId: XOR_ID });
+    try {
+      expect(screen({ token: XOR_KEY }).get('.head-logo-img').attributes('name')).toBe(POLKASWAP_TOKEN_ICONS.get(XOR_ID));
+      expect(screen().get('.head-logo-img').attributes('name')).toBe('DOT.svg');
+    } finally {
+      delete xor.type;
+      delete xor.currencyId;
+    }
   });
 
   it('names the token, its value, its share and how many holdings it has', () => {

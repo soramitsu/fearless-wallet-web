@@ -12,8 +12,9 @@
         {{ checkingNetworksText }}
       </span>
       <!-- On the wallet screen the button sits at the end of the toolbar's view row and this row shows only a status.
-           A disabled Teleport still resolves its target, so without a slot it names one that always exists. -->
-      <Teleport defer :to="refreshSlotId ? `#${refreshSlotId}` : 'body'" :disabled="!refreshSlotId">
+           Until that slot is on the page the button stays here; a disabled Teleport still resolves its target, so
+           without a slot it names one that always exists. -->
+      <Teleport :to="refreshSlot ?? 'body'" :disabled="!refreshSlot">
         <button
           class="portfolio-refresh"
           data-testid="portfolioRefresh"
@@ -259,6 +260,7 @@ export default defineComponent({
       refreshing: false,
       refreshError: '',
       groupPicker: null as null | { action: 'send' | 'receive'; symbol: string; options: GroupNetworkOption[] },
+      refreshSlot: null as HTMLElement | null,
     };
   },
   computed: {
@@ -461,11 +463,22 @@ export default defineComponent({
       return this.$t('portfolioPage.emptyWalletDescription');
     },
   },
+  // A kept-alive wallet screen off the page still follows the route, so this list can be created where the toolbar's
+  // slot is not in the document yet. Look it up again whenever the screen is back on the page.
+  mounted() {
+    this.findRefreshSlot();
+  },
+  activated() {
+    this.findRefreshSlot();
+  },
   // The picker lives in the body: a kept-alive list must not leave it open over another screen.
   deactivated() {
     this.groupPicker = null;
   },
   methods: {
+    findRefreshSlot() {
+      this.refreshSlot = this.refreshSlotId ? document.getElementById(this.refreshSlotId) : null;
+    },
     async refreshPortfolio() {
       if (this.refreshing) return;
 

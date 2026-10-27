@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "sourceCommit": "cbf5dac0694af7ce887a500bd8b8887cb457e4a6",
+  "referenceCommit": "54616c68d71be02d0f8236db99605294bb176f16",
+  "reviewer": "Codex source and artifact review",
+  "toolchain": {
+    "node": "24.19.0",
+    "yarn": "4.17.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Refresh exact Firefox warning fingerprints after the side-panel and recovery UI changes. Both configurations retain 38 reviewed warnings: 37 DANGEROUS_EVAL and one UNSAFE_VAR_ASSIGNMENT.",
+  "configurations": {
+    "ci": {
+      "configuration": "Without public provider configuration",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 38
+      },
+      "byteIdenticalWarningContexts": 36,
+      "renamedMinifiedWarningContexts": 2,
+      "newWarningSites": 0,
+      "removedWarningSites": 0,
+      "previousBaselineSha256": "6e4406197ada2092e8993904377a8bcafff2903383ecc27821e9d8541f0f60e1",
+      "baselineSha256": "3d49213ab4dc75b4b0eebe834c52031db1e24fd7aa85dfad28a3b0949790d8b9",
+      "rawReportSha256": "b2c20a318d304a0aeb14f848ea712f5122e75f43a10a586b1551304b38d43fad",
+      "referenceRawReportSha256": "8486ee47154e02b4dd6910f6c98c2057dbbadbe9b2533b53be6b4808062ab66e",
+      "warningSetSha256": "496c5bea7e7a48db6dad2e910cbbf9cced0d15ddd2824f6695e56fb33721cebf",
+      "vueStaticMarkupChunk": "chunks/_plugin-vue_export-helper.js"
+    },
+    "store": {
+      "configuration": "Published public provider configuration",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 38
+      },
+      "byteIdenticalWarningContexts": 36,
+      "renamedMinifiedWarningContexts": 2,
+      "newWarningSites": 0,
+      "removedWarningSites": 0,
+      "previousBaselineSha256": "3ef410549c5d98b6990503f230e9b8e9da1bc97968e52fafc40ef540d4032f4c",
+      "baselineSha256": "153b2a1f253453cd17bf5b62838e079ede3bf6dbdcb615f86e0afb139920cae5",
+      "rawReportSha256": "0105ea287cf32fd31c6ac0639e4b10f785eecceeff03bfb1c249e6ba8d2fb38a",
+      "referenceRawReportSha256": "8c7e74371535b34e49b4a8972a96137fe843f1623bcde89a3c4692cf44dd1912",
+      "warningSetSha256": "5bab0ca728fd16aaa5967a496522f19586f638cafb2418d8a67685cefe548ec3",
+      "vueStaticMarkupChunk": "chunks/usePortfolioPreferences.js"
+    }
+  },
+  "checks": [
+    "All 38 warning contexts were compared with independently rebuilt base artifacts in each configuration: 36 match byte-for-byte; two differ only in minified binding names in the generator capability probe and lodash global-object fallback.",
+    "The other warning sites remain dependency function-binding/get-intrinsic helpers, core-js global resolution, Cardano WASM glue, the subwallet capability probe, and Vue static template insertion. No new warning site was found.",
+    "The Vue static template insertion warning resides in the Vue export-helper chunk without public provider configuration and usePortfolioPreferences with the published configuration; both variants were reviewed separately.",
+    "Both Firefox manifests match their corresponding rebuilt base manifests exactly except for the version change from 4.2.1 to 4.2.2. Permissions and CSP are unchanged. Build flags and the yarn.lock digest also match.",
+    "The native reference rebuilds also reject their own committed baseline warningFiles maps. This review does not claim those historical fingerprints reproduce; it relies on the retained raw reports and actual warning-bearing bundles from both source revisions.",
+    "The unchanged strict policy verifies both replacement baselines against preserved bundles and raw reports. All 19 adversarial policy tests and six baseline-selection checks passed. Exact counts, warning codes, file maps, warning-set digests and artifact hashes remain enforced."
+  ],
+  "evidenceDirectory": "output/chrome-release-4.2.2",
+  "evidenceManifest": "firefox-warning-review-evidence-sha256.json"
+}

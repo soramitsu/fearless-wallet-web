@@ -8,16 +8,20 @@
     "UNSAFE_VAR_ASSIGNMENT": 1
   },
   "warningFiles": {
+    "chunks/_plugin-vue_export-helper.js": 1,
     "chunks/background-vendor/assert-Dr2usS2V.js": 8,
     "chunks/background-vendor/bcryptjs-Bs7wnWD7.js": 9,
     "chunks/background-vendor/core-js-pure--MZ3QQlj.js": 1,
     "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-bhnNmS9k.js": 2,
     "chunks/background-vendor/subwallet-keyring-Dz92pNZA.js": 1,
-    "chunks/mountApp.js": 16,
-    "chunks/usePortfolioPreferences.js": 1
+    "chunks/mountApp.js": 16
   },
-  "warningSetSha256": "a240c45d3714f502766ce0e070ce89d6a0465c871680c6b2befa2d6e6eb6bfab",
+  "warningSetSha256": "496c5bea7e7a48db6dad2e910cbbf9cced0d15ddd2824f6695e56fb33721cebf",
   "artifacts": [
+    {
+      "file": "chunks/_plugin-vue_export-helper.js",
+      "sha256": "c7be7cf021ba981509cc33ac96156e05fa77a0d935a46db78e820df1e20a9ae5"
+    },
     {
       "file": "chunks/background-vendor/assert-Dr2usS2V.js",
       "sha256": "f307bd27793c5d2b54e233c4c5a8d8c3745b2a34081ece640fd1adc1ef3797ed"
@@ -40,11 +44,7 @@
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "6166fe00a2b3e98da5c28e0922c6b031f02cc0d368dfe2aebeb38bead31eef8e"
-    },
-    {
-      "file": "chunks/usePortfolioPreferences.js",
-      "sha256": "ce5cf19ffa749a176a5b6f8eb1280b82d83842c831564ad0c2edfb3c90308241"
+      "sha256": "3e0dd6a17bbb1e3b6840ae1bc35cb2d118cce164dfc36f7865596cf95de356ab"
     }
   ]
 }

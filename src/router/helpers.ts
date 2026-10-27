@@ -14,7 +14,9 @@ import { useAccountsStore } from '@/stores/accounts';
 const hasSelectedWallet = (accountsStore: AccountStore) => accountsStore.selectedWallet.address.length !== 0;
 const haveAuthRequests = (extensionStore: ExtensionStore): number => extensionStore.authRequests.length;
 const haveSignRequests = (extensionStore: ExtensionStore): number =>
-  extensionStore.signRequests.length || Object.keys(extensionStore.signEvmRequests).length;
+  extensionStore.signRequests.length ||
+  Object.keys(extensionStore.signEvmRequests).length ||
+  Object.keys(extensionStore.signSolanaRequests).length;
 const haveMetaRequests = (extensionStore: ExtensionStore): number => extensionStore.metaRequests.length;
 const getStakingNetwork = async (stakingStore: StakingStore, network: NetworkName): Promise<NetworkParams> =>
   await new Promise((res) => setTimeout(() => res(stakingStore.getStakingNetwork(network)), 100));

@@ -337,6 +337,7 @@ export default defineComponent({ name: 'Header',
 
   .logo-container {
     width: 48px;
+    flex-shrink: 0;
     margin: auto;
   }
 
@@ -349,12 +350,15 @@ export default defineComponent({ name: 'Header',
   }
 
   .header-part-right {
+    flex-shrink: 0;
     gap: 4px;
     justify-content: flex-end;
     align-items: center;
   }
 
   .header-part-left {
+    flex: 1;
+    min-width: 0;
     gap: 10px;
 
     &:hover {
@@ -371,14 +375,15 @@ export default defineComponent({ name: 'Header',
 
     .wallet-name {
       display: flex;
+      min-width: 0;
       align-items: flex-start;
       justify-content: center;
       flex-direction: column;
 
-      // Sized so a wallet name of about twenty characters fits beside the network controls, not ten as before.
+      // Truncate the name to the remaining room while keeping the network controls visible.
       .name {
         display: flex;
-        max-width: 250px;
+        max-width: min(250px, 100%);
         font-weight: 700;
         font-size: 1.25rem;
         align-items: center;

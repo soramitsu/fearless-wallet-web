@@ -466,6 +466,12 @@ const routes: Array<RouteRecordRaw> = [
             next({ name: Components.Authorize });
             return;
           }
+          // Signing also belongs to the queued account. The background checks that signer,
+          // so an unrelated recovery-only portfolio selection must not hide the review.
+          if (haveSignRequests(extensionStore)) {
+            next({ name: Components.Transaction });
+            return;
+          }
           if (IS_EXTENSION) {
             const accounts = useAccountsStore();
             if (isSelectedWalletRecoveryOnly(accounts.accounts, accounts.selectedWallet.address)) {
@@ -473,8 +479,7 @@ const routes: Array<RouteRecordRaw> = [
               return;
             }
           }
-          if (haveSignRequests(extensionStore)) next({ name: Components.Transaction });
-          else if (haveMetaRequests(extensionStore)) next({ name: Components.MetaRequest });
+          if (haveMetaRequests(extensionStore)) next({ name: Components.MetaRequest });
           else next();
         },
         meta: {

@@ -62,6 +62,7 @@
 
         <Switcher
           v-if="manage"
+          class="asset-switch"
           :value="!asset.hidden"
           :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: asset.symbol, network: section.name })"
           @click.stop
@@ -213,6 +214,8 @@ function openAsset(asset: PortfolioAsset): void {
 .network-header,
 .asset-row,
 .detected-header {
+  // Buttons are border-box already; a row in Manage is a div.
+  box-sizing: border-box;
   width: 100%;
   border: 0;
   color: inherit;
@@ -224,7 +227,7 @@ function openAsset(asset: PortfolioAsset): void {
 .network-header {
   min-height: 68px;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto 16px;
+  grid-template-columns: 38px minmax(0, 1fr) auto 20px;
   align-items: center;
   gap: 10px;
   padding: 12px 0;
@@ -282,7 +285,7 @@ function openAsset(asset: PortfolioAsset): void {
 .asset-row {
   min-height: 64px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto 24px;
+  grid-template-columns: 42px minmax(0, 1fr) auto 20px;
   align-items: center;
   gap: 10px;
   padding: 10px 0 10px 8px;
@@ -290,7 +293,9 @@ function openAsset(asset: PortfolioAsset): void {
   text-align: left;
 }
 
+// In Manage the switch takes the chevron's place, and is wider than it.
 .asset-row--manage {
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
   cursor: default;
 }
 
@@ -420,8 +425,11 @@ function openAsset(asset: PortfolioAsset): void {
   }
 }
 
+// Both layouts give the carets a 20px column; Icon's 32px default ran past the row. Only the width: chevron-right.svg
+// is 23 x 25, so a 20px-high box would draw it smaller.
 .chevron,
 .asset-chevron {
+  width: 20px;
   color: $gray-color;
 }
 
@@ -431,6 +439,7 @@ function openAsset(asset: PortfolioAsset): void {
     grid-template-columns: 32px minmax(0, 1fr) 20px;
     gap: 6px 10px;
   }
+  .asset-row--manage { grid-template-columns: 32px minmax(0, 1fr) auto; }
   .network-value,
   .asset-balance {
     grid-column: 2;
@@ -439,7 +448,8 @@ function openAsset(asset: PortfolioAsset): void {
     text-align: left;
   }
   .chevron,
-  .asset-chevron { grid-column: 3; grid-row: 1 / 3; width: 20px; }
+  .asset-chevron,
+  .asset-switch { grid-column: 3; grid-row: 1 / 3; }
   .network-icon,
   .asset-icon { grid-row: 1 / 3; }
   .asset-name,

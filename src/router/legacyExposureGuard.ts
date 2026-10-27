@@ -18,6 +18,8 @@ type LegacyExposureRedirectInput = {
   state: LegacyExposureState | undefined;
   routeName: string | symbol | null | undefined;
   fullPath: string;
+  /** The selected wallet is an old or imported, recovery-only one. */
+  walletRecoveryOnly?: boolean;
 };
 
 // `allow` ends the guard at once: the notice itself must not be sent on to the per-account
@@ -26,6 +28,7 @@ function resolveLegacyExposureRedirect({
   state,
   routeName,
   fullPath,
+  walletRecoveryOnly = false,
 }: LegacyExposureRedirectInput): LegacyExposureRedirect | 'allow' | null {
   const name = typeof routeName === 'string' ? routeName : '';
   const isNoticeRoute = name === LEGACY_EXPOSURE_ROUTE_NAMES.Notice;
@@ -36,6 +39,9 @@ function resolveLegacyExposureRedirect({
 
   if (state === 'acknowledged') return null;
   if (state === 'guide_available') return isNoticeRoute ? { name: LEGACY_EXPOSURE_ROUTE_NAMES.Guide } : null;
+  // The recovery banner's one action: an old or imported wallet is shown how to move its funds whatever the exposure
+  // record says (a profile from before 3.0.1 reads as not exposed).
+  if (walletRecoveryOnly && name === LEGACY_EXPOSURE_ROUTE_NAMES.Guide) return null;
 
   // Nothing to tell this user: the notice and its guide lead back to the wallet.
   return isNoticeRoute || name === LEGACY_EXPOSURE_ROUTE_NAMES.Guide ? { name: LEGACY_EXPOSURE_ROUTE_NAMES.Welcome } : null;

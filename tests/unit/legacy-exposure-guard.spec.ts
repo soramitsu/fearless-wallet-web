@@ -132,4 +132,20 @@ describe('the security notice after an update from 3.0.x', () => {
     expect(await readLegacyExposureState()).toBe('acknowledged');
     expect(mocks.status).toHaveBeenCalledTimes(3);
   });
+
+  it('opens the recovery banner\'s guide for an old or imported wallet whatever the exposure record says', async () => {
+    const { resolveLegacyExposureRedirect } = await import('@/router/legacyExposureGuard');
+    const guide = (state: Parameters<typeof resolveLegacyExposureRedirect>[0]['state'], walletRecoveryOnly: boolean) =>
+      resolveLegacyExposureRedirect({ state, routeName: 'SecurityNoticeGuide', fullPath: '/security/guide', walletRecoveryOnly });
+
+    // A profile from before 3.0.1 reads as not exposed, yet its wallets are recovery-only and carry the banner.
+    for (const state of ['not_exposed', 'unknown', undefined] as const) {
+      expect(guide(state, true)).toBeNull();
+      expect(guide(state, false)).toEqual({ name: 'Welcome' });
+    }
+    // The pending notice still comes first, and the notice itself is not opened for the banner.
+    expect(guide('notice_pending', true)).toEqual({ name: 'SecurityNotice', query: { redirect: '/security/guide' } });
+    expect(resolveLegacyExposureRedirect({ state: 'not_exposed', routeName: 'SecurityNotice', fullPath: '/security', walletRecoveryOnly: true }))
+      .toEqual({ name: 'Welcome' });
+  });
 });

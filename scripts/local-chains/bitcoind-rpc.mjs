@@ -5,14 +5,32 @@ export function createBitcoindRpc({ url, user, password }) {
   const authorization = `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
   let nextId = 1;
 
-  async function call(method, params = [], wallet) {
-    const response = await fetch(wallet ? `${url}/wallet/${encodeURIComponent(wallet)}` : url, {
-      body: JSON.stringify({ id: nextId++, jsonrpc: '1.0', method, params }),
-      headers: { authorization, 'content-type': 'application/json' },
-      method: 'POST',
-      signal: AbortSignal.timeout(10_000),
-    });
-    const text = await response.text();
+  async function call(method, params = [], wallet, { timeoutMs = 10_000 } = {}) {
+    // Only local block generation may opt into a longer deadline. In particular,
+    // funding and broadcast requests keep their deadline and are never retried.
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) {
+      throw new Error('bitcoind RPC timeout must be between 1 and 60000 ms');
+    }
+    if (timeoutMs !== 10_000 && method !== 'generatetoaddress') {
+      throw new Error('Only local block generation may override the bitcoind RPC timeout');
+    }
+    let response;
+    let text;
+
+    try {
+      response = await fetch(wallet ? `${url}/wallet/${encodeURIComponent(wallet)}` : url, {
+        body: JSON.stringify({ id: nextId++, jsonrpc: '1.0', method, params }),
+        headers: { authorization, 'content-type': 'application/json' },
+        method: 'POST',
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      text = await response.text();
+    } catch (cause) {
+      const error = new Error(`bitcoind ${method}: ${cause.message}`, { cause });
+
+      error.name = cause.name;
+      throw error;
+    }
     let body;
 
     try {

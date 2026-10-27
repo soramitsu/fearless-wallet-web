@@ -11,7 +11,7 @@
       <span class="status-pill" :data-phase="snapshot.phase">{{ statusLabel }}</span>
     </header>
 
-    <ContentForm :height="contentHeight" backgroundColor="black">
+    <ContentForm fillHeight backgroundColor="black">
       <Scroll>
         <main class="connect-canvas" aria-labelledby="iroha-connect-title">
           <div class="sakura-field" :class="{ 'is-active': sakuraActive }" aria-hidden="true">
@@ -238,7 +238,6 @@ import {
   EMPTY_IROHA_CONNECT_SNAPSHOT,
   type IrohaConnectSnapshot,
 } from '@extension-base/services/iroha-connect-service/types';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { Components } from '@/router/routes';
 import { getClipboard } from '@/helpers';
 import {
@@ -255,7 +254,6 @@ import { useI18n } from '@/locales/useI18n';
 
 const router = useRouter();
 const { t } = useI18n();
-const contentHeight = CONTENT_FORM_HEIGHT;
 const petals = Array.from({ length: 14 }, (_, index) => index + 1);
 const snapshot = ref<IrohaConnectSnapshot>({ ...EMPTY_IROHA_CONNECT_SNAPSHOT });
 const selectedAccount = ref('');

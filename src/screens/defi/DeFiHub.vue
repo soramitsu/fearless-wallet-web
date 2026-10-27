@@ -8,7 +8,7 @@
       <span class="network-context">{{ t('defiHub.multiNetwork') }}</span>
     </header>
 
-    <ContentForm :height="contentHeight">
+    <ContentForm fillHeight>
       <Scroll>
         <section class="hub-section positions">
           <span class="eyebrow">{{ t('defiHub.yourPositions') }}</span>
@@ -92,7 +92,6 @@
 import { computed, onActivated, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Components } from '@/router/routes';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { useStakingStore } from '@/stores/staking';
 import { usePoolsStore } from '@/stores/pools';
 import { useAccountsStore } from '@/stores/accounts';
@@ -114,7 +113,6 @@ const accountsStore = useAccountsStore();
 const extensionStore = useExtensionStore();
 const stakingStore = useStakingStore();
 const poolsStore = usePoolsStore();
-const contentHeight = CONTENT_FORM_HEIGHT;
 const dashboard = ref<PositionDashboard>({ rows: [], status: 'ready' });
 const loading = ref(true);
 let requestId = 0;
@@ -191,6 +189,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 8px;
   text-align: left;
 
@@ -210,6 +209,12 @@ onBeforeUnmount(() => {
 .capability {
   color: $gray-color;
   font-size: 0.8125rem;
+}
+
+// The recovery description runs longer; it wraps, the label does not.
+.network-context {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .hub-section {

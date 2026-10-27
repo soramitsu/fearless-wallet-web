@@ -7,7 +7,7 @@
       </div>
     </header>
 
-    <ContentForm :height="contentHeight">
+    <ContentForm fillHeight>
       <Scroll>
         <div class="route-builder">
           <section v-if="crossChainPaused" class="paused-state" role="status" data-testid="crossChainPaused">
@@ -137,7 +137,6 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { NetworkJson } from '@extension-base/types';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { Components } from '@/router/routes';
 import {
   buildCrossChainProviderCapabilities,
@@ -167,7 +166,6 @@ const accountsStore = useAccountsStore();
 const extensionStore = useExtensionStore();
 const networksStore = useNetworksStore();
 const sendKillSwitchStore = useSendKillSwitchStore();
-const contentHeight = CONTENT_FORM_HEIGHT;
 const originChainId = ref('');
 const assetKey = ref('');
 const routeId = ref('');

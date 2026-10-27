@@ -12,7 +12,7 @@
       </div>
     </header>
 
-    <ContentForm :height="382">
+    <ContentForm fillHeight>
       <div class="content">
         <Loader v-if="showLoader" />
 
@@ -203,6 +203,9 @@ export default defineComponent({ name: 'StakingPage',
 
 <style lang="scss" scoped>
 .staking {
+  display: flex;
+  flex-direction: column;
+
   .staking-header {
     min-height: 46px;
     display: flex;

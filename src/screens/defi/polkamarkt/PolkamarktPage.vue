@@ -19,7 +19,7 @@
       </button>
     </header>
 
-    <ContentForm :height="contentHeight">
+    <ContentForm fillHeight>
       <div v-if="loading && !snapshot" class="center-state" data-testid="polkamarkt-loading">
         {{ t('polkamarktPage.loading') }}
       </div>
@@ -296,7 +296,6 @@ import type {
   PolkamarktTrade,
   PolkamarktTradeMode,
 } from '@/defi/polkamarkt/types';
-import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import { formatDecimalString } from '@/helpers/numbers';
 import { Components } from '@/router/routes';
 import { getPolkamarktQuote, getPolkamarktSnapshot, mutatePolkamarkt } from '@/extension/messaging';
@@ -310,7 +309,6 @@ const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 const recoveryOnly = useWalletRecovery();
-const contentHeight = CONTENT_FORM_HEIGHT;
 const views = ['Markets', 'Positions', 'Activity'] as const;
 const view = ref<(typeof views)[number]>(recoveryOnly.value ? 'Positions' : 'Markets');
 const snapshot = ref<PolkamarktSnapshot | null>(null);

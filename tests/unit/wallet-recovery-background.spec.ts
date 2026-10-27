@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { BehaviorSubject } from 'rxjs';
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
 import type { AccountAuthType, AuthType, RequestTypes } from '@extension-base/background/types/types';
@@ -233,5 +234,33 @@ describe('background recovery-only enforcement', () => {
     expect(extension.convertAccounts({ [address]: account } as never)).toEqual([
       expect.objectContaining({ address, ethereumAddress: address, walletEcosystem: 'evm' }),
     ]);
+  });
+
+  it('identifies imported TON accounts in the initial snapshot so Substrate approval excludes them', async () => {
+    const { extension, state } = setup();
+    const address = 'imported-ton';
+    const account = { json: { address, meta: { name: 'Imported TON' } } };
+    const publish = vi.fn();
+    let cleanup = () => {};
+    Object.assign(state.keyringService, {
+      getPair: () => undefined,
+      addressSubject: new BehaviorSubject({}),
+      accountSubject: new BehaviorSubject({}),
+      currentAccountSubject: new BehaviorSubject(undefined),
+      tonKeyring: { accountSubject: new BehaviorSubject({ [address]: account }) },
+    });
+    Object.assign(state, {
+      networkService: { selectedNetworks: {} },
+      subscriptionService: {
+        createSubscription: () => publish,
+        setUnsubscriptionHandle: (_id: string, handle: () => void) => { cleanup = handle; },
+      },
+    });
+    const initial = await extension.accountsSubscribe('authorization-accounts');
+    expect(initial).toEqual([expect.objectContaining({ address, walletEcosystem: 'ton' })]);
+    for (const [snapshot] of publish.mock.calls) {
+      expect(snapshot).toEqual([expect.objectContaining({ address, walletEcosystem: 'ton' })]);
+    }
+    cleanup();
   });
 });
